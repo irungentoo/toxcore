@@ -18,6 +18,10 @@
 
 #endif
 
+//Current time, unix format
+#define unix_time() ((uint32_t)time(NULL))
+
+#define CLIENT_ID_SIZE 32
 
 typedef union
 {
@@ -36,7 +40,7 @@ typedef struct
 
 typedef struct
 {
-    char client_id[32];
+    char client_id[CLIENT_ID_SIZE];
     IP_Port ip_port;
     uint32_t timestamp;
     
@@ -45,7 +49,7 @@ typedef struct
 
 typedef struct
 {
-    char client_id[32];
+    char client_id[CLIENT_ID_SIZE];
     Client_data client_list[8];
     
 }Friend;
@@ -73,18 +77,18 @@ typedef struct
 
 
 //Add a new friend to the friends list
-//client_id must be 32 bytes long.
+//client_id must be CLIENT_ID_SIZE bytes long.
 void addfriend(char * client_id);
 
 //Delete a friend from the friends list
-//client_id must be 32 bytes long.
+//client_id must be CLIENT_ID_SIZE bytes long.
 //returns 0 if success
 //returns 1 if failure (client_id not in friends list)
 char delfriend(char * client_id);
 
 
 //Get ip of friend
-//client_id must be 32 bytes long.
+//client_id must be CLIENT_ID_SIZE bytes long.
 //ip must be 4 bytes long.
 //port must be 2 bytes long.
 //returns ip if success
@@ -110,7 +114,7 @@ void bootstrap(IP_Port ip_port);
 //Global variables
 
 //Our client id
-char self_client_id[32];
+char self_client_id[CLIENT_ID_SIZE];
 
 //Our UDP socket.
 //We only use one so it's much easier to have it as a global variable
