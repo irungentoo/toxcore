@@ -26,6 +26,14 @@
 
 int main(int argc, char *argv[])
 {
+    #ifdef WIN32
+    WSADATA wsaData;
+    if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
+    {
+        return -1;
+    }
+    #endif
+    
     if (argc < 3) {
         printf("usage %s ip port\n", argv[0]);
         exit(0);
@@ -82,5 +90,9 @@ int main(int argc, char *argv[])
         }
         c_sleep(100);
     }
+    
+    #ifdef WIN32
+    WSACleanup();
+    #endif
     return 0;   
 }
