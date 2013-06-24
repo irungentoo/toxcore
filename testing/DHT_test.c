@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     //Set socket nonblocking
     #ifdef WIN32
     //I think this works for windows
+    u_long mode = 1;
     ioctl(sock, FIONBIO, &mode);
     #else
     fcntl(sock, F_SETFL, O_NONBLOCK, 1);
