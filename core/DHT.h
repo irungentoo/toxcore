@@ -21,7 +21,10 @@
 //Current time, unix format
 #define unix_time() ((uint32_t)time(NULL))
 
+//size of the client_id in bytes
 #define CLIENT_ID_SIZE 32
+
+#define MAX_UDP_PACKET_SIZE 65507
 
 typedef union
 {
@@ -100,7 +103,9 @@ IP_Port getfriendip(char * client_id);
 void doDHT();
 
 //if we recieve a DHT packet we call this function so it can be handled.
-void DHT_recvpacket(char * packet, uint32_t length, IP_Port source);
+//Return 0 if packet is handled correctly or if the packet was shit.
+//return 1 if it didn't handle the packet.
+int DHT_recvpacket(char * packet, uint32_t length, IP_Port source);
 
 //Use this function to bootstrap the client
 //Sends a get nodes request to the given ip port
@@ -139,3 +144,13 @@ Pinged pings[LPING_ARRAY];
 Pinged send_nodes[LSEND_NODES_ARRAY];
 
 
+//Basic network functions:
+//TODO: put them somewhere else than here
+
+//Function to send packet(data) of length length to ip_port
+int sendpacket(IP_Port ip_port, char * data, uint32_t length);
+
+//Function to recieve data, ip and port of sender is put into ip_port
+//the packet data into data
+//the packet length into length.
+int recievepacket(IP_Port * ip_port, char * data, uint32_t * length);

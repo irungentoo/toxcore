@@ -1,6 +1,9 @@
 #include "DHT.h"
 
 
+//Basic network functions:
+//TODO: put them somewhere else than here
+
 //Function to send packet(data) of length length to ip_port
 int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 {
@@ -8,6 +11,26 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length)
     
     return sendto(sock, data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
+
+//Function to recieve data, ip and port of sender is put into ip_port
+//the packet data into data
+//the packet length into length.
+int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
+{
+    ADDR addr;
+    uint32_t addrlen = sizeof(addr);
+    (*(int *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    if(*(int *)length == -1)
+    {
+        //nothing recieved
+        return -1;
+    }
+    ip_port->ip = addr.ip;
+    ip_port->port = addr.port;
+    return 0;
+}
+
+
 
 //Compares client_id1 and client_id2 with client_id
 //return 0 if both are same distance
@@ -288,7 +311,7 @@ int sendnodes(IP_Port ip_port, char * client_id)
 
 
 //Packet handling functions
-//One to handle each types of packets
+//One to handle each types of packets we recieve
 
 int handle_pingreq(char * packet, uint32_t length, IP_Port source)
 {
@@ -340,16 +363,16 @@ int handle_sendnodes(char * packet, uint32_t length, IP_Port source)
     
 }
 
-
+//END of packet handling functions
 
 
 
 void addfriend(char * client_id)
 {
-    
-    
-    
-    
+    //TODO: Make the array of friends dynamic instead of a static array with 256 places..
+    //WARNING:This will segfault if the number of friends exceeds 256.
+    memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
+    num_friends++;
 }
 
 
@@ -358,10 +381,17 @@ void addfriend(char * client_id)
 
 char delfriend(char * client_id)
 {
-    
-    
-    
-    
+    uint32_t i;
+    for(i = 0; i < num_friends; i++)
+    {
+        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)//Equal
+        {
+            memcpy(friends_list[num_friends].client_id, friends_list[i].client_id, CLIENT_ID_SIZE);
+            num_friends--;
+            return 0;
+        }
+    }
+    return 1;
 }
 
 
@@ -378,7 +408,7 @@ IP_Port getfriendip(char * client_id)
 
 
 
-void DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
+int DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) {
     case 0:
@@ -394,7 +424,7 @@ void DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
         handle_sendnodes(packet, length, source);
         break;
     default: 
-        return;
+        return 1;
         
     }
     
