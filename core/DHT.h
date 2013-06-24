@@ -59,6 +59,19 @@ typedef struct
 }Pinged;
 
 
+typedef struct
+{
+    int16_t family;
+    uint16_t port;
+    IP ip;
+    uint8_t zeroes[8];
+    #ifdef ENABLE_IPV6
+    uint8_t zeroes2[12];
+    #endif
+}ADDR;
+
+
+
 //Add a new friend to the friends list
 //client_id must be 32 bytes long.
 void addfriend(char * client_id);
@@ -83,7 +96,7 @@ IP_Port getfriendip(char * client_id);
 void doDHT();
 
 //if we recieve a DHT packet we call this function so it can be handled.
-void DHT_recvpacket(char * packet, uint32_t length);
+void DHT_recvpacket(char * packet, uint32_t length, IP_Port source);
 
 //Use this function to bootstrap the client
 //Sends a get nodes request to the given ip port
@@ -103,7 +116,9 @@ char self_client_id[32];
 //We only use one so it's much easier to have it as a global variable
 int sock;
 
-Client_data client_list[32];
+#define LCLIENT_LIST 32
+
+Client_data client_list[LCLIENT_LIST];
 
 //Let's start with a static array for testing.
 Friend friends_list[256];
@@ -111,8 +126,12 @@ uint16_t num_friends;
 
 //The list of ip ports along with the ping_id of what we sent them and a timestamp
 //TODO: make this more efficient looping up to 128 times is a bit...
-Pinged pings[128];
+#define LPING_ARRAY 128
 
-Pinged send_nodes[64];
+Pinged pings[LPING_ARRAY];
+
+#define LSEND_NODES_ARRAY LPING_ARRAY/2
+
+Pinged send_nodes[LSEND_NODES_ARRAY];
 
 
