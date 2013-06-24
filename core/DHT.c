@@ -100,7 +100,7 @@ int replace_good(Client_data * list, uint32_t length, char * client_id, IP_Port 
 //Attempt to add client with ip_port and client_id to the friends client list and close_clientlist
 int addto_lists(IP_Port ip_port, char * client_id)
 {
-    uint32_t i, j;
+    uint32_t i;
     
     //NOTE: current behaviour if there are two clients with the same id is to only keep one (the first one)
     if(!client_in_list(close_clientlist, LCLIENT_LIST, client_id))
@@ -143,7 +143,9 @@ int is_pinging(IP_Port ip_port)
     
     for(i = 0; i < LPING_ARRAY; i++ )
     {
-        if((pings[i].timestamp + PING_TIMEOUT) > unix_time() && pings[i].ip_port == ip_port)
+        if((pings[i].timestamp + PING_TIMEOUT) > unix_time() && 
+        pings[i].ip_port.ip.i == ip_port.ip.i &&
+        pings[i].ip_port.port == ip_port.port)
         {
                 return 1;
         }
@@ -161,7 +163,9 @@ int is_gettingnodes(IP_Port ip_port)
     
     for(i = 0; i < LSEND_NODES_ARRAY; i++ )
     {
-        if((send_nodes[i].timestamp + PING_TIMEOUT) > unix_time() && send_nodes[i].ip_port == ip_port)
+        if((send_nodes[i].timestamp + PING_TIMEOUT) > unix_time() && 
+        send_nodes[i].ip_port.ip.i == ip_port.ip.i &&
+        send_nodes[i].ip_port.port == ip_port.port)
         {
                 return 1;
         }
