@@ -4,13 +4,10 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef WIN32 //Put win32 includes here
 
-
-//Put win32 includes here
-#include <windows.h>
 #include <winsock2.h>
-
+#include <windows.h>
 
 #else //Linux includes
 
