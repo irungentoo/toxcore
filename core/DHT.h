@@ -116,9 +116,10 @@ char self_client_id[32];
 //We only use one so it's much easier to have it as a global variable
 int sock;
 
+//A list of the clients mathematically closest to ours.
 #define LCLIENT_LIST 32
+Client_data close_clientlist[LCLIENT_LIST];
 
-Client_data client_list[LCLIENT_LIST];
 
 //Let's start with a static array for testing.
 Friend friends_list[256];
