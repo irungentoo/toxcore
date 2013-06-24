@@ -53,6 +53,13 @@ typedef struct
     
 }Friend;
 
+typedef struct
+{
+    IP_Port ip_port;
+    uint32_t ping_id;
+    uint32_t timestamp;
+    
+}Pinged;
 
 
 //Add a new friend to the friends list
@@ -92,6 +99,9 @@ void bootstrap(IP_Port ip_port);
 
 //Global variables
 
+//Our client id
+char self_client_id[32];
+
 //Our UDP socket.
 //We only use one so it's much easier to have it as a global variable
 int sock;
@@ -99,4 +109,11 @@ int sock;
 Client_data client_list[32];
 
 //Let's start with a static array for testing.
-Friend friends_list[256]
+Friend friends_list[256];
+uint16_t num_friends;
+
+//The list of ip ports along with the ping_id of what we sent them and a timestamp
+//TODO: make this more efficient looping up to 128 times is a bit...
+Pinged pings[128];
+
+Pinged send_nodes[64];
