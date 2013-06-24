@@ -1,6 +1,10 @@
 Tox
 ===
 
+Current IRC: #InsertProjectNameHere
+on freenode or https://webchat.freenode.net/
+
+
 Proposal of a free as in freedom skype replacement:
 
 --------Basics--------:
