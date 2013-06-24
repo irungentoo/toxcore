@@ -8,6 +8,8 @@
 
 
 //Put win32 includes here
+#include <windows.h>
+#include <winsock2.h>
 
 
 #else //Linux includes
