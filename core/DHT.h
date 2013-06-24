@@ -65,6 +65,7 @@ void addfriend(char * client_id);
 //returns 1 if failure (client_id not in friends list)
 char delfriend(char * client_id);
 
+
 //Get ip of friend
 //client_id must be 32 bytes long.
 //ip must be 4 bytes long.
@@ -79,6 +80,11 @@ void doDHT();
 
 //if we recieve a DHT packet we call this function so it can be handled.
 void DHT_recvpacket(char * packet, uint32_t length);
+
+//Use this function to bootstrap the client
+//Sends a get nodes request to the given ip port
+void bootstrap(IP_Port ip_port);
+
 
 //TODO:
 //Add functions to save and load the state(client list, friends list)

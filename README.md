@@ -44,7 +44,7 @@ Proposal of a free as in freedom skype replacement:
             Vastly simplified packet format.
             
         Boostrapping:
-            The first time you install the client
+            The first time you install the client we bootstrap it with a node on our servers.(bandwidth should not be a problem as the client only needs to be sent one reply.)
         
     
         Basics (All the numbers here are just guesses and are probably not optimal values):
