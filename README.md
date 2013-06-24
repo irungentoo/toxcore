@@ -53,6 +53,13 @@ Proposal of a free as in freedom skype replacement:
             
             "friends" list: A list containing the node_ids of all our "friends" or clients we want to connect to.
                             Also contains the ip addresses + port + node_ids + timestamp(of last ping like in the client list) of the 8 clients closest (mathematically see bittorrent doc) to each "friend"
+                            
+            Two pinged lists: 
+                -One for storing a list of ips along with their ping_ids and a timestamp for the ping requests
+                -One for storing a list of ips along with their ping_ids and a timestamp for the get nodes requests
+                Entries in the pinged lists expire after 5 seconds.
+                If one of the lists becomes full, the expire rate reduces itself one second or the new ping takes the place of the oldest one.
+           
       
             Entries in client list and "friends" list expire after 300 seconds without ping response.
             Each client stores a maximum of 32 entries in its client list.
@@ -79,7 +86,7 @@ Proposal of a free as in freedom skype replacement:
     
             When a client receives a response:
                 -Ping response
-                    -If the node was previously pinged with a matching ping_id
+                    -If the node was previously pinged with a matching ping_id (check in the corresponding pinged list.)
                         -If the node is in the client list the matching client's timestamp is set to current time.
                         -If the node is in the "friends" list the matching client's timestamp is set to current time for every occurrence.
                         -If the node is not in the client list:
@@ -94,7 +101,7 @@ Proposal of a free as in freedom skype replacement:
                                 -If not, nothing happens.
                             
                 -Send nodes
-                    -If the ping_id matches what we sent previously:
+                    -If the ping_id matches what we sent previously (check in the corresponding pinged list.):
                         -Each node in the response is pinged.
               
     
