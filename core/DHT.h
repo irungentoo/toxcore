@@ -77,11 +77,18 @@ IP_Port getfriendip(char * client_id);
 //Run this function at least a couple times per second (It's the main loop)
 void doDHT();
 
+//if we recieve a DHT packet we call this function so it can be handled.
+void DHT_recvpacket(char * packet, uint32_t length);
 
-
+//TODO:
+//Add functions to save and load the state(client list, friends list)
 
 
 //Global variables
+
+//Our UDP socket.
+//We only use one so it's much easier to have it as a global variable
+int sock;
 
 Client_data client_list[32];
 
