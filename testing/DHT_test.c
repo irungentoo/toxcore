@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     //Set socket nonblocking
     #ifdef WIN32
-    //I think this works for windows
-    ioctl(sock, FIONBIO, &mode);
+    ioctlsocket(sock, FIONBIO, &mode);
     #else
     fcntl(sock, F_SETFL, O_NONBLOCK, 1);
     #endif
