@@ -33,6 +33,7 @@ int id_closest(char * client_id, char * client_id1, char * client_id2)
 }
 
 //check if client with client_id is already in list of length length.
+//if it is set it's corresponding timestamp to current time.
 //return True(1) or False(0)
 int client_in_list(Client_data * list, uint32_t length, char * client_id)
 {
@@ -49,6 +50,8 @@ int client_in_list(Client_data * list, uint32_t length, char * client_id)
         }
         if((j - 1) == CLIENT_ID_SIZE)
         {
+            //Refresh the client timestamp.
+            list[i].timestamp = unix_time();
             return 1;
         }
     }
@@ -128,21 +131,110 @@ int addto_lists(IP_Port ip_port, char * client_id)
 }
 
 
-//send a ping request
-//Currently incomplete: missing the ping_id part
-int pingreq(IP_Port ip_port)
+//ping timeout in seconds
+#define PING_TIMEOUT 10
+//check if we are currently pinging an ip_port
+//if we are already, return 1
+//else return 0
+//TODO: Maybe optimize this
+int is_pinging(IP_Port ip_port)
 {
-    char data[5 + CLIENT_ID_SIZE];
-    data[0] = 0;
+    uint32_t i;
     
-    memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
-    
-    sendpacket(ip_port, data, sizeof(data));
+    for(i = 0; i < LPING_ARRAY; i++ )
+    {
+        if((pings[i].timestamp + PING_TIMEOUT) > unix_time() && pings[i].ip_port == ip_port)
+        {
+                return 1;
+        }
+    }
+
+    return 0;
     
 }
 
+
+//Same as last function but for get_node requests.
+int is_gettingnodes(IP_Port ip_port)
+{
+    uint32_t i;
+    
+    for(i = 0; i < LSEND_NODES_ARRAY; i++ )
+    {
+        if((send_nodes[i].timestamp + PING_TIMEOUT) > unix_time() && send_nodes[i].ip_port == ip_port)
+        {
+                return 1;
+        }
+    }
+
+    return 0;
+    
+}
+
+//Add a new ping request to the list of ping requests
+//returns the ping_id to put in the ping request
+//TODO: Maybe optimize this
+int add_pinging(IP_Port ip_port)
+{
+    uint32_t i, j;
+    int ping_id = rand();
+    for(i = 0; i < PING_TIMEOUT; i++ )
+    {
+        for(j = 0; j < LPING_ARRAY; j++ )
+        {
+            if((pings[j].timestamp + PING_TIMEOUT - i) < unix_time())
+            {
+                    pings[j].timestamp = unix_time();
+                    pings[j].ip_port = ip_port;
+                    pings[j].ping_id = ping_id;
+                    return ping_id;
+            }
+        }
+    }
+}
+
+//Same but for get node requests
+int add_gettingnodes(IP_Port ip_port)
+{
+    uint32_t i, j;
+    int ping_id = rand();
+    for(i = 0; i < PING_TIMEOUT; i++ )
+    {
+        for(j = 0; j < LSEND_NODES_ARRAY; j++ )
+        {
+            if((send_nodes[j].timestamp + PING_TIMEOUT - i) < unix_time())
+            {
+                    send_nodes[j].timestamp = unix_time();
+                    send_nodes[j].ip_port = ip_port;
+                    send_nodes[j].ping_id = ping_id;
+                    return ping_id;
+            }
+        }
+    }
+}
+
+
+//send a ping request
+int pingreq(IP_Port ip_port)
+{
+    if(is_pinging(ip_port))
+    {
+        return 1;
+    }
+    
+    int ping_id = add_pinging(ip_port);
+    
+    char data[5 + CLIENT_ID_SIZE];
+    data[0] = 0;
+    memcpy(data + 1, &ping_id, 4);
+    memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
+    
+    return sendpacket(ip_port, data, sizeof(data));
+    
+}
+
+
 //send a ping response
-//Currently incomplete: missing the ping_id part
 int pingres(IP_Port ip_port, uint32_t ping_id)
 {
     char data[5 + CLIENT_ID_SIZE];
@@ -151,25 +243,32 @@ int pingres(IP_Port ip_port, uint32_t ping_id)
     memcpy(data + 1, &ping_id, 4);
     memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
     
-    sendpacket(ip_port, data, sizeof(data));
+    return sendpacket(ip_port, data, sizeof(data));
     
 }
 
 //send a getnodes request
-//Currently incomplete: missing the ping_id part
 int getnodes(IP_Port ip_port, char * client_id)
 {
-   char data[5 + CLIENT_ID_SIZE*2];
-   data[0] = 2;
-   
-   memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
-   memcpy(data + 5 + CLIENT_ID_SIZE, client_id, CLIENT_ID_SIZE);
-   
-   sendpacket(ip_port, data, sizeof(data));
+    if(is_gettingnodes(ip_port))
+    {
+        return 1;
+    }
+    
+    int ping_id = add_pinging(ip_port);
+    
+    char data[5 + CLIENT_ID_SIZE*2];
+    data[0] = 2;
+    
+    memcpy(data + 1, &ping_id, 4);
+    memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
+    memcpy(data + 5 + CLIENT_ID_SIZE, client_id, CLIENT_ID_SIZE);
+
+    return sendpacket(ip_port, data, sizeof(data));
 }
 
-//send a getnodes request
-//Currently incomplete: missing the ping_id part
+//send a send nodes response
+//Currently incomplete: missing bunch of stuff
 int sendnodes(IP_Port ip_port, char * client_id)
 {
    char data[5 + (CLIENT_ID_SIZE + 6)*8];

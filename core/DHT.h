@@ -130,7 +130,6 @@ Friend friends_list[256];
 uint16_t num_friends;
 
 //The list of ip ports along with the ping_id of what we sent them and a timestamp
-//TODO: make this more efficient looping up to 128 times is a bit...
 #define LPING_ARRAY 128
 
 Pinged pings[LPING_ARRAY];
