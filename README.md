@@ -1,4 +1,4 @@
-Tox
+# Tox
 ===
 
 Current IRC: #InsertProjectNameHere
@@ -7,7 +7,7 @@ on freenode or https://webchat.freenode.net/
 
 Proposal of a free as in freedom skype replacement:
 
---------Basics--------:
+## Basics:
 
     -UDP most be used for everything simply because you can't do hole punching with TCP (well you can but it doesn't work all the time)
     
@@ -36,7 +36,7 @@ Proposal of a free as in freedom skype replacement:
     
     See: docs/TODO.txt
 
-### Important-stuff ###:
+### Important-stuff:
 
     Use the same UDP socket for everything
 
