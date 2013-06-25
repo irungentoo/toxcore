@@ -110,7 +110,7 @@ Proposal of a free as in freedom skype replacement:
     
         Protocol:
     
-            Node format: [char array (node_id), length=32 bytes][ip (in network byte order), length=4 bytes][port (in network byte order), length=2 bytes]
+            Node format: [char array (node_id), length=32 bytes][ip (in network byte order), length=4 bytes][port (in network byte order), length=2 bytes][Padding , length=2 bytes]
     
             Valid queries and Responses:
     
@@ -122,6 +122,6 @@ Proposal of a free as in freedom skype replacement:
                 Packet contents: [byte with value: 02][random 4 byte (ping_id)][char array (client node_id), length=32 bytes][char array: requested_node_id (node_id of which we want the ip), length=32 bytes]
                 Valid replies: a send_nodes packet
     
-                Send_nodes (response): [byte with value: 03][random 4 byte (ping_id)][char array  (client node_id), length=32 bytes][Nodes in node format, length=38 * (number of nodes (maximum of 8 nodes)) bytes]
+                Send_nodes (response): [byte with value: 03][random 4 byte (ping_id)][char array  (client node_id), length=32 bytes][Nodes in node format, length=40 * (number of nodes (maximum of 8 nodes)) bytes]
                 ex: 03[Node][Node][Node] 
 

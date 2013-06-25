@@ -416,7 +416,7 @@ int sendnodes(IP_Port ip_port, char * client_id, uint32_t ping_id)
    memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
    memcpy(data + 5 + CLIENT_ID_SIZE, nodes_list, num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
    
-   return sendpacket(ip_port, data, sizeof(data));
+   return sendpacket(ip_port, data, 5 + CLIENT_ID_SIZE + num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
 }
 
 
@@ -462,6 +462,8 @@ int handle_getnodes(char * packet, uint32_t length, IP_Port source)
     uint32_t ping_id;
     memcpy(&ping_id, packet + 1, 4);
     sendnodes(source, packet + 5 + CLIENT_ID_SIZE, ping_id);
+    
+    pingreq(source);
     
     return 0;
 }

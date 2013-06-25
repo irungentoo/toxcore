@@ -40,7 +40,8 @@ typedef struct
 {
     IP ip;
     uint16_t port;
-    
+    //not used for anything right now
+    uint16_t padding; 
 }IP_Port;
 
 
