@@ -1,0 +1,17 @@
+language: c
+compiler:
+  - gcc
+
+script:
+  - cmake CMakeLists.txt
+  - make -j3
+
+notifications:
+  email: false
+  
+  irc: 
+    channels:
+      - "chat.freenode.net#InsertProjectNameHere"
+    on_success: always
+    on_failure: always
+
