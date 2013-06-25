@@ -26,6 +26,7 @@ Proposal of a free as in freedom skype replacement:
 
     1.Get our DHT working perfectly.
     2.Connection to other peers according to client id.
+    NOTE: We have not decided on the encryption yet. This was just a quick guess.
     3.Encrypted message sending with RSA
     4.Encrypted message sending with AES (encryption done)
     5.Reliable sending of data larger than the maximum packet size.
