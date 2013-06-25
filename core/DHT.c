@@ -1,5 +1,20 @@
 #include "DHT.h"
 
+uint16_t num_friends;
+char self_client_id[CLIENT_ID_SIZE];
+int sock;
+#define LCLIENT_LIST 32
+Client_data close_clientlist[LCLIENT_LIST];
+
+Friend friends_list[256];
+uint16_t num_friends;
+
+#define LPING_ARRAY 128
+Pinged pings[LPING_ARRAY];
+
+#define LSEND_NODES_ARRAY LPING_ARRAY/2
+Pinged send_nodes[LSEND_NODES_ARRAY];
+
 
 //Basic network functions:
 //TODO: put them somewhere else than here
@@ -7,7 +22,7 @@
 //Function to send packet(data) of length length to ip_port
 int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 {
-    ADDR addr = {.family = AF_INET, .ip = ip_port.ip, .port = ip_port.port};
+    ADDR addr = {AF_INET, ip_port.ip.i, ip_port.port};
     
     return sendto(sock, data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
@@ -18,7 +33,7 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
 {
     ADDR addr;
-    uint32_t addrlen = sizeof(addr);
+    int32_t addrlen = sizeof(addr);
     (*(int *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
     if(*(int *)length == -1)
     {
@@ -150,7 +165,7 @@ int addto_lists(IP_Port ip_port, char * client_id)
         }  
     }
     
-    
+    return 0;
 }
 
 
@@ -305,6 +320,8 @@ int sendnodes(IP_Port ip_port, char * client_id)
    memcpy(data + 5 + CLIENT_ID_SIZE, client_id, CLIENT_ID_SIZE);
    
    sendpacket(ip_port, data, sizeof(data));
+
+   return 0;
 }
 
 
@@ -400,9 +417,9 @@ char delfriend(char * client_id)
 
 IP_Port getfriendip(char * client_id)
 {
+    IP_Port ret;
     
-    
-    
+    return ret;
 }
 
 
