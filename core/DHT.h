@@ -1,3 +1,6 @@
+#ifndef DHT_H
+#define DHT_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -116,32 +119,32 @@ void bootstrap(IP_Port ip_port);
 //Add functions to save and load the state(client list, friends list)
 
 
-//Global variables
-
+//INITIZALED in DHT.CPP
+//Global variables 
 //Our client id
-char self_client_id[CLIENT_ID_SIZE];
+extern char self_client_id[CLIENT_ID_SIZE];
 
 //Our UDP socket.
 //We only use one so it's much easier to have it as a global variable
-int sock;
+extern int sock;
 
 //A list of the clients mathematically closest to ours.
 #define LCLIENT_LIST 32
-Client_data close_clientlist[LCLIENT_LIST];
+extern Client_data close_clientlist[LCLIENT_LIST];
 
 
 //Let's start with a static array for testing.
-Friend friends_list[256];
-uint16_t num_friends;
+extern Friend friends_list[256];
+extern uint16_t num_friends;
 
 //The list of ip ports along with the ping_id of what we sent them and a timestamp
 #define LPING_ARRAY 128
 
-Pinged pings[LPING_ARRAY];
+extern Pinged pings[LPING_ARRAY];
 
 #define LSEND_NODES_ARRAY LPING_ARRAY/2
 
-Pinged send_nodes[LSEND_NODES_ARRAY];
+extern Pinged send_nodes[LSEND_NODES_ARRAY];
 
 
 //Basic network functions:
@@ -154,3 +157,5 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length);
 //the packet data into data
 //the packet length into length.
 int recievepacket(IP_Port * ip_port, char * data, uint32_t * length);
+
+#endif
