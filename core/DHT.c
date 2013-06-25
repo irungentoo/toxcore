@@ -1,5 +1,19 @@
 #include "DHT.h"
 
+uint16_t num_friends;
+char self_client_id[CLIENT_ID_SIZE];
+int sock;
+#define LCLIENT_LIST 32
+Client_data close_clientlist[LCLIENT_LIST];
+
+Friend friends_list[256];
+extern uint16_t num_friends;
+
+#define LPING_ARRAY 128
+Pinged pings[LPING_ARRAY];
+
+#define LSEND_NODES_ARRAY LPING_ARRAY/2
+Pinged send_nodes[LSEND_NODES_ARRAY];
 
 //Basic network functions:
 //TODO: put them somewhere else than here
@@ -7,7 +21,7 @@
 //Function to send packet(data) of length length to ip_port
 int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 {
-    ADDR addr = {.family = AF_INET, .ip = ip_port.ip, .port = ip_port.port};
+    ADDR addr = {AF_INET, ip_port.ip.i, ip_port.port};
     
     return sendto(sock, data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
@@ -18,7 +32,7 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
 {
     ADDR addr;
-    uint32_t addrlen = sizeof(addr);
+    int32_t addrlen = sizeof(addr);
     (*(int *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
     if(*(int *)length == -1)
     {
@@ -150,7 +164,7 @@ int addto_lists(IP_Port ip_port, char * client_id)
         }  
     }
     
-    
+    return 0;
 }
 
 
@@ -289,22 +303,47 @@ int getnodes(IP_Port ip_port, char * client_id)
     
     memcpy(data + 1, &ping_id, 4);
     memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
-    memcpy(data + 5 + CLIENT_ID_SIZE, client_id, CLIENT_ID_SIZE);
 
     return sendpacket(ip_port, data, sizeof(data));
 }
 
-//send a send nodes response
+//send send nodes response
 //Currently incomplete: missing bunch of stuff
-int sendnodes(IP_Port ip_port, char * client_id)
+int sendnodes(IP_Port destination, Client_data *list, uint32_t length)
 {
    char data[5 + (CLIENT_ID_SIZE + 6)*8];
    data[0] = 3;
-   
+ 
+   /*
+   the format (for now):
+   	3PINGCLIENTID_32_length_xxxxxxxxxxxxxIPIPpt
+	
+	TODO-  implement xml for modularity and like below:
+	<MODE>3</MODE> (one byte)
+	<PING>1234</PING> (four bytes)
+	<CLIENTID>CLIENTID_32_length_xxxxxxxxxxxxx</CLIENTID> (32 bytes)
+	<IP>123123123123</IP> (four bytes)
+	<PORT>723485</PORT> (two bytes)
+   */
+
    memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
-   memcpy(data + 5 + CLIENT_ID_SIZE, client_id, CLIENT_ID_SIZE);
-   
-   sendpacket(ip_port, data, sizeof(data));
+   //todo, add our own ip and port (i know other peer can get, keep it simple though)
+   sendpacket(destination, data, sizeof(data));
+
+
+   //send all nodes in our list, one at a time
+    uint32_t i;
+    for(i = 0; i < length; i++)
+    {
+		//maybe store last ping respond from peers in our list for bytes 1 - 4 so other peer gets their ping response?
+		memcpy(data + 5, list->client_id, CLIENT_ID_SIZE);
+		memcpy(data + 5 + CLIENT_ID_SIZE, (unsigned char*)&list->ip_port.ip.i, sizeof(uint32_t));
+		memcpy(data + 5 + CLIENT_ID_SIZE + sizeof(uint32_t), (unsigned char*)&list->ip_port.port, sizeof(uint16_t));
+
+		sendpacket(destination, data, sizeof(data));
+	}
+
+   return 0;
 }
 
 
@@ -321,11 +360,9 @@ int handle_pingreq(char * packet, uint32_t length, IP_Port source)
     }
     
     uint32_t ping_id;
-    
     memcpy(&ping_id, packet + 1, 4);
+
     pingres(source, ping_id);
-    
-    
     
     return 0;
 }
@@ -346,21 +383,41 @@ int handle_getnodes(char * packet, uint32_t length, IP_Port source)
     {
         return 1;
     }
-    
-    
-    
+
+	//sendnodes(source, list, LCLIENT_LIST);
     
     return 0;   
 }
 
-int handle_sendnodes(char * packet, uint32_t length, IP_Port source)
+int handle_sendnodes(char *packet, uint32_t length, IP_Port source)
 {
+	char recv_client_id[CLIENT_ID_SIZE];
+	IP_Port recv_ip_port;
+
     if(length > 325 || (length - 5) % (CLIENT_ID_SIZE + 6) != 0)
     {
         return 1;
-    } 
-    addto_lists(source, packet + 5);
-    
+    }
+
+	memset(&recv_ip_port, 0, sizeof(IP_Port));
+
+	/*
+   the format (for now), see sendnodes():
+   	3PINGCLIENTID_32_length_xxxxxxxxxxxxxIPIPpt
+	*/
+
+	//parse recieved packet
+	//store client id
+	
+	memcpy(recv_client_id, packet + 5, CLIENT_ID_SIZE);
+
+	//ip 
+	memcpy((void*)&recv_ip_port.ip.i, packet + 5 + CLIENT_ID_SIZE, sizeof(uint32_t));
+
+	//port 
+	memcpy((void*)&recv_ip_port.ip.i, packet + 5 + CLIENT_ID_SIZE + sizeof(uint32_t), sizeof(uint16_t));
+
+    addto_lists(recv_ip_port, recv_client_id);
 }
 
 //END of packet handling functions
@@ -400,9 +457,9 @@ char delfriend(char * client_id)
 
 IP_Port getfriendip(char * client_id)
 {
+    IP_Port ret;
     
-    
-    
+	return ret;
 }
 
 
@@ -418,10 +475,10 @@ int DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
         handle_pingres(packet, length, source);
         break;        
     case 2:
-        handle_getnodes(packet, length, source);
+        handle_getnodes(packet, length, source);  //asked for our node list
         break;        
     case 3:
-        handle_sendnodes(packet, length, source);
+        handle_sendnodes(packet, length, source);  //receive someone else's node list
         break;
     default: 
         return 1;
