@@ -2,7 +2,7 @@ Tox
 ===
 
 Current IRC: #InsertProjectNameHere
-on [Freenode](irc://irc.freenode.net/InsertProjectNameHere) or [webchat](https://webchat.freenode.net/)
+on Freenode or [webchat](https://webchat.freenode.net/)
 
 
 Proposal of a free as in freedom skype replacement:
