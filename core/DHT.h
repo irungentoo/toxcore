@@ -1,3 +1,6 @@
+#ifndef DHT_H 
+#define DHT_H 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -48,14 +51,21 @@ typedef struct
     uint32_t timestamp;
     
 }Client_data;
+//maximum number of clients stored per friend.
+#define MAX_FRIEND_CLIENTS 8
+typedef struct
+{
+    char client_id[CLIENT_ID_SIZE];
+    Client_data client_list[MAX_FRIEND_CLIENTS];
+    
+}Friend;
 
 
 typedef struct
 {
     char client_id[CLIENT_ID_SIZE];
-    Client_data client_list[8];
-    
-}Friend;
+    IP_Port ip_port;
+}Node_format;
 
 typedef struct
 {
@@ -154,3 +164,5 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length);
 //the packet data into data
 //the packet length into length.
 int recievepacket(IP_Port * ip_port, char * data, uint32_t * length);
+
+#endif 

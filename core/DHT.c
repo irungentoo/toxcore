@@ -81,8 +81,102 @@ int client_in_list(Client_data * list, uint32_t length, char * client_id)
     return 0;
 }
 
+//check if client with client_id is already in knode format list of length length.
+//return True(1) or False(0)
+int client_in_nodelist(Node_format * list, uint32_t length, char * client_id)
+{
+    uint32_t i, j;
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < CLIENT_ID_SIZE; j++)
+        {
+        
+            if(list[i].client_id[j] != client_id[j])
+            {
+                break;
+            }
+        }
+        if((j - 1) == CLIENT_ID_SIZE)
+        {
+
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+
 //the number of seconds for a non responsive node to become bad.
 #define BAD_NODE_TIMEOUT 130
+//The max number of nodes to send with send nodes.
+#define MAX_SENT_NODES 8
+
+
+//Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
+//put them in the nodes_list and return how many were found.
+//TODO: Make this function much more efficient.
+int get_close_nodes(char * client_id, Node_format * nodes_list)
+{
+    uint32_t i, j, k;
+    int num_nodes=0;
+    uint32_t temp_time = unix_time();
+    for(i = 0; i < LCLIENT_LIST; i++)
+    {
+        if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time && 
+        !client_in_nodelist(nodes_list, MAX_SENT_NODES,close_clientlist[i].client_id))
+        //if node is good and not already in list.
+        {
+            if(num_nodes < MAX_SENT_NODES)
+            {
+                    memcpy(nodes_list[num_nodes].client_id, close_clientlist[i].client_id, CLIENT_ID_SIZE);
+                    nodes_list[num_nodes].ip_port = close_clientlist[i].ip_port;
+                    num_nodes++;
+            }
+            else for(j = 0; j < MAX_SENT_NODES; j++)
+            {
+                if(id_closest(client_id, nodes_list[j].client_id, close_clientlist[i].client_id) == 2)
+                {
+                    memcpy(nodes_list[j].client_id, close_clientlist[i].client_id, CLIENT_ID_SIZE);
+                    nodes_list[j].ip_port = close_clientlist[i].ip_port;
+                    break;
+                }
+            }
+        }
+        
+    }
+    for(i = 0; i < num_friends; i++)
+    {
+        for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
+        {
+            if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time && 
+            !client_in_nodelist(nodes_list, MAX_SENT_NODES,friends_list[i].client_list[j].client_id))
+            //if node is good and not already in list.
+            {
+                if(num_nodes < MAX_SENT_NODES)
+                {
+                        memcpy(nodes_list[num_nodes].client_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE);
+                        nodes_list[num_nodes].ip_port = friends_list[i].client_list[j].ip_port;
+                        num_nodes++;
+                }
+                else for(k = 0; k < MAX_SENT_NODES; k++)
+                {
+                    if(id_closest(client_id, nodes_list[j].client_id, friends_list[i].client_list[j].client_id) == 2)
+                    {
+                        memcpy(nodes_list[j].client_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE);
+                        nodes_list[j].ip_port = friends_list[i].client_list[j].ip_port;
+                        break;
+                    }
+                }
+            }
+            
+        }        
+        
+    }
+    
+}
+
+
 
 //replace first bad (or empty) node with this one
 //return 0 if successfull
@@ -90,13 +184,14 @@ int client_in_list(Client_data * list, uint32_t length, char * client_id)
 int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port)
 {
     uint32_t i;
+    uint32_t temp_time = unix_time();
     for(i = 0; i < length; i++)
     {
-        if(list[i].timestamp + BAD_NODE_TIMEOUT < unix_time())
+        if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time)//if node is bad.
         {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
-            list[i].timestamp = unix_time();
+            list[i].timestamp = temp_time;
             return 0;
         }
     }
@@ -138,13 +233,13 @@ int addto_lists(IP_Port ip_port, char * client_id)
     }
     for(i = 0; i < num_friends; i++)
     {
-        if(!client_in_list(friends_list[i].client_list, LCLIENT_LIST, client_id))
+        if(!client_in_list(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id))
         {
             
-            if(replace_bad(friends_list[i].client_list, LCLIENT_LIST, client_id, ip_port))
+            if(replace_bad(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
             {
                 //if we can't replace bad nodes we try replacing good ones
-                replace_good(friends_list[i].client_list, LCLIENT_LIST, client_id, ip_port, self_client_id);
+                replace_good(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port, self_client_id);
             }
             
         }  
@@ -294,11 +389,12 @@ int getnodes(IP_Port ip_port, char * client_id)
     return sendpacket(ip_port, data, sizeof(data));
 }
 
+
 //send a send nodes response
 //Currently incomplete: missing bunch of stuff
 int sendnodes(IP_Port ip_port, char * client_id)
 {
-   char data[5 + (CLIENT_ID_SIZE + 6)*8];
+   char data[5 + (CLIENT_ID_SIZE + sizeof(IP_Port))*MAX_SENT_NODES];
    data[0] = 3;
    
    memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
@@ -324,9 +420,7 @@ int handle_pingreq(char * packet, uint32_t length, IP_Port source)
     
     memcpy(&ping_id, packet + 1, 4);
     pingres(source, ping_id);
-    
-    
-    
+ 
     return 0;
 }
 
@@ -346,16 +440,17 @@ int handle_getnodes(char * packet, uint32_t length, IP_Port source)
     {
         return 1;
     }
+    //sendnodes(IP_Port ip_port, char * client_id)
     
     
     
-    
-    return 0;   
+    return 0;
 }
 
 int handle_sendnodes(char * packet, uint32_t length, IP_Port source)
 {
-    if(length > 325 || (length - 5) % (CLIENT_ID_SIZE + 6) != 0)
+    if(length > 5 + MAX_SENT_NODES * (CLIENT_ID_SIZE + sizeof(IP_Port)) || 
+    (length - 5) % (CLIENT_ID_SIZE + sizeof(IP_Port)) != 0)
     {
         return 1;
     } 
@@ -428,7 +523,7 @@ int DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
         
     }
     
-
+return 0;
 }
 
 //Ping each client in the "friends" list every 60 seconds.
