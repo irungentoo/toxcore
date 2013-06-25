@@ -16,16 +16,34 @@
 
 #else
 #include <unistd.h>
+#include <arpa/inet.h>
 #define c_sleep(x) usleep(1000*x)
 
 #endif
 
 #define PORT 33445
 
-
+void print_clientlist()
+{
+    uint32_t i, j;
+    IP_Port p_ip;
+    printf("___________________________________________________\n");
+    for(i = 0; i < 4; i++)
+    {
+        printf("ClientID: ");
+        for(j = 0; j < 32; j++)
+        {
+            printf("%c", close_clientlist[i].client_id[j]);
+        }
+        p_ip = close_clientlist[i].ip_port;
+        printf("\nIP: %u.%u.%u.%u Port: %u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
+        printf("\nTimestamp: %u\n", close_clientlist[i].timestamp);
+    }  
+}
 
 int main(int argc, char *argv[])
 {
+    memcpy(self_client_id,"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",32);
     #ifdef WIN32
     WSADATA wsaData;
     if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
@@ -52,9 +70,9 @@ int main(int argc, char *argv[])
     #endif
     
     //Bind our socket to port PORT and address 0.0.0.0
-    ADDR addr = {.family = AF_INET, .ip.i = 0, .port = htons(PORT)}; 
+    ADDR addr = {AF_INET, htons(PORT), {{0}}}; 
     bind(sock, (struct sockaddr*)&addr, sizeof(addr));
-    
+    perror("Initialization");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     //bootstrap_ip_port.ip.c[0] = 127;
@@ -75,7 +93,7 @@ int main(int argc, char *argv[])
             
         doDHT();
         
-        if(recievepacket(&ip_port, data, &length) != -1)
+        while(recievepacket(&ip_port, data, &length) != -1)
         {
             if(DHT_recvpacket(data, length, ip_port))
             {
@@ -90,7 +108,8 @@ int main(int argc, char *argv[])
                 printf("Received handled packet with length: %u\n", length);
             }
         }
-        c_sleep(100);
+        print_clientlist();
+        c_sleep(300);
     }
     
     #ifdef WIN32

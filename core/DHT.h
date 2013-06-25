@@ -106,6 +106,7 @@ char delfriend(char * client_id);
 //port must be 2 bytes long.
 //returns ip if success
 //returns ip of 0 if failure (This means the friend is either offline or we have not found him yet.)
+//returns ip of 1 if friend is not in list.
 IP_Port getfriendip(char * client_id);
 
 
