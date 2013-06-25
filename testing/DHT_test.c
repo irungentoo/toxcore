@@ -25,11 +25,12 @@
 
 #define PORT 33445
 
+
 void print_clientlist()
 {
     uint32_t i, j;
     IP_Port p_ip;
-    printf("___________________________________________________\n");
+    printf("___________________CLOSE________________________________\n");
     for(i = 0; i < 4; i++)
     {
         printf("ClientID: ");
@@ -43,9 +44,46 @@ void print_clientlist()
     }  
 }
 
+void print_friendlist()
+{
+    uint32_t i, j, k;
+    IP_Port p_ip;
+    printf("_________________FRIENDS__________________________________\n");
+    for(k = 0; k < num_friends; k++)
+    {
+        printf("FRIEND %u\n", k);
+        printf("ID: ");
+        for(j = 0; j < 32; j++)
+        {
+            printf("%c", friends_list[k].client_id[j]);
+        }
+        p_ip = getfriendip(friends_list[k].client_id);
+        printf("\nIP: %u.%u.%u.%u:%u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
+
+        printf("\nCLIENTS IN LIST:\n\n ");
+        
+        for(i = 0; i < 4; i++)
+        {
+            printf("ClientID: ");
+            for(j = 0; j < 32; j++)
+            {
+                printf("%X", friends_list[k].client_list[i].client_id[j]);
+            }
+            p_ip = friends_list[k].client_list[i].ip_port;
+            printf("\nIP: %u.%u.%u.%u:%u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
+            printf("\nTimestamp: %u\n", friends_list[k].client_list[i].timestamp);
+        }
+    }
+}
+
+
+
 int main(int argc, char *argv[])
 {
-    memcpy(self_client_id,"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",32);
+    srand(time(NULL));
+    int randdomnum = rand();
+    memcpy(self_client_id, &randdomnum, 4);
+    
     #ifdef WIN32
     WSADATA wsaData;
     if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
@@ -54,10 +92,11 @@ int main(int argc, char *argv[])
     }
     #endif
     
-    if (argc < 3) {
-        printf("usage %s ip port\n", argv[0]);
+    if (argc < 4) {
+        printf("usage %s ip port client_id\n", argv[0]);
         exit(0);
     }
+    addfriend(argv[3]);
     
     //initialize our socket
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
@@ -115,6 +154,7 @@ int main(int argc, char *argv[])
             }
         }
         print_clientlist();
+        print_friendlist();
         c_sleep(300);
     }
     

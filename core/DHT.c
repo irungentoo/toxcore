@@ -60,11 +60,20 @@ int id_closest(char * client_id, char * client_id1, char * client_id2)//tested
 //check if client with client_id is already in list of length length.
 //if it is set it's corresponding timestamp to current time.
 //return True(1) or False(0)
-int client_in_list(Client_data * list, uint32_t length, char * client_id)
+//TODO: maybe optimize this.
+int client_in_list(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port)
 {
     uint32_t i, j;
+    uint32_t temp_time = unix_time();
+    
     for(i = 0; i < length; i++)
     {
+        //If the id for an ip/port changes, replace it.
+        if(list[i].ip_port.ip.i == ip_port.ip.i &&
+        list[i].ip_port.port == ip_port.port)
+        {
+            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+        }
         for(j = 0; j < CLIENT_ID_SIZE; j++)
         {
         
@@ -76,7 +85,7 @@ int client_in_list(Client_data * list, uint32_t length, char * client_id)
         if(j == CLIENT_ID_SIZE)
         {
             //Refresh the client timestamp.
-            list[i].timestamp = unix_time();
+            list[i].timestamp = temp_time;
             return 1;
         }
     }
@@ -207,13 +216,15 @@ int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port i
 int replace_good(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port, char * comp_client_id)
 {
     uint32_t i;
+    uint32_t temp_time = unix_time();
+    
     for(i = 0; i < length; i++)
     {
         if(id_closest(comp_client_id, list[i].client_id, client_id) == 2)
         {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
-            list[i].timestamp = unix_time();
+            list[i].timestamp = temp_time;
             return 0;
         }
     }
@@ -227,7 +238,7 @@ void addto_lists(IP_Port ip_port, char * client_id)
     uint32_t i;
     
     //NOTE: current behaviour if there are two clients with the same id is to only keep one (the first one)
-    if(!client_in_list(close_clientlist, LCLIENT_LIST, client_id))
+    if(!client_in_list(close_clientlist, LCLIENT_LIST, client_id, ip_port))
     {
          
         if(replace_bad(close_clientlist, LCLIENT_LIST, client_id, ip_port))
@@ -239,7 +250,7 @@ void addto_lists(IP_Port ip_port, char * client_id)
     }
     for(i = 0; i < num_friends; i++)
     {
-        if(!client_in_list(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id))
+        if(!client_in_list(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
         {
             
             if(replace_bad(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
@@ -254,21 +265,43 @@ void addto_lists(IP_Port ip_port, char * client_id)
 
 //ping timeout in seconds
 #define PING_TIMEOUT 10
-//check if we are currently pinging an ip_port
+//check if we are currently pinging an ip_port and/or a ping_id
+//Variables with values of zero will not be checked.
 //if we are already, return 1
 //else return 0
 //TODO: Maybe optimize this
-int is_pinging(IP_Port ip_port)
+int is_pinging(IP_Port ip_port, uint32_t ping_id)
 {
     uint32_t i;
-    
+    uint8_t pinging;
+    uint32_t temp_time = unix_time();
+
     for(i = 0; i < LPING_ARRAY; i++ )
     {
-        if((pings[i].timestamp + PING_TIMEOUT) > unix_time() && 
-        pings[i].ip_port.ip.i == ip_port.ip.i &&
-        pings[i].ip_port.port == ip_port.port)
+        if((pings[i].timestamp + PING_TIMEOUT) > temp_time)
         {
-                return 1;
+            if(ip_port.ip.i != 0)
+            {
+                pinging = 0;
+                if(pings[i].ip_port.ip.i == ip_port.ip.i &&
+                pings[i].ip_port.port == ip_port.port)
+                {
+                        pinging = 1;
+                }
+            }
+            if(ping_id != 0)
+            {
+                pinging = 0;
+                if(pings[i].ping_id == ping_id)
+                {
+                        pinging = 1;
+                }
+            }
+            if(pinging == 1)
+            {
+                    return 1;
+            }
+            
         }
     }
 
@@ -278,23 +311,45 @@ int is_pinging(IP_Port ip_port)
 
 
 //Same as last function but for get_node requests.
-int is_gettingnodes(IP_Port ip_port)
+int is_gettingnodes(IP_Port ip_port, uint32_t ping_id)
 {
     uint32_t i;
-    
-    for(i = 0; i < LSEND_NODES_ARRAY; i++ )
+    uint8_t pinging;
+    uint32_t temp_time = unix_time();
+
+    for(i = 0; i < LPING_ARRAY; i++ )
     {
-        if((send_nodes[i].timestamp + PING_TIMEOUT) > unix_time() && 
-        send_nodes[i].ip_port.ip.i == ip_port.ip.i &&
-        send_nodes[i].ip_port.port == ip_port.port)
+        if((send_nodes[i].timestamp + PING_TIMEOUT) > temp_time)
         {
-                return 1;
+            if(ip_port.ip.i != 0)
+            {
+                pinging = 0;
+                if(send_nodes[i].ip_port.ip.i == ip_port.ip.i &&
+                send_nodes[i].ip_port.port == ip_port.port)
+                {
+                        pinging = 1;
+                }
+            }
+            if(ping_id != 0)
+            {
+                pinging = 0;
+                if(send_nodes[i].ping_id == ping_id)
+                {
+                        pinging = 1;
+                }
+            }
+            if(pinging == 1)
+            {
+                    return 1;
+            }
+            
         }
     }
 
     return 0;
     
 }
+
 
 //Add a new ping request to the list of ping requests
 //returns the ping_id to put in the ping request
@@ -304,13 +359,15 @@ int add_pinging(IP_Port ip_port)
 {
     uint32_t i, j;
     int ping_id = rand();
+    uint32_t temp_time = unix_time();
+    
     for(i = 0; i < PING_TIMEOUT; i++ )
     {
         for(j = 0; j < LPING_ARRAY; j++ )
         {
-            if((pings[j].timestamp + PING_TIMEOUT - i) < unix_time())
+            if((pings[j].timestamp + PING_TIMEOUT - i) < temp_time)
             {
-                    pings[j].timestamp = unix_time();
+                    pings[j].timestamp = temp_time;
                     pings[j].ip_port = ip_port;
                     pings[j].ping_id = ping_id;
                     return ping_id;
@@ -326,13 +383,15 @@ int add_gettingnodes(IP_Port ip_port)
 {
     uint32_t i, j;
     int ping_id = rand();
+    uint32_t temp_time = unix_time();
+    
     for(i = 0; i < PING_TIMEOUT; i++ )
     {
         for(j = 0; j < LSEND_NODES_ARRAY; j++ )
         {
-            if((send_nodes[j].timestamp + PING_TIMEOUT - i) < unix_time())
+            if((send_nodes[j].timestamp + PING_TIMEOUT - i) < temp_time)
             {
-                    send_nodes[j].timestamp = unix_time();
+                    send_nodes[j].timestamp = temp_time;
                     send_nodes[j].ip_port = ip_port;
                     send_nodes[j].ping_id = ping_id;
                     return ping_id;
@@ -344,11 +403,12 @@ int add_gettingnodes(IP_Port ip_port)
 }
 
 
+
 //send a ping request
 //Ping request only works if there is none hos been sent to that ip/port in the last 5 seconds.
 int pingreq(IP_Port ip_port)
 {
-    if(is_pinging(ip_port))
+    if(is_pinging(ip_port, 0))
     {
         return 1;
     }
@@ -385,7 +445,7 @@ int pingres(IP_Port ip_port, uint32_t ping_id)
 //send a getnodes request
 int getnodes(IP_Port ip_port, char * client_id)
 {
-    if(is_gettingnodes(ip_port))
+    if(is_gettingnodes(ip_port, 0))
     {
         return 1;
     }
@@ -448,6 +508,13 @@ int handle_pingreq(char * packet, uint32_t length, IP_Port source)//tested
     uint32_t ping_id;
     
     memcpy(&ping_id, packet + 1, 4);
+    IP_Port bad_ip = {{{0}}, 0};
+    
+    if(is_pinging(bad_ip, ping_id))//check if packet is from ourself.
+    {
+        return 1;
+    }
+    
     pingres(source, ping_id);
     
     pingreq(source);
@@ -456,15 +523,21 @@ int handle_pingreq(char * packet, uint32_t length, IP_Port source)//tested
     
 }
 
-int handle_pingres(char * packet, uint32_t length, IP_Port source)//tested
+int handle_pingres(char * packet, uint32_t length, IP_Port source)
 {
     if(length != (5 + CLIENT_ID_SIZE))
     {
         return 1;
     }
+    uint32_t ping_id;
     
-    addto_lists(source, packet + 5);
-    return 0;
+    memcpy(&ping_id, packet + 1, 4);    
+    if(is_pinging(source, ping_id))
+    {
+        addto_lists(source, packet + 5);
+        return 0;
+    }
+    return 1;
     
 }
 
@@ -477,6 +550,13 @@ int handle_getnodes(char * packet, uint32_t length, IP_Port source)
     uint32_t ping_id;
     memcpy(&ping_id, packet + 1, 4);
     sendnodes(source, packet + 5 + CLIENT_ID_SIZE, ping_id);
+    
+    IP_Port bad_ip = {{{0}}, 0};
+    
+    if(is_gettingnodes(bad_ip, ping_id))//check if packet is from ourself.
+    {
+        return 1;
+    }
     
     pingreq(source);
     
@@ -493,6 +573,13 @@ int handle_sendnodes(char * packet, uint32_t length, IP_Port source)//tested
     } 
     int num_nodes = (length - 5 - CLIENT_ID_SIZE) / (CLIENT_ID_SIZE + sizeof(IP_Port));
     uint32_t i;
+    uint32_t ping_id;
+    
+    memcpy(&ping_id, packet + 1, 4);    
+    if(!is_gettingnodes(source, ping_id))
+    {
+        return 1;
+    }
     
     Node_format nodes_list[MAX_SENT_NODES];
     memcpy(nodes_list, packet + 5 + CLIENT_ID_SIZE, num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
@@ -513,7 +600,7 @@ int handle_sendnodes(char * packet, uint32_t length, IP_Port source)//tested
 
 int addfriend(char * client_id)
 {
-    //TODO:Maybe make the array of friends dynamic instead of a static array with 256
+    //TODO:Maybe make the array of friends dynamic instead of a static array with MAX_FRIENDS
     if(MAX_FRIENDS > num_friends)
     {
         memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
@@ -609,7 +696,7 @@ int DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
 #define PING_INTERVAL 60
 
 //ping interval in seconds for each random sending of a get nodes request.
-#define GET_NODE_INTERVAL 20
+#define GET_NODE_INTERVAL 10
 
 //Ping each client in the "friends" list every 60 seconds.
 //Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list.
@@ -679,7 +766,6 @@ void doClose()//tested
                 index[num_nodes] = i;
                 num_nodes++;
             }
-            //TODO: Send getnodes requests
         }   
     }
     
