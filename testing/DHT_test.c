@@ -6,7 +6,7 @@
  * Command line arguments are the ip and port of a node
  * EX: ./test 127.0.0.1 33445
  */
-
+#pragma comment(lib, "ws2_32")
 #include "../core/DHT.h"
 
 //Sleep function (x = milliseconds)
@@ -23,9 +23,9 @@
 #define PORT 33445
 
 
-
 int main(int argc, char *argv[])
 {
+
     #ifdef WIN32
     WSADATA wsaData;
     if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
@@ -33,12 +33,13 @@ int main(int argc, char *argv[])
         return -1;
     }
     #endif
-    
+
     if (argc < 3) {
         printf("usage %s ip port\n", argv[0]);
+		Sleep(32543);
         exit(0);
     }
-    
+	
     //initialize our socket
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     //Set socket nonblocking
@@ -52,7 +53,7 @@ int main(int argc, char *argv[])
     #endif
     
     //Bind our socket to port PORT and address 0.0.0.0
-    ADDR addr = {.family = AF_INET, .ip.i = 0, .port = htons(PORT)}; 
+    ADDR addr = {AF_INET, 0, htons(PORT)}; 
     bind(sock, (struct sockaddr*)&addr, sizeof(addr));
     
     IP_Port bootstrap_ip_port;
@@ -70,7 +71,7 @@ int main(int argc, char *argv[])
     
     uint32_t i;
     
-    while(1)
+    while(true)
     {
             
         doDHT();
@@ -93,6 +94,7 @@ int main(int argc, char *argv[])
         c_sleep(100);
     }
     
+	
     #ifdef WIN32
     WSACleanup();
     #endif
