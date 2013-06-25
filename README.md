@@ -1,4 +1,4 @@
-# Tox
+Tox
 ===
 
 Current IRC: #InsertProjectNameHere
