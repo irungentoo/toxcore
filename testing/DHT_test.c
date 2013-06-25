@@ -9,6 +9,8 @@
 
 #include "../core/DHT.h"
 
+#include <string.h>
+
 //Sleep function (x = milliseconds)
 #ifdef WIN32
 
@@ -100,7 +102,11 @@ int main(int argc, char *argv[])
                 printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
                 printf("--------------------BEGIN-----------------------------\n");
                 for(i = 0; i < length; i++)
-                    printf("%c",data[i]);
+                {
+                    if(data[i] < 16)
+                        printf("0");
+                    printf("%X",data[i]);
+                }
                 printf("\n--------------------END-----------------------------\n\n\n");
             }
             else

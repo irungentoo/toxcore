@@ -92,13 +92,15 @@ typedef struct
 
 //Add a new friend to the friends list
 //client_id must be CLIENT_ID_SIZE bytes long.
-void addfriend(char * client_id);
+//returns 0 if success
+//returns 1 if failure (friends list is full)
+int addfriend(char * client_id);
 
 //Delete a friend from the friends list
 //client_id must be CLIENT_ID_SIZE bytes long.
 //returns 0 if success
 //returns 1 if failure (client_id not in friends list)
-char delfriend(char * client_id);
+int delfriend(char * client_id);
 
 
 //Get ip of friend
@@ -137,13 +139,17 @@ char self_client_id[CLIENT_ID_SIZE];
 //We only use one so it's much easier to have it as a global variable
 int sock;
 
+//TODO: Move these out of here and put them into the .c file.
 //A list of the clients mathematically closest to ours.
 #define LCLIENT_LIST 32
 Client_data close_clientlist[LCLIENT_LIST];
 
 
+//Hard maximum number of friends 
+#define MAX_FRIENDS 256
+
 //Let's start with a static array for testing.
-Friend friends_list[256];
+Friend friends_list[MAX_FRIENDS];
 uint16_t num_friends;
 
 //The list of ip ports along with the ping_id of what we sent them and a timestamp

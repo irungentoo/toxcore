@@ -9,6 +9,7 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip}; 
     return sendto(sock, data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
+    
 }
 
 //Function to recieve data, ip and port of sender is put into ip_port
@@ -27,6 +28,7 @@ int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
     ip_port->ip = addr.ip;
     ip_port->port = addr.port;
     return 0;
+    
 }
 
 
@@ -35,7 +37,7 @@ int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
 //return 0 if both are same distance
 //return 1 if client_id1 is closer.
 //return 2 if client_id2 is closer.
-int id_closest(char * client_id, char * client_id1, char * client_id2)
+int id_closest(char * client_id, char * client_id1, char * client_id2)//tested
 {
     uint32_t i;
     for(i = 0; i < CLIENT_ID_SIZE; i++)
@@ -52,6 +54,7 @@ int id_closest(char * client_id, char * client_id1, char * client_id2)
     }
     
     return 0;
+    
 }
 
 //check if client with client_id is already in list of length length.
@@ -78,6 +81,7 @@ int client_in_list(Client_data * list, uint32_t length, char * client_id)
         }
     }
     return 0;
+    
 }
 
 //check if client with client_id is already in node format list of length length.
@@ -102,6 +106,7 @@ int client_in_nodelist(Node_format * list, uint32_t length, char * client_id)
         }
     }
     return 0;
+    
 }
 
 
@@ -172,6 +177,7 @@ int get_close_nodes(char * client_id, Node_format * nodes_list)
     }
     
     return num_nodes;
+    
 }
 
 
@@ -179,7 +185,7 @@ int get_close_nodes(char * client_id, Node_format * nodes_list)
 //replace first bad (or empty) node with this one
 //return 0 if successfull
 //return 1 if not (list contains no bad nodes)
-int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port)
+int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port)//tested
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -194,6 +200,7 @@ int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port i
         }
     }
     return 1;
+    
 }
 
 //replace the first good node further to the comp_client_id than that of the client_id 
@@ -211,6 +218,7 @@ int replace_good(Client_data * list, uint32_t length, char * client_id, IP_Port 
         }
     }
     return 1;
+    
 }
 
 //Attempt to add client with ip_port and client_id to the friends client list and close_clientlist
@@ -239,11 +247,8 @@ void addto_lists(IP_Port ip_port, char * client_id)
                 //if we can't replace bad nodes we try replacing good ones
                 replace_good(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port, self_client_id);
             }
-            
         }  
     }
-    
-    
 }
 
 
@@ -313,6 +318,7 @@ int add_pinging(IP_Port ip_port)
         }
     }
     return 0;
+    
 }
 
 //Same but for get node requests
@@ -334,6 +340,7 @@ int add_gettingnodes(IP_Port ip_port)
         }
     }
     return 0;
+    
 }
 
 
@@ -398,25 +405,31 @@ int getnodes(IP_Port ip_port, char * client_id)
     memcpy(data + 5 + CLIENT_ID_SIZE, client_id, CLIENT_ID_SIZE);
 
     return sendpacket(ip_port, data, sizeof(data));
+    
 }
 
 
 //send a send nodes response
-//Currently incomplete: missing bunch of stuff
 int sendnodes(IP_Port ip_port, char * client_id, uint32_t ping_id)
 {
-   char data[5 + (CLIENT_ID_SIZE + sizeof(IP_Port))*MAX_SENT_NODES];
-   Node_format nodes_list[MAX_SENT_NODES];
+    char data[5 + (CLIENT_ID_SIZE + sizeof(IP_Port))*MAX_SENT_NODES];
+    Node_format nodes_list[MAX_SENT_NODES];
+
+    int num_nodes = get_close_nodes(client_id, nodes_list);
+
+    if(num_nodes == 0)
+    {
+        return 0;
+    }
+
+    data[0] = 3;
+
+    memcpy(data + 1, &ping_id, 4);
+    memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
+    memcpy(data + 5 + CLIENT_ID_SIZE, nodes_list, num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
+
+    return sendpacket(ip_port, data, 5 + CLIENT_ID_SIZE + num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
    
-   int num_nodes = get_close_nodes(client_id, nodes_list);
-   
-   data[0] = 3;
-   
-   memcpy(data + 1, &ping_id, 4);
-   memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
-   memcpy(data + 5 + CLIENT_ID_SIZE, nodes_list, num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
-   
-   return sendpacket(ip_port, data, 5 + CLIENT_ID_SIZE + num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
 }
 
 
@@ -425,7 +438,7 @@ int sendnodes(IP_Port ip_port, char * client_id, uint32_t ping_id)
 //Packet handling functions
 //One to handle each types of packets we recieve
 
-int handle_pingreq(char * packet, uint32_t length, IP_Port source)
+int handle_pingreq(char * packet, uint32_t length, IP_Port source)//tested
 {
     if(length != 5 + CLIENT_ID_SIZE)
     {
@@ -440,9 +453,10 @@ int handle_pingreq(char * packet, uint32_t length, IP_Port source)
     pingreq(source);
  
     return 0;
+    
 }
 
-int handle_pingres(char * packet, uint32_t length, IP_Port source)
+int handle_pingres(char * packet, uint32_t length, IP_Port source)//tested
 {
     if(length != (5 + CLIENT_ID_SIZE))
     {
@@ -451,6 +465,7 @@ int handle_pingres(char * packet, uint32_t length, IP_Port source)
     
     addto_lists(source, packet + 5);
     return 0;
+    
 }
 
 int handle_getnodes(char * packet, uint32_t length, IP_Port source)
@@ -466,20 +481,21 @@ int handle_getnodes(char * packet, uint32_t length, IP_Port source)
     pingreq(source);
     
     return 0;
+    
 }
 
-int handle_sendnodes(char * packet, uint32_t length, IP_Port source)
+int handle_sendnodes(char * packet, uint32_t length, IP_Port source)//tested
 {
-    if(length > 5 + MAX_SENT_NODES * (CLIENT_ID_SIZE + sizeof(IP_Port)) || 
-    (length - 5) % (CLIENT_ID_SIZE + sizeof(IP_Port)) != 0)
+    if(length >  (5 + CLIENT_ID_SIZE + MAX_SENT_NODES * (CLIENT_ID_SIZE + sizeof(IP_Port))) || 
+    (length - 5 - CLIENT_ID_SIZE) % (CLIENT_ID_SIZE + sizeof(IP_Port)) != 0)
     {
         return 1;
     } 
-    int num_nodes = (length - 5) / (CLIENT_ID_SIZE + sizeof(IP_Port));
+    int num_nodes = (length - 5 - CLIENT_ID_SIZE) / (CLIENT_ID_SIZE + sizeof(IP_Port));
     uint32_t i;
     
     Node_format nodes_list[MAX_SENT_NODES];
-    memcpy(nodes_list, packet + 5, num_nodes);
+    memcpy(nodes_list, packet + 5 + CLIENT_ID_SIZE, num_nodes * (CLIENT_ID_SIZE + sizeof(IP_Port)));
     
     for(i = 0; i < num_nodes; i++)
     {
@@ -488,25 +504,31 @@ int handle_sendnodes(char * packet, uint32_t length, IP_Port source)
     
     addto_lists(source, packet + 5);
     return 0;
+    
 }
 
 //END of packet handling functions
 
 
 
-void addfriend(char * client_id)
+int addfriend(char * client_id)
 {
-    //TODO: Make the array of friends dynamic instead of a static array with 256 places..
-    //WARNING:This will segfault if the number of friends exceeds 256.
-    memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
-    num_friends++;
+    //TODO:Maybe make the array of friends dynamic instead of a static array with 256
+    if(MAX_FRIENDS > num_friends)
+    {
+        memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
+        num_friends++;
+    return 0;
+    }
+    return 1;
+    
 }
 
 
 
 
 
-char delfriend(char * client_id)
+int delfriend(char * client_id)
 {
     uint32_t i;
     for(i = 0; i < num_friends; i++)
@@ -519,6 +541,7 @@ char delfriend(char * client_id)
         }
     }
     return 1;
+    
 }
 
 
@@ -548,6 +571,7 @@ IP_Port getfriendip(char * client_id)
     }
     empty.ip.i = 1;
     return empty;
+    
 }
     
     
@@ -574,7 +598,8 @@ int DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
         
     }
     
-return 0;
+    return 0;
+
 }
 
 //The timeout after which a node is discarded completely.
@@ -583,12 +608,23 @@ return 0;
 //ping interval in seconds for each node in our lists.
 #define PING_INTERVAL 60
 
+//ping interval in seconds for each random sending of a get nodes request.
+#define GET_NODE_INTERVAL 20
+
 //Ping each client in the "friends" list every 60 seconds.
 //Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list.
+
+uint32_t friend_lastgetnode[MAX_FRIENDS];
+
+
 void doFriends()
 {
     uint32_t i, j;
     uint32_t temp_time = unix_time();
+    uint32_t num_nodes = 0;
+    uint32_t rand_node;
+    uint32_t index[MAX_FRIEND_CLIENTS];
+    
     for(i = 0; i < num_friends; i++)
     {
         for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
@@ -600,18 +636,36 @@ void doFriends()
                 {
                     pingreq(friends_list[i].client_list[j].ip_port);
                 }
-                //TODO: Send getnodes requests
-            }   
+                if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
+                {
+                    index[num_nodes] = j;
+                    num_nodes++;
+                }
+            }
+        }
+        if(friend_lastgetnode[i] + GET_NODE_INTERVAL <= temp_time && num_nodes != 0)
+        {
+            rand_node = rand() % num_nodes;
+            getnodes(friends_list[i].client_list[index[rand_node]].ip_port, 
+            friends_list[i].client_list[index[rand_node]].client_id);
+            friend_lastgetnode[i] = temp_time;
         }
     }
 }
 
+uint32_t close_lastgetnodes;
 
-void doClose()
+//Ping each client in the close nodes list every 60 seconds.
+//Send a get nodes request every 20 seconds to a random good node int the list.
+void doClose()//tested
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
-    for(i = 0; i < MAX_FRIEND_CLIENTS; i++)
+    uint32_t num_nodes = 0;
+    uint32_t rand_node;
+    uint32_t index[LCLIENT_LIST];
+    
+    for(i = 0; i < LCLIENT_LIST; i++)
     {
         if(close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time)//if node is not dead.
         {
@@ -620,9 +674,23 @@ void doClose()
             {
                 pingreq(close_clientlist[i].ip_port);
             }
+            if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
+            {
+                index[num_nodes] = i;
+                num_nodes++;
+            }
             //TODO: Send getnodes requests
         }   
-    }    
+    }
+    
+    if(close_lastgetnodes + GET_NODE_INTERVAL <= temp_time && num_nodes != 0)
+    {
+        rand_node = rand() % num_nodes;
+        getnodes(close_clientlist[index[rand_node]].ip_port, 
+        close_clientlist[index[rand_node]].client_id);
+        close_lastgetnodes = temp_time;
+    }
+    
 }
 
 
