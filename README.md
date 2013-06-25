@@ -22,7 +22,7 @@ Proposal of a free as in freedom skype replacement:
     
     -Your client stores the id of the peers along with their public keys used to initiate the connection (this is your contacts list)
 
-## Roadmap: ##
+## Roadmap:
 
     1.Get our DHT working perfectly.
     2.Connection to other peers according to client id.
@@ -32,7 +32,7 @@ Proposal of a free as in freedom skype replacement:
     5.Reliable sending of data larger than the maximum packet size.
     ...
 
-## TODO: ##
+## TODO:
     
     See: docs/TODO.txt
 
@@ -40,7 +40,7 @@ Proposal of a free as in freedom skype replacement:
 
     Use the same UDP socket for everything
 
-### Details: ###
+### Details:
 
     DHT protocol:
         see: docs/DHT.txt
