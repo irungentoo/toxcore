@@ -11,7 +11,7 @@ Proposal of a free as in freedom skype replacement:
 
 UDP most be used for everything simply because you can't do hole punching with TCP (well you can but it doesn't work all the time)
     
-Every peer is represented as a byte string (the client id) (it is the hash (SHA-256 ?) of the public key of the peer). (if you want to add someone you need that id (either ask that person directly or maybe through some kind of search engine?))
+Every peer is represented as a byte string (the client id) (it is the hash (SHA-256?) of the public key of the peer). (if you want to add someone you need that id (either ask that person directly or maybe through some kind of search engine?))
     
 Use something torrent DHT style so that peers can find the ip of the other peers when they have their id.
     
@@ -34,7 +34,7 @@ NOTE: We have not decided on the encryption yet. This was just a quick guess.
 
 ## TODO:
     
-See: docs/TODO.txt
+See: [docs/TODO.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/TODO.txt)
 
 ### Important-stuff:
 
@@ -43,6 +43,6 @@ Use the same UDP socket for everything
 ### Details:
 
 DHT protocol:
-    see: docs/DHT.txt
+    see: [docs/DHT.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/DHT.txt)
     
 
