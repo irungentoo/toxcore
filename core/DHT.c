@@ -573,7 +573,7 @@ int handle_sendnodes(char * packet, uint32_t length, IP_Port source)//tested
     {
         return 1;
     } 
-    int num_nodes = (length - 5 - CLIENT_ID_SIZE) / (CLIENT_ID_SIZE + sizeof(IP_Port));
+    uint32_t num_nodes = (length - 5 - CLIENT_ID_SIZE) / (CLIENT_ID_SIZE + sizeof(IP_Port));
     uint32_t i;
     uint32_t ping_id;
     

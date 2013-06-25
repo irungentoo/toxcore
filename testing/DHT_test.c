@@ -3,8 +3,8 @@
  * 
  * Compile with: gcc -Wall -o test ../core/DHT.c DHT_test.c
  * 
- * Command line arguments are the ip and port of a node
- * EX: ./test 127.0.0.1 33445
+ * Command line arguments are the ip and port of a node and the client_id of the friend you want to find the ip_port of
+ * EX: ./test 127.0.0.1 33445 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef
  */
 
 #include "../core/DHT.h"
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     #endif
     
     if (argc < 4) {
-        printf("usage %s ip port client_id\n", argv[0]);
+        printf("usage %s ip port client_id(of friend to find ip_port of)\n", argv[0]);
         exit(0);
     }
     addfriend(argv[3]);
