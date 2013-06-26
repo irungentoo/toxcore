@@ -23,13 +23,14 @@ Less important.
     No UDP hole punching on them so we need to do something else 
     (only if both the clients which try to connect to themselves are behind one)
 
--Decentralized IRC like channels.
+
+-Decentralized IRC like channels (chatrooms).
 
 
 
 -Offline messaging protocol (text only)
     Use your friends.(or maybe the people closest (mathematically by comparing client_id's) to you or the friend you want to send the message to).
-    The message will not be very big. Let's say we limit the maximum number of bytes for one to 1024, it means if every client stores 1024 offline messages it only takes 1 MB of ram.
+    The message will not be very big. Lets say we limit the maximum number of bytes for one to 1024, it means if every client stores 1024 offline messages it only takes 1 MB of ram.
 
 -IPv6
     Currently the core only supports ipv4

@@ -47,6 +47,6 @@ DHT protocol:
     see: [docs/DHT.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/DHT.txt)
     
 Lossless UDP protocol:
-    Either we find one with an already working implementation (Preferred solution)
-    It should not be very hard to come up with one ourselves though if need be.
-    see also: [docs/Lossless_UDP.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/Lossless_UDP.txt)
+    Either we find one with an already working implementation (Didn't find a good implementation, writing my own)
+
+    see: [docs/Lossless_UDP.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/Lossless_UDP.txt)
