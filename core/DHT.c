@@ -61,6 +61,7 @@ int id_closest(char * client_id, char * client_id1, char * client_id2)//tested
 
 //check if client with client_id is already in list of length length.
 //if it is set it's corresponding timestamp to current time.
+//if the ip_port is already in the list but associated to a different ip, change it.
 //return True(1) or False(0)
 //TODO: maybe optimize this.
 int client_in_list(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port)

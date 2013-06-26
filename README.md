@@ -39,6 +39,8 @@ See: [docs/TODO.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/ma
 
 Use the same UDP socket for everything
 
+Keep everything really simple.
+
 ### Details:
 
 DHT protocol:

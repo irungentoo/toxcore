@@ -7,6 +7,9 @@ Things to do now:
 -Get a basic im client working using the now completed DHT implementation to find the ips of your friends.
 
 -Find some good encryption libraries.
+    I found this: http://libtom.org/
+    It looks pretty good so far
+    It's licenced under the WTFPL which is perfect.
 
 -Figure out the best way to do "lossless" UDP.
 
@@ -23,3 +26,7 @@ Less important.
 -Offline messaging protocol (text only)
     Use your friends.(or maybe the people closest (mathematically by comparing client_id's) to you or the friend you want to send the message to).
     The message will not be very big. Let's say we limit the maximum number of bytes for one to 1024, it means if every client stores 1024 offline messages it only takes 1 MB of ram.
+
+-IPv6
+    Currently the core only supports ipv4
+    
