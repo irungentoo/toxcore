@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.6.0)
 project(TOX C)
  
 set(core_sources
-        core/DHT.c)
+        core/DHT.c
+        core/network.c)
 	
 set(test_sources
         testing/DHT_test.c)

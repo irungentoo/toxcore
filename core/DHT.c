@@ -1,39 +1,13 @@
+/* DHT.c
+* 
+* An implementation of the DHT as seen in docs/DHT.txt
+* 
+*/
+
+
 #include "DHT.h"
 
-
-//Basic network functions:
-//TODO: put them somewhere else than here
-
-//Function to send packet(data) of length length to ip_port
-int sendpacket(IP_Port ip_port, char * data, uint32_t length)
-{
-    ADDR addr = {AF_INET, ip_port.port, ip_port.ip}; 
-    return sendto(sock, data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
-    
-}
-
-//Function to recieve data, ip and port of sender is put into ip_port
-//the packet data into data
-//the packet length into length.
-//dump all empty packets.
-int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
-{
-    ADDR addr;
-    uint32_t addrlen = sizeof(addr);
-    (*(int *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
-    if(*(int *)length <= 0)
-    {
-        //nothing recieved
-        //or empty packet
-        return -1;
-    }
-    ip_port->ip = addr.ip;
-    ip_port->port = addr.port;
-    return 0;
-    
-}
-
-
+char self_client_id[CLIENT_ID_SIZE];
 
 //Compares client_id1 and client_id2 with client_id
 //return 0 if both are same distance
@@ -744,7 +718,7 @@ void doFriends()
 static uint32_t close_lastgetnodes;
 
 //Ping each client in the close nodes list every 60 seconds.
-//Send a get nodes request every 20 seconds to a random good node int the list.
+//Send a get nodes request every 20 seconds to a random good node in the list.
 void doClose()//tested
 {
     uint32_t i;

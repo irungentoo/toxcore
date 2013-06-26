@@ -1,49 +1,20 @@
+/* DHT.h
+* 
+* An implementation of the DHT as seen in docs/DHT.txt
+* 
+*/
+
+
 #ifndef DHT_H 
 #define DHT_H 
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
-
-#ifdef WIN32 //Put win32 includes here
-
-#include <winsock2.h>
-#include <windows.h>
-
-#else //Linux includes
-
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-
-#endif
+#include "network.h"
 
 //Current time, unix format
 #define unix_time() ((uint32_t)time(NULL))
 
 //size of the client_id in bytes
 #define CLIENT_ID_SIZE 32
-
-#define MAX_UDP_PACKET_SIZE 65507
-
-typedef union
-{
-    uint8_t c[4];
-    uint16_t s[2];
-    uint32_t i;
-}IP;
-
-typedef struct
-{
-    IP ip;
-    uint16_t port;
-    //not used for anything right now
-    uint16_t padding; 
-}IP_Port;
-
 
 typedef struct
 {
@@ -75,19 +46,6 @@ typedef struct
     uint32_t timestamp;
     
 }Pinged;
-
-
-typedef struct
-{
-    int16_t family;
-    uint16_t port;
-    IP ip;
-    uint8_t zeroes[8];
-    #ifdef ENABLE_IPV6
-    uint8_t zeroes2[12];
-    #endif
-}ADDR;
-
 
 
 //Add a new friend to the friends list
@@ -133,11 +91,8 @@ void bootstrap(IP_Port ip_port);
 //Global variables
 
 //Our client id
-char self_client_id[CLIENT_ID_SIZE];
+extern char self_client_id[CLIENT_ID_SIZE];
 
-//Our UDP socket.
-//We only use one so it's much easier to have it as a global variable
-int sock;
 
 //TODO: Move these out of here and put them into the .c file.
 //A list of the clients mathematically closest to ours.
@@ -161,16 +116,5 @@ Pinged pings[LPING_ARRAY];
 
 Pinged send_nodes[LSEND_NODES_ARRAY];
 
-
-//Basic network functions:
-//TODO: put them somewhere else than here
-
-//Function to send packet(data) of length length to ip_port
-int sendpacket(IP_Port ip_port, char * data, uint32_t length);
-
-//Function to recieve data, ip and port of sender is put into ip_port
-//the packet data into data
-//the packet length into length.
-int recievepacket(IP_Port * ip_port, char * data, uint32_t * length);
 
 #endif 
