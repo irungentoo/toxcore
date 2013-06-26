@@ -214,7 +214,7 @@ int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port i
     
 }
 
-//replace the first good node further to the comp_client_id than that of the client_id 
+//replace the first good node that is further to the comp_client_id than that of the client_id in the list
 int replace_good(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port, char * comp_client_id)
 {
     uint32_t i;
@@ -266,7 +266,7 @@ void addto_lists(IP_Port ip_port, char * client_id)
 
 
 //ping timeout in seconds
-#define PING_TIMEOUT 10
+#define PING_TIMEOUT 5
 //check if we are currently pinging an ip_port and/or a ping_id
 //Variables with values of zero will not be checked.
 //if we are already, return 1
@@ -282,24 +282,23 @@ int is_pinging(IP_Port ip_port, uint32_t ping_id)
     {
         if((pings[i].timestamp + PING_TIMEOUT) > temp_time)
         {
+            pinging = 0;
             if(ip_port.ip.i != 0)
             {
-                pinging = 0;
                 if(pings[i].ip_port.ip.i == ip_port.ip.i &&
                 pings[i].ip_port.port == ip_port.port)
                 {
-                        pinging = 1;
+                        pinging++;
                 }
             }
             if(ping_id != 0)
             {
-                pinging = 0;
                 if(pings[i].ping_id == ping_id)
                 {
-                        pinging = 1;
+                        pinging++;
                 }
             }
-            if(pinging == 1)
+            if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
             {
                     return 1;
             }
@@ -323,24 +322,23 @@ int is_gettingnodes(IP_Port ip_port, uint32_t ping_id)
     {
         if((send_nodes[i].timestamp + PING_TIMEOUT) > temp_time)
         {
+            pinging = 0;
             if(ip_port.ip.i != 0)
             {
-                pinging = 0;
                 if(send_nodes[i].ip_port.ip.i == ip_port.ip.i &&
                 send_nodes[i].ip_port.port == ip_port.port)
                 {
-                        pinging = 1;
+                        pinging++;
                 }
             }
             if(ping_id != 0)
             {
-                pinging = 0;
                 if(send_nodes[i].ping_id == ping_id)
                 {
-                        pinging = 1;
+                        pinging++;
                 }
             }
-            if(pinging == 1)
+            if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
             {
                     return 1;
             }
@@ -407,7 +405,7 @@ int add_gettingnodes(IP_Port ip_port)
 
 
 //send a ping request
-//Ping request only works if there is none hos been sent to that ip/port in the last 5 seconds.
+//Ping request only works if none has been sent to that ip/port in the last 5 seconds.
 int pingreq(IP_Port ip_port)
 {
     if(is_pinging(ip_port, 0))
@@ -474,7 +472,7 @@ int getnodes(IP_Port ip_port, char * client_id)
 //send a send nodes response
 int sendnodes(IP_Port ip_port, char * client_id, uint32_t ping_id)
 {
-    char data[5 + (CLIENT_ID_SIZE + sizeof(IP_Port))*MAX_SENT_NODES];
+    char data[5 + CLIENT_ID_SIZE + (CLIENT_ID_SIZE + sizeof(IP_Port))*MAX_SENT_NODES];
     Node_format nodes_list[MAX_SENT_NODES];
 
     int num_nodes = get_close_nodes(client_id, nodes_list);
@@ -703,7 +701,7 @@ int DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
 //Ping each client in the "friends" list every 60 seconds.
 //Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list.
 
-uint32_t friend_lastgetnode[MAX_FRIENDS];
+static uint32_t friend_lastgetnode[MAX_FRIENDS];
 
 
 void doFriends()
@@ -742,7 +740,7 @@ void doFriends()
     }
 }
 
-uint32_t close_lastgetnodes;
+static uint32_t close_lastgetnodes;
 
 //Ping each client in the close nodes list every 60 seconds.
 //Send a get nodes request every 20 seconds to a random good node int the list.

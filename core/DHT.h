@@ -117,8 +117,8 @@ IP_Port getfriendip(char * client_id);
 void doDHT();
 
 //if we recieve a DHT packet we call this function so it can be handled.
-//Return 0 if packet is handled correctly or if the packet was shit.
-//return 1 if it didn't handle the packet.
+//Return 0 if packet is handled correctly.
+//return 1 if it didn't handle the packet or if the packet was shit.
 int DHT_recvpacket(char * packet, uint32_t length, IP_Port source);
 
 //Use this function to bootstrap the client

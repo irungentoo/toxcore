@@ -3,7 +3,7 @@
  * 
  * Compile with: gcc -Wall -o test ../core/DHT.c DHT_test.c
  * 
- * Command line arguments are the ip and port of a node and the client_id of the friend you want to find the ip_port of
+ * Command line arguments are the ip and port of a node and the client_id (32 bytes) of the friend you want to find the ip_port of
  * EX: ./test 127.0.0.1 33445 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef
  */
 
@@ -60,14 +60,16 @@ void print_friendlist()
         p_ip = getfriendip(friends_list[k].client_id);
         printf("\nIP: %u.%u.%u.%u:%u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
 
-        printf("\nCLIENTS IN LIST:\n\n ");
+        printf("\nCLIENTS IN LIST:\n\n");
         
         for(i = 0; i < 4; i++)
         {
             printf("ClientID: ");
             for(j = 0; j < 32; j++)
             {
-                printf("%X", friends_list[k].client_list[i].client_id[j]);
+                if(0 <= friends_list[k].client_list[i].client_id[j] && friends_list[k].client_list[i].client_id[j] < 16)
+                    printf("0");
+                printf("%hhX", friends_list[k].client_list[i].client_id[j]);
             }
             p_ip = friends_list[k].client_list[i].ip_port;
             printf("\nIP: %u.%u.%u.%u:%u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
@@ -83,6 +85,7 @@ int main(int argc, char *argv[])
     srand(time(NULL));
     int randdomnum = rand();
     memcpy(self_client_id, &randdomnum, 4);
+    //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     
     #ifdef WIN32
     WSADATA wsaData;
@@ -144,7 +147,7 @@ int main(int argc, char *argv[])
                 {
                     if(data[i] < 16)
                         printf("0");
-                    printf("%X",data[i]);
+                    printf("%hhX",data[i]);
                 }
                 printf("\n--------------------END-----------------------------\n\n\n");
             }
