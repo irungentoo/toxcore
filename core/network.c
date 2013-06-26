@@ -56,6 +56,20 @@ int init_networking(IP ip ,uint16_t port)
     //initialize our socket
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     
+    //Functions to increase the size of the send and recieve UDP buffers
+    //NOTE: uncomment if necessary.
+    /*
+    int n = 1024 * 1024 * 2;
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&n, sizeof(n)) == -1)
+    {
+        return -1;
+    }
+
+    if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&n, sizeof(n)) == -1)
+    {
+        return -1;
+    }*/
+    
     //Set socket nonblocking
     #ifdef WIN32
     //I think this works for windows

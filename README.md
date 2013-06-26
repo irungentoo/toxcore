@@ -9,7 +9,7 @@ Proposal of a free as in freedom skype replacement:
 
 ## Basics:
 
-UDP most be used for everything simply because you can't do hole punching with TCP (well you can but it doesn't work all the time)
+UDP must be used for everything simply because you can't do hole punching with TCP (well you can but it doesn't work all the time)
     
 Every peer is represented as a byte string (the client id) (it is the hash (SHA-256?) of the public key of the peer). (if you want to add someone you need that id (either ask that person directly or maybe through some kind of search engine?))
     
