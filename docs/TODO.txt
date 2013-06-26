@@ -17,7 +17,7 @@ Things to do later:
 Less important.
 
 -Symmetric NATs
-    UDP hole punching on them so we need to do something else 
+    No UDP hole punching on them so we need to do something else 
     (only if both the clients which try to connect to themselves are behind one)
 
 -Offline messaging protocol (text only)

@@ -24,10 +24,9 @@ Your client stores the id of the peers along with their public keys used to init
 
 ## Roadmap:
 
-1. Get our DHT working perfectly.
-2. Connection to other peers according to client id.
-NOTE: We have not decided on the encryption yet. This was just a quick guess.
-3. Encrypted message sending with RSA
+1. Get our DHT working perfectly.(Done, needs large scale testing though.)
+2. Connection to other peers according to client id. 
+3. Encrypted message sending with RSA (NOTE: We have not decided on the encryption yet. This was just a quick guess.)
 4. Encrypted message sending with AES (encryption done)
 5. Reliable sending of data larger than the maximum packet size.
 ...
@@ -45,4 +44,7 @@ Use the same UDP socket for everything
 DHT protocol:
     see: [docs/DHT.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/DHT.txt)
     
-
+Lossless UDP protocol:
+    Either we find one with an already working implementation (Preferred solution)
+    It should not be very hard to come up with one ourselves though if need be.
+    see also: [docs/Lossless_UDP.txt](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/Lossless_UDP.txt)
