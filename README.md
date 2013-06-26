@@ -18,17 +18,17 @@ Use something torrent DHT style so that peers can find the ip of the other peers
 Once the client has the ip of that peer they start initiating a secure connection with each other.(asymmetric encryption(RSA?)  is used to encrypt the session keys for the symmetric(AES?) encryption so that they are exchanged securely) 
 (We can't use public key encryption for everything it's too fucking slow) man in the middle attacks are avoided because the id is the hash of the public key (the client can be sure it's legit.)
     
-When both peers are securely connected with AES they can securely exchange messages, initiate a video chat, send files, etc...
+When both peers are securely connected with the encryption(AES?) they can securely exchange messages, initiate a video chat, send files, etc...
     
 Your client stores the id of the peers along with their public keys used to initiate the connection (this is your contacts list)
 
 ## Roadmap:
 
 1. Get our DHT working perfectly.(Done, needs large scale testing though.)
-2. Connection to other peers according to client id. 
+2. Reliable connection (See Lossless_UDP protocol) to other peers according to client id.
 3. Encrypted message sending with RSA (NOTE: We have not decided on the encryption yet. This was just a quick guess.)
 4. Encrypted message sending with AES (encryption done)
-5. Reliable sending of data larger than the maximum packet size.
+5. Reliable encrypted sending of data larger than the maximum packet size.
 ...
 
 ## TODO:
