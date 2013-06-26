@@ -79,7 +79,7 @@ int init_networking(IP ip ,uint16_t port)
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     
     //Functions to increase the size of the send and recieve UDP buffers
-    //NOTE: uncomment if nn
+    //NOTE: uncomment if necessary
     /*
     int n = 1024 * 1024 * 2;
     if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&n, sizeof(n)) == -1)
