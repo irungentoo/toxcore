@@ -660,7 +660,7 @@ IP_Port getfriendip(char * client_id)
 
 
 
-int DHT_recvpacket(char * packet, uint32_t length, IP_Port source)
+int DHT_handlepacket(char * packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) {
     case 0:

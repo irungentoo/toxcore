@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
         
         while(recievepacket(&ip_port, data, &length) != -1)
         {
-            if(DHT_recvpacket(data, length, ip_port))
+            if(DHT_handlepacket(data, length, ip_port))
             {
                 printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
                 printf("--------------------BEGIN-----------------------------\n");

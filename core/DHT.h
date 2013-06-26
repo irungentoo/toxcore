@@ -95,7 +95,7 @@ void doDHT();
 //if we recieve a DHT packet we call this function so it can be handled.
 //Return 0 if packet is handled correctly.
 //return 1 if it didn't handle the packet or if the packet was shit.
-int DHT_recvpacket(char * packet, uint32_t length, IP_Port source);
+int DHT_handlepacket(char * packet, uint32_t length, IP_Port source);
 
 //Use this function to bootstrap the client
 //Sends a get nodes request to the given ip port
