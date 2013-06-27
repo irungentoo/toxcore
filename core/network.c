@@ -122,3 +122,12 @@ int init_networking(IP ip ,uint16_t port)
     return 0;
 
 }
+
+//function to cleanup networking stuff
+void shutdown_networking()
+{
+    #ifdef WIN32
+    WSACleanup();
+    #endif
+    return;
+}

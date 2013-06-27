@@ -96,4 +96,8 @@ int recievepacket(IP_Port * ip_port, char * data, uint32_t * length);
 //returns 0 if no problems
 //TODO: add something to check if there are errors
 int init_networking(IP ip ,uint16_t port);
+
+
+//function to cleanup networking stuff(doesn't do much right now)
+void shutdown_networking();
 #endif
