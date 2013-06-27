@@ -96,9 +96,6 @@ void printpacket(char * data, uint32_t length, IP_Port ip_port)
 
 int main(int argc, char *argv[])
 {
-    srand(time(NULL));
-    int randdomnum = rand();
-    memcpy(self_client_id, &randdomnum, 4);
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     
     if (argc < 4) {
@@ -107,12 +104,15 @@ int main(int argc, char *argv[])
     }
     addfriend(argv[3]);
     
-    
     //initialize networking
     //bind to ip 0.0.0.0:PORT
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
+    
+    int randdomnum = random_int();
+    memcpy(self_client_id, &randdomnum, 4);
+    
 
     perror("Initialization");
     IP_Port bootstrap_ip_port;

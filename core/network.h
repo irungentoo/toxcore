@@ -79,6 +79,9 @@ typedef struct
 //returns current time in milleseconds since the epoch.
 uint64_t current_time();
 
+//return a random number
+int random_int();
+
 //Basic network functions:
 
 //Function to send packet(data) of length length to ip_port

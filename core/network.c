@@ -40,6 +40,16 @@ uint64_t current_time()
     
 }
 
+int random_int()
+{
+    #ifdef WIN32
+    //TODO replace rand with a more random windows function
+    return rand();
+    #else
+    return random();
+    #endif
+}
+
 //our UDP socket, a global variable.
 static int sock;
 
@@ -87,7 +97,11 @@ int init_networking(IP ip ,uint16_t port)
     {
         return -1;
     }
+    
+    #else
+    srandom((uint32_t)current_time());
     #endif
+    srand((uint32_t)current_time());
     
     //initialize our socket
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
