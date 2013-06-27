@@ -8,6 +8,8 @@ Lossless UDP:
 
     Draft of Proposed protocol:
     
+      Connexion example:
+    
         Alice wants to connect to Bob (Connection handshake):
             Alice generates a random 4 byte number.
             Alice puts it in the handshake packet (handshake_id1).
@@ -36,7 +38,13 @@ Lossless UDP:
                 bobs SYNC packets become request packets.
                 The packet id of the missing packet(s) are added to the end of the SYNC packet.
                 Alice resends the packets whose numbers appear at the end of the request packet.
-                
+
+        Alice and bob disconnect suddenly:
+            Alice stops receiving SYNC packets from bob.
+            Bob stops receiving SYNC packets from Alice.
+            Connexion times out if no data is received for 5 seconds.               
+
+      Packet handling:
 
         The client receives a SYNC packet:
             He checks if the packet is valid(sent_packetnum and counter make sense)
@@ -50,6 +58,7 @@ Lossless UDP:
                 Check if the other client received what we sent him (compare recv_packetnum with the number of packets we sent) and clear them from the buffer.
                 If the packet is a request packet.
                     Send the packets he requested.
+
                     
         
         The client receives a Connection handshake packet(not initiating connection):
@@ -72,11 +81,7 @@ Lossless UDP:
         Keep track of the percent of packets dropped, if it is too high, lower the send rate. If it is low, increase it.
                 
                 
-        Alice and bob disconnect suddenly:
-            Alice stops receiving SYNC packets from bob.
-            Bob stops receiving SYNC packets from Alice.
-            Connexion times out if no data is received for 5 seconds.
-            
+
             
             
             
