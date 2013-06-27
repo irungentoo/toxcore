@@ -32,6 +32,7 @@
 #include <string.h>
 #include <time.h>
 
+
 #ifdef WIN32 //Put win32 includes here
 
 #include <winsock2.h>
@@ -43,7 +44,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
-
+#include <sys/time.h>
 #endif
 
 #define MAX_UDP_PACKET_SIZE 65507
@@ -75,7 +76,8 @@ typedef struct
 }ADDR;
 
 
-
+//returns current time in milleseconds since the epoch.
+uint64_t current_time();
 
 //Basic network functions:
 

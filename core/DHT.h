@@ -39,7 +39,7 @@ typedef struct
     char client_id[CLIENT_ID_SIZE];
     IP_Port ip_port;
     uint32_t timestamp;
-    
+    uint32_t last_pinged;
 }Client_data;
 //maximum number of clients stored per friend.
 #define MAX_FRIEND_CLIENTS 8

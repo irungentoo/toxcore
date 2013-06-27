@@ -713,10 +713,10 @@ void doFriends()
         {
             if(friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time)//if node is not dead.
             {
-                //TODO: Make this better, it only works if the function is called more than once per second.
-                if((temp_time - friends_list[i].client_list[j].timestamp) % PING_INTERVAL == 0)
+                if((friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time)
                 {
                     pingreq(friends_list[i].client_list[j].ip_port);
+                    friends_list[i].client_list[j].last_pinged = temp_time;
                 }
                 if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
                 {
@@ -751,10 +751,10 @@ void doClose()//tested
     {
         if(close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time)//if node is not dead.
         {
-            //TODO: Make this better, it only works if the function is called more than once per second.
-            if((temp_time - close_clientlist[i].timestamp) % PING_INTERVAL == 0)
+            if((close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time)
             {
                 pingreq(close_clientlist[i].ip_port);
+                close_clientlist[i].last_pinged = temp_time;
             }
             if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
             {

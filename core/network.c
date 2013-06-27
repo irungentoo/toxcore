@@ -24,12 +24,26 @@
 
 #include "network.h"
 
+
+//returns current time in milleseconds since the epoch.
+uint64_t current_time()
+{
+    uint64_t time;
+    #ifdef WIN32
+    //TODO: windows version
+    #else
+    struct timeval a;
+    gettimeofday(&a, NULL);
+    time = 1000000UL*a.tv_sec + a.tv_usec;
+    #endif
+    return time;
+    
+}
+
 //our UDP socket, a global variable.
 static int sock;
 
 //Basic network functions:
-//TODO: put them somewhere else than here
-
 //Function to send packet(data) of length length to ip_port
 int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 {
