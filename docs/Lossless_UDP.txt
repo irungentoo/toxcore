@@ -13,9 +13,9 @@ Lossless UDP:
         Alice wants to connect to Bob (Connection handshake):
             Alice generates a random 4 byte number.
             Alice puts it in the handshake packet (handshake_id1).
-            Alice starts sending handshake packets to Bob.
+            Alice starts sending handshake packets to Bob (send 10 packets over 5 seconds if no response connection fails.)
             Bob receives the packet.
-            Bob takes the handshake packet he got from adds a random 4 byte number to it (handshake_id2)
+            Bob copies the handshake packet he got from alice but adds a random 4 byte number to it (handshake_id2)
             Alice receives the packet, checks if handshake_id1 matches the one she sent.
             If it does she starts sending SYNC packets with sent_packetnum = handshake_id2 .
             Bob receives the packet, 
