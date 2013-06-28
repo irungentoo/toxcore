@@ -68,12 +68,15 @@ int main(int argc, char *argv[])
     uint64_t timer = current_time();
     while(1)
     {
-        if(is_connected(connection) != 2)
+
+        if(is_connected(connection) == 3)
         {
-            if(is_connected(connection) == 1)
-            {
-                printf("Connecting took: %llu us", (unsigned long long)(current_time() - timer));
-            }
+            printf("Connecting took: %llu us", (unsigned long long)(current_time() - timer));
+            break;
+        }
+        if(is_connected(connection) == 0)
+        {
+            printf("Connection timeout after: %llu us", (unsigned long long)(current_time() - timer));
             break;
         }
         c_sleep(1);

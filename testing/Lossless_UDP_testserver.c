@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         connection = incoming_connection();
         if(connection != -1)
         {
-            if(is_connected(connection) == 1)
+            if(is_connected(connection) == 3)
             {
                 printf("Recieved the connection.");
             }

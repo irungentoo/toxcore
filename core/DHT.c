@@ -492,7 +492,7 @@ int sendnodes(IP_Port ip_port, char * client_id, uint32_t ping_id)
 
 //Packet handling functions
 //One to handle each types of packets we recieve
-
+//return 0 if handled correctly, 1 if packet is bad.
 int handle_pingreq(char * packet, uint32_t length, IP_Port source)//tested
 {
     if(length != 5 + CLIENT_ID_SIZE)
@@ -561,7 +561,7 @@ int handle_getnodes(char * packet, uint32_t length, IP_Port source)
 
 int handle_sendnodes(char * packet, uint32_t length, IP_Port source)//tested
 {
-    if(length >  (5 + CLIENT_ID_SIZE + MAX_SENT_NODES * (CLIENT_ID_SIZE + sizeof(IP_Port))) || 
+    if(length > (5 + CLIENT_ID_SIZE + MAX_SENT_NODES * (CLIENT_ID_SIZE + sizeof(IP_Port))) || 
     (length - 5 - CLIENT_ID_SIZE) % (CLIENT_ID_SIZE + sizeof(IP_Port)) != 0)
     {
         return 1;
