@@ -3,7 +3,7 @@
  * 
  * Best used in combination with Lossless_UDP_testclient
  * 
- * Compile with: gcc -O2 -Wall -o test ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testserver.c
+ * Compile with: gcc -O2 -Wall -o testserver ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testserver.c
  * 
  * Command line argument is the name of the file to save what we recieve to.
  * EX: ./test filename1.txt
@@ -41,6 +41,29 @@ void printpacket(char * data, uint32_t length, IP_Port ip_port)
     printf("\n--------------------END-----------------------------\n\n\n");
 }
 
+//recieve packets and send them to the packethandler
+//run doLossless_UDP(); 
+void Lossless_UDP()
+{
+    IP_Port ip_port;
+    char data[MAX_UDP_PACKET_SIZE];
+    uint32_t length;
+    while(recievepacket(&ip_port, data, &length) != -1)
+    {
+        if(LosslessUDP_handlepacket(data, length, ip_port))
+        {
+                printpacket(data, length, ip_port);
+        }
+        else
+        {
+                printf("Received handled packet with length: %u\n", length);
+        }
+    }
+    
+    doLossless_UDP();   
+    
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -67,12 +90,10 @@ int main(int argc, char *argv[])
     int connection;
     uint64_t timer = current_time();
     
-    IP_Port ip_port;
-    char data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
     
     while(1)
     {
+        Lossless_UDP();
         connection = incoming_connection();
         if(connection != -1)
         {
@@ -89,19 +110,7 @@ int main(int argc, char *argv[])
     
     while(1)
     {
-        while(recievepacket(&ip_port, data, &length) != -1)
-        {
-            if(LosslessUDP_handlepacket(data, length, ip_port))
-            {
-                    printpacket(data, length, ip_port);
-            }
-            else
-            {
-                    printf("Received handled packet with length: %u\n", length);
-            }
-        }
-        
-        doLossless_UDP();
+        Lossless_UDP();
         if(is_connected(connection) == 1)
         {
             read = read_packet(connection, buffer);
