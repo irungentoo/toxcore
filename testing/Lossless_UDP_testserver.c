@@ -1,5 +1,6 @@
 /* Lossless_UDP testserver
  * A program that waits for a lossless UDP connection and then saves all the data recieved to a file.
+ * NOTE: this program simulates a 33% packet loss.
  * 
  * Best used in combination with Lossless_UDP_testclient
  * 
@@ -40,6 +41,7 @@ void printpacket(char * data, uint32_t length, IP_Port ip_port)
     }
     printf("\n--------------------END-----------------------------\n\n\n");
 }
+/*
 void printpackets(Data test)
 {
     int i;
@@ -75,14 +77,14 @@ void printconnection(int connection_id)
     }
     Data sendbuffer[MAX_QUEUE_NUM];
     Data recvbuffer[MAX_QUEUE_NUM];
-    printf("recv_num: %u, recv_sync: %u, sent_packetnum %u, send_packetnum: %u, successful_sent: %u, successful_read: %u\n", 
+    printf("recv_num: %u, orecv_num: %u, sent_packetnum %u, osent_packetnum: %u, successful_sent: %u, successful_read: %u\n", 
     connections[connection_id].recv_packetnum, 
-    connections[connection_id].recv_packetnum_sync, connections[connection_id].sent_packetnum, connections[connection_id].send_packetnum,
+    connections[connection_id].orecv_packetnum, connections[connection_id].sent_packetnum, connections[connection_id].osent_packetnum,
     connections[connection_id].successful_sent,
     connections[connection_id].successful_read);
     
     printf("req packets: \n");
-    for(i = 0; i < MAX_PACKET_NUM; i++)
+    for(i = 0; i < BUFFER_PACKET_NUM; i++)
     {
             printf(" %u ", connections[connection_id].req_packets[i]);
     }
@@ -92,7 +94,7 @@ void printconnection(int connection_id)
     printf("--------------------END---------------------\n");
     
 }
-
+*/
 //recieve packets and send them to the packethandler
 //run doLossless_UDP(); 
 void Lossless_UDP()
@@ -103,14 +105,16 @@ void Lossless_UDP()
     while(recievepacket(&ip_port, data, &length) != -1)
     {
         if(rand() % 3 != 1)//add packet loss
-        if(LosslessUDP_handlepacket(data, length, ip_port))
         {
-                printpacket(data, length, ip_port);
-        }
-        else
-        {
-           // printconnection(0);
-                printf("Received handled packet with length: %u\n", length);
+            if(LosslessUDP_handlepacket(data, length, ip_port))
+            {
+                    printpacket(data, length, ip_port);
+            }
+            else
+            {
+                //printconnection(0);
+                // printf("Received handled packet with length: %u\n", length);
+            }
         }
     }
     
@@ -151,13 +155,14 @@ int main(int argc, char *argv[])
         connection = incoming_connection();
         if(connection != -1)
         {
-            if(is_connected(connection) == 3)
+            if(is_connected(connection) == 2)
             {
                 printf("Recieved the connection.\n");
+                
             }
             break;
         }
-        c_sleep(100);
+        c_sleep(1);
     }
     
     timer = current_time();
@@ -166,13 +171,13 @@ int main(int argc, char *argv[])
     {
         //printconnection(0);
         Lossless_UDP();
-        if(is_connected(connection) == 3)
+        if(is_connected(connection) >= 2)
         {
             read = read_packet(connection, buffer);
             
             if(read != 0)
             {
-                printf("Recieved data.\n");
+               // printf("Recieved data.\n");
                 if(!fwrite(buffer, read, 1, file))
                 {
                         printf("file write error\n");
@@ -185,7 +190,7 @@ int main(int argc, char *argv[])
             fclose(file);
             return 1;
         }
-        c_sleep(50);
+        c_sleep(1);
     }
         
     return 0;

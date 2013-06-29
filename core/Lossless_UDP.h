@@ -2,7 +2,26 @@
 * 
 * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
 * 
+ 
+    Copyright (C) 2013 Tox project All Rights Reserved.
+
+    This file is part of Tox.
+
+    Tox is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Tox is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+    
 */
+
 #ifndef LOSSLESS_UDP_H 
 #define LOSSLESS_UDP_H  
 
@@ -33,10 +52,10 @@ int read_packet(int connection_id, char * data);
 int write_packet(int connection_id, char * data, uint32_t length);
 
 //returns the number of packets in the queue waiting to be successfully sent.
-int sendqueue(int connection_id);
+uint32_t sendqueue(int connection_id);
 
 //returns the number of packets in the queue waiting to be successfully read with read_packet(...)
-int recvqueue(int connection_id);
+uint32_t recvqueue(int connection_id);
 
 //check if connection is connected
 //return 0 no.

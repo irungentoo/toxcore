@@ -2,18 +2,38 @@
 * 
 * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
 * 
+ 
+    Copyright (C) 2013 Tox project All Rights Reserved.
+
+    This file is part of Tox.
+
+    Tox is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Tox is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+    
 */
 
 #include "Lossless_UDP.h"
+
+
 
  //maximum data packets in sent and recieve queues.
 #define MAX_QUEUE_NUM 32
 
 //maximum length of the data in the data packets
-#define PDATA_SIZE 1024
+#define MAX_DATA_SIZE 1024
 
-//maximum number of data packets that can be sent/recieved at the same time
-#define MAX_PACKET_NUM (MAX_QUEUE_NUM/4)
+//maximum number of data packets in the buffer
+#define BUFFER_PACKET_NUM MAX_QUEUE_NUM
 
 //Lossless UDP connection timeout.
 #define CONNEXION_TIMEOUT 10
@@ -21,12 +41,12 @@
 //initial amount of sync/hanshake packets to send per second.
 #define SYNC_RATE 5
 
-//send rate of sync packets when data is being sent/recieved.
+//initial send rate of sync packets when data is being sent/recieved.
 #define DATA_SYNC_RATE 20
 
 typedef struct
 {
-    char data[PDATA_SIZE];
+    char data[MAX_DATA_SIZE];
     uint16_t size;
 }Data;
 
@@ -56,7 +76,7 @@ typedef struct
     uint32_t sendbuff_packetnum; //number of latest packet written onto the sendbuffer
     uint32_t successful_sent;//we know all packets before that number were successfully sent
     uint32_t successful_read;//packet number of last packet read with the read_packet function
-    uint32_t req_packets[MAX_PACKET_NUM]; //list of currently requested packet numbers(by the other person)
+    uint32_t req_packets[BUFFER_PACKET_NUM]; //list of currently requested packet numbers(by the other person)
     uint16_t num_req_paquets; //total number of currently requested packets(by the other person)
     uint8_t recv_counter;
     uint8_t send_counter;
@@ -83,6 +103,9 @@ int new_connection(IP_Port ip_port)
             connections[i].status = 1;
             connections[i].inbound = 0;
             connections[i].handshake_id1 = random_int();
+            connections[i].sent_packetnum = connections[i].handshake_id1;
+            connections[i].sendbuff_packetnum = connections[i].handshake_id1;
+            connections[i].successful_sent = connections[i].handshake_id1;
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
             connections[i].last_recv = current_time();
@@ -144,37 +167,6 @@ int kill_connection(int connection_id)
     return -1;
 }
 
-//return 0 if there is no received data in the buffer.
-//return length of received packet if successful
-int read_packet(int connection_id, char * data)
-{
-    
-    return 0;
-}
-
-//return 0 if data could not be put in packet queue
-//return 1 if data was put into the queue
-int write_packet(int connection_id, char * data, uint32_t length)
-{
-    
-    
-    return 0;
-}
-
-
-
-//returns the number of packets in the queue waiting to be successfully sent.
-int sendqueue(int connection_id)
-{
-    return connections[connection_id].sendbuff_packetnum - connections[connection_id].successful_sent;
-}
-
-//returns the number of packets in the queue waiting to be successfully read with read_packet(...)
-int recvqueue(int connection_id)
-{
-    return connections[connection_id].recv_packetnum - connections[connection_id].successful_read;
-}
-
 //check if connection is connected
 //return 0 no.
 //return 1 if attempting handshake
@@ -185,6 +177,60 @@ int is_connected(int connection_id)
     return connections[connection_id].status;
 }
 
+//returns the number of packets in the queue waiting to be successfully sent.
+uint32_t sendqueue(int connection_id)
+{
+    return connections[connection_id].sendbuff_packetnum - connections[connection_id].successful_sent;
+}
+
+//returns the number of packets in the queue waiting to be successfully read with read_packet(...)
+uint32_t recvqueue(int connection_id)
+{
+    return connections[connection_id].recv_packetnum - connections[connection_id].successful_read;
+}
+
+//return 0 if there is no received data in the buffer.
+//return length of received packet if successful
+int read_packet(int connection_id, char * data)
+{
+    if(recvqueue(connection_id) != 0)
+    {
+        uint16_t index = connections[connection_id].successful_read % MAX_QUEUE_NUM;
+        uint16_t size = connections[connection_id].recvbuffer[index].size;
+        memcpy(data, connections[connection_id].recvbuffer[index].data, size);
+        connections[connection_id].successful_read++;
+        connections[connection_id].recvbuffer[index].size = 0;
+        return size;
+    }
+    return 0;
+}
+
+//return 0 if data could not be put in packet queue
+//return 1 if data was put into the queue
+int write_packet(int connection_id, char * data, uint32_t length)
+{
+    if(length > MAX_DATA_SIZE)
+    {
+        return 0;
+    }
+    if(length == 0)
+    {
+        return 0;
+    }
+    if(sendqueue(connection_id) <  MAX_QUEUE_NUM)
+    {
+        uint32_t index = connections[connection_id].sendbuff_packetnum % MAX_QUEUE_NUM;
+        memcpy(connections[connection_id].sendbuffer[index].data, data, length);
+        connections[connection_id].sendbuffer[index].size = length;
+        connections[connection_id].sendbuff_packetnum++;
+        return 1;
+    }
+    return 0;
+}
+
+
+
+
 //put the packet numbers the we are missing in requested and return the number
 uint32_t missing_packets(int connection_id, uint32_t * requested)
 {
@@ -194,9 +240,13 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
     {
         if(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size == 0)
         {
-            memcpy(requested, &i, number);
+            memcpy(requested + number, &i, 4);
             number++;
         }
+    }
+    if(number == 0)
+    {
+        connections[connection_id].recv_packetnum = connections[connection_id].osent_packetnum;
     }
     return number;
     
@@ -221,14 +271,14 @@ int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_i
 int send_SYNC(uint32_t connection_id)
 {
     
-    char packet[(MAX_PACKET_NUM*4 + 4 + 4 + 2)];
+    char packet[(BUFFER_PACKET_NUM*4 + 4 + 4 + 2)];
     uint16_t index = 0;
     
     IP_Port ip_port = connections[connection_id].ip_port;
     uint8_t counter = connections[connection_id].send_counter;
     uint32_t recv_packetnum = connections[connection_id].recv_packetnum;
     uint32_t sent_packetnum = connections[connection_id].sent_packetnum;
-    uint32_t requested[MAX_PACKET_NUM];
+    uint32_t requested[BUFFER_PACKET_NUM];
     uint32_t number = missing_packets(connection_id, requested);
     
     packet[0] = 17;
@@ -245,21 +295,39 @@ int send_SYNC(uint32_t connection_id)
    
 }
 
-
-int send_data(IP_Port ip_port, uint32_t packet_num, char * data, uint32_t length)
+int send_data_packet(uint32_t connection_id, uint32_t packet_num)
 {
-    if(length > PDATA_SIZE)
-    {
-            return -1;
-    }
-    char packet[1 + 4 + PDATA_SIZE];
-    
+    uint32_t index = packet_num % MAX_QUEUE_NUM;
+    char packet[1 + 4 + MAX_DATA_SIZE];
     packet[0] = 18;
     memcpy(packet + 1, &packet_num, 4);
-    memcpy(packet + 5, data, length);
-    return sendpacket(ip_port, packet, 1 + 4 + length);
+    memcpy(packet + 5, connections[connection_id].sendbuffer[index].data, 
+                       connections[connection_id].sendbuffer[index].size);
+    return sendpacket(connections[connection_id].ip_port, packet,
+               1 + 4 + connections[connection_id].sendbuffer[index].size);
 }
 
+//sends 1 data packet
+int send_DATA(uint32_t connection_id)
+{
+    int ret;
+    uint32_t buffer[BUFFER_PACKET_NUM];
+    if(connections[connection_id].num_req_paquets > 0)
+    {  
+        ret = send_data_packet(connection_id, connections[connection_id].req_packets[0]);
+        connections[connection_id].num_req_paquets--;
+        memcpy(buffer, connections[connection_id].req_packets + 1, connections[connection_id].num_req_paquets * 4);
+        memcpy(connections[connection_id].req_packets, buffer, connections[connection_id].num_req_paquets * 4);
+        return ret;
+    }
+    if(connections[connection_id].sendbuff_packetnum != connections[connection_id].sent_packetnum)
+    {
+        ret = send_data_packet(connection_id, connections[connection_id].sent_packetnum);
+        connections[connection_id].sent_packetnum++;
+        return ret;
+    }
+    return 0;
+}
 
 //END of packet sending functions
 
@@ -281,7 +349,7 @@ int getconnection_id(IP_Port ip_port)
 }
 
 //table of random numbers used below.
-uint32_t randtable[6][256];
+static uint32_t randtable[6][256];
 
 
 //generate a handshake_id which depends on the ip_port.
@@ -333,9 +401,9 @@ int handle_handshake(char * packet, uint32_t length, IP_Port source)
         //NOTE:is this necessary?
         //connections[connection].handshake_id2 = handshake_id2;
         connections[connection].orecv_packetnum = handshake_id1;
-        connections[connection].sent_packetnum = handshake_id1;
         connections[connection].osent_packetnum = handshake_id2;
         connections[connection].recv_packetnum = handshake_id2;
+        connections[connection].successful_read = handshake_id2;
     }
     return 0;
 
@@ -349,7 +417,7 @@ int SYNC_valid(uint32_t length)
     {
         return 0;
     }
-    if(length > (MAX_PACKET_NUM*4 + 4 + 4 + 2) || 
+    if(length > (BUFFER_PACKET_NUM*4 + 4 + 4 + 2) || 
     ((length - 4 - 4 - 2) % 4) != 0)
     {
         return 0;
@@ -367,9 +435,12 @@ int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnu
         {
             connections[x].orecv_packetnum = recv_packetnum;
             connections[x].sent_packetnum = recv_packetnum;
+            connections[x].sendbuff_packetnum = recv_packetnum;
+            connections[x].successful_sent = recv_packetnum;
             connections[x].osent_packetnum = sent_packetnum;
             connections[x].recv_packetnum = sent_packetnum;
-            
+            connections[x].successful_read = sent_packetnum;
+
             return x;
         }
     }
@@ -379,26 +450,28 @@ int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnu
 //case 2:
 int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum)
 {
-    if(recv_packetnum == connections[connection_id].orecv_packetnum && 
-       sent_packetnum == connections[connection_id].osent_packetnum)
+    if(recv_packetnum == connections[connection_id].orecv_packetnum)
+       //&& sent_packetnum == connections[connection_id].osent_packetnum)
     {
         connections[connection_id].status =  3;
         connections[connection_id].recv_counter = counter;
         connections[connection_id].send_counter++;
         return 0;
     }
+    return 1;
 }
 //case 3:
 int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum, uint32_t * req_packets,
                  uint16_t number)
 {
-    uint8_t comp_counter = (connections[connection_id].recv_counter + 1);
-    if((recv_packetnum - connections[connection_id].orecv_packetnum) < MAX_PACKET_NUM &&
-       (sent_packetnum - connections[connection_id].osent_packetnum) < MAX_PACKET_NUM &&
-        counter == comp_counter) //packet valid
+    uint8_t comp_counter = (counter - connections[connection_id].recv_counter );
+    uint32_t comp_1 = (recv_packetnum - connections[connection_id].orecv_packetnum);
+    uint32_t comp_2 = (sent_packetnum - connections[connection_id].osent_packetnum);
+    if(comp_1 < BUFFER_PACKET_NUM && comp_2 < BUFFER_PACKET_NUM && comp_counter < 10) //packet valid
     {
         connections[connection_id].orecv_packetnum = recv_packetnum;
         connections[connection_id].osent_packetnum = sent_packetnum;
+        connections[connection_id].successful_sent = recv_packetnum;
         connections[connection_id].last_recv = current_time();
         connections[connection_id].recv_counter = counter;
         connections[connection_id].send_counter++;
@@ -419,7 +492,7 @@ int handle_SYNC(char * packet, uint32_t length, IP_Port source)
     int connection = getconnection_id(source);
     uint8_t counter;
     uint32_t recv_packetnum, sent_packetnum;
-    uint32_t req_packets[MAX_PACKET_NUM];
+    uint32_t req_packets[BUFFER_PACKET_NUM];
     uint16_t number = (length - 4 - 4 - 2)/ 4;
     
     memcpy(&counter, packet + 1, 1);
@@ -446,8 +519,63 @@ int handle_SYNC(char * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
+//add a packet to the recieved buffer and set the recv_packetnum of the connection to its proper value.
+//return 1 if data was too big, 0 if not.
+int add_recv(int connection_id, uint32_t data_num, char * data, uint16_t size)
+{
+    if(size > MAX_DATA_SIZE)
+    {
+        return 1;
+    }
+
+    uint32_t i;
+    uint32_t maxnum = connections[connection_id].successful_read + BUFFER_PACKET_NUM;
+    uint32_t sent_packet = data_num - connections[connection_id].osent_packetnum;
+    for(i =  connections[connection_id].recv_packetnum; i != maxnum; i++)
+    {    
+        if(i == data_num)
+        {
+            memcpy(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].data, data, size);
+            connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size = size;
+            if(sent_packet < BUFFER_PACKET_NUM)
+            {
+                connections[connection_id].osent_packetnum = data_num;
+            }
+            break;
+        }
+    }
+    for(i = connections[connection_id].recv_packetnum; i != maxnum; i++)
+    {
+        if(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size != 0)
+        {
+             connections[connection_id].recv_packetnum = i;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return 0;
+}
+
 int handle_data(char * packet, uint32_t length, IP_Port source)
 {
+    int connection = getconnection_id(source);
+    
+    if(connection == -1)
+    {
+        return 1;
+    }
+    if(length > 1 + 4 + MAX_DATA_SIZE || length < 1 + 4 + 1)
+    {
+        return 1;
+    }
+    uint32_t number;
+    uint16_t size = length - 1 - 4;
+    
+    memcpy(&number, packet + 1, 4);
+    return add_recv(connection, number, packet + 5, size);
     
 }
 
@@ -477,7 +605,6 @@ int LosslessUDP_handlepacket(char * packet, uint32_t length, IP_Port source)
 }
 
 //Send handshake requests
-//TODO: optimize this.
 //handshake packets are sent at the same rate as SYNC packets
 void doNew()
 {
@@ -521,7 +648,19 @@ void doSYNC()
 
 void doData()
 {
-    
+    uint32_t i;
+    uint64_t temp_time = current_time();
+    for(i = 0; i < MAX_CONNECTIONS; i++)
+    {
+        if(connections[i].status == 3)
+        {
+            if((connections[i].last_sent + (1000000UL/connections[i].data_rate)) <= temp_time)
+            {
+               send_DATA(i);
+               connections[i].last_sent = temp_time;
+            }
+        }
+    }    
 }
 
 //TODO: flow control.
