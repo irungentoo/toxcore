@@ -40,6 +40,64 @@ void printpacket(char * data, uint32_t length, IP_Port ip_port)
     printf("\n--------------------END-----------------------------\n\n\n");
 }
 
+void printip(IP_Port ip_port)
+{
+    printf("\nIP: %u.%u.%u.%u Port: %u",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
+}
+
+void printpackets(Data test)
+{
+    int i;
+    if(test.size == 0)
+        return;
+    printf("SIZE: %u\n", test.size);
+    for(i =0; i < test.size; i++)
+    {
+        printf("%hhX", test.data[i]);
+    }
+    printf("\n");
+}
+
+void printconnection(int connection_id)
+{
+    printf("--------------------BEGIN---------------------\n");
+    IP_Port ip_port = connections[connection_id].ip_port;
+    printf("IP: %u.%u.%u.%u Port: %u\n",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
+    printf("status: %u, inbound: %u, SYNC_rate: %u\n", connections[connection_id].status, 
+    connections[connection_id].inbound, connections[connection_id].SYNC_rate);
+    printf("data rate: %u, last sync: %llu, last sent: %llu, last recv: %llu \n", connections[connection_id].data_rate, 
+    connections[connection_id].last_SYNC, connections[connection_id].last_sent, connections[connection_id].last_recv);
+    int i;
+    for(i =0; i < MAX_QUEUE_NUM; i++)
+    {
+        printf(" %u ",i);
+        printpackets(connections[connection_id].sendbuffer[i]);
+    }
+    for(i =0; i < MAX_QUEUE_NUM; i++)
+    {
+        printf(" %u ",i);
+        printpackets(connections[connection_id].recvbuffer[i]);
+    }
+    Data sendbuffer[MAX_QUEUE_NUM];
+    Data recvbuffer[MAX_QUEUE_NUM];
+    printf("recv_num: %u, recv_sync: %u, sent_packetnum %u, send_packetnum: %u, successful_sent: %u, successful_read: %u\n", 
+    connections[connection_id].recv_packetnum, 
+    connections[connection_id].recv_packetnum_sync, connections[connection_id].sent_packetnum, connections[connection_id].send_packetnum,
+    connections[connection_id].successful_sent,
+    connections[connection_id].successful_read);
+    
+    printf("req packets: \n");
+    for(i = 0; i < MAX_PACKET_NUM; i++)
+    {
+            printf(" %u ", connections[connection_id].req_packets[i]);
+    }
+    printf("\nNumber: %u recv_counter: %u, send_counter: %u\n", connections[connection_id].num_req_paquets,
+    connections[connection_id].recv_counter, connections[connection_id].send_counter);
+
+    printf("--------------------END---------------------\n");
+    
+}
+
 //recieve packets and send them to the packethandler
 //run doLossless_UDP(); 
 void Lossless_UDP()
@@ -49,14 +107,18 @@ void Lossless_UDP()
     uint32_t length;
     while(recievepacket(&ip_port, data, &length) != -1)
     {
+        if(rand() % 3 != 1)//add packet loss
+            
         if(LosslessUDP_handlepacket(data, length, ip_port))
         {
                 printpacket(data, length, ip_port);
         }
         else
         {
+                //printconnection(0);
                 printf("Received handled packet with length: %u\n", length);
         }
+
     }
     
     doLossless_UDP();   
@@ -85,8 +147,10 @@ int main(int argc, char *argv[])
     ip.i = 0;
     init_networking(ip, PORT);
     perror("Initialization");
-    
-    IP_Port serverip = {{{inet_addr(argv[1])}}, htons(atoi(argv[2]))};
+    IP_Port serverip;
+    serverip.ip.i = inet_addr(argv[1]);
+    serverip.port = htons(atoi(argv[2]));
+    printip(serverip);
     int connection = new_connection(serverip);
     uint64_t timer = current_time();
     while(1)
@@ -94,47 +158,50 @@ int main(int argc, char *argv[])
         Lossless_UDP();
         if(is_connected(connection) == 3)
         {
-            printf("Connecting took: %llu us", (unsigned long long)(current_time() - timer));
+            printf("Connecting took: %llu us\n", (unsigned long long)(current_time() - timer));
             break;
         }
         if(is_connected(connection) == 0)
         {
-            printf("Connection timeout after: %llu us", (unsigned long long)(current_time() - timer));
-            break;
+            printf("Connection timeout after: %llu us\n", (unsigned long long)(current_time() - timer));
+            return 1;
         }
-        c_sleep(1);
+        c_sleep(100);
     }
     timer = current_time();
     
     
     //read first part of file
-    read = fread(buffer, 1, 128, file);
+    read = fread(buffer, 1, 1, file);
     
     while(1)
     {
+        //printconnection(connection);
         Lossless_UDP();
         
-        if(is_connected(connection) == 1)
+        if(is_connected(connection) == 3)
         {
             
             if(write_packet(connection, buffer, read))
             {
-                read = fread(buffer, 1, 128, file);
+               //printf("Wrote data.\n");
+                read = fread(buffer, 1, 1, file);
             }
             if(sendqueue(connection) == 0)
             {
                 if(read == 0)
                 {
-                    printf("Sent file successfully in: %llu us", (unsigned long long)(current_time() - timer));
+                    printf("Sent file successfully in: %llu us\n", (unsigned long long)(current_time() - timer));
                     break;
                 }
             }
         }
         else
         {
-            printf("Connecting Lost after: %llu us", (unsigned long long)(current_time() - timer));
+            printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
+            return 0;
         }
-        c_sleep(1);
+        c_sleep(50);
     }
         
     return 0;

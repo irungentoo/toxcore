@@ -88,7 +88,7 @@ Lossless UDP:
                 [byte with value: 16 (10 in hex)][4 byte (handshake_id1)][4 bytes (handshake_id2)]
                 
             SYNC packets:
-                [byte with value: 17 (11 in hex)][byte (type) (00 for keep alive, 01 for request)][byte (counter)][4 byte (recv_packetnum)][4 byte (sent_packetnum)][sequence of requested packet ids[4 bytes each](not present in keep alive)]
+                [byte with value: 17 (11 in hex)][byte (counter)][4 byte (recv_packetnum)][4 byte (sent_packetnum)][sequence of requested packet ids[4 bytes each](not present in keep alive)]
                 
             
             data packets:
