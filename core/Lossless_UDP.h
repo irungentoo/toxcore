@@ -9,8 +9,6 @@
 #include "network.h"
 
 
-
-
 //Functions
 
 //initialize a new connection to ip_port
