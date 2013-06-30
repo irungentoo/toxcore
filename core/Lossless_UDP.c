@@ -28,22 +28,22 @@
 
 
  //maximum data packets in sent and recieve queues.
-#define MAX_QUEUE_NUM 32
+#define MAX_QUEUE_NUM 16
 
 //maximum length of the data in the data packets
 #define MAX_DATA_SIZE 1024
 
 //maximum number of data packets in the buffer
-#define BUFFER_PACKET_NUM MAX_QUEUE_NUM
+#define BUFFER_PACKET_NUM (16-1)
 
 //Lossless UDP connection timeout.
 #define CONNEXION_TIMEOUT 10
 
 //initial amount of sync/hanshake packets to send per second.
-#define SYNC_RATE 5
+#define SYNC_RATE 50
 
 //initial send rate of sync packets when data is being sent/recieved.
-#define DATA_SYNC_RATE 20
+#define DATA_SYNC_RATE 200
 
 typedef struct
 {
@@ -242,7 +242,7 @@ int is_connected(int connection_id)
 //returns the ip_port of the corresponding connection.
 IP_Port connection_ip(int connection_id)
 {
-    if(connection_id > 0 && connection_id < MAX_CONNECTIONS)
+    if(connection_id >= 0 && connection_id < MAX_CONNECTIONS)
     {
         return connections[connection_id].ip_port;
     }
@@ -290,7 +290,7 @@ int write_packet(int connection_id, char * data, uint32_t length)
     {
         return 0;
     }
-    if(sendqueue(connection_id) <  MAX_QUEUE_NUM)
+    if(sendqueue(connection_id) <  BUFFER_PACKET_NUM)
     {
         uint32_t index = connections[connection_id].sendbuff_packetnum % MAX_QUEUE_NUM;
         memcpy(connections[connection_id].sendbuffer[index].data, data, length);
@@ -309,6 +309,11 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
 {
     uint32_t number = 0;
     uint32_t i;
+    
+    if(recvqueue(connection_id) >= BUFFER_PACKET_NUM)//don't request packets if the buffer is full.
+    {
+        return 0;
+    }
     for(i = connections[connection_id].recv_packetnum; i != connections[connection_id].osent_packetnum; i++ )
     {
         if(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size == 0)
@@ -500,9 +505,11 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
                  uint16_t number)
 {
     uint8_t comp_counter = (counter - connections[connection_id].recv_counter );
+    //uint32_t comp_1 = (recv_packetnum - connections[connection_id].successful_sent);
+    //uint32_t comp_2 = (sent_packetnum - connections[connection_id].successful_read);
     uint32_t comp_1 = (recv_packetnum - connections[connection_id].orecv_packetnum);
     uint32_t comp_2 = (sent_packetnum - connections[connection_id].osent_packetnum);
-    if(comp_1 < BUFFER_PACKET_NUM && comp_2 < BUFFER_PACKET_NUM && comp_counter < 10) //packet valid
+    if(comp_1 <= BUFFER_PACKET_NUM && comp_2 <= BUFFER_PACKET_NUM && comp_counter < 10 && comp_counter != 0) //packet valid
     {
         connections[connection_id].orecv_packetnum = recv_packetnum;
         connections[connection_id].osent_packetnum = sent_packetnum;

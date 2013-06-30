@@ -174,7 +174,6 @@ int main(int argc, char *argv[])
         if(is_connected(connection) >= 2)
         {
             read = read_packet(connection, buffer);
-            
             if(read != 0)
             {
                // printf("Recieved data.\n");

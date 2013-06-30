@@ -25,11 +25,10 @@ Your client stores the id of the peers along with their public keys used to init
 ## Roadmap:
 
 1. Get our DHT working perfectly.(Done, needs large scale testing though.)
-2. Reliable connection (See Lossless_UDP protocol) to other peers according to client id.
-3. Encrypted message sending with RSA (NOTE: We have not decided on the encryption yet. This was just a quick guess.)
-4. Encrypted message sending with AES (encryption done)
-5. Reliable encrypted sending of data larger than the maximum packet size.
-...
+2. Reliable connection (See Lossless_UDP protocol) to other peers according to client id. (Done, see DHT_sendfiletest.c for an example)
+3. Encryption. (this is where we are now)
+4. Optimize for streaming media.
+5. 
 
 ## TODO:
     
