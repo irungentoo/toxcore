@@ -7,7 +7,7 @@
  * Compile with: gcc -O2 -Wall -o testserver ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testserver.c
  * 
  * Command line argument is the name of the file to save what we recieve to.
- * EX: ./test filename1.txt
+ * EX: ./testserver filename1.txt
  */
 
 #include "../core/network.h"

@@ -21,7 +21,8 @@
     along with Tox.  If not, see <http://www.gnu.org/licenses/>.
     
 */
-
+//TODO: clean this file a bit.
+//There are a couple of useless variables to get rid of.
 #include "Lossless_UDP.h"
 
 
@@ -89,11 +90,61 @@ Connection connections[MAX_CONNECTIONS];
 
 //Functions
 
+//get connection id from IP_Port
+//return -1 if there are no connections like we are looking for
+//return id if it found it
+int getconnection_id(IP_Port ip_port)
+{
+    uint32_t i;
+    for(i = 0; i < MAX_CONNECTIONS; i++ )
+    {
+            if(connections[i].ip_port.ip.i == ip_port.ip.i && 
+            connections[i].ip_port.port == ip_port.port && connections[i].status > 0)
+            {
+                    return i;
+            }
+    }
+    return -1;
+}
+
+//table of random numbers used below.
+static uint32_t randtable[6][256];
+
+
+//generate a handshake_id which depends on the ip_port.
+//this function will always give one unique handshake_id per ip_port.
+//TODO: make this better
+uint32_t handshake_id(IP_Port source)
+{
+    uint32_t id = 0, i;
+    for(i = 0; i < 6; i++)
+    {
+        if(randtable[i][((uint8_t *)&source)[i]] == 0)
+        {
+            randtable[i][((uint8_t *)&source)[i]] = random_int();
+        }
+        id ^= randtable[i][((uint8_t *)&source)[i]];
+    }
+    if(id == 0)//id can't be zero
+    {
+        id = 1;
+    }
+    return id;
+}
+
+
+
 //initialize a new connection to ip_port
 //returns an integer corresponding to the connection id.
 //return -1 if it could not initialize the connection.
+//if there already was an existing connection to that ip_port return its number.
 int new_connection(IP_Port ip_port)
 {
+    int connect = getconnection_id(ip_port);
+    if(connect != -1)
+    {
+        return connect;
+    }
     uint32_t i;
     for(i = 0; i < MAX_CONNECTIONS; i++)
     {
@@ -102,7 +153,7 @@ int new_connection(IP_Port ip_port)
             connections[i].ip_port = ip_port;
             connections[i].status = 1;
             connections[i].inbound = 0;
-            connections[i].handshake_id1 = random_int();
+            connections[i].handshake_id1 = handshake_id(ip_port);
             connections[i].sent_packetnum = connections[i].handshake_id1;
             connections[i].sendbuff_packetnum = connections[i].handshake_id1;
             connections[i].successful_sent = connections[i].handshake_id1;
@@ -121,6 +172,10 @@ int new_connection(IP_Port ip_port)
 //return -1 if it could not initialize the connection.
 int new_inconnection(IP_Port ip_port)
 {
+    if(getconnection_id(ip_port) != -1)
+    {
+        return -1;
+    }
     uint32_t i;
     for(i = 0; i < MAX_CONNECTIONS; i++)
     {
@@ -159,10 +214,13 @@ int incoming_connection()
 //return 0 if killed successfully
 int kill_connection(int connection_id)
 {
-    if(connections[connection_id].status > 0)
+    if(connection_id >= 0 && connection_id < MAX_CONNECTIONS)
     {
-            connections[connection_id].status = 0;
-            return 0;
+        if(connections[connection_id].status > 0)
+        {
+                connections[connection_id].status = 0;
+                return 0;
+        }
     }
     return -1;
 }
@@ -174,7 +232,22 @@ int kill_connection(int connection_id)
 //return 3 if fully connected
 int is_connected(int connection_id)
 {
-    return connections[connection_id].status;
+    if(connection_id >= 0 && connection_id < MAX_CONNECTIONS)
+    {
+        return connections[connection_id].status;
+    }
+    return 0;
+}
+
+//returns the ip_port of the corresponding connection.
+IP_Port connection_ip(int connection_id)
+{
+    if(connection_id > 0 && connection_id < MAX_CONNECTIONS)
+    {
+        return connections[connection_id].ip_port;
+    }
+    IP_Port zero = {{{0}}, 0};
+    return zero;
 }
 
 //returns the number of packets in the queue waiting to be successfully sent.
@@ -331,47 +404,7 @@ int send_DATA(uint32_t connection_id)
 
 //END of packet sending functions
 
-//get connection id from IP_Port
-//return -1 if there are no connections like we are looking for
-//return id if it found it
-int getconnection_id(IP_Port ip_port)
-{
-    uint32_t i;
-    for(i = 0; i < MAX_CONNECTIONS; i++ )
-    {
-            if(connections[i].ip_port.ip.i == ip_port.ip.i && 
-            connections[i].ip_port.port == ip_port.port && connections[i].status > 0)
-            {
-                    return i;
-            }
-    }
-    return -1;
-}
 
-//table of random numbers used below.
-static uint32_t randtable[6][256];
-
-
-//generate a handshake_id which depends on the ip_port.
-//this function will always give one unique handshake_id per ip_port.
-//TODO: make this better
-uint32_t handshake_id(IP_Port source)
-{
-    uint32_t id = 0, i;
-    for(i = 0; i < 6; i++)
-    {
-        if(randtable[i][((uint8_t *)&source)[i]] == 0)
-        {
-            randtable[i][((uint8_t *)&source)[i]] = random_int();
-        }
-        id ^= randtable[i][((uint8_t *)&source)[i]];
-    }
-    if(id == 0)//id can't be zero
-    {
-        id = 1;
-    }
-    return id;
-}
 
 //Packet handling functions
 //One to handle each type of packets we recieve
@@ -383,27 +416,29 @@ int handle_handshake(char * packet, uint32_t length, IP_Port source)
             return 1;
     }
     uint32_t handshake_id1, handshake_id2;
+    int connection = getconnection_id(source);
     memcpy(&handshake_id1, packet + 1, 4);
     memcpy(&handshake_id2, packet + 5, 4);
+    
+    
     if(handshake_id2 == 0)
     {
-        send_handshake(source, handshake_id1, handshake_id(source));
+        send_handshake(source, handshake_id(source), handshake_id1);
         return 0;
     }
-    int connection = getconnection_id(source);
     if(is_connected(connection) != 1)
     {
         return 1;
     }
-    if(handshake_id1 == connections[connection].handshake_id1)//if handshake_id1 is what we sent previously.
+    if(handshake_id2 == connections[connection].handshake_id1)//if handshake_id2 is what we sent previously as handshake_id1
     {
         connections[connection].status = 2;
         //NOTE:is this necessary?
-        //connections[connection].handshake_id2 = handshake_id2;
-        connections[connection].orecv_packetnum = handshake_id1;
-        connections[connection].osent_packetnum = handshake_id2;
-        connections[connection].recv_packetnum = handshake_id2;
-        connections[connection].successful_read = handshake_id2;
+        //connections[connection].handshake_id2 = handshake_id1;
+        connections[connection].orecv_packetnum = handshake_id2;
+        connections[connection].osent_packetnum = handshake_id1;
+        connections[connection].recv_packetnum = handshake_id1;
+        connections[connection].successful_read = handshake_id1;
     }
     return 0;
 

@@ -63,7 +63,10 @@ Lossless UDP:
         
         The client receives a Connection handshake packet(not initiating connection):
             If handshake_id2 is zero:
-                add our random handshake_id2 to it and send it back
+                use the handshake_id1 in the packet as the handshake_id2 of the response.
+                use our random handshake_id1 as handshake_id1.
+                send the response packet.
+                
 
                 
         The client receives a Connection handshake packet(initiating connection):
