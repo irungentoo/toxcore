@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- List of friends -->
+
+<friends>
+	<friend id="001">
+		<name>Senator Herpies</name>
+		<userID>12341241251</userID>
+	</friend>
+</friends>
