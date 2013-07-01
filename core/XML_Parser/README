@@ -1,8 +1,8 @@
 ============================================================
 =============Adding the Library to Your Project=============
 ============================================================
+
 Include the "asm-xml.h" file in your source file.
-============================================================
 
 Link your project with the AsmXml object file.
  ~ ~ ~ ~
