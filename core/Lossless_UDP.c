@@ -309,6 +309,7 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
 {
     uint32_t number = 0;
     uint32_t i;
+    uint32_t temp;
     
     if(recvqueue(connection_id) >= BUFFER_PACKET_NUM)//don't request packets if the buffer is full.
     {
@@ -318,7 +319,8 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
     {
         if(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size == 0)
         {
-            memcpy(requested + number, &i, 4);
+            temp = htonl(i);
+            memcpy(requested + number, &temp, 4);
             number++;
         }
     }
@@ -338,9 +340,13 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
 int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
 {
     char packet[1 + 4 + 4];
+    uint32_t temp;
+    
     packet[0] = 16;
-    memcpy(packet + 1, &handshake_id1, 4);
-    memcpy(packet + 5, &handshake_id2, 4);
+    temp = htonl(handshake_id1);
+    memcpy(packet + 1, &temp, 4);
+    temp = htonl(handshake_id2);
+    memcpy(packet + 5, &temp, 4);
     return sendpacket(ip_port, packet, sizeof(packet));
     
 }
@@ -354,8 +360,8 @@ int send_SYNC(uint32_t connection_id)
     
     IP_Port ip_port = connections[connection_id].ip_port;
     uint8_t counter = connections[connection_id].send_counter;
-    uint32_t recv_packetnum = connections[connection_id].recv_packetnum;
-    uint32_t sent_packetnum = connections[connection_id].sent_packetnum;
+    uint32_t recv_packetnum = htonl(connections[connection_id].recv_packetnum);
+    uint32_t sent_packetnum = htonl(connections[connection_id].sent_packetnum);
     uint32_t requested[BUFFER_PACKET_NUM];
     uint32_t number = missing_packets(connection_id, requested);
     
@@ -376,9 +382,11 @@ int send_SYNC(uint32_t connection_id)
 int send_data_packet(uint32_t connection_id, uint32_t packet_num)
 {
     uint32_t index = packet_num % MAX_QUEUE_NUM;
+    uint32_t temp;
     char packet[1 + 4 + MAX_DATA_SIZE];
     packet[0] = 18;
-    memcpy(packet + 1, &packet_num, 4);
+    temp = htonl(packet_num);
+    memcpy(packet + 1, &temp, 4);
     memcpy(packet + 5, connections[connection_id].sendbuffer[index].data, 
                        connections[connection_id].sendbuffer[index].size);
     return sendpacket(connections[connection_id].ip_port, packet,
@@ -420,11 +428,13 @@ int handle_handshake(char * packet, uint32_t length, IP_Port source)
     {
             return 1;
     }
+    uint32_t temp;
     uint32_t handshake_id1, handshake_id2;
     int connection = getconnection_id(source);
-    memcpy(&handshake_id1, packet + 1, 4);
-    memcpy(&handshake_id2, packet + 5, 4);
-    
+    memcpy(&temp, packet + 1, 4);
+    handshake_id1 = ntohl(temp);
+    memcpy(&temp, packet + 5, 4);
+    handshake_id2 = ntohl(temp);
     
     if(handshake_id2 == 0)
     {
@@ -505,6 +515,7 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
                  uint16_t number)
 {
     uint8_t comp_counter = (counter - connections[connection_id].recv_counter );
+    uint32_t i, temp;
     //uint32_t comp_1 = (recv_packetnum - connections[connection_id].successful_sent);
     //uint32_t comp_2 = (sent_packetnum - connections[connection_id].successful_read);
     uint32_t comp_1 = (recv_packetnum - connections[connection_id].orecv_packetnum);
@@ -517,7 +528,11 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
         connections[connection_id].last_recv = current_time();
         connections[connection_id].recv_counter = counter;
         connections[connection_id].send_counter++;
-        memcpy(connections[connection_id].req_packets, req_packets, 4 * number);
+        for(i = 0; i < number; i++)
+        {
+            temp = ntohl(req_packets[i]);
+            memcpy(connections[connection_id].req_packets + i, &temp, 4 * number);
+        }
         connections[connection_id].num_req_paquets = number;
         return 0;
     }
@@ -533,13 +548,16 @@ int handle_SYNC(char * packet, uint32_t length, IP_Port source)
     }
     int connection = getconnection_id(source);
     uint8_t counter;
+    uint32_t temp;
     uint32_t recv_packetnum, sent_packetnum;
     uint32_t req_packets[BUFFER_PACKET_NUM];
     uint16_t number = (length - 4 - 4 - 2)/ 4;
     
     memcpy(&counter, packet + 1, 1);
-    memcpy(&recv_packetnum, packet + 2, 4);
-    memcpy(&sent_packetnum,packet + 6,  4);
+    memcpy(&temp, packet + 2, 4);
+    recv_packetnum = ntohl(temp);
+    memcpy(&temp,packet + 6,  4);
+    sent_packetnum = ntohl(temp);
     if(number != 0)
     {
         memcpy(req_packets, packet + 10,  4 * number);
@@ -613,10 +631,12 @@ int handle_data(char * packet, uint32_t length, IP_Port source)
     {
         return 1;
     }
+    uint32_t temp;
     uint32_t number;
     uint16_t size = length - 1 - 4;
     
-    memcpy(&number, packet + 1, 4);
+    memcpy(&temp, packet + 1, 4);
+    number = ntohl(temp);
     return add_recv(connection, number, packet + 5, size);
     
 }

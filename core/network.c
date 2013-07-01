@@ -70,8 +70,8 @@ int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
 {
     ADDR addr;
     uint32_t addrlen = sizeof(addr);
-    (*(int *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
-    if(*(int *)length <= 0)
+    (*(int32_t *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    if(*(int32_t *)length <= 0)
     {
         //nothing received
         //or empty packet
