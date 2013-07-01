@@ -10,7 +10,7 @@
 #include "asm-xml.h"
 
 static const int  chunkSize = 16*1024*1024; // 16Mk
-static const char schemaFilename[] = "schema.xml";
+static const char schemaFilename[] = "friends_schema.xml";
 static const char xmlFilename[]    = "friends.xml";
 
 char buffer[65536];
