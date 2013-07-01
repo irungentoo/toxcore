@@ -1,0 +1,29 @@
+Protocol for messages, data, video, etc..
+
+The protocol itself will run on top of the encryption which means it should be 
+impossible for someone to know what type of data is being transmitted.(Well they 
+could just analyze how much data is being transmitted for a pretty good guess)
+
+Because it runs on the encryption which itself runs on our Lossless UDP protocol
+it can be guaranteed that no data will be lost.
+
+Basic packet format:
+[char data_id][data]
+
+data_id represents the type of data.
+
+EX: data_id 64 designates a chat message. so the packet would look like: @Hello WorldNULL
+Where @ is the ASCII character for 64, "Hello World" is the message and NULL is the null string terminator.
+
+Proposed data_ids and what they mean (in decimal)
+
+ids 0 to 16 are reserved.
+
+
+64 Chat message
+65 Audio Data(Voip)
+66 Video?
+67 File transmission.
+68 
+69 
+...
