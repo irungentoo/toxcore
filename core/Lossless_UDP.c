@@ -563,17 +563,15 @@ int handle_SYNC(char * packet, uint32_t length, IP_Port source)
     }
     if(connection == -1)
     {
-        handle_SYNC1(source, recv_packetnum, sent_packetnum);
-        return 0;
+        return handle_SYNC1(source, recv_packetnum, sent_packetnum);
     }
     if(connections[connection].status ==  2)
     {
-        handle_SYNC2(connection, counter, recv_packetnum, sent_packetnum);
-        return 0;
+        return handle_SYNC2(connection, counter, recv_packetnum, sent_packetnum);
     }
     if(connections[connection].status ==  3)
     {
-        handle_SYNC3(connection, counter, recv_packetnum, sent_packetnum, req_packets, number);
+        return handle_SYNC3(connection, counter, recv_packetnum, sent_packetnum, req_packets, number);
     }    
     return 0;
 }
