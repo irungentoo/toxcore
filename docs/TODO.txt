@@ -1,6 +1,10 @@
 Things to do now:
 
--Network protocol for clients when they know their ips.
+-Network protocol (Done)
+
+-Figure out the best way to do "lossless" UDP. (Done)
+
+-Start work on the im protocol.
 
 -Start coding the gui
 
@@ -11,7 +15,7 @@ Things to do now:
     It looks pretty good so far
     It's licenced under the WTFPL which is perfect.
 
--Figure out the best way to do "lossless" UDP.
+-Find and fix bugs in the code.
 
 Things to do later:
 

@@ -310,8 +310,7 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
     uint32_t number = 0;
     uint32_t i;
     uint32_t temp;
-    
-    if(recvqueue(connection_id) >= BUFFER_PACKET_NUM)//don't request packets if the buffer is full.
+    if(recvqueue(connection_id) >= (BUFFER_PACKET_NUM - 1))//don't request packets if the buffer is full.
     {
         return 0;
     }
