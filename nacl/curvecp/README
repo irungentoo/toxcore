@@ -1,0 +1,10 @@
+Example of use (with nacl-20110221/build/*/bin in $PATH):
+  curvecpmakekey serverkey
+  curvecpprintkey serverkey > serverkey.hex
+  curvecpserver this.machine.name serverkey \
+    127.0.0.1 10000 31415926535897932384626433832795 \
+      curvecpmessage cat /usr/share/dict/words &
+  curvecpclient this.machine.name `cat serverkey.hex` \
+    127.0.0.1 10000 31415926535897932384626433832795 \
+      curvecpmessage -c sh -c 'nacl-sha512 <&6'
+  nacl-sha512 < /usr/share/dict/words

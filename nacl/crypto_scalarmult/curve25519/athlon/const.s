@@ -1,0 +1,114 @@
+.data
+.section .rodata
+.p2align 5
+
+.globl crypto_scalarmult_curve25519_athlon_scale
+.globl crypto_scalarmult_curve25519_athlon_121665
+.globl crypto_scalarmult_curve25519_athlon_alpha26
+.globl crypto_scalarmult_curve25519_athlon_alpha51
+.globl crypto_scalarmult_curve25519_athlon_alpha77
+.globl crypto_scalarmult_curve25519_athlon_alpha102
+.globl crypto_scalarmult_curve25519_athlon_alpha128
+.globl crypto_scalarmult_curve25519_athlon_alpha153
+.globl crypto_scalarmult_curve25519_athlon_alpha179
+.globl crypto_scalarmult_curve25519_athlon_alpha204
+.globl crypto_scalarmult_curve25519_athlon_alpha230
+.globl crypto_scalarmult_curve25519_athlon_alpha255
+.globl crypto_scalarmult_curve25519_athlon_in0offset
+.globl crypto_scalarmult_curve25519_athlon_in1offset
+.globl crypto_scalarmult_curve25519_athlon_in2offset
+.globl crypto_scalarmult_curve25519_athlon_in3offset
+.globl crypto_scalarmult_curve25519_athlon_in4offset
+.globl crypto_scalarmult_curve25519_athlon_in5offset
+.globl crypto_scalarmult_curve25519_athlon_in6offset
+.globl crypto_scalarmult_curve25519_athlon_in7offset
+.globl crypto_scalarmult_curve25519_athlon_in8offset
+.globl crypto_scalarmult_curve25519_athlon_in9offset
+.globl crypto_scalarmult_curve25519_athlon_out0offset
+.globl crypto_scalarmult_curve25519_athlon_out1offset
+.globl crypto_scalarmult_curve25519_athlon_out2offset
+.globl crypto_scalarmult_curve25519_athlon_out3offset
+.globl crypto_scalarmult_curve25519_athlon_out4offset
+.globl crypto_scalarmult_curve25519_athlon_out5offset
+.globl crypto_scalarmult_curve25519_athlon_out6offset
+.globl crypto_scalarmult_curve25519_athlon_out7offset
+.globl crypto_scalarmult_curve25519_athlon_out8offset
+.globl crypto_scalarmult_curve25519_athlon_out9offset
+.globl crypto_scalarmult_curve25519_athlon_two0
+.globl crypto_scalarmult_curve25519_athlon_two1
+.globl crypto_scalarmult_curve25519_athlon_zero
+.globl crypto_scalarmult_curve25519_athlon_rounding
+
+crypto_scalarmult_curve25519_athlon_scale:
+	.long 0x0,0x30430000
+crypto_scalarmult_curve25519_athlon_121665:
+	.long 0x0,0x40fdb410
+crypto_scalarmult_curve25519_athlon_in0offset:
+	.long 0x0,0x43300000
+crypto_scalarmult_curve25519_athlon_in1offset:
+	.long 0x0,0x45300000
+crypto_scalarmult_curve25519_athlon_in2offset:
+	.long 0x0,0x46b00000
+crypto_scalarmult_curve25519_athlon_in3offset:
+	.long 0x0,0x48300000
+crypto_scalarmult_curve25519_athlon_in4offset:
+	.long 0x0,0x49b00000
+crypto_scalarmult_curve25519_athlon_in5offset:
+	.long 0x0,0x4b300000
+crypto_scalarmult_curve25519_athlon_in6offset:
+	.long 0x0,0x4d300000
+crypto_scalarmult_curve25519_athlon_in7offset:
+	.long 0x0,0x4eb00000
+crypto_scalarmult_curve25519_athlon_in8offset:
+	.long 0x0,0x50300000
+crypto_scalarmult_curve25519_athlon_in9offset:
+	.long 0x0,0x51b00000
+crypto_scalarmult_curve25519_athlon_alpha26:
+	.long 0x0,0x45880000
+crypto_scalarmult_curve25519_athlon_alpha51:
+	.long 0x0,0x47180000
+crypto_scalarmult_curve25519_athlon_alpha77:
+	.long 0x0,0x48b80000
+crypto_scalarmult_curve25519_athlon_alpha102:
+	.long 0x0,0x4a480000
+crypto_scalarmult_curve25519_athlon_alpha128:
+	.long 0x0,0x4be80000
+crypto_scalarmult_curve25519_athlon_alpha153:
+	.long 0x0,0x4d780000
+crypto_scalarmult_curve25519_athlon_alpha179:
+	.long 0x0,0x4f180000
+crypto_scalarmult_curve25519_athlon_alpha204:
+	.long 0x0,0x50a80000
+crypto_scalarmult_curve25519_athlon_alpha230:
+	.long 0x0,0x52480000
+crypto_scalarmult_curve25519_athlon_alpha255:
+	.long 0x0,0x53d80000
+crypto_scalarmult_curve25519_athlon_two0:
+	.long 0x0,0x3ff00000
+crypto_scalarmult_curve25519_athlon_two1:
+	.long 0x0,0x40000000
+crypto_scalarmult_curve25519_athlon_zero:
+	.long 0x0,0x0
+crypto_scalarmult_curve25519_athlon_out0offset:
+	.long 0x1fffffed,0x43380000
+crypto_scalarmult_curve25519_athlon_out1offset:
+	.long 0xffffff8,0x44d80000
+crypto_scalarmult_curve25519_athlon_out2offset:
+	.long 0x1ffffff8,0x46680000
+crypto_scalarmult_curve25519_athlon_out3offset:
+	.long 0xffffff8,0x48080000
+crypto_scalarmult_curve25519_athlon_out4offset:
+	.long 0x1ffffff8,0x49980000
+crypto_scalarmult_curve25519_athlon_out5offset:
+	.long 0xffffff8,0x4b380000
+crypto_scalarmult_curve25519_athlon_out6offset:
+	.long 0x1ffffff8,0x4cc80000
+crypto_scalarmult_curve25519_athlon_out7offset:
+	.long 0xffffff8,0x4e680000
+crypto_scalarmult_curve25519_athlon_out8offset:
+	.long 0x1ffffff8,0x4ff80000
+crypto_scalarmult_curve25519_athlon_out9offset:
+	.long 0x1fffff8,0x51980000
+crypto_scalarmult_curve25519_athlon_rounding:
+	.byte 0x7f
+	.byte 0x13
