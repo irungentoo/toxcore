@@ -6,14 +6,12 @@ Things to do now:
 
 -Start work on the im protocol.
 
--Start coding the gui
+-Start coding the gui (In Progress (Using Qt5))
 
 -Get a basic im client working using the now completed DHT implementation to find the ips of your friends.
 
--Find some good encryption libraries.
-    I found this: http://libtom.org/
-    It looks pretty good so far
-    It's licenced under the WTFPL which is perfect.
+-Find some good encryption libraries.(Done)
+    we will use: http://nacl.cr.yp.to/
 
 -Find and fix bugs in the code.
 
