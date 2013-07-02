@@ -13,6 +13,8 @@ Things to do now:
 -Find some good encryption libraries.(Done)
     we will use: http://nacl.cr.yp.to/
 
+-Add NaCl to our build system.
+
 -Find and fix bugs in the code.
 
 Things to do later:
