@@ -17,10 +17,10 @@ Adding a friend:
     
     case 1:
         Alice connects to Bob and sends a data packet (friends request) like so:
-            [char with a value of 01][Alice's Public key (client_id) (32 bits)][Random nonce (24 bits)][Encrypted message]
+            [char with a value of 01][Alice's Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted message]
 
         Where the encrypted message is encrypted with crypto_box() (using Bobs public key, Alice's private key 
-        and the nonce (randomly generated 24bits)) and is a message from Alice in which she tells Bob who she is.
+        and the nonce (randomly generated 24 bytes)) and is a message from Alice in which she tells Bob who she is.
         Ex: hello bob it's me alice -_- add me pl0x.
         
         Bob receives the request and decrypts the message using the function crypto_box_open()
@@ -42,7 +42,7 @@ Connecting to an already added friend:
     Alice and Bob are friends.
     As soon as they connect they each send themselves the following packet (encrypted part encrypted with the public nonce in the packet
     the public key of the receiver and private key of the sender)
-        [char with a value of 02][Random nonce (24 bits)][Encrypted message containing a random 24 bit base nonce]
+        [char with a value of 02][Random nonce (24 bytes)][Encrypted message containing a random 24 bytes base nonce]
     If the packet is decrypted successfully:
     Each start using the secret nonce provided by the other to encrypt data packets (adding to it + 1 for each packet.)
     Data packet:
