@@ -28,6 +28,11 @@
 #include "network.h"
 
 
+//maximum length of the data in the data packets
+#define MAX_DATA_SIZE 1024
+
+
+
 //Functions
 
 //initialize a new connection to ip_port

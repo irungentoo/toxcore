@@ -40,10 +40,10 @@ uint64_t current_time()
     
 }
 
-int random_int()
+uint32_t random_int()
 {
     #ifdef WIN32
-    //TODO replace rand with a more random windows function
+    //TODO replace rand with something cryptograhically secure
     return rand();
     #else
     return random();

@@ -80,7 +80,7 @@ typedef struct
 uint64_t current_time();
 
 //return a random number
-int random_int();
+uint32_t random_int();
 
 //Basic network functions:
 

@@ -27,11 +27,11 @@
 
 
 
- //maximum data packets in sent and recieve queues.
+//maximum data packets in sent and recieve queues.
 #define MAX_QUEUE_NUM 16
 
 //maximum length of the data in the data packets
-#define MAX_DATA_SIZE 1024
+//#define MAX_DATA_SIZE 1024 //defined in Lossless_UDP.h
 
 //maximum number of data packets in the buffer
 #define BUFFER_PACKET_NUM (16-1)
