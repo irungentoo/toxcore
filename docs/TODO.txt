@@ -15,10 +15,9 @@ Things to do now:
 
 -Add NaCl to our build system.
 
--Make NaCl work on windows
-    The randombytes function for example in NaCl needs to be ported to windows (it works by reading bytes from /dev/urandom)
-    The first result on google for how to compile it on windows replaces /dev/urandom with rand() (DO NOT DO THIS)
-    Instead replace it with RtlGenRandom() or rand_s().
+-Make NaCl work on windows (DONE)
+    https://github.com/jedisct1/libsodium
+    
 
 -Crypto (In progress)
 
