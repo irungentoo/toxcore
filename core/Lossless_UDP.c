@@ -40,10 +40,10 @@
 #define CONNEXION_TIMEOUT 10
 
 //initial amount of sync/hanshake packets to send per second.
-#define SYNC_RATE 50
+#define SYNC_RATE 10
 
-//initial send rate of sync packets when data is being sent/recieved.
-#define DATA_SYNC_RATE 200
+//initial send rate of data.
+#define DATA_SYNC_RATE 30
 
 typedef struct
 {

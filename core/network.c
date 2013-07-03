@@ -25,26 +25,34 @@
 #include "network.h"
 
 
-//returns current time in milliseconds since the epoch.
+//returns current UNIX time in microseconds (us).
 uint64_t current_time()
 {
     uint64_t time;
     #ifdef WIN32
-    //TODO: windows version
+    //This probably works fine
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    time = ft.dwHighDateTime;
+    time <<=32;
+    time |= ft.dwLowDateTime;
+    time -= 116444736000000000UL;
+    return time/10;
     #else
     struct timeval a;
     gettimeofday(&a, NULL);
     time = 1000000UL*a.tv_sec + a.tv_usec;
-    #endif
     return time;
+    #endif
+    
     
 }
 
 uint32_t random_int()
 {
     #ifdef WIN32
-    //TODO replace rand with something cryptograhically secure
-    return rand();
+    //NOTE: this function comes from libsodium
+    return randombytes_random();
     #else
     return random();
     #endif
@@ -69,7 +77,11 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
 {
     ADDR addr;
+    #ifdef WIN32
+    int addrlen = sizeof(addr);
+    #else
     uint32_t addrlen = sizeof(addr);
+    #endif    
     (*(int32_t *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
     if(*(int32_t *)length <= 0)
     {
