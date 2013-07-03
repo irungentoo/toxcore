@@ -11,16 +11,15 @@ Proposal of a free as in freedom skype replacement:
 
 UDP must be used for everything simply because you can't do hole punching with TCP (well you can but it doesn't work all the time)
     
-Every peer is represented as a byte string (the client id) (it is the hash (SHA-256?) of the public key of the peer). (if you want to add someone you need that id (either ask that person directly or maybe through some kind of search engine?))
+Every peer is represented as a byte string (the client id) (It is the public key of the peer.). (if you want to add someone you need that id (either ask that person directly or maybe through some kind of search engine?))
     
 Use something torrent DHT style so that peers can find the ip of the other peers when they have their id.
     
-Once the client has the ip of that peer they start initiating a secure connection with each other.(asymmetric encryption(RSA?)  is used to encrypt the session keys for the symmetric(AES?) encryption so that they are exchanged securely) 
-(We can't use public key encryption for everything it's too fucking slow) man in the middle attacks are avoided because the id is the hash of the public key (the client can be sure it's legit.)
+Once the client has the ip of that peer they start initiating a secure connection with each other.(See Crypto.)
     
-When both peers are securely connected with the encryption(AES?) they can securely exchange messages, initiate a video chat, send files, etc...
+When both peers are securely connected with the encryption they can securely exchange messages, initiate a video chat, send files, etc...
     
-Your client stores the id of the peers along with their public keys used to initiate the connection (this is your contacts list)
+Your client stores the public keys/id of the peers used to initiate the connection (this is your contacts list)
 
 ## Roadmap:
 
@@ -48,3 +47,6 @@ DHT protocol:
 Lossless UDP protocol:
     Either we find one with an already working implementation (Didn't find a good implementation, writing my own)
     see also: [docs/Lossless_UDP.txt](/docs/Lossless_UDP.txt)
+
+Crypto:
+    see: [docs/Crypto.txt](/docs/Crypto.txt)
