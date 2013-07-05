@@ -47,18 +47,19 @@
 
 typedef struct
 {
-    char data[MAX_DATA_SIZE];
+    uint8_t data[MAX_DATA_SIZE];
     uint16_t size;
 }Data;
 
 typedef struct
 {
     IP_Port ip_port;
-    char status;//0 if connection is dead, 1 if attempting handshake, 
+    uint8_t status;//0 if connection is dead, 1 if attempting handshake, 
                 //2 if handshake is done (we start sending SYNC packets)
                 //3 if we are sending SYNC packets and can send data
+                //4 if the connection has timed out.
     
-    char inbound; //1 or 2 if connection was initiated by someone else, 0 if not. 
+    uint8_t inbound; //1 or 2 if connection was initiated by someone else, 0 if not. 
                   //2 if incoming_connection() has not returned it yet, 1 if it has.
                   
     uint16_t SYNC_rate;//current SYNC packet send rate packets per second.
@@ -66,6 +67,7 @@ typedef struct
     uint64_t last_SYNC; //time at which our last SYNC packet was sent.
     uint64_t last_sent; //time at which our last data or handshake packet was sent.
     uint64_t last_recv; //time at which we last recieved something from the other
+    uint64_t killat; //time at which to kill the connection
     Data sendbuffer[MAX_QUEUE_NUM];//packet send buffer.
     Data recvbuffer[MAX_QUEUE_NUM];//packet recieve buffer.
     uint32_t handshake_id1;
@@ -160,6 +162,7 @@ int new_connection(IP_Port ip_port)
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
             connections[i].last_recv = current_time();
+            connections[i].killat = ~0;
             connections[i].send_counter = 0;
             return i;
         }
@@ -187,6 +190,7 @@ int new_inconnection(IP_Port ip_port)
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
             connections[i].last_recv = current_time();
+            connections[i].killat = ~0;
             connections[i].send_counter = 127;
             return i;
         }
@@ -225,11 +229,28 @@ int kill_connection(int connection_id)
     return -1;
 }
 
+//kill connection in seconds seconds.
+//return -1 if it can not kill the connection.
+//return 0 if it will kill it
+int kill_connection_in(int connection_id, uint32_t seconds)
+{
+    if(connection_id >= 0 && connection_id < MAX_CONNECTIONS)
+    {
+        if(connections[connection_id].status > 0)
+        {
+                connections[connection_id].killat = current_time() + 1000000UL*seconds;
+                return 0;
+        }
+    }
+    return -1;
+}
+
 //check if connection is connected
 //return 0 no.
 //return 1 if attempting handshake
 //return 2 if handshake is done
 //return 3 if fully connected
+//return 4 if timed out and wating to be killed
 int is_connected(int connection_id)
 {
     if(connection_id >= 0 && connection_id < MAX_CONNECTIONS)
@@ -262,9 +283,19 @@ uint32_t recvqueue(int connection_id)
     return connections[connection_id].recv_packetnum - connections[connection_id].successful_read;
 }
 
+//returns the id of the next packet in the queue
+//return -1 if no packet in queue
+char id_packet(int connection_id)
+{
+    if(recvqueue(connection_id) != 0 && connections[connection_id].status != 0)
+    {
+        return connections[connection_id].recvbuffer[connections[connection_id].successful_read % MAX_QUEUE_NUM].data[0];
+    }
+    return -1;
+}
 //return 0 if there is no received data in the buffer.
 //return length of received packet if successful
-int read_packet(int connection_id, char * data)
+int read_packet(int connection_id, uint8_t * data)
 {
     if(recvqueue(connection_id) != 0)
     {
@@ -280,7 +311,7 @@ int read_packet(int connection_id, char * data)
 
 //return 0 if data could not be put in packet queue
 //return 1 if data was put into the queue
-int write_packet(int connection_id, char * data, uint32_t length)
+int write_packet(int connection_id, uint8_t * data, uint32_t length)
 {
     if(length > MAX_DATA_SIZE)
     {
@@ -338,7 +369,7 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
 
 int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
 {
-    char packet[1 + 4 + 4];
+    uint8_t packet[1 + 4 + 4];
     uint32_t temp;
     
     packet[0] = 16;
@@ -354,7 +385,7 @@ int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_i
 int send_SYNC(uint32_t connection_id)
 {
     
-    char packet[(BUFFER_PACKET_NUM*4 + 4 + 4 + 2)];
+    uint8_t packet[(BUFFER_PACKET_NUM*4 + 4 + 4 + 2)];
     uint16_t index = 0;
     
     IP_Port ip_port = connections[connection_id].ip_port;
@@ -382,7 +413,7 @@ int send_data_packet(uint32_t connection_id, uint32_t packet_num)
 {
     uint32_t index = packet_num % MAX_QUEUE_NUM;
     uint32_t temp;
-    char packet[1 + 4 + MAX_DATA_SIZE];
+    uint8_t packet[1 + 4 + MAX_DATA_SIZE];
     packet[0] = 18;
     temp = htonl(packet_num);
     memcpy(packet + 1, &temp, 4);
@@ -421,7 +452,7 @@ int send_DATA(uint32_t connection_id)
 //Packet handling functions
 //One to handle each type of packets we recieve
 //return 0 if handled correctly, 1 if packet is bad.
-int handle_handshake(char * packet, uint32_t length, IP_Port source)
+int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
 {    
     if(length != (1 + 4 + 4))
     {
@@ -538,7 +569,7 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
     return 1;
 }
 
-int handle_SYNC(char * packet, uint32_t length, IP_Port source)
+int handle_SYNC(uint8_t * packet, uint32_t length, IP_Port source)
 {
 
     if(!SYNC_valid(length))
@@ -578,7 +609,7 @@ int handle_SYNC(char * packet, uint32_t length, IP_Port source)
 
 //add a packet to the recieved buffer and set the recv_packetnum of the connection to its proper value.
 //return 1 if data was too big, 0 if not.
-int add_recv(int connection_id, uint32_t data_num, char * data, uint16_t size)
+int add_recv(int connection_id, uint32_t data_num, uint8_t * data, uint16_t size)
 {
     if(size > MAX_DATA_SIZE)
     {
@@ -616,7 +647,7 @@ int add_recv(int connection_id, uint32_t data_num, char * data, uint16_t size)
     return 0;
 }
 
-int handle_data(char * packet, uint32_t length, IP_Port source)
+int handle_data(uint8_t * packet, uint32_t length, IP_Port source)
 {
     int connection = getconnection_id(source);
     
@@ -641,7 +672,7 @@ int handle_data(char * packet, uint32_t length, IP_Port source)
 //END of packet handling functions
 
 
-int LosslessUDP_handlepacket(char * packet, uint32_t length, IP_Port source)
+int LosslessUDP_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
 
     switch (packet[0]) {
@@ -681,7 +712,13 @@ void doNew()
 
         }
         //kill all timed out connections
-        if( connections[i].status > 0 && (connections[i].last_recv + CONNEXION_TIMEOUT * 1000000UL) < temp_time)
+        if( connections[i].status > 0 && (connections[i].last_recv + CONNEXION_TIMEOUT * 1000000UL) < temp_time && 
+            connections[i].status != 4)
+        {
+            //kill_connection(i);
+            connections[i].status = 4;
+        }
+        if(connections[i].status > 0 && connections[i].killat < temp_time)
         {
             kill_connection(i);
         }

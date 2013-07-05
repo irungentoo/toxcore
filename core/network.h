@@ -95,12 +95,12 @@ uint32_t random_int();
 //Basic network functions:
 
 //Function to send packet(data) of length length to ip_port
-int sendpacket(IP_Port ip_port, char * data, uint32_t length);
+int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length);
 
 //Function to recieve data, ip and port of sender is put into ip_port
 //the packet data into data
 //the packet length into length.
-int recievepacket(IP_Port * ip_port, char * data, uint32_t * length);
+int recievepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
 
 //initialize networking
 //bind to ip and port

@@ -63,10 +63,10 @@ static int sock;
 
 //Basic network functions:
 //Function to send packet(data) of length length to ip_port
-int sendpacket(IP_Port ip_port, char * data, uint32_t length)
+int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip}; 
-    return sendto(sock, data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
+    return sendto(sock,(char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
     
 }
 
@@ -74,7 +74,7 @@ int sendpacket(IP_Port ip_port, char * data, uint32_t length)
 //the packet data into data
 //the packet length into length.
 //dump all empty packets.
-int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
+int recievepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
 {
     ADDR addr;
     #ifdef WIN32
@@ -82,7 +82,7 @@ int recievepacket(IP_Port * ip_port, char * data, uint32_t * length)
     #else
     uint32_t addrlen = sizeof(addr);
     #endif    
-    (*(int32_t *)length) = recvfrom(sock, data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    (*(int32_t *)length) = recvfrom(sock,(char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
     if(*(int32_t *)length <= 0)
     {
         //nothing received

@@ -27,13 +27,13 @@
 
 #include "DHT.h"
 
-char self_client_id[CLIENT_ID_SIZE];
+uint8_t self_client_id[CLIENT_ID_SIZE];
 
 //Compares client_id1 and client_id2 with client_id
 //return 0 if both are same distance
 //return 1 if client_id1 is closer.
 //return 2 if client_id2 is closer.
-int id_closest(char * client_id, char * client_id1, char * client_id2)//tested
+int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)//tested
 {
     uint32_t i;
     for(i = 0; i < CLIENT_ID_SIZE; i++)
@@ -58,7 +58,7 @@ int id_closest(char * client_id, char * client_id1, char * client_id2)//tested
 //if the ip_port is already in the list but associated to a different ip, change it.
 //return True(1) or False(0)
 //TODO: maybe optimize this.
-int client_in_list(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port)
+int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
 {
     uint32_t i, j;
     uint32_t temp_time = unix_time();
@@ -92,7 +92,7 @@ int client_in_list(Client_data * list, uint32_t length, char * client_id, IP_Por
 
 //check if client with client_id is already in node format list of length length.
 //return True(1) or False(0)
-int client_in_nodelist(Node_format * list, uint32_t length, char * client_id)
+int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
 {
     uint32_t i, j;
     for(i = 0; i < length; i++)
@@ -126,7 +126,7 @@ int client_in_nodelist(Node_format * list, uint32_t length, char * client_id)
 //Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
 //put them in the nodes_list and return how many were found.
 //TODO: Make this function much more efficient.
-int get_close_nodes(char * client_id, Node_format * nodes_list)
+int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 {
     uint32_t i, j, k;
     int num_nodes=0;
@@ -191,7 +191,7 @@ int get_close_nodes(char * client_id, Node_format * nodes_list)
 //replace first bad (or empty) node with this one
 //return 0 if successfull
 //return 1 if not (list contains no bad nodes)
-int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port)//tested
+int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)//tested
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -210,7 +210,7 @@ int replace_bad(Client_data * list, uint32_t length, char * client_id, IP_Port i
 }
 
 //replace the first good node that is further to the comp_client_id than that of the client_id in the list
-int replace_good(Client_data * list, uint32_t length, char * client_id, IP_Port ip_port, char * comp_client_id)
+int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port, uint8_t * comp_client_id)
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -230,7 +230,7 @@ int replace_good(Client_data * list, uint32_t length, char * client_id, IP_Port 
 }
 
 //Attempt to add client with ip_port and client_id to the friends client list and close_clientlist
-void addto_lists(IP_Port ip_port, char * client_id)
+void addto_lists(IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
     
@@ -414,7 +414,7 @@ int pingreq(IP_Port ip_port)
         return 1;
     }
     
-    char data[5 + CLIENT_ID_SIZE];
+    uint8_t data[5 + CLIENT_ID_SIZE];
     data[0] = 0;
     memcpy(data + 1, &ping_id, 4);
     memcpy(data + 5, self_client_id, CLIENT_ID_SIZE);
@@ -427,7 +427,7 @@ int pingreq(IP_Port ip_port)
 //send a ping response
 int pingres(IP_Port ip_port, uint32_t ping_id)
 {
-    char data[5 + CLIENT_ID_SIZE];
+    uint8_t data[5 + CLIENT_ID_SIZE];
     data[0] = 1;
     
     memcpy(data + 1, &ping_id, 4);
@@ -438,7 +438,7 @@ int pingres(IP_Port ip_port, uint32_t ping_id)
 }
 
 //send a getnodes request
-int getnodes(IP_Port ip_port, char * client_id)
+int getnodes(IP_Port ip_port, uint8_t * client_id)
 {
     if(is_gettingnodes(ip_port, 0))
     {
@@ -452,7 +452,7 @@ int getnodes(IP_Port ip_port, char * client_id)
         return 1;
     }
     
-    char data[5 + CLIENT_ID_SIZE*2];
+    uint8_t data[5 + CLIENT_ID_SIZE*2];
     data[0] = 2;
     
     memcpy(data + 1, &ping_id, 4);
@@ -465,9 +465,9 @@ int getnodes(IP_Port ip_port, char * client_id)
 
 
 //send a send nodes response
-int sendnodes(IP_Port ip_port, char * client_id, uint32_t ping_id)
+int sendnodes(IP_Port ip_port, uint8_t * client_id, uint32_t ping_id)
 {
-    char data[5 + CLIENT_ID_SIZE + (CLIENT_ID_SIZE + sizeof(IP_Port))*MAX_SENT_NODES];
+    uint8_t data[5 + CLIENT_ID_SIZE + (CLIENT_ID_SIZE + sizeof(IP_Port))*MAX_SENT_NODES];
     Node_format nodes_list[MAX_SENT_NODES];
 
     int num_nodes = get_close_nodes(client_id, nodes_list);
@@ -493,7 +493,7 @@ int sendnodes(IP_Port ip_port, char * client_id, uint32_t ping_id)
 //Packet handling functions
 //One to handle each types of packets we recieve
 //return 0 if handled correctly, 1 if packet is bad.
-int handle_pingreq(char * packet, uint32_t length, IP_Port source)//tested
+int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)//tested
 {
     if(length != 5 + CLIENT_ID_SIZE)
     {
@@ -518,7 +518,7 @@ int handle_pingreq(char * packet, uint32_t length, IP_Port source)//tested
     
 }
 
-int handle_pingres(char * packet, uint32_t length, IP_Port source)
+int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if(length != (5 + CLIENT_ID_SIZE))
     {
@@ -536,7 +536,7 @@ int handle_pingres(char * packet, uint32_t length, IP_Port source)
     
 }
 
-int handle_getnodes(char * packet, uint32_t length, IP_Port source)
+int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if(length != (5 + CLIENT_ID_SIZE*2))
     {
@@ -559,7 +559,7 @@ int handle_getnodes(char * packet, uint32_t length, IP_Port source)
     
 }
 
-int handle_sendnodes(char * packet, uint32_t length, IP_Port source)//tested
+int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)//tested
 {
     if(length > (5 + CLIENT_ID_SIZE + MAX_SENT_NODES * (CLIENT_ID_SIZE + sizeof(IP_Port))) || 
     (length - 5 - CLIENT_ID_SIZE) % (CLIENT_ID_SIZE + sizeof(IP_Port)) != 0)
@@ -593,7 +593,7 @@ int handle_sendnodes(char * packet, uint32_t length, IP_Port source)//tested
 
 
 
-int addfriend(char * client_id)
+int addfriend(uint8_t * client_id)
 {
     //TODO:Maybe make the array of friends dynamic instead of a static array with MAX_FRIENDS
     if(MAX_FRIENDS > num_friends)
@@ -610,7 +610,7 @@ int addfriend(char * client_id)
 
 
 
-int delfriend(char * client_id)
+int delfriend(uint8_t * client_id)
 {
     uint32_t i;
     for(i = 0; i < num_friends; i++)
@@ -630,7 +630,7 @@ int delfriend(char * client_id)
 
 
 //TODO: Optimize this.
-IP_Port getfriendip(char * client_id)
+IP_Port getfriendip(uint8_t * client_id)
 {
     uint32_t i, j;
     IP_Port empty = {{{0}}, 0};
@@ -660,7 +660,7 @@ IP_Port getfriendip(char * client_id)
 
 
 
-int DHT_handlepacket(char * packet, uint32_t length, IP_Port source)
+int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) {
     case 0:

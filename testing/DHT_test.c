@@ -80,7 +80,7 @@ void print_friendlist()
     }
 }
 
-void printpacket(char * data, uint32_t length, IP_Port ip_port)
+void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
         printf("usage %s ip port client_id(of friend to find ip_port of)\n", argv[0]);
         exit(0);
     }
-    addfriend(argv[3]);
+    addfriend((uint8_t *)argv[3]);
     
     //initialize networking
     //bind to ip 0.0.0.0:PORT
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     bootstrap(bootstrap_ip_port);
     
     IP_Port ip_port;
-    char data[MAX_UDP_PACKET_SIZE];
+    uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     
     while(1)

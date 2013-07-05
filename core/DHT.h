@@ -36,7 +36,7 @@
 
 typedef struct
 {
-    char client_id[CLIENT_ID_SIZE];
+    uint8_t client_id[CLIENT_ID_SIZE];
     IP_Port ip_port;
     uint32_t timestamp;
     uint32_t last_pinged;
@@ -45,7 +45,7 @@ typedef struct
 #define MAX_FRIEND_CLIENTS 8
 typedef struct
 {
-    char client_id[CLIENT_ID_SIZE];
+    uint8_t client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
     
 }Friend;
@@ -53,7 +53,7 @@ typedef struct
 
 typedef struct
 {
-    char client_id[CLIENT_ID_SIZE];
+    uint8_t client_id[CLIENT_ID_SIZE];
     IP_Port ip_port;
 }Node_format;
 
@@ -70,13 +70,13 @@ typedef struct
 //client_id must be CLIENT_ID_SIZE bytes long.
 //returns 0 if success
 //returns 1 if failure (friends list is full)
-int addfriend(char * client_id);
+int addfriend(uint8_t * client_id);
 
 //Delete a friend from the friends list
 //client_id must be CLIENT_ID_SIZE bytes long.
 //returns 0 if success
 //returns 1 if failure (client_id not in friends list)
-int delfriend(char * client_id);
+int delfriend(uint8_t * client_id);
 
 
 //Get ip of friend
@@ -86,7 +86,7 @@ int delfriend(char * client_id);
 //returns ip if success
 //returns ip of 0 if failure (This means the friend is either offline or we have not found him yet.)
 //returns ip of 1 if friend is not in list.
-IP_Port getfriendip(char * client_id);
+IP_Port getfriendip(uint8_t * client_id);
 
 
 //Run this function at least a couple times per second (It's the main loop)
@@ -95,7 +95,7 @@ void doDHT();
 //if we recieve a DHT packet we call this function so it can be handled.
 //Return 0 if packet is handled correctly.
 //return 1 if it didn't handle the packet or if the packet was shit.
-int DHT_handlepacket(char * packet, uint32_t length, IP_Port source);
+int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
 
 //Use this function to bootstrap the client
 //Sends a get nodes request to the given ip port
@@ -109,7 +109,7 @@ void bootstrap(IP_Port ip_port);
 //Global variables
 
 //Our client id
-extern char self_client_id[CLIENT_ID_SIZE];
+extern uint8_t self_client_id[CLIENT_ID_SIZE];
 
 
 //TODO: Move these out of here and put them into the .c file.
