@@ -25,9 +25,10 @@ Your client stores the public keys/id of the peers used to initiate the connecti
 
 1. Get our DHT working perfectly.(Done, needs large scale testing though.)
 2. Reliable connection (See Lossless_UDP protocol) to other peers according to client id. (Done, see DHT_sendfiletest.c for an example)
-3. Encryption. (this is where we are now)
-4. Optimize for streaming media.
-5. 
+3. Encryption. (Done)
+4. Get a simple text only im client working perfectly. (This is where we are)
+5. Streaming media
+6. 
 
 ## TODO:
     

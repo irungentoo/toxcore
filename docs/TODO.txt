@@ -19,7 +19,7 @@ Things to do now:
     https://github.com/jedisct1/libsodium
     
 
--Crypto (In progress)
+-Crypto (Done (needs testing))
 
 -Find and fix bugs in the code.
 
