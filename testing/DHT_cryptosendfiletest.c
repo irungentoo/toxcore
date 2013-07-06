@@ -8,7 +8,7 @@
  * NOTE: this program simulates 33% packet loss.
  * 
  * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../nacl/build/Linux/lib/amd64/* DHT_cryptosendfiletest.c 
-*
+ *
  * 
  * Command line arguments are the ip and port of a node (for bootstrapping).
  * 
@@ -167,8 +167,9 @@ int main(int argc, char *argv[])
         {
             uint8_t secret_nonce[crypto_box_NONCEBYTES];
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-            inconnection = crypto_inbound(public_key, secret_nonce);
-            inconnection = accept_crypto_inbound(inconnection, acceptedfriend_public_key, secret_nonce);
+            uint8_t session_key[crypto_box_PUBLICKEYBYTES];
+            inconnection = crypto_inbound(public_key, secret_nonce, session_key);
+            inconnection = accept_crypto_inbound(inconnection, acceptedfriend_public_key, secret_nonce, session_key);
             //inconnection = incoming_connection();
             if(inconnection != -1)
             {
