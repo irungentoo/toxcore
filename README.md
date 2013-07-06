@@ -54,4 +54,4 @@ Crypto:
 
 ### Why are you doing this? There are already a bunch of free skype alternatives.
 
-    see: [docs/WHY.txt](/docs/WHY.txt)
+see: [docs/WHY.txt](/docs/WHY.txt)
