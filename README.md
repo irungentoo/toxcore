@@ -51,3 +51,7 @@ Lossless UDP protocol:
 
 Crypto:
     see: [docs/Crypto.txt](/docs/Crypto.txt)
+
+### Why are you doing this? There are already a bunch of free skype alternatives.
+
+    see: [docs/WHY.txt](/docs/WHY.txt)
