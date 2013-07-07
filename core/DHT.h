@@ -34,49 +34,19 @@
 //size of the client_id in bytes
 #define CLIENT_ID_SIZE 32
 
-typedef struct
-{
-    uint8_t client_id[CLIENT_ID_SIZE];
-    IP_Port ip_port;
-    uint32_t timestamp;
-    uint32_t last_pinged;
-}Client_data;
-//maximum number of clients stored per friend.
-#define MAX_FRIEND_CLIENTS 8
-typedef struct
-{
-    uint8_t client_id[CLIENT_ID_SIZE];
-    Client_data client_list[MAX_FRIEND_CLIENTS];
-    
-}Friend;
-
-
-typedef struct
-{
-    uint8_t client_id[CLIENT_ID_SIZE];
-    IP_Port ip_port;
-}Node_format;
-
-typedef struct
-{
-    IP_Port ip_port;
-    uint32_t ping_id;
-    uint32_t timestamp;
-    
-}Pinged;
 
 
 //Add a new friend to the friends list
 //client_id must be CLIENT_ID_SIZE bytes long.
 //returns 0 if success
 //returns 1 if failure (friends list is full)
-int addfriend(uint8_t * client_id);
+int DHT_addfriend(uint8_t * client_id);
 
 //Delete a friend from the friends list
 //client_id must be CLIENT_ID_SIZE bytes long.
 //returns 0 if success
 //returns 1 if failure (client_id not in friends list)
-int delfriend(uint8_t * client_id);
+int DHT_delfriend(uint8_t * client_id);
 
 
 //Get ip of friend
@@ -86,7 +56,7 @@ int delfriend(uint8_t * client_id);
 //returns ip if success
 //returns ip of 0 if failure (This means the friend is either offline or we have not found him yet.)
 //returns ip of 1 if friend is not in list.
-IP_Port getfriendip(uint8_t * client_id);
+IP_Port DHT_getfriendip(uint8_t * client_id);
 
 
 //Run this function at least a couple times per second (It's the main loop)
@@ -99,7 +69,7 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
 
 //Use this function to bootstrap the client
 //Sends a get nodes request to the given ip port
-void bootstrap(IP_Port ip_port);
+void DHT_bootstrap(IP_Port ip_port);
 
 
 //TODO:
@@ -111,28 +81,6 @@ void bootstrap(IP_Port ip_port);
 //Our client id
 extern uint8_t self_client_id[CLIENT_ID_SIZE];
 
-
-//TODO: Move these out of here and put them into the .c file.
-//A list of the clients mathematically closest to ours.
-#define LCLIENT_LIST 32
-Client_data close_clientlist[LCLIENT_LIST];
-
-
-//Hard maximum number of friends 
-#define MAX_FRIENDS 256
-
-//Let's start with a static array for testing.
-Friend friends_list[MAX_FRIENDS];
-uint16_t num_friends;
-
-//The list of ip ports along with the ping_id of what we sent them and a timestamp
-#define LPING_ARRAY 128
-
-Pinged pings[LPING_ARRAY];
-
-#define LSEND_NODES_ARRAY LPING_ARRAY/2
-
-Pinged send_nodes[LSEND_NODES_ARRAY];
 
 
 #endif 

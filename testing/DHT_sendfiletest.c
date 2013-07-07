@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
         printf("usage %s ip port client_id(of friend to find ip_port of) filename(of file to send) client_id(ours)\n", argv[0]);
         exit(0);
     }
-    addfriend(argv[3]);
+    DHT_addfriend((uint8_t *)argv[3]);
     IP_Port friend_ip;
     int connection = -1;
     int inconnection = -1;
@@ -66,15 +66,15 @@ int main(int argc, char *argv[])
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-    bootstrap(bootstrap_ip_port);
+    DHT_bootstrap(bootstrap_ip_port);
     
     IP_Port ip_port;
-    char data[MAX_UDP_PACKET_SIZE];
+    uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     
-    char buffer1[128];
+    uint8_t buffer1[128];
     int read1 = 0;
-    char buffer2[128];
+    uint8_t buffer2[128];
     int read2 = 0;
     FILE *file1 = fopen(argv[4], "rb");
     if ( file1==NULL ){printf("Error opening file.\n");return 1;}
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        friend_ip = getfriendip(argv[3]);
+        friend_ip = DHT_getfriendip((uint8_t *)argv[3]);
         if(friend_ip.ip.i != 0)
         {
             if(connection == -1)

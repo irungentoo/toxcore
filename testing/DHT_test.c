@@ -1,13 +1,13 @@
 /* DHT test
  * A file with a main that runs our DHT for testing.
  * 
- * Compile with: gcc -O2 -Wall -o test ../core/DHT.c ../core/network.c DHT_test.c
+ * Compile with: gcc -O2 -Wall -o test ../core/network.c DHT_test.c
  * 
  * Command line arguments are the ip and port of a node and the client_id (32 bytes) of the friend you want to find the ip_port of
  * EX: ./test 127.0.0.1 33445 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef
  */
 #include "../core/network.h"
-#include "../core/DHT.h"
+#include "../core/DHT.c"
 
 #include <string.h>
 
@@ -58,7 +58,7 @@ void print_friendlist()
         {
             printf("%c", friends_list[k].client_id[j]);
         }
-        p_ip = getfriendip(friends_list[k].client_id);
+        p_ip = DHT_getfriendip(friends_list[k].client_id);
         printf("\nIP: %u.%u.%u.%u:%u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
 
         printf("\nCLIENTS IN LIST:\n\n");
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
         printf("usage %s ip port client_id(of friend to find ip_port of)\n", argv[0]);
         exit(0);
     }
-    addfriend((uint8_t *)argv[3]);
+    DHT_addfriend((uint8_t *)argv[3]);
     
     //initialize networking
     //bind to ip 0.0.0.0:PORT
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     //bootstrap_ip_port.ip.c[2] = 0;
     //bootstrap_ip_port.ip.c[3] = 1;
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-    bootstrap(bootstrap_ip_port);
+    DHT_bootstrap(bootstrap_ip_port);
     
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];

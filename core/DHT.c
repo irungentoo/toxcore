@@ -27,7 +27,64 @@
 
 #include "DHT.h"
 
+
+typedef struct
+{
+    uint8_t client_id[CLIENT_ID_SIZE];
+    IP_Port ip_port;
+    uint32_t timestamp;
+    uint32_t last_pinged;
+}Client_data;
+//maximum number of clients stored per friend.
+#define MAX_FRIEND_CLIENTS 8
+typedef struct
+{
+    uint8_t client_id[CLIENT_ID_SIZE];
+    Client_data client_list[MAX_FRIEND_CLIENTS];
+    
+}Friend;
+
+
+typedef struct
+{
+    uint8_t client_id[CLIENT_ID_SIZE];
+    IP_Port ip_port;
+}Node_format;
+
+typedef struct
+{
+    IP_Port ip_port;
+    uint32_t ping_id;
+    uint32_t timestamp;
+    
+}Pinged;
+
+
 uint8_t self_client_id[CLIENT_ID_SIZE];
+
+
+//TODO: Move these out of here and put them into the .c file.
+//A list of the clients mathematically closest to ours.
+#define LCLIENT_LIST 32
+Client_data close_clientlist[LCLIENT_LIST];
+
+
+//Hard maximum number of friends 
+#define MAX_FRIENDS 256
+
+//Let's start with a static array for testing.
+Friend friends_list[MAX_FRIENDS];
+uint16_t num_friends;
+
+//The list of ip ports along with the ping_id of what we sent them and a timestamp
+#define LPING_ARRAY 128
+
+Pinged pings[LPING_ARRAY];
+
+#define LSEND_NODES_ARRAY LPING_ARRAY/2
+
+Pinged send_nodes[LSEND_NODES_ARRAY];
+
 
 //Compares client_id1 and client_id2 with client_id
 //return 0 if both are same distance
@@ -593,7 +650,7 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)//tested
 
 
 
-int addfriend(uint8_t * client_id)
+int DHT_addfriend(uint8_t * client_id)
 {
     //TODO:Maybe make the array of friends dynamic instead of a static array with MAX_FRIENDS
     if(MAX_FRIENDS > num_friends)
@@ -610,7 +667,7 @@ int addfriend(uint8_t * client_id)
 
 
 
-int delfriend(uint8_t * client_id)
+int DHT_delfriend(uint8_t * client_id)
 {
     uint32_t i;
     for(i = 0; i < num_friends; i++)
@@ -630,7 +687,7 @@ int delfriend(uint8_t * client_id)
 
 
 //TODO: Optimize this.
-IP_Port getfriendip(uint8_t * client_id)
+IP_Port DHT_getfriendip(uint8_t * client_id)
 {
     uint32_t i, j;
     IP_Port empty = {{{0}}, 0};
@@ -785,7 +842,7 @@ void doDHT()
 
 
 
-void bootstrap(IP_Port ip_port)
+void DHT_bootstrap(IP_Port ip_port)
 {
 
     getnodes(ip_port, self_client_id);

@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     
 
-    addfriend(friend_id);
+    DHT_addfriend(friend_id);
     IP_Port friend_ip;
     int connection = -1;
     int inconnection = -1;
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-    bootstrap(bootstrap_ip_port);
+    DHT_bootstrap(bootstrap_ip_port);
     
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
@@ -146,21 +146,21 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        friend_ip = getfriendip((uint8_t *)friend_id);
+        friend_ip = DHT_getfriendip(friend_id);
         if(friend_ip.ip.i != 0)
         {
             if(connection == -1 && friendrequest == -1)
             {
                 printf("Sending friend request to peer:");
                 printip(friend_ip);
-                friendrequest = send_friendrequest(friend_id, friend_ip, "Hello World", 12);
+                friendrequest = send_friendrequest(friend_id, friend_ip,(uint8_t *) "Hello World", 12);
                 //connection = crypto_connect((uint8_t *)friend_id, friend_ip);
                 //connection = new_connection(friend_ip);
             }
             if(check_friendrequest(friendrequest) == 1)
             {
                 printf("Started connecting to friend:");
-                connection = crypto_connect((uint8_t *)friend_id, friend_ip);
+                connection = crypto_connect(friend_id, friend_ip);
             }
         }
         if(inconnection == -1)
