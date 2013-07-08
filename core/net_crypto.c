@@ -154,6 +154,10 @@ void random_nonce(uint8_t * nonce)
 //return length of recieved data if successful
 int read_cryptpacket(int crypt_connection_id, uint8_t * data)
 {
+    if(crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
+    {
+        return 0;   
+    }
     if(crypto_connections[crypt_connection_id].status != 3)
     {
         return 0;
@@ -184,6 +188,10 @@ int read_cryptpacket(int crypt_connection_id, uint8_t * data)
 //return 1 if data was put into the queue
 int write_cryptpacket(int crypt_connection_id, uint8_t * data, uint32_t length)
 {
+    if(crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
+    {
+        return 0;   
+    }
     if(length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES > MAX_DATA_SIZE - 1)
     {
         return 0;
