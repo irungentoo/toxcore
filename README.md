@@ -1,6 +1,8 @@
 Tox
 ===
 
+[![Build Status](https://travis-ci.org/irungentoo/ProjectTox-Core.png?branch=master)](https://travis-ci.org/irungentoo/ProjectTox-Core)
+
 Current IRC: #InsertProjectNameHere
 on Freenode or [webchat](https://webchat.freenode.net/)
 
