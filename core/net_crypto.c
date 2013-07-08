@@ -569,11 +569,7 @@ void handle_incomings()
     while(1)
     {
          income = incoming_connection();
-         if(income == -1)
-         {
-             break;
-         }
-         if(new_incoming(income))
+         if(income == -1 || new_incoming(income) )
          {
              break;
          }
