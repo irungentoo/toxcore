@@ -69,7 +69,7 @@ IP_Port connection_ip(int connection_id);
 char id_packet(int connection_id);
 
 //return 0 if there is no received data in the buffer.
-//return length of recieved packet if successful
+//return length of received packet if successful
 int read_packet(int connection_id, uint8_t * data);
 
 

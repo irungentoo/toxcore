@@ -53,7 +53,7 @@ Lossless UDP:
                     If the handshake was done:
                         Start sending SYNC packets.
                 Add +1 to the counter of the SYNC packets we send.
-                Check to see if any packets were dropped when sending them to us (compare sent_packetnum with the number of packets we recieved.)
+                Check to see if any packets were dropped when sending them to us (compare sent_packetnum with the number of packets we received.)
                     If some were, The next SYNC packets we send will be request packets requesting the missing packets.
                 Check if the other client received what we sent him (compare recv_packetnum with the number of packets we sent) and clear them from the buffer.
                 If the packet is a request packet.
@@ -81,7 +81,7 @@ Lossless UDP:
 
         Keep track of the percent of packets dropped, if it is too high, lower the send rate. If it is low, increase it.
                 
-        Have a send packets buffer that we can write to and a recieved packets buffer that we can read from.
+        Have a send packets buffer that we can write to and a received packets buffer that we can read from.
 
             
             

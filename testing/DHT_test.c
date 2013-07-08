@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
             
         doDHT();
         
-        while(recievepacket(&ip_port, data, &length) != -1)
+        while(receivepacket(&ip_port, data, &length) != -1)
         {
             if(DHT_handlepacket(data, length, ip_port))
             {

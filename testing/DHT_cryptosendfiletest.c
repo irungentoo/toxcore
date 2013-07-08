@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     while(1)
     {
 
-        while(recievepacket(&ip_port, data, &length) != -1)
+        while(receivepacket(&ip_port, data, &length) != -1)
         {
             if(rand() % 3 != 1)//simulate packet loss
             {

@@ -74,7 +74,7 @@ int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
 //the packet data into data
 //the packet length into length.
 //dump all empty packets.
-int recievepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
+int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
 {
     ADDR addr;
     #ifdef WIN32

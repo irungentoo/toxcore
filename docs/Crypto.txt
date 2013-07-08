@@ -51,8 +51,8 @@ Connecting to an already added friend:
     Data packet:
         [char with a value of 03][Encrypted data]
     Each data packet received it is decrypted using the secret nonce sent to the other(with +1 added for the first packet +2 for the second, etc...)
-    along with the private session key of the reciever.
+    along with the private session key of the receiver.
     Every data packet sent is encrypted using the secret nonce we received (with +1 added for the first packet +2 for the second, etc...),
-    the session public key of the reciever and the session private key of the sender.
+    the session public key of the receiver and the session private key of the sender.
     
     The encrypted connection is only deemed successful when the empty data packet is received and decrypted successfully.

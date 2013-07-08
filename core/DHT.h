@@ -62,7 +62,7 @@ IP_Port DHT_getfriendip(uint8_t * client_id);
 //Run this function at least a couple times per second (It's the main loop)
 void doDHT();
 
-//if we recieve a DHT packet we call this function so it can be handled.
+//if we receive a DHT packet we call this function so it can be handled.
 //Return 0 if packet is handled correctly.
 //return 1 if it didn't handle the packet or if the packet was shit.
 int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);

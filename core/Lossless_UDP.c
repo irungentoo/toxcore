@@ -27,7 +27,7 @@
 
 
 
-//maximum data packets in sent and recieve queues.
+//maximum data packets in sent and receive queues.
 #define MAX_QUEUE_NUM 16
 
 //maximum length of the data in the data packets
@@ -66,14 +66,14 @@ typedef struct
     uint16_t data_rate;//current data packet send rate packets per second.
     uint64_t last_SYNC; //time at which our last SYNC packet was sent.
     uint64_t last_sent; //time at which our last data or handshake packet was sent.
-    uint64_t last_recv; //time at which we last recieved something from the other
+    uint64_t last_recv; //time at which we last received something from the other
     uint64_t killat; //time at which to kill the connection
     Data sendbuffer[MAX_QUEUE_NUM];//packet send buffer.
-    Data recvbuffer[MAX_QUEUE_NUM];//packet recieve buffer.
+    Data recvbuffer[MAX_QUEUE_NUM];//packet receive buffer.
     uint32_t handshake_id1;
     uint32_t handshake_id2;
-    uint32_t recv_packetnum; //number of data packets recieved (also used as handshake_id1)
-    uint32_t orecv_packetnum; //number of packets recieved by the other peer
+    uint32_t recv_packetnum; //number of data packets received (also used as handshake_id1)
+    uint32_t orecv_packetnum; //number of packets received by the other peer
     uint32_t sent_packetnum; //number of data packets sent
     uint32_t osent_packetnum; //number of packets sent by the other peer.
     uint32_t sendbuff_packetnum; //number of latest packet written onto the sendbuffer
@@ -250,7 +250,7 @@ int kill_connection_in(int connection_id, uint32_t seconds)
 //return 1 if attempting handshake
 //return 2 if handshake is done
 //return 3 if fully connected
-//return 4 if timed out and wating to be killed
+//return 4 if timed out and waiting to be killed
 int is_connected(int connection_id)
 {
     if(connection_id >= 0 && connection_id < MAX_CONNECTIONS)
@@ -450,7 +450,7 @@ int send_DATA(uint32_t connection_id)
 
 
 //Packet handling functions
-//One to handle each type of packets we recieve
+//One to handle each type of packets we receive
 //return 0 if handled correctly, 1 if packet is bad.
 int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
 {    
@@ -607,7 +607,7 @@ int handle_SYNC(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-//add a packet to the recieved buffer and set the recv_packetnum of the connection to its proper value.
+//add a packet to the received buffer and set the recv_packetnum of the connection to its proper value.
 //return 1 if data was too big, 0 if not.
 int add_recv(int connection_id, uint32_t data_num, uint8_t * data, uint16_t size)
 {

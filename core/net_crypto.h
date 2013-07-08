@@ -36,7 +36,7 @@ extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 
 //encrypts plain of length length to encrypted of length + 16 using the 
-//public key(32 bytes) of the reciever and the secret key of the sender and a 24 byte nonce
+//public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
 //return -1 if there was a problem.
 //return length of encrypted data if everything was fine.
 int encrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce, 
@@ -44,7 +44,7 @@ int encrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce,
 
 
 //decrypts encrypted of length length to plain of length length - 16 using the
-//public key(32 bytes) of the sender, the secret key of the reciever and a 24 byte nonce
+//public key(32 bytes) of the sender, the secret key of the receiver and a 24 byte nonce
 //return -1 if there was a problem(decryption failed)
 //return length of plain data if everything was fine.
 int decrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce, 
@@ -53,7 +53,7 @@ int decrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce,
 
 //return 0 if there is no received data in the buffer 
 //return -1  if the packet was discarded.
-//return length of recieved data if successful
+//return length of received data if successful
 int read_cryptpacket(int crypt_connection_id, uint8_t * data);
 
 
@@ -94,7 +94,7 @@ int crypto_kill(int crypt_connection_id);
 
 //handle an incoming connection
 //return -1 if no crypto inbound connection
-//return incomming connection id (Lossless_UDP one) if there is an incomming crypto connection
+//return incoming connection id (Lossless_UDP one) if there is an incoming crypto connection
 //Put the public key of the peer in public_key, the secret_nonce from the handshake into secret_nonce
 //and the session public key for the connection in session_key
 //to accept it see: accept_crypto_inbound(...)
@@ -108,8 +108,8 @@ int crypto_inbound(uint8_t * public_key, uint8_t * secret_nonce, uint8_t * sessi
 int accept_crypto_inbound(int connection_id, uint8_t * public_key, uint8_t * secret_nonce, uint8_t * session_key);
 
 //return 0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet 
-//(we have recieved a hanshake but no empty data packet), 3 if the connection is established.
-//4 if the connection is timed out and wating to be killed
+//(we have received a handshake but no empty data packet), 3 if the connection is established.
+//4 if the connection is timed out and waiting to be killed
 int is_cryptoconnected(int crypt_connection_id);
 
 

@@ -36,13 +36,13 @@ uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 typedef struct
 {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];//the real public key of the peer.
-    uint8_t recv_nonce[crypto_box_NONCEBYTES];//nonce of recieved packets
+    uint8_t recv_nonce[crypto_box_NONCEBYTES];//nonce of received packets
     uint8_t sent_nonce[crypto_box_NONCEBYTES];//nonce of sent packets.
     uint8_t sessionpublic_key[crypto_box_PUBLICKEYBYTES];//our public key for this session.
     uint8_t sessionsecret_key[crypto_box_SECRETKEYBYTES];//our private key for this session.
     uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES];//The public key of the peer.
     uint8_t status;//0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet 
-                   //(we have recieved a hanshake but no empty data packet), 3 if the connection is established.
+                   //(we have received a handshake but no empty data packet), 3 if the connection is established.
                    //4 if the connection is timed out.
     uint16_t number; //Lossless_UDP connection number corresponding to this connection.
     
@@ -63,7 +63,7 @@ int outbound_friendrequests[MAX_FRIEND_REQUESTS];
 int incoming_connections[MAX_INCOMING];
 
 //encrypts plain of length length to encrypted of length + 16 using the 
-//public key(32 bytes) of the reciever and the secret key of the sender and a 24 byte nonce
+//public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
 //return -1 if there was a problem.
 //return length of encrypted data if everything was fine.
 int encrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce, 
@@ -93,7 +93,7 @@ int encrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce,
 }
 
 //decrypts encrypted of length length to plain of length length - 16 using the
-//public key(32 bytes) of the sender, the secret key of the reciever and a 24 byte nonce
+//public key(32 bytes) of the sender, the secret key of the receiver and a 24 byte nonce
 //return -1 if there was a problem(decryption failed)
 //return length of plain data if everything was fine.
 int decrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce, 
@@ -151,7 +151,7 @@ void random_nonce(uint8_t * nonce)
 
 //return 0 if there is no received data in the buffer 
 //return -1  if the packet was discarded.
-//return length of recieved data if successful
+//return length of received data if successful
 int read_cryptpacket(int crypt_connection_id, uint8_t * data)
 {
     if(crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
@@ -436,7 +436,7 @@ int crypto_connect(uint8_t * public_key, IP_Port ip_port)
 
 //handle an incoming connection
 //return -1 if no crypto inbound connection
-//return incomming connection id (Lossless_UDP one) if there is an incomming crypto connection
+//return incoming connection id (Lossless_UDP one) if there is an incoming crypto connection
 //Put the public key of the peer in public_key, the secret_nonce from the handshake into secret_nonce
 //and the session public key for the connection in session_key
 //to accept it see: accept_crypto_inbound(...)
@@ -524,8 +524,8 @@ int accept_crypto_inbound(int connection_id, uint8_t * public_key, uint8_t * sec
 }
 
 //return 0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet 
-//(we have recieved a hanshake but no empty data packet), 3 if the connection is established.
-//4 if the connection is timed out and wating to be killed
+//(we have received a handshake but no empty data packet), 3 if the connection is established.
+//4 if the connection is timed out and waiting to be killed
 int is_cryptoconnected(int crypt_connection_id)
 {
     if(crypt_connection_id >= 0 && crypt_connection_id < MAX_CRYPTO_CONNECTIONS)
@@ -580,8 +580,8 @@ void handle_incomings()
     }
 }
 
-//handle recieved packets for not yet established crypto connections.
-void recieve_crypto()
+//handle received packets for not yet established crypto connections.
+void receive_crypto()
 {
     uint32_t i;
     for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
@@ -678,6 +678,6 @@ void doNetCrypto()
     //handle new incoming connections
     //handle friend requests
     handle_incomings();
-    recieve_crypto();
+    receive_crypto();
     killTimedout();
 }

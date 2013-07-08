@@ -102,7 +102,7 @@ void Lossless_UDP()
     IP_Port ip_port;
     char data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
-    while(recievepacket(&ip_port, data, &length) != -1)
+    while(receivepacket(&ip_port, data, &length) != -1)
     {
         if(rand() % 3 != 1)//add packet loss
         {

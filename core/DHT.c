@@ -246,7 +246,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 
 
 //replace first bad (or empty) node with this one
-//return 0 if successfull
+//return 0 if successful
 //return 1 if not (list contains no bad nodes)
 int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)//tested
 {
@@ -291,7 +291,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
     
-    //NOTE: current behaviour if there are two clients with the same id is to only keep one (the first one)
+    //NOTE: current behavior if there are two clients with the same id is to only keep one (the first one)
     if(!client_in_list(close_clientlist, LCLIENT_LIST, client_id, ip_port))
     {
          
@@ -548,7 +548,7 @@ int sendnodes(IP_Port ip_port, uint8_t * client_id, uint32_t ping_id)
 
 
 //Packet handling functions
-//One to handle each types of packets we recieve
+//One to handle each types of packets we receive
 //return 0 if handled correctly, 1 if packet is bad.
 int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)//tested
 {
