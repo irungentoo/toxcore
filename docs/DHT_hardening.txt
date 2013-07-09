@@ -1,0 +1,17 @@
+List of possible attacks on the current DHT:
+
+create thousands of fake nodes cloning one client_id and flood our DHT with 
+them.
+
+create thousands of "real" nodes that do nothing but shit up our DHT with fake 
+crap.
+
+...
+
+Possible solutions:
+
+Each client_id is the public key of the peer so it would be trivial to encrypt 
+the DHT requests with crypto_box(). This would completely defeat the first 
+attack.
+
+...
