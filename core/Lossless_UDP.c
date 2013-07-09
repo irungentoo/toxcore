@@ -37,7 +37,7 @@
 #define BUFFER_PACKET_NUM (16-1)
 
 //Lossless UDP connection timeout.
-#define CONNEXION_TIMEOUT 10
+#define CONNEXION_TIMEOUT 5
 
 //initial amount of sync/hanshake packets to send per second.
 #define SYNC_RATE 10
@@ -133,7 +133,13 @@ uint32_t handshake_id(IP_Port source)
     }
     return id;
 }
-
+//change the hnshake id associated with that ip_port
+//TODO: make this better
+void change_handshake(IP_Port source)
+{
+    uint8_t rand = random_int() % 4;
+    randtable[rand][((uint8_t *)&source)[rand]] = random_int();
+}
 
 
 //initialize a new connection to ip_port
@@ -152,6 +158,7 @@ int new_connection(IP_Port ip_port)
     {
         if(connections[i].status == 0)
         {
+            memset(&connections[i], 0, sizeof(Connection));
             connections[i].ip_port = ip_port;
             connections[i].status = 1;
             connections[i].inbound = 0;
@@ -184,6 +191,7 @@ int new_inconnection(IP_Port ip_port)
     {
         if(connections[i].status == 0)
         {
+            memset(&connections[i], 0, sizeof(Connection));
             connections[i].ip_port = ip_port;
             connections[i].status = 2;
             connections[i].inbound = 2;
@@ -223,6 +231,7 @@ int kill_connection(int connection_id)
         if(connections[connection_id].status > 0)
         {
                 connections[connection_id].status = 0;
+                change_handshake(connections[connection_id].ip_port);
                 return 0;
         }
     }

@@ -45,6 +45,17 @@ int m_addfriend(uint8_t * client_id)
     return numfriends - 1;
 }
 
+int m_addfriend_norequest(uint8_t * client_id)
+{
+    DHT_addfriend(client_id);
+    friendlist[numfriends].status = 2;
+    friendlist[numfriends].friend_request_id = -1;
+    memcpy(friendlist[numfriends].client_id, client_id, CLIENT_ID_SIZE);
+    numfriends++;
+    
+    return numfriends - 1;
+}
+
 //remove a friend
 int m_delfriend(int friendnumber)
 {/*
@@ -74,7 +85,11 @@ int m_friendstatus(int friendnumber)
 //return 0 if it was not.
 int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length)
 {
-    if(length >= MAX_DATA_SIZE)
+    if(friendnumber < 0 || friendnumber >= MAX_NUM_FRIENDS)
+    {
+        return 0;
+    }
+    if(length >= MAX_DATA_SIZE || friendlist[friendnumber].status != 4)
     //this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less.
     {
         return 0;   
@@ -103,7 +118,7 @@ int m_setinfo(uint8_t * data, uint16_t length)
 void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 
 //set the function that will be executed when a friend request is received.
-int m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
+void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 {
     friend_request = function;
 }
@@ -112,7 +127,7 @@ int m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 void (*friend_message)(int, uint8_t *, uint16_t);
 
 //set the function that will be executed when a message from a friend is received.
-int m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
+void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
 {
     friend_message = function;
 }
@@ -146,14 +161,13 @@ void doFriends()
              if(friendip.ip.i > 1 && request == -1)
              {
                   friendlist[i].friend_request_id = send_friendrequest(friendlist[i].client_id, friendip, info, info_size);
-             }
-             if(request == 1)
-             {
                   friendlist[i].status = 2;
              }
         }
         if(friendlist[i].status == 2 || friendlist[i].status == 3)
         {
+            check_friendrequest(friendlist[i].friend_request_id);//for now this is used to kill the friend request
+            
             IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
             if(is_cryptoconnected(friendlist[i].crypt_connection_id) == 0 && friendip.ip.i > 1)
             {
@@ -162,6 +176,10 @@ void doFriends()
             if(is_cryptoconnected(friendlist[i].crypt_connection_id) == 3)//if connection is established.
             {
                  friendlist[i].status = 4;
+            }
+            if(is_cryptoconnected(friendlist[i].crypt_connection_id) == 4)
+            {
+                crypto_kill(friendlist[i].crypt_connection_id);
             }
         }
         while(friendlist[i].status == 4)
@@ -200,6 +218,45 @@ void doFriendRequest()
     }
 
 }
+
+
+//return the friend id associated to that public key.
+//return -1 if no such friend
+int getfriend_id(uint8_t * public_key)
+{
+    uint32_t i;
+    for(i = 0; i < numfriends; i++)
+    {
+        if(friendlist[i].status > 0)
+        {
+            if(memcmp(public_key, friendlist[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
+            {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+void doInbound()
+{
+    uint8_t secret_nonce[crypto_box_NONCEBYTES];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t session_key[crypto_box_PUBLICKEYBYTES];
+    int inconnection = crypto_inbound(public_key, secret_nonce, session_key);
+    if(inconnection != -1)
+    {
+        int friend_id = getfriend_id(public_key);
+        if(friend_id != -1)
+        {
+             friendlist[friend_id].crypt_connection_id = 
+             accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
+             
+             friendlist[friend_id].status = 3;
+        }
+    }
+}
+
 //the main loop that needs to be run at least 200 times per second.
 void doMessenger()
 {
@@ -224,6 +281,7 @@ void doMessenger()
     doDHT();
     doLossless_UDP();
     doNetCrypto();
+    doInbound();
     doFriendRequest();
     doFriends();
 }

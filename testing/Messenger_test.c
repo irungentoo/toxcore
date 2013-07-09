@@ -42,12 +42,22 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
     }
     printf("\nOf length: %u with data: %s \n", length, data);
     
+    if(length != sizeof("Install Gentoo"))
+    {
+        return;
+    }
+    if(memcmp(data ,"Install Gentoo", sizeof("Install Gentoo")) == 0 )
+    //if the request contained the message of peace the person is obviously a friend so we add him.
+    {
+        printf("Friend request accepted.\n");
+        m_addfriend_norequest(public_key);
+    }
 }
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
     printf("Message with length %u recieved from %u: %s \n", length, friendnumber, string);
-    
+    m_sendmessage(friendnumber, "Test1", 6);
 }
 
 int main(int argc, char *argv[])
@@ -86,7 +96,7 @@ int main(int argc, char *argv[])
     {
         m_sendmessage(num, "Test", 5);
         doMessenger();
-        c_sleep(1);
+        c_sleep(30);
     }
     
 }

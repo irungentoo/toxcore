@@ -383,13 +383,33 @@ int handle_friendrequest(uint8_t * public_key, uint8_t * data)
                                                     len - (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + 1), data);
                     if(len1 != -1)
                     {
-                        kill_connection_in(incoming_connections[i], 1); //conection is useless now, kill it in 1 seconds
+                        kill_connection(incoming_connections[i]);
+                        //kill_connection_in(incoming_connections[i], 1); //conection is useless now, kill it in 1 seconds
                         incoming_connections[i] = -1;
                         return len1;
                     }
                 }
                 kill_connection(incoming_connections[i]); //conection is useless now, kill it.
                 incoming_connections[i] = -1;
+            }
+        }
+    }
+    return -1;
+}
+
+//get crypto connection id from public key of peer
+//return -1 if there are no connections like we are looking for
+//return id if it found it
+int getcryptconnection_id(uint8_t * public_key)
+{
+    uint32_t i;
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    {
+        if(crypto_connections[i].status > 0)
+        {
+            if(memcmp(public_key, crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+            {
+                return i;
             }
         }
     }
@@ -403,7 +423,7 @@ int handle_friendrequest(uint8_t * public_key, uint8_t * data)
 int crypto_connect(uint8_t * public_key, IP_Port ip_port)
 {
     uint32_t i;
-    if(getconnection_id(ip_port) != -1)
+    if(getcryptconnection_id(public_key) != -1)
     {
         return -1;
     }
@@ -490,6 +510,10 @@ int accept_crypto_inbound(int connection_id, uint8_t * public_key, uint8_t * sec
 {
     uint32_t i;
     if(connection_id == -1)
+    {
+        return -1;
+    }
+    if(getcryptconnection_id(public_key) != -1)
     {
         return -1;
     }
@@ -584,13 +608,22 @@ void receive_crypto()
     {
         if(crypto_connections[i].status == 1)
         {
+            uint8_t temp_data[MAX_DATA_SIZE];
+            uint8_t secret_nonce[crypto_box_NONCEBYTES];
+            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+            uint8_t session_key[crypto_box_PUBLICKEYBYTES];
+            uint16_t len;
+            if(id_packet(crypto_connections[i].number) == 1) 
+            //if the packet is a friend request drop it (because we are already friends)
+            {
+                len = read_packet(crypto_connections[i].number, temp_data);
+                printf("REQUEST DROPPED\n");
+                
+            }
             if(id_packet(crypto_connections[i].number) == 2)//handle handshake packet.
             {
-                uint8_t temp_data[MAX_DATA_SIZE];
-                uint8_t secret_nonce[crypto_box_NONCEBYTES];
-                uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-                uint8_t session_key[crypto_box_PUBLICKEYBYTES];
-                uint16_t len = read_packet(crypto_connections[i].number, temp_data);
+
+                len = read_packet(crypto_connections[i].number, temp_data);
                 if(handle_cryptohandshake(public_key, secret_nonce, session_key, temp_data, len))
                 {
                     if(memcmp(public_key, crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
@@ -660,7 +693,7 @@ void killTimedout()
     uint32_t i;
     for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
     {
-        if(is_connected(crypto_connections[i].number) == 4)
+        if(crypto_connections[i].status != 0 && is_connected(crypto_connections[i].number) == 4)
         {
             crypto_connections[i].status = 4;
         }
