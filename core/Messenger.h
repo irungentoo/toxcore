@@ -27,12 +27,17 @@ int m_addfriend_norequest(uint8_t * client_id);
 //remove a friend
 int m_delfriend(int friendnumber);
 
-//return 1 if friend is online
-//return 0 if he is not
+//return 4 if friend is online
+//return 3 if friend is confirmed
+//return 2 if the friend request was sent
+//return 1 if the friend was added
+//return 0 if there is no friend with that number.
 int m_friendstatus(int friendnumber);
 
 
-//send a text chat message to a friend.
+//send a text chat message to an online friend.
+//returns 1 if packet was successfully put into the send queue
+//return 0 if it was not.
 int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length);
 
 //set the data that will be sent along with friend requests

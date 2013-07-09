@@ -12,7 +12,7 @@ typedef struct
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
     int friend_request_id; //id of the friend request corresponding to the current friend request to the current friend.
-    uint8_t status;//0 if no friend, 1 if added, 2 if friend request successfully sent, 3 if confirmed friend, 4 if online.
+    uint8_t status;//0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
     
 }Friend;
  
@@ -67,7 +67,7 @@ int m_delfriend(int friendnumber)
 
 //return 4 if friend is online
 //return 3 if friend is confirmed
-//return 2 if the friend request was sent successfully
+//return 2 if the friend request was sent
 //return 1 if the friend was added
 //return 0 if there is no friend with that number.
 int m_friendstatus(int friendnumber)
