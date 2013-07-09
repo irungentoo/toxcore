@@ -23,19 +23,25 @@ int m_delfriend(int friendnumber);
 
 //return 1 if friend is online
 //return 0 if he is not
-int m_friendonline(int friendnumber);
+int m_friendstatus(int friendnumber);
 
 
 //send a text chat message to a friend.
-int m_sendmessage(int friendnumber);
+int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length);
+
+//set the data that will be sent along with friend requests
+//return -1 if failure
+//return 0 if success
+int m_setinfo(uint8_t * data, uint16_t length);
+
+//set the function that will be executed when a friend request is received.
+//function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
+int m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 
 
-//set the function that will be executed when a friend request is recieved.
-int m_callback_friendrequest();
-
-
-//set the function that will be executed when a message from a friend is recieved.
-int m_callback_friendmessage();
+//set the function that will be executed when a message from a friend is received.
+//function format is: function(int friendnumber, uint8_t * message, uint32_t length)
+int m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
 
 
 //run this at startup

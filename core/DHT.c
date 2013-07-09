@@ -756,7 +756,7 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 static uint32_t friend_lastgetnode[MAX_FRIENDS];
 
 
-void doFriends()
+void doDHTFriends()
 {
     uint32_t i, j;
     uint32_t temp_time = unix_time();
@@ -836,7 +836,7 @@ void doClose()//tested
 void doDHT()
 {
     doClose();
-    doFriends();
+    doDHTFriends();
 }
 
 
