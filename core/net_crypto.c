@@ -617,7 +617,6 @@ void receive_crypto()
             //if the packet is a friend request drop it (because we are already friends)
             {
                 len = read_packet(crypto_connections[i].number, temp_data);
-                printf("REQUEST DROPPED\n");
                 
             }
             if(id_packet(crypto_connections[i].number) == 2)//handle handshake packet.

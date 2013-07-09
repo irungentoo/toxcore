@@ -1,4 +1,19 @@
- 
+/* Messenger test
+ * 
+ * This program adds a friend and accepts all friend requests with the proper message.
+ * 
+ * It tries sending a message to the added friend.
+ * 
+ * If it recieves a message from a friend it replies back.
+ * 
+ * 
+ * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../core/Messenger.c ../nacl/build/Linux/lib/amd64/* Messenger_test.c
+ *
+ * 
+ * Command line arguments are the ip and port of a node (for bootstrapping).
+ * 
+ * EX: ./test 127.0.0.1 33445
+ */
 
 #include "../core/Messenger.h"
 
