@@ -31,13 +31,14 @@ typedef struct
     int crypt_connection_id;
     int friend_request_id; //id of the friend request corresponding to the current friend request to the current friend.
     uint8_t status;//0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
+    uint8_t info[MAX_DATA_SIZE]; //the data that is sent during the friend requests we do
+    uint16_t info_size; //length of the info
     
 }Friend;
  
 
-uint8_t info[MAX_DATA_SIZE]; //the data that is sent during the friend requests we do
 
-uint16_t info_size; //length of the info
+
 
 #define MAX_NUM_FRIENDS 256
 
@@ -68,11 +69,19 @@ int getfriend_id(uint8_t * client_id)
 
 
 //add a friend
-//client_id is the client i of the friend
+//set the data that will be sent along with friend request
+//client_id is the client id of the friend
+//data is the data and length is the length
 //returns the friend number if success
 //return -1 if failure.
-int m_addfriend(uint8_t * client_id)
+int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
 {
+    if(length == 0 || length > MAX_DATA_SIZE - 1 - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES 
+                                                      - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES)
+    {
+        return -1;
+    }
+
     if(getfriend_id(client_id) != -1)
     {
         return -1;
@@ -86,6 +95,10 @@ int m_addfriend(uint8_t * client_id)
             friendlist[i].status = 1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
+            
+            memcpy(friendlist[i].info, data, length);
+            friendlist[i].info_size = length;
+            
             numfriends++;
             return i;
         }
@@ -176,19 +189,6 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length)
     
 }
 
-//set the data that will be sent along with friend requests
-//return -1 if failure
-//return 0 if success
-int m_setinfo(uint8_t * data, uint16_t length)
-{
-    if(length == 0 || length > MAX_DATA_SIZE - 1 - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES)
-    {
-        return -1;
-    }
-    memcpy(info, data, length);
-    info_size = length;
-    return 0;
-}
 
 void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 
@@ -235,7 +235,8 @@ void doFriends()
              //printf("\n%u %u %u\n", friendip.ip.i, request, friendlist[i].friend_request_id);
              if(friendip.ip.i > 1 && request == -1)
              {
-                  friendlist[i].friend_request_id = send_friendrequest(friendlist[i].client_id, friendip, info, info_size);
+                  friendlist[i].friend_request_id = send_friendrequest(friendlist[i].client_id, 
+                                               friendip, friendlist[i].info, friendlist[i].info_size);
                   friendlist[i].status = 2;
              }
         }

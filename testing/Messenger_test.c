@@ -57,7 +57,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
     }
     printf("\nOf length: %u with data: %s \n", length, data);
     
-    if(length != sizeof((uint8_t*)"Install Gentoo"))
+    if(length != sizeof("Install Gentoo"))
     {
         return;
     }
@@ -85,8 +85,6 @@ int main(int argc, char *argv[])
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     
-    m_setinfo((uint8_t*)"Install Gentoo", sizeof((uint8_t*)"Install Gentoo"));//The message we send is a message of peace
-    
     printf("OUR ID: ");
     uint32_t i;
     for(i = 0; i < 32; i++)
@@ -99,7 +97,7 @@ int main(int argc, char *argv[])
     char temp_id[128];
     printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
     scanf("%s", temp_id);
-    int num = m_addfriend(hex_string_to_bin(temp_id));
+    int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
     
     perror("Initialization");
     IP_Port bootstrap_ip_port;

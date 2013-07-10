@@ -31,9 +31,12 @@
 
 
 //add a friend
+//set the data that will be sent along with friend request
+//client_id is the client id of the friend
+//data is the data and length is the length
 //returns the friend number if success
 //return -1 if failure.
-int m_addfriend(uint8_t * client_id);
+int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length);
 
 
 //add a friend without sending a friendrequest.
@@ -61,10 +64,6 @@ int m_friendstatus(int friendnumber);
 //return 0 if it was not.
 int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length);
 
-//set the data that will be sent along with friend requests
-//return -1 if failure
-//return 0 if success
-int m_setinfo(uint8_t * data, uint16_t length);
 
 //set the function that will be executed when a friend request is received.
 //function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
