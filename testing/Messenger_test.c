@@ -7,7 +7,7 @@
  * If it recieves a message from a friend it replies back.
  * 
  * 
- * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../core/Messenger.c ../nacl/build/Linux/lib/amd64/* Messenger_test.c
+ * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../core/Messenger.c ../nacl/build/$HOSTNAME/lib/amd64/* Messenger_test.c
  *
  * 
  * Command line arguments are the ip and port of a node (for bootstrapping).

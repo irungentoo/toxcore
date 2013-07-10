@@ -23,6 +23,9 @@ int m_addfriend(uint8_t * client_id);
 //return -1 if failure.
 int m_addfriend_norequest(uint8_t * client_id);
 
+//return the friend id associated to that client id.
+//return -1 if no such friend
+int getfriend_id(uint8_t * client_id);
 
 //remove a friend
 int m_delfriend(int friendnumber);

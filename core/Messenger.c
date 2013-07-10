@@ -29,39 +29,96 @@ Friend friendlist[MAX_NUM_FRIENDS];
 
 uint32_t numfriends;
  
+
+//return the friend id associated to that public key.
+//return -1 if no such friend
+int getfriend_id(uint8_t * client_id)
+{
+    uint32_t i;
+    for(i = 0; i < numfriends; i++)
+    {
+        if(friendlist[i].status > 0)
+        {
+            if(memcmp(client_id, friendlist[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
+            {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+
 //add a friend
 //client_id is the client i of the friend
 //returns the friend number if success
 //return -1 if failure.
 int m_addfriend(uint8_t * client_id)
 {
-    
-    DHT_addfriend(client_id);
-    friendlist[numfriends].status = 1;
-    friendlist[numfriends].friend_request_id = -1;
-    memcpy(friendlist[numfriends].client_id, client_id, CLIENT_ID_SIZE);
-    numfriends++;
-    
-    return numfriends - 1;
+    if(getfriend_id(client_id) != -1)
+    {
+        return -1;
+    }
+    uint32_t i;
+    for(i = 0; i < (numfriends + 1); i++)
+    {
+        if(friendlist[i].status == 0)
+        {
+            DHT_addfriend(client_id);
+            friendlist[i].status = 1;
+            friendlist[i].friend_request_id = -1;
+            memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
+            numfriends++;
+            return i;
+        }
+    }
+    return -1;
 }
 
 int m_addfriend_norequest(uint8_t * client_id)
 {
-    DHT_addfriend(client_id);
-    friendlist[numfriends].status = 2;
-    friendlist[numfriends].friend_request_id = -1;
-    memcpy(friendlist[numfriends].client_id, client_id, CLIENT_ID_SIZE);
-    numfriends++;
-    
-    return numfriends - 1;
+    if(getfriend_id(client_id) != -1)
+    {
+        return -1;
+    }
+    uint32_t i;
+    for(i = 0; i < (numfriends + 1); i++)
+    {
+        if(friendlist[i].status == 0)
+        {
+            DHT_addfriend(client_id);
+            friendlist[i].status = 2;
+            friendlist[i].friend_request_id = -1;
+            memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
+            numfriends++;
+            return i;
+        }
+    }
+    return -1;
 }
 
 //remove a friend
+//returns 0 if success
+//return -1 if failure.
 int m_delfriend(int friendnumber)
-{/*
-    TODO
+{
+    if(friendnumber >= numfriends || friendnumber < 0)
+    {
+        return -1;
+    }
+
     DHT_delfriend(friendlist[friendnumber].client_id);
-*/
+    memset(&friendlist[friendnumber], 0, sizeof(Friend));
+    uint32_t i;
+    for(i = numfriends; i != 0; i--)
+    {
+        if(friendlist[i].status != 0)
+        {
+            break;
+        }
+    }
+    numfriends = i;
+    return 0;
 }
 
 
@@ -220,23 +277,6 @@ void doFriendRequest()
 }
 
 
-//return the friend id associated to that public key.
-//return -1 if no such friend
-int getfriend_id(uint8_t * public_key)
-{
-    uint32_t i;
-    for(i = 0; i < numfriends; i++)
-    {
-        if(friendlist[i].status > 0)
-        {
-            if(memcmp(public_key, friendlist[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
-            {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
 
 void doInbound()
 {

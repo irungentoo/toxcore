@@ -7,7 +7,7 @@
  * 
  * NOTE: this program simulates 33% packet loss.
  * 
- * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../nacl/build/Linux/lib/amd64/* DHT_cryptosendfiletest.c 
+ * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../nacl/build/$HOSTNAME/lib/amd64/* DHT_cryptosendfiletest.c 
  *
  * 
  * Command line arguments are the ip and port of a node (for bootstrapping).
