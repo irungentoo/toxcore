@@ -7,7 +7,7 @@
  * If it recieves a message from a friend it replies back.
  * 
  * 
- * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../core/Messenger.c ../nacl/build/$HOSTNAME/lib/amd64/* Messenger_test.c
+ * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/DHT.c ../core/Messenger.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/* Messenger_test.c
  *
  * 
  * Command line arguments are the ip and port of a node (for bootstrapping).
@@ -57,11 +57,11 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
     }
     printf("\nOf length: %u with data: %s \n", length, data);
     
-    if(length != sizeof("Install Gentoo"))
+    if(length != sizeof((uint8_t*)"Install Gentoo"))
     {
         return;
     }
-    if(memcmp(data ,"Install Gentoo", sizeof("Install Gentoo")) == 0 )
+    if(memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
     //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
@@ -72,7 +72,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
     printf("Message with length %u recieved from %u: %s \n", length, friendnumber, string);
-    m_sendmessage(friendnumber, "Test1", 6);
+    m_sendmessage(friendnumber, (uint8_t*)"Test1", 6);
 }
 
 int main(int argc, char *argv[])
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     
-    m_setinfo("Install Gentoo", sizeof("Install Gentoo"));//The message we send is a message of peace
+    m_setinfo((uint8_t*)"Install Gentoo", sizeof((uint8_t*)"Install Gentoo"));//The message we send is a message of peace
     
     printf("OUR ID: ");
     uint32_t i;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     
     while(1)
     {
-        m_sendmessage(num, "Test", 5);
+        m_sendmessage(num, (uint8_t*)"Test", 5);
         doMessenger();
         c_sleep(30);
     }
