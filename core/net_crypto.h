@@ -28,7 +28,7 @@
 
 //TODO: move this to network.h
 #ifndef WIN32
-#include "../nacl/build/localhost/include/amd64/crypto_box.h"  //${HOSTNAME%.*} doesn't work... set env var later
+#include "../nacl/build/Linux/include/amd64/crypto_box.h"  //${HOSTNAME%.*} doesn't work... set env var later
 #endif
 //Our public key.
 extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];

@@ -4,7 +4,7 @@ Things to do now:
 
 -Figure out the best way to do "lossless" UDP. (Done)
 
--Start work on the im protocol.
+-Start work on the im protocol.(simple im part pretty much done)
 
 -Start coding the gui (In Progress (Using Qt5))
 
@@ -20,6 +20,8 @@ Things to do now:
     
 
 -Crypto (Done (needs testing))
+
+-Harden the DHT (Research in progress)
 
 -Find and fix bugs in the code.
 
