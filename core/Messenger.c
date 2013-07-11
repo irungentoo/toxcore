@@ -44,7 +44,6 @@ typedef struct
 
 Friend friendlist[MAX_NUM_FRIENDS];
 
-#define MAX_MESSAGE_LENGTH 256
 
 uint32_t numfriends;
  
