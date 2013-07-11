@@ -2,6 +2,7 @@
 * 
 * An implementation of a simple text chat only messenger on the tox network core.
 * 
+* NOTE: All the text in the messages must be encoded using UTF-8
  
     Copyright (C) 2013 Tox project All Rights Reserved.
 
