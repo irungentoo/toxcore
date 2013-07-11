@@ -14,4 +14,21 @@ Each client_id is the public key of the peer so it would be trivial to encrypt
 the DHT requests with crypto_box(). This would completely defeat the first 
 attack.
 
+Make each peer send the information of at least one of his online friends in 
+every send nodes response. (Might be bad as any node can now know who our 
+friends are)
+
+Limit the maximum number of peers with identical ips that we keep connected to 
+in our DHT. (Not a real solution)
+
+Require each node to solve some kind of captcha in order to connect to the 
+network. (Bad idea.)
+
+Require nodes to crack hashes or solve other computationally intensive 
+problems in order to be accepted in the network. (Kind of like bitcoin)(This is 
+probably a bad idea as our application needs to work on phones which are low 
+power devices)
+
+Make each node test other nodes to see if they respond correctly before sending 
+them as part of their send nodes response.
 ...
