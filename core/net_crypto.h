@@ -26,10 +26,6 @@
 
 #include "Lossless_UDP.h"
 
-//TODO: move this to network.h
-#ifndef WIN32
-#include "../nacl/build/Linux/include/amd64/crypto_box.h"  //${HOSTNAME%.*} doesn't work... set env var later
-#endif
 //Our public key.
 extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
