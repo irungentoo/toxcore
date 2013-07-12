@@ -6,14 +6,13 @@ before_script:
   - git clone git://github.com/jedisct1/libsodium.git
   - cd libsodium
   - ./autogen.sh
-  - ./configure && make check
-  - sudo make install
-  - sudo ldconfig
+  - ./configure && make -j 3 check
   - cd ..
 
 script:
-  - cmake CMakeLists.txt
-  - make -j3
+  #- cmake CMakeLists.txt
+  #- make -j3
+   - gcc -o test -Wall -Werror -Ilibsodium/src/libsodium/include/ core/*.c libsodium/src/libsodium/.libs/libsodium.a testing/Messenger_test.c
 
 notifications:
   email: false
