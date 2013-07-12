@@ -32,8 +32,9 @@
 #endif
 //Our public key.
 extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
-
+#define ENCRYPTION_PADDING (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 
 //encrypts plain of length length to encrypted of length + 16 using the 
 //public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
@@ -49,6 +50,10 @@ int encrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce,
 //return length of plain data if everything was fine.
 int decrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce, 
                                        uint8_t * encrypted, uint32_t length, uint8_t * plain);
+
+
+//fill the given nonce with random bytes.
+void random_nonce(uint8_t * nonce);
 
 
 //return 0 if there is no received data in the buffer 

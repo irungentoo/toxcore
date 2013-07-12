@@ -26,13 +26,13 @@
 #ifndef DHT_H 
 #define DHT_H 
 
-#include "network.h"
+#include "net_crypto.h"
 
 //Current time, unix format
 #define unix_time() ((uint32_t)time(NULL))
 
 //size of the client_id in bytes
-#define CLIENT_ID_SIZE 32
+#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
 
 
 
@@ -68,18 +68,14 @@ void doDHT();
 int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
 
 //Use this function to bootstrap the client
-//Sends a get nodes request to the given ip port
-void DHT_bootstrap(IP_Port ip_port);
+//Sends a get nodes request to the given node with ip port and public_key
+void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key);
 
 
 //TODO:
 //Add functions to save and load the state(client list, friends list)
 
 
-//Global variables
-
-//Our client id
-extern uint8_t self_client_id[CLIENT_ID_SIZE];
 
 
 

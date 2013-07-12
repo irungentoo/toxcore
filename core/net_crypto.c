@@ -50,17 +50,17 @@ typedef struct
 
 #define MAX_CRYPTO_CONNECTIONS 256
 
-Crypto_Connection crypto_connections[MAX_CRYPTO_CONNECTIONS];
+static Crypto_Connection crypto_connections[MAX_CRYPTO_CONNECTIONS];
 
 #define MAX_FRIEND_REQUESTS 32
 
 //keeps track of the connection numbers for friends request so we can check later if they were sent
-int outbound_friendrequests[MAX_FRIEND_REQUESTS];
+static int outbound_friendrequests[MAX_FRIEND_REQUESTS];
 
 #define MAX_INCOMING 64
 
 //keeps track of the connection numbers for friends request so we can check later if they were sent
-int incoming_connections[MAX_INCOMING];
+static int incoming_connections[MAX_INCOMING];
 
 //encrypts plain of length length to encrypted of length + 16 using the 
 //public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
@@ -587,7 +587,7 @@ int new_incoming(int id)
 
 //TODO: optimize this
 //handle all new incoming connections.
-void handle_incomings()
+static void handle_incomings()
 {
     int income;
     while(1)
@@ -601,7 +601,7 @@ void handle_incomings()
 }
 
 //handle received packets for not yet established crypto connections.
-void receive_crypto()
+static void receive_crypto()
 {
     uint32_t i;
     for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
@@ -687,7 +687,7 @@ void initNetCrypto()
     memset(incoming_connections, -1 ,sizeof(incoming_connections));
 }
 
-void killTimedout()
+static void killTimedout()
 {
     uint32_t i;
     for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)

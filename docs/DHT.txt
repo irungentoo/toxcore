@@ -2,7 +2,7 @@ DHT protocol:
         Follows pretty much the principle of the torrent DHT: http://www.bittorrent.org/beps/bep_0005.html (READ IT)
     
         But:
-            Vastly simplified packet format.
+            Vastly simplified packet format and encryption.
             
         Boostrapping:
             The first time you install the client we bootstrap it with a node on our servers.(bandwidth should not be a problem as the client only needs to be sent one reply.)
@@ -75,13 +75,12 @@ DHT protocol:
     
             Valid queries and Responses:
     
-                Ping(Request and response): [byte with value: 00 for request, 01 for response][random 4 byte (ping_id)][char array (client node_id), length=32 bytes]
+                Ping(Request and response): [byte with value: 00 for request, 01 for response][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender: [random 8 byte (ping_id)]]
                     ping_id = a random integer, the response must contain the exact same number as the request
     
     
                 Get nodes (Request):
-                Packet contents: [byte with value: 02][random 4 byte (ping_id)][char array (client node_id), length=32 bytes][char array: requested_node_id (node_id of which we want the ip), length=32 bytes]
+                Packet contents: [byte with value: 02][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[random 8 byte (ping_id)][char array: requested_node_id (node_id of which we want the ip), length=32 bytes]]
                 Valid replies: a send_nodes packet
     
-                Send_nodes (response): [byte with value: 03][random 4 byte (ping_id)][char array  (client node_id), length=32 bytes][Nodes in node format, length=40 * (number of nodes (maximum of 8 nodes)) bytes]
-                ex: 03[Node][Node][Node] 
+                Send_nodes (response): [byte with value: 03][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[random 8 byte (ping_id)][Nodes in node format, length=40 * (number of nodes (maximum of 8 nodes)) bytes]]

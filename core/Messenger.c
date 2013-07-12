@@ -42,10 +42,10 @@ typedef struct
 
 #define MAX_NUM_FRIENDS 256
 
-Friend friendlist[MAX_NUM_FRIENDS];
+static Friend friendlist[MAX_NUM_FRIENDS];
 
 
-uint32_t numfriends;
+static uint32_t numfriends;
  
 
 //return the friend id associated to that public key.
@@ -189,7 +189,7 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length)
 }
 
 
-void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
+static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 
 //set the function that will be executed when a friend request is received.
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
@@ -198,7 +198,7 @@ void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 }
 
 
-void (*friend_message)(int, uint8_t *, uint16_t);
+static void (*friend_message)(int, uint8_t *, uint16_t);
 
 //set the function that will be executed when a message from a friend is received.
 void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
@@ -216,11 +216,10 @@ void initMessenger()
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
-    memcpy(self_client_id, self_public_key, crypto_box_PUBLICKEYBYTES);
     
 }
 
-void doFriends()
+static void doFriends()
 {//TODO: add incoming connections and some other stuff.
     uint32_t i;
     int len;
@@ -280,7 +279,7 @@ void doFriends()
     }
 }
 
-void doFriendRequest()
+static void doFriendRequest()
 {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t temp[MAX_DATA_SIZE];
@@ -296,7 +295,7 @@ void doFriendRequest()
 
 
 
-void doInbound()
+static void doInbound()
 {
     uint8_t secret_nonce[crypto_box_NONCEBYTES];
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];

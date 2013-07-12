@@ -39,8 +39,7 @@
 #include <winsock2.h>
 #include <windows.h>
 
-//we use libsodium (Portable version of NaCl) because stock NaCl doesn't compile on windows.
-#include <sodium.h>
+#undef VANILLA_NACL//make sure on windows we use libsodium
 
 #else //Linux includes
 
@@ -50,12 +49,20 @@
 #include <errno.h>
 #include <sys/time.h>
 
-//TODO: Including stuff like this is bad. This needs fixing.
-//We keep support for the original NaCl for now on UNIX like Operating Systems.
-//Commented out for now
-//#include "../nacl/build/Linux/include/amd64/crypto_box.h"
 
 #endif
+
+#ifndef VANILLA_NACL
+//we use libsodium by default
+#include <sodium.h>
+#else
+
+//TODO: Including stuff like this is bad. This needs fixing.
+//We keep support for the original NaCl for now.
+#include "../nacl/build/Linux/include/amd64/crypto_box.h"
+
+#endif
+
 
 #define MAX_UDP_PACKET_SIZE 65507
 

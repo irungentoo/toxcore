@@ -3,10 +3,12 @@
  * 
  * Compile with: gcc -O2 -Wall -o test ../core/network.c DHT_test.c
  * 
- * Command line arguments are the ip and port of a node and the client_id (32 bytes) of the friend you want to find the ip_port of
- * EX: ./test 127.0.0.1 33445 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef
+ * Command line arguments are the ip, port and public key of a node.
+ * EX: ./test 127.0.0.1 33445 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ * 
+ * The test will then ask you for the id (in hex format) of the friend you wish to add
  */
-#include "../core/network.h"
+//#include "../core/network.h"
 #include "../core/DHT.c"
 
 #include <string.h>
@@ -94,15 +96,44 @@ void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
     printf("\n--------------------END-----------------------------\n\n\n");
 }
 
+//horrible function from one of my first C programs.
+//only here because I was too lazy to write a proper one.
+unsigned char * hex_string_to_bin(char hex_string[])
+{
+    unsigned char * val = malloc(strlen(hex_string));
+    char * pos = hex_string;
+    int i=0;
+    while(i < strlen(hex_string))
+    {
+        sscanf(pos,"%2hhx",&val[i]);
+        pos+=2;
+        i++;
+    }
+    return val;
+}
+
 int main(int argc, char *argv[])
 {
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     
     if (argc < 4) {
-        printf("usage %s ip port client_id(of friend to find ip_port of)\n", argv[0]);
+        printf("usage %s ip port public_key\n", argv[0]);
         exit(0);
     }
-    DHT_addfriend((uint8_t *)argv[3]);
+    new_keys();
+    printf("OUR ID: ");
+    uint32_t i;
+    for(i = 0; i < 32; i++)
+    {
+        if(self_public_key[i] < 16)
+            printf("0");
+        printf("%hhX",self_public_key[i]);
+    }
+    
+    char temp_id[128];
+    printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
+    scanf("%s", temp_id);
+    DHT_addfriend(hex_string_to_bin(temp_id));
     
     //initialize networking
     //bind to ip 0.0.0.0:PORT
@@ -110,8 +141,7 @@ int main(int argc, char *argv[])
     ip.i = 0;
     init_networking(ip, PORT);
     
-    int randdomnum = random_int();
-    memcpy(self_client_id, &randdomnum, 4);
+
     
 
     perror("Initialization");
@@ -122,7 +152,7 @@ int main(int argc, char *argv[])
     //bootstrap_ip_port.ip.c[2] = 0;
     //bootstrap_ip_port.ip.c[3] = 1;
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-    DHT_bootstrap(bootstrap_ip_port);
+    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];

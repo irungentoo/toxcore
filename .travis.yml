@@ -2,6 +2,15 @@ language: c
 compiler:
   - gcc
 
+before_script:
+  - git clone git://github.com/jedisct1/libsodium.git
+  - cd libsodium
+  - ./autogen.sh
+  - ./configure && make check
+  - sudo make install
+  - sudo ldconfig
+  - cd ..
+
 script:
   - cmake CMakeLists.txt
   - make -j3
