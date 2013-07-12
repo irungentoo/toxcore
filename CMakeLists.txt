@@ -13,15 +13,16 @@ set(test_sources
 	
 set(exe_name TOX-app)
 
-target_link_libraries(sodium)
 
 add_executable(${exe_name}
 	${core_sources}
 	${test_sources})
 
 if(WIN32)
-	target_link_libraries(${exe_name} ws2_32)
-endif()
+	target_link_libraries(${exe_name} ws2_32 libsodium)
+else(WIN32)
+        target_link_libraries(libsodium)
+endif(WIN32)
 
 if(CMAKE_COMPILER_IS_GNUCC)
 	message(STATUS "==== GCC detected - Adding compiler flags")
