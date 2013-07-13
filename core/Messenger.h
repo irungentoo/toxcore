@@ -53,7 +53,7 @@ int getfriend_id(uint8_t * client_id);
 //make sure that client_id is of size CLIENT_ID_SIZE.
 //returns 0 if success
 //return -1 if failure.
-int getclient_id(int friend_id, uint8_t * client_id)
+int getclient_id(int friend_id, uint8_t * client_id);
 
 //remove a friend
 int m_delfriend(int friendnumber);
