@@ -149,6 +149,10 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 }
 int main(int argc, char *argv[])
 {
+    if (argc < 4) {
+        printf("usage %s ip port public_key (of the DHT bootstrap node)\n", argv[0]);
+        exit(0);
+    }
     int c;
     initMessenger();
     m_callback_friendrequest(print_request);
@@ -178,16 +182,24 @@ int main(int argc, char *argv[])
     new_lines(idstring0);
     do_refresh();
     strcpy(line, "");
-    while((c=getch())!=27) {
-        getmaxyx(stdscr,y,x);
-        if (c == '\n') {
-            line_eval(lines, line);
-            strcpy(line, "");
-        } else if (c == 127) {
-            line[strlen(line)-1] = '\0';
-        } else if (isalnum(c) || ispunct(c) || c == ' ') {
-            strcpy(line,appender(line, (char) c));
+    IP_Port bootstrap_ip_port;
+    bootstrap_ip_port.port = htons(atoi(argv[2]));
+    bootstrap_ip_port.ip.i = inet_addr(argv[1]);
+    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    while(true) {
+        c=getch();
+        if (c != 27) {
+            getmaxyx(stdscr,y,x);
+            if (c == '\n') {
+                line_eval(lines, line);
+                strcpy(line, "");
+            } else if (c == 127) {
+                line[strlen(line)-1] = '\0';
+            } else if (isalnum(c) || ispunct(c) || c == ' ') {
+                strcpy(line,appender(line, (char) c));
+            }
         }
+        doMessenger();
         do_refresh();
     }
     endwin();

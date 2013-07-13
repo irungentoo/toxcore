@@ -7,6 +7,9 @@
 #include <ncurses.h>
 #include <curses.h>
 #include <ctype.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "../core/Messenger.h"
 #define STRING_LENGTH 256
 #define HISTORY 50
