@@ -49,6 +49,12 @@ int m_addfriend_norequest(uint8_t * client_id);
 //return -1 if no such friend
 int getfriend_id(uint8_t * client_id);
 
+//copies the public key associated to that friend id into client_id buffer.
+//make sure that client_id is of size CLIENT_ID_SIZE.
+//returns 0 if success
+//return -1 if failure.
+int getclient_id(int friend_id, uint8_t * client_id)
+
 //remove a friend
 int m_delfriend(int friendnumber);
 
