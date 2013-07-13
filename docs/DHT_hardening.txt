@@ -32,3 +32,39 @@ power devices)
 Make each node test other nodes to see if they respond correctly before sending 
 them as part of their send nodes response.
 ...
+
+
+
+=====
+
+
+        
+
+<slvr> DHT_hardening.txt > create thousands of "real" nodes that do nothing but 
+shit up our DHT with fake crap.
+<slvr> This can be trivially solved by only storing verifiable data in the DHT.
+<slvr> there is one attack you have not considered, which is based on the Sybil 
+attack
+<slvr> I am assuming the DHT does say... a hash of a key in order to determine 
+which node to store data in, similar to Kad?
+<slvr> If there happens to be a malicious node at that DHT address, they might 
+actively deny storing that data.
+<slvr> This can be reduced by storing data at multiple places in the DHT 
+(equidistant points in DHT address space)
+<slvr> Since DHT addresses are public keys, it is computationally infeasible for 
+an attacker to actively deny all storage locations.
+<slvr> Recommended reading: S/Kademlia: A Practicable Approach Towards Secure 
+Key-Based Routing -- http://doc.tm.uka.de/2007/SKademlia_2007.pdf
+<biribiri> Type: application/pdf; Size: 202KiB; Updated: 2033d 19h 32m 5s ago 
+(Tue, 18 Dec 2007 13:28:18 GMT);
+<slvr> Tempering Kademlia with a Robust Identity Based System -- 
+http://www.di.unito.it/~ruffo/concorso/Papers/p2p08.pdf
+<biribiri> Type: application/pdf; Size: 145KiB; Updated: 1291d 23h 30m 12s ago 
+(Tue, 29 Dec 2009 09:30:28 GMT);
+<slvr> Also of interest: "An Analysis of BitTorrent's Two Kademlia-Based DHTs" 
+-- 
+http://www.tribler.org/trac/raw-attachment/wiki/AutoUpgradeToLastestVersion/
+Measurement_of_Bittorrent_DHT_performance_and_deployed_clients.pdf
+<biribiri> Type: application/pdf; charset=iso-8859-15; Size: 1.271MiB; Updated: 
+1669d 20h 25m 15s ago (Tue, 16 Dec 2008 12:44:08 GMT);
+
