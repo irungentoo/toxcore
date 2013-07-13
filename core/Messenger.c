@@ -66,6 +66,25 @@ int getfriend_id(uint8_t * client_id)
     return -1;
 }
 
+//copies the public key associated to that friend id into client_id buffer.
+//make sure that client_id is of size CLIENT_ID_SIZE.
+//returns 0 if success
+//return -1 if failure.
+int getclient_id(int friend_id, uint8_t * client_id)
+{
+    if(friendnumber >= numfriends || friendnumber < 0)
+    {
+        return -1;
+    }
+
+    if(friendlist[friend_id].status > 0)
+    {
+        memcpy(client_id, friendlist[friend_id].client_id, CLIENT_ID_SIZE);
+        return 0;
+    }
+    return -1;
+}
+
 
 //add a friend
 //set the data that will be sent along with friend request
