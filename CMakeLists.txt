@@ -11,7 +11,7 @@ set(core_sources
         core/Messenger.c)
 
 set(test_sources
-        testing/Messenger_test.c)
+        testing/nTox.c)
 
 add_executable(${exe_name}
         ${core_sources}
@@ -23,6 +23,7 @@ if(WIN32)
                 ${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a)
 else()
         target_link_libraries(${exe_name} sodium)
+        target_link_libraries(${exe_name} ncurses)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
