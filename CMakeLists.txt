@@ -9,9 +9,13 @@ set(core_sources
         core/Lossless_UDP.c
         core/net_crypto.c
         core/Messenger.c)
-
-set(test_sources
-        testing/nTox.c)
+if(WIN32)
+    set(test_sources
+            testing/Messenger_test.c)
+else()
+    set(test_sources
+            testing/nTox.c)
+endif()
 
 add_executable(${exe_name}
         ${core_sources}

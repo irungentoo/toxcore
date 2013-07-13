@@ -48,9 +48,11 @@ uint64_t current_time()
     
 }
 
+//return a random number
+//NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary
 uint32_t random_int()
 {
-    #ifdef WIN32
+    #ifndef VANILLA_NACL
     //NOTE: this function comes from libsodium
     return randombytes_random();
     #else
