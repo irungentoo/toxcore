@@ -72,7 +72,7 @@ int getfriend_id(uint8_t * client_id)
 //return -1 if failure.
 int getclient_id(int friend_id, uint8_t * client_id)
 {
-    if(friendnumber >= numfriends || friendnumber < 0)
+    if(friendnumber >= numfriends || friend_id < 0)
     {
         return -1;
     }
