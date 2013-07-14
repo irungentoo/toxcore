@@ -41,6 +41,7 @@ typedef struct
 {
     uint8_t client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
+    uint32_t lastgetnode;//time at which the last get_nodes request was sent.
     
 }Friend;
 
@@ -69,11 +70,8 @@ uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 static Client_data close_clientlist[LCLIENT_LIST];
 
 
-//Hard maximum number of friends 
-#define MAX_FRIENDS 256
 
-//Let's start with a static array for testing.
-static Friend friends_list[MAX_FRIENDS];
+static Friend * friends_list;
 static uint16_t num_friends;
 
 //The list of ip ports along with the ping_id of what we sent them and a timestamp
@@ -370,7 +368,7 @@ int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
     uint8_t pinging;
     uint32_t temp_time = unix_time();
 
-    for(i = 0; i < LPING_ARRAY; i++ )
+    for(i = 0; i < LSEND_NODES_ARRAY; i++ )
     {
         if((send_nodes[i].timestamp + PING_TIMEOUT) > temp_time)
         {
@@ -765,14 +763,26 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
 
 int DHT_addfriend(uint8_t * client_id)
 {
-    //TODO:Maybe make the array of friends dynamic instead of a static array with MAX_FRIENDS
-    if(MAX_FRIENDS > num_friends)
+    Friend * temp;
+    if(num_friends == 0)
     {
-        memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
-        num_friends++;
-    return 0;
+        temp = malloc(sizeof(Friend));
     }
-    return 1;
+    if(num_friends > 0)
+    {
+        temp = realloc(friends_list, sizeof(Friend) * (num_friends + 1));
+    }
+    if(temp == NULL)
+    {
+        return 1;
+    }
+    
+    friends_list = temp;
+    memset(&friends_list[num_friends], 0, sizeof(Friend));
+    memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
+    num_friends++;
+    return 0;
+
     
 }
 
@@ -783,17 +793,22 @@ int DHT_addfriend(uint8_t * client_id)
 int DHT_delfriend(uint8_t * client_id)
 {
     uint32_t i;
+    Friend * temp;
     for(i = 0; i < num_friends; i++)
     {
         if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)//Equal
         {
             memcpy(friends_list[num_friends].client_id, friends_list[i].client_id, CLIENT_ID_SIZE);
             num_friends--;
+            temp = realloc(friends_list, sizeof(friends_list) * (num_friends));
+            if(temp != NULL)
+            {
+                friends_list = temp;
+            }
             return 0;
         }
     }
     return 1;
-    
 }
 
 
@@ -866,8 +881,6 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 //Ping each client in the "friends" list every 60 seconds.
 //Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list.
 
-static uint32_t friend_lastgetnode[MAX_FRIENDS];
-
 
 void doDHTFriends()
 {
@@ -895,13 +908,13 @@ void doDHTFriends()
                 }
             }
         }
-        if(friend_lastgetnode[i] + GET_NODE_INTERVAL <= temp_time && num_nodes != 0)
+        if(friends_list[i].lastgetnode + GET_NODE_INTERVAL <= temp_time && num_nodes != 0)
         {
             rand_node = rand() % num_nodes;
             getnodes(friends_list[i].client_list[index[rand_node]].ip_port, 
                      friends_list[i].client_list[index[rand_node]].client_id, 
                      friends_list[i].client_id);
-            friend_lastgetnode[i] = temp_time;
+            friends_list[i].lastgetnode = temp_time;
         }
     }
 }
