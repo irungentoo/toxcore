@@ -64,6 +64,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             }
             int num = atoi(numstring);
             m_sendmessage(num, (uint8_t*) message, sizeof(message));
+        } else if (line[1] == 'q') { //exit
+		endwin();
+		exit(EXIT_SUCCESS);
         }
     } else {
         //new_lines(line);
