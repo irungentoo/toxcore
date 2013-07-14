@@ -282,7 +282,7 @@ static void doFriends()
             {
                  if(temp[0] == 64)
                  {
-                     (*friend_message)(i, temp, len);
+                     (*friend_message)(i, temp + 1, len - 1);
                  }
             }
             else
