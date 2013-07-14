@@ -346,11 +346,11 @@ void doMessenger()
         if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port))
         {
             //if packet is discarded
-            printf("Received unhandled packet with length: %u\n", length);
+            //printf("Received unhandled packet with length: %u\n", length);
         }
         else
         {
-            printf("Received handled packet with length: %u\n", length);
+            //printf("Received handled packet with length: %u\n", length);
         }
         //}
     }

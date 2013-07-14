@@ -10,6 +10,7 @@ void new_lines(char *line)
         strcpy(lines[i],lines[i-1]);
     }
     strcpy(lines[0],line);
+    do_refresh();
 }
 
 unsigned char * hex_string_to_bin(char hex_string[])
@@ -65,7 +66,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         strcat(command, line);
         new_lines(command);
     } else {
-        new_lines(line);
+        //new_lines(line);
     }
 }
 
@@ -186,17 +187,22 @@ int main(int argc, char *argv[])
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    nodelay(stdscr, TRUE);
     while(true) {
         c=getch();
-        if (c != 27) {
-            getmaxyx(stdscr,y,x);
-            if (c == '\n') {
-                line_eval(lines, line);
-                strcpy(line, "");
-            } else if (c == 127) {
-                line[strlen(line)-1] = '\0';
-            } else if (isalnum(c) || ispunct(c) || c == ' ') {
-                strcpy(line,appender(line, (char) c));
+        if (c != ERR) {
+            if (c != 27) {
+                getmaxyx(stdscr,y,x);
+                if (c == '\n') {
+                    line_eval(lines, line);
+                    strcpy(line, "");
+                } else if (c == 127) {
+                    line[strlen(line)-1] = '\0';
+                } else if (isalnum(c) || ispunct(c) || c == ' ') {
+                    strcpy(line,appender(line, (char) c));
+                }
+            } else {
+                break;
             }
         }
         doMessenger();
