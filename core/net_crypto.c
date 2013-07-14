@@ -660,6 +660,9 @@ static void receive_crypto()
                 {
                     increment_nonce(crypto_connections[i].recv_nonce);
                     crypto_connections[i].status = 3;
+                    
+                    //connection is accepted so we disable the auto kill by setting it to about 1 month from now.
+                    kill_connection_in(crypto_connections[i].number, 3000000);
                 }
                 else
                 {

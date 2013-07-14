@@ -198,7 +198,8 @@ int new_inconnection(IP_Port ip_port)
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
             connections[i].last_recv = current_time();
-            connections[i].killat = ~0;
+            //if this connection isn't handled within 5 seconds, kill it
+            connections[i].killat = current_time() + 1000000UL*CONNEXION_TIMEOUT;
             connections[i].send_counter = 127;
             return i;
         }
