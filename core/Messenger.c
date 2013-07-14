@@ -157,6 +157,7 @@ int m_delfriend(int friendnumber)
     }
 
     DHT_delfriend(friendlist[friendnumber].client_id);
+    crypto_kill(friendlist[friendnumber].crypt_connection_id);
     memset(&friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
     for(i = numfriends; i != 0; i--)
