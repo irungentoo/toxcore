@@ -57,13 +57,13 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 } else {
                     int j;
                     for (j=i+1; j<len; j++) {
-                        message[j] = line[j+3];
+                        message[j-i-1] = line[j+3];
                     }
                     break;
                 }
             }
             int num = atoi(numstring);
-            m_sendmessage(num, (uint8_t*) message, sizeof((uint8_t*)message));
+            m_sendmessage(num, (uint8_t*) message, sizeof(message));
         }
     } else {
         //new_lines(line);
@@ -140,7 +140,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
         new_lines("Friend request accepted.");
         do_refresh();
         int num = m_addfriend_norequest(public_key);
-        char numchar[10];
+        char numchar[100];
         sprintf(numchar, "Friend added, number: %d", num);
         new_lines(numchar);
     }
