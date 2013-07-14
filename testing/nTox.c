@@ -30,6 +30,9 @@ unsigned char * hex_string_to_bin(char hex_string[])
 void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 {
     if (line[0] == '/') {
+        char command[STRING_LENGTH + 2] = "> ";
+        strcat(command, line);
+        new_lines(command);
         if (line[1] == 'f') { // add friend command: /f ID
             int i;
             char temp_id[128];
@@ -38,7 +41,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             }
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
-            sprintf(numstring, "%d", num);
+            sprintf(numstring, "Friend added, number: %d", num);
             new_lines(numstring);
             do_refresh();
         } else if (line[1] == 'd') {
@@ -62,9 +65,6 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             int num = atoi(numstring);
             m_sendmessage(num, (uint8_t*) message, sizeof((uint8_t*)message));
         }
-        char command[STRING_LENGTH + 2] = "> ";
-        strcat(command, line);
-        new_lines(command);
     } else {
         //new_lines(line);
     }
@@ -139,14 +139,17 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
     {
         new_lines("Friend request accepted.");
         do_refresh();
-        m_addfriend_norequest(public_key);
+        int num = m_addfriend_norequest(public_key);
+        char numchar[10];
+        sprintf(numchar, "Friend added, number: %d", num);
+        new_lines(numchar);
     }
 }
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
-    new_lines("Message received");
-    do_refresh();
-    m_sendmessage(friendnumber, (uint8_t*)"Test1", 6);
+    char msg[100+length];
+    sprintf(msg, "Message [%d]: %s", friendnumber, string);
+    new_lines(msg);
 }
 int main(int argc, char *argv[])
 {
@@ -181,7 +184,7 @@ int main(int argc, char *argv[])
     raw();
     getmaxyx(stdscr,y,x);
     new_lines(idstring0);
-    do_refresh();
+    new_lines("/f ID (to add friend), /m friendnumber message (to send message)");
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
