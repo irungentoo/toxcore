@@ -14,7 +14,8 @@ if(WIN32)
             testing/Messenger_test.c)
 else()
     set(test_sources
-            testing/nTox.c)
+            #testing/nTox.c)
+            testing/Messenger_test.c)
 endif()
 
 add_executable(${exe_name}
