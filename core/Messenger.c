@@ -341,18 +341,24 @@ void doMessenger()
     uint32_t length;
     while(receivepacket(&ip_port, data, &length) != -1)
     {
+#ifdef DEBUG
         //if(rand() % 3 != 1)//simulate packet loss
         //{
         if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port))
         {
             //if packet is discarded
-            //printf("Received unhandled packet with length: %u\n", length);
+            printf("Received unhandled packet with length: %u\n", length);
         }
         else
         {
-            //printf("Received handled packet with length: %u\n", length);
+            printf("Received handled packet with length: %u\n", length);
         }
         //}
+#else
+        DHT_handlepacket(data, length, ip_port);
+        LosslessUDP_handlepacket(data, length, ip_port);
+#endif
+
     }
     doDHT();
     doLossless_UDP();
