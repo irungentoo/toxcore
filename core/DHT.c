@@ -126,6 +126,7 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
         {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
         }
+        
         for(j = 0; j < CLIENT_ID_SIZE; j++)
         {
         
@@ -768,7 +769,7 @@ int DHT_addfriend(uint8_t * client_id)
     {
         temp = malloc(sizeof(Friend));
     }
-    if(num_friends > 0)
+    else
     {
         temp = realloc(friends_list, sizeof(Friend) * (num_friends + 1));
     }
@@ -782,8 +783,6 @@ int DHT_addfriend(uint8_t * client_id)
     memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
     num_friends++;
     return 0;
-
-    
 }
 
 

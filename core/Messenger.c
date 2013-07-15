@@ -33,20 +33,14 @@ typedef struct
     uint8_t status;//0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
     uint8_t info[MAX_DATA_SIZE]; //the data that is sent during the friend requests we do
     uint16_t info_size; //length of the info
-    
 }Friend;
  
-
-
-
 
 #define MAX_NUM_FRIENDS 256
 
 static Friend friendlist[MAX_NUM_FRIENDS];
 
-
 static uint32_t numfriends;
- 
 
 //return the friend id associated to that public key.
 //return -1 if no such friend
@@ -65,6 +59,7 @@ int getfriend_id(uint8_t * client_id)
     }
     return -1;
 }
+
 
 //copies the public key associated to that friend id into client_id buffer.
 //make sure that client_id is of size CLIENT_ID_SIZE.
@@ -94,8 +89,8 @@ int getclient_id(int friend_id, uint8_t * client_id)
 //return -1 if failure.
 int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
 {
-    if(length == 0 || length > MAX_DATA_SIZE - 1 - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES 
-                                                      - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES)
+    if(length == 0 || length >= 
+            (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
     {
         return -1;
     }
@@ -105,7 +100,7 @@ int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
         return -1;
     }
     uint32_t i;
-    for(i = 0; i < (numfriends + 1); i++)
+    for(i = 0; i <= numfriends; i++)
     {
         if(friendlist[i].status == 0)
         {
@@ -131,7 +126,7 @@ int m_addfriend_norequest(uint8_t * client_id)
         return -1;
     }
     uint32_t i;
-    for(i = 0; i < (numfriends + 1); i++)
+    for(i = 0; i <= numfriends; i++)
     {
         if(friendlist[i].status == 0)
         {
@@ -205,7 +200,6 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length)
     temp[0] = 64;
     memcpy(temp + 1, message, length);
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
-    
 }
 
 
@@ -236,7 +230,6 @@ void initMessenger()
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
-    
 }
 
 static void doFriends()
@@ -261,19 +254,21 @@ static void doFriends()
         if(friendlist[i].status == 2 || friendlist[i].status == 3)
         {
             check_friendrequest(friendlist[i].friend_request_id);//for now this is used to kill the friend request
-            
             IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
-            if(is_cryptoconnected(friendlist[i].crypt_connection_id) == 0 && friendip.ip.i > 1)
+            switch(is_cryptoconnected(friendlist[i].crypt_connection_id))
             {
-                 friendlist[i].crypt_connection_id = crypto_connect(friendlist[i].client_id, friendip);
-            }
-            if(is_cryptoconnected(friendlist[i].crypt_connection_id) == 3)//if connection is established.
-            {
-                 friendlist[i].status = 4;
-            }
-            if(is_cryptoconnected(friendlist[i].crypt_connection_id) == 4)
-            {
-                crypto_kill(friendlist[i].crypt_connection_id);
+                case 0:
+                    if (friendip.ip.i > 1)
+                        friendlist[i].crypt_connection_id = crypto_connect(friendlist[i].client_id, friendip);
+                    break;
+                case 3: // Connection is established
+                    friendlist[i].status = 4;
+                    break;
+                case 4:
+                    crypto_kill(friendlist[i].crypt_connection_id);
+                    break;
+                default:
+                    break;
             }
         }
         while(friendlist[i].status == 4)
@@ -308,9 +303,7 @@ static void doFriendRequest()
     if(len >= 0)
     {
         (*friend_request)(public_key, temp, len);
-
     }
-
 }
 
 
