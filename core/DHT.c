@@ -110,35 +110,22 @@ int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)/
 
 //check if client with client_id is already in list of length length.
 //if it is set it's corresponding timestamp to current time.
-//if the ip_port is already in the list but associated to a different ip, change it.
+//if the id is already in the list with a different ip_port, update it.
 //return True(1) or False(0)
 //TODO: maybe optimize this.
 int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
 {
-    uint32_t i, j;
+    uint32_t i;
     uint32_t temp_time = unix_time();
     
     for(i = 0; i < length; i++)
     {
-        //If the id for an ip/port changes, replace it.
-        if(list[i].ip_port.ip.i == ip_port.ip.i &&
-        list[i].ip_port.port == ip_port.port)
-        {
-            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-        }
-        
-        for(j = 0; j < CLIENT_ID_SIZE; j++)
-        {
-        
-            if(list[i].client_id[j] != client_id[j])
-            {
-                break;
-            }
-        }
-        if(j == CLIENT_ID_SIZE)
+        if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
         {
             //Refresh the client timestamp.
             list[i].timestamp = temp_time;
+            list[i].ip_port.ip.i = ip_port.ip.i;
+            list[i].ip_port.port = ip_port.port;
             return 1;
         }
     }
@@ -150,18 +137,10 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
 //return True(1) or False(0)
 int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
 {
-    uint32_t i, j;
+    uint32_t i;
     for(i = 0; i < length; i++)
     {
-        for(j = 0; j < CLIENT_ID_SIZE; j++)
-        {
-        
-            if(list[i].client_id[j] != client_id[j])
-            {
-                break;
-            }
-        }
-        if(j == CLIENT_ID_SIZE)
+        if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
         {
 
             return 1;
@@ -290,7 +269,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
     
-    //NOTE: current behavior if there are two clients with the same id is to only keep one (the first one)
+    //NOTE: current behavior if there are two clients with the same id is to replace the first ip by the second.
     if(!client_in_list(close_clientlist, LCLIENT_LIST, client_id, ip_port))
     {
          
@@ -818,14 +797,15 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
 {
     uint32_t i, j;
     IP_Port empty = {{{0}}, 0};
-    
+    uint32_t temp_time = unix_time();
     for(i = 0; i < num_friends; i++)
     {
         if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)//Equal
         {
             for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
             {
-                if(memcmp(friends_list[i].client_list[j].client_id, client_id, CLIENT_ID_SIZE) == 0)
+                if(memcmp(friends_list[i].client_list[j].client_id, client_id, CLIENT_ID_SIZE) == 0 && 
+                 friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)
                 {
                     return friends_list[i].client_list[j].ip_port;
                 }
@@ -976,3 +956,64 @@ void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key)
     
 }
 
+
+//get the size of the DHT (for saving)
+uint32_t DHT_size()
+{
+    return sizeof(close_clientlist) + sizeof(Friend) * num_friends;
+}
+
+//save the DHT in data where data is an array of size DHT_size()
+void DHT_save(uint8_t * data)
+{
+    memcpy(data, close_clientlist, sizeof(close_clientlist));
+    memcpy(data + sizeof(close_clientlist), friends_list, sizeof(Friend) * num_friends);
+}
+
+//load the DHT from data of size size;
+//return -1 if failure
+//return 0 if success
+int DHT_load(uint8_t * data, uint32_t size)
+{
+    if(size < sizeof(close_clientlist))
+    {
+        return -1;
+    }
+    if((size - sizeof(close_clientlist)) % sizeof(Friend) != 0)
+    {
+        return -1;
+    }
+    uint32_t i, j;
+    //uint32_t temp_time = unix_time();
+    uint16_t temp;
+    
+    temp = (size - sizeof(close_clientlist))/sizeof(Friend);
+    
+    if(temp != 0)
+    {
+        Friend * tempfriends_list = (Friend *)(data + sizeof(close_clientlist));
+
+        for(i = 0; i < temp; i++)
+        {
+            DHT_addfriend(tempfriends_list[i].client_id);
+            for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
+            {
+                if(tempfriends_list[i].client_list[j].timestamp != 0)
+                {                
+                    getnodes(tempfriends_list[i].client_list[j].ip_port, 
+                             tempfriends_list[i].client_list[j].client_id, tempfriends_list[i].client_id);
+                }
+            }
+        }
+    }
+    Client_data * tempclose_clientlist = (Client_data *)data;
+
+    for(i = 0; i < LCLIENT_LIST; i++)
+    {
+        if(tempclose_clientlist[i].timestamp != 0)
+        {
+            DHT_bootstrap(tempclose_clientlist[i].ip_port, tempclose_clientlist[i].client_id);
+        }
+    }
+    return 0;
+}

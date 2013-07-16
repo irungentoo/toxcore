@@ -72,11 +72,19 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
 void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key);
 
 
-//TODO:
-//Add functions to save and load the state(client list, friends list)
+//SAVE/LOAD functions
+
+//get the size of the DHT (for saving)
+uint32_t DHT_size();
 
 
+//save the DHT in data where data is an array of size DHT_size()
+void DHT_save(uint8_t * data);
 
+//load the DHT from data of size size;
+//return -1 if failure
+//return 0 if success
+int DHT_load(uint8_t * data, uint32_t size);
 
 
 #endif 
