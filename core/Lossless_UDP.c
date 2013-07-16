@@ -40,7 +40,7 @@
 #define CONNEXION_TIMEOUT 5
 
 //initial amount of sync/hanshake packets to send per second.
-#define SYNC_RATE 10
+#define SYNC_RATE 2
 
 //initial send rate of data.
 #define DATA_SYNC_RATE 30
@@ -66,7 +66,8 @@ typedef struct
     uint16_t data_rate;//current data packet send rate packets per second.
     uint64_t last_SYNC; //time at which our last SYNC packet was sent.
     uint64_t last_sent; //time at which our last data or handshake packet was sent.
-    uint64_t last_recv; //time at which we last received something from the other
+    uint64_t last_recvSYNC; //time at which we last received a SYNC packet from the other
+    uint64_t last_recvdata; //time at which we last received a DATA packet from the other
     uint64_t killat; //time at which to kill the connection
     Data sendbuffer[MAX_QUEUE_NUM];//packet send buffer.
     Data recvbuffer[MAX_QUEUE_NUM];//packet receive buffer.
@@ -168,7 +169,7 @@ int new_connection(IP_Port ip_port)
             connections[i].successful_sent = connections[i].handshake_id1;
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
-            connections[i].last_recv = current_time();
+            connections[i].last_recvSYNC = current_time();
             connections[i].killat = ~0;
             connections[i].send_counter = 0;
             return i;
@@ -197,7 +198,7 @@ int new_inconnection(IP_Port ip_port)
             connections[i].inbound = 2;
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
-            connections[i].last_recv = current_time();
+            connections[i].last_recvSYNC = current_time();
             //if this connection isn't handled within 5 seconds, kill it
             connections[i].killat = current_time() + 1000000UL*CONNEXION_TIMEOUT;
             connections[i].send_counter = 127;
@@ -565,7 +566,7 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
         connections[connection_id].orecv_packetnum = recv_packetnum;
         connections[connection_id].osent_packetnum = sent_packetnum;
         connections[connection_id].successful_sent = recv_packetnum;
-        connections[connection_id].last_recv = current_time();
+        connections[connection_id].last_recvSYNC = current_time();
         connections[connection_id].recv_counter = counter;
         connections[connection_id].send_counter++;
         for(i = 0; i < number; i++)
@@ -635,6 +636,7 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t * data, uint16_t size
         {
             memcpy(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].data, data, size);
             connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size = size;
+            connections[connection_id].last_recvdata = current_time();
             if(sent_packet < BUFFER_PACKET_NUM)
             {
                 connections[connection_id].osent_packetnum = data_num;
@@ -722,7 +724,7 @@ void doNew()
 
         }
         //kill all timed out connections
-        if( connections[i].status > 0 && (connections[i].last_recv + CONNEXION_TIMEOUT * 1000000UL) < temp_time && 
+        if( connections[i].status > 0 && (connections[i].last_recvSYNC + CONNEXION_TIMEOUT * 1000000UL) < temp_time && 
             connections[i].status != 4)
         {
             //kill_connection(i);
@@ -755,15 +757,19 @@ void doSYNC()
 void doData()
 {
     uint32_t i;
+    uint64_t j;
     uint64_t temp_time = current_time();
     for(i = 0; i < MAX_CONNECTIONS; i++)
     {
-        if(connections[i].status == 3)
+        if(connections[i].status == 3 && sendqueue(i) != 0)
         {
             if((connections[i].last_sent + (1000000UL/connections[i].data_rate)) <= temp_time)
             {
-               send_DATA(i);
-               connections[i].last_sent = temp_time;
+                for(j = connections[i].last_sent; j < temp_time; j +=  (1000000UL/connections[i].data_rate))
+                {
+                    send_DATA(i);
+                }
+                connections[i].last_sent = temp_time;
             }
         }
     }    
@@ -771,12 +777,36 @@ void doData()
 
 //TODO: flow control.
 //automatically adjusts send rates of packets for optimal transmission.
+
+#define MAX_SYNC_RATE 10
+
 void adjustRates()
 {
-    //if()
-    
-}
+    uint32_t i;
+    uint64_t temp_time = current_time();
+    for(i = 0; i < MAX_CONNECTIONS; i++)
+    {
+        if(connections[i].status == 3)
+        {
+            if(sendqueue(i) != 0)
+            {
+  
+                 connections[i].data_rate = (BUFFER_PACKET_NUM - connections[i].num_req_paquets) * MAX_SYNC_RATE;
 
+                 connections[i].SYNC_rate = MAX_SYNC_RATE;
+
+            }
+            else if(connections[i].last_recvdata + 1000000UL > temp_time)
+            {
+                connections[i].SYNC_rate = MAX_SYNC_RATE;
+            }
+            else
+            {
+                connections[i].SYNC_rate = SYNC_RATE;
+            }
+        }
+    }    
+}
 //Call this function a couple times per second
 //It's the main loop.
 void doLossless_UDP()
