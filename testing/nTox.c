@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
     int c;
+    int on = 0;
     initMessenger();
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
@@ -217,6 +218,14 @@ int main(int argc, char *argv[])
                 }
             } else {
                 break;
+            }
+        }
+        if(on == 0)
+        {
+            if(DHT_isconnected())
+            {
+                new_lines("You are now connected to the DHT.");
+                on = 1;
             }
         }
         doMessenger();

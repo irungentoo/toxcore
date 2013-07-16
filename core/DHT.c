@@ -1017,3 +1017,19 @@ int DHT_load(uint8_t * data, uint32_t size)
     }
     return 0;
 }
+
+//returns 0 if we are not connected to the DHT
+//returns 1 if we are
+int DHT_isconnected()
+{
+    uint32_t i;
+    uint32_t temp_time = unix_time();
+    for(i = 0; i < LCLIENT_LIST; i++)
+    {
+        if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}

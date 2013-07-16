@@ -86,5 +86,8 @@ void DHT_save(uint8_t * data);
 //return 0 if success
 int DHT_load(uint8_t * data, uint32_t size);
 
+//returns 0 if we are not connected to the DHT
+//returns 1 if we are
+int DHT_isconnected();
 
 #endif 
