@@ -89,7 +89,9 @@ typedef struct
 
 #define MAX_CONNECTIONS 256
 
-Connection connections[MAX_CONNECTIONS];
+static Connection connections[MAX_CONNECTIONS];
+
+//static uint32_t numconnections;
 
 //Functions
 
@@ -170,6 +172,7 @@ int new_connection(IP_Port ip_port)
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
             connections[i].last_recvSYNC = current_time();
+            connections[i].last_sent = current_time();
             connections[i].killat = ~0;
             connections[i].send_counter = 0;
             return i;
@@ -199,6 +202,7 @@ int new_inconnection(IP_Port ip_port)
             connections[i].SYNC_rate = SYNC_RATE;
             connections[i].data_rate = DATA_SYNC_RATE;
             connections[i].last_recvSYNC = current_time();
+            connections[i].last_sent = current_time();
             //if this connection isn't handled within 5 seconds, kill it
             connections[i].killat = current_time() + 1000000UL*CONNEXION_TIMEOUT;
             connections[i].send_counter = 127;

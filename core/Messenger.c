@@ -36,11 +36,20 @@ typedef struct
 }Friend;
  
 
+
+uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+
+
 #define MAX_NUM_FRIENDS 256
 
 static Friend friendlist[MAX_NUM_FRIENDS];
 
 static uint32_t numfriends;
+ 
+//1 if we are online
+//0 if we are offline
+//static uint8_t online;
+
 
 //return the friend id associated to that public key.
 //return -1 if no such friend
@@ -94,7 +103,10 @@ int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
     {
         return -1;
     }
-
+    if(memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+    {
+        return -1;
+    }
     if(getfriend_id(client_id) != -1)
     {
         return -1;
@@ -106,6 +118,7 @@ int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
         {
             DHT_addfriend(client_id);
             friendlist[i].status = 1;
+            friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             
@@ -132,6 +145,7 @@ int m_addfriend_norequest(uint8_t * client_id)
         {
             DHT_addfriend(client_id);
             friendlist[i].status = 2;
+            friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             numfriends++;
@@ -348,6 +362,7 @@ void doMessenger()
             printf("Received handled packet with length: %u\n", length);
         }
         //}
+        printf("Status: %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id) );
 #else
         DHT_handlepacket(data, length, ip_port);
         LosslessUDP_handlepacket(data, length, ip_port);
@@ -361,3 +376,4 @@ void doMessenger()
     doFriendRequest();
     doFriends();
 }
+

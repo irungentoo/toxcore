@@ -1,4 +1,12 @@
 #include "nTox.h"
+
+#ifdef WIN32
+#define c_sleep(x) Sleep(1*x)
+#else
+#include <unistd.h>
+#define c_sleep(x) usleep(1000*x)
+#endif
+
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 int x,y;
@@ -212,6 +220,7 @@ int main(int argc, char *argv[])
             }
         }
         doMessenger();
+        c_sleep(1);
         do_refresh();
     }
     endwin();
