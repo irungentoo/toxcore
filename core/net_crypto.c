@@ -468,6 +468,12 @@ int crypto_inbound(uint8_t * public_key, uint8_t * secret_nonce, uint8_t * sessi
     {
         if(incoming_connections[i] != -1)
         {
+            if(is_connected(incoming_connections[i]) == 4 || is_connected(incoming_connections[i]) == 0)
+            {
+                kill_connection(incoming_connections[i]);
+                incoming_connections[i] = -1;
+                continue;
+            }
             if(id_packet(incoming_connections[i]) == 2)
             {
                 uint8_t temp_data[MAX_DATA_SIZE];
@@ -567,6 +573,22 @@ void new_keys()
     crypto_box_keypair(self_public_key,self_secret_key);
 }
 
+//save the public and private keys to the keys array
+//Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+void save_keys(uint8_t * keys)
+{
+    memcpy(keys, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(keys + crypto_box_PUBLICKEYBYTES, self_secret_key, crypto_box_SECRETKEYBYTES);
+}
+
+//load the public and private keys from the keys array
+//Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+void load_keys(uint8_t * keys)
+{
+    memcpy(self_public_key, keys, crypto_box_PUBLICKEYBYTES);
+    memcpy(self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
+}
+
 //TODO: optimize this
 //adds an incoming connection to the incoming_connection list.
 //returns 0 if successful
@@ -621,7 +643,6 @@ static void receive_crypto()
             }
             if(id_packet(crypto_connections[i].number) == 2)//handle handshake packet.
             {
-
                 len = read_packet(crypto_connections[i].number, temp_data);
                 if(handle_cryptohandshake(public_key, secret_nonce, session_key, temp_data, len))
                 {
