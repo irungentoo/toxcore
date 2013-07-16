@@ -28,7 +28,7 @@
 
 #define PORT 33445
 
-void printpacket(char * data, uint32_t length, IP_Port ip_port)
+void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
@@ -100,12 +100,12 @@ void printconnection(int connection_id)
 void Lossless_UDP()
 {
     IP_Port ip_port;
-    char data[MAX_UDP_PACKET_SIZE];
+    uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     while(receivepacket(&ip_port, data, &length) != -1)
     {
-        if(rand() % 3 != 1)//add packet loss
-        {
+        //if(rand() % 3 != 1)//add packet loss
+        //{
             if(LosslessUDP_handlepacket(data, length, ip_port))
             {
                     printpacket(data, length, ip_port);
@@ -113,9 +113,9 @@ void Lossless_UDP()
             else
             {
                 //printconnection(0);
-                // printf("Received handled packet with length: %u\n", length);
+                 printf("Received handled packet with length: %u\n", length);
             }
-        }
+        //}
     }
     
     doLossless_UDP();   
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
     
-    char buffer[128];
+    uint8_t buffer[512];
     int read;
     
     FILE *file = fopen(argv[1], "wb");
@@ -173,6 +173,7 @@ int main(int argc, char *argv[])
         Lossless_UDP();
         if(is_connected(connection) >= 2)
         {
+            kill_connection_in(connection, 3000000);
             read = read_packet(connection, buffer);
             if(read != 0)
             {
@@ -183,7 +184,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        else
+        if(is_connected(connection) == 4)
         {
             printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
             fclose(file);

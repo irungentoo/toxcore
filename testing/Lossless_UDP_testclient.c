@@ -27,7 +27,7 @@
 
 #define PORT 33446
 
-void printpacket(char * data, uint32_t length, IP_Port ip_port)
+void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
@@ -104,13 +104,13 @@ void printconnection(int connection_id)
 void Lossless_UDP()
 {
     IP_Port ip_port;
-    char data[MAX_UDP_PACKET_SIZE];
+    uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     while(receivepacket(&ip_port, data, &length) != -1)
     {
         printf("packet with length: %u\n", length);
-        if(rand() % 3 != 1)//add packet loss
-        {    
+        //if(rand() % 3 != 1)//add packet loss
+       // {    
             if(LosslessUDP_handlepacket(data, length, ip_port))
             {
                     printpacket(data, length, ip_port);
@@ -118,9 +118,9 @@ void Lossless_UDP()
             else
             {
                 //printconnection(0);
-                    printf("Received handled packet with length: %u\n", length);
+                 printf("Received handled packet with length: %u\n", length);
             }
-        }
+       // }
     }
     
     doLossless_UDP();   
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
     
-    char buffer[128];
+    uint8_t buffer[512];
     int read;
     
     FILE *file = fopen(argv[3], "rb");
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
     
     
     //read first part of file
-    read = fread(buffer, 1, 128, file);
+    read = fread(buffer, 1, 512, file);
     
     while(1)
     {
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
             if(write_packet(connection, buffer, read))
             {
                //printf("Wrote data.\n");
-                read = fread(buffer, 1, 128, file);
+                read = fread(buffer, 1, 512, file);
 
             }
             //printf("%u\n", sendqueue(connection));
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
             printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 0;
         }
-        c_sleep(1);
+        //c_sleep(1);
     }
         
     return 0;
