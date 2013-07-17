@@ -14,7 +14,9 @@ before_script:
 
 script:
   - cmake CMakeLists.txt
-  - make -j3
+  - make DHT_bootstrap -j3
+  - make Messenger_test -j3
+  - make nTox -j3
 
 notifications:
   email: false

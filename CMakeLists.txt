@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.6.0)
-project(TOX C)
 
-set(exe_name toxMessengerTest)
+if(WIN32)
+	include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
+endif()
 
 set(core_sources
         core/DHT.c
@@ -9,29 +10,29 @@ set(core_sources
         core/Lossless_UDP.c
         core/net_crypto.c
         core/Messenger.c)
-if(WIN32)
-    set(test_sources
-            testing/Messenger_test.c)
-else()
-    set(test_sources
-            testing/nTox.c)
-        #testing/Messenger_test.c)
-endif()
 
-add_executable(${exe_name}
-        ${core_sources}
-        ${test_sources})
+add_library(core ${core_sources})
 
-if(WIN32)
-        include_directories(${TOX_SOURCE_DIR}/sodium/include/)
-        target_link_libraries(${exe_name} ws2_32 
-                ${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a)
-else()
-        target_link_libraries(${exe_name} sodium)
-        target_link_libraries(${exe_name} ncurses)
-endif()
+macro(linkCoreLibraries exe_name)
+	if(WIN32)
+        	target_link_libraries(${exe_name} core
+                	${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a
+			ws2_32)
+	else()
+        	target_link_libraries(${exe_name} core
+			sodium)
+	endif()
+endmacro()
 
-if(CMAKE_COMPILER_IS_GNUCC)
-        message(STATUS "==== GCC detected - Adding compiler flags ====")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
-endif()
+
+macro(addCompilerFlags)
+	if(NOT WIN32)
+		if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
+			message(STATUS "==== ${CMAKE_C_COMPILER_ID} detected - Adding compiler flags ====")
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+		endif()
+	endif()
+endmacro()
+
+ADD_SUBDIRECTORY(testing)
+ADD_SUBDIRECTORY(other)
