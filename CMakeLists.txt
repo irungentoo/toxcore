@@ -31,5 +31,7 @@ macro(linkCoreLibraries exe_name)
 	endif()
 endmacro()
 
+cmake_policy(SET CMP0011 NEW)
+
 ADD_SUBDIRECTORY(testing)
 ADD_SUBDIRECTORY(other)
