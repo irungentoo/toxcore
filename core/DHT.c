@@ -781,7 +781,7 @@ int DHT_delfriend(uint8_t * client_id)
             {
                 memcpy(friends_list[i].client_id, friends_list[num_friends].client_id, CLIENT_ID_SIZE);
             }
-            temp = realloc(friends_list, sizeof(friends_list) * (num_friends));
+            temp = realloc(friends_list, sizeof(Friend) * (num_friends));
             if(temp != NULL)
             {
                 friends_list = temp;
