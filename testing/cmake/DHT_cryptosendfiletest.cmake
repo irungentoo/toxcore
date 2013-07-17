@@ -7,4 +7,3 @@ add_executable(${exe_name}
         DHT_cryptosendfiletest.c)
 
 linkCoreLibraries(${exe_name})
-addCompilerFlags()

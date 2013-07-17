@@ -7,4 +7,3 @@ add_executable(${exe_name}
         Lossless_UDP_testserver.c)
 
 linkCoreLibraries(${exe_name})
-addCompilerFlags()

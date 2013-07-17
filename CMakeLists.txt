@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 2.6.0)
 
+if(NOT WIN32)
+	if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
+		message(STATUS "==== ${CMAKE_C_COMPILER_ID} detected - Adding compiler flags ====")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+	endif()
+endif()
+
 if(WIN32)
 	include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
 endif()
@@ -21,16 +28,6 @@ macro(linkCoreLibraries exe_name)
 	else()
         	target_link_libraries(${exe_name} core
 			sodium)
-	endif()
-endmacro()
-
-
-macro(addCompilerFlags)
-	if(NOT WIN32)
-		if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
-			message(STATUS "==== ${CMAKE_C_COMPILER_ID} detected - Adding compiler flags ====")
-			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
-		endif()
 	endif()
 endmacro()
 

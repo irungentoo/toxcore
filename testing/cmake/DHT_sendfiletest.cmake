@@ -7,4 +7,3 @@ add_executable(${exe_name}
         DHT_sendfiletest.c)
 
 linkCoreLibraries(${exe_name})
-addCompilerFlags()
