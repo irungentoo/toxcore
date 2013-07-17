@@ -1,6 +1,7 @@
 language: c
 compiler:
   - gcc
+  - clang
 
 before_script:
   - git clone git://github.com/jedisct1/libsodium.git
