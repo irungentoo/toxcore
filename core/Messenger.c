@@ -280,6 +280,7 @@ static void doFriends()
                     break;
                 case 4:
                     crypto_kill(friendlist[i].crypt_connection_id);
+                    friendlist[i].crypt_connection_id = -1;
                     break;
                 default:
                     break;
@@ -300,6 +301,7 @@ static void doFriends()
                  if(is_cryptoconnected(friendlist[i].crypt_connection_id) == 4)//if the connection timed out, kill it
                  {
                          crypto_kill(friendlist[i].crypt_connection_id);
+                         friendlist[i].crypt_connection_id = -1;
                          friendlist[i].status = 3;
                  }
                  break;
@@ -333,6 +335,7 @@ static void doInbound()
         int friend_id = getfriend_id(public_key);
         if(friend_id != -1)
         {
+             crypto_kill(friendlist[friend_id].crypt_connection_id);
              friendlist[friend_id].crypt_connection_id = 
              accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
              
@@ -362,7 +365,7 @@ void doMessenger()
             printf("Received handled packet with length: %u\n", length);
         }
         //}
-        printf("Status: %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id) );
+        printf("Status: %u %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id),  friendlist[0].crypt_connection_id);
 #else
         DHT_handlepacket(data, length, ip_port);
         LosslessUDP_handlepacket(data, length, ip_port);
@@ -377,3 +380,74 @@ void doMessenger()
     doFriends();
 }
 
+//returns the size of the messenger data (for saving)
+uint32_t Messenger_size()
+{
+    return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+                                     + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * numfriends;
+}
+
+//save the messenger in data of size Messenger_size()
+void Messenger_save(uint8_t * data)
+{
+    save_keys(data);
+    data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    uint32_t size = DHT_size();
+    memcpy(data, &size, sizeof(size));
+    data += sizeof(size);
+    DHT_save(data);
+    data += size;
+    size = sizeof(Friend) * numfriends;
+    memcpy(data, &size, sizeof(size));
+    data += sizeof(size);
+    memcpy(data, friendlist, sizeof(Friend) * numfriends);
+}
+
+//load the messenger from data of size length.
+int Messenger_load(uint8_t * data, uint32_t length)
+{
+    if(length == ~0)
+    {
+        return -1;
+    }
+    if(length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2)
+    {
+        return -1;
+    }
+    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2;
+    load_keys(data);
+    data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    uint32_t size;
+    memcpy(&size, data, sizeof(size));
+    data += sizeof(size);
+    
+    if(length < size)
+    {
+        return -1;
+    }
+    length -= size;
+    if(DHT_load(data, size) == -1)
+    {
+        return -1;
+    }
+    data += size;
+    memcpy(&size, data, sizeof(size));
+    data += sizeof(size);
+    if(length != size || length % sizeof(Friend) != 0)
+    {
+        return -1;
+    }
+    
+    Friend * temp = malloc(size);
+    memcpy(temp, data, size);
+    
+    uint16_t num = size / sizeof(Friend);
+    
+    uint32_t i;
+    for(i = 0; i < num; i++)
+    {
+        m_addfriend_norequest(temp[i].client_id);
+    }
+    free(temp);
+    return 0;
+}

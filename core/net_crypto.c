@@ -423,9 +423,14 @@ int getcryptconnection_id(uint8_t * public_key)
 int crypto_connect(uint8_t * public_key, IP_Port ip_port)
 {
     uint32_t i;
-    if(getcryptconnection_id(public_key) != -1)
+    int id = getcryptconnection_id(public_key);
+    if(id != -1)
     {
-        return -1;
+        IP_Port c_ip = connection_ip(crypto_connections[id].number);
+        if(c_ip.ip.i == ip_port.ip.i && c_ip.port == ip_port.port)
+        {
+            return -1;
+        }
     }
     for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
     {
@@ -503,6 +508,7 @@ int crypto_kill(int crypt_connection_id)
     {
         crypto_connections[crypt_connection_id].status = 0;
         kill_connection(crypto_connections[crypt_connection_id].number);
+        crypto_connections[crypt_connection_id].number = ~0;
         return 0;
     }
     return 1;
@@ -519,10 +525,11 @@ int accept_crypto_inbound(int connection_id, uint8_t * public_key, uint8_t * sec
     {
         return -1;
     }
+    /*
     if(getcryptconnection_id(public_key) != -1)
     {
         return -1;
-    }
+    }*/
     for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
     {
         if(crypto_connections[i].status == 0)
@@ -709,6 +716,11 @@ void initNetCrypto()
     memset(crypto_connections, 0 ,sizeof(crypto_connections));
     memset(outbound_friendrequests, -1 ,sizeof(outbound_friendrequests));
     memset(incoming_connections, -1 ,sizeof(incoming_connections));
+    uint32_t i;
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    {
+        crypto_connections[i].number = ~0;
+    }
 }
 
 static void killTimedout()
@@ -719,6 +731,11 @@ static void killTimedout()
         if(crypto_connections[i].status != 0 && is_connected(crypto_connections[i].number) == 4)
         {
             crypto_connections[i].status = 4;
+        }
+        else if(is_connected(crypto_connections[i].number) == 4)
+        {
+            kill_connection(crypto_connections[i].number);
+            crypto_connections[i].number = ~0;
         }
     }
 }

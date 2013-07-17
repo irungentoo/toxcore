@@ -10,9 +10,14 @@
  * This is how I compile it: gcc -O2 -Wall -D VANILLA_NACL -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} Messenger_test.c
  *
  * 
- * Command line arguments are the ip and port of a node (for bootstrapping).
+ * Command line arguments are the ip, port and public_key of a node (for bootstrapping).
  * 
- * EX: ./test 127.0.0.1 33445
+ * EX: ./test 127.0.0.1 33445 CDCFD319CE3460824B33BE58FD86B8941C9585181D8FBD7C79C5721D7C2E9F7C
+ * 
+ * Or the argument can be the path to the save file.
+ * 
+ * EX: ./test Save.bak
+ * 
  */
 
 #include "../core/Messenger.h"
@@ -77,11 +82,29 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 4) {
-        printf("usage %s ip port public_key (of the DHT bootstrap node)\n", argv[0]);
+    if (argc < 4 && argc != 2) {
+        printf("usage %s ip port public_key (of the DHT bootstrap node)\n or\n %s Save.bak\n", argv[0], argv[0]);
         exit(0);
     }
     initMessenger();
+    if(argc > 3)
+    {
+        IP_Port bootstrap_ip_port;
+        bootstrap_ip_port.port = htons(atoi(argv[2]));
+        bootstrap_ip_port.ip.i = inet_addr(argv[1]);
+        DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    }
+    else
+    {
+        FILE *file = fopen(argv[1], "rb");
+        if ( file==NULL ){return 1;}
+        int read;
+        uint8_t buffer[128000];
+        read = fread(buffer, 1, 128000, file);
+        printf("Messenger loaded: %i\n", Messenger_load(buffer, read));
+        fclose(file);
+        
+    }
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     
@@ -103,16 +126,19 @@ int main(int argc, char *argv[])
     int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
     
     perror("Initialization");
-    IP_Port bootstrap_ip_port;
-    bootstrap_ip_port.port = htons(atoi(argv[2]));
-    bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
-    
+
     while(1)
     {
         m_sendmessage(num, (uint8_t*)"Test", 5);
         doMessenger();
         c_sleep(30);
+        FILE *file = fopen("Save.bak", "wb");
+        if ( file==NULL ){return 1;}
+        uint8_t * buffer = malloc(Messenger_size());
+        Messenger_save(buffer);
+        fwrite(buffer, 1, Messenger_size(), file);
+        free(buffer);
+        fclose(file);
     }
     
 }
