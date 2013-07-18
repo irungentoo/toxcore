@@ -1,7 +1,7 @@
 /* Messenger.c
-* 
+*
 * An implementation of a simple text chat only messenger on the tox network core.
-* 
+*
  
     Copyright (C) 2013 Tox project All Rights Reserved.
 
@@ -23,8 +23,7 @@
 */
 
 #include "Messenger.h"
- 
-#define MAX_NAME_LENGTH 128
+#define MIN(a,b) (((a)<(b))?(a):(b))
  
 typedef struct
 {
@@ -35,6 +34,9 @@ typedef struct
     uint8_t info[MAX_DATA_SIZE]; //the data that is sent during the friend requests we do
     uint8_t name[MAX_NAME_LENGTH];
     uint8_t name_sent;//0 if we didn't send our name to this friend 1 if we have.
+    uint8_t *userstatus;
+    uint16_t userstatus_length;
+    uint8_t userstatus_sent;
     uint16_t info_size; //length of the info
 }Friend;
  
@@ -43,6 +45,8 @@ typedef struct
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 static uint8_t self_name[MAX_NAME_LENGTH];
+static uint8_t *self_userstatus;
+static uint16_t self_userstatus_len;
 
 #define MAX_NUM_FRIENDS 256
 
@@ -102,7 +106,7 @@ int getclient_id(int friend_id, uint8_t * client_id)
 //return -1 if failure.
 int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
 {
-    if(length == 0 || length >= 
+    if(length == 0 || length >=
             (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
     {
         return -1;
@@ -125,7 +129,8 @@ int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
-            
+            friendlist[i].userstatus = calloc(1, 1);
+            friendlist[i].userstatus_length = 1;
             memcpy(friendlist[i].info, data, length);
             friendlist[i].info_size = length;
             
@@ -152,6 +157,8 @@ int m_addfriend_norequest(uint8_t * client_id)
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
+            friendlist[i].userstatus = calloc(1, 1);
+            friendlist[i].userstatus_length = 1;
             numfriends++;
             return i;
         }
@@ -171,6 +178,7 @@ int m_delfriend(int friendnumber)
 
     DHT_delfriend(friendlist[friendnumber].client_id);
     crypto_kill(friendlist[friendnumber].crypt_connection_id);
+    free(friendlist[friendnumber].userstatus);
     memset(&friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
     for(i = numfriends; i != 0; i--)
@@ -212,7 +220,7 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length)
     if(length >= MAX_DATA_SIZE || friendlist[friendnumber].status != 4)
     //this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less.
     {
-        return 0;   
+        return 0;
     }
     uint8_t temp[MAX_DATA_SIZE];
     temp[0] = 64;
@@ -278,6 +286,72 @@ int getname(int friendnumber, uint8_t * name)
     return 0;
 }
 
+int m_set_userstatus(uint8_t *status, uint16_t length)
+{
+    if(length > MAX_USERSTATUS_LENGTH)
+    {
+        return -1;
+    }
+    uint8_t *newstatus = calloc(length, 1);
+    memcpy(newstatus, status, length);
+    free(self_userstatus);
+    self_userstatus = newstatus;
+    self_userstatus_len = length;
+
+    uint32_t i;
+    for(i = 0; i < numfriends; i++)
+    {
+        friendlist[i].userstatus_sent = 0;
+    }
+    return 0;
+}
+
+// return the size of friendnumber's user status
+// guaranteed to be at most MAX_USERSTATUS_LENGTH
+int m_get_userstatus_size(int friendnumber)
+{
+    if(friendnumber >= numfriends || friendnumber < 0)
+    {
+        return -1;
+    }
+    return friendlist[friendnumber].userstatus_length;
+}
+
+// copy the user status of friendnumber into buf, truncating if needed to maxlen
+// bytes, use m_get_userstatus_size to find out how much you need to allocate
+int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
+{
+    if(friendnumber >= numfriends || friendnumber < 0)
+    {
+        return -1;
+    }
+    memset(buf, 0, 1);
+    memcpy(buf, friendlist[friendnumber].userstatus, MIN(maxlen, MAX_USERSTATUS_LENGTH) - 1);
+    return 0;
+}
+
+static int send_userstatus(int friendnumber, uint8_t * status, uint16_t length)
+{
+    uint8_t *thepacket = malloc(length + 1);
+    memcpy(thepacket + 1, status, length);
+    thepacket[0] = 70;
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
+}
+
+static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t length)
+{
+    if(friendnumber >= numfriends || friendnumber < 0)
+    {
+        return -1;
+    }
+    uint8_t *newstatus = calloc(length, 1);
+    memcpy(newstatus, status, length);
+    free(friendlist[friendnumber].userstatus);
+    friendlist[friendnumber].userstatus = newstatus;
+    friendlist[friendnumber].userstatus_length = length;
+    return 0;
+}
+
 static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 
 //set the function that will be executed when a friend request is received.
@@ -296,11 +370,24 @@ void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
 }
 
 
+static void (*friend_namechange)(int, uint8_t *, uint16_t);
+void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
+{
+    friend_namechange = function;
+}
+
+static void (*friend_statuschange)(int, uint8_t *, uint16_t);
+void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
+{
+    friend_statuschange = function;
+}
+
 #define PORT 33445
 //run this at startup
 void initMessenger()
 {
     new_keys();
+    m_set_userstatus((uint8_t*)"Online", sizeof("Online"));
     initNetCrypto();
     IP ip;
     ip.i = 0;
@@ -321,7 +408,7 @@ static void doFriends()
              //printf("\n%u %u %u\n", friendip.ip.i, request, friendlist[i].friend_request_id);
              if(friendip.ip.i > 1 && request == -1)
              {
-                  friendlist[i].friend_request_id = send_friendrequest(friendlist[i].client_id, 
+                  friendlist[i].friend_request_id = send_friendrequest(friendlist[i].client_id,
                                                friendip, friendlist[i].info, friendlist[i].info_size);
                   friendlist[i].status = 2;
              }
@@ -356,19 +443,37 @@ static void doFriends()
                     friendlist[i].name_sent = 1;
                 }
             }
+            if(friendlist[i].userstatus_sent == 0)
+            {
+                if(send_userstatus(i, self_userstatus, self_userstatus_len))
+                {
+                    friendlist[i].userstatus_sent = 1;
+                }
+            }
             len = read_cryptpacket(friendlist[i].crypt_connection_id, temp);
             if(len > 0)
             {
-                 if(temp[0] == 48 && len == MAX_NAME_LENGTH + 1)//Username
-                 {
-                     memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
-                     friendlist[i].name[MAX_NAME_LENGTH - 1] = 0;//make sure the NULL terminator is present.
-                 }
-                 else 
-                 if(temp[0] == 64)//Chat message
-                 {
-                     (*friend_message)(i, temp + 1, len - 1);
-                 }
+                switch(temp[0]) {
+                    case 48: {
+                        if (len != MAX_NAME_LENGTH + 1) break;
+                        friend_namechange(i, temp + 1, MAX_NAME_LENGTH); // todo: use the actual length
+                        memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
+                        friendlist[i].name[MAX_NAME_LENGTH - 1] = 0;//make sure the NULL terminator is present.
+                        break;
+                    }
+                    case 64: {
+                        (*friend_message)(i, temp + 1, len - 1);
+                        break;
+                    }
+                    case 70: {
+                        uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
+                        memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                        friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                        set_friend_userstatus(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                        free(status);
+                        break;
+                    }
+                }
             }
             else
             {
@@ -410,7 +515,7 @@ static void doInbound()
         if(friend_id != -1)
         {
              crypto_kill(friendlist[friend_id].crypt_connection_id);
-             friendlist[friend_id].crypt_connection_id = 
+             friendlist[friend_id].crypt_connection_id =
              accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
              
              friendlist[friend_id].status = 3;
@@ -520,7 +625,9 @@ int Messenger_load(uint8_t * data, uint32_t length)
     uint32_t i;
     for(i = 0; i < num; i++)
     {
-        setfriendname(m_addfriend_norequest(temp[i].client_id), temp[i].name);
+        int fnum = m_addfriend_norequest(temp[i].client_id);
+        setfriendname(fnum, temp[i].name);
+        set_friend_userstatus(fnum, temp[i].userstatus, temp[i].userstatus_length);
     }
     free(temp);
     return 0;
