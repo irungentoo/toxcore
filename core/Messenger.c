@@ -223,7 +223,7 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length)
         return 0;
     }
     uint8_t temp[MAX_DATA_SIZE];
-    temp[0] = 64;
+    temp[0] = PACKET_ID_MESSAGE;
     memcpy(temp + 1, message, length);
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
 }
@@ -233,7 +233,7 @@ static int m_sendname(int friendnumber, uint8_t * name)
 {
     uint8_t temp[MAX_NAME_LENGTH + 1];
     memcpy(temp + 1, name, MAX_NAME_LENGTH);
-    temp[0] = 48;
+    temp[0] = PACKET_ID_NICKNAME;
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, MAX_NAME_LENGTH + 1);
 }
 
@@ -334,7 +334,7 @@ static int send_userstatus(int friendnumber, uint8_t * status, uint16_t length)
 {
     uint8_t *thepacket = malloc(length + 1);
     memcpy(thepacket + 1, status, length);
-    thepacket[0] = 49;
+    thepacket[0] = PACKET_ID_USERSTATUS;
     int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
     free(thepacket);
     return written;
@@ -456,14 +456,14 @@ static void doFriends()
             if(len > 0)
             {
                 switch(temp[0]) {
-                    case 48: {
+                    case PACKET_ID_NICKNAME: {
                         if (len != MAX_NAME_LENGTH + 1) break;
                         friend_namechange(i, temp + 1, MAX_NAME_LENGTH); // todo: use the actual length
                         memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
                         friendlist[i].name[MAX_NAME_LENGTH - 1] = 0;//make sure the NULL terminator is present.
                         break;
                     }
-                    case 49: {
+                    case PACKET_ID_USERSTATUS: {
                         uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
                         memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
                         friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
@@ -471,7 +471,7 @@ static void doFriends()
                         free(status);
                         break;
                     }
-                    case 64: {
+                    case PACKET_ID_MESSAGE: {
                         (*friend_message)(i, temp + 1, len - 1);
                         break;
                     }
