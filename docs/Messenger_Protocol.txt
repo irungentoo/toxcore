@@ -26,7 +26,8 @@ ids 0 to 16 are reserved.
 48 Username (Send this packet as soon as you connect to a friend or to each friend everytime you change names.
               Username is maximum 128 bytes long with the null terminator included)
 
+49 Status change
 
 64 Chat message
 6? File transmission.
-70 Status change
+

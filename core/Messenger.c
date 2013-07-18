@@ -334,7 +334,7 @@ static int send_userstatus(int friendnumber, uint8_t * status, uint16_t length)
 {
     uint8_t *thepacket = malloc(length + 1);
     memcpy(thepacket + 1, status, length);
-    thepacket[0] = 70;
+    thepacket[0] = 49;
     int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
     free(thepacket);
     return written;
@@ -463,16 +463,16 @@ static void doFriends()
                         friendlist[i].name[MAX_NAME_LENGTH - 1] = 0;//make sure the NULL terminator is present.
                         break;
                     }
-                    case 64: {
-                        (*friend_message)(i, temp + 1, len - 1);
-                        break;
-                    }
-                    case 70: {
+                    case 49: {
                         uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
                         memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
                         friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
                         set_friend_userstatus(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
                         free(status);
+                        break;
+                    }
+                    case 64: {
+                        (*friend_message)(i, temp + 1, len - 1);
                         break;
                     }
                 }
