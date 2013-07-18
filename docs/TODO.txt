@@ -27,7 +27,9 @@ Things to do now:
 
 Things to do later:
 
--Figure out the whole sound and video transmission.
+-Figure out the whole sound and video transmission. (encrypted and fast)
+
+-File transfer (encrypted and fast)
 
 Less important.
 
