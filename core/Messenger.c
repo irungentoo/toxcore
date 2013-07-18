@@ -627,9 +627,12 @@ int Messenger_load(uint8_t * data, uint32_t length)
     uint32_t i;
     for(i = 0; i < num; i++)
     {
-        int fnum = m_addfriend_norequest(temp[i].client_id);
-        setfriendname(fnum, temp[i].name);
-        set_friend_userstatus(fnum, temp[i].userstatus, temp[i].userstatus_length);
+        if(temp[i].status != 0)
+        {
+            int fnum = m_addfriend_norequest(temp[i].client_id);
+            setfriendname(fnum, temp[i].name);
+            set_friend_userstatus(fnum, temp[i].userstatus, temp[i].userstatus_length);
+        }
     }
     free(temp);
     return 0;
