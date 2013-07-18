@@ -72,6 +72,30 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             }
             int num = atoi(numstring);
             m_sendmessage(num, (uint8_t*) message, sizeof(message));
+        } else if (line[1] == 'n') {
+            uint8_t name[MAX_NAME_LENGTH];
+            int i = 0;
+            for (i=3; i<strlen(line); i++) {
+                if (line[i] == 0 || line[i] == '\n') break;
+                name[i - 3] = line[i];
+            }
+            name[i - 3] = 0;
+            setname(name, i);
+            char numstring[100];
+            sprintf(numstring, "Changed nick to: %s", (char*)name);
+            new_lines(numstring);
+        } else if (line[1] == 's') {
+            uint8_t status[MAX_USERSTATUS_LENGTH];
+            int i = 0;
+            for (i=3; i<strlen(line); i++) {
+                if (line[i] == 0 || line[i] == '\n') break;
+                status[i - 3] = line[i];
+            }
+            status[i - 3] = 0;
+            m_set_userstatus(status, strlen((char*)status));
+            char numstring[100];
+            sprintf(numstring, "Changed status to: %s", (char*)status);
+            new_lines(numstring);
         } else if (line[1] == 'q') { //exit
 		endwin();
 		exit(EXIT_SUCCESS);
@@ -81,7 +105,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
     }
 }
 
-void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width) 
+void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 {
     int i = 0;
     strcpy(output,input);
@@ -95,7 +119,7 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
     }
 }
 
-int count_lines(char *string) 
+int count_lines(char *string)
 {
     int len = strlen(string);
     int i;
@@ -158,8 +182,27 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 }
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
+    char *name = malloc(MAX_NAME_LENGTH);
+    getname(friendnumber, (uint8_t*)name);
+    char msg[100+length+strlen(name)+1];
+    sprintf(msg, "[%d] <%s> %s", friendnumber, name, string);
+    free(name);
+    new_lines(msg);
+}
+void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
+    char *name = malloc(MAX_NAME_LENGTH);
+    getname(friendnumber, (uint8_t*)name);
     char msg[100+length];
-    sprintf(msg, "Message [%d]: %s", friendnumber, string);
+    sprintf(msg, "[%d] %s is now known as %s.", friendnumber, name, string);
+    free(name);
+    new_lines(msg);
+}
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
+    char *name = malloc(MAX_NAME_LENGTH);
+    getname(friendnumber, (uint8_t*)name);
+    char msg[100+length+strlen(name)+1];
+    sprintf(msg, "[%d] %s's status changed to %s.", friendnumber, name, string);
+    free(name);
     new_lines(msg);
 }
 int main(int argc, char *argv[])
@@ -173,6 +216,8 @@ int main(int argc, char *argv[])
     initMessenger();
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
+    m_callback_namechange(print_nickchange);
+    m_callback_userstatus(print_statuschange);
     char idstring0[200];
     char idstring1[32][5];
     char idstring2[32][5];

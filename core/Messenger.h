@@ -1,7 +1,7 @@
 /* Messenger.h
-* 
+*
 * An implementation of a simple text chat only messenger on the tox network core.
-* 
+*
 * NOTE: All the text in the messages must be encoded using UTF-8
  
     Copyright (C) 2013 Tox project All Rights Reserved.
@@ -24,12 +24,16 @@
 */
  
  
-#ifndef MESSENGER_H 
-#define MESSENGER_H  
+#ifndef MESSENGER_H
+#define MESSENGER_H
 
 #include "net_crypto.h"
 #include "DHT.h"
 
+#define MAX_NAME_LENGTH 128
+#define MAX_USERSTATUS_LENGTH 128
+// don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
+// to an absurdly large number later
 
 //add a friend
 //set the data that will be sent along with friend request
@@ -85,6 +89,20 @@ int setname(uint8_t * name, uint16_t length);
 //return -1 if failure
 int getname(int friendnumber, uint8_t * name);
 
+// set our user status
+// you are responsible for freeing status after
+// returns 0 on success, -1 on failure
+int m_set_userstatus(uint8_t *status, uint16_t length);
+
+// return the length of friendnumber's user status,
+// including null
+// pass it into malloc
+int m_get_userstatus_size(int friendnumber);
+
+// copy friendnumber's userstatus into buf, truncating if size is over maxlen
+// get the size you need to allocate from m_get_userstatus_size
+int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen);
+
 //set the function that will be executed when a friend request is received.
 //function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
@@ -94,6 +112,15 @@ void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 //function format is: function(int friendnumber, uint8_t * message, uint32_t length)
 void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
 
+// set the callback for name changes
+// function(int friendnumber, uint8_t *newname, uint16_t length)
+// you are not responsible for freeing newname
+void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
+
+// set the callback for user status changes
+// function(int friendnumber, uint8_t *newstatus, uint16_t length)
+// you are not responsible for freeing newstatus
+void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
 
 //run this at startup
 void initMessenger();
