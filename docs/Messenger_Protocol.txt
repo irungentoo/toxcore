@@ -2,8 +2,8 @@ Protocol for messages, data, etc..
 
 Streaming audio/video will not use this protocol as they can absorb some data loss.
 
-The protocol itself will run on top of the encryption which means it should be 
-impossible for someone to know what type of data is being transmitted.(Well they 
+The protocol itself will run on top of the encryption which means it should be
+impossible for someone to know what type of data is being transmitted.(Well they
 could just analyze how much data is being transmitted for a pretty good guess)
 
 Because it runs on the encryption which itself runs on our Lossless UDP protocol
@@ -29,4 +29,4 @@ ids 0 to 16 are reserved.
 
 64 Chat message
 6? File transmission.
-
+70 Status change
