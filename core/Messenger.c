@@ -325,7 +325,7 @@ int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
     {
         return -1;
     }
-    memset(buf, 0, 1);
+    memset(buf, 0, maxlen);
     memcpy(buf, friendlist[friendnumber].userstatus, MIN(maxlen, MAX_USERSTATUS_LENGTH) - 1);
     return 0;
 }
@@ -335,7 +335,9 @@ static int send_userstatus(int friendnumber, uint8_t * status, uint16_t length)
     uint8_t *thepacket = malloc(length + 1);
     memcpy(thepacket + 1, status, length);
     thepacket[0] = 70;
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
+    int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
+    free(thepacket);
+    return written;
 }
 
 static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t length)
