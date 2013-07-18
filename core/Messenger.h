@@ -32,6 +32,11 @@
 
 #define MAX_NAME_LENGTH 128
 #define MAX_USERSTATUS_LENGTH 128
+
+#define PACKET_ID_NICKNAME 48
+#define PACKET_ID_USERSTATUS 49
+#define PACKET_ID_MESSAGE 64
+
 // don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
 // to an absurdly large number later
 
