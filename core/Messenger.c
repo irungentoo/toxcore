@@ -24,6 +24,7 @@
 
 #include "Messenger.h"
  
+#define MAX_NAME_LENGTH 128
  
 typedef struct
 {
@@ -32,6 +33,8 @@ typedef struct
     int friend_request_id; //id of the friend request corresponding to the current friend request to the current friend.
     uint8_t status;//0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
     uint8_t info[MAX_DATA_SIZE]; //the data that is sent during the friend requests we do
+    uint8_t name[MAX_NAME_LENGTH];
+    uint8_t name_sent;//0 if we didn't send our name to this friend 1 if we have.
     uint16_t info_size; //length of the info
 }Friend;
  
@@ -39,6 +42,7 @@ typedef struct
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
+static uint8_t self_name[MAX_NAME_LENGTH];
 
 #define MAX_NUM_FRIENDS 256
 
@@ -216,6 +220,63 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length)
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
 }
 
+//send a name packet to friendnumber
+static int m_sendname(int friendnumber, uint8_t * name)
+{
+    uint8_t temp[MAX_NAME_LENGTH + 1];
+    memcpy(temp + 1, name, MAX_NAME_LENGTH);
+    temp[0] = 48;
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, MAX_NAME_LENGTH + 1);
+}
+
+//set the name of a friend
+//return 0 if success
+//return -1 if failure
+
+static int setfriendname(int friendnumber, uint8_t * name)
+{
+    if(friendnumber >= numfriends || friendnumber < 0)
+    {
+        return -1;
+    }
+    memcpy(friendlist[friendnumber].name, name, MAX_NAME_LENGTH);
+    return 0;
+}
+
+
+//Set our nickname
+//name must be a string of maximum MAX_NAME_LENGTH length.
+//return 0 if success
+//return -1 if failure
+int setname(uint8_t * name, uint16_t length)
+{
+    if(length > MAX_NAME_LENGTH)
+    {
+        return -1;
+    }
+    memcpy(self_name, name, length);
+    uint32_t i;
+    for(i = 0; i < numfriends; i++)
+    {
+        friendlist[i].name_sent = 0;
+    }
+    return 0;
+}
+
+//get name of friendnumber
+//put it in name
+//name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+//return 0 if success
+//return -1 if failure
+int getname(int friendnumber, uint8_t * name)
+{
+    if(friendnumber >= numfriends || friendnumber < 0)
+    {
+        return -1;
+    }
+    memcpy(name, friendlist[friendnumber].name, MAX_NAME_LENGTH);
+    return 0;
+}
 
 static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 
@@ -265,7 +326,7 @@ static void doFriends()
                   friendlist[i].status = 2;
              }
         }
-        if(friendlist[i].status == 2 || friendlist[i].status == 3)
+        if(friendlist[i].status == 2 || friendlist[i].status == 3) //friend is not online
         {
             check_friendrequest(friendlist[i].friend_request_id);//for now this is used to kill the friend request
             IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
@@ -286,12 +347,25 @@ static void doFriends()
                     break;
             }
         }
-        while(friendlist[i].status == 4)
+        while(friendlist[i].status == 4) //friend is online
         {
+            if(friendlist[i].name_sent == 0)
+            {
+                if(m_sendname(i, self_name))
+                {
+                    friendlist[i].name_sent = 1;
+                }
+            }
             len = read_cryptpacket(friendlist[i].crypt_connection_id, temp);
             if(len > 0)
             {
-                 if(temp[0] == 64)
+                 if(temp[0] == 48 && len == MAX_NAME_LENGTH + 1)//Username
+                 {
+                     memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
+                     friendlist[i].name[MAX_NAME_LENGTH - 1] = 0;//make sure the NULL terminator is present.
+                 }
+                 else 
+                 if(temp[0] == 64)//Chat message
                  {
                      (*friend_message)(i, temp + 1, len - 1);
                  }
@@ -446,7 +520,7 @@ int Messenger_load(uint8_t * data, uint32_t length)
     uint32_t i;
     for(i = 0; i < num; i++)
     {
-        m_addfriend_norequest(temp[i].client_id);
+        setfriendname(m_addfriend_norequest(temp[i].client_id), temp[i].name);
     }
     free(temp);
     return 0;

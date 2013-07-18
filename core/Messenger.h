@@ -71,6 +71,19 @@ int m_friendstatus(int friendnumber);
 //return 0 if it was not.
 int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length);
 
+//Set our nickname
+//name must be a string of maximum MAX_NAME_LENGTH length.
+//return 0 if success
+//return -1 if failure
+int setname(uint8_t * name, uint16_t length);
+
+
+//get name of friendnumber
+//put it in name
+//name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
+//return 0 if success
+//return -1 if failure
+int getname(int friendnumber, uint8_t * name);
 
 //set the function that will be executed when a friend request is received.
 //function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)

@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
         printf("%hhX",self_public_key[i]);
     }
     
+    setname((uint8_t *)"Anon", 5);
+    
     char temp_id[128];
     printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
     if(scanf("%s", temp_id) != 1)
@@ -129,6 +131,10 @@ int main(int argc, char *argv[])
 
     while(1)
     {
+        uint8_t name[128];
+        getname(num, name);
+        printf("%s\n", name);
+        
         m_sendmessage(num, (uint8_t*)"Test", 5);
         doMessenger();
         c_sleep(30);
