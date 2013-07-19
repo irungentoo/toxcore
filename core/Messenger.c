@@ -64,7 +64,7 @@ static uint32_t numfriends;
 int getfriend_id(uint8_t * client_id)
 {
     uint32_t i;
-    for(i = 0; i < numfriends; i++)
+    for(i = 0; i < numfriends; ++i)
     {
         if(friendlist[i].status > 0)
         {
@@ -120,7 +120,7 @@ int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
         return -1;
     }
     uint32_t i;
-    for(i = 0; i <= numfriends; i++)
+    for(i = 0; i <= numfriends; ++i)
     {
         if(friendlist[i].status == 0)
         {
@@ -134,7 +134,7 @@ int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length)
             memcpy(friendlist[i].info, data, length);
             friendlist[i].info_size = length;
             
-            numfriends++;
+            ++numfriends;
             return i;
         }
     }
@@ -148,7 +148,7 @@ int m_addfriend_norequest(uint8_t * client_id)
         return -1;
     }
     uint32_t i;
-    for(i = 0; i <= numfriends; i++)
+    for(i = 0; i <= numfriends; ++i)
     {
         if(friendlist[i].status == 0)
         {
@@ -181,7 +181,7 @@ int m_delfriend(int friendnumber)
     free(friendlist[friendnumber].userstatus);
     memset(&friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
-    for(i = numfriends; i != 0; i--)
+    for(i = numfriends; i != 0; --i)
     {
         if(friendlist[i].status != 0)
         {
@@ -264,7 +264,7 @@ int setname(uint8_t * name, uint16_t length)
     }
     memcpy(self_name, name, length);
     uint32_t i;
-    for(i = 0; i < numfriends; i++)
+    for(i = 0; i < numfriends; ++i)
     {
         friendlist[i].name_sent = 0;
     }
@@ -299,7 +299,7 @@ int m_set_userstatus(uint8_t *status, uint16_t length)
     self_userstatus_len = length;
 
     uint32_t i;
-    for(i = 0; i < numfriends; i++)
+    for(i = 0; i < numfriends; ++i)
     {
         friendlist[i].userstatus_sent = 0;
     }
@@ -401,7 +401,7 @@ static void doFriends()
     uint32_t i;
     int len;
     uint8_t temp[MAX_DATA_SIZE];
-    for(i = 0; i < numfriends; i++)
+    for(i = 0; i < numfriends; ++i)
     {
         if(friendlist[i].status == 1)
         {
@@ -625,7 +625,7 @@ int Messenger_load(uint8_t * data, uint32_t length)
     uint16_t num = size / sizeof(Friend);
     
     uint32_t i;
-    for(i = 0; i < num; i++)
+    for(i = 0; i < num; ++i)
     {
         if(temp[i].status != 0)
         {
