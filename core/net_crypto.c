@@ -128,9 +128,9 @@ int decrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce,
 void increment_nonce(uint8_t * nonce)
 {
     uint32_t i;
-    for(i = 0; i < crypto_box_NONCEBYTES; i++)
+    for(i = 0; i < crypto_box_NONCEBYTES; ++i)
     {
-        nonce[i]++;
+        ++nonce[i];
         if(nonce[i] != 0)
         {
             break;
@@ -143,7 +143,7 @@ void increment_nonce(uint8_t * nonce)
 void random_nonce(uint8_t * nonce)
 {
     uint32_t i;
-    for(i = 0; i < crypto_box_NONCEBYTES; i++)
+    for(i = 0; i < crypto_box_NONCEBYTES; ++i)
     {
         nonce[i] = random_int() % 256;
     }
@@ -228,7 +228,7 @@ int send_friendrequest(uint8_t * public_key, IP_Port ip_port, uint8_t * data, ui
         return -1;
     }
     uint32_t i;
-    for(i = 0; i < MAX_FRIEND_REQUESTS; i++)
+    for(i = 0; i < MAX_FRIEND_REQUESTS; ++i)
     {
         if(outbound_friendrequests[i] == -1)
         {
@@ -365,7 +365,7 @@ int handle_cryptohandshake(uint8_t * public_key, uint8_t * secret_nonce,
 int handle_friendrequest(uint8_t * public_key, uint8_t * data)
 {
     uint32_t i;
-    for(i = 0; i < MAX_INCOMING; i++)
+    for(i = 0; i < MAX_INCOMING; ++i)
     {
         if(incoming_connections[i] != -1)
         {
@@ -403,7 +403,7 @@ int handle_friendrequest(uint8_t * public_key, uint8_t * data)
 int getcryptconnection_id(uint8_t * public_key)
 {
     uint32_t i;
-    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
     {
         if(crypto_connections[i].status > 0)
         {
@@ -432,7 +432,7 @@ int crypto_connect(uint8_t * public_key, IP_Port ip_port)
             return -1;
         }
     }
-    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
     {
         if(crypto_connections[i].status == 0)
         {
@@ -469,7 +469,7 @@ int crypto_connect(uint8_t * public_key, IP_Port ip_port)
 int crypto_inbound(uint8_t * public_key, uint8_t * secret_nonce, uint8_t * session_key)
 {
     uint32_t i;
-    for(i = 0; i < MAX_INCOMING; i++)
+    for(i = 0; i < MAX_INCOMING; ++i)
     {
         if(incoming_connections[i] != -1)
         {
@@ -530,7 +530,7 @@ int accept_crypto_inbound(int connection_id, uint8_t * public_key, uint8_t * sec
     {
         return -1;
     }*/
-    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
     {
         if(crypto_connections[i].status == 0)
         {
@@ -603,7 +603,7 @@ void load_keys(uint8_t * keys)
 int new_incoming(int id)
 {
     uint32_t i;
-    for(i = 0; i < MAX_INCOMING; i++)
+    for(i = 0; i < MAX_INCOMING; ++i)
     {
         if(incoming_connections[i] == -1)
         {
@@ -633,7 +633,7 @@ static void handle_incomings()
 static void receive_crypto()
 {
     uint32_t i;
-    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
     {
         if(crypto_connections[i].status == 1)
         {
@@ -717,7 +717,7 @@ void initNetCrypto()
     memset(outbound_friendrequests, -1 ,sizeof(outbound_friendrequests));
     memset(incoming_connections, -1 ,sizeof(incoming_connections));
     uint32_t i;
-    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
     {
         crypto_connections[i].number = ~0;
     }
@@ -726,7 +726,7 @@ void initNetCrypto()
 static void killTimedout()
 {
     uint32_t i;
-    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
     {
         if(crypto_connections[i].status != 0 && is_connected(crypto_connections[i].number) == 4)
         {
