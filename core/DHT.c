@@ -91,7 +91,7 @@ static Pinged send_nodes[LSEND_NODES_ARRAY];
 int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)//tested
 {
     uint32_t i;
-    for(i = 0; i < CLIENT_ID_SIZE; i++)
+    for(i = 0; i < CLIENT_ID_SIZE; ++i)
     {
         if(abs(client_id[i] ^ client_id1[i]) < abs(client_id[i] ^ client_id2[i]))
         {
@@ -118,7 +118,7 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
     uint32_t i;
     uint32_t temp_time = unix_time();
     
-    for(i = 0; i < length; i++)
+    for(i = 0; i < length; ++i)
     {
         if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
         {
@@ -138,7 +138,7 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
 int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
 {
     uint32_t i;
-    for(i = 0; i < length; i++)
+    for(i = 0; i < length; ++i)
     {
         if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
         {
@@ -166,7 +166,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
     uint32_t i, j, k;
     int num_nodes=0;
     uint32_t temp_time = unix_time();
-    for(i = 0; i < LCLIENT_LIST; i++)
+    for(i = 0; i < LCLIENT_LIST; ++i)
     {
         if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time && 
         !client_in_nodelist(nodes_list, MAX_SENT_NODES,close_clientlist[i].client_id))
@@ -178,7 +178,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
                     nodes_list[num_nodes].ip_port = close_clientlist[i].ip_port;
                     num_nodes++;
             }
-            else for(j = 0; j < MAX_SENT_NODES; j++)
+            else for(j = 0; j < MAX_SENT_NODES; ++j)
             {
                 if(id_closest(client_id, nodes_list[j].client_id, close_clientlist[i].client_id) == 2)
                 {
@@ -190,9 +190,9 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
         }
         
     }
-    for(i = 0; i < num_friends; i++)
+    for(i = 0; i < num_friends; ++i)
     {
-        for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
+        for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
         {
             if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time && 
             !client_in_nodelist(nodes_list, MAX_SENT_NODES,friends_list[i].client_list[j].client_id))
@@ -204,7 +204,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
                         nodes_list[num_nodes].ip_port = friends_list[i].client_list[j].ip_port;
                         num_nodes++;
                 }
-                else for(k = 0; k < MAX_SENT_NODES; k++)
+                else for(k = 0; k < MAX_SENT_NODES; ++k)
                 {
                     if(id_closest(client_id, nodes_list[k].client_id, friends_list[i].client_list[j].client_id) == 2)
                     {
@@ -230,7 +230,7 @@ int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Por
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
-    for(i = 0; i < length; i++)
+    for(i = 0; i < length; ++i)
     {
         if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time)//if node is bad.
         {
@@ -250,7 +250,7 @@ int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Po
     uint32_t i;
     uint32_t temp_time = unix_time();
     
-    for(i = 0; i < length; i++)
+    for(i = 0; i < length; ++i)
     {
         if(id_closest(comp_client_id, list[i].client_id, client_id) == 2)
         {
@@ -280,7 +280,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
         }
         
     }
-    for(i = 0; i < num_friends; i++)
+    for(i = 0; i < num_friends; ++i)
     {
         if(!client_in_list(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
         {
@@ -308,7 +308,7 @@ int is_pinging(IP_Port ip_port, uint64_t ping_id)
     uint8_t pinging;
     uint32_t temp_time = unix_time();
 
-    for(i = 0; i < LPING_ARRAY; i++ )
+    for(i = 0; i < LPING_ARRAY; ++i )
     {
         if((pings[i].timestamp + PING_TIMEOUT) > temp_time)
         {
@@ -318,14 +318,14 @@ int is_pinging(IP_Port ip_port, uint64_t ping_id)
                 if(pings[i].ip_port.ip.i == ip_port.ip.i &&
                 pings[i].ip_port.port == ip_port.port)
                 {
-                        pinging++;
+                        ++pinging;
                 }
             }
             if(ping_id != 0)
             {
                 if(pings[i].ping_id == ping_id)
                 {
-                        pinging++;
+                        ++pinging;
                 }
             }
             if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
@@ -348,7 +348,7 @@ int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
     uint8_t pinging;
     uint32_t temp_time = unix_time();
 
-    for(i = 0; i < LSEND_NODES_ARRAY; i++ )
+    for(i = 0; i < LSEND_NODES_ARRAY; ++i )
     {
         if((send_nodes[i].timestamp + PING_TIMEOUT) > temp_time)
         {
@@ -358,14 +358,14 @@ int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
                 if(send_nodes[i].ip_port.ip.i == ip_port.ip.i &&
                 send_nodes[i].ip_port.port == ip_port.port)
                 {
-                        pinging++;
+                        ++pinging;
                 }
             }
             if(ping_id != 0)
             {
                 if(send_nodes[i].ping_id == ping_id)
                 {
-                        pinging++;
+                        ++pinging;
                 }
             }
             if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
@@ -391,9 +391,9 @@ uint64_t add_pinging(IP_Port ip_port)
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
     uint32_t temp_time = unix_time();
     
-    for(i = 0; i < PING_TIMEOUT; i++ )
+    for(i = 0; i < PING_TIMEOUT; ++i )
     {
-        for(j = 0; j < LPING_ARRAY; j++ )
+        for(j = 0; j < LPING_ARRAY; ++j )
         {
             if((pings[j].timestamp + PING_TIMEOUT - i) < temp_time)
             {
@@ -415,9 +415,9 @@ uint64_t add_gettingnodes(IP_Port ip_port)
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
     uint32_t temp_time = unix_time();
     
-    for(i = 0; i < PING_TIMEOUT; i++ )
+    for(i = 0; i < PING_TIMEOUT; ++i )
     {
-        for(j = 0; j < LSEND_NODES_ARRAY; j++ )
+        for(j = 0; j < LSEND_NODES_ARRAY; ++j )
         {
             if((send_nodes[j].timestamp + PING_TIMEOUT - i) < temp_time)
             {
@@ -727,7 +727,7 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
     memcpy(nodes_list, plain + sizeof(ping_id), num_nodes * sizeof(Node_format));
     
     uint32_t i;
-    for(i = 0; i < num_nodes; i++)
+    for(i = 0; i < num_nodes; ++i)
     {
         pingreq(nodes_list[i].ip_port, nodes_list[i].client_id);
     }
@@ -760,7 +760,7 @@ int DHT_addfriend(uint8_t * client_id)
     friends_list = temp;
     memset(&friends_list[num_friends], 0, sizeof(Friend));
     memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
-    num_friends++;
+    ++num_friends;
     return 0;
 }
 
@@ -772,11 +772,11 @@ int DHT_delfriend(uint8_t * client_id)
 {
     uint32_t i;
     Friend * temp;
-    for(i = 0; i < num_friends; i++)
+    for(i = 0; i < num_friends; ++i)
     {
         if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)//Equal
         {
-            num_friends--;
+            --num_friends;
             if(num_friends != i)
             {
                 memcpy(friends_list[i].client_id, friends_list[num_friends].client_id, CLIENT_ID_SIZE);
@@ -801,11 +801,11 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
     uint32_t i, j;
     IP_Port empty = {{{0}}, 0};
     uint32_t temp_time = unix_time();
-    for(i = 0; i < num_friends; i++)
+    for(i = 0; i < num_friends; ++i)
     {
         if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)//Equal
         {
-            for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
+            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
             {
                 if(memcmp(friends_list[i].client_list[j].client_id, client_id, CLIENT_ID_SIZE) == 0 && 
                  friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)
@@ -872,9 +872,9 @@ void doDHTFriends()
     uint32_t rand_node;
     uint32_t index[MAX_FRIEND_CLIENTS];
     
-    for(i = 0; i < num_friends; i++)
+    for(i = 0; i < num_friends; ++i)
     {
-        for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
+        for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
         {
             if(friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time)//if node is not dead.
             {
@@ -886,7 +886,7 @@ void doDHTFriends()
                 if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
                 {
                     index[num_nodes] = j;
-                    num_nodes++;
+                    ++num_nodes;
                 }
             }
         }
@@ -913,7 +913,7 @@ void doClose()//tested
     uint32_t rand_node;
     uint32_t index[LCLIENT_LIST];
     
-    for(i = 0; i < LCLIENT_LIST; i++)
+    for(i = 0; i < LCLIENT_LIST; ++i)
     {
         if(close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time)//if node is not dead.
         {
@@ -925,7 +925,7 @@ void doClose()//tested
             if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
             {
                 index[num_nodes] = i;
-                num_nodes++;
+                ++num_nodes;
             }
         }   
     }
@@ -996,10 +996,10 @@ int DHT_load(uint8_t * data, uint32_t size)
     {
         Friend * tempfriends_list = (Friend *)(data + sizeof(close_clientlist));
 
-        for(i = 0; i < temp; i++)
+        for(i = 0; i < temp; ++i)
         {
             DHT_addfriend(tempfriends_list[i].client_id);
-            for(j = 0; j < MAX_FRIEND_CLIENTS; j++)
+            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
             {
                 if(tempfriends_list[i].client_list[j].timestamp != 0)
                 {                
@@ -1011,7 +1011,7 @@ int DHT_load(uint8_t * data, uint32_t size)
     }
     Client_data * tempclose_clientlist = (Client_data *)data;
 
-    for(i = 0; i < LCLIENT_LIST; i++)
+    for(i = 0; i < LCLIENT_LIST; ++i)
     {
         if(tempclose_clientlist[i].timestamp != 0)
         {
@@ -1027,7 +1027,7 @@ int DHT_isconnected()
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
-    for(i = 0; i < LCLIENT_LIST; i++)
+    for(i = 0; i < LCLIENT_LIST; ++i)
     {
         if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)
         {
