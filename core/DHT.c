@@ -206,7 +206,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
                 }
                 else for(k = 0; k < MAX_SENT_NODES; k++)
                 {
-                    if(id_closest(friends_list[i].client_id, nodes_list[k].client_id, friends_list[i].client_list[j].client_id) == 2)
+                    if(id_closest(client_id, nodes_list[k].client_id, friends_list[i].client_list[j].client_id) == 2)
                     {
                         memcpy(nodes_list[k].client_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE);
                         nodes_list[k].ip_port = friends_list[i].client_list[j].ip_port;
@@ -288,7 +288,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
             if(replace_bad(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
             {
                 //if we can't replace bad nodes we try replacing good ones
-                replace_good(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port, self_public_key);
+                replace_good(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port, friends_list[i].client_id);
             }
         }  
     }
