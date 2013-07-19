@@ -16,8 +16,8 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 + Every peer is represented as a byte string (the public key of the peer [client id])
 + We're using torrent-style DHT so that peers can find the IP of the other peers when they have their ID.
 + Once the client has the IP of that peer, they start initiating a secure connection with each other. (See [Crypto](https://github.com/irungentoo/ProjectTox-Core/blob/master/docs/Crypto.txt))
-+ When both peers are securely connect with the encryption, they can securely exchange messages, initiate a video chat, send files, etc.
--[![Build Status](https://travis-ci.org/irungentoo/ProjectTox-Core.png?branch=master)](https://travis-ci.org/irungentoo/ProjectTox-Core) 
++ When both peers are securely connect with the encryption, they can securely exchange messages, initiate a video chat, send files, etc.<br />
+[![Build Status](https://travis-ci.org/irungentoo/ProjectTox-Core.png?branch=master)](https://travis-ci.org/irungentoo/ProjectTox-Core) 
 
 ## Roadmap:
 - [x] Get our DHT working perfectly.(Done, needs large scale testing though.)
