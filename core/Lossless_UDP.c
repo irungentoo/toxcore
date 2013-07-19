@@ -37,6 +37,7 @@
 #define BUFFER_PACKET_NUM (16-1)
 
 //Lossless UDP connection timeout.
+//timeout per connection is randomly set between CONNEXION_TIMEOUT and 2*CONNEXION_TIMEOUT
 #define CONNEXION_TIMEOUT 5
 
 //initial amount of sync/hanshake packets to send per second.
@@ -84,6 +85,7 @@ typedef struct
     uint16_t num_req_paquets; //total number of currently requested packets(by the other person)
     uint8_t recv_counter;
     uint8_t send_counter;
+    uint8_t timeout; //connection timeout in seconds.
 }Connection;
 
 
@@ -175,6 +177,8 @@ int new_connection(IP_Port ip_port)
             connections[i].last_sent = current_time();
             connections[i].killat = ~0;
             connections[i].send_counter = 0;
+            //add randomness to timeout to prevent connections getting stuck in a loop.
+            connections[i].timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
             return i;
         }
     }
@@ -203,8 +207,10 @@ int new_inconnection(IP_Port ip_port)
             connections[i].data_rate = DATA_SYNC_RATE;
             connections[i].last_recvSYNC = current_time();
             connections[i].last_sent = current_time();
-            //if this connection isn't handled within 5 seconds, kill it
-            connections[i].killat = current_time() + 1000000UL*CONNEXION_TIMEOUT;
+            //add randomness to timeout to prevent connections getting stuck in a loop.
+            connections[i].timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
+            //if this connection isn't handled within the timeout kill it.
+            connections[i].killat = current_time() + 1000000UL*connections[i].timeout;
             connections[i].send_counter = 127;
             return i;
         }
@@ -551,6 +557,7 @@ int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
         connections[connection_id].status =  3;
         connections[connection_id].recv_counter = counter;
         connections[connection_id].send_counter++;
+        send_SYNC(connection_id);
         return 0;
     }
     return 1;
@@ -671,6 +678,12 @@ int handle_data(uint8_t * packet, uint32_t length, IP_Port source)
     {
         return 1;
     }
+    
+    if(connections[connection].status != 3)//Drop the data packet if connection is not connected.
+    {
+        return 1;
+    }
+    
     if(length > 1 + 4 + MAX_DATA_SIZE || length < 1 + 4 + 1)
     {
         return 1;
@@ -728,7 +741,7 @@ void doNew()
 
         }
         //kill all timed out connections
-        if( connections[i].status > 0 && (connections[i].last_recvSYNC + CONNEXION_TIMEOUT * 1000000UL) < temp_time && 
+        if( connections[i].status > 0 && (connections[i].last_recvSYNC + connections[i].timeout * 1000000UL) < temp_time && 
             connections[i].status != 4)
         {
             //kill_connection(i);

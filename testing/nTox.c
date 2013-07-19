@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
     raw();
     getmaxyx(stdscr,y,x);
     new_lines(idstring0);
-    new_lines("/f ID (to add friend), /m friendnumber message (to send message)");
+    new_lines("/f ID (to add friend), /m friendnumber message (to send message), /s status (to change status), /n nick (to change nickname)");
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
