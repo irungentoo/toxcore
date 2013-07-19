@@ -103,7 +103,7 @@ static Connection connections[MAX_CONNECTIONS];
 int getconnection_id(IP_Port ip_port)
 {
     uint32_t i;
-    for(i = 0; i < MAX_CONNECTIONS; i++ )
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
             if(connections[i].ip_port.ip.i == ip_port.ip.i && 
             connections[i].ip_port.port == ip_port.port && connections[i].status > 0)
@@ -124,7 +124,7 @@ static uint32_t randtable[6][256];
 uint32_t handshake_id(IP_Port source)
 {
     uint32_t id = 0, i;
-    for(i = 0; i < 6; i++)
+    for(i = 0; i < 6; ++i)
     {
         if(randtable[i][((uint8_t *)&source)[i]] == 0)
         {
@@ -159,7 +159,7 @@ int new_connection(IP_Port ip_port)
         return connect;
     }
     uint32_t i;
-    for(i = 0; i < MAX_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
         if(connections[i].status == 0)
         {
@@ -195,7 +195,7 @@ int new_inconnection(IP_Port ip_port)
         return -1;
     }
     uint32_t i;
-    for(i = 0; i < MAX_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
         if(connections[i].status == 0)
         {
@@ -223,7 +223,7 @@ int new_inconnection(IP_Port ip_port)
 int incoming_connection()
 {
     uint32_t i;
-    for(i = 0; i < MAX_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
         if(connections[i].inbound == 2)
         {
@@ -323,7 +323,7 @@ int read_packet(int connection_id, uint8_t * data)
         uint16_t index = connections[connection_id].successful_read % MAX_QUEUE_NUM;
         uint16_t size = connections[connection_id].recvbuffer[index].size;
         memcpy(data, connections[connection_id].recvbuffer[index].data, size);
-        connections[connection_id].successful_read++;
+        ++connections[connection_id].successful_read;
         connections[connection_id].recvbuffer[index].size = 0;
         return size;
     }
@@ -372,7 +372,7 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
         {
             temp = htonl(i);
             memcpy(requested + number, &temp, 4);
-            number++;
+            ++number;
         }
     }
     if(number == 0)
@@ -556,7 +556,7 @@ int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
     {
         connections[connection_id].status =  3;
         connections[connection_id].recv_counter = counter;
-        connections[connection_id].send_counter++;
+        ++connections[connection_id].send_counter;
         send_SYNC(connection_id);
         return 0;
     }
@@ -579,8 +579,8 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
         connections[connection_id].successful_sent = recv_packetnum;
         connections[connection_id].last_recvSYNC = current_time();
         connections[connection_id].recv_counter = counter;
-        connections[connection_id].send_counter++;
-        for(i = 0; i < number; i++)
+        ++connections[connection_id].send_counter;
+        for(i = 0; i < number; ++i)
         {
             temp = ntohl(req_packets[i]);
             memcpy(connections[connection_id].req_packets + i, &temp, 4 * number);
@@ -641,7 +641,7 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t * data, uint16_t size
     uint32_t i;
     uint32_t maxnum = connections[connection_id].successful_read + BUFFER_PACKET_NUM;
     uint32_t sent_packet = data_num - connections[connection_id].osent_packetnum;
-    for(i =  connections[connection_id].recv_packetnum; i != maxnum; i++)
+    for(i =  connections[connection_id].recv_packetnum; i != maxnum; ++i)
     {    
         if(i == data_num)
         {
@@ -655,7 +655,7 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t * data, uint16_t size
             break;
         }
     }
-    for(i = connections[connection_id].recv_packetnum; i != maxnum; i++)
+    for(i = connections[connection_id].recv_packetnum; i != maxnum; ++i)
     {
         if(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size != 0)
         {
@@ -729,7 +729,7 @@ void doNew()
 {
     uint32_t i;
     uint64_t temp_time = current_time();
-    for(i = 0; i < MAX_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
         if(connections[i].status == 1)
         {
@@ -758,7 +758,7 @@ void doSYNC()
 {
     uint32_t i;
     uint64_t temp_time = current_time();
-    for(i = 0; i < MAX_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
         if(connections[i].status == 2 || connections[i].status == 3)
         {
@@ -776,7 +776,7 @@ void doData()
     uint32_t i;
     uint64_t j;
     uint64_t temp_time = current_time();
-    for(i = 0; i < MAX_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
         if(connections[i].status == 3 && sendqueue(i) != 0)
         {
@@ -801,7 +801,7 @@ void adjustRates()
 {
     uint32_t i;
     uint64_t temp_time = current_time();
-    for(i = 0; i < MAX_CONNECTIONS; i++)
+    for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
         if(connections[i].status == 3)
         {
