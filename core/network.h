@@ -34,14 +34,14 @@
 
 
 
-#ifdef WIN32 //Put win32 includes here
+#ifdef WIN32 /* Put win32 includes here */
 
 #include <winsock2.h>
 #include <windows.h>
 
-#undef VANILLA_NACL//make sure on windows we use libsodium
+#undef VANILLA_NACL /* make sure on windows we use libsodium */
 
-#else //Linux includes
+#else /* Linux includes */
 
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -53,12 +53,12 @@
 #endif
 
 #ifndef VANILLA_NACL
-//we use libsodium by default
+/* we use libsodium by default */
 #include <sodium.h>
 #else
 
-//TODO: Including stuff like this is bad. This needs fixing.
-//We keep support for the original NaCl for now.
+/* TODO: Including stuff like this is bad. This needs fixing.
+   We keep support for the original NaCl for now */
 #include "../nacl/build/Linux/include/amd64/crypto_box.h"
 
 #endif
@@ -77,7 +77,7 @@ typedef struct
 {
     IP ip;
     uint16_t port;
-    //not used for anything right now
+    /* not used for anything right now */
     uint16_t padding; 
 }IP_Port;
 
@@ -93,32 +93,32 @@ typedef struct
 }ADDR;
 
 
-//returns current time in milleseconds since the epoch.
+/* returns current time in milleseconds since the epoch. */
 uint64_t current_time();
 
-//return a random number
-//NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary
+/* return a random number
+   NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary */
 uint32_t random_int();
 
-//Basic network functions:
+/* Basic network functions: */
 
-//Function to send packet(data) of length length to ip_port
+/* Function to send packet(data) of length length to ip_port */
 int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length);
 
-//Function to receive data, ip and port of sender is put into ip_port
-//the packet data into data
-//the packet length into length.
+/* Function to receive data, ip and port of sender is put into ip_port
+   the packet data into data
+   the packet length into length. */
 int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
 
-//initialize networking
-//bind to ip and port
-//ip must be in network order EX: 127.0.0.1 = (7F000001)
-//port is in host byte order (this means don't worry about it)
-//returns 0 if no problems
-//TODO: add something to check if there are errors
+/* initialize networking
+   bind to ip and port
+   ip must be in network order EX: 127.0.0.1 = (7F000001)
+   port is in host byte order (this means don't worry about it)
+   returns 0 if no problems
+   TODO: add something to check if there are errors */
 int init_networking(IP ip ,uint16_t port);
 
 
-//function to cleanup networking stuff(doesn't do much right now)
+/* function to cleanup networking stuff(doesn't do much right now) */
 void shutdown_networking();
 #endif
