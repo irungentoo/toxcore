@@ -35,13 +35,13 @@ typedef struct
     uint32_t timestamp;
     uint32_t last_pinged;
 }Client_data;
-//maximum number of clients stored per friend.
+/* maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 typedef struct
 {
     uint8_t client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
-    uint32_t lastgetnode;//time at which the last get_nodes request was sent.
+    uint32_t lastgetnode; /* time at which the last get_nodes request was sent. */
     
 }Friend;
 
@@ -60,12 +60,12 @@ typedef struct
     
 }Pinged;
 
-//Our client id/public key
+/* Our client id/public key */
 uint8_t self_public_key[CLIENT_ID_SIZE];
 uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
-//TODO: Move these out of here and put them into the .c file.
-//A list of the clients mathematically closest to ours.
+/* TODO: Move these out of here and put them into the .c file.
+   A list of the clients mathematically closest to ours. */
 #define LCLIENT_LIST 32
 static Client_data close_clientlist[LCLIENT_LIST];
 
@@ -74,7 +74,7 @@ static Client_data close_clientlist[LCLIENT_LIST];
 static Friend * friends_list;
 static uint16_t num_friends;
 
-//The list of ip ports along with the ping_id of what we sent them and a timestamp
+/* The list of ip ports along with the ping_id of what we sent them and a timestamp */
 #define LPING_ARRAY 128
 
 static Pinged pings[LPING_ARRAY];
@@ -84,11 +84,11 @@ static Pinged pings[LPING_ARRAY];
 static Pinged send_nodes[LSEND_NODES_ARRAY];
 
 
-//Compares client_id1 and client_id2 with client_id
-//return 0 if both are same distance
-//return 1 if client_id1 is closer.
-//return 2 if client_id2 is closer.
-int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)//tested
+/* Compares client_id1 and client_id2 with client_id
+   return 0 if both are same distance
+   return 1 if client_id1 is closer
+   return 2 if client_id2 is closer */
+int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2) /* tested */
 {
     uint32_t i;
     for(i = 0; i < CLIENT_ID_SIZE; ++i)
@@ -108,11 +108,11 @@ int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)/
     
 }
 
-//check if client with client_id is already in list of length length.
-//if it is set it's corresponding timestamp to current time.
-//if the id is already in the list with a different ip_port, update it.
-//return True(1) or False(0)
-//TODO: maybe optimize this.
+/* check if client with client_id is already in list of length length.
+   if it is set it's corresponding timestamp to current time.
+   if the id is already in the list with a different ip_port, update it.
+   return True(1) or False(0)
+   TODO: maybe optimize this. */
 int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
 {
     uint32_t i;
@@ -122,7 +122,7 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
     {
         if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
         {
-            //Refresh the client timestamp.
+            /* Refresh the client timestamp. */
             list[i].timestamp = temp_time;
             list[i].ip_port.ip.i = ip_port.ip.i;
             list[i].ip_port.port = ip_port.port;
@@ -133,8 +133,8 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
     
 }
 
-//check if client with client_id is already in node format list of length length.
-//return True(1) or False(0)
+/* check if client with client_id is already in node format list of length length.
+   return True(1) or False(0) */
 int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
 {
     uint32_t i;
@@ -152,15 +152,15 @@ int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
 
 
 
-//the number of seconds for a non responsive node to become bad.
+/* the number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 130
-//The max number of nodes to send with send nodes.
+/* the max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 8
 
 
-//Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
-//put them in the nodes_list and return how many were found.
-//TODO: Make this function much more efficient.
+/* Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
+   put them in the nodes_list and return how many were found.
+   TODO: Make this function much more efficient. */
 int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 {
     uint32_t i, j, k;
@@ -170,7 +170,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
     {
         if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time && 
         !client_in_nodelist(nodes_list, MAX_SENT_NODES,close_clientlist[i].client_id))
-        //if node is good and not already in list.
+        /* if node is good and not already in list. */
         {
             if(num_nodes < MAX_SENT_NODES)
             {
@@ -196,7 +196,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
         {
             if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time && 
             !client_in_nodelist(nodes_list, MAX_SENT_NODES,friends_list[i].client_list[j].client_id))
-            //if node is good and not already in list.
+            /* if node is good and not already in list. */
             {
                 if(num_nodes < MAX_SENT_NODES)
                 {
@@ -223,16 +223,16 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 
 
 
-//replace first bad (or empty) node with this one
-//return 0 if successful
-//return 1 if not (list contains no bad nodes)
-int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)//tested
+/* replace first bad (or empty) node with this one
+   return 0 if successful
+   return 1 if not (list contains no bad nodes) */
+int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port) /* tested */
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
     for(i = 0; i < length; ++i)
     {
-        if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time)//if node is bad.
+        if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time) /* if node is bad. */
         {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
@@ -244,7 +244,7 @@ int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Por
     
 }
 
-//replace the first good node that is further to the comp_client_id than that of the client_id in the list
+/* replace the first good node that is further to the comp_client_id than that of the client_id in the list */
 int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port, uint8_t * comp_client_id)
 {
     uint32_t i;
@@ -264,18 +264,18 @@ int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Po
     
 }
 
-//Attempt to add client with ip_port and client_id to the friends client list and close_clientlist
+/* Attempt to add client with ip_port and client_id to the friends client list and close_clientlist */
 void addto_lists(IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
     
-    //NOTE: current behavior if there are two clients with the same id is to replace the first ip by the second.
+    /* NOTE: current behavior if there are two clients with the same id is to replace the first ip by the second. */
     if(!client_in_list(close_clientlist, LCLIENT_LIST, client_id, ip_port))
     {
          
         if(replace_bad(close_clientlist, LCLIENT_LIST, client_id, ip_port))
         {
-            //if we can't replace bad nodes we try replacing good ones
+            /* if we can't replace bad nodes we try replacing good ones */
             replace_good(close_clientlist, LCLIENT_LIST, client_id, ip_port, self_public_key);
         }
         
@@ -287,7 +287,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
             
             if(replace_bad(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
             {
-                //if we can't replace bad nodes we try replacing good ones
+                /* if we can't replace bad nodes we try replacing good ones. */
                 replace_good(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port, friends_list[i].client_id);
             }
         }  
@@ -295,13 +295,13 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
 }
 
 
-//ping timeout in seconds
+/* ping timeout in seconds */
 #define PING_TIMEOUT 5
-//check if we are currently pinging an ip_port and/or a ping_id
-//Variables with values of zero will not be checked.
-//if we are already, return 1
-//else return 0
-//TODO: Maybe optimize this
+/* check if we are currently pinging an ip_port and/or a ping_id
+   variables with values of zero will not be checked.
+   if we are already, return 1
+   else return 0
+TODO: optimize this */
 int is_pinging(IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
@@ -341,7 +341,7 @@ int is_pinging(IP_Port ip_port, uint64_t ping_id)
 }
 
 
-//Same as last function but for get_node requests.
+/* Same as last function but for get_node requests. */
 int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
@@ -381,10 +381,10 @@ int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 }
 
 
-//Add a new ping request to the list of ping requests
-//returns the ping_id to put in the ping request
-//returns 0 if problem.
-//TODO: Maybe optimize this
+/* Add a new ping request to the list of ping requests
+   returns the ping_id to put in the ping request
+   returns 0 if problem.
+   TODO: optimize this */
 uint64_t add_pinging(IP_Port ip_port)
 {
     uint32_t i, j;
@@ -408,7 +408,7 @@ uint64_t add_pinging(IP_Port ip_port)
     
 }
 
-//Same but for get node requests
+/* Same but for get node requests */
 uint64_t add_gettingnodes(IP_Port ip_port)
 {
     uint32_t i, j;
@@ -434,11 +434,11 @@ uint64_t add_gettingnodes(IP_Port ip_port)
 
 
 
-//send a ping request
-//Ping request only works if none has been sent to that ip/port in the last 5 seconds.
+/* send a ping request
+   Ping request only works if none has been sent to that ip/port in the last 5 seconds. */
 static int pingreq(IP_Port ip_port, uint8_t * public_key)
 {
-    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0)//check if packet is gonna be sent to ourself
+    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is gonna be sent to ourself */
     {
         return 1;
     }
@@ -474,10 +474,10 @@ static int pingreq(IP_Port ip_port, uint8_t * public_key)
 }
 
 
-//send a ping response
+/* send a ping response */
 static int pingres(IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
 {
-    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0)//check if packet is gonna be sent to ourself
+    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is gonna be sent to ourself */
     {
         return 1;
     }
@@ -501,10 +501,10 @@ static int pingres(IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
     
 }
 
-//send a getnodes request
+/* send a getnodes request */
 static int getnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
 {
-    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0)//check if packet is gonna be sent to ourself
+    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is gonna be sent to ourself */
     {
         return 1;
     }
@@ -545,10 +545,10 @@ static int getnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
 }
 
 
-//send a send nodes response
+/* send a send nodes response */
 static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id, uint64_t ping_id)
 {
-    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0)//check if packet is gonna be sent to ourself
+    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is gonna be sent to ourself */
     {
         return 1;
     }
@@ -591,10 +591,9 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
 
 
 
-
-//Packet handling functions
-//One to handle each types of packets we receive
-//return 0 if handled correctly, 1 if packet is bad.
+/* Packet handling functions
+   One to handle each types of packets we receive
+   return 0 if handled correctly, 1 if packet is bad. */
 int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
@@ -602,7 +601,7 @@ int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
     {
         return 1;
     }
-    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)//check if packet is from ourself.
+    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is from ourself. */
     {
         return 1;
     }
@@ -620,7 +619,7 @@ int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
     
     pingres(source, packet + 1, ping_id);
     
-    pingreq(source, packet + 1);//TODO: make this smarter?
+    pingreq(source, packet + 1); /* TODO: make this smarter? */
  
     return 0;
     
@@ -633,7 +632,7 @@ int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
     {
         return 1;
     }
-    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)//check if packet is from ourself.
+    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is from ourself. */
     {
         return 1;
     }
@@ -664,7 +663,7 @@ int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
     {
         return 1;
     }
-    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)//check if packet is from ourself.
+    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is from ourself. */
     {
         return 1;
     }
@@ -684,7 +683,7 @@ int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(source, packet + 1, plain + sizeof(ping_id), ping_id);
     
-    pingreq(source, packet + 1);//TODO: make this smarter?
+    pingreq(source, packet + 1); /* TODO: make this smarter? */
     
     return 0;
     
@@ -737,9 +736,7 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
     
 }
 
-//END of packet handling functions
-
-
+/* END of packet handling functions */
 
 int DHT_addfriend(uint8_t * client_id)
 {
@@ -766,15 +763,13 @@ int DHT_addfriend(uint8_t * client_id)
 
 
 
-
-
 int DHT_delfriend(uint8_t * client_id)
 {
     uint32_t i;
     Friend * temp;
     for(i = 0; i < num_friends; ++i)
     {
-        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)//Equal
+        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) /* Equal */
         {
             --num_friends;
             if(num_friends != i)
@@ -795,7 +790,7 @@ int DHT_delfriend(uint8_t * client_id)
 
 
 
-//TODO: Optimize this.
+/* TODO: Optimize this. */
 IP_Port DHT_getfriendip(uint8_t * client_id)
 {
     uint32_t i, j;
@@ -803,7 +798,7 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
     uint32_t temp_time = unix_time();
     for(i = 0; i < num_friends; ++i)
     {
-        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)//Equal
+        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) /* Equal */
         {
             for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
             {
@@ -821,9 +816,7 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
     empty.ip.i = 1;
     return empty;
     
-}
-    
-    
+}    
 
 
 
@@ -846,22 +839,22 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
         return 1;
         
     }
-    
+
     return 0;
 
 }
 
-//The timeout after which a node is discarded completely.
+/* The timeout after which a node is discarded completely. */
 #define Kill_NODE_TIMEOUT 300
 
-//ping interval in seconds for each node in our lists.
+/* ping interval in seconds for each node in our lists. */
 #define PING_INTERVAL 60
 
-//ping interval in seconds for each random sending of a get nodes request.
+/* ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 10
 
-//Ping each client in the "friends" list every 60 seconds.
-//Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list.
+/* Ping each client in the "friends" list every 60 seconds.
+   Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list. */
 
 
 void doDHTFriends()
@@ -876,14 +869,14 @@ void doDHTFriends()
     {
         for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
         {
-            if(friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time)//if node is not dead.
+            if(friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time) /* if node is not dead. */
             {
                 if((friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time)
                 {
                     pingreq(friends_list[i].client_list[j].ip_port, friends_list[i].client_list[j].client_id);
                     friends_list[i].client_list[j].last_pinged = temp_time;
                 }
-                if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
+                if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time) /* if node is good. */
                 {
                     index[num_nodes] = j;
                     ++num_nodes;
@@ -903,9 +896,9 @@ void doDHTFriends()
 
 static uint32_t close_lastgetnodes;
 
-//Ping each client in the close nodes list every 60 seconds.
-//Send a get nodes request every 20 seconds to a random good node in the list.
-void doClose()//tested
+/* Ping each client in the close nodes list every 60 seconds.
+   Send a get nodes request every 20 seconds to a random good node in the list. */
+void doClose() /* tested */
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -915,14 +908,14 @@ void doClose()//tested
     
     for(i = 0; i < LCLIENT_LIST; ++i)
     {
-        if(close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time)//if node is not dead.
+        if(close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time) /* if node is not dead. */
         {
             if((close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time)
             {
                 pingreq(close_clientlist[i].ip_port, close_clientlist[i].client_id);
                 close_clientlist[i].last_pinged = temp_time;
             }
-            if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)//if node is good.
+            if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time) /* if node is good. */
             {
                 index[num_nodes] = i;
                 ++num_nodes;
@@ -951,31 +944,28 @@ void doDHT()
 
 
 
-
 void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key)
 {
-
-    getnodes(ip_port, public_key, self_public_key);
-    
+    getnodes(ip_port, public_key, self_public_key);   
 }
 
 
-//get the size of the DHT (for saving)
+/* get the size of the DHT (for saving) */
 uint32_t DHT_size()
 {
     return sizeof(close_clientlist) + sizeof(Friend) * num_friends;
 }
 
-//save the DHT in data where data is an array of size DHT_size()
+/* save the DHT in data where data is an array of size DHT_size() */
 void DHT_save(uint8_t * data)
 {
     memcpy(data, close_clientlist, sizeof(close_clientlist));
     memcpy(data + sizeof(close_clientlist), friends_list, sizeof(Friend) * num_friends);
 }
 
-//load the DHT from data of size size;
-//return -1 if failure
-//return 0 if success
+/* load the DHT from data of size size;
+   return -1 if failure
+   return 0 if success */
 int DHT_load(uint8_t * data, uint32_t size)
 {
     if(size < sizeof(close_clientlist))
@@ -987,7 +977,7 @@ int DHT_load(uint8_t * data, uint32_t size)
         return -1;
     }
     uint32_t i, j;
-    //uint32_t temp_time = unix_time();
+    /* uint32_t temp_time = unix_time(); */
     uint16_t temp;
     
     temp = (size - sizeof(close_clientlist))/sizeof(Friend);
@@ -1021,8 +1011,8 @@ int DHT_load(uint8_t * data, uint32_t size)
     return 0;
 }
 
-//returns 0 if we are not connected to the DHT
-//returns 1 if we are
+/* returns 0 if we are not connected to the DHT
+   returns 1 if we are */
 int DHT_isconnected()
 {
     uint32_t i;
