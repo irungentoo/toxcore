@@ -38,6 +38,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include <wspiapi.h>
 
 #undef VANILLA_NACL /* make sure on windows we use libsodium */
 
@@ -48,7 +49,8 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <sys/time.h>
-
+#include <sys/types.h> 
+#include <netdb.h>
 
 #endif
 
@@ -121,4 +123,11 @@ int init_networking(IP ip ,uint16_t port);
 
 /* function to cleanup networking stuff(doesn't do much right now) */
 void shutdown_networking();
+
+/* resolves provided address to a binary data in network byte order
+   address is ASCII null terminated string
+   address should represent IPv4, IPv6 or a hostname
+   on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+   on failure returns -1 */
+int resolve_addr(char *address);
 #endif
