@@ -355,33 +355,41 @@ static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t le
 }
 
 static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
+static uint8_t friend_request_isset = 0;
 
 //set the function that will be executed when a friend request is received.
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 {
     friend_request = function;
+    friend_request_isset = 1;
 }
 
 
 static void (*friend_message)(int, uint8_t *, uint16_t);
+static uint8_t friend_message_isset = 0;
 
 //set the function that will be executed when a message from a friend is received.
 void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
 {
     friend_message = function;
+    friend_message_isset = 1;
 }
 
 
 static void (*friend_namechange)(int, uint8_t *, uint16_t);
+static uint8_t friend_namechange_isset = 0;
 void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
 {
     friend_namechange = function;
+    friend_namechange_isset = 1;
 }
 
 static void (*friend_statuschange)(int, uint8_t *, uint16_t);
+static uint8_t friend_statuschange_isset = 0;
 void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
 {
     friend_statuschange = function;
+    friend_statuschange_isset = 1;
 }
 
 #define PORT 33445
@@ -458,7 +466,10 @@ static void doFriends()
                 switch(temp[0]) {
                     case PACKET_ID_NICKNAME: {
                         if (len != MAX_NAME_LENGTH + 1) break;
-                        friend_namechange(i, temp + 1, MAX_NAME_LENGTH); // todo: use the actual length
+                        if(friend_namechange_isset)
+                        {
+                            friend_namechange(i, temp + 1, MAX_NAME_LENGTH); // todo: use the actual length
+                        }
                         memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
                         friendlist[i].name[MAX_NAME_LENGTH - 1] = 0;//make sure the NULL terminator is present.
                         break;
@@ -466,13 +477,19 @@ static void doFriends()
                     case PACKET_ID_USERSTATUS: {
                         uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
                         memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
-                        friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                        if(friend_statuschange_isset)
+                        {
+                            friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                        }
                         set_friend_userstatus(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
                         free(status);
                         break;
                     }
                     case PACKET_ID_MESSAGE: {
-                        (*friend_message)(i, temp + 1, len - 1);
+                        if(friend_message_isset)
+                        {
+                            (*friend_message)(i, temp + 1, len - 1);
+                        }
                         break;
                     }
                 }
@@ -499,7 +516,10 @@ static void doFriendRequest()
     int len = handle_friendrequest(public_key, temp);
     if(len >= 0)
     {
-        (*friend_request)(public_key, temp, len);
+        if(friend_request_isset)
+        {
+            (*friend_request)(public_key, temp, len);
+        }
     }
 }
 
