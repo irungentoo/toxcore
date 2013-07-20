@@ -861,12 +861,12 @@ void doDHTFriends()
 {
     uint32_t i, j;
     uint32_t temp_time = unix_time();
-    uint32_t num_nodes = 0;
     uint32_t rand_node;
     uint32_t index[MAX_FRIEND_CLIENTS];
     
     for(i = 0; i < num_friends; ++i)
     {
+        uint32_t num_nodes = 0;
         for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
         {
             if(friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time) /* if node is not dead. */
