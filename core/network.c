@@ -159,3 +159,28 @@ void shutdown_networking()
     #endif
     return;
 }
+
+/* resolves provided address to a binary data in network byte order
+  address is ASCII null terminated string
+  address should represent IPv4, IPv6 or a hostname
+  on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+  on failure returns -1 */
+int resolve_addr(char *address)
+{
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; //support both IPv4 and IPv6
+    hints.ai_socktype = SOCK_DGRAM; //type of socket Tox uses
+
+    struct addrinfo *server = NULL;
+
+    int success = getaddrinfo(address, "7", &hints, &server);
+    if(success != 0)
+    {
+        return -1;
+    }
+
+    int resolved = ((struct sockaddr_in*)server->ai_addr)->sin_addr.s_addr;
+    freeaddrinfo(server);
+    return resolved;
+}
