@@ -7,15 +7,15 @@
  *
  *                gcc -O2 -Wall -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c -lsodium DHT_bootstrap.c
  */
-#include <arpa/inet.h>
-#include "../core/DHT.h"
 
+#include "../core/DHT.h"
 
 //Sleep function (x = milliseconds)
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
 #else
 #include <unistd.h>
+#include <arpa/inet.h>
 #define c_sleep(x) usleep(1000*x)
 #endif
 
