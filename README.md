@@ -7,7 +7,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 
 
 **IRC**: #InsertProjectNameHere on Freenode, alternatively, you can use the [webchat](https://webchat.freenode.net/).<br />
-**Website**: [http://projecttox.org](http://projecttox.org)
+**Website**: [http://projecttox.org](http://tox.im)
 
 
 
@@ -27,7 +27,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 - [ ] Streaming media
 - [ ] ???
 
-For further information, check our [To-Do list](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/TODO.txt).
+For further information, check our [To-do list](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/TODO.txt).
 
 
 ### Important-stuff:
@@ -44,8 +44,8 @@ Keep everything really simple.
 [Ideas](/docs/IDEAS.txt)
 
 ### Why are you doing this? There are already a bunch of free skype alternatives.
-The goal of this project is to create a configuration free p2p skype 
-replacement. Configuration free means that the user will simply have to open the program and 
+The goal of this project is to create a configuration-free p2p skype 
+replacement. Configuration-free means that the user will simply have to open the program and 
 without any account configuration will be capable of adding people to his 
 friends list and start conversing with them. There are many so called skype replacements and all of them are either hard to 
 configure for the normal user or suffer from being much too centralized.
