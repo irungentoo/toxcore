@@ -35,6 +35,31 @@ unsigned char * hex_string_to_bin(char hex_string[])
     return val;
 }
 
+int resolve_dnsaddr(char *address, char *port)
+{
+    in_addr_t resolved = 0;
+    resolved = inet_addr(address);
+    if (resolved != -1)
+    {
+        return resolved;
+    }
+    
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    struct addrinfo *server = NULL;
+    int success = getaddrinfo(address, port, &hints, &server);
+    if (success != 0) {
+        printf("failed to resolve %s: %s\n", address, gai_strerror(success));
+        return -1;
+    } else {
+        resolved = ((struct sockaddr_in*)server->ai_addr)->sin_addr.s_addr;
+        freeaddrinfo(server);
+        return resolved;
+    }
+}
+
 void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 {
     if (line[0] == '/') {
@@ -245,7 +270,12 @@ int main(int argc, char *argv[])
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
-    bootstrap_ip_port.ip.i = inet_addr(argv[1]);
+    int resolved_address = resolve_dnsaddr(argv[1], argv[2]);
+    if (resolved_address != -1) {
+        bootstrap_ip_port.ip.i = resolved_address;
+    } else {
+        exit(1);
+    }
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {
