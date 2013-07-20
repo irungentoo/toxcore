@@ -35,7 +35,7 @@ unsigned char * hex_string_to_bin(char hex_string[])
     return val;
 }
 
-unsigned int resolve_dnsaddr(char *address, char *port)
+int resolve_dnsaddr(char *address, char *port)
 {
     in_addr_t resolved = 0;
     resolved = inet_addr(address);
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
-    unsigned int resolved_address = resolve_dnsaddr(argv[1], argv[2]);
+    int resolved_address = resolve_dnsaddr(argv[1], argv[2]);
     if (resolved_address != -1) {
         bootstrap_ip_port.ip.i = resolved_address;
     } else {
