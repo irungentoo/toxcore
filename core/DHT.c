@@ -34,6 +34,8 @@ typedef struct
     IP_Port ip_port;
     uint32_t timestamp;
     uint32_t last_pinged;
+    IP_Port ret_ip_port;/* The ip_port returned by this node for the friend 
+                           (for nodes in friends_list) or us (for nodes in close_clientlist) */
 }Client_data;
 /* maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -237,6 +239,8 @@ int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Por
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
             list[i].timestamp = temp_time;
+            list[i].ret_ip_port.ip.i = 0;
+            list[i].ret_ip_port.port = 0;
             return 0;
         }
     }
@@ -257,6 +261,8 @@ int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Po
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
             list[i].timestamp = temp_time;
+            list[i].ret_ip_port.ip.i = 0;
+            list[i].ret_ip_port.port = 0;
             return 0;
         }
     }
@@ -294,6 +300,38 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
     }
 }
 
+/* If client_id is a friend or us, update ret_ip_port  
+   nodeclient_id is the id of the node that sent us this info */
+void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
+{
+    uint32_t i, j;
+    if(memcmp(client_id, self_public_key, CLIENT_ID_SIZE) == 0)
+    {
+        for(i = 0; i < LCLIENT_LIST; ++i)
+        {
+            if(memcmp(nodeclient_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0)
+            {
+                close_clientlist[i].ret_ip_port = ip_port;
+                return;
+            }
+        }
+    }
+    else
+    for(i = 0; i < num_friends; ++i)
+    {
+        if(memcmp(client_id, friends_list[i].client_id, CLIENT_ID_SIZE) == 0)
+        {
+            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
+            {
+                if(memcmp(nodeclient_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE) == 0)
+                {
+                    friends_list[i].client_list[j].ret_ip_port = ip_port;
+                    return;
+                }
+            }
+        }
+    }
+}
 
 /* ping timeout in seconds */
 #define PING_TIMEOUT 5
@@ -725,15 +763,16 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
     Node_format nodes_list[MAX_SENT_NODES];
     memcpy(nodes_list, plain + sizeof(ping_id), num_nodes * sizeof(Node_format));
     
+    addto_lists(source, packet + 1);
+    
     uint32_t i;
     for(i = 0; i < num_nodes; ++i)
     {
         pingreq(nodes_list[i].ip_port, nodes_list[i].client_id);
+        returnedip_ports(nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
     
-    addto_lists(source, packet + 1);
     return 0;
-    
 }
 
 /* END of packet handling functions */
@@ -950,6 +989,81 @@ void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key)
 }
 
 
+
+/* send the given packet to node with client_id
+   returns -1 if failure */
+int route_packet(uint8_t * client_id, uint8_t * packet, uint32_t length)
+{
+    uint32_t i;
+    for(i = 0; i < LCLIENT_LIST; ++i)
+    {
+        if(memcmp(client_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0)
+        {
+            return sendpacket(close_clientlist[i].ip_port, packet, length);
+        }
+    }
+    return -1;
+}
+
+/* Send the following packet to everyone who tells us they are connected to friend_id
+   returns the number of nodes it sent the packet to */
+int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
+{
+    uint32_t i, j;
+    uint32_t sent = 0;
+    uint32_t temp_time = unix_time();
+    for(i = 0; i < num_friends; ++i)
+    {
+        if(memcmp(friends_list[i].client_id, friend_id, CLIENT_ID_SIZE) == 0) /* Equal */
+        {
+            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
+            {
+                if(friends_list[i].client_list[j].ret_ip_port.ip.i != 0 && 
+                   friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)
+                   /*If ip is not zero and node is good */
+                {
+                    if(sendpacket(friends_list[i].client_list[j].ip_port, packet, length) == length)
+                    {
+                        ++sent;
+                    }
+                }
+            }
+            return sent;
+        }
+    }
+    return 0;
+}
+
+/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist 
+   ip_portlist must be at least MAX_FRIEND_CLIENTS big
+   returns the number of ips returned
+   returns -1 if no such friend*/
+int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
+{
+    int num_ips = 0;
+    uint32_t i, j;
+    uint32_t temp_time = unix_time();
+    for(i = 0; i < num_friends; ++i)
+    {
+        if(memcmp(friends_list[i].client_id, friend_id, CLIENT_ID_SIZE) == 0) /* Equal */
+        {
+            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
+            {
+                if(friends_list[i].client_list[j].ret_ip_port.ip.i != 0 && 
+                   friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)
+                   /*If ip is not zero and node is good */
+                {
+                    ip_portlist[num_ips] = friends_list[i].client_list[j].ret_ip_port;
+                    ++num_ips;
+                }
+            }
+            return num_ips;
+        }
+        
+    }
+    return 0;
+}
+
 /* get the size of the DHT (for saving) */
 uint32_t DHT_size()
 {
@@ -1026,3 +1140,4 @@ int DHT_isconnected()
     }
     return 0;
 }
+

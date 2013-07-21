@@ -72,11 +72,33 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
 void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key);
 
 
+
+/* ROUTING FUNCTIONS */
+
+/* send the given packet to node with client_id
+   returns -1 if failure */
+int route_packet(uint8_t * client_id, uint8_t * packet, uint32_t length);
+
+/* Send the following packet to everyone who tells us they are connected to friend_id
+   returns the number of nodes it sent the packet to */
+int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length);
+
+
+
+/* NAT PUNCHING FUNCTIONS */
+
+/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist 
+   ip_portlist must be at least MAX_FRIEND_CLIENTS big
+   returns the number of ips returned
+   returns -1 if no such friend*/
+int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id);
+
+
+
 /* SAVE/LOAD functions */
 
 /* get the size of the DHT (for saving) */
 uint32_t DHT_size();
-
 
 /* save the DHT in data where data is an array of size DHT_size() */
 void DHT_save(uint8_t * data);
