@@ -15,7 +15,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 + Tox must use UDP simply because you can't hole punch with TCP. It's possible, but it doesn't work all the time.
 + Every peer is represented as a byte string (the public key of the peer [client id])
 + We're using torrent-style DHT so that peers can find the IP of the other peers when they have their ID.
-+ Once the client has the IP of that peer, they start initiating a secure connection with each other. (See [Crypto](https://github.com/irungentoo/ProjectTox-Core/blob/master/docs/Crypto.txt))
++ Once the client has the IP of that peer, they start initiating a secure connection with each other. (See [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)
 + When both peers are securely connect with the encryption, they can securely exchange messages, initiate a video chat, send files, etc.<br />
 + Current build status: [![Build Status](https://travis-ci.org/irungentoo/ProjectTox-Core.png?branch=master)](https://travis-ci.org/irungentoo/ProjectTox-Core) 
 
@@ -27,7 +27,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 - [ ] Streaming media
 - [ ] ???
 
-For further information, check our [To-do list](https://github.com/irungentoo/InsertProjectNameHere/blob/master/docs/TODO.txt).
+For further information, check our [To-do list](https://github.com/irungentoo/ProjectTox-Core/wiki/TODO)
 
 
 ### Important-stuff:
@@ -38,10 +38,10 @@ Keep everything really simple.
 
 ### Details and Documents:
 
-[DHT Protocol](/docs/DHT.txt)<br />
-[Lossless UDP Protocol](/docs/Lossless_UDP.txt)<br />
-[Crypto](/docs/Crypto.txt)<br />
-[Ideas](/docs/IDEAS.txt)
+[DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
+[Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
+[Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
+[Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
 
 ### Why are you doing this? There are already a bunch of free skype alternatives.
 The goal of this project is to create a configuration-free p2p skype 
