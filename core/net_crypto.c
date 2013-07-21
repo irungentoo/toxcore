@@ -577,8 +577,8 @@ int is_cryptoconnected(int crypt_connection_id)
    Only call this function the first time the program starts. */
 void new_keys()
 {
-    FILE *public_key_file;
-    FILE *private_key_file;
+    FILE *public_key_file = NULL;
+    FILE *private_key_file = NULL;
     //if keyfiles exist
     if ((public_key_file = fopen("public_key","r")) &&
         (private_key_file = fopen("private_key","r"))) {
