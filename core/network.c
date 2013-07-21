@@ -77,6 +77,8 @@ int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
    the packet length into length.
    dump all empty packets. */
 int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
+// setting socket to be a global variable was not such a good idea imo !Red!
+// int receivepacket(tux_sock sock, IP_Port * ip_port, uint8_t * data, uint32_t * length)
 {
     ADDR addr;
     #ifdef WIN32
@@ -103,7 +105,12 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
    port is in host byte order (this means don't worry about it)
    returns 0 if no problems
    TODO: add something to check if there are errors */
-int init_networking(IP ip ,uint16_t port)
+
+
+/* Red--Dot: added new return type. It's better to get a handle of our
+   sockets then to just keep them globally available.
+   I believe nothing is changed for now  but check it out later */
+tux_sock init_networking(IP ip ,uint16_t port)
 {
     #ifdef WIN32
     WSADATA wsaData;
@@ -143,12 +150,12 @@ int init_networking(IP ip ,uint16_t port)
     #else
     fcntl(sock, F_SETFL, O_NONBLOCK, 1);
     #endif
-    
-    /* Bind our socket to port PORT and address 0.0.0.0 */
-    ADDR addr = {AF_INET, htons(port), ip}; 
-    bind(sock, (struct sockaddr*)&addr, sizeof(addr));   
-    return 0;
 
+    /* Bind our socket to port PORT and address 0.0.0.0 */
+    ADDR addr = {AF_INET, htons(port), ip};
+    bind(sock, (struct sockaddr*)&addr, sizeof(addr));
+
+    return sock;
 }
 
 /* function to cleanup networking stuff */
