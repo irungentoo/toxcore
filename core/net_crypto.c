@@ -144,8 +144,9 @@ void random_nonce(uint8_t * nonce)
     uint32_t i, j, r, m = crypto_box_NONCEBYTES / 3, ind = 0;
     for(i = 0; i < m; ++i)
     {
-        r = ranom_int();
-        for (j = 0; j < 3; j++) {
+        r = random_int();
+        for (j = 0; j < 3; j++) 
+        {
             nonce[ind] = r % 1000 % 256;
             r /= 1000;
             ++ind;
