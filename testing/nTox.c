@@ -10,6 +10,7 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 int x,y;
+int nick_before;
 
 void new_lines(char *line)
 {
@@ -49,7 +50,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             }
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
-            sprintf(numstring, "Friend added, number: %d", num);
+            sprintf(numstring, "[i] added friend %d", num);
             new_lines(numstring);
             do_refresh();
         } else if (line[1] == 'd') {
@@ -82,7 +83,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             name[i - 3] = 0;
             setname(name, i);
             char numstring[100];
-            sprintf(numstring, "Changed nick to: %s", (char*)name);
+            sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
         } else if (line[1] == 's') {
             uint8_t status[MAX_USERSTATUS_LENGTH];
@@ -94,7 +95,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             status[i - 3] = 0;
             m_set_userstatus(status, strlen((char*)status));
             char numstring[100];
-            sprintf(numstring, "Changed status to: %s", (char*)status);
+            sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
         } else if (line[1] == 'q') { //exit
 		endwin();
@@ -172,11 +173,11 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
     if(memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
     //if the request contained the message of peace the person is obviously a friend so we add him.
     {
-        new_lines("Friend request accepted.");
+        new_lines("[i] friend request accepted.");
         do_refresh();
         int num = m_addfriend_norequest(public_key);
         char numchar[100];
-        sprintf(numchar, "Friend added, number: %d", num);
+        sprintf(numchar, "[i] added friendnumber %d", num);
         new_lines(numchar);
     }
 }
@@ -193,7 +194,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     char *name = malloc(MAX_NAME_LENGTH);
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length];
-    sprintf(msg, "[%d] %s is now known as %s.", friendnumber, name, string);
+    sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
     free(name);
     new_lines(msg);
 }
@@ -201,14 +202,14 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     char *name = malloc(MAX_NAME_LENGTH);
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
-    sprintf(msg, "[%d] %s's status changed to %s.", friendnumber, name, string);
+    sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
     free(name);
     new_lines(msg);
 }
 int main(int argc, char *argv[])
 {
     if (argc < 4) {
-        printf("usage %s ip port public_key (of the DHT bootstrap node)\n", argv[0]);
+        printf("[!] Usage: %s [IP] [port] [public_key]\n", argv[0]);
         exit(0);
     }
     int c;
@@ -231,7 +232,7 @@ int main(int argc, char *argv[])
         }
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
-    strcpy(idstring0,"Your ID is: ");
+    strcpy(idstring0,"[i] your ID: ");
     for(i=0; i<32; i++) {
         strcat(idstring0,idstring1[i]);
         strcat(idstring0,idstring2[i]);
@@ -241,7 +242,7 @@ int main(int argc, char *argv[])
     raw();
     getmaxyx(stdscr,y,x);
     new_lines(idstring0);
-    new_lines("/f ID (to add friend), /m friendnumber message (to send message), /s status (to change status), /n nick (to change nickname)");
+    new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /q (to quit)");
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -272,7 +273,7 @@ int main(int argc, char *argv[])
         {
             if(DHT_isconnected())
             {
-                new_lines("You are now connected to the DHT.");
+                new_lines("[i] connected to DHT\n[i] define username with /n");
                 on = 1;
             }
         }
