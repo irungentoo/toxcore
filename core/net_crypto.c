@@ -141,16 +141,11 @@ void increment_nonce(uint8_t * nonce)
 /* fill the given nonce with random bytes. */
 void random_nonce(uint8_t * nonce)
 {
-    uint32_t i, j, r, m = crypto_box_NONCEBYTES / 3, ind = 0;
-    for(i = 0; i < m; ++i)
+    uint32_t i, temp;
+    for (i = 0; i < crypto_box_NONCEBYTES / 4; ++i) 
     {
-        r = random_int();
-        for (j = 0; j < 3; j++) 
-        {
-            nonce[ind] = r % 1000 % 256;
-            r /= 1000;
-            ++ind;
-        }
+        uint32_t temp = random_int();
+        memcpy(nonce + 4 * i, &temp, 4);
     }
 }
 
