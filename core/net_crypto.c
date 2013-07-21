@@ -138,14 +138,19 @@ void increment_nonce(uint8_t * nonce)
     }
 }
 
-/* fill the given nonce with random bytes.
-   TODO: make this more optimized */
+/* fill the given nonce with random bytes. */
 void random_nonce(uint8_t * nonce)
 {
-    uint32_t i;
-    for(i = 0; i < crypto_box_NONCEBYTES; ++i)
+    uint32_t i, j, r, m = crypto_box_NONCEBYTES / 3, ind = 0;
+    for(i = 0; i < m; ++i)
     {
-        nonce[i] = random_int() % 256;
+        r = random_int();
+        for (j = 0; j < 3; j++) 
+        {
+            nonce[ind] = r % 1000 % 256;
+            r /= 1000;
+            ++ind;
+        }
     }
 }
 
