@@ -144,7 +144,7 @@ void random_nonce(uint8_t * nonce)
     uint32_t i, temp;
     for (i = 0; i < crypto_box_NONCEBYTES / 4; ++i) 
     {
-        uint32_t temp = random_int();
+        temp = random_int();
         memcpy(nonce + 4 * i, &temp, 4);
     }
 }
