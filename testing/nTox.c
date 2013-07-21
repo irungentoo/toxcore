@@ -266,8 +266,6 @@ int main(int argc, char *argv[])
                 } else if (isalnum(c) || ispunct(c) || c == ' ') {
                     strcpy(line,appender(line, (char) c));
                 }
-            } else {
-                break;
             }
         }
         if(on == 0)
