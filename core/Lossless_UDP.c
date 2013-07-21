@@ -803,6 +803,10 @@ void adjustRates()
     uint64_t temp_time = current_time();
     for(i = 0; i < MAX_CONNECTIONS; ++i)
     {
+        if(connections[i].status == 1 || connections[i].status == 2)
+        {
+            connections[i].SYNC_rate = MAX_SYNC_RATE;
+        }
         if(connections[i].status == 3)
         {
             if(sendqueue(i) != 0)
