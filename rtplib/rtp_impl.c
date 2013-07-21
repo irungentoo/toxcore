@@ -4,7 +4,7 @@ rtp_session_t* init_rtp_session ( IP_Port _dest, int max_users )
 {
     /* con_id = getconnection_id( _dest );
 	   if ( con_id == FAILURE )
-       return NULL; // cannot establish rtp session if no connection */
+       return NULL; /*cannot establish rtp session if no connection */
 
     rtp_session_t* _retu;
     ALLOCATOR_S ( _retu, rtp_session_t )

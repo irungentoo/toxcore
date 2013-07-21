@@ -10,4 +10,4 @@ int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* msg );
 int             rtp_recv_msg ( rtp_session_t* _session, tux_sock _socket ); /* function made for threading */
 rtp_msg_t*      rtp_msg_new ( uint8_t* _data, uint32_t _length, IP_Port* _from );
 
-#endif // _HANDLER_H_
+#endif /* _HANDLER_H_ */

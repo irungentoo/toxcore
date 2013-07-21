@@ -38,7 +38,7 @@ arg_t* parse_args ( int argc, char* argv[] )
     for ( size_t val = 0; val < argc; val ++ )
         {
             it->value = argv[val];
-            if ( val < argc - 1 ) // just about to end
+            if ( val < argc - 1 ) /* just about to end */
                 {
                     ALLOCATOR_LIST_NEXT_D ( it, arg_t )
                 }
@@ -66,7 +66,7 @@ const char* find_arg_duble ( arg_t* _head, const char* _id )
         {
             if ( strcmp ( _id, it->value ) == 0 )
                 {
-                    if ( it->next && it->next->value[0] != '-' ) // exclude option
+                    if ( it->next && it->next->value[0] != '-' ) /* exclude option */
                         {
                             return it->next->value;
                         }
@@ -92,18 +92,18 @@ int main ( int argc, char* argv[] )
     rtp_session_t* _m_session;
     rtp_msg_t*     _m_msg;
     arg_t* _list = parse_args ( argc, argv );
-    if ( _list == NULL ) // failed
+    if ( _list == NULL ) /* failed */
         {
             return print_help();
         }
     if ( find_arg_simple ( _list, "-r" ) != FAILURE )
         {
-            IP_Port LOCAL_IP; // since you need at least 1 recv-er
+            IP_Port LOCAL_IP; /* since you need at least 1 recv-er */
             LOCAL_IP.ip.i = inet_addr ( "127.0.0.1" );
             LOCAL_IP.port = RTP_PORT;
             LOCAL_IP.padding = -1;
             status = init_networking ( LOCAL_IP.ip, RTP_PORT_LISTEN );
-            tux_sock _socket;// = init_listener_socket(RTP_PORT_LISTEN);
+            tux_sock _socket;/* = init_listener_socket(RTP_PORT_LISTEN); */
             if ( status < 0 )
                 {
                     _m_session->_last_error = strerror ( errno );

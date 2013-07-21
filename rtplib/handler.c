@@ -30,10 +30,10 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* msg )
     unsigned long long _total = 0;
     for ( rtp_dest_list_t* _it = _session->_dest_list; _it != NULL; _it = _it->next )
         {
-            // if (
-            //write_packet(_it->con_id, data, lenght)
-            // == 1 )
-            //;
+            /* if (
+	     write_packet(_it->con_id, data, lenght)
+             == 1 )
+            ;*/
             if ( !msg  || msg->_data == NULL )
                 {
                     _session->_last_error = "Tried to send empty message";
@@ -52,7 +52,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* msg )
                         }
                 }
         }
-    DEALLOCATOR ( msg ) // free message
+    DEALLOCATOR ( msg ) /* free message */
     _session->_bytes_sent += _total;
     return SUCCESS;
 }
@@ -66,8 +66,7 @@ int rtp_recv_msg ( rtp_session_t* _session, tux_sock _socket )
     int32_t  _bytes;
     IP_Port  _from;
     int status = receivepacket ( &_from, LAST_SOCKET_DATA, &_bytes );
-    //recv_bytes(_socket, &_from, LAST_SOCKET_DATA, &_bytes);
-    if ( status == FAILURE ) // nothing recved
+    if ( status == FAILURE ) /* nothing recved */
         {
             return status;
         }
