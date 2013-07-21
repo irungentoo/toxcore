@@ -1,4 +1,6 @@
 #include "nTox.h"
+#include <stdio.h>
+#include <time.h>
 
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
@@ -168,12 +170,12 @@ void do_refresh()
 }
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {
-    new_lines("Friend request");
+    new_lines("[i] received friend request");
     do_refresh();
     if(memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
     //if the request contained the message of peace the person is obviously a friend so we add him.
     {
-        new_lines("[i] friend request accepted.");
+        new_lines("[i] friend request accepted");
         do_refresh();
         int num = m_addfriend_norequest(public_key);
         char numchar[100];
@@ -186,7 +188,11 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     char *name = malloc(MAX_NAME_LENGTH);
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
-    sprintf(msg, "[%d] <%s> %s", friendnumber, name, string);
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    sprintf(msg, "[%d] %s <%s> %s", friendnumber, asctime (timeinfo), name, string); // someone please fix this
     free(name);
     new_lines(msg);
 }
