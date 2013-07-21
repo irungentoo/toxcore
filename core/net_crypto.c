@@ -577,7 +577,24 @@ int is_cryptoconnected(int crypt_connection_id)
    Only call this function the first time the program starts. */
 void new_keys()
 {
-    crypto_box_keypair(self_public_key,self_secret_key);
+    FILE *public_key_file = NULL;
+    FILE *private_key_file = NULL;
+    //if keyfiles exist
+    if ((public_key_file = fopen("public_key","r")) &&
+        (private_key_file = fopen("private_key","r"))) {
+        //load keys
+        fread(self_public_key, sizeof(uint8_t), crypto_box_PUBLICKEYBYTES, public_key_file);
+        fread(self_secret_key, sizeof(uint8_t), crypto_box_SECRETKEYBYTES, private_key_file);
+    } else { 
+        //else generate and save new keys
+        fclose(public_key_file);
+        fclose(private_key_file);
+        crypto_box_keypair(self_public_key,self_secret_key);
+        public_key_file = fopen("public_key","w");
+        fwrite(self_public_key, sizeof(uint8_t), crypto_box_PUBLICKEYBYTES, public_key_file);
+        private_key_file = fopen("private_key","w");
+        fwrite(self_secret_key, sizeof(uint8_t), crypto_box_SECRETKEYBYTES, private_key_file);
+    }
 }
 
 /* save the public and private keys to the keys array

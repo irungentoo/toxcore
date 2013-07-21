@@ -9,3 +9,6 @@ CMakeFiles
 Makefile
 cmake_install.cmake
 install_manifest.txt
+
+core/private_key
+core/public_key
