@@ -7,7 +7,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 
 
 **IRC**: #InsertProjectNameHere on Freenode, alternatively, you can use the [webchat](https://webchat.freenode.net/).<br />
-**Website**: [http://projecttox.org](http://tox.im)
+**Website**: [http://tox.im](http://tox.im)
 
 
 
