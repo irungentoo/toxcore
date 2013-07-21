@@ -63,9 +63,16 @@
    We keep support for the original NaCl for now. */
 #include "../nacl/build/Linux/include/amd64/crypto_box.h"
 
-#endif
-
-
+#endif 
+// UNIVERSAL FILE DESCRIPTOR
+typedef
+#ifdef _WIN_
+SOCKET
+#else
+int
+#endif // WIN32
+tux_sock
+;
 #define MAX_UDP_PACKET_SIZE 65507
 
 typedef union
@@ -118,7 +125,7 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
    port is in host byte order (this means don't worry about it)
    returns 0 if no problems
    TODO: add something to check if there are errors */
-int init_networking(IP ip ,uint16_t port);
+tux_sock init_networking(IP ip ,uint16_t port);
 
 
 /* function to cleanup networking stuff(doesn't do much right now) */
