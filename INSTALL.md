@@ -27,6 +27,23 @@ For example, to build [`Messenger_test.c`](/others/Messenger_test.c) you would r
 make Messenger_test
 ```
 
+###OSX:
+
+Much the same as above, remember to install the latest XCode and the developer tools (Preferences -> Downloads -> Command Line Tools).
+Users running Mountain Lion and the latest version of XCode (4.6.3) will also need to install libtool
+Libtool is easy enough to install, grab it from http://www.gnu.org/software/libtool/ and:
+
+./configure
+make
+sudo make install
+
+Do not install it from macports (or any dependencies for that matter) as they get shoved in the wrong directory
+and make your life more annoying.
+
+Another thing you may want to install is the latest gcc, this caused me a few problems as XCode from 4.3
+no longer includes gcc and instead uses LLVM-GCC, a nice install guide can be found at
+http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
+
 ###Windows:
 
 You should install:
