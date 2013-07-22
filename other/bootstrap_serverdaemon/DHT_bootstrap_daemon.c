@@ -11,6 +11,8 @@
 #include <errno.h>
     
 #include "../core/DHT.h"
+#include "../core/friend_requests.h"
+
     
 /* Sleep function (x = milliseconds) */
 #ifdef WIN32
@@ -123,6 +125,7 @@ int main(int argc, char *argv[]) {
         doDHT();
         while(receivepacket(&ip_port, data, &length) != -1) {
             DHT_handlepacket(data, length, ip_port);
+            friendreq_handlepacket(data, length, ip_port);
         }
         c_sleep(1);
     }
