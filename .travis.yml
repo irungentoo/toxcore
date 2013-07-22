@@ -8,16 +8,15 @@ before_script:
   - cd libsodium
   - git checkout tags/0.4.2
   - ./autogen.sh
-  - ./configure && make -j3 check
+  - ./configure && make check -j3
   - sudo make install
   - sudo ldconfig
   - cd ..
 
 script:
-  - cmake CMakeLists.txt
-  - make DHT_bootstrap -j3
-  - make Messenger_test -j3
-  - make nTox -j3
+  - mkdir build && cd build
+  - cmake ..
+  - make -j3
 
 notifications:
   email: false

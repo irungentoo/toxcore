@@ -15,16 +15,22 @@ sudo ldconfig
 
 Then clone this repo and run:
 ```bash
-cmake CMakeLists.txt
+mkdir build && cd build
+cmake ..
 ```
 
-Then you can build any of the [`/testing`](/testing) and [`/other`](/other) by running:
+Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
 ```bash
 make name_of_c_file
 ```
 For example, to build [`Messenger_test.c`](/others/Messenger_test.c) you would run:
 ```bash
 make Messenger_test
+```
+
+Or you could just build everything that is supported on your platform by running:
+```bash
+make
 ```
 
 ###OSX:
@@ -56,14 +62,20 @@ After that you should get precompiled packages of libsodium from [here](https://
 
 Navigate in `cmd` to this repo and run:
 ```cmd
-cmake -G "MinGW Makefiles" CMakeLists.txt
+mkdir build && cd build
+cmake -G "MinGW Makefiles" ..
 ```
 
-Then you can build any of the [`/testing`](/testing) and [`/other`](/other) by running:
+Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
 ```cmd
 mingw32-make name_of_c_file
 ```
 For example, to build [`Messenger_test.c`](/others/Messenger_test.c) you would run:
 ```cmd
 mingw32-make Messenger_test
+```
+
+Or you could just build everything that is supported on your platform by running:
+```bash
+mingw32-make
 ```

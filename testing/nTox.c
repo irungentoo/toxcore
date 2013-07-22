@@ -226,6 +226,26 @@ int main(int argc, char *argv[])
     m_callback_friendmessage(messenger, print_message);
     m_callback_namechange(messenger, print_nickchange);
     m_callback_userstatus(messenger, print_statuschange);
+    FILE *data_file = NULL;
+    //if keyfiles exist
+    if ((data_file = fopen("data","r"))) {
+        //load keys
+        fseek(data_file, 0, SEEK_END);
+        int size = ftell(data_file);
+        fseek(data_file, 0, SEEK_SET);
+        uint8_t data[size];
+        fread(data, sizeof(uint8_t), size, data_file);
+        Messenger_load(messenger, data, size);
+    } else { 
+        //else save new keys
+        int size = Messenger_size(messenger);
+        uint8_t data[size];
+        Messenger_save(messenger, data);
+        data_file = fopen("data","w");
+        fwrite(data, sizeof(uint8_t), size, data_file);
+    }
+    fclose(data_file);
+    
     char idstring0[200];
     char idstring1[32][5];
     char idstring2[32][5];
