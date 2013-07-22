@@ -234,15 +234,24 @@ int main(int argc, char *argv[])
         int size = ftell(data_file);
         fseek(data_file, 0, SEEK_SET);
         uint8_t data[size];
-        fread(data, sizeof(uint8_t), size, data_file);
+        if(fread(data, sizeof(uint8_t), size, data_file) != size)
+        {
+            printf("Error reading file\n");
+            exit(0);
+        }
         Messenger_load(messenger, data, size);
+
     } else { 
         //else save new keys
         int size = Messenger_size(messenger);
         uint8_t data[size];
         Messenger_save(messenger, data);
         data_file = fopen("data","w");
-        fwrite(data, sizeof(uint8_t), size, data_file);
+        if(fwrite(data, sizeof(uint8_t), size, data_file) != size)
+        {
+            printf("Error writing file\n");
+            exit(0);
+        }
     }
     fclose(data_file);
     
