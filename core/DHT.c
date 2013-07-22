@@ -123,6 +123,13 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
     
     for(i = 0; i < length; ++i)
     {
+        /*If ip_port is assigned to a different client_id replace it*/
+        if(list[i].ip_port.ip.i == ip_port.ip.i &&
+        list[i].ip_port.port == ip_port.port)
+        {
+            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+        }
+        
         if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
         {
             /* Refresh the client timestamp. */
