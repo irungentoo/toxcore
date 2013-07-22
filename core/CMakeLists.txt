@@ -10,6 +10,7 @@ set(core_sources
         network.c
         Lossless_UDP.c
         net_crypto.c
+        friend_requests.c
         Messenger.c)
 
 add_library(core ${core_sources})

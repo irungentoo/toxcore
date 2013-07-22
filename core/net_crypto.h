@@ -62,24 +62,20 @@ int read_cryptpacket(int crypt_connection_id, uint8_t * data);
    return 1 if data was put into the queue */
 int write_cryptpacket(int crypt_connection_id, uint8_t * data, uint32_t length);
 
-/* send a friend request to peer with public_key and ip_port.
-   Data represents the data we send with the friends request.
+/* create a request to peer with public_key.
+   packet must be an array of MAX_DATA_SIZE big.
+   Data represents the data we send with the request with length being the length of the data.
+   request_id is the id of the request (32 = friend request, 254 = ping request)
    returns -1 on failure
-   returns a positive friend request id that can be used later to see if it was sent correctly on success. */
-int send_friendrequest(uint8_t * public_key, IP_Port ip_port, uint8_t * data, uint32_t length);
+   returns the length of the created packet on success */
+int create_request(uint8_t * packet, uint8_t * public_key, uint8_t * data, uint32_t length, uint8_t request_id);
 
 
-/* return -1 if failure
-   return 0 if connection is still trying to send the request.
-   return 1 if sent correctly
-   return 2 if connection timed out */
-int check_friendrequest(int friend_request);
-
-
-/* puts the public key of the friend if public_key, the  data from the request 
-   in data if a friend request was sent to us and returns the length of the data.
-   return -1 if no valid friend requests. */
-int handle_friendrequest(uint8_t * public_key, uint8_t * data);
+/* puts the senders public key in the request in public_key, the data from the request 
+   in data if a friend or ping request was sent to us and returns the length of the data.
+   packet is the request packet and length is its length
+   return -1 if not valid request. */
+int handle_request(uint8_t * public_key, uint8_t * data, uint8_t * packet, uint16_t length);
 
 
 /* Start a secure connection with other peer who has public_key and ip_port

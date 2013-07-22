@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
     //if keyfiles exist
     if(argc > 4){
         if(strncmp(argv[4], "nokey", 6) < 0){
-        load_key();
+        //load_key();
         }
     } else {
         load_key();

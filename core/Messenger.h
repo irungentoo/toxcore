@@ -29,6 +29,7 @@
 
 #include "net_crypto.h"
 #include "DHT.h"
+#include "friend_requests.h"
 
 #define MAX_NAME_LENGTH 128
 #define MAX_USERSTATUS_LENGTH 128

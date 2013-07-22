@@ -52,11 +52,6 @@ typedef struct
 
 static Crypto_Connection crypto_connections[MAX_CRYPTO_CONNECTIONS];
 
-#define MAX_FRIEND_REQUESTS 32
-
-/* keeps track of the connection numbers for friends request so we can check later if they were sent */
-static int outbound_friendrequests[MAX_FRIEND_REQUESTS];
-
 #define MAX_INCOMING 64
 
 /* keeps track of the connection numbers for friends request so we can check later if they were sent */
@@ -217,87 +212,62 @@ int write_cryptpacket(int crypt_connection_id, uint8_t * data, uint32_t length)
     return 1;
 }
 
-/* send a friend request to peer with public_key and ip_port.
-   Data represents the data we send with the friends request.
+/* create a request to peer with public_key.
+   packet must be an array of MAX_DATA_SIZE big.
+   Data represents the data we send with the request with length being the length of the data.
+   request_id is the id of the request (32 = friend request, 254 = ping request)
    returns -1 on failure
-   returns a positive friend request id that can be used later to see if it was sent correctly on success. */
-int send_friendrequest(uint8_t * public_key, IP_Port ip_port, uint8_t * data, uint32_t length)
+   returns the length of the created packet on success */
+int create_request(uint8_t * packet, uint8_t * public_key, uint8_t * data, uint32_t length, uint8_t request_id)
 {
-    if(length > MAX_DATA_SIZE - 1 - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES)
+    if(MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING)
     {
         return -1;
     }
-    uint32_t i;
-    for(i = 0; i < MAX_FRIEND_REQUESTS; ++i)
-    {
-        if(outbound_friendrequests[i] == -1)
-        {
-            break;
-        }
-    }
-    if(i == MAX_FRIEND_REQUESTS)
-    {
-        return -1;
-    }
-    uint8_t temp_data[MAX_DATA_SIZE];
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
     int len = encrypt_data(public_key, self_secret_key, nonce, data, length, 
-                           1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + temp_data);
+                           1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
     if(len == -1)
     {
         return -1;
     }
-    temp_data[0] = 1;
-    memcpy(temp_data + 1, self_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(temp_data + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
-    int id = new_connection(ip_port);
-    if(id == -1)
-    {
-        return -1;
-    }
-    if(write_packet(id, temp_data, len + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES) == 1)
-    {
-        outbound_friendrequests[i] = id;
-        return i;
-    }
-    return -1;
+    packet[0] = request_id;
+    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES * 2, nonce, crypto_box_NONCEBYTES);
+    
+    return len + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES;
 }
 
-/* return -1 if failure
-   return 0 if connection is still trying to send the request.
-   return 1 if sent correctly
-   return 2 if connection timed out */
-int check_friendrequest(int friend_request)
+/* puts the senders public key in the request in public_key, the data from the request 
+   in data if a friend or ping request was sent to us and returns the length of the data.
+   packet is the request packet and length is its length
+   return -1 if not valid request. */
+int handle_request(uint8_t * public_key, uint8_t * data, uint8_t * packet, uint16_t length)
 {
-    if(friend_request < 0 || friend_request > MAX_FRIEND_REQUESTS)
+
+    if(length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
+       length <= MAX_DATA_SIZE + ENCRYPTION_PADDING &&
+       memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+    {
+        memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
+        uint8_t nonce[crypto_box_NONCEBYTES];
+        memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
+        int len1 = decrypt_data(public_key, self_secret_key, nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES, 
+                                        length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), data);
+        if(len1 == -1)
+        {
+            return -1;
+        }
+        return len1;
+    }
+    else
     {
         return -1;
     }
-    if(outbound_friendrequests[friend_request] == -1)
-    {
-        return -1;
-    }
-    if(sendqueue(outbound_friendrequests[friend_request]) == 0)
-    {
-        kill_connection(outbound_friendrequests[friend_request]);
-        outbound_friendrequests[friend_request] = -1;
-        return 1;
-    }
-    int status = is_connected(outbound_friendrequests[friend_request]);
-    if(status == 4)
-    {
-        kill_connection(outbound_friendrequests[friend_request]);
-        outbound_friendrequests[friend_request] = -1;
-        return 2;
-    }
-    if(status == 0)
-    {
-        outbound_friendrequests[friend_request] = -1;
-        return 2;
-    }
-    return 0;
 }
+
 
 /* Send a crypto handshake packet containing an encrypted secret nonce and session public key
    to peer with connection_id and public_key
@@ -359,43 +329,7 @@ int handle_cryptohandshake(uint8_t * public_key, uint8_t * secret_nonce,
 }
 
 
-/* puts the public key of the friend if public_key, the  data from the request 
-   in data if a friend request was sent to us and returns the length of the data.
-   return -1 if no valid friend requests. */
-int handle_friendrequest(uint8_t * public_key, uint8_t * data)
-{
-    uint32_t i;
-    for(i = 0; i < MAX_INCOMING; ++i)
-    {
-        if(incoming_connections[i] != -1)
-        {
-            if(id_packet(incoming_connections[i]) == 1)
-            {
-                uint8_t temp_data[MAX_DATA_SIZE];
-                uint16_t len = read_packet(incoming_connections[i], temp_data);
-                if(len > crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + 1 
-                                 - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES)
-                {
-                    memcpy(public_key, temp_data + 1, crypto_box_PUBLICKEYBYTES);
-                    uint8_t nonce[crypto_box_NONCEBYTES];
-                    memcpy(nonce, temp_data + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_NONCEBYTES);
-                    int len1 = decrypt_data(public_key, self_secret_key, nonce, temp_data + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, 
-                                                    len - (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + 1), data);
-                    if(len1 != -1)
-                    {
-                        kill_connection(incoming_connections[i]);
-                        /* kill_connection_in(incoming_connections[i], 1); //conection is useless now, kill it in 1 seconds */
-                        incoming_connections[i] = -1;
-                        return len1;
-                    }
-                }
-                kill_connection(incoming_connections[i]); /* conection is useless now, kill it. */
-                incoming_connections[i] = -1;
-            }
-        }
-    }
-    return -1;
-}
+
 
 /* get crypto connection id from public key of peer
    return -1 if there are no connections like we are looking for
@@ -714,7 +648,6 @@ static void receive_crypto()
 void initNetCrypto()
 {
     memset(crypto_connections, 0 ,sizeof(crypto_connections));
-    memset(outbound_friendrequests, -1 ,sizeof(outbound_friendrequests));
     memset(incoming_connections, -1 ,sizeof(incoming_connections));
     uint32_t i;
     for(i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)

@@ -353,15 +353,14 @@ static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t le
     friendlist[friendnumber].userstatus_length = length;
     return 0;
 }
-
+/*
 static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t friend_request_isset = 0;
-
+*/
 /* set the function that will be executed when a friend request is received. */
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 {
-    friend_request = function;
-    friend_request_isset = 1;
+    callback_friendrequest(function);
 }
 
 
@@ -413,19 +412,20 @@ static void doFriends()
     {
         if(friendlist[i].status == 1)
         {
-             IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
-             int request = check_friendrequest(friendlist[i].friend_request_id);
-             /* printf("\n%u %u %u\n", friendip.ip.i, request, friendlist[i].friend_request_id); */
-             if(friendip.ip.i > 1 && request == -1)
-             {
-                  friendlist[i].friend_request_id = send_friendrequest(friendlist[i].client_id,
-                                               friendip, friendlist[i].info, friendlist[i].info_size);
-                  friendlist[i].status = 2;
-             }
+            int fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
+            if(fr == 0)/*TODO: This needs to be fixed so that it sends the friend requests a couple of times in case
+                                of packet loss*/
+            {
+                friendlist[i].status = 2;
+            }
+            else 
+            if(fr > 0)
+            {
+                friendlist[i].status = 2;
+            }
         }
         if(friendlist[i].status == 2 || friendlist[i].status == 3) /* friend is not online */
         {
-            check_friendrequest(friendlist[i].friend_request_id); /* for now this is used to kill the friend request */
             IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
             switch(is_cryptoconnected(friendlist[i].crypt_connection_id))
             {
@@ -508,21 +508,6 @@ static void doFriends()
     }
 }
 
-static void doFriendRequest()
-{
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t temp[MAX_DATA_SIZE];
-    
-    int len = handle_friendrequest(public_key, temp);
-    if(len >= 0)
-    {
-        if(friend_request_isset)
-        {
-            (*friend_request)(public_key, temp, len);
-        }
-    }
-}
-
 
 
 static void doInbound()
@@ -556,7 +541,7 @@ void doMessenger()
 #ifdef DEBUG
         /* if(rand() % 3 != 1) //simulate packet loss */
         /* { */
-        if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port))
+        if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port))
         {
             /* if packet is discarded */
             printf("Received unhandled packet with length: %u\n", length);
@@ -570,6 +555,7 @@ void doMessenger()
 #else
         DHT_handlepacket(data, length, ip_port);
         LosslessUDP_handlepacket(data, length, ip_port);
+        friendreq_handlepacket(data, length, ip_port);
 #endif
 
     }
@@ -577,7 +563,6 @@ void doMessenger()
     doLossless_UDP();
     doNetCrypto();
     doInbound();
-    doFriendRequest();
     doFriends();
 }
 

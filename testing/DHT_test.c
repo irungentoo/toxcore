@@ -10,6 +10,7 @@
  */
 //#include "../core/network.h"
 #include "../core/DHT.c"
+#include "../core/friend_requests.c"
 
 #include <string.h>
 
@@ -45,7 +46,7 @@ void print_clientlist()
         printf("\nTimestamp: %u", close_clientlist[i].timestamp);
         printf("\nLast pinged: %u\n", close_clientlist[i].last_pinged);
         p_ip = close_clientlist[i].ret_ip_port;
-        printf("\nOUR IP: %u.%u.%u.%u Port: %u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
+        printf("OUR IP: %u.%u.%u.%u Port: %u\n",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
     }  
 }
 
@@ -81,7 +82,7 @@ void print_friendlist()
             printf("\nTimestamp: %u", friends_list[k].client_list[i].timestamp);
             printf("\nLast pinged: %u\n", friends_list[k].client_list[i].last_pinged);
             p_ip = friends_list[k].client_list[i].ret_ip_port;
-            printf("\nret IP: %u.%u.%u.%u:%u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
+            printf("ret IP: %u.%u.%u.%u:%u\n",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
         }
     }
 }
@@ -146,8 +147,6 @@ int main(int argc, char *argv[])
     init_networking(ip, PORT);
     
 
-    
-
     perror("Initialization");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -169,7 +168,7 @@ int main(int argc, char *argv[])
         
         while(receivepacket(&ip_port, data, &length) != -1)
         {
-            if(DHT_handlepacket(data, length, ip_port))
+            if(DHT_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port))
             {
                 //unhandled packet
                 printpacket(data, length, ip_port);
