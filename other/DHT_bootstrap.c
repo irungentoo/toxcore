@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
         printf("%hhX",self_public_key[i]);
     }
     printf("\n");
-	printf("Port: 33445\n");
+	printf("Port: %u\n", PORT);
     //initialize networking
     //bind to ip 0.0.0.0:PORT
     IP ip;
