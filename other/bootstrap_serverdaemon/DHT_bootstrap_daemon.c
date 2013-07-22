@@ -10,8 +10,8 @@
 #include <unistd.h> /* POSIX things */
 #include <errno.h>
     
-#include "../core/DHT.h"
-#include "../core/friend_requests.h"
+#include "../../core/DHT.h"
+#include "../../core/friend_requests.h"
 
     
 /* Sleep function (x = milliseconds) */
