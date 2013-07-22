@@ -27,6 +27,9 @@
 
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* maximum length of the data in the data packets */
 #define MAX_DATA_SIZE 1024
@@ -105,5 +108,9 @@ void doLossless_UDP();
    return 0 if packet is handled correctly.
    return 1 if it didn't handle the packet or if the packet was shit. */
 int LosslessUDP_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
