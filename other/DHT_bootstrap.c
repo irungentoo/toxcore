@@ -35,9 +35,41 @@ unsigned char * hex_string_to_bin(char hex_string[])
     return val;
 }
 
+void manage_keys()
+{
+    const uint32_t KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    uint8_t keys[KEYS_SIZE];
+
+    FILE *keys_file = fopen("key", "r");
+    if (keys_file != NULL) {
+        //if file was opened successfully -- load keys
+        size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
+        if (read_size != KEYS_SIZE) {
+            printf("Error while reading the key file\nExiting.\n");
+            exit(1);
+        } else {
+            printf("Keys loaded successfully\n");
+        }
+        load_keys(keys);
+    } else {
+        //otherwise save new keys
+        new_keys();
+        save_keys(keys);
+        keys_file = fopen("key", "w");
+        if (fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file) != KEYS_SIZE) {
+            printf("Error while writing the key file.\nExiting.\n");
+            exit(1);
+        } else {
+            printf("Keys saved successfully\n");
+        }
+    }
+
+    fclose(keys_file);
+}
+
 int main(int argc, char *argv[])
 {
-    new_keys();
+    manage_keys();
     printf("Public key: ");
     uint32_t i;
     for(i = 0; i < 32; i++)
