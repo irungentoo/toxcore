@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6.0)
 if(NOT WIN32)
 	if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
 		message(STATUS "==== ${CMAKE_C_COMPILER_ID} detected - Adding compiler flags ====")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wextra -std=c99")
 	endif()
 endif()
 
