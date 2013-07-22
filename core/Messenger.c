@@ -426,6 +426,15 @@ static void doFriends()
         }
         if(friendlist[i].status == 2 || friendlist[i].status == 3) /* friend is not online */
         {
+            if(friendlist[i].status == 2)
+            {
+                if(friendlist[i].friend_request_id + 10 < unix_time()) /*I know this is hackish but it should work.*/
+                {
+                    send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
+                    friendlist[i].friend_request_id = unix_time();
+                    
+                }
+            }
             IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
             switch(is_cryptoconnected(friendlist[i].crypt_connection_id))
             {
