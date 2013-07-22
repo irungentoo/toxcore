@@ -12,11 +12,11 @@ macro(linkCoreLibraries exe_name)
 	add_dependencies(${exe_name} core)
 	if(WIN32)
 		include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
-        	target_link_libraries(${exe_name} core
-                	${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a
+		target_link_libraries(${exe_name} core
+		${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a
 			ws2_32)
 	else()
-        	target_link_libraries(${exe_name} core
+		target_link_libraries(${exe_name} core
 			sodium)
 	endif()
 endmacro()
