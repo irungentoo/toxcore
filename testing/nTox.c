@@ -1,7 +1,6 @@
 #include "nTox.h"
 #include <stdio.h>
 #include <time.h>
-#include <string.h>
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -192,7 +191,10 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     struct tm * timeinfo;
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
-    sprintf(msg, "[%d] %s <%s> %s", friendnumber, asctime (timeinfo), name, string); // someone please fix this
+    char* temp = asctime(timeinfo);
+    int len = strlen(temp);
+    temp[len-1]='\0';
+    sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // someone please fix this
     free(name);
     new_lines(msg);
 }
