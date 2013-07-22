@@ -47,6 +47,7 @@ void print_clientlist()
         printf("\nLast pinged: %u\n", close_clientlist[i].last_pinged);
         p_ip = close_clientlist[i].ret_ip_port;
         printf("OUR IP: %u.%u.%u.%u Port: %u\n",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
+        printf("Timestamp: %u\n", close_clientlist[i].ret_timestamp);
     }  
 }
 
@@ -83,6 +84,7 @@ void print_friendlist()
             printf("\nLast pinged: %u\n", friends_list[k].client_list[i].last_pinged);
             p_ip = friends_list[k].client_list[i].ret_ip_port;
             printf("ret IP: %u.%u.%u.%u:%u\n",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
+            printf("Timestamp: %u\n", friends_list[k].client_list[i].ret_timestamp);
         }
     }
 }

@@ -36,6 +36,7 @@ typedef struct
     uint32_t last_pinged;
     IP_Port ret_ip_port;/* The ip_port returned by this node for the friend 
                            (for nodes in friends_list) or us (for nodes in close_clientlist) */
+    uint32_t ret_timestamp;                       
 }Client_data;
 /* maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -241,6 +242,7 @@ int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Por
             list[i].timestamp = temp_time;
             list[i].ret_ip_port.ip.i = 0;
             list[i].ret_ip_port.port = 0;
+            list[i].ret_timestamp = 0;
             return 0;
         }
     }
@@ -263,6 +265,7 @@ int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Po
             list[i].timestamp = temp_time;
             list[i].ret_ip_port.ip.i = 0;
             list[i].ret_ip_port.port = 0;
+            list[i].ret_timestamp = 0;
             return 0;
         }
     }
@@ -305,6 +308,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
 void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
 {
     uint32_t i, j;
+    uint32_t temp_time = unix_time();
     if(memcmp(client_id, self_public_key, CLIENT_ID_SIZE) == 0)
     {
         for(i = 0; i < LCLIENT_LIST; ++i)
@@ -312,6 +316,7 @@ void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient
             if(memcmp(nodeclient_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0)
             {
                 close_clientlist[i].ret_ip_port = ip_port;
+                close_clientlist[i].ret_timestamp = temp_time;
                 return;
             }
         }
@@ -326,6 +331,7 @@ void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient
                 if(memcmp(nodeclient_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE) == 0)
                 {
                     friends_list[i].client_list[j].ret_ip_port = ip_port;
+                    friends_list[i].client_list[j].ret_timestamp = temp_time;
                     return;
                 }
             }
@@ -1019,7 +1025,7 @@ int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
             for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
             {
                 if(friends_list[i].client_list[j].ret_ip_port.ip.i != 0 && 
-                   friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)
+                   friends_list[i].client_list[j].ret_timestamp + BAD_NODE_TIMEOUT > temp_time)
                    /*If ip is not zero and node is good */
                 {
                     if(sendpacket(friends_list[i].client_list[j].ip_port, packet, length) == length)
@@ -1050,7 +1056,7 @@ int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
             for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
             {
                 if(friends_list[i].client_list[j].ret_ip_port.ip.i != 0 && 
-                   friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)
+                   friends_list[i].client_list[j].ret_timestamp + BAD_NODE_TIMEOUT > temp_time)
                    /*If ip is not zero and node is good */
                 {
                     ip_portlist[num_ips] = friends_list[i].client_list[j].ret_ip_port;
