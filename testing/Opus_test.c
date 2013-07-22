@@ -202,13 +202,12 @@ void get_devices(int * input, int * output)
     *input=-1;*output=-1;
     if(Pa_GetDeviceInfo(Pa_GetDefaultInputDevice())->maxInputChannels<=0)
     {
-  printf("The default input device has no channels\n");
+	printf("The default input device has no channels\n");
     }
     if(Pa_GetDeviceInfo(Pa_GetDefaultOutputDevice())->maxOutputChannels<=0)
     {
 	printf("The default output device has no channels\n");
     }
-    PaStreamParameters  Param;
     int i;
     int devices=Pa_GetDeviceCount();
     const   PaDeviceInfo *deviceInfo;
