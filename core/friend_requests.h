@@ -12,6 +12,9 @@
 #include "DHT.h"
 #include "net_crypto.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Try to send a friendrequest to peer with public_key
    data is the data in the request and length is the length. */
@@ -29,6 +32,8 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif
