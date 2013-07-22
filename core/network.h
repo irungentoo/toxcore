@@ -65,6 +65,9 @@
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define MAX_UDP_PACKET_SIZE 65507
 
@@ -130,4 +133,9 @@ void shutdown_networking();
    on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
    on failure returns -1 */
 int resolve_addr(char *address);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

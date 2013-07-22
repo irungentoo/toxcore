@@ -28,6 +28,10 @@
 
 #include "net_crypto.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Current time, unix format */
 #define unix_time() ((uint32_t)time(NULL))
 
@@ -111,5 +115,9 @@ int DHT_load(uint8_t * data, uint32_t size);
 /* returns 0 if we are not connected to the DHT
    returns 1 if we are */
 int DHT_isconnected();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
