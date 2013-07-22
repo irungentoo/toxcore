@@ -26,6 +26,10 @@
 
 #include "Lossless_UDP.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Our public key. */
 extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
@@ -129,5 +133,8 @@ void initNetCrypto();
 /* main loop */
 void doNetCrypto();
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -31,6 +31,10 @@
 #include "DHT.h"
 #include "friend_requests.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_NAME_LENGTH 128
 #define MAX_USERSTATUS_LENGTH 128
 
@@ -146,5 +150,9 @@ void Messenger_save(uint8_t * data);
 
 /* load the messenger from data of size length */
 int Messenger_load(uint8_t * data, uint32_t length);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
