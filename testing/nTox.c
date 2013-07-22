@@ -1,7 +1,7 @@
 #include "nTox.h"
 #include <stdio.h>
 #include <time.h>
-
+#include <string.h>
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -212,42 +212,50 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     free(name);
     new_lines(msg);
 }
+int load_key(){
+    FILE *data_file = NULL;
+    if ((data_file = fopen("data","r"))) {
+                 //load keys
+                 fseek(data_file, 0, SEEK_END);
+                 int size = ftell(data_file);
+                 fseek(data_file, 0, SEEK_SET);
+                 uint8_t data[size];
+            if(fread(data, sizeof(uint8_t), size, data_file) != size){
+                printf("Error reading file\n");
+                exit(0);
+            }
+                Messenger_load(data, size);
+            } else { 
+               //else save new keys
+               int size = Messenger_size();
+               uint8_t data[size];
+               Messenger_save(data);
+               data_file = fopen("data","w");
+               if(fwrite(data, sizeof(uint8_t), size, data_file) != size){
+                   printf("Error writing file\n");
+                   exit(0);
+               }
+           }
+   fclose(data_file);
+   return 0;
+}
 int main(int argc, char *argv[])
 {
     if (argc < 4) {
-        printf("[!] Usage: %s [IP] [port] [public_key]\n", argv[0]);
+        printf("[!] Usage: %s [IP] [port] [public_key] <nokey>\n", argv[0]);
         exit(0);
     }
     int c;
     int on = 0;
     initMessenger();
-    FILE *data_file = NULL;
     //if keyfiles exist
-    if ((data_file = fopen("data","r"))) {
-        //load keys
-        fseek(data_file, 0, SEEK_END);
-        int size = ftell(data_file);
-        fseek(data_file, 0, SEEK_SET);
-        uint8_t data[size];
-        if(fread(data, sizeof(uint8_t), size, data_file) != size)
-        {
-            printf("Error reading file\n");
-            exit(0);
+    if(argc > 4){
+        if(strncmp(argv[4], "nokey", 6) < 0){
+        load_key();
         }
-        Messenger_load(data, size);
-    } else { 
-        //else save new keys
-        int size = Messenger_size();
-        uint8_t data[size];
-        Messenger_save(data);
-        data_file = fopen("data","w");
-        if(fwrite(data, sizeof(uint8_t), size, data_file) != size)
-        {
-            printf("Error writing file\n");
-            exit(0);
-        }
+    } else {
+        load_key();
     }
-    fclose(data_file);
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
