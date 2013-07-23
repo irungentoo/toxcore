@@ -4,6 +4,7 @@ compiler:
   - clang
 
 before_script:
+# installing libsodium, needed for Core
   - git clone git://github.com/jedisct1/libsodium.git
   - cd libsodium
   - git checkout tags/0.4.2
@@ -12,6 +13,10 @@ before_script:
   - sudo make install
   - sudo ldconfig
   - cd ..
+# installing libconfig, needed for DHT_bootstrap_daemon
+  - sudo sed -i 's/precise/quantal/' /etc/apt/sources.list # needed for libconfig-dev
+  - sudo apt-get update -qq
+  - yes | sudo apt-get install libconfig-dev
 
 script:
   - mkdir build && cd build
