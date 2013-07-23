@@ -121,9 +121,8 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
    ip must be in network order EX: 127.0.0.1 = (7F000001)
    port is in host byte order (this means don't worry about it)
    returns 0 if no problems
-   TODO: add something to check if there are errors */
+   returns -1 if there were problems */
 int init_networking(IP ip ,uint16_t port);
-
 
 /* function to cleanup networking stuff(doesn't do much right now) */
 void shutdown_networking();
