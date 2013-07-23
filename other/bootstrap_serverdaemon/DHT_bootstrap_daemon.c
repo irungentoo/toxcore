@@ -242,7 +242,7 @@ struct server_conf_s configure_server(char *cfg_file)
                 printf("bootstrap_server %d: Invalid port\n", i);
             }
 
-            server_conf.info[i].conn.ip.i = inet_addr(strcpy(tmp_ip, bs_ip));
+            server_conf.info[i].conn.ip.i = resolve_addr(strcpy(tmp_ip, bs_ip));
             server_conf.info[i].conn.port = htons(bs_port);
             b16_to_key(strcpy(tmp_pk, bs_pk), bs_pk_p);
         }
