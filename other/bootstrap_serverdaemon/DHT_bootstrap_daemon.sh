@@ -20,8 +20,6 @@ DAEMON_ARGS="$CFG"
 PIDFILE=/home/$USER/.$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
-
-VERBOSE=yes
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
