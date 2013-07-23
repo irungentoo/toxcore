@@ -7,7 +7,6 @@
 #include <sys/stat.h> /* umask */
 #include <unistd.h> /* POSIX things */
 #include <errno.h>
-#include <err.h>
 
 #include <stdio.h>
 #include <stdlib.h>
