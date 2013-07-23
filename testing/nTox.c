@@ -99,8 +99,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
         } else if (line[1] == 'q') { //exit
-		endwin();
-		exit(EXIT_SUCCESS);
+            endwin();
+            exit(EXIT_SUCCESS);
         }
     } else {
         //new_lines(line);
@@ -184,7 +184,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 }
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
-    char *name = malloc(MAX_NAME_LENGTH);
+    char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
     time_t rawtime;
@@ -195,51 +195,47 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     int len = strlen(temp);
     temp[len-1]='\0';
     sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // someone please fix this
-    free(name);
     new_lines(msg);
 }
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
-    char *name = malloc(MAX_NAME_LENGTH);
+    char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length];
     sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
-    free(name);
     new_lines(msg);
 }
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
-    char *name = malloc(MAX_NAME_LENGTH);
+    char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
     sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
-    free(name);
     new_lines(msg);
 }
-int load_key(){
+void load_key(){
     FILE *data_file = NULL;
     if ((data_file = fopen("data","r"))) {
-                 //load keys
-                 fseek(data_file, 0, SEEK_END);
-                 int size = ftell(data_file);
-                 fseek(data_file, 0, SEEK_SET);
-                 uint8_t data[size];
-            if(fread(data, sizeof(uint8_t), size, data_file) != size){
-                printf("Error reading file\n");
-                exit(0);
-            }
-                Messenger_load(data, size);
-            } else { 
-               //else save new keys
-               int size = Messenger_size();
-               uint8_t data[size];
-               Messenger_save(data);
-               data_file = fopen("data","w");
-               if(fwrite(data, sizeof(uint8_t), size, data_file) != size){
-                   printf("Error writing file\n");
-                   exit(0);
-               }
-           }
+        //load keys
+        fseek(data_file, 0, SEEK_END);
+        int size = ftell(data_file);
+        fseek(data_file, 0, SEEK_SET);
+        uint8_t data[size];
+        if(fread(data, sizeof(uint8_t), size, data_file) != size){
+            printf("Error reading data file\nExiting.\n");
+            exit(1);
+        }
+        Messenger_load(data, size);
+    } else { 
+        //else save new keys
+        int size = Messenger_size();
+        uint8_t data[size];
+        Messenger_save(data);
+        data_file = fopen("data","w");
+        if(fwrite(data, sizeof(uint8_t), size, data_file) != size){
+            printf("Error writing data file\nExiting.\n");
+            exit(1);
+        }
+    }
    fclose(data_file);
-   return 0;
 }
 int main(int argc, char *argv[])
 {
@@ -298,31 +294,31 @@ int main(int argc, char *argv[])
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {
-        c=getch();
-        if (c != ERR) {
-            if (c != 27) {
-                getmaxyx(stdscr,y,x);
-                if (c == '\n') {
-                    line_eval(lines, line);
-                    strcpy(line, "");
-                } else if (c == 127) {
-                    line[strlen(line)-1] = '\0';
-                } else if (isalnum(c) || ispunct(c) || c == ' ') {
-                    strcpy(line,appender(line, (char) c));
-                }
-            }
-        }
-        if(on == 0)
+
+        if (on == 0 && DHT_isconnected())
         {
-            if(DHT_isconnected())
-            {
-                new_lines("[i] connected to DHT\n[i] define username with /n");
-                on = 1;
-            }
+            new_lines("[i] connected to DHT\n[i] define username with /n");
+            on = 1;
         }
+
         doMessenger();
         c_sleep(1);
         do_refresh();
+
+        c = getch();
+
+        if (c == ERR || c == 27)
+            continue;
+
+        getmaxyx(stdscr, y, x);
+        if (c == '\n') {
+            line_eval(lines, line);
+            strcpy(line, "");
+        } else if (c == 127) {
+            line[strlen(line) - 1] = '\0';
+        } else if (isalnum(c) || ispunct(c) || c == ' ') {
+            strcpy(line, appender(line, (char) c));
+        }
     }
     endwin();
     return 0;
