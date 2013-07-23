@@ -48,10 +48,9 @@ void manage_keys()
         if (read_size != KEYS_SIZE) {
             printf("Error while reading the key file\nExiting.\n");
             exit(1);
-        } else {
-            printf("Keys loaded successfully\n");
         }
         load_keys(keys);
+        printf("Keys loaded successfully\n");
     } else {
         //otherwise save new keys
         new_keys();
@@ -60,9 +59,8 @@ void manage_keys()
         if (fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file) != KEYS_SIZE) {
             printf("Error while writing the key file.\nExiting.\n");
             exit(1);
-        } else {
-            printf("Keys saved successfully\n");
         }
+        printf("Keys saved successfully\n");
     }
 
     fclose(keys_file);
@@ -80,15 +78,15 @@ int main(int argc, char *argv[])
         printf("%hhX",self_public_key[i]);
     }
     printf("\n");
-	printf("Port: %u\n", PORT);
+    printf("Port: %u\n", PORT);
     //initialize networking
     //bind to ip 0.0.0.0:PORT
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
-    
+
     perror("Initialization");
-    
+
     if (argc > 3) {
         printf("Trying to bootstrap into the network...\n");
         IP_Port bootstrap_info;
@@ -102,7 +100,7 @@ int main(int argc, char *argv[])
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
-    
+
     int is_waiting_for_dht_connection = 1;
     while(1)
     {
@@ -112,7 +110,7 @@ int main(int argc, char *argv[])
             is_waiting_for_dht_connection = 0;
         }
         doDHT();
-        
+
         while(receivepacket(&ip_port, data, &length) != -1)
         {
             DHT_handlepacket(data, length, ip_port);
