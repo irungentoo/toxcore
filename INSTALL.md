@@ -56,7 +56,7 @@ You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)'s C compiler
   - [CMake](http://www.cmake.org/cmake/resources/software.html)
 
-Additionally, if you are have wspiapi.h missing errors:
+Additionally, if you are having wspiapi.h missing errors:
  - [WSPiApi.h] (http://johnnypops.co.uk/tuxpaint/WSPiApi.h) - Place this in C:\MinGW\include
 
 Then you should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
