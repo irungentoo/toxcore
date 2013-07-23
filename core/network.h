@@ -35,10 +35,11 @@
 
 
 #ifdef WIN32 /* Put win32 includes here */
-
+//Windows XP
+#define WINVER 0x0501
 #include <winsock2.h>
 #include <windows.h>
-#include <wspiapi.h>
+#include <ws2tcpip.h>
 
 #undef VANILLA_NACL /* make sure on windows we use libsodium */
 
