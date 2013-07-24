@@ -119,6 +119,10 @@ int init_networking(IP ip ,uint16_t port)
     
     /* initialize our socket */
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
+
+	/* Check for socket error */
+	if (sock == INVALID_SOCKET)
+		return -1;
     
     /* Functions to increase the size of the send and receive UDP buffers
        NOTE: uncomment if necessary */
@@ -146,8 +150,7 @@ int init_networking(IP ip ,uint16_t port)
     
     /* Bind our socket to port PORT and address 0.0.0.0 */
     ADDR addr = {AF_INET, htons(port), ip}; 
-    if(bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1)
-		return -1;
+    bind(sock, (struct sockaddr*)&addr, sizeof(addr));
 
     return 0;
 
