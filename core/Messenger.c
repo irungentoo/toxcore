@@ -393,14 +393,18 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
 
 #define PORT 33445
 /* run this at startup */
-void initMessenger()
+int initMessenger()
 {
     new_keys();
     m_set_userstatus((uint8_t*)"Online", sizeof("Online"));
     initNetCrypto();
     IP ip;
     ip.i = 0;
-    init_networking(ip, PORT);
+
+    if(init_networking(ip,PORT) == -1)
+		return -1;
+	
+	return 0;
 }
 
 static void doFriends()
