@@ -41,7 +41,7 @@
 
 #define MESSENGER_PORT 33445
 
-typedef enum {
+typedef enum Friend_status {
 	NO_ADDED, /* was 0, no friend here */
 	ADDED, /* was 1, friend has been added */
 	REQUEST_SENT, /* was 2, friend request sent */
@@ -50,7 +50,7 @@ typedef enum {
 } Friend_status;
 
 
-typedef struct {
+typedef struct Friend {
     int crypt_connection_id;
     int friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
     Friend_status status;
@@ -67,7 +67,7 @@ typedef struct {
 } Friend;
 
 
-typedef struct {
+typedef struct Messenger {
 	/* FIXME eventually friendlist will be a dynamically growing array */
 	int numfriends; /* number of elements in use in friendlist */
 	int size; /* number of elements allocated for friendlist */
