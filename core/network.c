@@ -121,9 +121,15 @@ int init_networking(IP ip ,uint16_t port)
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
 
 	/* Check for socket error */
-	if (sock == INVALID_SOCKET)
+	#ifdef WIN32
+	if (sock == INVALID_SOCKET) //MSDN recommends this
 		return -1;
-    
+	#else
+	if (sock < 0)
+		return -1;
+	#endif
+
+
     /* Functions to increase the size of the send and receive UDP buffers
        NOTE: uncomment if necessary */
     /*
