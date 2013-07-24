@@ -41,7 +41,7 @@
 
 #define MESSENGER_PORT 33445
 
-typedef enum Friend_status {
+typedef enum {
 	NO_ADDED, /* was 0, no friend here */
 	ADDED, /* was 1, friend has been added */
 	REQUEST_SENT, /* was 2, friend request sent */
@@ -49,40 +49,45 @@ typedef enum Friend_status {
 	ONLINE /* was 4, friend is online */
 } Friend_status;
 
-typedef struct Friend {
-    uint8_t client_id[CLIENT_ID_SIZE];
+
+typedef struct {
     int crypt_connection_id;
     int friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
     Friend_status status;
+
+    uint16_t userstatus_length;
+    uint16_t info_size; /* length of the info */
+
+    uint8_t client_id[CLIENT_ID_SIZE];
     uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
     uint8_t name[MAX_NAME_LENGTH];
     uint8_t name_sent; /* 0 if we didn't send our name to this friend 1 if we have. */
     uint8_t *userstatus;
-    uint16_t userstatus_length;
     uint8_t userstatus_sent;
-    uint16_t info_size; /* length of the info */
 } Friend;
 
-typedef struct Messenger {
+
+typedef struct {
 	/* FIXME eventually friendlist will be a dynamically growing array */
 	int numfriends; /* number of elements in use in friendlist */
 	int size; /* number of elements allocated for friendlist */
+
 	Friend *friendlist;
-
-	uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-
-	uint8_t self_name[MAX_NAME_LENGTH];
-	uint8_t *self_userstatus;
-	uint16_t self_userstatus_len;
 
 	/* callback functions */
 	void (*friend_request)(struct Messenger *, uint8_t *, uint8_t *, uint16_t);
-	uint8_t friend_request_isset;
 	void (*friend_message)(struct Messenger *, int, uint8_t *, uint16_t);
-	uint8_t friend_message_isset;
 	void (*friend_namechange)(struct Messenger *, int, uint8_t *, uint16_t);
-	uint8_t friend_namechange_isset;
 	void (*friend_statuschange)(struct Messenger *, int, uint8_t *, uint16_t);
+
+	uint16_t self_userstatus_len;
+	uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+	uint8_t self_name[MAX_NAME_LENGTH];
+	uint8_t *self_userstatus;
+
+	uint8_t friend_request_isset;
+	uint8_t friend_message_isset;
+	uint8_t friend_namechange_isset;
 	uint8_t friend_statuschange_isset;
 } Messenger;
 
