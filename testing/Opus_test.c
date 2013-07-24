@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "portaudio.h"
+#include <portaudio.h>
 #include <opus/opus.h>
 
 #define SAMPLE_RATE  (48000)
