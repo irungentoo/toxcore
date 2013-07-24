@@ -46,6 +46,12 @@ typedef struct
     Client_data client_list[MAX_FRIEND_CLIENTS];
     uint32_t lastgetnode; /* time at which the last get_nodes request was sent. */
     
+    /*Symetric NAT hole punching stuff*/
+    uint8_t hole_punching; /*0 if not hole punching, 1 if currently hole punching */
+    uint32_t punching_index;
+    uint32_t punching_timestamp;
+    uint64_t NATping_id;
+    uint32_t NATping_timestamp;
 }Friend;
 
 
@@ -78,7 +84,7 @@ static Friend * friends_list;
 static uint16_t num_friends;
 
 /* The list of ip ports along with the ping_id of what we sent them and a timestamp */
-#define LPING_ARRAY 128
+#define LPING_ARRAY 256
 
 static Pinged pings[LPING_ARRAY];
 
@@ -160,10 +166,24 @@ int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
     
 }
 
+/*Return the friend number from the client_id
+ Return -1 if failure, number of friend if success*/
+static int friend_number(uint8_t * client_id)
+{
+    uint32_t i;
+    for(i = 0; i < num_friends; ++i)
+    {
+        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) /* Equal */
+        {
+            return i;
+        }
+    }
+    return -1;
+}
 
 
 /* the number of seconds for a non responsive node to become bad. */
-#define BAD_NODE_TIMEOUT 130
+#define BAD_NODE_TIMEOUT 70
 /* the max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 8
 
@@ -809,6 +829,7 @@ int DHT_addfriend(uint8_t * client_id)
     friends_list = temp;
     memset(&friends_list[num_friends], 0, sizeof(Friend));
     memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
+    friends_list[num_friends].NATping_id = ((uint64_t)random_int() << 32) + random_int();
     ++num_friends;
     return 0;
 }
@@ -871,30 +892,6 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
 }    
 
 
-
-int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
-{
-    switch (packet[0]) {
-    case 0:
-        return handle_pingreq(packet, length, source);   
-        
-    case 1:
-        return handle_pingres(packet, length, source); 
-        
-    case 2:
-        return handle_getnodes(packet, length, source); 
-        
-    case 3:
-        return handle_sendnodes(packet, length, source);
-        
-    default: 
-        return 1;
-        
-    }
-
-    return 0;
-
-}
 
 /* The timeout after which a node is discarded completely. */
 #define Kill_NODE_TIMEOUT 300
@@ -988,11 +985,6 @@ void doClose() /* tested */
 
 
 
-void doDHT()
-{
-    doClose();
-    doDHTFriends();
-}
 
 
 
@@ -1017,6 +1009,39 @@ int route_packet(uint8_t * client_id, uint8_t * packet, uint32_t length)
     }
     return -1;
 }
+
+
+/* Puts all the different ips returned by the nodes for a friend_num into array ip_portlist 
+   ip_portlist must be at least MAX_FRIEND_CLIENTS big
+   returns the number of ips returned
+   return 0 if we are connected to friend or if no ips were found.
+   returns -1 if no such friend*/
+static int friend_iplist(IP_Port * ip_portlist, uint16_t friend_num)
+{
+    int num_ips = 0;
+    uint32_t i;
+    uint32_t temp_time = unix_time();
+    if(friend_num >= num_friends)
+    {
+        return -1;
+    }
+    for(i = 0; i < MAX_FRIEND_CLIENTS; ++i)
+    {
+        if(friends_list[friend_num].client_list[i].ret_ip_port.ip.i != 0 && 
+            friends_list[friend_num].client_list[i].ret_timestamp + BAD_NODE_TIMEOUT > temp_time)
+            /*If ip is not zero and node is good */
+        {
+            if(memcmp(friends_list[friend_num].client_list[i].client_id, friends_list[friend_num].client_id, CLIENT_ID_SIZE) == 0 )
+            {
+                return 0;
+            }
+            ip_portlist[num_ips] = friends_list[friend_num].client_list[i].ret_ip_port;
+            ++num_ips;
+        }
+    }
+    return num_ips;
+}
+
 
 /* Send the following packet to everyone who tells us they are connected to friend_id
    returns the number of nodes it sent the packet to */
@@ -1047,35 +1072,293 @@ int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
     return 0;
 }
 
+/* Send the following packet to one random person who tells us they are connected to friend_id
+   returns the number of nodes it sent the packet to */
+int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
+{
+    int num = friend_number(friend_id);
+    if(num == -1)
+    {
+        return 0;
+    }
+    
+    IP_Port ip_list[MAX_FRIEND_CLIENTS];
+    int n = 0;
+    uint32_t i;
+    uint32_t temp_time = unix_time();
+    for(i = 0; i < MAX_FRIEND_CLIENTS; ++i)
+    {
+        if(friends_list[num].client_list[i].ret_ip_port.ip.i != 0 && 
+            friends_list[num].client_list[i].ret_timestamp + BAD_NODE_TIMEOUT > temp_time)
+            /*If ip is not zero and node is good */
+        {
+            ip_list[n] = friends_list[num].client_list[i].ip_port;
+            ++n;
+        }
+    }
+    if(n < 1)
+    {
+        return 0;
+    }
+    if(sendpacket(ip_list[rand() % n], packet, length) == length)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 /* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist 
    ip_portlist must be at least MAX_FRIEND_CLIENTS big
    returns the number of ips returned
+   return 0 if we are connected to friend or if no ips were found.
    returns -1 if no such friend*/
 int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
 {
-    int num_ips = 0;
-    uint32_t i, j;
-    uint32_t temp_time = unix_time();
+
+    uint32_t i;
     for(i = 0; i < num_friends; ++i)
     {
         if(memcmp(friends_list[i].client_id, friend_id, CLIENT_ID_SIZE) == 0) /* Equal */
         {
-            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
-            {
-                if(friends_list[i].client_list[j].ret_ip_port.ip.i != 0 && 
-                   friends_list[i].client_list[j].ret_timestamp + BAD_NODE_TIMEOUT > temp_time)
-                   /*If ip is not zero and node is good */
-                {
-                    ip_portlist[num_ips] = friends_list[i].client_list[j].ret_ip_port;
-                    ++num_ips;
-                }
-            }
-            return num_ips;
+            return friend_iplist(ip_portlist, i);
+        }
+    }
+    return -1;
+}
+
+/*BEGINNING OF NAT PUNCHING FUNCTIONS*/
+
+int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
+{
+    uint8_t data[sizeof(uint64_t) + 1];
+    data[0] = type;
+    memcpy(data + 1, &ping_id, sizeof(uint64_t));
+    
+    uint8_t packet[MAX_DATA_SIZE];
+    int len = create_request(packet, public_key, data, sizeof(uint64_t) + 1, 254); /* 254 is NAT ping request packet id */
+    if(len == -1)
+    {
+        return -1;
+    }
+    int num = 0;
+    if(type == 0)
+    {
+        num = route_tofriend(public_key, packet, len);/*If packet is request use many people to route it*/
+    }
+    else if(type == 1)
+    {
+        num = routeone_tofriend(public_key, packet, len);/*If packet is response use only one person to route it*/
+    }
+    if(num == 0)
+    {
+        return -1;
+    }
+    return num;
+}
+
+
+/* Handle a recieved ping request for */
+int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
+{
+    if(length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
+    length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
+    {
+        return 1;
+    }
+    if(memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)//check if request is for us.
+    {
+        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+        uint8_t data[MAX_DATA_SIZE];
+        int len = handle_request(public_key, data, packet, length);
+        if(len != sizeof(uint64_t) + 1)
+        {
+            return 1;
+        }
+        uint64_t ping_id;
+        memcpy(&ping_id, data + 1, sizeof(uint64_t));
+        
+        int friendnumber = friend_number(public_key);
+        if(friendnumber == -1)
+        {
+            return 1;
         }
         
+        if(data[0] == 0)
+        {
+            send_NATping(public_key, ping_id, 1);/*1 is reply*/
+            return 0;
+        }
+        else if (data[0] == 1)
+        {
+            if(friends_list[friendnumber].NATping_id == ping_id)
+            {
+                friends_list[friendnumber].NATping_id = ((uint64_t)random_int() << 32) + random_int();
+                friends_list[friendnumber].hole_punching = 1;
+                return 0;
+            }
+        }
+        return 1;
+    }
+    else//if request is not for us, try routing it.
+    {
+        if(route_packet(packet + 1, packet, length) == length)
+        {
+            return 0;
+        }
     }
     return 0;
 }
+
+/*Get the most common ip in the ip_portlist
+  Only return ip if it appears in list min_num or more
+  len must not be bigger than MAX_FRIEND_CLIENTS
+  return ip of 0 if failure */
+static IP NAT_commonip(IP_Port * ip_portlist, uint16_t len, uint16_t min_num)
+{
+    IP zero = {{0}};
+    if(len > MAX_FRIEND_CLIENTS)
+    {
+        return zero;
+    }
+    
+    uint32_t i, j;
+    uint16_t numbers[MAX_FRIEND_CLIENTS] = {0};
+    for(i = 0; i < len; ++i)
+    {
+        for(j = 0; j < len; ++j)
+        {
+            if(ip_portlist[i].ip.i == ip_portlist[j].ip.i)
+            {
+                ++numbers[i];
+            }
+        }
+        if(numbers[i] >= min_num)
+        {
+            return ip_portlist[i].ip;
+        }
+    }
+    return zero;
+}
+
+/*Return all the ports for one ip in a list
+  portlist must be at least len long
+  where len is the length of ip_portlist
+  returns the number of ports and puts the list of ports in portlist*/
+static uint16_t NAT_getports(uint16_t * portlist, IP_Port * ip_portlist, uint16_t len, IP ip)
+{
+    uint32_t i;
+    uint16_t num = 0;
+    for(i = 0; i < len; ++i)
+    {
+        if(ip_portlist[i].ip.i == ip.i)
+        {
+            portlist[num] = ntohs(ip_portlist[i].port);
+            ++num;
+        }
+    }
+    return num;
+}
+
+#define MAX_PUNCHING_PORTS 32
+
+static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t friend_num)
+{
+    if(numports > MAX_FRIEND_CLIENTS || numports == 0)
+    {
+        return;
+    }
+    uint32_t i;
+    uint32_t top = friends_list[friend_num].punching_index + MAX_PUNCHING_PORTS;
+    for(i = friends_list[friend_num].punching_index; i != top; i++)
+    {
+        /*TODO: improve port guessing algorithm*/
+        uint16_t port = port_list[(i/2) % numports] + (i/(2*numports))*((i % 2) ? -1 : 1);
+        IP_Port pinging = {ip, htons(port)};
+        pingreq(pinging, friends_list[friend_num].client_id);
+    }
+    friends_list[friend_num].punching_index = i;
+}
+
+/*Interval in seconds between punching attempts*/
+#define PUNCH_INTERVAL 10
+
+static void doNAT()
+{
+    uint32_t i;
+    uint32_t temp_time = unix_time();
+    for(i = 0; i < num_friends; ++i)
+    {
+        IP_Port ip_list[MAX_FRIEND_CLIENTS];
+        int num = friend_iplist(ip_list, i);
+        /*If we are connected to friend or if friend is not online don't try to hole punch with him*/
+        if(num < MAX_FRIEND_CLIENTS/2)
+        {
+            continue;
+        }
+        if(friends_list[i].hole_punching != 1) 
+        {
+            if(friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time)
+            {
+                send_NATping(friends_list[i].client_id, friends_list[i].NATping_id, 0); /*0 is request*/
+                friends_list[i].NATping_timestamp = temp_time;
+            }
+        }
+        else if(friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time)
+        {
+            IP ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS/2);
+            if(ip.i == 0)
+            {
+                continue;
+            }
+            uint16_t port_list[MAX_FRIEND_CLIENTS];
+            uint16_t numports = NAT_getports(port_list, ip_list, num, ip);
+            punch_holes(ip, port_list, numports, i);
+
+            friends_list[i].punching_timestamp = temp_time;
+            friends_list[i].hole_punching = 0;
+        }
+    }
+}
+
+/*END OF NAT PUNCHING FUNCTIONS*/
+
+
+int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+{
+    switch (packet[0]) {
+    case 0:
+        return handle_pingreq(packet, length, source);   
+        
+    case 1:
+        return handle_pingres(packet, length, source); 
+        
+    case 2:
+        return handle_getnodes(packet, length, source); 
+        
+    case 3:
+        return handle_sendnodes(packet, length, source);
+        
+    case 254:
+        return handle_NATping(packet, length, source);
+        
+    default: 
+        return 1;
+        
+    }
+
+    return 0;
+
+}
+
+
+void doDHT()
+{
+    doClose();
+    doDHTFriends();
+    doNAT();
+}
+
+
 
 /* get the size of the DHT (for saving) */
 uint32_t DHT_size()

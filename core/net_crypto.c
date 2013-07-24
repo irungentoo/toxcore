@@ -494,7 +494,7 @@ int accept_crypto_inbound(int connection_id, uint8_t * public_key, uint8_t * sec
     return -1;    
 }
 
-/* return 0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet 
+/* return 0 if no connection, 1 we have sent a handshake, 2 if connection is not confirmed yet 
    (we have received a handshake but no empty data packet), 3 if the connection is established.
    4 if the connection is timed out and waiting to be killed */
 int is_cryptoconnected(int crypt_connection_id)
