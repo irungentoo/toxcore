@@ -101,8 +101,8 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
    bind to ip and port
    ip must be in network order EX: 127.0.0.1 = (7F000001)
    port is in host byte order (this means don't worry about it)
-   returns 0 if no problems
-   TODO: add something to check if there are errors */
+   returns 0 if no problems 
+   returns -1 if there are problems */
 int init_networking(IP ip ,uint16_t port)
 {
     #ifdef WIN32
@@ -119,7 +119,17 @@ int init_networking(IP ip ,uint16_t port)
     
     /* initialize our socket */
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
-    
+
+	/* Check for socket error */
+	#ifdef WIN32
+	if (sock == INVALID_SOCKET) //MSDN recommends this
+		return -1;
+	#else
+	if (sock < 0)
+		return -1;
+	#endif
+
+
     /* Functions to increase the size of the send and receive UDP buffers
        NOTE: uncomment if necessary */
     /*
@@ -146,7 +156,8 @@ int init_networking(IP ip ,uint16_t port)
     
     /* Bind our socket to port PORT and address 0.0.0.0 */
     ADDR addr = {AF_INET, htons(port), ip}; 
-    bind(sock, (struct sockaddr*)&addr, sizeof(addr));   
+    bind(sock, (struct sockaddr*)&addr, sizeof(addr));
+
     return 0;
 
 }
