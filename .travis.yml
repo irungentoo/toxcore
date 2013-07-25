@@ -4,6 +4,8 @@ compiler:
   - clang
 
 before_script:
+  - sudo sed -i 's/precise/quantal/' /etc/apt/sources.list # needed for libopus-dev
+  - sudo apt-get update -qq
   - yes | sudo apt-get install libportaudio-dev libopus-dev
   - git clone git://github.com/jedisct1/libsodium.git
   - cd libsodium
