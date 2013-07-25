@@ -4,7 +4,7 @@ compiler:
   - clang
 
 before_script:
-  - yes | sudo apt-get install libportaudio-dev
+  - yes | sudo apt-get install libportaudio-dev libopus-dev
   - git clone git://github.com/jedisct1/libsodium.git
   - cd libsodium
   - git checkout tags/0.4.2
