@@ -22,7 +22,6 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */ 
-*/
  
  
 #ifndef MESSENGER_H
