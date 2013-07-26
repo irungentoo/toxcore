@@ -41,12 +41,14 @@
 
 #define PORT 33445
 
+//TODO: rewrite
 unsigned char * hex_string_to_bin(char hex_string[])
 {
-    unsigned char * val = malloc(strlen(hex_string));
+    size_t len = strlen(hex_string);
+    unsigned char * val = malloc(len);
     char * pos = hex_string;
     int i=0;
-    while(i < strlen(hex_string))
+    while(i < len)
     {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;
