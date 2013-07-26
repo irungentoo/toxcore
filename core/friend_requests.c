@@ -70,6 +70,43 @@ void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
     handle_friendrequest_isset = 1;
 }
 
+
+/*NOTE: the following is just a temporary fix for the multiple friend requests recieved at the same time problem
+  TODO: Make this better (This will most likely tie in with the way we will handle spam.)*/
+
+#define MAX_RECIEVED_STORED 32
+
+static uint8_t recieved_requests[MAX_RECIEVED_STORED][crypto_box_PUBLICKEYBYTES];
+static uint16_t recieved_requests_index;
+
+/*Add to list of recieved friend requests*/
+static void addto_recievedlist(uint8_t * client_id)
+{
+    if(recieved_requests_index >= MAX_RECIEVED_STORED)
+    {
+        recieved_requests_index = 0;
+    }
+    
+    memcpy(recieved_requests[recieved_requests_index], client_id, crypto_box_PUBLICKEYBYTES);
+    ++recieved_requests_index;
+}
+
+/* Check if a friend request was already recieved 
+   return 0 if not, 1 if we did  */
+static int request_recieved(uint8_t * client_id)
+{
+    uint32_t i;
+    for(i = 0; i < MAX_RECIEVED_STORED; ++i) 
+    {
+        if(memcmp(recieved_requests[i], client_id, crypto_box_PUBLICKEYBYTES) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
 int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
 
@@ -93,6 +130,11 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
             {
                 return 1;
             }
+            if(request_recieved(public_key))
+            {
+                return 1;
+            }
+            addto_recievedlist(public_key);
             (*handle_friendrequest)(public_key, data, len);
         }
         else//if request is not for us, try routing it.
