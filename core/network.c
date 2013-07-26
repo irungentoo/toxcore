@@ -42,8 +42,6 @@ uint64_t current_time()
     time = 1000000UL*a.tv_sec + a.tv_usec;
     return time;
     #endif
-    
-    
 }
 
 /* return a random number
@@ -67,7 +65,6 @@ int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip}; 
     return sendto(sock,(char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
-    
 }
 
 /* Function to receive data, ip and port of sender is put into ip_port
@@ -92,7 +89,6 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
     ip_port->ip = addr.ip;
     ip_port->port = addr.port;
     return 0;
-    
 }
 
 /* initialize networking
@@ -106,21 +102,18 @@ int init_networking(IP ip, uint16_t port)
     #ifdef WIN32
     WSADATA wsaData;
     if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
-    {
         return -1;
-    }
-    
     #else
     srandom((uint32_t)current_time());
     #endif
     srand((uint32_t)current_time());
-    
+
     /* initialize our socket */
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
 
     /* Check for socket error */
     #ifdef WIN32
-    if (sock == INVALID_SOCKET) //MSDN recommends this
+    if (sock == INVALID_SOCKET) /* MSDN recommends this */
         return -1;
     #else
     if (sock < 0)
@@ -137,11 +130,10 @@ int init_networking(IP ip, uint16_t port)
     }
 
     if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&n, sizeof(n)) == -1)
-    {
         return -1;
-    }*/
+    */
     
-    /*Enable broadcast on socket*/
+    /* Enable broadcast on socket */
     int broadcast = 1;
     setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
 
@@ -188,9 +180,7 @@ int resolve_addr(char *address)
 
     int success = getaddrinfo(address, "7", &hints, &server);
     if(success != 0)
-    {
         return -1;
-    }
 
     int resolved = ((struct sockaddr_in*)server->ai_addr)->sin_addr.s_addr;
     freeaddrinfo(server);
