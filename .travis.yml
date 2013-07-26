@@ -4,17 +4,25 @@ compiler:
   - clang
 
 before_script:
-  - sudo sed -i 's/precise/quantal/' /etc/apt/sources.list # needed for libopus-dev
-  - sudo apt-get update -qq
-  - yes | sudo apt-get install libportaudio-dev libopus-dev
+# installing libsodium, needed for Core
   - git clone git://github.com/jedisct1/libsodium.git
   - cd libsodium
   - git checkout tags/0.4.2
   - ./autogen.sh
   - ./configure && make check -j3
   - sudo make install
-  - sudo ldconfig
   - cd ..
+# installing libopus and portaudio (requires libasound-dev), needed for Opus_test
+  - sudo sed -i 's/precise/quantal/' /etc/apt/sources.list # needed for libopus-dev
+  - sudo apt-get update -qq
+  - yes | sudo apt-get install libopus-dev libasound-dev
+  - svn co https://subversion.assembla.com/svn/portaudio/portaudio/trunk/ portaudio
+  - cd portaudio
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
+# creating librarys' links and updating cache
+  - sudo ldconfig
 
 script:
   - mkdir build && cd build
