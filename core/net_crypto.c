@@ -1,37 +1,34 @@
 /* net_crypto.c
-* 
-* Functions for the core network crypto.
-* See also: docs/Crypto.txt
-* 
-* NOTE: This code has to be perfect. We don't mess around with encryption.
-*
- 
-    Copyright (C) 2013 Tox project All Rights Reserved.
-
-    This file is part of Tox.
-
-    Tox is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Tox is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-    
-*/
+ * 
+ * Functions for the core network crypto.
+ * See also: docs/Crypto.txt
+ * 
+ * NOTE: This code has to be perfect. We don't mess around with encryption.
+ * 
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
+ */
 
 #include "net_crypto.h"
-
 
 /* Our public and secret keys. */
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
-
 
 typedef struct
 {
@@ -178,7 +175,6 @@ int read_cryptpacket(int crypt_connection_id, uint8_t * data)
     return -1;
 }
 
-
 /* return 0 if data could not be put in packet queue
    return 1 if data was put into the queue */
 int write_cryptpacket(int crypt_connection_id, uint8_t * data, uint32_t length)
@@ -268,7 +264,6 @@ int handle_request(uint8_t * public_key, uint8_t * data, uint8_t * packet, uint1
     }
 }
 
-
 /* Send a crypto handshake packet containing an encrypted secret nonce and session public key
    to peer with connection_id and public_key
    the packet is encrypted with a random nonce which is sent in plain text with the packet */
@@ -328,9 +323,6 @@ int handle_cryptohandshake(uint8_t * public_key, uint8_t * secret_nonce,
     return 1;
 }
 
-
-
-
 /* get crypto connection id from public key of peer
    return -1 if there are no connections like we are looking for
    return id if it found it */
@@ -349,7 +341,6 @@ int getcryptconnection_id(uint8_t * public_key)
     }
     return -1;
 }
-
 
 /* Start a secure connection with other peer who has public_key and ip_port
    returns -1 if failure
@@ -448,7 +439,6 @@ int crypto_kill(int crypt_connection_id)
     return 1;
 }
 
-
 /* accept an incoming connection using the parameters provided by crypto_inbound
    return -1 if not successful
    returns the crypt_connection_id if successful */
@@ -505,7 +495,6 @@ int is_cryptoconnected(int crypt_connection_id)
     }
     return 0;
 }
-
 
 /* Generate our public and private keys
    Only call this function the first time the program starts. */

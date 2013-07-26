@@ -14,7 +14,26 @@
  * Saves all received data to: received.txt
  * 
  * EX: ./test 127.0.0.1 33445 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef filename.txt ABCDEFGHIJKLMNOPQRSTUVWXYZabcdeg
+ *
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
  */
+ 
 #include "../core/network.h"
 #include "../core/DHT.h"
 #include "../core/Lossless_UDP.h"
@@ -82,68 +101,53 @@ int main(int argc, char *argv[])
     if ( file2==NULL ){return 1;}
     read1 = fread(buffer1, 1, 128, file1);
     
-    while(1)
-    {
+    while(1) {
 
-        while(receivepacket(&ip_port, data, &length) != -1)
-        {
-            if(rand() % 3 != 1)//simulate packet loss
-            {
-                if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port))
-                {
-                    //if packet is not recognized
+        while(receivepacket(&ip_port, data, &length) != -1) {
+            if(rand() % 3 != 1) { /* simulate packet loss */
+                if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port)) {
+                    /* if packet is not recognized */
                     printf("Received unhandled packet with length: %u\n", length);
-                }
-                else
-                {
+                } else {
                     printf("Received handled packet with length: %u\n", length);
                 }
             }
         }
         friend_ip = DHT_getfriendip((uint8_t *)argv[3]);
-        if(friend_ip.ip.i != 0)
-        {
-            if(connection == -1)
-            {
+        if(friend_ip.ip.i != 0) {
+            if(connection == -1) {
                 printf("Started connecting to friend:");
                 printip(friend_ip);
                 connection = new_connection(friend_ip);
             }
         }
-        if(inconnection == -1)
-        {
+        if(inconnection == -1) {
             inconnection = incoming_connection();
-            if(inconnection != -1)
-            {
+            if(inconnection != -1) {
                 printf("Someone connected to us:");
                 printip(connection_ip(inconnection));
             }
         }
-        //if someone connected to us write what he sends to a file
-        //also send him our file.
-        if(inconnection != -1)
-        {
-            if(write_packet(inconnection, buffer1, read1))
-            {
+        /* if someone connected to us write what he sends to a file */
+        /* also send him our file. */
+        if(inconnection != -1) {
+            if(write_packet(inconnection, buffer1, read1)) {
                 printf("Wrote data.\n");
                 read1 = fread(buffer1, 1, 128, file1);
             }
             read2 = read_packet(inconnection, buffer2);
-            if(read2 != 0)
-            {
+            if(read2 != 0) {
                 printf("Received data.\n");
-                if(!fwrite(buffer2, read2, 1, file2))
-                {
+                if(!fwrite(buffer2, read2, 1, file2)) {
                         printf("file write error\n");
                 }
-                if(read2 < 128)
-                {
+                if(read2 < 128) {
                     fclose(file2);
                 }
             } 
         }
-        //if we are connected to a friend send him data from the file.
-        //also put what he sends us in a file.
+        /* if we are connected to a friend send him data from the file.
+         * also put what he sends us in a file. */
         if(is_connected(connection) == 3)
         {
             if(write_packet(0, buffer1, read1))
@@ -167,9 +171,9 @@ int main(int argc, char *argv[])
         }
         doDHT();
         doLossless_UDP();
-        //print_clientlist();
-        //print_friendlist();
-        //c_sleep(300);
+        /* print_clientlist();
+         * print_friendlist();
+         * c_sleep(300); */
         c_sleep(1);
     }
     

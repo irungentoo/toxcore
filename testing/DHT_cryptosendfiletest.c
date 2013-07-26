@@ -15,14 +15,33 @@
  * Saves all received data to: received.txt
  * 
  * EX: ./test 127.0.0.1 33445 filename.txt
+ *
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
  */
+ 
 #include "../core/network.h"
 #include "../core/DHT.h"
 #include "../core/net_crypto.h"
 
 #include <string.h>
 
-//Sleep function (x = milliseconds)
+/* Sleep function (x = milliseconds) */
 #ifdef WIN32
 
 #define c_sleep(x) Sleep(1*x)
@@ -41,16 +60,14 @@ void printip(IP_Port ip_port)
     printf("\nIP: %u.%u.%u.%u Port: %u\n",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
 }
 
-
-//horrible function from one of my first C programs.
-//only here because I was too lazy to write a proper one.
+/* horrible function from one of my first C programs.
+ *only here because I was too lazy to write a proper one. */
 unsigned char * hex_string_to_bin(char hex_string[])
 {
     unsigned char * val = malloc(strlen(hex_string));
     char * pos = hex_string;
     int i=0;
-    while(i < strlen(hex_string))
-    {
+    while(i < strlen(hex_string)) {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;
         i++;
@@ -69,8 +86,7 @@ int main(int argc, char *argv[])
     new_keys();
     printf("OUR ID: ");
     uint32_t i;
-    for(i = 0; i < 32; i++)
-    {
+    for(i = 0; i < 32; i++) {
         if(self_public_key[i] < 16)
             printf("0");
         printf("%hhX",self_public_key[i]);
@@ -86,8 +102,7 @@ int main(int argc, char *argv[])
     uint8_t friend_id[32];
     memcpy(friend_id, hex_string_to_bin(temp_id), 32);
     
-    
-    //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
+    /* memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32); */
     
 
     DHT_addfriend(friend_id);
@@ -99,15 +114,13 @@ int main(int argc, char *argv[])
     int friendrequest = -1;
     uint8_t request_data[512];
     
-    //initialize networking
-    //bind to ip 0.0.0.0:PORT
+    /* initialize networking
+     * bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
     initNetCrypto();
     
-    
-
     perror("Initialization");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -128,122 +141,99 @@ int main(int argc, char *argv[])
     if ( file2==NULL ){return 1;}
     read1 = fread(buffer1, 1, 128, file1);
     
-    while(1)
-    {
-
-        while(receivepacket(&ip_port, data, &length) != -1)
-        {
-            if(rand() % 3 != 1)//simulate packet loss
-            {
-                if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port))
-                {
-                    //if packet is not recognized
+    while(1) {
+        while(receivepacket(&ip_port, data, &length) != -1) {
+            if(rand() % 3 != 1) { /* simulate packet loss */
+                if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port)) {
+                    /* if packet is not recognized */
                     printf("Received unhandled packet with length: %u\n", length);
-                }
-                else
-                {
+                } else {
                     printf("Received handled packet with length: %u\n", length);
                 }
             }
         }
         friend_ip = DHT_getfriendip(friend_id);
-        if(friend_ip.ip.i != 0)
-        {
-            if(connection == -1 && friendrequest == -1)
-            {
+        if(friend_ip.ip.i != 0) {
+            if(connection == -1 && friendrequest == -1) {
                 printf("Sending friend request to peer:");
                 printip(friend_ip);
                 friendrequest = send_friendrequest(friend_id, friend_ip,(uint8_t *) "Hello World", 12);
-                //connection = crypto_connect((uint8_t *)friend_id, friend_ip);
-                //connection = new_connection(friend_ip);
+                /* connection = crypto_connect((uint8_t *)friend_id, friend_ip); */
+                /* connection = new_connection(friend_ip); */
             }
-            if(check_friendrequest(friendrequest) == 1)
-            {
+            if(check_friendrequest(friendrequest) == 1) {
                 printf("Started connecting to friend:");
                 connection = crypto_connect(friend_id, friend_ip);
             }
         }
-        if(inconnection == -1)
-        {
+        if(inconnection == -1) {
             uint8_t secret_nonce[crypto_box_NONCEBYTES];
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t session_key[crypto_box_PUBLICKEYBYTES];
             inconnection = crypto_inbound(public_key, secret_nonce, session_key);
             inconnection = accept_crypto_inbound(inconnection, acceptedfriend_public_key, secret_nonce, session_key);
-            //inconnection = incoming_connection();
-            if(inconnection != -1)
-            {
+            /* inconnection = incoming_connection(); */
+            if(inconnection != -1) {
                 printf("Someone connected to us:\n");
-               // printip(connection_ip(inconnection));
+               /* printip(connection_ip(inconnection)); */
             }
         }
-        if(handle_friendrequest(acceptedfriend_public_key, request_data) > 1)
-        {
+        if(handle_friendrequest(acceptedfriend_public_key, request_data) > 1) {
             printf("RECIEVED FRIEND REQUEST: %s\n", request_data);
         }
 
-        //if someone connected to us write what he sends to a file
-        //also send him our file.
-        if(inconnection != -1)
-        {
-            if(write_cryptpacket(inconnection, buffer1, read1))
-            {
+        /* if someone connected to us write what he sends to a file
+         * also send him our file. */
+        if(inconnection != -1) {
+            if(write_cryptpacket(inconnection, buffer1, read1)) {
                 printf("Wrote data1.\n");
                 read1 = fread(buffer1, 1, 128, file1);
             }
             read2 = read_cryptpacket(inconnection, buffer2);
-            if(read2 != 0)
-            {
+            if(read2 != 0) {
                 printf("Received data1.\n");
-                if(!fwrite(buffer2, read2, 1, file2))
-                {
+                if(!fwrite(buffer2, read2, 1, file2)) {
                         printf("file write error1\n");
                 }
-                if(read2 < 128)
-                {
+                if(read2 < 128) {
                     printf("Closed file1 %u\n", read2);
                     fclose(file2);
                 }
             }
-            else if(is_cryptoconnected(inconnection) == 4)//if buffer is empty and the connection timed out.
-            {
+			/* if buffer is empty and the connection timed out. */
+            else if(is_cryptoconnected(inconnection) == 4) {
                 crypto_kill(inconnection);
             }
         }
-        //if we are connected to a friend send him data from the file.
-        //also put what he sends us in a file.
-        if(is_cryptoconnected(connection) >= 3)
-        {
-            if(write_cryptpacket(0, buffer1, read1))
-            {
+        /* if we are connected to a friend send him data from the file.
+         * also put what he sends us in a file. */
+        if(is_cryptoconnected(connection) >= 3)  {
+            if(write_cryptpacket(0, buffer1, read1)) {
                 printf("Wrote data2.\n");
                 read1 = fread(buffer1, 1, 128, file1);
             }
             read2 = read_cryptpacket(0, buffer2);
-            if(read2 != 0)
-            {
+            if(read2 != 0) {
                 printf("Received data2.\n");
-                if(!fwrite(buffer2, read2, 1, file2))
-                {
+                if(!fwrite(buffer2, read2, 1, file2)) {
                         printf("file write error2\n");
                 }
-                if(read2 < 128)
-                {
+                if(read2 < 128) {
                     printf("Closed file2 %u\n", read2);
                     fclose(file2);
                 }
             }
-            else if(is_cryptoconnected(connection) == 4)//if buffer is empty and the connection timed out.
-            {
+			/* if buffer is empty and the connection timed out. */
+            else if(is_cryptoconnected(connection) == 4) {
                 crypto_kill(connection);
             }
         }
         doDHT();
         doLossless_UDP();
         doNetCrypto();
-        //print_clientlist();
-        //print_friendlist();
-        //c_sleep(300);
+        /*print_clientlist();
+         *print_friendlist();
+         *c_sleep(300); */
         c_sleep(1);
     }
     
