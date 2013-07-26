@@ -176,7 +176,7 @@ int new_inconnection(IP_Port ip_port)
     if(getconnection_id(ip_port) != -1)
         return -1;
     uint32_t i;
-    for(i = 0; i < MAX_CONNECTIONS; ++i)
+    for(i = 0; i < MAX_CONNECTIONS; ++i) {
         if(connections[i].status == 0) {
             memset(&connections[i], 0, sizeof(Connection));
             connections[i].ip_port = ip_port;
@@ -193,6 +193,7 @@ int new_inconnection(IP_Port ip_port)
             connections[i].send_counter = 127;
             return i;
         }
+    }
     return -1;
 }
 
