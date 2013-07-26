@@ -1,31 +1,29 @@
-/* Lossless_UDP.c
-* 
-* An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
-* 
- 
-    Copyright (C) 2013 Tox project All Rights Reserved.
+/* Lossless_UDP.c 
+ * 
+ * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
+ * 
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
+ */
 
-    This file is part of Tox.
-
-    Tox is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Tox is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-    
-*/
 /* TODO: clean this file a bit.
    There are a couple of useless variables to get rid of. */
 #include "Lossless_UDP.h"
-
-
 
 /* maximum data packets in sent and receive queues. */
 #define MAX_QUEUE_NUM 16
@@ -88,7 +86,6 @@ typedef struct
     uint8_t timeout; /* connection timeout in seconds. */
 }Connection;
 
-
 #define MAX_CONNECTIONS 256
 
 static Connection connections[MAX_CONNECTIONS];
@@ -117,7 +114,6 @@ int getconnection_id(IP_Port ip_port)
 /* table of random numbers used below. */
 static uint32_t randtable[6][256];
 
-
 /* generate a handshake_id which depends on the ip_port.
    this function will always give one unique handshake_id per ip_port.
    TODO: make this better */
@@ -138,6 +134,7 @@ uint32_t handshake_id(IP_Port source)
     }
     return id;
 }
+
 /* change the hnshake id associated with that ip_port
    TODO: make this better */
 void change_handshake(IP_Port source)
@@ -145,7 +142,6 @@ void change_handshake(IP_Port source)
     uint8_t rand = random_int() % 4;
     randtable[rand][((uint8_t *)&source)[rand]] = random_int();
 }
-
 
 /* initialize a new connection to ip_port
    returns an integer corresponding to the connection id.
@@ -314,6 +310,7 @@ char id_packet(int connection_id)
     }
     return -1;
 }
+
 /* return 0 if there is no received data in the buffer.
    return length of received packet if successful */
 int read_packet(int connection_id, uint8_t * data)
@@ -353,9 +350,6 @@ int write_packet(int connection_id, uint8_t * data, uint32_t length)
     return 0;
 }
 
-
-
-
 /* put the packet numbers the we are missing in requested and return the number */
 uint32_t missing_packets(int connection_id, uint32_t * requested)
 {
@@ -386,8 +380,6 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
 /* Packet sending functions
   One per packet type.
   see docs/Lossless_UDP.txt for more information. */
-
-
 int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
 {
     uint8_t packet[1 + 4 + 4];
@@ -401,7 +393,6 @@ int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_i
     return sendpacket(ip_port, packet, sizeof(packet));
     
 }
-
 
 int send_SYNC(uint32_t connection_id)
 {
@@ -467,8 +458,6 @@ int send_DATA(uint32_t connection_id)
 }
 
 /* END of packet sending functions */
-
-
 
 /* Packet handling functions
    One to handle each type of packets we receive
@@ -700,7 +689,6 @@ int handle_data(uint8_t * packet, uint32_t length, IP_Port source)
 
 /* END of packet handling functions */
 
-
 int LosslessUDP_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
 
@@ -828,6 +816,7 @@ void adjustRates()
         }
     }    
 }
+
 /* Call this function a couple times per second
    It's the main loop. */
 void doLossless_UDP()

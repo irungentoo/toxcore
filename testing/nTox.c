@@ -1,3 +1,26 @@
+/* nTox.c
+ *
+ * Textual frontend for Tox.
+ *
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
+ */
+
 #include "nTox.h"
 #include <stdio.h>
 #include <time.h>
@@ -28,8 +51,7 @@ unsigned char * hex_string_to_bin(char hex_string[])
     unsigned char * val = malloc(strlen(hex_string));
     char * pos = hex_string;
     int i=0;
-    while(i < strlen(hex_string))
-    {
+    while(i < strlen(hex_string)) {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;
         i++;
@@ -167,6 +189,7 @@ void do_refresh()
     clrtoeol();
     refresh();
 }
+
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {
     new_lines("[i] received friend request");
@@ -182,6 +205,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
         new_lines(numchar);
     }
 }
+
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
@@ -197,6 +221,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // someone please fix this
     new_lines(msg);
 }
+
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -204,6 +229,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
     new_lines(msg);
 }
+
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -211,6 +237,7 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
     new_lines(msg);
 }
+
 void load_key(){
     FILE *data_file = NULL;
     if ((data_file = fopen("data","r"))) {
@@ -237,6 +264,7 @@ void load_key(){
     }
    fclose(data_file);
 }
+
 int main(int argc, char *argv[])
 {
     if (argc < 4) {
@@ -294,9 +322,7 @@ int main(int argc, char *argv[])
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {
-
-        if (on == 0 && DHT_isconnected())
-        {
+        if (on == 0 && DHT_isconnected()) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
         }
