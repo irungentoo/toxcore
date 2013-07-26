@@ -756,7 +756,7 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
     uint32_t temp_time = unix_time();
     for(i = 0; i < num_friends; ++i) {
 	     /* Equal */
-        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)1 {
+        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
             for(j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
                 if(memcmp(friends_list[i].client_list[j].client_id, client_id, CLIENT_ID_SIZE) == 0 && 
                  friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time) {
