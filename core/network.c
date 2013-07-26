@@ -103,7 +103,7 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
    port is in host byte order (this means don't worry about it)
    returns 0 if no problems 
    returns -1 if there are problems */
-int init_networking(IP ip ,uint16_t port)
+int init_networking(IP ip, uint16_t port)
 {
     #ifdef WIN32
     WSADATA wsaData;
@@ -120,14 +120,14 @@ int init_networking(IP ip ,uint16_t port)
     /* initialize our socket */
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
 
-	/* Check for socket error */
-	#ifdef WIN32
-	if (sock == INVALID_SOCKET) //MSDN recommends this
-		return -1;
-	#else
-	if (sock < 0)
-		return -1;
-	#endif
+    /* Check for socket error */
+    #ifdef WIN32
+    if (sock == INVALID_SOCKET) //MSDN recommends this
+        return -1;
+    #else
+    if (sock < 0)
+        return -1;
+    #endif
 
 
     /* Functions to increase the size of the send and receive UDP buffers
@@ -143,6 +143,11 @@ int init_networking(IP ip ,uint16_t port)
     {
         return -1;
     }*/
+    
+    /*Enable broadcast on socket*/
+    int broadcast = 1;
+    setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
+
     
     /* Set socket nonblocking */
     #ifdef WIN32

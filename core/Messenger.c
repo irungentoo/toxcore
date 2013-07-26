@@ -402,9 +402,9 @@ int initMessenger()
     ip.i = 0;
 
     if(init_networking(ip,PORT) == -1)
-		return -1;
-	
-	return 0;
+        return -1;
+
+    return 0;
 }
 
 static void doFriends()
