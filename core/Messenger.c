@@ -530,6 +530,22 @@ static void doInbound()
     }
 }
 
+/*Interval in seconds between LAN discovery packet sending*/
+#define LAN_DISCOVERY_INTERVAL 60
+
+static uint32_t last_LANdiscovery;
+
+/*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
+static void LANdiscovery()
+{
+    if(last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time())
+    {
+        send_LANdiscovery(htons(PORT));
+        last_LANdiscovery = unix_time();
+    }
+}
+
+
 /* the main loop that needs to be run at least 200 times per second. */
 void doMessenger()
 {
@@ -541,7 +557,8 @@ void doMessenger()
 #ifdef DEBUG
         /* if(rand() % 3 != 1) //simulate packet loss */
         /* { */
-        if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port))
+        if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) && 
+        friendreq_handlepacket(data, length, ip_port) && LANdiscovery_handlepacket(data, length, ip_port))
         {
             /* if packet is discarded */
             printf("Received unhandled packet with length: %u\n", length);
@@ -556,6 +573,7 @@ void doMessenger()
         DHT_handlepacket(data, length, ip_port);
         LosslessUDP_handlepacket(data, length, ip_port);
         friendreq_handlepacket(data, length, ip_port);
+        LANdiscovery_handlepacket(data, length, ip_port);
 #endif
 
     }
@@ -564,6 +582,7 @@ void doMessenger()
     doNetCrypto();
     doInbound();
     doFriends();
+    LANdiscovery();
 }
 
 /* returns the size of the messenger data (for saving) */

@@ -144,7 +144,7 @@ int init_networking(IP ip, uint16_t port)
     /*Enable broadcast on socket*/
     int broadcast = 1;
     setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
-    
+
     /* Set socket nonblocking */
     #ifdef WIN32
     /* I think this works for windows */

@@ -29,6 +29,7 @@
 #include "net_crypto.h"
 #include "DHT.h"
 #include "friend_requests.h"
+#include "LAN_discovery.h"
 
 #ifdef __cplusplus
 extern "C" {
