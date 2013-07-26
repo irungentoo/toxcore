@@ -42,7 +42,6 @@
 
 #endif
 
-
 #define PORT 33446
 
 void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
@@ -50,8 +49,7 @@ void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
     printf("--------------------BEGIN-----------------------------\n");
-    for(i = 0; i < length; i++)
-    {
+    for(i = 0; i < length; i++) {
         if(data[i] < 16)
             printf("0");
         printf("%hhX",data[i]);
@@ -117,39 +115,34 @@ void printconnection(int connection_id)
     
 }
 */
-//recieve packets and send them to the packethandler
-//run doLossless_UDP(); 
+
+/*( recieve packets and send them to the packethandler */
+/*run doLossless_UDP(); */
 void Lossless_UDP()
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
-    while(receivepacket(&ip_port, data, &length) != -1)
-    {
+    while(receivepacket(&ip_port, data, &length) != -1) {
         printf("packet with length: %u\n", length);
-        //if(rand() % 3 != 1)//add packet loss
-       // {    
-            if(LosslessUDP_handlepacket(data, length, ip_port))
-            {
+        /* if(rand() % 3 != 1)//add packet loss
+         { */
+            if(LosslessUDP_handlepacket(data, length, ip_port)) {
                     printpacket(data, length, ip_port);
-            }
-            else
-            {
+            } else {
                 //printconnection(0);
                  printf("Received handled packet with length: %u\n", length);
             }
-       // }
+       /* } */
     }
     
     doLossless_UDP();   
     
 }
 
-
 int main(int argc, char *argv[])
 {
-    if (argc < 4) 
-    {
+    if (argc < 4) {
         printf("usage: %s ip port filename\n", argv[0]);
         exit(0);
     }
@@ -161,8 +154,8 @@ int main(int argc, char *argv[])
     if ( file==NULL ){return 1;}
     
     
-    //initialize networking
-    //bind to ip 0.0.0.0:PORT
+    /* initialize networking */
+    /* bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
@@ -173,17 +166,14 @@ int main(int argc, char *argv[])
     printip(serverip);
     int connection = new_connection(serverip);
     uint64_t timer = current_time();
-    while(1)
-    {
-       // printconnection(connection);
+    while(1) {
+       /* printconnection(connection); */
         Lossless_UDP();
-        if(is_connected(connection) == 3)
-        {
+        if(is_connected(connection) == 3) {
             printf("Connecting took: %llu us\n", (unsigned long long)(current_time() - timer));
             break;
         }
-        if(is_connected(connection) == 0)
-        {
+        if(is_connected(connection) == 0) {
             printf("Connection timeout after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 1;
         }
@@ -192,38 +182,32 @@ int main(int argc, char *argv[])
     timer = current_time();
     
     
-    //read first part of file
+    /*read first part of file */
     read = fread(buffer, 1, 512, file);
     
-    while(1)
-    {
-        //printconnection(connection);
+    while(1) {
+        /* printconnection(connection); */
         Lossless_UDP();
-        if(is_connected(connection) == 3)
-        {
+        if(is_connected(connection) == 3) {
             
-            if(write_packet(connection, buffer, read))
-            {
-               //printf("Wrote data.\n");
+            if(write_packet(connection, buffer, read)) {
+               /* printf("Wrote data.\n"); */
                 read = fread(buffer, 1, 512, file);
 
             }
-            //printf("%u\n", sendqueue(connection));
-            if(sendqueue(connection) == 0)
-            {
-                if(read == 0)
-                {
+            /* printf("%u\n", sendqueue(connection)); */
+            if(sendqueue(connection) == 0) {
+                if(read == 0) {
                     printf("Sent file successfully in: %llu us\n", (unsigned long long)(current_time() - timer));
                     break;
                 }
             }
         }
-        else
-        {
+        else {
             printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 0;
         }
-        //c_sleep(1);
+        /* c_sleep(1); */
     }
         
     return 0;

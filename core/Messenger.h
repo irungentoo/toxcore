@@ -22,8 +22,7 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */ 
- 
- 
+
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
@@ -79,7 +78,6 @@ int m_delfriend(int friendnumber);
    return 0 if there is no friend with that number */
 int m_friendstatus(int friendnumber);
 
-
 /* send a text chat message to an online friend
    returns 1 if packet was successfully put into the send queue
    return 0 if it was not */
@@ -90,7 +88,6 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length);
    return 0 if success
    return -1 if failure */
 int setname(uint8_t * name, uint16_t length);
-
 
 /* get name of friendnumber
    put it in name
@@ -117,7 +114,6 @@ int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen);
    function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 
-
 /* set the function that will be executed when a message from a friend is received.
    function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
 void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
@@ -137,10 +133,8 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
    returns -1 if there are problems */
 int initMessenger();
 
-
 /* the main loop that needs to be run at least 200 times per second */
 void doMessenger();
-
 
 /* SAVING AND LOADING FUNCTIONS: */
 

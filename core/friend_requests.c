@@ -25,7 +25,6 @@
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
-
 /* Try to send a friendrequest to peer with public_key
    data is the data in the request and length is the length. 
    return -1 if failure.
@@ -61,7 +60,6 @@ int send_friendrequest(uint8_t * public_key, uint8_t * data, uint32_t length)
     return num;
 }
 
-
 static void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t handle_friendrequest_isset = 0;
 
@@ -71,7 +69,6 @@ void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
     handle_friendrequest = function;
     handle_friendrequest_isset = 1;
 }
-
 
 int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {

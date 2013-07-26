@@ -33,8 +33,6 @@ extern "C" {
 /* maximum length of the data in the data packets */
 #define MAX_DATA_SIZE 1024
 
-
-
 /* Functions */
 
 /* initialize a new connection to ip_port
@@ -51,7 +49,6 @@ int getconnection_id(IP_Port ip_port);
 /* returns an integer corresponding to the next connection in our imcoming connection list
    return -1 if there are no new incoming connections in the list. */
 int incoming_connection();
-
 
 /* return -1 if it could not kill the connection.
    return 0 if killed successfully */
@@ -74,20 +71,15 @@ char id_packet(int connection_id);
    return length of received packet if successful */
 int read_packet(int connection_id, uint8_t * data);
 
-
 /* return 0 if data could not be put in packet queue
    return 1 if data was put into the queue */
 int write_packet(int connection_id, uint8_t * data, uint32_t length);
 
-
-
 /* returns the number of packets in the queue waiting to be successfully sent. */
 uint32_t sendqueue(int connection_id);
 
-
 /* returns the number of packets in the queue waiting to be successfully read with read_packet(...) */
 uint32_t recvqueue(int connection_id);
-
 
 /* check if connection is connected
    return 0 no.
@@ -96,7 +88,6 @@ uint32_t recvqueue(int connection_id);
    return 3 if fully connected
    return 4 if timed out and wating to be killed */
 int is_connected(int connection_id);
-
 
 /* Call this function a couple times per second
    It's the main loop. */

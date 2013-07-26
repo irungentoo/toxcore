@@ -51,8 +51,7 @@ unsigned char * hex_string_to_bin(char hex_string[])
     unsigned char * val = malloc(strlen(hex_string));
     char * pos = hex_string;
     int i=0;
-    while(i < strlen(hex_string))
-    {
+    while(i < strlen(hex_string)) {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;
         i++;
@@ -190,6 +189,7 @@ void do_refresh()
     clrtoeol();
     refresh();
 }
+
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {
     new_lines("[i] received friend request");
@@ -205,6 +205,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
         new_lines(numchar);
     }
 }
+
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
@@ -220,6 +221,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // someone please fix this
     new_lines(msg);
 }
+
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -227,6 +229,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
     new_lines(msg);
 }
+
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -234,6 +237,7 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
     new_lines(msg);
 }
+
 void load_key(){
     FILE *data_file = NULL;
     if ((data_file = fopen("data","r"))) {
@@ -260,6 +264,7 @@ void load_key(){
     }
    fclose(data_file);
 }
+
 int main(int argc, char *argv[])
 {
     if (argc < 4) {
@@ -317,9 +322,7 @@ int main(int argc, char *argv[])
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {
-
-        if (on == 0 && DHT_isconnected())
-        {
+        if (on == 0 && DHT_isconnected()) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
         }

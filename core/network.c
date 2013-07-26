@@ -23,7 +23,6 @@
 
 #include "network.h"
 
-
 /* returns current UNIX time in microseconds (us). */
 uint64_t current_time()
 {
@@ -128,7 +127,6 @@ int init_networking(IP ip, uint16_t port)
         return -1;
     #endif
 
-
     /* Functions to increase the size of the send and receive UDP buffers
        NOTE: uncomment if necessary */
     /*
@@ -146,7 +144,6 @@ int init_networking(IP ip, uint16_t port)
     /*Enable broadcast on socket*/
     int broadcast = 1;
     setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
-
     
     /* Set socket nonblocking */
     #ifdef WIN32

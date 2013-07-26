@@ -20,7 +20,6 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
- 
 
 #ifndef NETWORK_H 
 #define NETWORK_H 
@@ -30,8 +29,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
-
-
 
 #ifdef WIN32 /* Put win32 includes here */
 //Windows XP
@@ -96,7 +93,6 @@ typedef struct
     uint8_t zeroes2[12];
     #endif
 }ADDR;
-
 
 /* returns current time in milleseconds since the epoch. */
 uint64_t current_time();

@@ -104,15 +104,12 @@ int main(int argc, char *argv[])
         exit(0);
     }
     initMessenger();
-    if(argc > 3)
-    {
+    if(argc > 3) {
         IP_Port bootstrap_ip_port;
         bootstrap_ip_port.port = htons(atoi(argv[2]));
         bootstrap_ip_port.ip.i = inet_addr(argv[1]);
         DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
-    }
-    else
-    {
+    } else {
         FILE *file = fopen(argv[1], "rb");
         if ( file==NULL ){return 1;}
         int read;
@@ -127,8 +124,7 @@ int main(int argc, char *argv[])
     
     printf("OUR ID: ");
     uint32_t i;
-    for(i = 0; i < 32; i++)
-    {
+    for(i = 0; i < 32; i++) {
         if(self_public_key[i] < 16)
             printf("0");
         printf("%hhX",self_public_key[i]);
@@ -138,16 +134,14 @@ int main(int argc, char *argv[])
     
     char temp_id[128];
     printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
-    if(scanf("%s", temp_id) != 1)
-    {
+    if(scanf("%s", temp_id) != 1) {
         return 1;
     }
     int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
     
     perror("Initialization");
 
-    while(1)
-    {
+    while(1) {
         uint8_t name[128];
         getname(num, name);
         printf("%s\n", name);
@@ -162,6 +156,5 @@ int main(int argc, char *argv[])
         fwrite(buffer, 1, Messenger_size(), file);
         free(buffer);
         fclose(file);
-    }
-    
+    }  
 }

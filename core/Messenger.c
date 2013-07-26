@@ -38,8 +38,6 @@ typedef struct
     uint8_t userstatus_sent;
     uint16_t info_size; /* length of the info */
 }Friend;
- 
-
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
@@ -56,7 +54,6 @@ static uint32_t numfriends;
 /* 1 if we are online
    0 if we are offline
    static uint8_t online; */
-
 
 /* return the friend id associated to that public key.
    return -1 if no such friend */
@@ -76,7 +73,6 @@ int getfriend_id(uint8_t * client_id)
     return -1;
 }
 
-
 /* copies the public key associated to that friend id into client_id buffer.
    make sure that client_id is of size CLIENT_ID_SIZE.
    return 0 if success
@@ -95,7 +91,6 @@ int getclient_id(int friend_id, uint8_t * client_id)
     }
     return -1;
 }
-
 
 /* add a friend
    set the data that will be sent along with friend request
@@ -191,7 +186,6 @@ int m_delfriend(int friendnumber)
     return 0;
 }
 
-
 /* return 4 if friend is online
    return 3 if friend is confirmed
    return 2 if the friend request was sent
@@ -205,7 +199,6 @@ int m_friendstatus(int friendnumber)
     }
     return friendlist[friendnumber].status;
 }
-
 
 /* send a text chat message to an online friend
    return 1 if packet was successfully put into the send queue
@@ -239,7 +232,6 @@ static int m_sendname(int friendnumber, uint8_t * name)
 /* set the name of a friend
    return 0 if success
    return -1 if failure */
-
 static int setfriendname(int friendnumber, uint8_t * name)
 {
     if(friendnumber >= numfriends || friendnumber < 0)
@@ -249,7 +241,6 @@ static int setfriendname(int friendnumber, uint8_t * name)
     memcpy(friendlist[friendnumber].name, name, MAX_NAME_LENGTH);
     return 0;
 }
-
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
@@ -352,6 +343,7 @@ static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t le
     friendlist[friendnumber].userstatus_length = length;
     return 0;
 }
+
 /*
 static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t friend_request_isset = 0;
@@ -362,7 +354,6 @@ void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
     callback_friendrequest(function);
 }
 
-
 static void (*friend_message)(int, uint8_t *, uint16_t);
 static uint8_t friend_message_isset = 0;
 
@@ -372,7 +363,6 @@ void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
     friend_message = function;
     friend_message_isset = 1;
 }
-
 
 static void (*friend_namechange)(int, uint8_t *, uint16_t);
 static uint8_t friend_namechange_isset = 0;
@@ -519,8 +509,6 @@ static void doFriends()
         }
     }
 }
-
-
 
 static void doInbound()
 {

@@ -20,6 +20,7 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
+
 #ifndef NTOX_H
 #define NTOX_H
 
