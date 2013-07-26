@@ -4,7 +4,7 @@
  * 
  */
 
-#include "routing.h"
+#include "LAN_discovery.h"
 
 
 /*Return the broadcast ip
