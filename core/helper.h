@@ -2,7 +2,7 @@
 #define _HELPER_H_
 
 #include <time.h>
-#include <inttypes.h>.h>
+#include <inttypes.h>
 /* PLACE ALL YOUR HELPER FUNCTIONS/MACROS HERE */
 
 /* Current time, unix format */
