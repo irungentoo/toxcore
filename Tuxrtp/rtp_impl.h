@@ -56,6 +56,6 @@ typedef struct rtp_session_s {
 rtp_session_t*  rtp_init_session ( IP_Port _dest, int max_users ); /* you need to have at least 1 receiver */
 rtp_msg_t*      rtp_session_get_message_queded ( rtp_session_t* _session );
 
-char LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
+uint8_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
 
 #endif /* _RTP__IMPL_H_ */

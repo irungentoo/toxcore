@@ -83,7 +83,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
     rtp_msg_t* _retu;
     ALLOCATOR_LIST_D ( _retu, rtp_msg_t, NULL )
 
-    _retu->_header = rtp_build_header ( _session ); /* It allocates memory and all */
+    _retu->_header = (rtp_header_t*)rtp_build_header ( _session ); /* It allocates memory and all */
     _length += _retu->_header->_length;
 
     _retu->_data = ( uint8_t* ) malloc ( sizeof ( uint8_t ) * _length );

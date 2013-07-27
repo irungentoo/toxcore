@@ -87,8 +87,8 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     _retu->_ssrc = _session->_ssrc;
 
     if ( _session->_cc > 0 ) {
-            ALLOCATOR ( _retu->_csrc, uint8_t, _session->_cc )
-            memcpy ( _retu->_csrc, _session->_csrc, _session->_cc );
+            ALLOCATOR ( _retu->_csrc, uint32_t, _session->_cc )
+            memcpy ( _retu->_csrc, (void*)_session->_csrc, _session->_cc );
             }
     else {
             _retu->_csrc = NULL;
