@@ -166,7 +166,10 @@ int init_networking(IP ip ,uint16_t port)
 void shutdown_networking()
 {
     #ifdef WIN32
+    closesocket(sock);
     WSACleanup();
+    #else
+    close(sock);
     #endif
     return;
 }
