@@ -23,6 +23,7 @@
 
 #include "nTox.h"
 #include "misc_tools.h"
+
 #include <stdio.h>
 #include <time.h>
 #ifdef WIN32
