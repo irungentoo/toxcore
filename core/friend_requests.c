@@ -2,12 +2,28 @@
  * 
  * Handle friend requests.
  * 
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
  */
 
 #include "friend_requests.h"
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-
 
 /* Try to send a friendrequest to peer with public_key
    data is the data in the request and length is the length. 
@@ -18,32 +34,29 @@ int send_friendrequest(uint8_t * public_key, uint8_t * data, uint32_t length)
 {
     uint8_t packet[MAX_DATA_SIZE];
     int len = create_request(packet, public_key, data, length, 32); /* 32 is friend request packet id */
+    
     if(len == -1)
-    {
         return -1;
-    }
+
     IP_Port ip_port = DHT_getfriendip(public_key);
+
     if(ip_port.ip.i == 1)
-    {
         return -1;
-    }
+
     if(ip_port.ip.i != 0)
     {
         if(sendpacket(ip_port, packet, len) != -1)
-        {
             return 0;
-        }
         return -1;
     }
     
     int num = route_tofriend(public_key, packet, len);
+
     if(num == 0)
-    {
         return -1;
-    }
+
     return num;
 }
-
 
 static void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t handle_friendrequest_isset = 0;
@@ -56,6 +69,38 @@ void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 }
 
 
+/*NOTE: the following is just a temporary fix for the multiple friend requests recieved at the same time problem
+  TODO: Make this better (This will most likely tie in with the way we will handle spam.)*/
+
+#define MAX_RECIEVED_STORED 32
+
+static uint8_t recieved_requests[MAX_RECIEVED_STORED][crypto_box_PUBLICKEYBYTES];
+static uint16_t recieved_requests_index;
+
+/*Add to list of recieved friend requests*/
+static void addto_recievedlist(uint8_t * client_id)
+{
+    if(recieved_requests_index >= MAX_RECIEVED_STORED)
+        recieved_requests_index = 0;
+    
+    memcpy(recieved_requests[recieved_requests_index], client_id, crypto_box_PUBLICKEYBYTES);
+    ++recieved_requests_index;
+}
+
+/* Check if a friend request was already recieved 
+   return 0 if not, 1 if we did  */
+static int request_recieved(uint8_t * client_id)
+{
+    uint32_t i;
+
+    for(i = 0; i < MAX_RECIEVED_STORED; ++i) 
+        if(memcmp(recieved_requests[i], client_id, crypto_box_PUBLICKEYBYTES) == 0)
+            return 1;
+
+    return 0;
+}
+
+
 int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
 
@@ -63,31 +108,27 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
     {
         if(length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
         length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
-        {
             return 1;
-        }
-        if(memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)//check if request is for us.
+        if(memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) /* check if request is for us. */
         {
             if(handle_friendrequest_isset == 0)
-            {
                 return 1;
-            }
+
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t data[MAX_DATA_SIZE];
             int len = handle_request(public_key, data, packet, length);
+
             if(len == -1)
-            {
                 return 1;
-            }
+            if(request_recieved(public_key))
+                return 1;
+
+            addto_recievedlist(public_key);
             (*handle_friendrequest)(public_key, data, len);
         }
-        else//if request is not for us, try routing it.
-        {
+        else /* if request is not for us, try routing it. */
             if(route_packet(packet + 1, packet, length) == length)
-            {
                 return 0;
-            }
-        }
     }
         return 1;
 }

@@ -6,6 +6,25 @@
  *                gcc -O2 -Wall -D VANILLA_NACL -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../core/friend_requests.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} DHT_bootstrap.c
  *
  *                gcc -O2 -Wall -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../core/friend_requests.c -lsodium DHT_bootstrap.c
+ * 
+ *
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
  */
 
 #include "../core/DHT.h"
@@ -22,12 +41,14 @@
 
 #define PORT 33445
 
+//TODO: rewrite
 unsigned char * hex_string_to_bin(char hex_string[])
 {
-    unsigned char * val = malloc(strlen(hex_string));
+    size_t len = strlen(hex_string);
+    unsigned char * val = malloc(len);
     char * pos = hex_string;
     int i=0;
-    while(i < strlen(hex_string))
+    while(i < len)
     {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;

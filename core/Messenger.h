@@ -1,35 +1,35 @@
 /* Messenger.h
-*
-* An implementation of a simple text chat only messenger on the tox network core.
-*
-* NOTE: All the text in the messages must be encoded using UTF-8
- 
-    Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ * An implementation of a simple text chat only messenger on the tox network core.
+ *
+ * NOTE: All the text in the messages must be encoded using UTF-8
+ * 
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
+ */ 
 
-    This file is part of Tox.
-
-    Tox is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Tox is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-    
-*/
- 
- 
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
 #include "net_crypto.h"
 #include "DHT.h"
 #include "friend_requests.h"
+#include "LAN_discovery.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,7 +79,6 @@ int m_delfriend(int friendnumber);
    return 0 if there is no friend with that number */
 int m_friendstatus(int friendnumber);
 
-
 /* send a text chat message to an online friend
    returns 1 if packet was successfully put into the send queue
    return 0 if it was not */
@@ -90,7 +89,6 @@ int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length);
    return 0 if success
    return -1 if failure */
 int setname(uint8_t * name, uint16_t length);
-
 
 /* get name of friendnumber
    put it in name
@@ -117,7 +115,6 @@ int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen);
    function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 
-
 /* set the function that will be executed when a message from a friend is received.
    function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
 void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
@@ -137,10 +134,8 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
    returns -1 if there are problems */
 int initMessenger();
 
-
 /* the main loop that needs to be run at least 200 times per second */
 void doMessenger();
-
 
 /* SAVING AND LOADING FUNCTIONS: */
 

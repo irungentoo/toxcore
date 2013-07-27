@@ -1,3 +1,26 @@
+/* nTox.c
+ *
+ * Textual frontend for Tox.
+ *
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
+ */
+
 #include "nTox.h"
 #include <stdio.h>
 #include <time.h>
@@ -23,12 +46,14 @@ void new_lines(char *line)
     do_refresh();
 }
 
+//TODO: rewrite
 unsigned char * hex_string_to_bin(char hex_string[])
 {
-    unsigned char * val = malloc(strlen(hex_string));
+    size_t len = strlen(hex_string);
+    unsigned char * val = malloc(len);
     char * pos = hex_string;
     int i=0;
-    while(i < strlen(hex_string))
+    while(i < len)
     {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;
@@ -58,7 +83,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             doMessenger();
         } else if (line[1] == 'm') { //message command: /m friendnumber messsage
             int i;
-            int len = strlen(line);
+            size_t len = strlen(line);
             char numstring[len-3];
             char message[len-3];
             for (i=0; i<len; i++) {
@@ -77,7 +102,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         } else if (line[1] == 'n') {
             uint8_t name[MAX_NAME_LENGTH];
             int i = 0;
-            for (i=3; i<strlen(line); i++) {
+            size_t len = strlen(line);
+            for (i=3; i<len; i++) {
                 if (line[i] == 0 || line[i] == '\n') break;
                 name[i - 3] = line[i];
             }
@@ -89,7 +115,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         } else if (line[1] == 's') {
             uint8_t status[MAX_USERSTATUS_LENGTH];
             int i = 0;
-            for (i=3; i<strlen(line); i++) {
+            size_t len = strlen(line);
+            for (i=3; i<len; i++) {
                 if (line[i] == 0 || line[i] == '\n') break;
                 status[i - 3] = line[i];
             }
@@ -111,7 +138,8 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 {
     int i = 0;
     strcpy(output,input);
-    for (i=line_width; i < strlen(output); i = i + line_width) {
+    size_t len = strlen(output);
+    for (i=line_width; i < len; i = i + line_width) {
         while (output[i] != ' ' && i != 0) {
             i--;
         }
@@ -123,7 +151,7 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 
 int count_lines(char *string)
 {
-    int len = strlen(string);
+    size_t len = strlen(string);
     int i;
     int count = 1;
     for (i=0; i < len; i++) {
@@ -136,7 +164,7 @@ int count_lines(char *string)
 
 char *appender(char *str, const char c)
 {
-    int len = strlen(str);
+    size_t len = strlen(str);
     if (len < STRING_LENGTH) {
         str[len + 1] = str[len];
         str[len] = c;
@@ -167,6 +195,7 @@ void do_refresh()
     clrtoeol();
     refresh();
 }
+
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {
     new_lines("[i] received friend request");
@@ -182,6 +211,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
         new_lines(numchar);
     }
 }
+
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
@@ -192,11 +222,12 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
     char* temp = asctime(timeinfo);
-    int len = strlen(temp);
+    size_t len = strlen(temp);
     temp[len-1]='\0';
     sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // someone please fix this
     new_lines(msg);
 }
+
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -204,6 +235,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
     new_lines(msg);
 }
+
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -211,6 +243,7 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
     new_lines(msg);
 }
+
 void load_key(){
     FILE *data_file = NULL;
     if ((data_file = fopen("data","r"))) {
@@ -237,6 +270,7 @@ void load_key(){
     }
    fclose(data_file);
 }
+
 int main(int argc, char *argv[])
 {
     if (argc < 4) {
@@ -294,9 +328,7 @@ int main(int argc, char *argv[])
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {
-
-        if (on == 0 && DHT_isconnected())
-        {
+        if (on == 0 && DHT_isconnected()) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
         }

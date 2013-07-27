@@ -56,6 +56,8 @@ You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)'s C compiler
   - [CMake](http://www.cmake.org/cmake/resources/software.html)
 
+You have to [modify your PATH environment variable](http://www.computerhope.com/issues/ch000549.htm) so that it contains MinGW's bin folder path. With default settings, the bin folder is located at `C:\MinGW\bin`, which means that you would have to append `;C:\MinGW\bin` to the PATH variable.
+
 Then you should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
 
 After that you should get precompiled packages of libsodium from [here](https://download.libsodium.org/libsodium/releases/) and extract the archive into this repo's root. That is, `sodium` folder should be along with `core`, `testing` and other folders.

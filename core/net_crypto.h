@@ -1,26 +1,26 @@
 /* net_crypto.h
-* 
-* Functions for the core network crypto.
-*
- 
-    Copyright (C) 2013 Tox project All Rights Reserved.
+ * 
+ * Functions for the core network crypto.
+ *
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *  
+ */
 
-    This file is part of Tox.
-
-    Tox is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Tox is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-    
-*/
 #ifndef NET_CRYPTO_H 
 #define NET_CRYPTO_H  
 
@@ -55,12 +55,10 @@ int decrypt_data(uint8_t * public_key, uint8_t * secret_key, uint8_t * nonce,
 /* fill the given nonce with random bytes. */
 void random_nonce(uint8_t * nonce);
 
-
 /* return 0 if there is no received data in the buffer 
    return -1  if the packet was discarded.
    return length of received data if successful */
 int read_cryptpacket(int crypt_connection_id, uint8_t * data);
-
 
 /* return 0 if data could not be put in packet queue
    return 1 if data was put into the queue */
@@ -74,19 +72,16 @@ int write_cryptpacket(int crypt_connection_id, uint8_t * data, uint32_t length);
    returns the length of the created packet on success */
 int create_request(uint8_t * packet, uint8_t * public_key, uint8_t * data, uint32_t length, uint8_t request_id);
 
-
 /* puts the senders public key in the request in public_key, the data from the request 
    in data if a friend or ping request was sent to us and returns the length of the data.
    packet is the request packet and length is its length
    return -1 if not valid request. */
 int handle_request(uint8_t * public_key, uint8_t * data, uint8_t * packet, uint16_t length);
 
-
 /* Start a secure connection with other peer who has public_key and ip_port
    returns -1 if failure
    returns crypt_connection_id of the initialized connection if everything went well. */
 int crypto_connect(uint8_t * public_key, IP_Port ip_port);
-
 
 /* kill a crypto connection
    return 0 if killed successfully
@@ -101,7 +96,6 @@ int crypto_kill(int crypt_connection_id);
    to accept it see: accept_crypto_inbound(...)
    to refuse it just call kill_connection(...) on the connection id */
 int crypto_inbound(uint8_t * public_key, uint8_t * secret_nonce, uint8_t * session_key);
-
 
 /* accept an incoming connection using the parameters provided by crypto_inbound
    return -1 if not successful
