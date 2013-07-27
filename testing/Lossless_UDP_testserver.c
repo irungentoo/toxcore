@@ -45,12 +45,12 @@
 
 #define PORT 33445
 
-void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
+void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
     printf("--------------------BEGIN-----------------------------\n");
-    for(i = 0; i < length; i++) {
+    for (i = 0; i < length; i++) {
         if(data[i] < 16)
             printf("0");
         printf("%hhX",data[i]);
@@ -120,10 +120,10 @@ void Lossless_UDP()
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
-    while(receivepacket(&ip_port, data, &length) != -1) {
+    while (receivepacket(&ip_port, data, &length) != -1) {
         //if(rand() % 3 != 1)//add packet loss
         //{
-            if(LosslessUDP_handlepacket(data, length, ip_port)) {
+            if (LosslessUDP_handlepacket(data, length, ip_port)) {
                     printpacket(data, length, ip_port);
             } else {
                 //printconnection(0);
@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
     int read;
     
     FILE *file = fopen(argv[1], "wb");
-    if ( file==NULL ){return 1;}
+    if (file == NULL)
+      return 1;
     
     
     //initialize networking
@@ -161,7 +162,7 @@ int main(int argc, char *argv[])
     uint64_t timer = current_time();
     
     
-    while(1) {
+    while (1) {
         Lossless_UDP();
         connection = incoming_connection();
         if(connection != -1) {
@@ -176,17 +177,16 @@ int main(int argc, char *argv[])
     
     timer = current_time();
     
-    while(1) {
+    while (1) {
         //printconnection(0);
         Lossless_UDP();
-        if(is_connected(connection) >= 2) {
+        if (is_connected(connection) >= 2) {
             kill_connection_in(connection, 3000000);
             read = read_packet(connection, buffer);
-            if(read != 0) {
+            if (read != 0) {
                // printf("Recieved data.\n");
-                if(!fwrite(buffer, read, 1, file)) {
+                if (!fwrite(buffer, read, 1, file)) 
                         printf("file write error\n");
-                }
             }
         }
         if(is_connected(connection) == 4) {

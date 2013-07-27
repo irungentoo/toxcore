@@ -51,23 +51,23 @@ extern "C" {
    data is the data and length is the length
    returns the friend number if success
    return -1 if failure. */
-int m_addfriend(uint8_t * client_id, uint8_t * data, uint16_t length);
+int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
 
 
 /* add a friend without sending a friendrequest.
    returns the friend number if success
    return -1 if failure. */
-int m_addfriend_norequest(uint8_t * client_id);
+int m_addfriend_norequest(uint8_t *client_id);
 
 /* return the friend id associated to that client id.
    return -1 if no such friend */
-int getfriend_id(uint8_t * client_id);
+int getfriend_id(uint8_t *client_id);
 
 /* copies the public key associated to that friend id into client_id buffer.
    make sure that client_id is of size CLIENT_ID_SIZE.
    return 0 if success
    return -1 if failure */
-int getclient_id(int friend_id, uint8_t * client_id);
+int getclient_id(int friend_id, uint8_t *client_id);
 
 /* remove a friend */
 int m_delfriend(int friendnumber);
@@ -82,20 +82,20 @@ int m_friendstatus(int friendnumber);
 /* send a text chat message to an online friend
    returns 1 if packet was successfully put into the send queue
    return 0 if it was not */
-int m_sendmessage(int friendnumber, uint8_t * message, uint32_t length);
+int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
    return 0 if success
    return -1 if failure */
-int setname(uint8_t * name, uint16_t length);
+int setname(uint8_t *name, uint16_t length);
 
 /* get name of friendnumber
    put it in name
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
    return 0 if success
    return -1 if failure */
-int getname(int friendnumber, uint8_t * name);
+int getname(int friendnumber, uint8_t *name);
 
 /* set our user status
    you are responsible for freeing status after
@@ -109,7 +109,7 @@ int m_get_userstatus_size(int friendnumber);
 
 /* copy friendnumber's userstatus into buf, truncating if size is over maxlen
    get the size you need to allocate from m_get_userstatus_size */
-int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen);
+int m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
 
 /* set the function that will be executed when a friend request is received.
    function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
@@ -143,10 +143,10 @@ void doMessenger();
 uint32_t Messenger_size();
 
 /* save the messenger in data (must be allocated memory of size Messenger_size()) */
-void Messenger_save(uint8_t * data);
+void Messenger_save(uint8_t *data);
 
 /* load the messenger from data of size length */
-int Messenger_load(uint8_t * data, uint32_t length);
+int Messenger_load(uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
 }

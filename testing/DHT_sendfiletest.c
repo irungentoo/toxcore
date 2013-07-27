@@ -96,78 +96,72 @@ int main(int argc, char *argv[])
     uint8_t buffer2[128];
     int read2 = 0;
     FILE *file1 = fopen(argv[4], "rb");
-    if ( file1==NULL ){printf("Error opening file.\n");return 1;}
+    if (file1 == NULL) {
+      printf("Error opening file.\n");
+      return 1;
+    }
     FILE *file2 = fopen("received.txt", "wb");
-    if ( file2==NULL ){return 1;}
+    if (file2 == NULL)
+      return 1;
+    
     read1 = fread(buffer1, 1, 128, file1);
     
-    while(1) {
-
-        while(receivepacket(&ip_port, data, &length) != -1) {
-            if(rand() % 3 != 1) { /* simulate packet loss */
-                if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port)) {
-                    /* if packet is not recognized */
-                    printf("Received unhandled packet with length: %u\n", length);
-                } else {
+    while (1) {
+        while (receivepacket(&ip_port, data, &length) != -1) {
+            if (rand() % 3 != 1) { /* simulate packet loss */
+                if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port))
+                    printf("Received unhandled packet with length: %u\n", length); /* if packet is not recognized */
+                else
                     printf("Received handled packet with length: %u\n", length);
-                }
             }
         }
         friend_ip = DHT_getfriendip((uint8_t *)argv[3]);
-        if(friend_ip.ip.i != 0) {
-            if(connection == -1) {
+        if (friend_ip.ip.i != 0) {
+            if (connection == -1) {
                 printf("Started connecting to friend:");
                 printip(friend_ip);
                 connection = new_connection(friend_ip);
             }
         }
-        if(inconnection == -1) {
+        if (inconnection == -1) {
             inconnection = incoming_connection();
-            if(inconnection != -1) {
+            if (inconnection != -1) {
                 printf("Someone connected to us:");
                 printip(connection_ip(inconnection));
             }
         }
         /* if someone connected to us write what he sends to a file */
         /* also send him our file. */
-        if(inconnection != -1) {
-            if(write_packet(inconnection, buffer1, read1)) {
+        if (inconnection != -1) {
+            if (write_packet(inconnection, buffer1, read1)) {
                 printf("Wrote data.\n");
                 read1 = fread(buffer1, 1, 128, file1);
             }
             read2 = read_packet(inconnection, buffer2);
-            if(read2 != 0) {
+            if (read2 != 0) {
                 printf("Received data.\n");
-                if(!fwrite(buffer2, read2, 1, file2)) {
+                if (!fwrite(buffer2, read2, 1, file2))
                         printf("file write error\n");
-                }
-                if(read2 < 128) {
+                if (read2 < 128) {
                     fclose(file2);
                 }
             } 
         }
         /* if we are connected to a friend send him data from the file.
          * also put what he sends us in a file. */
-        if(is_connected(connection) == 3)
-        {
-            if(write_packet(0, buffer1, read1))
-            {
+        if (is_connected(connection) == 3) {
+            if (write_packet(0, buffer1, read1)) {
                 printf("Wrote data.\n");
                 read1 = fread(buffer1, 1, 128, file1);
             }
             read2 = read_packet(0, buffer2);
-            if(read2 != 0)
-            {
+            if (read2 != 0) {
                 printf("Received data.\n");
                 if(!fwrite(buffer2, read2, 1, file2))
-                {
-                        printf("file write error\n");
-                }
+                   printf("file write error\n");
                 if(read2 < 128)
-                {
                     fclose(file2);
-                }
-            } 
+            }
         }
         doDHT();
         doLossless_UDP();
