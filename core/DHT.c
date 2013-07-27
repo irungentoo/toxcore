@@ -583,7 +583,7 @@ int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
 
 int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
 {
-    uint64_t ping_id
+    uint64_t ping_id;
     /* TODO: make this more readable */
     if(length > (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
                  + sizeof(Node_format) * MAX_SENT_NODES + ENCRYPTION_PADDING) || 
@@ -906,10 +906,10 @@ int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
         if(friendnumber == -1)
             return 1;
         
-        if(data[0] == 0)
-            send_NATping(public_key, ping_id, 1);/*1 is reply*/
+        if(data[0] == 0) {
+            send_NATping(public_key, ping_id, 1); /*1 is reply*/
             return 0;
-        else if (data[0] == 1)
+        } else if (data[0] == 1)
             if(friends_list[friendnumber].NATping_id == ping_id) {
                 friends_list[friendnumber].NATping_id = ((uint64_t)random_int() << 32) + random_int();
                 friends_list[friendnumber].hole_punching = 1;
