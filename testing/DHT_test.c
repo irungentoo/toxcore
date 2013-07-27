@@ -30,6 +30,7 @@
 //#include "../core/network.h"
 #include "../core/DHT.c"
 #include "../core/friend_requests.c"
+#include "../core/misc_tools.h"
 
 #include <string.h>
 
@@ -112,22 +113,6 @@ void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
         printf("%hhX",data[i]);
     }
     printf("\n--------------------END-----------------------------\n\n\n");
-}
-
-//TODO: rewrite
-unsigned char * hex_string_to_bin(char hex_string[])
-{
-    size_t len = strlen(hex_string);
-    unsigned char * val = malloc(len);
-    char * pos = hex_string;
-    int i=0;
-    while(i < len)
-    {
-        sscanf(pos,"%2hhx",&val[i]);
-        pos+=2;
-        i++;
-    }
-    return val;
 }
 
 int main(int argc, char *argv[])
