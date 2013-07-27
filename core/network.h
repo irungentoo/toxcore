@@ -68,23 +68,20 @@ extern "C" {
 
 #define MAX_UDP_PACKET_SIZE 65507
 
-typedef union
-{
+typedef union {
     uint8_t c[4];
     uint16_t s[2];
     uint32_t i;
-}IP;
+} IP;
 
-typedef struct
-{
+typedef struct {
     IP ip;
     uint16_t port;
     /* not used for anything right now */
     uint16_t padding; 
-}IP_Port;
+} IP_Port;
 
-typedef struct
-{
+typedef struct {
     int16_t family;
     uint16_t port;
     IP ip;
@@ -92,7 +89,7 @@ typedef struct
     #ifdef ENABLE_IPV6
     uint8_t zeroes2[12];
     #endif
-}ADDR;
+} ADDR;
 
 /* returns current time in milleseconds since the epoch. */
 uint64_t current_time();
@@ -104,12 +101,12 @@ uint32_t random_int();
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port */
-int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length);
+int sendpacket(IP_Port ip_port, uint8_t *data, uint32_t length);
 
 /* Function to receive data, ip and port of sender is put into ip_port
    the packet data into data
    the packet length into length. */
-int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
+int receivepacket(IP_Port *ip_port, uint8_t *data, uint32_t *length);
 
 /* initialize networking
    bind to ip and port
@@ -117,7 +114,7 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
    port is in host byte order (this means don't worry about it)
    returns 0 if no problems
    returns -1 if there were problems */
-int init_networking(IP ip ,uint16_t port);
+int init_networking(IP ip, uint16_t port);
 
 /* function to cleanup networking stuff(doesn't do much right now) */
 void shutdown_networking();

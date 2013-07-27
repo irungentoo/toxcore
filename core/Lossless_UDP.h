@@ -69,11 +69,11 @@ char id_packet(int connection_id);
 
 /* return 0 if there is no received data in the buffer.
    return length of received packet if successful */
-int read_packet(int connection_id, uint8_t * data);
+int read_packet(int connection_id, uint8_t *data);
 
 /* return 0 if data could not be put in packet queue
    return 1 if data was put into the queue */
-int write_packet(int connection_id, uint8_t * data, uint32_t length);
+int write_packet(int connection_id, uint8_t *data, uint32_t length);
 
 /* returns the number of packets in the queue waiting to be successfully sent. */
 uint32_t sendqueue(int connection_id);
@@ -97,7 +97,7 @@ void doLossless_UDP();
 /* if we receive a Lossless_UDP packet we call this function so it can be handled.
    return 0 if packet is handled correctly.
    return 1 if it didn't handle the packet or if the packet was shit. */
-int LosslessUDP_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
+int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
 
 #ifdef __cplusplus
 }

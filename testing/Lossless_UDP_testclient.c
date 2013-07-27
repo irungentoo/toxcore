@@ -44,13 +44,13 @@
 
 #define PORT 33446
 
-void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
+void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
     printf("--------------------BEGIN-----------------------------\n");
-    for(i = 0; i < length; i++) {
-        if(data[i] < 16)
+    for (i = 0; i < length; i++) {
+        if (data[i] < 16)
             printf("0");
         printf("%hhX",data[i]);
     }
@@ -59,7 +59,7 @@ void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
 
 void printip(IP_Port ip_port)
 {
-    printf("\nIP: %u.%u.%u.%u Port: %u",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
+    printf("\nIP: %u.%u.%u.%u Port: %u", ip_port.ip.c[0], ip_port.ip.c[1], ip_port.ip.c[2], ip_port.ip.c[3], ntohs(ip_port.port));
 }
 /*
 void printpackets(Data test)
@@ -123,16 +123,15 @@ void Lossless_UDP()
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
-    while(receivepacket(&ip_port, data, &length) != -1) {
+    while (receivepacket(&ip_port, data, &length) != -1) {
         printf("packet with length: %u\n", length);
         /* if(rand() % 3 != 1)//add packet loss
          { */
-            if(LosslessUDP_handlepacket(data, length, ip_port)) {
-                    printpacket(data, length, ip_port);
-            } else {
-                //printconnection(0);
-                 printf("Received handled packet with length: %u\n", length);
-            }
+            if (LosslessUDP_handlepacket(data, length, ip_port))
+                printpacket(data, length, ip_port);
+            else 
+                printf("Received handled packet with length: %u\n", length); //printconnection(0);
+            
        /* } */
     }
     
@@ -151,7 +150,8 @@ int main(int argc, char *argv[])
     int read;
     
     FILE *file = fopen(argv[3], "rb");
-    if ( file==NULL ){return 1;}
+    if (file == NULL)
+      return 1;
     
     
     /* initialize networking */
@@ -166,14 +166,14 @@ int main(int argc, char *argv[])
     printip(serverip);
     int connection = new_connection(serverip);
     uint64_t timer = current_time();
-    while(1) {
+    while (1) {
        /* printconnection(connection); */
         Lossless_UDP();
-        if(is_connected(connection) == 3) {
+        if (is_connected(connection) == 3) {
             printf("Connecting took: %llu us\n", (unsigned long long)(current_time() - timer));
             break;
         }
-        if(is_connected(connection) == 0) {
+        if (is_connected(connection) == 0) {
             printf("Connection timeout after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 1;
         }
@@ -185,19 +185,19 @@ int main(int argc, char *argv[])
     /*read first part of file */
     read = fread(buffer, 1, 512, file);
     
-    while(1) {
+    while (1) {
         /* printconnection(connection); */
         Lossless_UDP();
-        if(is_connected(connection) == 3) {
+        if (is_connected(connection) == 3) {
             
-            if(write_packet(connection, buffer, read)) {
+            if (write_packet(connection, buffer, read)) {
                /* printf("Wrote data.\n"); */
                 read = fread(buffer, 1, 512, file);
 
             }
             /* printf("%u\n", sendqueue(connection)); */
-            if(sendqueue(connection) == 0) {
-                if(read == 0) {
+            if (sendqueue(connection) == 0) {
+                if (read == 0) {
                     printf("Sent file successfully in: %llu us\n", (unsigned long long)(current_time() - timer));
                     break;
                 }

@@ -39,9 +39,9 @@ int nick_before;
 void new_lines(char *line)
 {
     int i;
-    for (i = HISTORY-1; i > 0; i--) {
+    for (i = HISTORY-1; i > 0; i--) 
         strcpy(lines[i],lines[i-1]);
-    }
+    
     strcpy(lines[0],line);
     do_refresh();
 }
@@ -53,8 +53,7 @@ unsigned char * hex_string_to_bin(char hex_string[])
     unsigned char * val = malloc(len);
     char * pos = hex_string;
     int i=0;
-    while(i < len)
-    {
+    while(i < len) {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;
         i++;
@@ -71,17 +70,18 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         if (line[1] == 'f') { // add friend command: /f ID
             int i;
             char temp_id[128];
-            for (i=0; i<128; i++) {
+            for (i=0; i<128; i++) 
                 temp_id[i] = line[i+3];
-            }
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
             sprintf(numstring, "[i] added friend %d", num);
             new_lines(numstring);
             do_refresh();
-        } else if (line[1] == 'd') {
+        }
+        else if (line[1] == 'd') {
             doMessenger();
-        } else if (line[1] == 'm') { //message command: /m friendnumber messsage
+        }
+        else if (line[1] == 'm') { //message command: /m friendnumber messsage
             int i;
             size_t len = strlen(line);
             char numstring[len-3];
@@ -91,15 +91,15 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                     numstring[i] = line[i+3];
                 } else {
                     int j;
-                    for (j=i+1; j<len; j++) {
+                    for (j=i+1; j<len; j++)
                         message[j-i-1] = line[j+3];
-                    }
                     break;
                 }
             }
             int num = atoi(numstring);
             m_sendmessage(num, (uint8_t*) message, sizeof(message));
-        } else if (line[1] == 'n') {
+        }
+        else if (line[1] == 'n') {
             uint8_t name[MAX_NAME_LENGTH];
             int i = 0;
             size_t len = strlen(line);
@@ -112,7 +112,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
-        } else if (line[1] == 's') {
+        }
+        else if (line[1] == 's') {
             uint8_t status[MAX_USERSTATUS_LENGTH];
             int i = 0;
             size_t len = strlen(line);
@@ -125,7 +126,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
-        } else if (line[1] == 'q') { //exit
+        }
+        else if (line[1] == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
         }
@@ -139,7 +141,7 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
     int i = 0;
     strcpy(output,input);
     size_t len = strlen(output);
-    for (i=line_width; i < len; i = i + line_width) {
+    for (i = line_width; i < len; i = i + line_width) {
         while (output[i] != ' ' && i != 0) {
             i--;
         }
@@ -155,9 +157,8 @@ int count_lines(char *string)
     int i;
     int count = 1;
     for (i=0; i < len; i++) {
-        if (string[i] == '\n') {
+        if (string[i] == '\n')
             count++;
-        }
     }
     return count;
 }
@@ -196,11 +197,11 @@ void do_refresh()
     refresh();
 }
 
-void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
+void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 {
     new_lines("[i] received friend request");
     do_refresh();
-    if(memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
+    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0)
     //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         new_lines("[i] friend request accepted");
@@ -298,15 +299,14 @@ int main(int argc, char *argv[])
     uint32_t i;
     for(i = 0; i < 32; i++)
     {
-        if(self_public_key[i] < 16) {
+        if(self_public_key[i] < 16)
             strcpy(idstring1[i],"0");
-        } else {
+        else 
             strcpy(idstring1[i], "");
-        }
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
     strcpy(idstring0,"[i] your ID: ");
-    for(i=0; i<32; i++) {
+    for (i=0; i<32; i++) {
         strcat(idstring0,idstring1[i]);
         strcat(idstring0,idstring2[i]);
     }
@@ -320,11 +320,11 @@ int main(int argc, char *argv[])
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
-    if (resolved_address != -1) {
+    if (resolved_address != -1)
         bootstrap_ip_port.ip.i = resolved_address;
-    } else {
+    else 
         exit(1);
-    }
+    
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {

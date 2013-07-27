@@ -79,13 +79,10 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
     #else
     uint32_t addrlen = sizeof(addr);
     #endif    
-    (*(int32_t *)length) = recvfrom(sock,(char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
-    if(*(int32_t *)length <= 0)
-    {
-        /* nothing received
-           or empty packet */
-        return -1;
-    }
+    (*(int32_t*)length) = recvfrom(sock,(char*) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    if (*(int32_t*)length <= 0)
+        return -1; /* nothing received or empty packet */
+   
     ip_port->ip = addr.ip;
     ip_port->port = addr.port;
     return 0;
@@ -101,7 +98,7 @@ int init_networking(IP ip, uint16_t port)
 {
     #ifdef WIN32
     WSADATA wsaData;
-    if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
         return -1;
     #else
     srandom((uint32_t)current_time());
