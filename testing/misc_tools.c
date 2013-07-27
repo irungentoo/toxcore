@@ -25,19 +25,16 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h> //for sscanf
+#include <stdio.h> /* for sscanf */
 
-//TODO: rewrite
+/* TODO: rewrite */
 unsigned char * hex_string_to_bin(char hex_string[])
 {
     size_t len = strlen(hex_string);
     unsigned char *val = malloc(len);
     char *pos = hex_string;
-    int i=0;
-    while(i < len) {
+    int i;
+    for(i = 0; i < len; ++i, pos+=2)
         sscanf(pos,"%2hhx",&val[i]);
-        pos+=2;
-        i++;
-    }
     return val;
 }
