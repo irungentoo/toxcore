@@ -48,6 +48,7 @@
 #include <sys/time.h>
 #include <sys/types.h> 
 #include <netdb.h>
+#include <unistd.h>
 
 #endif
 
