@@ -4,6 +4,6 @@ project(DHT_test C)
 set(exe_name DHT_test)
 
 add_executable(${exe_name}
-        DHT_test.c)
+        DHT_test.c misc_tools.c)
 
 linkCoreLibraries(${exe_name})

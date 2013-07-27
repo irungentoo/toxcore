@@ -38,6 +38,7 @@
  */
 
 #include "../core/Messenger.h"
+#include "misc_tools.h"
 
 #ifdef WIN32
 
@@ -49,22 +50,6 @@
 #define c_sleep(x) usleep(1000*x)
 
 #endif
-
-//TODO: rewrite
-unsigned char * hex_string_to_bin(char hex_string[])
-{
-    size_t len = strlen(hex_string);
-    unsigned char * val = malloc(len);
-    char * pos = hex_string;
-    int i=0;
-    while(i < len)
-    {
-        sscanf(pos,"%2hhx",&val[i]);
-        pos+=2;
-        i++;
-    }
-    return val;
-}
 
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {

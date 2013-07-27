@@ -4,6 +4,6 @@ project(Messenger_test C)
 set(exe_name Messenger_test)
 
 add_executable(${exe_name}
-        Messenger_test.c)
+        Messenger_test.c misc_tools.c)
 
 linkCoreLibraries(${exe_name})
