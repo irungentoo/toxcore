@@ -267,14 +267,14 @@ void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient
 {
     uint32_t i, j;
     uint32_t temp_time = unix_time();
-    if(memcmp(client_id, self_public_key, CLIENT_ID_SIZE) == 0)
+    if(memcmp(client_id, self_public_key, CLIENT_ID_SIZE) == 0) {
         for(i = 0; i < LCLIENT_LIST; ++i)
             if(memcmp(nodeclient_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0) {
                 close_clientlist[i].ret_ip_port = ip_port;
                 close_clientlist[i].ret_timestamp = temp_time;
                 return;
             }
-    else
+    } else
     for(i = 0; i < num_friends; ++i)
         if(memcmp(client_id, friends_list[i].client_id, CLIENT_ID_SIZE) == 0)
             for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
