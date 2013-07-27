@@ -55,11 +55,8 @@ http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
 You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)'s C compiler
   - [CMake](http://www.cmake.org/cmake/resources/software.html)
-  
-Firstly, you need to change your system's PATH. Navigate to My Computer>System Properties>Advanced System Settings>Environment Variables. 
 
-Then under System Variables, edit your PATH and add C:\MinGW\bin; to the end of it (Change this to your MinGW install directory - C:\MinGW by default). 
-Make sure there's a ";" preceding this entry as well.
+You have to [modify your PATH environment variable](http://www.computerhope.com/issues/ch000549.htm) so that it contains MinGW's bin folder path. With default settings, the bin folder is located at `C:\MinGW\bin`, which means that you would have to append `;C:\MinGW\bin` to the PATH variable.
 
 Then you should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
 
