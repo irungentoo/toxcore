@@ -56,7 +56,7 @@ You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)'s C compiler
   - [CMake](http://www.cmake.org/cmake/resources/software.html)
   
-Firslty, you need to change your system's PATH. Navigate to My Computer>System Properties>Advanced System Settings>Environment Variables. 
+Firstly, you need to change your system's PATH. Navigate to My Computer>System Properties>Advanced System Settings>Environment Variables. 
 
 Then under System Variables, edit your PATH and add C:\MinGW\bin; to the end of it (Change this to your MinGW install directory - C:\MinGW by default). 
 Make sure there's a ";" preceding this entry as well.
