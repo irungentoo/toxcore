@@ -22,6 +22,8 @@
  */
 
 #include "nTox.h"
+#include "misc_tools.h"
+
 #include <stdio.h>
 #include <time.h>
 #ifdef WIN32
@@ -44,21 +46,6 @@ void new_lines(char *line)
     
     strcpy(lines[0],line);
     do_refresh();
-}
-
-//TODO: rewrite
-unsigned char * hex_string_to_bin(char hex_string[])
-{
-    size_t len = strlen(hex_string);
-    unsigned char * val = malloc(len);
-    char * pos = hex_string;
-    int i=0;
-    while(i < len) {
-        sscanf(pos,"%2hhx",&val[i]);
-        pos+=2;
-        i++;
-    }
-    return val;
 }
 
 void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
