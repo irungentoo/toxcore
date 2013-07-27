@@ -18,12 +18,12 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 #include "Messenger.h"
 #define MIN(a,b) (((a)<(b))?(a):(b))
- 
+
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
@@ -49,7 +49,7 @@ static uint16_t self_userstatus_len;
 static Friend friendlist[MAX_NUM_FRIENDS];
 
 static uint32_t numfriends;
- 
+
 /* 1 if we are online
    0 if we are offline
    static uint8_t online; */
@@ -95,7 +95,7 @@ int getclient_id(int friend_id, uint8_t *client_id)
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
     if (length == 0 || length >=
-            (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
+        (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
         return -1;
     if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
         return -1;
@@ -113,7 +113,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             friendlist[i].userstatus_length = 1;
             memcpy(friendlist[i].info, data, length);
             friendlist[i].info_size = length;
-            
+
             ++numfriends;
             return i;
         }
@@ -183,7 +183,7 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
     if (friendnumber < 0 || friendnumber >= MAX_NUM_FRIENDS)
         return 0;
     if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != 4)
-    /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
+        /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
         return 0;
     uint8_t temp[MAX_DATA_SIZE];
     temp[0] = PACKET_ID_MESSAGE;
@@ -349,7 +349,8 @@ int initMessenger()
 
 //TODO: make this function not suck.
 static void doFriends()
-{/* TODO: add incoming connections and some other stuff. */
+{
+    /* TODO: add incoming connections and some other stuff. */
     uint32_t i;
     int len;
     uint8_t temp[MAX_DATA_SIZE];
@@ -370,19 +371,19 @@ static void doFriends()
             }
             IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
             switch (is_cryptoconnected(friendlist[i].crypt_connection_id)) {
-                case 0:
-                    if (friendip.ip.i > 1)
-                        friendlist[i].crypt_connection_id = crypto_connect(friendlist[i].client_id, friendip);
-                    break;
-                case 3: /*  Connection is established */
-                    friendlist[i].status = 4;
-                    break;
-                case 4:
-                    crypto_kill(friendlist[i].crypt_connection_id);
-                    friendlist[i].crypt_connection_id = -1;
-                    break;
-                default:
-                    break;
+            case 0:
+                if (friendip.ip.i > 1)
+                    friendlist[i].crypt_connection_id = crypto_connect(friendlist[i].client_id, friendip);
+                break;
+            case 3: /*  Connection is established */
+                friendlist[i].status = 4;
+                break;
+            case 4:
+                crypto_kill(friendlist[i].crypt_connection_id);
+                friendlist[i].crypt_connection_id = -1;
+                break;
+            default:
+                break;
             }
         }
         while (friendlist[i].status == 4) { /* friend is online */
@@ -397,38 +398,37 @@ static void doFriends()
             len = read_cryptpacket(friendlist[i].crypt_connection_id, temp);
             if (len > 0) {
                 switch (temp[0]) {
-                    case PACKET_ID_NICKNAME: {
-                        if (len != MAX_NAME_LENGTH + 1)
-                           break;
-                        if(friend_namechange_isset)
-                            friend_namechange(i, temp + 1, MAX_NAME_LENGTH); /* TODO: use the actual length */
-                        memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
-                        friendlist[i].name[MAX_NAME_LENGTH - 1] = 0; /* make sure the NULL terminator is present. */
+                case PACKET_ID_NICKNAME: {
+                    if (len != MAX_NAME_LENGTH + 1)
                         break;
-                    }
-                    case PACKET_ID_USERSTATUS: {
-                        uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
-                        memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
-                        if (friend_statuschange_isset)
-                           friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
-                        set_friend_userstatus(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
-                        free(status);
-                        break;
-                    }
-                    case PACKET_ID_MESSAGE: {
-                        if (friend_message_isset)
-                            (*friend_message)(i, temp + 1, len - 1);
-                        break;
-                    }
+                    if(friend_namechange_isset)
+                        friend_namechange(i, temp + 1, MAX_NAME_LENGTH); /* TODO: use the actual length */
+                    memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
+                    friendlist[i].name[MAX_NAME_LENGTH - 1] = 0; /* make sure the NULL terminator is present. */
+                    break;
                 }
-            }
-            else {
-                 if (is_cryptoconnected(friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
-                         crypto_kill(friendlist[i].crypt_connection_id);
-                         friendlist[i].crypt_connection_id = -1;
-                         friendlist[i].status = 3;
-                 }
-                 break;
+                case PACKET_ID_USERSTATUS: {
+                    uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
+                    memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                    if (friend_statuschange_isset)
+                        friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                    set_friend_userstatus(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
+                    free(status);
+                    break;
+                }
+                case PACKET_ID_MESSAGE: {
+                    if (friend_message_isset)
+                        (*friend_message)(i, temp + 1, len - 1);
+                    break;
+                }
+                }
+            } else {
+                if (is_cryptoconnected(friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
+                    crypto_kill(friendlist[i].crypt_connection_id);
+                    friendlist[i].crypt_connection_id = -1;
+                    friendlist[i].status = 3;
+                }
+                break;
             }
         }
     }
@@ -443,11 +443,11 @@ static void doInbound()
     if (inconnection != -1) {
         int friend_id = getfriend_id(public_key);
         if (friend_id != -1) {
-             crypto_kill(friendlist[friend_id].crypt_connection_id);
-             friendlist[friend_id].crypt_connection_id =
-             accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
-             
-             friendlist[friend_id].status = 3;
+            crypto_kill(friendlist[friend_id].crypt_connection_id);
+            friendlist[friend_id].crypt_connection_id =
+                accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
+
+            friendlist[friend_id].status = 3;
         }
     }
 }
@@ -477,8 +477,8 @@ void doMessenger()
 #ifdef DEBUG
         /* if(rand() % 3 != 1) //simulate packet loss */
         /* { */
-        if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) && 
-        friendreq_handlepacket(data, length, ip_port) && LANdiscovery_handlepacket(data, length, ip_port))
+        if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) &&
+            friendreq_handlepacket(data, length, ip_port) && LANdiscovery_handlepacket(data, length, ip_port))
             /* if packet is discarded */
             printf("Received unhandled packet with length: %u\n", length);
         else
@@ -505,7 +505,7 @@ void doMessenger()
 uint32_t Messenger_size()
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
-                                     + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * numfriends;
+           + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * numfriends;
 }
 
 /* save the messenger in data of size Messenger_size() */
@@ -537,7 +537,7 @@ int Messenger_load(uint8_t * data, uint32_t length)
     uint32_t size;
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
-    
+
     if (length < size)
         return -1;
     length -= size;
@@ -548,12 +548,12 @@ int Messenger_load(uint8_t * data, uint32_t length)
     data += sizeof(size);
     if (length != size || length % sizeof(Friend) != 0)
         return -1;
-    
+
     Friend * temp = malloc(size);
     memcpy(temp, data, size);
-    
+
     uint16_t num = size / sizeof(Friend);
-    
+
     uint32_t i;
     for (i = 0; i < num; ++i) {
         if(temp[i].status != 0) {

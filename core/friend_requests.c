@@ -1,7 +1,7 @@
 /* friend_requests.c
- * 
+ *
  * Handle friend requests.
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 #include "friend_requests.h"
@@ -26,7 +26,7 @@
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 /* Try to send a friendrequest to peer with public_key
-   data is the data in the request and length is the length. 
+   data is the data in the request and length is the length.
    return -1 if failure.
    return  0 if it sent the friend request directly to the friend.
    return the number of peers it was routed through if it did not send it directly.*/
@@ -34,7 +34,7 @@ int send_friendrequest(uint8_t * public_key, uint8_t * data, uint32_t length)
 {
     uint8_t packet[MAX_DATA_SIZE];
     int len = create_request(packet, public_key, data, length, 32); /* 32 is friend request packet id */
-    
+
     if (len == -1)
         return -1;
 
@@ -48,7 +48,7 @@ int send_friendrequest(uint8_t * public_key, uint8_t * data, uint32_t length)
             return 0;
         return -1;
     }
-    
+
     int num = route_tofriend(public_key, packet, len);
 
     if (num == 0)
@@ -61,7 +61,8 @@ static void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t handle_friendrequest_isset = 0;
 
 /* set the function that will be executed when a friend request is received. */
-void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t)) {
+void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
+{
     handle_friendrequest = function;
     handle_friendrequest_isset = 1;
 }
@@ -76,17 +77,19 @@ static uint8_t recieved_requests[MAX_RECIEVED_STORED][crypto_box_PUBLICKEYBYTES]
 static uint16_t recieved_requests_index;
 
 /*Add to list of recieved friend requests*/
-static void addto_recievedlist(uint8_t * client_id) {
+static void addto_recievedlist(uint8_t * client_id)
+{
     if (recieved_requests_index >= MAX_RECIEVED_STORED)
         recieved_requests_index = 0;
-    
+
     memcpy(recieved_requests[recieved_requests_index], client_id, crypto_box_PUBLICKEYBYTES);
     ++recieved_requests_index;
 }
 
-/* Check if a friend request was already recieved 
+/* Check if a friend request was already recieved
    return 0 if not, 1 if we did  */
-static int request_recieved(uint8_t * client_id) {
+static int request_recieved(uint8_t * client_id)
+{
     uint32_t i;
 
     for (i = 0; i < MAX_RECIEVED_STORED; ++i) {
@@ -98,7 +101,8 @@ static int request_recieved(uint8_t * client_id) {
 }
 
 
-int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source) {
+int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+{
     if (packet[0] == 32) {
         if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
             length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
@@ -118,11 +122,10 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source) {
 
             addto_recievedlist(public_key);
             (*handle_friendrequest)(public_key, data, len);
-        }
-        else {/* if request is not for us, try routing it. */
+        } else { /* if request is not for us, try routing it. */
             if(route_packet(packet + 1, packet, length) == length)
                 return 0;
         }
     }
-        return 1;
+    return 1;
 }

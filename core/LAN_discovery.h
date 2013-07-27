@@ -1,7 +1,7 @@
 /*  LAN_discovery.h
- * 
+ *
  *  LAN discovery implementation.
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -18,12 +18,12 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 
-#ifndef LAN_DISCOVERY_H 
-#define LAN_DISCOVERY_H 
+#ifndef LAN_DISCOVERY_H
+#define LAN_DISCOVERY_H
 
 
 #include "DHT.h"
@@ -32,14 +32,14 @@
 extern "C" {
 #endif
 
-/*Send a LAN discovery pcaket to the broadcast address with port port*/
-int send_LANdiscovery(uint16_t port);
+    /*Send a LAN discovery pcaket to the broadcast address with port port*/
+    int send_LANdiscovery(uint16_t port);
 
 
-/* if we receive a packet we call this function so it can be handled.
-   return 0 if packet is handled correctly.
-   return 1 if it didn't handle the packet or if the packet was shit. */
-int LANdiscovery_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
+    /* if we receive a packet we call this function so it can be handled.
+       return 0 if packet is handled correctly.
+       return 1 if it didn't handle the packet or if the packet was shit. */
+    int LANdiscovery_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
 
 
 

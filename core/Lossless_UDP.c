@@ -1,7 +1,7 @@
-/* Lossless_UDP.c 
- * 
+/* Lossless_UDP.c
+ *
  * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 /* TODO: clean this file a bit.
@@ -47,18 +47,18 @@ timeout per connection is randomly set between CONNEXION_TIMEOUT and 2*CONNEXION
 typedef struct {
     uint8_t data[MAX_DATA_SIZE];
     uint16_t size;
-}Data;
+} Data;
 
 typedef struct {
     IP_Port ip_port;
-    uint8_t status; /* 0 if connection is dead, 1 if attempting handshake, 
+    uint8_t status; /* 0 if connection is dead, 1 if attempting handshake,
                        2 if handshake is done (we start sending SYNC packets)
                        3 if we are sending SYNC packets and can send data
                        4 if the connection has timed out. */
-    
-    uint8_t inbound; /* 1 or 2 if connection was initiated by someone else, 0 if not. 
+
+    uint8_t inbound; /* 1 or 2 if connection was initiated by someone else, 0 if not.
                         2 if incoming_connection() has not returned it yet, 1 if it has. */
-                  
+
     uint16_t SYNC_rate; /* current SYNC packet send rate packets per second. */
     uint16_t data_rate; /* current data packet send rate packets per second. */
     uint64_t last_SYNC; /* time at which our last SYNC packet was sent. */
@@ -82,7 +82,7 @@ typedef struct {
     uint8_t recv_counter;
     uint8_t send_counter;
     uint8_t timeout; /* connection timeout in seconds. */
-}Connection;
+} Connection;
 
 #define MAX_CONNECTIONS 256
 
@@ -95,10 +95,11 @@ static Connection connections[MAX_CONNECTIONS];
 /* get connection id from IP_Port
    return -1 if there are no connections like we are looking for
    return id if it found it */
-int getconnection_id(IP_Port ip_port) {
+int getconnection_id(IP_Port ip_port)
+{
     uint32_t i;
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
-        if (connections[i].ip_port.ip.i == ip_port.ip.i && 
+        if (connections[i].ip_port.ip.i == ip_port.ip.i &&
             connections[i].ip_port.port == ip_port.port && connections[i].status > 0)
             return i;
     }
@@ -384,10 +385,10 @@ int send_data_packet(uint32_t connection_id, uint32_t packet_num)
     packet[0] = 18;
     temp = htonl(packet_num);
     memcpy(packet + 1, &temp, 4);
-    memcpy(packet + 5, connections[connection_id].sendbuffer[index].data, 
-                       connections[connection_id].sendbuffer[index].size);
+    memcpy(packet + 5, connections[connection_id].sendbuffer[index].data,
+           connections[connection_id].sendbuffer[index].size);
     return sendpacket(connections[connection_id].ip_port, packet,
-               1 + 4 + connections[connection_id].sendbuffer[index].size);
+                      1 + 4 + connections[connection_id].sendbuffer[index].size);
 }
 
 /* sends 1 data packet */
@@ -395,7 +396,7 @@ int send_DATA(uint32_t connection_id)
 {
     int ret;
     uint32_t buffer[BUFFER_PACKET_NUM];
-    if (connections[connection_id].num_req_paquets > 0) {  
+    if (connections[connection_id].num_req_paquets > 0) {
         ret = send_data_packet(connection_id, connections[connection_id].req_packets[0]);
         connections[connection_id].num_req_paquets--;
         memcpy(buffer, connections[connection_id].req_packets + 1, connections[connection_id].num_req_paquets * 4);
@@ -416,9 +417,9 @@ int send_DATA(uint32_t connection_id)
    One to handle each type of packets we receive
    return 0 if handled correctly, 1 if packet is bad. */
 int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
-{    
+{
     if (length != (1 + 4 + 4))
-            return 1;
+        return 1;
     uint32_t temp;
     uint32_t handshake_id1, handshake_id2;
     int connection = getconnection_id(source);
@@ -426,7 +427,7 @@ int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
     handshake_id1 = ntohl(temp);
     memcpy(&temp, packet + 5, 4);
     handshake_id2 = ntohl(temp);
-    
+
     if (handshake_id2 == 0) {
         send_handshake(source, handshake_id(source), handshake_id1);
         return 0;
@@ -452,7 +453,7 @@ int SYNC_valid(uint32_t length)
 {
     if (length < 4 + 4 + 2)
         return 0;
-    if (length > (BUFFER_PACKET_NUM*4 + 4 + 4 + 2) || 
+    if (length > (BUFFER_PACKET_NUM*4 + 4 + 4 + 2) ||
         ((length - 4 - 4 - 2) % 4) != 0)
         return 0;
     return 1;
@@ -482,7 +483,7 @@ int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnu
 int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum)
 {
     if (recv_packetnum == connections[connection_id].orecv_packetnum) {
-       /* && sent_packetnum == connections[connection_id].osent_packetnum) */
+        /* && sent_packetnum == connections[connection_id].osent_packetnum) */
         connections[connection_id].status =  3;
         connections[connection_id].recv_counter = counter;
         ++connections[connection_id].send_counter;
@@ -522,14 +523,14 @@ int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
 {
 
     if (!SYNC_valid(length))
-        return 1;   
+        return 1;
     int connection = getconnection_id(source);
     uint8_t counter;
     uint32_t temp;
     uint32_t recv_packetnum, sent_packetnum;
     uint32_t req_packets[BUFFER_PACKET_NUM];
     uint16_t number = (length - 4 - 4 - 2)/ 4;
-    
+
     memcpy(&counter, packet + 1, 1);
     memcpy(&temp, packet + 2, 4);
     recv_packetnum = ntohl(temp);
@@ -556,7 +557,7 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_t size)
     uint32_t i;
     uint32_t maxnum = connections[connection_id].successful_read + BUFFER_PACKET_NUM;
     uint32_t sent_packet = data_num - connections[connection_id].osent_packetnum;
-    for (i = connections[connection_id].recv_packetnum; i != maxnum; ++i) {    
+    for (i = connections[connection_id].recv_packetnum; i != maxnum; ++i) {
         if (i == data_num) {
             memcpy(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].data, data, size);
             connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size = size;
@@ -568,7 +569,7 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_t size)
     }
     for (i = connections[connection_id].recv_packetnum; i != maxnum; ++i) {
         if (connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size != 0)
-             connections[connection_id].recv_packetnum = i;
+            connections[connection_id].recv_packetnum = i;
         else
             break;
     }
@@ -603,15 +604,15 @@ int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) { //TODO: check if no break statement is correct???
     case 16:
-        return handle_handshake(packet, length, source);   
+        return handle_handshake(packet, length, source);
 
     case 17:
-        return handle_SYNC(packet, length, source); 
+        return handle_SYNC(packet, length, source);
 
     case 18:
-        return handle_data(packet, length, source); 
+        return handle_data(packet, length, source);
 
-    default: 
+    default:
         return 1;
     }
 
@@ -627,13 +628,13 @@ void doNew()
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if (connections[i].status == 1)
             if ((connections[i].last_sent + (1000000UL/connections[i].SYNC_rate)) <= temp_time) {
-               send_handshake(connections[i].ip_port, connections[i].handshake_id1, 0);
-               connections[i].last_sent = temp_time;
+                send_handshake(connections[i].ip_port, connections[i].handshake_id1, 0);
+                connections[i].last_sent = temp_time;
             }
 
         /* kill all timed out connections */
-        if ( connections[i].status > 0 && (connections[i].last_recvSYNC + connections[i].timeout * 1000000UL) < temp_time && 
-            connections[i].status != 4)
+        if ( connections[i].status > 0 && (connections[i].last_recvSYNC + connections[i].timeout * 1000000UL) < temp_time &&
+             connections[i].status != 4)
             /* kill_connection(i); */
             connections[i].status = 4;
         if (connections[i].status > 0 && connections[i].killat < temp_time)
@@ -648,8 +649,8 @@ void doSYNC()
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if (connections[i].status == 2 || connections[i].status == 3)
             if ((connections[i].last_SYNC + (1000000UL/connections[i].SYNC_rate)) <= temp_time) {
-               send_SYNC(i);
-               connections[i].last_SYNC = temp_time;
+                send_SYNC(i);
+                connections[i].last_SYNC = temp_time;
             }
     }
 }
@@ -682,10 +683,9 @@ void adjustRates()
             connections[i].SYNC_rate = MAX_SYNC_RATE;
         if (connections[i].status == 3) {
             if (sendqueue(i) != 0) {
-                 connections[i].data_rate = (BUFFER_PACKET_NUM - connections[i].num_req_paquets) * MAX_SYNC_RATE;
-                 connections[i].SYNC_rate = MAX_SYNC_RATE;
-            }
-            else if (connections[i].last_recvdata + 1000000UL > temp_time)
+                connections[i].data_rate = (BUFFER_PACKET_NUM - connections[i].num_req_paquets) * MAX_SYNC_RATE;
+                connections[i].SYNC_rate = MAX_SYNC_RATE;
+            } else if (connections[i].last_recvdata + 1000000UL > temp_time)
                 connections[i].SYNC_rate = MAX_SYNC_RATE;
             else
                 connections[i].SYNC_rate = SYNC_RATE;

@@ -1,7 +1,7 @@
 /*  LAN_discovery.c
- * 
+ *
  *  LAN discovery implementation.
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 #include "LAN_discovery.h"
