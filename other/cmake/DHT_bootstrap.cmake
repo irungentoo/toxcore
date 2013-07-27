@@ -4,6 +4,6 @@ project(DHT_bootstrap C)
 set(exe_name DHT_bootstrap)
 
 add_executable(${exe_name}
-        DHT_bootstrap.c)
+        DHT_bootstrap.c ../testing/misc_tools.c)
 
 linkCoreLibraries(${exe_name})
