@@ -114,14 +114,15 @@ void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
     printf("\n--------------------END-----------------------------\n\n\n");
 }
 
-//horrible function from one of my first C programs.
-//only here because I was too lazy to write a proper one.
+//TODO: rewrite
 unsigned char * hex_string_to_bin(char hex_string[])
 {
-    unsigned char * val = malloc(strlen(hex_string));
+    size_t len = strlen(hex_string);
+    unsigned char * val = malloc(len);
     char * pos = hex_string;
     int i=0;
-    while(i < strlen(hex_string)) {
+    while(i < len)
+    {
         sscanf(pos,"%2hhx",&val[i]);
         pos+=2;
         i++;
