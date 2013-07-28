@@ -350,20 +350,11 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *, int, char
 /* run this at startup */
 Messenger * initMessenger()
 {
-#if 0
-	Messenger *m = calloc(1, sizeof(Messenger));
-	if( !m ) /* FIXME panic */
-		return 0;
-	m->friendlist = calloc(256, sizeof(Friend));
-	if( !m ) /* FIXME panic */
-		return 0;
-#endif
-
-    Messenger *m = malloc(sizeof(Messenger));
+    Messenger *m = calloc(1, sizeof(Messenger));
     if(!m)
         return NULL;
 
-    m->friendlist = malloc(sizeof(Friend) * 256);
+    m->friendlist = calloc(1, sizeof(Friend) * 256);
     if(!m->friendlist)
         return NULL;
 
