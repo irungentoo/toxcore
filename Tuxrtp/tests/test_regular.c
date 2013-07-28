@@ -18,8 +18,8 @@ int print_help()
     return FAILURE;
     }
 
-_no_main()
-/*_test_main()*/
+/*_no_main()*/
+_test_main()
     {
     int status;
     IP_Port     Ip_port[1];
@@ -56,15 +56,14 @@ _no_main()
 
             /* start in recv mode */
             while ( 1 ) {
-                    if ( rtp_recv_msg ( _m_session ) != FAILURE ) {
-                            _m_msg = rtp_session_get_message_queded ( _m_session );
+                    _m_msg = rtp_recv_msg ( _m_session );
 
-                            if ( _m_msg ) {
-                                    /**/
-                                    printf ( "Bytes received: %d\n", _m_session->_bytes_recv );
-                                    /**/
-
-                                    }
+                    /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
+                    if ( _m_msg ) {
+                            /**/
+                            printf ( "Bytes received: %d\n", _m_session->_bytes_recv );
+                            /**/
+                            DEALLOCATOR_MSG ( _m_msg )
                             }
 
                     usleep ( 10000 );
@@ -89,7 +88,7 @@ _no_main()
             _m_session = init_rtp_session ( Ip_port[0], -1 );
             puts ( "Now sending for ~5 s" );
 
-            for ( int i = 0; i < 1500; i++ ) {
+            for ( int i = 0; i < 500; i++ ) {
                     _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
                     rtp_send_msg ( _m_session, _m_msg );
                     usleep ( 10000 );

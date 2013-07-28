@@ -22,4 +22,7 @@
 
 #define DYNAMIC_STRING(VAR, SIZE) { ALLOCATOR(VAR, char, SIZE) memset(VAR, '\0', SIZE); }
 
+
+#define ADD_ALLOCATE(VAR, TYPE, PREV) realloc(VAR, sizeof(TYPE) * ( PREV + 1 ) );
+
 #endif /* _ALLOCATOR_H_ */

@@ -1,5 +1,5 @@
 #include "rtp_message.h"
-
+#include <assert.h>
 #define _MIN_LENGHT_ 11
 
 rtp_header_t* rtp_extract_header ( uint8_t* payload, size_t size )
@@ -17,20 +17,26 @@ rtp_header_t* rtp_extract_header ( uint8_t* payload, size_t size )
 
     _retu->_ssrc = ( ( uint32_t ) payload[4] << 24 ) |
                    ( ( uint32_t ) payload[5] << 16 ) |
-                   ( ( uint32_t ) payload[6] << 8 ) |
+                   ( ( uint32_t ) payload[6] << 8 )  |
                    ( ( uint32_t ) payload[7] ) ;
 
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _retu );
 
-    _retu->_csrc = ( uint32_t* ) malloc ( sizeof ( uint32_t ) * cc );
+    if ( cc > 0 ) {
+            _retu->_csrc = ( uint32_t* ) malloc ( sizeof ( uint32_t ) * cc );
+            }
+    else { /* But this should not happen ever */
+            _retu->_csrc = NULL;
+            return _retu;
+            }
 
     size_t i = 8;
 
     for ( size_t x = 0; x < cc; x++ ) {
-            _retu->_csrc = ( ( uint32_t ) payload[i]     << 24 ) |
-                           ( ( uint32_t ) payload[i + 1] << 16 ) |
-                           ( ( uint32_t ) payload[i + 2] << 8 ) |
-                           ( ( uint32_t ) payload[i + 3] ) ;
+            _retu->_csrc[x] = ( ( uint32_t ) payload[i]     << 24 ) |
+                              ( ( uint32_t ) payload[i + 1] << 16 ) |
+                              ( ( uint32_t ) payload[i + 2] << 8 )  |
+                              ( ( uint32_t ) payload[i + 3] ) ;
             i += 4;
             }
 
@@ -47,21 +53,22 @@ uint8_t* rtp_add_header ( rtp_header_t* _header, uint8_t* payload, size_t size )
 
     payload[0] = _header->_flags;
     payload[1] = _header->_marker_payload_t;
-    payload[2] = ( ( uint8_t ) _header->_sequence_number >> 8 );
-    payload[3] = ( ( uint8_t ) _header->_sequence_number );
 
-    payload[4] = ( ( uint8_t ) _header->_ssrc >> 24 );
-    payload[5] = ( ( uint8_t ) _header->_ssrc >> 16 );
-    payload[6] = ( ( uint8_t ) _header->_ssrc >> 8 );
-    payload[7] = ( ( uint8_t ) _header->_ssrc );
+    payload[2] = ( _header->_sequence_number >> 8 );
+    payload[3] = ( _header->_sequence_number );
+
+    payload[4] = ( _header->_ssrc >> 24 );
+    payload[5] = ( _header->_ssrc >> 16 );
+    payload[6] = ( _header->_ssrc >> 8 );
+    payload[7] = ( _header->_ssrc );
 
     size_t i = 8;
 
     for ( size_t x = 0; x < cc; x++ ) {
-            payload[i]  = ( ( uint8_t ) _header->_csrc[x] >> 24 ); i++;
-            payload[i]  = ( ( uint8_t ) _header->_csrc[x] >> 16 ); i++;
-            payload[i]  = ( ( uint8_t ) _header->_csrc[x] >> 8 ); i++;
-            payload[i]  = ( ( uint8_t ) _header->_csrc[x] ); i++;
+            payload[i]  = ( _header->_csrc[x] >> 24 ); i++;
+            payload[i]  = ( _header->_csrc[x] >> 16 ); i++;
+            payload[i]  = ( _header->_csrc[x] >> 8 ); i++;
+            payload[i]  = ( _header->_csrc[x] ); i++;
             }
 
 

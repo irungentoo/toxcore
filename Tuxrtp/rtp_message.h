@@ -7,6 +7,14 @@
 #define _MAX_SEQU_NUM 65535
 #define _CRSC_LEN(x) (x * 4)
 
+#define DEALLOCATOR_MSG(MSG) \
+    free(MSG->_header->_csrc); \
+    free(MSG->_header); \
+    if(MSG->_ext_header) free(MSG->_ext_header); \
+    free(MSG->_data); \
+    if ( MSG->next ) free(MSG->next); \
+    if ( MSG->prev ) free(MSG->prev);
+
 typedef struct rtp_header_s {
     uint8_t      _flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
     uint8_t      _marker_payload_t;  /* Marker(1), PlayLoad Type(7) */
