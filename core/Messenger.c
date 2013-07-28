@@ -41,6 +41,8 @@ typedef struct {
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 static uint8_t self_name[MAX_NAME_LENGTH];
+static uint16_t self_name_length;
+
 static uint8_t *self_userstatus;
 static uint16_t self_userstatus_len;
 
@@ -191,13 +193,16 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
 }
 
-/* send a name packet to friendnumber */
-static int m_sendname(int friendnumber, uint8_t * name)
+/* send a name packet to friendnumber 
+   length is the length with the NULL terminator*/
+static int m_sendname(int friendnumber, uint8_t * name, uint16_t length)
 {
+    if(length > MAX_NAME_LENGTH || length == 0)
+        return 0;
     uint8_t temp[MAX_NAME_LENGTH + 1];
-    memcpy(temp + 1, name, MAX_NAME_LENGTH);
+    memcpy(temp + 1, name, length);
     temp[0] = PACKET_ID_NICKNAME;
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, MAX_NAME_LENGTH + 1);
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
 }
 
 /* set the name of a friend
@@ -213,13 +218,16 @@ static int setfriendname(int friendnumber, uint8_t * name)
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
+   length must be at least 1 byte
+   length is the length of name with the NULL terminator
    return 0 if success
    return -1 if failure */
 int setname(uint8_t * name, uint16_t length)
 {
-    if (length > MAX_NAME_LENGTH)
+    if (length > MAX_NAME_LENGTH || length == 0)
         return -1;
     memcpy(self_name, name, length);
+    self_name_length = length;
     uint32_t i;
     for (i = 0; i < numfriends; ++i)
         friendlist[i].name_sent = 0;
@@ -388,7 +396,7 @@ static void doFriends()
         }
         while (friendlist[i].status == 4) { /* friend is online */
             if (friendlist[i].name_sent == 0) {
-                if (m_sendname(i, self_name))
+                if (m_sendname(i, self_name, self_name_length))
                     friendlist[i].name_sent = 1;
             }
             if (friendlist[i].userstatus_sent == 0) {
@@ -399,12 +407,12 @@ static void doFriends()
             if (len > 0) {
                 switch (temp[0]) {
                 case PACKET_ID_NICKNAME: {
-                    if (len != MAX_NAME_LENGTH + 1)
+                    if (len >= MAX_NAME_LENGTH + 1 || len == 1)
                         break;
                     if(friend_namechange_isset)
-                        friend_namechange(i, temp + 1, MAX_NAME_LENGTH); /* TODO: use the actual length */
-                    memcpy(friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
-                    friendlist[i].name[MAX_NAME_LENGTH - 1] = 0; /* make sure the NULL terminator is present. */
+                        friend_namechange(i, temp + 1, len - 1);
+                    memcpy(friendlist[i].name, temp + 1, len - 1);
+                    friendlist[i].name[len - 2] = 0; /* make sure the NULL terminator is present. */
                     break;
                 }
                 case PACKET_ID_USERSTATUS: {

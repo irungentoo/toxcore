@@ -85,9 +85,11 @@ int m_friendstatus(int friendnumber);
 int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
 
 /* Set our nickname
-    name must be a string of maximum MAX_NAME_LENGTH length.
-    return 0 if success
-    return -1 if failure */
+   name must be a string of maximum MAX_NAME_LENGTH length.
+   length must be at least 1 byte
+   length is the length of name with the NULL terminator
+   return 0 if success
+   return -1 if failure */
 int setname(uint8_t *name, uint16_t length);
 
 /* get name of friendnumber
