@@ -38,6 +38,10 @@ char line[STRING_LENGTH];
 int x,y;
 int nick_before;
 
+
+uint8_t pending_requests[256][CLIENT_ID_SIZE];
+uint8_t num_requests;
+
 void new_lines(char *line)
 {
     int i;
@@ -114,6 +118,17 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
         }
+        else if (line[1] == 'a') {
+            uint8_t numf = atoi(line + 3);
+            char numchar[100];
+            sprintf(numchar, "[i] friend request %u accepted", numf);
+            new_lines(numchar);
+            int num = m_addfriend_norequest(pending_requests[numf]);
+            sprintf(numchar, "[i] added friendnumber %d", num);
+            new_lines(numchar);
+            do_refresh();
+            
+        }
         else if (line[1] == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
@@ -184,20 +199,18 @@ void do_refresh()
     refresh();
 }
 
+
+
 void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 {
-    new_lines("[i] received friend request");
+    new_lines("[i] received friend request with message:");
+    new_lines((char *)data);
+    char numchar[100];
+    sprintf(numchar, "[i] To accept the request do: /a %u", num_requests);
+    new_lines(numchar);
+    memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
+    ++num_requests;
     do_refresh();
-    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0)
-    //if the request contained the message of peace the person is obviously a friend so we add him.
-    {
-        new_lines("[i] friend request accepted");
-        do_refresh();
-        int num = m_addfriend_norequest(public_key);
-        char numchar[100];
-        sprintf(numchar, "[i] added friendnumber %d", num);
-        new_lines(numchar);
-    }
 }
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)

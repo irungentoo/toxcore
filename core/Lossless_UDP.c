@@ -428,7 +428,7 @@ int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
     memcpy(&temp, packet + 5, 4);
     handshake_id2 = ntohl(temp);
 
-    if (handshake_id2 == 0) {
+    if (handshake_id2 == 0 && is_connected(connection) < 3) {
         send_handshake(source, handshake_id(source), handshake_id1);
         return 0;
     }
