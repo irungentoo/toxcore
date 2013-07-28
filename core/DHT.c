@@ -45,6 +45,7 @@ typedef struct {
     uint8_t hole_punching; /*0 if not hole punching, 1 if currently hole punching */
     uint32_t punching_index;
     uint32_t punching_timestamp;
+    uint32_t recvNATping_timestamp;
     uint64_t NATping_id;
     uint32_t NATping_timestamp;
 } Friend;
@@ -623,10 +624,7 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
 int DHT_addfriend(uint8_t * client_id)
 {
     Friend * temp;
-    if(num_friends == 0)
-        temp = malloc(sizeof(Friend));
-    else
-        temp = realloc(friends_list, sizeof(Friend) * (num_friends + 1));
+    temp = realloc(friends_list, sizeof(Friend) * (num_friends + 1));
     if(temp == NULL)
         return 1;
 
@@ -903,6 +901,7 @@ int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
 
         if(data[0] == 0) {
             send_NATping(public_key, ping_id, 1); /*1 is reply*/
+            friends_list[friendnumber].recvNATping_timestamp = unix_time();
             return 0;
         } else if (data[0] == 1)
             if(friends_list[friendnumber].NATping_id == ping_id) {
@@ -987,12 +986,14 @@ static void doNAT()
         if(num < MAX_FRIEND_CLIENTS/2)
             continue;
 
-        if(friends_list[i].hole_punching != 1) {
-            if(friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time) {
-                send_NATping(friends_list[i].client_id, friends_list[i].NATping_id, 0); /*0 is request*/
-                friends_list[i].NATping_timestamp = temp_time;
-            }
-        } else if(friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time) {
+
+        if(friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time) {
+            send_NATping(friends_list[i].client_id, friends_list[i].NATping_id, 0); /*0 is request*/
+            friends_list[i].NATping_timestamp = temp_time;
+        }
+        if(friends_list[i].hole_punching == 1 &&
+            friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time && 
+            friends_list[i].recvNATping_timestamp + PUNCH_INTERVAL*2 >= temp_time) {
             IP ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS/2);
             if(ip.i == 0)
                 continue;
