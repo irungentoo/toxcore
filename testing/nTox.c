@@ -88,7 +88,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 }
             }
             int num = atoi(numstring);
-            m_sendmessage(num, (uint8_t*) message, sizeof(message));
+            if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
+                new_lines("Error sending message.");
+            }
         }
         else if (line[1] == 'n') {
             uint8_t name[MAX_NAME_LENGTH];
