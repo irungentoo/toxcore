@@ -84,11 +84,13 @@ typedef struct {
     uint8_t timeout; /* connection timeout in seconds. */
 } Connection;
 
-#define MAX_CONNECTIONS 256
 
-static Connection connections[MAX_CONNECTIONS];
+static Connection * connections;
 
-/* static uint32_t numconnections; */
+static uint32_t connections_length; /* Length of connections array */
+static uint32_t connections_number; /* Number of connections in connections array */
+
+#define MAX_CONNECTIONS connections_length
 
 /* Functions */
 
@@ -142,6 +144,17 @@ int new_connection(IP_Port ip_port)
     int connect = getconnection_id(ip_port);
     if (connect != -1)
         return connect;
+    
+    if(connections_number == connections_length) {
+        Connection * temp;
+        temp = realloc(connections, sizeof(Connection) * (connections_length + 1));
+        if(temp == NULL)
+            return -1;
+        memset(&temp[connections_length], 0, sizeof(Connection));
+        ++connections_length;
+        connections = temp;
+    }
+    
     uint32_t i;
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if(connections[i].status == 0) {
@@ -161,6 +174,7 @@ int new_connection(IP_Port ip_port)
             connections[i].send_counter = 0;
             /* add randomness to timeout to prevent connections getting stuck in a loop. */
             connections[i].timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
+            ++connections_number;
             return i;
         }
     }
@@ -174,6 +188,17 @@ int new_inconnection(IP_Port ip_port)
 {
     if (getconnection_id(ip_port) != -1)
         return -1;
+    
+    if(connections_number == connections_length) {
+        Connection * temp;
+        temp = realloc(connections, sizeof(Connection) * (connections_length + 1));
+        if(temp == NULL)
+            return -1;
+        memset(&temp[connections_length], 0, sizeof(Connection));
+        ++connections_length;
+        connections = temp;
+    }
+    
     uint32_t i;
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if (connections[i].status == 0) {
@@ -190,6 +215,7 @@ int new_inconnection(IP_Port ip_port)
             /* if this connection isn't handled within the timeout kill it. */
             connections[i].killat = current_time() + 1000000UL*connections[i].timeout;
             connections[i].send_counter = 127;
+            ++connections_number;
             return i;
         }
     }
@@ -209,6 +235,23 @@ int incoming_connection()
     }
     return -1;
 }
+/*Try to free some memory from the connections array.*/
+static void free_connections()
+{
+    uint32_t i;
+    for(i = connections_length; i != 0; --i)
+        if (connections[i - 1].status != 0)
+            break;
+
+    if(connections_length == i)
+        return;
+    Connection * temp;
+    temp = realloc(connections, sizeof(Connection) * i);
+    if(temp == NULL && i != 0)
+        return;
+    connections = temp;
+    connections_length = i;
+}
 
 /* return -1 if it could not kill the connection.
    return 0 if killed successfully */
@@ -218,6 +261,8 @@ int kill_connection(int connection_id)
         if (connections[connection_id].status > 0) {
             connections[connection_id].status = 0;
             change_handshake(connections[connection_id].ip_port);
+            --connections_number;
+            free_connections();
             return 0;
         }
     }
