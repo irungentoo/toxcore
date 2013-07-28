@@ -51,7 +51,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             for (i=0; i<128; i++) {
                 temp_id[i] = line[i+3];
             }
-            int num = m_addfriend(messenger, hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            int num = m_addfriend(messenger, hex_string_to_bin(temp_id), "Install Gentoo", strlen("Install Gentoo"));
             char numstring[100];
             sprintf(numstring, "[i] added friend %d", num);
             new_lines(numstring);
@@ -75,9 +75,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 }
             }
             int num = atoi(numstring);
-            m_sendmessage(messenger, num, (uint8_t*) message, sizeof(message));
+            m_sendmessage(messenger, num, message, strlen(message));
         } else if (line[1] == 'n') {
-            uint8_t name[MAX_NAME_LENGTH];
+            char name[MAX_NAME_LENGTH];
             int i = 0;
             for (i=3; i<strlen(line); i++) {
                 if (line[i] == 0 || line[i] == '\n') break;
@@ -89,14 +89,14 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
         } else if (line[1] == 's') {
-            uint8_t status[MAX_USERSTATUS_LENGTH];
+            char status[MAX_USERSTATUS_LENGTH];
             int i = 0;
             for (i=3; i<strlen(line); i++) {
                 if (line[i] == 0 || line[i] == '\n') break;
                 status[i - 3] = line[i];
             }
             status[i - 3] = 0;
-            m_set_userstatus(messenger, status, strlen((char*)status));
+            m_set_userstatus(messenger, status, strlen(status));
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -169,7 +169,7 @@ void do_refresh()
     clrtoeol();
     refresh();
 }
-void print_request(Messenger *m, uint8_t * public_key, uint8_t * data, uint16_t length)
+void print_request(Messenger *m, uint8_t * public_key, char *data, uint16_t length)
 {
     new_lines("[i] received friend request");
     do_refresh();
@@ -184,10 +184,12 @@ void print_request(Messenger *m, uint8_t * public_key, uint8_t * data, uint16_t 
         new_lines(numchar);
     }
 }
-void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length)
+
+
+void print_message(Messenger *m, int friendnumber, char *string, uint16_t length)
 {
     char *name = malloc(MAX_NAME_LENGTH);
-    getname(messenger, friendnumber, (uint8_t*)name);
+    getname(messenger, friendnumber, name);
     char msg[100+length+strlen(name)+1];
     time_t rawtime;
     struct tm * timeinfo;
@@ -197,22 +199,28 @@ void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t le
     free(name);
     new_lines(msg);
 }
-void print_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length) {
+
+
+void print_nickchange(Messenger *m, int friendnumber, char *string, uint16_t length) {
     char *name = malloc(MAX_NAME_LENGTH);
-    getname(messenger, friendnumber, (uint8_t*)name);
+    getname(messenger, friendnumber, name);
     char msg[100+length];
     sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
     free(name);
     new_lines(msg);
 }
-void print_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length) {
+
+
+void print_statuschange(Messenger *m, int friendnumber, char *string, uint16_t length) {
     char *name = malloc(MAX_NAME_LENGTH);
-    getname(messenger, friendnumber, (uint8_t*)name);
+    getname(messenger, friendnumber, name);
     char msg[100+length+strlen(name)+1];
     sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
     free(name);
     new_lines(msg);
 }
+
+
 int main(int argc, char *argv[])
 {
     if (argc < 4) {

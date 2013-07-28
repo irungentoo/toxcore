@@ -60,30 +60,30 @@ typedef struct Friend {
 
     uint8_t client_id[CLIENT_ID_SIZE];
     uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
-    uint8_t name[MAX_NAME_LENGTH];
     uint8_t name_sent; /* 0 if we didn't send our name to this friend 1 if we have. */
-    uint8_t *userstatus;
-    uint8_t userstatus_sent;
+    char name[MAX_NAME_LENGTH];
+    char *userstatus;
+    char userstatus_sent;
 } Friend;
 
 
 typedef struct Messenger {
 	/* FIXME eventually friendlist will be a dynamically growing array */
 	int numfriends; /* number of elements in use in friendlist */
-	int size; /* number of elements allocated for friendlist */
+    int size; /* number of elements allocated for friendlist */
 
 	Friend *friendlist;
 
 	/* callback functions */
-	void (*friend_request)(struct Messenger *, uint8_t *, uint8_t *, uint16_t);
-	void (*friend_message)(struct Messenger *, int, uint8_t *, uint16_t);
-	void (*friend_namechange)(struct Messenger *, int, uint8_t *, uint16_t);
-	void (*friend_statuschange)(struct Messenger *, int, uint8_t *, uint16_t);
+	void (*friend_request)(struct Messenger *, uint8_t *, char *, uint16_t);
+	void (*friend_message)(struct Messenger *, int, char *, uint16_t);
+	void (*friend_namechange)(struct Messenger *, int, char *, uint16_t);
+	void (*friend_statuschange)(struct Messenger *, int, char*, uint16_t);
 
 	uint16_t self_userstatus_len;
-	uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-	uint8_t self_name[MAX_NAME_LENGTH];
-	uint8_t *self_userstatus;
+	char self_public_key[crypto_box_PUBLICKEYBYTES];
+	char self_name[MAX_NAME_LENGTH];
+	char *self_userstatus;
 
 	uint8_t friend_request_isset;
 	uint8_t friend_message_isset;
@@ -100,23 +100,23 @@ typedef struct Messenger {
    data is the data and length is the length
    returns the friend number if success
    return -1 if failure. */
-int m_addfriend(Messenger *m, uint8_t * client_id, uint8_t * data, uint16_t length);
+int m_addfriend(Messenger *m, uint8_t *client_id, char *data, uint16_t length);
 
 
 /* add a friend without sending a friendrequest.
    returns the friend number if success
    return -1 if failure. */
-int m_addfriend_norequest(Messenger *m, uint8_t * client_id);
+int m_addfriend_norequest(Messenger *m, uint8_t *client_id);
 
 /* return the friend id associated to that client id.
    return -1 if no such friend */
-int getfriend_id(Messenger *m, uint8_t * client_id);
+int getfriend_id(Messenger *m, uint8_t *client_id);
 
 /* copies the public key associated to that friend id into client_id buffer.
    make sure that client_id is of size CLIENT_ID_SIZE.
    return 0 if success
    return -1 if failure */
-int getclient_id(Messenger *m, int friend_id, uint8_t * client_id);
+int getclient_id(Messenger *m, int friend_id, uint8_t *client_id);
 
 /* remove a friend */
 int m_delfriend(Messenger *m, int friendnumber);
@@ -124,16 +124,18 @@ int m_delfriend(Messenger *m, int friendnumber);
 Friend_status m_friendstatus(Messenger *m, int friendnumber);
 
 
+
+
 /* send a text chat message to an online friend
    returns 1 if packet was successfully put into the send queue
    return 0 if it was not */
-int m_sendmessage(Messenger *m, int friendnumber, uint8_t * message, uint32_t length);
+int m_sendmessage(Messenger *m, int friendnumber, char *message, uint32_t length);
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
    return 0 if success
    return -1 if failure */
-int setname(Messenger *m, uint8_t * name, uint16_t length);
+int setname(Messenger *m, char *name, uint16_t length);
 
 
 /* get name of friendnumber
@@ -141,12 +143,12 @@ int setname(Messenger *m, uint8_t * name, uint16_t length);
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
    return 0 if success
    return -1 if failure */
-int getname(Messenger *m, int friendnumber, uint8_t * name);
+int getname(Messenger *m, int friendnumber, char *name);
 
 /* set our user status
    you are responsible for freeing status after
    returns 0 on success, -1 on failure */
-int m_set_userstatus(Messenger *m, uint8_t *status, uint16_t length);
+int m_set_userstatus(Messenger *m, char *status, uint16_t length);
 
 /* return the length of friendnumber's user status,
    including null
@@ -159,22 +161,22 @@ int m_copy_userstatus(Messenger *m, int friendnumber, uint8_t * buf, uint32_t ma
 
 /* set the function that will be executed when a friend request is received.
    function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *, uint8_t *, uint8_t *, uint16_t));
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *, uint8_t *, char *, uint16_t));
 
 
 /* set the function that will be executed when a message from a friend is received.
    function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *, int, uint8_t *, uint16_t));
+void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *, int, char *, uint16_t));
 
 /* set the callback for name changes
    function(int friendnumber, uint8_t *newname, uint16_t length)
    you are not responsible for freeing newname */
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *, int, uint8_t *, uint16_t));
+void m_callback_namechange(Messenger *m, void (*function)(Messenger *, int, char *, uint16_t));
 
 /* set the callback for user status changes
    function(int friendnumber, uint8_t *newstatus, uint16_t length)
    you are not responsible for freeing newstatus */
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *, int, uint8_t *, uint16_t));
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *, int, char *, uint16_t));
 
 /* run this at startup */
 Messenger * initMessenger();
@@ -195,3 +197,4 @@ void Messenger_save(Messenger *m, uint8_t * data);
 int Messenger_load(Messenger *m, uint8_t * data, uint32_t length);
 
 #endif
+

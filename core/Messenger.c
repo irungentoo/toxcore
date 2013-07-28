@@ -74,7 +74,7 @@ int getclient_id(Messenger *m, int friend_id, uint8_t * client_id)
    data is the data and length is the length
    returns the friend number if success
    return -1 if failure. */
-int m_addfriend(Messenger *m, uint8_t * client_id, uint8_t * data, uint16_t length)
+int m_addfriend(Messenger *m, uint8_t * client_id, char* data, uint16_t length)
 {
     if(length == 0 || length >=
             (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
@@ -176,8 +176,10 @@ Friend_status m_friendstatus(Messenger *m, int friendnumber)
 /* send a text chat message to an online friend
    return 1 if packet was successfully put into the send queue
    return 0 if it was not */
-int m_sendmessage(Messenger *m, int friendnumber, uint8_t * message, uint32_t length)
+int m_sendmessage(Messenger *m, int friendnumber, char *message, uint32_t length)
 {
+//    size_t length = strlen(message);
+
     if(friendnumber < 0 || friendnumber >= m->numfriends)
     {
         return 0;
@@ -194,7 +196,7 @@ int m_sendmessage(Messenger *m, int friendnumber, uint8_t * message, uint32_t le
 }
 
 /* send a name packet to friendnumber */
-static int m_sendname(Messenger *m, int friendnumber, uint8_t * name)
+static int m_sendname(Messenger *m, int friendnumber, char* name)
 {
     uint8_t temp[MAX_NAME_LENGTH + 1];
     memcpy(temp + 1, name, MAX_NAME_LENGTH);
@@ -206,7 +208,7 @@ static int m_sendname(Messenger *m, int friendnumber, uint8_t * name)
    return 0 if success
    return -1 if failure */
 
-static int setfriendname(Messenger *m, int friendnumber, uint8_t * name)
+static int setfriendname(Messenger *m, int friendnumber, char *name)
 {
     if(friendnumber >= m->numfriends || friendnumber < 0)
     {
@@ -221,7 +223,7 @@ static int setfriendname(Messenger *m, int friendnumber, uint8_t * name)
    name must be a string of maximum MAX_NAME_LENGTH length.
    return 0 if success
    return -1 if failure */
-int setname(Messenger *m, uint8_t * name, uint16_t length)
+int setname(Messenger *m, char *name, uint16_t length)
 {
     if(length > MAX_NAME_LENGTH)
     {
@@ -241,7 +243,7 @@ int setname(Messenger *m, uint8_t * name, uint16_t length)
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
    return 0 if success
    return -1 if failure */
-int getname(Messenger *m, int friendnumber, uint8_t * name)
+int getname(Messenger *m, int friendnumber, char *name)
 {
     if(friendnumber >= m->numfriends || friendnumber < 0)
     {
@@ -251,13 +253,13 @@ int getname(Messenger *m, int friendnumber, uint8_t * name)
     return 0;
 }
 
-int m_set_userstatus(Messenger *m, uint8_t *status, uint16_t length)
+int m_set_userstatus(Messenger *m, char *status, uint16_t length)
 {
     if(length > MAX_USERSTATUS_LENGTH)
     {
         return -1;
     }
-    uint8_t *newstatus = calloc(length, 1);
+    char *newstatus = calloc(length, 1);
     memcpy(newstatus, status, length);
     free(m->self_userstatus);
     m->self_userstatus = newstatus;
@@ -295,7 +297,7 @@ int m_copy_userstatus(Messenger *m, int friendnumber, uint8_t * buf, uint32_t ma
     return 0;
 }
 
-static int send_userstatus(Messenger *m, int friendnumber, uint8_t * status, uint16_t length)
+static int send_userstatus(Messenger *m, int friendnumber, char* status, uint16_t length)
 {
     uint8_t *thepacket = malloc(length + 1);
     memcpy(thepacket + 1, status, length);
@@ -305,13 +307,13 @@ static int send_userstatus(Messenger *m, int friendnumber, uint8_t * status, uin
     return written;
 }
 
-static int set_friend_userstatus(Messenger *m, int friendnumber, uint8_t * status, uint16_t length)
+static int set_friend_userstatus(Messenger *m, int friendnumber, char *status, uint16_t length)
 {
     if(friendnumber >= m->numfriends || friendnumber < 0)
     {
         return -1;
     }
-    uint8_t *newstatus = calloc(length, 1);
+    char *newstatus = malloc(length);
     memcpy(newstatus, status, length);
     free(m->friendlist[friendnumber].userstatus);
     m->friendlist[friendnumber].userstatus = newstatus;
@@ -320,26 +322,26 @@ static int set_friend_userstatus(Messenger *m, int friendnumber, uint8_t * statu
 }
 
 /* set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *, uint8_t *, uint8_t *, uint16_t))
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *, uint8_t *, char *, uint16_t))
 {
     m->friend_request = function;
     m->friend_request_isset = 1;
 }
 
 /* set the function that will be executed when a message from a friend is received. */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *, int, uint8_t *, uint16_t))
+void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *, int, char *, uint16_t))
 {
     m->friend_message = function;
     m->friend_message_isset = 1;
 }
 
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *, int, uint8_t *, uint16_t))
+void m_callback_namechange(Messenger *m, void (*function)(Messenger *, int, char *, uint16_t))
 {
     m->friend_namechange = function;
     m->friend_namechange_isset = 1;
 }
 
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *, int, uint8_t *, uint16_t))
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *, int, char *, uint16_t))
 {
     m->friend_statuschange = function;
     m->friend_statuschange_isset = 1;
@@ -348,16 +350,29 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *, int, uint
 /* run this at startup */
 Messenger * initMessenger()
 {
+#if 0
 	Messenger *m = calloc(1, sizeof(Messenger));
 	if( !m ) /* FIXME panic */
 		return 0;
 	m->friendlist = calloc(256, sizeof(Friend));
 	if( !m ) /* FIXME panic */
 		return 0;
+#endif
+
+    Messenger *m = malloc(sizeof(Messenger));
+    if(!m)
+        return NULL;
+
+    m->friendlist = malloc(sizeof(Friend) * 256);
+    if(!m->friendlist)
+        return NULL;
+
 	m->size = 256; /* FIXME make dynamic later on, requires logic change */
 
+    char *defstatus = "Online";
+    m_set_userstatus(m, defstatus, strlen(defstatus));
+
     new_keys();
-    m_set_userstatus(m, (uint8_t*)"Online", sizeof("Online"));
     initNetCrypto();
     IP ip;
     ip.i = 0;
@@ -430,14 +445,14 @@ static void doFriends(Messenger *m)
                         if (len != MAX_NAME_LENGTH + 1) break;
                         if(m->friend_namechange_isset)
                         {
-                            m->friend_namechange(m, i, temp + 1, MAX_NAME_LENGTH); /* TODO: use the actual length */
+                            m->friend_namechange(m, i, (char*)temp + 1, MAX_NAME_LENGTH); /* TODO: use the actual length */
                         }
                         memcpy(m->friendlist[i].name, temp + 1, MAX_NAME_LENGTH);
                         m->friendlist[i].name[MAX_NAME_LENGTH - 1] = 0; /* make sure the NULL terminator is present. */
                         break;
                     }
                     case PACKET_ID_USERSTATUS: {
-                        uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
+                        char *status = malloc(MIN(len - 1, MAX_USERSTATUS_LENGTH));
                         memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
                         if(m->friend_statuschange_isset)
                         {
@@ -450,7 +465,7 @@ static void doFriends(Messenger *m)
                     case PACKET_ID_MESSAGE: {
                         if(m->friend_message_isset)
                         {
-                            (*m->friend_message)(m, i, temp + 1, len - 1);
+                            (*m->friend_message)(m, i, (char*)temp + 1, len - 1);
                         }
                         break;
                     }
@@ -480,7 +495,7 @@ static void doFriendRequest(Messenger *m)
     {
         if(m->friend_request_isset)
         {
-            (*(m->friend_request))(m, public_key, temp, len);
+            (*(m->friend_request))(m, public_key, (char*)temp, len);
         }
     }
 }
@@ -535,6 +550,7 @@ void doMessenger(Messenger *m)
 #endif
 
     }
+
     doDHT();
     doLossless_UDP();
     doNetCrypto();
@@ -619,3 +635,4 @@ int Messenger_load(Messenger *m, uint8_t * data, uint32_t length)
     free(temp);
     return 0;
 }
+
