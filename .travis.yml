@@ -34,6 +34,6 @@ notifications:
 
   irc: 
     channels:
-      - "chat.freenode.net#InsertProjectNameHere"
+      - "chat.freenode.net#tox-dev"
     on_success: always
     on_failure: always
