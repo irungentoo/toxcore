@@ -36,8 +36,6 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 int x,y;
-int nick_before;
-
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests;
@@ -89,7 +87,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             }
             int num = atoi(numstring);
             if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
-                new_lines("Error sending message.");
+                new_lines("[i] could not send message");
             }
         }
         else if (line[1] == 'n') {
@@ -201,14 +199,12 @@ void do_refresh()
     refresh();
 }
 
-
-
 void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 {
     new_lines("[i] received friend request with message:");
     new_lines((char *)data);
     char numchar[100];
-    sprintf(numchar, "[i] To accept the request do: /a %u", num_requests);
+    sprintf(numchar, "[i] accept request with /a %u", num_requests);
     new_lines(numchar);
     memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
     ++num_requests;
@@ -227,7 +223,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     char* temp = asctime(timeinfo);
     size_t len = strlen(temp);
     temp[len-1]='\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // someone please fix this
+    sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
     new_lines(msg);
 }
 
@@ -256,7 +252,7 @@ void load_key(){
         fseek(data_file, 0, SEEK_SET);
         uint8_t data[size];
         if(fread(data, sizeof(uint8_t), size, data_file) != size){
-            printf("Error reading data file\nExiting.\n");
+            printf("[i] could not read data file\n[i] exiting\n");
             exit(1);
         }
         Messenger_load(data, size);
@@ -267,7 +263,7 @@ void load_key(){
         Messenger_save(data);
         data_file = fopen("data","w");
         if(fwrite(data, sizeof(uint8_t), size, data_file) != size){
-            printf("Error writing data file\nExiting.\n");
+            printf("[i] could not write data file\n[i] exiting\n");
             exit(1);
         }
     }
