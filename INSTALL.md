@@ -2,6 +2,12 @@
 
 ###Linux:
 
+Build dependencies:
+
+```bash
+apt-get install build-essential libtool autotools-dev automake libconfig-dev
+```
+
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
