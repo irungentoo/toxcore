@@ -27,6 +27,5 @@
 #include "../core/network.h"
 
 #define STRING_LENGTH 256
-#define HISTORY 50
 
 #endif
