@@ -31,8 +31,6 @@ char line[STRING_LENGTH];
 
 void do_header()
 {
-    system("cls");
-
     printf("\n[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /q (to quit)\n\n");
 }
 
@@ -148,7 +146,7 @@ void line_eval(char* line)
             }
             int num = atoi(numstring);
             if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
-                printf("\n[i] could not send message\n\n");
+                printf("\n[i] could not send message: %s\n\n", message);
             }
         }
 
@@ -228,6 +226,8 @@ int main(int argc, char *argv[])
     m_callback_namechange(print_nickchange);
     m_callback_userstatus(print_statuschange);
 
+    system("cls");
+
     char idstring0[200];
     char idstring1[32][5];
     char idstring2[32][5];
@@ -246,7 +246,9 @@ int main(int argc, char *argv[])
         strcat(idstring0,idstring2[i]);
     }
 
+    printf(idstring0);
     do_header();
+    
 
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
