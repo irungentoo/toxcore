@@ -5,7 +5,7 @@
 Build dependencies:
 
 ```bash
-apt-get install build-essential libtool autotools-dev automake libconfig-dev
+apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev
 ```
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
