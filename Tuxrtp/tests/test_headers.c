@@ -1,3 +1,27 @@
+/*   test_headers.c
+ *
+ *   Tests header parsing. You probably won't need this. !Red!
+ *
+ *
+ *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *   This file is part of Tox.
+ *
+ *   Tox is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   Tox is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "test_helper.h"
 #include "../../core/helper.h"
 #include "../handler.h"
@@ -16,7 +40,7 @@ int _print_help()
     {
     puts (
         " Usage: Tuxrtp [-s (send mode) -d IP ( destination ) -p PORT ( dest Port )] \n"
-        " [-r ( recv mode ) ]"
+        "               [-r ( recv mode ) ]"
     );
     return FAILURE;
     }
@@ -30,12 +54,20 @@ void print_session_stats ( rtp_session_t* _m_session )
         "\tPackets recv:%d\n\n"
         "\tBytes   sent:%d\n"
         "\tBytes   recv:%d\n\n"
+        "\tHeader CCSRs:%d\n"
         ,
         _m_session->_packets_sent,
         _m_session->_packets_recv,
         _m_session->_bytes_sent,
-        _m_session->_bytes_recv
+        _m_session->_bytes_recv,
+        _m_session->_cc
     );
+
+    for ( uint8_t i = 0; i < _m_session->_cc; i++ ) {
+            printf (
+                "%d > :%d\n", i, _m_session->_csrc[i]
+            );
+            }
     }
 
 void print_header_info ( rtp_header_t* _header )
@@ -43,24 +75,38 @@ void print_header_info ( rtp_header_t* _header )
     printf
     (
         "Header info:\n"
-        "\tVersion       :%d\n"
-        "\tPadding       :%d\n"
-        "\tExtension     :%d\n"
-        "\tCSRC count    :%d\n"
-        "\tPayload type  :%d\n"
-        "\tMarker        :%d\n"
+        "\tVersion              :%d\n"
+        "\tPadding              :%d\n"
+        "\tExtension            :%d\n"
+        "\tCSRC count           :%d\n"
+        "\tPayload type         :%d\n"
+        "\tMarker               :%d\n\n"
+
+        "\tSSrc                 :%d\n"
+        "\tSequence num         :%d\n"
+        "\tCSRC's:"
         ,
         rtp_header_get_flag_version ( _header ),
         rtp_header_get_flag_padding ( _header ),
         rtp_header_get_flag_extension ( _header ),
         rtp_header_get_flag_CSRC_count ( _header ),
         rtp_header_get_setting_payload_type ( _header ),
-        rtp_header_get_setting_marker ( _header )
+        rtp_header_get_setting_marker ( _header ),
+
+        _header->_ssrc,
+        _header->_sequence_number
     );
+
+    for ( uint8_t i = 0; i < rtp_header_get_flag_CSRC_count ( _header ); i++ ) {
+            printf (
+                "%d > :%d\n", i, _header->_csrc[i]
+            );
+            }
+
+    puts ( "\n" );
     }
 
-_test_main()
-/*_no_main()*/
+int _main(args)
     {
     arg_t* _list = parse_args ( argc, argv );
 
@@ -101,14 +147,15 @@ _test_main()
                     return FAILURE;
                     }
 
-            /* start in recv mode, get 1 message and then analyze it */
-            while ( 1 ) {
-                    if ( rtp_recv_msg ( _m_session ) != FAILURE ) {
-                            _m_msg = rtp_session_get_message_queded ( _m_session );
+            /* -- start in recv mode, get 1 message and then analyze it -- */
 
-                            if ( _m_msg ) {
-                                    break;
-                                    }
+
+            for ( int i = 0; i < 400; i++ ) { /* Recv for x seconds */
+                    _m_msg = rtp_recv_msg ( _m_session );
+
+                    /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
+                    if ( _m_msg ) {
+                            break;
                             }
 
                     usleep ( 10000 );
@@ -140,15 +187,27 @@ _test_main()
             printf ( "Remote: %s:%d\n", ip, port );
             status = init_networking ( Ip_port[0].ip, RTP_PORT );
             _m_session = init_rtp_session ( Ip_port[0], -1 );
-            puts ( "Now sending payload!" );
+            puts ( "Now sending payload!\n" );
+
+            uint16_t _first_sequ = _m_session->_sequence_number;
 
             _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ; /* just don't use strlen since it's slow */
             /* use already defined buffer lenght */
 
             rtp_send_msg ( _m_session, _m_msg );         /* It deallocates */
 
-            printf ( "Packets sent: %d\n", _m_session->_packets_sent );
-            printf ( "Bytes sent:   %d\n", _m_session->_bytes_sent );
+            printf ( "First sequence num :%d\n"
+                     "Last sequence num  :%d\n\n"
+                     "SSRC :%d\n\n"
+                     "Packets sent: %d\n"
+                     "Bytes sent:   %d\n\n"
+                     "CC:           %d\n",
+                     _first_sequ,
+                     _m_session->_sequence_number,
+                     _m_session->_ssrc,
+                     _m_session->_packets_sent,
+                     _m_session->_bytes_sent,
+                     _m_session->_csrc[0] );
 
             if ( _m_session->_last_error ) {
                     puts ( _m_session->_last_error );

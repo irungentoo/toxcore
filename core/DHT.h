@@ -1,8 +1,8 @@
 /* DHT.h
-* 
+*
 * An implementation of the DHT as seen in docs/DHT.txt
-* 
- 
+*
+
     Copyright (C) 2013 Tox project All Rights Reserved.
 
     This file is part of Tox.
@@ -19,17 +19,14 @@
 
     You should have received a copy of the GNU General Public License
     along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-    
+
 */
 
 
-#ifndef DHT_H 
-#define DHT_H 
+#ifndef DHT_H
+#define DHT_H
 
 #include "net_crypto.h"
-
-/* Current time, unix format */
-#define unix_time() ((uint32_t)time(NULL))
 
 /* size of the client_id in bytes */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
@@ -87,7 +84,7 @@ int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length);
 
 /* NAT PUNCHING FUNCTIONS */
 
-/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist 
+/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist
    ip_portlist must be at least MAX_FRIEND_CLIENTS big
    returns the number of ips returned
    returns -1 if no such friend*/

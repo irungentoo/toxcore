@@ -1,3 +1,28 @@
+/*   rtp_message.h
+ *
+ *   Rtp Message handler. It handles message/header parsing.
+ *   Refer to RTP: A Transport Protocol for Real-Time Applications ( RFC 3550 ) for more info. !Red!
+ *
+ *
+ *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *   This file is part of Tox.
+ *
+ *   Tox is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   Tox is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef _RTP__MESSAGE_H_
 #define _RTP__MESSAGE_H_
 
@@ -6,6 +31,14 @@
 
 #define _MAX_SEQU_NUM 65535
 #define _CRSC_LEN(x) (x * 4)
+
+#define DEALLOCATOR_MSG(MSG) \
+    free(MSG->_header->_csrc); \
+    free(MSG->_header); \
+    if(MSG->_ext_header) free(MSG->_ext_header); \
+    free(MSG->_data); \
+    if ( MSG->next ) free(MSG->next); \
+    if ( MSG->prev ) free(MSG->prev);
 
 typedef struct rtp_header_s {
     uint8_t      _flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */

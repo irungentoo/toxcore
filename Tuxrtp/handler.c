@@ -1,6 +1,30 @@
+/*   handler.c
+ *
+ *   Rtp handler. It's and interface for Rtp. You will use this as the way to communicate to
+ *   Rtp session and vice versa. !Red!
+ *
+ *
+ *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *   This file is part of Tox.
+ *
+ *   Tox is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   Tox is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "handler.h"
 #include <assert.h>
-/* Using lossless UDP with RTP is in my opinion */
 
 int rtp_add_user ( rtp_session_t* _session, IP_Port _dest )
     {
@@ -15,7 +39,7 @@ int rtp_add_user ( rtp_session_t* _session, IP_Port _dest )
     return SUCCESS;
     }
 
-int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* msg )
+int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
     {
     if ( !_session ) {
             return FAILURE;
@@ -25,31 +49,40 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* msg )
     unsigned long long _total = 0;
 
     for ( rtp_dest_list_t* _it = _session->_dest_list; _it != NULL; _it = _it->next ) {
-            if ( !msg  || msg->_data == NULL ) {
+            if ( !_msg  || _msg->_data == NULL ) {
                     _session->_last_error = "Tried to send empty message";
                     }
             else {
-                    _last = sendpacket ( _it->_dest, msg->_data, msg->_length );
+                    _last = sendpacket ( _it->_dest, _msg->_data, _msg->_length );
 
                     if ( _last < 0 ) {
                             _session->_last_error = strerror ( errno );
                             }
                     else {
+                            /* Set sequ number */
+                            if ( _session->_sequence_number == _MAX_SEQU_NUM ) {
+                                    _session->_sequence_number = 0;
+                                    }
+                            else {
+                                    _session->_sequence_number++;
+                                    }
+
+
                             _session->_packets_sent ++;
                             _total += _last;
                             }
                     }
             }
 
-    DEALLOCATOR ( msg ) /* free message */
+    DEALLOCATOR_MSG ( _msg ) /* free message */
     _session->_bytes_sent += _total;
     return SUCCESS;
     }
 
-int rtp_recv_msg ( rtp_session_t* _session )
+rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
     {
     if ( !_session ) {
-            return FAILURE;
+            return NULL;
             }
 
     int32_t  _bytes;
@@ -57,25 +90,13 @@ int rtp_recv_msg ( rtp_session_t* _session )
     int status = receivepacket ( &_from, LAST_SOCKET_DATA, &_bytes );
 
     if ( status == FAILURE ) { /* nothing recved */
-            return status;
+            return NULL;
             }
 
     _session->_bytes_recv += _bytes;
     _session->_packets_recv ++;
 
-    rtp_msg_t* _msg = rtp_msg_new ( _session, LAST_SOCKET_DATA, _bytes, &_from );
-
-    if ( !_session->_messages ) {
-            _session->_messages = _msg;
-            _session->_last_msg = _msg;
-            }
-    else {
-            _msg->prev = _session->_last_msg;
-            _session->_last_msg->next = _msg;
-            _session->_last_msg = _msg;
-            }
-
-    return status;
+    return rtp_msg_parse ( _session, LAST_SOCKET_DATA, _bytes, &_from );
     }
 
 rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
@@ -83,7 +104,63 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
     rtp_msg_t* _retu;
     ALLOCATOR_LIST_D ( _retu, rtp_msg_t, NULL )
 
-    _retu->_header = rtp_build_header ( _session ); /* It allocates memory and all */
+    _retu->_header = ( rtp_header_t* ) rtp_build_header ( _session ); /* It allocates memory and all */
+    _length += _retu->_header->_length;
+
+    _retu->_data = ( uint8_t* ) malloc ( sizeof ( uint8_t ) * _length );
+
+    /*memcpy ( _retu->_data, _data, _length ); */
+    rtp_add_header ( _retu->_header, _retu->_data, _length - _retu->_header->_length );
+    memadd ( _retu->_data, _retu->_header->_length, _data, _length );
+
+    _retu->_length = _length;
+
+    _retu->_ext_header = NULL; /* we don't need it for now */
+
+
+    if ( _from ) {
+            _retu->_from.ip = _from->ip;
+            _retu->_from.port = _from->port;
+            _retu->_from.padding = _from->padding;
+            }
+
+    return _retu;
+    }
+
+rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
+    {
+    rtp_msg_t* _retu;
+    ALLOCATOR_LIST_D ( _retu, rtp_msg_t, NULL )
+
+    _retu->_header = rtp_extract_header ( _data, _length ); /* It allocates memory and all */
+
+    if ( ! ( _retu->_header ) ) {
+            return NULL;
+            }
+    else if ( rtp_header_get_flag_CSRC_count ( _retu->_header ) == 1 ) { /* Which means initial msg */
+            ADD_ALLOCATE ( _session->_csrc, uint32_t, 1 )
+            _session->_cc = 2;
+            _session->_csrc[1] = _retu->_header->_csrc[0];
+            }
+    /*
+     * Check Sequence number. If this new msg has lesser number then expected drop it return
+     * NULL and add stats _packet_loss into _session. RTP does not specify what you do when the packet is lost.
+     * You may for example playback previous packet, show black screen etc.
+     */
+
+    else if ( _retu->_header->_sequence_number < _session->_last_sequence_number ) {
+            if ( _retu->_header->_sequence_number != 0 ) { // if == 0 then it's okay
+                    _session->_packet_loss++;
+                    _session->_last_sequence_number = _retu->_header->_sequence_number;
+
+                    free ( _retu->_header );
+                    free ( _retu );
+                    return NULL; /* Yes return NULL ( Drop the packet ) */
+                    }
+            }
+
+    _session->_last_sequence_number = _retu->_header->_sequence_number;
+
     _length += _retu->_header->_length;
 
     _retu->_data = ( uint8_t* ) malloc ( sizeof ( uint8_t ) * _length );
