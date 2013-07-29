@@ -30,15 +30,16 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include "helper.h"
 
 
 
 #ifdef WIN32 /* Put win32 includes here */
 
+//Windows XP
+#define WINVER 0x0501
 #include <winsock2.h>
 #include <windows.h>
-#include <wspiapi.h>
+#include <ws2tcpip.h>
 
 #undef VANILLA_NACL /* make sure on windows we use libsodium */
 
@@ -136,5 +137,5 @@ void shutdown_networking();
    address should represent IPv4, IPv6 or a hostname
    on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
    on failure returns -1 */
-int resolve_addr(char *address);
+int resolve_addr(const char *address);
 #endif
