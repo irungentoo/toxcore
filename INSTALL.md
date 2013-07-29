@@ -45,9 +45,11 @@ Much the same as above, remember to install the latest XCode and the developer t
 Users running Mountain Lion and the latest version of XCode (4.6.3) will also need to install libtool
 Libtool is easy enough to install, grab it from http://www.gnu.org/software/libtool/ and:
 
+```bash
 ./configure
 make
 sudo make install
+```
 
 Do not install it from macports (or any dependencies for that matter) as they get shoved in the wrong directory
 and make your life more annoying.
