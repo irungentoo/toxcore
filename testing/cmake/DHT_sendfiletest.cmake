@@ -4,6 +4,6 @@ project(DHT_sendfiletest C)
 set(exe_name DHT_sendfiletest)
 
 add_executable(${exe_name}
-        DHT_sendfiletest.c)
+	DHT_sendfiletest.c)
 
 linkCoreLibraries(${exe_name})

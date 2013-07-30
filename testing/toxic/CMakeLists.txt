@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 2.6.0)
-project(nTox C)
+project(toxic C)
 
-set(exe_name nTox)
+set(exe_name toxic)
 
 add_executable(${exe_name}
-	nTox.c misc_tools.c)
+	toxic/main.c
+	toxic/prompt.c)
 
 target_link_libraries(${exe_name}
-	ncurses)
+	curses)
 
 linkCoreLibraries(${exe_name})

@@ -125,7 +125,7 @@ void shutdown_networking();
     address should represent IPv4, IPv6 or a hostname
     on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
     on failure returns -1 */
-int resolve_addr(char *address);
+int resolve_addr(const char *address);
 
 #ifdef __cplusplus
 }
