@@ -234,12 +234,18 @@ int setname(uint8_t * name, uint16_t length)
     return 0;
 }
 
+int getname(uint8_t *name)
+{
+	memcpy(name, self_name, sizeof(self_name));
+	return 0;
+}
+
 /* get name of friendnumber
    put it in name
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
    return 0 if success
    return -1 if failure */
-int getname(int friendnumber, uint8_t * name)
+int getfriendname(int friendnumber, uint8_t * name)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
