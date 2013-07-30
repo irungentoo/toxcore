@@ -15,8 +15,8 @@ before_script:
   - cd ..
 # installing libconfig, needed for DHT_bootstrap_daemon
   - sudo sed -i 's/precise/quantal/' /etc/apt/sources.list # needed for libconfig-dev
-  - sudo apt-get update -qq
-  - yes | sudo apt-get install libconfig-dev
+  - sudo apt-get update -q
+  - sudo apt-get -y install libconfig-dev
 
 script:
   - mkdir build && cd build
