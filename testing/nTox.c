@@ -177,7 +177,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         
        else if (line[1] == 'h') { //help
            new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
-           new_lines("[i] /l list (list friends), /h for help, /n nick (to change nickname), /q (to quit)");
+           new_lines("[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)");
         }
       
        else if (line[1] == 'i') { //info
@@ -390,7 +390,7 @@ int main(int argc, char *argv[])
     getmaxyx(stdscr,y,x);
     new_lines(idstring0);
     new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
-    new_lines("[i] /l list (list friends), /n nick (to change nickname), /q (to quit)");
+    new_lines("[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)");
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
