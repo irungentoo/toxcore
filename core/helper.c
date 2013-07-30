@@ -1,41 +1,37 @@
 #include "helper.h"
-#include "network.h"
 
-static int _seed = -1; /* Not initiated */
+static int seed = -1; /* Not initiated */
 
-int set_ip_port ( const char* _ip, short _port, void* _dest )
-    {
-    if ( !_dest ) {
-            return FAILURE;
-            }
-
-    IP_Port* _dest_c = ( IP_Port* ) _dest;
-
-    _dest_c->ip.i = inet_addr ( _ip );
-    _dest_c->port = htons ( _port );
-
-    return SUCCESS;
+int set_ip_port(const char *ip, short port, IP_Port *dest)
+{
+    if (!dest) {
+        return -1;
     }
 
-uint32_t get_random_number ( uint32_t _max )
-    {
-    if ( _seed < 0 ) {
-            srand ( unix_time() );
-            _seed++;
-            }
+    dest->ip.i = resolve_addr(ip);
+    dest->port = htons(port);
 
-    if ( _max <= 0 ) {
-            return rand();
-            }
-    else {
-            return rand() % _max;
-            }
+    return 0;
+}
+
+uint32_t get_random_number(uint32_t max)
+{
+    if (seed < 0) {
+        srand(time(NULL));
+        seed++;
     }
 
-void        memadd ( uint8_t* _dest, uint16_t _from, const uint8_t* _source, uint16_t _size )
-    {
-    for ( uint16_t it = 0; _from < _size; _from ++ ) {
-            _dest[_from] = _source[it];
-            it ++;
-            }
+    if (max <= 0)
+        return rand();
+    else
+        return rand() % max;
+}
+
+void memadd(uint8_t *dest, uint16_t from, const uint8_t *source, uint16_t size)
+{
+    uint16_t i;
+    for (i = 0; from < size; ++ from) {
+        dest[from] = source[i];
+        ++ i;
     }
+}
