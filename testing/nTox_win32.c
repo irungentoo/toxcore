@@ -37,7 +37,7 @@ void do_header()
     system("cls");
     printf(users_id);
     printf("\n---------------------------------");
-    printf("\n[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /l (lists friends), /q (to quit), /r (reset screen)");
+    printf("\n[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /l (lists friends), /d friendnumber (deletes friend), /q (to quit), /r (reset screen)");
     printf("\n---------------------------------");
 }
 
@@ -149,7 +149,16 @@ void line_eval(char* line)
         }
 
         else if (line[1] == 'd') {
-            doMessenger();
+            size_t len = strlen(line);
+            char numstring[len-3];
+            int i;
+            for (i=0; i<len; i++) {
+                if (line[i+3] != ' ') {
+                    numstring[i] = line[i+3];
+                }
+            }
+            int num = atoi(numstring);
+            m_delfriend(num);
         }
         /* Send message to friend */
         else if (line[1] == 'm') {
