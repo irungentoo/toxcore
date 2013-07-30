@@ -1,8 +1,8 @@
 /* network.h
-* 
+*
 * Functions for the core networking.
-* 
- 
+*
+
     Copyright (C) 2013 Tox project All Rights Reserved.
 
     This file is part of Tox.
@@ -19,7 +19,7 @@
 
     You should have received a copy of the GNU General Public License
     along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-    
+
 */
 
 #include "network.h"
@@ -44,8 +44,8 @@ uint64_t current_time()
     time = 1000000UL*a.tv_sec + a.tv_usec;
     return time;
     #endif
-    
-    
+
+
 }
 
 /* return a random number
@@ -67,9 +67,9 @@ static int sock;
    Function to send packet(data) of length length to ip_port */
 int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
 {
-    ADDR addr = {AF_INET, ip_port.port, ip_port.ip}; 
+    ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
     return sendto(sock,(char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
-    
+
 }
 
 /* Function to receive data, ip and port of sender is put into ip_port
@@ -77,15 +77,17 @@ int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
    the packet length into length.
    dump all empty packets. */
 int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
-// setting socket to be a global variable was not such a good idea imo !Red!
-// int receivepacket(tux_sock sock, IP_Port * ip_port, uint8_t * data, uint32_t * length)
+/* Setting socket to be a global variable was not such a good idea imo.
+ * Also how about returning the size of bytes recved instead of passing *length? !Red!
+ */
+/* int receivepacket(tux_sock sock, IP_Port * ip_port, uint8_t * data, uint32_t * length) */
 {
     ADDR addr;
     #ifdef WIN32
     int addrlen = sizeof(addr);
     #else
     uint32_t addrlen = sizeof(addr);
-    #endif    
+    #endif
     (*(int32_t *)length) = recvfrom(sock,(char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
     if(*(int32_t *)length <= 0)
     {
@@ -96,7 +98,7 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
     ip_port->ip = addr.ip;
     ip_port->port = addr.port;
     return 0;
-    
+
 }
 
 /* initialize networking
@@ -118,15 +120,15 @@ tux_sock init_networking(IP ip ,uint16_t port)
     {
         return -1;
     }
-    
+
     #else
     srandom((uint32_t)current_time());
     #endif
-    srand((uint32_t)current_time());
-    
+    srand((uint32_t)current_time()); /* I think this is not necessary any more. Refer to core/helper.h !Red! */
+
     /* initialize our socket */
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
-    
+    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
     /* Functions to increase the size of the send and receive UDP buffers
        NOTE: uncomment if necessary */
     /*
@@ -140,13 +142,13 @@ tux_sock init_networking(IP ip ,uint16_t port)
     {
         return -1;
     }*/
-    
+
     /* Set socket nonblocking */
     #ifdef WIN32
     /* I think this works for windows */
     u_long mode = 1;
     /* ioctl(sock, FIONBIO, &mode); */
-    ioctlsocket(sock, FIONBIO, &mode); 
+    ioctlsocket(sock, FIONBIO, &mode);
     #else
     fcntl(sock, F_SETFL, O_NONBLOCK, 1);
     #endif
@@ -172,7 +174,8 @@ void shutdown_networking()
   address should represent IPv4, IPv6 or a hostname
   on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
   on failure returns -1 */
-int resolve_addr(const char *address)
+  /*
+int resolve_addr(char *address)
 {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -191,3 +194,4 @@ int resolve_addr(const char *address)
     freeaddrinfo(server);
     return resolved;
 }
+*/

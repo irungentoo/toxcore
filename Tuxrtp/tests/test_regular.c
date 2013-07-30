@@ -1,3 +1,27 @@
+/*   test_regular.c
+ *
+ *   Tests regular RTP flow. Use this for data transport. !Red!
+ *
+ *
+ *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *   This file is part of Tox.
+ *
+ *   Tox is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   Tox is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "../handler.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +34,7 @@
 #define RTP_PORT 31000
 #define RTP_PORT_LISTEN 31001
 
+/*
 int print_help()
     {
     const char* _help = " Usage: Tux_rtp_impl [-s (send mode) -d IP ( destination ) -p PORT ( dest Port )] \n"
@@ -17,9 +42,8 @@ int print_help()
     puts ( _help );
     return FAILURE;
     }
-
-_no_main()
-/*_test_main()*/
+*/
+int __main(args)
     {
     int status;
     IP_Port     Ip_port[1];
@@ -56,15 +80,14 @@ _no_main()
 
             /* start in recv mode */
             while ( 1 ) {
-                    if ( rtp_recv_msg ( _m_session ) != FAILURE ) {
-                            _m_msg = rtp_session_get_message_queded ( _m_session );
+                    _m_msg = rtp_recv_msg ( _m_session );
 
-                            if ( _m_msg ) {
-                                    /**/
-                                    printf ( "Bytes received: %d\n", _m_session->_bytes_recv );
-                                    /**/
-
-                                    }
+                    /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
+                    if ( _m_msg ) {
+                            /**/
+                            printf ( "Bytes received: %d\n", _m_session->_bytes_recv );
+                            /**/
+                            DEALLOCATOR_MSG ( _m_msg )
                             }
 
                     usleep ( 10000 );
@@ -89,7 +112,7 @@ _no_main()
             _m_session = init_rtp_session ( Ip_port[0], -1 );
             puts ( "Now sending for ~5 s" );
 
-            for ( int i = 0; i < 1500; i++ ) {
+            for ( int i = 0; i < 500; i++ ) {
                     _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
                     rtp_send_msg ( _m_session, _m_msg );
                     usleep ( 10000 );

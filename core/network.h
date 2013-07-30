@@ -1,8 +1,8 @@
 /* network.h
-* 
+*
 * Datatypes, functions and includes for the core networking.
-* 
- 
+*
+
     Copyright (C) 2013 Tox project All Rights Reserved.
 
     This file is part of Tox.
@@ -19,12 +19,13 @@
 
     You should have received a copy of the GNU General Public License
     along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-    
-*/
- 
 
-#ifndef NETWORK_H 
-#define NETWORK_H 
+*/
+
+
+
+#ifndef NETWORK_H
+#define NETWORK_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -43,14 +44,14 @@
 
 #undef VANILLA_NACL /* make sure on windows we use libsodium */
 
-#else //Linux includes
+#else /*Linux includes */
 
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
 #include <sys/time.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <netdb.h>
 
 #endif
@@ -64,16 +65,17 @@
    We keep support for the original NaCl for now. */
 #include "../nacl/build/Linux/include/amd64/crypto_box.h"
 
-#endif 
-// UNIVERSAL FILE DESCRIPTOR
+#endif
+/* UNIVERSAL FILE DESCRIPTOR */
 typedef
 #ifdef _WIN_
 SOCKET
 #else
 int
 #endif // WIN32
-tux_sock
-;
+tux_sock;
+
+
 #define MAX_UDP_PACKET_SIZE 65507
 
 typedef union
@@ -88,7 +90,7 @@ typedef struct
     IP ip;
     uint16_t port;
     /* not used for anything right now */
-    uint16_t padding; 
+    uint16_t padding;
 }IP_Port;
 
 typedef struct
