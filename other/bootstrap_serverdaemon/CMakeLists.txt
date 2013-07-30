@@ -4,7 +4,9 @@ project(DHT_bootstrap_daemon C)
 set(exe_name DHT_bootstrap_daemon)
 
 add_executable(${exe_name}
-        DHT_bootstrap_daemon.c)
+	DHT_bootstrap_daemon.c)
 
-target_link_libraries(${exe_name} config)
+target_link_libraries(${exe_name}
+	config)
+
 linkCoreLibraries(${exe_name})
