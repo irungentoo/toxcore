@@ -5,7 +5,7 @@
 Build dependencies:
 
 ```bash
-apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev
+apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall
 ```
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
@@ -15,7 +15,7 @@ cd libsodium
 git checkout tags/0.4.2
 ./autogen.sh
 ./configure && make check
-sudo make install
+sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
 ```
 
