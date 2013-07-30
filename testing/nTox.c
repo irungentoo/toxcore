@@ -151,6 +151,12 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             do_refresh();
             
         }
+        
+       else if (line[1] == 'h') { //help
+           new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
+           new_lines("[i] /l list (list friends), /h for help, /n nick (to change nickname), /q (to quit)");
+        }
+
         else if (line[1] == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
