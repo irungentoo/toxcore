@@ -30,18 +30,23 @@ uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests;
 
 char line[STRING_LENGTH];
+char users_id[200];
 
 void do_header()
 {
-    printf("\n[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /q (to quit)\n\n");
+    system("cls");
+    printf(users_id);
+    printf("\n---------------------------------");
+    printf("\n[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /l (lists friends), /q (to quit), /r (reset screen)");
+    printf("\n---------------------------------");
 }
 
 void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 {
-    printf("\n[i] received friend request with message\n");
+    printf("\n\n[i] received friend request with message\n");
     printf((char *)data);
     char numchar[100];
-    sprintf(numchar, "\n[i] accept request with /a %u\n", num_requests);
+    sprintf(numchar, "\n\n[i] accept request with /a %u\n\n", num_requests);
     printf(numchar);
     memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
     ++num_requests;
@@ -59,7 +64,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     char* temp = asctime(timeinfo);
     size_t len = strlen(temp);
     temp[len-1]='\0';
-    sprintf(msg, "\n[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
+    sprintf(msg, "\n[%d] %s <%s> %s\n\n", friendnumber, temp, name, string); // timestamp
     printf(msg);
 }
 
@@ -68,7 +73,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length];
-    sprintf(msg, "\n[i] [%d] %s is now known as %s.", friendnumber, name, string);
+    sprintf(msg, "\n\n[i] [%d] %s is now known as %s.\n\n", friendnumber, name, string);
     printf(msg);
 }
 
@@ -76,10 +81,9 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
-    sprintf(msg, "\n[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+    sprintf(msg, "\n\n[i] [%d] %s's status changed to %s.\n", friendnumber, name, string);
     printf(msg);
 }
-
 
 void load_key() 
 {
@@ -127,6 +131,23 @@ void line_eval(char* line)
             printf(numstring);
         }
 
+        else if (line[1] == 'r') {
+            do_header();
+            printf("\n\n");
+        }
+
+        else if (line[1] == 'l') {
+            printf("\n[i] Friend List\n\n");
+
+            int i;
+
+            for (i=0; i <= num_requests; i++) {
+                char name[MAX_NAME_LENGTH];
+                getname(i, (uint8_t*)name);
+                printf("[%d] %s\n\n", i, (uint8_t*)name);
+            }
+        }
+
         else if (line[1] == 'd') {
             doMessenger();
         }
@@ -148,7 +169,10 @@ void line_eval(char* line)
             }
             int num = atoi(numstring);
             if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
-                printf("\n[i] could not send message: %s\n\n", message);
+                printf("\n[i] could not send message: %s\n", message);
+            } else {
+                //simply for aesthetics
+                printf("\n");
             }
         }
 
@@ -222,14 +246,12 @@ int main(int argc, char *argv[])
         printf("initMessenger failed");
         exit(0);
     }
-
     
     if (argc > 4) {
         if(strncmp(argv[4], "nokey", 6) < 0) {
-            //nothing
-        } else {
-            load_key();
         }
+    } else {
+        load_key();
     }
     
     m_callback_friendrequest(print_request);
@@ -237,9 +259,6 @@ int main(int argc, char *argv[])
     m_callback_namechange(print_nickchange);
     m_callback_userstatus(print_statuschange);
 
-    system("cls");
-
-    char idstring0[200];
     char idstring1[32][5];
     char idstring2[32][5];
     uint32_t i;
@@ -251,15 +270,13 @@ int main(int argc, char *argv[])
             strcpy(idstring1[i], "");
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
-    strcpy(idstring0,"\n[i] your ID: ");
+    strcpy(users_id,"[i] your ID: ");
     for (i=0; i<32; i++) {
-        strcat(idstring0,idstring1[i]);
-        strcat(idstring0,idstring2[i]);
+        strcat(users_id,idstring1[i]);
+        strcat(users_id,idstring2[i]);
     }
 
-    printf(idstring0);
     do_header();
-    
 
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -271,15 +288,22 @@ int main(int argc, char *argv[])
     
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
 
-
     int c;
     int on = 0;
 
     _beginthread(get_input, 0, NULL);
 
     while(1) {
+        if (on == 1 && DHT_isconnected() == -1) {
+            printf("\n---------------------------------");
+            printf("\n[i] Disconnected from the DHT");
+            printf("\n---------------------------------\n\n");
+            on = 0;
+        }
+
         if (on == 0 && DHT_isconnected()) {
-            printf("\n[i] connected to DHT\n\n");
+            printf("\n[i] Connected to DHT");
+            printf("\n---------------------------------\n\n");
             on = 1;
         }
 
