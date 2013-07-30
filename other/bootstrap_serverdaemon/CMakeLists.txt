@@ -3,10 +3,14 @@ project(DHT_bootstrap_daemon C)
 
 set(exe_name DHT_bootstrap_daemon)
 
+find_package(LIBCONFIG REQUIRED)
+
+include_directories(${LIBCONFIG_INCLUDE_DIR})
+
 add_executable(${exe_name}
 	DHT_bootstrap_daemon.c)
 
 target_link_libraries(${exe_name}
-	config)
+	${LIBCONFIG_LIBRARY})
 
 linkCoreLibraries(${exe_name})
