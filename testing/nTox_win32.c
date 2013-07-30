@@ -24,6 +24,8 @@
 #include "nTox_win32.h"
 #include "misc_tools.h"
 
+#include <process.h>
+
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests;
 
@@ -200,6 +202,15 @@ void line_eval(char* line)
     }
 }
 
+void get_input()
+{
+    while(1) {
+        fgets(line, STRING_LENGTH, stdin);
+        line_eval(line);
+        strcpy(line, "");
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 4) {
@@ -264,6 +275,8 @@ int main(int argc, char *argv[])
     int c;
     int on = 0;
 
+    _beginthread(get_input, 0, NULL);
+
     while(1) {
         if (on == 0 && DHT_isconnected()) {
             printf("\n[i] connected to DHT\n\n");
@@ -271,12 +284,6 @@ int main(int argc, char *argv[])
         }
 
         doMessenger();
-
-        fgets(line, STRING_LENGTH, stdin);
-
-        line_eval(line);
-
-        strcpy(line, "");
     }
 
     return 0;
