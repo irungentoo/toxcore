@@ -169,7 +169,7 @@ void shutdown_networking()
   address should represent IPv4, IPv6 or a hostname
   on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
   on failure returns -1 */
-int resolve_addr(char *address)
+int resolve_addr(const char *address)
 {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -178,7 +178,7 @@ int resolve_addr(char *address)
 
     struct addrinfo *server = NULL;
 
-    int success = getaddrinfo(address, "7", &hints, &server);
+    int success = getaddrinfo(address, "echo", &hints, &server);
     if(success != 0)
         return -1;
 

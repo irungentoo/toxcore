@@ -71,6 +71,12 @@ int getfriend_id(uint8_t *client_id)
     return -1;
 }
 
+/* Returns number of friends */
+int getnumfriends()
+{
+    return numfriends;
+}
+
 /* copies the public key associated to that friend id into client_id buffer.
    make sure that client_id is of size CLIENT_ID_SIZE.
    return 0 if success
@@ -233,6 +239,16 @@ int setname(uint8_t * name, uint16_t length)
         friendlist[i].name_sent = 0;
     return 0;
 }
+
+/* get our nickname
+   put it in name 
+   name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+   return the length of the name */
+uint16_t getself_name(uint8_t *name)
+{
+    memcpy(name, self_name, self_name_length);
+    return self_name_length;
+} 
 
 /* get name of friendnumber
    put it in name

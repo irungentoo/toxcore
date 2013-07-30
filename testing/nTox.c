@@ -20,9 +20,9 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
-
 #include "nTox.h"
 #include "misc_tools.h"
+
 
 #include <stdio.h>
 #include <time.h>
@@ -48,6 +48,46 @@ void new_lines(char *line)
     
     strcpy(lines[0],line);
     do_refresh();
+}
+
+
+void print_friendlist()
+{
+    char name[MAX_NAME_LENGTH];
+    uint32_t i;
+
+    new_lines("[i] Friend List:");
+    for (i=0; i <= num_requests; i++) {
+        char fstring[128];
+
+        getname(i, (uint8_t*)name);
+        if (strlen(name) <= 0) {
+            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+        } else {
+            sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
+        }
+        new_lines(fstring);
+    }
+}
+
+char *format_message(char *message, int friendnum)
+{
+	char name[MAX_NAME_LENGTH];
+	if(friendnum != -1) {
+                getname(friendnum, (uint8_t*)name);
+	} else {
+                getself_name((uint8_t*)name);
+	}
+	char *msg = malloc(100+strlen(message)+strlen(name)+1);
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    char* time = asctime(timeinfo);
+    size_t len = strlen(time);
+    time[len-1]='\0';
+    sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message); // timestamp
+    return msg;
 }
 
 void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
@@ -88,6 +128,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             int num = atoi(numstring);
             if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
                 new_lines("[i] could not send message");
+            } else {
+    			new_lines(format_message(message, -1));
             }
         }
         else if (line[1] == 'n') {
@@ -103,6 +145,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
+        }
+        else if (line[1] == 'l') {
+            print_friendlist();
         }
         else if (line[1] == 's') {
             uint8_t status[MAX_USERSTATUS_LENGTH];
@@ -129,11 +174,20 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             do_refresh();
             
         }
+        
+       else if (line[1] == 'h') { //help
+           new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
+           new_lines("[i] /l list (list friends), /h for help, /n nick (to change nickname), /q (to quit)");
+        }
+
         else if (line[1] == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
+        } else { 
+            new_lines("[i] invalid command");
         }
     } else {
+        new_lines("[i] invalid command");
         //new_lines(line);
     }
 }
@@ -224,7 +278,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     size_t len = strlen(temp);
     temp[len-1]='\0';
     sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
-    new_lines(msg);
+    new_lines(format_message((char*)string, friendnumber));
 }
 
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
@@ -313,7 +367,8 @@ int main(int argc, char *argv[])
     raw();
     getmaxyx(stdscr,y,x);
     new_lines(idstring0);
-    new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /q (to quit)");
+    new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
+    new_lines("[i] /l list (list friends), /n nick (to change nickname), /q (to quit)");
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));

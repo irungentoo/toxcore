@@ -6,12 +6,12 @@ if(WIN32)
 endif()
 
 set(core_sources
-        DHT.c
-        network.c
-        Lossless_UDP.c
-        net_crypto.c
-        friend_requests.c
-        LAN_discovery.c
-        Messenger.c)
+	DHT.c
+	network.c
+	Lossless_UDP.c
+	net_crypto.c
+	friend_requests.c
+	LAN_discovery.c
+	Messenger.c)
 
 add_library(core ${core_sources})

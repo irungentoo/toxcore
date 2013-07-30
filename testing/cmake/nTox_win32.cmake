@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.6.0)
-project(Messenger_test C)
+project(nTox_win32 C)
 
-set(exe_name Messenger_test)
+set(exe_name nTox_win32)
 
 add_executable(${exe_name}
-	Messenger_test.c misc_tools.c)
-
+        nTox_win32.c misc_tools.c)
+        
 linkCoreLibraries(${exe_name})
