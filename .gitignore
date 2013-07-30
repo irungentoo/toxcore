@@ -12,3 +12,11 @@ install_manifest.txt
 
 testing/data
 *~
+
+# Object files
+*.o
+
+# Executables
+*.exe
+*.out
+*.app
