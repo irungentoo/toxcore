@@ -79,12 +79,20 @@ int main(int argc, char *argv[])
     manage_keys();
     printf("Public key: ");
     uint32_t i;
+
+    FILE *file;
+    file = fopen("PUBLIC_ID.txt", "w");
+
     for(i = 0; i < 32; i++)
     {
         if(self_public_key[i] < 16)
             printf("0");
         printf("%hhX",self_public_key[i]);
+        fprintf(file, "%hhX",self_public_key[i]);
     }
+
+    fclose(file);
+
     printf("\n");
     printf("Port: %u\n", PORT);
     //initialize networking
