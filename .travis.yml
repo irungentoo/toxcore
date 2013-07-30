@@ -11,12 +11,16 @@ before_script:
   - ./autogen.sh
   - ./configure && make check -j3
   - sudo make install
-  - sudo ldconfig
   - cd ..
 # installing libconfig, needed for DHT_bootstrap_daemon
-  - sudo sed -i 's/precise/quantal/' /etc/apt/sources.list # needed for libconfig-dev
-  - sudo apt-get update -qq
-  - yes | sudo apt-get install libconfig-dev
+  - wget http://www.hyperrealm.com/libconfig/libconfig-1.4.9.tar.gz
+  - tar -xvzf libconfig-1.4.9.tar.gz
+  - cd libconfig-1.4.9
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
+# creating librarys' links and updating cache
+  - sudo ldconfig
 
 script:
   - mkdir build && cd build
