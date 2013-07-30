@@ -242,6 +242,7 @@ int setname(uint8_t * name, uint16_t length)
 
 /* get our nickname
    put it in name 
+   name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
    return the length of the name */
 uint16_t getself_name(uint8_t *name)
 {
