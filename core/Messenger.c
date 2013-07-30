@@ -113,7 +113,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
     if (getfriend_id(client_id) != -1)
         return -3;
     uint32_t i;
-    for (i = 0; i <= numfriends; ++i) {
+    for (i = 0; i <= numfriends; ++i) { /*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
         if(friendlist[i].status == 0) {
             DHT_addfriend(client_id);
             friendlist[i].status = 1;
@@ -137,7 +137,7 @@ int m_addfriend_norequest(uint8_t * client_id)
     if (getfriend_id(client_id) != -1)
         return -1;
     uint32_t i;
-    for (i = 0; i <= numfriends; ++i) {
+    for (i = 0; i <= numfriends; ++i) {/*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
         if(friendlist[i].status == 0) {
             DHT_addfriend(client_id);
             friendlist[i].status = 2;
@@ -167,7 +167,7 @@ int m_delfriend(int friendnumber)
     memset(&friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
     for (i = numfriends; i != 0; --i) {
-        if (friendlist[i].status != 0)
+        if (friendlist[i-1].status != 0)
             break;
     }
     numfriends = i;
@@ -181,7 +181,7 @@ int m_delfriend(int friendnumber)
    return 0 if there is no friend with that number */
 int m_friendstatus(int friendnumber)
 {
-    if (friendnumber < 0 || friendnumber >= MAX_NUM_FRIENDS)
+    if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
     return friendlist[friendnumber].status;
 }
@@ -191,7 +191,7 @@ int m_friendstatus(int friendnumber)
    return 0 if it was not */
 int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 {
-    if (friendnumber < 0 || friendnumber >= MAX_NUM_FRIENDS)
+    if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
     if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != 4)
         /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
