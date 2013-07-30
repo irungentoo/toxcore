@@ -4,8 +4,8 @@ project(toxic C)
 set(exe_name toxic)
 
 add_executable(${exe_name}
-	toxic/main.c
-	toxic/prompt.c)
+	main.c
+	prompt.c)
 
 target_link_libraries(${exe_name}
 	curses)
