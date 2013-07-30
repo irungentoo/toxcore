@@ -20,7 +20,6 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
-#include "../core/DHT.c"
 #include "nTox.h"
 #include "misc_tools.h"
 
@@ -62,9 +61,9 @@ void print_friendlist()
 
         getname(i, (uint8_t*)name);
         if (strlen(name) <= 0) {
-	    sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
-	} else {
-	    sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
+            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+        } else {
+            sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
         new_lines(fstring);
     }
