@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 
     while(1) {
         uint8_t name[128];
-        getname(num, name);
+        getfriendname(num, name);
         printf("%s\n", name);
         
         m_sendmessage(num, (uint8_t*)"Test", 5);

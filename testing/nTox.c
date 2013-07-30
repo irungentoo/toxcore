@@ -88,6 +88,19 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             int num = atoi(numstring);
             if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
                 new_lines("[i] could not send message");
+            } else {
+            	char name[MAX_NAME_LENGTH];
+				getname((uint8_t*)name);
+				char msg[100+strlen(message)+strlen(name)+1];
+    			time_t rawtime;
+    			struct tm * timeinfo;
+    			time ( &rawtime );
+    			timeinfo = localtime ( &rawtime );
+    			char* time = asctime(timeinfo);
+    			size_t len = strlen(time);
+    			time[len-1]='\0';
+    			sprintf(msg, "[%d] %s <%s> %s", num, time, name, message); // timestamp
+    			new_lines(msg);
             }
         }
         else if (line[1] == 'n') {
@@ -214,7 +227,7 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
+    getfriendname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
     time_t rawtime;
     struct tm * timeinfo;
@@ -229,7 +242,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
+    getfriendname(friendnumber, (uint8_t*)name);
     char msg[100+length];
     sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
     new_lines(msg);
@@ -237,7 +250,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
 
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
+    getfriendname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
     sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
     new_lines(msg);
