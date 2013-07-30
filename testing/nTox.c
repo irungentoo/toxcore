@@ -179,7 +179,29 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
            new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
            new_lines("[i] /l list (list friends), /h for help, /n nick (to change nickname), /q (to quit)");
         }
-
+      
+       else if (line[1] == 'i') { //info
+           char idstring0[200];
+           char idstring1[32][5];
+           char idstring2[32][5];
+           uint32_t i;
+           for(i = 0; i < 32; i++)
+           {
+               if(self_public_key[i] < 16)
+                   strcpy(idstring1[i],"0");
+               else 
+                   strcpy(idstring1[i], "");
+               sprintf(idstring2[i], "%hhX",self_public_key[i]);
+           }
+           //
+           strcpy(idstring0,"[i] ID: ");
+           for (i=0; i<32; i++) {
+               strcat(idstring0,idstring1[i]);
+               strcat(idstring0,idstring2[i]);
+           }    
+                  new_lines(idstring0);
+       }
+  
         else if (line[1] == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
