@@ -178,7 +178,7 @@ int resolve_addr(char *address)
 
     struct addrinfo *server = NULL;
 
-    int success = getaddrinfo(address, "7", &hints, &server);
+    int success = getaddrinfo(address, "echo", &hints, &server);
     if(success != 0)
         return -1;
 
