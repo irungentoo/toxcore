@@ -154,8 +154,11 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         else if (line[1] == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
+        } else { 
+            new_lines("[i] invalid command");
         }
     } else {
+        new_lines("[i] invalid command");
         //new_lines(line);
     }
 }
