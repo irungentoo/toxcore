@@ -101,6 +101,11 @@ uint8_t* rtp_add_header ( rtp_header_t* _header, uint8_t* payload, size_t size )
     return SUCCESS;
     }
 
+uint16_t rtp_header_get_size(rtp_header_t* _header)
+{
+    return ( 8 + ( rtp_header_get_flag_CSRC_count(_header) * 4 ) );
+}
+
 /* Setting flags */
 
 void rtp_header_add_flag_version ( rtp_header_t* _header, int value )

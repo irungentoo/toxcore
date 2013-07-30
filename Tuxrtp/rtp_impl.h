@@ -56,10 +56,12 @@ typedef struct rtp_session_s {
     uint32_t                _ssrc;
     uint32_t*               _csrc;
 
-    rtp_ext_header_t*       _ext_header; /* If some additional data must be sent via message
-                                          * apply it here. Only by allocating this member you will be
-                                          * automatically placing it within a message.
-                                          */
+
+    /* If some additional data must be sent via message
+     * apply it here. Only by allocating this member you will be
+     * automatically placing it within a message.
+     */
+    rtp_ext_header_t*       _ext_header;
 
     int                     _max_users;    /* -1 undefined */
 
@@ -76,8 +78,9 @@ typedef struct rtp_session_s {
     struct rtp_dest_list_s* _dest_list;
     struct rtp_dest_list_s* _last_user; /* a tail for faster appending */
 
-    struct rtp_msg_s*       _messages;
-    struct rtp_msg_s*       _last_msg;
+
+
+    struct rtp_msg_s        _msg_handler; /* Use this to store messages and read message data */
 
     } rtp_session_t;
 

@@ -120,10 +120,10 @@ int _main(args)
     uint16_t    port;
 
 
-    const char* test_bytes = "0123456789012345678901234567890123456789012345678901234567890123456789"
-                             "0123456789012345678901234567890123456789012345678901234567890123456789"
-                             "0123456789012345678901234567890123456789012345678901234567890123456789"
-                             "0123456789012345678901234567890123456789012345678901234567890123456789";
+    const uint8_t* test_bytes = "0123456789012345678901234567890123456789012345678901234567890123456789"
+                                "0123456789012345678901234567890123456789012345678901234567890123456789"
+                                "0123456789012345678901234567890123456789012345678901234567890123456789"
+                                "0123456789012345678901234567890123456789012345678901234567890123456789";
 
     rtp_session_t* _m_session;
     rtp_msg_t*     _m_msg;
@@ -161,13 +161,13 @@ int _main(args)
                     usleep ( 10000 );
                     }
 
-            rtp_header_t* _header = rtp_extract_header ( _m_msg->_data, _m_msg->_length );
-
-            if ( _header ) {
-                    print_header_info ( _header );
+            if ( _m_msg->_header ) {
+                    print_header_info ( _m_msg->_header );
                     }
 
             print_session_stats ( _m_session );
+
+            printf("Payload: \n%s\n", _m_msg->_data );
 
             }
     else if ( find_arg_simple ( _list, "-s" ) != FAILURE ) {
@@ -191,7 +191,7 @@ int _main(args)
 
             uint16_t _first_sequ = _m_session->_sequence_number;
 
-            _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ; /* just don't use strlen since it's slow */
+            _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL );
             /* use already defined buffer lenght */
 
             rtp_send_msg ( _m_session, _m_msg );         /* It deallocates */

@@ -79,6 +79,7 @@ rtp_header_t*   rtp_extract_header ( uint8_t* payload, size_t size );
 
 
 uint8_t*        rtp_add_header ( rtp_header_t* _header, uint8_t* payload, size_t size );
+uint16_t        rtp_header_get_size(rtp_header_t* _header); /* In bytes */
 
 /* Adding flags and settings */
 void            rtp_header_add_flag_version ( rtp_header_t* _header, int value );

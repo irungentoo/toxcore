@@ -93,7 +93,7 @@ int main(args)
 
                     /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
                     if ( _m_msg ) {
-                            /**/
+                            /* ADD MSG HANDLERS HERE */
                             /**/
 
                             DEALLOCATOR_MSG ( _m_msg )
@@ -136,7 +136,7 @@ int main(args)
             printf ( "Now sending to remote: %s:%d ... ( press c to stop )\n", ip, port );
 
             for ( int _ch; _ch != 'c'; ) {
-                    _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
+                    _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL ) ;
                     rtp_send_msg ( _m_session, _m_msg );
                     usleep ( 10000 );
 
