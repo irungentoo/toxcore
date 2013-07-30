@@ -92,12 +92,16 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
    return -1 if failure */
 int setname(uint8_t *name, uint16_t length);
 
+/* Get our own nickname
+   Set's name to the our own nickname */
+int getname(uint8_t *name);
+
 /* get name of friendnumber
     put it in name
     name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
     return 0 if success
     return -1 if failure */
-int getname(int friendnumber, uint8_t *name);
+int getfriendname(int friendnumber, uint8_t *name);
 
 /* set our user status
     you are responsible for freeing status after
