@@ -240,6 +240,16 @@ int setname(uint8_t * name, uint16_t length)
     return 0;
 }
 
+/* get our nickname
+   put it in name 
+   name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+   return the length of the name */
+uint16_t getself_name(uint8_t *name)
+{
+    memcpy(name, self_name, self_name_length);
+    return self_name_length;
+} 
+
 /* get name of friendnumber
    put it in name
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.

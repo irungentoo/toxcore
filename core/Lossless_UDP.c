@@ -308,12 +308,16 @@ IP_Port connection_ip(int connection_id)
 /* returns the number of packets in the queue waiting to be successfully sent. */
 uint32_t sendqueue(int connection_id)
 {
+    if (connection_id < 0 || connection_id >= MAX_CONNECTIONS)
+        return 0;
     return connections[connection_id].sendbuff_packetnum - connections[connection_id].successful_sent;
 }
 
 /* returns the number of packets in the queue waiting to be successfully read with read_packet(...) */
 uint32_t recvqueue(int connection_id)
 {
+    if (connection_id < 0 || connection_id >= MAX_CONNECTIONS)
+        return 0;
     return connections[connection_id].recv_packetnum - connections[connection_id].successful_read;
 }
 
@@ -321,6 +325,8 @@ uint32_t recvqueue(int connection_id)
    return -1 if no packet in queue */
 char id_packet(int connection_id)
 {
+    if (connection_id < 0 || connection_id >= MAX_CONNECTIONS)
+        return -1;
     if (recvqueue(connection_id) != 0 && connections[connection_id].status != 0)
         return connections[connection_id].recvbuffer[connections[connection_id].successful_read % MAX_QUEUE_NUM].data[0];
     return -1;

@@ -22,6 +22,7 @@ before_script:
 # creating librarys' links and updating cache
   - sudo ldconfig
 
+
 script:
   - mkdir build && cd build
   - cmake ..

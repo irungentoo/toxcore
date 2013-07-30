@@ -14,6 +14,12 @@
 #include "windows.h"
 
 extern ToxWindow new_prompt();
+extern ToxWindow new_friendlist();
+
+extern int friendlist_addfriend(int num);
+extern int friendlist_nickchange(int num, uint8_t* str, uint16_t len);
+extern int friendlist_statuschange(int num, uint8_t* str, uint16_t len);
+
 extern int add_req(uint8_t* public_key); // XXX
 
 #define TOXWINDOWS_MAX_NUM 32
@@ -35,11 +41,19 @@ void on_message(int friendnumber, uint8_t* string, uint16_t length) {
 }
 
 void on_nickchange(int friendnumber, uint8_t* string, uint16_t length) {
-  wprintw(prompt->window, "\n(nick) %d: %s!\n", friendnumber, string);
+  wprintw(prompt->window, "\n(nickchange) %d: %s!\n", friendnumber, string);
+
+  friendlist_nickchange(friendnumber, string, length);
 }
 
 void on_statuschange(int friendnumber, uint8_t* string, uint16_t length) {
-  wprintw(prompt->window, "\n(status) %d: %s!\n", friendnumber, string);
+  wprintw(prompt->window, "\n(statuschange) %d: %s!\n", friendnumber, string);
+
+  friendlist_statuschange(friendnumber, string, length);
+}
+
+void on_friendadded(int friendnumber) {
+  friendlist_addfriend(friendnumber);
 }
 // CALLBACKS END
 
@@ -95,7 +109,7 @@ static void init_windows() {
   w_num = 0;
   w_active = 0;
 
-  if(add_window(new_prompt()) == -1) {
+  if(add_window(new_prompt()) == -1 || add_window(new_friendlist()) == -1) {
     fprintf(stderr, "add_window() failed.\n");
 
     endwin();
@@ -134,14 +148,18 @@ static void load_data() {
 
     if(buf == NULL) {
       fprintf(stderr, "malloc() failed.\n");
+
       fclose(fd);
+      endwin();
       exit(1);
     }
 
     if(fread(buf, len, 1, fd) != 1){
       fprintf(stderr, "fread() failed.\n");
+
       free(buf);
       fclose(fd);
+      endwin();
       exit(1);
     }
 
@@ -153,6 +171,7 @@ static void load_data() {
 
     if(buf == NULL) {
       fprintf(stderr, "malloc() failed.\n");
+      endwin();
       exit(1);
     }
 
@@ -161,14 +180,18 @@ static void load_data() {
     fd = fopen("data", "w");
     if(fd == NULL) {
       fprintf(stderr, "fopen() failed.\n");
+
       free(buf);
+      endwin();
       exit(1);
     }
 
     if(fwrite(buf, len, 1, fd) != 1){
       fprintf(stderr, "fwrite() failed.\n");
+
       free(buf);
       fclose(fd);
+      endwin();
       exit(1);
     }
   }
@@ -186,12 +209,16 @@ static void draw_bar() {
 
   move(LINES - 1, 0);
 
+  attron(COLOR_PAIR(3) | A_BOLD);
+  printw(" TOXIC 1.0 |");
+  attroff(COLOR_PAIR(3) | A_BOLD);
+
   for(i=0; i<w_num; i++) {
     if(i == w_active) {
       attron(A_BOLD);
     }
 
-    printw(" %s ", windows[i].title);
+    printw(" %s", windows[i].title);
 
     if(i == w_active) {
       attroff(A_BOLD);
@@ -199,6 +226,11 @@ static void draw_bar() {
   }
 
   refresh();
+}
+
+void prepare_window(WINDOW* w) {
+  mvwin(w, 0, 0);
+  wresize(w, LINES-2, COLS);
 }
 
 int main(int argc, char* argv[]) {
@@ -211,14 +243,21 @@ int main(int argc, char* argv[]) {
   init_windows();
 
   while(true) {
+    // Update tox.
     do_tox();
 
+    // Draw.
     a = &windows[w_active];
+    prepare_window(a->window);
     a->onDraw(a);
     draw_bar();
 
+    // Handle input.
     ch = getch();
-    if(ch != ERR) {
+    if(ch == '\t') {
+      w_active = (w_active + 1) % w_num;
+    }
+    else if(ch != ERR) {
       a->onKey(a, ch);
     }
 
