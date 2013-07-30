@@ -29,6 +29,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 - [ ] Get a simple text only im client working perfectly. (This is where we are)
 - [ ] Streaming media
 - [ ] ???
+- [ ] PROFIT!!!
 
 For further information, check our [To-do list](https://github.com/irungentoo/ProjectTox-Core/wiki/TODO)
 
