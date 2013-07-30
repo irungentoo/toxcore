@@ -137,11 +137,11 @@ void line_eval(char* line)
         }
 
         else if (line[1] == 'l') {
-            printf("\n[i] Friend List\n\n");
+            printf("\n[i] Friend List - %d\n\n", getnumfriends());
 
             int i;
 
-            for (i=0; i <= num_requests; i++) {
+            for (i=0; i < getnumfriends(); i++) {
                 char name[MAX_NAME_LENGTH];
                 getname(i, (uint8_t*)name);
                 printf("[%d] %s\n\n", i, (uint8_t*)name);
