@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* DHT test
  * A file with a main that runs our DHT for testing.
  * 
@@ -178,3 +179,5 @@ int main(int argc, char *argv[])
     shutdown_networking();
     return 0;   
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

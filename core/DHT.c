@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* DHT.c
  *
  * An implementation of the DHT as seen in docs/DHT.txt
@@ -1102,3 +1103,5 @@ int DHT_isconnected()
             return 1;
     return 0;
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

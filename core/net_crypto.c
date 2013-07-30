@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* net_crypto.c
  *
  * Functions for the core network crypto.
@@ -562,3 +563,5 @@ void doNetCrypto()
     receive_crypto();
     killTimedout();
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

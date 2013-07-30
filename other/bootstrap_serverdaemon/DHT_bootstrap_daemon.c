@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* DHT boostrap
  *
  * A simple DHT boostrap server for tox - daemon edition.
@@ -418,3 +419,5 @@ int main(int argc, char *argv[]) {
     shutdown_networking();
     exit(EXIT_SUCCESS);
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

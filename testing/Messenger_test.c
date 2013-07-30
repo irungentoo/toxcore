@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* Messenger test
  * 
  * This program adds a friend and accepts all friend requests with the proper message.
@@ -143,3 +144,5 @@ int main(int argc, char *argv[])
         fclose(file);
     }  
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

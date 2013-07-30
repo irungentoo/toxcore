@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* nTox.h
  * 
  *Textual frontend for Tox.
@@ -48,3 +49,5 @@ char *appender(char *str, const char c);
 void do_refresh();
 
 #endif
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

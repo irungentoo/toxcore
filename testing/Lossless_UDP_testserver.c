@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* Lossless_UDP testserver
  * A program that waits for a lossless UDP connection and then saves all the data recieved to a file.
  * NOTE: this program simulates a 33% packet loss.
@@ -199,3 +200,5 @@ int main(int argc, char *argv[])
         
     return 0;
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

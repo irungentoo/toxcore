@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* Messenger.h
  *
  * An implementation of a simple text chat only messenger on the tox network core.
@@ -155,3 +156,5 @@ int Messenger_load(uint8_t *data, uint32_t length);
 #endif
 
 #endif
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */
