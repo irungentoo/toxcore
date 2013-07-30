@@ -106,8 +106,7 @@ void print_header_info ( rtp_header_t* _header )
     puts ( "\n" );
     }
 
-/*_test_main()*/
-_no_main()
+int _main(args)
     {
     arg_t* _list = parse_args ( argc, argv );
 

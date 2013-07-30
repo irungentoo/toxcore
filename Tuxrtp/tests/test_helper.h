@@ -28,9 +28,7 @@
 #include "../../core/helper.h"
 #include "../Allocator.h"
 
-
-#define _test_main()  int main ( int argc, char* argv[] )
-#define _no_main()    int _main ( int argc, char* argv[] )
+#define args int argc, char* argv[]
 
 
 typedef struct arg_s {

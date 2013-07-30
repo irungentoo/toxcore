@@ -21,7 +21,7 @@
     along with Tox.  If not, see <http://www.gnu.org/licenses/>.
 
 */
- 
+
 
 
 #ifndef NETWORK_H
@@ -43,7 +43,7 @@
 
 #undef VANILLA_NACL /* make sure on windows we use libsodium */
 
-#else //Linux includes
+#else /*Linux includes */
 
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -65,15 +65,16 @@
 #include "../nacl/build/Linux/include/amd64/crypto_box.h"
 
 #endif
-// UNIVERSAL FILE DESCRIPTOR
+/* UNIVERSAL FILE DESCRIPTOR */
 typedef
 #ifdef _WIN_
 SOCKET
 #else
 int
 #endif // WIN32
-tux_sock
-;
+tux_sock;
+
+
 #define MAX_UDP_PACKET_SIZE 65507
 
 typedef union

@@ -26,6 +26,8 @@
 #include "helper.h"
 #include "network.h"
 
+#include <arpa/inet.h> /* Fixes implicit function warning. Someone put this in core/network.h? !Red! */
+
 static int _seed = -1; /* Not initiated */
 
 int set_ip_port ( const char* _ip, short _port, void* _dest )
@@ -59,7 +61,8 @@ uint32_t get_random_number ( uint32_t _max )
 
 void        memadd ( uint8_t* _dest, uint16_t _from, const uint8_t* _source, uint16_t _size )
     {
-    for ( uint16_t it = 0; _from < _size; _from ++ ) {
+    uint16_t it;
+    for ( it = 0; _from < _size; _from ++ ) {
             _dest[_from] = _source[it];
             it ++;
             }
