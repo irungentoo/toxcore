@@ -20,9 +20,9 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
-
 #include "nTox.h"
 #include "misc_tools.h"
+
 
 #include <stdio.h>
 #include <time.h>
@@ -48,6 +48,25 @@ void new_lines(char *line)
     
     strcpy(lines[0],line);
     do_refresh();
+}
+
+void print_friendlist()
+{
+    char name[MAX_NAME_LENGTH];
+    uint32_t i;
+
+    new_lines("[i] Friend List:");
+    for (i=0; i <= num_requests; i++) {
+        char fstring[128];
+
+        getname(i, (uint8_t*)name);
+        if (strlen(name) <= 0) {
+            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+        } else {
+            sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
+        }
+        new_lines(fstring);
+    }
 }
 
 void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
@@ -103,6 +122,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
+        }
+        else if (line[1] == 'l') {
+            print_friendlist();
         }
         else if (line[1] == 's') {
             uint8_t status[MAX_USERSTATUS_LENGTH];
@@ -313,7 +335,8 @@ int main(int argc, char *argv[])
     raw();
     getmaxyx(stdscr,y,x);
     new_lines(idstring0);
-    new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /q (to quit)");
+    new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
+    new_lines("[i] /l list (list friends), /n nick (to change nickname), /q (to quit)");
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
