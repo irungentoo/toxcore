@@ -50,6 +50,26 @@ void new_lines(char *line)
     do_refresh();
 }
 
+char *format_message(char *message, int friendnum)
+{
+	char name[MAX_NAME_LENGTH];
+	if(friendnum != -1) {
+		getfriendname(friendnum, (uint8_t*)name);
+	} else {
+		getname((uint8_t*)name);
+	}
+	char *msg = malloc(100+strlen(message)+strlen(name)+1);
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    char* time = asctime(timeinfo);
+    size_t len = strlen(time);
+    time[len-1]='\0';
+    sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message); // timestamp
+    return msg;
+}
+
 void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 {
     if (line[0] == '/') {
@@ -89,18 +109,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
                 new_lines("[i] could not send message");
             } else {
-            	char name[MAX_NAME_LENGTH];
-				getname((uint8_t*)name);
-				char msg[100+strlen(message)+strlen(name)+1];
-    			time_t rawtime;
-    			struct tm * timeinfo;
-    			time ( &rawtime );
-    			timeinfo = localtime ( &rawtime );
-    			char* time = asctime(timeinfo);
-    			size_t len = strlen(time);
-    			time[len-1]='\0';
-    			sprintf(msg, "[%d] %s <%s> %s", num, time, name, message); // timestamp
-    			new_lines(msg);
+    			new_lines(format_message(message, -1));
             }
         }
         else if (line[1] == 'n') {
@@ -237,7 +246,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     size_t len = strlen(temp);
     temp[len-1]='\0';
     sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
-    new_lines(msg);
+    new_lines(format_message((char*)string, friendnumber));
 }
 
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
