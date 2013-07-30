@@ -12,7 +12,8 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 **Website translations**: [see stal888's repository](https://github.com/stal888/ProjectTox-Website)<br/>
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
 
-
+**How to build Tox on Linux**: [YouTube video](http://www.youtube.com/watch?v=M4WXE4VKmyg)<br />
+**How to use Tox on Windows**: [YouTube video](http://www.youtube.com/watch?v=qg_j_sDb6WQ)
 
 ## The Complex Stuff:
 + Tox must use UDP simply because you can't hole punch with TCP. It's possible, but it doesn't work all the time.
