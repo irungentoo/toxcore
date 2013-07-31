@@ -125,8 +125,8 @@ static void execute(ToxWindow* self, char* cmd) {
       xx[2] = '\0';
 
       if(sscanf(xx, "%02x", &x) != 1) {
-	wprintw(self->window, "Invalid ID.\n");
-	return;
+        wprintw(self->window, "Invalid ID.\n");
+        return;
       }
 
       id_bin[i] = x;
@@ -221,7 +221,7 @@ static void execute(ToxWindow* self, char* cmd) {
     msg[0] = 0;
     msg++;
 
-    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) != 1) {
+    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0) {
       wprintw(self->window, "Error occurred while sending message.\n");
     }
     else {
@@ -311,6 +311,8 @@ static void prompt_onInit(ToxWindow* self) {
 
 ToxWindow new_prompt() {
   ToxWindow ret;
+
+  memset(&ret, 0, sizeof(ret));
 
   ret.onKey = &prompt_onKey;
   ret.onDraw = &prompt_onDraw;

@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -60,8 +61,10 @@ void print_friendlist()
     new_lines("[i] Friend List:");
     while(getname(i++, (uint8_t *)name) != -1) {
         char fstring[128];
-        if(strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: No friend here!\n\tid: %i", i);
+
+        getname(i, (uint8_t*)name);
+        if (strlen(name) <= 0) {
+            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
@@ -229,6 +232,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             new_lines(numchar);
             sprintf(numchar, "[i] added friendnumber %d", friend);
             new_lines(numchar);
+            do_refresh();
+            
         }
 
     } else if (command_char == 'h') { // help!

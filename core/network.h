@@ -56,11 +56,7 @@
 /* we use libsodium by default */
 #include <sodium.h>
 #else
-
-/* TODO: Including stuff like this is bad. This needs fixing.
-   We keep support for the original NaCl for now. */
-#include "../nacl/build/Linux/include/amd64/crypto_box.h"
-
+#include <crypto_box.h>
 #endif
 
 #ifdef __cplusplus
