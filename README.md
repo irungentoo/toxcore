@@ -1,4 +1,4 @@
-![Project Tox](https://rbt.asia/boards/g/img/0352/79/1373823047559.png "Project Tox")
+![Project Tox](http://i.imgur.com/3eIuPXG.png "Project Tox")
 Project Tox, _also known as Tox_, is a FOSS instant messaging application aimed to replace Skype.<br />
 
 With the rise of governmental monitoring programs, Tox aims to be an easy to use application that allows people to connect with friends and loved ones without the worry of privacy.<br /> <br />
