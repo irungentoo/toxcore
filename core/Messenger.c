@@ -384,9 +384,10 @@ static void doFriends()
     for (i = 0; i < numfriends; ++i) {
         if (friendlist[i].status == 1) {
             /* TODO: This needs to be fixed so that it sends the friend requests a couple of times in case of packet loss */
-            send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
+            int request_status = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
             
-            friendlist[i].status = 2;
+            if (request_status >= 0)
+                friendlist[i].status = 2;
         }
         if (friendlist[i].status == 2 || friendlist[i].status == 3) { /* friend is not online */
             if (friendlist[i].status == 2) {
