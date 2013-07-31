@@ -77,11 +77,12 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) 
+{
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
-    sprintf(msg, "\n\n[i] [%d] %s's status changed to %s.\n", friendnumber, name, string);
+    sprintf(msg, "\n\n[i] [%d] %s's status changed to %s.\n\n", friendnumber, name, string);
     printf(msg);
 }
 
@@ -127,7 +128,7 @@ void line_eval(char* line)
                 temp_id[i] = line[i+3];
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
-            sprintf(numstring, "\n[i] added friend %d\n\n", num);
+            sprintf(numstring, "\n[i] Friend request sent. Wait to be accepted. Friend id: %d\n\n", num);
             printf(numstring);
         }
 
@@ -144,7 +145,10 @@ void line_eval(char* line)
             for (i=0; i < getnumfriends(); i++) {
                 char name[MAX_NAME_LENGTH];
                 getname(i, (uint8_t*)name);
-                printf("[%d] %s\n\n", i, (uint8_t*)name);
+                if (m_friendstatus(i) == 0) 
+                    printf("[%d] No friend with this number\n\n", i);
+                else
+                    printf("[%d] %s\n\n", i, (uint8_t*)name);
             }
         }
 
@@ -159,6 +163,7 @@ void line_eval(char* line)
             }
             int num = atoi(numstring);
             m_delfriend(num);
+            printf("\n\n");
         }
         /* Send message to friend */
         else if (line[1] == 'm') {
