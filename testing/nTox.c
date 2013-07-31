@@ -188,7 +188,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             uint8_t numf = atoi(line + 3);
             char numchar[100];
             int num = m_addfriend_norequest(pending_requests[numf]);
-            if (num >= 0) {
+            if (num != -1) {
                 sprintf(numchar, "[i] friend request %u accepted", numf);
                 new_lines(numchar);
                 sprintf(numchar, "[i] added friendnumber %d", num);
