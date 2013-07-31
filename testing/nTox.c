@@ -72,13 +72,13 @@ void print_friendlist()
 
 char *format_message(char *message, int friendnum)
 {
-	char name[MAX_NAME_LENGTH];
-	if(friendnum != -1) {
-                getname(friendnum, (uint8_t*)name);
-	} else {
-                getself_name((uint8_t*)name);
-	}
-	char *msg = malloc(100+strlen(message)+strlen(name)+1);
+    char name[MAX_NAME_LENGTH];
+    if(friendnum != -1) {
+        getname(friendnum, (uint8_t*)name);
+    } else {
+        getself_name((uint8_t*)name);
+    }
+    char *msg = malloc(100+strlen(message)+strlen(name)+1);
     time_t rawtime;
     struct tm * timeinfo;
     time ( &rawtime );
@@ -129,7 +129,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
                 new_lines("[i] could not send message");
             } else {
-    			new_lines(format_message(message, -1));
+                new_lines(format_message(message, -1));
             }
         }
         else if (line[1] == 'n') {
