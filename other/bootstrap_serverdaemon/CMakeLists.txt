@@ -10,3 +10,6 @@ target_link_libraries(${exe_name}
 	config)
 
 linkCoreLibraries(${exe_name})
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+find_package(LibConfig REQUIRED)
