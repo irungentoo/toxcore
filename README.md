@@ -28,7 +28,7 @@ Keep everything really simple.
 
 ## Roadmap:
 - [x] Get our DHT working perfectly. (Done, needs large scale testing though)
-- [x] Reliable connection (See Lossless UDP protocol) to other peers according to client ID. (Done, see DHT_sendfiletest.c for an example)
+- [x] Reliable connection (See Lossless UDP protocol) to other peers according to client ID. (Done, see `DHT_sendfiletest.c` for an example)
 - [x] Encryption. (Done)
 - [  ] Get a simple text only IM client working perfectly. (This is where we are)
 - [  ] Streaming media
@@ -45,7 +45,8 @@ configure for the normal user or suffer from being way too centralized.
 
 ### Documentation:
 
-[DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
-[Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
-[Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
-[Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
+- [Installation](/INSTALL.md)
+- [DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
+- [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
+- [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
+- [Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
