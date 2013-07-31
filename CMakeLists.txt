@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 2.6.0)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 #MinGW prints more warnings for -Wall than gcc does, thus causing build to fail
 if(NOT WIN32)
 	if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
 		message(STATUS "==== ${CMAKE_C_COMPILER_ID} detected - Adding compiler flags ====")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
 	endif()
+	find_package(SODIUM REQUIRED)
 endif()
 
 macro(linkCoreLibraries exe_name)
@@ -16,8 +19,9 @@ macro(linkCoreLibraries exe_name)
 		${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a
 			ws2_32)
 	else()
+		include_directories(${SODIUM_INCLUDE_DIR})
 		target_link_libraries(${exe_name} core
-			sodium)
+			${SODIUM_LIBRARY})
 	endif()
 endmacro()
 
