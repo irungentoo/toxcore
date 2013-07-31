@@ -1,6 +1,6 @@
 CC=gcc
 FLAGS=-g -Wall -Wextra -std=c99 -c
-LINK=-lcore -lsodium
+LINK= -lsodium -lavformat -lavcodec -lavdevice -lswscale -lavutil -lm -lpthread `sdl-config --cflags` `sdl-config --libs`
 LDIR=-L../core
 
 #you may want to edit this for your liking
@@ -21,7 +21,10 @@ test_helper:
 	$(CC) $(FLAGS) tests/test_helper.c -o tests/test_helper.o
 
 test_regular:
-	$(CC) $(FLAGS) tests/test_regular.c -o tests/test_regular.o
-	$(CC) -o tests/test_regular $(CORE_STATIC) *.o tests/*.o 
+	$(CC) $(LINK) $(FLAGS) tests/test_regular.c -o tests/test_regular.o
+	$(CC) -std=c99 $(LINK) -o tests/test_regular $(CORE_STATIC) *.o  ../core/helper.c tests/*.o 
+	
+test_video:
+	$(CC) -std=c99 $(LINK) -o tests/test_video $(CORE_STATIC) *.o  ../core/helper.c tests/test_video.c tests/*.o 
 	
 #/usr/local/lib/libsodium.a /usr/local/lib/libsodium.so
