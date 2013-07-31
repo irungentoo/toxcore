@@ -32,7 +32,14 @@ void on_request(uint8_t* public_key, uint8_t* data, uint16_t length) {
   size_t i;
   int n = add_req(public_key);
 
-  wprintw(prompt->window, "\nFriend request.\nUse \"accept %d\" to accept it.\n", n);
+  wprintw(prompt->window, "\nFriend request from:\n");
+
+  for(i=0; i<32; i++) {
+    wprintw(prompt->window, "%02x", public_key[i] & 0xff);
+  }
+  wprintw(prompt->window, "\n");
+
+  wprintw(prompt->window, "Use \"accept %d\" to accept it.\n", n);
 
   for(i=0; i<w_num; i++) {
     if(windows[i].onFriendRequest != NULL)
@@ -230,6 +237,7 @@ static void load_data() {
 }
 
 static void draw_bar() {
+  static int odd = 0;
   size_t i;
 
   attron(COLOR_PAIR(4));
@@ -238,16 +246,26 @@ static void draw_bar() {
 
   move(LINES - 1, 0);
 
-  attron(COLOR_PAIR(3) | A_BOLD);
+  attron(COLOR_PAIR(4) | A_BOLD);
   printw(" TOXIC 1.0 |");
-  attroff(COLOR_PAIR(3) | A_BOLD);
+  attroff(COLOR_PAIR(4) | A_BOLD);
 
   for(i=0; i<w_num; i++) {
     if(i == w_active) {
       attron(A_BOLD);
     }
 
+    odd = (odd+1) % 2;
+
+    if(windows[i].blink && odd) {
+      attron(COLOR_PAIR(3));
+    }
+
     printw(" %s", windows[i].title);
+
+    if(windows[i].blink && odd) {
+      attron(COLOR_PAIR(3));
+    }
 
     if(i == w_active) {
       attroff(A_BOLD);
@@ -278,6 +296,7 @@ int main(int argc, char* argv[]) {
     // Draw.
     a = &windows[w_active];
     prepare_window(a->window);
+    a->blink = false;
     a->onDraw(a);
     draw_bar();
 
