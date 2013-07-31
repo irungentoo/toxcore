@@ -6,7 +6,8 @@ set(exe_name toxic)
 add_executable(${exe_name}
 	main.c
 	prompt.c
-	friendlist.c)
+	friendlist.c
+	chat.c)
 
 target_link_libraries(${exe_name}
 	curses)
