@@ -123,11 +123,12 @@ void manage_keys(char *keys_file)
 {
     const uint32_t KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
     uint8_t keys[KEYS_SIZE];
-
-    /* TODO: stat the file before trying to open it. We aren't cave people! */
-    FILE *keysf = fopen(keys_file, "r");
-    if (keysf != NULL) {
-        /* if file was opened successfully -- load keys */
+    struct stat existence;
+    
+    /* Check if file exits, proceed to open and load keys */
+    if(stat(keys_file,&existence) >= 0) {
+        FILE *keysf = fopen(keys_file, "r");
+        
         size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keysf);
         if (read_size != KEYS_SIZE) {
             printf("Error while reading the key file\nExiting.\n");
