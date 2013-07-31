@@ -122,8 +122,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 
     /* print out the command entered */
     char command_str[STRING_LENGTH + 2] = "> ";
-    strcat(command, line);
-    new_lines(command);
+    strcat(command_str, line);
+    new_lines(command_str);
 
     command = strtok_r(line, " ", &save_ptr);
 
@@ -137,7 +137,6 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         char *message = NULL;
         int message_len = 0;
         int rc = 0;
-        int i = 0;
 
         if(id == NULL) {
             new_lines("[!] /f needs an ID to act upon!\n");
@@ -149,7 +148,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             message = "Install Gentoo";
 
         message_len = strlen(message);
-        rc = m_addfriend(hex_string_to_bin(id), message, sizeof(char) * message_len);
+        rc = m_addfriend(hex_string_to_bin(id), (uint8_t *)message, sizeof(char) * message_len);
 
         add_friend_error(rc);
         do_refresh();
@@ -162,7 +161,6 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         char *message = NULL;
         int message_len = 0;
         int rc = 0;
-        int i = 0;
 
         if(num == NULL) {
             new_lines("[!] /m needs a friend number to act upon!\n");
@@ -176,7 +174,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         }
 
         message_len = strlen(message);
-        rc = m_sendmessage(atoi(num), message, sizeof(char) * message_len);
+        rc = m_sendmessage(atoi(num), (uint8_t *)message, sizeof(char) * message_len);
         if(rc == 0)
             new_lines("[!] /m fucked up!");
 
@@ -193,7 +191,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         }
 
         strncpy(name_mem, name, MAX_NAME_LENGTH - 1);
-        setname(name_mem, strlen(name_mem));
+        setname((uint8_t *)name_mem, strlen(name_mem));
 
         sprintf(numstring, "[i] changed nick to %s", (char*)name);
         new_lines(numstring);
@@ -211,7 +209,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             return;
         }
 
-        m_set_userstatus(status, strlen(status));
+        m_set_userstatus((uint8_t *)status, strlen(status));
         sprintf(numstring, "[i] changed status to %s", (char*)status);
         new_lines(numstring);
 
