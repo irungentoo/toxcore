@@ -45,7 +45,7 @@ int print_help()
     return FAILURE;
 }
 
-int main(args)
+int main ( args )
 {
     int status;
     IP_Port     Ip_port[1];
@@ -128,13 +128,6 @@ int main(args)
                 /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
                 if ( _m_msg ) {
                     /* ADD MSG HANDLERS HERE */
-                    printf("Bytes recved: %d\n", _m_msg->_length);
-                    printf("Payload:");
-                    for ( int i = 0; i < 280; i ++ )
-                    {
-                        printf("%c", _m_msg->_data[i]);
-                    }
-                    break;
                     /**/
 
                     DEALLOCATOR_MSG ( _m_msg )

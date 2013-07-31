@@ -27,6 +27,23 @@
 #include <assert.h>
 #define _MIN_LENGHT_ 11
 
+uint32_t payload_table[] = /* PAYLOAD TABLE */
+{
+	8000, 8000, 8000, 8000, 8000, 8000, 16000, 8000, 8000, 8000,	/* 0-9 */
+	44100, 44100, 0, 0, 90000, 8000, 11025, 22050, 0, 0,		    /* 10-19 */
+	0, 0, 0, 0, 0, 90000, 90000, 0, 90000, 0,			            /* 20-29 */
+	0, 90000, 90000, 90000, 90000, 0, 0, 0, 0, 0,			        /* 30-39 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 40-49 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 50-59 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 60-69 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 70-79 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 80-89 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 90-99 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 100-109 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					                /* 110-119 */
+	0, 0, 0, 0, 0, 0, 0, 0						                    /* 120-127 */
+};
+
 rtp_header_t* rtp_extract_header ( uint8_t* _payload, size_t _size )
 {
     if ( _size < _MIN_LENGHT_ ) {
@@ -107,6 +124,10 @@ uint8_t* rtp_add_header ( rtp_header_t* _header, uint8_t* _payload, size_t _size
 uint16_t rtp_header_get_size ( rtp_header_t* _header )
 {
     return ( 8 + ( rtp_header_get_flag_CSRC_count ( _header ) * 4 ) );
+}
+uint32_t rtp_get_payload_type_value ( rtp_header_t* _header )
+{
+    return payload_table[rtp_header_get_setting_payload_type(_header)];
 }
 
 /* Setting flags */

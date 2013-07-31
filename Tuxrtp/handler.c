@@ -92,6 +92,8 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
         return NULL;
     }
 
+    LAST_SOCKET_DATA[_bytes] = '\0'; /* Terminate it */
+
     _session->_bytes_recv += _bytes;
     _session->_packets_recv ++;
 
