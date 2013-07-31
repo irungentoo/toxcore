@@ -16,8 +16,6 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 
 ### Objectives:
 
-Use the same UDP socket for everything.
-
 Keep everything really simple.
 
 ## The Complex Stuff:
