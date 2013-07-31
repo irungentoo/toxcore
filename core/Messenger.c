@@ -99,18 +99,21 @@ int getclient_id(int friend_id, uint8_t *client_id)
    client_id is the client id of the friend
    data is the data and length is the length
    returns the friend number if success
-   return -1 if failure. */
+   return -1 if key length is wrong.
+   return -2 if user's own key
+   return -3 if already a friend
+   return -4 for other*/
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
     if (length == 0 || length >=
         (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
         return -1;
     if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
-        return -1;
+        return -2;
     if (getfriend_id(client_id) != -1)
-        return -1;
+        return -3;
     uint32_t i;
-    for (i = 0; i <= numfriends; ++i) {
+    for (i = 0; i <= numfriends; ++i) { /*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
         if(friendlist[i].status == 0) {
             DHT_addfriend(client_id);
             friendlist[i].status = 1;
@@ -126,7 +129,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             return i;
         }
     }
-    return -1;
+    return -4;
 }
 
 int m_addfriend_norequest(uint8_t * client_id)
@@ -134,7 +137,7 @@ int m_addfriend_norequest(uint8_t * client_id)
     if (getfriend_id(client_id) != -1)
         return -1;
     uint32_t i;
-    for (i = 0; i <= numfriends; ++i) {
+    for (i = 0; i <= numfriends; ++i) {/*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
         if(friendlist[i].status == 0) {
             DHT_addfriend(client_id);
             friendlist[i].status = 2;
@@ -165,7 +168,7 @@ int m_delfriend(int friendnumber)
     uint32_t i;
 
     for (i = numfriends; i != 0; --i) {
-        if (friendlist[i].status != 0)
+        if (friendlist[i-1].status != 0)
             break;
     }
     numfriends = i;
@@ -180,7 +183,7 @@ int m_delfriend(int friendnumber)
    return 0 if there is no friend with that number */
 int m_friendstatus(int friendnumber)
 {
-    if (friendnumber < 0 || friendnumber >= MAX_NUM_FRIENDS)
+    if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
     return friendlist[friendnumber].status;
 }
@@ -190,7 +193,7 @@ int m_friendstatus(int friendnumber)
    return 0 if it was not */
 int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 {
-    if (friendnumber < 0 || friendnumber >= MAX_NUM_FRIENDS)
+    if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
     if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != 4)
         /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
@@ -241,6 +244,16 @@ int setname(uint8_t * name, uint16_t length)
         friendlist[i].name_sent = 0;
     return 0;
 }
+
+/* get our nickname
+   put it in name 
+   name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+   return the length of the name */
+uint16_t getself_name(uint8_t *name)
+{
+    memcpy(name, self_name, self_name_length);
+    return self_name_length;
+} 
 
 /* get name of friendnumber
    put it in name

@@ -87,7 +87,7 @@ void print_friendlist()
         for(i = 0; i < 4; i++) {
             printf("ClientID: ");
             for(j = 0; j < 32; j++) {
-                if(0 <= friends_list[k].client_list[i].client_id[j] && friends_list[k].client_list[i].client_id[j] < 16)
+                if(friends_list[k].client_list[i].client_id[j] < 16)
                     printf("0");
                 printf("%hhX", friends_list[k].client_list[i].client_id[j]);
             }
@@ -134,7 +134,9 @@ int main(int argc, char *argv[])
     
     char temp_id[128];
     printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
-    scanf("%s", temp_id);
+    if(scanf("%s", temp_id) != 1)
+        exit(0);
+    
     DHT_addfriend(hex_string_to_bin(temp_id));
     
     /* initialize networking */

@@ -3,8 +3,17 @@ project(DHT_bootstrap_daemon C)
 
 set(exe_name DHT_bootstrap_daemon)
 
-add_executable(${exe_name}
-        DHT_bootstrap_daemon.c)
+find_package(LIBCONFIG REQUIRED)
 
-target_link_libraries(${exe_name} config)
+include_directories(${LIBCONFIG_INCLUDE_DIR})
+
+add_executable(${exe_name}
+	DHT_bootstrap_daemon.c)
+
+target_link_libraries(${exe_name}
+	${LIBCONFIG_LIBRARY})
+
 linkCoreLibraries(${exe_name})
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+find_package(LibConfig REQUIRED)

@@ -15,6 +15,8 @@
 uint8_t pending_requests[256][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
+extern void on_friendadded(int friendnumber);
+
 // XXX:
 int add_req(uint8_t* public_key) {
   memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
@@ -40,8 +42,7 @@ static int prompt_buf_pos=0;
 
 static void execute(ToxWindow* self, char* cmd) {
 
-  // quit/exit: Exit program.
-  if(!strcmp(cmd, "quit") || !strcmp(cmd, "exit")) {
+  if(!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
     exit(0);
   }
@@ -53,32 +54,31 @@ static void execute(ToxWindow* self, char* cmd) {
 
     ip = strchr(cmd, ' ');
     if(ip == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
     ip++;
 
     port = strchr(ip, ' ');
     if(port == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
     port[0] = 0;
     port++;
 
     key = strchr(port, ' ');
     if(key == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
     key[0] = 0;
     key++;
 
     if(atoi(port) == 0) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
-    wprintw(self->window, "ip=%s, port=%s, key=%s\n", ip, port, key);
 
     dht.port = htons(atoi(port));
 
@@ -91,38 +91,62 @@ static void execute(ToxWindow* self, char* cmd) {
     DHT_bootstrap(dht, hex_string_to_bin(key));
   }
   else if(!strncmp(cmd, "add ", strlen("add "))) {
+    uint8_t id_bin[32];
+    size_t i;
+    char xx[3];
+    uint32_t x;
+
     char* id;
     char* msg;
     int num;
 
     id = strchr(cmd, ' ');
-
     if(id == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
     id++;
 
     msg = strchr(id, ' ');
-    if(msg == NULL) {
+    if(msg != NULL) {
+      msg[0] = 0;
+      msg++;
+    }
+    else msg = "";
+
+    if(strlen(id) != 2*32) {
+      wprintw(self->window, "Invalid ID length.\n");
       return;
     }
 
-    msg[0] = 0;
-    msg++;
+    for(i=0; i<32; i++) {
+      xx[0] = id[2*i];
+      xx[1] = id[2*i+1];
+      xx[2] = '\0';
 
-    num = m_addfriend((uint8_t*) id, (uint8_t*) msg, strlen(msg)+1);
+      if(sscanf(xx, "%02x", &x) != 1) {
+        wprintw(self->window, "Invalid ID.\n");
+        return;
+      }
+
+      id_bin[i] = x;
+    }
+
+    num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
+
     wprintw(self->window, "Friend added as %d.\n", num);
+    on_friendadded(num);
   }
   else if(!strncmp(cmd, "status ", strlen("status "))) {
     char* msg;
 
     msg = strchr(cmd, ' ');
     if(msg == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
     msg++;
+
     m_set_userstatus((uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s.\n", msg);
   }
@@ -133,33 +157,22 @@ static void execute(ToxWindow* self, char* cmd) {
     if(nick == NULL) {
       return;
     }
-
     nick++;
+
     setname((uint8_t*) nick, strlen(nick)+1);
     wprintw(self->window, "Nickname set to: %s.\n", nick);
   }
   else if(!strcmp(cmd, "myid")) {
-    // XXX: Clean this up
-    char idstring0[200];
-    char idstring1[32][5];
-    char idstring2[32][5];
-    uint32_t i;
+    char id[32*2 + 1] = {0};
+    size_t i;
 
-    for(i = 0; i < 32; i++) {
-      if(self_public_key[i] < 16)
-	strcpy(idstring1[i], "0");
-      else 
-	strcpy(idstring1[i], "");
-
-      sprintf(idstring2[i], "%hhX", self_public_key[i]);
+    for(i=0; i<32; i++) {
+      char xx[3];
+      snprintf(xx, sizeof(xx), "%02x",  self_public_key[i] & 0xff);
+      strcat(id, xx);
     }
     
-    for (i=0; i<32; i++) {
-      strcat(idstring0, idstring1[i]);
-      strcat(idstring0, idstring2[i]);
-    }
-
-    wprintw(self->window, "%s\n", idstring0);
+    wprintw(self->window, "%s\n", id);
   }
   else if(!strncmp(cmd, "accept ", strlen("accept "))) {
     char* id;
@@ -167,17 +180,26 @@ static void execute(ToxWindow* self, char* cmd) {
 
     id = strchr(cmd, ' ');
     if(id == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
     id++;
-   
+
     num = atoi(id);
     if(num >= num_requests) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
 
     num = m_addfriend_norequest(pending_requests[num]);
-    wprintw(self->window, "Friend accepted as: %d.\n", num);
+
+    if(num == -1) {
+      wprintw(self->window, "Failed to add friend.\n");
+    }
+    else {
+      wprintw(self->window, "Friend accepted as: %d.\n", num);
+      on_friendadded(num);
+    }
   }
   else if(!strncmp(cmd, "msg ", strlen("msg "))) {
     char* id;
@@ -186,25 +208,28 @@ static void execute(ToxWindow* self, char* cmd) {
     id = strchr(cmd, ' ');
 
     if(id == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
     id++;
 
     msg = strchr(id, ' ');
     if(msg == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
-
     msg[0] = 0;
     msg++;
 
-    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) != 1) {
+    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0) {
       wprintw(self->window, "Error occurred while sending message.\n");
     }
     else {
       wprintw(self->window, "Message successfully sent.\n");
     }
+  }
+  else {
+    wprintw(self->window, "Invalid syntax.\n");
   }
 }
 
@@ -231,7 +256,7 @@ static void prompt_onKey(ToxWindow* self, int key) {
   }
 
   // BACKSPACE key: Remove one character from line.
-  else if(key == 0x107) {
+  else if(key == 0x107 || key == 0x8 || key == 0x7f) {
 
     if(prompt_buf_pos != 0) {
       prompt_buf[--prompt_buf_pos] = 0;
@@ -241,9 +266,6 @@ static void prompt_onKey(ToxWindow* self, int key) {
 
 static void prompt_onDraw(ToxWindow* self) {
   int x, y;
-
-  mvwin(self->window,0,0);
-  wresize(self->window, LINES-2, COLS);
 
   getyx(self->window, y, x);
   (void) x;
@@ -260,7 +282,7 @@ static void prompt_onDraw(ToxWindow* self) {
 
 static void print_usage(ToxWindow* self) {
   wattron(self->window, COLOR_PAIR(2) | A_BOLD);
-  wprintw(self->window, "Usage:\n");
+  wprintw(self->window, "Commands:\n");
   wattroff(self->window, A_BOLD);
   
   wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
@@ -270,6 +292,12 @@ static void print_usage(ToxWindow* self) {
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
   wprintw(self->window, "      myid                      : Print your ID\n");
   wprintw(self->window, "      quit/exit                 : Exit program\n");
+
+
+  wattron(self->window, A_BOLD);
+  wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
+  wattroff(self->window, A_BOLD);
+
   wattroff(self->window, COLOR_PAIR(2));
 }
 
@@ -282,6 +310,8 @@ static void prompt_onInit(ToxWindow* self) {
 
 ToxWindow new_prompt() {
   ToxWindow ret;
+
+  memset(&ret, 0, sizeof(ret));
 
   ret.onKey = &prompt_onKey;
   ret.onDraw = &prompt_onDraw;

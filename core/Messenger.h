@@ -46,11 +46,14 @@ extern "C" {
     to an absurdly large number later */
 
 /* add a friend
-    set the data that will be sent along with friend request
-    client_id is the client id of the friend
-    data is the data and length is the length
-    returns the friend number if success
-    return -1 if failure. */
+   set the data that will be sent along with friend request
+   client_id is the client id of the friend
+   data is the data and length is the length
+   returns the friend number if success
+   return -1 if key length is wrong.
+   return -2 if user's own key
+   return -3 if already a friend
+   return -4 for other*/
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
 
 
@@ -91,6 +94,11 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
    return 0 if success
    return -1 if failure */
 int setname(uint8_t *name, uint16_t length);
+
+/* get our nickname
+   put it in name 
+   return the length of the name*/
+uint16_t getself_name(uint8_t *name);
 
 /* get name of friendnumber
     put it in name

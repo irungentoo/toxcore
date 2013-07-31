@@ -4,6 +4,7 @@ project(DHT_cryptosendfiletest C)
 set(exe_name DHT_cryptosendfiletest)
 
 add_executable(${exe_name}
-        DHT_cryptosendfiletest.c misc_tools.c)
+	DHT_cryptosendfiletest.c
+	misc_tools.c)
 
 linkCoreLibraries(${exe_name})

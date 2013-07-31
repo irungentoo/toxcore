@@ -11,8 +11,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Messenger_test.cmake)
 if(WIN32)
 	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox_win32.cmake)
 endif()
+
 if(NOT WIN32)
 	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/toxic.cmake)
-
+	add_subdirectory(toxic)
 endif()

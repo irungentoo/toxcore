@@ -56,11 +56,7 @@
 /* we use libsodium by default */
 #include <sodium.h>
 #else
-
-/* TODO: Including stuff like this is bad. This needs fixing.
-   We keep support for the original NaCl for now. */
-#include "../nacl/build/Linux/include/amd64/crypto_box.h"
-
+#include <crypto_box.h>
 #endif
 
 #ifdef __cplusplus
@@ -125,7 +121,7 @@ void shutdown_networking();
     address should represent IPv4, IPv6 or a hostname
     on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
     on failure returns -1 */
-int resolve_addr(char *address);
+int resolve_addr(const char *address);
 
 #ifdef __cplusplus
 }

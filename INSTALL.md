@@ -5,8 +5,9 @@
 Build dependencies:
 
 ```bash
-apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev
+apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall
 ```
+Note that `libconfig-dev` should be >= 1.4.
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
 ```bash
@@ -15,7 +16,7 @@ cd libsodium
 git checkout tags/0.4.2
 ./autogen.sh
 ./configure && make check
-sudo make install
+sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
 ```
 
@@ -41,7 +42,17 @@ make
 
 ###OSX:
 
-Much the same as above, remember to install the latest XCode and the developer tools (Preferences -> Downloads -> Command Line Tools).
+####Homebrew:
+```
+brew install libtool automake autoconf libconfig libsodium
+cmake .
+make
+sudo make install
+```
+
+####Non-homebrew:
+
+Much the same as Linux, remember to install the latest XCode and the developer tools (Preferences -> Downloads -> Command Line Tools).
 Users running Mountain Lion and the latest version of XCode (4.6.3) will also need to install libtool, automake and autoconf.
 They are easy enough to install, grab them from http://www.gnu.org/software/libtool/, http://www.gnu.org/software/autoconf/ and http://www.gnu.org/software/automake/, then follow these steps for each:
 
@@ -68,7 +79,7 @@ You have to [modify your PATH environment variable](http://www.computerhope.com/
 
 Then you should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
 
-After that you should get precompiled packages of libsodium from [here](https://download.libsodium.org/libsodium/releases/) and extract the archive into this repo's root. That is, `sodium` folder should be along with `core`, `testing` and other folders.
+After that you should get precompiled package of libsodium from [here](https://download.libsodium.org/libsodium/releases/libsodium-win32-0.4.2.tar.gz) and extract the archive into this repo's root. That is, `sodium` folder should be along with `core`, `testing` and other folders.
 
 Navigate in `cmd` to this repo and run:
 ```cmd
