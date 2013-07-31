@@ -61,9 +61,7 @@ void print_friendlist()
     new_lines("[i] Friend List:");
     uint32_t i;
     for (i = 0; i <= num_requests; i++) {
-        printf ("num_resusts: %d\n", num_requests);
         char fstring[128];
-
         getname(i, (uint8_t*)name);
         if (strlen(name) <= 0) {
             sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
@@ -172,13 +170,17 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         else if (inpt_command == 'a') {
             uint8_t numf = atoi(line + 3);
             char numchar[100];
-            sprintf(numchar, "[i] friend request %u accepted", numf);
-            new_lines(numchar);
             int num = m_addfriend_norequest(pending_requests[numf]);
-            sprintf(numchar, "[i] added friendnumber %d", num);
-            new_lines(numchar);
+            if (num != -1) {
+                sprintf(numchar, "[i] friend request %u accepted", numf);
+                new_lines(numchar);
+                sprintf(numchar, "[i] added friendnumber %d", num);
+                new_lines(numchar);
+            } else {
+                sprintf(numchar, "[i] failed to add friend");
+                new_lines(numchar);
+            }
             do_refresh();
-            
         }
        else if (inpt_command == 'h') { //help
            new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");

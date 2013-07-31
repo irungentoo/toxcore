@@ -16,9 +16,7 @@
 extern ToxWindow new_prompt();
 extern ToxWindow new_friendlist();
 
-extern int friendlist_addfriend(int num);
-extern int friendlist_nickchange(int num, uint8_t* str, uint16_t len);
-extern int friendlist_statuschange(int num, uint8_t* str, uint16_t len);
+extern int friendlist_onFriendAdded(int num);
 
 extern int add_req(uint8_t* public_key); // XXX
 
@@ -31,29 +29,59 @@ static ToxWindow* prompt;
 
 // CALLBACKS START
 void on_request(uint8_t* public_key, uint8_t* data, uint16_t length) {
+  size_t i;
   int n = add_req(public_key);
 
-  wprintw(prompt->window, "\nFriend request.\nUse \"accept %d\" to accept it.\n", n);
+  wprintw(prompt->window, "\nFriend request from:\n");
+
+  for(i=0; i<32; i++) {
+    wprintw(prompt->window, "%02x", public_key[i] & 0xff);
+  }
+  wprintw(prompt->window, "\n");
+
+  wprintw(prompt->window, "Use \"accept %d\" to accept it.\n", n);
+
+  for(i=0; i<w_num; i++) {
+    if(windows[i].onFriendRequest != NULL)
+      windows[i].onFriendRequest(&windows[i], public_key, data, length);
+  }
 }
 
 void on_message(int friendnumber, uint8_t* string, uint16_t length) {
+  size_t i;
+
   wprintw(prompt->window, "\n(message) %d: %s!\n", friendnumber, string);
+
+  for(i=0; i<w_num; i++) {
+    if(windows[i].onMessage != NULL)
+      windows[i].onMessage(&windows[i], friendnumber, string, length);
+  }
 }
 
 void on_nickchange(int friendnumber, uint8_t* string, uint16_t length) {
+  size_t i;
+
   wprintw(prompt->window, "\n(nickchange) %d: %s!\n", friendnumber, string);
 
-  friendlist_nickchange(friendnumber, string, length);
+  for(i=0; i<w_num; i++) {
+    if(windows[i].onNickChange != NULL)
+      windows[i].onNickChange(&windows[i], friendnumber, string, length);
+  }
 }
 
 void on_statuschange(int friendnumber, uint8_t* string, uint16_t length) {
+  size_t i;
+
   wprintw(prompt->window, "\n(statuschange) %d: %s!\n", friendnumber, string);
 
-  friendlist_statuschange(friendnumber, string, length);
+  for(i=0; i<w_num; i++) {
+    if(windows[i].onStatusChange != NULL)
+      windows[i].onStatusChange(&windows[i], friendnumber, string, length);
+  }
 }
 
 void on_friendadded(int friendnumber) {
-  friendlist_addfriend(friendnumber);
+  friendlist_onFriendAdded(friendnumber);
 }
 // CALLBACKS END
 
@@ -87,7 +115,7 @@ static void init_tox() {
   m_callback_userstatus(on_statuschange);
 }
 
-static int add_window(ToxWindow w) {
+int add_window(ToxWindow w) {
   if(w_num == TOXWINDOWS_MAX_NUM)
     return -1;
 
@@ -102,7 +130,15 @@ static int add_window(ToxWindow w) {
   windows[w_num++] = w;
   w.onInit(&w);
 
-  return w_num;
+  return w_num - 1;
+}
+
+int focus_window(int num) {
+  if(num >= w_num || num < 0)
+    return -1;
+
+  w_active = num;
+  return 0;
 }
 
 static void init_windows() {
@@ -201,6 +237,7 @@ static void load_data() {
 }
 
 static void draw_bar() {
+  static int odd = 0;
   size_t i;
 
   attron(COLOR_PAIR(4));
@@ -209,16 +246,26 @@ static void draw_bar() {
 
   move(LINES - 1, 0);
 
-  attron(COLOR_PAIR(3) | A_BOLD);
+  attron(COLOR_PAIR(4) | A_BOLD);
   printw(" TOXIC 1.0 |");
-  attroff(COLOR_PAIR(3) | A_BOLD);
+  attroff(COLOR_PAIR(4) | A_BOLD);
 
   for(i=0; i<w_num; i++) {
     if(i == w_active) {
       attron(A_BOLD);
     }
 
+    odd = (odd+1) % 2;
+
+    if(windows[i].blink && odd) {
+      attron(COLOR_PAIR(3));
+    }
+
     printw(" %s", windows[i].title);
+
+    if(windows[i].blink && odd) {
+      attron(COLOR_PAIR(3));
+    }
 
     if(i == w_active) {
       attroff(A_BOLD);
@@ -249,6 +296,7 @@ int main(int argc, char* argv[]) {
     // Draw.
     a = &windows[w_active];
     prepare_window(a->window);
+    a->blink = false;
     a->onDraw(a);
     draw_bar();
 
