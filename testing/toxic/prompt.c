@@ -42,7 +42,7 @@ static int prompt_buf_pos=0;
 
 static void execute(ToxWindow* self, char* cmd) {
 
-  if(!strcmp(cmd, "quit") || !strcmp(cmd, "exit")) {
+  if(!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
     exit(0);
   }
@@ -282,12 +282,11 @@ static void prompt_onDraw(ToxWindow* self) {
 
 static void print_usage(ToxWindow* self) {
   wattron(self->window, COLOR_PAIR(2) | A_BOLD);
-  wprintw(self->window, "Usage:\n");
+  wprintw(self->window, "Commands:\n");
   wattroff(self->window, A_BOLD);
   
   wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
   wprintw(self->window, "      add <id> <message>        : Add friend\n");
-  wprintw(self->window, "      msg <number> <message>    : Send message\n");
   wprintw(self->window, "      status <message>          : Set your status\n");
   wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
@@ -296,7 +295,7 @@ static void print_usage(ToxWindow* self) {
 
 
   wattron(self->window, A_BOLD);
-  wprintw(self->window, "Use the TAB key to navigate through the tabs.\n");
+  wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
   wattroff(self->window, A_BOLD);
 
   wattroff(self->window, COLOR_PAIR(2));

@@ -1,3 +1,9 @@
+/*
+ * Toxic -- Tox Curses Client
+ */
+
+#include <stdbool.h>
+
 typedef struct ToxWindow_ ToxWindow;
 
 struct ToxWindow_ {
@@ -11,6 +17,7 @@ struct ToxWindow_ {
   char title[256];
 
   void* x;
+  bool blink;
 
   WINDOW* window;
 };
