@@ -385,7 +385,7 @@ static void doFriends()
         if (friendlist[i].status == 1) {
             fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
             if (fr == 0) {
-                for (i = 0; i < 3 && fr == 0; ++i)
+                for (j = 0; j < 3 && fr == 0; ++j)
                     fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);    
             }
             if (fr == 0)
