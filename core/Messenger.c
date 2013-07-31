@@ -389,11 +389,9 @@ static void doFriends()
                     fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);    
             }
             if (fr == 0)
-                friendlist[i].status = 2;
-                
+                friendlist[i].status = 2;      
             else if (fr > 0)
-                friendlist[i].status = 2;
-                
+                friendlist[i].status = 2;        
         }
         if (friendlist[i].status == 2 || friendlist[i].status == 3) { /* friend is not online */
             if (friendlist[i].status == 2) {
