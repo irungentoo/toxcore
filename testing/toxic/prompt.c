@@ -256,7 +256,7 @@ static void prompt_onKey(ToxWindow* self, int key) {
   }
 
   // BACKSPACE key: Remove one character from line.
-  else if(key == 0x107) {
+  else if(key == 0x107 || key == 0x8 || key == 0x7f) {
 
     if(prompt_buf_pos != 0) {
       prompt_buf[--prompt_buf_pos] = 0;

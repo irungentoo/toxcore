@@ -95,7 +95,7 @@ static void chat_onKey(ToxWindow* self, int key) {
     ctx->line[0] = '\0';
     ctx->pos = 0;
   }
-  else if(key == 0x107) {
+  else if(key == 0x107 || key == 0x8 || key == 0x7f) {
     if(ctx->pos != 0) {
       ctx->line[--ctx->pos] = '\0';
     }
