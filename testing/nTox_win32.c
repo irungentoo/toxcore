@@ -129,15 +129,19 @@ void line_eval(char* line)
             switch (num) {
                 case -1:
                     sprintf(numstring, "[i] Incorrect key length");
+                    printf(numstring);
                     break;
                 case -2:
                     sprintf(numstring, "[i] That appears to be your own key");
+                    printf(numstring);
                     break;
                 case -3:
                     sprintf(numstring, "[i] Friend request already sent");
+                    printf(numstring);
                     break;
                 case -4:
                     sprintf(numstring, "[i] Could not add friend");
+                    printf(numstring);
                     break;
                 default:
                     sprintf(numstring, "\n[i] added friend %d\n\n", num);
