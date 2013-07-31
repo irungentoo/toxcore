@@ -61,9 +61,7 @@ void print_friendlist()
     new_lines("[i] Friend List:");
     uint32_t i;
     for (i = 0; i <= num_requests; i++) {
-        printf ("num_resusts: %d\n", num_requests);
         char fstring[128];
-
         getname(i, (uint8_t*)name);
         if (strlen(name) <= 0) {
             sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
