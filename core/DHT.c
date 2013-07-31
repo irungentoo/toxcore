@@ -23,6 +23,36 @@
 
 #include "DHT.h"
 
+ /*return values*/
+
+const int CLIENT_IP_PORT_EQUAL = 1;
+const int CLIENT_IP_PORT_DIFFERENT=  0;
+const int EQUAL_DISTANCE = 0;
+const int CLIENT_ID1_CLOSER = 1;
+const int CLIENT_ID2_CLOSER = 2;
+const int CLIENT_IN_NODELIST = 1;
+const int CLIENT_NOT_IN_NODELIST = 0;
+const int CLIENT_IN_LIST=  1;
+const int CLIENT_NOT_IN_LIST=  0;
+const int NODE_REPLACED = 0;
+const int CURRENTLY_PINGING=  1;
+const int NOT_PINGING = 0;
+const int GETTING_NODES= 1;
+const int NOT_GETTING_NODES = 0;
+const int PACKET_HANDLED_CORRECTLY= 0;
+const int CONNTECTED_TO_DHT=  1;
+const int NOT_CONNTECTED_TO_DHT = 0;
+const int DHT_LOAD_SUCCESS = 0;
+const int DHT_LOAD_FAILURE=  -1;
+
+const int ERROR_BAD_PACKET=  0;
+const int ERROR_FAILED_TO_ADD_PING=  0;
+const int ERROR_NO_SUITABLE_NODE_FOUND=  1;
+const int ERROR_FAILED_TO_ADD_NODE=  0;
+const int ERROR_INVALID_FRIEND=  1;
+const int ERROR_NO_FRIEND_NUMBER_FOUND = -1;
+
+
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     IP_Port ip_port;
@@ -36,34 +66,8 @@ typedef struct {
 /* maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
-/*return values*/
 
-#define CLIENT_IP_PORT_EQUAL 1;
-#define CLIENT_IP_PORT_DIFFERENT 0;
-#define EQUAL_DISTANCE 0;
-#define CLIENT_ID1_CLOSER 1;
-#define CLIENT_ID2_CLOSER 2;
-#define CLIENT_IN_NODELIST 1;
-#define CLIENT_NOT_IN_NODELIST 0;
-#define CLIENT_IN_LIST 1;
-#define CLIENT_NOT_IN_LIST 0;
-#define NODE_REPLACED 0;
-#define CURRENTLY_PINGING 1;
-#define NOT_PINGING 0;
-#define GETTING_NODES 1;
-#define NOT_GETTING_NODES 0;
-#define PACKET_HANDLED_CORRECTLY 0;
-#define CONNTECTED_TO_DHT 1;
-#define NOT_CONNTECTED_TO_DHT 0;
-#define DHT_LOAD_SUCCESS 0;
-#define DHT_LOAD_FAILURE -1;
 
-#define ERROR_BAD_PACKET 0;
-#define ERROR_FAILED_TO_ADD_PING 0;
-#define ERROR_NO_SUITABLE_NODE_FOUND 1;
-#define ERROR_FAILED_TO_ADD_NODE 0;
-#define ERROR_INVALID_FRIEND 1;
-#define ERROR_NO_FRIEND_NUMBER_FOUND -1;
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
