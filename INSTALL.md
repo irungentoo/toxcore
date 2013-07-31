@@ -1,5 +1,17 @@
+#Install Instructions
+
+- [Installation](#installation)
+    - [Linux](#linux)
+    - [OS X](#osx)
+      - [Homebrew](#homebrew)
+      - [Non-Homebrew](#non-homebrew)
+    - [Windows](#windows)
+- [Usage](#usage)
+
+<a name="installation" />
 ##Installation
 
+<a name="linux" />
 ###Linux:
 
 Build dependencies:
@@ -40,8 +52,10 @@ Or you could just build everything that is supported on your platform by running
 make
 ```
 
-###OSX:
+<a name="osx" />
+###OS X:
 
+<a name="homebrew" />
 ####Homebrew:
 ```
 brew install libtool automake autoconf libconfig libsodium
@@ -50,6 +64,7 @@ make
 sudo make install
 ```
 
+<a name="non-homebrew" />
 ####Non-homebrew:
 
 Much the same as Linux, remember to install the latest XCode and the developer tools (Preferences -> Downloads -> Command Line Tools).
@@ -69,6 +84,7 @@ Another thing you may want to install is the latest gcc, this caused me a few pr
 no longer includes gcc and instead uses LLVM-GCC, a nice install guide can be found at
 http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
 
+<a name="windows" />
 ###Windows:
 
 You should install:
@@ -100,3 +116,8 @@ Or you could just build everything that is supported on your platform by running
 ```bash
 mingw32-make
 ```
+
+<a name="usage" />
+## Usage
+
+- [Start Guide](start_guide.md)
