@@ -38,7 +38,7 @@ char line[STRING_LENGTH];
 int x, y;
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
-uint8_t num_requests;
+uint8_t num_requests = 0;
 
 void new_lines(char *line)
 {
@@ -57,6 +57,7 @@ void print_friendlist()
     new_lines("[i] Friend List:");
     uint32_t i;
     for (i = 0; i <= num_requests; i++) {
+        printf ("num_resusts: %d\n", num_requests);
         char fstring[128];
 
         getname(i, (uint8_t*)name);

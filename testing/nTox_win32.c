@@ -27,7 +27,7 @@
 #include <process.h>
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
-uint8_t num_requests;
+uint8_t num_requests = 0;
 
 char line[STRING_LENGTH];
 char users_id[200];
