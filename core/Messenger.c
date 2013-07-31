@@ -120,7 +120,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
-            friendlist[i].userstatus = calloc(1, 1);
+            friendlist[i].userstatus = calloc(1, sizeof(uint8_t));
             friendlist[i].userstatus_length = 1;
             memcpy(friendlist[i].info, data, length);
             friendlist[i].info_size = length;
@@ -144,7 +144,7 @@ int m_addfriend_norequest(uint8_t * client_id)
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
-            friendlist[i].userstatus = calloc(1, 1);
+            friendlist[i].userstatus = calloc(1, sizeof(uint8_t));
             friendlist[i].userstatus_length = 1;
             numfriends++;
             return i;
