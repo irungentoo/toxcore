@@ -35,10 +35,10 @@
 #define SUCCESS 0
 #define FAILURE -1
 
-int set_ip_port(const char* _ip, short _port, void* _cont);
-uint32_t get_random_number( uint32_t _max);
+int set_ip_port ( const char* _ip, short _port, void* _cont );
+uint32_t get_random_number ( uint32_t _max );
 
-void memadd(uint8_t* _dest, uint16_t _from, const uint8_t* _source, uint16_t _size);
-void memcpy_from(uint8_t* _dest, uint16_t _from, const uint8_t* _source, uint16_t _size);
+void memadd ( uint8_t* _dest, uint16_t _from, const uint8_t* _source, uint16_t _size );
+void memcpy_from ( uint8_t* _dest, uint16_t _from, const uint8_t* _source, uint16_t _size );
 
 #endif /* _HELPER_H_ */
