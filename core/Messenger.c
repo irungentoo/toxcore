@@ -63,7 +63,7 @@ int getfriend_id(uint8_t *client_id)
     uint32_t i;
 
     for (i = 0; i < numfriends; ++i) {
-        if (friendlist[i].status > 0)
+        if (friendlist[i].status != FRIEND_STATUS_NONE)
             if (memcmp(client_id, friendlist[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
                 return i;
     }
@@ -114,9 +114,9 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
         return -3;
     uint32_t i;
     for (i = 0; i <= numfriends; ++i) { /*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
-        if(friendlist[i].status == 0) {
+        if(friendlist[i].status == FRIEND_STATUS_NONE) {
             DHT_addfriend(client_id);
-            friendlist[i].status = 1;
+            friendlist[i].status = FRIEND_STATUS_ADDED;
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
@@ -140,7 +140,7 @@ int m_addfriend_norequest(uint8_t * client_id)
     for (i = 0; i <= numfriends; ++i) {/*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
         if(friendlist[i].status == 0) {
             DHT_addfriend(client_id);
-            friendlist[i].status = 2;
+            friendlist[i].status = FRIEND_STATUS_REQ_SENT;
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
@@ -167,7 +167,7 @@ int m_delfriend(int friendnumber)
     memset(&friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
     for (i = numfriends; i != 0;) {
-        if (friendlist[--i].status != 0)
+        if (friendlist[--i].status != FRIEND_STATUS_NONE)
             break;
     }
     numfriends = i;
@@ -382,15 +382,15 @@ static void doFriends()
     int len;
     uint8_t temp[MAX_DATA_SIZE];
     for (i = 0; i < numfriends; ++i) {
-        if (friendlist[i].status == 1) {
+        if (friendlist[i].status == FRIEND_STATUS_ADDED) {
             /* TODO: This needs to be fixed so that it sends the friend requests a couple of times in case of packet loss */
             int request_status = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
             
             if (request_status >= 0)
-                friendlist[i].status = 2;
+                friendlist[i].status = FRIEND_STATUS_REQ_SENT;
         }
-        if (friendlist[i].status == 2 || friendlist[i].status == 3) { /* friend is not online */
-            if (friendlist[i].status == 2) {
+        if (friendlist[i].status == FRIEND_STATUS_REQ_SENT || friendlist[i].status == FRIEND_STATUS_CONFIRMED) { /* friend is not online */
+            if (friendlist[i].status == FRIEND_STATUS_REQ_SENT) {
                 if (friendlist[i].friend_request_id + 10 < unix_time()) { /*I know this is hackish but it should work.*/
                     send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
                     friendlist[i].friend_request_id = unix_time();
@@ -403,7 +403,7 @@ static void doFriends()
                     friendlist[i].crypt_connection_id = crypto_connect(friendlist[i].client_id, friendip);
                 break;
             case 3: /*  Connection is established */
-                friendlist[i].status = 4;
+                friendlist[i].status = FRIEND_STATUS_ONLINE;
                 break;
             case 4:
                 crypto_kill(friendlist[i].crypt_connection_id);
@@ -413,7 +413,7 @@ static void doFriends()
                 break;
             }
         }
-        while (friendlist[i].status == 4) { /* friend is online */
+        while (friendlist[i].status == FRIEND_STATUS_ONLINE) { /* friend is online */
             if (friendlist[i].name_sent == 0) {
                 if (m_sendname(i, self_name, self_name_length))
                     friendlist[i].name_sent = 1;
@@ -453,7 +453,7 @@ static void doFriends()
                 if (is_cryptoconnected(friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
                     crypto_kill(friendlist[i].crypt_connection_id);
                     friendlist[i].crypt_connection_id = -1;
-                    friendlist[i].status = 3;
+                    friendlist[i].status = FRIEND_STATUS_CONFIRMED;
                 }
                 break;
             }
@@ -474,7 +474,7 @@ static void doInbound()
             friendlist[friend_id].crypt_connection_id =
                 accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
 
-            friendlist[friend_id].status = 3;
+            friendlist[friend_id].status = FRIEND_STATUS_CONFIRMED;
         }
     }
 }
