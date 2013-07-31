@@ -4,7 +4,7 @@
  * 
  * Best used in combination with Lossless_UDP_testserver
  * 
- * Compile with: gcc -O2 -Wall -o testclient ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testclient.c
+ * Compile with: gcc -O2 -Wall -lsodium -o testclient ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testclient.c
  * 
  * Command line arguments are the ip and port to connect and send the file to.
  * EX: ./testclient 127.0.0.1 33445 filename.txt
