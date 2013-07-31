@@ -378,16 +378,20 @@ int initMessenger()
 static void doFriends()
 {
     /* TODO: add incoming connections and some other stuff. */
-    uint32_t i;
-    int len;
+    uint32_t i, j;
+    int len, fr;
     uint8_t temp[MAX_DATA_SIZE];
     for (i = 0; i < numfriends; ++i) {
         if (friendlist[i].status == 1) {
-            int fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
-            if (fr == 0) /* TODO: This needs to be fixed so that it sends the friend requests a couple of times in case of packet loss */
-                friendlist[i].status = 2;
+            fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
+            if (fr == 0) {
+                for (j = 0; j < 3 && fr == 0; ++j)
+                    fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);    
+            }
+            if (fr == 0)
+                friendlist[i].status = 2;      
             else if (fr > 0)
-                friendlist[i].status = 2;
+                friendlist[i].status = 2;        
         }
         if (friendlist[i].status == 2 || friendlist[i].status == 3) { /* friend is not online */
             if (friendlist[i].status == 2) {
