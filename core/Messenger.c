@@ -138,7 +138,7 @@ int m_addfriend_norequest(uint8_t * client_id)
         return -1;
     uint32_t i;
     for (i = 0; i <= numfriends; ++i) {/*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
-        if(friendlist[i].status == 0) {
+        if(friendlist[i].status == FRIEND_STATUS_NONE) {
             DHT_addfriend(client_id);
             friendlist[i].status = FRIEND_STATUS_REQ_SENT;
             friendlist[i].crypt_connection_id = -1;
@@ -193,7 +193,7 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
-    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != 4)
+    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_STATUS_ONLINE)
         /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
         return 0;
     uint8_t temp[MAX_DATA_SIZE];
