@@ -160,17 +160,9 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _le
 
     _session->_last_sequence_number = _retu->_header->_sequence_number;
 
-    _length += _retu->_header->_length;
-
-    _retu->_data = ( uint8_t* ) malloc ( sizeof ( uint8_t ) * _length );
-
-    /*memcpy ( _retu->_data, _data, _length ); */
-    /*rtp_add_header ( _retu->_header, _retu->_data, _length - _retu->_header->_length );
-    memadd ( _retu->_data, _retu->_header->_length, _data, _length );*/
-
-    memcpy_from ( _retu->_data, rtp_header_get_size ( _retu->_header ), _data, _length );
-
-    _retu->_length = _length;
+    _retu->_data = ( uint8_t* ) malloc ( sizeof ( uint8_t ) * ( _length - _retu->_header->_length ) );
+    memcpy_from ( _retu->_data, _retu->_header->_length, _data, _length );
+    _retu->_length = _length - _retu->_header->_length;
 
     _retu->_ext_header = NULL; /* we don't need it for now */
 
