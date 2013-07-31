@@ -125,8 +125,8 @@ static void execute(ToxWindow* self, char* cmd) {
       xx[2] = '\0';
 
       if(sscanf(xx, "%02x", &x) != 1) {
-	wprintw(self->window, "Invalid ID.\n");
-	return;
+        wprintw(self->window, "Invalid ID.\n");
+        return;
       }
 
       id_bin[i] = x;

@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
                     fclose(file2);
                 }
             }
-			/* if buffer is empty and the connection timed out. */
+            /* if buffer is empty and the connection timed out. */
             else if(is_cryptoconnected(inconnection) == 4) {
                 crypto_kill(inconnection);
             }
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
                     fclose(file2);
                 }
             }
-			/* if buffer is empty and the connection timed out. */
+            /* if buffer is empty and the connection timed out. */
             else if(is_cryptoconnected(connection) == 4) {
                 crypto_kill(connection);
             }
