@@ -27,5 +27,6 @@
 #include "../core/network.h"
 
 #define STRING_LENGTH 256
+#define PUB_KEY_BYTES 32
 
 #endif
