@@ -94,26 +94,31 @@ int getclient_id(int friend_id, uint8_t *client_id)
     return -1;
 }
 
+int is_own_key(uint8_t *client_id)
+{
+    return (memcmp(client_id, self_public_key,
+                crypto_box_PUBLICKEYBYTES) == 0);
+}
+
 /* add a friend
    set the data that will be sent along with friend request
    client_id is the client id of the friend
-   data is the data and length is the length
-   returns the friend number if success
-   return -1 if key length is wrong.
-   return -2 if user's own key
-   return -3 if already a friend
-   return -4 for other*/
+   data is the data and length is the length */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
-    if (length == 0 || length >=
-        (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
-        return -1;
-    if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
-        return -2;
-    if (getfriend_id(client_id) != -1)
-        return -3;
     uint32_t i;
-    for (i = 0; i <= numfriends; ++i) { /*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
+
+    /* this could probably be != ID_LENGTH
+     *  but I'm a little unsure, will look into */
+    if(length == 0 || length >= ID_LENGTH)
+        return ERR_KEY_LENGTH;
+    else if (is_own_key(client_id))
+        return ERR_OWN_KEY;
+    else if (getfriend_id(client_id) != -1)
+        return ERR_IS_FRIEND;
+
+     /*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
+    for (i = 0; i <= numfriends; ++i) {
         if(friendlist[i].status == 0) {
             DHT_addfriend(client_id);
             friendlist[i].status = 1;
@@ -129,8 +134,9 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             return i;
         }
     }
-    return -4;
+    return ERR_OTHER;
 }
+
 
 int m_addfriend_norequest(uint8_t * client_id)
 {
@@ -174,15 +180,15 @@ int m_delfriend(int friendnumber)
     return 0;
 }
 
-/* return 4 if friend is online
-   return 3 if friend is confirmed
-   return 2 if the friend request was sent
-   return 1 if the friend was added
-   return 0 if there is no friend with that number */
+/* return S_FRIEND_ONLINE if friend is online
+   return S_FRIEND_CONFIRMED if friend is confirmed
+   return S_FRIEND_REQURESTED if the friend request was sent
+   return S_FRIEND_ADDED if the friend was added
+   return ERR_NO_FRIEND if there is no friend with that number */
 int m_friendstatus(int friendnumber)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
-        return 0;
+        return ERR_NO_FRIEND;
     return friendlist[friendnumber].status;
 }
 

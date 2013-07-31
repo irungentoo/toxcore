@@ -36,24 +36,41 @@ extern "C" {
 #endif
 
 #define MAX_NAME_LENGTH 128
+
+/* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
+    to an absurdly large number later */
 #define MAX_USERSTATUS_LENGTH 128
 
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_USERSTATUS 49
 #define PACKET_ID_MESSAGE 64
 
-/* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
-    to an absurdly large number later */
+/* m_addfriend defines */
+#define ERR_KEY_LENGTH -1
+#define ERR_OWN_KEY -2
+#define ERR_IS_FRIEND -3
+#define ERR_OTHER -4
+
+/* m_friendstatus defines */
+#define S_FRIEND_ONLINE 4
+#define S_FRIEND_CONFIRMED 3
+#define S_FRIEND_REQURESTED 2
+#define S_FRIEND_ADDED 1
+#define ERR_NO_FRIEND 0 /* ;_; */
+
+/* not 100% on this name, but m_addfriends needs it */
+#define ID_LENGTH (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + \
+                        crypto_box_ZEROBYTES)
 
 /* add a friend
    set the data that will be sent along with friend request
    client_id is the client id of the friend
    data is the data and length is the length
    returns the friend number if success
-   return -1 if key length is wrong.
-   return -2 if user's own key
-   return -3 if already a friend
-   return -4 for other*/
+   return ERR_KEY_LENGTH if key length is wrong.
+   return ERR_OWN_KEY if user's own key
+   return ERR_IS_FRIEND if already a friend
+   return ERR_OTHER for other */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
 
 
@@ -75,11 +92,11 @@ int getclient_id(int friend_id, uint8_t *client_id);
 /* remove a friend */
 int m_delfriend(int friendnumber);
 
-/* return 4 if friend is online
-    return 3 if friend is confirmed
-    return 2 if the friend request was sent
-    return 1 if the friend was added
-    return 0 if there is no friend with that number */
+/* return S_FRIEND_ONLINE if friend is online
+   return S_FRIEND_CONFIRMED if friend is confirmed
+   return S_FRIEND_REQURESTED if the friend request was sent
+   return S_FRIEND_ADDED if the friend was added
+   return ERR_NO_FRIEND if there is no friend with that number */
 int m_friendstatus(int friendnumber);
 
 /* send a text chat message to an online friend
