@@ -38,7 +38,7 @@ typedef struct rtp_dest_list_s {
     struct rtp_dest_list_s* next;
     /* int con_id; */
 
-    } rtp_dest_list_t;
+} rtp_dest_list_t;
 
 
 
@@ -82,7 +82,7 @@ typedef struct rtp_session_s {
 
     struct rtp_msg_s        _msg_handler; /* Use this to store messages and read message data */
 
-    } rtp_session_t;
+} rtp_session_t;
 
 
 rtp_session_t*  rtp_init_session ( IP_Port _dest, int max_users ); /* you need to have at least 1 receiver */

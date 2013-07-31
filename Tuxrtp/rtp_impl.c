@@ -26,7 +26,7 @@
 #include "rtp_impl.h"
 
 rtp_session_t* init_rtp_session ( IP_Port _dest, int max_users )
-    {
+{
     rtp_session_t* _retu;
     ALLOCATOR_S ( _retu, rtp_session_t )
     ALLOCATOR_LIST_S ( _retu->_dest_list, rtp_dest_list_t, NULL )
@@ -62,19 +62,19 @@ rtp_session_t* init_rtp_session ( IP_Port _dest, int max_users )
     _retu->_ext_header = NULL;       /* When needed allocate */
 
     ALLOCATOR_S ( _retu->_csrc, uint32_t )
-    _retu->_csrc[0] = _retu->_ssrc;  /* Set my ssrc to the list */
+    _retu->_csrc[0] = _retu->_ssrc;  /* Set my ssrc to the list receive */
     /*
      *
      */
     memset ( LAST_SOCKET_DATA, '\0', MAX_UDP_PACKET_SIZE );
     return _retu;
-    }
+}
 
 rtp_header_t* rtp_build_header ( rtp_session_t* _session )
-    {
+{
     if ( !_session ) {
-            return NULL;
-            }
+        return NULL;
+    }
 
     rtp_header_t* _retu;
     _retu = ( rtp_header_t* ) malloc ( sizeof ( rtp_header_t ) );
@@ -91,20 +91,19 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     _retu->_ssrc = _session->_ssrc;
 
     if ( _session->_cc > 0 ) {
-            ALLOCATOR ( _retu->_csrc, uint32_t, _session->_cc )
+        ALLOCATOR ( _retu->_csrc, uint32_t, _session->_cc )
 
-            for ( int i = 0; i < _session->_cc; i++ ) {
-                    _retu->_csrc[i] = _session->_csrc[i];
-                    }
-            }
-    else {
-            _retu->_csrc = NULL;
-            }
+        for ( int i = 0; i < _session->_cc; i++ ) {
+            _retu->_csrc[i] = _session->_csrc[i];
+        }
+    } else {
+        _retu->_csrc = NULL;
+    }
 
     _retu->_length = 8 + _CRSC_LEN ( _session->_cc );
 
     return _retu;
-    }
+}
 
 
 

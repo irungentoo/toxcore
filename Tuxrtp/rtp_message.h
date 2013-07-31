@@ -35,10 +35,8 @@
 #define DEALLOCATOR_MSG(MSG) \
     free(MSG->_header->_csrc); \
     free(MSG->_header); \
-    if(MSG->_ext_header) free(MSG->_ext_header); \
+    if(MSG->_ext_header) { free( MSG->_ext_header->_hd_ext ); free(MSG->_ext_header); }\
     free(MSG->_data); \
-    if ( MSG->next ) free(MSG->next); \
-    if ( MSG->prev ) free(MSG->prev);
 
 typedef struct rtp_header_s {
     uint8_t      _flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
@@ -50,7 +48,7 @@ typedef struct rtp_header_s {
 
     uint32_t     _length;            /* A little something for allocation */
 
-    } rtp_header_t;
+} rtp_header_t;
 
 typedef struct rtp_ext_header_s {
     uint16_t     _ext_type;          /* Extension profile */
@@ -58,7 +56,7 @@ typedef struct rtp_ext_header_s {
     uint32_t*    _hd_ext;            /* Extension's table */
 
 
-    } rtp_ext_header_t;
+} rtp_ext_header_t;
 
 typedef struct rtp_msg_s {
     struct rtp_header_s*     _header;
@@ -68,18 +66,16 @@ typedef struct rtp_msg_s {
     uint8_t*                 _data;
     uint32_t                 _length;
     IP_Port                  _from;
-    struct rtp_msg_s*        next;
-    struct rtp_msg_s*        prev;
 
 
-    } rtp_msg_t;
+} rtp_msg_t;
 
 
-rtp_header_t*   rtp_extract_header ( uint8_t* payload, size_t size );
+rtp_header_t*   rtp_extract_header ( uint8_t* _payload, size_t _size );
 
 
-uint8_t*        rtp_add_header ( rtp_header_t* _header, uint8_t* payload, size_t size );
-uint16_t        rtp_header_get_size(rtp_header_t* _header); /* In bytes */
+uint8_t*        rtp_add_header ( rtp_header_t* _header, uint8_t* _payload, size_t _size );
+uint16_t        rtp_header_get_size ( rtp_header_t* _header ); /* In bytes */
 
 /* Adding flags and settings */
 void            rtp_header_add_flag_version ( rtp_header_t* _header, int value );
