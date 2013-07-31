@@ -140,7 +140,7 @@ void line_eval(char* line)
                     sprintf(numstring, "[i] Could not add friend");
                     break;
                 default:
-                    sprintf(numstring, "[i] Added friend %d", num);
+                    sprintf(numstring, "\n[i] added friend %d\n\n", num);
                     printf(numstring);
                     break;
             }
