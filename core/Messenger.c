@@ -146,7 +146,7 @@ int m_addfriend_norequest(uint8_t * client_id)
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             friendlist[i].userstatus = calloc(1, sizeof(uint8_t));
             friendlist[i].userstatus_length = 1;
-            numfriends++;
+            ++numfriends;
             return i;
         }
     }
