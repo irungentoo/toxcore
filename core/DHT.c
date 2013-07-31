@@ -26,6 +26,7 @@
 
 
 #include "DHT.h"
+#include "helper.h"
 
 
 typedef struct
