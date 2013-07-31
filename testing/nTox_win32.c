@@ -317,6 +317,7 @@ int main(int argc, char *argv[])
         }
 
         doMessenger();
+        Sleep(1);
     }
 
     return 0;
