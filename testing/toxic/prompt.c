@@ -148,7 +148,7 @@ static void execute(ToxWindow* self, char* cmd) {
     msg++;
 
     m_set_userstatus((uint8_t*) msg, strlen(msg)+1);
-    wprintw(self->window, "Status set to: %s.\n", msg);
+    wprintw(self->window, "Status set to: %s\n", msg);
   }
   else if(!strncmp(cmd, "nick ", strlen("nick "))) {
     char* nick;
