@@ -172,13 +172,17 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         else if (inpt_command == 'a') {
             uint8_t numf = atoi(line + 3);
             char numchar[100];
-            sprintf(numchar, "[i] friend request %u accepted", numf);
-            new_lines(numchar);
             int num = m_addfriend_norequest(pending_requests[numf]);
-            sprintf(numchar, "[i] added friendnumber %d", num);
-            new_lines(numchar);
+            if (num != -1) {
+                sprintf(numchar, "[i] friend request %u accepted", numf);
+                new_lines(numchar);
+                sprintf(numchar, "[i] added friendnumber %d", num);
+                new_lines(numchar);
+            } else {
+                sprintf(numchar, "[i] failed to add friend");
+                new_lines(numchar);
+            }
             do_refresh();
-            
         }
        else if (inpt_command == 'h') { //help
            new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
