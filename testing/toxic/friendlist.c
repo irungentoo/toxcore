@@ -22,7 +22,7 @@ typedef struct {
   uint8_t name[MAX_NAME_LENGTH];
   uint8_t status[MAX_USERSTATUS_LENGTH];
   int     num;
-
+  int     chatwin;
 } friend_t;
 
 static friend_t friends[MAX_FRIENDS_NUM];
@@ -37,7 +37,7 @@ void fix_name(uint8_t* name) {
   uint8_t* q = name;
 
   while(*p != 0) {
-    if(isalnum(*p)) {
+    if(isprint(*p)) {
       *q++ = *p;
     }
 
@@ -45,6 +45,16 @@ void fix_name(uint8_t* name) {
   }
 
   *q = 0;
+}
+
+void friendlist_onMessage(ToxWindow* self, int num, uint8_t* str, uint16_t len) {
+
+  if(num >= num_friends)
+    return;
+
+  if(friends[num].chatwin == -1) {
+    friends[num].chatwin = add_window(new_chat(num));
+  }
 }
 
 void friendlist_onNickChange(ToxWindow* self, int num, uint8_t* str, uint16_t len) {
@@ -55,8 +65,6 @@ void friendlist_onNickChange(ToxWindow* self, int num, uint8_t* str, uint16_t le
   memcpy((char*) &friends[num].name, (char*) str, len);
   friends[num].name[len] = 0;
   fix_name(friends[num].name);
-
-  return;
 }
 
 void friendlist_onStatusChange(ToxWindow* self, int num, uint8_t* str, uint16_t len) {
@@ -67,8 +75,6 @@ void friendlist_onStatusChange(ToxWindow* self, int num, uint8_t* str, uint16_t 
   memcpy((char*) &friends[num].status, (char*) str, len);
   friends[num].status[len] = 0;
   fix_name(friends[num].status);
-
-  return;
 }
 
 int friendlist_onFriendAdded(int num) {
@@ -80,6 +86,7 @@ int friendlist_onFriendAdded(int num) {
   getname(num, friends[num_friends].name);
   strcpy((char*) friends[num_friends].name, "unknown");
   strcpy((char*) friends[num_friends].status, "unknown");
+  friends[num_friends].chatwin = -1;
 
   num_friends++;
   return 0;
@@ -96,7 +103,12 @@ static void friendlist_onKey(ToxWindow* self, int key) {
       num_selected = (num_selected+1) % num_friends;
   }
   else if(key == '\n') {
-    focus_window(add_window(new_chat(num_selected)));
+
+    if(friends[num_selected].chatwin != -1)
+      return;
+
+    friends[num_selected].chatwin = add_window(new_chat(num_selected));
+    focus_window(friends[num_selected].chatwin);
   }
 }
 
@@ -110,12 +122,8 @@ static void friendlist_onDraw(ToxWindow* self) {
   }
   else {
     wattron(self->window, COLOR_PAIR(2) | A_BOLD);
-    wprintw(self->window, "Friend list:\n");
-    wattroff(self->window, A_BOLD);
-
-    wprintw(self->window, "      ENTER:     start a chat\n");
-    wprintw(self->window, "      UP/DOWN:   navigate list\n");
-    wattroff(self->window, COLOR_PAIR(2));
+    wprintw(self->window, "Open chat with.. (up/down keys, enter)\n");
+    wattroff(self->window, COLOR_PAIR(2) | A_BOLD);
   }
 
   wprintw(self->window, "\n");
@@ -123,7 +131,7 @@ static void friendlist_onDraw(ToxWindow* self) {
   for(i=0; i<num_friends; i++) {
 
     if(i == num_selected) wattron(self->window, COLOR_PAIR(3));
-    wprintw(self->window, "  [%d] ", friends[i].num);
+    wprintw(self->window, "  [#%d] ", friends[i].num);
     if(i == num_selected) wattroff(self->window, COLOR_PAIR(3));
 
     attron(A_BOLD);
@@ -149,6 +157,7 @@ ToxWindow new_friendlist() {
   ret.onKey = &friendlist_onKey;
   ret.onDraw = &friendlist_onDraw;
   ret.onInit = &friendlist_onInit;
+  ret.onMessage = &friendlist_onMessage;
   ret.onNickChange = &friendlist_onNickChange;
   ret.onStatusChange = &friendlist_onStatusChange;
   strcpy(ret.title, "[friends]");
