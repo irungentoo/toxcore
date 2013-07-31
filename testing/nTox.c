@@ -37,18 +37,22 @@
 
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
-int x,y;
+
+char *help = "[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)\n"
+             "[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)";
+int x, y;
+
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
-uint8_t num_requests;
+uint8_t num_requests = 0;
 
 void new_lines(char *line)
 {
     int i;
     for (i = HISTORY-1; i > 0; i--) 
-        strcpy(lines[i],lines[i-1]);
+        strcpy(lines[i], lines[i-1]);
     
-    strcpy(lines[0],line);
+    strcpy(lines[0], line);
     do_refresh();
 }
 
@@ -61,10 +65,8 @@ void print_friendlist()
     new_lines("[i] Friend List:");
     while(getname(i++, (uint8_t *)name) != -1) {
         char fstring[128];
-
-        getname(i, (uint8_t*)name);
-        if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+        if(strlen(name) <= 0) {
+            sprintf(fstring, "[i] Friend: No friend here!\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
@@ -74,20 +76,21 @@ void print_friendlist()
 
 char *format_message(char *message, int friendnum)
 {
-	char name[MAX_NAME_LENGTH];
-	if(friendnum != -1) {
-                getname(friendnum, (uint8_t*)name);
-	} else {
-                getself_name((uint8_t*)name);
-	}
-	char *msg = malloc(100+strlen(message)+strlen(name)+1);
+    char name[MAX_NAME_LENGTH];
+    if (friendnum != -1) {
+            getname(friendnum, (uint8_t*)name);
+    } else {
+            getself_name((uint8_t*)name);
+    }
+    char *msg = malloc(100+strlen(message)+strlen(name)+1);
+
     time_t rawtime;
     struct tm * timeinfo;
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
     char* time = asctime(timeinfo);
     size_t len = strlen(time);
-    time[len-1]='\0';
+    time[len-1] = '\0';
     sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message); // timestamp
     return msg;
 }
@@ -277,9 +280,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 
 void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 {
-    int i = 0;
     strcpy(output,input);
     size_t len = strlen(output);
+    int i = 0;
     for (i = line_width; i < len; i = i + line_width) {
         while (output[i] != ' ' && i != 0) {
             i--;
@@ -293,9 +296,9 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 int count_lines(char *string)
 {
     size_t len = strlen(string);
-    int i;
     int count = 1;
-    for (i=0; i < len; i++) {
+    int i;
+    for (i = 0; i < len; i++) {
         if (string[i] == '\n')
             count++;
     }
@@ -328,7 +331,7 @@ void do_refresh()
             clrtoeol();
         }
     }
-    move(y-1,0);
+    move(y-1, 0);
     clrtoeol();
     printw(">> ");
     printw(line);
@@ -359,12 +362,13 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     timeinfo = localtime ( &rawtime );
     char* temp = asctime(timeinfo);
     size_t len = strlen(temp);
-    temp[len-1]='\0';
+    temp[len-1] = '\0';
     sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
     new_lines(format_message((char*)string, friendnumber));
 }
 
-void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
+void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) 
+{
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length];
@@ -372,7 +376,8 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) {
     new_lines(msg);
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) 
+{
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
@@ -380,15 +385,17 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) {
     new_lines(msg);
 }
 
-void load_key(){
+void load_key() 
+{
     FILE *data_file = NULL;
-    if ((data_file = fopen("data","r"))) {
+    data_file = fopen("data","r");
+    if (data_file) {
         //load keys
         fseek(data_file, 0, SEEK_END);
         int size = ftell(data_file);
         fseek(data_file, 0, SEEK_SET);
         uint8_t data[size];
-        if(fread(data, sizeof(uint8_t), size, data_file) != size){
+        if (fread(data, sizeof(uint8_t), size, data_file) != size){
             printf("[i] could not read data file\n[i] exiting\n");
             exit(1);
         }
@@ -399,7 +406,7 @@ void load_key(){
         uint8_t data[size];
         Messenger_save(data);
         data_file = fopen("data","w");
-        if(fwrite(data, sizeof(uint8_t), size, data_file) != size){
+        if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
             printf("[i] could not write data file\n[i] exiting\n");
             exit(1);
         }
@@ -429,29 +436,29 @@ int main(int argc, char *argv[])
     m_callback_namechange(print_nickchange);
     m_callback_userstatus(print_statuschange);
     char idstring0[200];
-    char idstring1[32][5];
-    char idstring2[32][5];
-    uint32_t i;
-    for(i = 0; i < 32; i++)
+    char idstring1[PUB_KEY_BYTES][5];
+    char idstring2[PUB_KEY_BYTES][5];
+    int i;
+    for(i = 0; i < PUB_KEY_BYTES; i++)
     {
-        if(self_public_key[i] < 16)
+        if (self_public_key[i] < (PUB_KEY_BYTES / 2))
             strcpy(idstring1[i],"0");
         else 
             strcpy(idstring1[i], "");
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
     strcpy(idstring0,"[i] your ID: ");
-    for (i=0; i<32; i++) {
-        strcat(idstring0,idstring1[i]);
-        strcat(idstring0,idstring2[i]);
+    int j;
+    for (j = 0; j < PUB_KEY_BYTES; j++) {
+        strcat(idstring0,idstring1[j]);
+        strcat(idstring0,idstring2[j]);
     }
     initscr();
     noecho();
     raw();
-    getmaxyx(stdscr,y,x);
+    getmaxyx(stdscr, y, x);
     new_lines(idstring0);
-    new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
-    new_lines("[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)");
+    new_lines(help);
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -483,7 +490,7 @@ int main(int argc, char *argv[])
             line_eval(lines, line);
             strcpy(line, "");
         } else if (c == 127) {
-            line[strlen(line) - 1] = '\0';
+            line[strlen(line)-1] = '\0';
         } else if (isalnum(c) || ispunct(c) || c == ' ') {
             strcpy(line, appender(line, (char) c));
         }
