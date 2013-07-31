@@ -36,6 +36,34 @@ typedef struct {
 /* maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
+/*return values*/
+
+#define CLIENT_IP_PORT_EQUAL = 1;
+#define CLIENT_IP_PORT_DIFFERENT = 0;
+#define EQUAL_DISTANCE = 0;
+#define CLIENT_ID1_CLOSER = 1;
+#define CLIENT_ID2_CLOSER = 2;
+#define CLIENT_IN_NODELIST = 1;
+#define CLIENT_NOT_IN_NODELIST = 0;
+#define CLIENT_IN_LIST = 1;
+#define CLIENT_NOT_IN_LIST = 0;
+#define NODE_REPLACED = 0;
+#define CURRENTLY_PINGING = 1;
+#define NOT_PINGING = 0;
+#define GETTING_NODES = 1;
+#define NOT_GETTING_NODES = 0;
+#define PACKET_HANDLED_CORRECTLY = 0;
+
+#define ERROR_BAD_PACKET = 0;
+#define ERROR_FAILED_TO_ADD_PING = 0;
+#define ERROR_NO_SUITABLE_NODE_FOUND = 1;
+#define ERROR_FAILED_TO_ADD_NODE = 0;
+#define ERROR_INVALID_FRIEND = 1;
+#define ERROR_NO_FRIEND_NUMBER_FOUND = -1;
+#define CONNTECTED_TO_DHT = 1;
+#define NOT_CONNTECTED_TO_DHT = 0;
+#define DHT_LOAD_SUCCESS = 0;
+#define DHT_LOAD_FAILURE = -1;
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
@@ -92,11 +120,11 @@ int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2) 
     uint32_t i;
     for(i = 0; i < CLIENT_ID_SIZE; ++i) {
         if(abs(client_id[i] ^ client_id1[i]) < abs(client_id[i] ^ client_id2[i]))
-            return 1;
+            return CLIENT_ID1_CLOSER;
         else if(abs(client_id[i] ^ client_id1[i]) > abs(client_id[i] ^ client_id2[i]))
-            return 2;
+            return CLIENT_ID2_CLOSER;
     }
-    return 0;
+    return EQUAL_DISTANCE;
 }
 
 /* check if client with client_id is already in list of length length.
@@ -121,10 +149,10 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
             list[i].timestamp = temp_time;
             list[i].ip_port.ip.i = ip_port.ip.i;
             list[i].ip_port.port = ip_port.port;
-            return 1;
+            return CLIENT_IN_LIST;
         }
     }
-    return 0;
+    return CLIENT_NOT_IN_LIST;
 
 }
 
@@ -135,8 +163,8 @@ int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
     uint32_t i;
     for(i = 0; i < length; ++i)
         if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
-            return 1;
-    return 0;
+            return CLIENT_IN_NODELIST;
+    return CLIENT_NOT_IN_NODELIST;
 }
 
 /*Return the friend number from the client_id
@@ -147,7 +175,7 @@ static int friend_number(uint8_t * client_id)
     for(i = 0; i < num_friends; ++i)
         if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) /* Equal */
             return i;
-    return -1;
+    return ERROR_NO_FRIEND_NUMBER_FOUND;
 }
 
 /* the number of seconds for a non responsive node to become bad. */
@@ -213,10 +241,10 @@ int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Por
             list[i].ret_ip_port.ip.i = 0;
             list[i].ret_ip_port.port = 0;
             list[i].ret_timestamp = 0;
-            return 0;
+            return NODE_REPLACED;
         }
 
-    return 1;
+    return ERROR_NO_SUITABLE_NODE_FOUND;
 }
 
 /* replace the first good node that is further to the comp_client_id than that of the client_id in the list */
@@ -233,10 +261,10 @@ int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Po
             list[i].ret_ip_port.ip.i = 0;
             list[i].ret_ip_port.port = 0;
             list[i].ret_timestamp = 0;
-            return 0;
+            return NODE_REPLACED;
         }
 
-    return 1;
+    return ERROR_NO_SUITABLE_NODE_FOUND;
 }
 
 /* Attempt to add client with ip_port and client_id to the friends client list and close_clientlist */
@@ -306,10 +334,10 @@ int is_pinging(IP_Port ip_port, uint64_t ping_id)
                 if(pings[i].ping_id == ping_id)
                     ++pinging;
             if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
-                return 1;
+                return CURRENTLY_PINGING;
         }
 
-    return 0;
+    return NOT_PINGING;
 }
 
 /* Same as last function but for get_node requests. */
@@ -330,11 +358,11 @@ int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
                 if(send_nodes[i].ping_id == ping_id)
                     ++pinging;
             if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
-                return 1;
+                return GETTING_NODES;
 
         }
 
-    return 0;
+    return NOT_GETTING_NODES;
 }
 
 /* Add a new ping request to the list of ping requests
@@ -356,7 +384,7 @@ uint64_t add_pinging(IP_Port ip_port)
                 return ping_id;
             }
 
-    return 0;
+    return ERROR_FAILED_TO_ADD_PING;
 }
 
 /* Same but for get node requests */
@@ -375,7 +403,7 @@ uint64_t add_gettingnodes(IP_Port ip_port)
                 return ping_id;
             }
 
-    return 0;
+    return ERROR_FAILED_TO_ADD_NODE;
 }
 
 /* send a ping request
@@ -510,43 +538,43 @@ int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
     if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
-        return 1;
+        return ERROR_BAD_PACKET;
     /* check if packet is from ourself. */
     if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)
-        return 1;
+        return ERROR_BAD_PACKET;
 
     int len = decrypt_data(packet + 1, self_secret_key, packet + 1 + CLIENT_ID_SIZE,
                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                            sizeof(ping_id) + ENCRYPTION_PADDING, (uint8_t *)&ping_id);
     if(len != sizeof(ping_id))
-        return 1;
+        return ERROR_BAD_PACKET;
 
     pingres(source, packet + 1, ping_id);
 
     pingreq(source, packet + 1); /* TODO: make this smarter? */
 
-    return 0;
+    return PACKET_HANDLED_CORRECTLY;
 }
 
 int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
     if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
-        return 1;
+        return ERROR_BAD_PACKET;
     if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is from ourself. */
-        return 1;
+        return ERROR_BAD_PACKET;
 
     int len = decrypt_data(packet + 1, self_secret_key, packet + 1 + CLIENT_ID_SIZE,
                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                            sizeof(ping_id) + ENCRYPTION_PADDING, (uint8_t *)&ping_id);
     if(len != sizeof(ping_id))
-        return 1;
+        return ERROR_BAD_PACKET;
 
     if(is_pinging(source, ping_id)) {
         addto_lists(source, packet + 1);
         return 0;
     }
-    return 1;
+    return ERROR_BAD_PACKET;
 
 }
 
@@ -554,10 +582,10 @@ int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
     if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING)
-        return 1;
+        return ERROR_BAD_PACKET;
     /* check if packet is from ourself. */
     if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)
-        return 1;
+        return ERROR_BAD_PACKET;
 
     uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE];
 
@@ -566,14 +594,14 @@ int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
                            sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING, plain);
 
     if(len != sizeof(ping_id) + CLIENT_ID_SIZE)
-        return 1;
+        return ERROR_BAD_PACKET;
 
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(source, packet + 1, plain + sizeof(ping_id), ping_id);
 
     pingreq(source, packet + 1); /* TODO: make this smarter? */
 
-    return 0;
+    return PACKET_HANDLED_CORRECTLY;
 
 }
 
@@ -587,7 +615,7 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
                   + ENCRYPTION_PADDING)) % (sizeof(Node_format)) != 0 ||
        length < 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
        + sizeof(Node_format) + ENCRYPTION_PADDING) {
-        return 1;
+        return ERROR_BAD_PACKET;
     }
     uint32_t num_nodes = (length - (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES
                                     + sizeof(ping_id) + ENCRYPTION_PADDING)) / sizeof(Node_format);
@@ -599,11 +627,11 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
                            sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING, plain);
 
     if(len != sizeof(ping_id) + num_nodes * sizeof(Node_format))
-        return 1;
+        return ERROR_BAD_PACKET;
 
     memcpy(&ping_id, plain, sizeof(ping_id));
     if(!is_gettingnodes(source, ping_id))
-        return 1;
+        return ERROR_BAD_PACKET;
 
     Node_format nodes_list[MAX_SENT_NODES];
     memcpy(nodes_list, plain + sizeof(ping_id), num_nodes * sizeof(Node_format));
@@ -616,7 +644,7 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
         returnedip_ports(nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
 
-    return 0;
+    return PACKET_HANDLED_CORRECTLY;
 }
 
 /* END of packet handling functions */
@@ -626,7 +654,7 @@ int DHT_addfriend(uint8_t * client_id)
     Friend * temp;
     temp = realloc(friends_list, sizeof(Friend) * (num_friends + 1));
     if(temp == NULL)
-        return 1;
+        return ERROR_INVALID_FRIEND;
 
     friends_list = temp;
     memset(&friends_list[num_friends], 0, sizeof(Friend));
@@ -1062,9 +1090,9 @@ void DHT_save(uint8_t * data)
 int DHT_load(uint8_t * data, uint32_t size)
 {
     if(size < sizeof(close_clientlist))
-        return -1;
+        return DHT_LOAD_FAILURE;
     if((size - sizeof(close_clientlist)) % sizeof(Friend) != 0)
-        return -1;
+        return DHT_LOAD_FAILURE;
     uint32_t i, j;
     /* uint32_t temp_time = unix_time(); */
     uint16_t temp;
@@ -1088,7 +1116,7 @@ int DHT_load(uint8_t * data, uint32_t size)
     for(i = 0; i < LCLIENT_LIST; ++i)
         if(tempclose_clientlist[i].timestamp != 0)
             DHT_bootstrap(tempclose_clientlist[i].ip_port, tempclose_clientlist[i].client_id);
-    return 0;
+    return DHT_LOAD_SUCCESS;
 }
 
 /* returns 0 if we are not connected to the DHT
@@ -1099,6 +1127,6 @@ int DHT_isconnected()
     uint32_t temp_time = unix_time();
     for(i = 0; i < LCLIENT_LIST; ++i)
         if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)
-            return 1;
-    return 0;
+            return CONNTECTED_TO_DHT;
+    return NOT_CONNTECTED_TO_DHT;
 }
