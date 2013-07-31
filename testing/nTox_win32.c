@@ -126,8 +126,24 @@ void line_eval(char* line)
                 temp_id[i] = line[i+3];
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
-            sprintf(numstring, "\n[i] added friend %d\n\n", num);
-            printf(numstring);
+            switch (num) {
+                case -1:
+                    sprintf(numstring, "[i] Incorrect key length");
+                    break;
+                case -2:
+                    sprintf(numstring, "[i] That appears to be your own key");
+                    break;
+                case -3:
+                    sprintf(numstring, "[i] Friend request already sent");
+                    break;
+                case -4:
+                    sprintf(numstring, "[i] Could not add friend");
+                    break;
+                default:
+                    sprintf(numstring, "[i] Added friend %d", num);
+                    printf(numstring);
+                    break;
+            }
         }
 
         else if (inpt_command == 'r') {
