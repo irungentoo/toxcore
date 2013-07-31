@@ -55,15 +55,13 @@ void new_lines(char *line)
 void print_friendlist()
 {
     char name[MAX_NAME_LENGTH];
-    uint32_t i;
+    uint32_t i = 0;
 
     new_lines("[i] Friend List:");
-    for (i=0; i <= num_requests; i++) {
+    while(getname(i++, (uint8_t *)name) != -1) {
         char fstring[128];
-
-        getname(i, (uint8_t*)name);
-        if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+        if(strlen(name) <= 0) {
+            sprintf(fstring, "[i] Friend: No friend here!\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
@@ -132,7 +130,6 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         return;
 
     command_char = command[1];
-    printf("command_char: %d\n", command_char);
     if(command_char == 'f') { // add friend: /f ID MESSAGE
         char *id = strtok_r(NULL, " ", &save_ptr);
         char *message = NULL;
