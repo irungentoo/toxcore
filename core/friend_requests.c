@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* friend_requests.c
  *
  * Handle friend requests.
@@ -129,3 +130,5 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
     }
     return 1;
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

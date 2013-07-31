@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* misc_tools.c
  * 
  * Miscellaneous functions and data structures for doing random things.
@@ -38,3 +39,5 @@ unsigned char * hex_string_to_bin(char hex_string[])
         sscanf(pos,"%2hhx",&val[i]);
     return val;
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

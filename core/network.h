@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* network.h
  *
  * Datatypes, functions and includes for the core networking.
@@ -132,3 +133,5 @@ int resolve_addr(const char *address);
 #endif
 
 #endif
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* Lossless_UDP.h
  *
  * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
@@ -104,3 +105,5 @@ int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
 #endif
 
 #endif
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */

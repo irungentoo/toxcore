@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* DHT cryptosendfiletest
  * 
  * This program sends or recieves a friend request.
@@ -226,3 +227,5 @@ int main(int argc, char *argv[])
     shutdown_networking();
     return 0;   
 }
+
+/* vim:set shiftwidth=4 softtabstop=4 expandtab: */
