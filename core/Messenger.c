@@ -384,13 +384,11 @@ static void doFriends()
     for (i = 0; i < numfriends; ++i) {
         if (friendlist[i].status == 1) {
             fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
-            if (fr == 0) {
-                for (j = 0; j < 3 && fr == 0; ++j)
-                    fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);    
-            }
-            if (fr == 0)
+            for (j = 0; j < 3 && fr == 0; ++j)
+                 fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);    
+            if (fr == 0)//sent the friend request directly to the friend
                 friendlist[i].status = 2;      
-            else if (fr > 0)
+            else if (fr > 0)//sent through peers and eventually friend
                 friendlist[i].status = 2;        
         }
         if (friendlist[i].status == 2 || friendlist[i].status == 3) { /* friend is not online */
