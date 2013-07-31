@@ -53,6 +53,10 @@ typedef struct {
 #define GETTING_NODES = 1;
 #define NOT_GETTING_NODES = 0;
 #define PACKET_HANDLED_CORRECTLY = 0;
+#define CONNTECTED_TO_DHT = 1;
+#define NOT_CONNTECTED_TO_DHT = 0;
+#define DHT_LOAD_SUCCESS = 0;
+#define DHT_LOAD_FAILURE = -1;
 
 #define ERROR_BAD_PACKET = 0;
 #define ERROR_FAILED_TO_ADD_PING = 0;
@@ -60,10 +64,6 @@ typedef struct {
 #define ERROR_FAILED_TO_ADD_NODE = 0;
 #define ERROR_INVALID_FRIEND = 1;
 #define ERROR_NO_FRIEND_NUMBER_FOUND = -1;
-#define CONNTECTED_TO_DHT = 1;
-#define NOT_CONNTECTED_TO_DHT = 0;
-#define DHT_LOAD_SUCCESS = 0;
-#define DHT_LOAD_FAILURE = -1;
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
