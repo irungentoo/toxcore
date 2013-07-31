@@ -45,7 +45,7 @@ extern "C" {
 #define FRIEND_STATUS_NONE          0
 #define FRIEND_STATUS_ADDED         1
 #define FRIEND_STATUS_REQ_SENT      2
-#define FREIND_STATUS_CONFIRMED     3
+#define FRIEND_STATUS_CONFIRMED     3
 #define FRIEND_STATUS_ONLINE        4
 
 /* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
