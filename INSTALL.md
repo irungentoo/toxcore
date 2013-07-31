@@ -42,7 +42,17 @@ make
 
 ###OSX:
 
-Much the same as above, remember to install the latest XCode and the developer tools (Preferences -> Downloads -> Command Line Tools).
+####Homebrew:
+```
+brew install libtool automake autoconf libconfig libsodium
+cmake .
+make
+sudo make install
+```
+
+####Non-homebrew:
+
+Much the same as Linux, remember to install the latest XCode and the developer tools (Preferences -> Downloads -> Command Line Tools).
 Users running Mountain Lion and the latest version of XCode (4.6.3) will also need to install libtool, automake and autoconf.
 They are easy enough to install, grab them from http://www.gnu.org/software/libtool/, http://www.gnu.org/software/autoconf/ and http://www.gnu.org/software/automake/, then follow these steps for each:
 
