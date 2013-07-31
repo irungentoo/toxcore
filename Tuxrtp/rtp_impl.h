@@ -85,7 +85,7 @@ typedef struct rtp_session_s {
 } rtp_session_t;
 
 
-rtp_session_t*  rtp_init_session ( IP_Port _dest, int max_users ); /* you need to have at least 1 receiver */
+rtp_session_t*  init_rtp_session ( IP_Port _dest, int max_users ); /* you need to have at least 1 receiver */
 
 uint8_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
 
