@@ -132,44 +132,44 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         return;
 
     command_char = command[1];
+    printf("command_char: %d\n", command_char);
     if(command_char == 'f') { // add friend: /f ID MESSAGE
-        char *id = strtok_r(line, " ", &save_ptr);
+        char *id = strtok_r(NULL, " ", &save_ptr);
         char *message = NULL;
         int message_len = 0;
         int rc = 0;
 
         if(id == NULL) {
-            new_lines("[!] /f needs an ID to act upon!\n");
-            return;
+            new_lines("[!] /f needs an ID to act upon!");
+        } else {
+            message = strtok_r(NULL, " ", &save_ptr);
+
+            if(message == NULL)
+                message = "Install Gentoo";
+
+            message_len = strlen(message);
+            rc = m_addfriend(hex_string_to_bin(id), (uint8_t *)message, sizeof(char) * message_len);
+
+            add_friend_error(rc);
         }
-        message = strtok_r(line, " ", &save_ptr);
-
-        if(message == NULL)
-            message = "Install Gentoo";
-
-        message_len = strlen(message);
-        rc = m_addfriend(hex_string_to_bin(id), (uint8_t *)message, sizeof(char) * message_len);
-
-        add_friend_error(rc);
-        do_refresh();
 
     } else if(command_char == 'd') { // main loop
         doMessenger();
 
     } else if(command_char == 'm') { //message command: /m friendnumber messsage
-        char *num = strtok_r(line, " ", &save_ptr);
+        char *num = strtok_r(NULL, " ", &save_ptr);
         char *message = NULL;
         int message_len = 0;
         int rc = 0;
 
         if(num == NULL) {
-            new_lines("[!] /m needs a friend number to act upon!\n");
+            new_lines("[!] /m needs a friend number to act upon!");
             return;
         }
-        message = strtok_r(line, " ", &save_ptr);
+        message = strtok_r(NULL, " ", &save_ptr);
 
         if(message == NULL) {
-            new_lines("[!] /m needs a message to send!\n");
+            new_lines("[!] /m needs a message to send!");
             return;
         }
 
@@ -178,15 +178,13 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         if(rc == 0)
             new_lines("[!] /m fucked up!");
 
-        do_refresh();
-
     } else if(command_char == 'n') { // set name: /n NAME
-        char *name = strtok_r(line, " ", &save_ptr);
+        char *name = strtok_r(NULL, " ", &save_ptr);
         char name_mem[MAX_NAME_LENGTH];
         char numstring[MAX_NAME_LENGTH];
 
         if(name == NULL) {
-            new_lines("[!] /n needs a name to act upon!\n");
+            new_lines("[!] /n needs a name to act upon!");
             return;
         }
 
@@ -201,11 +199,11 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 
     } else if (line[1] == 's') { // set status: /s SOMETHING
         /* what's the user entering here? a digit? a string? */
-        char *status = strtok_r(line, " ", &save_ptr);
+        char *status = strtok_r(NULL, " ", &save_ptr);
         char numstring[MAX_USERSTATUS_LENGTH];
 
         if(status == NULL) {
-            new_lines("[!] /s needs a...thing! go type it! (pls document /s)\n");
+            new_lines("[!] /s needs a...thing! go type it! (pls document /s)");
             return;
         }
 
@@ -214,13 +212,13 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         new_lines(numstring);
 
     } else if (command_char == 'a') { // accept a friend request: /a ID
-        char *friend_num = strtok_r(line, " ", &save_ptr);
+        char *friend_num = strtok_r(NULL, " ", &save_ptr);
         char numchar[ID_LENGTH];
         int friend = 0;
         int rc = 0;
 
         if(friend_num == NULL) {
-            new_lines("[!] /a needs an ID to act upon!\n");
+            new_lines("[!] /a needs an ID to act upon!");
             return;
         }
 
@@ -235,11 +233,10 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             sprintf(numchar, "[i] added friendnumber %d", friend);
             new_lines(numchar);
         }
-        do_refresh();
 
     } else if (command_char == 'h') { // help!
         new_lines("[i] commands:\n/f ID (to add friend)\n/m friendnumber "
-                 "message (to send message)\n/s status (to change status)\n");
+                 "message (to send message)\n/s status (to change status)");
         new_lines("/l list (list friends)\n/h for help\n/i for info\n/n nick "
                  "(to change nickname)\n/q (to quit)");
 
@@ -272,6 +269,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 
     } else
         new_lines("[i] invalid command");
+
+    do_refresh();
 }
 
 void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
