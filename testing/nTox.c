@@ -97,17 +97,34 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 {
     if (line[0] == '/') {
         char inpt_command = line[1];
-        char prompt[STRING_LENGTH + 2] = "> ";
+        char prompt[STRING_LENGTH+2] = "> ";
+        int prompt_offset = 3;
         strcat(prompt, line);
         new_lines(prompt);
         if (inpt_command == 'f') { // add friend command: /f ID
             int i;
             char temp_id[128];
             for (i = 0; i < 128; i++) 
-                temp_id[i] = line[i+3];
+                temp_id[i] = line[i+prompt_offset];
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
-            sprintf(numstring, "[i] added friend %d", num);
+            switch (num) {
+                case -1:
+                    sprintf(numstring, "[i] Incorrect key length");
+                    break;
+                case -2:
+                    sprintf(numstring, "[i] That appears to be your own key");
+                    break;
+                case -3:
+                    sprintf(numstring, "[i] Friend request already sent");
+                    break;
+                case -4:
+                    sprintf(numstring, "[i] Could not add friend");
+                    break;
+                default:
+                    sprintf(numstring, "[i] Added friend %d", num);
+                    break;
+            }
             new_lines(numstring);
             do_refresh();
         }
