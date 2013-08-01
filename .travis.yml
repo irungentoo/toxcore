@@ -21,12 +21,15 @@ before_script:
   - cd ..
 # creating librarys' links and updating cache
   - sudo ldconfig
-
+# installing sphinx, needed for documentation
+  - sudo apt-get install python-sphinx
 
 script:
   - mkdir build && cd build
   - cmake ..
   - make -j3
+# build docs separately
+  - make docs
 
 notifications:
   email: false
