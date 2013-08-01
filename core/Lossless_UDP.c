@@ -506,11 +506,16 @@ int send_DATA(uint32_t connection_id)
     return 0;
 }
 
-/* END of packet sending functions */
+/* 
+ * END of packet sending functions
+ *
+ *
+ * BEGIN Packet handling functions
+ * One to handle each type of packets we receive
+ */
 
-/* Packet handling functions
-   One to handle each type of packets we receive
-   return 0 if handled correctly, 1 if packet is bad. */
+
+/* Return 0 if handled correctly, 1 if packet is bad. */
 int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if (length != (1 + 4 + 4))
@@ -542,8 +547,7 @@ int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
 
 }
 
-/* returns 1 if sync packet is valid
-   0 if not. */
+/* returns 1 if sync packet is valid 0 if not. */
 int SYNC_valid(uint32_t length)
 {
     if (length < 4 + 4 + 2)
@@ -554,19 +558,19 @@ int SYNC_valid(uint32_t length)
     return 1;
 }
 
-/* case 1: */
+/* case 1 in handle_SYNC: */
 int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnum)
 {
     if (handshake_id(source) == recv_packetnum) {
         int x = new_inconnection(source);
         if (x != -1) {
-            connections[x].orecv_packetnum = recv_packetnum;
-            connections[x].sent_packetnum = recv_packetnum;
+            connections[x].orecv_packetnum    = recv_packetnum;
+            connections[x].sent_packetnum     = recv_packetnum;
             connections[x].sendbuff_packetnum = recv_packetnum;
-            connections[x].successful_sent = recv_packetnum;
-            connections[x].osent_packetnum = sent_packetnum;
-            connections[x].recv_packetnum = sent_packetnum;
-            connections[x].successful_read = sent_packetnum;
+            connections[x].successful_sent    = recv_packetnum;
+            connections[x].osent_packetnum    = sent_packetnum;
+            connections[x].recv_packetnum     = sent_packetnum;
+            connections[x].successful_read    = sent_packetnum;
 
             return x;
         }
@@ -574,7 +578,7 @@ int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnu
     return -1;
 }
 
-/* case 2: */
+/* case 2 in handle_SYNC: */
 int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum)
 {
     if (recv_packetnum == connections[connection_id].orecv_packetnum) {
@@ -587,7 +591,7 @@ int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
     }
     return 1;
 }
-/* case 3: */
+/* case 3 in handle_SYNC: */
 int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum, uint32_t * req_packets,
                  uint16_t number)
 {
@@ -597,17 +601,24 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
        uint32_t comp_2 = (sent_packetnum - connections[connection_id].successful_read); */
     uint32_t comp_1 = (recv_packetnum - connections[connection_id].orecv_packetnum);
     uint32_t comp_2 = (sent_packetnum - connections[connection_id].osent_packetnum);
-    if (comp_1 <= BUFFER_PACKET_NUM && comp_2 <= BUFFER_PACKET_NUM && comp_counter < 10 && comp_counter != 0) { /* packet valid */
+
+    /* packet valid */
+    if (comp_1 <= BUFFER_PACKET_NUM && 
+        comp_2 <= BUFFER_PACKET_NUM && 
+        comp_counter < 10 && comp_counter != 0) { 
+
         connections[connection_id].orecv_packetnum = recv_packetnum;
         connections[connection_id].osent_packetnum = sent_packetnum;
         connections[connection_id].successful_sent = recv_packetnum;
-        connections[connection_id].last_recvSYNC = current_time();
-        connections[connection_id].recv_counter = counter;
+        connections[connection_id].last_recvSYNC    = current_time();
+        connections[connection_id].recv_counter    = counter;
         ++connections[connection_id].send_counter;
+
         for (i = 0; i < number; ++i) {
             temp = ntohl(req_packets[i]);
             memcpy(connections[connection_id].req_packets + i, &temp, 4 * number);
         }
+
         connections[connection_id].num_req_paquets = number;
         return 0;
     }
@@ -631,14 +642,20 @@ int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
     recv_packetnum = ntohl(temp);
     memcpy(&temp,packet + 6,  4);
     sent_packetnum = ntohl(temp);
+
     if (number != 0)
         memcpy(req_packets, packet + 10,  4 * number);
+
     if (connection == -1)
         return handle_SYNC1(source, recv_packetnum, sent_packetnum);
+
     if (connections[connection].status ==  2)
-        return handle_SYNC2(connection, counter, recv_packetnum, sent_packetnum);
+        return handle_SYNC2(connection, counter, 
+                            recv_packetnum, sent_packetnum);
+
     if (connections[connection].status ==  3)
-        return handle_SYNC3(connection, counter, recv_packetnum, sent_packetnum, req_packets, number);
+        return handle_SYNC3(connection, counter, recv_packetnum, 
+                            sent_packetnum, req_packets, number);
     return 0;
 }
 
@@ -654,13 +671,17 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_t size)
     uint32_t i;
     uint32_t maxnum = connections[connection_id].successful_read + BUFFER_PACKET_NUM;
     uint32_t sent_packet = data_num - connections[connection_id].osent_packetnum;
+
     for (i = connections[connection_id].recv_packetnum; i != maxnum; ++i) {
         if (i == data_num) {
             memcpy(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].data, data, size);
+
             connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size = size;
             connections[connection_id].last_recvdata = current_time();
+
             if (sent_packet < BUFFER_PACKET_NUM)
                 connections[connection_id].osent_packetnum = data_num;
+
             break;
         }
     }
@@ -696,7 +717,10 @@ int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
     return add_recv(connection, number, packet + 5, size);
 }
 
-/* END of packet handling functions */
+/* 
+ * END of packet handling functions 
+ */
+
 int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) {
@@ -732,10 +756,13 @@ void doNew()
             }
 
         /* kill all timed out connections */
-        if ( connections[i].status > 0 && (connections[i].last_recvSYNC + connections[i].timeout * 1000000UL) < temp_time &&
-             connections[i].status != 4)
-            /* kill_connection(i); */
+        if (connections[i].status > 0 && 
+            (connections[i].last_recvSYNC + connections[i].timeout * 1000000UL) < temp_time &&
+            connections[i].status != 4) {
             connections[i].status = 4;
+            /* kill_connection(i); */
+        }
+
         if (connections[i].status > 0 && connections[i].killat < temp_time)
             kill_connection(i);
     }
@@ -794,8 +821,7 @@ void adjustRates()
     }
 }
 
-/* Call this function a couple times per second
-   It's the main loop. */
+/* Call this function a couple times per second It's the main loop. */
 void doLossless_UDP()
 {
     doNew();
