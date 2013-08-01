@@ -41,7 +41,7 @@ For further information, check our [To-do list](https://github.com/irungentoo/Pr
 The goal of this project is to create a configuration-free P2P skype 
 replacement. Configuration-free means that the user will simply have to open the program and 
 without any account configuration will be capable of adding people to his 
-friends list and start conversing with them. There are many so called skype replacements and all of them are either hard to 
+friends list and start conversing with them. There are many so-called skype replacements and all of them are either hard to 
 configure for the normal user or suffer from being way too centralized.
 
 ### Documentation:
