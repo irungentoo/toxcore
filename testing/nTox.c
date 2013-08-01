@@ -133,6 +133,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
+	    if(len < 3)
+	      return;
+
             char numstring[len-3];
             char message[len-3];
             int i;
@@ -141,13 +144,13 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                     numstring[i] = line[i+3];
                 } else {
                     int j;
-                    for (j = (i+1); j < len; j++)
+                    for (j = (i+1); j < (len+1); j++)
                         message[j-i-1] = line[j+3];
                     break;
                 }
             }
             int num = atoi(numstring);
-            if (m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
+            if (m_sendmessage(num, (uint8_t*) message, strlen(message) + 1) != 1) {
                 new_lines("[i] could not send message");
             } else {
                 new_lines(format_message(message, -1));
@@ -162,7 +165,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 name[i-3] = line[i];
             }
             name[i-3] = 0;
-            setname(name, i);
+            setname(name, i - 2);
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
@@ -179,7 +182,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            m_set_userstatus(status, strlen((char*)status));
+            m_set_userstatus(status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
