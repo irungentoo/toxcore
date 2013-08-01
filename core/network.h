@@ -116,12 +116,16 @@ int init_networking(IP ip, uint16_t port);
 /* function to cleanup networking stuff(doesn't do much right now) */
 void shutdown_networking();
 
-/* resolves provided address to a binary data in network byte order
-    address is ASCII null terminated string
-    address should represent IPv4, IPv6 or a hostname
-    on success returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
-    on failure returns -1 */
-int resolve_addr(const char *address);
+/*
+  resolve_addr():
+    address should represent IPv4 or a hostname with A record
+
+    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+    returns 0 on failure
+
+    TODO: Fix ipv6 support
+*/
+uint32_t resolve_addr(const char *address);
 
 #ifdef __cplusplus
 }

@@ -75,10 +75,9 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     uint32_t i;
     uint32_t check = 0;
     for(i = 0; i < crypto_box_BOXZEROBYTES; ++i) {
-        if (temp_encrypted[i] != 0)
-            check = 1;
+            check |= temp_plain[i] ^ 0;
     }
-    if(check == 1)
+    if(check != 0)
         return -1;
 
     /* unpad the encrypted message */
@@ -110,10 +109,9 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     uint32_t i;
     uint32_t check = 0;
     for(i = 0; i < crypto_box_ZEROBYTES; ++i) {
-        if (temp_plain[i] != 0)
-            check = 1;
+            check |= temp_plain[i] ^ 0;
     }
-    if(check == 1)
+    if(check != 0)
         return -1;
 
     /* unpad the plain message */

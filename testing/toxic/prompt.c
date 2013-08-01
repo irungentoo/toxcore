@@ -83,8 +83,8 @@ static void execute(ToxWindow* self, char* cmd) {
 
     dht.port = htons(atoi(port));
 
-    int resolved_address = resolve_addr(ip);
-    if (resolved_address == -1) {
+    uint32_t resolved_address = resolve_addr(ip);
+    if (resolved_address == 0) {
       return;
     }
 
