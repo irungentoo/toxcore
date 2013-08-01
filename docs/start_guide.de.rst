@@ -1,7 +1,7 @@
 Tox nutzen
 ==========
 
-1. Tox erstellen
+1. :doc:`Tox erstellen <install>`
 2. Fehler korrigieren
 3. Im IRC nach Hilfe fragen
 4. Auf Debug-Reise für Entwickler
@@ -64,5 +64,3 @@ anwenderfreundlicher Versuch.
       sprich einfach über uns!
    -  Je mehr Interesse wir erhalten, desto mehr Arbeit wird getan und
       desto besser wird Tox.
-
-

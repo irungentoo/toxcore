@@ -4,7 +4,7 @@ Using Tox
 .. note:: There is a German version of this page available: :doc:`start_guide.de`
 
 
-1. `Build Tox <../INSTALL.md>`_
+1. :doc:`Build Tox <install>`
 2. Fix errors
 3. Consult IRC for help
 4. Go on debugging journey for devs
