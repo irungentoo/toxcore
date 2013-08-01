@@ -24,26 +24,28 @@
 #include "LAN_discovery.h"
 
 #define MAX_INTERFACES 16
-#define ERR_IOCTL 0
 
 #ifdef __linux
 /* get the first working broadcast address that's not from "lo"
  *  returns higher than 0 on success
- *  returns ERR_IOCTL on error */
+ *  returns 0 on error */
 uint32_t get_broadcast(void)
 {
     /* not sure how many platforms this will
      *  run on, so it's wrapped in __linux for now */
     struct sockaddr_in *sock_holder = NULL;
     struct ifreq i_faces[MAX_INTERFACES];
-    struct in_addr result;
     struct ifconf ifconf;
     int count = 0;
     int sock = 0;
     int i = 0;
 
     /* configure ifconf for the ioctl call */
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("[!] get_broadcast: socket() error");
+        return 0;
+    }
+
     memset(i_faces, 0, sizeof(struct ifreq) * MAX_INTERFACES);
 
     ifconf.ifc_buf = (char *)i_faces;
@@ -51,16 +53,15 @@ uint32_t get_broadcast(void)
     count = ifconf.ifc_len / sizeof(struct ifreq);
     if(ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
         perror("get_broadcast: ioctl() error");
-        return ERR_IOCTL;
+        return 0;
     }
 
-    fprintf(stderr, "count: %d\n", count);
     for(i = 0; i < count; i++) {
         /* skip the loopback interface, as it's useless */
         if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
             if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
                 perror("[!] get_broadcast: ioctl error");
-                return ERR_IOCTL;
+                return 0;
             }
 
             /* just to clarify where we're getting the values from */
@@ -69,13 +70,6 @@ uint32_t get_broadcast(void)
         }
     }
     close(sock);
-
-    char test[INET_ADDRSTRLEN];
-
-    result.s_addr = sock_holder->sin_addr.s_addr;
-    inet_ntop(AF_INET, &result, test, INET_ADDRSTRLEN);
-    fprintf(stderr, "broadcast address for %s: %s\n", i_faces[i].ifr_name, test);
-    getchar();
 
     return sock_holder->sin_addr.s_addr;
 }
@@ -87,8 +81,8 @@ IP broadcast_ip()
     IP ip;
     #ifdef __linux
     ip.i = get_broadcast();
-    if(ip.i == ERR_IOCTL)
-        /* ioctl errored, but try anyway? */
+    if(ip.i == 0)
+        /* error errored, but try anyway? */
         ip.i = ~0;
     #else
     ip.i = ~0;
