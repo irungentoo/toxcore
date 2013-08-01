@@ -73,10 +73,13 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     /* if encryption is successful the first crypto_box_BOXZEROBYTES of the message will be zero
        apparently memcmp should not be used so we do this instead:*/
     uint32_t i;
+    uint32_t check = 0;
     for(i = 0; i < crypto_box_BOXZEROBYTES; ++i) {
         if (temp_encrypted[i] != 0)
-            return -1;
+            check = 1;
     }
+    if(check == 1)
+        return -1;
 
     /* unpad the encrypted message */
     memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
@@ -105,10 +108,13 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero 
        apparently memcmp should not be used so we do this instead:*/
     uint32_t i;
+    uint32_t check = 0;
     for(i = 0; i < crypto_box_ZEROBYTES; ++i) {
         if (temp_plain[i] != 0)
-            return -1;
+            check = 1;
     }
+    if(check == 1)
+        return -1;
 
     /* unpad the plain message */
     memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES);
