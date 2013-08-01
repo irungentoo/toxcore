@@ -23,7 +23,6 @@
 #include "nTox.h"
 #include "misc_tools.h"
 
-
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -236,7 +235,6 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             sprintf(numchar, "[i] added friendnumber %d", friend);
             new_lines(numchar);
             do_refresh();
-            
         }
 
     } else if (command_char == 'h') { // help!
@@ -317,16 +315,16 @@ char *appender(char *str, const char c)
 
 void do_refresh()
 {
-    int i;
     int count=0;
-    int l;
     char wrap_output[STRING_LENGTH];
-    for (i=0; i<HISTORY; i++) {
+    int L;
+    int i;
+    for (i = 0; i < HISTORY; i++) {
         wrap(wrap_output, lines[i], x);
-        l = count_lines(wrap_output);
-        count = count + l;
+        L = count_lines(wrap_output);
+        count = count + L;
         if (count < y) {
-            move(y-1-count,0);
+            move(y-1-count, 0);
             printw(wrap_output);
             clrtoeol();
         }
@@ -481,7 +479,6 @@ int main(int argc, char *argv[])
         do_refresh();
 
         c = getch();
-
         if (c == ERR || c == 27)
             continue;
 
