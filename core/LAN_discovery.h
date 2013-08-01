@@ -28,14 +28,6 @@
 
 #include "DHT.h"
 
-/* used for get_broadcast() */
-#ifdef __linux
-#include <sys/ioctl.h>
-#include <arpa/inet.h>
-#include <linux/netdevice.h>
-#endif
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
