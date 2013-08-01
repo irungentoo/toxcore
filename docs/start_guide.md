@@ -1,5 +1,5 @@
 # Using Tox
-1. [Build Tox](/INSTALL.md)
+1. [Build Tox](../INSTALL.md)
 2. Fix errors
 3. Consult IRC for help
 4. Go on debugging journey for devs
@@ -29,7 +29,7 @@ Tox. Here's a user-friendly attempt at it.
     + Now use the `/m` command to send a message to someone. Wow, you're chatting!
 4. But something broke!
     + Yeah, pre-alpha-alpha software tends to do that. We're working on it.
-    + Please report all crashes to either the [github](/) page, or `#tox-dev` on freenode.
+    + Please report all crashes to either the GitHub page, or `#tox-dev` on freenode.
 5. Nothing broke, but what does `/f` mean?
     + `nTox` parses text as a command if the first character is a forward-slash (`/`).
       You can check all commands in commands.md.
