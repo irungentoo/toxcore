@@ -9,8 +9,9 @@ Welcome to ProjectTox's documentation!
 Contents:
 
 .. toctree::
+   start_guide.rst
+   install.rst
    commands.rst
-   using_tox.rst
    :maxdepth: 2
 
 
