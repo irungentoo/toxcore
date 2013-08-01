@@ -5,5 +5,5 @@ set(exe_name nTox_win32)
 
 add_executable(${exe_name}
         nTox_win32.c misc_tools.c)
-        
+
 linkCoreLibraries(${exe_name})
