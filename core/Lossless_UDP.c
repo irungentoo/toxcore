@@ -393,7 +393,10 @@ uint32_t recvqueue(int connection_id)
    return -1 if no packet in queue */
 char id_packet(int connection_id)
 {
-    if (recvqueue(connection_id) > 0 && connections[connection_id].status != 0 && connection_id < MAX_CONNECTIONS)
+    if (connection_id < 0 || connection_id >= MAX_CONNECTIONS)
+        return -1;
+
+    if (recvqueue(connection_id) != 0 && connections[connection_id].status != 0)
         return connections[connection_id].recvbuffer[connections[connection_id].successful_read % MAX_QUEUE_NUM].data[0];
 
     return -1;
