@@ -21,28 +21,27 @@
  *
  */
 
-/* TODO: clean this file a bit.
-   There are a couple of useless variables to get rid of. */
+/* 
+ * TODO: clean this file a bit.
+ * There are a couple of useless variables to get rid of.
+ */
+
 #include "Lossless_UDP.h"
 
 /* maximum data packets in sent and receive queues. */
-#define MAX_QUEUE_NUM 16
-
-/* maximum length of the data in the data packets */
-/* #define MAX_DATA_SIZE 1024 */ /* defined in Lossless_UDP.h */
+#define MAX_QUEUE_NUM     16
 
 /* maximum number of data packets in the buffer */
 #define BUFFER_PACKET_NUM (16-1)
 
-/* Lossless UDP connection timeout.
-timeout per connection is randomly set between CONNEXION_TIMEOUT and 2*CONNEXION_TIMEOUT */
+/* timeout per connection is randomly set between CONNEXION_TIMEOUT and 2*CONNEXION_TIMEOUT */
 #define CONNEXION_TIMEOUT 5
 
 /* initial amount of sync/hanshake packets to send per second. */
-#define SYNC_RATE 2
+#define SYNC_RATE         2
 
 /* initial send rate of data. */
-#define DATA_SYNC_RATE 30
+#define DATA_SYNC_RATE    30
 
 typedef struct {
     uint8_t  data[MAX_DATA_SIZE];
@@ -51,6 +50,7 @@ typedef struct {
 
 typedef struct {
     IP_Port ip_port;
+
     /*
      * 0 if connection is dead, 1 if attempting handshake,
      * 2 if handshake is done (we start sending SYNC packets)
@@ -122,26 +122,33 @@ static uint32_t connections_number; /* Number of connections in connections arra
 
 /* Functions */
 
-/* get connection id from IP_Port
-   return -1 if there are no connections like we are looking for
-   return id if it found it */
+/* 
+ * Get connection id from IP_Port
+ * Return -1 if there are no connections like we are looking for
+ * Return id if it found it
+ */
 int getconnection_id(IP_Port ip_port)
 {
     uint32_t i;
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if (connections[i].ip_port.ip.i == ip_port.ip.i &&
-            connections[i].ip_port.port == ip_port.port && connections[i].status > 0)
+            connections[i].ip_port.port == ip_port.port && 
+            connections[i].status > 0)
             return i;
     }
+
     return -1;
 }
 
 /* table of random numbers used below. */
 static uint32_t randtable[6][256];
 
-/* generate a handshake_id which depends on the ip_port.
-   this function will always give one unique handshake_id per ip_port.
-   TODO: make this better */
+/* 
+ * Generate a handshake_id which depends on the ip_port.
+ * This function will always give one unique handshake_id per ip_port.
+ *
+ * TODO: make this better
+ */
 uint32_t handshake_id(IP_Port source)
 {
     uint32_t id = 0, i;
@@ -152,21 +159,27 @@ uint32_t handshake_id(IP_Port source)
     }
     if (id == 0) /* id can't be zero */
         id = 1;
+
     return id;
 }
 
-/* change the hnshake id associated with that ip_port
-   TODO: make this better */
+/* 
+ * Change the hanshake id associated with that ip_port
+ *
+ * TODO: make this better
+ */
 void change_handshake(IP_Port source)
 {
     uint8_t rand = random_int() % 4;
     randtable[rand][((uint8_t *)&source)[rand]] = random_int();
 }
 
-/* initialize a new connection to ip_port
-   returns an integer corresponding to the connection id.
-   return -1 if it could not initialize the connection.
-   if there already was an existing connection to that ip_port return its number. */
+/* 
+ * Initialize a new connection to ip_port
+ * Returns an integer corresponding to the connection idt
+ * Return -1 if it could not initialize the connectiont
+ * If there already was an existing connection to that ip_port return its number.
+ */
 int new_connection(IP_Port ip_port)
 {
     int connect = getconnection_id(ip_port);
@@ -176,8 +189,10 @@ int new_connection(IP_Port ip_port)
     if(connections_number == connections_length) {
         Connection * temp;
         temp = realloc(connections, sizeof(Connection) * (connections_length + 1));
+
         if(temp == NULL)
             return -1;
+
         memset(&temp[connections_length], 0, sizeof(Connection));
         ++connections_length;
         connections = temp;
@@ -213,9 +228,11 @@ int new_connection(IP_Port ip_port)
     return -1;
 }
 
-/* initialize a new inbound connection from ip_port
-   returns an integer corresponding to the connection id.
-   return -1 if it could not initialize the connection. */
+/* 
+ * Initialize a new inbound connection from ip_port
+ * Returns an integer corresponding to the connection id.
+ * Return -1 if it could not initialize the connection.
+ */
 int new_inconnection(IP_Port ip_port)
 {
     if (getconnection_id(ip_port) != -1)
@@ -224,8 +241,10 @@ int new_inconnection(IP_Port ip_port)
     if(connections_number == connections_length) {
         Connection * temp;
         temp = realloc(connections, sizeof(Connection) * (connections_length + 1));
+
         if(temp == NULL)
             return -1;
+
         memset(&temp[connections_length], 0, sizeof(Connection));
         ++connections_length;
         connections = temp;
@@ -259,8 +278,10 @@ int new_inconnection(IP_Port ip_port)
     return -1;
 }
 
-/* returns an integer corresponding to the next connection in our incoming connection list
-   return -1 if there are no new incoming connections in the list. */
+/* 
+ * Returns an integer corresponding to the next connection in our incoming connection list.
+ * Return -1 if there are no new incoming connections in the list.
+ */
 int incoming_connection()
 {
     uint32_t i;
@@ -270,9 +291,11 @@ int incoming_connection()
             return i;
         }
     }
+
     return -1;
 }
-/*Try to free some memory from the connections array.*/
+
+/* Try to free some memory from the connections array. */
 static void free_connections()
 {
     uint32_t i;
@@ -292,8 +315,10 @@ static void free_connections()
     connections_length = i;
 }
 
-/* return -1 if it could not kill the connection.
-   return 0 if killed successfully */
+/* 
+ * Return -1 if it could not kill the connection.
+ * Return 0 if killed successfully
+ */
 int kill_connection(int connection_id)
 {
     if (connection_id >= 0 && connection_id < MAX_CONNECTIONS) {
@@ -308,9 +333,11 @@ int kill_connection(int connection_id)
     return -1;
 }
 
-/* kill connection in seconds seconds.
-   return -1 if it can not kill the connection.
-   return 0 if it will kill it */
+/* 
+ * Kill connection in seconds.
+ * Return -1 if it can not kill the connection.
+ * Return 0 if it will kill it.
+ */
 int kill_connection_in(int connection_id, uint32_t seconds)
 {
     if (connection_id >= 0 && connection_id < MAX_CONNECTIONS) {
@@ -322,12 +349,14 @@ int kill_connection_in(int connection_id, uint32_t seconds)
     return -1;
 }
 
-/* check if connection is connected
-   return 0 no.
-   return 1 if attempting handshake
-   return 2 if handshake is done
-   return 3 if fully connected
-   return 4 if timed out and waiting to be killed */
+/* 
+ * Check if connection is connected:
+ * Return 0 no.
+ * Return 1 if attempting handshake.
+ * Return 2 if handshake is done.
+ * Return 3 if fully connected.
+ * Return 4 if timed out and waiting to be killed.
+ */
 int is_connected(int connection_id)
 {
     if (connection_id >= 0 && connection_id < MAX_CONNECTIONS)
@@ -364,10 +393,9 @@ uint32_t recvqueue(int connection_id)
    return -1 if no packet in queue */
 char id_packet(int connection_id)
 {
-    if (connection_id < 0 || connection_id >= MAX_CONNECTIONS)
-        return -1;
-    if (recvqueue(connection_id) != 0 && connections[connection_id].status != 0)
+    if (recvqueue(connection_id) > 0 && connections[connection_id].status != 0 && connection_id < MAX_CONNECTIONS)
         return connections[connection_id].recvbuffer[connections[connection_id].successful_read % MAX_QUEUE_NUM].data[0];
+
     return -1;
 }
 
@@ -386,14 +414,13 @@ int read_packet(int connection_id, uint8_t * data)
     return 0;
 }
 
-/* return 0 if data could not be put in packet queue
-   return 1 if data was put into the queue */
+/* 
+ * Return 0 if data could not be put in packet queue
+ * Return 1 if data was put into the queue
+ */
 int write_packet(int connection_id, uint8_t * data, uint32_t length)
 {
-    if (length > MAX_DATA_SIZE)
-        return 0;
-
-    if (length == 0)
+    if (length > MAX_DATA_SIZE || length == 0)
         return 0;
 
     if (sendqueue(connection_id) <  BUFFER_PACKET_NUM) {
@@ -403,6 +430,7 @@ int write_packet(int connection_id, uint8_t * data, uint32_t length)
         connections[connection_id].sendbuff_packetnum++;
         return 1;
     }
+
     return 0;
 }
 
@@ -412,8 +440,11 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
     uint32_t number = 0;
     uint32_t i;
     uint32_t temp;
-    if (recvqueue(connection_id) >= (BUFFER_PACKET_NUM - 1)) /* don't request packets if the buffer is full. */
+
+    /* don't request packets if the buffer is full. */
+    if (recvqueue(connection_id) >= (BUFFER_PACKET_NUM - 1)) 
         return 0;
+
     for (i = connections[connection_id].recv_packetnum; i != connections[connection_id].osent_packetnum; i++) {
         if(connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size == 0) {
             temp = htonl(i);
@@ -421,14 +452,19 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
             ++number;
         }
     }
+    
     if(number == 0)
         connections[connection_id].recv_packetnum = connections[connection_id].osent_packetnum;
+
     return number;
 }
 
-/* Packet sending functions
-  One per packet type.
-  see docs/Lossless_UDP.txt for more information. */
+/* 
+ * BEGIN Packet sending functions
+ * One per packet type.
+ * see docs/Lossless_UDP.txt for more information.
+ */
+
 int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
 {
     uint8_t packet[1 + 4 + 4];
@@ -445,7 +481,6 @@ int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_i
 
 int send_SYNC(uint32_t connection_id)
 {
-
     uint8_t packet[(BUFFER_PACKET_NUM*4 + 4 + 4 + 2)];
     uint16_t index = 0;
 
@@ -456,7 +491,6 @@ int send_SYNC(uint32_t connection_id)
 
     uint32_t requested[BUFFER_PACKET_NUM];
     uint32_t number         = missing_packets(connection_id, requested);
-
 
     packet[0] = 17;
     index += 1;
@@ -520,8 +554,10 @@ int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if (length != (1 + 4 + 4))
         return 1;
+
     uint32_t temp;
     uint32_t handshake_id1, handshake_id2;
+
     int connection = getconnection_id(source);
     memcpy(&temp, packet + 1, 4);
     handshake_id1 = ntohl(temp);
@@ -534,17 +570,19 @@ int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
     }
     if (is_connected(connection) != 1)
         return 1;
-    if (handshake_id2 == connections[connection].handshake_id1) { /* if handshake_id2 is what we sent previously as handshake_id1 */
+
+    /* if handshake_id2 is what we sent previously as handshake_id1 */
+    if (handshake_id2 == connections[connection].handshake_id1) { 
         connections[connection].status = 2;
         /* NOTE: is this necessary?
         connections[connection].handshake_id2 = handshake_id1; */
         connections[connection].orecv_packetnum = handshake_id2;
         connections[connection].osent_packetnum = handshake_id1;
-        connections[connection].recv_packetnum = handshake_id1;
+        connections[connection].recv_packetnum  = handshake_id1;
         connections[connection].successful_read = handshake_id1;
     }
-    return 0;
 
+    return 0;
 }
 
 /* returns 1 if sync packet is valid 0 if not. */
@@ -610,8 +648,9 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
         connections[connection_id].orecv_packetnum = recv_packetnum;
         connections[connection_id].osent_packetnum = sent_packetnum;
         connections[connection_id].successful_sent = recv_packetnum;
-        connections[connection_id].last_recvSYNC    = current_time();
+        connections[connection_id].last_recvSYNC   = current_time();
         connections[connection_id].recv_counter    = counter;
+
         ++connections[connection_id].send_counter;
 
         for (i = 0; i < number; ++i) {
@@ -630,6 +669,7 @@ int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
 
     if (!SYNC_valid(length))
         return 1;
+
     int connection = getconnection_id(source);
     uint8_t counter;
     uint32_t temp;
@@ -679,12 +719,14 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_t size)
             connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size = size;
             connections[connection_id].last_recvdata = current_time();
 
-            if (sent_packet < BUFFER_PACKET_NUM)
+            if (sent_packet < BUFFER_PACKET_NUM) {
                 connections[connection_id].osent_packetnum = data_num;
+            }
 
             break;
         }
     }
+
     for (i = connections[connection_id].recv_packetnum; i != maxnum; ++i) {
         if (connections[connection_id].recvbuffer[i % MAX_QUEUE_NUM].size != 0)
             connections[connection_id].recv_packetnum = i;
@@ -708,12 +750,14 @@ int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
 
     if (length > 1 + 4 + MAX_DATA_SIZE || length < 1 + 4 + 1)
         return 1;
+
     uint32_t temp;
     uint32_t number;
     uint16_t size = length - 1 - 4;
 
     memcpy(&temp, packet + 1, 4);
     number = ntohl(temp);
+
     return add_recv(connection, number, packet + 5, size);
 }
 
