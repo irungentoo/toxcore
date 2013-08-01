@@ -305,6 +305,9 @@ int main(int argc, char* argv[]) {
     if(ch == '\t') {
       w_active = (w_active + 1) % w_num;
     }
+    else if(ch == KEY_BTAB) {
+      w_active = (w_active + w_num - 1) % w_num;
+    }
     else if(ch != ERR) {
       a->onKey(a, ch);
     }
