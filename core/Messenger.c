@@ -166,8 +166,8 @@ int m_delfriend(int friendnumber)
     free(friendlist[friendnumber].userstatus);
     memset(&friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
-    for (i = numfriends; i != 0;) {
-        if (friendlist[--i].status != 0)
+    for (i = numfriends; i != 0; --i) {
+        if (friendlist[i-1].status != 0)
             break;
     }
     numfriends = i;
