@@ -89,7 +89,12 @@ char *format_message(char *message, int friendnum)
     char* time = asctime(timeinfo);
     size_t len = strlen(time);
     time[len-1] = '\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message); // timestamp
+    if (friendnum != -1) {
+        sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message);
+    } else {
+        // This message came from ourselves
+        sprintf(msg, "%s <%s> %s", time, name, message);
+    }
     return msg;
 }
 
@@ -316,17 +321,6 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length+strlen(name)+1];
-    time_t rawtime;
-    struct tm * timeinfo;
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-    char* temp = asctime(timeinfo);
-    size_t len = strlen(temp);
-    temp[len-1] = '\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
     new_lines(format_message((char*)string, friendnumber));
 }
 
