@@ -12,7 +12,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
 
 **How to build Tox on Linux**: [YouTube video](http://www.youtube.com/watch?v=M4WXE4VKmyg)<br />
-**How to use Tox on Windows**: [YouTube video](http://www.youtube.com/watch?v=qg_j_sDb6WQ)
+**How to use Tox on Windows**: [YouTube video](http://www.youtube.com/watch?v=qg_j_sDb6WQ)<br />
 **For Mac OSX read INSTALL.md**
 
 ### Objectives:
