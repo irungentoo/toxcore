@@ -32,11 +32,14 @@ sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
 ```
 
-Then clone this repo and run:
+Then clone this repo and generate makefile:
 ```bash
+git clone git://github.com/irungentoo/ProjectTox-Core.git
+cd ProjectTox-Core
 mkdir build && cd build
 cmake ..
 ```
+Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
 Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
 ```bash
@@ -102,6 +105,7 @@ Navigate in `cmd` to this repo and run:
 mkdir build && cd build
 cmake -G "MinGW Makefiles" ..
 ```
+Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
 Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
 ```cmd
