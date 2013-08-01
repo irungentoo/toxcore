@@ -58,7 +58,7 @@ make
 <a name="homebrew" />
 ####Homebrew:
 ```
-brew install libtool automake autoconf libconfig libsodium
+brew install libtool automake autoconf libconfig libsodium cmake
 cmake .
 make
 sudo make install
