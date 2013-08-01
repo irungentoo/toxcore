@@ -383,9 +383,10 @@ static void doFriends()
     uint8_t temp[MAX_DATA_SIZE];
     for (i = 0; i < numfriends; ++i) {
         if (friendlist[i].status == 1) {
-            fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
-            for (j = 0; j < 3 && fr == 0; ++j)
-                 fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);    
+            if (friendlist[i].friend_request_id + 10 < unix_time()) { /* hackish like below, ideally do gradually decreasing interval*/
+                fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
+                friendlist[i].friend_request_id = unix_time();
+                }
             if (fr == 0)//sent the friend request directly to the friend
                 friendlist[i].status = 2;      
             else if (fr > 0)//sent through peers and eventually friend
