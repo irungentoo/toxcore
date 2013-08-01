@@ -6,7 +6,6 @@
       - [Homebrew](#homebrew)
       - [Non-Homebrew](#non-homebrew)
     - [Windows](#windows)
-- [Usage](#usage)
 
 <a name="installation" />
 ##Installation
@@ -121,7 +120,3 @@ Or you could just build everything that is supported on your platform by running
 mingw32-make
 ```
 
-<a name="usage" />
-## Usage
-
-- [Start Guide](start_guide.md)
