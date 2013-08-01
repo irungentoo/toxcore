@@ -318,17 +318,6 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length+strlen(name)+1];
-    time_t rawtime;
-    struct tm * timeinfo;
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-    char* temp = asctime(timeinfo);
-    size_t len = strlen(temp);
-    temp[len-1] = '\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
     new_lines(format_message((char*)string, friendnumber));
 }
 
