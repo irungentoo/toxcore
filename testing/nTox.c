@@ -89,7 +89,12 @@ char *format_message(char *message, int friendnum)
     char* time = asctime(timeinfo);
     size_t len = strlen(time);
     time[len-1] = '\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message); // timestamp
+    if (friendnum != -1) {
+        sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message);
+    } else {
+        // This message came from ourselves
+        sprintf(msg, "%s <%s> %s", time, name, message);
+    }
     return msg;
 }
 
