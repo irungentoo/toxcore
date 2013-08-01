@@ -138,13 +138,15 @@ static void execute(ToxWindow* self, char* cmd) {
       wprintw(self->window, "Message is too long.\n");
       break;
     case -2:
+      wprintw(self->window, "Please add a message to your request.\n");
+    case -3:
       wprintw(self->window, "That appears to be your own ID.\n");
       break;
-    case -3:
+    case -4:
       wprintw(self->window, "Friend request already sent.\n");
       break;
-    case -4:
-      wprintw(self->window, "Invalid ID.\n");
+    case -5:
+      wprintw(self->window, "[i] Undefined error when adding friend.\n");
       break; 
     default:
       wprintw(self->window, "Friend added as %d.\n", num);

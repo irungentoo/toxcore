@@ -132,13 +132,15 @@ void line_eval(char* line)
                 printf(numstring);
             }
             else if (num == -1) 
-                printf("\nWrong key size\n\n");
+                printf("\n[i] Message is too long.\n\n");
             else if (num == -2)
-                printf("\nYou can't add yourself\n\n");
+                printf("\n[i] Please add a message to your friend request.\n\n");
             else if (num == -3)
-                printf("\nYou already have this person added\n\n");
+                printf("\n[i] That appears to be your own ID.\n\n");
             else if (num == -4)
-                printf("\nUndefined error when adding friend");
+                printf("\n[i] Friend request already sent.\n\n");
+            else if (num == -5)
+                printf("\n[i] Undefined error when adding friend\n\n");
         }
 
         else if (inpt_command == 'r') {
