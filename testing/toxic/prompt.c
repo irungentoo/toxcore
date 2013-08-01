@@ -16,6 +16,7 @@ uint8_t pending_requests[256][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
 extern void on_friendadded(int friendnumber);
+static void print_usage(ToxWindow* self);
 
 // XXX:
 int add_req(uint8_t* public_key) {
@@ -138,24 +139,7 @@ static void execute(ToxWindow* self, char* cmd) {
     on_friendadded(num);
   }
   else if(!strcmp(cmd, "help")) {
-  wattron(self->window, COLOR_PAIR(2) | A_BOLD);
-  wprintw(self->window, "Commands:\n");
-  wattroff(self->window, A_BOLD);
-  
-  wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
-  wprintw(self->window, "      add <id> <message>        : Add friend\n");
-  wprintw(self->window, "      status <message>          : Set your status\n");
-  wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
-  wprintw(self->window, "      accept <number>           : Accept friend request\n");
-  wprintw(self->window, "      myid                      : Print your ID\n");
-  wprintw(self->window, "      quit/exit                 : Exit program\n");
-
-
-  wattron(self->window, A_BOLD);
-  wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
-  wattroff(self->window, A_BOLD);
-
-  wattroff(self->window, COLOR_PAIR(2));
+	  print_usage(self);
   }
   else if(!strncmp(cmd, "status ", strlen("status "))) {
     char* msg;
