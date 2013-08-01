@@ -378,7 +378,7 @@ int initMessenger()
 static void doFriends()
 {
     /* TODO: add incoming connections and some other stuff. */
-    uint32_t i, j;
+    uint32_t i;
     int len, fr;
     uint8_t temp[MAX_DATA_SIZE];
     for (i = 0; i < numfriends; ++i) {
