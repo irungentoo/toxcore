@@ -27,17 +27,20 @@
 #define ERR_IOCTL 0
 
 #ifdef __linux
+/* get the first working broadcast address that's not from "lo"
+ *  returns higher than 0 on success
+ *  returns ERR_IOCTL on error */
 uint32_t get_broadcast(void)
 {
     /* not sure how many platforms this will
      *  run on, so it's wrapped in __linux for now */
-    struct ifconf ifconf;
+    struct sockaddr_in *sock_holder = NULL;
     struct ifreq i_faces[MAX_INTERFACES];
+    struct in_addr result;
+    struct ifconf ifconf;
     int count = 0;
     int sock = 0;
     int i = 0;
-    struct sockaddr_in *sock_holder = NULL;
-    struct in_addr result;
 
     /* configure ifconf for the ioctl call */
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -55,7 +58,6 @@ uint32_t get_broadcast(void)
     for(i = 0; i < count; i++) {
         /* skip the loopback interface, as it's useless */
         if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
-            fprintf(stderr, "device name: %s\n", i_faces[i].ifr_name);
             if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
                 perror("[!] get_broadcast: ioctl error");
                 return ERR_IOCTL;
@@ -72,7 +74,7 @@ uint32_t get_broadcast(void)
 
     result.s_addr = sock_holder->sin_addr.s_addr;
     inet_ntop(AF_INET, &result, test, INET_ADDRSTRLEN);
-    fputs(test, stderr);
+    fprintf(stderr, "broadcast address for %s: %s\n", i_faces[i].ifr_name, test);
     getchar();
 
     return sock_holder->sin_addr.s_addr;
