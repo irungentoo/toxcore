@@ -75,7 +75,7 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     uint32_t i;
     uint32_t check = 0;
     for(i = 0; i < crypto_box_BOXZEROBYTES; ++i) {
-            check |= temp_plain[i] ^ 0;
+            check |= temp_encrypted[i] ^ 0;
     }
     if(check != 0)
         return -1;
