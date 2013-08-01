@@ -99,14 +99,15 @@ int getclient_id(int friend_id, uint8_t *client_id)
    client_id is the client id of the friend
    data is the data and length is the length
    returns the friend number if success
-   return -1 if key length is wrong.
+   return -1 if message length is too long
    return -2 if user's own key
    return -3 if already a friend
    return -4 for other*/
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
-    if (length == 0 || length >=
-        (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
+    if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES 
+                         - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES 
+                         + crypto_box_ZEROBYTES))
         return -1;
     if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
         return -2;
