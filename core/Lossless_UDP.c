@@ -240,7 +240,7 @@ static void free_connections()
 {
     uint32_t i;
     for(i = connections_length; i != 0; --i)
-        if (connections[i - 1].status != 0)
+        if (connections[i-1].status != 0)
             break;
 
     if(connections_length == i)
