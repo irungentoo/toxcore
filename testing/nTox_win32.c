@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
-    if (resolved_address != -1)
+    if (resolved_address != 0)
         bootstrap_ip_port.ip.i = resolved_address;
     else 
         exit(1);
