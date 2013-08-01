@@ -2,7 +2,7 @@
 1. [Build Tox](/INSTALL.md)
 2. Fix errors
 3. Consult IRC for help
-4. Go on debugging journy for devs
+4. Go on debugging journey for devs
 5. Build Tox for real
 6. ???
 
