@@ -65,15 +65,18 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
     uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES] = {0};
     uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_ZEROBYTES];
-    uint8_t zeroes[crypto_box_BOXZEROBYTES] = {0};
 
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); /* pad the message with 32 0 bytes. */
 
     crypto_box(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce, public_key, secret_key);
 
-    /* if encryption is successful the first crypto_box_BOXZEROBYTES of the message will be zero */
-    if (memcmp(temp_encrypted, zeroes, crypto_box_BOXZEROBYTES) != 0)
-        return -1;
+    /* if encryption is successful the first crypto_box_BOXZEROBYTES of the message will be zero
+       apparently memcmp should not be used so we do this instead:*/
+    uint32_t i;
+    for(i = 0; i < crypto_box_BOXZEROBYTES; ++i) {
+        if (temp_encrypted[i] != 0)
+            return -1;
+    }
 
     /* unpad the encrypted message */
     memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
@@ -92,7 +95,6 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
     uint8_t temp_plain[MAX_DATA_SIZE - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES];
     uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
-    uint8_t zeroes[crypto_box_ZEROBYTES] = {0};
 
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); /* pad the message with 16 0 bytes. */
 
@@ -100,9 +102,13 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
                         nonce, public_key, secret_key) == -1)
         return -1;
 
-    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero */
-    if (memcmp(temp_plain, zeroes, crypto_box_ZEROBYTES) != 0)
-        return -1;
+    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero 
+       apparently memcmp should not be used so we do this instead:*/
+    uint32_t i;
+    for(i = 0; i < crypto_box_ZEROBYTES; ++i) {
+        if (temp_plain[i] != 0)
+            return -1;
+    }
 
     /* unpad the plain message */
     memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES);
@@ -365,6 +371,7 @@ int crypto_kill(int crypt_connection_id)
     if (crypto_connections[crypt_connection_id].status != 0) {
         crypto_connections[crypt_connection_id].status = 0;
         kill_connection(crypto_connections[crypt_connection_id].number);
+        memset(&crypto_connections[crypt_connection_id], 0 ,sizeof(Crypto_Connection));
         crypto_connections[crypt_connection_id].number = ~0;
         return 0;
     }
