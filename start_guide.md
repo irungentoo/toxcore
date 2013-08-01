@@ -22,9 +22,9 @@ Tox. Here's a user-friendly attempt at it.
     + Now that you're on the network, you need a friend. To get one of those,
        you need to to send or receive a request. What's a request, you ask?
        It's like a friend request, but we use really scary and cryptic numbers
-       instead of names. When `nTox` starts, it shows your _your_ long, scary number,
+       instead of names. When `nTox` starts, it shows _your_ long, scary number,
        called your *public key*. Give that to people, and they can add you as
-       as "friend". Or, you can add someone else, with the `/f` command, if you like.
+       a "friend". Or, you can add someone else, with the `/f` command, if you like.
 3. Chat it up!
     + Now use the `/m` command to send a message to someone. Wow, you're chatting!
 4. But something broke!
