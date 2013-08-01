@@ -22,7 +22,7 @@ configure_file(
     "${BINARY_BUILD_DIR}/conf.py"
     @ONLY)
  
-add_custom_target(docs ALL
+add_custom_target(docs
     ${SPHINX_EXECUTABLE}
     -b html
     -c "${BINARY_BUILD_DIR}"
