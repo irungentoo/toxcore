@@ -23,13 +23,74 @@
 
 #include "LAN_discovery.h"
 
+#define MAX_INTERFACES 16
+#define ERR_IOCTL 0
 
-/*Return the broadcast ip
-  TODO: make it return the real one, not the 255.255.255.255 one.*/
+#ifdef __linux
+uint32_t get_broadcast(void)
+{
+    /* not sure how many platforms this will
+     *  run on, so it's wrapped in __linux for now */
+    struct ifconf ifconf;
+    struct ifreq i_faces[MAX_INTERFACES];
+    int count = 0;
+    int sock = 0;
+    int i = 0;
+    struct sockaddr_in *sock_holder = NULL;
+    struct in_addr result;
+
+    /* configure ifconf for the ioctl call */
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    memset(i_faces, 0, sizeof(struct ifreq) * MAX_INTERFACES);
+
+    ifconf.ifc_buf = (char *)i_faces;
+    ifconf.ifc_len = sizeof(i_faces);
+    count = ifconf.ifc_len / sizeof(struct ifreq);
+    if(ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
+        perror("get_broadcast: ioctl() error");
+        return ERR_IOCTL;
+    }
+
+    fprintf(stderr, "count: %d\n", count);
+    for(i = 0; i < count; i++) {
+        /* skip the loopback interface, as it's useless */
+        if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
+            fprintf(stderr, "device name: %s\n", i_faces[i].ifr_name);
+            if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
+                perror("[!] get_broadcast: ioctl error");
+                return ERR_IOCTL;
+            }
+
+            /* just to clarify where we're getting the values from */
+            sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
+            break;
+        }
+    }
+    close(sock);
+
+    char test[INET_ADDRSTRLEN];
+
+    result.s_addr = sock_holder->sin_addr.s_addr;
+    inet_ntop(AF_INET, &result, test, INET_ADDRSTRLEN);
+    fputs(test, stderr);
+    getchar();
+
+    return sock_holder->sin_addr.s_addr;
+}
+#endif
+
+/* Return the broadcast ip */
 IP broadcast_ip()
 {
     IP ip;
+    #ifdef __linux
+    ip.i = get_broadcast();
+    if(ip.i == ERR_IOCTL)
+        /* ioctl errored, but try anyway? */
+        ip.i = ~0;
+    #else
     ip.i = ~0;
+    #endif
     return ip;
 }
 
