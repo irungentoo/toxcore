@@ -147,13 +147,13 @@ static void execute(ToxWindow* self, char* cmd) {
 
     for(i = 0; i < 32; i++) {
       if(self_public_key[i] < 16)
-	strcpy(idstring1[i], "0");
+		strcpy(idstring1[i], "0");
       else 
-	strcpy(idstring1[i], "");
-
-      sprintf(idstring2[i], "%hhX", self_public_key[i]);
+		strcpy(idstring1[i], "");
+	    sprintf(idstring2[i], "%hhX", self_public_key[i]);
     }
     
+    bzero(idstring0, strlen(idstring0));
     for (i=0; i<32; i++) {
       strcat(idstring0, idstring1[i]);
       strcat(idstring0, idstring2[i]);
