@@ -134,10 +134,28 @@ static void execute(ToxWindow* self, char* cmd) {
     }
 
     num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
-
-    wprintw(self->window, "Friend added as %d.\n", num);
-    on_friendadded(num);
+    switch (num) {
+    case -1: 
+      wprintw(self->window, "Message is too long.\n");
+      break;
+    case -2:
+      wprintw(self->window, "Please add a message to your request.\n");
+    case -3:
+      wprintw(self->window, "That appears to be your own ID.\n");
+      break;
+    case -4:
+      wprintw(self->window, "Friend request already sent.\n");
+      break;
+    case -5:
+      wprintw(self->window, "[i] Undefined error when adding friend.\n");
+      break; 
+    default:
+      wprintw(self->window, "Friend added as %d.\n", num);
+      on_friendadded(num);
+      break;
+    }
   }
+
   else if(!strcmp(cmd, "help")) {
 	  print_usage(self);
   }
