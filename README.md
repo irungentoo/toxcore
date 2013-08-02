@@ -47,6 +47,7 @@ configure for the normal user or suffer from being way too centralized.
 ### Documentation:
 
 - [Installation](/INSTALL.md)
+- [Commands](/docs/commands.rst)
 - [DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
 - [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
 - [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
