@@ -71,12 +71,6 @@ int getfriend_id(uint8_t *client_id)
     return -1;
 }
 
-/* Returns number of friends */
-int getnumfriends()
-{
-    return numfriends;
-}
-
 /* copies the public key associated to that friend id into client_id buffer.
    make sure that client_id is of size CLIENT_ID_SIZE.
    return 0 if success
