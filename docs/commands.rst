@@ -41,8 +41,8 @@ this.
 
    -  Print some help.
 
--  */q/*
+-  */q*
 
-   -  Quit Tox. (why ;\_;)
+   -  Quit Tox. 
 
 
