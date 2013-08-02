@@ -111,24 +111,28 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             char temp_id[128];
             for (i = 0; i < 128; i++) 
                 temp_id[i] = line[i+prompt_offset];
+
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
             switch (num) {
-                case -1:
-                    sprintf(numstring, "[i] Incorrect key length");
-                    break;
-                case -2:
-                    sprintf(numstring, "[i] That appears to be your own key");
-                    break;
-                case -3:
-                    sprintf(numstring, "[i] Friend request already sent");
-                    break;
-                case -4:
-                    sprintf(numstring, "[i] Could not add friend");
-                    break;
-                default:
-                    sprintf(numstring, "[i] Added friend %d", num);
-                    break;
+            case -1:
+                sprintf(numstring, "[i] Message is too long.");
+                break;
+            case -2:
+                sprintf(numstring, "[i] Please add a message to your request.");
+                break;
+            case -3:
+                sprintf(numstring, "[i] That appears to be your own ID.");
+                break;
+            case -4:
+                sprintf(numstring, "[i] Friend request already sent.");
+                break;
+            case -5:
+                sprintf(numstring, "[i] Undefined error when adding friend.");
+                break;
+            default:
+                sprintf(numstring, "[i] Added friend as %d.", num);
+                break;
             }
             new_lines(numstring);
             do_refresh();
