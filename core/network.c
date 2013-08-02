@@ -64,7 +64,7 @@ static int sock;
 int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
-    return sendto(sock,(char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
+    return (int)sendto(sock,(char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
 
 /* Function to receive data, ip and port of sender is put into ip_port
@@ -79,7 +79,7 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
 #else
     uint32_t addrlen = sizeof(addr);
 #endif
-    (*(int32_t*)length) = recvfrom(sock,(char*) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    (*(int32_t*)length) = (uint32_t)recvfrom(sock,(char*) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
     if (*(int32_t*)length <= 0)
         return -1; /* nothing received or empty packet */
 
