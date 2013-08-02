@@ -44,13 +44,40 @@ int x, y;
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests = 0;
 
+// 01513F29A0483B3F482478B4A039041E19571249AE1F4E323E4C1C6A446BFF06
+// 01513F29A0483B3F482478B4A039041E19571249AE1F4E323E4C1C6A446BFF06
+// 01513F29A0483B3F482478B4A039041E19571249AE1F4E323E4C1C6A446BFF0
+void get_id(char *data)
+{
+    char idstring0[200];
+    char idstring1[PUB_KEY_BYTES][5];
+    char idstring2[PUB_KEY_BYTES][5];
+    int i;
+    for(i = 0; i < PUB_KEY_BYTES; i++)
+    {
+        if (self_public_key[i] < (PUB_KEY_BYTES / 2))
+            strcpy(idstring1[i],"0");
+        else 
+            strcpy(idstring1[i], "");
+        sprintf(idstring2[i], "%hhX",self_public_key[i]);
+    }
+    strcpy(idstring0,"[i] ID: ");
+    int j;
+    for (j = 0; j < PUB_KEY_BYTES; j++) {
+        strcat(idstring0,idstring1[j]);
+        strcat(idstring0,idstring2[j]);
+    }
+
+    memcpy(data, idstring0, strlen(idstring0));
+}
+
 void new_lines(char *line)
 {
-    int i;
+    int i = 0;
     for (i = HISTORY-1; i > 0; i--) 
-        strcpy(lines[i], lines[i-1]);
+        strncpy(lines[i], lines[i-1], STRING_LENGTH - 1);
     
-    strcpy(lines[0], line);
+    strncpy(lines[0], line, STRING_LENGTH - 1);
     do_refresh();
 }
 
@@ -216,26 +243,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
            new_lines("[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)");
         }
        else if (inpt_command == 'i') { //info
-           char idstring0[200];
-           char idstring1[PUB_KEY_BYTES][5];
-           char idstring2[PUB_KEY_BYTES][5];
-           int i;
-           for (i = 0; i < PUB_KEY_BYTES; i++)
-           {
-               if (self_public_key[i] < (PUB_KEY_BYTES/2))
-                   strcpy(idstring1[i],"0");
-               else 
-                   strcpy(idstring1[i], "");
-               sprintf(idstring2[i], "%hhX", self_public_key[i]);
-           }
-           //
-           strcpy(idstring0,"[i] ID: ");
-           int j;
-           for (j = 0; j < PUB_KEY_BYTES; j++) {
-               strcat(idstring0,idstring1[j]);
-               strcat(idstring0,idstring2[j]);
-           }    
-                  new_lines(idstring0);
+           char idstring[200];
+           get_id(idstring);
+           new_lines(idstring);
        }
 
         else if (inpt_command == 'q') { //exit
@@ -396,29 +406,14 @@ int main(int argc, char *argv[])
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
     m_callback_userstatus(print_statuschange);
-    char idstring0[200];
-    char idstring1[PUB_KEY_BYTES][5];
-    char idstring2[PUB_KEY_BYTES][5];
-    int i;
-    for(i = 0; i < PUB_KEY_BYTES; i++)
-    {
-        if (self_public_key[i] < (PUB_KEY_BYTES / 2))
-            strcpy(idstring1[i],"0");
-        else 
-            strcpy(idstring1[i], "");
-        sprintf(idstring2[i], "%hhX",self_public_key[i]);
-    }
-    strcpy(idstring0,"[i] your ID: ");
-    int j;
-    for (j = 0; j < PUB_KEY_BYTES; j++) {
-        strcat(idstring0,idstring1[j]);
-        strcat(idstring0,idstring2[j]);
-    }
+
+    char idstring[200];
+    get_id(idstring);
     initscr();
     noecho();
     raw();
     getmaxyx(stdscr, y, x);
-    new_lines(idstring0);
+    new_lines(idstring);
     new_lines(help);
     strcpy(line, "");
     IP_Port bootstrap_ip_port;
