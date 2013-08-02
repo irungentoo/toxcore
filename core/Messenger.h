@@ -55,7 +55,7 @@ extern "C" {
 #define FAERR_NOMESSAGE -2
 #define FAERR_OWNKEY -3
 #define FAERR_ALREADYSENT -4
-#define FAERR_GENERAL -5
+#define FAERR_UNKNOWN -5
 
 /* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */

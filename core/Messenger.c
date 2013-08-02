@@ -94,11 +94,11 @@ int getclient_id(int friend_id, uint8_t *client_id)
  * client_id is the client id of the friend
  * data is the data and length is the length
  * returns the friend number if success
- * return -1 if message length is too long
- * return -2 if no message (message length must be >= 1 byte)
- * return -3 if user's own key
- * return -4 if friend request already sent or already a friend
- * return -5 for unknown error 
+ * return FA_TOOLONG if message length is too long
+ * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
+ * return FAERR_OWNKEY if user's own key
+ * return FAERR_ALREADYSENT if friend request already sent or already a friend
+ * return FAERR_UNKNOWN for unknown error 
  */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
@@ -130,7 +130,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             return i;
         }
     }
-    return FAERR_GENERAL;
+    return FAERR_UNKNOWN;
 }
 
 int m_addfriend_norequest(uint8_t * client_id)
@@ -177,11 +177,11 @@ int m_delfriend(int friendnumber)
     return 0;
 }
 
-/* return 4 if friend is online
-   return 3 if friend is confirmed
-   return 2 if the friend request was sent
-   return 1 if the friend was added
-   return 0 if there is no friend with that number */
+/* return FRIEND_ONLINE if friend is online
+   return FRIEND_CONFIRMED if friend is confirmed
+   return FRIEND_REQUESTED if the friend request was sent
+   return FRIEND_ADDED if the friend was added
+   return NOFRIEND if there is no friend with that number */
 int m_friendstatus(int friendnumber)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
