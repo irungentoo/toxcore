@@ -28,6 +28,7 @@
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests = 0;
+uint8_t maxnumfriends;
 
 char line[STRING_LENGTH];
 char users_id[200];
@@ -115,30 +116,176 @@ void load_key()
     fclose(data_file);
 }
 
+void add_friend()
+{
+    int i;
+    char temp_id[128];
+    
+    for (i = 0; i < 128; i++)  
+        temp_id[i] = line[i+3];
+    
+    int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+   
+    if (num >= 0) {
+        char numstring[100];
+        sprintf(numstring, "\n[i] Friend request sent. Wait to be accepted. Friend id: %d\n\n", num);
+        printf(numstring);
+        ++maxnumfriends;
+    }
+    
+    else if (num == -1) 
+        printf("\nWrong key size\n\n");
+    
+    else if (num == -2)
+        printf("\nYou can't add yourself\n\n");
+    
+    else if (num == -3)
+        printf("\nYou already have this person added\n\n");
+    
+    else if (num == -4)
+        printf("\nUndefined error when adding friend");
+}
+
+void list_friends()
+{
+    int activefriends = 0;
+    int i;
+
+    for (i = 0; i <= maxnumfriends; i++) {
+        if (m_friendstatus(i) == 4)
+            activefriends++;
+    }
+
+    printf("\n[i] Friend List | Total: %d\n\n", activefriends);
+
+    for (i = 0; i <= getnumfriends(); i++) {
+        char name[MAX_NAME_LENGTH];
+        getname(i, (uint8_t*)name);
+        
+        if (m_friendstatus(i) == 4)    
+            printf("[%d] %s\n\n", i, (uint8_t*)name);
+    }
+}
+
+void delete_friend()
+{
+    size_t len = strlen(line);
+    char numstring[len-3];
+    int i;
+    
+    for (i = 0; i < len; i++) {
+        if (line[i+3] != ' ')
+            numstring[i] = line[i+3];
+    }
+    
+    int num = atoi(numstring);
+    m_delfriend(num);
+    --maxnumfriends;
+    printf("\n\n");
+}
+
+void message_friend()
+{
+    size_t len = strlen(line);
+    char numstring[len-3];
+    char message[len-3];
+    int i;
+    
+    for (i = 0; i < len; i++) {
+
+        if (line[i+3] != ' ') 
+            numstring[i] = line[i+3];
+
+        else {
+            int j;
+
+            for (j = (i+1); j < len; j++)
+                message[j-i-1] = line[j+3];
+
+            break;
+        }
+    }
+
+    int num = atoi(numstring);
+
+    if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1)
+        printf("\n[i] could not send message (they may be offline): %s\n", message);
+   
+    else
+        printf("\n");
+}
+
+void change_nickname()
+{
+    uint8_t name[MAX_NAME_LENGTH];
+    int i = 0;
+    size_t len = strlen(line);
+    
+    for (i = 3; i < len; i++) {
+
+        if (line[i] == 0 || line[i] == '\n') 
+            break;
+
+        name[i-3] = line[i];
+    }
+    
+    name[i-3] = 0;
+    setname(name, i);
+    char numstring[100];
+    sprintf(numstring, "\n[i] changed nick to %s\n\n", (char*)name);
+    printf(numstring);
+
+    FILE *name_file = NULL;
+    name_file = fopen("namefile.txt", "w");
+    fprintf(name_file, "%s", (char*)name);
+    fclose(name_file);
+}
+
+void change_status()
+{
+    uint8_t status[MAX_USERSTATUS_LENGTH];
+    int i = 0;
+    size_t len = strlen(line);
+    
+    for (i = 3; i < len; i++) {
+        if (line[i] == 0 || line[i] == '\n') 
+            break;
+        
+        status[i-3] = line[i];
+    }
+
+    status[i-3] = 0;
+    m_set_userstatus(status, strlen((char*)status));
+    char numstring[100];
+    sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
+    printf(numstring);
+
+    FILE* status_file = NULL;
+    status_file = fopen("statusfile.txt", "w");
+    fprintf(status_file, "%s", (char*)status);
+    fclose(status_file);
+}
+
+void accept_friend_request()
+{
+    uint8_t numf = atoi(line + 3);
+    char numchar[100];
+    sprintf(numchar, "\n[i] friend request %u accepted\n\n", numf);
+    printf(numchar);
+    int num = m_addfriend_norequest(pending_requests[numf]);
+    sprintf(numchar, "\n[i] added friendnumber %d\n\n", num);
+    printf(numchar);
+    ++maxnumfriends;
+}
+
 void line_eval(char* line)
 {
     if(line[0] == '/') {
+
         char inpt_command = line[1];
-        /* Add friend */
+
         if(inpt_command == 'f') {
-            int i;
-            char temp_id[128];
-            for (i = 0; i < 128; i++) 
-                temp_id[i] = line[i+3];
-            int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
-            if (num >= 0) {
-                char numstring[100];
-                sprintf(numstring, "\n[i] Friend request sent. Wait to be accepted. Friend id: %d\n\n", num);
-                printf(numstring);
-            }
-            else if (num == -1) 
-                printf("\nWrong key size\n\n");
-            else if (num == -2)
-                printf("\nYou can't add yourself\n\n");
-            else if (num == -3)
-                printf("\nYou already have this person added\n\n");
-            else if (num == -4)
-                printf("\nUndefined error when adding friend");
+            add_friend(line);
         }
 
         else if (inpt_command == 'r') {
@@ -147,111 +294,27 @@ void line_eval(char* line)
         }
 
         else if (inpt_command == 'l') {
-            int activefriends = 0;
-            int i;
-
-            for (i = 0; i <= getnumfriends(); i++)
-            {
-                if (m_friendstatus(i) == 4)
-                    activefriends++;
-            }
-
-            printf("\n[i] Friend List | Total: %d\n\n", activefriends);
-
-            for (i = 0; i <= getnumfriends(); i++) {
-                char name[MAX_NAME_LENGTH];
-                getname(i, (uint8_t*)name);
-                if (m_friendstatus(i) == 4)    
-                    printf("[%d] %s\n\n", i, (uint8_t*)name);
-            }
+            list_friends(line);
         }
 
         else if (inpt_command == 'd') {
-            size_t len = strlen(line);
-            char numstring[len-3];
-            int i;
-            for (i = 0; i < len; i++) {
-                if (line[i+3] != ' ') {
-                    numstring[i] = line[i+3];
-                }
-            }
-            int num = atoi(numstring);
-            m_delfriend(num);
-            printf("\n\n");
+            delete_friend(line);
         }
         /* Send message to friend */
         else if (inpt_command == 'm') {
-            size_t len = strlen(line);
-            char numstring[len-3];
-            char message[len-3];
-            int i;
-            for (i = 0; i < len; i++) {
-                if (line[i+3] != ' ') {
-                    numstring[i] = line[i+3];
-                } else {
-                    int j;
-                    for (j = (i+1); j < len; j++)
-                        message[j-i-1] = line[j+3];
-                    break;
-                }
-            }
-            int num = atoi(numstring);
-            if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
-                printf("\n[i] could not send message (they may be offline): %s\n", message);
-            } else {
-                //simply for aesthetics
-                printf("\n");
-            }
+            message_friend(line);
         }
 
         else if (inpt_command == 'n') {
-            uint8_t name[MAX_NAME_LENGTH];
-            int i = 0;
-            size_t len = strlen(line);
-            for (i = 3; i < len; i++) {
-                if (line[i] == 0 || line[i] == '\n') break;
-                name[i-3] = line[i];
-            }
-            name[i-3] = 0;
-            setname(name, i);
-            char numstring[100];
-            sprintf(numstring, "\n[i] changed nick to %s\n\n", (char*)name);
-            printf(numstring);
-
-            FILE *name_file = NULL;
-            name_file = fopen("namefile.txt", "w");
-            fprintf(name_file, "%s", (char*)name);
-            fclose(name_file);
+            change_nickname(line);
         }
 
         else if (inpt_command == 's') {
-            uint8_t status[MAX_USERSTATUS_LENGTH];
-            int i = 0;
-            size_t len = strlen(line);
-            for (i = 3; i < len; i++) {
-                if (line[i] == 0 || line[i] == '\n') break;
-                status[i-3] = line[i];
-            }
-            status[i-3] = 0;
-            m_set_userstatus(status, strlen((char*)status));
-            char numstring[100];
-            sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
-            printf(numstring);
-
-            FILE* status_file = NULL;
-            status_file = fopen("statusfile.txt", "w");
-            fprintf(status_file, "%s", (char*)status);
-            fclose(status_file);
+            change_status(line);
         }
 
         else if (inpt_command == 'a') {
-            uint8_t numf = atoi(line + 3);
-            char numchar[100];
-            sprintf(numchar, "\n[i] friend request %u accepted\n\n", numf);
-            printf(numchar);
-            int num = m_addfriend_norequest(pending_requests[numf]);
-            sprintf(numchar, "\n[i] added friendnumber %d\n\n", num);
-            printf(numchar);
+            accept_friend_request(line);
         }
         /* EXIT */
         else if (inpt_command == 'q') { 
@@ -259,8 +322,6 @@ void line_eval(char* line)
             m_set_userstatus(status, strlen((char*)status));
             exit(EXIT_SUCCESS);
         }
-    } else {
-        //nothing atm
     }
 }
 
