@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
         int read;
         uint8_t buffer[128000];
         read = fread(buffer, 1, 128000, file);
-        printf("Messenger loaded: %i\n", Messenger_load(buffer, read));
+        printf("Messenger loaded: %i\n", messenger_load(buffer, read));
         fclose(file);
         
     }
@@ -136,9 +136,9 @@ int main(int argc, char *argv[])
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
         if ( file==NULL ){return 1;}
-        uint8_t * buffer = malloc(Messenger_size());
-        Messenger_save(buffer);
-        fwrite(buffer, 1, Messenger_size(), file);
+        uint8_t * buffer = malloc(messenger_size());
+        messenger_save(buffer);
+        fwrite(buffer, 1, messenger_size(), file);
         free(buffer);
         fclose(file);
     }  

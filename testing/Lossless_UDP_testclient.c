@@ -118,7 +118,7 @@ void printconnection(int connection_id)
 
 /*( recieve packets and send them to the packethandler */
 /*run doLossless_UDP(); */
-void Lossless_UDP()
+void lossless_UDP()
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
@@ -127,7 +127,7 @@ void Lossless_UDP()
         printf("packet with length: %u\n", length);
         /* if(rand() % 3 != 1)//add packet loss
          { */
-            if (LosslessUDP_handlepacket(data, length, ip_port))
+            if (losslessUDP_handlepacket(data, length, ip_port))
                 printpacket(data, length, ip_port);
             else 
                 printf("Received handled packet with length: %u\n", length); //printconnection(0);
@@ -135,7 +135,7 @@ void Lossless_UDP()
        /* } */
     }
     
-    doLossless_UDP();   
+    do_lossless_UDP();   
     
 }
 
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     uint64_t timer = current_time();
     while (1) {
        /* printconnection(connection); */
-        Lossless_UDP();
+        lossless_UDP();
         if (is_connected(connection) == 3) {
             printf("Connecting took: %llu us\n", (unsigned long long)(current_time() - timer));
             break;
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
     
     while (1) {
         /* printconnection(connection); */
-        Lossless_UDP();
+        lossless_UDP();
         if (is_connected(connection) == 3) {
             
             if (write_packet(connection, buffer, read)) {

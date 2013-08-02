@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
             printf("Connected to other bootstrap server successfully.\n");
             is_waiting_for_dht_connection = 0;
         }
-        doDHT();
+        do_DHT();
 
         while(receivepacket(&ip_port, data, &length) != -1)
         {

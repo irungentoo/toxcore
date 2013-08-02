@@ -651,7 +651,7 @@ int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
 
 /* END of packet handling functions */
 
-int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
+int losslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) { //TODO: check if no break statement is correct???
     case 16:

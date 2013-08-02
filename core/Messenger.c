@@ -366,7 +366,7 @@ int init_messenger()
 {
     new_keys();
     m_set_userstatus((uint8_t*)"Online", sizeof("Online"));
-    initNetCrypto();
+    init_net_crypto();
     IP ip;
     ip.i = 0;
 
@@ -516,7 +516,7 @@ void do_messenger()
         printf("Status: %u %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id),  friendlist[0].crypt_connection_id);
 #else
         DHT_handlepacket(data, length, ip_port);
-        lossless_UDP_handlepacket(data, length, ip_port);
+        losslessUDP_handlepacket(data, length, ip_port);
         friendreq_handlepacket(data, length, ip_port);
         LANdiscovery_handlepacket(data, length, ip_port);
 #endif
@@ -524,21 +524,21 @@ void do_messenger()
     }
     do_DHT();
     do_lossless_UDP();
-    doNetCrypto();
+    do_net_crypto();
     do_inbound();
     do_friends();
     LANdiscovery();
 }
 
 /* returns the size of the messenger data (for saving) */
-uint32_t Messenger_size()
+uint32_t messenger_size()
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
            + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * numfriends;
 }
 
 /* save the messenger in data of size Messenger_size() */
-void Messenger_save(uint8_t *data)
+void messenger_save(uint8_t *data)
 {
     save_keys(data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
@@ -554,7 +554,7 @@ void Messenger_save(uint8_t *data)
 }
 
 /* load the messenger from data of size length. */
-int Messenger_load(uint8_t * data, uint32_t length)
+int messenger_load(uint8_t * data, uint32_t length)
 {
     if (length == ~0)
         return -1;

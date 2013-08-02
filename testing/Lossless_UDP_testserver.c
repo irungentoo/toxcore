@@ -115,7 +115,7 @@ void printconnection(int connection_id)
 
 /* recieve packets and send them to the packethandler
  * run doLossless_UDP(); */
-void Lossless_UDP()
+void lossless_UDP()
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
@@ -123,7 +123,7 @@ void Lossless_UDP()
     while (receivepacket(&ip_port, data, &length) != -1) {
         //if(rand() % 3 != 1)//add packet loss
         //{
-            if (LosslessUDP_handlepacket(data, length, ip_port)) {
+            if (losslessUDP_handlepacket(data, length, ip_port)) {
                     printpacket(data, length, ip_port);
             } else {
                 //printconnection(0);
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     
     
     while (1) {
-        Lossless_UDP();
+        lossless_UDP();
         connection = incoming_connection();
         if(connection != -1) {
             if(is_connected(connection) == 2) {
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     
     while (1) {
         //printconnection(0);
-        Lossless_UDP();
+        lossless_UDP();
         if (is_connected(connection) >= 2) {
             kill_connection_in(connection, 3000000);
             read = read_packet(connection, buffer);

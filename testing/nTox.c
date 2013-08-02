@@ -129,7 +129,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             do_refresh();
         }
         else if (inpt_command == 'd') {
-            doMessenger();
+            do_messenger();
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
@@ -359,12 +359,12 @@ void load_key()
             printf("[i] could not read data file\n[i] exiting\n");
             exit(1);
         }
-        Messenger_load(data, size);
+        messenger_load(data, size);
     } else { 
         //else save new keys
-        int size = Messenger_size();
+        int size = messenger_size();
         uint8_t data[size];
-        Messenger_save(data);
+        messenger_save(data);
         data_file = fopen("data","w");
         if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
             printf("[i] could not write data file\n[i] exiting\n");
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
     }
     int c;
     int on = 0;
-    initMessenger();
+    init_messenger();
     //if keyfiles exist
     if(argc > 4){
         if(strncmp(argv[4], "nokey", 6) < 0){
@@ -436,7 +436,7 @@ int main(int argc, char *argv[])
             on = 1;
         }
 
-        doMessenger();
+        do_messenger();
         c_sleep(1);
         do_refresh();
 

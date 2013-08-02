@@ -150,13 +150,13 @@ void do_messenger();
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* returns the size of the messenger data (for saving) */
-uint32_t Messenger_size();
+uint32_t messenger_size();
 
 /* save the messenger in data (must be allocated memory of size Messenger_size()) */
-void Messenger_save(uint8_t *data);
+void messenger_save(uint8_t *data);
 
 /* load the messenger from data of size length */
-int Messenger_load(uint8_t *data, uint32_t length);
+int messenger_load(uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
 }
