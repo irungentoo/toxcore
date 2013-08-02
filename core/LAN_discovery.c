@@ -23,7 +23,9 @@
 
 #include "LAN_discovery.h"
 
-#define MAX_INTERFACES 16
+/* We don't care for the "lo" interface, and so we need, at most, two.
+ */
+#define MAX_INTERFACES 2
 
 #ifdef __linux
 /* get the first working broadcast address that's not from "lo"
