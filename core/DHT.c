@@ -149,7 +149,7 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
 
         if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
             /* Refresh the client timestamp. */
-            list[i].timestamp = temp_time;
+            list[i].timestamp = (uint32_t)temp_time;
             list[i].ip_port.ip.i = ip_port.ip.i;
             list[i].ip_port.port = ip_port.port;
             return 1;
@@ -235,7 +235,7 @@ int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Por
         if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time) { /* if node is bad. */
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
-            list[i].timestamp = temp_time;
+            list[i].timestamp = (uint32_t)temp_time;
             list[i].ret_ip_port.ip.i = 0;
             list[i].ret_ip_port.port = 0;
             list[i].ret_timestamp = 0;
@@ -255,7 +255,7 @@ int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Po
         if(id_closest(comp_client_id, list[i].client_id, client_id) == 2) {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
-            list[i].timestamp = temp_time;
+            list[i].timestamp = (uint32_t)temp_time;
             list[i].ret_ip_port.ip.i = 0;
             list[i].ret_ip_port.port = 0;
             list[i].ret_timestamp = 0;
@@ -293,7 +293,7 @@ void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient
         for(i = 0; i < LCLIENT_LIST; ++i)
             if(memcmp(nodeclient_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0) {
                 close_clientlist[i].ret_ip_port = ip_port;
-                close_clientlist[i].ret_timestamp = temp_time;
+                close_clientlist[i].ret_timestamp = (uint32_t)temp_time;
                 return;
             }
     } else
@@ -302,7 +302,7 @@ void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient
                 for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
                     if(memcmp(nodeclient_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE) == 0) {
                         friends_list[i].client_list[j].ret_ip_port = ip_port;
-                        friends_list[i].client_list[j].ret_timestamp = temp_time;
+                        friends_list[i].client_list[j].ret_timestamp = (uint32_t)temp_time;
                         return;
                     }
 }
@@ -715,7 +715,7 @@ void doDHTFriends()
             if(friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time) { /* if node is not dead. */
                 if((friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
                     pingreq(friends_list[i].client_list[j].ip_port, friends_list[i].client_list[j].client_id);
-                    friends_list[i].client_list[j].last_pinged = temp_time;
+                    friends_list[i].client_list[j].last_pinged = (uint32_t)temp_time;
                 }
                 if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time) { /* if node is good. */
                     index[num_nodes] = j;
@@ -727,7 +727,7 @@ void doDHTFriends()
             getnodes(friends_list[i].client_list[index[rand_node]].ip_port,
                      friends_list[i].client_list[index[rand_node]].client_id,
                      friends_list[i].client_id);
-            friends_list[i].lastgetnode = temp_time;
+            friends_list[i].lastgetnode = (uint32_t)temp_time;
         }
     }
 }
@@ -749,7 +749,7 @@ void doClose() /* tested */
         if(close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time) {
             if((close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
                 pingreq(close_clientlist[i].ip_port, close_clientlist[i].client_id);
-                close_clientlist[i].last_pinged = temp_time;
+                close_clientlist[i].last_pinged = (uint32_t)temp_time;
             }
             /* if node is good. */
             if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time) {
@@ -763,7 +763,7 @@ void doClose() /* tested */
         getnodes(close_clientlist[index[rand_node]].ip_port,
                  close_clientlist[index[rand_node]].client_id,
                  self_public_key);
-        close_lastgetnodes = temp_time;
+        close_lastgetnodes = (uint32_t)temp_time;
     }
 }
 
@@ -1000,7 +1000,7 @@ static void doNAT()
 
         if(friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time) {
             send_NATping(friends_list[i].client_id, friends_list[i].NATping_id, 0); /*0 is request*/
-            friends_list[i].NATping_timestamp = temp_time;
+            friends_list[i].NATping_timestamp = (uint32_t)temp_time;
         }
         if(friends_list[i].hole_punching == 1 &&
             friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time && 
@@ -1013,7 +1013,7 @@ static void doNAT()
             uint16_t numports = NAT_getports(port_list, ip_list, num, ip);
             punch_holes(ip, port_list, numports, i);
 
-            friends_list[i].punching_timestamp = temp_time;
+            friends_list[i].punching_timestamp = (uint32_t)temp_time;
             friends_list[i].hole_punching = 0;
         }
     }
