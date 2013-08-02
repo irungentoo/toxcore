@@ -1021,7 +1021,7 @@ int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
 
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int n = 0;
-    uint32_t i, temp_time = unix_time();
+    uint32_t i;
     int64_t temp_time = unix_time();
 
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
@@ -1066,12 +1066,12 @@ int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
     uint8_t data[sizeof(uint64_t) + 1];
     uint8_t packet[MAX_DATA_SIZE];
 
-    /* 254 is NAT ping request packet id */
-    int len = create_request(packet, public_key, data, sizeof(uint64_t) + 1, 254);
     int num = 0;
 
     data[0] = type;
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
+    /* 254 is NAT ping request packet id */
+    int len = create_request(packet, public_key, data, sizeof(uint64_t) + 1, 254);
 
     if (len == -1)
         return -1;
@@ -1325,7 +1325,7 @@ int DHT_load(uint8_t * data, uint32_t size)
  */
 int DHT_isconnected()
 {
-    uint32_t i, temp_time = unix_time();
+    uint32_t i;
     int64_t temp_time = unix_time();
 
     for(i = 0; i < LCLIENT_LIST; ++i) {
