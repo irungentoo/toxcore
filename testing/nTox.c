@@ -24,6 +24,7 @@
 #include "misc_tools.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #ifdef WIN32
@@ -36,8 +37,8 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 
-char *help = "[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)\n"
-             "[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)";
+char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  (to send message)\n/s status (to change status)\n"
+             "[i] /l list (list friends)\n/h for help\n/i for info\n/n nick (to change nickname)\n/q (to quit)";
 int x, y;
 
 
@@ -58,13 +59,13 @@ void new_lines(char *line)
 void print_friendlist()
 {
     char name[MAX_NAME_LENGTH];
+    uint32_t i = 0;
+
     new_lines("[i] Friend List:");
-    uint32_t i;
-    for (i = 0; i <= num_requests; i++) {
+    while(getname(i++, (uint8_t *)name) != -1) {
         char fstring[128];
-        getname(i, (uint8_t*)name);
-        if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+        if(strlen(name) <= 0) {
+            sprintf(fstring, "[i] Friend: No friend here!\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
@@ -98,156 +99,181 @@ char *format_message(char *message, int friendnum)
     return msg;
 }
 
+void add_friend_error(int code)
+{
+    switch(code) {
+        case ERR_KEY_LENGTH:
+            new_lines("[!] the key wasn't long enough!");
+            break;
+        case ERR_OWN_KEY:
+            new_lines("[!] that was _your_ key!");
+            break;
+        case ERR_IS_FRIEND:
+            new_lines("[!] you already know that person!");
+            break;
+        case ERR_OTHER:
+            new_lines("[!] something happened!");
+            break;
+        default:
+            break;
+    }
+}
+
+/* this should be split up into something like eval_info, eval_friend, etc. */
+/* evaluate a possible user command in the following format:
+     '/[letter] <args>' */
 void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
 {
-    if (line[0] == '/') {
-        char inpt_command = line[1];
-        char prompt[STRING_LENGTH+2] = "> ";
-        int prompt_offset = 3;
-        strcat(prompt, line);
-        new_lines(prompt);
-        if (inpt_command == 'f') { // add friend command: /f ID
-            int i;
-            char temp_id[128];
-            for (i = 0; i < 128; i++) 
-                temp_id[i] = line[i+prompt_offset];
+    char *save_ptr = NULL;
+    char *command = NULL;
+    int command_char = 0;
 
-            int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
-            char numstring[100];
-            switch (num) {
-            case -1:
-                sprintf(numstring, "[i] Message is too long.");
-                break;
-            case -2:
-                sprintf(numstring, "[i] Please add a message to your request.");
-                break;
-            case -3:
-                sprintf(numstring, "[i] That appears to be your own ID.");
-                break;
-            case -4:
-                sprintf(numstring, "[i] Friend request already sent.");
-                break;
-            case -5:
-                sprintf(numstring, "[i] Undefined error when adding friend.");
-                break;
-            default:
-                sprintf(numstring, "[i] Added friend as %d.", num);
-                break;
-            }
-            new_lines(numstring);
+    /* print out the command entered */
+    char command_str[STRING_LENGTH + 2] = "> ";
+    strcat(command_str, line);
+    new_lines(command_str);
+
+    command = strtok_r(line, " ", &save_ptr);
+
+    if(command == NULL || command[0] != '/')
+        /* no command, who cares */
+        return;
+
+    command_char = command[1];
+    if(command_char == 'f') { // add friend: /f ID MESSAGE
+        char *id = strtok_r(NULL, " ", &save_ptr);
+        char *message = NULL;
+        int message_len = 0;
+        int rc = 0;
+
+        if(id == NULL) {
+            new_lines("[!] /f needs an ID to act upon!");
+        } else {
+            message = strtok_r(NULL, " ", &save_ptr);
+
+            if(message == NULL)
+                message = "Install Gentoo";
+
+            message_len = strlen(message);
+            rc = m_addfriend(hex_string_to_bin(id), (uint8_t *)message, sizeof(char) * message_len);
+
+            add_friend_error(rc);
+        }
+
+    } else if(command_char == 'd') { // main loop
+        doMessenger();
+
+    } else if(command_char == 'm') { //message command: /m friendnumber messsage
+        char *num = strtok_r(NULL, " ", &save_ptr);
+        char *message = NULL;
+        int message_len = 0;
+        int rc = 0;
+
+        if(num == NULL) {
+            new_lines("[!] /m needs a friend number to act upon!");
+            return;
+        }
+        message = strtok_r(NULL, " ", &save_ptr);
+
+        if(message == NULL) {
+            new_lines("[!] /m needs a message to send!");
+            return;
+        }
+
+        message_len = strlen(message);
+        rc = m_sendmessage(atoi(num), (uint8_t *)message, sizeof(char) * message_len);
+        if(rc == 0)
+            new_lines("[!] /m fucked up!");
+
+    } else if(command_char == 'n') { // set name: /n NAME
+        char *name = strtok_r(NULL, " ", &save_ptr);
+        char name_mem[MAX_NAME_LENGTH];
+        char numstring[MAX_NAME_LENGTH];
+
+        if(name == NULL) {
+            new_lines("[!] /n needs a name to act upon!");
+            return;
+        }
+
+        strncpy(name_mem, name, MAX_NAME_LENGTH - 1);
+        setname((uint8_t *)name_mem, strlen(name_mem));
+
+        sprintf(numstring, "[i] changed nick to %s", (char*)name);
+        new_lines(numstring);
+
+    } else if(command_char == 'l') { // print friends list: /l
+        print_friendlist();
+
+    } else if (line[1] == 's') { // set status: /s STRING
+        char *status = strtok_r(NULL, " ", &save_ptr);
+        char numstring[MAX_USERSTATUS_LENGTH];
+
+        if(status == NULL) {
+            new_lines("[!] /s needs a status to set!");
+            return;
+        }
+
+        m_set_userstatus((uint8_t *)status, strlen(status));
+        sprintf(numstring, "[i] changed status to %s", (char*)status);
+        new_lines(numstring);
+
+    } else if (command_char == 'a') { // accept a friend request: /a ID
+        char *friend_num = strtok_r(NULL, " ", &save_ptr);
+        char numchar[ID_LENGTH];
+        int friend = 0;
+        int rc = 0;
+
+        if(friend_num == NULL) {
+            new_lines("[!] /a needs an ID to act upon!");
+            return;
+        }
+
+        friend = atoi(friend_num);
+        rc = m_addfriend_norequest(pending_requests[friend]);
+
+        if(rc == -1)
+            sprintf(numchar, "[!] no such friend (%d)!", friend);
+        else {
+            sprintf(numchar, "[i] friend request %u accepted", friend);
+            new_lines(numchar);
+            sprintf(numchar, "[i] added friendnumber %d", friend);
+            new_lines(numchar);
             do_refresh();
         }
-        else if (inpt_command == 'd') {
-            doMessenger();
-        }
-        else if (inpt_command == 'm') { //message command: /m friendnumber messsage
-            size_t len = strlen(line);
-	    if(len < 3)
-	      return;
 
-            char numstring[len-3];
-            char message[len-3];
-            int i;
-            for (i = 0; i < len; i++) {
-                if (line[i+3] != ' ') {
-                    numstring[i] = line[i+3];
-                } else {
-                    int j;
-                    for (j = (i+1); j < (len+1); j++)
-                        message[j-i-1] = line[j+3];
-                    break;
-                }
-            }
-            int num = atoi(numstring);
-            if (m_sendmessage(num, (uint8_t*) message, strlen(message) + 1) != 1) {
-                new_lines("[i] could not send message");
-            } else {
-                new_lines(format_message(message, -1));
-            }
-        }
-        else if (inpt_command == 'n') {
-            uint8_t name[MAX_NAME_LENGTH];
-            int i = 0;
-            size_t len = strlen(line);
-            for (i = 3; i < len; i++) {
-                if (line[i] == 0 || line[i] == '\n') break;
-                name[i-3] = line[i];
-            }
-            name[i-3] = 0;
-            setname(name, i - 2);
-            char numstring[100];
-            sprintf(numstring, "[i] changed nick to %s", (char*)name);
-            new_lines(numstring);
-        }
-        else if (inpt_command == 'l') {
-            print_friendlist();
-        }
-        else if (inpt_command == 's') {
-            uint8_t status[MAX_USERSTATUS_LENGTH];
-            int i = 0;
-            size_t len = strlen(line);
-            for (i = 3; i < len; i++) {
-                if (line[i] == 0 || line[i] == '\n') break;
-                status[i-3] = line[i];
-            }
-            status[i-3] = 0;
-            m_set_userstatus(status, strlen((char*)status) + 1);
-            char numstring[100];
-            sprintf(numstring, "[i] changed status to %s", (char*)status);
-            new_lines(numstring);
-        }
-        else if (inpt_command == 'a') {
-            uint8_t numf = atoi(line + 3);
-            char numchar[100];
-            int num = m_addfriend_norequest(pending_requests[numf]);
-            if (num != -1) {
-                sprintf(numchar, "[i] friend request %u accepted", numf);
-                new_lines(numchar);
-                sprintf(numchar, "[i] added friendnumber %d", num);
-                new_lines(numchar);
-            } else {
-                sprintf(numchar, "[i] failed to add friend");
-                new_lines(numchar);
-            }
-            do_refresh();
-        }
-       else if (inpt_command == 'h') { //help
-           new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
-           new_lines("[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)");
-        }
-       else if (inpt_command == 'i') { //info
-           char idstring0[200];
-           char idstring1[PUB_KEY_BYTES][5];
-           char idstring2[PUB_KEY_BYTES][5];
-           int i;
-           for (i = 0; i < PUB_KEY_BYTES; i++)
-           {
-               if (self_public_key[i] < (PUB_KEY_BYTES/2))
-                   strcpy(idstring1[i],"0");
-               else 
-                   strcpy(idstring1[i], "");
-               sprintf(idstring2[i], "%hhX", self_public_key[i]);
-           }
-           //
-           strcpy(idstring0,"[i] ID: ");
-           int j;
-           for (j = 0; j < PUB_KEY_BYTES; j++) {
-               strcat(idstring0,idstring1[j]);
-               strcat(idstring0,idstring2[j]);
-           }    
-                  new_lines(idstring0);
+    } else if (command_char == 'h') // help!
+        new_lines(help);
+
+    else if (command_char == 'i') { // print some helpful info: /i
+       char idstring0[200];
+       char idstring1[32][5];
+       char idstring2[32][5];
+       uint32_t i;
+       for(i = 0; i < 32; i++) {
+           if(self_public_key[i] < 16)
+               strcpy(idstring1[i],"0");
+           else 
+               strcpy(idstring1[i], "");
+           sprintf(idstring2[i], "%hhX",self_public_key[i]);
        }
 
-        else if (inpt_command == 'q') { //exit
-            endwin();
-            exit(EXIT_SUCCESS);
-        } else { 
-            new_lines("[i] invalid command");
-        }
-    } else {
+       strcpy(idstring0,"[i] ID: ");
+       for (i=0; i<32; i++) {
+           strcat(idstring0,idstring1[i]);
+           strcat(idstring0,idstring2[i]);
+       }    
+      new_lines(idstring0);
+
+   } else if (command_char == 'q') { //exit
+        endwin();
+        /* where does *line come from?
+         *  possible memory leak? */
+        exit(EXIT_SUCCESS);
+
+    } else
         new_lines("[i] invalid command");
-        //new_lines(line);
-    }
+
+    do_refresh();
 }
 
 void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
@@ -281,7 +307,7 @@ char *appender(char *str, const char c)
 {
     size_t len = strlen(str);
     if (len < STRING_LENGTH) {
-        str[len+1] = str[len];
+        str[len + 1] = str[len];
         str[len] = c;
     }
     return str;
@@ -325,6 +351,17 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
+    char name[MAX_NAME_LENGTH];
+    getname(friendnumber, (uint8_t*)name);
+    char msg[100+length+strlen(name)+1];
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    char* temp = asctime(timeinfo);
+    size_t len = strlen(temp);
+    temp[len-1] = '\0';
+    sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
     new_lines(format_message((char*)string, friendnumber));
 }
 
