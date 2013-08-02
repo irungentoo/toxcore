@@ -274,14 +274,19 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 }
 
 /* replace first bad (or empty) node with this one
-   return 0 if successful
-   return 1 if not (list contains no bad nodes) */
-int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port) /* tested */
+ * return 0 if successful
+ * return 1 if not (list contains no bad nodes)
+ */
+int replace_bad(    Client_data *   list, 
+                    uint32_t        length,  
+                    uint8_t *       client_id,   
+                    IP_Port         ip_port )
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
-    for(i = 0; i < length; ++i)
-        if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time) { /* if node is bad. */
+    for(i = 0; i < length; ++i) {
+        /* if node is bad */
+        if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time) {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
             list[i].timestamp = temp_time;
@@ -290,12 +295,17 @@ int replace_bad(Client_data * list, uint32_t length, uint8_t * client_id, IP_Por
             list[i].ret_timestamp = 0;
             return 0;
         }
+    }
 
     return 1;
 }
 
 /* replace the first good node that is further to the comp_client_id than that of the client_id in the list */
-int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port, uint8_t * comp_client_id)
+int replace_good(   Client_data *   list,
+                    uint32_t        length, 
+                    uint8_t *       client_id, 
+                    IP_Port         ip_port, 
+                    uint8_t *       comp_client_id )
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -314,22 +324,46 @@ int replace_good(Client_data * list, uint32_t length, uint8_t * client_id, IP_Po
     return 1;
 }
 
-/* Attempt to add client with ip_port and client_id to the friends client list and close_clientlist */
+/* Attempt to add client with ip_port and client_id to the friends client list 
+ * and close_clientlist 
+ */
 void addto_lists(IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
 
-    /* NOTE: current behavior if there are two clients with the same id is to replace the first ip by the second. */
-    if(!client_in_list(close_clientlist, LCLIENT_LIST, client_id, ip_port))
-        if(replace_bad(close_clientlist, LCLIENT_LIST, client_id, ip_port))
+    /* NOTE: current behavior if there are two clients with the same id is
+     * to replace the first ip by the second. 
+     */
+    if (!client_in_list(close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
+        if (replace_bad(close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
             /* if we can't replace bad nodes we try replacing good ones */
-            replace_good(close_clientlist, LCLIENT_LIST, client_id, ip_port, self_public_key);
+            replace_good(   close_clientlist, 
+                            LCLIENT_LIST, 
+                            client_id, 
+                            ip_port, 
+                            self_public_key );
+        }
+    }
 
-    for(i = 0; i < num_friends; ++i)
-        if(!client_in_list(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
-            if(replace_bad(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port))
+    for (i = 0; i < num_friends; ++i) {
+        if (!client_in_list(    friends_list[i].client_list, 
+                                MAX_FRIEND_CLIENTS, 
+                                client_id, 
+                                ip_port )) {
+
+            if (replace_bad(    friends_list[i].client_list, 
+                                MAX_FRIEND_CLIENTS,
+                                client_id, 
+                                ip_port )) {
                 /* if we can't replace bad nodes we try replacing good ones. */
-                replace_good(friends_list[i].client_list, MAX_FRIEND_CLIENTS, client_id, ip_port, friends_list[i].client_id);
+                replace_good(   friends_list[i].client_list, 
+                                MAX_FRIEND_CLIENTS, 
+                                client_id, 
+                                ip_port, 
+                                friends_list[i].client_id );
+            }
+        }
+    }
 }
 
 /* If client_id is a friend or us, update ret_ip_port
