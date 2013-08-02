@@ -280,12 +280,24 @@ void prepare_window(WINDOW* w) {
   wresize(w, LINES-2, COLS);
 }
 
-/* Draws cursor relative to input */
-void position_cursor(WINDOW* w)
+/* 
+ * Draws cursor relative to input on prompt window.
+ * Removes cursor on friends window and chat windows.
+ *
+ * TODO: Make it work for chat windows
+ */
+void position_cursor(WINDOW* w, char* title, ToxWindow* a)
 {
-  int x, y;
-  getyx(w, y, x);
-  move(y, x);
+  curs_set(1);
+  if (strcmp(title, "[prompt]") == 0) {    // main/prompt window
+    int x, y;
+    getyx(w, y, x);
+    move(y, x);
+  }
+  else if (strcmp(title, "[friends]") == 0)    // friends window
+    curs_set(0);
+  else    // any other window (i.e chat)
+    curs_set(0);
 }
 
 int main(int argc, char* argv[]) {
@@ -307,7 +319,7 @@ int main(int argc, char* argv[]) {
     a->blink = false;
     a->onDraw(a);
     draw_bar();
-    position_cursor(a->window);
+    position_cursor(a->window, a->title, a);
 
     // Handle input.
     ch = getch();
