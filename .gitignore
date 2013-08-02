@@ -3,6 +3,7 @@
 //nacl build
 nacl/build/
 build
+sodium
 
 CMakeCache.txt
 CMakeFiles

@@ -12,7 +12,8 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
 
 **How to build Tox on Linux**: [YouTube video](http://www.youtube.com/watch?v=M4WXE4VKmyg)<br />
-**How to use Tox on Windows**: [YouTube video](http://www.youtube.com/watch?v=qg_j_sDb6WQ)
+**How to use Tox on Windows**: [YouTube video](http://www.youtube.com/watch?v=qg_j_sDb6WQ)<br />
+**For Mac OSX read** [INSTALL.md](INSTALL.md)
 
 ### Objectives:
 
@@ -34,18 +35,19 @@ Keep everything really simple.
 - [  ] Streaming media
 - [  ] ???
 
-For further information, check our [To-do list](https://github.com/irungentoo/ProjectTox-Core/wiki/TODO)
+For further information, check our [To-do list](http://wiki.tox.im/index.php/TODO)
 
 ### Why are you doing this? There are already a bunch of free skype alternatives.
 The goal of this project is to create a configuration-free P2P skype 
 replacement. Configuration-free means that the user will simply have to open the program and 
 without any account configuration will be capable of adding people to his 
-friends list and start conversing with them. There are many so called skype replacements and all of them are either hard to 
+friends list and start conversing with them. There are many so-called skype replacements and all of them are either hard to 
 configure for the normal user or suffer from being way too centralized.
 
 ### Documentation:
 
 - [Installation](/INSTALL.md)
+- [Commands](/docs/commands.rst)
 - [DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
 - [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
 - [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />

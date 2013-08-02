@@ -90,7 +90,12 @@ char *format_message(char *message, int friendnum)
     char* time = asctime(timeinfo);
     size_t len = strlen(time);
     time[len-1] = '\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message); // timestamp
+    if (friendnum != -1) {
+        sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message);
+    } else {
+        // This message came from ourselves
+        sprintf(msg, "%s <%s> %s", time, name, message);
+    }
     return msg;
 }
 
@@ -456,7 +461,7 @@ int main(int argc, char *argv[])
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
-    if (resolved_address != -1)
+    if (resolved_address != 0)
         bootstrap_ip_port.ip.i = resolved_address;
     else 
         exit(1);

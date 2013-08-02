@@ -36,41 +36,42 @@ extern "C" {
 #endif
 
 #define MAX_NAME_LENGTH 128
-
-/* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
-    to an absurdly large number later */
 #define MAX_USERSTATUS_LENGTH 128
 
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_USERSTATUS 49
 #define PACKET_ID_MESSAGE 64
 
-/* m_addfriend defines */
-#define ERR_KEY_LENGTH -1
-#define ERR_OWN_KEY -2
-#define ERR_IS_FRIEND -3
-#define ERR_OTHER -4
+/* status definitions */
+#define FRIEND_ONLINE 4
+#define FRIEND_CONFIRMED 3
+#define FRIEND_REQUESTED 2
+#define FRIEND_ADDED 1
+#define NOFRIEND 0
 
-/* m_friendstatus defines */
-#define S_FRIEND_ONLINE 4
-#define S_FRIEND_CONFIRMED 3
-#define S_FRIEND_REQURESTED 2
-#define S_FRIEND_ADDED 1
-#define ERR_NO_FRIEND 0 /* ;_; */
+/* errors for m_addfriend
+ *  FAERR - Friend Add Error */
+#define FAERR_TOOLONG -1
+#define FAERR_NOMESSAGE -2
+#define FAERR_OWNKEY -3
+#define FAERR_ALREADYSENT -4
+#define FAERR_UNKNOWN -5
 
-/* not 100% on this name, but m_addfriends needs it */
-#define ID_LENGTH (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + \
-                        crypto_box_ZEROBYTES)
+/* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
+    to an absurdly large number later */
 
-/* add a friend
-   set the data that will be sent along with friend request
-   client_id is the client id of the friend
-   data is the data and length is the length
-   returns the friend number if success
-   return ERR_KEY_LENGTH if key length is wrong.
-   return ERR_OWN_KEY if user's own key
-   return ERR_IS_FRIEND if already a friend
-   return ERR_OTHER for other */
+/*
+ * add a friend
+ * set the data that will be sent along with friend request
+ * client_id is the client id of the friend
+ * data is the data and length is the length
+ * returns the friend number if success
+ * return -1 if message length is too long
+ * return -2 if no message (message length must be >= 1 byte)
+ * return -3 if user's own key
+ * return -4 if friend request already sent or already a friend
+ * return -5 for unknown error 
+ */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
 
 
@@ -92,11 +93,11 @@ int getclient_id(int friend_id, uint8_t *client_id);
 /* remove a friend */
 int m_delfriend(int friendnumber);
 
-/* return S_FRIEND_ONLINE if friend is online
-   return S_FRIEND_CONFIRMED if friend is confirmed
-   return S_FRIEND_REQURESTED if the friend request was sent
-   return S_FRIEND_ADDED if the friend was added
-   return ERR_NO_FRIEND if there is no friend with that number */
+/* return 4 if friend is online
+    return 3 if friend is confirmed
+    return 2 if the friend request was sent
+    return 1 if the friend was added
+    return 0 if there is no friend with that number */
 int m_friendstatus(int friendnumber);
 
 /* send a text chat message to an online friend

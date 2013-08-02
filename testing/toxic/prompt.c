@@ -16,6 +16,7 @@ uint8_t pending_requests[256][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
 extern void on_friendadded(int friendnumber);
+static void print_usage(ToxWindow* self);
 
 // XXX:
 int add_req(uint8_t* public_key) {
@@ -82,8 +83,8 @@ static void execute(ToxWindow* self, char* cmd) {
 
     dht.port = htons(atoi(port));
 
-    int resolved_address = resolve_addr(ip);
-    if (resolved_address == -1) {
+    uint32_t resolved_address = resolve_addr(ip);
+    if (resolved_address == 0) {
       return;
     }
 
@@ -133,29 +134,30 @@ static void execute(ToxWindow* self, char* cmd) {
     }
 
     num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
-
-    wprintw(self->window, "Friend added as %d.\n", num);
-    on_friendadded(num);
+    switch (num) {
+    case -1: 
+      wprintw(self->window, "Message is too long.\n");
+      break;
+    case -2:
+      wprintw(self->window, "Please add a message to your request.\n");
+    case -3:
+      wprintw(self->window, "That appears to be your own ID.\n");
+      break;
+    case -4:
+      wprintw(self->window, "Friend request already sent.\n");
+      break;
+    case -5:
+      wprintw(self->window, "[i] Undefined error when adding friend.\n");
+      break; 
+    default:
+      wprintw(self->window, "Friend added as %d.\n", num);
+      on_friendadded(num);
+      break;
+    }
   }
+
   else if(!strcmp(cmd, "help")) {
-  wattron(self->window, COLOR_PAIR(2) | A_BOLD);
-  wprintw(self->window, "Commands:\n");
-  wattroff(self->window, A_BOLD);
-  
-  wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
-  wprintw(self->window, "      add <id> <message>        : Add friend\n");
-  wprintw(self->window, "      status <message>          : Set your status\n");
-  wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
-  wprintw(self->window, "      accept <number>           : Accept friend request\n");
-  wprintw(self->window, "      myid                      : Print your ID\n");
-  wprintw(self->window, "      quit/exit                 : Exit program\n");
-
-
-  wattron(self->window, A_BOLD);
-  wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
-  wattroff(self->window, A_BOLD);
-
-  wattroff(self->window, COLOR_PAIR(2));
+	  print_usage(self);
   }
   else if(!strncmp(cmd, "status ", strlen("status "))) {
     char* msg;

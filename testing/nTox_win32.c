@@ -132,13 +132,15 @@ void line_eval(char* line)
                 printf(numstring);
             }
             else if (num == -1) 
-                printf("\nWrong key size\n\n");
+                printf("\n[i] Message is too long.\n\n");
             else if (num == -2)
-                printf("\nYou can't add yourself\n\n");
+                printf("\n[i] Please add a message to your friend request.\n\n");
             else if (num == -3)
-                printf("\nYou already have this person added\n\n");
+                printf("\n[i] That appears to be your own ID.\n\n");
             else if (num == -4)
-                printf("\nUndefined error when adding friend");
+                printf("\n[i] Friend request already sent.\n\n");
+            else if (num == -5)
+                printf("\n[i] Undefined error when adding friend\n\n");
         }
 
         else if (inpt_command == 'r') {
@@ -149,21 +151,6 @@ void line_eval(char* line)
         else if (inpt_command == 'l') {
             int activefriends = 0;
             int i;
-
-            for (i = 0; i <= getnumfriends(); i++)
-            {
-                if (m_friendstatus(i) == 4)
-                    activefriends++;
-            }
-
-            printf("\n[i] Friend List | Total: %d\n\n", activefriends);
-
-            for (i = 0; i <= getnumfriends(); i++) {
-                char name[MAX_NAME_LENGTH];
-                getname(i, (uint8_t*)name);
-                if (m_friendstatus(i) == 4)    
-                    printf("[%d] %s\n\n", i, (uint8_t*)name);
-            }
         }
 
         else if (inpt_command == 'd') {
@@ -346,7 +333,7 @@ int main(int argc, char *argv[])
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
-    if (resolved_address != -1)
+    if (resolved_address != 0)
         bootstrap_ip_port.ip.i = resolved_address;
     else 
         exit(1);
