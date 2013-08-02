@@ -52,12 +52,12 @@ uint32_t get_broadcast(void)
 
     ifconf.ifc_buf = (char *)i_faces;
     ifconf.ifc_len = sizeof(i_faces);
-    count = ifconf.ifc_len / sizeof(struct ifreq);
     if(ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
         perror("get_broadcast: ioctl() error");
         return 0;
     }
 
+    count = ifconf.ifc_len / sizeof(struct ifreq);
     for(i = 0; i < count; i++) {
         /* skip the loopback interface, as it's useless */
         if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
