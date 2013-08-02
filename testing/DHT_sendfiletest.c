@@ -163,8 +163,8 @@ int main(int argc, char *argv[])
                     fclose(file2);
             }
         }
-        doDHT();
-        doLossless_UDP();
+        do_DHT();
+        do_lossless_UDP();
         /* print_clientlist();
          * print_friendlist();
          * c_sleep(300); */

@@ -214,9 +214,9 @@ int main(int argc, char *argv[])
                 crypto_kill(connection);
             }
         }
-        doDHT();
-        doLossless_UDP();
-        doNetCrypto();
+        do_DHT();
+        do_lossless_UDP();
+        do_net_crypto();
         /*print_clientlist();
          *print_friendlist();
          *c_sleep(300); */

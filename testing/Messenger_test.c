@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         printf("usage %s ip port public_key (of the DHT bootstrap node)\n or\n %s Save.bak\n", argv[0], argv[0]);
         exit(0);
     }
-    initMessenger();
+    init_messenger();
     if(argc > 3) {
         IP_Port bootstrap_ip_port;
         bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
         
         m_sendmessage(num, (uint8_t*)"Test", 5);
-        doMessenger();
+        do_messenger();
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
         if ( file==NULL ){return 1;}

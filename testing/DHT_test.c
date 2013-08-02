@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     
     while(1) {
             
-        doDHT();
+        do_DHT();
         
         while(receivepacket(&ip_port, data, &length) != -1) {
             if(DHT_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
