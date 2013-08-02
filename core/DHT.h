@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 /* Current time, unix format */
-#define unix_time() ((int64_t)time(NULL))
+#define unix_time() ((uint64_t)time(NULL))
 
 /* size of the client_id in bytes */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES

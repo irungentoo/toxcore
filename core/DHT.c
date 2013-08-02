@@ -64,12 +64,12 @@
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
-    uint32_t    timestamp;
-    uint32_t    last_pinged;
+    uint64_t    timestamp;
+    uint64_t    last_pinged;
 
     /* Returned by this node. Either our friend or us */
     IP_Port     ret_ip_port;
-    uint32_t    ret_timestamp;
+    uint64_t    ret_timestamp;
 } Client_data;
 
 typedef struct {
@@ -77,17 +77,17 @@ typedef struct {
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* time at which the last get_nodes request was sent. */
-    uint32_t    lastgetnode;
+    uint64_t    lastgetnode;
 
     /* Symetric NAT hole punching stuff */
 
     /* 1 if currently hole punching, otherwise 0 */
     uint8_t     hole_punching; 
     uint32_t    punching_index;
-    uint32_t    punching_timestamp;
-    int64_t     recvNATping_timestamp;
+    uint64_t    punching_timestamp;
+    uint64_t    recvNATping_timestamp;
     uint64_t    NATping_id;
-    uint32_t    NATping_timestamp;
+    uint64_t    NATping_timestamp;
 } Friend;
 
 typedef struct {
@@ -98,7 +98,7 @@ typedef struct {
 typedef struct {
     IP_Port     ip_port;
     uint64_t    ping_id;
-    int64_t     timestamp;
+    uint64_t    timestamp;
 } Pinged;
 
 /*----------------------------------------------------------------------------------*/
@@ -146,7 +146,7 @@ int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)
 int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
 {
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for(i = 0; i < length; ++i) {
         /*If ip_port is assigned to a different client_id replace it*/
@@ -199,7 +199,7 @@ static int friend_number(uint8_t * client_id)
 int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 {
     uint32_t    i, j, k;
-    int64_t     temp_time = unix_time();
+    uint64_t     temp_time = unix_time();
     int         num_nodes = 0, closest, tout, inlist;
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
@@ -285,7 +285,7 @@ int replace_bad(    Client_data *   list,
                     IP_Port         ip_port )
 {
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
     for(i = 0; i < length; ++i) {
         /* if node is bad */
         if(list[i].timestamp + BAD_NODE_TIMEOUT < temp_time) {
@@ -310,7 +310,7 @@ int replace_good(   Client_data *   list,
                     uint8_t *       comp_client_id )
 {
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for(i = 0; i < length; ++i)
         if(id_closest(comp_client_id, list[i].client_id, client_id) == 2) {
@@ -374,7 +374,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
 void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
 {
     uint32_t i, j;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     if (memcmp(client_id, self_public_key, CLIENT_ID_SIZE) == 0) {
         for (i = 0; i < LCLIENT_LIST; ++i) {
@@ -416,7 +416,7 @@ int is_pinging(IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
     uint8_t pinging;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for (i = 0; i < LPING_ARRAY; ++i ) {
         if ((pings[i].timestamp + PING_TIMEOUT) > temp_time) {
@@ -440,7 +440,7 @@ int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
     uint8_t pinging;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for(i = 0; i < LSEND_NODES_ARRAY; ++i ) {
         if((send_nodes[i].timestamp + PING_TIMEOUT) > temp_time) {
@@ -469,7 +469,7 @@ uint64_t add_pinging(IP_Port ip_port)
 {
     uint32_t i, j;
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
 
     for(i = 0; i < PING_TIMEOUT; ++i ) {
@@ -491,7 +491,7 @@ uint64_t add_gettingnodes(IP_Port ip_port)
 {
     uint32_t i, j;
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for(i = 0; i < PING_TIMEOUT; ++i ) {
         for(j = 0; j < LSEND_NODES_ARRAY; ++j ) {
@@ -831,7 +831,7 @@ int DHT_delfriend(uint8_t * client_id)
 IP_Port DHT_getfriendip(uint8_t * client_id)
 {
     uint32_t i, j;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
     IP_Port empty = {{{0}}, 0};
 
     for (i = 0; i < num_friends; ++i) {
@@ -857,7 +857,7 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
 void doDHTFriends()
 {
     uint32_t i, j;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
     uint32_t rand_node;
     uint32_t index[MAX_FRIEND_CLIENTS];
 
@@ -888,7 +888,7 @@ void doDHTFriends()
     }
 }
 
-static uint32_t close_lastgetnodes;
+static uint64_t close_lastgetnodes;
 
 /* Ping each client in the close nodes list every 60 seconds.
  * Send a get nodes request every 20 seconds to a random good node in the list.
@@ -896,7 +896,7 @@ static uint32_t close_lastgetnodes;
 void doClose()
 {
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
     uint32_t num_nodes = 0;
     uint32_t rand_node;
     uint32_t index[LCLIENT_LIST];
@@ -954,7 +954,7 @@ static int friend_iplist(IP_Port * ip_portlist, uint16_t friend_num)
 {
     int num_ips = 0;
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
     
     if (friend_num >= num_friends)
         return -1;
@@ -989,7 +989,7 @@ int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
         return 0;
 
     uint32_t i, sent = 0;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
     Friend * friend = &friends_list[num];
     Client_data * client;
 
@@ -1022,7 +1022,7 @@ int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int n = 0;
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &friend->client_list[i];
@@ -1196,7 +1196,7 @@ static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t
 static void doNAT()
 {
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for (i = 0; i < num_friends; ++i) {
         IP_Port ip_list[MAX_FRIEND_CLIENTS];
@@ -1291,7 +1291,7 @@ int DHT_load(uint8_t * data, uint32_t size)
 
     uint32_t i, j;
     uint16_t temp;
-    /* int64_t temp_time = unix_time(); */
+    /* uint64_t temp_time = unix_time(); */
 
     Client_data * client;
 
@@ -1326,7 +1326,7 @@ int DHT_load(uint8_t * data, uint32_t size)
 int DHT_isconnected()
 {
     uint32_t i;
-    int64_t temp_time = unix_time();
+    uint64_t temp_time = unix_time();
 
     for(i = 0; i < LCLIENT_LIST; ++i) {
         if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)
