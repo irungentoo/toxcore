@@ -115,30 +115,37 @@ static Pinged       send_nodes[LSEND_NODES_ARRAY];
 /*----------------------------------------------------------------------------------*/
 
 /* Compares client_id1 and client_id2 with client_id
-   return 0 if both are same distance
-   return 1 if client_id1 is closer
-   return 2 if client_id2 is closer */
-int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2) /* tested */
+ * return 0 if both are same distance
+ * return 1 if client_id1 is closer
+ * return 2 if client_id2 is closer
+ */
+int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)
 {
     uint32_t i;
+    uint8_t tmp1, tmp2;
+
     for(i = 0; i < CLIENT_ID_SIZE; ++i) {
-        if(abs(client_id[i] ^ client_id1[i]) < abs(client_id[i] ^ client_id2[i]))
+        tmp1 = abs(client_id[i] ^ client_id1[i]);
+        tmp2 = abs(client_id[i] ^ client_id2[i]);
+        
+        if(tmp1 < tmp2)
             return 1;
-        else if(abs(client_id[i] ^ client_id1[i]) > abs(client_id[i] ^ client_id2[i]))
+        else if(tmp1 > tmp2)
             return 2;
     }
     return 0;
 }
 
 /* check if client with client_id is already in list of length length.
-   if it is set it's corresponding timestamp to current time.
-   if the id is already in the list with a different ip_port, update it.
-   return True(1) or False(0)
-   TODO: maybe optimize this. */
+ * if it is then set its corresponding timestamp to current time.
+ * if the id is already in the list with a different ip_port, update it.
+ * return True(1) or False(0)
+ *
+ * TODO: maybe optimize this.
+ */
 int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
 {
-    uint32_t i;
-    uint32_t temp_time = unix_time();
+    uint32_t i, temp_time = unix_time();
 
     for(i = 0; i < length; ++i) {
         /*If ip_port is assigned to a different client_id replace it*/
@@ -156,71 +163,113 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
         }
     }
     return 0;
-
 }
 
 /* check if client with client_id is already in node format list of length length.
-   return True(1) or False(0) */
+ * return True(1) or False(0)
+ */
 int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
 {
     uint32_t i;
-    for(i = 0; i < length; ++i)
+    for(i = 0; i < length; ++i) {
         if(memcmp(list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
             return 1;
+    }
     return 0;
 }
 
-/*Return the friend number from the client_id
- Return -1 if failure, number of friend if success*/
+/* Returns the friend number from the client_id, or -1 if a failure occurs
+ */
 static int friend_number(uint8_t * client_id)
 {
     uint32_t i;
-    for(i = 0; i < num_friends; ++i)
-        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) /* Equal */
+    for(i = 0; i < num_friends; ++i) {
+        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0)
             return i;
+    }
     return -1;
 }
 
 /* Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
-   put them in the nodes_list and return how many were found.
-   TODO: Make this function much more efficient. */
+ * put them in the nodes_list and return how many were found.
+ *
+ * TODO: For the love of based Allah make this function cleaner and much more efficient.
+ */
 int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 {
-    uint32_t i, j, k;
-    int num_nodes=0;
-    uint32_t temp_time = unix_time();
-    for(i = 0; i < LCLIENT_LIST; ++i)
-        if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time &&
-           !client_in_nodelist(nodes_list, MAX_SENT_NODES,close_clientlist[i].client_id)) {
-            /* if node is good and not already in list. */
+    uint32_t    i, j, k, temp_time = unix_time();
+    int         num_nodes = 0, closest, tout, inlist;
+
+    for (i = 0; i < LCLIENT_LIST; ++i) {
+        tout = close_clientlist[i].timestamp <= temp_time - BAD_NODE_TIMEOUT;
+        inlist = client_in_nodelist(nodes_list, MAX_SENT_NODES, close_clientlist[i].client_id);
+
+        /* if node isn't good or is already in list. */
+        if(tout || inlist)
+            continue;
+
+        if(num_nodes < MAX_SENT_NODES) {
+
+            memcpy( nodes_list[num_nodes].client_id, 
+                    close_clientlist[i].client_id, 
+                    CLIENT_ID_SIZE );
+
+            nodes_list[num_nodes].ip_port = close_clientlist[i].ip_port;
+            num_nodes++;
+        } else {
+            for(j = 0; j < MAX_SENT_NODES; ++j) {
+                closest = id_closest(   client_id, 
+                                        nodes_list[j].client_id, 
+                                        close_clientlist[i].client_id );
+                if(closest == 2) {
+                    memcpy( nodes_list[j].client_id, 
+                            close_clientlist[i].client_id, 
+                            CLIENT_ID_SIZE);
+
+                    nodes_list[j].ip_port = close_clientlist[i].ip_port;
+                    break;
+                }
+            }
+        }
+    }
+
+    for(i = 0; i < num_friends; ++i) {
+        for(j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+            tout = friends_list[i].client_list[j].timestamp <= temp_time - BAD_NODE_TIMEOUT;
+            inlist = client_in_nodelist(    nodes_list,
+                                            MAX_SENT_NODES, 
+                                            friends_list[i].client_list[j].client_id);
+
+            /* if node isn't good or is already in list. */
+            if(tout || inlist)
+                continue;
+
             if(num_nodes < MAX_SENT_NODES) {
-                memcpy(nodes_list[num_nodes].client_id, close_clientlist[i].client_id, CLIENT_ID_SIZE);
-                nodes_list[num_nodes].ip_port = close_clientlist[i].ip_port;
+
+                memcpy( nodes_list[num_nodes].client_id, 
+                        friends_list[i].client_list[j].client_id, 
+                        CLIENT_ID_SIZE);
+
+                nodes_list[num_nodes].ip_port = friends_list[i].client_list[j].ip_port;
                 num_nodes++;
-            } else for(j = 0; j < MAX_SENT_NODES; ++j)
-                    if(id_closest(client_id, nodes_list[j].client_id, close_clientlist[i].client_id) == 2) {
-                        memcpy(nodes_list[j].client_id, close_clientlist[i].client_id, CLIENT_ID_SIZE);
-                        nodes_list[j].ip_port = close_clientlist[i].ip_port;
+            } else  {
+                for(k = 0; k < MAX_SENT_NODES; ++k) {
+
+                    closest = id_closest(   client_id, 
+                                            nodes_list[k].client_id, 
+                                            friends_list[i].client_list[j].client_id );
+                    if(closest == 2) {
+                        memcpy( nodes_list[k].client_id, 
+                                friends_list[i].client_list[j].client_id, 
+                                CLIENT_ID_SIZE );
+
+                        nodes_list[k].ip_port = friends_list[i].client_list[j].ip_port;
                         break;
                     }
-        }
-
-    for(i = 0; i < num_friends; ++i)
-        for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
-            if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time &&
-               !client_in_nodelist(nodes_list, MAX_SENT_NODES,friends_list[i].client_list[j].client_id)) {
-                /* if node is good and not already in list. */
-                if(num_nodes < MAX_SENT_NODES) {
-                    memcpy(nodes_list[num_nodes].client_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE);
-                    nodes_list[num_nodes].ip_port = friends_list[i].client_list[j].ip_port;
-                    num_nodes++;
-                } else for(k = 0; k < MAX_SENT_NODES; ++k)
-                        if(id_closest(client_id, nodes_list[k].client_id, friends_list[i].client_list[j].client_id) == 2) {
-                            memcpy(nodes_list[k].client_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE);
-                            nodes_list[k].ip_port = friends_list[i].client_list[j].ip_port;
-                            break;
-                        }
+                }
             }
+        }
+    }
     return num_nodes;
 }
 
