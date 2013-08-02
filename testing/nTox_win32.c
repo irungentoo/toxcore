@@ -151,6 +151,21 @@ void line_eval(char* line)
         else if (inpt_command == 'l') {
             int activefriends = 0;
             int i;
+
+            for (i = 0; i <= numfriends; i++)
+            {
+                if (m_friendstatus(i) == 4)
+                    activefriends++;
+            }
+
+            printf("\n[i] Friend List | Total: %d\n\n", activefriends);
+
+            for (i = 0; i <= numfriends; i++) {
+                char name[MAX_NAME_LENGTH];
+                getname(i, (uint8_t*)name);
+                if (m_friendstatus(i) == 4)    
+                    printf("[%d] %s\n\n", i, (uint8_t*)name);
+            }
         }
 
         else if (inpt_command == 'd') {
