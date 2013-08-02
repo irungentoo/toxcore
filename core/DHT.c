@@ -367,53 +367,66 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
 }
 
 /* If client_id is a friend or us, update ret_ip_port
-   nodeclient_id is the id of the node that sent us this info */
+ * nodeclient_id is the id of the node that sent us this info
+ */
 void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
 {
-    uint32_t i, j;
-    uint32_t temp_time = unix_time();
-    if(memcmp(client_id, self_public_key, CLIENT_ID_SIZE) == 0) {
-        for(i = 0; i < LCLIENT_LIST; ++i)
-            if(memcmp(nodeclient_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0) {
+    uint32_t i, j, temp_time = unix_time();
+
+    if (memcmp(client_id, self_public_key, CLIENT_ID_SIZE) == 0) {
+        for (i = 0; i < LCLIENT_LIST; ++i) {
+
+            if (memcmp( nodeclient_id, 
+                        close_clientlist[i].client_id, 
+                        CLIENT_ID_SIZE ) == 0) {
                 close_clientlist[i].ret_ip_port = ip_port;
                 close_clientlist[i].ret_timestamp = temp_time;
                 return;
             }
-    } else
-        for(i = 0; i < num_friends; ++i)
-            if(memcmp(client_id, friends_list[i].client_id, CLIENT_ID_SIZE) == 0)
-                for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
-                    if(memcmp(nodeclient_id, friends_list[i].client_list[j].client_id, CLIENT_ID_SIZE) == 0) {
+        }
+    } else {
+        for (i = 0; i < num_friends; ++i) {
+            if (memcmp( client_id, 
+                        friends_list[i].client_id, 
+                        CLIENT_ID_SIZE ) == 0) {
+                for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+
+                    if (memcmp( nodeclient_id, 
+                                friends_list[i].client_list[j].client_id, 
+                                CLIENT_ID_SIZE ) == 0) {
                         friends_list[i].client_list[j].ret_ip_port = ip_port;
                         friends_list[i].client_list[j].ret_timestamp = temp_time;
                         return;
                     }
+                }
+            }
+        }
+    }
 }
 
-/* check if we are currently pinging an ip_port and/or a ping_id
-   variables with values of zero will not be checked.
-   if we are already, return 1
-   else return 0
-TODO: optimize this */
+/* check if we are currently pinging an ip_port and/or a ping_id variables with
+ * values of zero will not be checked. If we are already, return 1 else return 0
+ *
+ * TODO: optimize this 
+ */
 int is_pinging(IP_Port ip_port, uint64_t ping_id)
 {
-    uint32_t i;
+    uint32_t i, temp_time = unix_time();
     uint8_t pinging;
-    uint32_t temp_time = unix_time();
 
-    for(i = 0; i < LPING_ARRAY; ++i )
-        if((pings[i].timestamp + PING_TIMEOUT) > temp_time) {
+    for (i = 0; i < LPING_ARRAY; ++i ) {
+        if ((pings[i].timestamp + PING_TIMEOUT) > temp_time) {
             pinging = 0;
-            if(ip_port.ip.i != 0)
-                if(pings[i].ip_port.ip.i == ip_port.ip.i &&
-                   pings[i].ip_port.port == ip_port.port)
+            if (ip_port.ip.i != 0 &&
+                pings[i].ip_port.ip.i == ip_port.ip.i &&
+                pings[i].ip_port.port == ip_port.port)
                     ++pinging;
-            if(ping_id != 0)
-                if(pings[i].ping_id == ping_id)
-                    ++pinging;
-            if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
+            if (ping_id != 0 && pings[i].ping_id == ping_id)
+                ++pinging;
+            if (pinging == ((ping_id != 0) + (ip_port.ip.i != 0)))
                 return 1;
         }
+    }
 
     return 0;
 }
@@ -421,46 +434,47 @@ int is_pinging(IP_Port ip_port, uint64_t ping_id)
 /* Same as last function but for get_node requests. */
 int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 {
-    uint32_t i;
+    uint32_t i, temp_time = unix_time();
     uint8_t pinging;
-    uint32_t temp_time = unix_time();
 
-    for(i = 0; i < LSEND_NODES_ARRAY; ++i )
+    for(i = 0; i < LSEND_NODES_ARRAY; ++i ) {
         if((send_nodes[i].timestamp + PING_TIMEOUT) > temp_time) {
             pinging = 0;
-            if(ip_port.ip.i != 0)
-                if(send_nodes[i].ip_port.ip.i == ip_port.ip.i &&
-                   send_nodes[i].ip_port.port == ip_port.port)
+            if(ip_port.ip.i != 0 &&
+                send_nodes[i].ip_port.ip.i == ip_port.ip.i &&
+                send_nodes[i].ip_port.port == ip_port.port)
                     ++pinging;
-            if(ping_id != 0)
-                if(send_nodes[i].ping_id == ping_id)
+            if(ping_id != 0 && send_nodes[i].ping_id == ping_id)
                     ++pinging;
             if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
                 return 1;
-
         }
+    }
 
     return 0;
 }
 
 /* Add a new ping request to the list of ping requests
-   returns the ping_id to put in the ping request
-   returns 0 if problem.
-   TODO: optimize this */
+ * returns the ping_id to put in the ping request
+ * returns 0 if problem.
+ *
+ * TODO: optimize this
+ */
 uint64_t add_pinging(IP_Port ip_port)
 {
-    uint32_t i, j;
+    uint32_t i, j, temp_time = unix_time();
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
-    uint32_t temp_time = unix_time();
 
-    for(i = 0; i < PING_TIMEOUT; ++i )
-        for(j = 0; j < LPING_ARRAY; ++j )
+    for(i = 0; i < PING_TIMEOUT; ++i ) {
+        for(j = 0; j < LPING_ARRAY; ++j ) {
             if((pings[j].timestamp + PING_TIMEOUT - i) < temp_time) {
                 pings[j].timestamp = temp_time;
                 pings[j].ip_port = ip_port;
                 pings[j].ping_id = ping_id;
                 return ping_id;
             }
+        }
+    }
 
     return 0;
 }
@@ -472,26 +486,28 @@ uint64_t add_gettingnodes(IP_Port ip_port)
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
     uint32_t temp_time = unix_time();
 
-    for(i = 0; i < PING_TIMEOUT; ++i )
-        for(j = 0; j < LSEND_NODES_ARRAY; ++j )
+    for(i = 0; i < PING_TIMEOUT; ++i ) {
+        for(j = 0; j < LSEND_NODES_ARRAY; ++j ) {
             if((send_nodes[j].timestamp + PING_TIMEOUT - i) < temp_time) {
                 send_nodes[j].timestamp = temp_time;
                 send_nodes[j].ip_port = ip_port;
                 send_nodes[j].ping_id = ping_id;
                 return ping_id;
             }
+        }
+    }
 
     return 0;
 }
 
-/* send a ping request
-   Ping request only works if none has been sent to that ip/port in the last 5 seconds. */
+/* send a ping request, only works if none has been sent to that ip/port
+ * in the last 5 seconds. 
+ */
 static int pingreq(IP_Port ip_port, uint8_t * public_key)
-{
-    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is gonna be sent to ourself */
-        return 1;
-
-    if(is_pinging(ip_port, 0))
+{ 
+    /* check if packet is gonna be sent to ourself */
+    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0
+        || is_pinging(ip_port, 0))
         return 1;
 
     uint64_t ping_id = add_pinging(ip_port);
@@ -503,9 +519,16 @@ static int pingreq(IP_Port ip_port, uint8_t * public_key)
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
 
-    int len = encrypt_data(public_key, self_secret_key, nonce, (uint8_t *)&ping_id, sizeof(ping_id), encrypt);
+    int len = encrypt_data( public_key, 
+                            self_secret_key, 
+                            nonce, 
+                            (uint8_t *)&ping_id, 
+                            sizeof(ping_id), 
+                            encrypt );
+
     if(len != sizeof(ping_id) + ENCRYPTION_PADDING)
         return -1;
+
     data[0] = 0;
     memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
@@ -526,9 +549,15 @@ static int pingres(IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
 
-    int len = encrypt_data(public_key, self_secret_key, nonce, (uint8_t *)&ping_id, sizeof(ping_id), encrypt);
+    int len = encrypt_data( public_key, 
+                            self_secret_key, nonce, 
+                            (uint8_t *)&ping_id, 
+                            sizeof(ping_id), 
+                            encrypt );
+
     if(len != sizeof(ping_id) + ENCRYPTION_PADDING)
         return -1;
+
     data[0] = 1;
     memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
