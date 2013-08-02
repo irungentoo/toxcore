@@ -45,6 +45,8 @@ extern "C" {
 /* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
 
+extern uint32_t numfriends;
+
 /*
  * add a friend
  * set the data that will be sent along with friend request

@@ -152,7 +152,7 @@ void line_eval(char* line)
             int activefriends = 0;
             int i;
 
-            for (i = 0; i <= getnumfriends(); i++)
+            for (i = 0; i <= numfriends; i++)
             {
                 if (m_friendstatus(i) == 4)
                     activefriends++;
@@ -160,7 +160,7 @@ void line_eval(char* line)
 
             printf("\n[i] Friend List | Total: %d\n\n", activefriends);
 
-            for (i = 0; i <= getnumfriends(); i++) {
+            for (i = 0; i <= numfriends; i++) {
                 char name[MAX_NAME_LENGTH];
                 getname(i, (uint8_t*)name);
                 if (m_friendstatus(i) == 4)    

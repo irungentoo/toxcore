@@ -50,7 +50,7 @@ static uint16_t self_userstatus_len;
 
 static Friend friendlist[MAX_NUM_FRIENDS];
 
-static uint32_t numfriends;
+uint32_t numfriends;
 
 /* 1 if we are online
    0 if we are offline
