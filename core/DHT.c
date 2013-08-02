@@ -785,12 +785,13 @@ int DHT_addfriend(uint8_t * client_id)
 {
     Friend * temp;
     temp = realloc(friends_list, sizeof(Friend) * (num_friends + 1));
-    if(temp == NULL)
+    if (temp == NULL)
         return 1;
 
     friends_list = temp;
     memset(&friends_list[num_friends], 0, sizeof(Friend));
     memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
+
     friends_list[num_friends].NATping_id = ((uint64_t)random_int() << 32) + random_int();
     ++num_friends;
     return 0;
@@ -800,17 +801,21 @@ int DHT_delfriend(uint8_t * client_id)
 {
     uint32_t i;
     Friend * temp;
-    for(i = 0; i < num_friends; ++i)
+    for (i = 0; i < num_friends; ++i) {
         /* Equal */
-        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
+        if (memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
             --num_friends;
-            if(num_friends != i)
-                memcpy(friends_list[i].client_id, friends_list[num_friends].client_id, CLIENT_ID_SIZE);
+            if (num_friends != i) {
+                memcpy( friends_list[i].client_id, 
+                        friends_list[num_friends].client_id, 
+                        CLIENT_ID_SIZE );
+            }
             temp = realloc(friends_list, sizeof(Friend) * (num_friends));
-            if(temp != NULL)
+            if (temp != NULL)
                 friends_list = temp;
             return 0;
         }
+    }
 
     return 1;
 }
@@ -818,26 +823,29 @@ int DHT_delfriend(uint8_t * client_id)
 /* TODO: Optimize this. */
 IP_Port DHT_getfriendip(uint8_t * client_id)
 {
-    uint32_t i, j;
+    uint32_t i, j, temp_time = unix_time();
     IP_Port empty = {{{0}}, 0};
-    uint32_t temp_time = unix_time();
-    for(i = 0; i < num_friends; ++i)
+
+    for (i = 0; i < num_friends; ++i) {
         /* Equal */
-        if(memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
-            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
-                if(memcmp(friends_list[i].client_list[j].client_id, client_id, CLIENT_ID_SIZE) == 0 &&
+        if (memcmp(friends_list[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
+            for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+                if (memcmp( friends_list[i].client_list[j].client_id, 
+                            client_id, 
+                            CLIENT_ID_SIZE ) == 0 &&
                    friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time)
                     return friends_list[i].client_list[j].ip_port;
-
+            }
             return empty;
         }
+    }
     empty.ip.i = 1;
     return empty;
-
 }
 
-/* Ping each client in the "friends" list every 60 seconds.
-   Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list. */
+/* Ping each client in the "friends" list every 60 seconds. Send a get nodes request
+ * every 20 seconds to a random good node for each "friend" in our "friends" list. 
+ */
 void doDHTFriends()
 {
     uint32_t i, j;
@@ -845,24 +853,28 @@ void doDHTFriends()
     uint32_t rand_node;
     uint32_t index[MAX_FRIEND_CLIENTS];
 
-    for(i = 0; i < num_friends; ++i) {
+    for (i = 0; i < num_friends; ++i) {
         uint32_t num_nodes = 0;
-        for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
-            if(friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time) { /* if node is not dead. */
-                if((friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
-                    pingreq(friends_list[i].client_list[j].ip_port, friends_list[i].client_list[j].client_id);
+        for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+            /* if node is not dead. */
+            if (friends_list[i].client_list[j].timestamp + Kill_NODE_TIMEOUT > temp_time) {
+                if ((friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
+                    pingreq( friends_list[i].client_list[j].ip_port, 
+                             friends_list[i].client_list[j].client_id );
                     friends_list[i].client_list[j].last_pinged = temp_time;
                 }
-                if(friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time) { /* if node is good. */
+                /* if node is good. */
+                if (friends_list[i].client_list[j].timestamp + BAD_NODE_TIMEOUT > temp_time) { 
                     index[num_nodes] = j;
                     ++num_nodes;
                 }
             }
+        }
         if(friends_list[i].lastgetnode + GET_NODE_INTERVAL <= temp_time && num_nodes != 0) {
             rand_node = rand() % num_nodes;
-            getnodes(friends_list[i].client_list[index[rand_node]].ip_port,
-                     friends_list[i].client_list[index[rand_node]].client_id,
-                     friends_list[i].client_id);
+            getnodes( friends_list[i].client_list[index[rand_node]].ip_port,
+                      friends_list[i].client_list[index[rand_node]].client_id,
+                      friends_list[i].client_id );
             friends_list[i].lastgetnode = temp_time;
         }
     }
