@@ -883,8 +883,9 @@ void doDHTFriends()
 static uint32_t close_lastgetnodes;
 
 /* Ping each client in the close nodes list every 60 seconds.
-   Send a get nodes request every 20 seconds to a random good node in the list. */
-void doClose() /* tested */
+ * Send a get nodes request every 20 seconds to a random good node in the list.
+ */
+void doClose()
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -892,25 +893,27 @@ void doClose() /* tested */
     uint32_t rand_node;
     uint32_t index[LCLIENT_LIST];
 
-    for(i = 0; i < LCLIENT_LIST; ++i)
+    for (i = 0; i < LCLIENT_LIST; ++i) {
         /* if node is not dead. */
-        if(close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time) {
-            if((close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
-                pingreq(close_clientlist[i].ip_port, close_clientlist[i].client_id);
+        if (close_clientlist[i].timestamp + Kill_NODE_TIMEOUT > temp_time) {
+            if ((close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
+                pingreq( close_clientlist[i].ip_port, 
+                         close_clientlist[i].client_id );
                 close_clientlist[i].last_pinged = temp_time;
             }
             /* if node is good. */
-            if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time) {
+            if (close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time) {
                 index[num_nodes] = i;
                 ++num_nodes;
             }
         }
+    }
 
-    if(close_lastgetnodes + GET_NODE_INTERVAL <= temp_time && num_nodes != 0) {
+    if (close_lastgetnodes + GET_NODE_INTERVAL <= temp_time && num_nodes != 0) {
         rand_node = rand() % num_nodes;
-        getnodes(close_clientlist[index[rand_node]].ip_port,
-                 close_clientlist[index[rand_node]].client_id,
-                 self_public_key);
+        getnodes( close_clientlist[index[rand_node]].ip_port,
+                  close_clientlist[index[rand_node]].client_id,
+                  self_public_key );
         close_lastgetnodes = temp_time;
     }
 }
@@ -921,100 +924,126 @@ void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key)
 }
 
 /* send the given packet to node with client_id
-   returns -1 if failure */
+ * returns -1 if failure 
+ */
 int route_packet(uint8_t * client_id, uint8_t * packet, uint32_t length)
 {
     uint32_t i;
-    for(i = 0; i < LCLIENT_LIST; ++i)
-        if(memcmp(client_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0)
+    for (i = 0; i < LCLIENT_LIST; ++i) {
+        if (memcmp(client_id, close_clientlist[i].client_id, CLIENT_ID_SIZE) == 0)
             return sendpacket(close_clientlist[i].ip_port, packet, length);
+    }
     return -1;
 }
 
 /* Puts all the different ips returned by the nodes for a friend_num into array ip_portlist
-   ip_portlist must be at least MAX_FRIEND_CLIENTS big
-   returns the number of ips returned
-   return 0 if we are connected to friend or if no ips were found.
-   returns -1 if no such friend*/
+ * ip_portlist must be at least MAX_FRIEND_CLIENTS big
+ * returns the number of ips returned
+ * return 0 if we are connected to friend or if no ips were found.
+ * returns -1 if no such friend
+ */
 static int friend_iplist(IP_Port * ip_portlist, uint16_t friend_num)
 {
     int num_ips = 0;
-    uint32_t i;
-    uint32_t temp_time = unix_time();
-    if(friend_num >= num_friends)
+    uint32_t i, temp_time = unix_time();
+
+    if (friend_num >= num_friends)
         return -1;
-    for(i = 0; i < MAX_FRIEND_CLIENTS; ++i)
+
+    Friend * friend = &friends_list[friend_num];
+    Client_data * client;
+
+    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        client = &friend->client_list[i];
+
         /*If ip is not zero and node is good */
-        if(friends_list[friend_num].client_list[i].ret_ip_port.ip.i != 0 &&
-           friends_list[friend_num].client_list[i].ret_timestamp + BAD_NODE_TIMEOUT > temp_time) {
-            if(memcmp(friends_list[friend_num].client_list[i].client_id, friends_list[friend_num].client_id, CLIENT_ID_SIZE) == 0 )
+        if (client->ret_ip_port.ip.i != 0 &&
+           client->ret_timestamp + BAD_NODE_TIMEOUT > temp_time) {
+
+            if (memcmp(client->client_id, friend->client_id, CLIENT_ID_SIZE) == 0)
                 return 0;
-            ip_portlist[num_ips] = friends_list[friend_num].client_list[i].ret_ip_port;
+
+            ip_portlist[num_ips] = client->ret_ip_port;
             ++num_ips;
         }
+    }
     return num_ips;
 }
 
 /* Send the following packet to everyone who tells us they are connected to friend_id
-   returns the number of nodes it sent the packet to */
+ * returns the number of nodes it sent the packet to
+ */
 int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
 {
-    uint32_t i, j;
-    uint32_t sent = 0;
-    uint32_t temp_time = unix_time();
-    for(i = 0; i < num_friends; ++i)
-        /* Equal */
-        if(memcmp(friends_list[i].client_id, friend_id, CLIENT_ID_SIZE) == 0)  {
-            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
-                /*If ip is not zero and node is good */
-                if(friends_list[i].client_list[j].ret_ip_port.ip.i != 0 &&
-                   friends_list[i].client_list[j].ret_timestamp + BAD_NODE_TIMEOUT > temp_time)
-                    if(sendpacket(friends_list[i].client_list[j].ip_port, packet, length) == length)
-                        ++sent;
-            return sent;
+    int num = friend_number(friend_id);
+    if (num == -1)
+        return 0;
+
+    uint32_t i, sent = 0, temp_time = unix_time();
+    Friend * friend = &friends_list[num];
+    Client_data * client;
+
+    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        client = &friend->client_list[i];
+
+        /*If ip is not zero and node is good */
+        if (client->ret_ip_port.ip.i != 0 &&
+           client->ret_timestamp + BAD_NODE_TIMEOUT > temp_time) {
+
+            if (sendpacket(client->ip_port, packet, length) == length)
+                ++sent;
         }
-    return 0;
+    }
+    return sent;
 }
 
 /* Send the following packet to one random person who tells us they are connected to friend_id
-   returns the number of nodes it sent the packet to */
+*  returns the number of nodes it sent the packet to
+*/
 int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
 {
     int num = friend_number(friend_id);
-    if(num == -1)
+    if (num == -1)
         return 0;
+
+    Friend * friend = &friends_list[num];
+    Client_data * client;
 
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int n = 0;
-    uint32_t i;
-    uint32_t temp_time = unix_time();
-    for(i = 0; i < MAX_FRIEND_CLIENTS; ++i)
+    uint32_t i, temp_time = unix_time();
+
+    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        client = &friend->client_list[i];
+
         /*If ip is not zero and node is good */
-        if(friends_list[num].client_list[i].ret_ip_port.ip.i != 0 &&
-           friends_list[num].client_list[i].ret_timestamp + BAD_NODE_TIMEOUT > temp_time) {
-            ip_list[n] = friends_list[num].client_list[i].ip_port;
+        if(client->ret_ip_port.ip.i != 0 &&
+           client->ret_timestamp + BAD_NODE_TIMEOUT > temp_time) {
+            ip_list[n] = client->ip_port;
             ++n;
         }
-    if(n < 1)
+    }
+    if (n < 1)
         return 0;
-    if(sendpacket(ip_list[rand() % n], packet, length) == length)
+    if (sendpacket(ip_list[rand() % n], packet, length) == length)
         return 1;
     return 0;
 }
 
 /* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist
-   ip_portlist must be at least MAX_FRIEND_CLIENTS big
-   returns the number of ips returned
-   return 0 if we are connected to friend or if no ips were found.
-   returns -1 if no such friend*/
+ * ip_portlist must be at least MAX_FRIEND_CLIENTS big
+ * returns the number of ips returned
+ * return 0 if we are connected to friend or if no ips were found.
+ * returns -1 if no such friend
+ */
 int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
 {
-
     uint32_t i;
-    for(i = 0; i < num_friends; ++i)
+    for (i = 0; i < num_friends; ++i) {
         /* Equal */
-        if(memcmp(friends_list[i].client_id, friend_id, CLIENT_ID_SIZE) == 0)
+        if (memcmp(friends_list[i].client_id, friend_id, CLIENT_ID_SIZE) == 0)
             return friend_iplist(ip_portlist, i);
+    }
     return -1;
 }
 
