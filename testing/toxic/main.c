@@ -280,6 +280,14 @@ void prepare_window(WINDOW* w) {
   wresize(w, LINES-2, COLS);
 }
 
+/* Draws cursor relative to input */
+void position_cursor(WINDOW* w)
+{
+  int x, y;
+  getyx(w, y, x);
+  move(y, x);
+}
+
 int main(int argc, char* argv[]) {
   int ch;
   ToxWindow* a;
@@ -299,6 +307,7 @@ int main(int argc, char* argv[]) {
     a->blink = false;
     a->onDraw(a);
     draw_bar();
+    position_cursor(a->window);
 
     // Handle input.
     ch = getch();
