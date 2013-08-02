@@ -160,7 +160,7 @@ void list_friends()
 
     printf("\n[i] Friend List | Total: %d\n\n", activefriends);
 
-    for (i = 0; i <= getnumfriends(); i++) {
+    for (i = 0; i <= 256; i++) {/* TODO: fix this properly*/
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
         
