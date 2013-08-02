@@ -37,21 +37,24 @@ static Messenger *messenger;
 
 //horrible function from one of my first C programs.
 //only here because I was too lazy to write a proper one.
-unsigned char * hex_string_to_bin(char hex_string[])
+unsigned char * hex_string_to_bin(char *hex_string)
 {
-    unsigned char * val = malloc(strlen(hex_string));
-    char * pos = hex_string;
-    int i=0;
-    while(i < strlen(hex_string))
-    {
-        sscanf(pos,"%2hhx",&val[i]);
-        pos+=2;
+    int len = strlen(hex_string);
+    unsigned char * val = malloc(len);
+    char *iter = hex_string;
+
+    int i;
+    for(i = 0; i < len; i++) {
+        sscanf(iter, "%2hhx", &val[i]);
+        iter += 2;
         i++;
     }
+
     return val;
 }
 
-void print_request(Messenger *m, uint8_t * public_key, uint8_t * data, uint16_t length)
+
+void print_request(Messenger *m, uint8_t * public_key, char * data, uint16_t length)
 {
     printf("Friend request recieved from: \n");
     printf("ClientID: ");
@@ -76,11 +79,13 @@ void print_request(Messenger *m, uint8_t * public_key, uint8_t * data, uint16_t 
     }
 }
 
-void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length)
+
+void print_message(Messenger *m, int friendnumber, char *string, uint16_t length)
 {
     printf("Message with length %u recieved from %u: %s \n", length, friendnumber, string);
-    m_sendmessage(messenger, friendnumber, (uint8_t*)"Test1", 6);
+    m_sendmessage(messenger, friendnumber, "Test1", 5);
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -124,7 +129,7 @@ int main(int argc, char *argv[])
         printf("%hhX",self_public_key[i]);
     }
 
-    setname(messenger, (uint8_t *)"Anon", 5);
+    setname(messenger, "Anon", 4);
 
     char temp_id[128];
     printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
@@ -132,22 +137,22 @@ int main(int argc, char *argv[])
     {
         return 1;
     }
-    int num = m_addfriend(messenger, hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+    int num = m_addfriend(messenger, hex_string_to_bin(temp_id), "Install Gentoo", strlen("Install Gentoo"));
 
     perror("Initialization");
 
     while(1)
     {
-        uint8_t name[128];
+        char name[128];
         getname(messenger, num, name);
         printf("%s\n", name);
 
-        m_sendmessage(messenger, num, (uint8_t*)"Test", 5);
+        m_sendmessage(messenger, num, "Test", 4);
         doMessenger(messenger);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
         if ( file==NULL ){return 1;}
-        uint8_t * buffer = malloc(Messenger_size(messenger));
+        uint8_t * buffer = calloc(1, Messenger_size(messenger));
         Messenger_save(messenger, buffer);
         fwrite(buffer, 1, Messenger_size(messenger), file);
         free(buffer);
