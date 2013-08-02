@@ -27,7 +27,7 @@
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
-    int friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
+    int64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
     uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
     uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
     uint8_t name[MAX_NAME_LENGTH];
@@ -491,7 +491,7 @@ static void doInbound()
 /*Interval in seconds between LAN discovery packet sending*/
 #define LAN_DISCOVERY_INTERVAL 60
 
-static uint32_t last_LANdiscovery;
+static int64_t last_LANdiscovery;
 
 /*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
 static void LANdiscovery()
