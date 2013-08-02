@@ -282,7 +282,7 @@ void prepare_window(WINDOW* w) {
 
 int main(int argc, char* argv[]) {
   int ch;
-  ToxWindow* current_window;
+  ToxWindow* a;
 
   init_term();
   init_tox();
@@ -294,20 +294,22 @@ int main(int argc, char* argv[]) {
     do_tox();
 
     // Draw.
-    current_window = &windows[w_active];
-    prepare_window(current_window->window);
-    current_window->blink = false;
-    current_window->onDraw(current_window);
+    a = &windows[w_active];
+    prepare_window(a->window);
+    a->blink = false;
+    a->onDraw(a);
     draw_bar();
 
     // Handle input.
     ch = getch();
     if(ch == '\t') {
       w_active = (w_active + 1) % w_num;
-    } else if(ch == KEY_BTAB) {
+    } 
+    else if(ch == KEY_BTAB) {
       w_active = (w_active + w_num - 1) % w_num;
-    } else if(ch != ERR) {
-      current_window->onKey(current_window, ch);
+    } 
+    else if(ch != ERR) {
+      a->onKey(a, ch);
     }
 
   }

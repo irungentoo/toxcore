@@ -155,9 +155,8 @@ int main(int argc, char *argv[])
     //bind to ip 0.0.0.0:PORT
     IP ip;
     ip.i = 0;
-    //ip.c = 0x7F000001;
     init_networking(ip, PORT);
-    //perror("Initialization");
+    perror("Initialization");
     
     int connection;
     uint64_t timer = current_time();
