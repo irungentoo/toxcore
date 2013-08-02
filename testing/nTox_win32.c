@@ -106,6 +106,7 @@ void load_key()
         int size = Messenger_size();
         uint8_t data[size];
         Messenger_save(data);
+        fclose(data_file);
         data_file = fopen("data", "w");
 
         if (fwrite(data, sizeof(uint8_t), size, data_file) != size) {
@@ -366,8 +367,9 @@ int main(int argc, char *argv[])
         setname(name, strlen((char*)name)+1);
         nameloaded = 1;
         printf("%s\n", name);
+        fclose(name_file);
     }
-    fclose(name_file);
+    
 
     FILE* status_file = NULL;
     status_file = fopen("statusfile.txt", "r");
@@ -379,8 +381,9 @@ int main(int argc, char *argv[])
         m_set_userstatus(status, strlen((char*)status)+1);
         statusloaded = 1;
         printf("%s\n", status);
+        fclose(status_file);
     }
-    fclose(status_file);
+    
 
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
