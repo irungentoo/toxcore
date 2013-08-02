@@ -28,7 +28,7 @@
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests = 0;
-uint8_t maxnumfriends;
+uint32_t maxnumfriends;
 
 char line[STRING_LENGTH];
 char users_id[200];
