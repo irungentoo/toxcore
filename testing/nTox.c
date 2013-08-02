@@ -37,8 +37,8 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 
-char *help = "[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)\n"
-             "[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)";
+char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  (to send message)\n/s status (to change status)\n"
+             "[i] /l list (list friends)\n/h for help\n/i for info\n/n nick (to change nickname)\n/q (to quit)";
 int x, y;
 
 
@@ -199,13 +199,12 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
     } else if(command_char == 'l') { // print friends list: /l
         print_friendlist();
 
-    } else if (line[1] == 's') { // set status: /s SOMETHING
-        /* what's the user entering here? a digit? a string? */
+    } else if (line[1] == 's') { // set status: /s STRING
         char *status = strtok_r(NULL, " ", &save_ptr);
         char numstring[MAX_USERSTATUS_LENGTH];
 
         if(status == NULL) {
-            new_lines("[!] /s needs a...thing! go type it! (pls document /s)");
+            new_lines("[!] /s needs a status to set!");
             return;
         }
 
@@ -237,19 +236,15 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             do_refresh();
         }
 
-    } else if (command_char == 'h') { // help!
-        new_lines("[i] commands:\n/f ID (to add friend)\n/m friendnumber "
-                 "message (to send message)\n/s status (to change status)");
-        new_lines("/l list (list friends)\n/h for help\n/i for info\n/n nick "
-                 "(to change nickname)\n/q (to quit)");
+    } else if (command_char == 'h') // help!
+        new_lines(help);
 
-    } else if (command_char == 'i') { // print some helpful info: /i
+    else if (command_char == 'i') { // print some helpful info: /i
        char idstring0[200];
        char idstring1[32][5];
        char idstring2[32][5];
        uint32_t i;
-       for(i = 0; i < 32; i++)
-       {
+       for(i = 0; i < 32; i++) {
            if(self_public_key[i] < 16)
                strcpy(idstring1[i],"0");
            else 
