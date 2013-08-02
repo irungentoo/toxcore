@@ -537,7 +537,7 @@ static void receive_crypto()
 
 /* run this to (re)initialize net_crypto
    sets all the global connection variables to their default values. */
-void initNetCrypto()
+void init_net_crypto()
 {
     memset(crypto_connections, 0 ,sizeof(crypto_connections));
     memset(incoming_connections, -1 ,sizeof(incoming_connections));
@@ -546,7 +546,7 @@ void initNetCrypto()
         crypto_connections[i].number = ~0;
 }
 
-static void killTimedout()
+static void kill_timedout()
 {
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
@@ -560,12 +560,12 @@ static void killTimedout()
 }
 
 /* main loop */
-void doNetCrypto()
+void do_net_crypto()
 {
     /* TODO:check if friend requests were sent correctly
        handle new incoming connections
        handle friend requests */
     handle_incomings();
     receive_crypto();
-    killTimedout();
+    kill_timedout();
 }

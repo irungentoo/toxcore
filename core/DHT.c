@@ -687,7 +687,7 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
 
 /* Ping each client in the "friends" list every 60 seconds.
    Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list. */
-void doDHTFriends()
+void do_DHT_friends()
 {
     uint32_t i, j;
     uint32_t temp_time = unix_time();
@@ -721,7 +721,7 @@ static uint32_t close_lastgetnodes;
 
 /* Ping each client in the close nodes list every 60 seconds.
    Send a get nodes request every 20 seconds to a random good node in the list. */
-void doClose() /* tested */
+void do_close() /* tested */
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -975,7 +975,7 @@ static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t
 /*Interval in seconds between punching attempts*/
 #define PUNCH_INTERVAL 10
 
-static void doNAT()
+static void do_NAT()
 {
     uint32_t i;
     uint32_t temp_time = unix_time();
@@ -1036,11 +1036,11 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-void doDHT()
+void do_DHT()
 {
-    doClose();
-    doDHTFriends();
-    doNAT();
+    do_close();
+    do_DHT_friends();
+    do_NAT();
 }
 
 /* get the size of the DHT (for saving) */

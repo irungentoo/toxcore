@@ -142,10 +142,10 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
 /* run this at startup
     returns 0 if no connection problems
     returns -1 if there are problems */
-int initMessenger();
+int init_messenger();
 
 /* the main loop that needs to be run at least 200 times per second */
-void doMessenger();
+void do_messenger();
 
 /* SAVING AND LOADING FUNCTIONS: */
 

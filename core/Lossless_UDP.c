@@ -651,7 +651,7 @@ int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
 
 /* END of packet handling functions */
 
-int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
+int lossless_UDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) { //TODO: check if no break statement is correct???
     case 16:
@@ -672,7 +672,7 @@ int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
 
 /* Send handshake requests
    handshake packets are sent at the same rate as SYNC packets */
-void doNew()
+void do_new()
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -693,7 +693,7 @@ void doNew()
     }
 }
 
-void doSYNC()
+void do_SYNC()
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -706,7 +706,7 @@ void doSYNC()
     }
 }
 
-void doData()
+void do_data()
 {
     uint32_t i;
     uint64_t j;
@@ -725,7 +725,7 @@ void doData()
 
 #define MAX_SYNC_RATE 10
 
-void adjustRates()
+void adjust_rates()
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -746,10 +746,10 @@ void adjustRates()
 
 /* Call this function a couple times per second
    It's the main loop. */
-void doLossless_UDP()
+void do_lossless_UDP()
 {
-    doNew();
-    doSYNC();
-    doData();
-    adjustRates();
+    do_new();
+    do_SYNC();
+    do_data();
+    adjust_rates();
 }

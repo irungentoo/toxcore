@@ -362,7 +362,7 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
 
 #define PORT 33445
 /* run this at startup */
-int initMessenger()
+int init_messenger()
 {
     new_keys();
     m_set_userstatus((uint8_t*)"Online", sizeof("Online"));
@@ -377,7 +377,7 @@ int initMessenger()
 }
 
 //TODO: make this function not suck.
-static void doFriends()
+static void do_friends()
 {
     /* TODO: add incoming connections and some other stuff. */
     uint32_t i;
@@ -463,7 +463,7 @@ static void doFriends()
     }
 }
 
-static void doInbound()
+static void do_inbound()
 {
     uint8_t secret_nonce[crypto_box_NONCEBYTES];
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -497,7 +497,7 @@ static void LANdiscovery()
 
 
 /* the main loop that needs to be run at least 200 times per second. */
-void doMessenger()
+void do_messenger()
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
@@ -506,7 +506,7 @@ void doMessenger()
 #ifdef DEBUG
         /* if(rand() % 3 != 1) //simulate packet loss */
         /* { */
-        if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) &&
+        if (DHT_handlepacket(data, length, ip_port) && lossless_UDP_handlepacket(data, length, ip_port) &&
             friendreq_handlepacket(data, length, ip_port) && LANdiscovery_handlepacket(data, length, ip_port))
             /* if packet is discarded */
             printf("Received unhandled packet with length: %u\n", length);
@@ -516,17 +516,17 @@ void doMessenger()
         printf("Status: %u %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id),  friendlist[0].crypt_connection_id);
 #else
         DHT_handlepacket(data, length, ip_port);
-        LosslessUDP_handlepacket(data, length, ip_port);
+        lossless_UDP_handlepacket(data, length, ip_port);
         friendreq_handlepacket(data, length, ip_port);
         LANdiscovery_handlepacket(data, length, ip_port);
 #endif
 
     }
-    doDHT();
-    doLossless_UDP();
+    do_DHT();
+    do_lossless_UDP();
     doNetCrypto();
-    doInbound();
-    doFriends();
+    do_inbound();
+    do_friends();
     LANdiscovery();
 }
 
