@@ -406,7 +406,7 @@ int main(int argc, char *argv[]) {
 
     while(1)
     {
-        doDHT();
+        do_DHT();
 
         while(receivepacket(&ip_port, data, &length) != -1)
         {
