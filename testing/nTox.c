@@ -44,15 +44,12 @@ int x, y;
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests = 0;
 
-// 01513F29A0483B3F482478B4A039041E19571249AE1F4E323E4C1C6A446BFF06
-// 01513F29A0483B3F482478B4A039041E19571249AE1F4E323E4C1C6A446BFF06
-// 01513F29A0483B3F482478B4A039041E19571249AE1F4E323E4C1C6A446BFF0
 void get_id(char *data)
 {
     char idstring0[200];
     char idstring1[PUB_KEY_BYTES][5];
     char idstring2[PUB_KEY_BYTES][5];
-    int i;
+    int i = 0;
     for(i = 0; i < PUB_KEY_BYTES; i++)
     {
         if (self_public_key[i] < (PUB_KEY_BYTES / 2))
@@ -62,7 +59,7 @@ void get_id(char *data)
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
     strcpy(idstring0,"[i] ID: ");
-    int j;
+    int j = 0;
     for (j = 0; j < PUB_KEY_BYTES; j++) {
         strcat(idstring0,idstring1[j]);
         strcat(idstring0,idstring2[j]);
