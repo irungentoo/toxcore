@@ -1053,21 +1053,24 @@ int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
 int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 {
     uint8_t data[sizeof(uint64_t) + 1];
+    uint8_t packet[MAX_DATA_SIZE];
+
+    /* 254 is NAT ping request packet id */
+    int len = create_request(packet, public_key, data, sizeof(uint64_t) + 1, 254);
+    int num = 0;
+
     data[0] = type;
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
 
-    uint8_t packet[MAX_DATA_SIZE];
-    int len = create_request(packet, public_key, data, sizeof(uint64_t) + 1, 254); /* 254 is NAT ping request packet id */
-    if(len == -1)
+    if (len == -1)
         return -1;
 
-    int num = 0;
+    if (type == 0) /*If packet is request use many people to route it*/
+        num = route_tofriend(public_key, packet, len);
+    else if (type == 1) /*If packet is response use only one person to route it*/
+        num = routeone_tofriend(public_key, packet, len);
 
-    if(type == 0)
-        num = route_tofriend(public_key, packet, len);/*If packet is request use many people to route it*/
-    else if(type == 1)
-        num = routeone_tofriend(public_key, packet, len);/*If packet is response use only one person to route it*/
-    if(num == 0)
+    if (num == 0)
         return -1;
     return num;
 }
@@ -1075,45 +1078,54 @@ int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 /* Handle a recieved ping request for */
 int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
 {
-    if(length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
-       length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
+    if (length < crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING 
+            && length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
         return 1;
+
     /* check if request is for us. */
-    if(memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+    if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];
         uint8_t data[MAX_DATA_SIZE];
+
         int len = handle_request(public_key, data, packet, length);
-        if(len != sizeof(uint64_t) + 1)
+        if (len != sizeof(uint64_t) + 1)
             return 1;
+
         uint64_t ping_id;
         memcpy(&ping_id, data + 1, sizeof(uint64_t));
 
         int friendnumber = friend_number(public_key);
-        if(friendnumber == -1)
+        if (friendnumber == -1)
             return 1;
 
-        if(data[0] == 0) {
-            send_NATping(public_key, ping_id, 1); /*1 is reply*/
-            friends_list[friendnumber].recvNATping_timestamp = unix_time();
+        Friend * friend = &friends_list[friendnumber];
+
+        if (data[0] == 0) {
+            /* 1 is reply */
+            send_NATping(public_key, ping_id, 1);
+            friend->recvNATping_timestamp = unix_time();
             return 0;
-        } else if (data[0] == 1)
-            if(friends_list[friendnumber].NATping_id == ping_id) {
-                friends_list[friendnumber].NATping_id = ((uint64_t)random_int() << 32) + random_int();
-                friends_list[friendnumber].hole_punching = 1;
+        } else if (data[0] == 1) {
+            if (friend->NATping_id == ping_id) {
+                friend->NATping_id = ((uint64_t)random_int() << 32) + random_int();
+                friend->hole_punching = 1;
                 return 0;
             }
+        }
         return 1;
     }
+
     /* if request is not for us, try routing it. */
-    else if(route_packet(packet + 1, packet, length) == length)
-        return 0;
+    route_packet(packet + 1, packet, length);
+
     return 0;
 }
 
-/*Get the most common ip in the ip_portlist
-  Only return ip if it appears in list min_num or more
-  len must not be bigger than MAX_FRIEND_CLIENTS
-  return ip of 0 if failure */
+/* Get the most common ip in the ip_portlist
+ * Only return ip if it appears in list min_num or more
+ * len must not be bigger than MAX_FRIEND_CLIENTS
+ * return ip of 0 if failure 
+ */
 static IP NAT_commonip(IP_Port * ip_portlist, uint16_t len, uint16_t min_num)
 {
     IP zero = {{0}};
@@ -1122,29 +1134,34 @@ static IP NAT_commonip(IP_Port * ip_portlist, uint16_t len, uint16_t min_num)
 
     uint32_t i, j;
     uint16_t numbers[MAX_FRIEND_CLIENTS] = {0};
+
     for(i = 0; i < len; ++i) {
-        for(j = 0; j < len; ++j)
+        for(j = 0; j < len; ++j) {
             if(ip_portlist[i].ip.i == ip_portlist[j].ip.i)
                 ++numbers[i];
+        }
         if(numbers[i] >= min_num)
             return ip_portlist[i].ip;
     }
     return zero;
 }
 
-/*Return all the ports for one ip in a list
-  portlist must be at least len long
-  where len is the length of ip_portlist
-  returns the number of ports and puts the list of ports in portlist*/
+/* Return all the ports for one ip in a list
+ * portlist must be at least len long
+ * where len is the length of ip_portlist
+ * returns the number of ports and puts the list of ports in portlist
+ */
 static uint16_t NAT_getports(uint16_t * portlist, IP_Port * ip_portlist, uint16_t len, IP ip)
 {
     uint32_t i;
     uint16_t num = 0;
-    for(i = 0; i < len; ++i)
+
+    for(i = 0; i < len; ++i) {
         if(ip_portlist[i].ip.i == ip.i) {
             portlist[num] = ntohs(ip_portlist[i].port);
             ++num;
         }
+    }
     return num;
 }
 
@@ -1152,8 +1169,10 @@ static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t
 {
     if(numports > MAX_FRIEND_CLIENTS || numports == 0)
         return;
+
     uint32_t i;
     uint32_t top = friends_list[friend_num].punching_index + MAX_PUNCHING_PORTS;
+
     for(i = friends_list[friend_num].punching_index; i != top; i++) {
         /*TODO: improve port guessing algorithm*/
         uint16_t port = port_list[(i/2) % numports] + (i/(2*numports))*((i % 2) ? -1 : 1);
@@ -1165,25 +1184,26 @@ static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t
 
 static void doNAT()
 {
-    uint32_t i;
-    uint32_t temp_time = unix_time();
-    for(i = 0; i < num_friends; ++i) {
+    uint32_t i, temp_time = unix_time();
+
+    for (i = 0; i < num_friends; ++i) {
         IP_Port ip_list[MAX_FRIEND_CLIENTS];
         int num = friend_iplist(ip_list, i);
-        /*If we are connected to friend or if friend is not online don't try to hole punch with him*/
-        if(num < MAX_FRIEND_CLIENTS/2)
+
+        /*If already connected or friend is not online don't try to hole punch*/
+        if (num < MAX_FRIEND_CLIENTS/2)
             continue;
 
-
-        if(friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time) {
+        if (friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time) {
             send_NATping(friends_list[i].client_id, friends_list[i].NATping_id, 0); /*0 is request*/
             friends_list[i].NATping_timestamp = temp_time;
         }
-        if(friends_list[i].hole_punching == 1 &&
+        if (friends_list[i].hole_punching == 1 &&
             friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time && 
             friends_list[i].recvNATping_timestamp + PUNCH_INTERVAL*2 >= temp_time) {
+
             IP ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS/2);
-            if(ip.i == 0)
+            if (ip.i == 0)
                 continue;
 
             uint16_t port_list[MAX_FRIEND_CLIENTS];
