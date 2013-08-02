@@ -42,6 +42,21 @@ extern "C" {
 #define PACKET_ID_USERSTATUS 49
 #define PACKET_ID_MESSAGE 64
 
+/* status definitions */
+#define FRIEND_ONLINE 4
+#define FRIEND_CONFIRMED 3
+#define FRIEND_REQUESTED 2
+#define FRIEND_ADDED 1
+#define NOFRIEND 0
+
+/* errors for m_addfriend
+ *  FAERR - Friend Add Error */
+#define FAERR_TOOLONG -1
+#define FAERR_NOMESSAGE -2
+#define FAERR_OWNKEY -3
+#define FAERR_ALREADYSENT -4
+#define FAERR_GENERAL -5
+
 /* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
 
