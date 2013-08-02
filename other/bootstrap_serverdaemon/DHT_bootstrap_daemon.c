@@ -245,7 +245,7 @@ struct server_conf_s configure_server(char *cfg_file)
             it away in the server_info struct */
             server_conf.info[i].valid = 1;
 
-            if(resolve_addr(strcpy(tmp_ip, bs_ip)) == -1) {
+            if(resolve_addr(strcpy(tmp_ip, bs_ip)) == 0) {
                 server_conf.info[i].valid = 0;
                 printf("bootstrap_server %d: Invalid IP\n", i);
             }

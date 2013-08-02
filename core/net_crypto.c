@@ -48,6 +48,12 @@ typedef struct {
 
 static Crypto_Connection crypto_connections[MAX_CRYPTO_CONNECTIONS];
 
+#define CONN_NO_CONNECTION 0
+#define CONN_HANDSHAKE_SENT 1
+#define CONN_NOT_CONFIRMED 2
+#define CONN_ESTABLISHED 3
+#define CONN_TIMED_OUT 4
+
 #define MAX_INCOMING 64
 
 /* keeps track of the connection numbers for friends request so we can check later if they were sent */
@@ -65,14 +71,19 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
     uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES] = {0};
     uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_ZEROBYTES];
-    uint8_t zeroes[crypto_box_BOXZEROBYTES] = {0};
 
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); /* pad the message with 32 0 bytes. */
 
     crypto_box(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce, public_key, secret_key);
 
-    /* if encryption is successful the first crypto_box_BOXZEROBYTES of the message will be zero */
-    if (memcmp(temp_encrypted, zeroes, crypto_box_BOXZEROBYTES) != 0)
+    /* if encryption is successful the first crypto_box_BOXZEROBYTES of the message will be zero
+       apparently memcmp should not be used so we do this instead:*/
+    uint32_t i;
+    uint32_t check = 0;
+    for(i = 0; i < crypto_box_BOXZEROBYTES; ++i) {
+            check |= temp_encrypted[i] ^ 0;
+    }
+    if(check != 0)
         return -1;
 
     /* unpad the encrypted message */
@@ -92,7 +103,6 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
     uint8_t temp_plain[MAX_DATA_SIZE - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES];
     uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
-    uint8_t zeroes[crypto_box_ZEROBYTES] = {0};
 
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); /* pad the message with 16 0 bytes. */
 
@@ -100,8 +110,14 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
                         nonce, public_key, secret_key) == -1)
         return -1;
 
-    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero */
-    if (memcmp(temp_plain, zeroes, crypto_box_ZEROBYTES) != 0)
+    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero 
+       apparently memcmp should not be used so we do this instead:*/
+    uint32_t i;
+    uint32_t check = 0;
+    for(i = 0; i < crypto_box_ZEROBYTES; ++i) {
+            check |= temp_plain[i] ^ 0;
+    }
+    if(check != 0)
         return -1;
 
     /* unpad the plain message */
@@ -137,7 +153,7 @@ int read_cryptpacket(int crypt_connection_id, uint8_t *data)
 {
     if (crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
         return 0;
-    if (crypto_connections[crypt_connection_id].status != 3)
+    if (crypto_connections[crypt_connection_id].status != CONN_ESTABLISHED)
         return 0;
     uint8_t temp_data[MAX_DATA_SIZE];
     int length = read_packet(crypto_connections[crypt_connection_id].number, temp_data);
@@ -163,7 +179,7 @@ int write_cryptpacket(int crypt_connection_id, uint8_t *data, uint32_t length)
         return 0;
     if (length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES > MAX_DATA_SIZE - 1)
         return 0;
-    if (crypto_connections[crypt_connection_id].status != 3)
+    if (crypto_connections[crypt_connection_id].status != CONN_ESTABLISHED)
         return 0;
     uint8_t temp_data[MAX_DATA_SIZE];
     int len = encrypt_data(crypto_connections[crypt_connection_id].peersessionpublic_key,
@@ -283,7 +299,7 @@ int getcryptconnection_id(uint8_t *public_key)
 {
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
-        if (crypto_connections[i].status > 0)
+        if (crypto_connections[i].status != CONN_NO_CONNECTION)
             if (memcmp(public_key, crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
                 return i;
     }
@@ -303,12 +319,12 @@ int crypto_connect(uint8_t *public_key, IP_Port ip_port)
             return -1;
     }
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
-        if (crypto_connections[i].status == 0) {
+        if (crypto_connections[i].status == CONN_NO_CONNECTION) {
             int id = new_connection(ip_port);
             if (id == -1)
                 return -1;
             crypto_connections[i].number = id;
-            crypto_connections[i].status = 1;
+            crypto_connections[i].status = CONN_HANDSHAKE_SENT;
             random_nonce(crypto_connections[i].recv_nonce);
             memcpy(crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
             crypto_box_keypair(crypto_connections[i].sessionpublic_key, crypto_connections[i].sessionsecret_key);
@@ -362,9 +378,10 @@ int crypto_kill(int crypt_connection_id)
 {
     if (crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
         return 1;
-    if (crypto_connections[crypt_connection_id].status != 0) {
-        crypto_connections[crypt_connection_id].status = 0;
+    if (crypto_connections[crypt_connection_id].status != CONN_NO_CONNECTION) {
+        crypto_connections[crypt_connection_id].status = CONN_NO_CONNECTION;
         kill_connection(crypto_connections[crypt_connection_id].number);
+        memset(&crypto_connections[crypt_connection_id], 0 ,sizeof(Crypto_Connection));
         crypto_connections[crypt_connection_id].number = ~0;
         return 0;
     }
@@ -385,9 +402,9 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
         return -1;
     }*/
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
-        if(crypto_connections[i].status == 0) {
+        if(crypto_connections[i].status == CONN_NO_CONNECTION) {
             crypto_connections[i].number = connection_id;
-            crypto_connections[i].status = 2;
+            crypto_connections[i].status = CONN_NOT_CONFIRMED;
             random_nonce(crypto_connections[i].recv_nonce);
             memcpy(crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
             memcpy(crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
@@ -400,9 +417,9 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
                                      crypto_connections[i].sessionpublic_key) == 1) {
                 increment_nonce(crypto_connections[i].recv_nonce);
                 uint32_t zero = 0;
-                crypto_connections[i].status = 3; /* connection status needs to be 3 for write_cryptpacket() to work */
+                crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                 write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
-                crypto_connections[i].status = 2; /* set it to its proper value right after. */
+                crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
                 return i;
             }
             return -1; /* this should never happen. */
@@ -418,7 +435,7 @@ int is_cryptoconnected(int crypt_connection_id)
 {
     if (crypt_connection_id >= 0 && crypt_connection_id < MAX_CRYPTO_CONNECTIONS)
         return crypto_connections[crypt_connection_id].status;
-    return 0;
+    return CONN_NO_CONNECTION;
 }
 
 /* Generate our public and private keys
@@ -477,7 +494,7 @@ static void receive_crypto()
 {
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
-        if (crypto_connections[i].status == 1) {
+        if (crypto_connections[i].status == CONN_HANDSHAKE_SENT) {
             uint8_t temp_data[MAX_DATA_SIZE];
             uint8_t secret_nonce[crypto_box_NONCEBYTES];
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -494,17 +511,17 @@ static void receive_crypto()
                         memcpy(crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
                         increment_nonce(crypto_connections[i].sent_nonce);
                         uint32_t zero = 0;
-                        crypto_connections[i].status = 3; /* connection status needs to be 3 for write_cryptpacket() to work */
+                        crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                         write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
-                        crypto_connections[i].status = 2; /* set it to its proper value right after. */
+                        crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
                     }
                 }
             } else if (id_packet(crypto_connections[i].number) != -1) // This should not happen kill the connection if it does
                 crypto_kill(crypto_connections[i].number);
 
         }
-        if (crypto_connections[i].status == 2) {
-            if (id_packet(crypto_connections[i].number) == 3) {
+        if (crypto_connections[i].status == CONN_NOT_CONFIRMED) {
+            if (id_packet(crypto_connections[i].number) == CONN_ESTABLISHED) {
                 uint8_t temp_data[MAX_DATA_SIZE];
                 uint8_t data[MAX_DATA_SIZE];
                 int length = read_packet(crypto_connections[i].number, temp_data);
@@ -514,7 +531,7 @@ static void receive_crypto()
                 uint32_t zero = 0;
                 if (len == sizeof(uint32_t) && memcmp(((uint8_t *)&zero), data, sizeof(uint32_t)) == 0) {
                     increment_nonce(crypto_connections[i].recv_nonce);
-                    crypto_connections[i].status = 3;
+                    crypto_connections[i].status = CONN_ESTABLISHED;
 
                     /* connection is accepted so we disable the auto kill by setting it to about 1 month from now. */
                     kill_connection_in(crypto_connections[i].number, 3000000);
@@ -543,8 +560,8 @@ static void killTimedout()
 {
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
-        if (crypto_connections[i].status != 0 && is_connected(crypto_connections[i].number) == 4)
-            crypto_connections[i].status = 4;
+        if (crypto_connections[i].status != CONN_NO_CONNECTION && is_connected(crypto_connections[i].number) == 4)
+            crypto_connections[i].status = CONN_TIMED_OUT;
         else if (is_connected(crypto_connections[i].number) == 4) {
             kill_connection(crypto_connections[i].number);
             crypto_connections[i].number = ~0;

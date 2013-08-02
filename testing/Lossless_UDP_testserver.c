@@ -4,7 +4,7 @@
  * 
  * Best used in combination with Lossless_UDP_testclient
  * 
- * Compile with: gcc -O2 -Wall -o testserver ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testserver.c
+ * Compile with: gcc -O2 -Wall -lsodium -o testserver ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testserver.c
  * 
  * Command line argument is the name of the file to save what we recieve to.
  * EX: ./testserver filename1.txt

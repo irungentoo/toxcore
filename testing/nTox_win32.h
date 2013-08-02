@@ -29,4 +29,12 @@
 #define STRING_LENGTH 256
 #define PUB_KEY_BYTES 32
 
+void do_header();
+void print_message(int friendnumber, uint8_t * string, uint16_t length);
+void print_nickchange(int friendnumber, uint8_t *string, uint16_t length);
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length);
+void load_key();
+void line_eval(char* line);
+void get_input();
+
 #endif

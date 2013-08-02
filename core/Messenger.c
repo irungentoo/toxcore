@@ -27,7 +27,7 @@
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
-    int friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
+    int64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
     uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
     uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
     uint8_t name[MAX_NAME_LENGTH];
@@ -94,24 +94,31 @@ int getclient_id(int friend_id, uint8_t *client_id)
     return -1;
 }
 
-/* add a friend
-   set the data that will be sent along with friend request
-   client_id is the client id of the friend
-   data is the data and length is the length
-   returns the friend number if success
-   return -1 if key length is wrong.
-   return -2 if user's own key
-   return -3 if already a friend
-   return -4 for other*/
+/*
+ * add a friend
+ * set the data that will be sent along with friend request
+ * client_id is the client id of the friend
+ * data is the data and length is the length
+ * returns the friend number if success
+ * return -1 if message length is too long
+ * return -2 if no message (message length must be >= 1 byte)
+ * return -3 if user's own key
+ * return -4 if friend request already sent or already a friend
+ * return -5 for unknown error 
+ */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
-    if (length == 0 || length >=
-        (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES))
+    if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES 
+                         - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES 
+                         + crypto_box_ZEROBYTES))
         return -1;
-    if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+    if (length < 1)
         return -2;
-    if (getfriend_id(client_id) != -1)
+    if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
         return -3;
+    if (getfriend_id(client_id) != -1)
+        return -4;
+
     uint32_t i;
     for (i = 0; i <= numfriends; ++i) { /*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
         if(friendlist[i].status == 0) {
@@ -129,7 +136,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             return i;
         }
     }
-    return -4;
+    return -5;
 }
 
 int m_addfriend_norequest(uint8_t * client_id)
@@ -166,11 +173,13 @@ int m_delfriend(int friendnumber)
     free(friendlist[friendnumber].userstatus);
     memset(&friendlist[friendnumber], 0, sizeof(Friend));
     uint32_t i;
+
     for (i = numfriends; i != 0; --i) {
         if (friendlist[i-1].status != 0)
             break;
     }
     numfriends = i;
+
     return 0;
 }
 
@@ -482,7 +491,7 @@ static void doInbound()
 /*Interval in seconds between LAN discovery packet sending*/
 #define LAN_DISCOVERY_INTERVAL 60
 
-static uint32_t last_LANdiscovery;
+static int64_t last_LANdiscovery;
 
 /*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
 static void LANdiscovery()

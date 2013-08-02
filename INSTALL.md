@@ -1,5 +1,16 @@
+#Install Instructions
+
+- [Installation](#installation)
+    - [Linux](#linux)
+    - [OS X](#osx)
+      - [Homebrew](#homebrew)
+      - [Non-Homebrew](#non-homebrew)
+    - [Windows](#windows)
+
+<a name="installation" />
 ##Installation
 
+<a name="linux" />
 ###Linux:
 
 Build dependencies:
@@ -20,11 +31,14 @@ sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
 ```
 
-Then clone this repo and run:
+Then clone this repo and generate makefile:
 ```bash
+git clone git://github.com/irungentoo/ProjectTox-Core.git
+cd ProjectTox-Core
 mkdir build && cd build
 cmake ..
 ```
+Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
 Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
 ```bash
@@ -40,16 +54,19 @@ Or you could just build everything that is supported on your platform by running
 make
 ```
 
-###OSX:
+<a name="osx" />
+###OS X:
 
+<a name="homebrew" />
 ####Homebrew:
 ```
-brew install libtool automake autoconf libconfig libsodium
+brew install libtool automake autoconf libconfig libsodium cmake
 cmake .
 make
 sudo make install
 ```
 
+<a name="non-homebrew" />
 ####Non-homebrew:
 
 Much the same as Linux, remember to install the latest XCode and the developer tools (Preferences -> Downloads -> Command Line Tools).
@@ -69,6 +86,7 @@ Another thing you may want to install is the latest gcc, this caused me a few pr
 no longer includes gcc and instead uses LLVM-GCC, a nice install guide can be found at
 http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
 
+<a name="windows" />
 ###Windows:
 
 You should install:
@@ -86,6 +104,7 @@ Navigate in `cmd` to this repo and run:
 mkdir build && cd build
 cmake -G "MinGW Makefiles" ..
 ```
+Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
 Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
 ```cmd
@@ -100,3 +119,4 @@ Or you could just build everything that is supported on your platform by running
 ```bash
 mingw32-make
 ```
+
