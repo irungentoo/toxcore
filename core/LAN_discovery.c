@@ -58,19 +58,25 @@ uint32_t get_broadcast(void)
     }
 
     count = ifconf.ifc_len / sizeof(struct ifreq);
-    for(i = 0; i < count; i++) {
-        /* skip the loopback interface, as it's useless */
-        if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
-            if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
-                perror("[!] get_broadcast: ioctl error");
-                return 0;
-            }
+    if (count > 0) {
+        for(i = 0; i < count; i++) {
+            /* skip the loopback interface, as it's useless */
+            if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
+                if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
+                    perror("[!] get_broadcast: ioctl error");
+                    return 0;
+                }
 
-            /* just to clarify where we're getting the values from */
-            sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
-            break;
+                /* just to clarify where we're getting the values from */
+                sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
+                break;
+            }
         }
     }
+    else {
+      return 0;
+    }
+
     close(sock);
 
     return sock_holder->sin_addr.s_addr;
