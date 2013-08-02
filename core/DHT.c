@@ -570,10 +570,8 @@ static int pingres(IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
 static int getnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
 {
     /* check if packet is gonna be sent to ourself */
-    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0)
-        return 1;
-
-    if(is_gettingnodes(ip_port, 0))
+    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0
+            || is_gettingnodes(ip_port, 0))
         return 1;
 
     uint64_t ping_id = add_gettingnodes(ip_port);
@@ -590,21 +588,29 @@ static int getnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
     memcpy(plain, &ping_id, sizeof(ping_id));
     memcpy(plain + sizeof(ping_id), client_id, CLIENT_ID_SIZE);
 
-    int len = encrypt_data(public_key, self_secret_key, nonce, plain, sizeof(ping_id) + CLIENT_ID_SIZE, encrypt);
+    int len = encrypt_data( public_key, 
+                            self_secret_key, 
+                            nonce, 
+                            plain, 
+                            sizeof(ping_id) + CLIENT_ID_SIZE, 
+                            encrypt );
 
     if(len != sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING)
         return -1;
+
     data[0] = 2;
     memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+
     return sendpacket(ip_port, data, sizeof(data));
 }
 
 /* send a send nodes response */
 static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id, uint64_t ping_id)
 {
-    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is gonna be sent to ourself */
+    /* check if packet is gonna be sent to ourself */
+    if(memcmp(public_key, self_public_key, CLIENT_ID_SIZE) == 0) 
         return 1;
 
     uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
@@ -624,8 +630,12 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
     memcpy(plain, &ping_id, sizeof(ping_id));
     memcpy(plain + sizeof(ping_id), nodes_list, num_nodes * sizeof(Node_format));
 
-    int len = encrypt_data(public_key, self_secret_key, nonce, plain,
-                           sizeof(ping_id) + num_nodes * sizeof(Node_format), encrypt);
+    int len = encrypt_data( public_key, 
+                            self_secret_key, 
+                            nonce, 
+                            plain,
+                            sizeof(ping_id) + num_nodes * sizeof(Node_format), 
+                            encrypt );
 
     if(len != sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING)
         return -1;
@@ -638,26 +648,30 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
     return sendpacket(ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
-/* Packet handling functions
-   One to handle each types of packets we receive
-   return 0 if handled correctly, 1 if packet is bad. */
+/* Packet handling functions, one to handle each types of packets we receive
+ * Returns 0 if handled correctly, 1 if packet is bad.
+ */
 int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
     if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
+
     /* check if packet is from ourself. */
     if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)
         return 1;
 
-    int len = decrypt_data(packet + 1, self_secret_key, packet + 1 + CLIENT_ID_SIZE,
-                           packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                           sizeof(ping_id) + ENCRYPTION_PADDING, (uint8_t *)&ping_id);
+    int len = decrypt_data( packet + 1, 
+                            self_secret_key, 
+                            packet + 1 + CLIENT_ID_SIZE,
+                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                            sizeof(ping_id) + ENCRYPTION_PADDING, 
+                            (uint8_t *)&ping_id );
+
     if(len != sizeof(ping_id))
         return 1;
 
     pingres(source, packet + 1, ping_id);
-
     pingreq(source, packet + 1); /* TODO: make this smarter? */
 
     return 0;
@@ -668,12 +682,18 @@ int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
     uint64_t ping_id;
     if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
-    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0) /* check if packet is from ourself. */
+
+    /* check if packet is from ourself. */
+    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)
         return 1;
 
-    int len = decrypt_data(packet + 1, self_secret_key, packet + 1 + CLIENT_ID_SIZE,
-                           packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                           sizeof(ping_id) + ENCRYPTION_PADDING, (uint8_t *)&ping_id);
+    int len = decrypt_data( packet + 1, 
+                            self_secret_key, 
+                            packet + 1 + CLIENT_ID_SIZE,
+                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                            sizeof(ping_id) + ENCRYPTION_PADDING, 
+                            (uint8_t *)&ping_id );
+
     if(len != sizeof(ping_id))
         return 1;
 
@@ -682,25 +702,30 @@ int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
         return 0;
     }
     return 1;
-
 }
 
 int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
-    if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING)
+
+    if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES 
+                    + sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING ))
         return 1;
+
     /* check if packet is from ourself. */
-    if(memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)
+    if (memcmp(packet + 1, self_public_key, CLIENT_ID_SIZE) == 0)
         return 1;
 
     uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE];
 
-    int len = decrypt_data(packet + 1, self_secret_key, packet + 1 + CLIENT_ID_SIZE,
-                           packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                           sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING, plain);
+    int len = decrypt_data( packet + 1, 
+                            self_secret_key, 
+                            packet + 1 + CLIENT_ID_SIZE,
+                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                            sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING, 
+                            plain );
 
-    if(len != sizeof(ping_id) + CLIENT_ID_SIZE)
+    if (len != sizeof(ping_id) + CLIENT_ID_SIZE)
         return 1;
 
     memcpy(&ping_id, plain, sizeof(ping_id));
@@ -709,29 +734,28 @@ int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
     pingreq(source, packet + 1); /* TODO: make this smarter? */
 
     return 0;
-
 }
 
 int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
-    /* TODO: make this more readable */
-    if(length > (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
-                 + sizeof(Node_format) * MAX_SENT_NODES + ENCRYPTION_PADDING) ||
-       (length - (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
-                  + ENCRYPTION_PADDING)) % (sizeof(Node_format)) != 0 ||
-       length < 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
-       + sizeof(Node_format) + ENCRYPTION_PADDING) {
-        return 1;
-    }
-    uint32_t num_nodes = (length - (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES
-                                    + sizeof(ping_id) + ENCRYPTION_PADDING)) / sizeof(Node_format);
+    uint32_t cid_size = 1 + CLIENT_ID_SIZE;
+    cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING;
 
+    if (length > (cid_size + sizeof(Node_format) * MAX_SENT_NODES) ||
+        ((length - cid_size) % sizeof(Node_format)) != 0 ||
+        (length < cid_size + sizeof(Node_format)))
+        return 1;
+
+    uint32_t num_nodes = (length - cid_size) / sizeof(Node_format);
     uint8_t plain[sizeof(ping_id) + sizeof(Node_format) * MAX_SENT_NODES];
 
-    int len = decrypt_data(packet + 1, self_secret_key, packet + 1 + CLIENT_ID_SIZE,
-                           packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                           sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING, plain);
+    int len = decrypt_data( 
+            packet + 1, 
+            self_secret_key, 
+            packet + 1 + CLIENT_ID_SIZE,
+            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+            sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING, plain );
 
     if(len != sizeof(ping_id) + num_nodes * sizeof(Node_format))
         return 1;
