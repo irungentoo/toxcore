@@ -58,7 +58,7 @@ make
 You need the latest XCode with the Developer Tools (Preferences -> Downloads -> Command Line Tools).
 The following libraries are required along with libsodium and cmake for Mountain Lion and XCode 4.6.3 install libtool, automake and autoconf. You can download them with Homebrew, or install them manually.
 
-There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch.
+There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch. See [Usage](#usage) below.
 
 <a name="homebrew" />
 ####Homebrew:
@@ -75,12 +75,15 @@ Grab the following packages:
   * http://www.gnu.org/software/libtool/
   * http://www.gnu.org/software/autoconf/ 
   * http://www.gnu.org/software/automake/
+  * http://www.cmake.org/
+  * https://github.com/jedisct1/libsodium
 
-Then follow these steps for each:
+Uncompress and install them all. Make sure to follow the README as the instructions change, but they all follow the same pattern below:
 
 ```bash
 ./configure
 make
+sudo make install
 ```
 
 In your local TOX repository:
