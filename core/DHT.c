@@ -1266,17 +1266,22 @@ void DHT_save(uint8_t * data)
 }
 
 /* load the DHT from data of size size;
-   return -1 if failure
-   return 0 if success */
+ * return -1 if failure
+ * return 0 if success 
+ */
 int DHT_load(uint8_t * data, uint32_t size)
 {
     if(size < sizeof(close_clientlist))
         return -1;
+
     if((size - sizeof(close_clientlist)) % sizeof(Friend) != 0)
         return -1;
+
     uint32_t i, j;
-    /* uint32_t temp_time = unix_time(); */
     uint16_t temp;
+    /* uint32_t temp_time = unix_time(); */
+
+    Client_data * client;
 
     temp = (size - sizeof(close_clientlist))/sizeof(Friend);
 
@@ -1285,29 +1290,34 @@ int DHT_load(uint8_t * data, uint32_t size)
 
         for(i = 0; i < temp; ++i) {
             DHT_addfriend(tempfriends_list[i].client_id);
-            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j)
-                if(tempfriends_list[i].client_list[j].timestamp != 0) {
-                    getnodes(tempfriends_list[i].client_list[j].ip_port,
-                             tempfriends_list[i].client_list[j].client_id, tempfriends_list[i].client_id);
-                }
+
+            for(j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+                client = &tempfriends_list[i].client_list[j];
+                if(client->timestamp != 0)
+                    getnodes(client->ip_port, client->client_id, tempfriends_list[i].client_id);
+            }
         }
     }
     Client_data * tempclose_clientlist = (Client_data *)data;
 
-    for(i = 0; i < LCLIENT_LIST; ++i)
+    for(i = 0; i < LCLIENT_LIST; ++i) {
         if(tempclose_clientlist[i].timestamp != 0)
-            DHT_bootstrap(tempclose_clientlist[i].ip_port, tempclose_clientlist[i].client_id);
+            DHT_bootstrap(  tempclose_clientlist[i].ip_port, 
+                            tempclose_clientlist[i].client_id );
+    }
     return 0;
 }
 
 /* returns 0 if we are not connected to the DHT
-   returns 1 if we are */
+ * returns 1 if we are 
+ */
 int DHT_isconnected()
 {
-    uint32_t i;
-    uint32_t temp_time = unix_time();
-    for(i = 0; i < LCLIENT_LIST; ++i)
+    uint32_t i, temp_time = unix_time();
+
+    for(i = 0; i < LCLIENT_LIST; ++i) {
         if(close_clientlist[i].timestamp + BAD_NODE_TIMEOUT > temp_time)
             return 1;
+    }
     return 0;
 }
