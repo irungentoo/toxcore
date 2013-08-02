@@ -13,7 +13,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 
 **How to build Tox on Linux**: [YouTube video](http://www.youtube.com/watch?v=M4WXE4VKmyg)<br />
 **How to use Tox on Windows**: [YouTube video](http://www.youtube.com/watch?v=qg_j_sDb6WQ)<br />
-**For Mac OSX read INSTALL.md**
+**For Mac OSX read [INSTALL.md](INSTALL.md)**
 
 ### Objectives:
 
@@ -35,7 +35,7 @@ Keep everything really simple.
 - [  ] Streaming media
 - [  ] ???
 
-For further information, check our [To-do list](https://github.com/irungentoo/ProjectTox-Core/wiki/TODO)
+For further information, check our [To-do list](http://wiki.tox.im/index.php/TODO)
 
 ### Why are you doing this? There are already a bunch of free skype alternatives.
 The goal of this project is to create a configuration-free P2P skype 
