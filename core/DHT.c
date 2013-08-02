@@ -21,67 +21,98 @@
  *
  */
 
-#include "DHT.h"
+/*----------------------------------------------------------------------------------*/
 
-typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
-    IP_Port ip_port;
-    uint32_t timestamp;
-    uint32_t last_pinged;
-    IP_Port ret_ip_port;/* The ip_port returned by this node for the friend
-                           (for nodes in friends_list) or us (for nodes in close_clientlist) */
-    uint32_t ret_timestamp;
-} Client_data;
+#include "DHT.h"
 
 /* maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
-typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
-    Client_data client_list[MAX_FRIEND_CLIENTS];
-    uint32_t lastgetnode; /* time at which the last get_nodes request was sent. */
-
-    /*Symetric NAT hole punching stuff*/
-    uint8_t hole_punching; /*0 if not hole punching, 1 if currently hole punching */
-    uint32_t punching_index;
-    uint32_t punching_timestamp;
-    uint32_t recvNATping_timestamp;
-    uint64_t NATping_id;
-    uint32_t NATping_timestamp;
-} Friend;
-
-typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
-    IP_Port ip_port;
-} Node_format;
-
-typedef struct {
-    IP_Port ip_port;
-    uint64_t ping_id;
-    uint32_t timestamp;
-
-} Pinged;
-
-/* Our client id/public key */
-uint8_t self_public_key[CLIENT_ID_SIZE];
-uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
-
-/* TODO: Move these out of here and put them into the .c file.
-   A list of the clients mathematically closest to ours. */
+/* A list of the clients mathematically closest to ours. */
 #define LCLIENT_LIST 32
-static Client_data close_clientlist[LCLIENT_LIST];
-
-static Friend * friends_list;
-static uint16_t num_friends;
 
 /* The list of ip ports along with the ping_id of what we sent them and a timestamp */
 #define LPING_ARRAY 256
 
-static Pinged pings[LPING_ARRAY];
-
 #define LSEND_NODES_ARRAY LPING_ARRAY/2
 
-static Pinged send_nodes[LSEND_NODES_ARRAY];
+/* the number of seconds for a non responsive node to become bad. */
+#define BAD_NODE_TIMEOUT 70
+
+/* the max number of nodes to send with send nodes. */
+#define MAX_SENT_NODES 8
+
+/* ping timeout in seconds */
+#define PING_TIMEOUT 5
+
+/* The timeout after which a node is discarded completely. */
+#define Kill_NODE_TIMEOUT 300
+
+/* ping interval in seconds for each node in our lists. */
+#define PING_INTERVAL 60
+
+/* ping interval in seconds for each random sending of a get nodes request. */
+#define GET_NODE_INTERVAL 10
+
+#define MAX_PUNCHING_PORTS 32
+
+/*Interval in seconds between punching attempts*/
+#define PUNCH_INTERVAL 10
+
+/*----------------------------------------------------------------------------------*/
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IP_Port     ip_port;
+    uint32_t    timestamp;
+    uint32_t    last_pinged;
+
+    /* Returned by this node. Either our friend or us */
+    IP_Port     ret_ip_port;
+    uint32_t    ret_timestamp;
+} Client_data;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    Client_data client_list[MAX_FRIEND_CLIENTS];
+
+    /* time at which the last get_nodes request was sent. */
+    uint32_t    lastgetnode;
+
+    /* Symetric NAT hole punching stuff */
+
+    /* 1 if currently hole punching, otherwise 0 */
+    uint8_t     hole_punching; 
+    uint32_t    punching_index;
+    uint32_t    punching_timestamp;
+    uint32_t    recvNATping_timestamp;
+    uint64_t    NATping_id;
+    uint32_t    NATping_timestamp;
+} Friend;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IP_Port     ip_port;
+} Node_format;
+
+typedef struct {
+    IP_Port     ip_port;
+    uint64_t    ping_id;
+    uint32_t    timestamp;
+} Pinged;
+
+/*----------------------------------------------------------------------------------*/
+
+                    /* Our client id/public key */
+uint8_t             self_public_key[CLIENT_ID_SIZE];
+uint8_t             self_secret_key[crypto_box_SECRETKEYBYTES];
+static Client_data  close_clientlist[LCLIENT_LIST];
+static Friend *     friends_list;
+static uint16_t     num_friends;
+static Pinged       pings[LPING_ARRAY];
+static Pinged       send_nodes[LSEND_NODES_ARRAY];
+
+/*----------------------------------------------------------------------------------*/
 
 /* Compares client_id1 and client_id2 with client_id
    return 0 if both are same distance
@@ -149,11 +180,6 @@ static int friend_number(uint8_t * client_id)
             return i;
     return -1;
 }
-
-/* the number of seconds for a non responsive node to become bad. */
-#define BAD_NODE_TIMEOUT 70
-/* the max number of nodes to send with send nodes. */
-#define MAX_SENT_NODES 8
 
 /* Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
    put them in the nodes_list and return how many were found.
@@ -280,9 +306,6 @@ void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient
                         return;
                     }
 }
-
-/* ping timeout in seconds */
-#define PING_TIMEOUT 5
 
 /* check if we are currently pinging an ip_port and/or a ping_id
    variables with values of zero will not be checked.
@@ -619,7 +642,8 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-/* END of packet handling functions */
+/*----------------------------------------------------------------------------------*/
+/*------------------------END of packet handling functions--------------------------*/
 
 int DHT_addfriend(uint8_t * client_id)
 {
@@ -675,15 +699,6 @@ IP_Port DHT_getfriendip(uint8_t * client_id)
     return empty;
 
 }
-
-/* The timeout after which a node is discarded completely. */
-#define Kill_NODE_TIMEOUT 300
-
-/* ping interval in seconds for each node in our lists. */
-#define PING_INTERVAL 60
-
-/* ping interval in seconds for each random sending of a get nodes request. */
-#define GET_NODE_INTERVAL 10
 
 /* Ping each client in the "friends" list every 60 seconds.
    Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list. */
@@ -855,7 +870,8 @@ int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
     return -1;
 }
 
-/*BEGINNING OF NAT PUNCHING FUNCTIONS*/
+/*----------------------------------------------------------------------------------*/
+/*---------------------BEGINNING OF NAT PUNCHING FUNCTIONS--------------------------*/
 
 int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 {
@@ -955,8 +971,6 @@ static uint16_t NAT_getports(uint16_t * portlist, IP_Port * ip_portlist, uint16_
     return num;
 }
 
-#define MAX_PUNCHING_PORTS 32
-
 static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t friend_num)
 {
     if(numports > MAX_FRIEND_CLIENTS || numports == 0)
@@ -971,9 +985,6 @@ static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t
     }
     friends_list[friend_num].punching_index = i;
 }
-
-/*Interval in seconds between punching attempts*/
-#define PUNCH_INTERVAL 10
 
 static void doNAT()
 {
@@ -1008,7 +1019,8 @@ static void doNAT()
     }
 }
 
-/*END OF NAT PUNCHING FUNCTIONS*/
+/*----------------------------------------------------------------------------------*/
+/*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
 int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
