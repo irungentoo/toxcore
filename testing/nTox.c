@@ -89,7 +89,12 @@ char *format_message(char *message, int friendnum)
     char* time = asctime(timeinfo);
     size_t len = strlen(time);
     time[len-1] = '\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message); // timestamp
+    if (friendnum != -1) {
+        sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message);
+    } else {
+        // This message came from ourselves
+        sprintf(msg, "%s <%s> %s", time, name, message);
+    }
     return msg;
 }
 
@@ -106,24 +111,28 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             char temp_id[128];
             for (i = 0; i < 128; i++) 
                 temp_id[i] = line[i+prompt_offset];
+
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
             switch (num) {
-                case -1:
-                    sprintf(numstring, "[i] Incorrect key length");
-                    break;
-                case -2:
-                    sprintf(numstring, "[i] That appears to be your own key");
-                    break;
-                case -3:
-                    sprintf(numstring, "[i] Friend request already sent");
-                    break;
-                case -4:
-                    sprintf(numstring, "[i] Could not add friend");
-                    break;
-                default:
-                    sprintf(numstring, "[i] Added friend %d", num);
-                    break;
+            case -1:
+                sprintf(numstring, "[i] Message is too long.");
+                break;
+            case -2:
+                sprintf(numstring, "[i] Please add a message to your request.");
+                break;
+            case -3:
+                sprintf(numstring, "[i] That appears to be your own ID.");
+                break;
+            case -4:
+                sprintf(numstring, "[i] Friend request already sent.");
+                break;
+            case -5:
+                sprintf(numstring, "[i] Undefined error when adding friend.");
+                break;
+            default:
+                sprintf(numstring, "[i] Added friend as %d.", num);
+                break;
             }
             new_lines(numstring);
             do_refresh();
@@ -133,6 +142,9 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
+	    if(len < 3)
+	      return;
+
             char numstring[len-3];
             char message[len-3];
             int i;
@@ -141,13 +153,13 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                     numstring[i] = line[i+3];
                 } else {
                     int j;
-                    for (j = (i+1); j < len; j++)
+                    for (j = (i+1); j < (len+1); j++)
                         message[j-i-1] = line[j+3];
                     break;
                 }
             }
             int num = atoi(numstring);
-            if (m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1) {
+            if (m_sendmessage(num, (uint8_t*) message, strlen(message) + 1) != 1) {
                 new_lines("[i] could not send message");
             } else {
                 new_lines(format_message(message, -1));
@@ -162,7 +174,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 name[i-3] = line[i];
             }
             name[i-3] = 0;
-            setname(name, i);
+            setname(name, i - 2);
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
@@ -179,7 +191,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            m_set_userstatus(status, strlen((char*)status));
+            m_set_userstatus(status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -313,17 +325,6 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length+strlen(name)+1];
-    time_t rawtime;
-    struct tm * timeinfo;
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-    char* temp = asctime(timeinfo);
-    size_t len = strlen(temp);
-    temp[len-1] = '\0';
-    sprintf(msg, "[%d] %s <%s> %s", friendnumber, temp, name, string); // timestamp
     new_lines(format_message((char*)string, friendnumber));
 }
 

@@ -23,13 +23,70 @@
 
 #include "LAN_discovery.h"
 
+#define MAX_INTERFACES 16
 
-/*Return the broadcast ip
-  TODO: make it return the real one, not the 255.255.255.255 one.*/
+#ifdef __linux
+/* get the first working broadcast address that's not from "lo"
+ *  returns higher than 0 on success
+ *  returns 0 on error */
+uint32_t get_broadcast(void)
+{
+    /* not sure how many platforms this will
+     *  run on, so it's wrapped in __linux for now */
+    struct sockaddr_in *sock_holder = NULL;
+    struct ifreq i_faces[MAX_INTERFACES];
+    struct ifconf ifconf;
+    int count = 0;
+    int sock = 0;
+    int i = 0;
+
+    /* configure ifconf for the ioctl call */
+    if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("[!] get_broadcast: socket() error");
+        return 0;
+    }
+
+    memset(i_faces, 0, sizeof(struct ifreq) * MAX_INTERFACES);
+
+    ifconf.ifc_buf = (char *)i_faces;
+    ifconf.ifc_len = sizeof(i_faces);
+    count = ifconf.ifc_len / sizeof(struct ifreq);
+    if(ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
+        perror("get_broadcast: ioctl() error");
+        return 0;
+    }
+
+    for(i = 0; i < count; i++) {
+        /* skip the loopback interface, as it's useless */
+        if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
+            if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
+                perror("[!] get_broadcast: ioctl error");
+                return 0;
+            }
+
+            /* just to clarify where we're getting the values from */
+            sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
+            break;
+        }
+    }
+    close(sock);
+
+    return sock_holder->sin_addr.s_addr;
+}
+#endif
+
+/* Return the broadcast ip */
 IP broadcast_ip()
 {
     IP ip;
+    #ifdef __linux
+    ip.i = get_broadcast();
+    if(ip.i == 0)
+        /* error errored, but try anyway? */
+        ip.i = ~0;
+    #else
     ip.i = ~0;
+    #endif
     return ip;
 }
 

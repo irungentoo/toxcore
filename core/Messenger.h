@@ -45,15 +45,18 @@ extern "C" {
 /* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
 
-/* add a friend
-   set the data that will be sent along with friend request
-   client_id is the client id of the friend
-   data is the data and length is the length
-   returns the friend number if success
-   return -1 if key length is wrong.
-   return -2 if user's own key
-   return -3 if already a friend
-   return -4 for other*/
+/*
+ * add a friend
+ * set the data that will be sent along with friend request
+ * client_id is the client id of the friend
+ * data is the data and length is the length
+ * returns the friend number if success
+ * return -1 if message length is too long
+ * return -2 if no message (message length must be >= 1 byte)
+ * return -3 if user's own key
+ * return -4 if friend request already sent or already a friend
+ * return -5 for unknown error 
+ */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
 
 
