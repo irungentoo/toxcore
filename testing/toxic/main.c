@@ -286,7 +286,7 @@ void prepare_window(WINDOW* w) {
  *
  * TODO: Make it work for chat windows
  */
-void position_cursor(WINDOW* w, char* title, ToxWindow* a)
+void position_cursor(WINDOW* w, char* title)
 {
   curs_set(1);
   if (strcmp(title, "[prompt]") == 0) {    // main/prompt window
@@ -319,7 +319,7 @@ int main(int argc, char* argv[]) {
     a->blink = false;
     a->onDraw(a);
     draw_bar();
-    position_cursor(a->window, a->title, a);
+    position_cursor(a->window, a->title);
 
     // Handle input.
     ch = getch();
