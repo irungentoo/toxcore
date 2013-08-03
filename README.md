@@ -20,7 +20,7 @@ Keep everything really simple.
 
 ## The Complex Stuff:
 + Tox must use UDP simply because [hole punching](http://en.wikipedia.org/wiki/UDP_hole_punching) with TCP is not as reliable.
-+ Every peer is represented as a [byte string](https://en.wikipedia.org/wiki/String_(computer_science)) (the public key of the peer [client ID]).
++ Every peer is represented as a [byte string][String] (the public key of the peer [client ID]).
 + We're using torrent-style DHT so that peers can find the IP of the other peers when they have their ID.
 + Once the client has the IP of that peer, they start initiating a secure connection with each other. (See [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto))
 + When both peers are securely connected, they can exchange messages, initiate a video chat, send files, etc, all using encrypted communications.
@@ -50,3 +50,4 @@ configure for the normal user or suffer from being way too centralized.
 - [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
 - [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
 - [Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
+- [String]: https://en.wikipedia.org/wiki/String_(computer_science)
