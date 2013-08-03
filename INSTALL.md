@@ -18,6 +18,14 @@ Build dependencies:
 ```bash
 apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall
 ```
+
+on Fedora:
+
+```bash
+yum groupinstall "Development Tools"
+yum install libtool autoconf automake libconfig-devel ncurses-devel cmake
+```
+
 Note that `libconfig-dev` should be >= 1.4.
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
@@ -30,6 +38,18 @@ git checkout tags/0.4.2
 sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
 ```
+
+or without checkinstall:
+```bash
+git clone git://github.com/jedisct1/libsodium.git
+cd libsodium
+git checkout tags/0.4.2
+./autogen.sh
+./configure
+make
+sudo make install
+```
+
 
 Then clone this repo and generate makefile:
 ```bash
