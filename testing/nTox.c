@@ -343,19 +343,21 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length];
-    sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
-    new_lines(msg);
+    if(getname(friendnumber, (uint8_t*)name) != -1) {
+        char msg[100+length];
+        sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
+        new_lines(msg);
+    }
 }
 
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length+strlen(name)+1];
-    sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
-    new_lines(msg);
+    if(getname(friendnumber, (uint8_t*)name) != -1) {
+        char msg[100+length+strlen(name)+1];
+        sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+        new_lines(msg);
+    }
 }
 
 void load_key(char *path)
