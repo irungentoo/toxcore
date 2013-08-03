@@ -209,17 +209,18 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 void wall_announce(uint8_t *message, uint32_t length)
 {
     int i, count =0;
-    printf("%u", message);
+    printf("%s\n", (char *) message);
     for( i = 0; i < 256; i++) { // Where the fuck did the number 256 originate?
     // Wouldn't an array of active users make more sense?
 
-        if (m_friendstatus(i) == 4)
+        if (m_friendstatus(i) == 4) {
             if(m_sendmessage(i, message, sizeof(message)) != 1) {
                 printf("\n[i] could not send message to friend ->#%d\n", i);
             } else {
                 printf("\n[i] Sent to friend ->#%d\n", i);
                 count++;
             }
+        }
     }
     if (count == 0) printf("Unable to Announce (Friends offline?)\n");
 }
