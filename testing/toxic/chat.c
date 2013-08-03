@@ -77,6 +77,18 @@ static void chat_onStatusChange(ToxWindow* self, int num, uint8_t* status, uint1
 
 }
 
+/* check that the string has one non-space character */
+int string_is_empty(char *string)
+{
+  int rc = 0;
+  char *copy = strdup(string);
+
+  rc = ((strtok(copy, " ") == NULL) ? 1:0);
+  free(copy);
+
+  return rc;
+}
+
 static void chat_onKey(ToxWindow* self, int key) {
   ChatContext* ctx = (ChatContext*) self->x;
 
@@ -92,23 +104,28 @@ static void chat_onKey(ToxWindow* self, int key) {
       ctx->line[ctx->pos] = '\0';
     }
   }
+
   else if(key == '\n') {
-    wattron(ctx->history, COLOR_PAIR(2));
-    wprintw(ctx->history, "%02d:%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-    wattron(ctx->history, COLOR_PAIR(1));
-    wprintw(ctx->history, "you: ", ctx->line);
-    wattroff(ctx->history, COLOR_PAIR(1));
-    wprintw(ctx->history, "%s\n", ctx->line);
+    if(!string_is_empty(ctx->line)) {
+      /* make sure the string has at least non-space character */
+      wattron(ctx->history, COLOR_PAIR(2));
+      wprintw(ctx->history, "%02d:%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+      wattron(ctx->history, COLOR_PAIR(1));
+      wprintw(ctx->history, "you: ", ctx->line);
+      wattroff(ctx->history, COLOR_PAIR(1));
+      wprintw(ctx->history, "%s\n", ctx->line);
 
-    if(m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
-      wattron(ctx->history, COLOR_PAIR(3));
-      wprintw(ctx->history, " * Failed to send message.\n");
-      wattroff(ctx->history, COLOR_PAIR(3));
+      if(m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
+        wattron(ctx->history, COLOR_PAIR(3));
+        wprintw(ctx->history, " * Failed to send message.\n");
+        wattroff(ctx->history, COLOR_PAIR(3));
+      }
+
+      ctx->line[0] = '\0';
+      ctx->pos = 0;
     }
-
-    ctx->line[0] = '\0';
-    ctx->pos = 0;
   }
+
   else if(key == 0x107 || key == 0x8 || key == 0x7f) {
     if(ctx->pos != 0) {
       ctx->line[--ctx->pos] = '\0';
