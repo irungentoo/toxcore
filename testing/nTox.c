@@ -36,10 +36,11 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 
-char *help = "[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)\n"
-             "[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)";
+char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
+             "(to send message)\n/s status (to change status)\n[i] /l list (l"
+             "ist friends)\n/h for help\n/i for info\n/n nick (to change nick"
+             "name)\n/q (to quit)";
 int x, y;
-
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests = 0;
@@ -82,18 +83,23 @@ void new_lines(char *line)
 void print_friendlist()
 {
     char name[MAX_NAME_LENGTH];
+    int i = 0;
     new_lines("[i] Friend List:");
-    uint32_t i;
-    for (i = 0; i <= num_requests; i++) {
-        char fstring[128];
-        getname(i, (uint8_t*)name);
+    while(getname(i, (uint8_t *)name) != -1) {
+        /* account for the longest name and the longest "base" string */
+        char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
+
         if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+            sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
+        i++;
         new_lines(fstring);
     }
+
+    if(i == 0)
+        new_lines("\tno friends! D:");
 }
 
 char *format_message(char *message, int friendnum)
@@ -122,7 +128,7 @@ char *format_message(char *message, int friendnum)
     return msg;
 }
 
-void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
+void line_eval(char *line)
 {
     if (line[0] == '/') {
         char inpt_command = line[1];
@@ -236,8 +242,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             do_refresh();
         }
        else if (inpt_command == 'h') { //help
-           new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
-           new_lines("[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)");
+           new_lines(help);
         }
        else if (inpt_command == 'i') { //info
            char idstring[200];
@@ -353,10 +358,10 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
     new_lines(msg);
 }
 
-void load_key()
+void load_key(char *path)
 {
-    FILE *data_file = NULL;
-    data_file = fopen("data","r");
+    FILE *data_file = fopen(path, "r");
+
     if (data_file) {
         //load keys
         fseek(data_file, 0, SEEK_END);
@@ -368,51 +373,81 @@ void load_key()
             exit(1);
         }
         Messenger_load(data, size);
-    } else {
+
+    } else { 
         //else save new keys
         int size = Messenger_size();
         uint8_t data[size];
         Messenger_save(data);
-        data_file = fopen("data","w");
+        data_file = fopen(path, "w");
+
+        if(!data_file) {
+            perror("[!] load_key");
+            exit(1);
+        }
+
         if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
-            printf("[i] could not write data file\n[i] exiting\n");
+            puts("[i] could not write data file! exiting...");
             exit(1);
         }
     }
    fclose(data_file);
 }
 
+void print_help(void)
+{
+    printf("nTox %.1f - Command-line tox-core client\n", 0.1);
+    puts("Options:");
+    puts("\t-h\t-\tPrint this help and exit.");
+    puts("\t-f\t-\tSpecify a keyfile to read (or write to) from.");
+}
+
 int main(int argc, char *argv[])
 {
+    int on = 0;
+    int c = 0;
+    int i = 0;
+    char *filename = "data";
+    char idstring[200] = {0};
+
     if (argc < 4) {
-        printf("[!] Usage: %s [IP] [port] [public_key] <nokey>\n", argv[0]);
+        printf("[!] Usage: %s [IP] [port] [public_key] <keyfile>\n", argv[0]);
         exit(0);
     }
-    int c;
-    int on = 0;
-    initMessenger();
-    //if keyfiles exist
-    if(argc > 4){
-        if(strncmp(argv[4], "nokey", 6) < 0){
-        //load_key();
+
+    for(i = 0; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            if(argv[i][1] == 'h') {
+                print_help();
+                exit(0);
+            } else if(argv[i][1] == 'f') {
+                if(argv[i + 1] != NULL)
+                    filename = argv[i + 1];
+                else {
+                    fputs("[!] you passed '-f' without giving an argument!\n", stderr);
+                }
+            }
         }
-    } else {
-        load_key();
     }
+
+    initMessenger();
+    load_key(filename);
+
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
     m_callback_userstatus(print_statuschange);
 
-    char idstring[200];
-    get_id(idstring);
     initscr();
     noecho();
     raw();
     getmaxyx(stdscr, y, x);
+
+    new_lines("/h for list of commands");
+    get_id(idstring);
     new_lines(idstring);
-    new_lines(help);
     strcpy(line, "");
+
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
@@ -439,7 +474,7 @@ int main(int argc, char *argv[])
 
         getmaxyx(stdscr, y, x);
         if (c == '\n') {
-            line_eval(lines, line);
+            line_eval(line);
             strcpy(line, "");
         } else if (c == 8 || c == 127) {
             line[strlen(line)-1] = '\0';
