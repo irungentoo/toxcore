@@ -47,21 +47,8 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   fix_name(msg);
   fix_name(nick);
 
-  int inthour = timeinfo->tm_hour;
-  int intmin = timeinfo->tm_min;
-  char min[2];
-  char hour[2];
-  sprintf(hour,"%d",inthour);
-  if (intmin < 10) {
-    sprintf(min,"0%d",intmin);
-  } else {
-    sprintf(min,"%d",intmin);
-  }
-
-
   wattron(ctx->history, COLOR_PAIR(2));
-  wprintw(ctx->history,"%s",hour);
-  wprintw(ctx->history,":%s  ",min);
+  wprintw(ctx->history, "%02d:%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
   wattron(ctx->history, COLOR_PAIR(4));
   wprintw(ctx->history, "%s: ", nick);
   wattroff(ctx->history, COLOR_PAIR(4));
@@ -106,24 +93,11 @@ static void chat_onKey(ToxWindow* self, int key) {
     }
   }
   else if(key == '\n') {
-
-    int inthour = timeinfo->tm_hour; //Pretty bad, but it gets the job done
-    int intmin = timeinfo->tm_min;
-    char min[2];
-    char hour[2];
-    sprintf(hour,"%d",inthour);
-    if (intmin < 10) {
-      sprintf(min,"0%d",intmin);
-    } else {
-      sprintf(min,"%d",intmin);
-    }
     wattron(ctx->history, COLOR_PAIR(2));
-    wprintw(ctx->history,"%s",hour);
-    wprintw(ctx->history,":%s  ",min);
+    wprintw(ctx->history, "%02d:%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     wattron(ctx->history, COLOR_PAIR(1));
     wprintw(ctx->history, "you: ", ctx->line);
     wattroff(ctx->history, COLOR_PAIR(1));
-
     wprintw(ctx->history, "%s\n", ctx->line);
 
     if(m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
@@ -140,7 +114,7 @@ static void chat_onKey(ToxWindow* self, int key) {
       ctx->line[--ctx->pos] = '\0';
     }
   }
-  
+
 }
 
 static void chat_onDraw(ToxWindow* self) {
@@ -188,7 +162,7 @@ ToxWindow new_chat(int friendnum) {
   uint8_t nick[MAX_NAME_LENGTH] = {0};
   getname(friendnum, (uint8_t*) &nick);
   fix_name(nick);
-  
+
   snprintf(ret.title, sizeof(ret.title), "[%s (%d)]", nick, friendnum);
 
   ChatContext* x = calloc(1, sizeof(ChatContext));
