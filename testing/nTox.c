@@ -90,7 +90,7 @@ void print_friendlist()
         char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
 
         if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: !\n\tid: %i", i);
+            sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
