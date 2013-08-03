@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 #include "nTox_win32.h"
@@ -78,7 +78,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) 
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -87,7 +87,7 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void load_key() 
+void load_key()
 {
     FILE *data_file = NULL;
     data_file = fopen("data","r");
@@ -121,30 +121,30 @@ void add_friend()
 {
     int i;
     char temp_id[128];
-    
-    for (i = 0; i < 128; i++)  
+
+    for (i = 0; i < 128; i++)
         temp_id[i] = line[i+3];
-    
+
     int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
-   
+
     if (num >= 0) {
         char numstring[100];
         sprintf(numstring, "\n[i] Friend request sent. Wait to be accepted. Friend id: %d\n\n", num);
         printf(numstring);
         ++maxnumfriends;
     }
-    else if (num == -1) 
+    else if (num == -1)
         printf("\n[i] Message is too long.\n\n");
-    
+
     else if (num == -2)
         printf("\n[i] Please add a message to your friend request.\n\n");
-    
+
     else if (num == -3)
         printf("\n[i] That appears to be your own ID.\n\n");
-    
+
     else if (num == -4)
         printf("\n[i] Friend request already sent.\n\n");
-    
+
     else if (num == -5)
         printf("\n[i] Undefined error when adding friend\n\n");
 }
@@ -164,8 +164,8 @@ void list_friends()
     for (i = 0; i <= 256; i++) {/* TODO: fix this properly*/
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
-        
-        if (m_friendstatus(i) == 4)    
+
+        if (m_friendstatus(i) == 4)
             printf("[%d] %s\n\n", i, (uint8_t*)name);
     }
 }
@@ -175,12 +175,12 @@ void delete_friend()
     size_t len = strlen(line);
     char numstring[len-3];
     int i;
-    
+
     for (i = 0; i < len; i++) {
         if (line[i+3] != ' ')
             numstring[i] = line[i+3];
     }
-    
+
     int num = atoi(numstring);
     m_delfriend(num);
     --maxnumfriends;
@@ -193,10 +193,10 @@ void message_friend()
     char numstring[len-3];
     char message[len-3];
     int i;
-    
+
     for (i = 0; i < len; i++) {
 
-        if (line[i+3] != ' ') 
+        if (line[i+3] != ' ')
             numstring[i] = line[i+3];
 
         else {
@@ -213,9 +213,25 @@ void message_friend()
 
     if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1)
         printf("\n[i] could not send message (they may be offline): %s\n", message);
-   
+
     else
         printf("\n");
+}
+
+void make_announcement()
+{
+    int i;
+    uint8_t receive[128];
+    if (strlen(line) -3 > 60) {
+        printf("\n[i] Please keep message short and concise when announcing\n");
+        return;
+    }
+    uint8_t message[] = "Announcement: ";
+
+    for (i = 0; i < 100; i++)
+        receive[i] = (uint8_t)line[i+3];
+    strcat(message, receive);
+    wall_announce(message, strlen(message) -1);
 }
 
 void change_nickname()
@@ -223,15 +239,15 @@ void change_nickname()
     uint8_t name[MAX_NAME_LENGTH];
     int i = 0;
     size_t len = strlen(line);
-    
+
     for (i = 3; i < len; i++) {
 
-        if (line[i] == 0 || line[i] == '\n') 
+        if (line[i] == 0 || line[i] == '\n')
             break;
 
         name[i-3] = line[i];
     }
-    
+
     name[i-3] = 0;
     setname(name, i);
     char numstring[100];
@@ -249,11 +265,11 @@ void change_status()
     uint8_t status[MAX_USERSTATUS_LENGTH];
     int i = 0;
     size_t len = strlen(line);
-    
+
     for (i = 3; i < len; i++) {
-        if (line[i] == 0 || line[i] == '\n') 
+        if (line[i] == 0 || line[i] == '\n')
             break;
-        
+
         status[i-3] = line[i];
     }
 
@@ -276,7 +292,10 @@ void accept_friend_request()
     sprintf(numchar, "\n[i] friend request %u accepted\n\n", numf);
     printf(numchar);
     int num = m_addfriend_norequest(pending_requests[numf]);
-    sprintf(numchar, "\n[i] added friendnumber %d\n\n", num);
+    if ( num >= 0)
+        sprintf(numchar, "\n[i] added friendnumber %d\n\n", num);
+    else
+        sprintf(numchar, "\n[i] Failed with return code %d\n\n", num);
     printf(numchar);
     ++maxnumfriends;
 }
@@ -319,8 +338,11 @@ void line_eval(char* line)
         else if (inpt_command == 'a') {
             accept_friend_request(line);
         }
+        else if (inpt_command == 'w') {
+            make_announcement(line);
+        }
         /* EXIT */
-        else if (inpt_command == 'q') { 
+        else if (inpt_command == 'q') {
             uint8_t status[MAX_USERSTATUS_LENGTH] = "Offline";
             m_set_userstatus(status, strlen((char*)status));
             exit(EXIT_SUCCESS);
@@ -369,7 +391,7 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
         fclose(name_file);
     }
-    
+
 
     FILE* status_file = NULL;
     status_file = fopen("statusfile.txt", "r");
@@ -383,7 +405,7 @@ int main(int argc, char *argv[])
         printf("%s\n", status);
         fclose(status_file);
     }
-    
+
 
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
@@ -396,7 +418,7 @@ int main(int argc, char *argv[])
     {
         if(self_public_key[i] < (PUB_KEY_BYTES/2))
             strcpy(idstring1[i],"0");
-        else 
+        else
             strcpy(idstring1[i], "");
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
@@ -408,15 +430,15 @@ int main(int argc, char *argv[])
     }
 
     do_header();
-    
+
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
     if (resolved_address != 0)
         bootstrap_ip_port.ip.i = resolved_address;
-    else 
+    else
         exit(1);
-    
+
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
 
     int c;
