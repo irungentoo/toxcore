@@ -82,18 +82,22 @@ void new_lines(char *line)
 void print_friendlist()
 {
     char name[MAX_NAME_LENGTH];
+    int i = 0;
     new_lines("[i] Friend List:");
-    uint32_t i;
-    for (i = 0; i <= num_requests; i++) {
-        char fstring[128];
-        getname(i, (uint8_t*)name);
+    while(getname(i++, (uint8_t *)name) != -1) {
+        /* account for the longest name and the longest "base" string */
+        char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
+
         if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+            sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
         new_lines(fstring);
     }
+
+    if(i == 1)
+        new_lines("\tno friends! D:");
 }
 
 char *format_message(char *message, int friendnum)
