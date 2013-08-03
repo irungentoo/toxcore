@@ -170,12 +170,12 @@ static void do_tox() {
   doMessenger();
 }
 
-static void load_data() {
+static void load_data(char *path) {
   FILE* fd;
   size_t len;
   uint8_t* buf;
 
-  if((fd = fopen("data", "r")) != NULL) {
+  if((fd = fopen(path, "r")) != NULL) {
     fseek(fd, 0, SEEK_END);
     len = ftell(fd);
     fseek(fd, 0, SEEK_SET);
@@ -213,7 +213,7 @@ static void load_data() {
 
     Messenger_save(buf);
 
-    fd = fopen("data", "w");
+    fd = fopen(path, "w");
     if(fd == NULL) {
       fprintf(stderr, "fopen() failed.\n");
 
@@ -282,11 +282,25 @@ void prepare_window(WINDOW* w) {
 
 int main(int argc, char* argv[]) {
   int ch;
+  int i = 0;
+  char *filename = "data";
   ToxWindow* a;
+
+    for(i = 0; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            if(argv[i][1] == 'f') {
+                if(argv[i + 1] != NULL)
+                    filename = argv[i + 1];
+                else {
+                    fputs("[!] you passed '-f' without giving an argument!\n", stderr);
+                }
+            }
+        }
+    }
 
   init_term();
   init_tox();
-  load_data();
+  load_data(filename);
   init_windows();
 
   while(true) {
