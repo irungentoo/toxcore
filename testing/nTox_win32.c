@@ -255,7 +255,7 @@ void change_nickname()
     fclose(name_file);
 }
 
-void change_status()
+void change_status(int savetofile)
 {
     uint8_t status[MAX_USERSTATUS_LENGTH];
     int i = 0;
@@ -274,10 +274,12 @@ void change_status()
     sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
     printf(numstring);
 
-    FILE* status_file = NULL;
-    status_file = fopen("statusfile.txt", "w");
-    fprintf(status_file, "%s", (char*)status);
-    fclose(status_file);
+    if (savetofile == 1) {
+        FILE* status_file = NULL;
+        status_file = fopen("statusfile.txt", "w");
+        fprintf(status_file, "%s", (char*)status);
+        fclose(status_file);
+    }
 }
 
 void accept_friend_request()
@@ -298,7 +300,7 @@ void line_eval(char* line)
         char inpt_command = line[1];
 
         if(inpt_command == 'f') {
-            add_friend(line);
+            add_friend();
         }
 
         else if (inpt_command == 'r') {
@@ -307,23 +309,23 @@ void line_eval(char* line)
         }
 
         else if (inpt_command == 'l') {
-            list_friends(line);
+            list_friends();
         }
 
         else if (inpt_command == 'd') {
-            delete_friend(line);
+            delete_friend();
         }
         /* Send message to friend */
         else if (inpt_command == 'm') {
-            message_friend(line);
+            message_friend();
         }
 
         else if (inpt_command == 'n') {
-            change_nickname(line);
+            change_nickname();
         }
 
         else if (inpt_command == 's') {
-            change_status(line);
+            change_status(1);
         }
 
         else if (inpt_command == 'a') {
@@ -332,8 +334,8 @@ void line_eval(char* line)
         }
         /* EXIT */
         else if (inpt_command == 'q') { 
-            strcpy(line, "Offline");
-            change_status(line);
+            strcpy(line, "---Offline");
+            change_status(0);
             exit(EXIT_SUCCESS);
         }
     }
