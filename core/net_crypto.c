@@ -66,11 +66,11 @@ static int incoming_connections[MAX_INCOMING];
 int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
                  uint8_t *plain, uint32_t length, uint8_t *encrypted)
 {
-    if (length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES > MAX_DATA_SIZE || length == 0)
+    if (length + crypto_box_MACBYTES > MAX_DATA_SIZE || length == 0)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES] = {0};
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_ZEROBYTES];
+    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
+    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
 
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); /* pad the message with 32 0 bytes. */
 
@@ -87,7 +87,7 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
         return -1;
 
     /* unpad the encrypted message */
-    memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
+    memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length + crypto_box_MACBYTES);
     return length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES;
 }
 
@@ -101,8 +101,8 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     if (length > MAX_DATA_SIZE || length <= crypto_box_BOXZEROBYTES)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES];
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
+    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
+    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
 
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); /* pad the message with 16 0 bytes. */
 
@@ -121,7 +121,7 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
         return -1;
 
     /* unpad the plain message */
-    memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES);
+    memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_MACBYTES);
     return length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES;
 }
 
