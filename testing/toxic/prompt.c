@@ -141,6 +141,7 @@ static void execute(ToxWindow* self, char* cmd) {
     case -2:
       wprintw(self->window, "Please add a message to your request.\n");
     case -3:
+      break;
       wprintw(self->window, "That appears to be your own ID.\n");
       break;
     case -4:
