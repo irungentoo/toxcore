@@ -121,16 +121,20 @@ static Pinged       send_nodes[LSEND_NODES_ARRAY];
  */
 int id_closest(uint8_t * client_id, uint8_t * client_id1, uint8_t * client_id2)
 {
-    uint32_t i;
-    uint8_t tmp1, tmp2;
+    size_t    i;
+    uint32_t* id  = (uint32_t*) client_id;
+    uint32_t* id1 = (uint32_t*) client_id1;
+    uint32_t* id2 = (uint32_t*) client_id2;
+    uint32_t  distance1, distance2;
 
-    for(i = 0; i < CLIENT_ID_SIZE; ++i) {
-        tmp1 = abs(client_id[i] ^ client_id1[i]);
-        tmp2 = abs(client_id[i] ^ client_id2[i]);
+    for(i = 0; i < CLIENT_ID_SIZE/sizeof(uint32_t); ++i) {
+
+        distance1 = abs(id[i] ^ id1[i]);
+        distance2 = abs(id[i] ^ id2[i]);
         
-        if(tmp1 < tmp2)
+        if(distance1 < distance2)
             return 1;
-        else if(tmp1 > tmp2)
+        if(distance1 > distance2)
             return 2;
     }
     return 0;
