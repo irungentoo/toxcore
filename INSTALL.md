@@ -19,7 +19,7 @@ Build dependencies:
 apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall
 ```
 
-on Fedora:
+On Fedora:
 
 ```bash
 yum groupinstall "Development Tools"
@@ -39,7 +39,7 @@ sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
 ```
 
-or without checkinstall:
+Or if checkinstall is not easily available for your distribution (e.g. Fedora):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
@@ -49,6 +49,7 @@ git checkout tags/0.4.2
 make check
 sudo make install
 ```
+This will copy the libs to /usr/local/lib and the headers to /usr/local/include
 
 
 Then clone this repo and generate makefile:
