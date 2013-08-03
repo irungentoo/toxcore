@@ -32,6 +32,7 @@ uint32_t maxnumfriends;
 
 char line[STRING_LENGTH];
 char users_id[200];
+int friend_request_received;
 
 void do_header()
 {
@@ -44,10 +45,11 @@ void do_header()
 
 void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 {
+    friend_request_received = 1;
     printf("\n\n[i] received friend request with message\n");
-    printf((char *)data);
+    printf("'%s'",(char *)data);
     char numchar[100];
-    sprintf(numchar, "\n\n[i] accept request with /a %u\n\n", num_requests);
+    sprintf(numchar, "\n[i] accept request with /a %u\n\n", num_requests);
     printf(numchar);
     memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
     ++num_requests;
@@ -151,23 +153,32 @@ void add_friend()
 
 void list_friends()
 {
-    int activefriends = 0;
     int i;
+    
+    printf("\n[i] Friend List");
+
+    printf("----- PENDING -----\n\n");
 
     for (i = 0; i <= maxnumfriends; i++) {
-        if (m_friendstatus(i) == 4)
-            activefriends++;
+        char name[MAX_NAME_LENGTH];
+        getname(i, (uint8_t*)name);
+        if (m_friendstatus(i) > 0 && m_friendstatus(i) < 4)
+            printf("[%d] %s\n", i, (uint8_t*)name);
     }
+    
+    printf("\n");
 
-    printf("\n[i] Friend List | Total: %d\n\n", activefriends);
+    printf("----- ACTIVE -----\n\n");
 
-    for (i = 0; i <= 256; i++) {/* TODO: fix this properly*/
+    for (i = 0; i <= maxnumfriends; i++) {
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
         
         if (m_friendstatus(i) == 4)    
-            printf("[%d] %s\n\n", i, (uint8_t*)name);
+            printf("[%d] %s\n", i, (uint8_t*)name);
     }
+
+    printf("\n");
 }
 
 void delete_friend()
@@ -244,7 +255,7 @@ void change_nickname()
     fclose(name_file);
 }
 
-void change_status()
+void change_status(int savetofile)
 {
     uint8_t status[MAX_USERSTATUS_LENGTH];
     int i = 0;
@@ -263,20 +274,21 @@ void change_status()
     sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
     printf(numstring);
 
-    FILE* status_file = NULL;
-    status_file = fopen("statusfile.txt", "w");
-    fprintf(status_file, "%s", (char*)status);
-    fclose(status_file);
+    if (savetofile == 1) {
+        FILE* status_file = NULL;
+        status_file = fopen("statusfile.txt", "w");
+        fprintf(status_file, "%s", (char*)status);
+        fclose(status_file);
+    }
 }
 
 void accept_friend_request()
 {
+    friend_request_received = 0;
     uint8_t numf = atoi(line + 3);
     char numchar[100];
-    sprintf(numchar, "\n[i] friend request %u accepted\n\n", numf);
-    printf(numchar);
     int num = m_addfriend_norequest(pending_requests[numf]);
-    sprintf(numchar, "\n[i] added friendnumber %d\n\n", num);
+    sprintf(numchar, "\n[i] Added friendnumber: %d\n\n", num);
     printf(numchar);
     ++maxnumfriends;
 }
@@ -288,7 +300,7 @@ void line_eval(char* line)
         char inpt_command = line[1];
 
         if(inpt_command == 'f') {
-            add_friend(line);
+            add_friend();
         }
 
         else if (inpt_command == 'r') {
@@ -297,32 +309,33 @@ void line_eval(char* line)
         }
 
         else if (inpt_command == 'l') {
-            list_friends(line);
+            list_friends();
         }
 
         else if (inpt_command == 'd') {
-            delete_friend(line);
+            delete_friend();
         }
         /* Send message to friend */
         else if (inpt_command == 'm') {
-            message_friend(line);
+            message_friend();
         }
 
         else if (inpt_command == 'n') {
-            change_nickname(line);
+            change_nickname();
         }
 
         else if (inpt_command == 's') {
-            change_status(line);
+            change_status(1);
         }
 
         else if (inpt_command == 'a') {
-            accept_friend_request(line);
+            if (friend_request_received == 1)
+                accept_friend_request(line);
         }
         /* EXIT */
         else if (inpt_command == 'q') { 
-            uint8_t status[MAX_USERSTATUS_LENGTH] = "Offline";
-            m_set_userstatus(status, strlen((char*)status));
+            strcpy(line, "---Offline");
+            change_status(0);
             exit(EXIT_SUCCESS);
         }
     }
@@ -368,8 +381,7 @@ int main(int argc, char *argv[])
         nameloaded = 1;
         printf("%s\n", name);
         fclose(name_file);
-    }
-    
+    } 
 
     FILE* status_file = NULL;
     status_file = fopen("statusfile.txt", "r");
@@ -383,7 +395,6 @@ int main(int argc, char *argv[])
         printf("%s\n", status);
         fclose(status_file);
     }
-    
 
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);

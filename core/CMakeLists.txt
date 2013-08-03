@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6.0)
-project(core C)
+project(toxcore C)
 
 if(WIN32)
 	include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
@@ -16,4 +16,4 @@ set(core_sources
 	LAN_discovery.c
 	Messenger.c)
 
-add_library(core ${core_sources})
+add_library(toxcore SHARED ${core_sources})

@@ -39,7 +39,7 @@ void list_friends();
 void delete_friend();
 void message_friend();
 void change_nickname();
-void change_status();
+void change_status(int savetofile);
 void accept_friend_request();
 void line_eval(char* line);
 void get_input();

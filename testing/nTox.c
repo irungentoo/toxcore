@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 #include "nTox.h"
 #include "misc_tools.h"
@@ -54,7 +54,7 @@ void get_id(char *data)
     {
         if (self_public_key[i] < (PUB_KEY_BYTES / 2))
             strcpy(idstring1[i],"0");
-        else 
+        else
             strcpy(idstring1[i], "");
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
@@ -71,9 +71,9 @@ void get_id(char *data)
 void new_lines(char *line)
 {
     int i = 0;
-    for (i = HISTORY-1; i > 0; i--) 
+    for (i = HISTORY-1; i > 0; i--)
         strncpy(lines[i], lines[i-1], STRING_LENGTH - 1);
-    
+
     strncpy(lines[0], line, STRING_LENGTH - 1);
     do_refresh();
 }
@@ -133,7 +133,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         if (inpt_command == 'f') { // add friend command: /f ID
             int i;
             char temp_id[128];
-            for (i = 0; i < 128; i++) 
+            for (i = 0; i < 128; i++)
                 temp_id[i] = line[i+prompt_offset];
 
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
@@ -166,8 +166,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
-	    if(len < 3)
-	      return;
+            if(len < 3)
+                return;
 
             char numstring[len-3];
             char message[len-3];
@@ -248,7 +248,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         else if (inpt_command == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
-        } else { 
+        } else {
             new_lines("[i] invalid command");
         }
     } else {
@@ -335,7 +335,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     new_lines(format_message((char*)string, friendnumber));
 }
 
-void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) 
+void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -344,7 +344,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     new_lines(msg);
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) 
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -353,7 +353,7 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
     new_lines(msg);
 }
 
-void load_key() 
+void load_key()
 {
     FILE *data_file = NULL;
     data_file = fopen("data","r");
@@ -368,7 +368,7 @@ void load_key()
             exit(1);
         }
         Messenger_load(data, size);
-    } else { 
+    } else {
         //else save new keys
         int size = Messenger_size();
         uint8_t data[size];
@@ -418,9 +418,9 @@ int main(int argc, char *argv[])
     int resolved_address = resolve_addr(argv[1]);
     if (resolved_address != 0)
         bootstrap_ip_port.ip.i = resolved_address;
-    else 
+    else
         exit(1);
-    
+
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {
@@ -441,7 +441,7 @@ int main(int argc, char *argv[])
         if (c == '\n') {
             line_eval(lines, line);
             strcpy(line, "");
-        } else if (c == 127) {
+        } else if (c == 8 || c == 127) {
             line[strlen(line)-1] = '\0';
         } else if (isalnum(c) || ispunct(c) || c == ' ') {
             strcpy(line, appender(line, (char) c));

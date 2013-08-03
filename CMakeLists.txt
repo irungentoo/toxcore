@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.6.0)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+if(UNIX)
+	find_package(Curses REQUIRED)
+endif()
+
 if(NOT WIN32)
 	option(USE_NACL "Use NaCl library instead of libsodium")
 endif()
@@ -29,15 +33,15 @@ if(NOT USE_NACL)
 endif()
 
 macro(linkCoreLibraries exe_name)
-	add_dependencies(${exe_name} core)
+	add_dependencies(${exe_name} toxcore)
 	if(WIN32)
 		include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
-		target_link_libraries(${exe_name} core
+		target_link_libraries(${exe_name} toxcore
 		${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a
 			ws2_32)
 	else()
 		include_directories(${SODIUM_INCLUDE_DIR})
-		target_link_libraries(${exe_name} core
+		target_link_libraries(${exe_name} toxcore
 			${LINK_CRYPTO_LIBRARY})
 
 	endif()
