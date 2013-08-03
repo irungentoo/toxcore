@@ -1,6 +1,6 @@
 /* Lossless_UDP.h
  *
- * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
+ * An implementation of the Lossless_UDP protocol as seen in http://wiki.tox.im/index.php/Lossless_UDP
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
