@@ -361,16 +361,18 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 void load_key(char *path)
 {
     FILE *data_file = fopen(path, "r");
+    int size = 0;
 
     if (data_file) {
         //load keys
         fseek(data_file, 0, SEEK_END);
-        int size = ftell(data_file);
-        fseek(data_file, 0, SEEK_SET);
+        size = ftell(data_file);
+        rewind(data_file);
+
         uint8_t data[size];
         if (fread(data, sizeof(uint8_t), size, data_file) != size){
-            printf("[i] could not read data file\n[i] exiting\n");
-            exit(1);
+            fputs("[!] could not read data file! exiting...\n", stderr);
+            goto FILE_ERROR;
         }
         Messenger_load(data, size);
 
@@ -387,11 +389,15 @@ void load_key(char *path)
         }
 
         if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
-            puts("[i] could not write data file! exiting...");
-            exit(1);
+            fputs("[!] could not write data file! exiting...", stderr);
+            goto FILE_ERROR;
         }
     }
-   fclose(data_file);
+
+FILE_ERROR:
+    if(fclose(data_file) < 0)
+        perror("[!] fclose failed");
+    exit(1);
 }
 
 void print_help(void)
