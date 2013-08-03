@@ -1,8 +1,4 @@
-/* Messenger.h
- *
- * An implementation of a simple text chat only messenger on the tox network core.
- *
- * NOTE: All the text in the messages must be encoded using UTF-8
+/* Connection.h
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -23,31 +19,33 @@
  *
  */
 
-#ifndef MESSENGER_H
-#define MESSENGER_H
+#ifndef CONNECTION_H
+#define CONNECTION_H
 
+#include "DHT.h"
+#include "net_crypto.h"
+#include "friend_requests.h"
+#include "LAN_discovery.h"
 #include "Friends.h"
-#include "Connection.h"
+#include "Messenger.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*  PUBLIC INTERFACE:  */
+#define PACKET_ID_NICKNAME 48
+#define PACKET_ID_USERSTATUS 49
+#define PACKET_ID_MESSAGE 64
 
-/* send a text chat message to an online friend
-    returns 1 if packet was successfully put into the send queue
-    return 0 if it was not */
-int send_message(int friendId, uint8_t *message, uint32_t length);
+/* process connection routine - handle incoming data */
+void doConnection();
 
-/* set the function that will be executed when a message from a friend is received.
-    function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
-void message_receive_callback(void (*function)(int, uint8_t *, uint16_t));
+/*  process incoming data from friend
+ * returns 1 if processed or 0 if not */
+int received_friend_packet(int friendId, int connectionId);
 
-
-/*  INTERNAL STUFF:  */
-
-void message_received(int friendId, uint8_t* data, uint16_t size);
+/* sends packet to friend */
+int send_friend_packet(int friendId, int packetType, uint8_t *message, uint32_t length);
 
 #ifdef __cplusplus
 }

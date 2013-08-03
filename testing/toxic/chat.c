@@ -34,7 +34,7 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   if(ctx->friendnum != num)
     return;
 
-  getname(num, (uint8_t*) &nick);
+  get_friend_name(num, (uint8_t*) &nick);
 
   msg[len-1] = '\0';
   nick[MAX_NAME_LENGTH-1] = '\0';
@@ -88,7 +88,7 @@ static void chat_onKey(ToxWindow* self, int key) {
 
     wprintw(ctx->history, "%s\n", ctx->line);
 
-    if(m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
+    if(send_message(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
       wattron(ctx->history, COLOR_PAIR(3));
       wprintw(ctx->history, " * Failed to send message.\n");
       wattroff(ctx->history, COLOR_PAIR(3));
@@ -147,7 +147,7 @@ ToxWindow new_chat(int friendnum) {
   ret.onStatusChange = &chat_onStatusChange;
 
   uint8_t nick[MAX_NAME_LENGTH] = {0};
-  getname(friendnum, (uint8_t*) &nick);
+  get_friend_name(friendnum, (uint8_t*) &nick);
   fix_name(nick);
   
   snprintf(ret.title, sizeof(ret.title), "[%s (%d)]", nick, friendnum);

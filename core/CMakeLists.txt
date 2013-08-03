@@ -14,6 +14,9 @@ set(core_sources
 	net_crypto.c
 	friend_requests.c
 	LAN_discovery.c
+        State.c
+        Friends.c
+        Connection.c
 	Messenger.c)
 
 add_library(core ${core_sources})

@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "../../core/Messenger.h"
+#include "../../core/State.h"
 #include "../../core/network.h"
 
 #include "windows.h"
@@ -104,15 +105,15 @@ static void init_term() {
   refresh();
 }
 
-static void init_tox() {
-  // Init core.
-  initMessenger();
+static void init_libtox() {
+    // Init core.
+    init_tox();
 
-  // Callbacks.
-  m_callback_friendrequest(on_request);
-  m_callback_friendmessage(on_message);
-  m_callback_namechange(on_nickchange);
-  m_callback_userstatus(on_statuschange);
+    // Callbacks.
+    friend_add_request_callback(on_request);
+    message_receive_callback(on_message);
+    friend_name_change_callback(on_nickchange);
+    friend_userstatus_change_callback(on_statuschange);
 }
 
 int add_window(ToxWindow w) {
@@ -167,7 +168,7 @@ static void do_tox() {
     wprintw(prompt->window, "\nDHT disconnected!\n");
   }
 
-  doMessenger();
+  doTox();
 }
 
 static void load_data() {
@@ -199,10 +200,10 @@ static void load_data() {
       exit(1);
     }
 
-    Messenger_load(buf, len);
+    load_tox_state(buf, len);
   }
   else { 
-    len = Messenger_size();
+    len = tox_state_size();
     buf = malloc(len);
 
     if(buf == NULL) {
@@ -211,7 +212,7 @@ static void load_data() {
       exit(1);
     }
 
-    Messenger_save(buf);
+    save_tox_state(buf);
 
     fd = fopen("data", "w");
     if(fd == NULL) {
@@ -305,7 +306,7 @@ int main(int argc, char* argv[]) {
   ToxWindow* a;
 
   init_term();
-  init_tox();
+  init_libtox();
   load_data();
   init_windows();
 

@@ -8,6 +8,7 @@
 #include <curses.h>
 
 #include "../../core/Messenger.h"
+#include "../../core/State.h"
 #include "../../core/network.h"
 
 #include "windows.h"
@@ -133,7 +134,7 @@ static void execute(ToxWindow* self, char* cmd) {
       id_bin[i] = x;
     }
 
-    num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
+    num = add_friend(id_bin, (uint8_t*) msg, strlen(msg)+1);
     switch (num) {
     case -1: 
       wprintw(self->window, "Message is too long.\n");
@@ -169,7 +170,7 @@ static void execute(ToxWindow* self, char* cmd) {
     }
     msg++;
 
-    m_set_userstatus((uint8_t*) msg, strlen(msg)+1);
+    set_self_userstatus((uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s\n", msg);
   }
   else if(!strncmp(cmd, "nick ", strlen("nick "))) {
@@ -181,7 +182,7 @@ static void execute(ToxWindow* self, char* cmd) {
     }
     nick++;
 
-    setname((uint8_t*) nick, strlen(nick)+1);
+    set_self_name((uint8_t*) nick, strlen(nick)+1);
     wprintw(self->window, "Nickname set to: %s.\n", nick);
   }
   else if(!strcmp(cmd, "myid")) {
@@ -213,7 +214,7 @@ static void execute(ToxWindow* self, char* cmd) {
       return;
     }
 
-    num = m_addfriend_norequest(pending_requests[num]);
+    num = add_friend_norequest(pending_requests[num]);
 
     if(num == -1) {
       wprintw(self->window, "Failed to add friend.\n");
@@ -243,7 +244,7 @@ static void execute(ToxWindow* self, char* cmd) {
     msg[0] = 0;
     msg++;
 
-    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0) {
+    if(send_message(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0) {
       wprintw(self->window, "Error occurred while sending message.\n");
     }
     else {
