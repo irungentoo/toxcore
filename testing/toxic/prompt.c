@@ -140,6 +140,7 @@ static void execute(ToxWindow* self, char* cmd) {
       break;
     case -2:
       wprintw(self->window, "Please add a message to your request.\n");
+      break;
     case -3:
       wprintw(self->window, "That appears to be your own ID.\n");
       break;
@@ -287,6 +288,7 @@ static void prompt_onKey(ToxWindow* self, int key) {
 }
 
 static void prompt_onDraw(ToxWindow* self) {
+  curs_set(1);
   int x, y;
 
   getyx(self->window, y, x);
