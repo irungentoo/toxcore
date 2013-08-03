@@ -288,6 +288,7 @@ static void prompt_onKey(ToxWindow* self, int key) {
 }
 
 static void prompt_onDraw(ToxWindow* self) {
+  curs_set(1);
   int x, y;
 
   getyx(self->window, y, x);
