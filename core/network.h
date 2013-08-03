@@ -57,6 +57,7 @@
 #include <sodium.h>
 #else
 #include <crypto_box.h>
+#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
 #ifdef __cplusplus
