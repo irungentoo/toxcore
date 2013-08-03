@@ -202,15 +202,16 @@ int new_connection(IP_Port ip_port)
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if(connections[i].status == 0) {
             memset(&connections[i], 0, sizeof(Connection));
+            uint32_t handshake_id1 = handshake_id(ip_port);
 
             connections[i] = (Connection) {
               .ip_port            = ip_port,
               .status             = 1,
               .inbound            = 0,
-              .handshake_id1      = handshake_id(ip_port),
-              .sent_packetnum     = connections[i].handshake_id1,
-              .sendbuff_packetnum = connections[i].handshake_id1,
-              .successful_sent    = connections[i].handshake_id1,
+              .handshake_id1      = handshake_id1,
+              .sent_packetnum     = handshake_id1,
+              .sendbuff_packetnum = handshake_id1,
+              .successful_sent    = handshake_id1,
               .SYNC_rate          = SYNC_RATE,
               .data_rate          = DATA_SYNC_RATE,
               .last_recvSYNC      = current_time(),
@@ -254,6 +255,7 @@ int new_inconnection(IP_Port ip_port)
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if (connections[i].status == 0) {
             memset(&connections[i], 0, sizeof(Connection));
+            uint64_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
 
             connections[i] = (Connection){
                 .ip_port       = ip_port,
@@ -266,10 +268,10 @@ int new_inconnection(IP_Port ip_port)
                 .send_counter  = 127,
 
                 /* add randomness to timeout to prevent connections getting stuck in a loop. */
-                .timeout       = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT,
+                .timeout       = timeout,
 
                 /* if this connection isn't handled within the timeout kill it. */
-                .killat        = current_time() + 1000000UL*connections[i].timeout
+                .killat        = current_time() + 1000000UL*timeout
             };
             ++connections_number;
             return i;
