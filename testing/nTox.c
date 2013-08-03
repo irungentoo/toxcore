@@ -36,10 +36,11 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 
-char *help = "[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)\n"
-             "[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)";
+char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
+             "(to send message)\n/s status (to change status)\n[i] /l list (l"
+             "ist friends)\n/h for help\n/i for info\n/n nick (to change nick"
+             "name)\n/q (to quit)";
 int x, y;
-
 
 uint8_t pending_requests[256][CLIENT_ID_SIZE];
 uint8_t num_requests = 0;
@@ -126,7 +127,7 @@ char *format_message(char *message, int friendnum)
     return msg;
 }
 
-void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
+void line_eval(char *line)
 {
     if (line[0] == '/') {
         char inpt_command = line[1];
@@ -410,13 +411,16 @@ int main(int argc, char *argv[])
 
     char idstring[200];
     get_id(idstring);
+
     initscr();
     noecho();
     raw();
     getmaxyx(stdscr, y, x);
+
+    new_lines("/h for list of commands");
     new_lines(idstring);
-    new_lines(help);
     strcpy(line, "");
+
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
@@ -443,7 +447,7 @@ int main(int argc, char *argv[])
 
         getmaxyx(stdscr, y, x);
         if (c == '\n') {
-            line_eval(lines, line);
+            line_eval(line);
             strcpy(line, "");
         } else if (c == 127) {
             line[strlen(line)-1] = '\0';
