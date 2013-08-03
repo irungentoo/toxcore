@@ -48,7 +48,7 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   fix_name(nick);
 
   wattron(ctx->history, COLOR_PAIR(2));
-  wprintw(ctx->history, "%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min);
+  wprintw(ctx->history, "%02d:%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
   wattron(ctx->history, COLOR_PAIR(4));
   wprintw(ctx->history, "%s: ", nick);
   wattroff(ctx->history, COLOR_PAIR(4));
@@ -94,7 +94,7 @@ static void chat_onKey(ToxWindow* self, int key) {
   }
   else if(key == '\n') {
     wattron(ctx->history, COLOR_PAIR(2));
-    wprintw(ctx->history, "%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min);
+    wprintw(ctx->history, "%02d:%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     wattron(ctx->history, COLOR_PAIR(1));
     wprintw(ctx->history, "you: ", ctx->line);
     wattroff(ctx->history, COLOR_PAIR(1));
