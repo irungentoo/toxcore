@@ -52,7 +52,12 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   char min[2];
   char hour[2];
   sprintf(hour,"%d",inthour);
-  sprintf(min,"%d",intmin);
+  if (intmin < 10) {
+    sprintf(min,"0%d",intmin);
+  } else {
+    sprintf(min,"%d",intmin);
+  }
+
 
   wattron(ctx->history, COLOR_PAIR(2));
   wprintw(ctx->history,"%s",hour);
@@ -109,7 +114,11 @@ static void chat_onKey(ToxWindow* self, int key) {
     char min[2];
     char hour[2];
     sprintf(hour,"%d",inthour);
-    sprintf(min,"%d",intmin);
+    if (intmin < 10) {
+      sprintf(min,"0%d",intmin);
+    } else {
+      sprintf(min,"%d",intmin);
+    }
 
     wattron(ctx->history, COLOR_PAIR(2));
     wprintw(ctx->history,"%s",hour);
