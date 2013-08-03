@@ -50,7 +50,7 @@ void on_request(uint8_t* public_key, uint8_t* data, uint16_t length) {
 void on_message(int friendnumber, uint8_t* string, uint16_t length) {
   size_t i;
 
-  wprintw(prompt->window, "\n(message) %d: %s!\n", friendnumber, string);
+  wprintw(prompt->window, "\n(message) %d: %s\n", friendnumber, string);
 
   for(i=0; i<w_num; i++) {
     if(windows[i].onMessage != NULL)
