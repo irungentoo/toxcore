@@ -33,15 +33,15 @@ if(NOT USE_NACL)
 endif()
 
 macro(linkCoreLibraries exe_name)
-	add_dependencies(${exe_name} core)
+	add_dependencies(${exe_name} toxcore)
 	if(WIN32)
 		include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
-		target_link_libraries(${exe_name} core
+		target_link_libraries(${exe_name} toxcore
 		${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a
 			ws2_32)
 	else()
 		include_directories(${SODIUM_INCLUDE_DIR})
-		target_link_libraries(${exe_name} core
+		target_link_libraries(${exe_name} toxcore
 			${LINK_CRYPTO_LIBRARY})
 
 	endif()
