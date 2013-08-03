@@ -17,3 +17,4 @@ set(core_sources
 	Messenger.c)
 
 add_library(toxcore SHARED ${core_sources})
+target_link_libraries(toxcore ${SODIUM_LIBRARY})

@@ -1,6 +1,6 @@
 /* Lossless_UDP.c
  *
- * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
+ * An implementation of the Lossless_UDP protocol as seen in http://wiki.tox.im/index.php/Lossless_UDP
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -467,7 +467,7 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
 /* 
  * BEGIN Packet sending functions
  * One per packet type.
- * see docs/Lossless_UDP.txt for more information.
+ * see http://wiki.tox.im/index.php/Lossless_UDP for more information.
  */
 
 int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
