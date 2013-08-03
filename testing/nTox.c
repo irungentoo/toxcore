@@ -90,7 +90,7 @@ void print_friendlist()
         char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
 
         if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
+            sprintf(fstring, "[i] Friend: !\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
@@ -375,8 +375,6 @@ void load_key(char *path)
         Messenger_load(data, size);
 
     } else { 
-        fputs("(saving new keys now)\n", stderr);
-
         //else save new keys
         int size = Messenger_size();
         uint8_t data[size];
@@ -389,7 +387,7 @@ void load_key(char *path)
         }
 
         if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
-            printf("[i] could not write data file\n[i] exiting\n");
+            puts("[i] could not write data file! exiting...");
             exit(1);
         }
     }
@@ -401,7 +399,7 @@ void print_help(void)
     printf("nTox %.1f - Command-line tox-core client\n", 0.1);
     puts("Options:");
     puts("\t-h\t-\tPrint this help and exit.");
-    puts("\t-f\t-\tSpecify a keyfile to read from.");
+    puts("\t-f\t-\tSpecify a keyfile to read (or write to) from.");
 }
 
 int main(int argc, char *argv[])
@@ -447,7 +445,7 @@ int main(int argc, char *argv[])
 
     new_lines("/h for list of commands");
     get_id(idstring);
-    puts(idstring);
+    new_lines(idstring);
     strcpy(line, "");
 
     IP_Port bootstrap_ip_port;
@@ -457,7 +455,7 @@ int main(int argc, char *argv[])
         bootstrap_ip_port.ip.i = resolved_address;
     else 
         exit(1);
-    
+
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     nodelay(stdscr, TRUE);
     while(true) {
