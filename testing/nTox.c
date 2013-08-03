@@ -145,19 +145,19 @@ void line_eval(char *line)
             int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             char numstring[100];
             switch (num) {
-            case -1:
+            case FAERR_TOOLONG:
                 sprintf(numstring, "[i] Message is too long.");
                 break;
-            case -2:
+            case FAERR_NOMESSAGE:
                 sprintf(numstring, "[i] Please add a message to your request.");
                 break;
-            case -3:
+            case FAERR_OWNKEY:
                 sprintf(numstring, "[i] That appears to be your own ID.");
                 break;
-            case -4:
+            case FAERR_ALREADYSENT:
                 sprintf(numstring, "[i] Friend request already sent.");
                 break;
-            case -5:
+            case FAERR_UNKNOWN:
                 sprintf(numstring, "[i] Undefined error when adding friend.");
                 break;
             default:
