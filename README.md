@@ -7,6 +7,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 
 **IRC**: #tox on freenode, alternatively, you can use the [webchat](http://webchat.freenode.net/?channels=#tox).<br />
 **Website**: [http://tox.im](http://tox.im)
+**Developer Blog**: [http://dev.tox.im](http://dev.tox.im)
 
 **Website translations**: [see stal888's repository](https://github.com/stal888/ProjectTox-Website)<br/>
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
