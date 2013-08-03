@@ -251,6 +251,9 @@ static void execute(ToxWindow* self, char* cmd) {
       wprintw(self->window, "Message successfully sent.\n");
     }
   }
+  else if(!strcmp(cmd, "clear")){
+      wclear(self->window);
+  }
   else {
     wprintw(self->window, "Invalid syntax.\n");
   }
@@ -317,6 +320,7 @@ static void print_usage(ToxWindow* self) {
   wprintw(self->window, "      myid                      : Print your ID\n");
   wprintw(self->window, "      quit/exit                 : Exit program\n");
   wprintw(self->window, "      help                      : Print this message again\n");
+  wprintw(self->window, "      clear                     : Clear the prompt screen\n");
 
 
   wattron(self->window, A_BOLD);
