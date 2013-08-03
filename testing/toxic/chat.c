@@ -106,6 +106,7 @@ static void chat_onKey(ToxWindow* self, int key) {
 }
 
 static void chat_onDraw(ToxWindow* self) {
+  curs_set(1);
   int x, y;
   ChatContext* ctx = (ChatContext*) self->x;
 
@@ -117,7 +118,7 @@ static void chat_onDraw(ToxWindow* self) {
 
   wclear(ctx->linewin);
   mvwhline(ctx->linewin, 0, 0, '_', COLS);
-  mvwprintw(ctx->linewin, 1, 0, "%s\n", ctx->line);
+  mvwprintw(self->window, y-1, 0, "%s\n", ctx->line);
 
   wrefresh(self->window);
 }
