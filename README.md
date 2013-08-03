@@ -50,4 +50,5 @@ configure for the normal user or suffer from being way too centralized.
 - [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
 - [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
 - [Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
-- [String]: https://en.wikipedia.org/wiki/String_(computer_science)
+
+[String]: https://en.wikipedia.org/wiki/String_(computer_science)
