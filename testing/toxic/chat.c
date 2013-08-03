@@ -63,8 +63,6 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   wprintw(ctx->history,"%s",hour);
   wprintw(ctx->history,":%s  ",min);
   wattron(ctx->history, COLOR_PAIR(4));
-  wprintw(ctx->history, "%s: ", now);
-  wattron(ctx->history, COLOR_PAIR(4));
   wprintw(ctx->history, "%s: ", nick);
   wattroff(ctx->history, COLOR_PAIR(4));
   wprintw(ctx->history, "%s\n", msg);
@@ -109,17 +107,19 @@ static void chat_onKey(ToxWindow* self, int key) {
   }
   else if(key == '\n') {
 
+    printf("Get times to int");
     int inthour = timeinfo->tm_hour; //Pretty bad, but it gets the job done
     int intmin = timeinfo->tm_min;
     char min[2];
     char hour[2];
+    printf("Turn to varible");
     sprintf(hour,"%d",inthour);
     if (intmin < 10) {
       sprintf(min,"0%d",intmin);
     } else {
       sprintf(min,"%d",intmin);
     }
-
+    printf("Display");
     wattron(ctx->history, COLOR_PAIR(2));
     wprintw(ctx->history,"%s",hour);
     wprintw(ctx->history,":%s  ",min);
