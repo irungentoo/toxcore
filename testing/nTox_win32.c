@@ -38,7 +38,7 @@ void do_header()
     system("cls");
     printf(users_id);
     printf("\n---------------------------------");
-    printf("\n[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /l (lists friends), /d friendnumber (deletes friend), /q (to quit), /r (reset screen)");
+    printf("\n[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status), /n nick (to change nickname), /l (lists friends), /d friendnumber (deletes friend), /w to announce /q (to quit), /r (reset screen)");
     printf("\n---------------------------------");
 }
 
