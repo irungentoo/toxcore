@@ -32,6 +32,7 @@ uint32_t maxnumfriends;
 
 char line[STRING_LENGTH];
 char users_id[200];
+int friend_request_received;
 
 void do_header()
 {
@@ -44,10 +45,11 @@ void do_header()
 
 void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 {
+    friend_request_received = 1;
     printf("\n\n[i] received friend request with message\n");
-    printf((char *)data);
+    printf("'%s'",(char *)data);
     char numchar[100];
-    sprintf(numchar, "\n\n[i] accept request with /a %u\n\n", num_requests);
+    sprintf(numchar, "\n[i] accept request with /a %u\n\n", num_requests);
     printf(numchar);
     memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
     ++num_requests;
@@ -271,12 +273,11 @@ void change_status()
 
 void accept_friend_request()
 {
+    friend_request_received = 0;
     uint8_t numf = atoi(line + 3);
     char numchar[100];
-    sprintf(numchar, "\n[i] friend request %u accepted\n\n", numf);
-    printf(numchar);
     int num = m_addfriend_norequest(pending_requests[numf]);
-    sprintf(numchar, "\n[i] added friendnumber %d\n\n", num);
+    sprintf(numchar, "\n[i] Added friendnumber: %d\n\n", num);
     printf(numchar);
     ++maxnumfriends;
 }
@@ -317,12 +318,14 @@ void line_eval(char* line)
         }
 
         else if (inpt_command == 'a') {
-            accept_friend_request(line);
+            if (friend_request_received == 1)
+                accept_friend_request(line);
         }
         /* EXIT */
         else if (inpt_command == 'q') { 
             uint8_t status[MAX_USERSTATUS_LENGTH] = "Offline";
             m_set_userstatus(status, strlen((char*)status));
+            Sleep(10);
             exit(EXIT_SUCCESS);
         }
     }
@@ -368,8 +371,7 @@ int main(int argc, char *argv[])
         nameloaded = 1;
         printf("%s\n", name);
         fclose(name_file);
-    }
-    
+    } 
 
     FILE* status_file = NULL;
     status_file = fopen("statusfile.txt", "r");
@@ -383,7 +385,6 @@ int main(int argc, char *argv[])
         printf("%s\n", status);
         fclose(status_file);
     }
-    
 
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
