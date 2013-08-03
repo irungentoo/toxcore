@@ -158,7 +158,6 @@ int init_networking(IP ip, uint16_t port)
 
     /* Bind our socket to port PORT and address 0.0.0.0 */
     ADDR addr = {AF_INET, htons(port), ip};
-    
     /* IPv6
     ADDR addr = {AF_INET6, htons(port), ip}; */
     
@@ -194,7 +193,7 @@ uint32_t resolve_addr(const char *address)
     struct addrinfo *server = NULL;
     struct addrinfo  hints;
     int              rc;
-    uint32_t         addr;
+    uint32_t         addr = 0;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;    // both IPv4 and IPv6 and sort later
