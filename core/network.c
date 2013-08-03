@@ -191,9 +191,11 @@ void shutdown_networking()
 uint32_t resolve_addr(const char *address)
 {
     struct addrinfo *server = NULL;
+    struct addrinfo *server4 = NULL;
     struct addrinfo  hints;
     int              rc;
     uint32_t         addr = 0;
+	uint16_t ipv6flag = 0; // tells us if IPv6 found
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;    // both IPv4 and IPv6 and sort later
@@ -206,15 +208,31 @@ uint32_t resolve_addr(const char *address)
     if(rc != 0) {
         return 0;
     }
-
-    // IPv4
-    if(server->ai_family == AF_INET) {
-    	addr = ((struct sockaddr_in*)server->ai_addr)->sin_addr.s_addr;
-    // IPv6
-    } else if (server->ai_family == AF_INET6) {
-    	return 0;
-    }
+	
+	// a bit hacky, could be prettier...
+	// save server in server4 in case we do need IPv4
+	memcpy(server,server4,sizeof(server));
+	
+	while(server) {
+		// IPv6
+		if(server->ai_family == AF_INET6) {
+			ipv6flag = 1;
+			addr = ((struct sockaddr_in*)server->ai_addr)->sin_addr.s_addr;
+   		break;
+   		} 
+		server = server->ai_next;
+	}
+	
+	// IPv4
+	if (!ipv6flag){
+		if(server4->ai_family == AF_INET) {
+			addr = ((struct sockaddr_in*)server4->ai_addr)->sin_addr.s_addr;
+		} else {
+			return 0;
+		}
+	}
     
     freeaddrinfo(server);
+    freeaddrinfo(server4);
     return addr;
 }
