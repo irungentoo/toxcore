@@ -40,7 +40,7 @@ sudo ldconfig
 ```
 
 Or if checkinstall is not easily available for your distribution (e.g. Fedora), 
-this will install the libs to /usr/local/lib and the headers to /usr/local/include
+this will install the libs to /usr/local/lib and the headers to /usr/local/include:
 
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
