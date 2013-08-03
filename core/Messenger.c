@@ -98,12 +98,12 @@ int getclient_id(int friend_id, uint8_t *client_id)
  * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
  * return FAERR_OWNKEY if user's own key
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
- * return FAERR_UNKNOWN for unknown error 
+ * return FAERR_UNKNOWN for unknown error
  */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
-    if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES 
-                         - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES 
+    if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES
+                         - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
                          + crypto_box_ZEROBYTES))
         return FAERR_TOOLONG;
     if (length < 1)
@@ -205,7 +205,26 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
 }
 
-/* send a name packet to friendnumber 
+/* Allow users to send short messages to all friends */
+void wall_announce(uint8_t *message, uint32_t length)
+{
+    int i, count =0;
+    printf("%s\n", (char *) message);
+    for( i = 0; i < 256; i++) { // Where the fuck did the number 256 originate?
+    // Wouldn't an array of active users make more sense?
+
+        if (m_friendstatus(i) == 4) {
+            if(m_sendmessage(i, message, sizeof(message)) != 1) {
+                printf("\n[i] could not send message to friend ->#%d\n", i);
+            } else {
+                printf("\n[i] Sent to friend ->#%d\n", i);
+                count++;
+            }
+        }
+    }
+    if (count == 0) printf("Unable to Announce (Friends offline?)\n");
+}
+/* send a name packet to friendnumber
    length is the length with the NULL terminator*/
 static int m_sendname(int friendnumber, uint8_t * name, uint16_t length)
 {
@@ -247,14 +266,14 @@ int setname(uint8_t * name, uint16_t length)
 }
 
 /* get our nickname
-   put it in name 
+   put it in name
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
    return the length of the name */
 uint16_t getself_name(uint8_t *name)
 {
     memcpy(name, self_name, self_name_length);
     return self_name_length;
-} 
+}
 
 /* get name of friendnumber
    put it in name
