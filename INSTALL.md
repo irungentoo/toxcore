@@ -46,7 +46,7 @@ cd libsodium
 git checkout tags/0.4.2
 ./autogen.sh
 ./configure
-make
+make check
 sudo make install
 ```
 
