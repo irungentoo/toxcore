@@ -251,20 +251,21 @@ static void execute(ToxWindow* self, char* cmd) {
       wprintw(self->window, "Message successfully sent.\n");
     }
   }
+
+  else if (!strncmp(cmd, "clear", strlen("clear"))) {
+    wclear(self->window);
+  }
   else {
     wprintw(self->window, "Invalid syntax.\n");
   }
 }
 
 static void prompt_onKey(ToxWindow* self, int key) {
-
   // PRINTABLE characters: Add to line.
   if(isprint(key)) {
-
     if(prompt_buf_pos == (sizeof(prompt_buf) - 1)) {
       return;
     }
-
     prompt_buf[prompt_buf_pos++] = key;
     prompt_buf[prompt_buf_pos] = 0;
   }
@@ -273,14 +274,12 @@ static void prompt_onKey(ToxWindow* self, int key) {
   else if(key == '\n') {
     wprintw(self->window, "\n");
     execute(self, prompt_buf);
-
     prompt_buf_pos = 0;
     prompt_buf[0] = 0;
   }
 
   // BACKSPACE key: Remove one character from line.
   else if(key == 0x107 || key == 0x8 || key == 0x7f) {
-
     if(prompt_buf_pos != 0) {
       prompt_buf[--prompt_buf_pos] = 0;
     }
@@ -315,6 +314,7 @@ static void print_usage(ToxWindow* self) {
   wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
   wprintw(self->window, "      myid                      : Print your ID\n");
+  wprintw(self->window, "      clear                     : Clear the screen\n");
   wprintw(self->window, "      quit/exit                 : Exit program\n");
   wprintw(self->window, "      help                      : Print this message again\n");
 
