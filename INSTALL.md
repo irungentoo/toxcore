@@ -39,7 +39,9 @@ sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
 ```
 
-Or if checkinstall is not easily available for your distribution (e.g. Fedora):
+Or if checkinstall is not easily available for your distribution (e.g. Fedora), 
+this will install the libs to /usr/local/lib and the headers to /usr/local/include
+
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
@@ -49,7 +51,6 @@ git checkout tags/0.4.2
 make check
 sudo make install
 ```
-This will copy the libs to /usr/local/lib and the headers to /usr/local/include
 
 
 Then clone this repo and generate makefile:
