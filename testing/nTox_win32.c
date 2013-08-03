@@ -153,23 +153,32 @@ void add_friend()
 
 void list_friends()
 {
-    int activefriends = 0;
     int i;
+    
+    printf("\n[i] Friend List");
+
+    printf("----- PENDING -----\n\n");
 
     for (i = 0; i <= maxnumfriends; i++) {
-        if (m_friendstatus(i) == 4)
-            activefriends++;
+        char name[MAX_NAME_LENGTH];
+        getname(i, (uint8_t*)name);
+        if (m_friendstatus(i) > 0 && m_friendstatus(i) < 4)
+            printf("[%d] %s\n", i, (uint8_t*)name);
     }
+    
+    printf("\n");
 
-    printf("\n[i] Friend List | Total: %d\n\n", activefriends);
+    printf("----- ACTIVE -----\n\n");
 
-    for (i = 0; i <= 256; i++) {/* TODO: fix this properly*/
+    for (i = 0; i <= maxnumfriends; i++) {
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
         
         if (m_friendstatus(i) == 4)    
-            printf("[%d] %s\n\n", i, (uint8_t*)name);
+            printf("[%d] %s\n", i, (uint8_t*)name);
     }
+
+    printf("\n");
 }
 
 void delete_friend()
@@ -323,9 +332,8 @@ void line_eval(char* line)
         }
         /* EXIT */
         else if (inpt_command == 'q') { 
-            uint8_t status[MAX_USERSTATUS_LENGTH] = "Offline";
-            m_set_userstatus(status, strlen((char*)status));
-            Sleep(10);
+            strcpy(line, "Offline");
+            change_status(line);
             exit(EXIT_SUCCESS);
         }
     }
