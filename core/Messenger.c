@@ -187,12 +187,59 @@ int m_sendmessage(Messenger *m, int friendnumber, uint8_t * message, uint32_t le
     {
         return 0;
     }
+        /*  Ensure that the message is a least 15 characters, small phrases (while
+        unlikely) may allow data leakage: */
+    if (length < 15) { // Derived from avg IRC message length
+
+        uint8_t other[80]  = " {junk}";
+        srand ( time(NULL) );
+        int totalAdd = 15 + (rand() % 35 + 2);
+        int i = 0;
+        for ( i = 0; i < totalAdd; i++) {
+            other[i+7] = (uint8_t)(rand() % 26 + 97);
+        }
+
+        strcat(message , other);
+
+    }
     uint8_t temp[MAX_DATA_SIZE];
     temp[0] = PACKET_ID_MESSAGE;
     memcpy(temp + 1, message, length);
     return write_cryptpacket(m->friendlist[friendnumber].crypt_connection_id, temp, length + 1);
 }
+/* Once the length has been added to the message nTox, toxic etc. can call this
+function to remove {junk}+ */
+uint8_t *rm_junk(uint8_t *mess)
+{
+    uint8_t stop[7];
+    int i = 0, enabled = 0, j = 0;
+    for( i = 0; i < strlen(mess) -1; i++) {
+        if (mess[i] == '{') {
+            j = 0;
+            enabled = 1;
+        }
+        if (enabled)
+            if ( strlen(stop) != 7) {
+                stop[j] = mess[i];
+                j++;
+            } else {
+                enabled = 0;
+                j = 0;
+            }
+        if (mess[i] == '}') {
+            if (strcmp(stop, "{junk}") == 0) {
+                memmove ( mess+(i-6),mess+strlen(mess),80);
+                break;
+            } else {
+                j = 0;
+                enabled = 0;
+            }
 
+        }
+    }
+    return mess;
+
+}
 /* send a name packet to friendnumber */
 static int m_sendname(Messenger *m, int friendnumber, uint8_t * name)
 {
