@@ -163,7 +163,7 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
 int initmessenger();
 
 /* the main loop that needs to be run at least 200 times per second */
-void domessenger();
+void do_messenger();
 
 /* SAVING AND LOADING FUNCTIONS: */
 

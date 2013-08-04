@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
         
         m_sendmessage(num, (uint8_t*)"Test", 5);
-        domessenger();
+        do_messenger();
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
         if ( file==NULL ){return 1;}

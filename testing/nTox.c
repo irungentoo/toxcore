@@ -170,7 +170,7 @@ void line_eval(char *line)
             do_refresh();
         }
         else if (inpt_command == 'd') {
-            domessenger();
+            do_messenger();
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
@@ -478,7 +478,7 @@ int main(int argc, char *argv[])
             on = 1;
         }
 
-        domessenger();
+        do_messenger();
         c_sleep(1);
         do_refresh();
 

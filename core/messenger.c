@@ -498,7 +498,7 @@ static void LANdiscovery()
 
 
 /* the main loop that needs to be run at least 200 times per second. */
-void domessenger()
+void do_messenger()
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];

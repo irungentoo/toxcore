@@ -167,7 +167,7 @@ static void do_tox() {
     wprintw(prompt->window, "\nDHT disconnected!\n");
   }
 
-  domessenger();
+  do_messenger();
 }
 
 static void load_data(char *path) {

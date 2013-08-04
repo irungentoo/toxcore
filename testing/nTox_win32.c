@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
             printf("\n---------------------------------\n\n");
             on = 1;
         }
-        domessenger();
+        do_messenger();
         Sleep(1);
     }
     return 0;

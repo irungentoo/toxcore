@@ -11,7 +11,7 @@ this.
 
 -  */d*
 
-   -  Call domessenger() which does...something?
+   -  Call do_messenger() which does...something?
 
 -  */m* [FRIEND\_NUM] [MESSAGE]
 
