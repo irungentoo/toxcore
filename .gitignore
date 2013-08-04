@@ -2,7 +2,8 @@
 
 //nacl build
 nacl/build/
-build
+build/
+!build/Makefile.am
 sodium
 
 CMakeCache.txt
@@ -22,11 +23,31 @@ tags
 
 # Object files
 *.o
+*.lo
+*.a
 
 # Executables
 *.exe
 *.out
 *.app
+*.swp
+*.la
+
+m4/*
+configure
+configure_aux
+Makefile.in
+aclocal.m4
+config.h*
+config.log
+config.status
+stamp-h1
+autom4te.cache
+libtoxcore.pc
+libtool
+
+.deps
+.libs
 
 #netbeans
 nbproject

@@ -27,7 +27,7 @@ before_script:
   - sudo apt-get install check
 
 script:
-  - mkdir build && cd build
+  - mkdir -p build && cd build
   - cmake ..
   - make -j3
   - make test
