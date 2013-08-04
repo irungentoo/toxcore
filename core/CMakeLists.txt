@@ -14,7 +14,7 @@ set(core_sources
 	net_crypto.c
 	friend_requests.c
 	LAN_discovery.c
-	Messenger.c)
+	messenger.c)
 
 add_library(toxcore SHARED ${core_sources})
 target_link_libraries(toxcore ${SODIUM_LIBRARY})

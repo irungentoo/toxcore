@@ -170,7 +170,7 @@ void line_eval(char *line)
             do_refresh();
         }
         else if (inpt_command == 'd') {
-            doMessenger();
+            do_messenger();
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
@@ -378,13 +378,13 @@ void load_key(char *path)
             fputs("[!] could not read data file! exiting...\n", stderr);
             goto FILE_ERROR;
         }
-        Messenger_load(data, size);
+        messenger_load(data, size);
 
     } else { 
         //else save new keys
-        int size = Messenger_size();
+        int size = messenger_size();
         uint8_t data[size];
-        Messenger_save(data);
+        messenger_save(data);
         data_file = fopen(path, "w");
 
         if(!data_file) {
@@ -442,7 +442,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    initMessenger();
+    initmessenger();
     load_key(filename);
 
     m_callback_friendrequest(print_request);
@@ -478,7 +478,7 @@ int main(int argc, char *argv[])
             on = 1;
         }
 
-        doMessenger();
+        do_messenger();
         c_sleep(1);
         do_refresh();
 

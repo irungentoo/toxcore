@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     while (1) {
         while (receivepacket(&ip_port, data, &length) != -1) {
             if (rand() % 3 != 1) { /* simulate packet loss */
-                if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port))
+                if (DHT_handlepacket(data, length, ip_port) && Lossless_UDP_handlepacket(data, length, ip_port))
                     printf("Received unhandled packet with length: %u\n", length); /* if packet is not recognized */
                 else
                     printf("Received handled packet with length: %u\n", length);
@@ -163,8 +163,8 @@ int main(int argc, char *argv[])
                     fclose(file2);
             }
         }
-        doDHT();
-        doLossless_UDP();
+        do_DHT();
+        do_Lossless_UDP();
         /* print_clientlist();
          * print_friendlist();
          * c_sleep(300); */

@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../../core/Messenger.h"
+#include "../../core/messenger.h"
 #include "../../core/network.h"
 
 #include "windows.h"
@@ -106,7 +106,7 @@ static void init_term() {
 
 static void init_tox() {
   // Init core.
-  initMessenger();
+  initmessenger();
 
   // Callbacks.
   m_callback_friendrequest(on_request);
@@ -167,7 +167,7 @@ static void do_tox() {
     wprintw(prompt->window, "\nDHT disconnected!\n");
   }
 
-  doMessenger();
+  do_messenger();
 }
 
 static void load_data(char *path) {
@@ -199,10 +199,10 @@ static void load_data(char *path) {
       exit(1);
     }
 
-    Messenger_load(buf, len);
+    messenger_load(buf, len);
   }
   else { 
-    len = Messenger_size();
+    len = messenger_size();
     buf = malloc(len);
 
     if(buf == NULL) {
@@ -211,7 +211,7 @@ static void load_data(char *path) {
       exit(1);
     }
 
-    Messenger_save(buf);
+    messenger_save(buf);
 
     fd = fopen(path, "w");
     if(fd == NULL) {

@@ -1,4 +1,4 @@
-/* Messenger.c
+/* messenger.c
  *
  * An implementation of a simple text chat only messenger on the tox network core.
  *
@@ -21,7 +21,7 @@
  *
  */
 
-#include "Messenger.h"
+#include "messenger.h"
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 typedef struct {
@@ -363,11 +363,11 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
 
 #define PORT 33445
 /* run this at startup */
-int initMessenger()
+int initmessenger()
 {
     new_keys();
     m_set_userstatus((uint8_t*)"Online", sizeof("Online"));
-    initNetCrypto();
+    init_net_crypto();
     IP ip;
     ip.i = 0;
 
@@ -378,7 +378,7 @@ int initMessenger()
 }
 
 //TODO: make this function not suck.
-static void doFriends()
+static void do_friends()
 {
     /* TODO: add incoming connections and some other stuff. */
     uint32_t i;
@@ -464,7 +464,7 @@ static void doFriends()
     }
 }
 
-static void doInbound()
+static void do_inbound()
 {
     uint8_t secret_nonce[crypto_box_NONCEBYTES];
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -498,7 +498,7 @@ static void LANdiscovery()
 
 
 /* the main loop that needs to be run at least 200 times per second. */
-void doMessenger()
+void do_messenger()
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
@@ -507,7 +507,7 @@ void doMessenger()
 #ifdef DEBUG
         /* if(rand() % 3 != 1) //simulate packet loss */
         /* { */
-        if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) &&
+        if (DHT_handlepacket(data, length, ip_port) && Lossless_UDP_handlepacket(data, length, ip_port) &&
             friendreq_handlepacket(data, length, ip_port) && LANdiscovery_handlepacket(data, length, ip_port))
             /* if packet is discarded */
             printf("Received unhandled packet with length: %u\n", length);
@@ -517,29 +517,29 @@ void doMessenger()
         printf("Status: %u %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id),  friendlist[0].crypt_connection_id);
 #else
         DHT_handlepacket(data, length, ip_port);
-        LosslessUDP_handlepacket(data, length, ip_port);
+        Lossless_UDP_handlepacket(data, length, ip_port);
         friendreq_handlepacket(data, length, ip_port);
         LANdiscovery_handlepacket(data, length, ip_port);
 #endif
 
     }
-    doDHT();
-    doLossless_UDP();
-    doNetCrypto();
-    doInbound();
-    doFriends();
+    do_DHT();
+    do_Lossless_UDP();
+    do_net_crypto();
+    do_inbound();
+    do_friends();
     LANdiscovery();
 }
 
 /* returns the size of the messenger data (for saving) */
-uint32_t Messenger_size()
+uint32_t messenger_size()
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
            + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * numfriends;
 }
 
-/* save the messenger in data of size Messenger_size() */
-void Messenger_save(uint8_t *data)
+/* save the messenger in data of size messenger_size() */
+void messenger_save(uint8_t *data)
 {
     save_keys(data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
@@ -555,7 +555,7 @@ void Messenger_save(uint8_t *data)
 }
 
 /* load the messenger from data of size length. */
-int Messenger_load(uint8_t * data, uint32_t length)
+int messenger_load(uint8_t * data, uint32_t length)
 {
     if (length == ~0)
         return -1;

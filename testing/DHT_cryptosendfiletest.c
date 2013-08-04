@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
-    initNetCrypto();
+    init_net_crypto();
     
     perror("Initialization");
     IP_Port bootstrap_ip_port;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
     while(1) {
         while(receivepacket(&ip_port, data, &length) != -1) {
             if(rand() % 3 != 1) { /* simulate packet loss */
-                if(DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port)) {
+                if(DHT_handlepacket(data, length, ip_port) && Lossless_UDP_handlepacket(data, length, ip_port)) {
                     /* if packet is not recognized */
                     printf("Received unhandled packet with length: %u\n", length);
                 } else {
@@ -214,9 +214,9 @@ int main(int argc, char *argv[])
                 crypto_kill(connection);
             }
         }
-        doDHT();
-        doLossless_UDP();
-        doNetCrypto();
+        do_DHT();
+        do_Lossless_UDP();
+        do_net_crypto();
         /*print_clientlist();
          *print_friendlist();
          *c_sleep(300); */

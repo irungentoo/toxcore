@@ -3,9 +3,9 @@
  * A simple DHT boostrap server for tox.
  *
  * Build commands (use one or the other):
- *                gcc -O2 -Wall -D VANILLA_NACL -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../core/friend_requests.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} DHT_bootstrap.c
+ *                gcc -O2 -Wall -D VANILLA_NACL -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/messenger.c ../core/DHT.c ../core/friend_requests.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} DHT_bootstrap.c
  *
- *                gcc -O2 -Wall -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../core/friend_requests.c -lsodium DHT_bootstrap.c
+ *                gcc -O2 -Wall -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/messenger.c ../core/DHT.c ../core/friend_requests.c -lsodium DHT_bootstrap.c
  * 
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
             printf("Connected to other bootstrap server successfully.\n");
             is_waiting_for_dht_connection = 0;
         }
-        doDHT();
+        do_DHT();
 
         while(receivepacket(&ip_port, data, &length) != -1)
         {

@@ -103,11 +103,11 @@ void load_key()
             exit(1);
         }
 
-        Messenger_load(data, size);
+        messenger_load(data, size);
     } else {
-        int size = Messenger_size();
+        int size = messenger_size();
         uint8_t data[size];
-        Messenger_save(data);
+        messenger_save(data);
         fclose(data_file);
         data_file = fopen("data", "w");
 
@@ -356,8 +356,8 @@ int main(int argc, char *argv[])
         printf("[!] Usage: %s [IP] [port] [public_key] <nokey>\n", argv[0]);
         exit(0);
     }
-    if (initMessenger() == -1) {
-        printf("initMessenger failed");
+    if (initmessenger() == -1) {
+        printf("initmessenger failed");
         exit(0);
     }
     if (argc > 4) {
@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
             printf("\n---------------------------------\n\n");
             on = 1;
         }
-        doMessenger();
+        do_messenger();
         Sleep(1);
     }
     return 0;

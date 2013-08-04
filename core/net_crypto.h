@@ -122,10 +122,10 @@ void load_keys(uint8_t * keys);
 
 /* run this to (re)initialize net_crypto
     sets all the global connection variables to their default values. */
-void initNetCrypto();
+void init_net_crypto();
 
 /* main loop */
-void doNetCrypto();
+void do_net_crypto();
 
 #ifdef __cplusplus
 }
