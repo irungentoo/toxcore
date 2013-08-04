@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#include "../../core/Messenger.h"
+#include "../../core/messenger.h"
 #include "../../core/network.h"
 
 #include "windows.h"
@@ -83,7 +83,7 @@ int friendlist_onFriendAdded(int num) {
     return -1;
 
   friends[num_friends].num = num;
-  getname(num, friends[num_friends].name);
+  get_friend_name(num, friends[num_friends].name);
   strcpy((char*) friends[num_friends].name, "unknown");
   strcpy((char*) friends[num_friends].status, "unknown");
   friends[num_friends].chatwin = -1;
