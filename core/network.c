@@ -100,6 +100,7 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
    returns -1 if there are problems */
 int init_networking(IP ip, uint16_t port)
 {
+uint16_t ipv4flag = 0;
 #ifdef WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
@@ -109,18 +110,28 @@ int init_networking(IP ip, uint16_t port)
 #endif
     srand((uint32_t)current_time());
 
-    /* initialize our socket */
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    /* IPv6 
-	sock = socket(AF_INET6, SOCK_DGRAM,  IPPROTO_UDP); */
+    /* initialize our socket, prefer IPv6 */
+    sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
     /* Check for socket error */
 #ifdef WIN32
-    if (sock == INVALID_SOCKET) /* MSDN recommends this */
-        return -1;
+    if (sock == INVALID_SOCKET) { /* MSDN recommends this */
+    	// no IPv6, try IPv4 then
+        sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (sock == INVALID_SOCKET) {
+        	return -1;
+        }
+        ipv4flag = 1;
+    }
 #else
-    if (sock < 0)
-        return -1;
+    if (sock < 0) {
+    	// no IPv6, try IPv4 then
+        sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (sock < 0) {
+        	return -1;
+        }
+        ipv4flag = 1;
+    }
 #endif
 
     /* Functions to increase the size of the send and receive UDP buffers
@@ -136,16 +147,19 @@ int init_networking(IP ip, uint16_t port)
         return -1;
     */
 
-    /* Enable broadcast on socket */
-    int broadcast = 1;
-    setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
-
+	if (!ipv4flag) {
+	// TODO IPv6 Multicast
 	/* IPv6: Obviously, there is no broadcast in IPv6, so multicast to all nodes it is
 	--> ff01::1 or ff02::1 -> all nodes addresses
 	
-	setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF ,
+		setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF ,
                            &outif, sizeof(outif)); */
                            
+    } else {
+		/* Enable broadcast on IPv4-socket */
+		int broadcast = 1;
+		setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
+    }              
     /* Set socket nonblocking */
 #ifdef WIN32
     /* I think this works for windows */
@@ -156,12 +170,14 @@ int init_networking(IP ip, uint16_t port)
     fcntl(sock, F_SETFL, O_NONBLOCK, 1);
 #endif
 
-    /* Bind our socket to port PORT and address 0.0.0.0 */
-    ADDR addr = {AF_INET, htons(port), ip};
-    /* IPv6
-    ADDR addr = {AF_INET6, htons(port), ip}; */
-    
-    bind(sock, (struct sockaddr*)&addr, sizeof(addr));
+	/* assume IPv6 */
+	ADDR addr = {AF_INET6, htons(port), ip};
+	
+	if (ipv4flag)
+		addr.family = AF_INET;
+       
+   	/* Bind our socket to port PORT and address 0.0.0.0 */
+   	bind(sock, (struct sockaddr*)&addr, sizeof(addr));
 
     return 0;
 
@@ -185,8 +201,6 @@ void shutdown_networking()
 
     returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
     returns 0 on failure
-
-    TODO: Fix IPv6 support
 */
 uint32_t resolve_addr(const char *address)
 {
