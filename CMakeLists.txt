@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.6.0)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-find_package(Curses REQUIRED)
+if(UNIX)
+	find_package(Curses REQUIRED)
+endif()
 
 if(NOT WIN32)
 	option(USE_NACL "Use NaCl library instead of libsodium")
