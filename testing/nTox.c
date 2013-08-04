@@ -234,7 +234,7 @@ void line_eval(char *line)
         else if (inpt_command == 'a') {
             uint8_t numf = atoi(line + 3);
             char numchar[100];
-            if(numf >= num_requests || pending_requests[numf].accepted) {
+            if (numf >= num_requests || pending_requests[numf].accepted) {
                 sprintf(numchar,"[i] you either didn't receive that request or you already accepted it");
                 new_lines(numchar);
             } else {
