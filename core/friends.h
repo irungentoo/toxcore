@@ -42,7 +42,7 @@ extern "C" {
 #define FRIEND_ADDED 1
 #define NOFRIEND 0
 
-/* errors for m_addfriend
+/* errors for add_friend
  *  FAERR - Friend Add Error */
 #define FAERR_TOOLONG -1
 #define FAERR_NOMESSAGE -2
@@ -104,7 +104,7 @@ int get_friend_name(int friendnumber, uint8_t *name);
 int friend_userstatus_size(int friendnumber);
 
 /* copy friendnumber's userstatus into buf, truncating if size is over maxlen
-    get the size you need to allocate from m_get_userstatus_size */
+    get the size you need to allocate from friend_userstatus_size */
 int get_friend_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
 
 

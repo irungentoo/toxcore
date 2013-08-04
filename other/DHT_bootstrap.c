@@ -3,9 +3,9 @@
  * A simple DHT boostrap server for tox.
  *
  * Build commands (use one or the other):
- *                gcc -O2 -Wall -D VANILLA_NACL -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../core/friend_requests.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} DHT_bootstrap.c
+ *                gcc -O2 -Wall -D VANILLA_NACL -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/messenger.c ../core/state.c ../core/friends.c ../core/DHT.c ../core/friend_requests.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} DHT_bootstrap.c
  *
- *                gcc -O2 -Wall -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../core/friend_requests.c -lsodium DHT_bootstrap.c
+ *                gcc -O2 -Wall -o bootstrap_server ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/messenger.c ../core/state.c ../core/friends.c ../core/DHT.c ../core/friend_requests.c -lsodium DHT_bootstrap.c
  * 
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.

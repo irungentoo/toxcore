@@ -11,7 +11,7 @@ this.
 
 -  */d*
 
-   -  Call doMessenger() which does...something?
+   -  Call process_tox() which does...something?
 
 -  */m* [FRIEND\_NUM] [MESSAGE]
 

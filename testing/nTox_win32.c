@@ -103,11 +103,11 @@ void load_key()
             exit(1);
         }
 
-        Messenger_load(data, size);
+        friends_data_load(data, size);
     } else {
-        int size = Messenger_size();
+        int size = tox_state_size();
         uint8_t data[size];
-        Messenger_save(data);
+        save_tox_state(data);
         fclose(data_file);
         data_file = fopen("data", "w");
 
@@ -193,7 +193,7 @@ void delete_friend()
     }
     
     int num = atoi(numstring);
-    m_delfriend(num);
+    del_friend(num);
     --maxnumfriends;
     printf("\n\n");
 }
@@ -356,8 +356,8 @@ int main(int argc, char *argv[])
         printf("[!] Usage: %s [IP] [port] [public_key] <nokey>\n", argv[0]);
         exit(0);
     }
-    if (initMessenger() == -1) {
-        printf("initMessenger failed");
+    if (init_tox() == -1) {
+        printf("init_tox failed");
         exit(0);
     }
     if (argc > 4) {
@@ -396,10 +396,10 @@ int main(int argc, char *argv[])
         fclose(status_file);
     }
 
-    m_callback_friendrequest(print_request);
-    m_callback_friendmessage(print_message);
-    m_callback_namechange(print_nickchange);
-    m_callback_userstatus(print_statuschange);
+    friend_add_request_callback(print_request);
+    message_receive_callback(print_message);
+    friend_name_change_callback(print_nickchange);
+    friend_userstatus_change_callback(print_statuschange);
     char idstring1[PUB_KEY_BYTES][5];
     char idstring2[PUB_KEY_BYTES][5];
     int i;
@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
             printf("\n---------------------------------\n\n");
             on = 1;
         }
-        doMessenger();
+        process_tox();
         Sleep(1);
     }
     return 0;

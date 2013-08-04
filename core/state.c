@@ -120,7 +120,7 @@ uint32_t tox_state_size()
             + sizeof(uint32_t) + friends_data_size();
 }
 
-/* save the state in data (must be allocated memory of size Messenger_size()) */
+/* save the state in data (must be allocated memory of size tox_state_size()) */
 void save_tox_state(uint8_t *data)
 {
     save_keys(data);

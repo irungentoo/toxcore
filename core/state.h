@@ -74,7 +74,7 @@ void process_tox();
 /* returns the size of the state data (for saving) */
 uint32_t tox_state_size();
 
-/* save the state in data (must be allocated memory of size Messenger_size()) */
+/* save the state in data (must be allocated memory of size tox_state_size()) */
 void save_tox_state(uint8_t *data);
 
 /* load the messenger from data of size length */

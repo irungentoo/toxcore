@@ -126,4 +126,4 @@ running::
 .. _/testing: https://github.com/irungentoo/ProjectTox-Core/tree/master/testing
 .. _/other: https://github.com/irungentoo/ProjectTox-Core/tree/master/other
 
-.. _Messenger_test.c: https://github.com/irungentoo/ProjectTox-Core/tree/master/other/Messanger_test.c
+.. _Messenger_test.c: https://github.com/irungentoo/ProjectTox-Core/tree/master/other/Messenger_test.c
