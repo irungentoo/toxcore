@@ -1,4 +1,4 @@
-#include "Friends.h"
+#include "friends.h"
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 typedef struct {
@@ -379,7 +379,7 @@ static void doInbound()
     }
 }
 
-void doFriends(uint8_t *self_name,
+void process_friends(uint8_t *self_name,
                uint16_t self_name_length,
                uint8_t *self_userstatus,
                uint16_t self_userstatus_len)

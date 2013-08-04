@@ -1,4 +1,4 @@
-/* Friends.h
+/* friends.h
  *
  * An implementation of friends manipulation stuff (add, remove, friendlists, etc.)
  *
@@ -24,7 +24,7 @@
 #ifndef FRIENDS_H
 #define FRIENDS_H
 
-#include "Connection.h"
+#include "connection.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,7 +50,7 @@ extern "C" {
 #define FAERR_ALREADYSENT -4
 #define FAERR_UNKNOWN -5
 
-/*   PUBLIC INTERFACE: */
+/*   FRIENDS PUBLIC INTERFACE: */
 
 /*
  * add a friend
@@ -122,50 +122,7 @@ void friend_name_change_callback(void (*function)(int, uint8_t *, uint16_t));
     you are not responsible for freeing newstatus */
 void friend_userstatus_change_callback(void (*function)(int, uint8_t *, uint16_t));
 
-
-/*  INTERNAL STUFF - should not be used outside core */
-
-/* return friends count */
-int get_friends_number();
-
-/* return crypt connection id by friend id */
-int get_friend_connection_id(int friendId);
-
-/* return 1 if online; 0 if ofline */
-int is_friend_online(int friendId);
-
-/* process incoming name change packet */
-void friend_change_nickname(int friendId, uint8_t* data, uint16_t size);
-
-/* process incoming userstate change packet */
-void friend_change_userstate(int friendId, uint8_t* data, uint16_t size);
-
-/* process friend connection timeout */
-void friend_disconnect(int friendId);
-
-/* tell friends that our name has changed */
-void friends_selfname_updated();
-
-/* tell friends that our status has changed */
-void friends_selfstatus_updated();
-
-/* friends processing stuff */
-void doFriends(uint8_t *self_name,
-               uint16_t self_name_length,
-               uint8_t *self_userstatus,
-               uint16_t self_userstatus_len);
-
-
-/* serialization stuff */
-
-/* returns size of friends data (for saving) */
-uint32_t friends_data_size();
-
-/* store friends in data */
-void friends_data_save(uint8_t *data);
-
-/* loads friends from data */
-int friends_data_load(uint8_t *data, uint32_t size);
+#include "friends_internal.h"
 
 #ifdef __cplusplus
 }

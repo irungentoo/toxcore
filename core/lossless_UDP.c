@@ -1,4 +1,4 @@
-/* Lossless_UDP.c
+/* lossless_UDP.c
  *
  * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
  *
@@ -26,7 +26,7 @@
  * There are a couple of useless variables to get rid of.
  */
 
-#include "Lossless_UDP.h"
+#include "lossless_UDP.h"
 
 /* maximum data packets in sent and receive queues. */
 #define MAX_QUEUE_NUM     16
@@ -871,7 +871,7 @@ void adjustRates()
 }
 
 /* Call this function a couple times per second It's the main loop. */
-void doLossless_UDP()
+void process_Lossless_UDP()
 {
     doNew();
     doSYNC();

@@ -7,8 +7,8 @@
 #include <ctype.h>
 #include <curses.h>
 
-#include "../../core/Messenger.h"
-#include "../../core/State.h"
+#include "../../core/messenger.h"
+#include "../../core/state.h"
 #include "../../core/network.h"
 
 #include "windows.h"

@@ -35,8 +35,8 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <netdb.h>
-#include "../core/Messenger.h"
-#include "../core/State.h"
+#include "../core/messenger.h"
+#include "../core/state.h"
 #include "../core/network.h"
 #define STRING_LENGTH 256
 #define HISTORY 50

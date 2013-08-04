@@ -1,4 +1,4 @@
-/* State.h
+/* state.h
  *
  *  Here is user self state (status, name, etc.)
  *
@@ -24,12 +24,14 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include "Friends.h"
-#include "Connection.h"
+#include "friends.h"
+#include "connection.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* TOX STATE PUBLIC INTERFACE */
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
@@ -50,7 +52,7 @@ uint16_t get_self_name(uint8_t *name);
 int set_self_userstatus(uint8_t *status, uint16_t length);
 
 
-/* INITIALIZATION AND MAIN LOOP: */
+/* TOX INITIALIZATION AND MAIN LOOP: */
 
 /* run this at startup
     returns 0 if no connection problems
@@ -58,10 +60,10 @@ int set_self_userstatus(uint8_t *status, uint16_t length);
 int init_tox();
 
 /* the main loop that needs to be run at least 200 times per second */
-void doTox();
+void process_tox();
 
 
-/* SAVING AND LOADING FUNCTIONS: */
+/* TOX STATE SAVING AND LOADING FUNCTIONS: */
 
 /*
  *  State consists of:

@@ -19,7 +19,7 @@
  *
  */
 
-#include "State.h"
+#include "state.h"
 
 
 static uint8_t self_name[MAX_NAME_LENGTH];
@@ -76,7 +76,7 @@ int init_tox()
 {
     new_keys();
     set_self_userstatus((uint8_t*)"Online", sizeof("Online"));
-    initNetCrypto();
+    init_net_crypto();
     IP ip;
     ip.i = 0;
 
@@ -101,13 +101,13 @@ static void LANdiscovery()
 }
 
 /* the main loop that needs to be run at least 200 times per second. */
-void doTox()
+void process_tox()
 {
-    doConnection();
-    doDHT();
-    doLossless_UDP();
-    doNetCrypto();
-    doFriends(self_name, self_name_length, self_userstatus, self_userstatus_len);
+    process_connection();
+    process_DHT();
+    process_Lossless_UDP();
+    process_net_crypto();
+    process_friends(self_name, self_name_length, self_userstatus, self_userstatus_len);
     LANdiscovery();
 }
 

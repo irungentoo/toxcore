@@ -8,8 +8,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../../core/Messenger.h"
-#include "../../core/State.h"
+#include "../../core/messenger.h"
+#include "../../core/state.h"
 #include "../../core/network.h"
 
 #include "windows.h"
@@ -168,7 +168,7 @@ static void do_tox() {
     wprintw(prompt->window, "\nDHT disconnected!\n");
   }
 
-  doTox();
+  process_tox();
 }
 
 static void load_data() {

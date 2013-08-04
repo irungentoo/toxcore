@@ -10,13 +10,15 @@ endif()
 set(core_sources
 	DHT.c
 	network.c
-	Lossless_UDP.c
+        lossless_UDP.c
 	net_crypto.c
 	friend_requests.c
 	LAN_discovery.c
-        State.c
-        Friends.c
-        Connection.c
-	Messenger.c)
+        state.c
+        friends.c
+        friends_internal.h
+        connection.c
+        messenger.c
+        messenger_internal.h)
 
 add_library(core ${core_sources})

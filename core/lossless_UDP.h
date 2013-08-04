@@ -1,4 +1,4 @@
-/* Lossless_UDP.h
+/* lossless_UDP.h
  *
  * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
  *
@@ -110,7 +110,7 @@ uint32_t recvqueue(int connection_id);
 int is_connected(int connection_id);
 
 /* Call this function a couple times per second It's the main loop. */
-void doLossless_UDP();
+void process_Lossless_UDP();
 
 /* 
  * If we receive a Lossless_UDP packet, call this function so it can be handled.

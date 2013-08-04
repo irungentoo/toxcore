@@ -1257,7 +1257,7 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-void doDHT()
+void process_DHT()
 {
     doClose();
     doDHTFriends();

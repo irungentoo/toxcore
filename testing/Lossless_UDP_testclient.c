@@ -29,7 +29,7 @@
  */
 
 #include "../core/network.h"
-#include "../core/Lossless_UDP.h"
+#include "../core/lossless_UDP.h"
 
 #ifdef WIN32
 
@@ -135,7 +135,7 @@ void Lossless_UDP()
        /* } */
     }
     
-    doLossless_UDP();   
+    process_Lossless_UDP();   
     
 }
 

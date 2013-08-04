@@ -37,8 +37,8 @@
  *  
  */
 
-#include "../core/Messenger.h"
-#include "../core/State.h"
+#include "../core/messenger.h"
+#include "../core/state.h"
 #include "misc_tools.h"
 
 #ifdef WIN32
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
         
         send_message(num, (uint8_t*)"Test", 5);
-        doTox();
+        process_tox();
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
         if ( file==NULL ){return 1;}

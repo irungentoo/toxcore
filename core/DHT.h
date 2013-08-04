@@ -58,7 +58,7 @@ int DHT_delfriend(uint8_t *client_id);
 IP_Port DHT_getfriendip(uint8_t *client_id);
 
 /* Run this function at least a couple times per second (It's the main loop) */
-void doDHT();
+void process_DHT();
 
 /* if we receive a DHT packet we call this function so it can be handled.
     return 0 if packet is handled correctly.

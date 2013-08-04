@@ -162,7 +162,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
             do_refresh();
         }
         else if (inpt_command == 'd') {
-            doTox();
+            process_tox();
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
@@ -429,7 +429,7 @@ int main(int argc, char *argv[])
             on = 1;
         }
 
-        doTox();
+        process_tox();
         c_sleep(1);
         do_refresh();
 

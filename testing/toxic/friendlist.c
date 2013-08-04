@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#include "../../core/Messenger.h"
+#include "../../core/messenger.h"
 #include "../../core/network.h"
 
 #include "windows.h"

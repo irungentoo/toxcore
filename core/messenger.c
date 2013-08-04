@@ -1,4 +1,4 @@
-/* Messenger.c
+/* messenger.c
  *
  * An implementation of a simple text chat only messenger on the tox network core.
  *
@@ -21,7 +21,7 @@
  *
  */
 
-#include "Messenger.h"
+#include "messenger.h"
 
 /* send a text chat message to an online friend
    return 1 if packet was successfully put into the send queue

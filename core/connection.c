@@ -1,4 +1,4 @@
-/* Connection.c
+/* connection.c
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -19,9 +19,9 @@
  *
  */
 
-#include "Connection.h"
+#include "connection.h"
 
-void doConnection()
+void process_connection()
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];

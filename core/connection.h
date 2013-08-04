@@ -1,4 +1,4 @@
-/* Connection.h
+/* connection.h
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -26,8 +26,8 @@
 #include "net_crypto.h"
 #include "friend_requests.h"
 #include "LAN_discovery.h"
-#include "Friends.h"
-#include "Messenger.h"
+#include "friends.h"
+#include "messenger.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +38,7 @@ extern "C" {
 #define PACKET_ID_MESSAGE 64
 
 /* process connection routine - handle incoming data */
-void doConnection();
+void process_connection();
 
 /*  process incoming data from friend
  * returns 1 if processed or 0 if not */
