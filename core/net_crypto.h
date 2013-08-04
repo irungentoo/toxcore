@@ -24,7 +24,7 @@
 #ifndef NET_CRYPTO_H
 #define NET_CRYPTO_H
 
-#include "Lossless_UDP.h"
+#include "lossless_UDP.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,10 +122,10 @@ void load_keys(uint8_t * keys);
 
 /* run this to (re)initialize net_crypto
     sets all the global connection variables to their default values. */
-void initNetCrypto();
+void init_net_crypto();
 
 /* main loop */
-void doNetCrypto();
+void process_net_crypto();
 
 #ifdef __cplusplus
 }

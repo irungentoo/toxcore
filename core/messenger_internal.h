@@ -1,6 +1,8 @@
-/* nTox.h
- * 
- *Textual frontend for Tox.
+/* messenger_internal.h
+ *
+ * messenger internal stuff
+ *
+ * NOTE: All the text in the messages must be encoded using UTF-8
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -18,36 +20,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
-#ifndef NTOX_H
-#define NTOX_H
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ncurses.h>
-#include <curses.h>
-#include <ctype.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include "../core/messenger.h"
-#include "../core/state.h"
-#include "../core/network.h"
-
-#define STRING_LENGTH 256
-#define HISTORY 50
-#define PUB_KEY_BYTES 32
-
-void new_lines(char *line);
-void line_eval(char *line);
-void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width) ;
-int count_lines(char *string) ;
-char *appender(char *str, const char c);
-void do_refresh();
-
-#endif
+void message_received(int friendId, uint8_t* data, uint16_t size);
