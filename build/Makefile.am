@@ -1,8 +1,15 @@
 EXTRA_DIST=
 
-noinst_LIBRARIES = libtoxcore.a
+LIBTOXCORE_VERSION = 0:0:0
 
-libtoxcore_a_SOURCES = 	$(top_srcdir)/toxcore/DHT.h \
+lib_LTLIBRARIES = libtoxcore.la
+
+libtoxcore_la_include_HEADERS = $(top_srcdir)/toxcore/Messenger.h \
+								$(top_srcdir)/toxcore/network.h
+
+libtoxcore_la_includedir = $(includedir)/tox
+
+libtoxcore_la_SOURCES =	$(top_srcdir)/toxcore/DHT.h \
 						$(top_srcdir)/toxcore/DHT.c \
 					   	$(top_srcdir)/toxcore/network.h \
 					   	$(top_srcdir)/toxcore/network.c \
@@ -22,9 +29,11 @@ libtoxcore_a_SOURCES = 	$(top_srcdir)/toxcore/DHT.h \
 						$(top_srcdir)/toxcore/util.h \
 						$(top_srcdir)/toxcore/util.c
 
-libtoxcore_a_CFLAGS = 	-I$(top_srcdir) \
+libtoxcore_la_CFLAGS = 	-I$(top_srcdir) \
 						-I$(top_srcdir)/toxcore \
 						$(LIBSODIUM_CFLAGS)
+
+libtoxcore_la_LDFLAGS = -version-info $(LIBTOXCORE_VERSION)
 
 bin_PROGRAMS = nTox	toxic
 
@@ -37,7 +46,7 @@ COMMONCFLAGS =			-I$(top_srcdir) \
 COMMONLDADD =			$(LIBSODIUM_LDFLAGS) \
 						$(LIBSODIUM_LIBS) \
 						$(NCURSES_LIBS) \
-						libtoxcore.a
+						libtoxcore.la
 
 
 nTox_SOURCES = 			$(top_srcdir)/testing/misc_tools.h \
@@ -62,15 +71,10 @@ toxic_SOURCES =			$(top_srcdir)/testing/toxic/main.c \
 						$(top_srcdir)/testing/toxic/friendlist.c \
 						$(top_srcdir)/testing/toxic/windows.h
 
-toxic_CFLAGS =			-I$(top_srcdir) \
-						-I$(top_srcdir)/testing/toxic \
-						$(LIBSODIUM_CFLAGS) \
-						$(NCURSES_CFLAGS)
+toxic_CFLAGS =			-I$(top_srcdir)/testing/toxic \
+						$(COMMONCFLAGS)
 
-toxic_LDADD =			$(LIBSODIUM_LDFLAGS) \
-						$(LIBSODIUM_LIBS) \
-						$(NCURSES_LIBS) \
-						libtoxcore.a
+toxic_LDADD =			$(COMMONLDADD)
 
 
 noinst_bindir =			$(top_builddir)/build
@@ -85,15 +89,9 @@ DHT_test_SOURCES =		$(top_srcdir)/testing/DHT_test.c \
 						$(top_srcdir)/testing/misc_tools.h \
 						$(top_srcdir)/testing/misc_tools.c
 
-DHT_test_CFLAGS =		-I$(top_srcdir) \
-						-I$(top_srcdir)/testing \
-						$(LIBSODIUM_CFLAGS) \
-						$(NCURSES_CFLAGS)
+DHT_test_CFLAGS =		$(COMMONCFLAGS)	
 
-DHT_test_LDADD = 		$(LIBSODIUM_LDFLAGS) \
-						$(LIBSODIUM_LIBS) \
-						$(NCURSES_LIBS) \
-						libtoxcore.a
+DHT_test_LDADD = 		$(COMMONLDADD)
 
 
 Lossless_UDP_testclient_SOURCES = \

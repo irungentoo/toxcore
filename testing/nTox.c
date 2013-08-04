@@ -33,6 +33,10 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+/* TODO: where should these two things go? some common public header? */
+#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
+extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 

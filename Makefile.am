@@ -1,6 +1,16 @@
 SUBDIRS = build
 
+ACLOCAL_AMFLAGS = -I m4
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = $(top_srcdir)/libtoxcore.pc
+
+BUILT_SOURCES = $(top_srcdir)/libtoxcore.pc
+CLEANFILES = $(top_srcdir)/libtoxcore.pc
+
+
 EXTRA_DIST = \
+	$(top_srcdir)/libtoxcore.pc.in \
 	$(top_srcdir)/testing/cmake/Messenger_test.cmake \
 	$(top_srcdir)/testing/cmake/DHT_sendfiletest.cmake \
 	$(top_srcdir)/testing/cmake/DHT_cryptosendfiletest.cmake \

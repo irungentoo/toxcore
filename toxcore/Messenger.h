@@ -26,10 +26,7 @@
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
-#include "net_crypto.h"
-#include "DHT.h"
-#include "friend_requests.h"
-#include "LAN_discovery.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
