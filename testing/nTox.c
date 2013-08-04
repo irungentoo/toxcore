@@ -436,7 +436,7 @@ int main(int argc, char *argv[])
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
-    m_callback_userstatus(print_statuschange);
+    m_callback_frienduserstatus(print_statuschange);
 
     initscr();
     noecho();

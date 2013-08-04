@@ -112,7 +112,7 @@ static void init_tox() {
   m_callback_friendrequest(on_request);
   m_callback_friendmessage(on_message);
   m_callback_namechange(on_nickchange);
-  m_callback_userstatus(on_statuschange);
+  m_callback_frienduserstatus(on_statuschange);
 }
 
 int add_window(ToxWindow w) {
