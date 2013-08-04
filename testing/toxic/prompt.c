@@ -253,9 +253,6 @@ static void execute(ToxWindow* self, char* cmd) {
     }
   }
 
-  else if (!strncmp(cmd, "clear", strlen("clear"))) {
-    wclear(self->window);
-  }
   else {
     wprintw(self->window, "Invalid command.\n");
   }
@@ -315,7 +312,6 @@ static void print_usage(ToxWindow* self) {
   wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
   wprintw(self->window, "      myid                      : Print your ID\n");
-  wprintw(self->window, "      clear                     : Clear the screen\n");
   wprintw(self->window, "      quit/exit                 : Exit program\n");
   wprintw(self->window, "      help                      : Print this message again\n");
 
