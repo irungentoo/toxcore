@@ -148,7 +148,7 @@ static void execute(ToxWindow* self, char* cmd) {
       wprintw(self->window, "Friend request already sent.\n");
       break;
     case -5:
-      wprintw(self->window, "[i] Undefined error when adding friend.\n");
+      wprintw(self->window, "Undefined error when adding friend.\n");
       break; 
     default:
       wprintw(self->window, "Friend added as %d.\n", num);
@@ -178,12 +178,13 @@ static void execute(ToxWindow* self, char* cmd) {
 
     nick = strchr(cmd, ' ');
     if(nick == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
       return;
     }
     nick++;
 
     setname((uint8_t*) nick, strlen(nick)+1);
-    wprintw(self->window, "Nickname set to: %s.\n", nick);
+    wprintw(self->window, "Nickname set to: %s\n", nick);
   }
   else if(!strcmp(cmd, "myid")) {
     char id[32*2 + 1] = {0};
@@ -195,7 +196,7 @@ static void execute(ToxWindow* self, char* cmd) {
       strcat(id, xx);
     }
     
-    wprintw(self->window, "%s\n", id);
+    wprintw(self->window, "Your ID: %s\n", id);
   }
   else if(!strncmp(cmd, "accept ", strlen("accept "))) {
     char* id;
@@ -251,20 +252,18 @@ static void execute(ToxWindow* self, char* cmd) {
       wprintw(self->window, "Message successfully sent.\n");
     }
   }
+
   else {
-    wprintw(self->window, "Invalid syntax.\n");
+    wprintw(self->window, "Invalid command.\n");
   }
 }
 
 static void prompt_onKey(ToxWindow* self, int key) {
-
   // PRINTABLE characters: Add to line.
   if(isprint(key)) {
-
     if(prompt_buf_pos == (sizeof(prompt_buf) - 1)) {
       return;
     }
-
     prompt_buf[prompt_buf_pos++] = key;
     prompt_buf[prompt_buf_pos] = 0;
   }
@@ -273,14 +272,12 @@ static void prompt_onKey(ToxWindow* self, int key) {
   else if(key == '\n') {
     wprintw(self->window, "\n");
     execute(self, prompt_buf);
-
     prompt_buf_pos = 0;
     prompt_buf[0] = 0;
   }
 
   // BACKSPACE key: Remove one character from line.
   else if(key == 0x107 || key == 0x8 || key == 0x7f) {
-
     if(prompt_buf_pos != 0) {
       prompt_buf[--prompt_buf_pos] = 0;
     }
