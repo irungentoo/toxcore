@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.6.0)
-project(Messenger_test C)
+project(messenger_test C)
 
-set(exe_name Messenger_test)
+set(exe_name messenger_test)
 
 add_executable(${exe_name}
-	Messenger_test.c misc_tools.c)
+	messenger_test.c misc_tools.c)
 
 linkCoreLibraries(${exe_name})

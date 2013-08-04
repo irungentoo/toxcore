@@ -23,7 +23,7 @@
 #ifndef NTOX_WIN32_H
 #define NTOX_WIN32_H
 
-#include "../core/Messenger.h"
+#include "../core/messenger.h"
 #include "../core/network.h"
 
 #define STRING_LENGTH 256

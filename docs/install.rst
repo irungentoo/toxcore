@@ -32,9 +32,9 @@ supported on your platform by running ::
 
     make name_of_c_file
 
-For example, to build `Messenger_test.c`_ you would run ::
+For example, to build `messenger_test.c`_ you would run ::
 
-    make Messenger_test
+    make messenger_test
 
 
 Or you could just build everything that is supported on your platform by
@@ -113,9 +113,9 @@ supported on your platform by running::
 
     mingw32-make name_of_c_file
     
-For example, to build `Messenger_test.c`_ you would run::
+For example, to build `messenger_test.c`_ you would run::
 
-    mingw32-make Messenger_test``
+    mingw32-make messenger_test``
 
 Or you could just build everything that is supported on your platform by
 running::
@@ -126,4 +126,4 @@ running::
 .. _/testing: https://github.com/irungentoo/ProjectTox-Core/tree/master/testing
 .. _/other: https://github.com/irungentoo/ProjectTox-Core/tree/master/other
 
-.. _Messenger_test.c: https://github.com/irungentoo/ProjectTox-Core/tree/master/other/Messanger_test.c
+.. _messenger_test.c: https://github.com/irungentoo/ProjectTox-Core/tree/master/other/Messanger_test.c

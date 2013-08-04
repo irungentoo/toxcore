@@ -1,4 +1,4 @@
-/* Messenger test
+/* messenger test
  * 
  * This program adds a friend and accepts all friend requests with the proper message.
  * 
@@ -7,7 +7,7 @@
  * If it recieves a message from a friend it replies back.
  * 
  * 
- * This is how I compile it: gcc -O2 -Wall -D VANILLA_NACL -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} Messenger_test.c
+ * This is how I compile it: gcc -O2 -Wall -D VANILLA_NACL -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/messenger.c ../core/DHT.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} messenger_test.c
  *
  * 
  * Command line arguments are the ip, port and public_key of a node (for bootstrapping).
@@ -37,7 +37,7 @@
  *  
  */
 
-#include "../core/Messenger.h"
+#include "../core/messenger.h"
 #include "misc_tools.h"
 
 #ifdef WIN32
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         printf("usage %s ip port public_key (of the DHT bootstrap node)\n or\n %s Save.bak\n", argv[0], argv[0]);
         exit(0);
     }
-    initMessenger();
+    initmessenger();
     if(argc > 3) {
         IP_Port bootstrap_ip_port;
         bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
         int read;
         uint8_t buffer[128000];
         read = fread(buffer, 1, 128000, file);
-        printf("Messenger loaded: %i\n", Messenger_load(buffer, read));
+        printf("Messenger loaded: %i\n", messenger_load(buffer, read));
         fclose(file);
         
     }
@@ -132,13 +132,13 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
         
         m_sendmessage(num, (uint8_t*)"Test", 5);
-        doMessenger();
+        domessenger();
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
         if ( file==NULL ){return 1;}
-        uint8_t * buffer = malloc(Messenger_size());
-        Messenger_save(buffer);
-        fwrite(buffer, 1, Messenger_size(), file);
+        uint8_t * buffer = malloc(messenger_size());
+        messenger_save(buffer);
+        fwrite(buffer, 1, messenger_size(), file);
         free(buffer);
         fclose(file);
     }  

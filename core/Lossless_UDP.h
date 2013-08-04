@@ -110,14 +110,14 @@ uint32_t recvqueue(int connection_id);
 int is_connected(int connection_id);
 
 /* Call this function a couple times per second It's the main loop. */
-void doLossless_UDP();
+void do_Lossless_UDP();
 
 /* 
  * If we receive a Lossless_UDP packet, call this function so it can be handled.
  * Return 0 if packet is handled correctly.
  * Return 1 if it didn't handle the packet or if the packet was shit.
  */
-int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
+int Lossless_UDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
 
 #ifdef __cplusplus
 }

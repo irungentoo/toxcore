@@ -66,9 +66,9 @@ Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that
 ```bash
 make name_of_c_file
 ```
-For example, to build [`Messenger_test.c`](/others/Messenger_test.c) you would run:
+For example, to build [`messenger_test.c`](/others/messenger_test.c) you would run:
 ```bash
-make Messenger_test
+make messenger_test
 ```
 
 Or you could just build everything that is supported on your platform by running:
@@ -149,9 +149,9 @@ Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that
 ```cmd
 mingw32-make name_of_c_file
 ```
-For example, to build [`Messenger_test.c`](/others/Messenger_test.c) you would run:
+For example, to build [`messenger_test.c`](/others/messenger_test.c) you would run:
 ```cmd
-mingw32-make Messenger_test
+mingw32-make messenger_test
 ```
 
 Or you could just build everything that is supported on your platform by running:

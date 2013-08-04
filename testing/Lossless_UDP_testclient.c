@@ -117,7 +117,7 @@ void printconnection(int connection_id)
 */
 
 /*( recieve packets and send them to the packethandler */
-/*run doLossless_UDP(); */
+/*run do_Lossless_UDP(); */
 void Lossless_UDP()
 {
     IP_Port ip_port;
@@ -127,7 +127,7 @@ void Lossless_UDP()
         printf("packet with length: %u\n", length);
         /* if(rand() % 3 != 1)//add packet loss
          { */
-            if (LosslessUDP_handlepacket(data, length, ip_port))
+            if (Lossless_UDP_handlepacket(data, length, ip_port))
                 printpacket(data, length, ip_port);
             else 
                 printf("Received handled packet with length: %u\n", length); //printconnection(0);
@@ -135,7 +135,7 @@ void Lossless_UDP()
        /* } */
     }
     
-    doLossless_UDP();   
+    do_Lossless_UDP();   
     
 }
 

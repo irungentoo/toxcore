@@ -107,7 +107,7 @@ int connect_to_servers(struct server_info_s *info)
             break;
         }
 
-        doDHT();
+        do_DHT();
 
         while(receivepacket(&ip_port, data, &length) != -1)
         {
@@ -406,7 +406,7 @@ int main(int argc, char *argv[]) {
 
     while(1)
     {
-        doDHT();
+        do_DHT();
 
         while(receivepacket(&ip_port, data, &length) != -1)
         {
