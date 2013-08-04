@@ -8,6 +8,7 @@ AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.10 -Wall])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+AC_CONFIG_MACRO_DIR([m4])
 
 if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
@@ -54,7 +55,7 @@ AC_ARG_WITH(libsodium-libs,
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 
 AC_CANONICAL_HOST
 case $host_os in
@@ -201,5 +202,7 @@ fi
 AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes")
 
 AC_CONFIG_FILES([Makefile
-                 build/Makefile])
+                 build/Makefile
+                 libtoxcore.pc
+                ])
 AC_OUTPUT

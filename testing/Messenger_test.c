@@ -37,7 +37,11 @@
  *  
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "../toxcore/Messenger.h"
+#include "../toxcore/network.h"
 #include "misc_tools.h"
 
 #ifdef WIN32
@@ -50,6 +54,10 @@
 #define c_sleep(x) usleep(1000*x)
 
 #endif
+
+/* TODO: where should these two things go? some common public header? */
+#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
+extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {
