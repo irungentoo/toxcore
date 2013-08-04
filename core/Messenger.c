@@ -178,7 +178,7 @@ int m_delfriend(int friendnumber)
 }
 
 /* return FRIEND_ONLINE if friend is online
-   return FRIEND_AWAY if friend is aways
+   return FRIEND_AWAY if friend is away
    return FRIEND_BUSY if friend is busy
    return FRIEND_CONFIRMED if friend is confirmed
    return FRIEND_REQUESTED if the friend request was sent
