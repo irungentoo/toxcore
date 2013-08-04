@@ -133,11 +133,11 @@ int m_set_userstatus(uint8_t *status, uint16_t length);
 /* return the length of friendnumber's user status,
     including null
     pass it into malloc */
-int m_get_userstatus_size(int friendnumber);
+int m_get_frienduserstatus_size(int friendnumber);
 
 /* copy friendnumber's userstatus into buf, truncating if size is over maxlen
     get the size you need to allocate from m_get_userstatus_size */
-int m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
+int m_copy_frienduserstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
 
 /* set the function that will be executed when a friend request is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
@@ -155,7 +155,7 @@ void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
 /* set the callback for user status changes
     function(int friendnumber, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
-void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
+void m_callback_frienduserstatus(void (*function)(int, uint8_t *, uint16_t));
 
 /* run this at startup
     returns 0 if no connection problems

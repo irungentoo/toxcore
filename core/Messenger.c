@@ -287,7 +287,7 @@ int m_set_userstatus(uint8_t *status, uint16_t length)
 
 /*  return the size of friendnumber's user status
     guaranteed to be at most MAX_USERSTATUS_LENGTH */
-int m_get_userstatus_size(int friendnumber)
+int m_get_frienduserstatus_size(int friendnumber)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
@@ -296,7 +296,7 @@ int m_get_userstatus_size(int friendnumber)
 
 /*  copy the user status of friendnumber into buf, truncating if needed to maxlen
     bytes, use m_get_userstatus_size to find out how much you need to allocate */
-int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
+int m_copy_frienduserstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
@@ -355,7 +355,7 @@ void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
 
 static void (*friend_statuschange)(int, uint8_t *, uint16_t);
 static uint8_t friend_statuschange_isset = 0;
-void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
+void m_callback_frienduserstatus(void (*function)(int, uint8_t *, uint16_t))
 {
     friend_statuschange = function;
     friend_statuschange_isset = 1;
