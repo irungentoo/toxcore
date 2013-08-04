@@ -127,7 +127,7 @@ void add_friend()
     for (i = 0; i < 128; i++)  
         temp_id[i] = line[i+3];
     
-    int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+    int num = add_friend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
    
     if (num >= 0) {
         char numstring[100];
@@ -162,7 +162,7 @@ void list_friends()
     for (i = 0; i <= maxnumfriends; i++) {
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
-        if (m_friendstatus(i) > 0 && m_friendstatus(i) < 4)
+        if (get_friend_status(i) > 0 && get_friend_status(i) < 4)
             printf("[%d] %s\n", i, (uint8_t*)name);
     }
     
@@ -174,7 +174,7 @@ void list_friends()
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
         
-        if (m_friendstatus(i) == 4)    
+        if (get_friend_status(i) == 4)    
             printf("[%d] %s\n", i, (uint8_t*)name);
     }
 
@@ -222,7 +222,7 @@ void message_friend()
 
     int num = atoi(numstring);
 
-    if(m_sendmessage(num, (uint8_t*) message, sizeof(message)) != 1)
+    if(send_message(num, (uint8_t*) message, sizeof(message)) != 1)
         printf("\n[i] could not send message (they may be offline): %s\n", message);
    
     else
@@ -244,7 +244,7 @@ void change_nickname()
     }
     
     name[i-3] = 0;
-    setname(name, i);
+    set_self_name(name, i);
     char numstring[100];
     sprintf(numstring, "\n[i] changed nick to %s\n\n", (char*)name);
     printf(numstring);
@@ -287,7 +287,7 @@ void accept_friend_request()
     friend_request_received = 0;
     uint8_t numf = atoi(line + 3);
     char numchar[100];
-    int num = m_addfriend_norequest(pending_requests[numf]);
+    int num = add_friend_norequest(pending_requests[numf]);
     sprintf(numchar, "\n[i] Added friendnumber: %d\n\n", num);
     printf(numchar);
     ++maxnumfriends;
@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
         while (fgets(line, MAX_NAME_LENGTH, name_file) != NULL) {
             sscanf(line, "%s", (char*)name);
         }
-        setname(name, strlen((char*)name)+1);
+        set_self_name(name, strlen((char*)name)+1);
         nameloaded = 1;
         printf("%s\n", name);
         fclose(name_file);
