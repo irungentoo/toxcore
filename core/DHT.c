@@ -119,7 +119,7 @@ static Pinged       send_nodes[LSEND_NODES_ARRAY];
  * return 1 if client_id1 is closer
  * return 2 if client_id2 is closer
  */
-int id_closest(uint8_t * id, uint8_t * id1, uint8_t * id2)
+static int id_closest(uint8_t * id, uint8_t * id1, uint8_t * id2)
 {
     size_t   i;
     uint8_t distance1, distance2;
@@ -137,17 +137,17 @@ int id_closest(uint8_t * id, uint8_t * id1, uint8_t * id2)
     return 0;
 }
 
-int ipport_equal(IP_Port a, IP_Port b)
+static int ipport_equal(IP_Port a, IP_Port b)
 {
   return (a.ip.i == b.ip.i) && (a.port == b.port);
 }
 
-int id_equal(uint8_t* a, uint8_t* b)
+static int id_equal(uint8_t* a, uint8_t* b)
 {
   return memcmp(a, b, CLIENT_ID_SIZE) == 0;
 }
 
-int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
+static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
 {
   return timestamp + timeout <= time_now;
 }
@@ -159,7 +159,7 @@ int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
  *
  * TODO: maybe optimize this.
  */
-int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
+static int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -184,7 +184,7 @@ int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_
 /* check if client with client_id is already in node format list of length length.
  * return True(1) or False(0)
  */
-int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
+static int client_in_nodelist(Node_format * list, uint32_t length, uint8_t * client_id)
 {
     uint32_t i;
 
@@ -215,7 +215,7 @@ static int friend_number(uint8_t * client_id)
  *
  * TODO: For the love of based Allah make this function cleaner and much more efficient.
  */
-int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
+static int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 {
     uint32_t    i, j, k;
     uint64_t    temp_time = unix_time();
@@ -301,7 +301,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
  * return 0 if successful
  * return 1 if not (list contains no bad nodes)
  */
-int replace_bad(    Client_data *   list, 
+static int replace_bad(    Client_data *   list, 
                     uint32_t        length,  
                     uint8_t *       client_id,   
                     IP_Port         ip_port )
@@ -325,7 +325,7 @@ int replace_bad(    Client_data *   list,
 }
 
 /* replace the first good node that is further to the comp_client_id than that of the client_id in the list */
-int replace_good(   Client_data *   list,
+static int replace_good(   Client_data *   list,
                     uint32_t        length, 
                     uint8_t *       client_id, 
                     IP_Port         ip_port, 
@@ -351,7 +351,7 @@ int replace_good(   Client_data *   list,
 /* Attempt to add client with ip_port and client_id to the friends client list 
  * and close_clientlist 
  */
-void addto_lists(IP_Port ip_port, uint8_t * client_id)
+static void addto_lists(IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
 
@@ -393,7 +393,7 @@ void addto_lists(IP_Port ip_port, uint8_t * client_id)
 /* If client_id is a friend or us, update ret_ip_port
  * nodeclient_id is the id of the node that sent us this info
  */
-void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
+static void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
@@ -431,7 +431,7 @@ void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient
  *
  * TODO: optimize this 
  */
-int is_pinging(IP_Port ip_port, uint64_t ping_id)
+static int is_pinging(IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
     uint8_t pinging;
@@ -456,7 +456,7 @@ int is_pinging(IP_Port ip_port, uint64_t ping_id)
 }
 
 /* Same as last function but for get_node requests. */
-int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
+static int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
     uint8_t pinging;
@@ -486,7 +486,7 @@ int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
  *
  * TODO: optimize this
  */
-uint64_t add_pinging(IP_Port ip_port)
+static uint64_t add_pinging(IP_Port ip_port)
 {
     uint32_t i, j;
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
@@ -507,7 +507,7 @@ uint64_t add_pinging(IP_Port ip_port)
 }
 
 /* Same but for get node requests */
-uint64_t add_gettingnodes(IP_Port ip_port)
+static uint64_t add_gettingnodes(IP_Port ip_port)
 {
     uint32_t i, j;
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
@@ -676,7 +676,7 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
 /* Packet handling functions, one to handle each types of packets we receive
  * Returns 0 if handled correctly, 1 if packet is bad.
  */
-int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
     if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
@@ -702,7 +702,7 @@ int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
     if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
@@ -729,7 +729,7 @@ int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
     return 1;
 }
 
-int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
 
@@ -761,7 +761,7 @@ int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
 {
     uint64_t ping_id;
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
@@ -1029,7 +1029,7 @@ int route_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
 /* Send the following packet to one random person who tells us they are connected to friend_id
 *  returns the number of nodes it sent the packet to
 */
-int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
+static int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t length)
 {
     int num = friend_number(friend_id);
     if (num == -1)
@@ -1079,7 +1079,7 @@ int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
 /*----------------------------------------------------------------------------------*/
 /*---------------------BEGINNING OF NAT PUNCHING FUNCTIONS--------------------------*/
 
-int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
+static int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 {
     uint8_t data[sizeof(uint64_t) + 1];
     uint8_t packet[MAX_DATA_SIZE];
@@ -1105,7 +1105,7 @@ int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 }
 
 /* Handle a recieved ping request for */
-int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if (length < crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING 
             && length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
