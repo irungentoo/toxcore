@@ -225,7 +225,7 @@ uint32_t resolve_addr(const char *address)
 	
 	// a bit hacky, could be prettier...
 	// save server in server4 in case we do need IPv4
-	memcpy(server,server4,sizeof(server));
+	memcpy(server,server4,sizeof(struct addrinfo));
 	
 	while(server) {
 		// IPv6
