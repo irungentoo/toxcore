@@ -428,7 +428,9 @@ int main(int argc, char *argv[])
     }
 
     for(i = 0; i < argc; i++) {
-        if(argv[i][0] == '-') {
+      if (argv[i] == NULL){
+        break;
+      } else if(argv[i][0] == '-') {
             if(argv[i][1] == 'h') {
                 print_help();
                 exit(0);
