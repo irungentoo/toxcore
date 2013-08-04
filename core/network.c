@@ -109,10 +109,16 @@ uint16_t ipv4flag = 0;
     srandom((uint32_t)current_time());
 #endif
     srand((uint32_t)current_time());
-
-    /* initialize our socket, prefer IPv6 */
-    sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-
+    
+    /* as long as the 32-bit IP problem in union IP is not fixed just use
+    IPv4 by default. When it is fixed, just add a 6 to AF_INET.
+    The rest of the code will still work for now */
+	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	ipv4flag = 1; // force IPv4, delete this for IPv6-try then
+	
+	 /* initialize our socket, prefer IPv6
+     sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP); */
+	
     /* Check for socket error */
 #ifdef WIN32
     if (sock == INVALID_SOCKET) { /* MSDN recommends this */
