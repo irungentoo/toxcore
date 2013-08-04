@@ -94,6 +94,11 @@ int string_is_empty(char *string)
 static void chat_onKey(ToxWindow* self, int key) {
   ChatContext* ctx = (ChatContext*) self->x;
 
+  time_t now;
+  time(&now);
+  struct tm * timeinfo;
+  timeinfo = localtime(&now);
+
   /* PRINTABLE characters: Add to line */
   if(isprint(key)) {
     if(ctx->pos != sizeof(ctx->line)-1) {
@@ -107,11 +112,15 @@ static void chat_onKey(ToxWindow* self, int key) {
     if (ctx->line[0] == '/')
       execute(self, ctx, ctx->line);
     else {
-      wattron(ctx->history, COLOR_PAIR(1));
-      wprintw(ctx->history, "you: ", ctx->line);
-      wattroff(ctx->history, COLOR_PAIR(1));
-      wprintw(ctx->history, "%s\n", ctx->line);
-
+      if(!string_is_empty(ctx->line)) {
+        /* make sure the string has at least non-space character */
+        wattron(ctx->history, COLOR_PAIR(2));
+        wprintw(ctx->history, "%02d:%02d:%02d ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+        wattron(ctx->history, COLOR_PAIR(1));
+        wprintw(ctx->history, "you: ", ctx->line);
+        wattroff(ctx->history, COLOR_PAIR(1));
+        wprintw(ctx->history, "%s\n", ctx->line);
+      }
       if(m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
         wattron(ctx->history, COLOR_PAIR(3));
         wprintw(ctx->history, " * Failed to send message.\n");
