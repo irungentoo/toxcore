@@ -142,7 +142,9 @@ void line_eval(char *line)
             for (i = 0; i < 128; i++)
                 temp_id[i] = line[i+prompt_offset];
 
-            int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            unsigned char *bin_string = hex_string_to_bin(temp_id);
+            int num = m_addfriend(bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            free(bin_string);
             char numstring[100];
             switch (num) {
             case -1:
@@ -456,7 +458,9 @@ int main(int argc, char *argv[])
     else
         exit(1);
 
-    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    unsigned char *binary_string = hex_string_to_bin(argv[3]);
+    DHT_bootstrap(bootstrap_ip_port, binary_string);
+    free(binary_string);
     nodelay(stdscr, TRUE);
     while(true) {
         if (on == 0 && DHT_isconnected()) {
