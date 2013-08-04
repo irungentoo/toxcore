@@ -35,9 +35,9 @@
  *  
  */
  
-#include "../core/network.h"
-#include "../core/DHT.h"
-#include "../core/net_crypto.h"
+#include "../toxcore/network.h"
+#include "../toxcore/DHT.h"
+#include "../toxcore/net_crypto.h"
 #include "misc_tools.h"
 
 #include <string.h>

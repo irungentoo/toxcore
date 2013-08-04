@@ -34,9 +34,9 @@
  *  
  */
  
-#include "../core/network.h"
-#include "../core/DHT.h"
-#include "../core/Lossless_UDP.h"
+#include "../toxcore/network.h"
+#include "../toxcore/DHT.h"
+#include "../toxcore/Lossless_UDP.h"
 
 #include <string.h>
 

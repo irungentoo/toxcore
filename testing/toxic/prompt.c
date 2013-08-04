@@ -7,8 +7,8 @@
 #include <ctype.h>
 #include <curses.h>
 
-#include "../../core/Messenger.h"
-#include "../../core/network.h"
+#include "../../toxcore/Messenger.h"
+#include "../../toxcore/network.h"
 
 #include "windows.h"
 
