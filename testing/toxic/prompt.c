@@ -35,6 +35,7 @@ unsigned char * hex_string_to_bin(char hex_string[])
     int i;
     for(i = 0; i < len; ++i, pos+=2)
         sscanf(pos,"%2hhx",&val[i]);
+
     return val;
 }
 
@@ -89,7 +90,11 @@ static void execute(ToxWindow* self, char* cmd) {
     }
 
     dht.ip.i = resolved_address;
-    DHT_bootstrap(dht, hex_string_to_bin(key));
+
+    unsigned char *binary_string = hex_string_to_bin(key);
+    DHT_bootstrap(dht, binary_string);
+    free(binary_string); 
+
   }
   else if(!strncmp(cmd, "add ", strlen("add "))) {
     uint8_t id_bin[32];
