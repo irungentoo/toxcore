@@ -142,22 +142,24 @@ void line_eval(char *line)
             for (i = 0; i < 128; i++)
                 temp_id[i] = line[i+prompt_offset];
 
-            int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            unsigned char *bin_string = hex_string_to_bin(temp_id);
+            int num = m_addfriend(bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            free(bin_string);
             char numstring[100];
             switch (num) {
-            case -1:
+            case FAERR_TOOLONG:
                 sprintf(numstring, "[i] Message is too long.");
                 break;
-            case -2:
+            case FAERR_NOMESSAGE:
                 sprintf(numstring, "[i] Please add a message to your request.");
                 break;
-            case -3:
+            case FAERR_OWNKEY:
                 sprintf(numstring, "[i] That appears to be your own ID.");
                 break;
-            case -4:
+            case FAERR_ALREADYSENT:
                 sprintf(numstring, "[i] Friend request already sent.");
                 break;
-            case -5:
+            case FAERR_UNKNOWN:
                 sprintf(numstring, "[i] Undefined error when adding friend.");
                 break;
             default:
@@ -343,34 +345,38 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length];
-    sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
-    new_lines(msg);
+    if(getname(friendnumber, (uint8_t*)name) != -1) {
+        char msg[100+length];
+        sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
+        new_lines(msg);
+    }
 }
 
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length+strlen(name)+1];
-    sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
-    new_lines(msg);
+    if(getname(friendnumber, (uint8_t*)name) != -1) {
+        char msg[100+length+strlen(name)+1];
+        sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+        new_lines(msg);
+    }
 }
 
 void load_key(char *path)
 {
     FILE *data_file = fopen(path, "r");
+    int size = 0;
 
     if (data_file) {
         //load keys
         fseek(data_file, 0, SEEK_END);
-        int size = ftell(data_file);
-        fseek(data_file, 0, SEEK_SET);
+        size = ftell(data_file);
+        rewind(data_file);
+
         uint8_t data[size];
         if (fread(data, sizeof(uint8_t), size, data_file) != size){
-            printf("[i] could not read data file\n[i] exiting\n");
-            exit(1);
+            fputs("[!] could not read data file! exiting...\n", stderr);
+            goto FILE_ERROR;
         }
         messenger_load(data, size);
 
@@ -387,11 +393,17 @@ void load_key(char *path)
         }
 
         if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
-            puts("[i] could not write data file! exiting...");
-            exit(1);
+            fputs("[!] could not write data file! exiting...", stderr);
+            goto FILE_ERROR;
         }
     }
-   fclose(data_file);
+
+    return;
+
+FILE_ERROR:
+    if(fclose(data_file) < 0)
+        perror("[!] fclose failed");
+    exit(1);
 }
 
 void print_help(void)
@@ -456,7 +468,9 @@ int main(int argc, char *argv[])
     else
         exit(1);
 
-    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    unsigned char *binary_string = hex_string_to_bin(argv[3]);
+    DHT_bootstrap(bootstrap_ip_port, binary_string);
+    free(binary_string);
     nodelay(stdscr, TRUE);
     while(true) {
         if (on == 0 && DHT_isconnected()) {

@@ -91,7 +91,7 @@ static void init_term() {
   cbreak();
   keypad(stdscr, 1);
   noecho();
-  timeout(2000);
+  timeout(100);
 
   if(has_colors()) {
     start_color();
@@ -255,15 +255,15 @@ static void draw_bar() {
       attron(A_BOLD);
     }
 
-    odd = (odd+1) % 2;
+    odd = (odd+1) % 10;
 
-    if(windows[i].blink && odd) {
+    if(windows[i].blink && (odd < 5)) {
       attron(COLOR_PAIR(3));
     }
 
     printw(" %s", windows[i].title);
 
-    if(windows[i].blink && odd) {
+    if(windows[i].blink && (odd < 5)) {
       attron(COLOR_PAIR(3));
     }
 
