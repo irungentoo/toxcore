@@ -288,7 +288,9 @@ int main(int argc, char* argv[]) {
   ToxWindow* a;
 
     for(i = 0; i < argc; i++) {
-        if(argv[i][0] == '-') {
+      if (argv[i] == NULL){
+        break; 
+      } else if(argv[i][0] == '-') {
             if(argv[i][1] == 'f') {
                 if(argv[i + 1] != NULL)
                     filename = argv[i + 1];
