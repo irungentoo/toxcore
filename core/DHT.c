@@ -40,7 +40,7 @@
 #define BAD_NODE_TIMEOUT 70
 
 /* the max number of nodes to send with send nodes. */
-#define MAX_SENT_NODES 8
+#define MAX_SEND_NODES 8
 
 /* ping timeout in seconds */
 #define PING_TIMEOUT 5
@@ -210,7 +210,7 @@ static int friend_number(uint8_t * client_id)
     return -1;
 }
 
-/* Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
+/* Find MAX_SEND_NODES nodes closest to the client_id for the send nodes request:
  * put them in the nodes_list and return how many were found.
  *
  * TODO: For the love of based Allah make this function cleaner and much more efficient.
@@ -223,13 +223,13 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
         tout = is_timeout(temp_time, close_clientlist[i].timestamp, BAD_NODE_TIMEOUT);
-        inlist = client_in_nodelist(nodes_list, MAX_SENT_NODES, close_clientlist[i].client_id);
+        inlist = client_in_nodelist(nodes_list, MAX_SEND_NODES, close_clientlist[i].client_id);
 
         /* if node isn't good or is already in list. */
         if(tout || inlist)
             continue;
 
-        if(num_nodes < MAX_SENT_NODES) {
+        if(num_nodes < MAX_SEND_NODES) {
 
             memcpy( nodes_list[num_nodes].client_id, 
                     close_clientlist[i].client_id, 
@@ -240,7 +240,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 
         } else {
 
-            for(j = 0; j < MAX_SENT_NODES; ++j) {
+            for(j = 0; j < MAX_SEND_NODES; ++j) {
                 closest = id_closest(   client_id, 
                                         nodes_list[j].client_id, 
                                         close_clientlist[i].client_id );
@@ -261,14 +261,14 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 
             tout = is_timeout(temp_time, friends_list[i].client_list[j].timestamp, BAD_NODE_TIMEOUT);
             inlist = client_in_nodelist(    nodes_list,
-                                            MAX_SENT_NODES, 
+                                            MAX_SEND_NODES, 
                                             friends_list[i].client_list[j].client_id);
 
             /* if node isn't good or is already in list. */
             if(tout || inlist)
                 continue;
 
-            if(num_nodes < MAX_SENT_NODES) {
+            if(num_nodes < MAX_SEND_NODES) {
 
                 memcpy( nodes_list[num_nodes].client_id, 
                         friends_list[i].client_list[j].client_id, 
@@ -277,7 +277,7 @@ int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
                 nodes_list[num_nodes].ip_port = friends_list[i].client_list[j].ip_port;
                 num_nodes++;
             } else  {
-                for(k = 0; k < MAX_SENT_NODES; ++k) {
+                for(k = 0; k < MAX_SEND_NODES; ++k) {
 
                     closest = id_closest(   client_id, 
                                             nodes_list[k].client_id, 
@@ -639,16 +639,16 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
         return 1;
 
     uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
-                 + sizeof(Node_format) * MAX_SENT_NODES + ENCRYPTION_PADDING];
+                 + sizeof(Node_format) * MAX_SEND_NODES + ENCRYPTION_PADDING];
 
-    Node_format nodes_list[MAX_SENT_NODES];
+    Node_format nodes_list[MAX_SEND_NODES];
     int num_nodes = get_close_nodes(client_id, nodes_list);
 
     if(num_nodes == 0)
         return 0;
 
-    uint8_t plain[sizeof(ping_id) + sizeof(Node_format) * MAX_SENT_NODES];
-    uint8_t encrypt[sizeof(ping_id) + sizeof(Node_format) * MAX_SENT_NODES + ENCRYPTION_PADDING];
+    uint8_t plain[sizeof(ping_id) + sizeof(Node_format) * MAX_SEND_NODES];
+    uint8_t encrypt[sizeof(ping_id) + sizeof(Node_format) * MAX_SEND_NODES + ENCRYPTION_PADDING];
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
 
@@ -767,13 +767,13 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
     cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING;
 
-    if (length > (cid_size + sizeof(Node_format) * MAX_SENT_NODES) ||
+    if (length > (cid_size + sizeof(Node_format) * MAX_SEND_NODES) ||
         ((length - cid_size) % sizeof(Node_format)) != 0 ||
         (length < cid_size + sizeof(Node_format)))
         return 1;
 
     uint32_t num_nodes = (length - cid_size) / sizeof(Node_format);
-    uint8_t plain[sizeof(ping_id) + sizeof(Node_format) * MAX_SENT_NODES];
+    uint8_t plain[sizeof(ping_id) + sizeof(Node_format) * MAX_SEND_NODES];
 
     int len = decrypt_data( 
             packet + 1, 
@@ -789,7 +789,7 @@ int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
     if(!is_gettingnodes(source, ping_id))
         return 1;
 
-    Node_format nodes_list[MAX_SENT_NODES];
+    Node_format nodes_list[MAX_SEND_NODES];
     memcpy(nodes_list, plain + sizeof(ping_id), num_nodes * sizeof(Node_format));
 
     addto_lists(source, packet + 1);
