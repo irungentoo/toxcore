@@ -114,7 +114,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
         return FAERR_ALREADYSENT;
 
     uint32_t i;
-    for (i = 0; i <= numfriends; ++i) { /*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
+    for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
         if(friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
             friendlist[i].status = FRIEND_ADDED;
@@ -138,7 +138,7 @@ int m_addfriend_norequest(uint8_t * client_id)
     if (getfriend_id(client_id) != -1)
         return -1;
     uint32_t i;
-    for (i = 0; i <= numfriends; ++i) {/*TODO: dynamic memory allocation, this will segfault if there are more than MAX_NUM_FRIENDS*/
+    for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
         if(friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
             friendlist[i].status = FRIEND_REQUESTED;
