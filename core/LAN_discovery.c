@@ -76,7 +76,7 @@ static uint32_t get_broadcast(void)
 #endif
 
 /* Return the broadcast ip */
-static IP broadcast_ip()
+static IP broadcast_ip(void)
 {
     IP ip;
     #ifdef __linux

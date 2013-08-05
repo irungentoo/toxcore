@@ -52,7 +52,7 @@ int getconnection_id(IP_Port ip_port);
  * Returns an int corresponding to the next connection in our imcoming connection list
  * Return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection();
+int incoming_connection(void);
 
 /* 
  * Return -1 if it could not kill the connection.
@@ -110,7 +110,7 @@ uint32_t recvqueue(int connection_id);
 int is_connected(int connection_id);
 
 /* Call this function a couple times per second It's the main loop. */
-void doLossless_UDP();
+void doLossless_UDP(void);
 
 /* 
  * If we receive a Lossless_UDP packet, call this function so it can be handled.

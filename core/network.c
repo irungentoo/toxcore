@@ -24,7 +24,7 @@
 #include "network.h"
 
 /* returns current UNIX time in microseconds (us). */
-uint64_t current_time()
+uint64_t current_time(void)
 {
     uint64_t time;
 #ifdef WIN32
@@ -46,7 +46,7 @@ uint64_t current_time()
 
 /* return a random number
    NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary */
-uint32_t random_int()
+uint32_t random_int(void)
 {
 #ifndef VANILLA_NACL
     //NOTE: this function comes from libsodium
@@ -153,7 +153,7 @@ int init_networking(IP ip, uint16_t port)
 }
 
 /* function to cleanup networking stuff */
-void shutdown_networking()
+void shutdown_networking(void)
 {
 #ifdef WIN32
     closesocket(sock);
