@@ -23,7 +23,9 @@
 
 #include "LAN_discovery.h"
 
-#define MAX_INTERFACES 16
+/* We don't care for the "lo" interface, and so we need, at most, two.
+ */
+#define MAX_INTERFACES 2
 
 #ifdef __linux
 /* get the first working broadcast address that's not from "lo"
@@ -50,25 +52,31 @@ static uint32_t get_broadcast(void)
 
     ifconf.ifc_buf = (char *)i_faces;
     ifconf.ifc_len = sizeof(i_faces);
-    count = ifconf.ifc_len / sizeof(struct ifreq);
     if(ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
         perror("get_broadcast: ioctl() error");
         return 0;
     }
 
-    for(i = 0; i < count; i++) {
-        /* skip the loopback interface, as it's useless */
-        if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
-            if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
-                perror("[!] get_broadcast: ioctl error");
-                return 0;
-            }
+    count = ifconf.ifc_len / sizeof(struct ifreq);
+    if (count > 0) {
+        for(i = 0; i < count; i++) {
+            /* skip the loopback interface, as it's useless */
+            if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
+                if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
+                    perror("[!] get_broadcast: ioctl error");
+                    return 0;
+                }
 
-            /* just to clarify where we're getting the values from */
-            sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
-            break;
+                /* just to clarify where we're getting the values from */
+                sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
+                break;
+            }
         }
     }
+    else {
+      return 0;
+    }
+
     close(sock);
 
     return sock_holder->sin_addr.s_addr;
