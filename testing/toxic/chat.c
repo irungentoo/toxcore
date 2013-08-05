@@ -52,7 +52,7 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   fix_name(nick);
 
   wattron(ctx->history, COLOR_PAIR(2));
-  wprintw(ctx->history, "[%02d:%02d:%02d]  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
   wattroff(ctx->history, COLOR_PAIR(2));
   wattron(ctx->history, COLOR_PAIR(4));
   wprintw(ctx->history, "%s: ", nick);
