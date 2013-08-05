@@ -337,28 +337,37 @@ void set_active_window(int ch) {
 
 int main(int argc, char* argv[]) {
   int ch;
+  int i = 0;
+  int f_flag = 0;
+  char *filename = "data";
   ToxWindow* a;
+
+    for(i = 0; i < argc; i++) {
+      if (argv[i] == NULL){
+        break; 
+      } else if(argv[i][0] == '-') {
+            if(argv[i][1] == 'f') {
+                if(argv[i + 1] != NULL)
+                    filename = argv[i + 1];
+                else {
+                    f_flag = -1;
+                }
+            }
+        }
+    }
 
   init_term();
   init_tox();
-  init_window_status();
-  init_windows();
-  char *filename = "data";
   load_data(filename);
+  init_windows();
 
-  int i;
-  for(i = 0; i < argc; i++) {
-    if(argv[i][0] == '-' && argv[i][1] == 'f') {
-      if(argv[i + 1] != NULL)
-        filename = argv[i + 1];
-      else {
-        attron(COLOR_PAIR(3) | A_BOLD);
-        wprintw(prompt->window, "You passed '-f' without giving an argument!\n"
+  if(f_flag == -1) {
+    attron(COLOR_PAIR(3) | A_BOLD);
+    wprintw(prompt->window, "You passed '-f' without giving an argument!\n"
                             "defaulting to 'data' for a keyfile...\n");
-        attroff(COLOR_PAIR(3) | A_BOLD);
-      }
-    }
+    attroff(COLOR_PAIR(3) | A_BOLD);
   }
+  
   while(true) {
     // Update tox.
     do_tox();

@@ -236,6 +236,7 @@ void print_help(ChatContext* self) {
   wprintw(self->history, "      /nick <nickname>           : Set your nickname\n");
   wprintw(self->history, "      /myid                      : Print your ID\n");
   wprintw(self->history, "      /clear                     : Clear the screen\n");
+  wprintw(self->history, "      /close                     : Closes the current chat window\n");
   wprintw(self->history, "      /quit or /exit             : Exit program\n");
   wprintw(self->history, "      /help                      : Print this message again\n\n");
 
@@ -264,5 +265,6 @@ ToxWindow new_chat(int friendnum) {
   x->friendnum = friendnum;
 
   ret.x = (void*) x;
+  free(x);
   return ret;
 }
