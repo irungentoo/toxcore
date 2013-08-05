@@ -160,15 +160,15 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
 /* run this at startup
     returns 0 if no connection problems
     returns -1 if there are problems */
-int initMessenger();
+int initMessenger(void);
 
 /* the main loop that needs to be run at least 200 times per second */
-void doMessenger();
+void doMessenger(void);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* returns the size of the messenger data (for saving) */
-uint32_t Messenger_size();
+uint32_t Messenger_size(void);
 
 /* save the messenger in data (must be allocated memory of size Messenger_size()) */
 void Messenger_save(uint8_t *data);
