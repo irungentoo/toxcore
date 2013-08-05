@@ -363,7 +363,7 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
 
 #define PORT 33445
 /* run this at startup */
-int initMessenger()
+int initMessenger(void)
 {
     new_keys();
     m_set_userstatus((uint8_t*)"Online", sizeof("Online"));
@@ -378,7 +378,7 @@ int initMessenger()
 }
 
 //TODO: make this function not suck.
-static void doFriends()
+static void doFriends(void)
 {
     /* TODO: add incoming connections and some other stuff. */
     uint32_t i;
@@ -464,7 +464,7 @@ static void doFriends()
     }
 }
 
-static void doInbound()
+static void doInbound(void)
 {
     uint8_t secret_nonce[crypto_box_NONCEBYTES];
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -488,7 +488,7 @@ static void doInbound()
 static uint64_t last_LANdiscovery;
 
 /*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
-static void LANdiscovery()
+static void LANdiscovery(void)
 {
     if (last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
         send_LANdiscovery(htons(PORT));
@@ -498,7 +498,7 @@ static void LANdiscovery()
 
 
 /* the main loop that needs to be run at least 200 times per second. */
-void doMessenger()
+void doMessenger(void)
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
@@ -532,7 +532,7 @@ void doMessenger()
 }
 
 /* returns the size of the messenger data (for saving) */
-uint32_t Messenger_size()
+uint32_t Messenger_size(void)
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
            + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * numfriends;
