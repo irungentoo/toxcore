@@ -225,11 +225,12 @@ static void chat_onInit(ToxWindow* self) {
   scrollok(ctx->history, 1);
 
   ctx->linewin = subwin(self->window, 2, x, y - 3, 0);
+  print_help(ctx);
 }
 
 void print_help(ChatContext* self) {
   wattron(self->history, COLOR_PAIR(2) | A_BOLD);
-  wprintw(self->history, "\nCommands:\n");
+  wprintw(self->history, "Commands:\n");
   wattroff(self->history, A_BOLD);
   
   wprintw(self->history, "      /status <message>          : Set your status\n");
