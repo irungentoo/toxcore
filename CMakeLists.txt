@@ -2,12 +2,16 @@ cmake_minimum_required(VERSION 2.6.0)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-if(UNIX)
-	find_package(Curses REQUIRED)
+option(SHARED_TOXCORE "Build Core as a shared library")
+
+if(WIN32)
+	option(SHARED_LIBSODIUM "Links libsodium as a shared library")
+else()
+	option(USE_NACL "Use NaCl library instead of libsodium")
 endif()
 
-if(NOT WIN32)
-	option(USE_NACL "Use NaCl library instead of libsodium")
+if(UNIX)
+	find_package(Curses REQUIRED)
 endif()
 
 if(USE_NACL)
@@ -17,6 +21,12 @@ if(USE_NACL)
 	add_definitions(-DVANILLA_NACL)
 
 	set(LINK_CRYPTO_LIBRARY ${NACL_LIBRARIES})
+else()
+	find_package(SODIUM REQUIRED)
+
+	include_directories(${SODIUM_INCLUDE_DIR})
+
+	set(LINK_CRYPTO_LIBRARY ${SODIUM_LIBRARY})
 endif()
 
 #MinGW prints more warnings for -Wall than gcc does, thus causing build to fail
@@ -27,23 +37,13 @@ if(NOT WIN32)
 	endif()
 endif()
 
-if(NOT USE_NACL)
-	find_package(SODIUM REQUIRED)
-	set(LINK_CRYPTO_LIBRARY ${SODIUM_LIBRARY})
-endif()
-
 macro(linkCoreLibraries exe_name)
 	add_dependencies(${exe_name} toxcore)
-	if(WIN32)
-		include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
-		target_link_libraries(${exe_name} toxcore
-		${CMAKE_SOURCE_DIR}/sodium/lib/libsodium.a
-			ws2_32)
-	else()
-		include_directories(${SODIUM_INCLUDE_DIR})
-		target_link_libraries(${exe_name} toxcore
-			${LINK_CRYPTO_LIBRARY})
+	target_link_libraries(${exe_name} toxcore
+		${LINK_CRYPTO_LIBRARY})
 
+	if(WIN32)
+		target_link_libraries(${exe_name} ws2_32)
 	endif()
 endmacro()
 
