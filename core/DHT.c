@@ -24,6 +24,7 @@
 /*----------------------------------------------------------------------------------*/
 
 #include "DHT.h"
+#include "packets.h"
 #include "ping.h"
 
 /* maximum number of clients stored per friend. */
@@ -472,71 +473,6 @@ static uint64_t add_gettingnodes(IP_Port ip_port)
     return 0;
 }
 
-/* send a ping request, only works if none has been sent to that ip/port
- * in the last 5 seconds. 
- */
-static int pingreq(IP_Port ip_port, uint8_t * public_key)
-{ 
-    /* check if packet is gonna be sent to ourself */
-    if(id_equal(public_key, self_public_key) || is_pinging(ip_port, 0))
-        return 1;
-
-    uint64_t ping_id = add_ping(ip_port);
-    if(ping_id == 0)
-        return 1;
-
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING];
-    uint8_t encrypt[sizeof(ping_id) + ENCRYPTION_PADDING];
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    random_nonce(nonce);
-
-    int len = encrypt_data( public_key, 
-                            self_secret_key, 
-                            nonce, 
-                            (uint8_t *)&ping_id, 
-                            sizeof(ping_id), 
-                            encrypt );
-
-    if(len != sizeof(ping_id) + ENCRYPTION_PADDING)
-        return -1;
-
-    data[0] = 0;
-    memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
-    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
-
-    return sendpacket(ip_port, data, sizeof(data));
-}
-
-/* send a ping response */
-static int pingres(IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
-{
-    /* check if packet is gonna be sent to ourself */
-    if(id_equal(public_key, self_public_key))
-        return 1;
-
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING];
-    uint8_t encrypt[sizeof(ping_id) + ENCRYPTION_PADDING];
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    random_nonce(nonce);
-
-    int len = encrypt_data( public_key, 
-                            self_secret_key, nonce, 
-                            (uint8_t *)&ping_id, 
-                            sizeof(ping_id), 
-                            encrypt );
-
-    if(len != sizeof(ping_id) + ENCRYPTION_PADDING)
-        return -1;
-
-    data[0] = 1;
-    memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
-    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
-
-    return sendpacket(ip_port, data, sizeof(data));
-}
-
 /* send a getnodes request */
 static int getnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
 {
@@ -641,8 +577,8 @@ static int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
     if(len != sizeof(ping_id))
         return 1;
 
-    pingres(source, packet + 1, ping_id);
-    pingreq(source, packet + 1); /* TODO: make this smarter? */
+    send_ping_response(source, (clientid_t*) (packet + 1), ping_id);
+    send_ping_request(source, (clientid_t*) (packet + 1)); /* TODO: make this smarter? */
 
     return 0;
 }
@@ -701,7 +637,7 @@ static int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(source, packet + 1, plain + sizeof(ping_id), ping_id);
 
-    pingreq(source, packet + 1); /* TODO: make this smarter? */
+    send_ping_request(source, (clientid_t*) (packet + 1)); /* TODO: make this smarter? */
 
     return 0;
 }
@@ -741,7 +677,7 @@ static int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
 
     uint32_t i;
     for(i = 0; i < num_nodes; ++i)  {
-        pingreq(nodes_list[i].ip_port, nodes_list[i].client_id);
+        send_ping_request(nodes_list[i].ip_port, (clientid_t*) &nodes_list[i].client_id);
         returnedip_ports(nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
 
@@ -831,8 +767,8 @@ static void doDHTFriends(void)
             /* if node is not dead. */
           if (!is_timeout(temp_time, friends_list[i].client_list[j].timestamp, Kill_NODE_TIMEOUT)) {
                 if ((friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
-                    pingreq( friends_list[i].client_list[j].ip_port, 
-                             friends_list[i].client_list[j].client_id );
+                    send_ping_request( friends_list[i].client_list[j].ip_port, 
+                                       (clientid_t*) &friends_list[i].client_list[j].client_id );
                     friends_list[i].client_list[j].last_pinged = temp_time;
                 }
                 /* if node is good. */
@@ -869,8 +805,8 @@ static void doClose(void)
         /* if node is not dead. */
         if (!is_timeout(temp_time, close_clientlist[i].timestamp, Kill_NODE_TIMEOUT)) {
             if ((close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
-                pingreq( close_clientlist[i].ip_port, 
-                         close_clientlist[i].client_id );
+                send_ping_request( close_clientlist[i].ip_port, 
+                                   (clientid_t*) &close_clientlist[i].client_id );
                 close_clientlist[i].last_pinged = temp_time;
             }
             /* if node is good. */
@@ -1151,7 +1087,7 @@ static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t
         /*TODO: improve port guessing algorithm*/
         uint16_t port = port_list[(i/2) % numports] + (i/(2*numports))*((i % 2) ? -1 : 1);
         IP_Port pinging = {ip, htons(port)};
-        pingreq(pinging, friends_list[friend_num].client_id);
+        send_ping_request(pinging, (clientid_t*) &friends_list[friend_num].client_id);
     }
     friends_list[friend_num].punching_index = i;
 }
