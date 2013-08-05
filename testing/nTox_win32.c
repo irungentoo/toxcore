@@ -26,7 +26,12 @@
 
 #include <process.h>
 
-uint8_t pending_requests[256][CLIENT_ID_SIZE];
+typedef struct {
+    uint8_t id[CLIENT_ID_SIZE];
+    uint8_t accepted;
+} Friend_request;
+
+Friend_request pending_requests[256];
 uint8_t num_requests = 0;
 uint32_t maxnumfriends;
 
@@ -51,7 +56,8 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
     char numchar[100];
     sprintf(numchar, "\n[i] accept request with /a %u\n\n", num_requests);
     printf(numchar);
-    memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
+    memcpy(pending_requests[num_requests].id, public_key, CLIENT_ID_SIZE);
+    pending_requests[num_requests].accepted = 0;
     ++num_requests;
 }
 
@@ -287,10 +293,21 @@ void accept_friend_request()
     friend_request_received = 0;
     uint8_t numf = atoi(line + 3);
     char numchar[100];
-    int num = m_addfriend_norequest(pending_requests[numf]);
-    sprintf(numchar, "\n[i] Added friendnumber: %d\n\n", num);
-    printf(numchar);
-    ++maxnumfriends;
+    if (numf >= num_requests || pending_requests[numf].accepted) {
+        sprintf(numchar, "\n[i] you either didn't receive that request or you already accepted it");
+        printf(numchar);
+    } else {
+        int num = m_addfriend_norequest(pending_requests[numf].id);
+        if (num != -1) {
+            pending_requests[numf].accepted = 1;
+            sprintf(numchar, "\n[i] Added friendnumber: %d\n\n", num);
+            printf(numchar);
+            ++maxnumfriends;
+        } else {
+            sprintf(numchar, "[i] failed to add friend");
+            printf(numchar);
+        }
+    }
 }
 
 void line_eval(char* line)
