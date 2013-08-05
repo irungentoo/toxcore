@@ -25,8 +25,8 @@ typedef struct {
 
 } ChatContext;
 
+extern int w_active;
 extern void del_window(ToxWindow *w, int f_num);
-extern int focus_window(int num);
 extern void fix_name(uint8_t* name);
 void print_help(ChatContext* self);
 void execute(ToxWindow* self, ChatContext* ctx, char* cmd);
@@ -188,7 +188,7 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd)
     wprintw(ctx->history, "Your ID: %s\n", id);
   }
   else if (strcmp(ctx->line, "/close") == 0) {
-    focus_window(0);    // Go to prompt screen
+    w_active = 0;    // Go to prompt screen
     int f_num = ctx->friendnum;
     delwin(ctx->linewin);
     del_window(self, f_num);
@@ -236,7 +236,7 @@ void print_help(ChatContext* self) {
   wprintw(self->history, "      /nick <nickname>           : Set your nickname\n");
   wprintw(self->history, "      /myid                      : Print your ID\n");
   wprintw(self->history, "      /clear                     : Clear the screen\n");
-  wprintw(self->history, "      /close                     : Closes the current chat window\n");
+  wprintw(self->history, "      /close                     : Close the current chat window\n");
   wprintw(self->history, "      /quit or /exit             : Exit program\n");
   wprintw(self->history, "      /help                      : Print this message again\n\n");
 

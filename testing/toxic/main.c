@@ -23,7 +23,7 @@ extern int add_req(uint8_t* public_key); // XXX
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];    // Holds status of chat windows
 static ToxWindow windows[MAX_WINDOW_SLOTS];
 int w_num;
-static int w_active;
+int w_active;
 static ToxWindow* prompt;
 
 // CALLBACKS START
@@ -40,7 +40,7 @@ void on_request(uint8_t* public_key, uint8_t* data, uint16_t length) {
 
   wprintw(prompt->window, "Use \"accept %d\" to accept it.\n", n);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onFriendRequest != NULL)
       windows[i].onFriendRequest(&windows[i], public_key, data, length);
   }
@@ -51,7 +51,7 @@ void on_message(int friendnumber, uint8_t* string, uint16_t length) {
 
   wprintw(prompt->window, "\n(message) %d: %s\n", friendnumber, string);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onMessage != NULL)
       windows[i].onMessage(&windows[i], friendnumber, string, length);
   }
@@ -62,7 +62,7 @@ void on_nickchange(int friendnumber, uint8_t* string, uint16_t length) {
 
   wprintw(prompt->window, "\n(nickchange) %d: %s!\n", friendnumber, string);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onNickChange != NULL)
       windows[i].onNickChange(&windows[i], friendnumber, string, length);
   }
@@ -73,7 +73,7 @@ void on_statuschange(int friendnumber, uint8_t* string, uint16_t length) {
 
   wprintw(prompt->window, "\n(statuschange) %d: %s!\n", friendnumber, string);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onStatusChange != NULL)
       windows[i].onStatusChange(&windows[i], friendnumber, string, length);
   }
@@ -115,31 +115,31 @@ static void init_tox() {
 }
 
 void init_window_status() {
+  /* Default window values decrement from -2 */
   int i;
   for (i = 0; i < N_DEFAULT_WINS; i++)
-    WINDOW_STATUS[i] = i;
+    WINDOW_STATUS[i] = -(i+2);
 
   int j;
   for (j = N_DEFAULT_WINS; j < MAX_WINDOW_SLOTS; j++)
     WINDOW_STATUS[j] = -1;
 }
 
-int add_window(ToxWindow w) {
-  if(w_num == TOXWINDOWS_MAX_NUM)
+int add_window(ToxWindow w, int n) {
+  if(w_num >= TOXWINDOWS_MAX_NUM)
     return -1;
 
   if(LINES < 2)
     return -1;
 
   w.window = newwin(LINES - 2, COLS, 0, 0);
-
   if(w.window == NULL)
     return -1;
 
-  windows[w_num++] = w;
+  windows[n] = w;
   w.onInit(&w);
-
-  return w_num - 1;
+  w_num++;
+  return n;
 }
 
 /* Deletes window w and cleans up */
@@ -157,24 +157,17 @@ void del_window(ToxWindow *w, int f_num) {
   refresh();
 }
 
-int focus_window(int num) {
-  if(num >= w_num || num < 0)
-    return -1;
-
-  w_active = num;
-  return 0;
-}
-
 static void init_windows() {
   w_num = 0;
-
-  if(add_window(new_prompt()) == -1 || add_window(new_friendlist()) == -1) {
+  int n_prompt = 0;
+  int n_friendslist = 1;
+  if(add_window(new_prompt(), n_prompt) == -1 
+                        || add_window(new_friendlist(), n_friendslist) == -1) {
     fprintf(stderr, "add_window() failed.\n");
-
     endwin();
     exit(1);
   }
-  prompt = &windows[0];
+  prompt = &windows[n_prompt];
 }
 
 static void do_tox() {
