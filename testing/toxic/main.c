@@ -360,6 +360,7 @@ int main(int argc, char* argv[]) {
   init_tox();
   load_data(filename);
   init_windows();
+  init_window_status();
 
   if(f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
