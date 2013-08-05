@@ -265,6 +265,5 @@ ToxWindow new_chat(int friendnum) {
   x->friendnum = friendnum;
 
   ret.x = (void*) x;
-  free(x);
   return ret;
 }

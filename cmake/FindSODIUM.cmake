@@ -26,11 +26,12 @@ set(_SODIUM_ROOT_HINTS
 
 set(_SODIUM_ROOT_PATHS
     "$ENV{PROGRAMFILES}/sodium"
+    "${CMAKE_SOURCE_DIR}/sodium"
 )
 
 find_path(SODIUM_ROOT_DIR
     NAMES
-        include/cmocka.h
+        include/sodium.h
     HINTS
         ${_SODIUM_ROOT_HINTS}
     PATHS
@@ -45,8 +46,15 @@ find_path(SODIUM_INCLUDE_DIR
         ${SODIUM_ROOT_DIR}/include
 )
 
+if(SHARED_LIBSODIUM)
+        set(WIN32_LIBSODIUM_FILENAME libsodium.dll.a)
+else()
+        set(WIN32_LIBSODIUM_FILENAME libsodium.a)
+endif()
+
 find_library(SODIUM_LIBRARY
     NAMES
+        ${WIN32_LIBSODIUM_FILENAME}
         sodium
     PATHS
         ${SODIUM_ROOT_DIR}/lib
