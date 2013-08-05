@@ -318,7 +318,7 @@ static void print_usage(ToxWindow* self) {
   wprintw(self->window, "      myid                      : Print your ID\n");
   wprintw(self->window, "      quit/exit                 : Exit program\n");
   wprintw(self->window, "      help                      : Print this message again\n");
-  wprintw(self->window, "      clear:                    : Clear this window\n");
+  wprintw(self->window, "      clear                     : Clear this window\n");
 
   wattron(self->window, A_BOLD);
   wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
