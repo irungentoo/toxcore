@@ -46,10 +46,16 @@ find_path(SODIUM_INCLUDE_DIR
         ${SODIUM_ROOT_DIR}/include
 )
 
+if(SHARED_LIBSODIUM)
+        set(WIN32_LIBSODIUM_FILENAME libsodium.dll.a)
+else()
+        set(WIN32_LIBSODIUM_FILENAME libsodium.a)
+endif()
+
 find_library(SODIUM_LIBRARY
     NAMES
+        ${WIN32_LIBSODIUM_FILENAME}
         sodium
-        libsodium.a
     PATHS
         ${SODIUM_ROOT_DIR}/lib
 )
