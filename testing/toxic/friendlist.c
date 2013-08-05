@@ -58,11 +58,11 @@ void friendlist_onMessage(ToxWindow* self, int num, uint8_t* str, uint16_t len) 
     for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; i++) {
       if (WINDOW_STATUS[i] == -1) {
         WINDOW_STATUS[i] = num;
-        add_window(new_chat(num_selected), i);
+        add_window(new_chat(num), i);
         w_active = i;
         break;
-        }
       }
+    }
   }
 }
 
@@ -101,8 +101,9 @@ int friendlist_onFriendAdded(int num) {
 
 static void friendlist_onKey(ToxWindow* self, int key) {
   if(key == KEY_UP) {
-    if(num_selected != 0)
-      num_selected--;
+    num_selected--;
+    if (num_selected < 0)
+      num_selected = num_friends-1;
   }
   else if(key == KEY_DOWN) {
     if(num_friends != 0)
