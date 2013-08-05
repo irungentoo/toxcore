@@ -29,7 +29,7 @@
 /* get the first working broadcast address that's not from "lo"
  *  returns higher than 0 on success
  *  returns 0 on error */
-uint32_t get_broadcast(void)
+static uint32_t get_broadcast(void)
 {
     /* not sure how many platforms this will
      *  run on, so it's wrapped in __linux for now */
@@ -76,7 +76,7 @@ uint32_t get_broadcast(void)
 #endif
 
 /* Return the broadcast ip */
-IP broadcast_ip()
+static IP broadcast_ip(void)
 {
     IP ip;
     #ifdef __linux
@@ -92,7 +92,7 @@ IP broadcast_ip()
 
 /*return 0 if ip is a LAN ip
   return -1 if it is not */
-int LAN_ip(IP ip)
+static int LAN_ip(IP ip)
 {
     if (ip.c[0] == 127)/* Loopback */
         return 0;
@@ -107,7 +107,7 @@ int LAN_ip(IP ip)
     return -1;
 }
 
-int handle_LANdiscovery(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_LANdiscovery(uint8_t *packet, uint32_t length, IP_Port source)
 {
     if (LAN_ip(source.ip) == -1)
         return 1;

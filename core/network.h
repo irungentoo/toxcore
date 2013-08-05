@@ -90,11 +90,11 @@ typedef struct {
 } ADDR;
 
 /* returns current time in milleseconds since the epoch. */
-uint64_t current_time();
+uint64_t current_time(void);
 
 /* return a random number
     NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary */
-uint32_t random_int();
+uint32_t random_int(void);
 
 /* Basic network functions: */
 
@@ -115,7 +115,7 @@ int receivepacket(IP_Port *ip_port, uint8_t *data, uint32_t *length);
 int init_networking(IP ip, uint16_t port);
 
 /* function to cleanup networking stuff(doesn't do much right now) */
-void shutdown_networking();
+void shutdown_networking(void);
 
 /*
   resolve_addr():

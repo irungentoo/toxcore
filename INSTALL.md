@@ -60,6 +60,10 @@ cd ProjectTox-Core
 mkdir build && cd build
 cmake ..
 ```
+Advance cmake options:
+  - `-DSHARED_TOXCORE=ON` (default `OFF`) — Build Core as a shared library.
+  - `-DUSE_NACL=ON` (default `OFF`) — Use NaCl library instead of libsodium.
+  
 Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
 Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
@@ -143,6 +147,10 @@ Navigate in `cmd` to this repo and run:
 mkdir build && cd build
 cmake -G "MinGW Makefiles" ..
 ```
+Advance cmake options:
+  - `-DSHARED_TOXCORE=ON` (default OFF) — Build Core as a shared library.
+  - `-DSHARED_LIBSODIUM=ON` (default OFF) — Link libsodium as a shared library.
+
 Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
 Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:

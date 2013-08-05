@@ -126,7 +126,7 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 }
 
 /* increment the given nonce by 1 */
-void increment_nonce(uint8_t *nonce)
+static void increment_nonce(uint8_t *nonce)
 {
     uint32_t i;
     for (i = 0; i < crypto_box_NONCEBYTES; ++i) {
@@ -243,7 +243,7 @@ int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *packet, uint16_t
 /* Send a crypto handshake packet containing an encrypted secret nonce and session public key
    to peer with connection_id and public_key
    the packet is encrypted with a random nonce which is sent in plain text with the packet */
-int send_cryptohandshake(int connection_id, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
+static int send_cryptohandshake(int connection_id, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
 {
     uint8_t temp_data[MAX_DATA_SIZE];
     uint8_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
@@ -266,7 +266,7 @@ int send_cryptohandshake(int connection_id, uint8_t *public_key, uint8_t *secret
 /* Extract secret nonce, session public key and public_key from a packet(data) with length length
    return 1 if successful
    return 0 if failure */
-int handle_cryptohandshake(uint8_t *public_key, uint8_t *secret_nonce,
+static int handle_cryptohandshake(uint8_t *public_key, uint8_t *secret_nonce,
                            uint8_t *session_key, uint8_t *data, uint16_t length)
 {
     int pad = (- crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
@@ -295,7 +295,7 @@ int handle_cryptohandshake(uint8_t *public_key, uint8_t *secret_nonce,
 /* get crypto connection id from public key of peer
    return -1 if there are no connections like we are looking for
    return id if it found it */
-int getcryptconnection_id(uint8_t *public_key)
+static int getcryptconnection_id(uint8_t *public_key)
 {
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
@@ -440,7 +440,7 @@ int is_cryptoconnected(int crypt_connection_id)
 
 /* Generate our public and private keys
    Only call this function the first time the program starts. */
-void new_keys()
+void new_keys(void)
 {
     crypto_box_keypair(self_public_key,self_secret_key);
 }
@@ -465,7 +465,7 @@ void load_keys(uint8_t *keys)
    adds an incoming connection to the incoming_connection list.
    returns 0 if successful
    returns 1 if failure */
-int new_incoming(int id)
+static int new_incoming(int id)
 {
     uint32_t i;
     for (i = 0; i < MAX_INCOMING; ++i) {
@@ -479,7 +479,7 @@ int new_incoming(int id)
 
 /* TODO: optimize this
    handle all new incoming connections. */
-static void handle_incomings()
+static void handle_incomings(void)
 {
     int income;
     while (1) {
@@ -490,7 +490,7 @@ static void handle_incomings()
 }
 
 /* handle received packets for not yet established crypto connections. */
-static void receive_crypto()
+static void receive_crypto(void)
 {
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
@@ -547,7 +547,7 @@ static void receive_crypto()
 
 /* run this to (re)initialize net_crypto
    sets all the global connection variables to their default values. */
-void initNetCrypto()
+void initNetCrypto(void)
 {
     memset(crypto_connections, 0 ,sizeof(crypto_connections));
     memset(incoming_connections, -1 ,sizeof(incoming_connections));
@@ -556,7 +556,7 @@ void initNetCrypto()
         crypto_connections[i].number = ~0;
 }
 
-static void killTimedout()
+static void killTimedout(void)
 {
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
@@ -570,7 +570,7 @@ static void killTimedout()
 }
 
 /* main loop */
-void doNetCrypto()
+void doNetCrypto(void)
 {
     /* TODO:check if friend requests were sent correctly
        handle new incoming connections

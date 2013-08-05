@@ -58,7 +58,7 @@ int DHT_delfriend(uint8_t *client_id);
 IP_Port DHT_getfriendip(uint8_t *client_id);
 
 /* Run this function at least a couple times per second (It's the main loop) */
-void doDHT();
+void doDHT(void);
 
 /* if we receive a DHT packet we call this function so it can be handled.
     return 0 if packet is handled correctly.
@@ -90,7 +90,7 @@ int friend_ips(IP_Port *ip_portlist, uint8_t *friend_id);
 /* SAVE/LOAD functions */
 
 /* get the size of the DHT (for saving) */
-uint32_t DHT_size();
+uint32_t DHT_size(void);
 
 /* save the DHT in data where data is an array of size DHT_size() */
 void DHT_save(uint8_t *data);
