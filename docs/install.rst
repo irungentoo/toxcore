@@ -6,7 +6,7 @@ Linux
 
 First, install the build dependencies ::
 
-    bash apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall
+    sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall
 
 .. note :: ``libconfig-dev`` should be >= 1.4.
 
