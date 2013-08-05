@@ -284,7 +284,7 @@ static int new_inconnection(IP_Port ip_port)
  * Returns an integer corresponding to the next connection in our incoming connection list.
  * Return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection()
+int incoming_connection(void)
 {
     uint32_t i;
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
@@ -298,7 +298,7 @@ int incoming_connection()
 }
 
 /* Try to free some memory from the connections array. */
-static void free_connections()
+static void free_connections(void)
 {
     uint32_t i;
     for(i = connections_length; i != 0; --i)
@@ -793,7 +793,7 @@ int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
  * Send handshake requests
  * handshake packets are sent at the same rate as SYNC packets
  */
-static void doNew()
+static void doNew(void)
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -817,7 +817,7 @@ static void doNew()
     }
 }
 
-static void doSYNC()
+static void doSYNC(void)
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -830,7 +830,7 @@ static void doSYNC()
     }
 }
 
-static void doData()
+static void doData(void)
 {
     uint32_t i;
     uint64_t j;
@@ -851,7 +851,7 @@ static void doData()
  *
  * TODO: flow control.
  */
-static void adjustRates()
+static void adjustRates(void)
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -871,7 +871,7 @@ static void adjustRates()
 }
 
 /* Call this function a couple times per second It's the main loop. */
-void doLossless_UDP()
+void doLossless_UDP(void)
 {
     doNew();
     doSYNC();
