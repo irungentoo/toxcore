@@ -57,7 +57,7 @@ static uint32_t numfriends = 0;
    static uint8_t online; */
 
 /* find friend #friendnumber in the friend list */
-Friend *seektofriend(uint32_t friendnumber)
+static Friend *seektofriend(int friendnumber)
 {
     uint32_t i;
     Friend *f;
