@@ -32,7 +32,7 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd);
 static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len) {
   ChatContext* ctx = (ChatContext*) self->x;
   uint8_t nick[MAX_NAME_LENGTH] = {0};
-
+  
   time_t now;
   time(&now);
   struct tm * timeinfo;
@@ -58,6 +58,7 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   wprintw(ctx->history, "%s\n", msg);
 
   self->blink = true;
+  beep();
 }
 
 static void chat_onNickChange(ToxWindow* self, int num, uint8_t* nick, uint16_t len) {
