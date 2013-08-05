@@ -25,11 +25,11 @@ if(NOT WIN32)
 		message(STATUS "==== ${CMAKE_C_COMPILER_ID} detected - Adding compiler flags ====")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
 	endif()
-	find_package(SODIUM REQUIRED)
 endif()
 
 if(NOT USE_NACL)
-	 set(LINK_CRYPTO_LIBRARY ${SODIUM_LIBRARY})
+	find_package(SODIUM REQUIRED)
+	set(LINK_CRYPTO_LIBRARY ${SODIUM_LIBRARY})
 endif()
 
 macro(linkCoreLibraries exe_name)
