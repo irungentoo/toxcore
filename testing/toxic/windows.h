@@ -3,6 +3,14 @@
  */
 
 #include <stdbool.h>
+#define TOXWINDOWS_MAX_NUM 32
+#define MAX_FRIENDS_NUM 100
+ 
+/* number of permanent default windows */
+#define N_DEFAULT_WINS 2  
+
+/* maximum window slots for WINDOW_STATUS array */
+#define MAX_WINDOW_SLOTS N_DEFAULT_WINS+MAX_FRIENDS_NUM
 
 typedef struct ToxWindow_ ToxWindow;
 

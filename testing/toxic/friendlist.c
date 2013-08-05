@@ -12,11 +12,10 @@
 
 #include "windows.h"
 
+extern char WINDOW_STATUS[TOXWINDOWS_MAX_NUM];
 extern int add_window(ToxWindow w);
 extern int focus_window(int num);
 extern ToxWindow new_chat(int friendnum);
-
-#define MAX_FRIENDS_NUM 100
 
 typedef struct {
   uint8_t name[MAX_NAME_LENGTH];
@@ -86,14 +85,11 @@ int friendlist_onFriendAdded(int num) {
   getname(num, friends[num_friends].name);
   strcpy((char*) friends[num_friends].name, "unknown");
   strcpy((char*) friends[num_friends].status, "unknown");
-  friends[num_friends].chatwin = -1;
-
-  num_friends++;
+  friends[num_friends++].chatwin = -1;
   return 0;
 }
 
 static void friendlist_onKey(ToxWindow* self, int key) {
-
   if(key == KEY_UP) {
     if(num_selected != 0)
       num_selected--;
@@ -103,12 +99,26 @@ static void friendlist_onKey(ToxWindow* self, int key) {
       num_selected = (num_selected+1) % num_friends;
   }
   else if(key == '\n') {
-
-    if(friends[num_selected].chatwin != -1)
-      return;
-
-    friends[num_selected].chatwin = add_window(new_chat(num_selected));
-    focus_window(friends[num_selected].chatwin);
+    /* Jump to chat window if already open */
+    if (friends[num_selected].chatwin != -1) {
+      int i;
+      for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; i++) {
+        if (WINDOW_STATUS[i] == num_selected) {
+          focus_window(i);
+          break;
+        }
+      }
+    }else {
+      friends[num_selected].chatwin = add_window(new_chat(num_selected));
+      focus_window(friends[num_selected].chatwin);
+      int i;
+      for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; i++) {   // Find open slot
+        if (WINDOW_STATUS[i] == -1) {
+          WINDOW_STATUS[i] = num_selected;
+          break;
+        }
+      }
+    }
   }
 }
 
@@ -143,6 +153,10 @@ static void friendlist_onDraw(ToxWindow* self) {
   }
 
   wrefresh(self->window);
+}
+
+void disable_chatwin(int f_num) {
+  friends[f_num].chatwin = -1;
 }
 
 static void friendlist_onInit(ToxWindow* self) {
