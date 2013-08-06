@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 #include "nTox.h"
 #include "misc_tools.h"
@@ -36,21 +36,51 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 
-char *help = "[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)\n"
-             "[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)";
+char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
+             "(to send message)\n/s status (to change status)\n[i] /l list (l"
+             "ist friends)\n/h for help\n/i for info\n/n nick (to change nick"
+             "name)\n/q (to quit)";
 int x, y;
 
+typedef struct {
+    uint8_t id[CLIENT_ID_SIZE];
+    uint8_t accepted;
+} Friend_request;
 
-uint8_t pending_requests[256][CLIENT_ID_SIZE];
+Friend_request pending_requests[256];
 uint8_t num_requests = 0;
+
+void get_id(char *data)
+{
+    char idstring0[200];
+    char idstring1[PUB_KEY_BYTES][5];
+    char idstring2[PUB_KEY_BYTES][5];
+    int i = 0;
+    for(i = 0; i < PUB_KEY_BYTES; i++)
+    {
+        if (self_public_key[i] < (PUB_KEY_BYTES / 2))
+            strcpy(idstring1[i],"0");
+        else
+            strcpy(idstring1[i], "");
+        sprintf(idstring2[i], "%hhX",self_public_key[i]);
+    }
+    strcpy(idstring0,"[i] ID: ");
+    int j = 0;
+    for (j = 0; j < PUB_KEY_BYTES; j++) {
+        strcat(idstring0,idstring1[j]);
+        strcat(idstring0,idstring2[j]);
+    }
+
+    memcpy(data, idstring0, strlen(idstring0));
+}
 
 void new_lines(char *line)
 {
-    int i;
-    for (i = HISTORY-1; i > 0; i--) 
-        strcpy(lines[i], lines[i-1]);
-    
-    strcpy(lines[0], line);
+    int i = 0;
+    for (i = HISTORY-1; i > 0; i--)
+        strncpy(lines[i], lines[i-1], STRING_LENGTH - 1);
+
+    strncpy(lines[0], line, STRING_LENGTH - 1);
     do_refresh();
 }
 
@@ -58,18 +88,23 @@ void new_lines(char *line)
 void print_friendlist()
 {
     char name[MAX_NAME_LENGTH];
+    int i = 0;
     new_lines("[i] Friend List:");
-    uint32_t i;
-    for (i = 0; i <= num_requests; i++) {
-        char fstring[128];
-        getname(i, (uint8_t*)name);
+    while(getname(i, (uint8_t *)name) != -1) {
+        /* account for the longest name and the longest "base" string */
+        char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
+
         if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: NULL\n\tid: %i", i);
+            sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
         } else {
             sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t*)name, i);
         }
+        i++;
         new_lines(fstring);
     }
+
+    if(i == 0)
+        new_lines("\tno friends! D:");
 }
 
 char *format_message(char *message, int friendnum)
@@ -98,7 +133,7 @@ char *format_message(char *message, int friendnum)
     return msg;
 }
 
-void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
+void line_eval(char *line)
 {
     if (line[0] == '/') {
         char inpt_command = line[1];
@@ -109,25 +144,27 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         if (inpt_command == 'f') { // add friend command: /f ID
             int i;
             char temp_id[128];
-            for (i = 0; i < 128; i++) 
+            for (i = 0; i < 128; i++)
                 temp_id[i] = line[i+prompt_offset];
 
-            int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            unsigned char *bin_string = hex_string_to_bin(temp_id);
+            int num = m_addfriend(bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            free(bin_string);
             char numstring[100];
             switch (num) {
-            case -1:
+            case FAERR_TOOLONG:
                 sprintf(numstring, "[i] Message is too long.");
                 break;
-            case -2:
+            case FAERR_NOMESSAGE:
                 sprintf(numstring, "[i] Please add a message to your request.");
                 break;
-            case -3:
+            case FAERR_OWNKEY:
                 sprintf(numstring, "[i] That appears to be your own ID.");
                 break;
-            case -4:
+            case FAERR_ALREADYSENT:
                 sprintf(numstring, "[i] Friend request already sent.");
                 break;
-            case -5:
+            case FAERR_UNKNOWN:
                 sprintf(numstring, "[i] Undefined error when adding friend.");
                 break;
             default:
@@ -142,8 +179,8 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
-	    if(len < 3)
-	      return;
+            if(len < 3)
+                return;
 
             char numstring[len-3];
             char message[len-3];
@@ -191,7 +228,7 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            m_set_userstatus(status, strlen((char*)status) + 1);
+            m_set_userstatus(USERSTATUS_KIND_ONLINE, status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -199,49 +236,37 @@ void line_eval(char lines[HISTORY][STRING_LENGTH], char *line)
         else if (inpt_command == 'a') {
             uint8_t numf = atoi(line + 3);
             char numchar[100];
-            int num = m_addfriend_norequest(pending_requests[numf]);
-            if (num != -1) {
-                sprintf(numchar, "[i] friend request %u accepted", numf);
-                new_lines(numchar);
-                sprintf(numchar, "[i] added friendnumber %d", num);
+            if (numf >= num_requests || pending_requests[numf].accepted) {
+                sprintf(numchar,"[i] you either didn't receive that request or you already accepted it");
                 new_lines(numchar);
             } else {
-                sprintf(numchar, "[i] failed to add friend");
-                new_lines(numchar);
+                int num = m_addfriend_norequest(pending_requests[numf].id);
+                if (num != -1) {
+                    pending_requests[numf].accepted = 1;
+                    sprintf(numchar, "[i] friend request %u accepted", numf);
+                    new_lines(numchar);
+                    sprintf(numchar, "[i] added friendnumber %d", num);
+                    new_lines(numchar);
+                } else {
+                    sprintf(numchar, "[i] failed to add friend");
+                    new_lines(numchar);
+                }
             }
             do_refresh();
         }
        else if (inpt_command == 'h') { //help
-           new_lines("[i] commands: /f ID (to add friend), /m friendnumber message  (to send message), /s status (to change status)");
-           new_lines("[i] /l list (list friends), /h for help, /i for info, /n nick (to change nickname), /q (to quit)");
+           new_lines(help);
         }
        else if (inpt_command == 'i') { //info
-           char idstring0[200];
-           char idstring1[PUB_KEY_BYTES][5];
-           char idstring2[PUB_KEY_BYTES][5];
-           int i;
-           for (i = 0; i < PUB_KEY_BYTES; i++)
-           {
-               if (self_public_key[i] < (PUB_KEY_BYTES/2))
-                   strcpy(idstring1[i],"0");
-               else 
-                   strcpy(idstring1[i], "");
-               sprintf(idstring2[i], "%hhX", self_public_key[i]);
-           }
-           //
-           strcpy(idstring0,"[i] ID: ");
-           int j;
-           for (j = 0; j < PUB_KEY_BYTES; j++) {
-               strcat(idstring0,idstring1[j]);
-               strcat(idstring0,idstring2[j]);
-           }    
-                  new_lines(idstring0);
+           char idstring[200];
+           get_id(idstring);
+           new_lines(idstring);
        }
 
         else if (inpt_command == 'q') { //exit
             endwin();
             exit(EXIT_SUCCESS);
-        } else { 
+        } else {
             new_lines("[i] invalid command");
         }
     } else {
@@ -318,7 +343,8 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
     char numchar[100];
     sprintf(numchar, "[i] accept request with /a %u", num_requests);
     new_lines(numchar);
-    memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
+    memcpy(pending_requests[num_requests].id, public_key, CLIENT_ID_SIZE);
+    pending_requests[num_requests].accepted = 0;
     ++num_requests;
     do_refresh();
 }
@@ -328,108 +354,137 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
     new_lines(format_message((char*)string, friendnumber));
 }
 
-void print_nickchange(int friendnumber, uint8_t *string, uint16_t length) 
+void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length];
-    sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
-    new_lines(msg);
+    if(getname(friendnumber, (uint8_t*)name) != -1) {
+        char msg[100+length];
+        sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
+        new_lines(msg);
+    }
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) 
+void print_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    getname(friendnumber, (uint8_t*)name);
-    char msg[100+length+strlen(name)+1];
-    sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
-    new_lines(msg);
+    if(getname(friendnumber, (uint8_t*)name) != -1) {
+        char msg[100+length+strlen(name)+1];
+        sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+        new_lines(msg);
+    }
 }
 
-void load_key() 
+void load_key(char *path)
 {
-    FILE *data_file = NULL;
-    data_file = fopen("data","r");
+    FILE *data_file = fopen(path, "r");
+    int size = 0;
+
     if (data_file) {
         //load keys
         fseek(data_file, 0, SEEK_END);
-        int size = ftell(data_file);
-        fseek(data_file, 0, SEEK_SET);
+        size = ftell(data_file);
+        rewind(data_file);
+
         uint8_t data[size];
         if (fread(data, sizeof(uint8_t), size, data_file) != size){
-            printf("[i] could not read data file\n[i] exiting\n");
-            exit(1);
+            fputs("[!] could not read data file! exiting...\n", stderr);
+            goto FILE_ERROR;
         }
         Messenger_load(data, size);
-    } else { 
+
+    } else {
         //else save new keys
         int size = Messenger_size();
         uint8_t data[size];
         Messenger_save(data);
-        data_file = fopen("data","w");
-        if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
-            printf("[i] could not write data file\n[i] exiting\n");
+        data_file = fopen(path, "w");
+
+        if(!data_file) {
+            perror("[!] load_key");
             exit(1);
         }
+
+        if (fwrite(data, sizeof(uint8_t), size, data_file) != size){
+            fputs("[!] could not write data file! exiting...", stderr);
+            goto FILE_ERROR;
+        }
     }
-   fclose(data_file);
+
+    return;
+
+FILE_ERROR:
+    if(fclose(data_file) < 0)
+        perror("[!] fclose failed");
+    exit(1);
+}
+
+void print_help(void)
+{
+    printf("nTox %.1f - Command-line tox-core client\n", 0.1);
+    puts("Options:");
+    puts("\t-h\t-\tPrint this help and exit.");
+    puts("\t-f\t-\tSpecify a keyfile to read (or write to) from.");
 }
 
 int main(int argc, char *argv[])
 {
+    int on = 0;
+    int c = 0;
+    int i = 0;
+    char *filename = "data";
+    char idstring[200] = {0};
+
     if (argc < 4) {
-        printf("[!] Usage: %s [IP] [port] [public_key] <nokey>\n", argv[0]);
+        printf("[!] Usage: %s [IP] [port] [public_key] <keyfile>\n", argv[0]);
         exit(0);
     }
-    int c;
-    int on = 0;
-    initMessenger();
-    //if keyfiles exist
-    if(argc > 4){
-        if(strncmp(argv[4], "nokey", 6) < 0){
-        //load_key();
+
+    for(i = 0; i < argc; i++) {
+      if (argv[i] == NULL){
+        break;
+      } else if(argv[i][0] == '-') {
+            if(argv[i][1] == 'h') {
+                print_help();
+                exit(0);
+            } else if(argv[i][1] == 'f') {
+                if(argv[i + 1] != NULL)
+                    filename = argv[i + 1];
+                else {
+                    fputs("[!] you passed '-f' without giving an argument!\n", stderr);
+                }
+            }
         }
-    } else {
-        load_key();
     }
+
+    initMessenger();
+    load_key(filename);
+
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
     m_callback_userstatus(print_statuschange);
-    char idstring0[200];
-    char idstring1[PUB_KEY_BYTES][5];
-    char idstring2[PUB_KEY_BYTES][5];
-    int i;
-    for(i = 0; i < PUB_KEY_BYTES; i++)
-    {
-        if (self_public_key[i] < (PUB_KEY_BYTES / 2))
-            strcpy(idstring1[i],"0");
-        else 
-            strcpy(idstring1[i], "");
-        sprintf(idstring2[i], "%hhX",self_public_key[i]);
-    }
-    strcpy(idstring0,"[i] your ID: ");
-    int j;
-    for (j = 0; j < PUB_KEY_BYTES; j++) {
-        strcat(idstring0,idstring1[j]);
-        strcat(idstring0,idstring2[j]);
-    }
+
     initscr();
     noecho();
     raw();
     getmaxyx(stdscr, y, x);
-    new_lines(idstring0);
-    new_lines(help);
+
+    new_lines("/h for list of commands");
+    get_id(idstring);
+    new_lines(idstring);
     strcpy(line, "");
+
     IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
     if (resolved_address != 0)
         bootstrap_ip_port.ip.i = resolved_address;
-    else 
+    else
         exit(1);
-    
-    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+
+    unsigned char *binary_string = hex_string_to_bin(argv[3]);
+    DHT_bootstrap(bootstrap_ip_port, binary_string);
+    free(binary_string);
     nodelay(stdscr, TRUE);
     while(true) {
         if (on == 0 && DHT_isconnected()) {
@@ -447,9 +502,9 @@ int main(int argc, char *argv[])
 
         getmaxyx(stdscr, y, x);
         if (c == '\n') {
-            line_eval(lines, line);
+            line_eval(line);
             strcpy(line, "");
-        } else if (c == 127) {
+        } else if (c == 8 || c == 127) {
             line[strlen(line)-1] = '\0';
         } else if (isalnum(c) || ispunct(c) || c == ' ') {
             strcpy(line, appender(line, (char) c));

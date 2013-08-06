@@ -1,6 +1,6 @@
 /* Lossless_UDP.c
  *
- * An implementation of the Lossless_UDP protocol as seen in docs/Lossless_UDP.txt
+ * An implementation of the Lossless_UDP protocol as seen in http://wiki.tox.im/index.php/Lossless_UDP
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -149,7 +149,7 @@ static uint32_t randtable[6][256];
  *
  * TODO: make this better
  */
-uint32_t handshake_id(IP_Port source)
+static uint32_t handshake_id(IP_Port source)
 {
     uint32_t id = 0, i;
     for (i = 0; i < 6; ++i) {
@@ -168,7 +168,7 @@ uint32_t handshake_id(IP_Port source)
  *
  * TODO: make this better
  */
-void change_handshake(IP_Port source)
+static void change_handshake(IP_Port source)
 {
     uint8_t rand = random_int() % 4;
     randtable[rand][((uint8_t *)&source)[rand]] = random_int();
@@ -202,15 +202,16 @@ int new_connection(IP_Port ip_port)
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if(connections[i].status == 0) {
             memset(&connections[i], 0, sizeof(Connection));
+            uint32_t handshake_id1 = handshake_id(ip_port);
 
             connections[i] = (Connection) {
               .ip_port            = ip_port,
               .status             = 1,
               .inbound            = 0,
-              .handshake_id1      = handshake_id(ip_port),
-              .sent_packetnum     = connections[i].handshake_id1,
-              .sendbuff_packetnum = connections[i].handshake_id1,
-              .successful_sent    = connections[i].handshake_id1,
+              .handshake_id1      = handshake_id1,
+              .sent_packetnum     = handshake_id1,
+              .sendbuff_packetnum = handshake_id1,
+              .successful_sent    = handshake_id1,
               .SYNC_rate          = SYNC_RATE,
               .data_rate          = DATA_SYNC_RATE,
               .last_recvSYNC      = current_time(),
@@ -233,7 +234,7 @@ int new_connection(IP_Port ip_port)
  * Returns an integer corresponding to the connection id.
  * Return -1 if it could not initialize the connection.
  */
-int new_inconnection(IP_Port ip_port)
+static int new_inconnection(IP_Port ip_port)
 {
     if (getconnection_id(ip_port) != -1)
         return -1;
@@ -254,6 +255,7 @@ int new_inconnection(IP_Port ip_port)
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
         if (connections[i].status == 0) {
             memset(&connections[i], 0, sizeof(Connection));
+            uint64_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
 
             connections[i] = (Connection){
                 .ip_port       = ip_port,
@@ -266,10 +268,10 @@ int new_inconnection(IP_Port ip_port)
                 .send_counter  = 127,
 
                 /* add randomness to timeout to prevent connections getting stuck in a loop. */
-                .timeout       = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT,
+                .timeout       = timeout,
 
                 /* if this connection isn't handled within the timeout kill it. */
-                .killat        = current_time() + 1000000UL*connections[i].timeout
+                .killat        = current_time() + 1000000UL*timeout
             };
             ++connections_number;
             return i;
@@ -282,7 +284,7 @@ int new_inconnection(IP_Port ip_port)
  * Returns an integer corresponding to the next connection in our incoming connection list.
  * Return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection()
+int incoming_connection(void)
 {
     uint32_t i;
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
@@ -296,7 +298,7 @@ int incoming_connection()
 }
 
 /* Try to free some memory from the connections array. */
-static void free_connections()
+static void free_connections(void)
 {
     uint32_t i;
     for(i = connections_length; i != 0; --i)
@@ -465,10 +467,10 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
 /* 
  * BEGIN Packet sending functions
  * One per packet type.
- * see docs/Lossless_UDP.txt for more information.
+ * see http://wiki.tox.im/index.php/Lossless_UDP for more information.
  */
 
-int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
+static int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
 {
     uint8_t packet[1 + 4 + 4];
     uint32_t temp;
@@ -482,7 +484,7 @@ int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_i
     return sendpacket(ip_port, packet, sizeof(packet));
 }
 
-int send_SYNC(uint32_t connection_id)
+static int send_SYNC(uint32_t connection_id)
 {
     uint8_t packet[(BUFFER_PACKET_NUM*4 + 4 + 4 + 2)];
     uint16_t index = 0;
@@ -509,7 +511,7 @@ int send_SYNC(uint32_t connection_id)
 
 }
 
-int send_data_packet(uint32_t connection_id, uint32_t packet_num)
+static int send_data_packet(uint32_t connection_id, uint32_t packet_num)
 {
     uint32_t index = packet_num % MAX_QUEUE_NUM;
     uint32_t temp;
@@ -524,7 +526,7 @@ int send_data_packet(uint32_t connection_id, uint32_t packet_num)
 }
 
 /* sends 1 data packet */
-int send_DATA(uint32_t connection_id)
+static int send_DATA(uint32_t connection_id)
 {
     int ret;
     uint32_t buffer[BUFFER_PACKET_NUM];
@@ -553,7 +555,7 @@ int send_DATA(uint32_t connection_id)
 
 
 /* Return 0 if handled correctly, 1 if packet is bad. */
-int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if (length != (1 + 4 + 4))
         return 1;
@@ -589,7 +591,7 @@ int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
 }
 
 /* returns 1 if sync packet is valid 0 if not. */
-int SYNC_valid(uint32_t length)
+static int SYNC_valid(uint32_t length)
 {
     if (length < 4 + 4 + 2)
         return 0;
@@ -600,7 +602,7 @@ int SYNC_valid(uint32_t length)
 }
 
 /* case 1 in handle_SYNC: */
-int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnum)
+static int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnum)
 {
     if (handshake_id(source) == recv_packetnum) {
         int x = new_inconnection(source);
@@ -620,7 +622,7 @@ int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnu
 }
 
 /* case 2 in handle_SYNC: */
-int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum)
+static int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum)
 {
     if (recv_packetnum == connections[connection_id].orecv_packetnum) {
         /* && sent_packetnum == connections[connection_id].osent_packetnum) */
@@ -633,7 +635,7 @@ int handle_SYNC2(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
     return 1;
 }
 /* case 3 in handle_SYNC: */
-int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum, uint32_t * req_packets,
+static int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, uint32_t sent_packetnum, uint32_t * req_packets,
                  uint16_t number)
 {
     uint8_t comp_counter = (counter - connections[connection_id].recv_counter );
@@ -667,7 +669,7 @@ int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packetnum, ui
     return 1;
 }
 
-int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
 {
 
     if (!SYNC_valid(length))
@@ -706,7 +708,7 @@ int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
  * Add a packet to the received buffer and set the recv_packetnum of the 
  * connection to its proper value. Return 1 if data was too big, 0 if not.
  */
-int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_t size)
+static int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_t size)
 {
     if (size > MAX_DATA_SIZE)
         return 1;
@@ -740,7 +742,7 @@ int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_t size)
     return 0;
 }
 
-int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
 {
     int connection = getconnection_id(source);
 
@@ -791,7 +793,7 @@ int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
  * Send handshake requests
  * handshake packets are sent at the same rate as SYNC packets
  */
-void doNew()
+static void doNew(void)
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -815,7 +817,7 @@ void doNew()
     }
 }
 
-void doSYNC()
+static void doSYNC(void)
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -828,7 +830,7 @@ void doSYNC()
     }
 }
 
-void doData()
+static void doData(void)
 {
     uint32_t i;
     uint64_t j;
@@ -849,7 +851,7 @@ void doData()
  *
  * TODO: flow control.
  */
-void adjustRates()
+static void adjustRates(void)
 {
     uint32_t i;
     uint64_t temp_time = current_time();
@@ -869,7 +871,7 @@ void adjustRates()
 }
 
 /* Call this function a couple times per second It's the main loop. */
-void doLossless_UDP()
+void doLossless_UDP(void)
 {
     doNew();
     doSYNC();

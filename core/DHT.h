@@ -1,6 +1,6 @@
 /* DHT.h
  *
- * An implementation of the DHT as seen in docs/DHT.txt
+ * An implementation of the DHT as seen in http://wiki.tox.im/index.php/DHT
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 /* Current time, unix format */
-#define unix_time() ((int64_t)time(NULL))
+#define unix_time() ((uint64_t)time(NULL))
 
 /* size of the client_id in bytes */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
@@ -58,7 +58,7 @@ int DHT_delfriend(uint8_t *client_id);
 IP_Port DHT_getfriendip(uint8_t *client_id);
 
 /* Run this function at least a couple times per second (It's the main loop) */
-void doDHT();
+void doDHT(void);
 
 /* if we receive a DHT packet we call this function so it can be handled.
     return 0 if packet is handled correctly.
@@ -90,7 +90,7 @@ int friend_ips(IP_Port *ip_portlist, uint8_t *friend_id);
 /* SAVE/LOAD functions */
 
 /* get the size of the DHT (for saving) */
-uint32_t DHT_size();
+uint32_t DHT_size(void);
 
 /* save the DHT in data where data is an array of size DHT_size() */
 void DHT_save(uint8_t *data);

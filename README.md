@@ -7,6 +7,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 
 **IRC**: #tox on freenode, alternatively, you can use the [webchat](http://webchat.freenode.net/?channels=#tox).<br />
 **Website**: [http://tox.im](http://tox.im)
+**Developer Blog**: [http://dev.tox.im](http://dev.tox.im)
 
 **Website translations**: [see stal888's repository](https://github.com/stal888/ProjectTox-Website)<br/>
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
@@ -21,7 +22,7 @@ Keep everything really simple.
 
 ## The Complex Stuff:
 + Tox must use UDP simply because [hole punching](http://en.wikipedia.org/wiki/UDP_hole_punching) with TCP is not as reliable.
-+ Every peer is represented as a [byte string](https://en.wikipedia.org/wiki/String_(computer_science)) (the public key of the peer [client ID]).
++ Every peer is represented as a [byte string][String] (the public key of the peer [client ID]).
 + We're using torrent-style DHT so that peers can find the IP of the other peers when they have their ID.
 + Once the client has the IP of that peer, they start initiating a secure connection with each other. (See [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto))
 + When both peers are securely connected, they can exchange messages, initiate a video chat, send files, etc, all using encrypted communications.
@@ -47,7 +48,10 @@ configure for the normal user or suffer from being way too centralized.
 ### Documentation:
 
 - [Installation](/INSTALL.md)
+- [Commands](/docs/commands.rst)
 - [DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
 - [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
 - [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
 - [Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
+
+[String]: https://en.wikipedia.org/wiki/String_(computer_science)

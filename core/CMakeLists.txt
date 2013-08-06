@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 2.6.0)
-project(core C)
-
-if(WIN32)
-	include_directories(${CMAKE_HOME_DIRECTORY}/sodium/include/)
-else(WIN32)
-	include_directories(${SODIUM_INCLUDE_DIR})
-endif()
+project(toxcore C)
 
 set(core_sources
 	DHT.c
@@ -14,6 +8,18 @@ set(core_sources
 	net_crypto.c
 	friend_requests.c
 	LAN_discovery.c
-	Messenger.c)
+	Messenger.c
+	util.c
+	ping.c)
 
-add_library(core ${core_sources})
+if(SHARED_TOXCORE)
+	add_library(toxcore SHARED ${core_sources})
+else()
+	add_library(toxcore ${core_sources})
+endif()
+
+target_link_libraries(toxcore ${LINK_CRYPTO_LIBRARY})
+
+if(WIN32)
+	target_link_libraries(toxcore ws2_32)
+endif()

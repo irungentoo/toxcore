@@ -113,9 +113,10 @@ static void friendlist_onKey(ToxWindow* self, int key) {
 }
 
 static void friendlist_onDraw(ToxWindow* self) {
+  curs_set(0);
   size_t i;
 
-  wclear(self->window);
+  werase(self->window);
 
   if(num_friends == 0) {
     wprintw(self->window, "Empty. Add some friends! :-)\n");

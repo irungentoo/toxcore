@@ -110,7 +110,7 @@ int is_cryptoconnected(int crypt_connection_id);
 
 /* Generate our public and private keys
     Only call this function the first time the program starts. */
-void new_keys();
+void new_keys(void);
 
 /* save the public and private keys to the keys array
     Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES */
@@ -122,10 +122,10 @@ void load_keys(uint8_t * keys);
 
 /* run this to (re)initialize net_crypto
     sets all the global connection variables to their default values. */
-void initNetCrypto();
+void initNetCrypto(void);
 
 /* main loop */
-void doNetCrypto();
+void doNetCrypto(void);
 
 #ifdef __cplusplus
 }

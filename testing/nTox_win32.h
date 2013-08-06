@@ -34,6 +34,13 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length);
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length);
 void print_statuschange(int friendnumber, uint8_t *string, uint16_t length);
 void load_key();
+void add_friend();
+void list_friends();
+void delete_friend();
+void message_friend();
+void change_nickname();
+void change_status(int savetofile);
+void accept_friend_request();
 void line_eval(char* line);
 void get_input();
 
