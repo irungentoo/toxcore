@@ -181,17 +181,17 @@ uint32_t resolve_addr(const char *address)
     uint32_t         addr;
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_INET;    // IPv4 only right now.
-    hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
+    hints.ai_family   = AF_INET;    /* IPv4 only right now. */
+    hints.ai_socktype = SOCK_DGRAM; /* type of socket Tox uses.*/
 
     rc = getaddrinfo(address, "echo", &hints, &server);
 
-    // Lookup failed.
+    /* Lookup failed.*/
     if(rc != 0) {
         return 0;
     }
 
-    // IPv4 records only..
+    /* IPv4 records only..*/
     if(server->ai_family != AF_INET) {
         freeaddrinfo(server);
         return 0;

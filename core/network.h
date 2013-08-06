@@ -39,7 +39,7 @@
 
 #undef VANILLA_NACL /* make sure on windows we use libsodium */
 
-#else //Linux includes
+#else /* Linux includes */
 
 #include <fcntl.h>
 #include <sys/socket.h>
