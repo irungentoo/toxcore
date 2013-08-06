@@ -102,7 +102,7 @@ bool is_pinging(IP_Port ipp, uint64_t ping_id) // O(n)
         id = (pos_pings + i) % PING_NUM_MAX;
 
         // ping_id = 0 means match any id
-        if(ipp_eq(pings[id].ipp, ipp) && (ping_id == 0 || pings[id].id == ping_id)) {
+        if ((ipp_eq(pings[id].ipp, ipp) || ipp.ip.i == 0) && (pings[id].id == ping_id || ping_id == 0)) {
             return true;
         }
     }
