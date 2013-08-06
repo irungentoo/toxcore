@@ -43,8 +43,8 @@ static int prompt_buf_pos=0;
 
 static void execute(ToxWindow* self, char* u_cmd) {
     int i;
-    int newlines = 0;
-    char cmd[256] = {0};
+	int newlines = 0;
+	char cmd[256] = {0};
     for(i = 0; i < strlen(prompt_buf); i++) 
     {
     if (u_cmd[i] == '\n')
@@ -331,15 +331,15 @@ static void print_usage(ToxWindow* self) {
   wprintw(self->window, "Commands:\n");
   wattroff(self->window, A_BOLD);
   
-  wprintw(self->window, " connect <ip> <port> <key> : Connect to DHT server\n");
-  wprintw(self->window, " add <id> <message> : Add friend\n");
-  wprintw(self->window, " status <message> : Set your status\n");
-  wprintw(self->window, " nick <nickname> : Set your nickname\n");
-  wprintw(self->window, " accept <number> : Accept friend request\n");
-  wprintw(self->window, " myid : Print your ID\n");
-  wprintw(self->window, " quit/exit : Exit program\n");
-  wprintw(self->window, " help : Print this message again\n");
-  wprintw(self->window, " clear : Clear this window\n");
+    wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
+    wprintw(self->window, "      add <id> <message>        : Add friend\n");
+    wprintw(self->window, "      status <message>          : Set your status\n");
+    wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
+    wprintw(self->window, "      accept <number>           : Accept friend request\n");
+    wprintw(self->window, "      myid                      : Print your ID\n");
+    wprintw(self->window, "      quit/exit                 : Exit program\n");
+    wprintw(self->window, "      help                      : Print this message again\n");
+    wprintw(self->window, "      clear                     : Clear this window\n"); 
 
   wattron(self->window, A_BOLD);
   wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
