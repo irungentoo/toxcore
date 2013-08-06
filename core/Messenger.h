@@ -60,6 +60,22 @@ extern "C" {
 /* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
 
+/* USERSTATUS_KIND
+ * Represents the different kinds of userstatus
+ * someone can have.
+ * More on this later... */
+
+typedef enum {
+    USERSTATUS_KIND_RETAIN = (uint8_t)0, /* This is a special value that must not be returned by
+                             * m_get_userstatus_kind. You can pass it into m_set_userstatus
+                             * to keep the current USERSTATUS_KIND. */
+    USERSTATUS_KIND_ONLINE, /* Recommended representation: Green. */
+    USERSTATUS_KIND_AWAY, /* Recommended representation: Orange, or yellow. */
+    USERSTATUS_KIND_BUSY, /* Recommended representation: Red. */
+    USERSTATUS_KIND_OFFLINE, /* Recommended representation: Grey, semi-transparent. */
+    USERSTATUS_KIND_INVALID,
+} USERSTATUS_KIND;
+
 /*
  * add a friend
  * set the data that will be sent along with friend request
@@ -70,7 +86,7 @@ extern "C" {
  * return -2 if no message (message length must be >= 1 byte)
  * return -3 if user's own key
  * return -4 if friend request already sent or already a friend
- * return -5 for unknown error 
+ * return -5 for unknown error
  */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
 
@@ -114,7 +130,7 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
 int setname(uint8_t *name, uint16_t length);
 
 /* get our nickname
-   put it in name 
+   put it in name
    return the length of the name*/
 uint16_t getself_name(uint8_t *name);
 
@@ -128,7 +144,8 @@ int getname(int friendnumber, uint8_t *name);
 /* set our user status
     you are responsible for freeing status after
     returns 0 on success, -1 on failure */
-int m_set_userstatus(uint8_t *status, uint16_t length);
+int m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length);
+int m_set_userstatus_kind(USERSTATUS_KIND kind);
 
 /* return the length of friendnumber's user status,
     including null
@@ -136,8 +153,17 @@ int m_set_userstatus(uint8_t *status, uint16_t length);
 int m_get_userstatus_size(int friendnumber);
 
 /* copy friendnumber's userstatus into buf, truncating if size is over maxlen
-    get the size you need to allocate from m_get_userstatus_size */
+    get the size you need to allocate from m_get_userstatus_size
+    The self variant will copy our own userstatus. */
 int m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
+int m_copy_self_userstatus(uint8_t *buf, uint32_t maxlen);
+
+/* Return one of USERSTATUS_KIND values, except USERSTATUS_KIND_RETAIN.
+ * Values unknown to your application should be represented as USERSTATUS_KIND_ONLINE.
+ * As above, the self variant will return our own USERSTATUS_KIND.
+ * If friendnumber is invalid, this shall return USERSTATUS_KIND_INVALID. */
+USERSTATUS_KIND m_get_userstatus_kind(int friendnumber);
+USERSTATUS_KIND m_get_self_userstatus_kind(void);
 
 /* set the function that will be executed when a friend request is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
@@ -153,9 +179,9 @@ void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
 void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
 
 /* set the callback for user status changes
-    function(int friendnumber, uint8_t *newstatus, uint16_t length)
+    function(int friendnumber, USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
-void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t));
+void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t));
 
 /* run this at startup
     returns 0 if no connection problems
