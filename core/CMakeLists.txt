@@ -8,7 +8,9 @@ set(core_sources
 	net_crypto.c
 	friend_requests.c
 	LAN_discovery.c
-	Messenger.c)
+	Messenger.c
+	util.c
+	ping.c)
 
 if(SHARED_TOXCORE)
 	add_library(toxcore SHARED ${core_sources})

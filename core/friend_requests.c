@@ -104,7 +104,7 @@ static int request_recieved(uint8_t * client_id)
 int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if (packet[0] == 32) {
-        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
+        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
             length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
             return 1;
         if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.

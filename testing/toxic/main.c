@@ -17,14 +17,13 @@ extern ToxWindow new_prompt();
 extern ToxWindow new_friendlist();
 
 extern int friendlist_onFriendAdded(int num);
-
+extern void disable_chatwin(int f_num);
 extern int add_req(uint8_t* public_key); // XXX
 
-#define TOXWINDOWS_MAX_NUM 32
-
-static ToxWindow windows[TOXWINDOWS_MAX_NUM];
-static int w_num;
-static int w_active;
+char WINDOW_STATUS[MAX_WINDOW_SLOTS];    // Holds status of chat windows
+static ToxWindow windows[MAX_WINDOW_SLOTS];
+int w_num;
+int w_active;
 static ToxWindow* prompt;
 
 // CALLBACKS START
@@ -41,7 +40,7 @@ void on_request(uint8_t* public_key, uint8_t* data, uint16_t length) {
 
   wprintw(prompt->window, "Use \"accept %d\" to accept it.\n", n);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onFriendRequest != NULL)
       windows[i].onFriendRequest(&windows[i], public_key, data, length);
   }
@@ -52,7 +51,7 @@ void on_message(int friendnumber, uint8_t* string, uint16_t length) {
 
   wprintw(prompt->window, "\n(message) %d: %s\n", friendnumber, string);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onMessage != NULL)
       windows[i].onMessage(&windows[i], friendnumber, string, length);
   }
@@ -63,18 +62,18 @@ void on_nickchange(int friendnumber, uint8_t* string, uint16_t length) {
 
   wprintw(prompt->window, "\n(nickchange) %d: %s!\n", friendnumber, string);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onNickChange != NULL)
       windows[i].onNickChange(&windows[i], friendnumber, string, length);
   }
 }
 
-void on_statuschange(int friendnumber, uint8_t* string, uint16_t length) {
+void on_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t* string, uint16_t length) {
   size_t i;
 
-  wprintw(prompt->window, "\n(statuschange) %d: %s!\n", friendnumber, string);
+  wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
 
-  for(i=0; i<w_num; i++) {
+  for(i=0; i<MAX_WINDOW_SLOTS; i++) {
     if(windows[i].onStatusChange != NULL)
       windows[i].onStatusChange(&windows[i], friendnumber, string, length);
   }
@@ -115,44 +114,60 @@ static void init_tox() {
   m_callback_userstatus(on_statuschange);
 }
 
-int add_window(ToxWindow w) {
-  if(w_num == TOXWINDOWS_MAX_NUM)
+void init_window_status() {
+  /* Default window values decrement from -2 */
+  int i;
+  for (i = 0; i < N_DEFAULT_WINS; i++)
+    WINDOW_STATUS[i] = -(i+2);
+
+  int j;
+  for (j = N_DEFAULT_WINS; j < MAX_WINDOW_SLOTS; j++)
+    WINDOW_STATUS[j] = -1;
+}
+
+int add_window(ToxWindow w, int n) {
+  if(w_num >= TOXWINDOWS_MAX_NUM)
     return -1;
 
   if(LINES < 2)
     return -1;
 
   w.window = newwin(LINES - 2, COLS, 0, 0);
-
   if(w.window == NULL)
     return -1;
 
-  windows[w_num++] = w;
+  windows[n] = w;
   w.onInit(&w);
-
-  return w_num - 1;
+  w_num++;
+  return n;
 }
 
-int focus_window(int num) {
-  if(num >= w_num || num < 0)
-    return -1;
-
-  w_active = num;
-  return 0;
+/* Deletes window w and cleans up */
+void del_window(ToxWindow *w, int f_num) {
+  delwin(w->window);
+  int i;
+  for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; i++) {
+    if (WINDOW_STATUS[i] == f_num) {
+      WINDOW_STATUS[i] = -1;
+      disable_chatwin(f_num);
+      break;
+    }
+  }
+  clear();
+  refresh();
 }
 
 static void init_windows() {
   w_num = 0;
-  w_active = 0;
-
-  if(add_window(new_prompt()) == -1 || add_window(new_friendlist()) == -1) {
+  int n_prompt = 0;
+  int n_friendslist = 1;
+  if(add_window(new_prompt(), n_prompt) == -1 
+                        || add_window(new_friendlist(), n_friendslist) == -1) {
     fprintf(stderr, "add_window() failed.\n");
-
     endwin();
     exit(1);
   }
-
-  prompt = &windows[0];
+  prompt = &windows[n_prompt];
 }
 
 static void do_tox() {
@@ -201,7 +216,7 @@ static void load_data(char *path) {
 
     Messenger_load(buf, len);
   }
-  else { 
+  else {
     len = Messenger_size();
     buf = malloc(len);
 
@@ -238,7 +253,6 @@ static void load_data(char *path) {
 
 static void draw_bar() {
   static int odd = 0;
-  size_t i;
 
   attron(COLOR_PAIR(4));
   mvhline(LINES - 2, 0, '_', COLS);
@@ -250,34 +264,68 @@ static void draw_bar() {
   printw(" TOXIC 1.0 |");
   attroff(COLOR_PAIR(4) | A_BOLD);
 
-  for(i=0; i<w_num; i++) {
-    if(i == w_active) {
-      attron(A_BOLD);
-    }
+  int i;
+  for (i = 0; i < (MAX_WINDOW_SLOTS-1); i++) {
+    if (WINDOW_STATUS[i] != -1) {
+      if (i == w_active)
+        attron(A_BOLD);
 
-    odd = (odd+1) % 10;
+      odd = (odd+1) % 10;
+      if(windows[i].blink && (odd < 5)) {
+        attron(COLOR_PAIR(3));
+      }
 
-    if(windows[i].blink && (odd < 5)) {
-      attron(COLOR_PAIR(3));
-    }
-
-    printw(" %s", windows[i].title);
-
-    if(windows[i].blink && (odd < 5)) {
-      attron(COLOR_PAIR(3));
-    }
-
-    if(i == w_active) {
-      attroff(A_BOLD);
+      printw(" %s", windows[i].title);
+      if(windows[i].blink && (odd < 5)) {
+        attron(COLOR_PAIR(3));
+      }
+      if(i == w_active) {
+        attroff(A_BOLD);
+      }
     }
   }
-
   refresh();
 }
 
 void prepare_window(WINDOW* w) {
   mvwin(w, 0, 0);
   wresize(w, LINES-2, COLS);
+}
+
+/* Shows next window when tab or back-tab is pressed */
+void set_active_window(int ch) {
+  int f_inf = 0;
+  int max = MAX_WINDOW_SLOTS-1;
+  if (ch == '\t') {
+    int i = (w_active + 1) % max;
+    while (true) {
+      if (WINDOW_STATUS[i] != -1) {
+        w_active = i;
+        return;
+      }
+      i = (i  + 1) % max;
+      if (f_inf++ > max) {   // infinite loop check
+        endwin();
+        clear();
+        exit(2);
+      }
+    }
+  }else {
+    int i = w_active - 1;
+    if (i < 0) i = max;
+    while (true) {
+      if (WINDOW_STATUS[i] != -1) {
+        w_active = i;
+        return;
+      }
+      if (--i < 0) i = max;
+      if (f_inf++ > max) {
+        endwin();
+        clear();
+        exit(2);
+      }
+    }
+  }
 }
 
 int main(int argc, char* argv[]) {
@@ -289,7 +337,7 @@ int main(int argc, char* argv[]) {
 
     for(i = 0; i < argc; i++) {
       if (argv[i] == NULL){
-        break; 
+        break;
       } else if(argv[i][0] == '-') {
             if(argv[i][1] == 'f') {
                 if(argv[i + 1] != NULL)
@@ -305,6 +353,7 @@ int main(int argc, char* argv[]) {
   init_tox();
   load_data(filename);
   init_windows();
+  init_window_status();
 
   if(f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
@@ -312,8 +361,7 @@ int main(int argc, char* argv[]) {
                             "defaulting to 'data' for a keyfile...\n");
     attroff(COLOR_PAIR(3) | A_BOLD);
   }
-    
-
+  
   while(true) {
     // Update tox.
     do_tox();
@@ -327,18 +375,14 @@ int main(int argc, char* argv[]) {
 
     // Handle input.
     ch = getch();
-    if(ch == '\t') {
-      w_active = (w_active + 1) % w_num;
-    }
-    else if(ch == KEY_BTAB) {
-      w_active = (w_active + w_num - 1) % w_num;
+    if(ch == '\t' || ch == KEY_BTAB)
+      set_active_window(ch);
+    else if(ch != ERR) {
+      a->onKey(a, ch);
     }
     else if(ch != ERR) {
       a->onKey(a, ch);
     }
-
   }
-
   return 0;
 }
-

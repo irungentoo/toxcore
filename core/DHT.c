@@ -24,6 +24,7 @@
 /*----------------------------------------------------------------------------------*/
 
 #include "DHT.h"
+#include "ping.h"
 
 /* maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -109,7 +110,6 @@ uint8_t             self_secret_key[crypto_box_SECRETKEYBYTES];
 static Client_data  close_clientlist[LCLIENT_LIST];
 static Friend *     friends_list;
 static uint16_t     num_friends;
-static Pinged       pings[LPING_ARRAY];
 static Pinged       send_nodes[LSEND_NODES_ARRAY];
 
 /*----------------------------------------------------------------------------------*/
@@ -426,35 +426,6 @@ static void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nod
     }
 }
 
-/* check if we are currently pinging an ip_port and/or a ping_id variables with
- * values of zero will not be checked. If we are already, return 1 else return 0
- *
- * TODO: optimize this 
- */
-static int is_pinging(IP_Port ip_port, uint64_t ping_id)
-{
-    uint32_t i;
-    uint8_t pinging;
-    uint64_t temp_time = unix_time();
-
-    for (i = 0; i < LPING_ARRAY; ++i ) {
-        if (!is_timeout(temp_time, pings[i].timestamp, PING_TIMEOUT)) {
-            pinging = 0;
-
-            if (ip_port.ip.i != 0 && ipport_equal(pings[i].ip_port, ip_port))
-                    ++pinging;
-
-            if (ping_id != 0 && pings[i].ping_id == ping_id)
-                ++pinging;
-
-            if (pinging == ((ping_id != 0) + (ip_port.ip.i != 0)))
-                return 1;
-        }
-    }
-
-    return 0;
-}
-
 /* Same as last function but for get_node requests. */
 static int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 {
@@ -474,32 +445,6 @@ static int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 
             if(pinging == (ping_id != 0) + (ip_port.ip.i != 0))
                 return 1;
-        }
-    }
-
-    return 0;
-}
-
-/* Add a new ping request to the list of ping requests
- * returns the ping_id to put in the ping request
- * returns 0 if problem.
- *
- * TODO: optimize this
- */
-static uint64_t add_pinging(IP_Port ip_port)
-{
-    uint32_t i, j;
-    uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
-    uint64_t temp_time = unix_time();
-
-    for(i = 0; i < PING_TIMEOUT; ++i ) {
-        for(j = 0; j < LPING_ARRAY; ++j ) {
-            if(is_timeout(temp_time, pings[j].timestamp, PING_TIMEOUT - i)) {
-                pings[j].timestamp = temp_time;
-                pings[j].ip_port = ip_port;
-                pings[j].ping_id = ping_id;
-                return ping_id;
-            }
         }
     }
 
@@ -536,7 +481,7 @@ static int pingreq(IP_Port ip_port, uint8_t * public_key)
     if(id_equal(public_key, self_public_key) || is_pinging(ip_port, 0))
         return 1;
 
-    uint64_t ping_id = add_pinging(ip_port);
+    uint64_t ping_id = add_ping(ip_port);
     if(ping_id == 0)
         return 1;
 
@@ -1108,7 +1053,7 @@ static int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 static int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if (length < crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING 
-            && length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
+            || length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
         return 1;
 
     /* check if request is for us. */
@@ -1301,6 +1246,8 @@ void DHT_save(uint8_t * data)
  */
 int DHT_load(uint8_t * data, uint32_t size)
 {
+    init_ping();
+
     if(size < sizeof(close_clientlist))
         return -1;
 

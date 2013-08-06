@@ -5,7 +5,12 @@
 # LIBCONFIG_FOUND
 #
 
-FIND_PATH(LIBCONFIG_INCLUDE_DIR NAMES libconfig.h)
+if (UNIX)
+  find_package(PkgConfig QUIET)
+  pkg_check_modules(_LIBCONFIG QUIET libconfig)
+endif ()
+
+FIND_PATH(LIBCONFIG_INCLUDE_DIR NAMES libconfig.h HINTS ${_LIBCONFIG_INCLUDEDIR})
 
 FIND_LIBRARY(LIBCONFIG_LIBRARY NAMES config)
 

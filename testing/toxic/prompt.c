@@ -1,6 +1,6 @@
 /*
- * Toxic -- Tox Curses Client
- */
+* Toxic -- Tox Curses Client
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +41,17 @@ unsigned char * hex_string_to_bin(char hex_string[])
 static char prompt_buf[256] = {0};
 static int prompt_buf_pos=0;
 
-static void execute(ToxWindow* self, char* cmd) {
+static void execute(ToxWindow* self, char* u_cmd) {
+    int i;
+	int newlines = 0;
+	char cmd[256] = {0};
+    for(i = 0; i < strlen(prompt_buf); i++) 
+    {
+    if (u_cmd[i] == '\n')
+		++newlines;
+	else
+        cmd[i - newlines] = u_cmd[i];
+    }
 
   if(!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
@@ -91,7 +101,7 @@ static void execute(ToxWindow* self, char* cmd) {
     dht.ip.i = resolved_address;
     unsigned char *binary_string = hex_string_to_bin(key);
     DHT_bootstrap(dht, binary_string);
-    free(binary_string); 
+    free(binary_string);
   }
   else if(!strncmp(cmd, "add ", strlen("add "))) {
     uint8_t id_bin[32];
@@ -137,7 +147,7 @@ static void execute(ToxWindow* self, char* cmd) {
 
     num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
     switch (num) {
-    case -1: 
+    case -1:
       wprintw(self->window, "Message is too long.\n");
       break;
     case -2:
@@ -151,18 +161,19 @@ static void execute(ToxWindow* self, char* cmd) {
       break;
     case -5:
       wprintw(self->window, "Undefined error when adding friend.\n");
-      break; 
+      break;
     default:
       wprintw(self->window, "Friend added as %d.\n", num);
       on_friendadded(num);
       break;
     }
   }
-  else if(!strcmp(cmd, "clear")) { 
-  	wclear(self->window);
+  else if(!strcmp(cmd, "clear")) {
+      wclear(self->window);
   }
   else if(!strcmp(cmd, "help")) {
-	  print_usage(self);
+      wclear(self->window);
+      print_usage(self);
   }
   else if(!strncmp(cmd, "status ", strlen("status "))) {
     char* msg;
@@ -174,7 +185,7 @@ static void execute(ToxWindow* self, char* cmd) {
     }
     msg++;
 
-    m_set_userstatus((uint8_t*) msg, strlen(msg)+1);
+    m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s\n", msg);
   }
   else if(!strncmp(cmd, "nick ", strlen("nick "))) {
@@ -196,7 +207,7 @@ static void execute(ToxWindow* self, char* cmd) {
 
     for(i=0; i<32; i++) {
       char xx[3];
-      snprintf(xx, sizeof(xx), "%02x",  self_public_key[i] & 0xff);
+      snprintf(xx, sizeof(xx), "%02x", self_public_key[i] & 0xff);
       strcat(id, xx);
     }
     
@@ -256,7 +267,6 @@ static void execute(ToxWindow* self, char* cmd) {
       wprintw(self->window, "Message successfully sent.\n");
     }
   }
-
   else {
     wprintw(self->window, "Invalid command.\n");
   }
@@ -265,8 +275,16 @@ static void execute(ToxWindow* self, char* cmd) {
 static void prompt_onKey(ToxWindow* self, int key) {
   // PRINTABLE characters: Add to line.
   if(isprint(key)) {
-    if(prompt_buf_pos == (sizeof(prompt_buf) - 1)) {
-      return;
+	if (prompt_buf_pos == (sizeof(prompt_buf) - 1)){
+        wprintw(self->window, "\nToo Long.\n");
+		prompt_buf_pos = 0;
+        prompt_buf[0] = 0;
+	}
+    else if(!(prompt_buf_pos == 0) && (prompt_buf_pos < COLS) && (prompt_buf_pos % (COLS - 3) == 0)) {
+        prompt_buf[prompt_buf_pos++] = '\n';
+    }
+    else if(!(prompt_buf_pos == 0) && (prompt_buf_pos > COLS) && ((prompt_buf_pos - (COLS - 3)) % (COLS) == 0)) {
+        prompt_buf[prompt_buf_pos++] = '\n';
     }
     prompt_buf[prompt_buf_pos++] = key;
     prompt_buf[prompt_buf_pos] = 0;
@@ -289,20 +307,22 @@ static void prompt_onKey(ToxWindow* self, int key) {
 }
 
 static void prompt_onDraw(ToxWindow* self) {
-  curs_set(1);
-  int x, y;
-
-  getyx(self->window, y, x);
-  (void) x;
-
-  wattron(self->window, COLOR_PAIR(1));
-  mvwprintw(self->window, y, 0, "# ");
-  wattroff(self->window, COLOR_PAIR(1));
-
-  mvwprintw(self->window, y, 2, "%s", prompt_buf);
-  wclrtoeol(self->window);
-
-  wrefresh(self->window);
+    curs_set(1);
+    int x, y;
+    getyx(self->window, y, x);
+    (void) x;
+    int i;
+    for (i = 0; i < (strlen(prompt_buf)); i++)
+    {
+        if ((prompt_buf[i] == '\n') && (y != 0))
+            --y;
+    }
+    wattron(self->window, COLOR_PAIR(1));
+    mvwprintw(self->window, y, 0, "# ");
+    wattroff(self->window, COLOR_PAIR(1));
+    mvwprintw(self->window, y, 2, "%s", prompt_buf);
+    wclrtoeol(self->window);
+    wrefresh(self->window);
 }
 
 static void print_usage(ToxWindow* self) {
@@ -310,15 +330,15 @@ static void print_usage(ToxWindow* self) {
   wprintw(self->window, "Commands:\n");
   wattroff(self->window, A_BOLD);
   
-  wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
-  wprintw(self->window, "      add <id> <message>        : Add friend\n");
-  wprintw(self->window, "      status <message>          : Set your status\n");
-  wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
-  wprintw(self->window, "      accept <number>           : Accept friend request\n");
-  wprintw(self->window, "      myid                      : Print your ID\n");
-  wprintw(self->window, "      quit/exit                 : Exit program\n");
-  wprintw(self->window, "      help                      : Print this message again\n");
-  wprintw(self->window, "      clear                     : Clear this window\n");
+    wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
+    wprintw(self->window, "      add <id> <message>        : Add friend\n");
+    wprintw(self->window, "      status <message>          : Set your status\n");
+    wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
+    wprintw(self->window, "      accept <number>           : Accept friend request\n");
+    wprintw(self->window, "      myid                      : Print your ID\n");
+    wprintw(self->window, "      quit/exit                 : Exit program\n");
+    wprintw(self->window, "      help                      : Print this message again\n");
+    wprintw(self->window, "      clear                     : Clear this window\n"); 
 
   wattron(self->window, A_BOLD);
   wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");

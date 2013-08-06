@@ -228,7 +228,7 @@ void line_eval(char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            m_set_userstatus(status, strlen((char*)status) + 1);
+            m_set_userstatus(USERSTATUS_KIND_ONLINE, status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -364,7 +364,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     }
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
+void print_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     if(getname(friendnumber, (uint8_t*)name) != -1) {
@@ -392,7 +392,7 @@ void load_key(char *path)
         }
         Messenger_load(data, size);
 
-    } else { 
+    } else {
         //else save new keys
         int size = Messenger_size();
         uint8_t data[size];
