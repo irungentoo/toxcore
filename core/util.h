@@ -8,3 +8,6 @@
 uint64_t now();
 uint64_t random_64b();
 bool ipp_eq(IP_Port a, IP_Port b);
+bool id_eq(clientid_t* dest, clientid_t* src);
+void id_cpy(clientid_t* dest, clientid_t* src);
+
