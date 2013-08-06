@@ -352,7 +352,7 @@ static int replace_good(   Client_data *   list,
 /* Attempt to add client with ip_port and client_id to the friends client list 
  * and close_clientlist 
  */
-static void addto_lists(IP_Port ip_port, uint8_t * client_id)
+void addto_lists(IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
 
@@ -552,62 +552,6 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
     return sendpacket(ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
-}
-
-/* Packet handling functions, one to handle each types of packets we receive
- * Returns 0 if handled correctly, 1 if packet is bad.
- */
-static int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
-{
-    uint64_t ping_id;
-    if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
-        return 1;
-
-    /* check if packet is from ourself. */
-    if(id_equal(packet + 1, self_public_key))
-        return 1;
-
-    int len = decrypt_data( packet + 1, 
-                            self_secret_key, 
-                            packet + 1 + CLIENT_ID_SIZE,
-                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                            sizeof(ping_id) + ENCRYPTION_PADDING, 
-                            (uint8_t *)&ping_id );
-
-    if(len != sizeof(ping_id))
-        return 1;
-
-    send_ping_response(source, (clientid_t*) (packet + 1), ping_id);
-    send_ping_request(source, (clientid_t*) (packet + 1)); /* TODO: make this smarter? */
-
-    return 0;
-}
-
-static int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
-{
-    uint64_t ping_id;
-    if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
-        return 1;
-
-    /* check if packet is from ourself. */
-    if(id_equal(packet + 1, self_public_key))
-        return 1;
-
-    int len = decrypt_data( packet + 1, 
-                            self_secret_key, 
-                            packet + 1 + CLIENT_ID_SIZE,
-                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                            sizeof(ping_id) + ENCRYPTION_PADDING, 
-                            (uint8_t *)&ping_id );
-
-    if(len != sizeof(ping_id))
-        return 1;
-
-    if(is_pinging(source, ping_id)) {
-        addto_lists(source, packet + 1);
-        return 0;
-    }
-    return 1;
 }
 
 static int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
@@ -1134,10 +1078,10 @@ int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
     switch (packet[0]) {
     case 0:
-        return handle_pingreq(packet, length, source);
+        return handle_ping_request(packet, length, source);
 
     case 1:
-        return handle_pingres(packet, length, source);
+        return handle_ping_response(packet, length, source);
 
     case 2:
         return handle_getnodes(packet, length, source);

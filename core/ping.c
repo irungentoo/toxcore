@@ -163,3 +163,59 @@ int send_ping_response(IP_Port ipp, clientid_t* client_id, uint64_t ping_id)
 
     return sendpacket(ipp, (uint8_t*) &pk, sizeof(pk));
 }
+
+int handle_ping_request(uint8_t* packet, uint32_t length, IP_Port source)
+{
+    pingreq_t* p = (pingreq_t*) packet;
+    int        rc;
+    uint64_t   ping_id;
+
+    if (length != sizeof(pingreq_t) || id_eq(&p->client_id, self_id))
+        return 1;
+
+    // Decrypt ping_id
+    rc = decrypt_data((uint8_t*) &p->client_id,
+                      self_secret_key,
+                      (uint8_t*) &p->nonce,
+                      (uint8_t*) &p->ping_id,
+                      sizeof(ping_id) + ENCRYPTION_PADDING,
+                      (uint8_t*) &ping_id);
+
+    if (rc != sizeof(ping_id))
+        return 1;
+
+    // Send response
+    send_ping_response(source, &p->client_id, ping_id);
+    send_ping_request(source, &p->client_id); // Make this smarter?
+
+    return 0;
+}
+
+int handle_ping_response(uint8_t* packet, uint32_t length, IP_Port source)
+{
+    pingres_t* p = (pingres_t*) packet;
+    int       rc;
+    uint64_t  ping_id;
+
+    if (length != sizeof(pingres_t) || id_eq(&p->client_id, self_id))
+        return 1;
+
+    // Decrypt ping_id
+    rc = decrypt_data((uint8_t*) &p->client_id,
+                      self_secret_key,
+                      (uint8_t*) &p->nonce,
+                      (uint8_t*) &p->ping_id,
+                      sizeof(ping_id) + ENCRYPTION_PADDING,
+                      (uint8_t*) &ping_id);
+
+    if (rc != sizeof(ping_id))
+        return 1;
+
+    // Make sure ping_id is correct
+    if(!is_pinging(source, ping_id))
+        return 1;
+
+    // Associate source ip with client_id
+    addto_lists(source, (uint8_t*) &p->client_id);
+    return 0;
+}
