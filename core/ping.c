@@ -31,124 +31,135 @@ static clientid_t* self_id = (clientid_t*) &self_public_key;
 extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES]; // DHT.c
 
 
-void init_ping() {
-  num_pings = 0;
-  pos_pings = 0;
+void init_ping()
+{
+    num_pings = 0;
+    pos_pings = 0;
 }
 
-static bool is_timeout(uint64_t time) {
-  return (time + PING_TIMEOUT) < now();
+static bool is_timeout(uint64_t time)
+{
+    return (time + PING_TIMEOUT) < now();
 }
 
-static void remove_timeouts() { // O(n)
-  size_t i, id;
-  size_t new_pos = pos_pings;
-  size_t new_num = num_pings;
+static void remove_timeouts() // O(n)
+{
+    size_t i, id;
+    size_t new_pos = pos_pings;
+    size_t new_num = num_pings;
 
-  // Loop through buffer, oldest first
-  for(i=0; i<num_pings; i++) {
-    id = (pos_pings + i) % PING_NUM_MAX;
+    // Loop through buffer, oldest first
+    for (i=0; i<num_pings; i++) {
+        id = (pos_pings + i) % PING_NUM_MAX;
 
-    if(is_timeout(pings[id].timestamp)) {
-      new_pos++;
-      new_num--;
+        if(is_timeout(pings[id].timestamp)) {
+            new_pos++;
+            new_num--;
+        }
+        // Break here because list is sorted.
+        else {
+            break;
+        }
     }
-    // Break here because list is sorted.
-    else
-      break;
-  }
 
   num_pings = new_num;
   pos_pings = new_pos % PING_NUM_MAX;
 }
 
-uint64_t add_ping(IP_Port ipp) { // O(n)
-  size_t p;
-  
-  remove_timeouts();
+uint64_t add_ping(IP_Port ipp) // O(n)
+{
+    size_t p;
 
-  // Remove oldest ping if full buffer
-  if(num_pings == PING_NUM_MAX) {
-    num_pings--;
-    pos_pings = (pos_pings + 1) % PING_NUM_MAX;
-  }
+    remove_timeouts();
 
-  // Insert new ping at end of list
-  p = (pos_pings + num_pings) % PING_NUM_MAX;
-
-  pings[p].ipp       = ipp;
-  pings[p].timestamp = now();
-  pings[p].id        = random_64b();
-
-  num_pings++;
-  return pings[p].id;
-}
-
-bool is_pinging(IP_Port ipp, uint64_t ping_id) { // O(n)
-  size_t i, id;
-
-  remove_timeouts();
-
-  for(i=0; i<num_pings; i++) {
-    id = (pos_pings + i) % PING_NUM_MAX;
-
-    // ping_id = 0 means match any id
-    if(ipp_eq(pings[id].ipp, ipp) && (ping_id == 0 || pings[id].id == ping_id)) {
-      return true;
+    // Remove oldest ping if full buffer
+    if (num_pings == PING_NUM_MAX) {
+        num_pings--;
+        pos_pings = (pos_pings + 1) % PING_NUM_MAX;
     }
-  }
 
-  return false;
+    // Insert new ping at end of list
+    p = (pos_pings + num_pings) % PING_NUM_MAX;
+
+    pings[p].ipp       = ipp;
+    pings[p].timestamp = now();
+    pings[p].id        = random_64b();
+
+    num_pings++;
+    return pings[p].id;
 }
 
-int send_ping_request(IP_Port ipp, clientid_t* client_id) {
-  pingreq_t pk;
-  int       rc;
-  uint64_t  ping_id;
+bool is_pinging(IP_Port ipp, uint64_t ping_id) // O(n)
+{
+    size_t i, id;
 
-  if(is_pinging(ipp, 0) || id_eq(client_id, self_id))
-    return 1;
+    if (ipp.ip.i == 0 && ping_id == 0)
+        return false;
 
-  // Generate random ping_id
-  ping_id = add_ping(ipp);
+    remove_timeouts();
 
-  pk.magic = PACKET_PING_REQ;
-  id_cpy(&pk.client_id, self_id);     // Our pubkey
-  random_nonce((uint8_t*) &pk.nonce); // Generate random nonce
+    for (i=0; i<num_pings; i++) {
+        id = (pos_pings + i) % PING_NUM_MAX;
 
-  // Encrypt ping_id using recipient privkey
-  rc = encrypt_data((uint8_t*) client_id,
-                    self_secret_key,
-                    (uint8_t*) &pk.nonce,
-                    (uint8_t*) &ping_id, sizeof(ping_id),
-                    (uint8_t*) &pk.ping_id);
+        // ping_id = 0 means match any id
+        if(ipp_eq(pings[id].ipp, ipp) && (ping_id == 0 || pings[id].id == ping_id)) {
+            return true;
+        }
+    }
 
-  if(rc != sizeof(ping_id) + ENCRYPTION_PADDING)
-    return 1;
-
-  return sendpacket(ipp, (uint8_t*) &pk, sizeof(pk));
+    return false;
 }
 
-int send_ping_response(IP_Port ipp, clientid_t* client_id, uint64_t ping_id) {
-  pingres_t pk;
-  int       rc;
+int send_ping_request(IP_Port ipp, clientid_t* client_id)
+{
+    pingreq_t pk;
+    int       rc;
+    uint64_t  ping_id;
 
-  if(id_eq(client_id, self_id))
-    return 1;
+    if (is_pinging(ipp, 0) || id_eq(client_id, self_id))
+        return 1;
 
-  pk.magic = PACKET_PING_RES;
-  id_cpy(&pk.client_id, self_id);     // Our pubkey
-  random_nonce((uint8_t*) &pk.nonce); // Generate random nonce
+    // Generate random ping_id
+    ping_id = add_ping(ipp);
 
-  // Encrypt ping_id using recipient privkey
-  rc = encrypt_data((uint8_t*) client_id,
-                    self_secret_key,
-                    (uint8_t*) &pk.nonce,
-                    (uint8_t*) &ping_id, sizeof(ping_id),
-                    (uint8_t*) &pk.ping_id);
+    pk.magic = PACKET_PING_REQ;
+    id_cpy(&pk.client_id, self_id);     // Our pubkey
+    random_nonce((uint8_t*) &pk.nonce); // Generate random nonce
 
-  if(rc != sizeof(ping_id) + ENCRYPTION_PADDING)
-    return 1;
+    // Encrypt ping_id using recipient privkey
+    rc = encrypt_data((uint8_t*) client_id,
+                      self_secret_key,
+                      (uint8_t*) &pk.nonce,
+                      (uint8_t*) &ping_id, sizeof(ping_id),
+                      (uint8_t*) &pk.ping_id);
 
-  return sendpacket(ipp, (uint8_t*) &pk, sizeof(pk));
+    if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
+        return 1;
+
+    return sendpacket(ipp, (uint8_t*) &pk, sizeof(pk));
+}
+
+int send_ping_response(IP_Port ipp, clientid_t* client_id, uint64_t ping_id)
+{
+    pingres_t pk;
+    int       rc;
+
+    if (id_eq(client_id, self_id))
+        return 1;
+
+    pk.magic = PACKET_PING_RES;
+    id_cpy(&pk.client_id, self_id);     // Our pubkey
+    random_nonce((uint8_t*) &pk.nonce); // Generate random nonce
+
+    // Encrypt ping_id using recipient privkey
+    rc = encrypt_data((uint8_t*) client_id,
+                      self_secret_key,
+                      (uint8_t*) &pk.nonce,
+                      (uint8_t*) &ping_id, sizeof(ping_id),
+                      (uint8_t*) &pk.ping_id);
+
+    if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
+        return 1;
+
+    return sendpacket(ipp, (uint8_t*) &pk, sizeof(pk));
 }
