@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 #include "nTox_win32.h"
@@ -86,7 +86,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length) 
+void print_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -95,7 +95,7 @@ void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void load_key() 
+void load_key()
 {
     FILE *data_file = NULL;
     data_file = fopen("data","r");
@@ -130,7 +130,7 @@ void add_friend()
     int i;
     char temp_id[128];
     
-    for (i = 0; i < 128; i++)  
+    for (i = 0; i < 128; i++)
         temp_id[i] = line[i+3];
     
     int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
@@ -141,7 +141,7 @@ void add_friend()
         printf(numstring);
         ++maxnumfriends;
     }
-    else if (num == -1) 
+    else if (num == -1)
         printf("\n[i] Message is too long.\n\n");
     
     else if (num == -2)
@@ -180,7 +180,7 @@ void list_friends()
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
         
-        if (m_friendstatus(i) == 4)    
+        if (m_friendstatus(i) == 4)
             printf("[%d] %s\n", i, (uint8_t*)name);
     }
 
@@ -213,7 +213,7 @@ void message_friend()
     
     for (i = 0; i < len; i++) {
 
-        if (line[i+3] != ' ') 
+        if (line[i+3] != ' ')
             numstring[i] = line[i+3];
 
         else {
@@ -243,7 +243,7 @@ void change_nickname()
     
     for (i = 3; i < len; i++) {
 
-        if (line[i] == 0 || line[i] == '\n') 
+        if (line[i] == 0 || line[i] == '\n')
             break;
 
         name[i-3] = line[i];
@@ -268,7 +268,7 @@ void change_status(int savetofile)
     size_t len = strlen(line);
     
     for (i = 3; i < len; i++) {
-        if (line[i] == 0 || line[i] == '\n') 
+        if (line[i] == 0 || line[i] == '\n')
             break;
         
         status[i-3] = line[i];
@@ -350,7 +350,7 @@ void line_eval(char* line)
                 accept_friend_request(line);
         }
         /* EXIT */
-        else if (inpt_command == 'q') { 
+        else if (inpt_command == 'q') {
             strcpy(line, "---Offline");
             change_status(0);
             exit(EXIT_SUCCESS);
@@ -398,7 +398,7 @@ int main(int argc, char *argv[])
         nameloaded = 1;
         printf("%s\n", name);
         fclose(name_file);
-    } 
+    }
 
     FILE* status_file = NULL;
     status_file = fopen("statusfile.txt", "r");
@@ -424,7 +424,7 @@ int main(int argc, char *argv[])
     {
         if(self_public_key[i] < (PUB_KEY_BYTES/2))
             strcpy(idstring1[i],"0");
-        else 
+        else
             strcpy(idstring1[i], "");
         sprintf(idstring2[i], "%hhX",self_public_key[i]);
     }
@@ -442,7 +442,7 @@ int main(int argc, char *argv[])
     int resolved_address = resolve_addr(argv[1]);
     if (resolved_address != 0)
         bootstrap_ip_port.ip.i = resolved_address;
-    else 
+    else
         exit(1);
     
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
