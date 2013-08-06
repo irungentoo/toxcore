@@ -76,9 +76,26 @@ typedef enum {
     USERSTATUS_KIND_INVALID,
 } USERSTATUS_KIND;
 
+/* a friend */
+typedef struct {
+    uint8_t client_id[CLIENT_ID_SIZE];
+    int crypt_connection_id;
+    uint64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
+    uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
+    uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
+    uint8_t name[MAX_NAME_LENGTH];
+    uint8_t name_sent; /* 0 if we didn't send our name to this friend 1 if we have. */
+    uint8_t *userstatus;
+    uint16_t userstatus_length;
+    uint8_t userstatus_sent;
+    USERSTATUS_KIND userstatus_kind;
+    uint16_t info_size; /* length of the info */
+} Friend;
+
 /*
  * add a friend
  * set the data that will be sent along with friend request
+ * f is the friend that will be created
  * client_id is the client id of the friend
  * data is the data and length is the length
  * returns the friend number if success
@@ -88,13 +105,13 @@ typedef enum {
  * return -4 if friend request already sent or already a friend
  * return -5 for unknown error
  */
-int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
+int m_addfriend(Friend *f, uint8_t *client_id, uint8_t *data, uint16_t length);
 
 
 /* add a friend without sending a friendrequest.
     returns the friend number if success
     return -1 if failure. */
-int m_addfriend_norequest(uint8_t *client_id);
+int m_addfriend_norequest(Friend *f, uint8_t *client_id);
 
 /* return the friend id associated to that client id.
     return -1 if no such friend */
@@ -104,22 +121,22 @@ int getfriend_id(uint8_t *client_id);
     make sure that client_id is of size CLIENT_ID_SIZE.
     return 0 if success
     return -1 if failure */
-int getclient_id(int friend_id, uint8_t *client_id);
+int getclient_id(Friend *f, uint8_t *client_id);
 
 /* remove a friend */
-int m_delfriend(int friendnumber);
+int m_delfriend(Friend *f);
 
 /* return 4 if friend is online
     return 3 if friend is confirmed
     return 2 if the friend request was sent
     return 1 if the friend was added
     return 0 if there is no friend with that number */
-int m_friendstatus(int friendnumber);
+int m_friendstatus(Friend *f);
 
 /* send a text chat message to an online friend
     returns 1 if packet was successfully put into the send queue
     return 0 if it was not */
-int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
+int m_sendmessage(Friend *f, uint8_t *message, uint32_t length);
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
@@ -130,7 +147,7 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
 int setname(uint8_t *name, uint16_t length);
 
 /* get our nickname
-   put it in name
+   put it in name 
    return the length of the name*/
 uint16_t getself_name(uint8_t *name);
 
@@ -139,7 +156,7 @@ uint16_t getself_name(uint8_t *name);
     name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
     return 0 if success
     return -1 if failure */
-int getname(int friendnumber, uint8_t *name);
+int getname(Friend *f, uint8_t *name);
 
 /* set our user status
     you are responsible for freeing status after
@@ -150,19 +167,19 @@ int m_set_userstatus_kind(USERSTATUS_KIND kind);
 /* return the length of friendnumber's user status,
     including null
     pass it into malloc */
-int m_get_userstatus_size(int friendnumber);
+int m_get_userstatus_size(Friend *f);
 
-/* copy friendnumber's userstatus into buf, truncating if size is over maxlen
+/* copy friend's userstatus into buf, truncating if size is over maxlen
     get the size you need to allocate from m_get_userstatus_size
     The self variant will copy our own userstatus. */
-int m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
+int m_copy_userstatus(Friend *f, uint8_t *buf, uint32_t maxlen);
 int m_copy_self_userstatus(uint8_t *buf, uint32_t maxlen);
 
 /* Return one of USERSTATUS_KIND values, except USERSTATUS_KIND_RETAIN.
  * Values unknown to your application should be represented as USERSTATUS_KIND_ONLINE.
  * As above, the self variant will return our own USERSTATUS_KIND.
  * If friendnumber is invalid, this shall return USERSTATUS_KIND_INVALID. */
-USERSTATUS_KIND m_get_userstatus_kind(int friendnumber);
+USERSTATUS_KIND m_get_userstatus_kind(Friend *);
 USERSTATUS_KIND m_get_self_userstatus_kind(void);
 
 /* set the function that will be executed when a friend request is received.
@@ -170,18 +187,18 @@ USERSTATUS_KIND m_get_self_userstatus_kind(void);
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 
 /* set the function that will be executed when a message from a friend is received.
-    function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
-void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
+    function format is: function(Friend *f, uint8_t * message, uint32_t length) */
+void m_callback_friendmessage(void (*function)(Friend *f, uint8_t *, uint16_t));
 
 /* set the callback for name changes
-    function(int friendnumber, uint8_t *newname, uint16_t length)
+    function(Friend *f, uint8_t *newname, uint16_t length)
     you are not responsible for freeing newname */
-void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
+void m_callback_namechange(void (*function)(Friend *f, uint8_t *, uint16_t));
 
 /* set the callback for user status changes
-    function(int friendnumber, USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
+    function(Friend *f, USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
-void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t));
+void m_callback_userstatus(void (*function)(Friend *f, USERSTATUS_KIND, uint8_t *, uint16_t));
 
 /* run this at startup
     returns 0 if no connection problems
@@ -189,7 +206,7 @@ void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uin
 int initMessenger(void);
 
 /* the main loop that needs to be run at least 200 times per second */
-void doMessenger(void);
+void doMessenger(Friend *f);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
