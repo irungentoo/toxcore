@@ -12,11 +12,10 @@
 
 #include "windows.h"
 
-extern int add_window(ToxWindow w);
-extern int focus_window(int num);
+extern char WINDOW_STATUS[TOXWINDOWS_MAX_NUM];
+extern int add_window(ToxWindow w, int n);
 extern ToxWindow new_chat(int friendnum);
-
-#define MAX_FRIENDS_NUM 100
+extern int w_active;
 
 typedef struct {
   uint8_t name[MAX_NAME_LENGTH];
@@ -53,7 +52,17 @@ void friendlist_onMessage(ToxWindow* self, int num, uint8_t* str, uint16_t len) 
     return;
 
   if(friends[num].chatwin == -1) {
-    friends[num].chatwin = add_window(new_chat(num));
+    friends[num].chatwin = num;
+    int i;
+    /* Find first open slot to hold chat window */
+    for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; i++) {
+      if (WINDOW_STATUS[i] == -1) {
+        WINDOW_STATUS[i] = num;
+        add_window(new_chat(num), i);
+        w_active = i;
+        break;
+      }
+    }
   }
 }
 
@@ -86,29 +95,42 @@ int friendlist_onFriendAdded(int num) {
   getname(num, friends[num_friends].name);
   strcpy((char*) friends[num_friends].name, "unknown");
   strcpy((char*) friends[num_friends].status, "unknown");
-  friends[num_friends].chatwin = -1;
-
-  num_friends++;
+  friends[num_friends++].chatwin = -1;
   return 0;
 }
 
 static void friendlist_onKey(ToxWindow* self, int key) {
-
   if(key == KEY_UP) {
-    if(num_selected != 0)
-      num_selected--;
+    num_selected--;
+    if (num_selected < 0)
+      num_selected = num_friends-1;
   }
   else if(key == KEY_DOWN) {
     if(num_friends != 0)
       num_selected = (num_selected+1) % num_friends;
   }
   else if(key == '\n') {
-
-    if(friends[num_selected].chatwin != -1)
-      return;
-
-    friends[num_selected].chatwin = add_window(new_chat(num_selected));
-    focus_window(friends[num_selected].chatwin);
+    /* Jump to chat window if already open */
+    if (friends[num_selected].chatwin != -1) {
+      int i;
+      for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; i++) {
+        if (WINDOW_STATUS[i] == num_selected) {
+          w_active = i;
+          break;
+        }
+      }
+    }else {
+      int i;
+      for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; i++) {
+        if (WINDOW_STATUS[i] == -1) {
+          WINDOW_STATUS[i] = num_selected;
+          friends[num_selected].chatwin = num_selected;
+          add_window(new_chat(num_selected), i);
+          w_active = i;
+          break;
+        }
+      }
+    }
   }
 }
 
@@ -143,6 +165,10 @@ static void friendlist_onDraw(ToxWindow* self) {
   }
 
   wrefresh(self->window);
+}
+
+void disable_chatwin(int f_num) {
+  friends[f_num].chatwin = -1;
 }
 
 static void friendlist_onInit(ToxWindow* self) {

@@ -25,6 +25,8 @@ typedef struct {
 
 } ChatContext;
 
+extern int w_active;
+extern void del_window(ToxWindow *w, int f_num);
 extern void fix_name(uint8_t* name);
 void print_help(ChatContext* self);
 void execute(ToxWindow* self, ChatContext* ctx, char* cmd);
@@ -50,7 +52,7 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   fix_name(nick);
 
   wattron(ctx->history, COLOR_PAIR(2));
-  wprintw(ctx->history, "%02d:%02d:%02d  ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
   wattroff(ctx->history, COLOR_PAIR(2));
   wattron(ctx->history, COLOR_PAIR(4));
   wprintw(ctx->history, "%s: ", nick);
@@ -118,7 +120,7 @@ static void chat_onKey(ToxWindow* self, int key) {
       if(!string_is_empty(ctx->line)) {
         /* make sure the string has at least non-space character */
         wattron(ctx->history, COLOR_PAIR(2));
-        wprintw(ctx->history, "%02d:%02d:%02d ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+        wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
         wattroff(ctx->history, COLOR_PAIR(2));
         wattron(ctx->history, COLOR_PAIR(1));
         wprintw(ctx->history, "you: ", ctx->line);
@@ -187,6 +189,12 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd)
     }
     wprintw(ctx->history, "Your ID: %s\n", id);
   }
+  else if (strcmp(ctx->line, "/close") == 0) {
+    w_active = 0;    // Go to prompt screen
+    int f_num = ctx->friendnum;
+    delwin(ctx->linewin);
+    del_window(self, f_num);
+  }
   else
     wprintw(ctx->history, "Invalid command.\n");
 }
@@ -219,17 +227,19 @@ static void chat_onInit(ToxWindow* self) {
   scrollok(ctx->history, 1);
 
   ctx->linewin = subwin(self->window, 2, x, y - 3, 0);
+  print_help(ctx);
 }
 
 void print_help(ChatContext* self) {
   wattron(self->history, COLOR_PAIR(2) | A_BOLD);
-  wprintw(self->history, "\nCommands:\n");
+  wprintw(self->history, "Commands:\n");
   wattroff(self->history, A_BOLD);
   
   wprintw(self->history, "      /status <message>          : Set your status\n");
   wprintw(self->history, "      /nick <nickname>           : Set your nickname\n");
   wprintw(self->history, "      /myid                      : Print your ID\n");
   wprintw(self->history, "      /clear                     : Clear the screen\n");
+  wprintw(self->history, "      /close                     : Close the current chat window\n");
   wprintw(self->history, "      /quit or /exit             : Exit program\n");
   wprintw(self->history, "      /help                      : Print this message again\n\n");
 

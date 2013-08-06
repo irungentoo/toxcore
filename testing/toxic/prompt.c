@@ -267,7 +267,6 @@ static void execute(ToxWindow* self, char* u_cmd) {
       wprintw(self->window, "Message successfully sent.\n");
     }
   }
-
   else {
     wprintw(self->window, "Invalid command.\n");
   }
