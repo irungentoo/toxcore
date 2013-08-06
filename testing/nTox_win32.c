@@ -86,7 +86,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void print_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -275,7 +275,7 @@ void change_status(int savetofile)
     }
 
     status[i-3] = 0;
-    m_set_userstatus(status, strlen((char*)status));
+    m_set_userstatus(m_get_userstatus_kind(0), status, strlen((char*)status));
     char numstring[100];
     sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
     printf(numstring);
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
         while (fgets(line, MAX_USERSTATUS_LENGTH, status_file) != NULL) {
             sscanf(line, "%s", (char*)status);
         }
-        m_set_userstatus(status, strlen((char*)status)+1);
+        m_set_userstatus(m_get_userstatus_kind(0), status, strlen((char*)status)+1);
         statusloaded = 1;
         printf("%s\n", status);
         fclose(status_file);
