@@ -72,7 +72,7 @@ void on_nickchange(int friendnumber, uint8_t* string, uint16_t length) {
 void on_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t* string, uint16_t length) {
   size_t i;
 
-  wprintw(prompt->window, "\n(statuschange) %d: %s!\n", friendnumber, string);
+  wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
 
   for(i=0; i<w_num; i++) {
     if(windows[i].onStatusChange != NULL)
