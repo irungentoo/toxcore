@@ -44,12 +44,12 @@ static int prompt_buf_pos=0;
 static void execute(ToxWindow* self, char* u_cmd) {
     int i;
     int newlines = 0;
-	  char cmd[256] = {0};
+    char cmd[256] = {0};
     for(i = 0; i < strlen(prompt_buf); i++) 
     {
     if (u_cmd[i] == '\n')
-		    ++newlines;
-	  else
+		++newlines;
+	else
         cmd[i - newlines] = u_cmd[i];
     }
 
@@ -276,7 +276,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
 static void prompt_onKey(ToxWindow* self, int key) {
   // PRINTABLE characters: Add to line.
   if(isprint(key)) {
-	if (prompt_buf_pos == 255){
+	if (prompt_buf_pos == (sizeof(prompt_buf) - 1)){
         wprintw(self->window, "\nToo Long.\n");
 		prompt_buf_pos = 0;
         prompt_buf[0] = 0;
