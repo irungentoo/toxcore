@@ -62,15 +62,7 @@ unsigned char * hex_string_to_bin(char hex_string[]);
 #endif // DEBUG
 
 /************************Linked List***********************
- * This is a simple linked list implementation, very similar
- * to Linux kernel's /include/linux/list.h (which we can't 
- * use because Tox is GPLv3 and Linux is GPLv2.)
- *
- * TODO: Make the lists easier to use with some sweat pre-
- * processor syntactic sugar.
- **********************************************************/
-
-/* Example usage
+TODO: move to wiki.
 
 This sample program makes a new struct which contains a
 character and a tox_list_t. It then prompts a user for
@@ -133,37 +125,41 @@ and the type of structure to return.
 #define GET_PARENT(var, var_name_in_parent, parent_type) \
    (*((parent_type*)((uint64_t)(&(var)) - (uint64_t)(MEMBER_OFFSET(var_name_in_parent, parent_type)))))
 
+/* LIFO */
+#define TOX_LIST_FOR_EACH_REVERSE(lst, tmp_name) \
+   for (struct tox_list* tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
+
+/* LILO */
 #define TOX_LIST_FOR_EACH(lst, tmp_name) \
-   for (tox_list_t* tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
+   for (struct tox_list* tmp_name = lst.prev; tmp_name != &lst; tmp_name = tmp_name->prev)
 
 #define TOX_LIST_GET_VALUE(tmp_name, name_in_parent, parent_type) GET_PARENT(tmp_name, name_in_parent, parent_type)
 
-typedef struct tox_list {
-   struct tox_list *prev, *next;
-} tox_list_t;
+struct tox_list
+{
+    struct tox_list *prev, *next;
+};
 
-/* Returns a new tox_list_t. */
-static inline void tox_list_new(tox_list_t* lst) {
-   lst->prev = lst->next = lst;
+/* only call this for the head */
+static inline void tox_list_init(struct tox_list * head)
+{
+    head->prev = head->next = head;
 }
       
 /* Inserts a new tox_lst after lst and returns it. */
-static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst) {
-   tox_list_new(new_lst);
+static inline void tox_list_add(struct tox_list * lst, struct tox_list * new_lst)
+{
+    /* tox_list_new(new_lst); */
+    new_lst->next = lst->next;
+    new_lst->next->prev = new_lst;
 
-   new_lst->next = lst->next;
-   new_lst->next->prev = new_lst;
-
-   lst->next = new_lst;
-   new_lst->prev = lst;
+    lst->next = new_lst;
+    new_lst->prev = lst;
 }
 
-static inline void tox_list_remove(tox_list_t* lst) {
-#ifdef DEBUG /* TODO: check how debugging is done in Tox. */
-   assert(lst->next != lst && lst->prev != lst);
-#endif
-   lst->prev->next = lst->next;
-   lst->next->prev = lst->prev;
+static inline void tox_list_remove(struct tox_list * lst) {
+    lst->prev->next = lst->next;
+    lst->next->prev = lst->prev;
 }
 
 #endif // MISC_TOOLS_H
