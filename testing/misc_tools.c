@@ -25,7 +25,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h> /* for sscanf */
+#include <stdio.h>
+
+#ifdef DEBUG
+#include <assert.h>
+#endif // DEBUG
 
 /* TODO: rewrite */
 unsigned char * hex_string_to_bin(char hex_string[])
@@ -39,3 +43,9 @@ unsigned char * hex_string_to_bin(char hex_string[])
 
     return val;
 }
+
+
+
+
+
+
