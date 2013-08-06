@@ -35,6 +35,7 @@ typedef struct {
     uint8_t *userstatus;
     uint16_t userstatus_length;
     uint8_t userstatus_sent;
+    USERSTATUS_KIND userstatus_kind;
     uint16_t info_size; /* length of the info */
 } Friend;
 
@@ -45,6 +46,7 @@ static uint16_t self_name_length;
 
 static uint8_t *self_userstatus;
 static uint16_t self_userstatus_len;
+static USERSTATUS_KIND self_userstatus_kind;
 
 #define MAX_NUM_FRIENDS 256
 
@@ -98,12 +100,12 @@ int getclient_id(int friend_id, uint8_t *client_id)
  * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
  * return FAERR_OWNKEY if user's own key
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
- * return FAERR_UNKNOWN for unknown error 
+ * return FAERR_UNKNOWN for unknown error
  */
 int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
-    if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES 
-                         - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES 
+    if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES
+                         - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
                          + crypto_box_ZEROBYTES))
         return FAERR_TOOLONG;
     if (length < 1)
@@ -123,6 +125,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             friendlist[i].userstatus = calloc(1, 1);
             friendlist[i].userstatus_length = 1;
+            friendlist[i].userstatus_kind = USERSTATUS_KIND_OFFLINE;
             memcpy(friendlist[i].info, data, length);
             friendlist[i].info_size = length;
 
@@ -205,7 +208,7 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
 }
 
-/* send a name packet to friendnumber 
+/* send a name packet to friendnumber
    length is the length with the NULL terminator*/
 static int m_sendname(int friendnumber, uint8_t * name, uint16_t length)
 {
@@ -247,14 +250,14 @@ int setname(uint8_t * name, uint16_t length)
 }
 
 /* get our nickname
-   put it in name 
+   put it in name
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
    return the length of the name */
 uint16_t getself_name(uint8_t *name)
 {
     memcpy(name, self_name, self_name_length);
     return self_name_length;
-} 
+}
 
 /* get name of friendnumber
    put it in name
@@ -269,16 +272,33 @@ int getname(int friendnumber, uint8_t * name)
     return 0;
 }
 
-int m_set_userstatus(uint8_t *status, uint16_t length)
+int m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
 {
     if (length > MAX_USERSTATUS_LENGTH)
         return -1;
+    if (kind != USERSTATUS_KIND_RETAIN) {
+        self_userstatus_kind = kind;
+    }
     uint8_t *newstatus = calloc(length, 1);
     memcpy(newstatus, status, length);
     free(self_userstatus);
     self_userstatus = newstatus;
     self_userstatus_len = length;
 
+    uint32_t i;
+    for (i = 0; i < numfriends; ++i)
+        friendlist[i].userstatus_sent = 0;
+    return 0;
+}
+
+int m_set_userstatus_kind(USERSTATUS_KIND kind) {
+    if (kind >= USERSTATUS_KIND_INVALID) {
+        return -1;
+    }
+    if (kind == USERSTATUS_KIND_RETAIN) {
+        return 0;
+    }
+    self_userstatus_kind = kind;
     uint32_t i;
     for (i = 0; i < numfriends; ++i)
         friendlist[i].userstatus_sent = 0;
@@ -305,11 +325,33 @@ int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
     return 0;
 }
 
+int m_copy_self_userstatus(uint8_t * buf, uint32_t maxlen)
+{
+    memset(buf, 0, maxlen);
+    memcpy(buf, self_userstatus, MIN(maxlen, MAX_USERSTATUS_LENGTH) - 1);
+    return 0;
+}
+
+USERSTATUS_KIND m_get_userstatus_kind(int friendnumber) {
+    if (friendnumber >= numfriends || friendnumber < 0)
+        return USERSTATUS_KIND_INVALID;
+    USERSTATUS_KIND uk = friendlist[friendnumber].userstatus_kind;
+    if (uk >= USERSTATUS_KIND_INVALID) {
+        uk = USERSTATUS_KIND_ONLINE;
+    }
+    return uk;
+}
+
+USERSTATUS_KIND m_get_self_userstatus_kind(void) {
+    return self_userstatus_kind;
+}
+
 static int send_userstatus(int friendnumber, uint8_t * status, uint16_t length)
 {
-    uint8_t *thepacket = malloc(length + 1);
-    memcpy(thepacket + 1, status, length);
+    uint8_t *thepacket = malloc(length + 2);
+    memcpy(thepacket + 2, status, length);
     thepacket[0] = PACKET_ID_USERSTATUS;
+    thepacket[1] = self_userstatus_kind;
     int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
     free(thepacket);
     return written;
@@ -325,6 +367,11 @@ static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t le
     friendlist[friendnumber].userstatus = newstatus;
     friendlist[friendnumber].userstatus_length = length;
     return 0;
+}
+
+static void set_friend_userstatus_kind(int friendnumber, USERSTATUS_KIND k)
+{
+    friendlist[friendnumber].userstatus_kind = k;
 }
 
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
@@ -353,9 +400,9 @@ void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
     friend_namechange_isset = 1;
 }
 
-static void (*friend_statuschange)(int, uint8_t *, uint16_t);
+static void (*friend_statuschange)(int, USERSTATUS_KIND, uint8_t *, uint16_t);
 static uint8_t friend_statuschange_isset = 0;
-void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
+void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t))
 {
     friend_statuschange = function;
     friend_statuschange_isset = 1;
@@ -366,7 +413,7 @@ void m_callback_userstatus(void (*function)(int, uint8_t *, uint16_t))
 int initMessenger(void)
 {
     new_keys();
-    m_set_userstatus((uint8_t*)"Online", sizeof("Online"));
+    m_set_userstatus(USERSTATUS_KIND_ONLINE, (uint8_t*)"Online", sizeof("Online"));
     initNetCrypto();
     IP ip;
     ip.i = 0;
@@ -438,12 +485,17 @@ static void doFriends(void)
                     break;
                 }
                 case PACKET_ID_USERSTATUS: {
-                    uint8_t *status = calloc(MIN(len - 1, MAX_USERSTATUS_LENGTH), 1);
-                    memcpy(status, temp + 1, MIN(len - 1, MAX_USERSTATUS_LENGTH));
-                    if (friend_statuschange_isset)
-                        friend_statuschange(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
-                    set_friend_userstatus(i, status, MIN(len - 1, MAX_USERSTATUS_LENGTH));
-                    free(status);
+                    if (len > 2) {
+                        uint8_t *status = calloc(MIN(len - 2, MAX_USERSTATUS_LENGTH), 1);
+                        memcpy(status, temp + 2, MIN(len - 2, MAX_USERSTATUS_LENGTH));
+                        if (friend_statuschange_isset)
+                            friend_statuschange(i, temp[1], status, MIN(len - 2, MAX_USERSTATUS_LENGTH));
+                        set_friend_userstatus(i, status, MIN(len - 2, MAX_USERSTATUS_LENGTH));
+                        free(status);
+                    } else if (friend_statuschange_isset) {
+                        friend_statuschange(i, temp[1], friendlist[i].userstatus, friendlist[i].userstatus_length);
+                    }
+                    set_friend_userstatus_kind(i, temp[1]);
                     break;
                 }
                 case PACKET_ID_MESSAGE: {
