@@ -159,10 +159,11 @@ static void execute(ToxWindow* self, char* cmd) {
     }
   }
   else if(!strcmp(cmd, "clear")) { 
-  	wclear(self->window);
+      wclear(self->window);
   }
   else if(!strcmp(cmd, "help")) {
-	  print_usage(self);
+      wclear(self->window);
+      print_usage(self);
   }
   else if(!strncmp(cmd, "status ", strlen("status "))) {
     char* msg;
@@ -265,8 +266,8 @@ static void execute(ToxWindow* self, char* cmd) {
 static void prompt_onKey(ToxWindow* self, int key) {
   // PRINTABLE characters: Add to line.
   if(isprint(key)) {
-    if(prompt_buf_pos == (sizeof(prompt_buf) - 1)) {
-      return;
+    if(prompt_buf_pos == (COLS - 3)) {
+        return;
     }
     prompt_buf[prompt_buf_pos++] = key;
     prompt_buf[prompt_buf_pos] = 0;
