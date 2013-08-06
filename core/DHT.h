@@ -104,6 +104,8 @@ int DHT_load(uint8_t *data, uint32_t size);
     returns 1 if we are */
 int DHT_isconnected();
 
+void addto_lists(IP_Port ip_port, uint8_t * client_id);
+
 #ifdef __cplusplus
 }
 #endif
