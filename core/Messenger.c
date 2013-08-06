@@ -352,7 +352,7 @@ static int send_userstatus(int friendnumber, uint8_t * status, uint16_t length)
     memcpy(thepacket + 2, status, length);
     thepacket[0] = PACKET_ID_USERSTATUS;
     thepacket[1] = self_userstatus_kind;
-    int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
+    int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 2);
     free(thepacket);
     return written;
 }
