@@ -52,6 +52,13 @@ static void execute(ToxWindow *self, char *u_cmd)
       cmd[i - newlines] = u_cmd[i];
   }
 
+  if (cmd[0] == '/') {
+    int i;
+    for (i = i1; i < strlen(cmd); i++) { //This doesn't work when it doesn't end with a space and another word
+      cmd[i - 1] = cmd[i]; //Still working on why
+    }
+  }
+
   if (!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
     exit(0);
