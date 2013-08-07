@@ -52,9 +52,21 @@ static void execute(ToxWindow *self, char *u_cmd)
       cmd[i - newlines] = u_cmd[i];
   }
 
+  int leading_spc = 0;
+  for (i = 0; i < 256 && isspace(cmd[i]); ++i)
+    leading_spc++;
+  memmove(cmd, cmd + leading_spc, 256 - leading_spc);
+
+  int cmd_end = strlen(cmd);
+  while (cmd_end > 0 && cmd_end--)
+    if (!isspace(cmd[cmd_end]))
+      break;
+  cmd[cmd_end + 1] = '\0';
+
   if (cmd[0] == '/') {
+    wprintw(self->window,"Warning: Run your command without the /, this may not work\n");
     int i;
-    for (i = i; i < strlen(cmd); i++) { //This doesn't work when it doesn't end with a space and another word
+    for (i = 1; i < strlen(cmd); i++) { //This doesn't work when it doesn't end with a space and another word
       cmd[i - 1] = cmd[i]; //Still working on why
     }
   }
@@ -171,6 +183,54 @@ static void execute(ToxWindow *self, char *u_cmd)
   }
 
   else if (!strncmp(cmd, "status ", strlen("status "))) {
+    char *status = strchr(cmd, ' ');
+    char *msg;
+    char *status_text;
+    if (status == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
+      return;
+    }
+    status++;
+    USERSTATUS_KIND status_kind;
+    if (!strncmp(status, "online", strlen("online"))) {
+      status_kind = USERSTATUS_KIND_ONLINE;
+      status_text = "ONLINE";
+    }
+
+    else if (!strncmp(status, "away", strlen("away"))) {
+      status_kind = USERSTATUS_KIND_AWAY;
+      status_text = "AWAY";
+    }
+
+    else if (!strncmp(status, "busy", strlen("busy"))) {
+      status_kind = USERSTATUS_KIND_BUSY;
+      status_text = "BUSY";
+    }
+
+    else if (!strncmp(status, "offline", strlen("offline"))) {
+      status_kind = USERSTATUS_KIND_OFFLINE;
+      status_text = "OFFLINE";
+    }
+
+    else
+    {
+      wprintw(self->window, "Invalid status.\n");
+      return;
+    }
+
+    msg = strchr(status, ' ');
+    if (msg == NULL) {
+      m_set_userstatus_kind(status_kind);
+      wprintw(self->window, "Status set to: %s\n", status_text);
+    }
+    else {
+      msg++;
+      m_set_userstatus(status_kind, (uint8_t*) msg, strlen(msg)+1);
+      wprintw(self->window, "Status set to: %s, %s\n", status_text, msg);
+    }
+  }
+
+  else if (!strncmp(cmd, "statusmsg ", strlen("statumsg "))) {
     char *msg = strchr(cmd, ' ');
     if (msg == NULL) {
       wprintw(self->window, "Invalid syntax.\n");
@@ -313,7 +373,8 @@ static void print_usage(ToxWindow *self)
 
   wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
   wprintw(self->window, "      add <id> <message>        : Add friend\n");
-  wprintw(self->window, "      status <message>          : Set your status\n");
+  wprintw(self->window, "      status <type> <message>   : Set your status\n");
+  wprintw(self->window, "      statusmsg  <message>      : Set your status\n");
   wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
   wprintw(self->window, "      myid                      : Print your ID\n");
