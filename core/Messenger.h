@@ -40,6 +40,7 @@ extern "C" {
 
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_USERSTATUS 49
+#define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
 
 /* status definitions */
@@ -117,9 +118,14 @@ int m_delfriend(int friendnumber);
 int m_friendstatus(int friendnumber);
 
 /* send a text chat message to an online friend
-    returns 1 if packet was successfully put into the send queue
-    return 0 if it was not */
-int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
+    returns the message id if packet was successfully put into the send queue
+    return 0 if it was not
+    you will want to retain the return value, it will be passed to your read receipt callback
+    if one is received.
+    m_sendmessage_withid will send a message with the id of your choosing,
+    however we can generate an id for you by calling plain m_sendmessage. */
+uint32_t m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
+uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
@@ -182,6 +188,8 @@ void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
     function(int friendnumber, USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
 void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t));
+
+void m_callback_read_receipt(void (*function)(int, uint32_t));
 
 /* run this at startup
     returns 0 if no connection problems
