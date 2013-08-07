@@ -86,7 +86,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
+void print_statuschange(int friendnumber,USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
