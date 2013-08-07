@@ -23,6 +23,8 @@ before_script:
   - sudo ldconfig
 # installing sphinx, needed for documentation
   - sudo apt-get install python-sphinx
+# installing check, needed for unit tests
+  - sudo apt-get install check
 
 script:
   - mkdir build && cd build
@@ -30,6 +32,7 @@ script:
   - make -j3
 # build docs separately
   - make docs
+  - cd ../auto_tests/ && ./run_tests
 
 notifications:
   email: false

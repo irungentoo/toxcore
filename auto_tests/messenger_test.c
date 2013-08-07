@@ -25,7 +25,7 @@ char *friend_id_str = "1145e295b0fbdc9330d5d74ec204a8bf23c315106040b4035d0d358d0
 char *good_id_a_str = "DB9B569D14850ED8364C3744CAC2C8FF78985D213E980C7C508D0E91E8E45441";
 char *good_id_b_str = "d3f14b6d384d8f5f2a66cff637e69f28f539c5de61bc29744785291fa4ef4d64";
 
-char *bad_id_str =    "THIS_IS_A_BAD_IDTHIS_IS_A_BAD_IDTHIS_IS_A_BAD_IDTHIS_IS_A_BAD_ID";
+char *bad_id_str =    "9B569D14ff637e69f2";
 
 unsigned char *friend_id = NULL;
 unsigned char *good_id_a = NULL;
@@ -69,8 +69,11 @@ START_TEST(test_m_get_userstatus_size)
                                                             REALLY_BIG_NUMBER);
     rc = m_get_userstatus_size(friend_id_num);
 
+    /* this WILL error if the original m_addfriend_norequest() failed */
     ck_assert_msg((rc > 0 && rc <= MAX_USERSTATUS_LENGTH),
-        "m_get_userstatus_size is returning out of range values!\n");
+        "m_get_userstatus_size is returning out of range values!\n"
+        "(this can be caused by the error of m_addfriend_norequest"
+        " in the beginning of the suite)\n");
 }
 END_TEST
 
@@ -126,8 +129,11 @@ START_TEST(test_m_addfriend)
     if(m_addfriend((uint8_t *)friend_id, (uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG)
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", really_bad_len);
 
+    /* this will error if the original m_addfriend_norequest() failed */
     if(m_addfriend((uint8_t *)friend_id, (uint8_t *)good_data, good_len) != FAERR_ALREADYSENT)
-        ck_abort_msg("m_addfriend did NOT catch adding a friend we already have.\n");
+        ck_abort_msg("m_addfriend did NOT catch adding a friend we already have.\n"
+                     "(this can be caused by the error of m_addfriend_norequest in"
+                     " the beginning of the suite)\n");
 
     if(m_addfriend((uint8_t *)good_id_b, (uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE)
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", bad_len);
@@ -250,8 +256,15 @@ int main(int argc, char *argv[])
     bad_id    = hex_string_to_bin(bad_id_str);
 
     /* setup a default friend and friendnum */
-    m_addfriend_norequest((uint8_t *)friend_id);
-    friend_id_num = getfriend_id((uint8_t *)friend_id);
+    if(m_addfriend_norequest((uint8_t *)friend_id) < 0)
+        fputs("m_addfriend_norequest() failed on a valid ID!\n"
+              "this was CRITICAL to the test, and the build WILL fail.\n"
+              "the tests will continue now...\n\n", stderr);
+
+    if((friend_id_num = getfriend_id((uint8_t *)friend_id)) < 0)
+        fputs("getfriend_id() failed on a valid ID!\n"
+              "this was CRITICAL to the test, and the build WILL fail.\n"
+              "the tests will continue now...\n\n", stderr);
 
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);
