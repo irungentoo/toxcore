@@ -410,6 +410,8 @@ void load_key(char *path)
         }
     }
 
+    if(fclose(data_file) < 0)
+        perror("[!] fclose failed");
     return;
 
 FILE_ERROR:
