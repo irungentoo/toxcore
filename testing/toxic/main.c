@@ -249,6 +249,7 @@ static void load_data(char *path)
 static void draw_bar()
 {
   static int odd = 0;
+  int blinkrate = 30;
 
   attron(COLOR_PAIR(4));
   mvhline(LINES - 2, 0, '_', COLS);
@@ -266,14 +267,13 @@ static void draw_bar()
       if (i == active_window)
         attron(A_BOLD);
 
-      odd = (odd+1) % 10;
-      if (windows[i].blink && (odd < 5)) {
+      odd = (odd+1) % blinkrate;
+      if (windows[i].blink && (odd < (blinkrate/2))) {
         attron(COLOR_PAIR(3));
       }
-
       printw(" %s", windows[i].title);
       if (windows[i].blink && (odd < 5)) {
-        attron(COLOR_PAIR(3));
+        attroff(COLOR_PAIR(3));
       }
       if (i == active_window) {
         attroff(A_BOLD);
@@ -375,9 +375,8 @@ int main(int argc, char *argv[])
     ch = getch();
     if (ch == '\t' || ch == KEY_BTAB)
       set_active_window(ch);
-    else if (ch != ERR) {
+    else if (ch != ERR)
       a->onKey(a, ch);
-    }
   }
   return 0;
 }
