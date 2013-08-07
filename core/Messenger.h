@@ -40,6 +40,7 @@ extern "C" {
 
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_USERSTATUS 49
+#define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
 
 /* status definitions */
@@ -117,9 +118,14 @@ int m_delfriend(int friendnumber);
 int m_friendstatus(int friendnumber);
 
 /* send a text chat message to an online friend
-    returns 1 if packet was successfully put into the send queue
-    return 0 if it was not */
-int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
+    returns the message id if packet was successfully put into the send queue
+    return 0 if it was not
+    you will want to retain the return value, it will be passed to your read receipt callback
+    if one is received.
+    m_sendmessage_withid will send a message with the id of your choosing,
+    however we can generate an id for you by calling plain m_sendmessage. */
+uint32_t m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
+uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
@@ -165,6 +171,10 @@ int m_copy_self_userstatus(uint8_t *buf, uint32_t maxlen);
 USERSTATUS_KIND m_get_userstatus_kind(int friendnumber);
 USERSTATUS_KIND m_get_self_userstatus_kind(void);
 
+/* Sets whether we send read receipts for friendnumber.
+ * This function is not lazy, and it will fail if yesno is not (0 or 1).*/
+void m_set_sends_receipts(int friendnumber, int yesno);
+
 /* set the function that will be executed when a friend request is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
 void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
@@ -182,6 +192,15 @@ void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
     function(int friendnumber, USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
 void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t));
+
+/* set the callback for read receipts
+    function(int friendnumber, uint32_t receipt)
+    if you are keeping a record of returns from m_sendmessage,
+    receipt might be one of those values, and that means the message
+    has been received on the other side. since core doesn't
+    track ids for you, receipt may not correspond to any message
+    in that case, you should discard it. */
+void m_callback_read_receipt(void (*function)(int, uint32_t));
 
 /* run this at startup
     returns 0 if no connection problems

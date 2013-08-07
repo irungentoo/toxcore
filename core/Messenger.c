@@ -37,6 +37,8 @@ typedef struct {
     uint8_t userstatus_sent;
     USERSTATUS_KIND userstatus_kind;
     uint16_t info_size; /* length of the info */
+    uint32_t message_id; /* a semi-unique id used in read receipts */
+    uint8_t receives_read_receipts; /* shall we send read receipts to this person? */
 } Friend;
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
@@ -128,6 +130,8 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             friendlist[i].userstatus_kind = USERSTATUS_KIND_OFFLINE;
             memcpy(friendlist[i].info, data, length);
             friendlist[i].info_size = length;
+            friendlist[i].message_id = 0;
+            friendlist[i].receives_read_receipts = 1; /* default: YES */
 
             ++numfriends;
             return i;
@@ -150,6 +154,8 @@ int m_addfriend_norequest(uint8_t * client_id)
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             friendlist[i].userstatus = calloc(1, 1);
             friendlist[i].userstatus_length = 1;
+            friendlist[i].message_id = 0;
+            friendlist[i].receives_read_receipts = 1; /* default: YES */
             numfriends++;
             return i;
         }
@@ -193,19 +199,33 @@ int m_friendstatus(int friendnumber)
 }
 
 /* send a text chat message to an online friend
-   return 1 if packet was successfully put into the send queue
+   return the message id if packet was successfully put into the send queue
    return 0 if it was not */
-int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
+uint32_t m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
-    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_ONLINE)
+    uint32_t msgid = ++friendlist[friendnumber].message_id;
+    if (msgid == 0)
+        msgid = 1; /* otherwise, false error */
+    return m_sendmessage_withid(friendnumber, msgid, message, length);
+}
+
+uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
+{
+    if (friendnumber < 0 || friendnumber >= numfriends)
+        return 0;
+    if (length >= (MAX_DATA_SIZE - 4) || friendlist[friendnumber].status != FRIEND_ONLINE)
         /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
         return 0;
     uint8_t temp[MAX_DATA_SIZE];
     temp[0] = PACKET_ID_MESSAGE;
-    memcpy(temp + 1, message, length);
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
+    temp[1] = theid >> 24;
+    temp[2] = theid >> 16;
+    temp[3] = theid >> 8;
+    temp[4] = theid;
+    memcpy(temp + 5, message, length);
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 5);
 }
 
 /* send a name packet to friendnumber
@@ -374,6 +394,16 @@ static void set_friend_userstatus_kind(int friendnumber, USERSTATUS_KIND k)
     friendlist[friendnumber].userstatus_kind = k;
 }
 
+/* Sets whether we send read receipts for friendnumber. */
+void m_set_sends_receipts(int friendnumber, int yesno)
+{
+    if (yesno < 0 || yesno > 1)
+        return;
+    if (friendnumber >= numfriends || friendnumber < 0)
+        return;
+    friendlist[friendnumber].receives_read_receipts = yesno;
+}
+
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t friend_request_isset = 0; */
 /* set the function that will be executed when a friend request is received. */
@@ -406,6 +436,14 @@ void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uin
 {
     friend_statuschange = function;
     friend_statuschange_isset = 1;
+}
+
+static void (*read_receipt)(int, uint32_t);
+static uint8_t read_receipt_isset = 0;
+void m_callback_read_receipt(void (*function)(int, uint32_t))
+{
+    read_receipt = function;
+    read_receipt_isset = 1;
 }
 
 #define PORT 33445
@@ -499,8 +537,23 @@ static void doFriends(void)
                     break;
                 }
                 case PACKET_ID_MESSAGE: {
+                    if (friendlist[i].receives_read_receipts) {
+                        uint8_t *thepacket = malloc(5);
+                        thepacket[0] = PACKET_ID_RECEIPT;
+                        memcpy(thepacket + 1, temp + 1, 4);
+                        write_cryptpacket(friendlist[i].crypt_connection_id, thepacket, 5);
+                        free(thepacket);
+                    }
                     if (friend_message_isset)
-                        (*friend_message)(i, temp + 1, len - 1);
+                        (*friend_message)(i, temp + 5, len - 5);
+                    break;
+                }
+                case PACKET_ID_RECEIPT: {
+                    if (len < 5)
+                        break;
+                    uint32_t msgid = (temp[1] << 24) | (temp[2] << 16) | (temp[3] << 8) | temp[4];
+                    if (read_receipt_isset)
+                        (*read_receipt)(i, msgid);
                     break;
                 }
                 }
