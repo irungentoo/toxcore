@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 /* Our public key. */
-extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+extern uint8_t tox_self_public_key[crypto_box_PUBLICKEYBYTES];
 extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
 #define ENCRYPTION_PADDING (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
@@ -81,7 +81,7 @@ int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *packet, uint16_t
 /* Start a secure connection with other peer who has public_key and ip_port
     returns -1 if failure
     returns crypt_connection_id of the initialized connection if everything went well. */
-int crypto_connect(uint8_t *public_key, IP_Port ip_port);
+int crypto_connect(uint8_t *public_key, tox_IP_Port ip_port);
 
 /* kill a crypto connection
     return 0 if killed successfully

@@ -23,7 +23,7 @@
 
 #include "friend_requests.h"
 
-uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+uint8_t tox_self_public_key[crypto_box_PUBLICKEYBYTES];
 
 /* Try to send a friendrequest to peer with public_key
    data is the data in the request and length is the length.
@@ -38,7 +38,7 @@ int send_friendrequest(uint8_t * public_key, uint8_t * data, uint32_t length)
     if (len == -1)
         return -1;
 
-    IP_Port ip_port = DHT_getfriendip(public_key);
+    tox_IP_Port ip_port = DHT_getfriendip(public_key);
 
     if (ip_port.ip.i == 1)
         return -1;
@@ -101,13 +101,13 @@ static int request_recieved(uint8_t * client_id)
 }
 
 
-int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+int friendreq_handlepacket(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     if (packet[0] == 32) {
         if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
             length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
             return 1;
-        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.
+        if (memcmp(packet + 1, tox_self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.
             if (handle_friendrequest_isset == 0)
                 return 1;
 

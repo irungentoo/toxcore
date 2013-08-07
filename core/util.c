@@ -28,7 +28,7 @@ uint64_t random_64b()
     return r;
 }
 
-bool ipp_eq(IP_Port a, IP_Port b)
+bool ipp_eq(tox_IP_Port a, tox_IP_Port b)
 {
     return (a.ip.i == b.ip.i) && (a.port == b.port);
 }

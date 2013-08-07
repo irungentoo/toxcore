@@ -28,7 +28,7 @@
 
 #define DEBUG
 
-unsigned char *hex_string_to_bin(char hex_string[]);
+unsigned char *tox_hex_string_to_bin(char hex_string[]);
 
 /* See http://wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging for usage info. */
 #ifdef DEBUG

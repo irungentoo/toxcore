@@ -85,10 +85,10 @@ int main(int argc, char *argv[])
 
     for(i = 0; i < 32; i++)
     {
-        if(self_public_key[i] < 16)
+        if(tox_self_public_key[i] < 16)
             printf("0");
-        printf("%hhX",self_public_key[i]);
-        fprintf(file, "%hhX",self_public_key[i]);
+        printf("%hhX", tox_self_public_key[i]);
+        fprintf(file, "%hhX", tox_self_public_key[i]);
     }
 
     fclose(file);
@@ -105,15 +105,15 @@ int main(int argc, char *argv[])
 
     if (argc > 3) {
         printf("Trying to bootstrap into the network...\n");
-        IP_Port bootstrap_info;
+        tox_IP_Port bootstrap_info;
         bootstrap_info.ip.i = inet_addr(argv[1]);
         bootstrap_info.port = htons(atoi(argv[2]));
-        uint8_t *bootstrap_key = hex_string_to_bin(argv[3]);
+        uint8_t *bootstrap_key = tox_hex_string_to_bin(argv[3]);
         DHT_bootstrap(bootstrap_info, bootstrap_key);
         free(bootstrap_key);
     }
 
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 

@@ -43,7 +43,7 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   if(ctx->friendnum != num)
     return;
 
-  getname(num, (uint8_t*) &nick);
+  tox_getname(num, (uint8_t*) &nick);
 
   msg[len-1] = '\0';
   nick[tox_MAX_NAME_LENGTH-1] = '\0';
@@ -184,7 +184,7 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd)
     int i;
     for (i = 0; i < 32; i++) {
       char xx[3];
-      snprintf(xx, sizeof(xx), "%02x",  self_public_key[i] & 0xff);
+      snprintf(xx, sizeof(xx), "%02x",  tox_self_public_key[i] & 0xff);
       strcat(id, xx);
     }
     wprintw(ctx->history, "Your ID: %s\n", id);
@@ -259,7 +259,7 @@ ToxWindow new_chat(int friendnum) {
   ret.onStatusChange = &chat_onStatusChange;
 
   uint8_t nick[tox_MAX_NAME_LENGTH] = {0};
-  getname(friendnum, (uint8_t*) &nick);
+  tox_getname(friendnum, (uint8_t*) &nick);
   fix_name(nick);
 
   snprintf(ret.title, sizeof(ret.title), "[%s (%d)]", nick, friendnum);

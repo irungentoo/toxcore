@@ -77,7 +77,7 @@ typedef struct {
     uint16_t port;
     /* not used for anything right now */
     uint16_t padding;
-} IP_Port;
+} tox_IP_Port;
 
 typedef struct {
     int16_t family;
@@ -99,12 +99,12 @@ uint32_t random_int(void);
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port */
-int sendpacket(IP_Port ip_port, uint8_t *data, uint32_t length);
+int sendpacket(tox_IP_Port ip_port, uint8_t *data, uint32_t length);
 
 /* Function to receive data, ip and port of sender is put into ip_port
     the packet data into data
     the packet length into length. */
-int receivepacket(IP_Port *ip_port, uint8_t *data, uint32_t *length);
+int receivepacket(tox_IP_Port *ip_port, uint8_t *data, uint32_t *length);
 
 /* initialize networking
     bind to ip and port
@@ -121,7 +121,7 @@ void shutdown_networking(void);
   resolve_addr():
     address should represent IPv4 or a hostname with A record
 
-    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+    returns a data in network byte order that can be used to set IP.i or tox_IP_Port.ip.i
     returns 0 on failure
 
     TODO: Fix ipv6 support

@@ -54,7 +54,7 @@
 
 #define PORT 33445
 
-void printip(IP_Port ip_port)
+void printip(tox_IP_Port ip_port)
 {
     printf("\nIP: %u.%u.%u.%u Port: %u\n",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
 }
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
     DHT_addfriend((uint8_t *)argv[3]);
-    IP_Port friend_ip;
+    tox_IP_Port friend_ip;
     int connection = -1;
     int inconnection = -1;
     
@@ -82,12 +82,12 @@ int main(int argc, char *argv[])
     
 
     perror("Initialization");
-    IP_Port bootstrap_ip_port;
+    tox_IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
     DHT_bootstrap(bootstrap_ip_port);
     
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     

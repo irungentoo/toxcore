@@ -42,7 +42,7 @@ void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 /* if we receive a packet we call this function so it can be handled.
     return 0 if packet is handled correctly.
     return 1 if it didn't handle the packet or if the packet was shit. */
-int friendreq_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
+int friendreq_handlepacket(uint8_t *packet, uint32_t length, tox_IP_Port source);
 
 #ifdef __cplusplus
 }

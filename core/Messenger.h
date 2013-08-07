@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 #define tox_MAX_NAME_LENGTH 128
-#define MAX_USERSTATUS_LENGTH 128
+#define tox_MAX_USERSTATUS_LENGTH 128
 
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_USERSTATUS 49
@@ -57,7 +57,7 @@ extern "C" {
 #define FAERR_ALREADYSENT -4
 #define FAERR_UNKNOWN -5
 
-/* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
+/* don't assume tox_MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
 
 /* tox_USERSTATUS_KIND
@@ -101,7 +101,7 @@ int tox_m_addfriend_norequest(uint8_t *client_id);
 int tox_getfriend_id(uint8_t *client_id);
 
 /* copies the public key associated to that friend id into client_id buffer.
-    make sure that client_id is of size CLIENT_ID_SIZE.
+    make sure that client_id is of size tox_CLIENT_ID_SIZE.
     return 0 if success
     return -1 if failure */
 int tox_getclient_id(int friend_id, uint8_t *client_id);
@@ -132,14 +132,14 @@ int tox_setname(uint8_t *name, uint16_t length);
 /* get our nickname
    put it in name
    return the length of the name*/
-uint16_t getself_name(uint8_t *name);
+uint16_t tox_getself_name(uint8_t *name);
 
 /* get name of friendnumber
     put it in name
     name needs to be a valid memory location with a size of at least tox_MAX_NAME_LENGTH (128) bytes.
     return 0 if success
     return -1 if failure */
-int getname(int friendnumber, uint8_t *name);
+int tox_getname(int friendnumber, uint8_t *name);
 
 /* set our user status
     you are responsible for freeing status after
@@ -189,18 +189,18 @@ void tox_m_callback_userstatus(void (*function)(int, tox_USERSTATUS_KIND, uint8_
 int tox_initMessenger(void);
 
 /* the main loop that needs to be run at least 200 times per second */
-void doMessenger(void);
+void tox_doMessenger(void);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* returns the size of the messenger data (for saving) */
-uint32_t Messenger_size(void);
+uint32_t tox_Messenger_size(void);
 
-/* save the messenger in data (must be allocated memory of size Messenger_size()) */
-void Messenger_save(uint8_t *data);
+/* save the messenger in data (must be allocated memory of size tox_Messenger_size()) */
+void tox_Messenger_save(uint8_t *data);
 
 /* load the messenger from data of size length */
-int Messenger_load(uint8_t *data, uint32_t length);
+int tox_Messenger_load(uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
 }

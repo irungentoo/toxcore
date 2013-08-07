@@ -43,7 +43,7 @@ char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
 int x, y;
 
 typedef struct {
-    uint8_t id[CLIENT_ID_SIZE];
+    uint8_t id[tox_CLIENT_ID_SIZE];
     uint8_t accepted;
 } Friend_request;
 
@@ -58,11 +58,11 @@ void get_id(char *data)
     int i = 0;
     for(i = 0; i < PUB_KEY_BYTES; i++)
     {
-        if (self_public_key[i] < (PUB_KEY_BYTES / 2))
+        if (tox_self_public_key[i] < (PUB_KEY_BYTES / 2))
             strcpy(idstring1[i],"0");
         else
             strcpy(idstring1[i], "");
-        sprintf(idstring2[i], "%hhX",self_public_key[i]);
+        sprintf(idstring2[i], "%hhX", tox_self_public_key[i]);
     }
     strcpy(idstring0,"[i] ID: ");
     int j = 0;
@@ -90,7 +90,7 @@ void print_friendlist()
     char name[tox_MAX_NAME_LENGTH];
     int i = 0;
     new_lines("[i] Friend List:");
-    while(getname(i, (uint8_t *)name) != -1) {
+    while(tox_getname(i, (uint8_t *)name) != -1) {
         /* account for the longest name and the longest "base" string */
         char fstring[tox_MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
 
@@ -111,9 +111,9 @@ char *format_message(char *message, int friendnum)
 {
     char name[tox_MAX_NAME_LENGTH];
     if (friendnum != -1) {
-            getname(friendnum, (uint8_t*)name);
+            tox_getname(friendnum, (uint8_t*)name);
     } else {
-            getself_name((uint8_t*)name);
+            tox_getself_name((uint8_t*)name);
     }
     char *msg = malloc(100+strlen(message)+strlen(name)+1);
 
@@ -147,7 +147,7 @@ void line_eval(char *line)
             for (i = 0; i < 128; i++)
                 temp_id[i] = line[i+prompt_offset];
 
-            unsigned char *bin_string = hex_string_to_bin(temp_id);
+            unsigned char *bin_string = tox_hex_string_to_bin(temp_id);
             int num = tox_m_addfriend(bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             free(bin_string);
             char numstring[100];
@@ -175,7 +175,7 @@ void line_eval(char *line)
             do_refresh();
         }
         else if (inpt_command == 'd') {
-            doMessenger();
+            tox_doMessenger();
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
@@ -220,7 +220,7 @@ void line_eval(char *line)
             print_friendlist();
         }
         else if (inpt_command == 's') {
-            uint8_t status[MAX_USERSTATUS_LENGTH];
+            uint8_t status[tox_MAX_USERSTATUS_LENGTH];
             int i = 0;
             size_t len = strlen(line);
             for (i = 3; i < len; i++) {
@@ -343,7 +343,7 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
     char numchar[100];
     sprintf(numchar, "[i] accept request with /a %u", num_requests);
     new_lines(numchar);
-    memcpy(pending_requests[num_requests].id, public_key, CLIENT_ID_SIZE);
+    memcpy(pending_requests[num_requests].id, public_key, tox_CLIENT_ID_SIZE);
     pending_requests[num_requests].accepted = 0;
     ++num_requests;
     do_refresh();
@@ -357,7 +357,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[tox_MAX_NAME_LENGTH];
-    if(getname(friendnumber, (uint8_t*)name) != -1) {
+    if(tox_getname(friendnumber, (uint8_t*)name) != -1) {
         char msg[100+length];
         sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
         new_lines(msg);
@@ -367,7 +367,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 void print_statuschange(int friendnumber, tox_USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
 {
     char name[tox_MAX_NAME_LENGTH];
-    if(getname(friendnumber, (uint8_t*)name) != -1) {
+    if(tox_getname(friendnumber, (uint8_t*)name) != -1) {
         char msg[100+length+strlen(name)+1];
         sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
         new_lines(msg);
@@ -390,13 +390,13 @@ void load_key(char *path)
             fputs("[!] could not read data file! exiting...\n", stderr);
             goto FILE_ERROR;
         }
-        Messenger_load(data, size);
+        tox_Messenger_load(data, size);
 
     } else {
         //else save new keys
-        int size = Messenger_size();
+        int size = tox_Messenger_size();
         uint8_t data[size];
-        Messenger_save(data);
+        tox_Messenger_save(data);
         data_file = fopen(path, "w");
 
         if(!data_file) {
@@ -474,7 +474,7 @@ int main(int argc, char *argv[])
     new_lines(idstring);
     strcpy(line, "");
 
-    IP_Port bootstrap_ip_port;
+    tox_IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
     if (resolved_address != 0)
@@ -482,7 +482,7 @@ int main(int argc, char *argv[])
     else
         exit(1);
 
-    unsigned char *binary_string = hex_string_to_bin(argv[3]);
+    unsigned char *binary_string = tox_hex_string_to_bin(argv[3]);
     DHT_bootstrap(bootstrap_ip_port, binary_string);
     free(binary_string);
     nodelay(stdscr, TRUE);
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
             on = 1;
         }
 
-        doMessenger();
+        tox_doMessenger();
         c_sleep(1);
         do_refresh();
 

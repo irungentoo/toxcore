@@ -25,7 +25,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
+    uint8_t client_id[tox_CLIENT_ID_SIZE];
     int crypt_connection_id;
     uint64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
     uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
@@ -39,7 +39,7 @@ typedef struct {
     uint16_t info_size; /* length of the info */
 } Friend;
 
-uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+uint8_t tox_self_public_key[crypto_box_PUBLICKEYBYTES];
 
 static uint8_t self_name[tox_MAX_NAME_LENGTH];
 static uint16_t self_name_length;
@@ -74,7 +74,7 @@ int getfriend_id(uint8_t *client_id)
 }
 
 /* copies the public key associated to that friend id into client_id buffer.
-   make sure that client_id is of size CLIENT_ID_SIZE.
+   make sure that client_id is of size tox_CLIENT_ID_SIZE.
    return 0 if success
    return -1 if failure. */
 int getclient_id(int friend_id, uint8_t *client_id)
@@ -83,7 +83,7 @@ int getclient_id(int friend_id, uint8_t *client_id)
         return -1;
 
     if (friendlist[friend_id].status > 0) {
-        memcpy(client_id, friendlist[friend_id].client_id, CLIENT_ID_SIZE);
+        memcpy(client_id, friendlist[friend_id].client_id, tox_CLIENT_ID_SIZE);
         return 0;
     }
 
@@ -110,7 +110,7 @@ int tox_m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
         return FAERR_TOOLONG;
     if (length < 1)
         return FAERR_NOMESSAGE;
-    if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+    if (memcmp(client_id, tox_self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
         return FAERR_OWNKEY;
     if (getfriend_id(client_id) != -1)
         return FAERR_ALREADYSENT;
@@ -122,7 +122,7 @@ int tox_m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             friendlist[i].status = FRIEND_ADDED;
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
-            memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(friendlist[i].client_id, client_id, tox_CLIENT_ID_SIZE);
             friendlist[i].userstatus = calloc(1, 1);
             friendlist[i].userstatus_length = 1;
             friendlist[i].userstatus_kind = tox_USERSTATUS_KIND_OFFLINE;
@@ -147,7 +147,7 @@ int tox_m_addfriend_norequest(uint8_t * client_id)
             friendlist[i].status = FRIEND_REQUESTED;
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
-            memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(friendlist[i].client_id, client_id, tox_CLIENT_ID_SIZE);
             friendlist[i].userstatus = calloc(1, 1);
             friendlist[i].userstatus_length = 1;
             numfriends++;
@@ -253,7 +253,7 @@ int tox_setname(uint8_t * name, uint16_t length)
    put it in name
    name needs to be a valid memory location with a size of at least tox_MAX_NAME_LENGTH bytes.
    return the length of the name */
-uint16_t getself_name(uint8_t *name)
+uint16_t tox_getself_name(uint8_t *name)
 {
     memcpy(name, self_name, self_name_length);
     return self_name_length;
@@ -264,7 +264,7 @@ uint16_t getself_name(uint8_t *name)
    name needs to be a valid memory location with a size of at least tox_MAX_NAME_LENGTH bytes.
    return 0 if success
    return -1 if failure */
-int getname(int friendnumber, uint8_t * name)
+int tox_getname(int friendnumber, uint8_t * name)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
@@ -274,7 +274,7 @@ int getname(int friendnumber, uint8_t * name)
 
 int tox_m_set_userstatus(tox_USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
 {
-    if (length > MAX_USERSTATUS_LENGTH)
+    if (length > tox_MAX_USERSTATUS_LENGTH)
         return -1;
     if (kind != tox_USERSTATUS_KIND_RETAIN) {
         self_userstatus_kind = kind;
@@ -306,7 +306,7 @@ int tox_m_set_userstatus_kind(tox_USERSTATUS_KIND kind) {
 }
 
 /*  return the size of friendnumber's user status
-    guaranteed to be at most MAX_USERSTATUS_LENGTH */
+    guaranteed to be at most tox_MAX_USERSTATUS_LENGTH */
 int tox_m_get_userstatus_size(int friendnumber)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
@@ -316,19 +316,19 @@ int tox_m_get_userstatus_size(int friendnumber)
 
 /*  copy the user status of friendnumber into buf, truncating if needed to maxlen
     bytes, use tox_m_get_userstatus_size to find out how much you need to allocate */
-int tox_tox_m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
+int tox_m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
     memset(buf, 0, maxlen);
-    memcpy(buf, friendlist[friendnumber].userstatus, MIN(maxlen, MAX_USERSTATUS_LENGTH) - 1);
+    memcpy(buf, friendlist[friendnumber].userstatus, MIN(maxlen, tox_MAX_USERSTATUS_LENGTH) - 1);
     return 0;
 }
 
 int tox_m_copy_self_userstatus(uint8_t * buf, uint32_t maxlen)
 {
     memset(buf, 0, maxlen);
-    memcpy(buf, self_userstatus, MIN(maxlen, MAX_USERSTATUS_LENGTH) - 1);
+    memcpy(buf, self_userstatus, MIN(maxlen, tox_MAX_USERSTATUS_LENGTH) - 1);
     return 0;
 }
 
@@ -446,7 +446,7 @@ static void doFriends(void)
                     friendlist[i].friend_request_id = unix_time();
                 }
             }
-            IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
+            tox_IP_Port friendip = DHT_getfriendip(friendlist[i].client_id);
             switch (is_cryptoconnected(friendlist[i].crypt_connection_id)) {
             case 0:
                 if (friendip.ip.i > 1)
@@ -486,11 +486,11 @@ static void doFriends(void)
                 }
                 case PACKET_ID_USERSTATUS: {
                     if (len > 2) {
-                        uint8_t *status = calloc(MIN(len - 2, MAX_USERSTATUS_LENGTH), 1);
-                        memcpy(status, temp + 2, MIN(len - 2, MAX_USERSTATUS_LENGTH));
+                        uint8_t *status = calloc(MIN(len - 2, tox_MAX_USERSTATUS_LENGTH), 1);
+                        memcpy(status, temp + 2, MIN(len - 2, tox_MAX_USERSTATUS_LENGTH));
                         if (friend_statuschange_isset)
-                            friend_statuschange(i, temp[1], status, MIN(len - 2, MAX_USERSTATUS_LENGTH));
-                        set_friend_userstatus(i, status, MIN(len - 2, MAX_USERSTATUS_LENGTH));
+                            friend_statuschange(i, temp[1], status, MIN(len - 2, tox_MAX_USERSTATUS_LENGTH));
+                        set_friend_userstatus(i, status, MIN(len - 2, tox_MAX_USERSTATUS_LENGTH));
                         free(status);
                     } else if (friend_statuschange_isset) {
                         friend_statuschange(i, temp[1], friendlist[i].userstatus, friendlist[i].userstatus_length);
@@ -550,9 +550,9 @@ static void LANdiscovery(void)
 
 
 /* the main loop that needs to be run at least 200 times per second. */
-void doMessenger(void)
+void tox_doMessenger(void)
 {
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     while (receivepacket(&ip_port, data, &length) != -1) {
@@ -584,14 +584,14 @@ void doMessenger(void)
 }
 
 /* returns the size of the messenger data (for saving) */
-uint32_t Messenger_size(void)
+uint32_t tox_Messenger_size(void)
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
            + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * numfriends;
 }
 
-/* save the messenger in data of size Messenger_size() */
-void Messenger_save(uint8_t *data)
+/* save the messenger in data of size tox_Messenger_size() */
+void tox_Messenger_save(uint8_t *data)
 {
     save_keys(data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
@@ -607,7 +607,7 @@ void Messenger_save(uint8_t *data)
 }
 
 /* load the messenger from data of size length. */
-int Messenger_load(uint8_t * data, uint32_t length)
+int tox_Messenger_load(uint8_t * data, uint32_t length)
 {
     if (length == ~0)
         return -1;

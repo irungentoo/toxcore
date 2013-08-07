@@ -32,7 +32,7 @@
 #endif // DEBUG
 
 /* TODO: rewrite */
-unsigned char * hex_string_to_bin(char hex_string[])
+unsigned char * tox_hex_string_to_bin(char hex_string[])
 {
     size_t len = strlen(hex_string);
     unsigned char *val = malloc(len);

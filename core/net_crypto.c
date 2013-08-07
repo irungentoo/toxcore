@@ -27,7 +27,7 @@
 #include "net_crypto.h"
 
 /* Our public and secret keys. */
-uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+uint8_t tox_self_public_key[crypto_box_PUBLICKEYBYTES];
 uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
 typedef struct {
@@ -212,7 +212,7 @@ int create_request(uint8_t *packet, uint8_t *public_key, uint8_t *data, uint32_t
         return -1;
     packet[0] = request_id;
     memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, tox_self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES * 2, nonce, crypto_box_NONCEBYTES);
 
     return len + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES;
@@ -227,7 +227,7 @@ int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *packet, uint16_t
 
     if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
         length <= MAX_DATA_SIZE + ENCRYPTION_PADDING &&
-        memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        memcmp(packet + 1, tox_self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
         memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
         uint8_t nonce[crypto_box_NONCEBYTES];
         memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
@@ -258,7 +258,7 @@ static int send_cryptohandshake(int connection_id, uint8_t *public_key, uint8_t 
     if (len == -1)
         return 0;
     temp_data[0] = 2;
-    memcpy(temp_data + 1, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(temp_data + 1, tox_self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(temp_data + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
     return write_packet(connection_id, temp_data, len + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
 }
@@ -309,12 +309,12 @@ static int getcryptconnection_id(uint8_t *public_key)
 /* Start a secure connection with other peer who has public_key and ip_port
    returns -1 if failure
    returns crypt_connection_id of the initialized connection if everything went well. */
-int crypto_connect(uint8_t *public_key, IP_Port ip_port)
+int crypto_connect(uint8_t *public_key, tox_IP_Port ip_port)
 {
     uint32_t i;
     int id = getcryptconnection_id(public_key);
     if (id != -1) {
-        IP_Port c_ip = connection_ip(crypto_connections[id].number);
+        tox_IP_Port c_ip = connection_ip(crypto_connections[id].number);
         if(c_ip.ip.i == ip_port.ip.i && c_ip.port == ip_port.port)
             return -1;
     }
@@ -442,14 +442,14 @@ int is_cryptoconnected(int crypt_connection_id)
    Only call this function the first time the program starts. */
 void new_keys(void)
 {
-    crypto_box_keypair(self_public_key,self_secret_key);
+    crypto_box_keypair(tox_self_public_key,self_secret_key);
 }
 
 /* save the public and private keys to the keys array
    Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES */
 void save_keys(uint8_t *keys)
 {
-    memcpy(keys, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(keys, tox_self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(keys + crypto_box_PUBLICKEYBYTES, self_secret_key, crypto_box_SECRETKEYBYTES);
 }
 
@@ -457,7 +457,7 @@ void save_keys(uint8_t *keys)
    Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES */
 void load_keys(uint8_t *keys)
 {
-    memcpy(self_public_key, keys, crypto_box_PUBLICKEYBYTES);
+    memcpy(tox_self_public_key, keys, crypto_box_PUBLICKEYBYTES);
     memcpy(self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
 }
 

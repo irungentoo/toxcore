@@ -44,7 +44,7 @@
 
 #define PORT 33446
 
-void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
+void printpacket(uint8_t *data, uint32_t length, tox_IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
@@ -57,7 +57,7 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
     printf("\n--------------------END-----------------------------\n\n\n");
 }
 
-void printip(IP_Port ip_port)
+void printip(tox_IP_Port ip_port)
 {
     printf("\nIP: %u.%u.%u.%u Port: %u", ip_port.ip.c[0], ip_port.ip.c[1], ip_port.ip.c[2], ip_port.ip.c[3], ntohs(ip_port.port));
 }
@@ -78,7 +78,7 @@ void printpackets(Data test)
 void printconnection(int connection_id)
 {
     printf("--------------------BEGIN---------------------\n");
-    IP_Port ip_port = connections[connection_id].ip_port;
+    tox_IP_Port ip_port = connections[connection_id].ip_port;
     printf("IP: %u.%u.%u.%u Port: %u\n",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
     printf("status: %u, inbound: %u, SYNC_rate: %u\n", connections[connection_id].status, 
     connections[connection_id].inbound, connections[connection_id].SYNC_rate);
@@ -120,7 +120,7 @@ void printconnection(int connection_id)
 /*run doLossless_UDP(); */
 void Lossless_UDP()
 {
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     while (receivepacket(&ip_port, data, &length) != -1) {
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     ip.i = 0;
     init_networking(ip, PORT);
     perror("Initialization");
-    IP_Port serverip;
+    tox_IP_Port serverip;
     serverip.ip.i = inet_addr(argv[1]);
     serverip.port = htons(atoi(argv[2]));
     printip(serverip);

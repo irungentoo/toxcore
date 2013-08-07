@@ -42,7 +42,7 @@
 /* Server info struct */
 struct server_info_s {
     int valid;
-    IP_Port conn;
+    tox_IP_Port conn;
     uint8_t bs_pk[32];
 };
 
@@ -81,7 +81,7 @@ int connect_to_servers(struct server_info_s *info)
     int i;
     int c;
 
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 
@@ -321,8 +321,8 @@ int main(int argc, char *argv[]) {
     for(i = 0; i < 32; ++i)
     {
         uint8_t ln, hn;
-        ln = 0x0F & self_public_key[i];
-        hn = 0xF0 & self_public_key[i];
+        ln = 0x0F & tox_self_public_key[i];
+        hn = 0xF0 & tox_self_public_key[i];
         hn = hn >> 4;
         printf("%X%X", hn, ln);
     }
@@ -400,7 +400,7 @@ int main(int argc, char *argv[]) {
     close(STDERR_FILENO);
 
     /* Main loop */
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 

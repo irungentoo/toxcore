@@ -56,12 +56,12 @@
 
 #define PORT 33445
 
-void printip(IP_Port ip_port)
+void printip(tox_IP_Port ip_port)
 {
     printf("\nIP: %u.%u.%u.%u Port: %u\n",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
 }
 
-uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+uint8_t tox_self_public_key[crypto_box_PUBLICKEYBYTES];
 
 int main(int argc, char *argv[])
 {
@@ -73,26 +73,26 @@ int main(int argc, char *argv[])
     printf("OUR ID: ");
     uint32_t i;
     for(i = 0; i < 32; i++) {
-        if(self_public_key[i] < 16)
+        if(tox_self_public_key[i] < 16)
             printf("0");
-        printf("%hhX",self_public_key[i]);
+        printf("%hhX", tox_self_public_key[i]);
     }
     printf("\n");
     
-    memcpy(self_client_id, self_public_key, 32);
+    memcpy(self_client_id, tox_self_public_key, 32);
     
     char temp_id[128];
     printf("Enter the client_id of the friend to connect to (32 bytes HEX format):\n");
     scanf("%s", temp_id);
     
     uint8_t friend_id[32];
-    memcpy(friend_id, hex_string_to_bin(temp_id), 32);
+    memcpy(friend_id, tox_hex_string_to_bin(temp_id), 32);
     
     /* memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32); */
     
 
     DHT_addfriend(friend_id);
-    IP_Port friend_ip;
+    tox_IP_Port friend_ip;
     int connection = -1;
     int inconnection = -1;
     
@@ -108,12 +108,12 @@ int main(int argc, char *argv[])
     tox_initNetCrypto();
     
     perror("Initialization");
-    IP_Port bootstrap_ip_port;
+    tox_IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
     DHT_bootstrap(bootstrap_ip_port);
     
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     

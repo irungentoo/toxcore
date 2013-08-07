@@ -61,7 +61,7 @@ static int sock;
 
 /* Basic network functions:
    Function to send packet(data) of length length to ip_port */
-int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
+int sendpacket(tox_IP_Port ip_port, uint8_t * data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
     return sendto(sock,(char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
@@ -71,7 +71,7 @@ int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
    the packet data into data
    the packet length into length.
    dump all empty packets. */
-int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
+int receivepacket(tox_IP_Port * ip_port, uint8_t * data, uint32_t * length)
 {
     ADDR addr;
 #ifdef WIN32
@@ -168,7 +168,7 @@ void shutdown_networking(void)
   resolve_addr():
     address should represent IPv4 or a hostname with A record
 
-    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+    returns a data in network byte order that can be used to set IP.i or tox_IP_Port.ip.i
     returns 0 on failure
 
     TODO: Fix ipv6 support

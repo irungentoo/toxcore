@@ -34,28 +34,28 @@ extern "C" {
 #define unix_time() ((uint64_t)time(NULL))
 
 /* size of the client_id in bytes */
-#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
+#define tox_CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
 
 /* Add a new friend to the friends list
-    client_id must be CLIENT_ID_SIZE bytes long.
+    client_id must be tox_CLIENT_ID_SIZE bytes long.
     returns 0 if success
     returns 1 if failure (friends list is full) */
 int DHT_addfriend(uint8_t *client_id);
 
 /* Delete a friend from the friends list
-    client_id must be CLIENT_ID_SIZE bytes long.
+    client_id must be tox_CLIENT_ID_SIZE bytes long.
     returns 0 if success
     returns 1 if failure (client_id not in friends list) */
 int DHT_delfriend(uint8_t *client_id);
 
 /* Get ip of friend
-    client_id must be CLIENT_ID_SIZE bytes long.
+    client_id must be tox_CLIENT_ID_SIZE bytes long.
     ip must be 4 bytes long.
     port must be 2 bytes long.
     returns ip if success
     returns ip of 0 if failure (This means the friend is either offline or we have not found him yet.)
     returns ip of 1 if friend is not in list. */
-IP_Port DHT_getfriendip(uint8_t *client_id);
+tox_IP_Port DHT_getfriendip(uint8_t *client_id);
 
 /* Run this function at least a couple times per second (It's the main loop) */
 void doDHT(void);
@@ -63,11 +63,11 @@ void doDHT(void);
 /* if we receive a DHT packet we call this function so it can be handled.
     return 0 if packet is handled correctly.
     return 1 if it didn't handle the packet or if the packet was shit. */
-int DHT_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
+int DHT_handlepacket(uint8_t *packet, uint32_t length, tox_IP_Port source);
 
 /* Use this function to bootstrap the client
     Sends a get nodes request to the given node with ip port and public_key */
-void DHT_bootstrap(IP_Port ip_port, uint8_t *public_key);
+void DHT_bootstrap(tox_IP_Port ip_port, uint8_t *public_key);
 
 /* ROUTING FUNCTIONS */
 
@@ -85,7 +85,7 @@ int route_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t length);
     ip_portlist must be at least MAX_FRIEND_CLIENTS big
     returns the number of ips returned
     returns -1 if no such friend*/
-int friend_ips(IP_Port *ip_portlist, uint8_t *friend_id);
+int friend_ips(tox_IP_Port *ip_portlist, uint8_t *friend_id);
 
 /* SAVE/LOAD functions */
 

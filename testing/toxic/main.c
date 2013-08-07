@@ -182,7 +182,7 @@ static void do_tox() {
     wprintw(prompt->window, "\nDHT disconnected!\n");
   }
 
-  doMessenger();
+  tox_doMessenger();
 }
 
 static void load_data(char *path) {
@@ -214,10 +214,10 @@ static void load_data(char *path) {
       exit(1);
     }
 
-    Messenger_load(buf, len);
+    tox_Messenger_load(buf, len);
   }
   else {
-    len = Messenger_size();
+    len = tox_Messenger_size();
     buf = malloc(len);
 
     if(buf == NULL) {
@@ -226,7 +226,7 @@ static void load_data(char *path) {
       exit(1);
     }
 
-    Messenger_save(buf);
+    tox_Messenger_save(buf);
 
     fd = fopen(path, "w");
     if(fd == NULL) {

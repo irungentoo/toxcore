@@ -39,14 +39,14 @@ extern "C" {
  * Return -1 if it could not initialize the connection.
  * Return number if there already was an existing connection to that ip_port.
  */
-int new_connection(IP_Port ip_port);
+int new_connection(tox_IP_Port ip_port);
 
 /* 
  * Get connection id from IP_Port.
  * Return -1 if there are no connections like we are looking for.
  * Return id if it found it .
  */
-int getconnection_id(IP_Port ip_port);
+int getconnection_id(tox_IP_Port ip_port);
 
 /* 
  * Returns an int corresponding to the next connection in our imcoming connection list
@@ -71,7 +71,7 @@ int kill_connection_in(int connection_id, uint32_t seconds);
  * Returns the ip_port of the corresponding connection.
  * Return 0 if there is no such connection.
  */
-IP_Port connection_ip(int connection_id);
+tox_IP_Port connection_ip(int connection_id);
 
 /* 
  * Returns the id of the next packet in the queue 
@@ -117,7 +117,7 @@ void doLossless_UDP(void);
  * Return 0 if packet is handled correctly.
  * Return 1 if it didn't handle the packet or if the packet was shit.
  */
-int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
+int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, tox_IP_Port source);
 
 #ifdef __cplusplus
 }

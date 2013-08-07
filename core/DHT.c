@@ -63,18 +63,18 @@
 /*----------------------------------------------------------------------------------*/
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    IP_Port     ip_port;
+    uint8_t     client_id[tox_CLIENT_ID_SIZE];
+    tox_IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
 
     /* Returned by this node. Either our friend or us */
-    IP_Port     ret_ip_port;
+    tox_IP_Port     ret_ip_port;
     uint64_t    ret_timestamp;
 } Client_data;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     client_id[tox_CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* time at which the last get_nodes request was sent. */
@@ -92,12 +92,12 @@ typedef struct {
 } Friend;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    IP_Port     ip_port;
+    uint8_t     client_id[tox_CLIENT_ID_SIZE];
+    tox_IP_Port     ip_port;
 } Node_format;
 
 typedef struct {
-    IP_Port     ip_port;
+    tox_IP_Port     ip_port;
     uint64_t    ping_id;
     uint64_t    timestamp;
 } Pinged;
@@ -105,7 +105,7 @@ typedef struct {
 /*----------------------------------------------------------------------------------*/
 
                     /* Our client id/public key */
-uint8_t             tox_self_public_key[CLIENT_ID_SIZE];
+uint8_t             tox_self_public_key[tox_CLIENT_ID_SIZE];
 uint8_t             self_secret_key[crypto_box_SECRETKEYBYTES];
 static Client_data  close_clientlist[LCLIENT_LIST];
 static Friend *     friends_list;
@@ -124,7 +124,7 @@ static int id_closest(uint8_t * id, uint8_t * id1, uint8_t * id2)
     size_t   i;
     uint8_t distance1, distance2;
 
-    for(i = 0; i < CLIENT_ID_SIZE; ++i) {
+    for(i = 0; i < tox_CLIENT_ID_SIZE; ++i) {
 
         distance1 = abs(id[i] ^ id1[i]);
         distance2 = abs(id[i] ^ id2[i]);
@@ -137,14 +137,14 @@ static int id_closest(uint8_t * id, uint8_t * id1, uint8_t * id2)
     return 0;
 }
 
-static int ipport_equal(IP_Port a, IP_Port b)
+static int ipport_equal(tox_IP_Port a, tox_IP_Port b)
 {
   return (a.ip.i == b.ip.i) && (a.port == b.port);
 }
 
 static int id_equal(uint8_t* a, uint8_t* b)
 {
-  return memcmp(a, b, CLIENT_ID_SIZE) == 0;
+  return memcmp(a, b, tox_CLIENT_ID_SIZE) == 0;
 }
 
 static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
@@ -159,7 +159,7 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
  *
  * TODO: maybe optimize this.
  */
-static int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, IP_Port ip_port)
+static int client_in_list(Client_data * list, uint32_t length, uint8_t * client_id, tox_IP_Port ip_port)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -167,7 +167,7 @@ static int client_in_list(Client_data * list, uint32_t length, uint8_t * client_
     for(i = 0; i < length; ++i) {
         /*If ip_port is assigned to a different client_id replace it*/
         if(ipport_equal(list[i].ip_port, ip_port)) {
-            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(list[i].client_id, client_id, tox_CLIENT_ID_SIZE);
         }
 
         if(id_equal(list[i].client_id, client_id)) {
@@ -233,7 +233,7 @@ static int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 
             memcpy( nodes_list[num_nodes].client_id, 
                     close_clientlist[i].client_id, 
-                    CLIENT_ID_SIZE );
+                    tox_CLIENT_ID_SIZE );
 
             nodes_list[num_nodes].ip_port = close_clientlist[i].ip_port;
             num_nodes++;
@@ -247,7 +247,7 @@ static int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
                 if(closest == 2) {
                     memcpy( nodes_list[j].client_id, 
                             close_clientlist[i].client_id, 
-                            CLIENT_ID_SIZE);
+                            tox_CLIENT_ID_SIZE);
 
                     nodes_list[j].ip_port = close_clientlist[i].ip_port;
                     break;
@@ -272,7 +272,7 @@ static int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 
                 memcpy( nodes_list[num_nodes].client_id, 
                         friends_list[i].client_list[j].client_id, 
-                        CLIENT_ID_SIZE);
+                        tox_CLIENT_ID_SIZE);
 
                 nodes_list[num_nodes].ip_port = friends_list[i].client_list[j].ip_port;
                 num_nodes++;
@@ -285,7 +285,7 @@ static int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
                     if(closest == 2) {
                         memcpy( nodes_list[k].client_id, 
                                 friends_list[i].client_list[j].client_id, 
-                                CLIENT_ID_SIZE );
+                                tox_CLIENT_ID_SIZE );
 
                         nodes_list[k].ip_port = friends_list[i].client_list[j].ip_port;
                         break;
@@ -304,14 +304,14 @@ static int get_close_nodes(uint8_t * client_id, Node_format * nodes_list)
 static int replace_bad(    Client_data *   list, 
                     uint32_t        length,  
                     uint8_t *       client_id,   
-                    IP_Port         ip_port )
+                    tox_IP_Port         ip_port )
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
     for(i = 0; i < length; ++i) {
         /* if node is bad */
         if(is_timeout(temp_time, list[i].timestamp, BAD_NODE_TIMEOUT)) {
-            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(list[i].client_id, client_id, tox_CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
             list[i].timestamp = temp_time;
             list[i].ret_ip_port.ip.i = 0;
@@ -328,7 +328,7 @@ static int replace_bad(    Client_data *   list,
 static int replace_good(   Client_data *   list,
                     uint32_t        length, 
                     uint8_t *       client_id, 
-                    IP_Port         ip_port, 
+                    tox_IP_Port         ip_port, 
                     uint8_t *       comp_client_id )
 {
     uint32_t i;
@@ -336,7 +336,7 @@ static int replace_good(   Client_data *   list,
 
     for(i = 0; i < length; ++i)
         if(id_closest(comp_client_id, list[i].client_id, client_id) == 2) {
-            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(list[i].client_id, client_id, tox_CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
             list[i].timestamp = temp_time;
             list[i].ret_ip_port.ip.i = 0;
@@ -351,7 +351,7 @@ static int replace_good(   Client_data *   list,
 /* Attempt to add client with ip_port and client_id to the friends client list 
  * and close_clientlist 
  */
-static void addto_lists(IP_Port ip_port, uint8_t * client_id)
+static void addto_lists(tox_IP_Port ip_port, uint8_t * client_id)
 {
     uint32_t i;
 
@@ -365,7 +365,7 @@ static void addto_lists(IP_Port ip_port, uint8_t * client_id)
                             LCLIENT_LIST, 
                             client_id, 
                             ip_port, 
-                            self_public_key );
+                            tox_self_public_key );
         }
     }
 
@@ -393,12 +393,12 @@ static void addto_lists(IP_Port ip_port, uint8_t * client_id)
 /* If client_id is a friend or us, update ret_ip_port
  * nodeclient_id is the id of the node that sent us this info
  */
-static void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
+static void returnedip_ports(tox_IP_Port ip_port, uint8_t * client_id, uint8_t * nodeclient_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
 
-    if (id_equal(client_id, self_public_key)) {
+    if (id_equal(client_id, tox_self_public_key)) {
 
         for (i = 0; i < LCLIENT_LIST; ++i) {
             if (id_equal(nodeclient_id, close_clientlist[i].client_id)) {
@@ -427,7 +427,7 @@ static void returnedip_ports(IP_Port ip_port, uint8_t * client_id, uint8_t * nod
 }
 
 /* Same as last function but for get_node requests. */
-static int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
+static int is_gettingnodes(tox_IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
     uint8_t pinging;
@@ -452,7 +452,7 @@ static int is_gettingnodes(IP_Port ip_port, uint64_t ping_id)
 }
 
 /* Same but for get node requests */
-static uint64_t add_gettingnodes(IP_Port ip_port)
+static uint64_t add_gettingnodes(tox_IP_Port ip_port)
 {
     uint32_t i, j;
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
@@ -475,17 +475,17 @@ static uint64_t add_gettingnodes(IP_Port ip_port)
 /* send a ping request, only works if none has been sent to that ip/port
  * in the last 5 seconds. 
  */
-static int pingreq(IP_Port ip_port, uint8_t * public_key)
+static int pingreq(tox_IP_Port ip_port, uint8_t * public_key)
 { 
     /* check if packet is gonna be sent to ourself */
-    if(id_equal(public_key, self_public_key) || is_pinging(ip_port, 0))
+    if(id_equal(public_key, tox_self_public_key) || is_pinging(ip_port, 0))
         return 1;
 
     uint64_t ping_id = add_ping(ip_port);
     if(ping_id == 0)
         return 1;
 
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING];
+    uint8_t data[1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING];
     uint8_t encrypt[sizeof(ping_id) + ENCRYPTION_PADDING];
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
@@ -501,21 +501,21 @@ static int pingreq(IP_Port ip_port, uint8_t * public_key)
         return -1;
 
     data[0] = 0;
-    memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
-    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+    memcpy(data + 1, tox_self_public_key, tox_CLIENT_ID_SIZE);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
     return sendpacket(ip_port, data, sizeof(data));
 }
 
 /* send a ping response */
-static int pingres(IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
+static int pingres(tox_IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
 {
     /* check if packet is gonna be sent to ourself */
-    if(id_equal(public_key, self_public_key))
+    if(id_equal(public_key, tox_self_public_key))
         return 1;
 
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING];
+    uint8_t data[1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING];
     uint8_t encrypt[sizeof(ping_id) + ENCRYPTION_PADDING];
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
@@ -530,18 +530,18 @@ static int pingres(IP_Port ip_port, uint8_t * public_key, uint64_t ping_id)
         return -1;
 
     data[0] = 1;
-    memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
-    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+    memcpy(data + 1, tox_self_public_key, tox_CLIENT_ID_SIZE);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
     return sendpacket(ip_port, data, sizeof(data));
 }
 
 /* send a getnodes request */
-static int getnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
+static int getnodes(tox_IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
 {
     /* check if packet is gonna be sent to ourself */
-    if(id_equal(public_key, self_public_key) || is_gettingnodes(ip_port, 0))
+    if(id_equal(public_key, tox_self_public_key) || is_gettingnodes(ip_port, 0))
         return 1;
 
     uint64_t ping_id = add_gettingnodes(ip_port);
@@ -549,41 +549,41 @@ static int getnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id)
     if(ping_id == 0)
         return 1;
 
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING];
-    uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE];
-    uint8_t encrypt[sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING];
+    uint8_t data[1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + tox_CLIENT_ID_SIZE + ENCRYPTION_PADDING];
+    uint8_t plain[sizeof(ping_id) + tox_CLIENT_ID_SIZE];
+    uint8_t encrypt[sizeof(ping_id) + tox_CLIENT_ID_SIZE + ENCRYPTION_PADDING];
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
 
     memcpy(plain, &ping_id, sizeof(ping_id));
-    memcpy(plain + sizeof(ping_id), client_id, CLIENT_ID_SIZE);
+    memcpy(plain + sizeof(ping_id), client_id, tox_CLIENT_ID_SIZE);
 
     int len = encrypt_data( public_key, 
                             self_secret_key, 
                             nonce, 
                             plain, 
-                            sizeof(ping_id) + CLIENT_ID_SIZE, 
+                            sizeof(ping_id) + tox_CLIENT_ID_SIZE, 
                             encrypt );
 
-    if(len != sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING)
+    if(len != sizeof(ping_id) + tox_CLIENT_ID_SIZE + ENCRYPTION_PADDING)
         return -1;
 
     data[0] = 2;
-    memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
-    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+    memcpy(data + 1, tox_self_public_key, tox_CLIENT_ID_SIZE);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
     return sendpacket(ip_port, data, sizeof(data));
 }
 
 /* send a send nodes response */
-static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id, uint64_t ping_id)
+static int sendnodes(tox_IP_Port ip_port, uint8_t * public_key, uint8_t * client_id, uint64_t ping_id)
 {
     /* check if packet is gonna be sent to ourself */
-    if(id_equal(public_key, self_public_key)) 
+    if(id_equal(public_key, tox_self_public_key)) 
         return 1;
 
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
+    uint8_t data[1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
                  + sizeof(Node_format) * MAX_SENT_NODES + ENCRYPTION_PADDING];
 
     Node_format nodes_list[MAX_SENT_NODES];
@@ -611,30 +611,30 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
         return -1;
 
     data[0] = 3;
-    memcpy(data + 1, self_public_key, CLIENT_ID_SIZE);
-    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+    memcpy(data + 1, tox_self_public_key, tox_CLIENT_ID_SIZE);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
+    return sendpacket(ip_port, data, 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
 /* Packet handling functions, one to handle each types of packets we receive
  * Returns 0 if handled correctly, 1 if packet is bad.
  */
-static int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_pingreq(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     uint64_t ping_id;
-    if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
+    if(length != 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
     /* check if packet is from ourself. */
-    if(id_equal(packet + 1, self_public_key))
+    if(id_equal(packet + 1, tox_self_public_key))
         return 1;
 
     int len = decrypt_data( packet + 1, 
                             self_secret_key, 
-                            packet + 1 + CLIENT_ID_SIZE,
-                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                            packet + 1 + tox_CLIENT_ID_SIZE,
+                            packet + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                             sizeof(ping_id) + ENCRYPTION_PADDING, 
                             (uint8_t *)&ping_id );
 
@@ -647,20 +647,20 @@ static int handle_pingreq(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-static int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_pingres(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     uint64_t ping_id;
-    if(length != 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
+    if(length != 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
     /* check if packet is from ourself. */
-    if(id_equal(packet + 1, self_public_key))
+    if(id_equal(packet + 1, tox_self_public_key))
         return 1;
 
     int len = decrypt_data( packet + 1, 
                             self_secret_key, 
-                            packet + 1 + CLIENT_ID_SIZE,
-                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                            packet + 1 + tox_CLIENT_ID_SIZE,
+                            packet + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                             sizeof(ping_id) + ENCRYPTION_PADDING, 
                             (uint8_t *)&ping_id );
 
@@ -674,28 +674,28 @@ static int handle_pingres(uint8_t * packet, uint32_t length, IP_Port source)
     return 1;
 }
 
-static int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_getnodes(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     uint64_t ping_id;
 
-    if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES 
-                    + sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING ))
+    if (length != ( 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES 
+                    + sizeof(ping_id) + tox_CLIENT_ID_SIZE + ENCRYPTION_PADDING ))
         return 1;
 
     /* check if packet is from ourself. */
-    if (id_equal(packet + 1, self_public_key))
+    if (id_equal(packet + 1, tox_self_public_key))
         return 1;
 
-    uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE];
+    uint8_t plain[sizeof(ping_id) + tox_CLIENT_ID_SIZE];
 
     int len = decrypt_data( packet + 1, 
                             self_secret_key, 
-                            packet + 1 + CLIENT_ID_SIZE,
-                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                            sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING, 
+                            packet + 1 + tox_CLIENT_ID_SIZE,
+                            packet + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                            sizeof(ping_id) + tox_CLIENT_ID_SIZE + ENCRYPTION_PADDING, 
                             plain );
 
-    if (len != sizeof(ping_id) + CLIENT_ID_SIZE)
+    if (len != sizeof(ping_id) + tox_CLIENT_ID_SIZE)
         return 1;
 
     memcpy(&ping_id, plain, sizeof(ping_id));
@@ -706,10 +706,10 @@ static int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-static int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_sendnodes(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     uint64_t ping_id;
-    uint32_t cid_size = 1 + CLIENT_ID_SIZE;
+    uint32_t cid_size = 1 + tox_CLIENT_ID_SIZE;
     cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING;
 
     if (length > (cid_size + sizeof(Node_format) * MAX_SENT_NODES) ||
@@ -723,8 +723,8 @@ static int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
     int len = decrypt_data( 
             packet + 1, 
             self_secret_key, 
-            packet + 1 + CLIENT_ID_SIZE,
-            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+            packet + 1 + tox_CLIENT_ID_SIZE,
+            packet + 1 + tox_CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
             sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING, plain );
 
     if(len != sizeof(ping_id) + num_nodes * sizeof(Node_format))
@@ -760,7 +760,7 @@ int DHT_addfriend(uint8_t * client_id)
 
     friends_list = temp;
     memset(&friends_list[num_friends], 0, sizeof(Friend));
-    memcpy(friends_list[num_friends].client_id, client_id, CLIENT_ID_SIZE);
+    memcpy(friends_list[num_friends].client_id, client_id, tox_CLIENT_ID_SIZE);
 
     friends_list[num_friends].NATping_id = ((uint64_t)random_int() << 32) + random_int();
     ++num_friends;
@@ -779,7 +779,7 @@ int DHT_delfriend(uint8_t * client_id)
             if (num_friends != i) {
                 memcpy( friends_list[i].client_id, 
                         friends_list[num_friends].client_id, 
-                        CLIENT_ID_SIZE );
+                        tox_CLIENT_ID_SIZE );
             }
 
             temp = realloc(friends_list, sizeof(Friend) * (num_friends));
@@ -795,11 +795,11 @@ int DHT_delfriend(uint8_t * client_id)
 }
 
 /* TODO: Optimize this. */
-IP_Port DHT_getfriendip(uint8_t * client_id)
+tox_IP_Port DHT_getfriendip(uint8_t * client_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
-    IP_Port empty = {{{0}}, 0};
+    tox_IP_Port empty = {{{0}}, 0};
 
     for (i = 0; i < num_friends; ++i) {
         /* Equal */
@@ -885,14 +885,14 @@ static void doClose(void)
         rand_node = rand() % num_nodes;
         getnodes( close_clientlist[index[rand_node]].ip_port,
                   close_clientlist[index[rand_node]].client_id,
-                  self_public_key );
+                  tox_self_public_key );
         close_lastgetnodes = temp_time;
     }
 }
 
-void DHT_bootstrap(IP_Port ip_port, uint8_t * public_key)
+void DHT_bootstrap(tox_IP_Port ip_port, uint8_t * public_key)
 {
-    getnodes(ip_port, public_key, self_public_key);
+    getnodes(ip_port, public_key, tox_self_public_key);
 }
 
 /* send the given packet to node with client_id
@@ -916,7 +916,7 @@ int route_packet(uint8_t * client_id, uint8_t * packet, uint32_t length)
  * return 0 if we are connected to friend or if no ips were found.
  * returns -1 if no such friend
  */
-static int friend_iplist(IP_Port * ip_portlist, uint16_t friend_num)
+static int friend_iplist(tox_IP_Port * ip_portlist, uint16_t friend_num)
 {
     int num_ips = 0;
     uint32_t i;
@@ -983,7 +983,7 @@ static int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t len
     Friend * friend = &friends_list[num];
     Client_data * client;
 
-    IP_Port ip_list[MAX_FRIEND_CLIENTS];
+    tox_IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int n = 0;
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -1010,7 +1010,7 @@ static int routeone_tofriend(uint8_t * friend_id, uint8_t * packet, uint32_t len
  * return 0 if we are connected to friend or if no ips were found.
  * returns -1 if no such friend
  */
-int friend_ips(IP_Port * ip_portlist, uint8_t * friend_id)
+int friend_ips(tox_IP_Port * ip_portlist, uint8_t * friend_id)
 {
     uint32_t i;
     for (i = 0; i < num_friends; ++i) {
@@ -1050,14 +1050,14 @@ static int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 }
 
 /* Handle a recieved ping request for */
-static int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_NATping(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     if (length < crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING 
             || length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
         return 1;
 
     /* check if request is for us. */
-    if (id_equal(packet + 1, self_public_key)) {
+    if (id_equal(packet + 1, tox_self_public_key)) {
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];
         uint8_t data[MAX_DATA_SIZE];
 
@@ -1100,7 +1100,7 @@ static int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
  * len must not be bigger than MAX_FRIEND_CLIENTS
  * return ip of 0 if failure 
  */
-static IP NAT_commonip(IP_Port * ip_portlist, uint16_t len, uint16_t min_num)
+static IP NAT_commonip(tox_IP_Port * ip_portlist, uint16_t len, uint16_t min_num)
 {
     IP zero = {{0}};
     if(len > MAX_FRIEND_CLIENTS)
@@ -1125,7 +1125,7 @@ static IP NAT_commonip(IP_Port * ip_portlist, uint16_t len, uint16_t min_num)
  * where len is the length of ip_portlist
  * returns the number of ports and puts the list of ports in portlist
  */
-static uint16_t NAT_getports(uint16_t * portlist, IP_Port * ip_portlist, uint16_t len, IP ip)
+static uint16_t NAT_getports(uint16_t * portlist, tox_IP_Port * ip_portlist, uint16_t len, IP ip)
 {
     uint32_t i;
     uint16_t num = 0;
@@ -1150,7 +1150,7 @@ static void punch_holes(IP ip, uint16_t * port_list, uint16_t numports, uint16_t
     for(i = friends_list[friend_num].punching_index; i != top; i++) {
         /*TODO: improve port guessing algorithm*/
         uint16_t port = port_list[(i/2) % numports] + (i/(2*numports))*((i % 2) ? -1 : 1);
-        IP_Port pinging = {ip, htons(port)};
+        tox_IP_Port pinging = {ip, htons(port)};
         pingreq(pinging, friends_list[friend_num].client_id);
     }
     friends_list[friend_num].punching_index = i;
@@ -1162,7 +1162,7 @@ static void doNAT(void)
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < num_friends; ++i) {
-        IP_Port ip_list[MAX_FRIEND_CLIENTS];
+        tox_IP_Port ip_list[MAX_FRIEND_CLIENTS];
         int num = friend_iplist(ip_list, i);
 
         /*If already connected or friend is not online don't try to hole punch*/
@@ -1194,7 +1194,7 @@ static void doNAT(void)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
-int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+int DHT_handlepacket(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     switch (packet[0]) {
     case 0:

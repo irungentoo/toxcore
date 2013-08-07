@@ -49,7 +49,7 @@ typedef struct {
 } Data;
 
 typedef struct {
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
 
     /*
      * 0 if connection is dead, 1 if attempting handshake,
@@ -123,11 +123,11 @@ static uint32_t connections_number; /* Number of connections in connections arra
 /* Functions */
 
 /* 
- * Get connection id from IP_Port
+ * Get connection id from tox_IP_Port
  * Return -1 if there are no connections like we are looking for
  * Return id if it found it
  */
-int getconnection_id(IP_Port ip_port)
+int getconnection_id(tox_IP_Port ip_port)
 {
     uint32_t i;
     for (i = 0; i < MAX_CONNECTIONS; ++i) {
@@ -149,7 +149,7 @@ static uint32_t randtable[6][256];
  *
  * TODO: make this better
  */
-static uint32_t handshake_id(IP_Port source)
+static uint32_t handshake_id(tox_IP_Port source)
 {
     uint32_t id = 0, i;
     for (i = 0; i < 6; ++i) {
@@ -168,7 +168,7 @@ static uint32_t handshake_id(IP_Port source)
  *
  * TODO: make this better
  */
-static void change_handshake(IP_Port source)
+static void change_handshake(tox_IP_Port source)
 {
     uint8_t rand = random_int() % 4;
     randtable[rand][((uint8_t *)&source)[rand]] = random_int();
@@ -180,7 +180,7 @@ static void change_handshake(IP_Port source)
  * Return -1 if it could not initialize the connectiont
  * If there already was an existing connection to that ip_port return its number.
  */
-int new_connection(IP_Port ip_port)
+int new_connection(tox_IP_Port ip_port)
 {
     int connect = getconnection_id(ip_port);
     if (connect != -1)
@@ -234,7 +234,7 @@ int new_connection(IP_Port ip_port)
  * Returns an integer corresponding to the connection id.
  * Return -1 if it could not initialize the connection.
  */
-static int new_inconnection(IP_Port ip_port)
+static int new_inconnection(tox_IP_Port ip_port)
 {
     if (getconnection_id(ip_port) != -1)
         return -1;
@@ -367,11 +367,11 @@ int is_connected(int connection_id)
 }
 
 /* returns the ip_port of the corresponding connection. */
-IP_Port connection_ip(int connection_id)
+tox_IP_Port connection_ip(int connection_id)
 {
     if (connection_id >= 0 && connection_id < MAX_CONNECTIONS)
         return connections[connection_id].ip_port;
-    IP_Port zero = {{{0}}, 0};
+    tox_IP_Port zero = {{{0}}, 0};
     return zero;
 }
 
@@ -470,7 +470,7 @@ uint32_t missing_packets(int connection_id, uint32_t * requested)
  * see http://wiki.tox.im/index.php/Lossless_UDP for more information.
  */
 
-static int send_handshake(IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
+static int send_handshake(tox_IP_Port ip_port, uint32_t handshake_id1, uint32_t handshake_id2)
 {
     uint8_t packet[1 + 4 + 4];
     uint32_t temp;
@@ -489,7 +489,7 @@ static int send_SYNC(uint32_t connection_id)
     uint8_t packet[(BUFFER_PACKET_NUM*4 + 4 + 4 + 2)];
     uint16_t index = 0;
 
-    IP_Port ip_port         = connections[connection_id].ip_port;
+    tox_IP_Port ip_port         = connections[connection_id].ip_port;
     uint8_t counter         = connections[connection_id].send_counter;
     uint32_t recv_packetnum = htonl(connections[connection_id].recv_packetnum);
     uint32_t sent_packetnum = htonl(connections[connection_id].sent_packetnum);
@@ -555,7 +555,7 @@ static int send_DATA(uint32_t connection_id)
 
 
 /* Return 0 if handled correctly, 1 if packet is bad. */
-static int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_handshake(uint8_t * packet, uint32_t length, tox_IP_Port source)
 {
     if (length != (1 + 4 + 4))
         return 1;
@@ -602,7 +602,7 @@ static int SYNC_valid(uint32_t length)
 }
 
 /* case 1 in handle_SYNC: */
-static int handle_SYNC1(IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnum)
+static int handle_SYNC1(tox_IP_Port source, uint32_t recv_packetnum, uint32_t sent_packetnum)
 {
     if (handshake_id(source) == recv_packetnum) {
         int x = new_inconnection(source);
@@ -669,7 +669,7 @@ static int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packet
     return 1;
 }
 
-static int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_SYNC(uint8_t *packet, uint32_t length, tox_IP_Port source)
 {
 
     if (!SYNC_valid(length))
@@ -742,7 +742,7 @@ static int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_
     return 0;
 }
 
-static int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_data(uint8_t *packet, uint32_t length, tox_IP_Port source)
 {
     int connection = getconnection_id(source);
 
@@ -770,7 +770,7 @@ static int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
  * END of packet handling functions 
  */
 
-int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
+int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, tox_IP_Port source)
 {
     switch (packet[0]) {
     case 16:

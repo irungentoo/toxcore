@@ -19,7 +19,7 @@ extern int w_active;
 
 typedef struct {
   uint8_t name[tox_MAX_NAME_LENGTH];
-  uint8_t status[MAX_USERSTATUS_LENGTH];
+  uint8_t status[tox_MAX_USERSTATUS_LENGTH];
   int     num;
   int     chatwin;
 } friend_t;
@@ -78,7 +78,7 @@ void friendlist_onNickChange(ToxWindow* self, int num, uint8_t* str, uint16_t le
 
 void friendlist_onStatusChange(ToxWindow* self, int num, uint8_t* str, uint16_t len) {
 
-  if(len >= MAX_USERSTATUS_LENGTH || num >= num_friends)
+  if(len >= tox_MAX_USERSTATUS_LENGTH || num >= num_friends)
     return;
 
   memcpy((char*) &friends[num].status, (char*) str, len);
@@ -92,7 +92,7 @@ int friendlist_onFriendAdded(int num) {
     return -1;
 
   friends[num_friends].num = num;
-  getname(num, friends[num_friends].name);
+  tox_getname(num, friends[num_friends].name);
   strcpy((char*) friends[num_friends].name, "unknown");
   strcpy((char*) friends[num_friends].status, "unknown");
   friends[num_friends++].chatwin = -1;

@@ -90,17 +90,17 @@ int main(int argc, char *argv[])
     }
     tox_initMessenger();
     if(argc > 3) {
-        IP_Port bootstrap_ip_port;
+        tox_IP_Port bootstrap_ip_port;
         bootstrap_ip_port.port = htons(atoi(argv[2]));
         bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-        DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+        DHT_bootstrap(bootstrap_ip_port, tox_hex_string_to_bin(argv[3]));
     } else {
         FILE *file = fopen(argv[1], "rb");
         if ( file==NULL ){return 1;}
         int read;
         uint8_t buffer[128000];
         read = fread(buffer, 1, 128000, file);
-        printf("Messenger loaded: %i\n", Messenger_load(buffer, read));
+        printf("Messenger loaded: %i\n", tox_Messenger_load(buffer, read));
         fclose(file);
         
     }
@@ -110,9 +110,9 @@ int main(int argc, char *argv[])
     printf("OUR ID: ");
     uint32_t i;
     for(i = 0; i < 32; i++) {
-        if(self_public_key[i] < 16)
+        if(tox_self_public_key[i] < 16)
             printf("0");
-        printf("%hhX",self_public_key[i]);
+        printf("%hhX", tox_self_public_key[i]);
     }
     
     tox_setname((uint8_t *)"Anon", 5);
@@ -122,23 +122,23 @@ int main(int argc, char *argv[])
     if(scanf("%s", temp_id) != 1) {
         return 1;
     }
-    int num = tox_m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+    int num = tox_m_addfriend(tox_hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
     
     perror("Initialization");
 
     while(1) {
         uint8_t name[128];
-        getname(num, name);
+        tox_getname(num, name);
         printf("%s\n", name);
         
         tox_m_sendmessage(num, (uint8_t*)"Test", 5);
-        doMessenger();
+        tox_doMessenger();
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
         if ( file==NULL ){return 1;}
-        uint8_t * buffer = malloc(Messenger_size());
-        Messenger_save(buffer);
-        fwrite(buffer, 1, Messenger_size(), file);
+        uint8_t * buffer = malloc(tox_Messenger_size());
+        tox_Messenger_save(buffer);
+        fwrite(buffer, 1, tox_Messenger_size(), file);
         free(buffer);
         fclose(file);
     }  

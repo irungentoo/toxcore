@@ -51,7 +51,7 @@
 void print_clientlist()
 {
     uint32_t i, j;
-    IP_Port p_ip;
+    tox_IP_Port p_ip;
     printf("___________________CLOSE________________________________\n");
     for(i = 0; i < 4; i++) {
         printf("ClientID: ");
@@ -71,7 +71,7 @@ void print_clientlist()
 void print_friendlist()
 {
     uint32_t i, j, k;
-    IP_Port p_ip;
+    tox_IP_Port p_ip;
     printf("_________________FRIENDS__________________________________\n");
     for(k = 0; k < num_friends; k++) {
         printf("FRIEND %u\n", k);
@@ -102,7 +102,7 @@ void print_friendlist()
     }
 }
 
-void printpacket(uint8_t * data, uint32_t length, IP_Port ip_port)
+void printpacket(uint8_t * data, uint32_t length, tox_IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
@@ -127,9 +127,9 @@ int main(int argc, char *argv[])
     printf("OUR ID: ");
     uint32_t i;
     for(i = 0; i < 32; i++) {
-        if(self_public_key[i] < 16)
+        if(tox_self_public_key[i] < 16)
             printf("0");
-        printf("%hhX",self_public_key[i]);
+        printf("%hhX", tox_self_public_key[i]);
     }
     
     char temp_id[128];
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
     if(scanf("%s", temp_id) != 1)
         exit(0);
     
-    DHT_addfriend(hex_string_to_bin(temp_id));
+    DHT_addfriend(tox_hex_string_to_bin(temp_id));
     
     /* initialize networking */
     /* bind to ip 0.0.0.0:PORT */
@@ -147,16 +147,16 @@ int main(int argc, char *argv[])
     
 
     perror("Initialization");
-    IP_Port bootstrap_ip_port;
+    tox_IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     /* bootstrap_ip_port.ip.c[0] = 127;
      * bootstrap_ip_port.ip.c[1] = 0;
      * bootstrap_ip_port.ip.c[2] = 0;
      * bootstrap_ip_port.ip.c[3] = 1; */
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    DHT_bootstrap(bootstrap_ip_port, tox_hex_string_to_bin(argv[3]));
     
-    IP_Port ip_port;
+    tox_IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     

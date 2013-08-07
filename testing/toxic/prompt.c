@@ -13,7 +13,7 @@
 
 #include "windows.h"
 
-uint8_t pending_requests[256][CLIENT_ID_SIZE]; // XXX
+uint8_t pending_requests[256][tox_CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
 extern void on_friendadded(int friendnumber);
@@ -21,7 +21,7 @@ static void print_usage(ToxWindow* self);
 
 // XXX:
 int add_req(uint8_t* public_key) {
-  memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
+  memcpy(pending_requests[num_requests], public_key, tox_CLIENT_ID_SIZE);
   ++num_requests;
 
   return num_requests-1;
@@ -50,7 +50,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     char* ip;
     char* port;
     char* key;
-    IP_Port dht;
+    tox_IP_Port dht;
 
     ip = strchr(cmd, ' ');
     if(ip == NULL) {
@@ -88,7 +88,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     }
 
     dht.ip.i = resolved_address;
-    unsigned char *binary_string = hex_string_to_bin(key);
+    unsigned char *binary_string = tox_hex_string_to_bin(key);
     DHT_bootstrap(dht, binary_string);
     free(binary_string);
   }
@@ -196,7 +196,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
 
     for(i=0; i<32; i++) {
       char xx[3];
-      snprintf(xx, sizeof(xx), "%02x", self_public_key[i] & 0xff);
+      snprintf(xx, sizeof(xx), "%02x", tox_self_public_key[i] & 0xff);
       strcat(id, xx);
     }
     

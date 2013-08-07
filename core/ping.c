@@ -15,7 +15,7 @@
 #define PING_TIMEOUT 5 // 5s
 
 typedef struct {
-    IP_Port  ipp;
+    tox_IP_Port  ipp;
     uint64_t id;
     uint64_t timestamp;
 } pinged_t;
@@ -59,7 +59,7 @@ static void remove_timeouts()   // O(n)
     pos_pings = new_pos % PING_NUM_MAX;
 }
 
-uint64_t add_ping(IP_Port ipp)   // O(n)
+uint64_t add_ping(tox_IP_Port ipp)   // O(n)
 {
     size_t p;
 
@@ -82,7 +82,7 @@ uint64_t add_ping(IP_Port ipp)   // O(n)
     return pings[p].id;
 }
 
-bool is_pinging(IP_Port ipp, uint64_t ping_id)   // O(n) TODO: replace this with something else.
+bool is_pinging(tox_IP_Port ipp, uint64_t ping_id)   // O(n) TODO: replace this with something else.
 {
     if (ipp.ip.i == 0 && ping_id == 0)
         return false;
