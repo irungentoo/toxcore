@@ -7,4 +7,4 @@ add_executable(${exe_name}
 
 linkCoreLibraries(${exe_name})
 add_dependencies(${exe_name} Check)
-target_link_libraries(${exe_name} Check)
+target_link_libraries(${exe_name} check)
