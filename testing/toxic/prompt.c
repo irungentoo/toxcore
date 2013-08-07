@@ -45,7 +45,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     int i;
 	int newlines = 0;
 	char cmd[256] = {0};
-    for(i = 0; i < strlen(prompt_buf); i++) 
+    for(i = 0; i < strlen(prompt_buf); i++)
     {
     if (u_cmd[i] == '\n')
 		++newlines;
@@ -260,7 +260,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     msg[0] = 0;
     msg++;
 
-    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0) {
+    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) == 0) {
       wprintw(self->window, "Error occurred while sending message.\n");
     }
     else {
@@ -338,7 +338,7 @@ static void print_usage(ToxWindow* self) {
     wprintw(self->window, "      myid                      : Print your ID\n");
     wprintw(self->window, "      quit/exit                 : Exit program\n");
     wprintw(self->window, "      help                      : Print this message again\n");
-    wprintw(self->window, "      clear                     : Clear this window\n"); 
+    wprintw(self->window, "      clear                     : Clear this window\n");
 
   wattron(self->window, A_BOLD);
   wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
