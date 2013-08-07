@@ -73,23 +73,6 @@ int getfriend_id(uint8_t *client_id)
     return -1;
 }
 
-/* copies the public key associated to that friend id into client_id buffer.
-   make sure that client_id is of size CLIENT_ID_SIZE.
-   return 0 if success
-   return -1 if failure. */
-int getclient_id(int friend_id, uint8_t *client_id)
-{
-    if (friend_id >= numfriends || friend_id < 0)
-        return -1;
-
-    if (friendlist[friend_id].status > 0) {
-        memcpy(client_id, friendlist[friend_id].client_id, CLIENT_ID_SIZE);
-        return 0;
-    }
-
-    return -1;
-}
-
 /*
  * add a friend
  * set the data that will be sent along with friend request
@@ -302,26 +285,6 @@ int m_set_userstatus_kind(USERSTATUS_KIND kind) {
     uint32_t i;
     for (i = 0; i < numfriends; ++i)
         friendlist[i].userstatus_sent = 0;
-    return 0;
-}
-
-/*  return the size of friendnumber's user status
-    guaranteed to be at most MAX_USERSTATUS_LENGTH */
-int m_get_userstatus_size(int friendnumber)
-{
-    if (friendnumber >= numfriends || friendnumber < 0)
-        return -1;
-    return friendlist[friendnumber].userstatus_length;
-}
-
-/*  copy the user status of friendnumber into buf, truncating if needed to maxlen
-    bytes, use m_get_userstatus_size to find out how much you need to allocate */
-int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
-{
-    if (friendnumber >= numfriends || friendnumber < 0)
-        return -1;
-    memset(buf, 0, maxlen);
-    memcpy(buf, friendlist[friendnumber].userstatus, MIN(maxlen, MAX_USERSTATUS_LENGTH) - 1);
     return 0;
 }
 
