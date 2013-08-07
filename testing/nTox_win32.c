@@ -275,7 +275,7 @@ void change_status(int savetofile)
     }
 
     status[i-3] = 0;
-    m_set_userstatus(m_get_userstatus_kind(0), status, strlen((char*)status));
+    m_set_userstatus(USERSTATUS_KIND_RETAIN, status, strlen((char*)status));
     char numstring[100];
     sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
     printf(numstring);
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
         while (fgets(line, MAX_USERSTATUS_LENGTH, status_file) != NULL) {
             sscanf(line, "%s", (char*)status);
         }
-        m_set_userstatus(m_get_userstatus_kind(0), status, strlen((char*)status)+1);
+        m_set_userstatus(USERSTATUS_KIND_RETAIN, status, strlen((char*)status)+1);
         statusloaded = 1;
         printf("%s\n", status);
         fclose(status_file);
