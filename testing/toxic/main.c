@@ -272,7 +272,7 @@ static void draw_bar()
         attron(COLOR_PAIR(3));
       }
       printw(" %s", windows[i].title);
-      if (windows[i].blink && (odd < 5)) {
+      if (windows[i].blink && (odd < (blinkrate/2))) {
         attroff(COLOR_PAIR(3));
       }
       if (i == active_window) {
