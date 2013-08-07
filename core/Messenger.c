@@ -215,17 +215,15 @@ uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
-    if (length >= (MAX_DATA_SIZE - 4) || friendlist[friendnumber].status != FRIEND_ONLINE)
+    if (length >= (MAX_DATA_SIZE - sizeof(theid)) || friendlist[friendnumber].status != FRIEND_ONLINE)
         /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
         return 0;
     uint8_t temp[MAX_DATA_SIZE];
     temp[0] = PACKET_ID_MESSAGE;
-    temp[1] = theid >> 24;
-    temp[2] = theid >> 16;
-    temp[3] = theid >> 8;
-    temp[4] = theid;
-    memcpy(temp + 5, message, length);
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 5);
+    theid = htonl(theid);
+    memcpy(temp + 1, &theid, sizeof(theid));
+    memcpy(temp + 1 + sizeof(theid), message, length);
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1 + sizeof(theid));
 }
 
 /* send a name packet to friendnumber
@@ -397,7 +395,7 @@ static void set_friend_userstatus_kind(int friendnumber, USERSTATUS_KIND k)
 /* Sets whether we send read receipts for friendnumber. */
 void m_set_sends_receipts(int friendnumber, int yesno)
 {
-    if (yesno < 0 || yesno > 1)
+    if (yesno != 0 || yesno != 1)
         return;
     if (friendnumber >= numfriends || friendnumber < 0)
         return;
@@ -549,9 +547,11 @@ static void doFriends(void)
                     break;
                 }
                 case PACKET_ID_RECEIPT: {
-                    if (len < 5)
+                    uint32_t msgid;
+                    if (len < 1 + sizeof(msgid))
                         break;
-                    uint32_t msgid = (temp[1] << 24) | (temp[2] << 16) | (temp[3] << 8) | temp[4];
+                    memcpy(&msgid, temp + 1, sizeof(msgid));
+                    msgid = ntohl(msgid);
                     if (read_receipt_isset)
                         (*read_receipt)(i, msgid);
                     break;
