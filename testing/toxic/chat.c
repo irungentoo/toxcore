@@ -57,7 +57,6 @@ static void chat_onMessage(ToxWindow *self, int num, uint8_t *msg, uint16_t len)
 
   self->blink = true;
   beep();
-  flash();
 }
 
 static void chat_onNickChange(ToxWindow *self, int num, uint8_t *nick, uint16_t len)
@@ -121,7 +120,7 @@ static void chat_onKey(ToxWindow *self, int key)
         wattroff(ctx->history, COLOR_PAIR(1));
         wprintw(ctx->history, "%s\n", ctx->line);
       }
-      if (m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
+      if (m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) == 0) {
         wattron(ctx->history, COLOR_PAIR(3));
         wprintw(ctx->history, " * Failed to send message.\n");
         wattroff(ctx->history, COLOR_PAIR(3));

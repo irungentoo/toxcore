@@ -22,6 +22,7 @@ extern int add_req(uint8_t *public_key); // XXX
 
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
+#define TOXICVER "0.1.0" //Will be moved to a -D flag later 
 
 static ToxWindow windows[MAX_WINDOW_SLOTS];
 static ToxWindow* prompt;
@@ -258,7 +259,7 @@ static void draw_bar()
   move(LINES - 1, 0);
 
   attron(COLOR_PAIR(4) | A_BOLD);
-  printw(" TOXIC 1.0 |");
+  printw(" TOXIC " TOXICVER " |"); 
   attroff(COLOR_PAIR(4) | A_BOLD);
 
   int i;

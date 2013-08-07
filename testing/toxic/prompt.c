@@ -62,6 +62,16 @@ static void execute(ToxWindow *self, char *u_cmd)
     if (!isspace(cmd[cmd_end]))
       break;
   cmd[cmd_end + 1] = '\0';
+  
+/* What is this supposed to do?
+  if (cmd[0] == '/') {
+    wprintw(self->window,"Warning: Run your command without the /, this may not work\n");
+    int i;
+    for (i = 1; i < strlen(cmd); i++) { //This doesn't work when it doesn't end with a space and another word
+      cmd[i - 1] = cmd[i]; //Still working on why
+    }
+  }
+*/
 
   if (!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
@@ -287,7 +297,7 @@ static void execute(ToxWindow *self, char *u_cmd)
     }
     msg[0] = 0;
     msg++;
-    if (m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0)
+    if (m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) == 0)
       wprintw(self->window, "Error occurred while sending message.\n");
     else
       wprintw(self->window, "Message successfully sent.\n");
@@ -368,7 +378,7 @@ static void print_usage(ToxWindow *self)
   wprintw(self->window, "      myid                      : Print your ID\n");
   wprintw(self->window, "      quit/exit                 : Exit program\n");
   wprintw(self->window, "      help                      : Print this message again\n");
-  wprintw(self->window, "      clear                     : Clear this window\n"); 
+  wprintw(self->window, "      clear                     : Clear this window\n");
   
   wattron(self->window, A_BOLD);
   wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
