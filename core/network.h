@@ -60,6 +60,12 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
+#ifdef ENABLE_IPV6
+/* more information on porting to IPv6:
+http://long.ccaba.upc.edu/long/045Guidelines/eva/ipv6.html */
+#define IPV6_MIN_MTU	1280
+#endif 
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -63,7 +63,11 @@ static int sock;
    Function to send packet(data) of length length to ip_port */
 int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
 {
+
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
+    /* IPv6
+	ADDR addr = {AF_INET6, ip_port.port, ip_port.ip}; */
+	
     return sendto(sock,(char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
 
@@ -96,6 +100,7 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
    returns -1 if there are problems */
 int init_networking(IP ip, uint16_t port)
 {
+uint16_t ipv4flag = 0;
 #ifdef WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
@@ -104,17 +109,35 @@ int init_networking(IP ip, uint16_t port)
     srandom((uint32_t)current_time());
 #endif
     srand((uint32_t)current_time());
-
-    /* initialize our socket */
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
+    
+    /* as long as the 32-bit IP problem in union IP is not fixed just use
+    IPv4 by default. When it is fixed, just add a 6 to AF_INET.
+    The rest of the code will still work for now */
+	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	ipv4flag = 1; // force IPv4, delete this for IPv6-try then
+	
+	 /* initialize our socket, prefer IPv6
+     sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP); */
+	
     /* Check for socket error */
 #ifdef WIN32
-    if (sock == INVALID_SOCKET) /* MSDN recommends this */
-        return -1;
+    if (sock == INVALID_SOCKET) { /* MSDN recommends this */
+    	// no IPv6, try IPv4 then
+        sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (sock == INVALID_SOCKET) {
+        	return -1;
+        }
+        ipv4flag = 1;
+    }
 #else
-    if (sock < 0)
-        return -1;
+    if (sock < 0) {
+    	// no IPv6, try IPv4 then
+        sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (sock < 0) {
+        	return -1;
+        }
+        ipv4flag = 1;
+    }
 #endif
 
     /* Functions to increase the size of the send and receive UDP buffers
@@ -130,10 +153,19 @@ int init_networking(IP ip, uint16_t port)
         return -1;
     */
 
-    /* Enable broadcast on socket */
-    int broadcast = 1;
-    setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
-
+	if (!ipv4flag) {
+	// TODO IPv6 Multicast
+	/* IPv6: Obviously, there is no broadcast in IPv6, so multicast to all nodes it is
+	--> ff01::1 or ff02::1 -> all nodes addresses
+	
+		setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF ,
+                           &outif, sizeof(outif)); */
+                           
+    } else {
+		/* Enable broadcast on IPv4-socket */
+		int broadcast = 1;
+		setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast));
+    }              
     /* Set socket nonblocking */
 #ifdef WIN32
     /* I think this works for windows */
@@ -144,9 +176,14 @@ int init_networking(IP ip, uint16_t port)
     fcntl(sock, F_SETFL, O_NONBLOCK, 1);
 #endif
 
-    /* Bind our socket to port PORT and address 0.0.0.0 */
-    ADDR addr = {AF_INET, htons(port), ip};
-    bind(sock, (struct sockaddr*)&addr, sizeof(addr));
+	/* assume IPv6 */
+	ADDR addr = {AF_INET6, htons(port), ip};
+	
+	if (ipv4flag)
+		addr.family = AF_INET;
+       
+   	/* Bind our socket to port PORT and address 0.0.0.0 */
+   	bind(sock, (struct sockaddr*)&addr, sizeof(addr));
 
     return 0;
 
@@ -170,36 +207,52 @@ void shutdown_networking(void)
 
     returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
     returns 0 on failure
-
-    TODO: Fix ipv6 support
 */
 uint32_t resolve_addr(const char *address)
 {
     struct addrinfo *server = NULL;
+    struct addrinfo *server4 = NULL;
     struct addrinfo  hints;
     int              rc;
-    uint32_t         addr;
+    uint32_t         addr = 0;
+	uint16_t ipv6flag = 0; // tells us if IPv6 found
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_INET;    // IPv4 only right now.
+    hints.ai_family   = AF_UNSPEC;    // both IPv4 and IPv6 and sort later
     hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
 
+	/* port 7 - echo protocol sends back everything it gets */
     rc = getaddrinfo(address, "echo", &hints, &server);
 
     // Lookup failed.
     if(rc != 0) {
         return 0;
     }
-
-    // IPv4 records only..
-    if(server->ai_family != AF_INET) {
-        freeaddrinfo(server);
-        return 0;
-    }
+	
+	// a bit hacky, could be prettier...
+	// save server in server4 in case we do need IPv4
+	memcpy(server,server4,sizeof(struct addrinfo));
+	
+	while(server) {
+		// IPv6
+		if(server->ai_family == AF_INET6) {
+			ipv6flag = 1;
+			addr = ((struct sockaddr_in*)server->ai_addr)->sin_addr.s_addr;
+   		break;
+   		} 
+		server = server->ai_next;
+	}
+	
+	// IPv4
+	if (!ipv6flag){
+		if(server4->ai_family == AF_INET) {
+			addr = ((struct sockaddr_in*)server4->ai_addr)->sin_addr.s_addr;
+		} else {
+			return 0;
+		}
+	}
     
-
-    addr = ((struct sockaddr_in*)server->ai_addr)->sin_addr.s_addr;
-
     freeaddrinfo(server);
+    freeaddrinfo(server4);
     return addr;
 }
