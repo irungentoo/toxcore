@@ -62,6 +62,16 @@ static void execute(ToxWindow *self, char *u_cmd)
     if (!isspace(cmd[cmd_end]))
       break;
   cmd[cmd_end + 1] = '\0';
+  
+/* What is this supposed to do?
+  if (cmd[0] == '/') {
+    wprintw(self->window,"Warning: Run your command without the /, this may not work\n");
+    int i;
+    for (i = 1; i < strlen(cmd); i++) { //This doesn't work when it doesn't end with a space and another word
+      cmd[i - 1] = cmd[i]; //Still working on why
+    }
+  }
+*/
 
   if (!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
