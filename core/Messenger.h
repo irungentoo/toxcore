@@ -101,12 +101,6 @@ int m_addfriend_norequest(uint8_t *client_id);
     return -1 if no such friend */
 int getfriend_id(uint8_t *client_id);
 
-/* copies the public key associated to that friend id into client_id buffer.
-    make sure that client_id is of size CLIENT_ID_SIZE.
-    return 0 if success
-    return -1 if failure */
-int getclient_id(int friend_id, uint8_t *client_id);
-
 /* remove a friend */
 int m_delfriend(int friendnumber);
 
@@ -153,15 +147,6 @@ int getname(int friendnumber, uint8_t *name);
 int m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length);
 int m_set_userstatus_kind(USERSTATUS_KIND kind);
 
-/* return the length of friendnumber's user status,
-    including null
-    pass it into malloc */
-int m_get_userstatus_size(int friendnumber);
-
-/* copy friendnumber's userstatus into buf, truncating if size is over maxlen
-    get the size you need to allocate from m_get_userstatus_size
-    The self variant will copy our own userstatus. */
-int m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
 int m_copy_self_userstatus(uint8_t *buf, uint32_t maxlen);
 
 /* Return one of USERSTATUS_KIND values, except USERSTATUS_KIND_RETAIN.
