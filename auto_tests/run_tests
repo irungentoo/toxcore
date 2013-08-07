@@ -1,0 +1,6 @@
+#!/bin/bash
+# run_tests - run the current tests for tox core
+set -e
+
+make
+./messenger_test && ./friends_test 
