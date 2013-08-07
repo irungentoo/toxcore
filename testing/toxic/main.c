@@ -68,7 +68,7 @@ void on_nickchange(int friendnumber, uint8_t* string, uint16_t length) {
   }
 }
 
-void on_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t* string, uint16_t length) {
+void on_statuschange(int friendnumber, tox_USERSTATUS_KIND kind, uint8_t* string, uint16_t length) {
   size_t i;
 
   wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
@@ -173,11 +173,11 @@ static void init_windows() {
 static void do_tox() {
   static bool dht_on = false;
 
-  if(!dht_on && DHT_isconnected()) {
+  if(!dht_on && tox_DHT_isconnected()) {
     dht_on = true;
     wprintw(prompt->window, "\nDHT connected!\n");
   }
-  else if(dht_on && !DHT_isconnected()) {
+  else if(dht_on && !tox_DHT_isconnected()) {
     dht_on = false;
     wprintw(prompt->window, "\nDHT disconnected!\n");
   }

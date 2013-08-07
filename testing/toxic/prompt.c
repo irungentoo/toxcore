@@ -174,7 +174,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     }
     msg++;
 
-    tox_m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
+    tox_m_set_userstatus(tox_USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s\n", msg);
   }
   else if(!strncmp(cmd, "nick ", strlen("nick "))) {
@@ -187,7 +187,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     }
     nick++;
 
-    setname((uint8_t*) nick, strlen(nick)+1);
+    tox_setname((uint8_t*) nick, strlen(nick)+1);
     wprintw(self->window, "Nickname set to: %s\n", nick);
   }
   else if(!strcmp(cmd, "myid")) {

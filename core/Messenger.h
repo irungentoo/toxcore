@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-#define MAX_NAME_LENGTH 128
+#define tox_MAX_NAME_LENGTH 128
 #define MAX_USERSTATUS_LENGTH 128
 
 #define PACKET_ID_NICKNAME 48
@@ -60,21 +60,21 @@ extern "C" {
 /* don't assume MAX_USERSTATUS_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
 
-/* USERSTATUS_KIND
+/* tox_USERSTATUS_KIND
  * Represents the different kinds of userstatus
  * someone can have.
  * More on this later... */
 
 typedef enum {
-    USERSTATUS_KIND_RETAIN = (uint8_t)0, /* This is a special value that must not be returned by
+    tox_USERSTATUS_KIND_RETAIN = (uint8_t)0, /* This is a special value that must not be returned by
                              * tox_m_get_userstatus_kind. You can pass it into tox_m_set_userstatus
                              * to keep the current USERSTATUS_KIND. */
-    USERSTATUS_KIND_ONLINE, /* Recommended representation: Green. */
-    USERSTATUS_KIND_AWAY, /* Recommended representation: Orange, or yellow. */
-    USERSTATUS_KIND_BUSY, /* Recommended representation: Red. */
-    USERSTATUS_KIND_OFFLINE, /* Recommended representation: Grey, semi-transparent. */
-    USERSTATUS_KIND_INVALID,
-} USERSTATUS_KIND;
+    tox_USERSTATUS_KIND_ONLINE, /* Recommended representation: Green. */
+    tox_USERSTATUS_KIND_AWAY, /* Recommended representation: Orange, or yellow. */
+    tox_USERSTATUS_KIND_BUSY, /* Recommended representation: Red. */
+    tox_USERSTATUS_KIND_OFFLINE, /* Recommended representation: Grey, semi-transparent. */
+    tox_USERSTATUS_KIND_INVALID,
+} tox_USERSTATUS_KIND;
 
 /*
  * add a friend
@@ -122,12 +122,12 @@ int tox_m_friendstatus(int friendnumber);
 int tox_m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
 
 /* Set our nickname
-   name must be a string of maximum MAX_NAME_LENGTH length.
+   name must be a string of maximum tox_MAX_NAME_LENGTH length.
    length must be at least 1 byte
    length is the length of name with the NULL terminator
    return 0 if success
    return -1 if failure */
-int setname(uint8_t *name, uint16_t length);
+int tox_setname(uint8_t *name, uint16_t length);
 
 /* get our nickname
    put it in name
@@ -136,7 +136,7 @@ uint16_t getself_name(uint8_t *name);
 
 /* get name of friendnumber
     put it in name
-    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
+    name needs to be a valid memory location with a size of at least tox_MAX_NAME_LENGTH (128) bytes.
     return 0 if success
     return -1 if failure */
 int getname(int friendnumber, uint8_t *name);
@@ -144,8 +144,8 @@ int getname(int friendnumber, uint8_t *name);
 /* set our user status
     you are responsible for freeing status after
     returns 0 on success, -1 on failure */
-int tox_m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length);
-int tox_m_set_userstatus_kind(USERSTATUS_KIND kind);
+int tox_m_set_userstatus(tox_USERSTATUS_KIND kind, uint8_t *status, uint16_t length);
+int tox_m_set_userstatus_kind(tox_USERSTATUS_KIND kind);
 
 /* return the length of friendnumber's user status,
     including null
@@ -158,12 +158,12 @@ int tox_m_get_userstatus_size(int friendnumber);
 int tox_m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
 int tox_m_copy_self_userstatus(uint8_t *buf, uint32_t maxlen);
 
-/* Return one of USERSTATUS_KIND values, except USERSTATUS_KIND_RETAIN.
+/* Return one of tox_USERSTATUS_KIND values, except tox_USERSTATUS_KIND_RETAIN.
  * Values unknown to your application should be represented as USERSTATUS_KIND_ONLINE.
- * As above, the self variant will return our own USERSTATUS_KIND.
- * If friendnumber is invalid, this shall return USERSTATUS_KIND_INVALID. */
-USERSTATUS_KIND tox_m_get_userstatus_kind(int friendnumber);
-USERSTATUS_KIND tox_m_get_self_userstatus_kind(void);
+ * As above, the self variant will return our own tox_USERSTATUS_KIND.
+ * If friendnumber is invalid, this shall return tox_USERSTATUS_KIND_INVALID. */
+tox_USERSTATUS_KIND tox_m_get_userstatus_kind(int friendnumber);
+tox_USERSTATUS_KIND tox_m_get_self_userstatus_kind(void);
 
 /* set the function that will be executed when a friend request is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
@@ -179,9 +179,9 @@ void tox_m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
 void tox_m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
 
 /* set the callback for user status changes
-    function(int friendnumber, USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
+    function(int friendnumber, tox_USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
-void tox_m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t));
+void tox_m_callback_userstatus(void (*function)(int, tox_USERSTATUS_KIND, uint8_t *, uint16_t));
 
 /* run this at startup
     returns 0 if no connection problems

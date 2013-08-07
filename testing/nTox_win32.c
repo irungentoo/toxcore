@@ -63,7 +63,7 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[tox_MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
     time_t rawtime;
@@ -79,16 +79,16 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[tox_MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length];
     sprintf(msg, "\n\n[i] [%d] %s is now known as %s.\n\n", friendnumber, name, string);
     printf(msg);
 }
 
-void print_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
+void print_statuschange(int friendnumber, tox_USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[tox_MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
     char msg[100+length+strlen(name)+1];
     sprintf(msg, "\n\n[i] [%d] %s's status changed to %s.\n\n", friendnumber, name, string);
@@ -166,7 +166,7 @@ void list_friends()
     printf("----- PENDING -----\n\n");
 
     for (i = 0; i <= maxnumfriends; i++) {
-        char name[MAX_NAME_LENGTH];
+        char name[tox_MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
         if (tox_m_friendstatus(i) > 0 && m_friendstatus(i) < 4)
             printf("[%d] %s\n", i, (uint8_t*)name);
@@ -237,7 +237,7 @@ void message_friend()
 
 void change_nickname()
 {
-    uint8_t name[MAX_NAME_LENGTH];
+    uint8_t name[tox_MAX_NAME_LENGTH];
     int i = 0;
     size_t len = strlen(line);
     
@@ -250,7 +250,7 @@ void change_nickname()
     }
     
     name[i-3] = 0;
-    setname(name, i);
+    tox_setname(name, i);
     char numstring[100];
     sprintf(numstring, "\n[i] changed nick to %s\n\n", (char*)name);
     printf(numstring);
@@ -390,11 +390,11 @@ int main(int argc, char *argv[])
     FILE* name_file = NULL;
     name_file = fopen("namefile.txt", "r");
     if(name_file) {
-        uint8_t name[MAX_NAME_LENGTH];
-        while (fgets(line, MAX_NAME_LENGTH, name_file) != NULL) {
+        uint8_t name[tox_MAX_NAME_LENGTH];
+        while (fgets(line, tox_MAX_NAME_LENGTH, name_file) != NULL) {
             sscanf(line, "%s", (char*)name);
         }
-        setname(name, strlen((char*)name)+1);
+        tox_setname(name, strlen((char*)name)+1);
         nameloaded = 1;
         printf("%s\n", name);
         fclose(name_file);
@@ -463,13 +463,13 @@ int main(int argc, char *argv[])
     }
 
     while(1) {
-        if (on == 1 && DHT_isconnected() == -1) {
+        if (on == 1 && tox_DHT_isconnected() == -1) {
             printf("\n---------------------------------");
             printf("\n[i] Disconnected from the DHT");
             printf("\n---------------------------------\n\n");
             on = 0;
         }
-        if (on == 0 && DHT_isconnected()) {
+        if (on == 0 && tox_DHT_isconnected()) {
             printf("\n[i] Connected to DHT");
             printf("\n---------------------------------\n\n");
             on = 1;

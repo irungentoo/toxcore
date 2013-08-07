@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
         printf("%hhX",self_public_key[i]);
     }
     
-    setname((uint8_t *)"Anon", 5);
+    tox_setname((uint8_t *)"Anon", 5);
     
     char temp_id[128];
     printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");

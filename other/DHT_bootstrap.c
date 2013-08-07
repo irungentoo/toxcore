@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     int is_waiting_for_dht_connection = 1;
     while(1)
     {
-        if (is_waiting_for_dht_connection && DHT_isconnected())
+        if (is_waiting_for_dht_connection && tox_DHT_isconnected())
         {
             printf("Connected to other bootstrap server successfully.\n");
             is_waiting_for_dht_connection = 0;

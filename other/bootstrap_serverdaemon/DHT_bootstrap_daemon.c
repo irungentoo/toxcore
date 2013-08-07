@@ -96,12 +96,12 @@ int connect_to_servers(struct server_info_s *info)
     /* Check if we're connected to the DHT */
     for(c = 0; c != 100; ++c) {
         usleep(10000);
-        if(DHT_isconnected()) {
+        if(tox_DHT_isconnected()) {
             //puts("Connected");
             return 1;
             break;
         }
-        if(DHT_isconnected() == 0 && c == 99) {
+        if(tox_DHT_isconnected() == 0 && c == 99) {
             //puts("Not connected");
             return -1;
             break;
@@ -341,7 +341,7 @@ int main(int argc, char *argv[]) {
     connect_to_servers(server_conf.info);
     errno = tmperr;
 
-    if(!DHT_isconnected()) {
+    if(!tox_DHT_isconnected()) {
         puts("Could not establish DHT connection. Check server settings.\n");
         exit(EXIT_FAILURE);
     } else {

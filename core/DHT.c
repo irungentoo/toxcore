@@ -105,7 +105,7 @@ typedef struct {
 /*----------------------------------------------------------------------------------*/
 
                     /* Our client id/public key */
-uint8_t             self_public_key[CLIENT_ID_SIZE];
+uint8_t             tox_self_public_key[CLIENT_ID_SIZE];
 uint8_t             self_secret_key[crypto_box_SECRETKEYBYTES];
 static Client_data  close_clientlist[LCLIENT_LIST];
 static Friend *     friends_list;
@@ -1288,7 +1288,7 @@ int DHT_load(uint8_t * data, uint32_t size)
 /* returns 0 if we are not connected to the DHT
  * returns 1 if we are 
  */
-int DHT_isconnected(void)
+int tox_DHT_isconnected(void)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();

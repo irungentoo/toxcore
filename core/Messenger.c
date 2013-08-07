@@ -30,23 +30,23 @@ typedef struct {
     uint64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
     uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
     uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
-    uint8_t name[MAX_NAME_LENGTH];
+    uint8_t name[tox_MAX_NAME_LENGTH];
     uint8_t name_sent; /* 0 if we didn't send our name to this friend 1 if we have. */
     uint8_t *userstatus;
     uint16_t userstatus_length;
     uint8_t userstatus_sent;
-    USERSTATUS_KIND userstatus_kind;
+    tox_USERSTATUS_KIND userstatus_kind;
     uint16_t info_size; /* length of the info */
 } Friend;
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
-static uint8_t self_name[MAX_NAME_LENGTH];
+static uint8_t self_name[tox_MAX_NAME_LENGTH];
 static uint16_t self_name_length;
 
 static uint8_t *self_userstatus;
 static uint16_t self_userstatus_len;
-static USERSTATUS_KIND self_userstatus_kind;
+static tox_USERSTATUS_KIND self_userstatus_kind;
 
 #define MAX_NUM_FRIENDS 256
 
@@ -125,7 +125,7 @@ int tox_m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             friendlist[i].userstatus = calloc(1, 1);
             friendlist[i].userstatus_length = 1;
-            friendlist[i].userstatus_kind = USERSTATUS_KIND_OFFLINE;
+            friendlist[i].userstatus_kind = tox_USERSTATUS_KIND_OFFLINE;
             memcpy(friendlist[i].info, data, length);
             friendlist[i].info_size = length;
 
@@ -212,9 +212,9 @@ int tox_m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
    length is the length with the NULL terminator*/
 static int tox_m_sendname(int friendnumber, uint8_t * name, uint16_t length)
 {
-    if(length > MAX_NAME_LENGTH || length == 0)
+    if(length > tox_MAX_NAME_LENGTH || length == 0)
         return 0;
-    uint8_t temp[MAX_NAME_LENGTH + 1];
+    uint8_t temp[tox_MAX_NAME_LENGTH + 1];
     memcpy(temp + 1, name, length);
     temp[0] = PACKET_ID_NICKNAME;
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
@@ -227,19 +227,19 @@ static int setfriendname(int friendnumber, uint8_t * name)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
-    memcpy(friendlist[friendnumber].name, name, MAX_NAME_LENGTH);
+    memcpy(friendlist[friendnumber].name, name, tox_MAX_NAME_LENGTH);
     return 0;
 }
 
 /* Set our nickname
-   name must be a string of maximum MAX_NAME_LENGTH length.
+   name must be a string of maximum tox_MAX_NAME_LENGTH length.
    length must be at least 1 byte
    length is the length of name with the NULL terminator
    return 0 if success
    return -1 if failure */
-int setname(uint8_t * name, uint16_t length)
+int tox_setname(uint8_t * name, uint16_t length)
 {
-    if (length > MAX_NAME_LENGTH || length == 0)
+    if (length > tox_MAX_NAME_LENGTH || length == 0)
         return -1;
     memcpy(self_name, name, length);
     self_name_length = length;
@@ -251,7 +251,7 @@ int setname(uint8_t * name, uint16_t length)
 
 /* get our nickname
    put it in name
-   name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+   name needs to be a valid memory location with a size of at least tox_MAX_NAME_LENGTH bytes.
    return the length of the name */
 uint16_t getself_name(uint8_t *name)
 {
@@ -261,22 +261,22 @@ uint16_t getself_name(uint8_t *name)
 
 /* get name of friendnumber
    put it in name
-   name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+   name needs to be a valid memory location with a size of at least tox_MAX_NAME_LENGTH bytes.
    return 0 if success
    return -1 if failure */
 int getname(int friendnumber, uint8_t * name)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
-    memcpy(name, friendlist[friendnumber].name, MAX_NAME_LENGTH);
+    memcpy(name, friendlist[friendnumber].name, tox_MAX_NAME_LENGTH);
     return 0;
 }
 
-int tox_m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
+int tox_m_set_userstatus(tox_USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
 {
     if (length > MAX_USERSTATUS_LENGTH)
         return -1;
-    if (kind != USERSTATUS_KIND_RETAIN) {
+    if (kind != tox_USERSTATUS_KIND_RETAIN) {
         self_userstatus_kind = kind;
     }
     uint8_t *newstatus = calloc(length, 1);
@@ -291,11 +291,11 @@ int tox_m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
     return 0;
 }
 
-int tox_m_set_userstatus_kind(USERSTATUS_KIND kind) {
-    if (kind >= USERSTATUS_KIND_INVALID) {
+int tox_m_set_userstatus_kind(tox_USERSTATUS_KIND kind) {
+    if (kind >= tox_USERSTATUS_KIND_INVALID) {
         return -1;
     }
-    if (kind == USERSTATUS_KIND_RETAIN) {
+    if (kind == tox_USERSTATUS_KIND_RETAIN) {
         return 0;
     }
     self_userstatus_kind = kind;
@@ -332,17 +332,17 @@ int tox_m_copy_self_userstatus(uint8_t * buf, uint32_t maxlen)
     return 0;
 }
 
-USERSTATUS_KIND tox_m_get_userstatus_kind(int friendnumber) {
+tox_USERSTATUS_KIND tox_m_get_userstatus_kind(int friendnumber) {
     if (friendnumber >= numfriends || friendnumber < 0)
-        return USERSTATUS_KIND_INVALID;
-    USERSTATUS_KIND uk = friendlist[friendnumber].userstatus_kind;
-    if (uk >= USERSTATUS_KIND_INVALID) {
-        uk = USERSTATUS_KIND_ONLINE;
+        return tox_USERSTATUS_KIND_INVALID;
+    tox_USERSTATUS_KIND uk = friendlist[friendnumber].userstatus_kind;
+    if (uk >= tox_USERSTATUS_KIND_INVALID) {
+        uk = tox_USERSTATUS_KIND_ONLINE;
     }
     return uk;
 }
 
-USERSTATUS_KIND tox_m_get_self_userstatus_kind(void) {
+tox_USERSTATUS_KIND tox_m_get_self_userstatus_kind(void) {
     return self_userstatus_kind;
 }
 
@@ -369,7 +369,7 @@ static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t le
     return 0;
 }
 
-static void set_friend_userstatus_kind(int friendnumber, USERSTATUS_KIND k)
+static void set_friend_userstatus_kind(int friendnumber, tox_USERSTATUS_KIND k)
 {
     friendlist[friendnumber].userstatus_kind = k;
 }
@@ -400,9 +400,9 @@ void tox_m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
     friend_namechange_isset = 1;
 }
 
-static void (*friend_statuschange)(int, USERSTATUS_KIND, uint8_t *, uint16_t);
+static void (*friend_statuschange)(int, tox_USERSTATUS_KIND, uint8_t *, uint16_t);
 static uint8_t friend_statuschange_isset = 0;
-void tox_m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t))
+void tox_m_callback_userstatus(void (*function)(int, tox_USERSTATUS_KIND, uint8_t *, uint16_t))
 {
     friend_statuschange = function;
     friend_statuschange_isset = 1;
@@ -413,7 +413,7 @@ void tox_m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *,
 int tox_initMessenger(void)
 {
     new_keys();
-    tox_m_set_userstatus(USERSTATUS_KIND_ONLINE, (uint8_t*)"Online", sizeof("Online"));
+    tox_m_set_userstatus(tox_USERSTATUS_KIND_ONLINE, (uint8_t*)"Online", sizeof("Online"));
     tox_initNetCrypto();
     IP ip;
     ip.i = 0;
@@ -476,7 +476,7 @@ static void doFriends(void)
             if (len > 0) {
                 switch (temp[0]) {
                 case PACKET_ID_NICKNAME: {
-                    if (len >= MAX_NAME_LENGTH + 1 || len == 1)
+                    if (len >= tox_MAX_NAME_LENGTH + 1 || len == 1)
                         break;
                     if(friend_namechange_isset)
                         friend_namechange(i, temp + 1, len - 1);

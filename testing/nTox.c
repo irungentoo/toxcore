@@ -87,12 +87,12 @@ void new_lines(char *line)
 
 void print_friendlist()
 {
-    char name[MAX_NAME_LENGTH];
+    char name[tox_MAX_NAME_LENGTH];
     int i = 0;
     new_lines("[i] Friend List:");
     while(getname(i, (uint8_t *)name) != -1) {
         /* account for the longest name and the longest "base" string */
-        char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
+        char fstring[tox_MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
 
         if (strlen(name) <= 0) {
             sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
@@ -109,7 +109,7 @@ void print_friendlist()
 
 char *format_message(char *message, int friendnum)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[tox_MAX_NAME_LENGTH];
     if (friendnum != -1) {
             getname(friendnum, (uint8_t*)name);
     } else {
@@ -203,7 +203,7 @@ void line_eval(char *line)
             }
         }
         else if (inpt_command == 'n') {
-            uint8_t name[MAX_NAME_LENGTH];
+            uint8_t name[tox_MAX_NAME_LENGTH];
             int i = 0;
             size_t len = strlen(line);
             for (i = 3; i < len; i++) {
@@ -211,7 +211,7 @@ void line_eval(char *line)
                 name[i-3] = line[i];
             }
             name[i-3] = 0;
-            setname(name, i - 2);
+            tox_setname(name, i - 2);
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
@@ -228,7 +228,7 @@ void line_eval(char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            tox_m_set_userstatus(USERSTATUS_KIND_ONLINE, status, strlen((char*)status) + 1);
+            tox_m_set_userstatus(tox_USERSTATUS_KIND_ONLINE, status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -356,7 +356,7 @@ void print_message(int friendnumber, uint8_t * string, uint16_t length)
 
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[tox_MAX_NAME_LENGTH];
     if(getname(friendnumber, (uint8_t*)name) != -1) {
         char msg[100+length];
         sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
@@ -364,9 +364,9 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     }
 }
 
-void print_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
+void print_statuschange(int friendnumber, tox_USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[tox_MAX_NAME_LENGTH];
     if(getname(friendnumber, (uint8_t*)name) != -1) {
         char msg[100+length+strlen(name)+1];
         sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
     free(binary_string);
     nodelay(stdscr, TRUE);
     while(true) {
-        if (on == 0 && DHT_isconnected()) {
+        if (on == 0 && tox_DHT_isconnected()) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
         }

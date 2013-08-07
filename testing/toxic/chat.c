@@ -33,7 +33,7 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd);
 
 static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len) {
   ChatContext* ctx = (ChatContext*) self->x;
-  uint8_t nick[MAX_NAME_LENGTH] = {0};
+  uint8_t nick[tox_MAX_NAME_LENGTH] = {0};
   
   time_t now;
   time(&now);
@@ -46,7 +46,7 @@ static void chat_onMessage(ToxWindow* self, int num, uint8_t* msg, uint16_t len)
   getname(num, (uint8_t*) &nick);
 
   msg[len-1] = '\0';
-  nick[MAX_NAME_LENGTH-1] = '\0';
+  nick[tox_MAX_NAME_LENGTH-1] = '\0';
 
   fix_name(msg);
   fix_name(nick);
@@ -165,7 +165,7 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd)
       return;
     }
     msg++;
-    tox_m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
+    tox_m_set_userstatus(tox_USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
     wprintw(ctx->history, "Status set to: %s\n", msg);
   }
   else if (!strncmp(cmd, "/nick ", strlen("/nick "))) {
@@ -176,7 +176,7 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd)
       return;
     }
     nick++;
-    setname((uint8_t*) nick, strlen(nick)+1);
+    tox_setname((uint8_t*) nick, strlen(nick)+1);
     wprintw(ctx->history, "Nickname set to: %s\n", nick);
   }
   else if(!strcmp(cmd, "/myid")) {
@@ -258,7 +258,7 @@ ToxWindow new_chat(int friendnum) {
   ret.onNickChange = &chat_onNickChange;
   ret.onStatusChange = &chat_onStatusChange;
 
-  uint8_t nick[MAX_NAME_LENGTH] = {0};
+  uint8_t nick[tox_MAX_NAME_LENGTH] = {0};
   getname(friendnum, (uint8_t*) &nick);
   fix_name(nick);
 

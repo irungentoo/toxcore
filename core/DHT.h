@@ -102,7 +102,7 @@ int DHT_load(uint8_t *data, uint32_t size);
 
 /* returns 0 if we are not connected to the DHT
     returns 1 if we are */
-int DHT_isconnected();
+int tox_DHT_isconnected();
 
 #ifdef __cplusplus
 }
