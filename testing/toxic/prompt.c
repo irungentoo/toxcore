@@ -52,6 +52,17 @@ static void execute(ToxWindow *self, char *u_cmd)
       cmd[i - newlines] = u_cmd[i];
   }
 
+  int leading_spc = 0;
+  for (i = 0; i < 256 && isspace(cmd[i]); ++i)
+    leading_spc++;
+  memmove(cmd, cmd + leading_spc, 256 - leading_spc);
+
+  int cmd_end = strlen(cmd);
+  while (cmd_end > 0 && cmd_end--)
+    if (!isspace(cmd[cmd_end]))
+      break;
+  cmd[cmd_end + 1] = '\0';
+
   if (!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
     exit(0);
