@@ -20,11 +20,10 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
-
-#define DEBUG
-
 #ifndef MISC_TOOLS_H
 #define MISC_TOOLS_H
+
+#define DEBUG
 
 unsigned char * hex_string_to_bin(char hex_string[]);
 
