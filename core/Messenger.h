@@ -41,6 +41,7 @@ extern "C" {
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_USERSTATUS 49
 #define PACKET_ID_MESSAGE 64
+#define PACKET_ID_FRIENDSYNC 66
 
 /* status definitions */
 #define FRIEND_ONLINE 4

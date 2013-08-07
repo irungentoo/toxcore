@@ -157,6 +157,51 @@ int m_addfriend_norequest(uint8_t * client_id)
     return -1;
 }
 
+/* 
+ * send a friend sync message to an online friend
+ * return 1 if packet was successfully put into the send queue
+ * return 0 if it was not
+ */
+int m_send_friendsync(int friendnumber)
+{
+    if (friendnumber < 0 || friendnumber >= numfriends)
+        return 0;
+    if (friendlist[friendnumber].status != FRIEND_ONLINE)
+        /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
+        return 0;
+    uint8_t temp[sizeof(Friend) + 1];
+    temp[0] = PACKET_ID_FRIENDSYNC;
+    memcpy(temp + 1, &friendlist[friendnumber], sizeof(Friend));
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, sizeof(Friend) + 1);
+}
+
+/* 
+ * process a friend sync message
+ * returns the friend number if success
+ * return -1 otherwise
+ */
+int m_process_friendsync(int friendnumber, uint8_t *newfriend)
+{
+    /* commented out until friend linking has been implemented
+     * if (friendlist[friendnumber] != linked_friend)
+     *  return -1;
+     */
+
+    Friend temp;
+    memcpy(&temp, newfriend, sizeof(Friend));
+    if (getfriend_id(temp.client_id) != -1)
+        return -1;
+
+    uint32_t i;
+    for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
+        if(friendlist[i].status == NOFRIEND) {
+            memcpy(&friendlist[i], &temp, sizeof(Friend));
+            return i;
+        }
+    }
+    return -1;
+}
+
 /* remove a friend
    return 0 if success
    return -1 if failure */
@@ -501,6 +546,10 @@ static void doFriends(void)
                 case PACKET_ID_MESSAGE: {
                     if (friend_message_isset)
                         (*friend_message)(i, temp + 1, len - 1);
+                    break;
+                }
+                case PACKET_ID_FRIENDSYNC: {
+                    m_process_friendsync(i, temp + 1);
                     break;
                 }
                 }
