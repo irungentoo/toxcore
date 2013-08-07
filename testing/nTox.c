@@ -148,7 +148,7 @@ void line_eval(char *line)
                 temp_id[i] = line[i+prompt_offset];
 
             unsigned char *bin_string = hex_string_to_bin(temp_id);
-            int num = m_addfriend(bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            int num = tox_m_addfriend(bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             free(bin_string);
             char numstring[100];
             switch (num) {
@@ -196,7 +196,7 @@ void line_eval(char *line)
                 }
             }
             int num = atoi(numstring);
-            if (m_sendmessage(num, (uint8_t*) message, strlen(message) + 1) != 1) {
+            if (tox_m_sendmessage(num, (uint8_t*) message, strlen(message) + 1) != 1) {
                 new_lines("[i] could not send message");
             } else {
                 new_lines(format_message(message, -1));
@@ -228,7 +228,7 @@ void line_eval(char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            m_set_userstatus(USERSTATUS_KIND_ONLINE, status, strlen((char*)status) + 1);
+            tox_m_set_userstatus(USERSTATUS_KIND_ONLINE, status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -240,7 +240,7 @@ void line_eval(char *line)
                 sprintf(numchar,"[i] you either didn't receive that request or you already accepted it");
                 new_lines(numchar);
             } else {
-                int num = m_addfriend_norequest(pending_requests[numf].id);
+                int num = tox_m_addfriend_norequest(pending_requests[numf].id);
                 if (num != -1) {
                     pending_requests[numf].accepted = 1;
                     sprintf(numchar, "[i] friend request %u accepted", numf);
@@ -456,13 +456,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    initMessenger();
+    tox_initMessenger();
     load_key(filename);
 
-    m_callback_friendrequest(print_request);
-    m_callback_friendmessage(print_message);
-    m_callback_namechange(print_nickchange);
-    m_callback_userstatus(print_statuschange);
+    tox_m_callback_friendrequest(print_request);
+    tox_m_callback_friendmessage(print_message);
+    tox_m_callback_namechange(print_nickchange);
+    tox_m_callback_userstatus(print_statuschange);
 
     initscr();
     noecho();

@@ -72,14 +72,14 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
     //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
-        m_addfriend_norequest(public_key);
+        tox_m_addfriend_norequest(public_key);
     }
 }
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
     printf("Message with length %u recieved from %u: %s \n", length, friendnumber, string);
-    m_sendmessage(friendnumber, (uint8_t*)"Test1", 6);
+    tox_m_sendmessage(friendnumber, (uint8_t*)"Test1", 6);
 }
 
 int main(int argc, char *argv[])
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         printf("usage %s ip port public_key (of the DHT bootstrap node)\n or\n %s Save.bak\n", argv[0], argv[0]);
         exit(0);
     }
-    initMessenger();
+    tox_initMessenger();
     if(argc > 3) {
         IP_Port bootstrap_ip_port;
         bootstrap_ip_port.port = htons(atoi(argv[2]));
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
         fclose(file);
         
     }
-    m_callback_friendrequest(print_request);
-    m_callback_friendmessage(print_message);
+    tox_m_callback_friendrequest(print_request);
+    tox_m_callback_friendmessage(print_message);
     
     printf("OUR ID: ");
     uint32_t i;
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     if(scanf("%s", temp_id) != 1) {
         return 1;
     }
-    int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+    int num = tox_m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
     
     perror("Initialization");
 
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
         getname(num, name);
         printf("%s\n", name);
         
-        m_sendmessage(num, (uint8_t*)"Test", 5);
+        tox_m_sendmessage(num, (uint8_t*)"Test", 5);
         doMessenger();
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");

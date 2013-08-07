@@ -547,7 +547,7 @@ static void receive_crypto(void)
 
 /* run this to (re)initialize net_crypto
    sets all the global connection variables to their default values. */
-void initNetCrypto(void)
+void tox_initNetCrypto(void)
 {
     memset(crypto_connections, 0 ,sizeof(crypto_connections));
     memset(incoming_connections, -1 ,sizeof(incoming_connections));

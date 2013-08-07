@@ -133,7 +133,7 @@ void add_friend()
     for (i = 0; i < 128; i++)
         temp_id[i] = line[i+3];
     
-    int num = m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+    int num = tox_m_addfriend(hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
    
     if (num >= 0) {
         char numstring[100];
@@ -168,7 +168,7 @@ void list_friends()
     for (i = 0; i <= maxnumfriends; i++) {
         char name[MAX_NAME_LENGTH];
         getname(i, (uint8_t*)name);
-        if (m_friendstatus(i) > 0 && m_friendstatus(i) < 4)
+        if (tox_m_friendstatus(i) > 0 && m_friendstatus(i) < 4)
             printf("[%d] %s\n", i, (uint8_t*)name);
     }
     
@@ -199,7 +199,7 @@ void delete_friend()
     }
     
     int num = atoi(numstring);
-    m_delfriend(num);
+    tox_m_delfriend(num);
     --maxnumfriends;
     printf("\n\n");
 }
@@ -275,7 +275,7 @@ void change_status(int savetofile)
     }
 
     status[i-3] = 0;
-    m_set_userstatus(status, strlen((char*)status));
+    tox_m_set_userstatus(status, strlen((char*)status));
     char numstring[100];
     sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
     printf(numstring);
@@ -297,7 +297,7 @@ void accept_friend_request()
         sprintf(numchar, "\n[i] you either didn't receive that request or you already accepted it");
         printf(numchar);
     } else {
-        int num = m_addfriend_norequest(pending_requests[numf].id);
+        int num = tox_m_addfriend_norequest(pending_requests[numf].id);
         if (num != -1) {
             pending_requests[numf].accepted = 1;
             sprintf(numchar, "\n[i] Added friendnumber: %d\n\n", num);
@@ -373,7 +373,7 @@ int main(int argc, char *argv[])
         printf("[!] Usage: %s [IP] [port] [public_key] <nokey>\n", argv[0]);
         exit(0);
     }
-    if (initMessenger() == -1) {
+    if (tox_initMessenger() == -1) {
         printf("initMessenger failed");
         exit(0);
     }
@@ -407,15 +407,15 @@ int main(int argc, char *argv[])
         while (fgets(line, MAX_USERSTATUS_LENGTH, status_file) != NULL) {
             sscanf(line, "%s", (char*)status);
         }
-        m_set_userstatus(status, strlen((char*)status)+1);
+        tox_m_set_userstatus(status, strlen((char*)status)+1);
         statusloaded = 1;
         printf("%s\n", status);
         fclose(status_file);
     }
 
-    m_callback_friendrequest(print_request);
-    m_callback_friendmessage(print_message);
-    m_callback_namechange(print_nickchange);
+    tox_m_callback_friendrequest(print_request);
+    tox_m_callback_friendmessage(print_message);
+    tox_m_callback_namechange(print_nickchange);
     m_callback_userstatus(print_statuschange);
     char idstring1[PUB_KEY_BYTES][5];
     char idstring2[PUB_KEY_BYTES][5];

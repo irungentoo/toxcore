@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <curses.h>
 
+#include "../misc_tools.h"
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
 
@@ -24,18 +25,6 @@ int add_req(uint8_t* public_key) {
   ++num_requests;
 
   return num_requests-1;
-}
-
-// XXX: FIX
-unsigned char * hex_string_to_bin(char hex_string[])
-{
-    size_t len = strlen(hex_string);
-    unsigned char *val = malloc(len);
-    char *pos = hex_string;
-    int i;
-    for(i = 0; i < len; ++i, pos+=2)
-        sscanf(pos,"%2hhx",&val[i]);
-    return val;
 }
 
 static char prompt_buf[256] = {0};
@@ -145,7 +134,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
       id_bin[i] = x;
     }
 
-    num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
+    num = tox_m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
     switch (num) {
     case -1:
       wprintw(self->window, "Message is too long.\n");
@@ -185,7 +174,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     }
     msg++;
 
-    m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
+    tox_m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s\n", msg);
   }
   else if(!strncmp(cmd, "nick ", strlen("nick "))) {
@@ -230,7 +219,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
       return;
     }
 
-    num = m_addfriend_norequest(pending_requests[num]);
+    num = tox_m_addfriend_norequest(pending_requests[num]);
 
     if(num == -1) {
       wprintw(self->window, "Failed to add friend.\n");
@@ -260,7 +249,7 @@ static void execute(ToxWindow* self, char* u_cmd) {
     msg[0] = 0;
     msg++;
 
-    if(m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0) {
+    if(tox_m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) < 0) {
       wprintw(self->window, "Error occurred while sending message.\n");
     }
     else {

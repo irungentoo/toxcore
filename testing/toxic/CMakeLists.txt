@@ -7,7 +7,8 @@ add_executable(${exe_name}
 	main.c
 	prompt.c
 	friendlist.c
-	chat.c)
+	chat.c
+  ../misc_tools.c)
 
 target_link_libraries(${exe_name}
 	curses)

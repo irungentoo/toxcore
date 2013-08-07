@@ -102,7 +102,7 @@ int getclient_id(int friend_id, uint8_t *client_id)
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
  * return FAERR_UNKNOWN for unknown error
  */
-int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
+int tox_m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
 {
     if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES
                          - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
@@ -136,7 +136,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
     return FAERR_UNKNOWN;
 }
 
-int m_addfriend_norequest(uint8_t * client_id)
+int tox_m_addfriend_norequest(uint8_t * client_id)
 {
     if (getfriend_id(client_id) != -1)
         return -1;
@@ -160,7 +160,7 @@ int m_addfriend_norequest(uint8_t * client_id)
 /* remove a friend
    return 0 if success
    return -1 if failure */
-int m_delfriend(int friendnumber)
+int tox_m_delfriend(int friendnumber)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
@@ -185,7 +185,7 @@ int m_delfriend(int friendnumber)
    return FRIEND_REQUESTED if the friend request was sent
    return FRIEND_ADDED if the friend was added
    return NOFRIEND if there is no friend with that number */
-int m_friendstatus(int friendnumber)
+int tox_m_friendstatus(int friendnumber)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
         return NOFRIEND;
@@ -195,7 +195,7 @@ int m_friendstatus(int friendnumber)
 /* send a text chat message to an online friend
    return 1 if packet was successfully put into the send queue
    return 0 if it was not */
-int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
+int tox_m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
@@ -210,7 +210,7 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 
 /* send a name packet to friendnumber
    length is the length with the NULL terminator*/
-static int m_sendname(int friendnumber, uint8_t * name, uint16_t length)
+static int tox_m_sendname(int friendnumber, uint8_t * name, uint16_t length)
 {
     if(length > MAX_NAME_LENGTH || length == 0)
         return 0;
@@ -272,7 +272,7 @@ int getname(int friendnumber, uint8_t * name)
     return 0;
 }
 
-int m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
+int tox_m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
 {
     if (length > MAX_USERSTATUS_LENGTH)
         return -1;
@@ -291,7 +291,7 @@ int m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length)
     return 0;
 }
 
-int m_set_userstatus_kind(USERSTATUS_KIND kind) {
+int tox_m_set_userstatus_kind(USERSTATUS_KIND kind) {
     if (kind >= USERSTATUS_KIND_INVALID) {
         return -1;
     }
@@ -307,7 +307,7 @@ int m_set_userstatus_kind(USERSTATUS_KIND kind) {
 
 /*  return the size of friendnumber's user status
     guaranteed to be at most MAX_USERSTATUS_LENGTH */
-int m_get_userstatus_size(int friendnumber)
+int tox_m_get_userstatus_size(int friendnumber)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
@@ -315,8 +315,8 @@ int m_get_userstatus_size(int friendnumber)
 }
 
 /*  copy the user status of friendnumber into buf, truncating if needed to maxlen
-    bytes, use m_get_userstatus_size to find out how much you need to allocate */
-int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
+    bytes, use tox_m_get_userstatus_size to find out how much you need to allocate */
+int tox_tox_m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
 {
     if (friendnumber >= numfriends || friendnumber < 0)
         return -1;
@@ -325,14 +325,14 @@ int m_copy_userstatus(int friendnumber, uint8_t * buf, uint32_t maxlen)
     return 0;
 }
 
-int m_copy_self_userstatus(uint8_t * buf, uint32_t maxlen)
+int tox_m_copy_self_userstatus(uint8_t * buf, uint32_t maxlen)
 {
     memset(buf, 0, maxlen);
     memcpy(buf, self_userstatus, MIN(maxlen, MAX_USERSTATUS_LENGTH) - 1);
     return 0;
 }
 
-USERSTATUS_KIND m_get_userstatus_kind(int friendnumber) {
+USERSTATUS_KIND tox_m_get_userstatus_kind(int friendnumber) {
     if (friendnumber >= numfriends || friendnumber < 0)
         return USERSTATUS_KIND_INVALID;
     USERSTATUS_KIND uk = friendlist[friendnumber].userstatus_kind;
@@ -342,7 +342,7 @@ USERSTATUS_KIND m_get_userstatus_kind(int friendnumber) {
     return uk;
 }
 
-USERSTATUS_KIND m_get_self_userstatus_kind(void) {
+USERSTATUS_KIND tox_m_get_self_userstatus_kind(void) {
     return self_userstatus_kind;
 }
 
@@ -377,7 +377,7 @@ static void set_friend_userstatus_kind(int friendnumber, USERSTATUS_KIND k)
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t friend_request_isset = 0; */
 /* set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
+void tox_m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 {
     callback_friendrequest(function);
 }
@@ -386,7 +386,7 @@ static void (*friend_message)(int, uint8_t *, uint16_t);
 static uint8_t friend_message_isset = 0;
 
 /* set the function that will be executed when a message from a friend is received. */
-void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
+void tox_m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
 {
     friend_message = function;
     friend_message_isset = 1;
@@ -394,7 +394,7 @@ void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
 
 static void (*friend_namechange)(int, uint8_t *, uint16_t);
 static uint8_t friend_namechange_isset = 0;
-void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
+void tox_m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
 {
     friend_namechange = function;
     friend_namechange_isset = 1;
@@ -402,7 +402,7 @@ void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
 
 static void (*friend_statuschange)(int, USERSTATUS_KIND, uint8_t *, uint16_t);
 static uint8_t friend_statuschange_isset = 0;
-void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t))
+void tox_m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t))
 {
     friend_statuschange = function;
     friend_statuschange_isset = 1;
@@ -410,11 +410,11 @@ void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uin
 
 #define PORT 33445
 /* run this at startup */
-int initMessenger(void)
+int tox_initMessenger(void)
 {
     new_keys();
-    m_set_userstatus(USERSTATUS_KIND_ONLINE, (uint8_t*)"Online", sizeof("Online"));
-    initNetCrypto();
+    tox_m_set_userstatus(USERSTATUS_KIND_ONLINE, (uint8_t*)"Online", sizeof("Online"));
+    tox_initNetCrypto();
     IP ip;
     ip.i = 0;
 
@@ -465,7 +465,7 @@ static void doFriends(void)
         }
         while (friendlist[i].status == FRIEND_ONLINE) { /* friend is online */
             if (friendlist[i].name_sent == 0) {
-                if (m_sendname(i, self_name, self_name_length))
+                if (tox_m_sendname(i, self_name, self_name_length))
                     friendlist[i].name_sent = 1;
             }
             if (friendlist[i].userstatus_sent == 0) {
@@ -639,7 +639,7 @@ int Messenger_load(uint8_t * data, uint32_t length)
     uint32_t i;
     for (i = 0; i < num; ++i) {
         if(temp[i].status != 0) {
-            int fnum = m_addfriend_norequest(temp[i].client_id);
+            int fnum = tox_m_addfriend_norequest(temp[i].client_id);
             setfriendname(fnum, temp[i].name);
             /* set_friend_userstatus(fnum, temp[i].userstatus, temp[i].userstatus_length); */
         }

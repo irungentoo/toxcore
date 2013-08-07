@@ -127,7 +127,7 @@ static void chat_onKey(ToxWindow* self, int key) {
         wattroff(ctx->history, COLOR_PAIR(1));
         wprintw(ctx->history, "%s\n", ctx->line);
       }
-      if(m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
+      if(tox_m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
         wattron(ctx->history, COLOR_PAIR(3));
         wprintw(ctx->history, " * Failed to send message.\n");
         wattroff(ctx->history, COLOR_PAIR(3));
@@ -165,7 +165,7 @@ void execute(ToxWindow* self, ChatContext* ctx, char* cmd)
       return;
     }
     msg++;
-    m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
+    tox_m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
     wprintw(ctx->history, "Status set to: %s\n", msg);
   }
   else if (!strncmp(cmd, "/nick ", strlen("/nick "))) {

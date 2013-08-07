@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip.i = 0;
     init_networking(ip, PORT);
-    initNetCrypto();
+    tox_initNetCrypto();
     
     perror("Initialization");
     IP_Port bootstrap_ip_port;

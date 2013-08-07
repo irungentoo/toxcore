@@ -49,7 +49,7 @@ extern "C" {
 #define FRIEND_ADDED 1
 #define NOFRIEND 0
 
-/* errors for m_addfriend
+/* errors for tox_m_addfriend
  *  FAERR - Friend Add Error */
 #define FAERR_TOOLONG -1
 #define FAERR_NOMESSAGE -2
@@ -67,7 +67,7 @@ extern "C" {
 
 typedef enum {
     USERSTATUS_KIND_RETAIN = (uint8_t)0, /* This is a special value that must not be returned by
-                             * m_get_userstatus_kind. You can pass it into m_set_userstatus
+                             * tox_m_get_userstatus_kind. You can pass it into tox_m_set_userstatus
                              * to keep the current USERSTATUS_KIND. */
     USERSTATUS_KIND_ONLINE, /* Recommended representation: Green. */
     USERSTATUS_KIND_AWAY, /* Recommended representation: Orange, or yellow. */
@@ -88,38 +88,38 @@ typedef enum {
  * return -4 if friend request already sent or already a friend
  * return -5 for unknown error
  */
-int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
+int tox_m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
 
 
 /* add a friend without sending a friendrequest.
     returns the friend number if success
     return -1 if failure. */
-int m_addfriend_norequest(uint8_t *client_id);
+int tox_m_addfriend_norequest(uint8_t *client_id);
 
 /* return the friend id associated to that client id.
     return -1 if no such friend */
-int getfriend_id(uint8_t *client_id);
+int tox_getfriend_id(uint8_t *client_id);
 
 /* copies the public key associated to that friend id into client_id buffer.
     make sure that client_id is of size CLIENT_ID_SIZE.
     return 0 if success
     return -1 if failure */
-int getclient_id(int friend_id, uint8_t *client_id);
+int tox_getclient_id(int friend_id, uint8_t *client_id);
 
 /* remove a friend */
-int m_delfriend(int friendnumber);
+int tox_m_delfriend(int friendnumber);
 
 /* return 4 if friend is online
     return 3 if friend is confirmed
     return 2 if the friend request was sent
     return 1 if the friend was added
     return 0 if there is no friend with that number */
-int m_friendstatus(int friendnumber);
+int tox_m_friendstatus(int friendnumber);
 
 /* send a text chat message to an online friend
     returns 1 if packet was successfully put into the send queue
     return 0 if it was not */
-int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
+int tox_m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
@@ -144,49 +144,49 @@ int getname(int friendnumber, uint8_t *name);
 /* set our user status
     you are responsible for freeing status after
     returns 0 on success, -1 on failure */
-int m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length);
-int m_set_userstatus_kind(USERSTATUS_KIND kind);
+int tox_m_set_userstatus(USERSTATUS_KIND kind, uint8_t *status, uint16_t length);
+int tox_m_set_userstatus_kind(USERSTATUS_KIND kind);
 
 /* return the length of friendnumber's user status,
     including null
     pass it into malloc */
-int m_get_userstatus_size(int friendnumber);
+int tox_m_get_userstatus_size(int friendnumber);
 
 /* copy friendnumber's userstatus into buf, truncating if size is over maxlen
-    get the size you need to allocate from m_get_userstatus_size
+    get the size you need to allocate from tox_m_get_userstatus_size
     The self variant will copy our own userstatus. */
-int m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
-int m_copy_self_userstatus(uint8_t *buf, uint32_t maxlen);
+int tox_m_copy_userstatus(int friendnumber, uint8_t *buf, uint32_t maxlen);
+int tox_m_copy_self_userstatus(uint8_t *buf, uint32_t maxlen);
 
 /* Return one of USERSTATUS_KIND values, except USERSTATUS_KIND_RETAIN.
  * Values unknown to your application should be represented as USERSTATUS_KIND_ONLINE.
  * As above, the self variant will return our own USERSTATUS_KIND.
  * If friendnumber is invalid, this shall return USERSTATUS_KIND_INVALID. */
-USERSTATUS_KIND m_get_userstatus_kind(int friendnumber);
-USERSTATUS_KIND m_get_self_userstatus_kind(void);
+USERSTATUS_KIND tox_m_get_userstatus_kind(int friendnumber);
+USERSTATUS_KIND tox_m_get_self_userstatus_kind(void);
 
 /* set the function that will be executed when a friend request is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
-void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
+void tox_m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 
 /* set the function that will be executed when a message from a friend is received.
     function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
-void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
+void tox_m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
 
 /* set the callback for name changes
     function(int friendnumber, uint8_t *newname, uint16_t length)
     you are not responsible for freeing newname */
-void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
+void tox_m_callback_namechange(void (*function)(int, uint8_t *, uint16_t));
 
 /* set the callback for user status changes
     function(int friendnumber, USERSTATUS_KIND kind, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
-void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t));
+void tox_m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uint16_t));
 
 /* run this at startup
     returns 0 if no connection problems
     returns -1 if there are problems */
-int initMessenger(void);
+int tox_initMessenger(void);
 
 /* the main loop that needs to be run at least 200 times per second */
 void doMessenger(void);

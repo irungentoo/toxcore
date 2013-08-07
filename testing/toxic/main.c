@@ -105,13 +105,13 @@ static void init_term() {
 
 static void init_tox() {
   // Init core.
-  initMessenger();
+  tox_initMessenger();
 
   // Callbacks.
-  m_callback_friendrequest(on_request);
-  m_callback_friendmessage(on_message);
-  m_callback_namechange(on_nickchange);
-  m_callback_userstatus(on_statuschange);
+  tox_m_callback_friendrequest(on_request);
+  tox_m_callback_friendmessage(on_message);
+  tox_m_callback_namechange(on_nickchange);
+  tox_m_callback_userstatus(on_statuschange);
 }
 
 void init_window_status() {
