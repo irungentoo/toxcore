@@ -68,7 +68,7 @@ void on_nickchange(int friendnumber, uint8_t *string, uint16_t length)
   }
 }
 
-void on_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
+void on_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
   wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
   int i;
@@ -112,7 +112,7 @@ static void init_tox()
   m_callback_friendrequest(on_request);
   m_callback_friendmessage(on_message);
   m_callback_namechange(on_nickchange);
-  m_callback_userstatus(on_statuschange);
+  m_callback_statusmessage(on_statuschange);
 }
 
 void init_window_status()

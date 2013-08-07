@@ -183,25 +183,20 @@ static void execute(ToxWindow *self, char *u_cmd)
       return;
     }
     status++;
-    USERSTATUS_KIND status_kind;
+    USERSTATUS status_kind;
     if (!strncmp(status, "online", strlen("online"))) {
-      status_kind = USERSTATUS_KIND_ONLINE;
+      status_kind = USERSTATUS_NONE;
       status_text = "ONLINE";
     }
 
     else if (!strncmp(status, "away", strlen("away"))) {
-      status_kind = USERSTATUS_KIND_AWAY;
+      status_kind = USERSTATUS_AWAY;
       status_text = "AWAY";
     }
 
     else if (!strncmp(status, "busy", strlen("busy"))) {
-      status_kind = USERSTATUS_KIND_BUSY;
+      status_kind = USERSTATUS_BUSY;
       status_text = "BUSY";
-    }
-
-    else if (!strncmp(status, "offline", strlen("offline"))) {
-      status_kind = USERSTATUS_KIND_OFFLINE;
-      status_text = "OFFLINE";
     }
 
     else
@@ -212,12 +207,13 @@ static void execute(ToxWindow *self, char *u_cmd)
 
     msg = strchr(status, ' ');
     if (msg == NULL) {
-      m_set_userstatus_kind(status_kind);
+      m_set_userstatus(status_kind);
       wprintw(self->window, "Status set to: %s\n", status_text);
     }
     else {
       msg++;
-      m_set_userstatus(status_kind, (uint8_t*) msg, strlen(msg)+1);
+      m_set_userstatus(status_kind);
+      m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
       wprintw(self->window, "Status set to: %s, %s\n", status_text, msg);
     }
   }
@@ -229,7 +225,7 @@ static void execute(ToxWindow *self, char *u_cmd)
       return;
     }
     msg++;
-    m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
+    m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s\n", msg);
   }
 

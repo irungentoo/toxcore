@@ -162,7 +162,7 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
       return;
     }
     msg++;
-    m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
+    m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
     wprintw(ctx->history, "Status set to: %s\n", msg);
   }
 
