@@ -30,17 +30,7 @@
 
 #include "../core/network.h"
 #include "../core/Lossless_UDP.h"
-
-#ifdef WIN32
-
-#define c_sleep(x) Sleep(1*x)
-
-#else
-#include <unistd.h>
-#include <arpa/inet.h>
-#define c_sleep(x) usleep(1000*x)
-
-#endif
+#include "misc_tools.h"
 
 #define PORT 33446
 

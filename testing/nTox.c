@@ -24,14 +24,6 @@
 #include "misc_tools.h"
 
 #include <stdio.h>
-#include <time.h>
-
-#ifdef WIN32
-#define c_sleep(x) Sleep(1*x)
-#else
-#include <unistd.h>
-#define c_sleep(x) usleep(1000*x)
-#endif
 
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];

@@ -25,10 +25,22 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
+
 
 #define DEBUG
 
 unsigned char *tox_hex_string_to_bin(char hex_string[]);
+
+#ifdef WIN32
+#include <windows.h>
+//Sleep function (x = milliseconds)
+#define c_sleep(x) Sleep(1*x)
+#else
+#include <unistd.h>
+#include <arpa/inet.h>
+#define c_sleep(x) usleep(1000*x)
+#endif
 
 /* See http://wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging for usage info. */
 #ifdef DEBUG

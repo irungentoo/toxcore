@@ -37,20 +37,9 @@
 #include "../core/network.h"
 #include "../core/DHT.h"
 #include "../core/Lossless_UDP.h"
+#include "misc_tools.h"
 
 #include <string.h>
-
-//Sleep function (x = milliseconds)
-#ifdef WIN32
-
-#define c_sleep(x) Sleep(1*x)
-
-#else
-#include <unistd.h>
-#include <arpa/inet.h>
-#define c_sleep(x) usleep(1000*x)
-
-#endif
 
 #define PORT 33445
 

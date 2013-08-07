@@ -40,17 +40,6 @@
 #include "../core/Messenger.h"
 #include "misc_tools.h"
 
-#ifdef WIN32
-
-#define c_sleep(x) Sleep(1*x)
-
-#else
-#include <unistd.h>
-#include <arpa/inet.h>
-#define c_sleep(x) usleep(1000*x)
-
-#endif
-
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {
     printf("Friend request recieved from: \n");

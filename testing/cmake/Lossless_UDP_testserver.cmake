@@ -4,6 +4,7 @@ project(Lossless_UDP_testserver C)
 set(exe_name Lossless_UDP_testserver)
 
 add_executable(${exe_name}
-	Lossless_UDP_testserver.c)
+	Lossless_UDP_testserver.c
+  misc_tools.c)
 
 linkCoreLibraries(${exe_name})

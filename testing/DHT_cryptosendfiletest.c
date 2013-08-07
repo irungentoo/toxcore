@@ -42,18 +42,6 @@
 
 #include <string.h>
 
-/* Sleep function (x = milliseconds) */
-#ifdef WIN32
-
-#define c_sleep(x) Sleep(1*x)
-
-#else
-#include <unistd.h>
-#include <arpa/inet.h>
-#define c_sleep(x) usleep(1000*x)
-
-#endif
-
 #define PORT 33445
 
 void printip(tox_IP_Port ip_port)
