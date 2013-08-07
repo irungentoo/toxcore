@@ -57,7 +57,6 @@ static void chat_onMessage(ToxWindow *self, int num, uint8_t *msg, uint16_t len)
 
   self->blink = true;
   beep();
-  flash();
 }
 
 static void chat_onNickChange(ToxWindow *self, int num, uint8_t *nick, uint16_t len)
