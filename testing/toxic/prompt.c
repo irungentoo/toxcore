@@ -175,6 +175,54 @@ static void execute(ToxWindow *self, char *u_cmd)
   }
 
   else if (!strncmp(cmd, "status ", strlen("status "))) {
+    char *status = strchr(cmd, ' ');
+    char *msg;
+    char *status_text;
+    if (status == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
+      return;
+    }
+    status++;
+    USERSTATUS_KIND status_kind;
+    if (!strncmp(status, "online", strlen("online"))) {
+      status_kind = USERSTATUS_KIND_ONLINE;
+      status_text = "ONLINE";
+    }
+
+    else if (!strncmp(status, "away", strlen("away"))) {
+      status_kind = USERSTATUS_KIND_AWAY;
+      status_text = "AWAY";
+    }
+
+    else if (!strncmp(status, "busy", strlen("busy"))) {
+      status_kind = USERSTATUS_KIND_BUSY;
+      status_text = "BUSY";
+    }
+
+    else if (!strncmp(status, "offline", strlen("offline"))) {
+      status_kind = USERSTATUS_KIND_OFFLINE;
+      status_text = "OFFLINE";
+    }
+
+    else
+    {
+      wprintw(self->window, "Invalid status.\n");
+      return;
+    }
+
+    msg = strchr(status, ' ');
+    if (msg == NULL) {
+      m_set_userstatus_kind(status_kind);
+      wprintw(self->window, "Status set to: %s\n", status_text);
+    }
+    else {
+      msg++;
+      m_set_userstatus(status_kind, (uint8_t*) msg, strlen(msg)+1);
+      wprintw(self->window, "Status set to: %s, %s\n", status_text, msg);
+    }
+  }
+
+  else if (!strncmp(cmd, "statusmsg ", strlen("statumsg "))) {
     char *msg = strchr(cmd, ' ');
     if (msg == NULL) {
       wprintw(self->window, "Invalid syntax.\n");
@@ -317,7 +365,8 @@ static void print_usage(ToxWindow *self)
 
   wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
   wprintw(self->window, "      add <id> <message>        : Add friend\n");
-  wprintw(self->window, "      status <message>          : Set your status\n");
+  wprintw(self->window, "      status <type> <message>   : Set your status\n");
+  wprintw(self->window, "      statusmsg  <message>      : Set your status\n");
   wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
   wprintw(self->window, "      myid                      : Print your ID\n");
