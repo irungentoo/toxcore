@@ -205,7 +205,10 @@ uint32_t m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
-    return m_sendmessage_withid(friendnumber, friendlist[friendnumber].message_id++, message, length);
+    uint32_t msgid = ++friendlist[friendnumber].message_id;
+    if (msgid == 0)
+        msgid = 1; /* otherwise, false error */
+    return m_sendmessage_withid(friendnumber, msgid, message, length);
 }
 
 uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
@@ -389,6 +392,16 @@ static int set_friend_userstatus(int friendnumber, uint8_t * status, uint16_t le
 static void set_friend_userstatus_kind(int friendnumber, USERSTATUS_KIND k)
 {
     friendlist[friendnumber].userstatus_kind = k;
+}
+
+/* Sets whether we send read receipts for friendnumber. */
+void m_set_sends_receipts(int friendnumber, int yesno)
+{
+    if (yesno < 0 || yesno > 1)
+        return;
+    if (friendnumber >= numfriends || friendnumber < 0)
+        return;
+    friendlist[friendnumber].receives_read_receipts = yesno;
 }
 
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
