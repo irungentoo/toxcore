@@ -12,12 +12,12 @@
 
 #include "windows.h"
 
-uint8_t pending_requests[256][CLIENT_ID_SIZE]; // XXX
+uint8_t pending_requests[MAX_STR_SIZE][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
 extern void on_friendadded(int friendnumber);
 static void print_usage(ToxWindow *self);
-static char prompt_buf[256] = {0};
+static char prompt_buf[MAX_STR_SIZE] = {0};
 static int prompt_buf_pos = 0;
 
 // XXX:
@@ -43,25 +43,26 @@ unsigned char *hex_string_to_bin(char hex_string[])
 static void execute(ToxWindow *self, char *u_cmd)
 {
   int newlines = 0;
-  char cmd[256] = {0};
+  char cmd[MAX_STR_SIZE] = {0};
   int i;
   for (i = 0; i < strlen(prompt_buf); ++i) {
     if (u_cmd[i] == '\n')
       ++newlines;
     else
-      cmd[i - newlines] = u_cmd[i];
+      cmd[i-newlines] = u_cmd[i];
   }
-
+  /* Remove trailing white space from command */
   int leading_spc = 0;
-  for (i = 0; i < 256 && isspace(cmd[i]); ++i)
+  for (i = 0; i < MAX_STR_SIZE && isspace(cmd[i]); ++i)
     leading_spc++;
-  memmove(cmd, cmd + leading_spc, 256 - leading_spc);
+  memmove(cmd, cmd+leading_spc, MAX_STR_SIZE-leading_spc);
 
   int cmd_end = strlen(cmd);
-  while (cmd_end > 0 && cmd_end--)
+  while (cmd_end--) {
     if (!isspace(cmd[cmd_end]))
       break;
-  cmd[cmd_end + 1] = '\0';
+  }
+  cmd[cmd_end+1] = '\0';
 
   if (!strcmp(cmd, "quit") || !strcmp(cmd, "exit") || !strcmp(cmd, "q")) {
     endwin();
@@ -204,8 +205,7 @@ static void execute(ToxWindow *self, char *u_cmd)
       status_text = "OFFLINE";
     }
 
-    else
-    {
+    else {
       wprintw(self->window, "Invalid status.\n");
       return;
     }
@@ -230,7 +230,7 @@ static void execute(ToxWindow *self, char *u_cmd)
     }
     msg++;
     m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
-    wprintw(self->window, "Status set to: %s\n", msg);
+    wprintw(self->window, "Status message set to: %s\n", msg);
   }
 
   else if (!strncmp(cmd, "nick ", strlen("nick "))) {
@@ -366,7 +366,7 @@ static void print_usage(ToxWindow *self)
   wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
   wprintw(self->window, "      add <id> <message>        : Add friend\n");
   wprintw(self->window, "      status <type> <message>   : Set your status\n");
-  wprintw(self->window, "      statusmsg  <message>      : Set your status\n");
+  wprintw(self->window, "      statusmsg  <message>      : Set your status message\n");
   wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
   wprintw(self->window, "      myid                      : Print your ID\n");
