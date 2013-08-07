@@ -598,11 +598,14 @@ static int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
         return 1;
 
     uint32_t num_nodes = (length - cid_size) / sizeof(Node_format);
+    if (num_nodes > MAX_SENT_NODES)
+        return 1;
+
     uint8_t plain[sizeof(ping_id) + sizeof(Node_format) * MAX_SENT_NODES];
 
-    int len = decrypt_data( 
-            packet + 1, 
-            self_secret_key, 
+    int len = decrypt_data(
+            packet + 1,
+            self_secret_key,
             packet + 1 + CLIENT_ID_SIZE,
             packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
             sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING, plain );
