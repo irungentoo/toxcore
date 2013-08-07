@@ -51,6 +51,7 @@ unsigned char * hex_string_to_bin(char hex_string[]);
         DEBUG_PRINT(__VA_ARGS__, ' '); \
     } while (0)
 
+	#undef ERROR
     #define ERROR(exit_status, ...) do { \
         fprintf(stderr, "error in "); \
         DEBUG_PRINT(__VA_ARGS__, ' '); \
@@ -58,6 +59,7 @@ unsigned char * hex_string_to_bin(char hex_string[]);
     } while (0)
 #else
     #define WARNING(...)
+    #undef ERROR
     #define ERROR(...)
 #endif // DEBUG
 
