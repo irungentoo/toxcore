@@ -139,6 +139,7 @@ int main(int argc, char *argv[])
         uint8_t * buffer = malloc(Messenger_size());
         Messenger_save(buffer);
         size_t write_result = fwrite(buffer, 1, Messenger_size(), file);
+        if (write_result < Messenger_size()) {return 1;}
         free(buffer);
         fclose(file);
     }  
