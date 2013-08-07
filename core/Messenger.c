@@ -162,17 +162,19 @@ int m_addfriend_norequest(uint8_t * client_id)
  * return 1 if packet was successfully put into the send queue
  * return 0 if it was not
  */
-int m_send_friendsync(int friendnumber)
+int m_send_friendsync(int friendnumber, int recipient)
 {
     if (friendnumber < 0 || friendnumber >= numfriends)
         return 0;
-    if (friendlist[friendnumber].status != FRIEND_ONLINE)
-        /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
+    if (recipient < 0 || recipient >= numfriends)
         return 0;
+    if (friendlist[recipient].status != FRIEND_ONLINE)
+        return 0;
+
     uint8_t temp[sizeof(Friend) + 1];
     temp[0] = PACKET_ID_FRIENDSYNC;
     memcpy(temp + 1, &friendlist[friendnumber], sizeof(Friend));
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, sizeof(Friend) + 1);
+    return write_cryptpacket(friendlist[recipient].crypt_connection_id, temp, sizeof(Friend) + 1);
 }
 
 /* 
