@@ -116,7 +116,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
         return FAERR_ALREADYSENT;
 
     uint32_t i;
-    for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
+    for (i = 0; i < numfriends && i < MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
         if(friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
             friendlist[i].status = FRIEND_ADDED;
@@ -141,7 +141,7 @@ int m_addfriend_norequest(uint8_t * client_id)
     if (getfriend_id(client_id) != -1)
         return -1;
     uint32_t i;
-    for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
+    for (i = 0; i < numfriends && i < MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
         if(friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
             friendlist[i].status = FRIEND_REQUESTED;
@@ -352,7 +352,7 @@ static int send_userstatus(int friendnumber, uint8_t * status, uint16_t length)
     memcpy(thepacket + 2, status, length);
     thepacket[0] = PACKET_ID_USERSTATUS;
     thepacket[1] = self_userstatus_kind;
-    int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
+    int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 2);
     free(thepacket);
     return written;
 }

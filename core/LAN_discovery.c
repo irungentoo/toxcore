@@ -70,6 +70,10 @@ static uint32_t get_broadcast(void)
         }
     }
     close(sock);
+    if(sock_holder == NULL) {
+        perror("[!] no broadcast device found");
+        return 0;
+    }
 
     return sock_holder->sin_addr.s_addr;
 }
