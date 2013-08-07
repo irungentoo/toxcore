@@ -25,7 +25,7 @@
 
 #define DEBUG
 
-unsigned char * hex_string_to_bin(char hex_string[]);
+unsigned char *hex_string_to_bin(char hex_string[]);
 
 /* See http://wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging for usage info. */
 #ifdef DEBUG
@@ -65,11 +65,11 @@ unsigned char * hex_string_to_bin(char hex_string[]);
 
 /* LIFO */
 #define TOX_LIST_FOR_EACH_REVERSE(lst, tmp_name) \
-   for (struct tox_list* tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
+   for (struct tox_list *tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
 
 /* LILO */
 #define TOX_LIST_FOR_EACH(lst, tmp_name) \
-   for (struct tox_list* tmp_name = lst.prev; tmp_name != &lst; tmp_name = tmp_name->prev)
+   for (struct tox_list *tmp_name = lst.prev; tmp_name != &lst; tmp_name = tmp_name->prev)
 
 #define TOX_LIST_GET_VALUE(tmp_name, name_in_parent, parent_type) GET_PARENT(tmp_name, name_in_parent, parent_type)
 
@@ -79,15 +79,14 @@ struct tox_list
 };
 
 /* only call this for the head */
-static inline void tox_list_init(struct tox_list * head)
+static inline void tox_list_init(struct tox_list *head)
 {
     head->prev = head->next = head;
 }
       
 /* Inserts a new tox_lst after lst and returns it. */
-static inline void tox_list_add(struct tox_list * lst, struct tox_list * new_lst)
+static inline void tox_list_add(struct tox_list *lst, struct tox_list *new_lst)
 {
-    /* tox_list_new(new_lst); */
     new_lst->next = lst->next;
     new_lst->next->prev = new_lst;
 
@@ -95,7 +94,7 @@ static inline void tox_list_add(struct tox_list * lst, struct tox_list * new_lst
     new_lst->prev = lst;
 }
 
-static inline void tox_list_remove(struct tox_list * lst) {
+static inline void tox_list_remove(struct tox_list *lst) {
     lst->prev->next = lst->next;
     lst->next->prev = lst->prev;
 }
