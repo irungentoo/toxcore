@@ -11,6 +11,7 @@
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
 
+#include "configdir.h"
 #include "windows.h"
 
 extern ToxWindow new_prompt();
@@ -331,7 +332,24 @@ int main(int argc, char *argv[])
 {
   int ch;
   int f_flag = 0;
-  char *filename = "data";
+  char *configdir = get_user_config_dir();
+  char *default_file = "data";
+  int mkdir_err
+  #ifdef _win32
+  mkdir_err = _mkdir(configdir);
+  #else
+  mkdir_err = mkdir(configdir, 0700);
+  #endif
+
+  char *filename;
+  if(mkdir_err == -1) {
+    filename = default_file;
+  } else {
+    filename = malloc(strlen(configdir) + strlen(default_file) + 1);
+    strcpy(filename, configdir);
+    strcat(filename, default_file);
+  }
+  
   ToxWindow* a;
 
   int i = 0;
