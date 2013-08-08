@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
-    m_callback_statusmessae(print_statuschange);
+    m_callback_statusmessage(print_statuschange);
     char idstring1[PUB_KEY_BYTES][5];
     char idstring2[PUB_KEY_BYTES][5];
     int i;
