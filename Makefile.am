@@ -21,6 +21,7 @@ EXTRA_DIST = \
 	$(top_srcdir)/testing/cmake/nTox.cmake \
 	$(top_srcdir)/testing/toxic/CMakeLists.txt \
 	$(top_srcdir)/testing/CMakeLists.txt \
+	$(top_srcdir)/cmake/FindCheck.cmake \
 	$(top_srcdir)/cmake/FindLIBCONFIG.cmake \
 	$(top_srcdir)/cmake/FindSphinx.cmake \
 	$(top_srcdir)/cmake/FindSODIUM.cmake \
@@ -34,4 +35,9 @@ EXTRA_DIST = \
 	$(top_srcdir)/other/CMakeLists.txt \
 	$(top_srcdir)/toxcore/CMakeLists.txt \
 	$(top_srcdir)/docs/CMakeLists.txt \
-	$(top_srcdir)/CMakeLists.txt
+	$(top_srcdir)/CMakeLists.txt \
+	$(top_srcdir)/auto_tests/CMakeLists.txt \
+	$(top_srcdir)/auto_tests/cmake/friends_test.cmake \
+	$(top_srcdir)/auto_tests/cmake/messenger_test.cmake \
+	$(top_srcdir)/auto_tests/run_tests
+

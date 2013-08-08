@@ -67,6 +67,8 @@ nTox_LDADD = 			$(COMMONLDADD)
 
 toxic_SOURCES =			$(top_srcdir)/testing/toxic/main.c \
 						$(top_srcdir)/testing/toxic/chat.c \
+						$(top_srcdir)/testing/toxic/configdir.h \
+						$(top_srcdir)/testing/toxic/configdir.c \
 						$(top_srcdir)/testing/toxic/prompt.c \
 						$(top_srcdir)/testing/toxic/friendlist.c \
 						$(top_srcdir)/testing/toxic/windows.h
@@ -142,4 +144,24 @@ DHT_bootstrap_daemon_CFLAGS = \
 DHT_bootstrap_daemon_LDADD = \
 						$(LIBCONFIG_LIBS) \
 						$(COMMONLDADD)
+endif
+
+if BUILD_TESTS
+
+TESTS = friends_test messenger_test
+
+check_PROGRAMS = friends_test messenger_test
+
+friends_test_SOURCES =	$(top_srcdir)/auto_tests/friends_test.c
+friends_test_CFLAGS = 	$(COMMONCFLAGS) \
+						$(CHECK_CFLAGS)
+friends_test_LDADD =	$(COMMONLDADD) \
+						$(CHECK_LIBS)
+
+messenger_test_SOURCES = \
+						$(top_srcdir)/auto_tests/messenger_test.c
+messenger_test_CFLAGS =	$(COMMONCFLAGS) \
+						$(CHECK_CFLAGS)
+messenger_test_LDADD =	$(COMMONLDADD) \
+						$(CHECK_LIBS)
 endif
