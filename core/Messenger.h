@@ -201,6 +201,10 @@ void m_callback_userstatus(void (*function)(int, USERSTATUS));
     in that case, you should discard it. */
 void m_callback_read_receipt(void (*function)(int, uint32_t));
 
+/* set the callback for friend status changes
+    function(int friendnumber, uint8_t status) */
+void m_callback_friendstatus(void (*function)(int, uint8_t));
+
 /* run this at startup
     returns 0 if no connection problems
     returns -1 if there are problems */
