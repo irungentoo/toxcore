@@ -462,18 +462,18 @@ void m_callback_read_receipt(void (*function)(int, uint32_t))
     read_receipt_isset = 1;
 }
 
-static void (*friend_status)(int, uint8_t);
-static uint8_t friend_status_isset = 0;
+static void (*friend_statuschange)(int, uint8_t);
+static uint8_t friend_statuschange_isset = 0;
 void m_callback_friend_status(void (*function)(int, uint8_t))
 {
-    friend_status = function;
-    friend_status_isset = 1;
+    friend_statuschange = function;
+    friend_statuschange_isset = 1;
 }
 
 static void set_friend_status(int friendnumber, uint8_t status)
 {
-    if (friendlist[friendnumber].status != status && friend_status_isset)
-        friend_status(friendnumber, status);
+    if (friendlist[friendnumber].status != status && friend_statuschange_isset)
+        friend_statuschange(friendnumber, status);
     friendlist[friendnumber].status = status;
 }
 
