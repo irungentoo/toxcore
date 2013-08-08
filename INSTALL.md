@@ -16,14 +16,14 @@
 Build dependencies:
 
 ```bash
-apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall
+apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall check
 ```
 
 On Fedora:
 
 ```bash
 yum groupinstall "Development Tools"
-yum install libtool autoconf automake libconfig-devel ncurses-devel cmake
+yum install libtool autoconf automake libconfig-devel ncurses-devel cmake check
 ```
 
 Note that `libconfig-dev` should be >= 1.4.
@@ -91,7 +91,7 @@ There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is
 <a name="homebrew" />
 ####Homebrew:
 ```
-brew install libtool automake autoconf libconfig libsodium cmake
+brew install libtool automake autoconf libconfig libsodium cmake check
 cmake .
 make
 ```
@@ -106,6 +106,7 @@ Grab the following packages:
   * http://www.cmake.org/
   * https://github.com/jedisct1/libsodium
   * http://www.hyperrealm.com/libconfig/
+  * http://check.sourceforge.net/
 
 Uncompress and install them all. Make sure to follow the README as the instructions change, but they all follow the same pattern below:
 
@@ -135,6 +136,7 @@ http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
 You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)'s C compiler
   - [CMake](http://www.cmake.org/cmake/resources/software.html)
+  - [check] (http://check.sourceforge.net/)
 
 You have to [modify your PATH environment variable](http://www.computerhope.com/issues/ch000549.htm) so that it contains MinGW's bin folder path. With default settings, the bin folder is located at `C:\MinGW\bin`, which means that you would have to append `;C:\MinGW\bin` to the PATH variable.
 
