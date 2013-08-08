@@ -22,7 +22,7 @@ extern int add_req(uint8_t *public_key); // XXX
 
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
-#define TOXICVER "0.1.0" //Will be moved to a -D flag later 
+//#define TOXICVER "0.1.0" //Will be moved to a -D flag later 
 
 static ToxWindow windows[MAX_WINDOW_SLOTS];
 static ToxWindow* prompt;
