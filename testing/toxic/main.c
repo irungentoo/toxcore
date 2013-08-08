@@ -22,7 +22,7 @@ extern int add_req(uint8_t *public_key); // XXX
 
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
-#define TOXICVER "0.1.0" //Will be moved to a -D flag later 
+//#define TOXICVER "0.1.0" //Will be moved to a -D flag later 
 
 static ToxWindow windows[MAX_WINDOW_SLOTS];
 static ToxWindow* prompt;
@@ -69,7 +69,7 @@ void on_nickchange(int friendnumber, uint8_t *string, uint16_t length)
   }
 }
 
-void on_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
+void on_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
   wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
   int i;
@@ -113,7 +113,7 @@ static void init_tox()
   m_callback_friendrequest(on_request);
   m_callback_friendmessage(on_message);
   m_callback_namechange(on_nickchange);
-  m_callback_userstatus(on_statuschange);
+  m_callback_statusmessage(on_statuschange);
 }
 
 void init_window_status()
