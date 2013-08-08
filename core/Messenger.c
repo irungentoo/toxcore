@@ -52,7 +52,6 @@ static uint16_t self_statusmessage_len;
 static USERSTATUS self_userstatus;
 
 static Friend *friendlist;
-static uint32_t numallocated;
 static uint32_t numfriends;
 
 
@@ -60,18 +59,13 @@ static uint32_t numfriends;
    0 if we are offline
    static uint8_t online; */
 
-/* double the size of the friend list
+/* set the size of the friend list to numfriends
    return -1 if realloc fails */
-int realloc_friendlist(void) {
-    if (numallocated == 0)
-        numallocated = 1; /* initial size */
-    else
-        numallocated *= 2; /* double each time */
-
-    Friend *newfriendlist = realloc(friendlist, numallocated*sizeof(Friend));
+int realloc_friendlist(uint32_t num) {
+    Friend *newfriendlist = realloc(friendlist, num*sizeof(Friend));
     if (newfriendlist == NULL)
         return -1;
-
+    memset(&newfriendlist[num-1], 0, sizeof(Friend));
     friendlist = newfriendlist;
     return 0;
 }
@@ -134,8 +128,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
         return FAERR_ALREADYSENT;
 
     /* resize the friend list if necessary */
-    if (numfriends + 1 > numallocated)
-        realloc_friendlist();
+    realloc_friendlist(numfriends + 1);
 
     uint32_t i;
     for (i = 0; i <= numfriends; ++i)  {
@@ -166,8 +159,7 @@ int m_addfriend_norequest(uint8_t * client_id)
         return -1;
 
     /* resize the friend list if necessary */
-    if (numfriends + 1 > numallocated)
-        realloc_friendlist();
+    realloc_friendlist(numfriends + 1);
 
     uint32_t i;
     for (i = 0; i <= numfriends; ++i) {
@@ -208,6 +200,7 @@ int m_delfriend(int friendnumber)
             break;
     }
     numfriends = i;
+    realloc_friendlist(numfriends + 1);
 
     return 0;
 }
