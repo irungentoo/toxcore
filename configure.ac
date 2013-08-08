@@ -14,6 +14,20 @@ if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
 fi
 
+
+BUILD_TESTS="auto"
+AC_ARG_ENABLE([tests],
+    [AC_HELP_STRING([--disable-tests], [build unit tests (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_TESTS="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_TESTS="yes"
+        fi
+    ]
+)
+
+
 DEPSEARCH=
 LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
@@ -148,6 +162,19 @@ if test -n "$PKG_CONFIG"; then
             AC_MSG_ERROR([$NCURSES_PKG_ERRORS])
         ])
 
+    if test "x$BUILD_TESTS" = "xyes" || test "x$BUILD_TESTS" = "xauto"; then
+        PKG_CHECK_MODULES([CHECK], [check], [],
+            [
+                if test "x$BUILD_TESTS" = "xauto"; then
+                    AC_MSG_WARN([libcheck not found, not building unit tests: $CHECK_PKG_ERRORS])
+                    BUILD_TESTS="no"
+                else
+                    AC_MSG_ERROR([$CHECK_PKG_ERRORS])
+                    BUILD_TESTS="no"
+                fi
+            ])
+    fi
+
     if test "$WIN32" != "xyes"; then
         PKG_CHECK_MODULES([LIBCONFIG], [libconfig],
             [
@@ -200,6 +227,9 @@ else
     fi
 fi
 AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes")
+
+
+AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" != "xno")
 
 AC_CONFIG_FILES([Makefile
                  build/Makefile
