@@ -35,6 +35,9 @@
 extern "C" {
 #endif
 
+/* length that the ID should be in a hex string */
+#define ID_STRLEN ((crypto_box_PUBLICKEYBYTES) * 2)
+
 #define MAX_NAME_LENGTH 128
 #define MAX_STATUSMESSAGE_LENGTH 128
 
@@ -58,6 +61,7 @@ extern "C" {
 #define FAERR_OWNKEY -3
 #define FAERR_ALREADYSENT -4
 #define FAERR_UNKNOWN -5
+#define FAERR_NOTVALID -6
 
 /* don't assume MAX_STATUSMESSAGE_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
@@ -78,19 +82,20 @@ typedef enum {
  * client_id is the client id of the friend
  * data is the data and length is the length
  * returns the friend number if success
- * return -1 if message length is too long
- * return -2 if no message (message length must be >= 1 byte)
- * return -3 if user's own key
- * return -4 if friend request already sent or already a friend
- * return -5 for unknown error
+ * return FA_TOOLONG if message length is too long
+ * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
+ * return FAERR_OWNKEY if user's own key
+ * return FAERR_ALREADYSENT if friend request already sent or already a friend
+ * return FAERR_NOTVALID if the string length passed != ID_STRLEN
+ * return FAERR_UNKNOWN for unknown error
  */
-int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length);
+int m_addfriend(uint8_t *client_id, int id_strlen, uint8_t *data, uint16_t length);
 
 
 /* add a friend without sending a friendrequest.
     returns the friend number if success
-    return -1 if failure. */
-int m_addfriend_norequest(uint8_t *client_id);
+    otherwise returns the same possible errors as m_addfriend */
+int m_addfriend_norequest(uint8_t * client_id, int id_strlen);
 
 /* return the friend id associated to that client id.
     return -1 if no such friend */

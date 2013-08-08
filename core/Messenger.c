@@ -103,9 +103,10 @@ int getclient_id(int friend_id, uint8_t *client_id)
  * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
  * return FAERR_OWNKEY if user's own key
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
+ * return FAERR_NOTVALID if the string length passed != ID_STRLEN
  * return FAERR_UNKNOWN for unknown error
  */
-int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
+int m_addfriend(uint8_t *client_id, int id_strlen, uint8_t *data, uint16_t length)
 {
     if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES
                          - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
@@ -117,6 +118,8 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
         return FAERR_OWNKEY;
     if (getfriend_id(client_id) != -1)
         return FAERR_ALREADYSENT;
+    if (id_strlen != ID_STRLEN)
+        return FAERR_NOTVALID;
 
     uint32_t i;
     for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i)  { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
@@ -141,10 +144,13 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
     return FAERR_UNKNOWN;
 }
 
-int m_addfriend_norequest(uint8_t * client_id)
+int m_addfriend_norequest(uint8_t * client_id, int id_strlen)
 {
     if (getfriend_id(client_id) != -1)
-        return -1;
+        return FAERR_ALREADYSENT;
+    if (id_strlen != ID_STRLEN)
+        return FAERR_NOTVALID;
+
     uint32_t i;
     for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
         if(friendlist[i].status == NOFRIEND) {
@@ -718,7 +724,8 @@ int Messenger_load(uint8_t * data, uint32_t length)
     uint32_t i;
     for (i = 0; i < num; ++i) {
         if(temp[i].status != 0) {
-            int fnum = m_addfriend_norequest(temp[i].client_id);
+            /* assume that the ID length in data was correct */
+            int fnum = m_addfriend_norequest(temp[i].client_id, ID_STRLEN);
             setfriendname(fnum, temp[i].name);
             /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
         }
