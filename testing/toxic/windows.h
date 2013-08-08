@@ -24,6 +24,7 @@ struct ToxWindow_ {
   void(*onMessage)(ToxWindow*, int, uint8_t*, uint16_t);
   void(*onNickChange)(ToxWindow*, int, uint8_t*, uint16_t);
   void(*onStatusChange)(ToxWindow*, int, uint8_t*, uint16_t);
+  void(*onAction)(ToxWindow*, int, uint8_t*, uint16_t);
   char title[256];
 
   void* x;
