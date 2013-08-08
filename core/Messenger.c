@@ -245,6 +245,21 @@ uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1 + sizeof(theid));
 }
 
+/* send an action to an online friend
+   return 1 if packet was successfully put into the send queue
+   return 0 if it was not */
+int m_sendaction(int friendnumber, uint8_t *action, uint32_t length)
+{
+    if (friendnumber < 0 || friendnumber >= numfriends)
+        return 0;
+    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_ONLINE)
+        return 0;
+    uint8_t temp[MAX_DATA_SIZE];
+    temp[0] = PACKET_ID_ACTION;
+    memcpy(temp + 1, action, length);
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
+}
+
 /* send a name packet to friendnumber
    length is the length with the NULL terminator*/
 static int m_sendname(int friendnumber, uint8_t * name, uint16_t length)
@@ -445,6 +460,14 @@ void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t))
     friend_message_isset = 1;
 }
 
+static void (*friend_action)(int, uint8_t *, uint16_t);
+static uint8_t friend_action_isset = 0;
+void m_callback_action(void (*function)(int, uint8_t *, uint16_t))
+{
+    friend_action = function;
+    friend_action_isset = 1;
+}
+
 static void (*friend_namechange)(int, uint8_t *, uint16_t);
 static uint8_t friend_namechange_isset = 0;
 void m_callback_namechange(void (*function)(int, uint8_t *, uint16_t))
@@ -587,6 +610,11 @@ static void doFriends(void)
                     }
                     if (friend_message_isset)
                         (*friend_message)(i, temp + 5, len - 5);
+                    break;
+                }
+                case PACKET_ID_ACTION: {
+                    if (friend_action_isset)
+                        (*friend_action)(i, temp + 1, len - 1);
                     break;
                 }
                 case PACKET_ID_RECEIPT: {
