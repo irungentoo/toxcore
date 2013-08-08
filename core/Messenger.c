@@ -472,11 +472,9 @@ void m_callback_friend_status(void (*function)(int, uint8_t))
 
 static void set_friend_status(int friendnumber, uint8_t status)
 {
-    friendlist[friendnumber].status = status;
-    if (friendlist[friendnumber].status == status)
-        return;
-    if (friend_status_isset)
+    if (friendlist[friendnumber].status != status && friend_status_isset)
         friend_status(friendnumber, status);
+    friendlist[friendnumber].status = status;
 }
 
 #define PORT 33445
