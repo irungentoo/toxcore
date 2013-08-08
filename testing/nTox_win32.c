@@ -86,7 +86,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     printf(msg);
 }
 
-void print_statuschange(int friendnumber,USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     getname(friendnumber, (uint8_t*)name);
@@ -263,7 +263,7 @@ void change_nickname()
 
 void change_status(int savetofile)
 {
-    uint8_t status[MAX_USERSTATUS_LENGTH];
+    uint8_t status[MAX_STATUSMESSAGE_LENGTH];
     int i = 0;
     size_t len = strlen(line);
     
@@ -275,7 +275,7 @@ void change_status(int savetofile)
     }
 
     status[i-3] = 0;
-    m_set_userstatus(USERSTATUS_KIND_RETAIN, status, strlen((char*)status));
+    m_set_statusmessage(status, strlen((char*)status));
     char numstring[100];
     sprintf(numstring, "\n[i] changed status to %s\n\n", (char*)status);
     printf(numstring);
@@ -403,11 +403,11 @@ int main(int argc, char *argv[])
     FILE* status_file = NULL;
     status_file = fopen("statusfile.txt", "r");
     if(status_file) {
-        uint8_t status[MAX_USERSTATUS_LENGTH];
-        while (fgets(line, MAX_USERSTATUS_LENGTH, status_file) != NULL) {
+        uint8_t status[MAX_STATUSMESSAGE_LENGTH];
+        while (fgets(line, MAX_STATUSMESSAGE_LENGTH, status_file) != NULL) {
             sscanf(line, "%s", (char*)status);
         }
-        m_set_userstatus(USERSTATUS_KIND_RETAIN, status, strlen((char*)status)+1);
+        m_set_statusmessage(status, strlen((char*)status)+1);
         statusloaded = 1;
         printf("%s\n", status);
         fclose(status_file);
@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
-    m_callback_userstatus(print_statuschange);
+    m_callback_statusmessae(print_statuschange);
     char idstring1[PUB_KEY_BYTES][5];
     char idstring2[PUB_KEY_BYTES][5];
     int i;
