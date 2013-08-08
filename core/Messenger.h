@@ -43,6 +43,7 @@ extern "C" {
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
+#define PACKET_ID_FRIENDSYNC 66
 
 /* status definitions */
 #define FRIEND_ONLINE 4
