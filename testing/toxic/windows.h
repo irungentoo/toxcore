@@ -5,7 +5,9 @@
 #include <stdbool.h>
 #define TOXWINDOWS_MAX_NUM 32
 #define MAX_FRIENDS_NUM 100
- 
+#define MAX_STR_SIZE 256
+#define KEY_SIZE_BYTES 32
+
 /* number of permanent default windows */
 #define N_DEFAULT_WINS 2  
 

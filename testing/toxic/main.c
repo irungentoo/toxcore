@@ -23,7 +23,10 @@ extern int add_req(uint8_t *public_key); // XXX
 
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
-#define TOXICVER "0.1.0" //Will be moved to a -D flag later 
+
+#ifndef TOXICVER
+#define TOXICVER "NOVER" //Use the -D flag to set this
+#endif
 
 static ToxWindow windows[MAX_WINDOW_SLOTS];
 static ToxWindow* prompt;
@@ -38,7 +41,7 @@ void on_request(uint8_t *public_key, uint8_t *data, uint16_t length)
   wprintw(prompt->window, "\nFriend request from:\n");
 
   int i;
-  for (i = 0; i < 32; ++i) {
+  for (i = 0; i < KEY_SIZE_BYTES; ++i) {
     wprintw(prompt->window, "%02x", public_key[i] & 0xff);
   }
 

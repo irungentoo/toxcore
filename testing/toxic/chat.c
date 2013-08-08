@@ -16,7 +16,7 @@
 
 typedef struct {
   int friendnum;
-  char line[256];
+  char line[MAX_STR_SIZE];
   size_t pos;
   WINDOW* history;
   WINDOW* linewin;
@@ -154,15 +154,47 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
   }
 
   else if (!strncmp(cmd, "/status ", strlen("/status "))) {
+    char *status = strchr(cmd, ' ');
     char *msg;
-    msg = strchr(cmd, ' ');
-    if (msg == NULL) {
+    char *status_text;
+    if (status == NULL) {
       wprintw(ctx->history, "Invalid syntax.\n");
       return;
     }
-    msg++;
-    m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
-    wprintw(ctx->history, "Status set to: %s\n", msg);
+    status++;
+    USERSTATUS status_kind;
+    if (!strncmp(status, "online", strlen("online"))) {
+      status_kind = USERSTATUS_NONE;
+      status_text = "ONLINE";
+    }
+
+    else if (!strncmp(status, "away", strlen("away"))) {
+      status_kind = USERSTATUS_AWAY;
+      status_text = "AWAY";
+    }
+
+    else if (!strncmp(status, "busy", strlen("busy"))) {
+      status_kind = USERSTATUS_BUSY;
+      status_text = "BUSY";
+    }
+
+    else
+    {
+      wprintw(ctx->history, "Invalid status.\n");
+      return;
+    }
+
+    msg = strchr(status, ' ');
+    if (msg == NULL) {
+      m_set_userstatus(status_kind);
+      wprintw(ctx->history, "Status set to: %s\n", status_text);
+    }
+    else {
+      msg++;
+      m_set_userstatus(status_kind);
+      m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
+      wprintw(ctx->history, "Status set to: %s, %s\n", status_text, msg);
+    }
   }
 
   else if (!strncmp(cmd, "/nick ", strlen("/nick "))) {
@@ -178,9 +210,9 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
   }
 
   else if (!strcmp(cmd, "/myid")) {
-    char id[32*2 + 1] = {0};
+    char id[KEY_SIZE_BYTES*2+1] = {0};
     int i;
-    for (i = 0; i < 32; i++) {
+    for (i = 0; i < KEY_SIZE_BYTES; i++) {
       char xx[3];
       snprintf(xx, sizeof(xx), "%02x",  self_public_key[i] & 0xff);
       strcat(id, xx);
@@ -231,7 +263,7 @@ void print_help(ChatContext *self)
   wprintw(self->history, "Commands:\n");
   wattroff(self->history, A_BOLD);
   
-  wprintw(self->history, "      /status <message>          : Set your status\n");
+  wprintw(self->history, "      /status <type> <message>   : Set your status\n");
   wprintw(self->history, "      /nick <nickname>           : Set your nickname\n");
   wprintw(self->history, "      /myid                      : Print your ID\n");
   wprintw(self->history, "      /clear                     : Clear the screen\n");
