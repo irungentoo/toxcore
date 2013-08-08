@@ -228,17 +228,6 @@ static void execute(ToxWindow *self, char *u_cmd)
     }
   }
 
-  else if (!strncmp(cmd, "statusmsg ", strlen("statumsg "))) {
-    char *msg = strchr(cmd, ' ');
-    if (msg == NULL) {
-      wprintw(self->window, "Invalid syntax.\n");
-      return;
-    }
-    msg++;
-    m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
-    wprintw(self->window, "Status set to: %s\n", msg);
-  }
-
   else if (!strncmp(cmd, "nick ", strlen("nick "))) {
     char *nick = strchr(cmd, ' ');
     if (nick == NULL) {
@@ -372,7 +361,6 @@ static void print_usage(ToxWindow *self)
   wprintw(self->window, "      connect <ip> <port> <key> : Connect to DHT server\n");
   wprintw(self->window, "      add <id> <message>        : Add friend\n");
   wprintw(self->window, "      status <type> <message>   : Set your status\n");
-  wprintw(self->window, "      statusmsg  <message>      : Set your status\n");
   wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
   wprintw(self->window, "      accept <number>           : Accept friend request\n");
   wprintw(self->window, "      myid                      : Print your ID\n");
