@@ -481,7 +481,7 @@ void m_callback_read_receipt(void (*function)(int, uint32_t))
 
 static void (*friend_statuschange)(int, uint8_t);
 static uint8_t friend_statuschange_isset = 0;
-void m_callback_friend_status(void (*function)(int, uint8_t))
+void m_callback_friendstatus(void (*function)(int, uint8_t))
 {
     friend_statuschange = function;
     friend_statuschange_isset = 1;
