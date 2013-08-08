@@ -354,6 +354,7 @@ int main(int argc, char *argv[])
   char *user_config_dir = get_user_config_dir();
   char *filename;
   int config_err = create_user_config_dir(user_config_dir);
+  uint8_t loadfromfile = 1;
   if(config_err) {
     filename = "data";
   } else {
@@ -374,13 +375,16 @@ int main(int argc, char *argv[])
           filename = argv[i + 1];
         else
           f_flag = -1;
+      } else if (argv[i][1] == 'n') {
+          loadfromfile = 0;
       }
     }
   }
 
   init_term();
   init_tox();
-  load_data(filename);
+  if(loadfromfile)
+    load_data(filename);
   free(filename);
   init_windows();
   init_window_status();
