@@ -66,6 +66,11 @@ extern "C" {
 
 #define MAX_UDP_PACKET_SIZE 65507
 
+
+/* Current time, unix format */
+#define unix_time() ((uint64_t)time(NULL))
+
+
 typedef union {
     uint8_t c[4];
     uint16_t s[2];
