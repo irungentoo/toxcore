@@ -65,7 +65,7 @@ void parent_confirm_message(int num, uint8_t *data, uint16_t length)
     request_flags |= SECOND_FLAG;
 }
 
-void parent_confirm_status(int num, USERSTATUS_KIND status, uint8_t *data, uint16_t length)
+void parent_confirm_status(int num, uint8_t *data, uint16_t length)
 {
     puts("OK");
     request_flags |= FIRST_FLAG;
@@ -110,7 +110,7 @@ void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length)
     request_flags |= FIRST_FLAG;
 }
 
-void child_got_statuschange(int friend_num, USERSTATUS_KIND status, uint8_t *string, uint16_t length)
+void child_got_statuschange(int friend_num, uint8_t *string, uint16_t length)
 {
     request_flags |= SECOND_FLAG;
 }
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
         msync(child_id, crypto_box_PUBLICKEYBYTES, MS_SYNC);
 
         m_callback_friendrequest(child_got_request);
-        m_callback_userstatus(child_got_statuschange);
+        m_callback_statusmessage(child_got_statuschange);
 
         /* wait on the friend request */
        while(!(request_flags & FIRST_FLAG))
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     }
 
     msync(parent_id, crypto_box_PUBLICKEYBYTES, MS_SYNC);
-    m_callback_userstatus(parent_confirm_status);
+    m_callback_statusmessage(parent_confirm_status);
     m_callback_friendmessage(parent_confirm_message);
 
     /* hacky way to give the child time to set up */
