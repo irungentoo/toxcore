@@ -32,6 +32,11 @@ unsigned char *good_id_a = NULL;
 unsigned char *good_id_b = NULL;
 unsigned char *bad_id    = NULL;
 
+int friend_id_len = 0;
+int good_id_a_len = 0;
+int good_id_b_len = 0;
+int bad_id_len = 0;
+
 int friend_id_num = 0;
 
 unsigned char * hex_string_to_bin(char hex_string[])
@@ -126,20 +131,21 @@ START_TEST(test_m_addfriend)
                      - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
                                          + crypto_box_ZEROBYTES + 100);
 
-    if(m_addfriend((uint8_t *)friend_id, (uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG)
+    if(m_addfriend((uint8_t *)friend_id, friend_id_len,
+                (uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG)
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", really_bad_len);
 
     /* this will error if the original m_addfriend_norequest() failed */
-    if(m_addfriend((uint8_t *)friend_id, (uint8_t *)good_data, good_len) != FAERR_ALREADYSENT)
+    if(m_addfriend((uint8_t *)friend_id, friend_id_len, (uint8_t *)good_data, good_len) != FAERR_ALREADYSENT)
         ck_abort_msg("m_addfriend did NOT catch adding a friend we already have.\n"
                      "(this can be caused by the error of m_addfriend_norequest in"
                      " the beginning of the suite)\n");
 
-    if(m_addfriend((uint8_t *)good_id_b, (uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE)
+    if(m_addfriend((uint8_t *)good_id_b, good_id_b_len, (uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE)
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", bad_len);
 
     /* this should REALLY error */
-    if(m_addfriend((uint8_t *)bad_id, (uint8_t *)good_data, good_len) >= 0)
+    if(m_addfriend((uint8_t *)bad_id, bad_id_len, (uint8_t *)good_data, good_len) >= 0)
         ck_abort_msg("The following ID passed through "
               "m_addfriend without an error:\n'%s'\n", bad_id_str);
 }
@@ -255,8 +261,13 @@ int main(int argc, char *argv[])
     good_id_b = hex_string_to_bin(good_id_b_str);
     bad_id    = hex_string_to_bin(bad_id_str);
 
+    friend_id_len = strlen(friend_id_str);
+    good_id_a_len = strlen(good_id_a_str);
+    good_id_b_len = strlen(good_id_b_str);
+    bad_id_len = strlen(bad_id_str);
+
     /* setup a default friend and friendnum */
-    if(m_addfriend_norequest((uint8_t *)friend_id) < 0)
+    if(m_addfriend_norequest((uint8_t *)friend_id, friend_id_len) < 0)
         fputs("m_addfriend_norequest() failed on a valid ID!\n"
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);

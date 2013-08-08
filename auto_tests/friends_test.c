@@ -46,6 +46,8 @@ uint8_t *child_id = NULL;
 pid_t child_pid = 0;
 int request_flags = 0;
 
+/* note, we just assume that the key length is always correct in any m_addfriend*() calls */
+
 void do_tox(void)
 {
     static int dht_on = 0;
@@ -80,7 +82,7 @@ int parent_friend_request(void)
     fputs("Sending child request.", stdout);
     fflush(stdout);
 
-    m_addfriend(child_id, (uint8_t *)message, len);
+    m_addfriend(child_id, ID_STRLEN, (uint8_t *)message, len);
 
     /* wait on the status change */
     for(i = 0; i < WAIT_COUNT; i++) {
@@ -106,7 +108,7 @@ void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length)
 {
     fputs("OK\nsending status to parent", stdout);
     fflush(stdout);
-    m_addfriend_norequest(public_key);
+    m_addfriend_norequest(public_key, ID_STRLEN);
     request_flags |= FIRST_FLAG;
 }
 
