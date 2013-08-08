@@ -27,3 +27,6 @@ tags
 *.exe
 *.out
 *.app
+
+#netbeans
+nbproject
