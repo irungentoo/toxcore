@@ -137,9 +137,12 @@ START_TEST(test_m_addfriend)
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", bad_len);
 
     /* this should REALLY error */
+    /*
+     * TODO: validate client_id in m_addfriend?
     if(m_addfriend((uint8_t *)bad_id, (uint8_t *)good_data, good_len) >= 0)
         ck_abort_msg("The following ID passed through "
               "m_addfriend without an error:\n'%s'\n", bad_id_str);
+    */
 }
 END_TEST
 
