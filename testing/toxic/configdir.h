@@ -23,5 +23,11 @@
 #else
 #define CONFIGDIR "/toxic/"
 #endif
+ 
+#ifndef S_ISDIR
+#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+#endif
 
 char *get_user_config_dir(void);
+
+int create_user_config_dir(char *path);

@@ -3,10 +3,18 @@
  */
 
 #include <curses.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+#ifdef _win32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
@@ -332,26 +340,19 @@ int main(int argc, char *argv[])
 {
   int ch;
   int f_flag = 0;
-  char *configdir = get_user_config_dir();
-  char *default_file = "data";
-  int mkdir_err
-  #ifdef _win32
-  mkdir_err = _mkdir(configdir);
-  #else
-  mkdir_err = mkdir(configdir, 0700);
-  #endif
-
+  char *user_config_dir = get_user_config_dir();
   char *filename;
-  if(mkdir_err == -1) {
-    filename = default_file;
+  int config_err = create_user_config_dir(user_config_dir);
+  if(config_err) {
+    filename = "data";
   } else {
-    filename = malloc(strlen(configdir) + strlen(default_file) + 1);
-    strcpy(filename, configdir);
-    strcat(filename, default_file);
+    filename = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
+    strcpy(filename, user_config_dir);
+    strcat(filename, CONFIGDIR);
+    strcat(filename, "data");
   }
   
   ToxWindow* a;
-
   int i = 0;
   for (i = 0; i < argc; ++i) {
     if (argv[i] == NULL)
@@ -375,6 +376,13 @@ int main(int argc, char *argv[])
   if (f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
     wprintw(prompt->window, "You passed '-f' without giving an argument!\n"
+                            "defaulting to 'data' for a keyfile...\n");
+    attroff(COLOR_PAIR(3) | A_BOLD);
+  }
+
+  if(config_err) {
+    attron(COLOR_PAIR(3) | A_BOLD);
+    wprintw(prompt->window, "Unable to determine configuration directory!\n"
                             "defaulting to 'data' for a keyfile...\n");
     attroff(COLOR_PAIR(3) | A_BOLD);
   }

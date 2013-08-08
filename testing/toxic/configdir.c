@@ -21,71 +21,126 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 
-#ifdef _win32
+#ifdef WIN32
 #include <shlobj.h>
+#include <direct.h>
 #endif
 
 #ifdef __APPLE__
-#include <sys/types.h>
 #include <unistd.h>
 #include <pwd.h>
 #endif
 
+#include "configdir.h"
+
+/*
+ * Retrieves a correct configuration directory, depending on the OS used, with a trailing slash
+ */
 char *get_user_config_dir(void)
 {
-	char *user_config_dir;
+  char *user_config_dir;
 
-	#ifdef _win32
+  #ifdef WIN32
 
-	char appdata[MAX_PATH];
-	HRESULT result = SHGetFolderPath(
-		NULL,
-		CSIDL_APPDATA, // TODO: Maybe use CSIDL_LOCAL_APPDATA instead? Not sure.
-		NULL,
-		SHGFP_TYPE_CURRENT,
-		appdata
-	)
-	if (!result) return NULL;
+  char appdata[MAX_PATH];
+  HRESULT result = SHGetFolderPath(
+    NULL,
+    CSIDL_APPDATA,
+    NULL,
+    SHGFP_TYPE_CURRENT,
+    appdata
+  )
+  if (!result) return NULL;
 
-	user_config_dir = malloc(strlen(appdata) + strlen(CONFIGDIR) + 1);
-	if (user_config_dir) {
-		strcpy(user_config_dir, appdata);
-		strcat(user_config_dir, CONFIGDIR);
-	}
-	return user_config_dir;
+  user_config_dir = malloc(strlen(appdata) + 1);
+  if (user_config_dir) {
+    strcpy(user_config_dir, appdata);
+  }
+  return user_config_dir;
 
-	#elif defined __APPLE__
+  #elif defined __APPLE__
 
-	struct passwd *pass = getpwuid(getuid());
-	if (!pass) return NULL;
-	char *home = pass->pw_dir;
-	user_config_dir = malloc(strlen(home) + strlen("/Library/Application Support") + strlen(CONFIGDIR) + 1);
-	
-	if(user_config_dir) {
-		strcpy(user_config_dir, home);
-		strcat(user_config_dir, "/Library/Application Support");
-		strcat(user_config_dir, CONFIGDIR);
-	}
-	return user_config_dir;
+  struct passwd *pass = getpwuid(getuid());
+  if (!pass) return NULL;
+  char *home = pass->pw_dir;
+  user_config_dir = malloc(strlen(home) + strlen("/Library/Application Support") + 1);
+  
+  if(user_config_dir) {
+    strcpy(user_config_dir, home);
+    strcat(user_config_dir, "/Library/Application Support");
+  }
+  return user_config_dir;
 
-	#else
+  #else
 
-	if (getenv("XDG_CONFIG_HOME")) {
-		user_config_dir = malloc(strlen(getenv("XDG_CONFIG_HOME")) + strlen(CONFIGDIR) + 1);
-		if (user_config_dir) {
-			strcpy(user_config_dir, getenv("XDG_CONFIG_HOME"));
-			strcat(user_config_dir, CONFIGDIR);
-		}
-	} else {
-		user_config_dir = malloc(strlen(getenv("HOME")) + strlen("/.config") + strlen(CONFIGDIR) + 1);
-		if (user_config_dir) {
-			strcpy(user_config_dir, getenv("HOME"));
-			strcat(user_config_dir, "/.config");
-			strcat(user_config_dir, CONFIGDIR);
-		}
-	}
-	return user_config_dir;
+  if (getenv("XDG_CONFIG_HOME")) {
+    user_config_dir = malloc(strlen(getenv("XDG_CONFIG_HOME")) + 1);
+    if (user_config_dir) {
+      strcpy(user_config_dir, getenv("XDG_CONFIG_HOME"));
+    }
+  } else {
+    user_config_dir = malloc(strlen(getenv("HOME")) + strlen("/.config") + 1);
+    if (user_config_dir) {
+      strcpy(user_config_dir, getenv("HOME"));
+      strcat(user_config_dir, "/.config");
+    }
+  }
+  return user_config_dir;
 
-	#endif
+  #endif
+}
+
+/*
+ * Creates the config directory.
+ */
+int create_user_config_dir(char *path)
+{ 
+
+  int mkdir_err;
+
+  #ifdef WIN32
+
+  char *fullpath = malloc(strlen(path) + strlen(CONFIGDIR) + 1);
+  strcpy(fullpath, path);
+  strcat(fullpath, CONFIGDIR);
+
+  mkdir_err = _mkdir(fullpath);
+
+  if (mkdir_err) {
+    if(errno != EEXIST) return -1;
+    struct _stat buf;
+    if(_wstat64(fullpath, &buf)) return -1;
+    if(!S_ISDIR(buf.st_mode)) return -1;
+  }
+
+  #else
+
+  mkdir_err = mkdir(path, 0700);
+  struct stat buf;
+
+  if(mkdir_err) {
+    if(errno != EEXIST) return -1;
+    if(stat(path, &buf)) return -1;
+    if(!S_ISDIR(buf.st_mode)) return -1;
+  }
+
+  char *fullpath = malloc(strlen(path) + strlen(CONFIGDIR) + 1);
+  strcpy(fullpath, path);
+  strcat(fullpath, CONFIGDIR);
+
+  mkdir_err = mkdir(fullpath, 0700);
+
+  if(mkdir_err) {
+    if(errno != EEXIST) return -1;
+    if(stat(fullpath, &buf)) return -1;
+    if(!S_ISDIR(buf.st_mode)) return -1;
+  }
+  
+  #endif
+
+  return 0;
 }
