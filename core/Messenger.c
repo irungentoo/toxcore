@@ -51,15 +51,30 @@ static uint8_t *self_statusmessage;
 static uint16_t self_statusmessage_len;
 static USERSTATUS self_userstatus;
 
-#define MAX_NUM_FRIENDS 256
-
-static Friend friendlist[MAX_NUM_FRIENDS];
-
+static Friend *friendlist;
+static uint32_t numallocated;
 static uint32_t numfriends;
+
 
 /* 1 if we are online
    0 if we are offline
    static uint8_t online; */
+
+/* double the size of the friend list
+   return -1 if realloc fails */
+int realloc_friendlist(void) {
+    if (numallocated == 0)
+        numallocated = 1; /* initial size */
+    else
+        numallocated *= 2; /* double each time */
+
+    Friend *newfriendlist = realloc(friendlist, numallocated*sizeof(Friend));
+    if (newfriendlist == NULL)
+        return -1;
+
+    friendlist = newfriendlist;
+    return 0;
+}
 
 /* return the friend id associated to that public key.
    return -1 if no such friend */
@@ -118,8 +133,12 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
     if (getfriend_id(client_id) != -1)
         return FAERR_ALREADYSENT;
 
+    /* resize the friend list if necessary */
+    if (numfriends + 1 > numallocated)
+        realloc_friendlist();
+
     uint32_t i;
-    for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i)  { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
+    for (i = 0; i <= numfriends; ++i)  {
         if (friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
             friendlist[i].status = FRIEND_ADDED;
@@ -145,8 +164,13 @@ int m_addfriend_norequest(uint8_t * client_id)
 {
     if (getfriend_id(client_id) != -1)
         return -1;
+
+    /* resize the friend list if necessary */
+    if (numfriends + 1 > numallocated)
+        realloc_friendlist();
+
     uint32_t i;
-    for (i = 0; i <= numfriends && i <= MAX_NUM_FRIENDS; ++i) { /*TODO: dynamic memory allocation to allow for more than MAX_NUM_FRIENDS friends */
+    for (i = 0; i <= numfriends; ++i) {
         if(friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
             friendlist[i].status = FRIEND_REQUESTED;
@@ -158,7 +182,7 @@ int m_addfriend_norequest(uint8_t * client_id)
             friendlist[i].userstatus = USERSTATUS_NONE;
             friendlist[i].message_id = 0;
             friendlist[i].receives_read_receipts = 1; /* default: YES */
-            numfriends++;
+            ++numfriends;
             return i;
         }
     }
