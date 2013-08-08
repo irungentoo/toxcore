@@ -190,7 +190,7 @@ void m_callback_statusmessage(void (*function)(int, uint8_t *, uint16_t));
 
 /* set the callback for status type changes
     function(int friendnumber, USERSTATUS kind) */
-void m_callback_userstatus(void (*function)(int, USERSTATUS))
+void m_callback_userstatus(void (*function)(int, USERSTATUS));
 
 /* set the callback for read receipts
     function(int friendnumber, uint32_t receipt)
