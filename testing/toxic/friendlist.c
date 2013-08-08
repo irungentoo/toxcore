@@ -177,6 +177,7 @@ ToxWindow new_friendlist() {
   ret.onDraw = &friendlist_onDraw;
   ret.onInit = &friendlist_onInit;
   ret.onMessage = &friendlist_onMessage;
+  ret.onAction = &friendlist_onMessage;    // Action has identical behaviour to message
   ret.onNickChange = &friendlist_onNickChange;
   ret.onStatusChange = &friendlist_onStatusChange;
 
