@@ -43,6 +43,7 @@ extern "C" {
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
+#define PACKET_ID_ACTION 63
 
 /* status definitions */
 #define FRIEND_ONLINE 4
@@ -122,6 +123,11 @@ int m_friendstatus(int friendnumber);
 uint32_t m_sendmessage(int friendnumber, uint8_t *message, uint32_t length);
 uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
 
+/* send an action to an online friend
+    returns 1 if packet was successfully put into the send queue
+    return 0 if it was not */
+int m_sendaction(int friendnumber, uint8_t *action, uint32_t length);
+
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
    length must be at least 1 byte
@@ -177,6 +183,10 @@ void m_callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 /* set the function that will be executed when a message from a friend is received.
     function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
 void m_callback_friendmessage(void (*function)(int, uint8_t *, uint16_t));
+
+/* set the function that will be executed when an action from a friend is received.
+    function format is: function(int friendnumber, uint8_t * action, uint32_t length) */
+void m_callback_action(void (*function)(int, uint8_t *, uint16_t));
 
 /* set the callback for name changes
     function(int friendnumber, uint8_t *newname, uint16_t length)
