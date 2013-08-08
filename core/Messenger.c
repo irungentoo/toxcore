@@ -55,6 +55,8 @@ static Friend *friendlist;
 static uint32_t numfriends;
 
 
+static void set_friend_status(int friendnumber, uint8_t status);
+
 /* 1 if we are online
    0 if we are offline
    static uint8_t online; */
@@ -134,7 +136,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
     for (i = 0; i <= numfriends; ++i)  {
         if (friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
-            friendlist[i].status = FRIEND_ADDED;
+            set_friend_status(i, FRIEND_ADDED);
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
@@ -165,7 +167,7 @@ int m_addfriend_norequest(uint8_t * client_id)
     for (i = 0; i <= numfriends; ++i) {
         if(friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
-            friendlist[i].status = FRIEND_REQUESTED;
+            set_friend_status(i, FRIEND_REQUESTED);
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
@@ -477,6 +479,21 @@ void m_callback_read_receipt(void (*function)(int, uint32_t))
     read_receipt_isset = 1;
 }
 
+static void (*friend_statuschange)(int, uint8_t);
+static uint8_t friend_statuschange_isset = 0;
+void m_callback_friend_status(void (*function)(int, uint8_t))
+{
+    friend_statuschange = function;
+    friend_statuschange_isset = 1;
+}
+
+static void set_friend_status(int friendnumber, uint8_t status)
+{
+    if (friendlist[friendnumber].status != status && friend_statuschange_isset)
+        friend_statuschange(friendnumber, status);
+    friendlist[friendnumber].status = status;
+}
+
 #define PORT 33445
 /* run this at startup */
 int initMessenger(void)
@@ -504,9 +521,9 @@ static void doFriends(void)
         if (friendlist[i].status == FRIEND_ADDED) {
             int fr = send_friendrequest(friendlist[i].client_id, friendlist[i].info, friendlist[i].info_size);
             if (fr == 0) /* TODO: This needs to be fixed so that it sends the friend requests a couple of times in case of packet loss */
-                friendlist[i].status = FRIEND_REQUESTED;
+                set_friend_status(i, FRIEND_REQUESTED);
             else if (fr > 0)
-                friendlist[i].status = FRIEND_REQUESTED;
+                set_friend_status(i, FRIEND_REQUESTED);
         }
         if (friendlist[i].status == FRIEND_REQUESTED || friendlist[i].status == FRIEND_CONFIRMED) { /* friend is not online */
             if (friendlist[i].status == FRIEND_REQUESTED) {
@@ -522,7 +539,7 @@ static void doFriends(void)
                     friendlist[i].crypt_connection_id = crypto_connect(friendlist[i].client_id, friendip);
                 break;
             case 3: /*  Connection is established */
-                friendlist[i].status = FRIEND_ONLINE;
+                set_friend_status(i, FRIEND_ONLINE);
                 break;
             case 4:
                 crypto_kill(friendlist[i].crypt_connection_id);
@@ -604,7 +621,7 @@ static void doFriends(void)
                 if (is_cryptoconnected(friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
                     crypto_kill(friendlist[i].crypt_connection_id);
                     friendlist[i].crypt_connection_id = -1;
-                    friendlist[i].status = FRIEND_CONFIRMED;
+                    set_friend_status(i, FRIEND_CONFIRMED);
                 }
                 break;
             }
@@ -625,7 +642,7 @@ static void doInbound(void)
             friendlist[friend_id].crypt_connection_id =
                 accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
 
-            friendlist[friend_id].status = FRIEND_CONFIRMED;
+            set_friend_status(friend_id, FRIEND_CONFIRMED);
         }
     }
 }
