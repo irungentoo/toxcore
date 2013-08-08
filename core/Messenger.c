@@ -541,6 +541,8 @@ static void doFriends(void)
                     break;
                 }
                 case PACKET_ID_STATUSMESSAGE: {
+                    if (len < 2)
+                        break;
                     uint8_t *status = calloc(MIN(len - 1, MAX_STATUSMESSAGE_LENGTH), 1);
                     memcpy(status, temp + 1, MIN(len - 1, MAX_STATUSMESSAGE_LENGTH));
                     if (friend_statusmessagechange_isset)
@@ -550,6 +552,8 @@ static void doFriends(void)
                     break;
                 }
                 case PACKET_ID_USERSTATUS: {
+                    if (len != 2)
+                        break;
                     USERSTATUS status = *(temp + 1);
                     if (friend_userstatuschange_isset)
                         friend_userstatuschange(i, status);
