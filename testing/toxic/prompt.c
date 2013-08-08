@@ -12,12 +12,12 @@
 
 #include "windows.h"
 
-uint8_t pending_requests[256][CLIENT_ID_SIZE]; // XXX
+uint8_t pending_requests[MAX_STR_SIZE][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
 extern void on_friendadded(int friendnumber);
 static void print_usage(ToxWindow *self);
-static char prompt_buf[256] = {0};
+static char prompt_buf[MAX_STR_SIZE] = {0};
 static int prompt_buf_pos = 0;
 
 // XXX:
@@ -43,7 +43,7 @@ unsigned char *hex_string_to_bin(char hex_string[])
 static void execute(ToxWindow *self, char *u_cmd)
 {
   int newlines = 0;
-  char cmd[256] = {0};
+  char cmd[MAX_STR_SIZE] = {0};
   int i;
   for (i = 0; i < strlen(prompt_buf); ++i) {
     if (u_cmd[i] == '\n')
@@ -53,9 +53,9 @@ static void execute(ToxWindow *self, char *u_cmd)
   }
 
   int leading_spc = 0;
-  for (i = 0; i < 256 && isspace(cmd[i]); ++i)
+  for (i = 0; i < MAX_STR_SIZE && isspace(cmd[i]); ++i)
     leading_spc++;
-  memmove(cmd, cmd + leading_spc, 256 - leading_spc);
+  memmove(cmd, cmd + leading_spc, MAX_STR_SIZE - leading_spc);
 
   int cmd_end = strlen(cmd);
   while (cmd_end > 0 && cmd_end--)
@@ -109,7 +109,7 @@ static void execute(ToxWindow *self, char *u_cmd)
     }
 
     dht.port = htons(atoi(port));
-    uint32_t resolved_address = resolve_addr(ip);
+    uintKEY_SIZE_BYTES_t resolved_address = resolve_addr(ip);
     if (resolved_address == 0) {
       return;
     }
@@ -121,9 +121,9 @@ static void execute(ToxWindow *self, char *u_cmd)
   }
 
   else if (!strncmp(cmd, "add ", strlen("add "))) {
-    uint8_t id_bin[32];
+    uint8_t id_bin[KEY_SIZE_BYTES];
     char xx[3];
-    uint32_t x;
+    uintKEY_SIZE_BYTES_t x;
     char *id = strchr(cmd, ' ');
     if (id == NULL) {
       wprintw(self->window, "Invalid syntax.\n");
@@ -136,12 +136,12 @@ static void execute(ToxWindow *self, char *u_cmd)
       msg++;
     }
     else msg = "";
-    if (strlen(id) != 2*32) {
+    if (strlen(id) != 2*KEY_SIZE_BYTES) {
       wprintw(self->window, "Invalid ID length.\n");
       return;
     }
     int i;
-    for (i = 0; i < 32; ++i) {
+    for (i = 0; i < KEY_SIZE_BYTES; ++i) {
       xx[0] = id[2*i];
       xx[1] = id[2*i+1];
       xx[2] = '\0';
@@ -251,9 +251,9 @@ static void execute(ToxWindow *self, char *u_cmd)
   }
 
   else if (!strcmp(cmd, "myid")) {
-    char id[32*2 + 1] = {0};
+    char id[KEY_SIZE_BYTES*2 + 1] = {0};
     size_t i;
-    for (i = 0; i < 32; ++i) {
+    for (i = 0; i < KEY_SIZE_BYTES; ++i) {
       char xx[3];
       snprintf(xx, sizeof(xx), "%02x", self_public_key[i] & 0xff);
       strcat(id, xx);
