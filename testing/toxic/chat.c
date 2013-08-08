@@ -16,7 +16,7 @@
 
 typedef struct {
   int friendnum;
-  char line[256];
+  char line[MAX_STR_SIZE];
   size_t pos;
   WINDOW* history;
   WINDOW* linewin;
@@ -178,9 +178,9 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
   }
 
   else if (!strcmp(cmd, "/myid")) {
-    char id[32*2 + 1] = {0};
+    char id[KEY_SIZE_BYTES*2+1] = {0};
     int i;
-    for (i = 0; i < 32; i++) {
+    for (i = 0; i < KEY_SIZE_BYTES; i++) {
       char xx[3];
       snprintf(xx, sizeof(xx), "%02x",  self_public_key[i] & 0xff);
       strcat(id, xx);

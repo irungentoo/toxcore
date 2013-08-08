@@ -37,7 +37,7 @@ void on_request(uint8_t *public_key, uint8_t *data, uint16_t length)
   wprintw(prompt->window, "\nFriend request from:\n");
 
   int i;
-  for (i = 0; i < 32; ++i) {
+  for (i = 0; i < KEY_SIZE_BYTES; ++i) {
     wprintw(prompt->window, "%02x", public_key[i] & 0xff);
   }
 
