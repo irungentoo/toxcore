@@ -151,7 +151,7 @@ static void execute(ToxWindow *self, char *u_cmd)
       }
       id_bin[i] = x;
     }
-    int num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
+    int num = m_addfriend(id_bin, strlen(id), (uint8_t*) msg, strlen(msg)+1);
     switch (num) {
     case -1:
       wprintw(self->window, "Message is too long.\n");
@@ -279,7 +279,8 @@ static void execute(ToxWindow *self, char *u_cmd)
       return;
     }
 
-    num = m_addfriend_norequest(pending_requests[num]);
+    /* assume that pending_requests contains only proper ID's */
+    num = m_addfriend_norequest(pending_requests[num], ID_STRLEN);
     if (num == -1)
       wprintw(self->window, "Failed to add friend.\n");
     else {
