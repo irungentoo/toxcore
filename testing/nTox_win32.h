@@ -32,7 +32,7 @@
 void do_header();
 void print_message(int friendnumber, uint8_t * string, uint16_t length);
 void print_nickchange(int friendnumber, uint8_t *string, uint16_t length);
-void print_statuschange(int friendnumber,USERSTATUS_KIND kind, uint8_t *string, uint16_t length);
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length);
 void load_key();
 void add_friend();
 void list_friends();

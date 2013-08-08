@@ -62,16 +62,16 @@ END_TEST
 START_TEST(test_m_get_userstatus_size)
 {
     int rc = 0;
-    ck_assert_msg((m_get_userstatus_size(-1) == -1),
-                "m_get_userstatus_size did NOT catch an argument of -1");
-    ck_assert_msg((m_get_userstatus_size(REALLY_BIG_NUMBER) == -1),
-            "m_get_userstatus_size did NOT catch the following argument: %d\n",
+    ck_assert_msg((m_get_statusmessage_size(-1) == -1),
+                "m_get_statusmessage_size did NOT catch an argument of -1");
+    ck_assert_msg((m_get_statusmessage_size(REALLY_BIG_NUMBER) == -1),
+            "m_get_statusmessage_size did NOT catch the following argument: %d\n",
                                                             REALLY_BIG_NUMBER);
-    rc = m_get_userstatus_size(friend_id_num);
+    rc = m_get_statusmessage_size(friend_id_num);
 
     /* this WILL error if the original m_addfriend_norequest() failed */
-    ck_assert_msg((rc > 0 && rc <= MAX_USERSTATUS_LENGTH),
-        "m_get_userstatus_size is returning out of range values!\n"
+    ck_assert_msg((rc > 0 && rc <= MAX_STATUSMESSAGE_LENGTH),
+        "m_get_statusmessage_size is returning out of range values!\n"
         "(this can be caused by the error of m_addfriend_norequest"
         " in the beginning of the suite)\n");
 }
@@ -83,15 +83,13 @@ START_TEST(test_m_set_userstatus)
     uint16_t good_length = strlen(status);
     uint16_t bad_length = REALLY_BIG_NUMBER;
 
-    if(m_set_userstatus(USERSTATUS_KIND_ONLINE,
-                (uint8_t *)status, bad_length) != -1)
+    if(m_set_statusmessage((uint8_t *)status, bad_length) != -1)
         ck_abort_msg("m_set_userstatus did NOT catch the following length: %d\n",
                                                             REALLY_BIG_NUMBER);
 
-    if((m_set_userstatus(USERSTATUS_KIND_RETAIN,
-                (uint8_t *)status, good_length)) != 0)
+    if((m_set_statusmessage((uint8_t *)status, good_length)) != 0)
         ck_abort_msg("m_set_userstatus did NOT return 0 on the following length: %d\n"
-                     "MAX_USERSTATUS_LENGTH: %d\n", good_length, MAX_USERSTATUS_LENGTH);
+                     "MAX_STATUSMESSAGE_LENGTH: %d\n", good_length, MAX_STATUSMESSAGE_LENGTH);
 }
 END_TEST
 
