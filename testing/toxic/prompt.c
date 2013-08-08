@@ -109,7 +109,7 @@ static void execute(ToxWindow *self, char *u_cmd)
     }
 
     dht.port = htons(atoi(port));
-    uintKEY_SIZE_BYTES_t resolved_address = resolve_addr(ip);
+    uint32_t resolved_address = resolve_addr(ip);
     if (resolved_address == 0) {
       return;
     }
@@ -123,7 +123,7 @@ static void execute(ToxWindow *self, char *u_cmd)
   else if (!strncmp(cmd, "add ", strlen("add "))) {
     uint8_t id_bin[KEY_SIZE_BYTES];
     char xx[3];
-    uintKEY_SIZE_BYTES_t x;
+    uint32_t x;
     char *id = strchr(cmd, ' ');
     if (id == NULL) {
       wprintw(self->window, "Invalid syntax.\n");
