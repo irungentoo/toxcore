@@ -163,24 +163,24 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
       return;
     }
     status++;
-    USERSTATUS_KIND status_kind;
+    USERSTATUS status_kind;
     if (!strncmp(status, "online", strlen("online"))) {
-      status_kind = USERSTATUS_KIND_ONLINE;
+      status_kind = USERSTATUS_ONLINE;
       status_text = "ONLINE";
     }
 
     else if (!strncmp(status, "away", strlen("away"))) {
-      status_kind = USERSTATUS_KIND_AWAY;
+      status_kind = USERSTATUS_AWAY;
       status_text = "AWAY";
     }
 
     else if (!strncmp(status, "busy", strlen("busy"))) {
-      status_kind = USERSTATUS_KIND_BUSY;
+      status_kind = USERSTATUS_BUSY;
       status_text = "BUSY";
     }
 
     else if (!strncmp(status, "offline", strlen("offline"))) {
-      status_kind = USERSTATUS_KIND_OFFLINE;
+      status_kind = USERSTATUS_OFFLINE;
       status_text = "OFFLINE";
     }
 
@@ -190,7 +190,7 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
     }
     msg = strchr(status, ' ');
     if (msg == NULL) {
-      m_set_userstatus_kind(status_kind);
+      m_set_USERSTATUS(status_kind);
       wprintw(ctx->history, "Status set to: %s\n", status_text);
     }
     else {
@@ -207,7 +207,7 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
       return;
     }
     msg++;
-    m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
+    m_set_userstatus(USERSTATUS_RETAIN, (uint8_t*) msg, strlen(msg)+1);
     wprintw(ctx->history, "Status message set to: %s\n", msg);
   }
 
