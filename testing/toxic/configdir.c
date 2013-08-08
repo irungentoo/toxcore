@@ -56,10 +56,8 @@ char *get_user_config_dir(void)
   )
   if (!result) return NULL;
 
-  user_config_dir = malloc(strlen(appdata) + 1);
-  if (user_config_dir) {
-    strcpy(user_config_dir, appdata);
-  }
+  user_config_dir = strdup(appdata);
+
   return user_config_dir;
 
   #elif defined __APPLE__
@@ -78,10 +76,7 @@ char *get_user_config_dir(void)
   #else
 
   if (getenv("XDG_CONFIG_HOME")) {
-    user_config_dir = malloc(strlen(getenv("XDG_CONFIG_HOME")) + 1);
-    if (user_config_dir) {
-      strcpy(user_config_dir, getenv("XDG_CONFIG_HOME"));
-    }
+    user_config_dir = strdup(getenv("XDG_CONFIG_HOME"));
   } else {
     user_config_dir = malloc(strlen(getenv("HOME")) + strlen("/.config") + 1);
     if (user_config_dir) {
@@ -109,12 +104,10 @@ int create_user_config_dir(char *path)
   strcat(fullpath, CONFIGDIR);
 
   mkdir_err = _mkdir(fullpath);
-
-  if (mkdir_err) {
-    if(errno != EEXIST) return -1;
-    struct _stat buf;
-    if(_wstat64(fullpath, &buf)) return -1;
-    if(!S_ISDIR(buf.st_mode)) return -1;
+  struct __stat64 buf;
+  if (mkdir_err && (errno != EEXIST || _wstat64(fullpath, &buf) || !S_ISDIR(buf.st_mode))) {
+    free(fullpath);
+    return -1;
   }
 
   #else
@@ -122,10 +115,8 @@ int create_user_config_dir(char *path)
   mkdir_err = mkdir(path, 0700);
   struct stat buf;
 
-  if(mkdir_err) {
-    if(errno != EEXIST) return -1;
-    if(stat(path, &buf)) return -1;
-    if(!S_ISDIR(buf.st_mode)) return -1;
+  if(mkdir_err && (errno != EEXIST || stat(path, &buf) || !S_ISDIR(buf.st_mode))) {
+    return -1;
   }
 
   char *fullpath = malloc(strlen(path) + strlen(CONFIGDIR) + 1);
@@ -134,10 +125,9 @@ int create_user_config_dir(char *path)
 
   mkdir_err = mkdir(fullpath, 0700);
 
-  if(mkdir_err) {
-    if(errno != EEXIST) return -1;
-    if(stat(fullpath, &buf)) return -1;
-    if(!S_ISDIR(buf.st_mode)) return -1;
+  if(mkdir_err && (errno != EEXIST || stat(fullpath, &buf) || !S_ISDIR(buf.st_mode))) {
+    free(fullpath);
+    return -1;
   }
   
   #endif

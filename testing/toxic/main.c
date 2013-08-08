@@ -370,6 +370,7 @@ int main(int argc, char *argv[])
   init_term();
   init_tox();
   load_data(filename);
+  free(filename);
   init_windows();
   init_window_status();
 
