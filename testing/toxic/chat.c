@@ -14,6 +14,8 @@
 
 #include "windows.h"
 
+#define CURS_Y_OFFSET 3
+
 typedef struct {
   int friendnum;
   char line[MAX_STR_SIZE];
@@ -123,16 +125,35 @@ static void chat_onKey(ToxWindow *self, int key)
   struct tm * timeinfo;
   timeinfo = localtime(&now);
 
-  /* Add printable characters to line */
+  int x, y, y2, x2;
+  getyx(self->window, y, x);
+  getmaxyx(self->window, y2, x2);
+
+  /* Add printable chars to buffer and print on input space */
   if (isprint(key)) {
     if (ctx->pos != sizeof(ctx->line)-1) {
+      mvwaddch(self->window, y, x, key);
       ctx->line[ctx->pos++] = key;
       ctx->line[ctx->pos] = '\0';
     }
   }
 
+  /* BACKSPACE key: Remove one character from line */
+  else if (key == 0x107 || key == 0x8 || key == 0x7f) {
+    if (ctx->pos > 0) {
+      ctx->line[--ctx->pos] = '\0';
+      if (x == 0)
+        mvwdelch(self->window, y-1, x2-1);
+      else
+        mvwdelch(self->window, y, x-1);
+    }
+  }
+
   /* RETURN key: Execute command or print line */
-  else if (key == '\n') {
+  if (key == '\n') {
+    wclear(ctx->linewin);
+    wmove(self->window, y2-CURS_Y_OFFSET, 0);
+    wclrtobot(self->window);
     if (ctx->line[0] == '/')
       execute(self, ctx, ctx->line, timeinfo);
     else {
@@ -155,13 +176,6 @@ static void chat_onKey(ToxWindow *self, int key)
     ctx->line[0] = '\0';
     ctx->pos = 0;
   }
-
-  /* BACKSPACE key: Remove one character from line */
-  else if (key == 0x107 || key == 0x8 || key == 0x7f) {
-    if (ctx->pos != 0) {
-      ctx->line[--ctx->pos] = '\0';
-    }
-  }
 }
 
 void execute(ToxWindow *self, ChatContext *ctx, char *cmd, struct tm *timeinfo)
@@ -169,6 +183,10 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd, struct tm *timeinfo)
   if (!strcmp(cmd, "/clear") || !strcmp(cmd, "/c")) {
     wclear(self->window);
     wclear(ctx->history);
+    int x, y;
+    getmaxyx(self->window, y, x);
+    (void) x;
+    wmove(self->window, y-CURS_Y_OFFSET, 0);
   }
 
   else if (!strcmp(cmd, "/help") || !strcmp(cmd, "/h"))
@@ -287,14 +305,10 @@ static void chat_onDraw(ToxWindow *self)
 {
   curs_set(1);
   int x, y;
-  ChatContext *ctx = (ChatContext*) self->x;
   getmaxyx(self->window, y, x);
-  (void) x;
-  if (y < 3) return;
-
-  wclear(ctx->linewin);
-  mvwhline(ctx->linewin, 0, 0, '_', COLS);
-  mvwprintw(self->window, y-1, 0, "%s\n", ctx->line);
+  (void) y;
+  ChatContext *ctx = (ChatContext*) self->x;
+  mvwhline(ctx->linewin, 0, 0, '_', x);
   wrefresh(self->window);
 }
 
@@ -303,10 +317,11 @@ static void chat_onInit(ToxWindow *self)
   int x, y;
   ChatContext *ctx = (ChatContext*) self->x;
   getmaxyx(self->window, y, x);
-  ctx->history = subwin(self->window, y - 4, x, 0, 0);
+  ctx->history = subwin(self->window, y-4, x, 0, 0);
   scrollok(ctx->history, 1);
-  ctx->linewin = subwin(self->window, 2, x, y - 3, 0);
+  ctx->linewin = subwin(self->window, 2, x, y-4, 0);
   print_help(ctx);
+  wmove(self->window, y-CURS_Y_OFFSET, 0);
 }
 
 void print_help(ChatContext *self)
