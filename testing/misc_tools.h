@@ -24,10 +24,15 @@
 #ifndef MISC_TOOLS_H
 #define MISC_TOOLS_H
 
+#include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 
 unsigned char* hex_string_to_bin(char hex_string[]);
+
+/* misc stuff */
+extern const char* tox_program_name;
 
 /*********************Debugging Macros********************
  * wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging
@@ -39,7 +44,7 @@ unsigned char* hex_string_to_bin(char hex_string[]);
 
     #define DEBUG_PRINT(str, ...) do { \
         char msg[1000]; \
-        sprintf(msg, "%s(): line %d (file %s): %s%%c\n", __FUNCTION__, __LINE__, __FILE__, str); \
+        sprintf(msg, "%s: %s:%d: %s(): %s%%c\n", tox_program_name, __FILE__, __LINE__, __FUNCTION__, str); \
         fprintf(stderr, msg, __VA_ARGS__); \
     } while (0)
 

@@ -20,16 +20,10 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
- 
+
 #include "misc_tools.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#ifdef DEBUG
-#include <assert.h>
-#endif // DEBUG
+const char* tox_program_name = "Tox";
 
 /* TODO: rewrite */
 unsigned char * hex_string_to_bin(char hex_string[])

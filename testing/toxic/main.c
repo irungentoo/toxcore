@@ -349,6 +349,7 @@ void set_active_window(int ch)
 
 int main(int argc, char *argv[])
 {
+  tox_program_name = argv[0];
   int ch;
   int f_flag = 0;
   char *user_config_dir = get_user_config_dir();
