@@ -76,22 +76,22 @@ unsigned char* hex_string_to_bin(char hex_string[]);
    ((parent_type*)((uint64_t)(&(var)) - (uint64_t)(MEMBER_OFFSET(var_name_in_parent, parent_type))))
 
 #define TOX_LIST_FOR_EACH(lst, tmp_name) \
-   for (tox_list_t* tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
+   for (tox_list* tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
 
 #define TOX_LIST_GET_VALUE(tmp_name, name_in_parent, parent_type) GET_PARENT(tmp_name, name_in_parent, parent_type)
 
 typedef struct tox_list {
-   struct tox_list *prev, *next;
-} tox_list_t;
+   tox_list *prev, *next;
+} tox_list;
 
-/* Returns a new tox_list_t. */
-static inline void tox_list_new(tox_list_t* lst)
+/* Returns a new tox_list. */
+static inline void tox_list_new(tox_list* lst)
 {
    lst->prev = lst->next = lst;
 }
       
 /* Inserts a new tox_lst after lst and returns it. */
-static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst)
+static inline void tox_list_add(tox_list* lst, tox_list* new_lst)
 {
    tox_list_new(new_lst);
 
@@ -102,7 +102,7 @@ static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst)
    new_lst->prev = lst;
 }
 
-static inline void tox_list_remove(tox_list_t* lst)
+static inline void tox_list_remove(tox_list* lst)
 {
    lst->prev->next = lst->next;
    lst->next->prev = lst->prev;
@@ -118,7 +118,7 @@ static inline void tox_list_remove(tox_list_t* lst)
 struct tox_array {
     void **data;
     uint32_t size, length;
-};
+} tox_array;
 
 static inline void tox_array_init(struct tox_array *arr)
 {
