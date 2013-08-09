@@ -173,4 +173,52 @@ static inline void tox_list_remove(tox_list_t* lst) {
    lst->next->prev = lst->prev;
 }
 
+/****************************Array***************************
+ * Array to store pointers which tracks it's own size.
+ * TODO: Figure out if it shold store values instead of
+ * pointers?
+ ************************************************************/
+
+struct tox_array {
+    void **data;
+    uint32_t size, length;
+};
+
+ static inline void tox_array_init(struct tox_array *arr)
+{
+    arr->size = 1;
+    arr->length = 0;
+    arr->data = malloc(sizeof(void*));
+}
+
+static inline void tox_array_delete(struct tox_array *arr)
+{
+    free(arr->data);
+    arr->size = arr->length = 0;
+}
+
+/* shrinks arr so it will not have unused space. If you want to have
+ * addtional space, extra species the amount of extra space.
+ */
+static inline void tox_array_shrink_to_fit(struct tox_array *arr, int32_t extra)
+{
+    arr->size = arr->length + extra;
+    arr->data = realloc(arr->data, arr->size * sizeof(void*));
+}
+
+static inline void _tox_array_push(struct tox_array *arr, void *new)
+{
+    if (arr->length+1 >= arr->size)
+        tox_array_shrink_to_fit(arr, arr->size);
+    arr->data[arr->length++] = new;
+}
+#define tox_array_push(arr, new) _tox_array_push(arr, (void*)new)
+
+static inline void* tox_array_pop(struct tox_array *arr)
+{
+    if (arr->length-1 < arr->size/4)
+        tox_array_shrink_to_fit(arr, arr->length*2); 
+    return arr->data[arr->length--]; 
+}
+
 #endif // MISC_TOOLS_H
