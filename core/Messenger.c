@@ -571,55 +571,62 @@ static void doFriends(void)
                     friendlist[i].userstatus_sent = 1;
             }
             len = read_cryptpacket(friendlist[i].crypt_connection_id, temp);
+            uint8_t packet_id = temp[0];
+            uint8_t* data = temp + 1;
+            int data_length = len - 1;
             if (len > 0) {
-                switch (temp[0]) {
+                switch (packet_id) {
                 case PACKET_ID_NICKNAME: {
-                    if (len >= MAX_NAME_LENGTH + 1 || len == 1)
+                    if (data_length >= MAX_NAME_LENGTH || data_length == 0)
                         break;
                     if(friend_namechange_isset)
-                        friend_namechange(i, temp + 1, len - 1);
-                    memcpy(friendlist[i].name, temp + 1, len - 1);
-                    friendlist[i].name[len - 2] = 0; /* make sure the NULL terminator is present. */
+                        friend_namechange(i, data, data_length);
+                    memcpy(friendlist[i].name, data, data_length);
+                    friendlist[i].name[data_length - 1] = 0; /* make sure the NULL terminator is present. */
                     break;
                 }
                 case PACKET_ID_STATUSMESSAGE: {
-                    if (len < 2)
+                    if (data_length == 0)
                         break;
-                    uint8_t *status = calloc(MIN(len - 1, MAX_STATUSMESSAGE_LENGTH), 1);
-                    memcpy(status, temp + 1, MIN(len - 1, MAX_STATUSMESSAGE_LENGTH));
+                    uint8_t *status = calloc(MIN(data_length, MAX_STATUSMESSAGE_LENGTH), 1);
+                    memcpy(status, data, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
                     if (friend_statusmessagechange_isset)
-                        friend_statusmessagechange(i, status, MIN(len - 1, MAX_STATUSMESSAGE_LENGTH));
-                    set_friend_statusmessage(i, status, MIN(len - 1, MAX_STATUSMESSAGE_LENGTH));
+                        friend_statusmessagechange(i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
+                    set_friend_statusmessage(i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
                     free(status);
                     break;
                 }
                 case PACKET_ID_USERSTATUS: {
-                    if (len != 2)
+                    if (data_length != 1)
                         break;
-                    USERSTATUS status = temp[1];
+                    USERSTATUS status = data[0];
                     if (friend_userstatuschange_isset)
                         friend_userstatuschange(i, status);
                     set_friend_userstatus(i, status);
                     break;
                 }
                 case PACKET_ID_MESSAGE: {
+                    uint8_t *message_id = data;
+                    uint8_t message_id_length = 4;
+                    uint8_t *message = data + message_id_length;
+                    uint16_t message_length = data_length - message_id_length;
                     if (friendlist[i].receives_read_receipts) {
-                        write_cryptpacket_id(i, PACKET_ID_RECEIPT, temp + 1, 4);
+                        write_cryptpacket_id(i, PACKET_ID_RECEIPT, message_id, message_id_length);
                     }
                     if (friend_message_isset)
-                        (*friend_message)(i, temp + 5, len - 5);
+                        (*friend_message)(i, message, message_length);
                     break;
                 }
                 case PACKET_ID_ACTION: {
                     if (friend_action_isset)
-                        (*friend_action)(i, temp + 1, len - 1);
+                        (*friend_action)(i, data, data_length);
                     break;
                 }
                 case PACKET_ID_RECEIPT: {
                     uint32_t msgid;
-                    if (len < 1 + sizeof(msgid))
+                    if (data_length < sizeof(msgid))
                         break;
-                    memcpy(&msgid, temp + 1, sizeof(msgid));
+                    memcpy(&msgid, data, sizeof(msgid));
                     msgid = ntohl(msgid);
                     if (read_receipt_isset)
                         (*read_receipt)(i, msgid);
