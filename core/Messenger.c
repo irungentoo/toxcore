@@ -236,6 +236,8 @@ uint32_t m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
 
 uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
 {
+    if (length >= (MAX_DATA_SIZE - sizeof(theid)))
+        return 0;
     uint8_t temp[MAX_DATA_SIZE];
     theid = htonl(theid);
     memcpy(temp, &theid, sizeof(theid));
