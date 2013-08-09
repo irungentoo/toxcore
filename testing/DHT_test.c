@@ -56,7 +56,7 @@ void print_clientlist()
     for(i = 0; i < 4; i++) {
         printf("ClientID: ");
         for(j = 0; j < 32; j++) {
-            printf("%c", close_clientlist[i].client_id[j]);
+            printf("%hhX", close_clientlist[i].client_id[j]);
         }
         p_ip = close_clientlist[i].ip_port;
         printf("\nIP: %u.%u.%u.%u Port: %u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));
