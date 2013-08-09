@@ -929,7 +929,7 @@ static int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
     return num;
 }
 
-/* Handle a recieved ping request for */
+/* Handle a received ping request for */
 static int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
 {
     if (length < crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING 

@@ -7,7 +7,7 @@
  *
  *  Note:
  *      None of the functions here test things that rely on the network, i.e.
- *      checking that status changes are recieved, messages can be sent, etc.
+ *      checking that status changes are received, messages can be sent, etc.
  *      All of that is done in a separate test, with two local clients running. */
 
 #include "../core/Messenger.h"

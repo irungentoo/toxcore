@@ -1,6 +1,6 @@
 /* DHT cryptosendfiletest
  * 
- * This program sends or recieves a friend request.
+ * This program sends or receives a friend request.
  * 
  * it also sends the encrypted data from a file to another client.
  * Receives the file data that that client sends us.
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
             }
         }
         if(handle_friendrequest(acceptedfriend_public_key, request_data) > 1) {
-            printf("RECIEVED FRIEND REQUEST: %s\n", request_data);
+            printf("RECEIVED FRIEND REQUEST: %s\n", request_data);
         }
 
         /* if someone connected to us write what he sends to a file
