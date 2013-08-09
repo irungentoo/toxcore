@@ -82,7 +82,7 @@ void on_action(int friendnumber, uint8_t *string, uint16_t length)
 
 void on_nickchange(int friendnumber, uint8_t *string, uint16_t length)
 {
-  wprintw(prompt->window, "\n(nickchange) %d: %s!\n", friendnumber, string);
+  wprintw(prompt->window, "\n(nickchange) %d: %s\n", friendnumber, string);
   int i;
   for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
     if (windows[i].onNickChange != NULL)
@@ -281,7 +281,7 @@ static void draw_bar()
   move(LINES - 1, 0);
 
   attron(COLOR_PAIR(4) | A_BOLD);
-  printw(" TOXIC " TOXICVER " |"); 
+  printw(" TOXIC " TOXICVER "|"); 
   attroff(COLOR_PAIR(4) | A_BOLD);
 
   int i;
