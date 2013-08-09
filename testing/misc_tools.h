@@ -24,7 +24,7 @@
 #ifndef MISC_TOOLS_H
 #define MISC_TOOLS_H
 
-unsigned char * hex_string_to_bin(char hex_string[]);
+unsigned char* hex_string_to_bin(char hex_string[]);
 
 /*********************Debugging Macros********************
  * wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging
@@ -82,12 +82,14 @@ typedef struct tox_list {
 } tox_list_t;
 
 /* Returns a new tox_list_t. */
-static inline void tox_list_new(tox_list_t* lst) {
+static inline void tox_list_new(tox_list_t* lst)
+{
    lst->prev = lst->next = lst;
 }
       
 /* Inserts a new tox_lst after lst and returns it. */
-static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst) {
+static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst)
+{
    tox_list_new(new_lst);
 
    new_lst->next = lst->next;
@@ -97,10 +99,8 @@ static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst) {
    new_lst->prev = lst;
 }
 
-static inline void tox_list_remove(tox_list_t* lst) {
-#ifdef DEBUG /* TODO: check how debugging is done in Tox. */
-   assert(lst->next != lst && lst->prev != lst);
-#endif
+static inline void tox_list_remove(tox_list_t* lst)
+{
    lst->prev->next = lst->next;
    lst->next->prev = lst->prev;
 }
