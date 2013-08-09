@@ -56,6 +56,7 @@ static uint32_t numfriends;
 
 
 static void set_friend_status(int friendnumber, uint8_t status);
+static int write_cryptpacket_id(int crypt_connection_id, uint8_t packet_id, uint8_t *data, uint32_t length);
 
 /* 1 if we are online
    0 if we are offline
@@ -240,11 +241,10 @@ uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message
         /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
         return 0;
     uint8_t temp[MAX_DATA_SIZE];
-    temp[0] = PACKET_ID_MESSAGE;
     theid = htonl(theid);
-    memcpy(temp + 1, &theid, sizeof(theid));
-    memcpy(temp + 1 + sizeof(theid), message, length);
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1 + sizeof(theid));
+    memcpy(temp, &theid, sizeof(theid));
+    memcpy(temp + sizeof(theid), message, length);
+    return write_cryptpacket_id(friendlist[friendnumber].crypt_connection_id, PACKET_ID_MESSAGE, temp, length + sizeof(theid));
 }
 
 /* send an action to an online friend
@@ -256,10 +256,7 @@ int m_sendaction(int friendnumber, uint8_t *action, uint32_t length)
         return 0;
     if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_ONLINE)
         return 0;
-    uint8_t temp[MAX_DATA_SIZE];
-    temp[0] = PACKET_ID_ACTION;
-    memcpy(temp + 1, action, length);
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
+    return write_cryptpacket_id(friendlist[friendnumber].crypt_connection_id, PACKET_ID_ACTION, action, length);
 }
 
 /* send a name packet to friendnumber
@@ -268,10 +265,7 @@ static int m_sendname(int friendnumber, uint8_t * name, uint16_t length)
 {
     if(length > MAX_NAME_LENGTH || length == 0)
         return 0;
-    uint8_t temp[MAX_NAME_LENGTH + 1];
-    memcpy(temp + 1, name, length);
-    temp[0] = PACKET_ID_NICKNAME;
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
+    return write_cryptpacket_id(friendlist[friendnumber].crypt_connection_id, PACKET_ID_NICKNAME, name, length);
 }
 
 /* set the name of a friend
@@ -399,22 +393,12 @@ USERSTATUS m_get_self_userstatus(void)
 
 static int send_statusmessage(int friendnumber, uint8_t * status, uint16_t length)
 {
-    uint8_t *thepacket = malloc(length + 1);
-    memcpy(thepacket + 1, status, length);
-    thepacket[0] = PACKET_ID_STATUSMESSAGE;
-    int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, length + 1);
-    free(thepacket);
-    return written;
+    return write_cryptpacket_id(friendlist[friendnumber].crypt_connection_id, PACKET_ID_STATUSMESSAGE, status, length);
 }
 
 static int send_userstatus(int friendnumber, USERSTATUS status)
 {
-    uint8_t *thepacket = malloc(1 + 1);
-    memcpy(thepacket + 1, &status, 1);
-    thepacket[0] = PACKET_ID_USERSTATUS;
-    int written = write_cryptpacket(friendlist[friendnumber].crypt_connection_id, thepacket, 1 + 1);
-    free(thepacket);
-    return written;
+    return write_cryptpacket_id(friendlist[friendnumber].crypt_connection_id, PACKET_ID_USERSTATUS, (uint8_t*)&status, sizeof(USERSTATUS));
 }
 
 static int set_friend_statusmessage(int friendnumber, uint8_t * status, uint16_t length)
@@ -515,6 +499,14 @@ static void set_friend_status(int friendnumber, uint8_t status)
     if (friendlist[friendnumber].status != status && friend_statuschange_isset)
         friend_statuschange(friendnumber, status);
     friendlist[friendnumber].status = status;
+}
+
+static int write_cryptpacket_id(int crypt_connection_id, uint8_t packet_id, uint8_t *data, uint32_t length)
+{
+    uint8_t packet[length + 1];
+    packet[0] = packet_id;
+    memcpy(packet + 1, data, length);
+    return write_cryptpacket(crypt_connection_id, packet, length + 1);
 }
 
 #define PORT 33445
@@ -619,11 +611,7 @@ static void doFriends(void)
                 }
                 case PACKET_ID_MESSAGE: {
                     if (friendlist[i].receives_read_receipts) {
-                        uint8_t *thepacket = malloc(5);
-                        thepacket[0] = PACKET_ID_RECEIPT;
-                        memcpy(thepacket + 1, temp + 1, 4);
-                        write_cryptpacket(friendlist[i].crypt_connection_id, thepacket, 5);
-                        free(thepacket);
+                        write_cryptpacket_id(friendlist[i].crypt_connection_id, PACKET_ID_RECEIPT, temp + 1, 4);
                     }
                     if (friend_message_isset)
                         (*friend_message)(i, temp + 5, len - 5);
