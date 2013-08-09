@@ -42,4 +42,3 @@ while True:
         print "Sending SYNC resp"
         a+=1
         sock.sendto("11".decode('hex') + chr(a) + data[1:9], addr)
-        
