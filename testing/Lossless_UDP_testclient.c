@@ -116,7 +116,7 @@ void printconnection(int connection_id)
 }
 */
 
-/*( recieve packets and send them to the packethandler */
+/*( receive packets and send them to the packethandler */
 /*run doLossless_UDP(); */
 void Lossless_UDP()
 {

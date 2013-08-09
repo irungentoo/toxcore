@@ -4,7 +4,7 @@
  * 
  * It tries sending a message to the added friend.
  * 
- * If it recieves a message from a friend it replies back.
+ * If it receives a message from a friend it replies back.
  * 
  * 
  * This is how I compile it: gcc -O2 -Wall -D VANILLA_NACL -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} Messenger_test.c
@@ -53,7 +53,7 @@
 
 void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 {
-    printf("Friend request recieved from: \n");
+    printf("Friend request received from: \n");
     printf("ClientID: ");
     uint32_t j;
     for(j = 0; j < 32; j++)
@@ -78,7 +78,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
 
 void print_message(int friendnumber, uint8_t * string, uint16_t length)
 {
-    printf("Message with length %u recieved from %u: %s \n", length, friendnumber, string);
+    printf("Message with length %u received from %u: %s \n", length, friendnumber, string);
     m_sendmessage(friendnumber, (uint8_t*)"Test1", 6);
 }
 

@@ -132,7 +132,7 @@ int parent_wait_for_message(void)
     }
 
     if(!(request_flags & SECOND_FLAG)) {
-        fputs("\nParent hasn't recieved the message yet!\n"
+        fputs("\nParent hasn't received the message yet!\n"
               "Messaging may be broken, failing the build!\n", stderr);
         kill(child_pid, SIGKILL);
         return -1;
