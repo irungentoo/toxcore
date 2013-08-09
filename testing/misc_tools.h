@@ -24,6 +24,9 @@
 #ifndef MISC_TOOLS_H
 #define MISC_TOOLS_H
 
+#include <stdlib.h>
+#include <stdint.h>
+
 unsigned char* hex_string_to_bin(char hex_string[]);
 
 /*********************Debugging Macros********************
