@@ -22,7 +22,7 @@
  *
  */
 
-#include "../rtp_handler.h"
+#include "../rtp_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,14 +32,14 @@
 
 #include "test_helper.h"
 
-
+/*
 int print_help()
 {
     const char* _help = " Usage: Tux_rtp_impl [-s (send mode) -d IP ( destination ) -p PORT ( dest Port )] \n"
                         "		 			  [-r ( recv mode ) -i INTERVAL ( interval in seconds ) ]";
     puts ( _help );
     return FAILURE;
-}
+} */
 
 int ___main ( int argc, char* argv[] )
 {
@@ -145,9 +145,9 @@ int ___main ( int argc, char* argv[] )
         set_ip_port ( ip, port, Ip_port );
         status = init_networking ( Ip_port[0].ip, RTP_PORT );
         _m_session = rtp_init_session ( Ip_port[0], -1 );
-        printf ( "Now sending to remote: %s:%d ... ( press c to stop )\n", ip, port );
+        printf ( "Now sending to remote: %s:%d ... ( press ctrl-c to stop )\n", ip, port );
 
-        for ( int _ch; _ch != 'c'; ) {
+        for ( ;; ) {
             _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL ) ;
             rtp_send_msg ( _m_session, _m_msg );
             usleep ( 10000 );

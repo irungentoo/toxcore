@@ -24,21 +24,6 @@
 #include "Messenger.h"
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
-typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
-    int crypt_connection_id;
-    uint64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
-    uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
-    uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
-    uint8_t name[MAX_NAME_LENGTH];
-    uint8_t name_sent; /* 0 if we didn't send our name to this friend 1 if we have. */
-    uint8_t *userstatus;
-    uint16_t userstatus_length;
-    uint8_t userstatus_sent;
-    USERSTATUS_KIND userstatus_kind;
-    uint16_t info_size; /* length of the info */
-} Friend;
-
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 static uint8_t self_name[MAX_NAME_LENGTH];

@@ -76,8 +76,8 @@ rtp_header_t* rtp_extract_header ( uint8_t* _payload, size_t _from, size_t _size
         return _retu;
     }
 
-
-    for ( size_t x = 0; x < cc; x++ ) {
+    size_t x;
+    for ( x = 0; x < cc; x++ ) {
         _it += 4;
         _retu->_csrc[x] = ( ( uint32_t ) *_it        << 24 ) |
                           ( ( uint32_t ) *(_it + 1)  << 16 ) |
@@ -99,7 +99,8 @@ rtp_ext_header_t* rtp_extract_ext_header ( uint8_t* _payload, size_t _from, size
 
     ALLOCATOR(_retu->_hd_ext, uint32_t, _retu->_ext_len)
 
-    for ( size_t i = 0; i < _retu->_ext_len; i++ ){
+    size_t i;
+    for ( i = 0; i < _retu->_ext_len; i++ ){
         _it += 4;
         _retu->_hd_ext[i] = ( (uint32_t) *_it       << 24 ) |
                             ( (uint32_t) *(_it + 1) << 16 ) |
@@ -129,7 +130,8 @@ size_t rtp_add_header ( rtp_header_t* _header, uint8_t* _payload, size_t _from, 
 
     _from += 8;
 
-    for ( size_t x = 0; x < cc; x++ ) {
+    size_t x;
+    for ( x = 0; x < cc; x++ ) {
         ++_it;
         *_it = ( _header->_csrc[x] >> 24 );  ++_it;
         *_it = ( _header->_csrc[x] >> 16 );  ++_it;
@@ -153,7 +155,8 @@ size_t rtp_add_extention_header(rtp_ext_header_t* _header, uint8_t* _payload, si
 
     _from += 4;
 
-    for ( size_t x = 0; x < _header->_ext_len; x++ ) {
+    size_t x;
+    for ( x = 0; x < _header->_ext_len; x++ ) {
 
         _from += 4;
         ++_it;

@@ -24,7 +24,7 @@
 
 #include "test_helper.h"
 #include "../rtp_helper.h"
-#include "../rtp_handler.h"
+#include "../rtp_impl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,7 +60,8 @@ void print_session_stats ( rtp_session_t* _m_session )
         _m_session->_cc
     );
 
-    for ( uint8_t i = 0; i < _m_session->_cc; i++ ) {
+    uint8_t i;
+    for ( i = 0; i < _m_session->_cc; i++ ) {
         printf (
             "\t%d > :%d\n", i, _m_session->_csrc[i]
         );
@@ -96,7 +97,9 @@ void print_header_info ( rtp_header_t* _header )
         _header->_length
     );
 
-    for ( uint8_t i = 0; i < rtp_header_get_flag_CSRC_count ( _header ); i++ ) {
+
+    uint8_t i;
+    for ( i = 0; i < rtp_header_get_flag_CSRC_count ( _header ); i++ ) {
         printf (
             "\t%d >                  :%d\n", i, _header->_csrc[i]
         );

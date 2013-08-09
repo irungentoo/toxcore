@@ -45,6 +45,8 @@ const uint8_t RTP_EXT_MARK_SOMETHING = 2;
 
 /* Some defines */
 
+#define RTP_PACKET_ID 100
+
 /* Payload identifiers */
 
 /* Audio */
@@ -79,7 +81,7 @@ typedef struct rtp_session_s {
     uint8_t                 _payload_type;
     uint16_t                _sequence_number;      /* Set when sending */
     uint16_t                _last_sequence_number; /* Check when recving msg */
-    uint16_t                _initial_time;
+    uint64_t                _initial_time;
     uint32_t                _time_elapsed;
     uint32_t                _ssrc;
     uint32_t*               _csrc;
@@ -110,21 +112,46 @@ typedef struct rtp_session_s {
 } rtp_session_t;
 
 
-/* Session initiation and termination. */
-rtp_session_t*  rtp_init_session ( IP_Port _dest, int _max_users );
-int             rtp_terminate_session( rtp_session_t* _session );
+/*
+ * Now i don't believe we need to store this _from thing every time
+ * since we have csrc table but will leave it like this for a while
+ */
+
+/* Functions handling receiving */
+rtp_msg_t*      rtp_recv_msg ( rtp_session_t* _session );
+rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from );
+
+/* Functions handling sending */
+int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* msg );
+rtp_msg_t*      rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from );
+
 
 /* Convenient functions for creating a header */
 rtp_header_t*   rtp_build_header ( rtp_session_t* _session );
 
-/* Convenient functions for marking the resolution */
+/* Functions handling session control */
+
+/* Handling an rtp packet */
+int             rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
+
+    /* Session initiation and termination. */
+rtp_session_t*  rtp_init_session ( IP_Port _dest, int _max_users );
+int             rtp_terminate_session( rtp_session_t* _session );
+
+    /* Adding receiver */
+int             rtp_add_user ( rtp_session_t* _session, IP_Port _dest );
+
+    /* Convenient functions for marking the resolution */
 int             rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint16_t _height );
 int             rtp_remove_resolution_marking ( rtp_session_t* _session );
 uint16_t        rtp_get_resolution_marking_height(rtp_ext_header_t* _header);
 uint16_t        rtp_get_resolution_marking_width(rtp_ext_header_t* _header);
 
-/* Convenient functions for marking the payload */
+    /* Convenient functions for marking the payload */
 void            rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value );
 uint32_t        rtp_get_payload_type ( rtp_session_t* _session );
+
+    /* Informational */
+uint32_t        rtp_get_time_elapsed ( rtp_session_t* _session );
 
 #endif /* _RTP__IMPL_H_ */

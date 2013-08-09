@@ -22,7 +22,7 @@
  *
  */
 
-#include "../rtp_handler.h"
+#include "../rtp_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +40,7 @@ int print_help()
     return FAILURE;
     }
 */
-int main ( int argc, char* argv[] )
+int ____main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;
@@ -53,6 +53,7 @@ int main ( int argc, char* argv[] )
     rtp_session_t* _m_session;
     rtp_msg_t*     _m_msg;
     arg_t* _list = parse_args ( argc, argv );
+
 
     if ( _list == NULL ) { /* failed */
         return print_help();
@@ -120,7 +121,8 @@ int main ( int argc, char* argv[] )
         _m_session = rtp_init_session ( Ip_port, -1 );
         puts ( "Now sending for ~5 s" );
 
-        for ( int i = 0; i < 100; i++ ) {
+        int i;
+        for ( i = 0; i < 100; i++ ) {
             _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
             rtp_send_msg ( _m_session, _m_msg );
             usleep ( 10000 );
@@ -129,7 +131,7 @@ int main ( int argc, char* argv[] )
         /* Messages will have an external header from now on */
         rtp_add_resolution_marking(_m_session, 1920, 1080);
 
-        for ( int i = 0; i < 300; i++ ) {
+        for ( i = 0; i < 300; i++ ) {
             _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
             rtp_send_msg ( _m_session, _m_msg );
             usleep ( 10000 );
@@ -138,7 +140,7 @@ int main ( int argc, char* argv[] )
         /* Messages no longer have external header */
         rtp_remove_resolution_marking(_m_session);
 
-        for ( int i = 0; i < 100; i++ ) {
+        for ( i = 0; i < 100; i++ ) {
             _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
             rtp_send_msg ( _m_session, _m_msg );
             usleep ( 10000 );

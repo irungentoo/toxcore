@@ -24,6 +24,7 @@
  *
  */
 #include "rtp_impl.h"
+#include "rtp_allocator.h"
 
 /* Some defines */
 
@@ -55,7 +56,7 @@ rtp_session_t* rtp_init_session ( IP_Port _dest, int max_users )
     ALLOCATOR_S ( _retu, rtp_session_t )
     ALLOCATOR_LIST_S ( _retu->_dest_list, rtp_dest_list_t, NULL )
 
-    _retu->_last_user = _retu->_dest_list; // set tail
+    _retu->_last_user = _retu->_dest_list; /* set tail */
     _retu->_dest_list->_dest = _dest;
     _retu->_max_users = max_users;
     _retu->_packets_recv = 0;
@@ -78,10 +79,12 @@ rtp_session_t* rtp_init_session ( IP_Port _dest, int max_users )
     _retu->_ssrc      = get_random_number ( -1 );
     _retu->_marker    = 0;
     _retu->_payload_type = 0;        /* You should specify payload type */
-    _retu->_sequence_number = get_random_number ( _MAX_SEQU_NUM );
-    _retu->_last_sequence_number = 0;/* Do not touch this variable */
+
     /* Sequence starts at random number and goes to _MAX_SEQU_NUM */
-    _retu->_initial_time = 0;        /* In seconds */
+    _retu->_sequence_number = get_random_number ( _MAX_SEQU_NUM );
+    _retu->_last_sequence_number = _retu->_sequence_number; /* Do not touch this variable */
+
+    _retu->_initial_time = now();    /* In seconds */
     _retu->_time_elapsed = 0;        /* In seconds */
 
     _retu->_ext_header = NULL;       /* When needed allocate */
@@ -119,43 +122,13 @@ int rtp_terminate_session(rtp_session_t* _session)
     return SUCCESS;
 }
 
-int rtp_add_resolution_marking( rtp_session_t* _session, uint16_t _width, uint16_t _height )
+int rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 {
-    if ( !_session )
-        return FAILURE;
-
-    if ( !(_session->_ext_header) ){
-        ALLOCATOR_S(_session->_ext_header, rtp_ext_header_t)
-        _session->_extension = 1;
-        _session->_ext_header->_ext_len = 0;
-        ALLOCATOR_S(_session->_ext_header->_hd_ext, uint32_t)
+    switch ( packet[0] )
+    {
+    case RTP_PACKET_ID:
+        return SUCCESS;
     }
-    else ADD_ALLOCATE ( _session->_ext_header->_hd_ext, uint32_t, _session->_ext_header->_ext_len )
-
-    _session->_ext_header->_ext_len++; /* Just add one */
-    _session->_ext_header->_ext_type = RTP_EXT_TYPE_RESOLUTION;
-
-
-    _session->_ext_header->_hd_ext[_session->_ext_header->_ext_len - 1] = _width << 16 | ( uint32_t ) _height;
-
-    return SUCCESS;
-}
-
-int rtp_remove_resolution_marking( rtp_session_t* _session )
-{
-    if ( !_session || _session->_extension == 0 || !(_session->_ext_header) )
-        return FAILURE;
-
-    if ( _session->_ext_header->_ext_type != RTP_EXT_TYPE_RESOLUTION )
-        return FAILURE;
-
-    DEALLOCATOR(_session->_ext_header->_hd_ext)
-    DEALLOCATOR(_session->_ext_header)
-
-    _session->_ext_header = NULL; /* It's very important */
-    _session->_extension = 0;
-
-    return SUCCESS;
 }
 
 uint16_t rtp_get_resolution_marking_height(rtp_ext_header_t* _header)
@@ -176,10 +149,6 @@ uint16_t rtp_get_resolution_marking_width(rtp_ext_header_t* _header)
 
 rtp_header_t* rtp_build_header ( rtp_session_t* _session )
 {
-    if ( !_session ) {
-        return NULL;
-    }
-
     rtp_header_t* _retu;
     _retu = ( rtp_header_t* ) malloc ( sizeof ( rtp_header_t ) );
 
@@ -191,13 +160,15 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     rtp_header_add_setting_payload ( _retu, _session->_payload_type );
 
     _retu->_sequence_number = _session->_sequence_number;
-    _retu->_timestamp = _session->_initial_time + _session->_time_elapsed;
+    _retu->_timestamp = 0;/* _session->_initial_time + _session->_time_elapsed; */
     _retu->_ssrc = _session->_ssrc;
 
     if ( _session->_cc > 0 ) {
         ALLOCATOR ( _retu->_csrc, uint32_t, _session->_cc )
 
-        for ( int i = 0; i < _session->_cc; i++ ) {
+        int i;
+
+        for ( i = 0; i < _session->_cc; i++ ) {
             _retu->_csrc[i] = _session->_csrc[i];
         }
     } else {
@@ -216,4 +187,228 @@ void rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value )
 uint32_t rtp_get_payload_type ( rtp_session_t* _session )
 {
     return _payload_table[_session->_payload_type];
+}
+
+
+
+int rtp_add_user ( rtp_session_t* _session, IP_Port _dest )
+{
+    rtp_dest_list_t* _new_user;
+    ALLOCATOR_LIST_S ( _new_user, rtp_dest_list_t, NULL )
+    _session->_last_user->next = _new_user;
+    _session->_last_user = _new_user;
+    return SUCCESS;
+}
+
+int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
+{
+    int _last;
+    unsigned long long _total = 0;
+
+
+    rtp_dest_list_t* _it;
+    for ( _it = _session->_dest_list; _it != NULL; _it = _it->next ) {
+
+        if ( !_msg  || _msg->_data == NULL ) {
+            _session->_last_error = "Tried to send empty message";
+        } else {
+            _last = sendpacket ( _it->_dest, _msg->_data, _msg->_length );
+
+            if ( _last < 0 ) {
+                _session->_last_error = strerror ( errno );
+            } else {
+                /* Set sequ number */
+                if ( _session->_sequence_number == _MAX_SEQU_NUM ) {
+                    _session->_sequence_number = 0;
+                } else {
+                    _session->_sequence_number++;
+                }
+
+
+                _session->_packets_sent ++;
+                _total += _last;
+            }
+        }
+
+    }
+
+    DEALLOCATOR_MSG ( _msg ) /* free message */
+    _session->_bytes_sent += _total;
+    return SUCCESS;
+}
+
+rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
+{
+    int32_t  _bytes;
+    IP_Port  _from;
+    int status = receivepacket ( &_from, LAST_SOCKET_DATA, &_bytes );
+
+    if ( status == FAILURE )  /* nothing recved */
+        return NULL;
+
+
+    LAST_SOCKET_DATA[_bytes] = '\0';
+
+    _session->_bytes_recv += _bytes;
+    _session->_packets_recv ++;
+
+    return rtp_msg_parse ( _session, LAST_SOCKET_DATA, _bytes, &_from );
+}
+
+rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
+{
+    rtp_msg_t* _retu;
+    ALLOCATOR_S ( _retu, rtp_msg_t )
+
+    /* Sets header values and copies the extension header in _retu */
+    _retu->_header = ( rtp_header_t* ) rtp_build_header ( _session ); /* It allocates memory and all */
+    _retu->_ext_header = _session->_ext_header;
+
+    _length += _retu->_header->_length;
+
+    /* Allocate Memory for _retu->_data */
+    _retu->_data = ( uint8_t* ) malloc ( sizeof ( uint8_t ) * _length );
+
+    /*
+     * Parses header into _retu->_data starting from 0
+     * Will need to set this _from to 1 since the 0 byte
+     * Is used by the messenger to determine that this is rtp.
+     */
+    uint16_t _from_pos = rtp_add_header ( _retu->_header, _retu->_data, 0, _length );
+
+    /*
+     * Parses the extension header into the message
+     * Of course if there is any
+     */
+
+    if ( _retu->_ext_header ){
+
+        _length += ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
+        SET_ALLOCATE(_retu->_data, uint8_t, _length )
+
+        _from_pos = rtp_add_extention_header( _retu->_ext_header, _retu->_data, _from_pos - 1, _length );
+    }
+
+    /* Appends _data on to _retu->_data */
+    memadd ( _retu->_data, _from_pos, _data, _length);
+
+    _retu->_length = _length;
+
+    if ( _from ) {
+        _retu->_from.ip = _from->ip;
+        _retu->_from.port = _from->port;
+        _retu->_from.padding = _from->padding;
+    }
+
+    return _retu;
+}
+
+rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
+{
+    rtp_msg_t* _retu;
+    ALLOCATOR_S ( _retu, rtp_msg_t )
+
+    _retu->_header = rtp_extract_header ( _data, 0, _length ); /* It allocates memory and all */
+
+    if ( !_retu->_header )
+        return NULL;
+
+
+    _retu->_length = _length - _retu->_header->_length;
+
+    uint16_t _from_pos = _retu->_header->_length;
+
+    if ( rtp_header_get_flag_CSRC_count ( _retu->_header ) == 1 ) { /* Which means initial msg */
+        ADD_ALLOCATE ( _session->_csrc, uint32_t, 1 )
+        _session->_cc = 2;
+        _session->_csrc[1] = _retu->_header->_csrc[0];
+        _retu->_header->_length += 4;
+    }
+
+    /*
+     * Check Sequence number. If this new msg has lesser number then expected drop it return
+     * NULL and add stats _packet_loss into _session. RTP does not specify what you do when the packet is lost.
+     * You may for example play previous packet, show black screen etc.
+     */
+
+    else if ( _retu->_header->_sequence_number < _session->_last_sequence_number ) {
+        if ( _retu->_header->_sequence_number != 0 ) { /* if == 0 then it's okay */
+            _session->_packet_loss++;
+            _session->_last_sequence_number = _retu->_header->_sequence_number;
+
+            free ( _retu->_header );
+            free ( _retu );
+
+            return NULL; /* Yes return NULL ( Drop the packet ) */
+        }
+    }
+
+    _session->_last_sequence_number = _retu->_header->_sequence_number;
+
+    if ( rtp_header_get_flag_extension(_retu->_header) ){
+        _retu->_ext_header = rtp_extract_ext_header(_data, _from_pos - 1, _length);
+        _retu->_length -= ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
+        _from_pos += ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
+    }
+
+    /* Get the payload */
+    _retu->_data = malloc ( sizeof ( uint8_t ) * _retu->_length );
+    memcpy_from ( _retu->_data, _from_pos, _data, _length);
+
+
+    if ( _from ) { /* Remove this is not need */
+        _retu->_from.ip = _from->ip;
+        _retu->_from.port = _from->port;
+        _retu->_from.padding = _from->padding;
+    }
+
+    return _retu;
+}
+
+
+int rtp_add_resolution_marking( rtp_session_t* _session, uint16_t _width, uint16_t _height )
+{
+    if ( !(_session->_ext_header) ){
+        ALLOCATOR_S(_session->_ext_header, rtp_ext_header_t)
+        _session->_extension = 1;
+        _session->_ext_header->_ext_len = 0;
+        ALLOCATOR_S(_session->_ext_header->_hd_ext, uint32_t)
+    }
+    else ADD_ALLOCATE ( _session->_ext_header->_hd_ext, uint32_t, _session->_ext_header->_ext_len )
+
+    _session->_ext_header->_ext_len++; /* Just add one */
+    _session->_ext_header->_ext_type = RTP_EXT_TYPE_RESOLUTION;
+
+
+    _session->_ext_header->_hd_ext[_session->_ext_header->_ext_len - 1] = _width << 16 | ( uint32_t ) _height;
+
+    return SUCCESS;
+}
+
+int rtp_remove_resolution_marking( rtp_session_t* _session )
+{
+    if ( _session->_extension == 0 || !(_session->_ext_header) )
+        return FAILURE;
+
+    if ( _session->_ext_header->_ext_type != RTP_EXT_TYPE_RESOLUTION )
+        return FAILURE;
+
+    DEALLOCATOR(_session->_ext_header->_hd_ext)
+    DEALLOCATOR(_session->_ext_header)
+
+    _session->_ext_header = NULL; /* It's very important */
+    _session->_extension = 0;
+
+    return SUCCESS;
+}
+
+uint32_t rtp_get_time_elapsed ( rtp_session_t* _session )
+{
+    uint64_t _current = now();
+
+    if ( ( _session->_initial_time + _session->_time_elapsed ) < _current ){
+        _session->_time_elapsed = _current - _session->_time_elapsed;
+    }
+
+    return _session->_time_elapsed;
 }

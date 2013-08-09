@@ -1,4 +1,4 @@
-/* helper.h
+/* rtp_helper.h
 *
 * Has some standard functions. !Red!
 *
@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef _HELPER_H_
-#define _HELPER_H_
+#ifndef _RTP__HELPER_H_
+#define _RTP__HELPER_H_
 
 #include <time.h>
 #include <inttypes.h>
@@ -43,4 +43,4 @@ uint32_t get_random_number ( uint32_t _max );
 void memadd ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size );
 void memcpy_from ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size );
 
-#endif /* _HELPER_H_ */
+#endif /* _RTP__HELPER_H_ */
