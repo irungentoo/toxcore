@@ -10,6 +10,14 @@ else()
 	option(USE_NACL "Use NaCl library instead of libsodium")
 endif()
 
+#OS X specific
+if(APPLE)
+	set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
+	set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
+	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -I/opt/local/include" )
+	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -L/opt/local/lib")
+endif()
+
 if(UNIX)
 	find_package(Curses REQUIRED)
 endif()
