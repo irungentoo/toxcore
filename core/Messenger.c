@@ -517,6 +517,11 @@ int initMessenger(void)
     if(init_networking(ip,PORT) == -1)
         return -1;
 
+	DHT_init();
+	LosslessUDP_init();
+	friendreq_init();
+	LANdiscovery_init();
+
     return 0;
 }
 
@@ -684,21 +689,13 @@ static void LANdiscovery(void)
 void doMessenger(void)
 {
 	networking_poll();
-
+	
 	doDHT();
 	doLossless_UDP();
 	doNetCrypto();
 	doInbound();
 	doFriends();
 	LANdiscovery();
-}
-
-void Messenger_init(void)
-{
-	DHT_init();
-	LosslessUDP_init();
-	friendreq_init();
-	LANdiscovery_init();
 }
 
 /* returns the size of the messenger data (for saving) */
