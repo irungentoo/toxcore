@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.6.0)
-project(nTox C)
+project(nToxAudio C)
 
-set(exe_name nTox)
+set(exe_name nToxAudio)
 
 add_executable(${exe_name}
-	nTox.c misc_tools.c)
+	nToxAudio.c misc_tools.c)
 
 target_link_libraries(${exe_name}
 	ncurses)
