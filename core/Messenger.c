@@ -47,8 +47,9 @@ uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 static uint8_t self_name[MAX_NAME_LENGTH];
 static uint16_t self_name_length;
 
-static uint8_t *self_statusmessage;
-static uint16_t self_statusmessage_len;
+static uint8_t self_statusmessage[MAX_STATUSMESSAGE_LENGTH];
+static uint16_t self_statusmessage_length;
+
 static USERSTATUS self_userstatus;
 
 static Friend *friendlist;
@@ -315,11 +316,8 @@ int m_set_statusmessage(uint8_t *status, uint16_t length)
 {
     if (length > MAX_STATUSMESSAGE_LENGTH)
         return -1;
-    uint8_t *newstatus = calloc(length, 1);
-    memcpy(newstatus, status, length);
-    free(self_statusmessage);
-    self_statusmessage = newstatus;
-    self_statusmessage_len = length;
+    memcpy(self_statusmessage, status, length);
+    self_statusmessage_length = length;
 
     uint32_t i;
     for (i = 0; i < numfriends; ++i)
@@ -565,7 +563,7 @@ static void doFriends(void)
                     friendlist[i].name_sent = 1;
             }
             if (friendlist[i].statusmessage_sent == 0) {
-                if (send_statusmessage(i, self_statusmessage, self_statusmessage_len))
+                if (send_statusmessage(i, self_statusmessage, self_statusmessage_length))
                     friendlist[i].statusmessage_sent = 1;
             }
             if (friendlist[i].userstatus_sent == 0) {
