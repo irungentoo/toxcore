@@ -599,9 +599,9 @@ static void doFriends(void)
                     break;
                 }
                 case PACKET_ID_USERSTATUS: {
-                    if (data_length != 1)
+                    if (data_length != sizeof(USERSTATUS))
                         break;
-                    USERSTATUS status = data[0];
+                    USERSTATUS status = (USERSTATUS)(*data);
                     if (friend_userstatuschange_isset)
                         friend_userstatuschange(i, status);
                     set_friend_userstatus(i, status);
