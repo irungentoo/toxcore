@@ -71,7 +71,7 @@ int sendpacket(IP_Port ip_port, uint8_t * data, uint32_t length)
    the packet data into data
    the packet length into length.
    dump all empty packets. */
-int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
+static int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
 {
     ADDR addr;
 #ifdef WIN32
@@ -86,6 +86,27 @@ int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
     ip_port->ip = addr.ip;
     ip_port->port = addr.port;
     return 0;
+}
+
+static packet_handler_callback packethandlers[256] = {0};
+
+void networking_registerhandler(uint8_t byte, packet_handler_callback cb)
+{
+	packethandlers[byte] = cb;
+}
+
+void networking_poll()
+{
+	IP_Port ip_port;
+	uint8_t data[MAX_UDP_PACKET_SIZE];
+	uint32_t length;
+
+	while (receivepacket(&ip_port, data, &length))
+	{
+		if (length < 1) continue;
+		if (!packethandlers[data[0]]) continue;
+		packethandlers[data[0]](ip_port, data, length);
+	}
 }
 
 /* initialize networking
@@ -149,7 +170,6 @@ int init_networking(IP ip, uint16_t port)
     bind(sock, (struct sockaddr*)&addr, sizeof(addr));
 
     return 0;
-
 }
 
 /* function to cleanup networking stuff */

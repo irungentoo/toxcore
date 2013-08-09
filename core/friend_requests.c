@@ -101,7 +101,7 @@ static int request_received(uint8_t * client_id)
 }
 
 
-int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+static int friendreq_handlepacket(IP_Port source, uint8_t * packet, uint32_t length)
 {
     if (packet[0] == 32) {
         if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
@@ -128,4 +128,9 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
         }
     }
     return 1;
+}
+
+void friendreq_init(void)
+{
+	networking_registerhandler(32, &friendreq_handlepacket);
 }

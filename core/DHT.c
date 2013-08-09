@@ -554,7 +554,7 @@ static int sendnodes(IP_Port ip_port, uint8_t * public_key, uint8_t * client_id,
     return sendpacket(ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
-static int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_getnodes(IP_Port source, uint8_t * packet, uint32_t length)
 {
     uint64_t ping_id;
 
@@ -586,7 +586,7 @@ static int handle_getnodes(uint8_t * packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-static int handle_sendnodes(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_sendnodes(IP_Port source, uint8_t * packet, uint32_t length)
 {
     uint64_t ping_id;
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
@@ -930,7 +930,7 @@ static int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 }
 
 /* Handle a received ping request for */
-static int handle_NATping(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_NATping(IP_Port source, uint8_t * packet, uint32_t length) 
 {
     if (length < crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING 
             || length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
@@ -1074,30 +1074,13 @@ static void doNAT(void)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
-int DHT_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+void DHT_init(void)
 {
-    switch (packet[0]) {
-    case 0:
-        return handle_ping_request(packet, length, source);
-
-    case 1:
-        return handle_ping_response(packet, length, source);
-
-    case 2:
-        return handle_getnodes(packet, length, source);
-
-    case 3:
-        return handle_sendnodes(packet, length, source);
-
-    case 254:
-        return handle_NATping(packet, length, source);
-
-    default:
-        return 1;
-
-    }
-
-    return 0;
+	networking_registerhandler(0, &handle_ping_request);
+	networking_registerhandler(1, &handle_ping_request);
+	networking_registerhandler(2, &handle_getnodes);
+	networking_registerhandler(3, &handle_sendnodes);
+	networking_registerhandler(254, &handle_NATping);
 }
 
 void doDHT(void)
