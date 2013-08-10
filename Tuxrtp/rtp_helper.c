@@ -47,7 +47,7 @@ int set_ip_port ( const char* _ip, short _port, void* _dest )
 uint32_t get_random_number ( uint32_t _max )
 {
     if ( _seed < 0 ) {
-        srand ( unix_time() );
+        srand ( _time );
         _seed++;
     }
 
