@@ -156,14 +156,20 @@ int main(int argc, char *argv[])
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
     DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     
+/*
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
+*/
+
+    DHT_init();
+    friendreq_init();
     
     while(1) {
             
         doDHT();
         
+/* slvrTODO:
         while(receivepacket(&ip_port, data, &length) != -1) {
             if(DHT_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
                 //unhandled packet
@@ -172,11 +178,14 @@ int main(int argc, char *argv[])
                 printf("Received handled packet with length: %u\n", length);
             }
         }
+*/
+        networking_poll();
+
         print_clientlist();
         print_friendlist();
         c_sleep(300);
     }
     
     shutdown_networking();
-    return 0;   
+    return 0;
 }

@@ -518,6 +518,11 @@ int initMessenger(void)
     if(init_networking(ip,PORT) == -1)
         return -1;
 
+    DHT_init();
+    LosslessUDP_init();
+    friendreq_init();
+    LANdiscovery_init();
+
     return 0;
 }
 
@@ -684,29 +689,8 @@ static void LANdiscovery(void)
 /* the main loop that needs to be run at least 200 times per second. */
 void doMessenger(void)
 {
-    IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
-    while (receivepacket(&ip_port, data, &length) != -1) {
-#ifdef DEBUG
-        /* if(rand() % 3 != 1) //simulate packet loss */
-        /* { */
-        if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) &&
-            friendreq_handlepacket(data, length, ip_port) && LANdiscovery_handlepacket(data, length, ip_port))
-            /* if packet is discarded */
-            printf("Received unhandled packet with length: %u\n", length);
-        else
-            printf("Received handled packet with length: %u\n", length);
-        /* } */
-        printf("Status: %u %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id),  friendlist[0].crypt_connection_id);
-#else
-        DHT_handlepacket(data, length, ip_port);
-        LosslessUDP_handlepacket(data, length, ip_port);
-        friendreq_handlepacket(data, length, ip_port);
-        LANdiscovery_handlepacket(data, length, ip_port);
-#endif
-
-    }
+    networking_poll();
+	
     doDHT();
     doLossless_UDP();
     doNetCrypto();
