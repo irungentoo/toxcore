@@ -190,7 +190,7 @@ int handle_ping_request(IP_Port source, uint8_t* packet, uint32_t length)
     return 0;
 }
 
-int handle_ping_response(uint8_t* packet, uint32_t length, IP_Port source)
+int handle_ping_response(IP_Port source, uint8_t* packet, uint32_t length)
 {
     pingres_t* p = (pingres_t*) packet;
     int       rc;
