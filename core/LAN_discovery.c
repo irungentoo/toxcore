@@ -127,7 +127,9 @@ int send_LANdiscovery(uint16_t port)
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = 32;
     memcpy(data + 1, self_public_key, crypto_box_PUBLICKEYBYTES);
-    IP_Port ip_port = {broadcast_ip(), port};
+    IP_Port ip_port;
+    ip_port.ip = broadcast_ip();
+    ip_port.port = port;
     return sendpacket(ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
 

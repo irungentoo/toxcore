@@ -9,7 +9,6 @@
 
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
-#include "../misc_tools.h"
 
 #include "windows.h"
 
@@ -61,6 +60,18 @@ int add_req(uint8_t *public_key)
   memcpy(pending_requests[num_requests], public_key, CLIENT_ID_SIZE);
   ++num_requests;
   return num_requests-1;
+}
+
+// XXX: FIX
+unsigned char *hex_string_to_bin(char hex_string[])
+{
+  size_t len = strlen(hex_string);
+  unsigned char *val = malloc(len);
+  char *pos = hex_string;
+  int i;
+  for (i = 0; i < len; ++i, pos+=2)
+    sscanf(pos,"%2hhx",&val[i]);
+  return val;
 }
 
 void cmd_accept(ToxWindow *self, char **args)

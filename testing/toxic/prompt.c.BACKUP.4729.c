@@ -63,7 +63,23 @@ int add_req(uint8_t *public_key)
   return num_requests-1;
 }
 
+<<<<<<< HEAD
+static void execute(ToxWindow *self, char *u_cmd)
+=======
+// XXX: FIX
+unsigned char *hex_string_to_bin(char hex_string[])
+{
+  size_t len = strlen(hex_string);
+  unsigned char *val = malloc(len);
+  char *pos = hex_string;
+  int i;
+  for (i = 0; i < len; ++i, pos+=2)
+    sscanf(pos,"%2hhx",&val[i]);
+  return val;
+}
+
 void cmd_accept(ToxWindow *self, char **args)
+>>>>>>> 341de59bb627600c27ef29b113fa71bac120350f
 {
   int num = atoi(args[1]);
   if (num >= num_requests) {

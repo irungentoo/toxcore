@@ -18,9 +18,12 @@
 
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
+#include "../misc_tools.h"
 
 #include "configdir.h"
 #include "windows.h"
+
+extern const char *tox_program_name;
 
 extern ToxWindow new_prompt();
 extern ToxWindow new_friendlist();
@@ -349,6 +352,7 @@ void set_active_window(int ch)
 
 int main(int argc, char *argv[])
 {
+  tox_program_name = argv[0];
   int ch;
   int f_flag = 0;
   char *user_config_dir = get_user_config_dir();
