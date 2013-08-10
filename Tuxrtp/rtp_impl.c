@@ -26,6 +26,7 @@
 #include "rtp_impl.h"
 #include <assert.h>
 #include "rtp_allocator.h"
+#include "../core/util.h"
 
 /* Some defines */
 
@@ -107,9 +108,6 @@ int rtp_terminate_session(rtp_session_t* _session)
     if ( _session->_dest_list )
         DEALLOCATOR_LIST_S(_session->_dest_list, rtp_dest_list_t)
 
-    if ( _session->_last_error )
-        DEALLOCATOR(_session->_last_error)
-
     if ( _session->_ext_header )
         DEALLOCATOR(_session->_ext_header)
 
@@ -130,6 +128,7 @@ int rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
     case RTP_PACKET_ID:
         return SUCCESS;
     }
+    return FAILURE;
 }
 
 uint16_t rtp_get_resolution_marking_height(rtp_ext_header_t* _header)
@@ -256,15 +255,14 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
 
 rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
 {
-    int32_t  _bytes;
+    uint32_t  _bytes;
     IP_Port  _from;
     int status = receivepacket ( &_from, LAST_SOCKET_DATA, &_bytes );
 
+    LAST_SOCKET_DATA[_bytes] = '\0';
+
     if ( status == FAILURE )  /* nothing recved */
         return NULL;
-
-
-    LAST_SOCKET_DATA[_bytes] = '\0';
 
     _session->_bytes_recv += _bytes;
     _session->_packets_recv ++;

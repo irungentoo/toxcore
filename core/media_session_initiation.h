@@ -24,8 +24,8 @@
 */
 
 
-#ifndef _RTP__SESSION__INITIATION_H_
-#define _RTP__SESSION__INITIATION_H_
+#ifndef _MEDIA__SESSION__INITIATION_H_
+#define _MEDIA__SESSION__INITIATION_H_
 
 #include <inttypes.h>
 #include "Messenger.h"
@@ -109,4 +109,4 @@ void media_session_register_callback_state_ringing(int (*callback) (void));
 int media_session_handlepacket ( media_session_t* _session, uint8_t* _data, uint16_t _lenght );
 
 
-#endif /* _RTP__SESSION__INITIATION_H_ */
+#endif /* _MEDIA__SESSION__INITIATION_H_ */

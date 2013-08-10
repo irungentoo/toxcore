@@ -5,6 +5,11 @@
  * Copyright 2013  plutooo
  */
 
+#ifndef _PACKET_H_
+#define _PACKET_H_
+
+#include "DHT.h"
+
 typedef struct {
     uint8_t id[CLIENT_ID_SIZE];
 
@@ -35,3 +40,5 @@ typedef struct {
     uint8_t    padding[ENCRYPTION_PADDING];
 
 } __attribute__((packed)) pingres_t;
+
+#endif /* _PACKET_H_ */

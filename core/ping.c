@@ -7,12 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "DHT.h"
-#include "net_crypto.h"
-#include "packets.h"
-#include "network.h"
-#include "util.h"
+#include "ping.h"
 
 #define PING_NUM_MAX 256
 #define PING_TIMEOUT 5 // 5s
@@ -92,7 +87,7 @@ bool is_pinging(IP_Port ipp, uint64_t ping_id)   // O(n) TODO: replace this with
 {
     if (ipp.ip.i == 0 && ping_id == 0)
         return false;
-    
+
     size_t i, id;
 
     remove_timeouts();
