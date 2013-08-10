@@ -61,7 +61,6 @@ int media_session_handle_recv_ringing ( media_session_t* _session, uint8_t* _dat
 
 int media_session_handlepacket ( media_session_t* _session, uint8_t* _data, uint16_t _lenght )
 {
-    assert(0);
     if ( _lenght < 2 )
         return FAILURE;
 
