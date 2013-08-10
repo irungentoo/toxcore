@@ -8,7 +8,7 @@
 /* --------- GLOBAL FUNCTIONS USED BY THIS FILE --------- */
 
 /* CALLBACKS */
-int (*media_session_send_message_callback) ( int, uint8_t*, uint16_t ) = NULL;
+int (*media_session_send_message_callback) ( int, uint8_t*, uint32_t ) = NULL;
 
 int (*media_session_state_ringing_callback) (void) = NULL;
 /* End of CALLBACKS */
@@ -52,9 +52,11 @@ void media_session_register_callback_state_ringing(int (*callback) (void))
 
 int media_session_handle_recv_invite ( media_session_t* _session, uint8_t* _data, uint16_t _lenght )
 {
+    return 0;
 }
 int media_session_handle_recv_ringing ( media_session_t* _session, uint8_t* _data, uint16_t _lenght )
 {
+    return 0;
 }
 
 int media_session_handlepacket ( media_session_t* _session, uint8_t* _data, uint16_t _lenght )
