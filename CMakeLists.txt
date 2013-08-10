@@ -40,7 +40,7 @@ endif()
 macro(linkCoreLibraries exe_name)
 	add_dependencies(${exe_name} toxcore toxrtp)
 	target_link_libraries(${exe_name} toxcore toxrtp
-		${LINK_CRYPTO_LIBRARY})
+		${LINK_CRYPTO_LIBRARY} pthread)
 
 	if(WIN32)
 		target_link_libraries(${exe_name} ws2_32)
