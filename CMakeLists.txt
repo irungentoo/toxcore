@@ -38,8 +38,8 @@ if(NOT WIN32)
 endif()
 
 macro(linkCoreLibraries exe_name)
-	add_dependencies(${exe_name} toxcore)
-	target_link_libraries(${exe_name} toxcore
+	add_dependencies(${exe_name} toxcore toxrtp)
+	target_link_libraries(${exe_name} toxcore toxrtp
 		${LINK_CRYPTO_LIBRARY})
 
 	if(WIN32)
@@ -50,6 +50,7 @@ endmacro()
 cmake_policy(SET CMP0011 NEW)
 
 add_subdirectory(core)
+add_subdirectory(Tuxrtp)
 add_subdirectory(testing)
 add_subdirectory(other)
 add_subdirectory(docs)

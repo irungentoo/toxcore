@@ -22,7 +22,7 @@
  */
 
 #include "Messenger.h"
-#include "../Tuxrtp/media_session_initiation.h" /* It contains Messenger.h by default
+#include "media_session_initiation.h" /* It contains Messenger.h by default
                                                  * so no need to include Messenger.h */
 #define MIN(a,b) (((a)<(b))?(a):(b))
 

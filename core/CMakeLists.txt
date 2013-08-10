@@ -10,7 +10,8 @@ set(core_sources
 	LAN_discovery.c
 	Messenger.c
 	util.c
-	ping.c)
+	ping.c	
+	media_session_initiation.c)
 
 if(SHARED_TOXCORE)
 	add_library(toxcore SHARED ${core_sources})
