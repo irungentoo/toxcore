@@ -1077,7 +1077,7 @@ static void doNAT(void)
 void DHT_init(void)
 {
 	networking_registerhandler(0, &handle_ping_request);
-	networking_registerhandler(1, &handle_ping_request);
+	networking_registerhandler(1, &handle_ping_response);
 	networking_registerhandler(2, &handle_getnodes);
 	networking_registerhandler(3, &handle_sendnodes);
 	networking_registerhandler(254, &handle_NATping);
