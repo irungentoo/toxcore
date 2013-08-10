@@ -96,7 +96,7 @@ int media_terminate_session(media_session_t* _session);
 
 /* Registering callbacks */
 
-void media_session_register_callback_send(int (*callback) ( int, uint8_t*, uint16_t ) );
+void media_session_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) );
 
 /* It's a function to register as a callback when the ringing state hits on */
 void media_session_register_callback_state_ringing(int (*callback) (void));

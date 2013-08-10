@@ -40,7 +40,7 @@ int media_terminate_session(media_session_t* _session)
     return status;
 }
 
-void media_session_register_callback_send(int (*callback) ( int, uint8_t*, uint16_t ) )
+void media_session_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) )
 {
     media_session_send_message_callback = callback;
 }
