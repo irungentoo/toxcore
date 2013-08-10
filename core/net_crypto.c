@@ -467,7 +467,6 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
             random_nonce(crypto_connections[i].recv_nonce);
             memcpy(crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
             memcpy(crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
-            
             increment_nonce(crypto_connections[i].sent_nonce);
             memcpy(crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
 
@@ -477,6 +476,9 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
                                      crypto_connections[i].sessionpublic_key) == 1) {
                 increment_nonce(crypto_connections[i].recv_nonce);
                 uint32_t zero = 0;
+                encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
+                                   crypto_connections[i].sessionsecret_key, 
+                                   crypto_connections[i].shared_key);
                 crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                 write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
                 crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
@@ -569,9 +571,11 @@ static void receive_crypto(void)
                     if (memcmp(public_key, crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
                         memcpy(crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
                         memcpy(crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
-                        encrypt_precompute(crypto_connections[i].peersessionpublic_key, crypto_connections[i].sessionsecret_key, crypto_connections[i].shared_key);
                         increment_nonce(crypto_connections[i].sent_nonce);
                         uint32_t zero = 0;
+                        encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
+                                           crypto_connections[i].sessionsecret_key, 
+                                           crypto_connections[i].shared_key);
                         crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                         write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
                         crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
@@ -592,6 +596,9 @@ static void receive_crypto(void)
                 uint32_t zero = 0;
                 if (len == sizeof(uint32_t) && memcmp(((uint8_t *)&zero), data, sizeof(uint32_t)) == 0) {
                     increment_nonce(crypto_connections[i].recv_nonce);
+                    encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
+                                       crypto_connections[i].sessionsecret_key, 
+                                       crypto_connections[i].shared_key);
                     crypto_connections[i].status = CONN_ESTABLISHED;
 
                     /* connection is accepted so we disable the auto kill by setting it to about 1 month from now. */
