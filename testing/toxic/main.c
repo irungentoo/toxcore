@@ -28,7 +28,6 @@ extern ToxWindow new_friendlist();
 extern int friendlist_onFriendAdded(int num);
 extern void disable_chatwin(int f_num);
 extern int add_req(uint8_t *public_key); // XXX
-extern void cmd_connect(ToxWindow *self, char **args);
 extern unsigned char *hex_string_to_bin(char hex_string[]);
 
 /* Holds status of chat windows */
