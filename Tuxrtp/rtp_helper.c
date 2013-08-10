@@ -30,6 +30,11 @@
 
 static int _seed = -1; /* Not initiated */
 
+int wfunc_unused()
+{
+    s_unused(NULL)
+}
+
 int set_ip_port ( const char* _ip, short _port, void* _dest )
 {
     if ( !_dest ) {
