@@ -389,7 +389,8 @@ static int send_statusmessage(int friendnumber, uint8_t * status, uint16_t lengt
 
 static int send_userstatus(int friendnumber, USERSTATUS status)
 {
-    return write_cryptpacket_id(friendnumber, PACKET_ID_USERSTATUS, (uint8_t*)&status, sizeof(USERSTATUS));
+    uint8_t stat = status;
+    return write_cryptpacket_id(friendnumber, PACKET_ID_USERSTATUS, &stat, sizeof(stat));
 }
 
 static int set_friend_statusmessage(int friendnumber, uint8_t * status, uint16_t length)
