@@ -81,8 +81,9 @@ typedef struct rtp_session_s {
     uint8_t                 _payload_type;
     uint16_t                _sequence_number;      /* Set when sending */
     uint16_t                _last_sequence_number; /* Check when recving msg */
-    uint64_t                _initial_time;
+    uint32_t                _initial_time;
     uint32_t                _time_elapsed;
+    uint32_t                _current_timestamp;
     uint32_t                _ssrc;
     uint32_t*               _csrc;
 
@@ -117,6 +118,9 @@ typedef struct rtp_session_s {
  * since we have csrc table but will leave it like this for a while
  */
 
+
+void            rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message);
+
 /* Functions handling receiving */
 rtp_msg_t*      rtp_recv_msg ( rtp_session_t* _session );
 rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from );
@@ -150,8 +154,5 @@ uint16_t        rtp_get_resolution_marking_width(rtp_ext_header_t* _header);
     /* Convenient functions for marking the payload */
 void            rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value );
 uint32_t        rtp_get_payload_type ( rtp_session_t* _session );
-
-    /* Informational */
-uint32_t        rtp_get_time_elapsed ( rtp_session_t* _session );
 
 #endif /* _RTP__IMPL_H_ */

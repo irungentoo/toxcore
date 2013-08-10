@@ -41,7 +41,7 @@ int print_help()
     return FAILURE;
 } */
 
-int ___main ( int argc, char* argv[] )
+int ____main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port[1];
@@ -83,30 +83,30 @@ int ___main ( int argc, char* argv[] )
         /* start in recv mode */
 
         if ( _interval > 0 ) {
-            int _interval_counter = _interval * 100;
+            int _interval_counter = _interval * ( 1000000 / _SLEEP_INTERVAL );
 
             while ( 1 ) {
                 _m_msg = rtp_recv_msg ( _m_session );
-
-                /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
-                if ( _m_msg ) {
-                    /* ADD MSG HANDLERS HERE */
-                    /**/
-
-                    DEALLOCATOR_MSG ( _m_msg )
-                }
 
                 if ( _interval_counter == 0 ) {
 
                     printf ( "Bytes received:   %d\n"
                              "Packets received: %d\n"
                              "Packet loss:      %d\n"
+                             "Last SequNum      %d\n"
                              , _m_session->_bytes_recv
                              , _m_session->_packets_recv
-                             , _m_session->_packet_loss );
+                             , _m_session->_packet_loss
+                             , _m_session->_last_sequence_number );
 
-                    _interval_counter = _interval * 100;
+                    _interval_counter = _interval * ( 1000000 / _SLEEP_INTERVAL );
 
+                }
+
+                if ( _m_msg ) {
+                    /* ADD MSG HANDLERS HERE */
+                    /**/
+                    rtp_free_msg(_m_session, _m_msg);
                 }
 
                 usleep ( _SLEEP_INTERVAL );
@@ -118,12 +118,11 @@ int ___main ( int argc, char* argv[] )
             while ( 1 ) {
                 _m_msg = rtp_recv_msg ( _m_session );
 
-                /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
                 if ( _m_msg ) {
                     /* ADD MSG HANDLERS HERE */
                     /**/
 
-                    DEALLOCATOR_MSG ( _m_msg )
+                    rtp_free_msg(_m_session, _m_msg);
                 }
 
                 usleep ( _SLEEP_INTERVAL );
@@ -147,13 +146,40 @@ int ___main ( int argc, char* argv[] )
         _m_session = rtp_init_session ( Ip_port[0], -1 );
         printf ( "Now sending to remote: %s:%d ... ( press ctrl-c to stop )\n", ip, port );
 
-        for ( ;; ) {
-            _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL ) ;
-            rtp_send_msg ( _m_session, _m_msg );
-            usleep ( 10000 );
+        const char* _interval_arg = find_arg_duble ( _list, "-i" );
+        int _interval = -1;
 
+        if ( _interval_arg != NULL ) {
+            _interval = atoi ( _interval_arg );
         }
 
+        if ( _interval > 0 ) {
+            int _interval_counter = _interval * ( 1000000 / _SLEEP_INTERVAL );
+
+
+            for ( ;; ) {
+                _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL ) ;
+                rtp_send_msg ( _m_session, _m_msg );
+                usleep ( _SLEEP_INTERVAL );
+
+                if ( _interval_counter == 0 ) {
+
+                    _m_session->_sequence_number -= 5;
+
+                    _interval_counter = _interval * ( 1000000 / _SLEEP_INTERVAL );
+
+                }
+
+                _interval_counter--;
+            }
+        }
+        else {
+            for ( ;; ) {
+                _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL ) ;
+                rtp_send_msg ( _m_session, _m_msg );
+                usleep ( _SLEEP_INTERVAL );
+            }
+        }
         printf ( "Packets sent: %d\n", _m_session->_packets_sent );
         printf ( "Bytes sent:   %d\n", _m_session->_bytes_sent );
 

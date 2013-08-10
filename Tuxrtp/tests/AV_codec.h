@@ -168,7 +168,7 @@ int decode_thread(void *arg)
             {
                 printf("frame finished!\n");
                 display_frame(is);
-                DEALLOCATOR_MSG ( is->_m_msg )
+                rtp_free_msg(is->_m_session, is->_m_msg);
             }
             else
             {

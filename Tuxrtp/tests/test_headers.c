@@ -168,7 +168,7 @@ int _main ( int argc, char* argv[] )
 
             /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
             if ( _m_msg ) {
-                DEALLOCATOR_MSG(_m_msg)
+                rtp_free_msg(_m_session, _m_msg);
                 _m_msg = NULL;
                 /*break;*/
             }

@@ -40,7 +40,7 @@ int print_help()
     return FAILURE;
     }
 */
-int ____main ( int argc, char* argv[] )
+int ___main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;
@@ -84,7 +84,7 @@ int ____main ( int argc, char* argv[] )
                 /**/
                 printf ( "Bytes received: %d\n", _m_session->_bytes_recv );
                 /**/
-                DEALLOCATOR_MSG ( _m_msg )
+                rtp_free_msg(_m_session, _m_msg);
             }
 
             usleep ( 10000 );

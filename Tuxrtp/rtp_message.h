@@ -33,11 +33,6 @@
 
 #define _MAX_SEQU_NUM 65535
 
-#define DEALLOCATOR_MSG(MSG) \
-    free(MSG->_header->_csrc); \
-    free(MSG->_header); \
-    free(MSG->_data); \
-
 /* End of defines */
 
 typedef struct rtp_header_s {

@@ -31,7 +31,7 @@
 #define RTP_PORT 31003
 #define RTP_PORT_LISTEN 31001
 
-#define _SLEEP_INTERVAL 10000
+#define _SLEEP_INTERVAL 1000
 
 typedef struct arg_s {
     const char*   value;

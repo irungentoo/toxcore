@@ -22,6 +22,8 @@
  */
 
 #include "Messenger.h"
+#include "../Tuxrtp/media_session_initiation.h" /* It contains Messenger.h by default
+                                                 * so no need to include Messenger.h */
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
@@ -35,9 +37,29 @@ static USERSTATUS_KIND self_userstatus_kind;
 
 #define MAX_NUM_FRIENDS 256
 
+
+typedef struct {
+    uint8_t client_id[CLIENT_ID_SIZE];
+    int crypt_connection_id;
+    uint64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
+    uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
+    uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
+    uint8_t name[MAX_NAME_LENGTH];
+    uint8_t name_sent; /* 0 if we didn't send our name to this friend 1 if we have. */
+    uint8_t *userstatus;
+    uint16_t userstatus_length;
+    uint8_t userstatus_sent;
+    USERSTATUS_KIND userstatus_kind;
+    uint16_t info_size; /* length of the info */
+} Friend;
+
 static Friend friendlist[MAX_NUM_FRIENDS];
 
 static uint32_t numfriends;
+
+/* This messenger's Media session descriptor */
+static media_session_t* _media_session;
+/**/
 
 /* 1 if we are online
    0 if we are offline
@@ -191,6 +213,45 @@ int m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
     temp[0] = PACKET_ID_MESSAGE;
     memcpy(temp + 1, message, length);
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
+}
+
+/* send an media_session_initiation packet to an online friend
+    returns 1 if packet was successfully put into the send queue
+    return 0 if it was not */
+int m_sendmediainitcallback(int friendnumber, uint8_t *message, uint32_t length)
+{
+    if (friendnumber < 0 || friendnumber >= numfriends)
+        return 0;
+    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_ONLINE)
+        /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
+        return 0;
+    uint8_t temp[MAX_DATA_SIZE];
+    temp[0] = PACKET_ID_MEDIA;
+    memcpy(temp + 1, message, length);
+    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
+}
+
+/* Starts the call flow.
+   Returns if the thread started */
+int m_startcall(int friendnumber)
+{
+    if ( !_media_session )
+        return 0; /* Failed */
+
+    int _status;
+    _media_session->_friend_id = friendnumber;
+
+    _status = pthread_create(&(_media_session->_thread_id), NULL, media_session_pool_stack, (void*) _media_session );
+
+    if ( _status != 0 )
+        return 0; /* Failed */
+
+    _status = pthread_detach(_media_session->_thread_id);
+
+    if ( _status != 0 )
+        return 0; /* Failed */
+
+    return 1;
 }
 
 /* send a name packet to friendnumber
@@ -394,6 +455,7 @@ void m_callback_userstatus(void (*function)(int, USERSTATUS_KIND, uint8_t *, uin
 }
 
 #define PORT 33445
+
 /* run this at startup */
 int initMessenger(void)
 {
@@ -405,6 +467,14 @@ int initMessenger(void)
 
     if(init_networking(ip,PORT) == -1)
         return -1;
+
+    IP_Port ip_port = { ip, PORT, -1 };
+    _media_session = media_init_session(ip_port);
+
+    if ( _media_session == NULL )
+        return -1;
+
+    media_session_register_callback_send(m_sendmediainitcallback);
 
     return 0;
 }
@@ -553,10 +623,11 @@ void doMessenger(void)
         /* } */
         printf("Status: %u %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id),  friendlist[0].crypt_connection_id);
 #else
-        DHT_handlepacket(data, length, ip_port);
-        LosslessUDP_handlepacket(data, length, ip_port);
-        friendreq_handlepacket(data, length, ip_port);
-        LANdiscovery_handlepacket(data, length, ip_port);
+        if      ( media_session_handlepacket( _media_session, data, length ) ) break;
+        else if ( DHT_handlepacket(data, length, ip_port) ) break;
+        else if ( LosslessUDP_handlepacket(data, length, ip_port) ) break;
+        else if ( friendreq_handlepacket(data, length, ip_port) ) break;
+        else if ( LANdiscovery_handlepacket(data, length, ip_port) ) break;
 #endif
 
     }

@@ -266,12 +266,13 @@ void line_eval ( char* line )
                 return;
 
             char* numstring = strtok(line, " ");
-            numstring = strtok(NULL, " "); /* Get the second member directly */
+            numstring = strtok(NULL, " "); /* Get the second string directly */
 
             int num = atoi ( numstring );
 
-            printf("\n%d\n", num);
-            assert(0);
+            new_lines( " [i] Now sending INVITE" );
+
+            m_startcall(num);
 
             /*if ( m_sendmessage ( num, ( uint8_t* ) message, strlen ( message ) + 1 ) != 1 ) {
                 new_lines ( "[i] could not send message" );

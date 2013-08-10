@@ -24,6 +24,7 @@
  *
  */
 #include "rtp_impl.h"
+#include <assert.h>
 #include "rtp_allocator.h"
 
 /* Some defines */
@@ -147,6 +148,21 @@ uint16_t rtp_get_resolution_marking_width(rtp_ext_header_t* _header)
         return 0;
 }
 
+void rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message)
+{
+    free(_message->_data);
+
+    if ( _session->_csrc != _message->_header->_csrc )
+        free(_message->_header->_csrc);
+    if ( _session->_ext_header != _message->_ext_header){
+        free(_message->_ext_header->_hd_ext);
+        free(_message->_ext_header);
+    }
+
+    free(_message->_header);
+    free(_message);
+}
+
 rtp_header_t* rtp_build_header ( rtp_session_t* _session )
 {
     rtp_header_t* _retu;
@@ -160,7 +176,8 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     rtp_header_add_setting_payload ( _retu, _session->_payload_type );
 
     _retu->_sequence_number = _session->_sequence_number;
-    _retu->_timestamp = 0;/* _session->_initial_time + _session->_time_elapsed; */
+    _session->_time_elapsed = now() - _session->_initial_time;
+    _retu->_timestamp = _session->_initial_time + _session->_time_elapsed; /* It's equivalent of now() */
     _retu->_ssrc = _session->_ssrc;
 
     if ( _session->_cc > 0 ) {
@@ -222,7 +239,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
                     _session->_sequence_number = 0;
                 } else {
                     _session->_sequence_number++;
-                }
+				}
 
 
                 _session->_packets_sent ++;
@@ -232,7 +249,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
 
     }
 
-    DEALLOCATOR_MSG ( _msg ) /* free message */
+    rtp_free_msg(_session, _msg);
     _session->_bytes_sent += _total;
     return SUCCESS;
 }
@@ -318,37 +335,43 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _le
 
     uint16_t _from_pos = _retu->_header->_length;
 
-    if ( rtp_header_get_flag_CSRC_count ( _retu->_header ) == 1 ) { /* Which means initial msg */
+ /*
+    if ( _session->_packets_recv == 0 ) {
         ADD_ALLOCATE ( _session->_csrc, uint32_t, 1 )
         _session->_cc = 2;
         _session->_csrc[1] = _retu->_header->_csrc[0];
         _retu->_header->_length += 4;
     }
-
+  */
     /*
      * Check Sequence number. If this new msg has lesser number then expected drop it return
      * NULL and add stats _packet_loss into _session. RTP does not specify what you do when the packet is lost.
      * You may for example play previous packet, show black screen etc.
      */
 
-    else if ( _retu->_header->_sequence_number < _session->_last_sequence_number ) {
-        if ( _retu->_header->_sequence_number != 0 ) { /* if == 0 then it's okay */
+    if ( _retu->_header->_sequence_number < _session->_last_sequence_number ) {
+        if ( _retu->_header->_timestamp < _session->_current_timestamp ) {
+            /* Just to check if the sequence number reset */
+
             _session->_packet_loss++;
-            _session->_last_sequence_number = _retu->_header->_sequence_number;
 
             free ( _retu->_header );
             free ( _retu );
 
-            return NULL; /* Yes return NULL ( Drop the packet ) */
+            return NULL; /* Drop the packet. You can check if the packet dropped by checking _packet_loss increment. */
         }
     }
 
     _session->_last_sequence_number = _retu->_header->_sequence_number;
+    _session->_current_timestamp = _retu->_header->_timestamp;
 
     if ( rtp_header_get_flag_extension(_retu->_header) ){
         _retu->_ext_header = rtp_extract_ext_header(_data, _from_pos - 1, _length);
         _retu->_length -= ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
         _from_pos += ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
+    }
+    else {
+        _retu->_ext_header = NULL;
     }
 
     /* Get the payload */
@@ -400,15 +423,4 @@ int rtp_remove_resolution_marking( rtp_session_t* _session )
     _session->_extension = 0;
 
     return SUCCESS;
-}
-
-uint32_t rtp_get_time_elapsed ( rtp_session_t* _session )
-{
-    uint64_t _current = now();
-
-    if ( ( _session->_initial_time + _session->_time_elapsed ) < _current ){
-        _session->_time_elapsed = _current - _session->_time_elapsed;
-    }
-
-    return _session->_time_elapsed;
 }
