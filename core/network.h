@@ -80,7 +80,6 @@ typedef union {
 
 /* sizeof(IP_Port) = 8 */
 typedef union {
-    uint64_t uint64;
     uint8_t uint8[8];
 
     struct {
