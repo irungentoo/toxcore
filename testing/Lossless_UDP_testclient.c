@@ -120,20 +120,23 @@ void printconnection(int connection_id)
 /*run doLossless_UDP(); */
 void Lossless_UDP()
 {
-    IP_Port ip_port;
+/*    IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     while (receivepacket(&ip_port, data, &length) != -1) {
-        printf("packet with length: %u\n", length);
+    printf("packet with length: %u\n", length); */
         /* if(rand() % 3 != 1)//add packet loss
          { */
+/*
             if (LosslessUDP_handlepacket(data, length, ip_port))
                 printpacket(data, length, ip_port);
             else 
-                printf("Received handled packet with length: %u\n", length); //printconnection(0);
+            printf("Received handled packet with length: %u\n", length); //printconnection(0); */
             
        /* } */
-    }
+	/* }*/
+
+    networking_poll();
     
     doLossless_UDP();   
     
@@ -181,6 +184,7 @@ int main(int argc, char *argv[])
     }
     timer = current_time();
     
+    LosslessUDP_init();
     
     /*read first part of file */
     read = fread(buffer, 1, 512, file);

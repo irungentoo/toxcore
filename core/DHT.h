@@ -58,11 +58,6 @@ IP_Port DHT_getfriendip(uint8_t *client_id);
 /* Run this function at least a couple times per second (It's the main loop) */
 void doDHT(void);
 
-/* if we receive a DHT packet we call this function so it can be handled.
-    return 0 if packet is handled correctly.
-    return 1 if it didn't handle the packet or if the packet was shit. */
-int DHT_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
-
 /* Use this function to bootstrap the client
     Sends a get nodes request to the given node with ip port and public_key */
 void DHT_bootstrap(IP_Port ip_port, uint8_t *public_key);
@@ -92,6 +87,9 @@ uint32_t DHT_size(void);
 
 /* save the DHT in data where data is an array of size DHT_size() */
 void DHT_save(uint8_t *data);
+
+/* init DHT */
+void DHT_init(void);
 
 /* load the DHT from data of size size;
     return -1 if failure

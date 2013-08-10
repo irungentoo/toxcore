@@ -111,7 +111,7 @@ static int LAN_ip(IP ip)
     return -1;
 }
 
-static int handle_LANdiscovery(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_LANdiscovery(IP_Port source, uint8_t *packet, uint32_t length)
 {
     if (LAN_ip(source.ip) == -1)
         return 1;
@@ -125,16 +125,14 @@ static int handle_LANdiscovery(uint8_t *packet, uint32_t length, IP_Port source)
 int send_LANdiscovery(uint16_t port)
 {
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
-    data[0] = 32;
+    data[0] = 33;
     memcpy(data + 1, self_public_key, crypto_box_PUBLICKEYBYTES);
     IP_Port ip_port = {broadcast_ip(), port};
     return sendpacket(ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
 
 
-int LANdiscovery_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
+void LANdiscovery_init(void)
 {
-    if (packet[0] == 32)
-        return handle_LANdiscovery(packet, length, source);
-    return 1;
+    networking_registerhandler(33, &handle_LANdiscovery);
 }

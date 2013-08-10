@@ -113,11 +113,9 @@ int is_connected(int connection_id);
 void doLossless_UDP(void);
 
 /* 
- * If we receive a Lossless_UDP packet, call this function so it can be handled.
- * Return 0 if packet is handled correctly.
- * Return 1 if it didn't handle the packet or if the packet was shit.
+ * This function sets up LosslessUDP packet handling.
  */
-int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
+void LosslessUDP_init(void);
 
 #ifdef __cplusplus
 }
