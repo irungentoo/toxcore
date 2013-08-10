@@ -36,6 +36,9 @@ extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
 #define ENCRYPTION_PADDING (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 
+/* returns zero if the buffer contains only zeros */
+uint8_t crypto_iszero(uint8_t* buffer, uint32_t blen);
+
 /* encrypts plain of length length to encrypted of length + 16 using the
     public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
     return -1 if there was a problem.
@@ -50,6 +53,19 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     return length of plain data if everything was fine. */
 int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
                     uint8_t *encrypted, uint32_t length, uint8_t *plain);
+
+/* Fast encrypt/decrypt operations. Use if this is not a one-time communication. 
+   encrypt_precompute does the shared-key generation once so it does not have
+   to be preformed on every encrypt/decrypt. */
+void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key);
+
+/* Fast encrypt. Depends on enc_key from encrypt_precompute. */
+int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce, 
+                      uint8_t *plain, uint32_t length, uint8_t *encrypted);
+
+/* Fast decrypt. Depends on enc_ley from encrypt_precompute. */
+int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
+                      uint8_t *encrypted, uint32_t length, uint8_t *plain);
 
 
 /* fill the given nonce with random bytes. */
