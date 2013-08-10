@@ -134,5 +134,5 @@ int send_LANdiscovery(uint16_t port)
 
 void LANdiscovery_init(void)
 {
-	networking_registerhandler(33, &handle_LANdiscovery);
+    networking_registerhandler(33, &handle_LANdiscovery);
 }

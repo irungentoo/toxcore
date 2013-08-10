@@ -92,21 +92,21 @@ static packet_handler_callback packethandlers[256] = {0};
 
 void networking_registerhandler(uint8_t byte, packet_handler_callback cb)
 {
-	packethandlers[byte] = cb;
+    packethandlers[byte] = cb;
 }
 
 void networking_poll()
 {
-	IP_Port ip_port;
-	uint8_t data[MAX_UDP_PACKET_SIZE];
-	uint32_t length;
-
-	while (receivepacket(&ip_port, data, &length) != -1)
-	{
-		if (length < 1) continue;
-		if (!packethandlers[data[0]]) continue;
-		packethandlers[data[0]](ip_port, data, length);
-	}
+    IP_Port ip_port;
+    uint8_t data[MAX_UDP_PACKET_SIZE];
+    uint32_t length;
+    
+    while (receivepacket(&ip_port, data, &length) != -1)
+    {
+        if (length < 1) continue;
+        if (!packethandlers[data[0]]) continue;
+        packethandlers[data[0]](ip_port, data, length);
+    }
 }
 
 /* initialize networking

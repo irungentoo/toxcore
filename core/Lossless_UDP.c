@@ -772,9 +772,9 @@ static int handle_data(IP_Port source, uint8_t *packet, uint32_t length)
 
 void LosslessUDP_init(void)
 {
-	networking_registerhandler(16, &handle_handshake);
-	networking_registerhandler(17, &handle_SYNC);
-	networking_registerhandler(18, &handle_data);
+    networking_registerhandler(16, &handle_handshake);
+    networking_registerhandler(17, &handle_SYNC);
+    networking_registerhandler(18, &handle_data);
 }
 
 /*

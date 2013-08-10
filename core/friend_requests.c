@@ -132,5 +132,5 @@ static int friendreq_handlepacket(IP_Port source, uint8_t * packet, uint32_t len
 
 void friendreq_init(void)
 {
-	networking_registerhandler(32, &friendreq_handlepacket);
+    networking_registerhandler(32, &friendreq_handlepacket);
 }
