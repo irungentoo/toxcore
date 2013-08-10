@@ -29,7 +29,9 @@
 #include <inttypes.h>
 
 /* Current time, unix format */
+#ifndef unix_time()
 #define unix_time() ((uint32_t)time(NULL))
+#endif /* unix_time */
 
 #define SUCCESS 0
 #define FAILURE -1
