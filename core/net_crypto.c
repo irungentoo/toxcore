@@ -521,7 +521,7 @@ static void receive_crypto(void)
 
         }
         if (crypto_connections[i].status == CONN_NOT_CONFIRMED) {
-            if (id_packet(crypto_connections[i].number) == CONN_ESTABLISHED) {
+            if (id_packet(crypto_connections[i].number) == 3) {
                 uint8_t temp_data[MAX_DATA_SIZE];
                 uint8_t data[MAX_DATA_SIZE];
                 int length = read_packet(crypto_connections[i].number, temp_data);
