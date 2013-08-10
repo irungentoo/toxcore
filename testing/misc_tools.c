@@ -37,9 +37,3 @@ unsigned char * hex_string_to_bin(char hex_string[])
 
     return val;
 }
-
-
-
-
-
-

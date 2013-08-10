@@ -29,6 +29,10 @@
 #define WAIT_COUNT 30
 #define WAIT_TIME 500
 
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 /* first step, second step */
 #define FIRST_FLAG 0x1
 #define SECOND_FLAG 0x2
