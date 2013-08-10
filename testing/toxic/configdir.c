@@ -129,8 +129,8 @@ int create_user_config_dir(char *path)
     free(fullpath);
     return -1;
   }
-  
+    
   #endif
-
+  free(fullpath);
   return 0;
 }
