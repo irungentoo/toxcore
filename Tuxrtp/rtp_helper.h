@@ -43,4 +43,7 @@ uint32_t get_random_number ( uint32_t _max );
 void memadd ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size );
 void memcpy_from ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size );
 
+static void unused (void* x, ...) {}
+#define s_unused(x) unused(NULL, x);
+
 #endif /* _RTP__HELPER_H_ */
