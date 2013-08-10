@@ -427,14 +427,15 @@ int main(int argc, char *argv[])
       }
     }
   }
-  if(f_loadfromfile)
-    load_data(DATA_FILE);
-  free(DATA_FILE);
 
   init_term();
   init_tox();
   init_windows();
   init_window_status();
+  
+  if(f_loadfromfile)
+    load_data(DATA_FILE);
+  free(DATA_FILE);
 
   int connected = init_connection();
   if (connected != 0)
