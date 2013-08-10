@@ -32,7 +32,7 @@
 unsigned char* hex_string_to_bin(char hex_string[]);
 
 /* misc stuff */
-extern const char* tox_program_name;
+//extern const char *tox_program_name;
 
 /*********************Debugging Macros********************
  * wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging
@@ -86,7 +86,7 @@ extern const char* tox_program_name;
 #define TOX_LIST_GET_VALUE(tmp_name, name_in_parent, parent_type) GET_PARENT(tmp_name, name_in_parent, parent_type)
 
 typedef struct tox_list {
-   tox_list *prev, *next;
+   struct tox_list *prev, *next;
 } tox_list;
 
 /* Returns a new tox_list. */

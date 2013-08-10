@@ -371,7 +371,9 @@ IP_Port connection_ip(int connection_id)
 {
     if (connection_id >= 0 && connection_id < MAX_CONNECTIONS)
         return connections[connection_id].ip_port;
-    IP_Port zero = {{{0}}, 0};
+        
+    IP_Port zero;
+    zero.uint64 = 0;
     return zero;
 }
 

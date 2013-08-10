@@ -71,17 +71,24 @@ extern "C" {
 #define unix_time() ((uint64_t)time(NULL))
 
 
+/* sizeof(IP) = 4 */
 typedef union {
     uint8_t c[4];
     uint16_t s[2];
     uint32_t i;
 } IP;
 
-typedef struct {
-    IP ip;
-    uint16_t port;
-    /* not used for anything right now */
-    uint16_t padding;
+/* sizeof(IP_Port) = 8 */
+typedef union {
+    uint64_t uint64;
+    uint8_t uint8[8];
+
+    struct {
+        IP ip;
+        uint16_t port;
+        /* not used for anything right now */
+        uint16_t padding;
+    };
 } IP_Port;
 
 typedef struct {

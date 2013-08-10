@@ -18,9 +18,12 @@
 
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
+#include "../misc_tools.h"
 
 #include "configdir.h"
 #include "windows.h"
+
+extern const char *tox_program_name;
 
 extern ToxWindow new_prompt();
 extern ToxWindow new_friendlist();
