@@ -150,7 +150,7 @@ static void chat_onKey(ToxWindow *self, int key)
   }
 
   /* RETURN key: Execute command or print line */
-  if (key == '\n') {
+  else if (key == '\n') {
     wclear(ctx->linewin);
     wmove(self->window, y2-CURS_Y_OFFSET, 0);
     wclrtobot(self->window);
