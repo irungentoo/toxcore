@@ -2,4 +2,4 @@
 # run_tests - run the current tests for tox core
 set -e
 
-./messenger_test && ./friends_test 
+./messenger_test && ./friends_test && ./crypto_test
