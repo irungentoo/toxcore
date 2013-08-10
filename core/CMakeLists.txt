@@ -19,7 +19,7 @@ else()
 	add_library(toxcore ${core_sources})
 endif()
 
-target_link_libraries(toxcore ${LINK_CRYPTO_LIBRARY})
+target_link_libraries(toxcore ${LINK_CRYPTO_LIBRARY} pthread)
 
 if(WIN32)
 	target_link_libraries(toxcore ws2_32)
