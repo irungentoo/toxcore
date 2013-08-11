@@ -1,4 +1,4 @@
-#include "../core/net_crypto.h"
+#include "../toxcore/net_crypto.h"
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
