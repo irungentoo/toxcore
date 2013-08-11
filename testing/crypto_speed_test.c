@@ -1,6 +1,9 @@
 // Hi-resolution timer
 #ifdef WIN32
-
+#ifndef WINVER
+//Windows XP
+#define WINVER 0x0501
+#endif
 #include <windows.h>
 double get_time()
 {

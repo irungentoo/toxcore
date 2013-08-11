@@ -31,8 +31,10 @@
 #include <time.h>
 
 #ifdef WIN32 /* Put win32 includes here */
+#ifndef WINVER
 //Windows XP
 #define WINVER 0x0501
+#endif
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
