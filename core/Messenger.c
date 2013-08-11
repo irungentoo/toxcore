@@ -231,7 +231,11 @@ uint32_t m_sendmessage(int friendnumber, uint8_t *message, uint32_t length)
     uint32_t msgid = ++friendlist[friendnumber].message_id;
     if (msgid == 0)
         msgid = 1; /* otherwise, false error */
-    return m_sendmessage_withid(friendnumber, msgid, message, length);
+    if(m_sendmessage_withid(friendnumber, msgid, message, length)) {
+        return msgid;
+    }
+    
+    return 0;
 }
 
 uint32_t m_sendmessage_withid(int friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
