@@ -1,8 +1,13 @@
 /*
  * Toxic -- Tox Curses Client
  */
+#ifndef _windows_h
+#define _windows_h
 
+#include <curses.h>
+#include <stdint.h>
 #include <stdbool.h>
+#include "../../core/Messenger.h"
 #define TOXWINDOWS_MAX_NUM 32
 #define MAX_FRIENDS_NUM 100
 #define MAX_STR_SIZE 256
@@ -32,3 +37,6 @@ struct ToxWindow_ {
 
   WINDOW* window;
 };
+
+#endif
+
