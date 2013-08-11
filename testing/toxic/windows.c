@@ -1,5 +1,6 @@
 #include "friendlist.h"
 #include "prompt.h"
+#include "dhtstatus.h"
 #include "windows.h"
 
 /* Holds status of chat windows */
@@ -164,8 +165,10 @@ ToxWindow *init_windows()
   w_num = 0;
   int n_prompt = 0;
   int n_friendslist = 1;
+  int n_dhtstatus = 2;
   if (add_window(m, new_prompt(on_friendadded), n_prompt) == -1
-                        || add_window(m, new_friendlist(WINDOW_STATUS), n_friendslist) == -1) {
+                        || add_window(m, new_friendlist(WINDOW_STATUS), n_friendslist) == -1
+                        || add_window(m, new_dhtstatus(), n_dhtstatus) == -1) {
     fprintf(stderr, "add_window() failed.\n");
     endwin();
     exit(1);
