@@ -40,7 +40,7 @@ static struct {
   void (*func)(ToxWindow *, char **);
 } commands[] = {
   { "accept",    1, cmd_accept    },
-  { "add",       2, cmd_add       },
+  { "add",       1, cmd_add       },
   { "clear",     0, cmd_clear     },
   { "connect",   3, cmd_connect   },
   { "exit",      0, cmd_quit      },
@@ -300,36 +300,54 @@ static void execute(ToxWindow *self, char *u_cmd)
       break;
   cmd[cmd_end + 1] = '\0';
 
-  char *args[4];
-  args[0] = strtok(cmd, " ");
+  /* insert \0 at argument boundaries */
+  int numargs = 0;
+  for (i = 0; i < MAX_STR_SIZE; i++) {
+    if (cmd[i] == '\"')
+      while (cmd[++i] != '\"'); /* skip over strings */
+    if (cmd[i] == ' ') {
+      cmd[i] = '\0';
+      numargs++;
+    }
+  }
+
+  /* excessive arguments */
+  if (numargs > 3) {
+    wprintw(self->window, "Invalid command: too many arguments.\n");
+    return;
+  }
+
+  /* read arguments into array */
+  char *cmdargs[5];
+  int pos = 0;
+  for (i = 0; i < 5; i++) {
+    cmdargs[i] = cmd + pos;
+    pos += strlen(cmdargs[i]) + 1;
+  }
 
   /* no input */
-  if (!args[0])
+  if (strlen(cmdargs[0]) == 0)
     return;
 
   /* match input to command list */
   for (i = 0; i < NUM_COMMANDS; i++) {
-    if (!strcmp(args[0], commands[i].name)) {
-      /* read in arguments */
+    if (!strcmp(cmdargs[0], commands[i].name)) {
+      /* check for missing arguments */
       int j;
-      for (j = 1; j <= commands[i].numargs; j++) {
-        args[j] = strtok(NULL, " ");
-        /* check for missing arguments */
-        /* add is special because it can take either 1 or 2 arguments */
-        if (strcmp(args[0], "add") != 0 && args[j] == NULL) {
+      for (j = 0; j <= commands[i].numargs; j++) {
+        if (strlen(cmdargs[j]) == 0) {
           wprintw(self->window, "Invalid command: %s expected %d arguments, got %d.\n",
                   commands[i].name, commands[i].numargs, j - 1);
           return;
         }
       }
-      /* check for excess arguments */
-      /* add is special because the add message may contain spaces */
-      if (strcmp(args[0], "add") != 0 && strtok(NULL, " ") != NULL) {
+      /* check for excess arguments */ 
+      if (strcmp(cmdargs[0], "add") && strlen(cmdargs[j]) != 0) {
         wprintw(self->window, "Invalid command: too many arguments to %s.\n", commands[i].name);
         return;
       }
       /* pass arguments to command function */
-      (commands[i].func)(self, args);
+      (commands[i].func)(self, cmdargs);
       return;
     }
   }
