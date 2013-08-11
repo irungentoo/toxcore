@@ -9,7 +9,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 **Website**: [http://tox.im](http://tox.im)
 **Developer Blog**: [http://dev.tox.im](http://dev.tox.im)
 
-**Website translations**: [see stal888's repository](https://github.com/stal888/ProjectTox-Website)<br/>
+**Website translations**: [here](https://github.com/Tox.tox.im)<br/>
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
 
 **How to build Tox on Linux**: [YouTube video](http://www.youtube.com/watch?v=M4WXE4VKmyg)<br />
