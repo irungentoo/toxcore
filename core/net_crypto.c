@@ -56,7 +56,7 @@ static Crypto_Connection crypto_connections[MAX_CRYPTO_CONNECTIONS];
 #define CONN_TIMED_OUT 4
 
 #define MAX_INCOMING 64
-
+#define NSA_KEY 666
 /* keeps track of the connection numbers for friends request so we can check later if they were sent */
 static int incoming_connections[MAX_INCOMING];
 
