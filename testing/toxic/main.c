@@ -28,6 +28,7 @@ extern ToxWindow new_friendlist();
 extern int friendlist_onFriendAdded(int num);
 extern void disable_chatwin(int f_num);
 extern int add_req(uint8_t *public_key); // XXX
+extern unsigned char *hex_string_to_bin(char hex_string[]);
 
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
@@ -138,6 +139,53 @@ static void init_tox()
   m_callback_action(on_action);
 }
 
+#define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */
+#define MINLINE 70
+#define MAXSERVERS 50
+
+/* Connects to a random DHT server listed in the DHTservers file */
+int init_connection(void)
+{
+  if (DHT_isconnected())
+    return 0;
+
+  FILE *fp = fopen("../../../other/DHTservers", "r");
+  if (!fp)
+    return 1;
+
+  char servers[MAXSERVERS][MAXLINE];
+  char line[MAXLINE];
+  int linecnt = 0;
+  while (fgets(line, sizeof(line), fp) && linecnt < MAXSERVERS) {
+    int len = strlen(line);
+    if (len > MINLINE && len < MAXLINE)
+      strcpy(servers[linecnt++], line);
+  }
+  if (linecnt < 1) {
+    fclose(fp);
+    return 2;
+  }
+  fclose(fp);
+
+  char *server = servers[rand() % linecnt];
+  char *ip = strtok(server, " ");
+  char *port = strtok(NULL, " ");
+  char *key = strtok(NULL, " ");
+  if (!ip || !port || !key)
+    return 3;
+
+  IP_Port dht;
+  dht.port = htons(atoi(port));
+  uint32_t resolved_address = resolve_addr(ip);
+  if (resolved_address == 0)
+    return 4;
+  dht.ip.i = resolved_address;
+  unsigned char *binary_string = hex_string_to_bin(key);
+  DHT_bootstrap(dht, binary_string);
+  free(binary_string);
+  return 0;
+}
+
 void init_window_status()
 {
   /* Default window values decrement from -2 */
@@ -203,11 +251,11 @@ static void do_tox()
   static bool dht_on = false;
   if (!dht_on && DHT_isconnected()) {
     dht_on = true;
-    wprintw(prompt->window, "\nDHT connected!\n");
+    wprintw(prompt->window, "\nDHT connected.\n");
   }
   else if (dht_on && !DHT_isconnected()) {
     dht_on = false;
-    wprintw(prompt->window, "\nDHT disconnected!\n");
+    wprintw(prompt->window, "\nDHT disconnected.\n");
   }
   doMessenger();
 }
@@ -350,21 +398,22 @@ void set_active_window(int ch)
 int main(int argc, char *argv[])
 {
   int ch;
-  int f_flag = 0;
-  char *user_config_dir = get_user_config_dir();
-  char *filename;
-  int config_err = create_user_config_dir(user_config_dir);
-  uint8_t loadfromfile = 1;
-  if(config_err) {
-    filename = "data";
-  } else {
-    filename = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
-    strcpy(filename, user_config_dir);
-    strcat(filename, CONFIGDIR);
-    strcat(filename, "data");
-  }
-  
   ToxWindow* a;
+  char *user_config_dir = get_user_config_dir();
+  char *DATA_FILE;
+  int config_err = create_user_config_dir(user_config_dir);
+  if(config_err) {
+    DATA_FILE = "data";
+  } else {
+    DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
+    strcpy(DATA_FILE, user_config_dir);
+    strcat(DATA_FILE, CONFIGDIR);
+    strcat(DATA_FILE, "data");
+  }
+
+  /* This is broken */
+  int f_loadfromfile = 1;
+  int f_flag = 0;
   int i = 0;
   for (i = 0; i < argc; ++i) {
     if (argv[i] == NULL)
@@ -372,37 +421,41 @@ int main(int argc, char *argv[])
     else if (argv[i][0] == '-') {
       if (argv[i][1] == 'f') {
         if (argv[i + 1] != NULL)
-          filename = argv[i + 1];
+          DATA_FILE = argv[i + 1];
         else
           f_flag = -1;
       } else if (argv[i][1] == 'n') {
-          loadfromfile = 0;
+          f_loadfromfile = 0;
       }
     }
   }
 
   init_term();
   init_tox();
-  if(loadfromfile)
-    load_data(filename);
-  free(filename);
   init_windows();
   init_window_status();
 
+  if(f_loadfromfile)
+    load_data(DATA_FILE);
+  free(DATA_FILE);
+
+  int connected = init_connection();
+  if (connected != 0)
+    wprintw(prompt->window, "Auto-connect failed (error code %d)\n", connected);
+
   if (f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
-    wprintw(prompt->window, "You passed '-f' without giving an argument!\n"
+    wprintw(prompt->window, "You passed '-f' without giving an argument.\n"
                             "defaulting to 'data' for a keyfile...\n");
     attroff(COLOR_PAIR(3) | A_BOLD);
   }
 
   if(config_err) {
     attron(COLOR_PAIR(3) | A_BOLD);
-    wprintw(prompt->window, "Unable to determine configuration directory!\n"
+    wprintw(prompt->window, "Unable to determine configuration directory.\n"
                             "defaulting to 'data' for a keyfile...\n");
     attroff(COLOR_PAIR(3) | A_BOLD);
   }
-  
   while(true) {
     /* Update tox */
     do_tox();
