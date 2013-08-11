@@ -65,17 +65,6 @@
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
-    IP_Port     ip_port;
-    uint64_t    timestamp;
-    uint64_t    last_pinged;
-
-    /* Returned by this node. Either our friend or us */
-    IP_Port     ret_ip_port;
-    uint64_t    ret_timestamp;
-} Client_data;
-
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* time at which the last get_nodes request was sent. */

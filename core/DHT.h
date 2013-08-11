@@ -34,6 +34,17 @@ extern "C" {
 /* size of the client_id in bytes */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
 
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IP_Port     ip_port;
+    uint64_t    timestamp;
+    uint64_t    last_pinged;
+    
+    /* Returned by this node. Either our friend or us */
+    IP_Port     ret_ip_port;
+    uint64_t    ret_timestamp;
+} Client_data;
+
 /* Add a new friend to the friends list
     client_id must be CLIENT_ID_SIZE bytes long.
     returns 0 if success
