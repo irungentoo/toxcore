@@ -138,7 +138,7 @@ int m_addfriend(uint8_t *client_id, uint8_t *data, uint16_t length)
     for (i = 0; i <= numfriends; ++i)  {
         if (friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
-            set_friend_status(i, FRIEND_ADDED);
+            friendlist[i].status = FRIEND_ADDED;
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
