@@ -140,6 +140,7 @@ static void init_tox()
 }
 
 #define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */
+#define MINLINE 70
 #define MAXSERVERS 50
 
 /* Connects to a random DHT server listed in the DHTservers file */
@@ -149,7 +150,7 @@ int init_connection(void)
     return 0;
 
   FILE *fp = fopen("../../../other/DHTservers", "r");
-  if (fp == NULL)
+  if (!fp)
     return 1;
 
   char servers[MAXSERVERS][MAXLINE];
@@ -157,7 +158,7 @@ int init_connection(void)
   int linecnt = 0;
   while (fgets(line, sizeof(line), fp) && linecnt < MAXSERVERS) {
     int len = strlen(line);
-    if (len > 74 && len < MAXLINE)
+    if (len > MINLINE && len < MAXLINE)
       strcpy(servers[linecnt++], line);
   }
   if (linecnt < 1) {
@@ -166,17 +167,18 @@ int init_connection(void)
   }
   fclose(fp);
 
-  int servnum = rand() % linecnt;
-  char *server = servers[servnum];
+  char *server = servers[rand() % linecnt];
   char *ip = strtok(server, " ");
   char *port = strtok(NULL, " ");
   char *key = strtok(NULL, " ");
+  if (!ip || !port || !key)
+    return 3;
 
   IP_Port dht;
   dht.port = htons(atoi(port));
   uint32_t resolved_address = resolve_addr(ip);
   if (resolved_address == 0)
-    return 3;
+    return 4;
   dht.ip.i = resolved_address;
   unsigned char *binary_string = hex_string_to_bin(key);
   DHT_bootstrap(dht, binary_string);
@@ -432,7 +434,7 @@ int main(int argc, char *argv[])
   init_tox();
   init_windows();
   init_window_status();
-  
+
   if(f_loadfromfile)
     load_data(DATA_FILE);
   free(DATA_FILE);
