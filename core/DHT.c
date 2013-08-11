@@ -104,6 +104,12 @@ static Pinged       send_nodes[LSEND_NODES_ARRAY];
 
 /*----------------------------------------------------------------------------------*/
 
+
+Client_data * DHT_get_close_list(void)
+{
+    return close_clientlist;
+}
+
 /* Compares client_id1 and client_id2 with client_id
  * return 0 if both are same distance
  * return 1 if client_id1 is closer

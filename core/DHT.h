@@ -45,6 +45,8 @@ typedef struct {
     uint64_t    ret_timestamp;
 } Client_data;
 
+Client_data * DHT_get_close_list(void);
+
 /* Add a new friend to the friends list
     client_id must be CLIENT_ID_SIZE bytes long.
     returns 0 if success
