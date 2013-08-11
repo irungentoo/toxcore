@@ -169,7 +169,7 @@ int m_addfriend_norequest(uint8_t * client_id)
     for (i = 0; i <= numfriends; ++i) {
         if(friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
-            set_friend_status(i, FRIEND_REQUESTED);
+            friendlist[i].status = FRIEND_REQUESTED;
             friendlist[i].crypt_connection_id = -1;
             friendlist[i].friend_request_id = -1;
             memcpy(friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
@@ -482,18 +482,29 @@ void m_callback_read_receipt(void (*function)(int, uint32_t))
     read_receipt_isset = 1;
 }
 
-static void (*friend_statuschange)(int, uint8_t);
-static uint8_t friend_statuschange_isset = 0;
-void m_callback_friendstatus(void (*function)(int, uint8_t))
+static void (*friend_connectionstatuschange)(int, uint8_t);
+static uint8_t friend_connectionstatuschange_isset = 0;
+void m_callback_connectionstatus(void (*function)(int, uint8_t))
 {
-    friend_statuschange = function;
-    friend_statuschange_isset = 1;
+    friend_connectionstatuschange = function;
+    friend_connectionstatuschange_isset = 1;
+}
+
+static void check_friend_connectionstatus(int friendnumber, uint8_t status)
+{
+    if (!friend_connectionstatuschange_isset)
+        return;
+    if (status == NOFRIEND)
+        return;
+    const uint8_t is_connected = friendlist[friendnumber].status == FRIEND_ONLINE;
+    const uint8_t was_connected = status == FRIEND_ONLINE;
+    if (is_connected != was_connected)
+        friend_connectionstatuschange(friendnumber, is_connected);
 }
 
 static void set_friend_status(int friendnumber, uint8_t status)
 {
-    if (friendlist[friendnumber].status != status && friend_statuschange_isset)
-        friend_statuschange(friendnumber, status);
+    check_friend_connectionstatus(friendnumber, status);
     friendlist[friendnumber].status = status;
 }
 
