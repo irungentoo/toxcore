@@ -66,6 +66,11 @@ extern "C" {
 
 #define MAX_UDP_PACKET_SIZE 65507
 
+
+/* Current time, unix format */
+#define unix_time() ((uint64_t)time(NULL))
+
+
 typedef union {
     uint8_t c[4];
     uint16_t s[2];
@@ -89,6 +94,11 @@ typedef struct {
 #endif
 } ADDR;
 
+/* Function to receive data, ip and port of sender is put into ip_port
+    the packet data into data
+    the packet length into length. */
+typedef int (*packet_handler_callback)(IP_Port ip_port, uint8_t *data, uint32_t len);
+
 /* returns current time in milleseconds since the epoch. */
 uint64_t current_time(void);
 
@@ -101,10 +111,11 @@ uint32_t random_int(void);
 /* Function to send packet(data) of length length to ip_port */
 int sendpacket(IP_Port ip_port, uint8_t *data, uint32_t length);
 
-/* Function to receive data, ip and port of sender is put into ip_port
-    the packet data into data
-    the packet length into length. */
-int receivepacket(IP_Port *ip_port, uint8_t *data, uint32_t *length);
+/* Function to call when packet beginning with byte is received */
+void networking_registerhandler(uint8_t byte, packet_handler_callback cb);
+
+/* call this several times a second */
+void networking_poll();
 
 /* initialize networking
     bind to ip and port

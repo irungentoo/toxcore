@@ -18,17 +18,17 @@ a = 1;
 #send ping request to our DHT on localhost.
 sock.sendto("0012345678".decode("hex") + client_id, ('127.0.0.1', 33445))
 
-#print all packets recieved and respond to ping requests properly
+#print all packets received and respond to ping requests properly
 while True:
     data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
     print "received message:", data.encode('hex'), " From:", addr
-    #if we recieve a ping request.
+    #if we receive a ping request.
     print data[0].encode('hex')
     if data[0] == "00".decode('hex'):
         print "Sending ping resp"
         sock.sendto("01".decode('hex') + data[1:5] + client_id, addr)
         
-    #if we recieve a get_nodes request.
+    #if we receive a get_nodes request.
     if data[0] == "02".decode('hex'):
         print "Sending getn resp"
         #send send nodes packet with a couple 127.0.0.1 ips and ports.
@@ -42,4 +42,3 @@ while True:
         print "Sending SYNC resp"
         a+=1
         sock.sendto("11".decode('hex') + chr(a) + data[1:9], addr)
-        

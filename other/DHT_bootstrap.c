@@ -113,9 +113,8 @@ int main(int argc, char *argv[])
         free(bootstrap_key);
     }
 
-    IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
+    DHT_init();
+    friendreq_init();
 
     int is_waiting_for_dht_connection = 1;
     while(1)
@@ -127,11 +126,8 @@ int main(int argc, char *argv[])
         }
         doDHT();
 
-        while(receivepacket(&ip_port, data, &length) != -1)
-        {
-            DHT_handlepacket(data, length, ip_port);
-            friendreq_handlepacket(data, length, ip_port);
-        }
+        networking_poll();
+
         c_sleep(1);
     }
     shutdown_networking();

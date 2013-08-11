@@ -14,6 +14,12 @@ install_manifest.txt
 testing/data
 *~
 
+# Vim
+*.swp
+
+# Ctags
+tags
+
 # Object files
 *.o
 
@@ -21,3 +27,6 @@ testing/data
 *.exe
 *.out
 *.app
+
+#netbeans
+nbproject

@@ -23,11 +23,14 @@ before_script:
   - sudo ldconfig
 # installing sphinx, needed for documentation
   - sudo apt-get install python-sphinx
+# installing check, needed for unit tests
+  - sudo apt-get install check
 
 script:
   - mkdir build && cd build
   - cmake ..
   - make -j3
+  - make test
 # build docs separately
   - make docs
 

@@ -24,17 +24,14 @@
 #ifndef MISC_TOOLS_H
 #define MISC_TOOLS_H
 
-unsigned char * hex_string_to_bin(char hex_string[]);
+#include <stdlib.h>
+#include <stdint.h>
 
-/* WARNING(msg) takes a printf()-styled string and prints it
- * with some additional details.
- * ERROR(exit_status, msg) does the same thing as WARNING(), but
- * also exits the program with the given exit status.
- * Examples:
- * WARNING("<insert warning message here>");
- * int exit_status = 2;
- * ERROR(exit_status, "exiting with status %i", exit_status);
- */
+unsigned char* hex_string_to_bin(char hex_string[]);
+
+/*********************Debugging Macros********************
+ * wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging
+ *********************************************************/
 #ifdef DEBUG
     #include <assert.h>
     #include <stdio.h>
@@ -51,6 +48,11 @@ unsigned char * hex_string_to_bin(char hex_string[]);
         DEBUG_PRINT(__VA_ARGS__, ' '); \
     } while (0)
 
+    #define INFO(...) do { \
+        DEBUG_PRINT(__VA_ARGS__, ' '); \
+    } while (0)
+    
+	#undef ERROR
     #define ERROR(exit_status, ...) do { \
         fprintf(stderr, "error in "); \
         DEBUG_PRINT(__VA_ARGS__, ' '); \
@@ -58,80 +60,20 @@ unsigned char * hex_string_to_bin(char hex_string[]);
     } while (0)
 #else
     #define WARNING(...)
+    #define INFO(...)
+    #undef ERROR
     #define ERROR(...)
 #endif // DEBUG
 
 /************************Linked List***********************
- * This is a simple linked list implementation, very similar
- * to Linux kernel's /include/linux/list.h (which we can't 
- * use because Tox is GPLv3 and Linux is GPLv2.)
- *
- * TODO: Make the lists easier to use with some sweat pre-
- * processor syntactic sugar.
+ * http://wiki.tox.im/index.php/Internal_functions_and_data_structures#Linked_List
  **********************************************************/
-
-/* Example usage
-
-This sample program makes a new struct which contains a
-character and a tox_list_t. It then prompts a user for
-input until he enters q or e. It then adds each character
-to the list, and uses a special for loop to print them.
-It then removes all the 'z' characters, and prints the list
-again.
-
-//Notice that the data to be put in the list *contains* tox_list_t;
-//usually, this is the other way around!
-typedef struct tox_string {
-   char c;
-   tox_list_t tox_lst; //Notice that tox_lst is *NOT* a pointer.
-} tox_string_t;
-
-int main()
-{
-   tox_list_t head;
-   tox_list_new(&head); //initialize head
-   
-   //input a new character, until user enters q or e
-   char c = '\0';
-   while (c != 'q' && c != 'e') {
-      scanf("%c", &c);
-      tox_string_t* tmp = malloc(sizeof(tox_string_t));
-      tmp->c = c;
-      tox_list_add(&head, &tmp->tox_lst); //add it to the list
-   }
-   
-TOX_LIST_FOR_EACH() takes a struct tox_list and a name for a temporary pointer to use in the loop.
-   
-TOX_LIST_GET_VALUE() uses magic to return an instance of a structure that contains tox_list_t.
-You have to give it a temporary tox_string_t, name of tox_list_t member inside our structure (tox_lst),
-and the type of structure to return.
-   
-   TOX_LIST_FOR_EACH(head, tmp)
-      printf("%c", TOX_LIST_GET_VALUE(*tmp, tox_lst, tox_string_t).c);
-   
-   TOX_LIST_FOR_EACH(head, tmp) {
-      if (TOX_LIST_GET_VALUE(*tmp, tox_lst, tox_string_t).c == 'z') {
-         //If you delete tmp, you have to quit the loop, or it will go on infinitly.
-         //This will be fixed later on.
-         tox_list_remove(tmp);
-         break;
-      }
-   }
-   
-   printf("\n");
-   TOX_LIST_FOR_EACH(head, tmp)
-      printf("%c", TOX_LIST_GET_VALUE(*tmp, tox_lst, tox_string_t).c);
-   
-   
-   return 0;
-}
-*/
 
 #define MEMBER_OFFSET(var_name_in_parent, parent_type) \
    (&(((parent_type*)0)->var_name_in_parent))
 
 #define GET_PARENT(var, var_name_in_parent, parent_type) \
-   (*((parent_type*)((uint64_t)(&(var)) - (uint64_t)(MEMBER_OFFSET(var_name_in_parent, parent_type)))))
+   ((parent_type*)((uint64_t)(&(var)) - (uint64_t)(MEMBER_OFFSET(var_name_in_parent, parent_type))))
 
 #define TOX_LIST_FOR_EACH(lst, tmp_name) \
    for (tox_list_t* tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
@@ -143,12 +85,14 @@ typedef struct tox_list {
 } tox_list_t;
 
 /* Returns a new tox_list_t. */
-static inline void tox_list_new(tox_list_t* lst) {
+static inline void tox_list_new(tox_list_t* lst)
+{
    lst->prev = lst->next = lst;
 }
       
 /* Inserts a new tox_lst after lst and returns it. */
-static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst) {
+static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst)
+{
    tox_list_new(new_lst);
 
    new_lst->next = lst->next;
@@ -158,12 +102,59 @@ static inline void tox_list_add(tox_list_t* lst, tox_list_t* new_lst) {
    new_lst->prev = lst;
 }
 
-static inline void tox_list_remove(tox_list_t* lst) {
-#ifdef DEBUG /* TODO: check how debugging is done in Tox. */
-   assert(lst->next != lst && lst->prev != lst);
-#endif
+static inline void tox_list_remove(tox_list_t* lst)
+{
    lst->prev->next = lst->next;
    lst->next->prev = lst->prev;
+}
+
+/****************************Array***************************
+ * Array to store pointers which tracks it's own size.
+ * TODO: Figure out if it shold store values instead of
+ * pointers?
+ * TODO: Add wiki info usage.
+ ************************************************************/
+
+struct tox_array {
+    void **data;
+    uint32_t size, length;
+};
+
+static inline void tox_array_init(struct tox_array *arr)
+{
+    arr->size = 1;
+    arr->length = 0;
+    arr->data = malloc(sizeof(void*));
+}
+
+static inline void tox_array_delete(struct tox_array *arr)
+{
+    free(arr->data);
+    arr->size = arr->length = 0;
+}
+
+/* shrinks arr so it will not have unused space. If you want to have
+ * addtional space, extra species the amount of extra space.
+ */
+static inline void tox_array_shrink_to_fit(struct tox_array *arr, int32_t extra)
+{
+    arr->size = arr->length + extra;
+    arr->data = realloc(arr->data, arr->size * sizeof(void*));
+}
+
+static inline void _tox_array_push(struct tox_array *arr, void *new)
+{
+    if (arr->length+1 >= arr->size)
+        tox_array_shrink_to_fit(arr, arr->size);
+    arr->data[arr->length++] = new;
+}
+#define tox_array_push(arr, new) _tox_array_push(arr, (void*)new)
+
+static inline void* tox_array_pop(struct tox_array *arr)
+{
+    if (arr->length-1 < arr->size/4)
+        tox_array_shrink_to_fit(arr, arr->length*2); 
+    return arr->data[arr->length--]; 
 }
 
 #endif // MISC_TOOLS_H

@@ -220,7 +220,7 @@ void line_eval(char *line)
             print_friendlist();
         }
         else if (inpt_command == 's') {
-            uint8_t status[MAX_USERSTATUS_LENGTH];
+            uint8_t status[MAX_STATUSMESSAGE_LENGTH];
             int i = 0;
             size_t len = strlen(line);
             for (i = 3; i < len; i++) {
@@ -228,7 +228,7 @@ void line_eval(char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            m_set_userstatus(USERSTATUS_KIND_ONLINE, status, strlen((char*)status) + 1);
+            m_set_statusmessage(status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -364,7 +364,7 @@ void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
     }
 }
 
-void print_statuschange(int friendnumber, USERSTATUS_KIND kind, uint8_t *string, uint16_t length)
+void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
     if(getname(friendnumber, (uint8_t*)name) != -1) {
@@ -464,7 +464,7 @@ int main(int argc, char *argv[])
     m_callback_friendrequest(print_request);
     m_callback_friendmessage(print_message);
     m_callback_namechange(print_nickchange);
-    m_callback_userstatus(print_statuschange);
+    m_callback_statusmessage(print_statuschange);
 
     initscr();
     noecho();

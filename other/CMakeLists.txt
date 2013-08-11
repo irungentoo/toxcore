@@ -4,6 +4,6 @@ cmake_policy(SET CMP0011 NEW)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DHT_bootstrap.cmake)
 
-if(NOT WIN32)
+if(LINUX)
 	add_subdirectory(bootstrap_serverdaemon)
 endif()

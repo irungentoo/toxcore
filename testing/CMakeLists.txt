@@ -8,6 +8,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DHT_test.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Lossless_UDP_testclient.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Lossless_UDP_testserver.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Messenger_test.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/crypto_speed_test.cmake)
 
 if(WIN32)
 	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox_win32.cmake)

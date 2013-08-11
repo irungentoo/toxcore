@@ -20,7 +20,7 @@ extern int active_window;
 
 typedef struct {
   uint8_t name[MAX_NAME_LENGTH];
-  uint8_t status[MAX_USERSTATUS_LENGTH];
+  uint8_t status[MAX_STATUSMESSAGE_LENGTH];
   int num;
   int chatwin;
 } friend_t;
@@ -74,7 +74,7 @@ void friendlist_onNickChange(ToxWindow *self, int num, uint8_t *str, uint16_t le
 
 void friendlist_onStatusChange(ToxWindow *self, int num, uint8_t *str, uint16_t len)
 {
-  if (len >= MAX_USERSTATUS_LENGTH || num >= num_friends)
+  if (len >= MAX_STATUSMESSAGE_LENGTH || num >= num_friends)
     return;
 
   memcpy((char*) &friends[num].status, (char*) str, len);
@@ -177,6 +177,7 @@ ToxWindow new_friendlist() {
   ret.onDraw = &friendlist_onDraw;
   ret.onInit = &friendlist_onInit;
   ret.onMessage = &friendlist_onMessage;
+  ret.onAction = &friendlist_onMessage;    // Action has identical behaviour to message
   ret.onNickChange = &friendlist_onNickChange;
   ret.onStatusChange = &friendlist_onStatusChange;
 

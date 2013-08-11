@@ -39,10 +39,8 @@ int send_friendrequest(uint8_t *public_key, uint8_t *data, uint32_t length);
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
 void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
 
-/* if we receive a packet we call this function so it can be handled.
-    return 0 if packet is handled correctly.
-    return 1 if it didn't handle the packet or if the packet was shit. */
-int friendreq_handlepacket(uint8_t *packet, uint32_t length, IP_Port source);
+/* sets up friendreq packet handlers */
+void friendreq_init(void);
 
 #ifdef __cplusplus
 }

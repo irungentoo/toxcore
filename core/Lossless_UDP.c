@@ -555,7 +555,7 @@ static int send_DATA(uint32_t connection_id)
 
 
 /* Return 0 if handled correctly, 1 if packet is bad. */
-static int handle_handshake(uint8_t * packet, uint32_t length, IP_Port source)
+static int handle_handshake(IP_Port source, uint8_t * packet, uint32_t length)
 {
     if (length != (1 + 4 + 4))
         return 1;
@@ -669,7 +669,7 @@ static int handle_SYNC3(int connection_id, uint8_t counter, uint32_t recv_packet
     return 1;
 }
 
-static int handle_SYNC(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_SYNC(IP_Port source, uint8_t *packet, uint32_t length)
 {
 
     if (!SYNC_valid(length))
@@ -742,7 +742,7 @@ static int add_recv(int connection_id, uint32_t data_num, uint8_t *data, uint16_
     return 0;
 }
 
-static int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
+static int handle_data(IP_Port source, uint8_t *packet, uint32_t length)
 {
     int connection = getconnection_id(source);
 
@@ -770,23 +770,11 @@ static int handle_data(uint8_t *packet, uint32_t length, IP_Port source)
  * END of packet handling functions 
  */
 
-int LosslessUDP_handlepacket(uint8_t *packet, uint32_t length, IP_Port source)
+void LosslessUDP_init(void)
 {
-    switch (packet[0]) {
-    case 16:
-        return handle_handshake(packet, length, source);
-
-    case 17:
-        return handle_SYNC(packet, length, source);
-
-    case 18:
-        return handle_data(packet, length, source);
-
-    default:
-        return 1;
-    }
-
-    return 0;
+    networking_registerhandler(16, &handle_handshake);
+    networking_registerhandler(17, &handle_SYNC);
+    networking_registerhandler(18, &handle_data);
 }
 
 /*

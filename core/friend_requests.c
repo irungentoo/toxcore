@@ -68,32 +68,32 @@ void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
 }
 
 
-/*NOTE: the following is just a temporary fix for the multiple friend requests recieved at the same time problem
+/*NOTE: the following is just a temporary fix for the multiple friend requests received at the same time problem
   TODO: Make this better (This will most likely tie in with the way we will handle spam.)*/
 
-#define MAX_RECIEVED_STORED 32
+#define MAX_RECEIVED_STORED 32
 
-static uint8_t recieved_requests[MAX_RECIEVED_STORED][crypto_box_PUBLICKEYBYTES];
-static uint16_t recieved_requests_index;
+static uint8_t received_requests[MAX_RECEIVED_STORED][crypto_box_PUBLICKEYBYTES];
+static uint16_t received_requests_index;
 
-/*Add to list of recieved friend requests*/
-static void addto_recievedlist(uint8_t * client_id)
+/*Add to list of received friend requests*/
+static void addto_receivedlist(uint8_t * client_id)
 {
-    if (recieved_requests_index >= MAX_RECIEVED_STORED)
-        recieved_requests_index = 0;
+    if (received_requests_index >= MAX_RECEIVED_STORED)
+        received_requests_index = 0;
 
-    memcpy(recieved_requests[recieved_requests_index], client_id, crypto_box_PUBLICKEYBYTES);
-    ++recieved_requests_index;
+    memcpy(received_requests[received_requests_index], client_id, crypto_box_PUBLICKEYBYTES);
+    ++received_requests_index;
 }
 
-/* Check if a friend request was already recieved
+/* Check if a friend request was already received
    return 0 if not, 1 if we did  */
-static int request_recieved(uint8_t * client_id)
+static int request_received(uint8_t * client_id)
 {
     uint32_t i;
 
-    for (i = 0; i < MAX_RECIEVED_STORED; ++i) {
-        if (memcmp(recieved_requests[i], client_id, crypto_box_PUBLICKEYBYTES) == 0)
+    for (i = 0; i < MAX_RECEIVED_STORED; ++i) {
+        if (memcmp(received_requests[i], client_id, crypto_box_PUBLICKEYBYTES) == 0)
             return 1;
     }
 
@@ -101,7 +101,7 @@ static int request_recieved(uint8_t * client_id)
 }
 
 
-int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+static int friendreq_handlepacket(IP_Port source, uint8_t * packet, uint32_t length)
 {
     if (packet[0] == 32) {
         if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
@@ -117,10 +117,10 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
 
             if (len == -1)
                 return 1;
-            if (request_recieved(public_key))
+            if (request_received(public_key))
                 return 1;
 
-            addto_recievedlist(public_key);
+            addto_receivedlist(public_key);
             (*handle_friendrequest)(public_key, data, len);
         } else { /* if request is not for us, try routing it. */
             if(route_packet(packet + 1, packet, length) == length)
@@ -128,4 +128,9 @@ int friendreq_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
         }
     }
     return 1;
+}
+
+void friendreq_init(void)
+{
+    networking_registerhandler(32, &friendreq_handlepacket);
 }

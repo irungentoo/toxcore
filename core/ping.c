@@ -158,7 +158,7 @@ int send_ping_response(IP_Port ipp, clientid_t* client_id, uint64_t ping_id)
     return sendpacket(ipp, (uint8_t*) &pk, sizeof(pk));
 }
 
-int handle_ping_request(uint8_t* packet, uint32_t length, IP_Port source)
+int handle_ping_request(IP_Port source, uint8_t* packet, uint32_t length)
 {
     pingreq_t* p = (pingreq_t*) packet;
     int        rc;
@@ -185,7 +185,7 @@ int handle_ping_request(uint8_t* packet, uint32_t length, IP_Port source)
     return 0;
 }
 
-int handle_ping_response(uint8_t* packet, uint32_t length, IP_Port source)
+int handle_ping_response(IP_Port source, uint8_t* packet, uint32_t length)
 {
     pingres_t* p = (pingres_t*) packet;
     int       rc;

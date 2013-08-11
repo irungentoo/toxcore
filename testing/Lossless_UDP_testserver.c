@@ -1,12 +1,12 @@
 /* Lossless_UDP testserver
- * A program that waits for a lossless UDP connection and then saves all the data recieved to a file.
+ * A program that waits for a lossless UDP connection and then saves all the data received to a file.
  * NOTE: this program simulates a 33% packet loss.
  * 
  * Best used in combination with Lossless_UDP_testclient
  * 
  * Compile with: gcc -O2 -Wall -lsodium -o testserver ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testserver.c
  * 
- * Command line argument is the name of the file to save what we recieve to.
+ * Command line argument is the name of the file to save what we receive to.
  * EX: ./testserver filename1.txt
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
@@ -113,24 +113,26 @@ void printconnection(int connection_id)
 }
 */
 
-/* recieve packets and send them to the packethandler
+/* receive packets and send them to the packethandler
  * run doLossless_UDP(); */
 void Lossless_UDP()
 {
-    IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
-    while (receivepacket(&ip_port, data, &length) != -1) {
+//    IP_Port ip_port;
+//    uint8_t data[MAX_UDP_PACKET_SIZE];
+//    uint32_t length;
+//    while (receivepacket(&ip_port, data, &length) != -1) {
         //if(rand() % 3 != 1)//add packet loss
         //{
-            if (LosslessUDP_handlepacket(data, length, ip_port)) {
-                    printpacket(data, length, ip_port);
-            } else {
+//            if (LosslessUDP_handlepacket(data, length, ip_port)) {
+//                    printpacket(data, length, ip_port);
+//            } else {
                 //printconnection(0);
-                 printf("Received handled packet with length: %u\n", length);
-            }
+//                 printf("Received handled packet with length: %u\n", length);
+//            }
         //}
-    }
+//    }
+
+    networking_poll();
     
     doLossless_UDP();   
 }
@@ -161,13 +163,14 @@ int main(int argc, char *argv[])
     int connection;
     uint64_t timer = current_time();
     
+    LosslessUDP_init();
     
     while (1) {
         Lossless_UDP();
         connection = incoming_connection();
         if(connection != -1) {
             if(is_connected(connection) == 2) {
-                printf("Recieved the connection.\n");
+                printf("Received the connection.\n");
                 
             }
             break;
@@ -184,7 +187,7 @@ int main(int argc, char *argv[])
             kill_connection_in(connection, 3000000);
             read = read_packet(connection, buffer);
             if (read != 0) {
-               // printf("Recieved data.\n");
+               // printf("Received data.\n");
                 if (!fwrite(buffer, read, 1, file)) 
                         printf("file write error\n");
             }

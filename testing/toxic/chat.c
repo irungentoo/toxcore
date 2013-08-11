@@ -14,9 +14,11 @@
 
 #include "windows.h"
 
+#define CURS_Y_OFFSET 3
+
 typedef struct {
   int friendnum;
-  char line[256];
+  char line[MAX_STR_SIZE];
   size_t pos;
   WINDOW* history;
   WINDOW* linewin;
@@ -27,7 +29,7 @@ extern int active_window;
 extern void del_window(ToxWindow *w, int f_num);
 extern void fix_name(uint8_t *name);
 void print_help(ChatContext *self);
-void execute(ToxWindow *self, ChatContext *ctx, char *cmd);
+void execute(ToxWindow *self, ChatContext *ctx, char *cmd, struct tm *timeinfo);
 
 static void chat_onMessage(ToxWindow *self, int num, uint8_t *msg, uint16_t len)
 {
@@ -35,7 +37,7 @@ static void chat_onMessage(ToxWindow *self, int num, uint8_t *msg, uint16_t len)
   uint8_t nick[MAX_NAME_LENGTH] = {0};
   time_t now;
   time(&now);
-  struct tm * timeinfo;
+  struct tm *timeinfo;
   timeinfo = localtime(&now);
 
   if (ctx->friendnum != num)
@@ -57,7 +59,32 @@ static void chat_onMessage(ToxWindow *self, int num, uint8_t *msg, uint16_t len)
 
   self->blink = true;
   beep();
-  flash();
+}
+
+static void chat_onAction(ToxWindow *self, int num, uint8_t *action, uint16_t len)
+{
+  ChatContext *ctx = (ChatContext*) self->x;
+  time_t now;
+  time(&now);
+  struct tm *timeinfo;
+  timeinfo = localtime(&now);
+
+  if (ctx->friendnum != num)
+    return;
+
+  action[len-1] = '\0';
+  fix_name(action);
+
+  wattron(ctx->history, COLOR_PAIR(2));
+  wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  wattroff(ctx->history, COLOR_PAIR(2));
+
+  wattron(ctx->history, COLOR_PAIR(4));
+  wprintw(ctx->history, "%s\n", action);
+  wattroff(ctx->history, COLOR_PAIR(4));
+
+  self->blink = true;
+  beep();
 }
 
 static void chat_onNickChange(ToxWindow *self, int num, uint8_t *nick, uint16_t len)
@@ -98,18 +125,37 @@ static void chat_onKey(ToxWindow *self, int key)
   struct tm * timeinfo;
   timeinfo = localtime(&now);
 
-  /* Add printable characters to line */
+  int x, y, y2, x2;
+  getyx(self->window, y, x);
+  getmaxyx(self->window, y2, x2);
+
+  /* Add printable chars to buffer and print on input space */
   if (isprint(key)) {
     if (ctx->pos != sizeof(ctx->line)-1) {
+      mvwaddch(self->window, y, x, key);
       ctx->line[ctx->pos++] = key;
       ctx->line[ctx->pos] = '\0';
     }
   }
 
+  /* BACKSPACE key: Remove one character from line */
+  else if (key == 0x107 || key == 0x8 || key == 0x7f) {
+    if (ctx->pos > 0) {
+      ctx->line[--ctx->pos] = '\0';
+      if (x == 0)
+        mvwdelch(self->window, y-1, x2-1);
+      else
+        mvwdelch(self->window, y, x-1);
+    }
+  }
+
   /* RETURN key: Execute command or print line */
-  else if (key == '\n') {
+  if (key == '\n') {
+    wclear(ctx->linewin);
+    wmove(self->window, y2-CURS_Y_OFFSET, 0);
+    wclrtobot(self->window);
     if (ctx->line[0] == '/')
-      execute(self, ctx, ctx->line);
+      execute(self, ctx, ctx->line, timeinfo);
     else {
       if (!string_is_empty(ctx->line)) {
         /* make sure the string has at least non-space character */
@@ -121,7 +167,7 @@ static void chat_onKey(ToxWindow *self, int key)
         wattroff(ctx->history, COLOR_PAIR(1));
         wprintw(ctx->history, "%s\n", ctx->line);
       }
-      if (m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) < 0) {
+      if (m_sendmessage(ctx->friendnum, (uint8_t*) ctx->line, strlen(ctx->line)+1) == 0) {
         wattron(ctx->history, COLOR_PAIR(3));
         wprintw(ctx->history, " * Failed to send message.\n");
         wattroff(ctx->history, COLOR_PAIR(3));
@@ -130,20 +176,17 @@ static void chat_onKey(ToxWindow *self, int key)
     ctx->line[0] = '\0';
     ctx->pos = 0;
   }
-
-  /* BACKSPACE key: Remove one character from line */
-  else if (key == 0x107 || key == 0x8 || key == 0x7f) {
-    if (ctx->pos != 0) {
-      ctx->line[--ctx->pos] = '\0';
-    }
-  }
 }
 
-void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
+void execute(ToxWindow *self, ChatContext *ctx, char *cmd, struct tm *timeinfo)
 {
   if (!strcmp(cmd, "/clear") || !strcmp(cmd, "/c")) {
     wclear(self->window);
     wclear(ctx->history);
+    int x, y;
+    getmaxyx(self->window, y, x);
+    (void) x;
+    wmove(self->window, y-CURS_Y_OFFSET, 0);
   }
 
   else if (!strcmp(cmd, "/help") || !strcmp(cmd, "/h"))
@@ -154,16 +197,74 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
     exit(0);
   }
 
+  else if (!strncmp(cmd, "/me ", strlen("/me "))) {
+    char *action = strchr(cmd, ' ');
+    if (action == NULL) {
+      wprintw(self->window, "Invalid syntax.\n");
+      return;
+    }
+    action++;
+
+    wattron(ctx->history, COLOR_PAIR(2));
+    wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    wattroff(ctx->history, COLOR_PAIR(2));
+
+    uint8_t selfname[MAX_NAME_LENGTH];
+    int len = getself_name(selfname);
+    char msg[MAX_STR_SIZE-len-4];
+    snprintf(msg, sizeof(msg), "* %s %s\n", (uint8_t*) selfname, action);
+
+    wattron(ctx->history, COLOR_PAIR(1));
+    wprintw(ctx->history, msg);
+    wattroff(ctx->history, COLOR_PAIR(1));
+    if (m_sendaction(ctx->friendnum, (uint8_t*) msg, strlen(msg)+1) < 0) {
+      wattron(ctx->history, COLOR_PAIR(3));
+      wprintw(ctx->history, " * Failed to send action\n");
+      wattroff(ctx->history, COLOR_PAIR(3));
+    }
+  }
+
   else if (!strncmp(cmd, "/status ", strlen("/status "))) {
+    char *status = strchr(cmd, ' ');
     char *msg;
-    msg = strchr(cmd, ' ');
-    if (msg == NULL) {
+    char *status_text;
+    if (status == NULL) {
       wprintw(ctx->history, "Invalid syntax.\n");
       return;
     }
-    msg++;
-    m_set_userstatus(USERSTATUS_KIND_RETAIN, (uint8_t*) msg, strlen(msg)+1);
-    wprintw(ctx->history, "Status set to: %s\n", msg);
+    status++;
+    USERSTATUS status_kind;
+    if (!strncmp(status, "online", strlen("online"))) {
+      status_kind = USERSTATUS_NONE;
+      status_text = "ONLINE";
+    }
+
+    else if (!strncmp(status, "away", strlen("away"))) {
+      status_kind = USERSTATUS_AWAY;
+      status_text = "AWAY";
+    }
+
+    else if (!strncmp(status, "busy", strlen("busy"))) {
+      status_kind = USERSTATUS_BUSY;
+      status_text = "BUSY";
+    }
+
+    else {
+      wprintw(ctx->history, "Invalid status.\n");
+      return;
+    }
+
+    msg = strchr(status, ' ');
+    if (msg == NULL) {
+      m_set_userstatus(status_kind);
+      wprintw(ctx->history, "Status set to: %s\n", status_text);
+    }
+    else {
+      msg++;
+      m_set_userstatus(status_kind);
+      m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
+      wprintw(ctx->history, "Status set to: %s, %s\n", status_text, msg);
+    }
   }
 
   else if (!strncmp(cmd, "/nick ", strlen("/nick "))) {
@@ -179,9 +280,9 @@ void execute(ToxWindow *self, ChatContext *ctx, char *cmd)
   }
 
   else if (!strcmp(cmd, "/myid")) {
-    char id[32*2 + 1] = {0};
+    char id[KEY_SIZE_BYTES*2+1] = {0};
     int i;
-    for (i = 0; i < 32; i++) {
+    for (i = 0; i < KEY_SIZE_BYTES; i++) {
       char xx[3];
       snprintf(xx, sizeof(xx), "%02x",  self_public_key[i] & 0xff);
       strcat(id, xx);
@@ -204,14 +305,10 @@ static void chat_onDraw(ToxWindow *self)
 {
   curs_set(1);
   int x, y;
-  ChatContext *ctx = (ChatContext*) self->x;
   getmaxyx(self->window, y, x);
-  (void) x;
-  if (y < 3) return;
-
-  wclear(ctx->linewin);
-  mvwhline(ctx->linewin, 0, 0, '_', COLS);
-  mvwprintw(self->window, y-1, 0, "%s\n", ctx->line);
+  (void) y;
+  ChatContext *ctx = (ChatContext*) self->x;
+  mvwhline(ctx->linewin, 0, 0, '_', x);
   wrefresh(self->window);
 }
 
@@ -220,10 +317,11 @@ static void chat_onInit(ToxWindow *self)
   int x, y;
   ChatContext *ctx = (ChatContext*) self->x;
   getmaxyx(self->window, y, x);
-  ctx->history = subwin(self->window, y - 4, x, 0, 0);
+  ctx->history = subwin(self->window, y-4, x, 0, 0);
   scrollok(ctx->history, 1);
-  ctx->linewin = subwin(self->window, 2, x, y - 3, 0);
+  ctx->linewin = subwin(self->window, 2, x, y-4, 0);
   print_help(ctx);
+  wmove(self->window, y-CURS_Y_OFFSET, 0);
 }
 
 void print_help(ChatContext *self)
@@ -232,8 +330,9 @@ void print_help(ChatContext *self)
   wprintw(self->history, "Commands:\n");
   wattroff(self->history, A_BOLD);
   
-  wprintw(self->history, "      /status <message>          : Set your status\n");
+  wprintw(self->history, "      /status <type> <message>   : Set your status\n");
   wprintw(self->history, "      /nick <nickname>           : Set your nickname\n");
+  wprintw(self->history, "      /me <action>               : Do an action\n");
   wprintw(self->history, "      /myid                      : Print your ID\n");
   wprintw(self->history, "      /clear                     : Clear the screen\n");
   wprintw(self->history, "      /close                     : Close the current chat window\n");
@@ -254,6 +353,7 @@ ToxWindow new_chat(int friendnum)
   ret.onMessage = &chat_onMessage;
   ret.onNickChange = &chat_onNickChange;
   ret.onStatusChange = &chat_onStatusChange;
+  ret.onAction = &chat_onAction;
 
   uint8_t nick[MAX_NAME_LENGTH] = {0};
   getname(friendnum, (uint8_t*) &nick);

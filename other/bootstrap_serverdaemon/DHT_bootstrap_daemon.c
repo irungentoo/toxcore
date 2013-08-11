@@ -81,10 +81,6 @@ int connect_to_servers(struct server_info_s *info)
     int i;
     int c;
 
-    IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
-
     for(i = 0; i < 32; ++i) {
         if(info[i].valid) {
             /* Actual bootstrapping code goes here */
@@ -109,10 +105,7 @@ int connect_to_servers(struct server_info_s *info)
 
         doDHT();
 
-        while(receivepacket(&ip_port, data, &length) != -1)
-        {
-            DHT_handlepacket(data, length, ip_port);
-        }
+        networking_poll();
     }
 
     /* This probably never happens */
@@ -337,6 +330,7 @@ int main(int argc, char *argv[]) {
     /* Bootstrap the DHT
     This one throws odd errors, too. Ignore. I assume they come
     from somewhere in the core. */
+    DHT_init();
     tmperr = errno;
     connect_to_servers(server_conf.info);
     errno = tmperr;
@@ -400,19 +394,13 @@ int main(int argc, char *argv[]) {
     close(STDERR_FILENO);
 
     /* Main loop */
-    IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
+    friendreq_init();
 
     while(1)
     {
         doDHT();
 
-        while(receivepacket(&ip_port, data, &length) != -1)
-        {
-            DHT_handlepacket(data, length, ip_port);
-            friendreq_handlepacket(data, length, ip_port);
-        }
+        networking_poll();
         usleep(10000);
     }
 
