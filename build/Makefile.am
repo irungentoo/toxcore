@@ -85,7 +85,8 @@ noinst_PROGRAMS = 		DHT_test \
 						Lossless_UDP_testclient \
 						Lossless_UDP_testserver \
 						Messenger_test \
-						DHT_bootstrap
+						DHT_bootstrap \
+						crypto_speed_test
 
 DHT_test_SOURCES =		$(top_srcdir)/testing/DHT_test.c \
 						$(top_srcdir)/testing/misc_tools.h \
@@ -131,6 +132,15 @@ DHT_bootstrap_SOURCES =	$(top_srcdir)/other/DHT_bootstrap.c \
 DHT_bootstrap_CFLAGS =	$(COMMONCFLAGS)
 DHT_bootstrap_LDADD =	$(COMMONLDADD)
 
+crypto_speed_test_SOURCES = \
+						$(top_srcdir)/testing/crypto_speed_test.c
+
+crypto_speed_test_CFLAGS = \
+						$(COMMONCFLAGS)
+
+crypto_speed_test_LDADD = \
+						$(COMMONLDADD)
+
 if BUILD_DHT_BOOTSTRAP_DAEMON
 noinst_PROGRAMS += 		DHT_bootstrap_daemon
 EXTRA_DIST +=			$(top_srcdir)/other/bootstrap_serverdaemon/server.cfg
@@ -148,9 +158,9 @@ endif
 
 if BUILD_TESTS
 
-TESTS = friends_test messenger_test
+TESTS = friends_test messenger_test crypto_test
 
-check_PROGRAMS = friends_test messenger_test
+check_PROGRAMS = friends_test messenger_test crypto_test
 
 friends_test_SOURCES =	$(top_srcdir)/auto_tests/friends_test.c
 friends_test_CFLAGS = 	$(COMMONCFLAGS) \
@@ -164,4 +174,11 @@ messenger_test_CFLAGS =	$(COMMONCFLAGS) \
 						$(CHECK_CFLAGS)
 messenger_test_LDADD =	$(COMMONLDADD) \
 						$(CHECK_LIBS)
+
+crypto_test_SOURCES =	$(top_srcdir)/auto_tests/crypto_test.c
+crypto_test_CFLAGS = 	$(COMMONCFLAGS) \
+						$(CHECK_CFLAGS)
+crypto_test_LDADD =		$(COMMONLDADD) \
+						$(CHECK_LIBS)
+
 endif

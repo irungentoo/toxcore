@@ -25,7 +25,7 @@ double get_time()
 
 #endif
 
-#include "../core/net_crypto.h"
+#include "../toxcore/net_crypto.h"
 #include <stdlib.h>
 #include <time.h>
 
