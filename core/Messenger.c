@@ -26,6 +26,7 @@
                                                  * so no need to include Messenger.h */
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
+
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
@@ -261,17 +262,9 @@ int m_sendaction(int friendnumber, uint8_t *action, uint32_t length)
 /* send an media_session_initiation packet to an online friend
     returns 1 if packet was successfully put into the send queue
     return 0 if it was not */
-int m_sendmediainitcallback(int friendnumber, uint8_t *message, uint32_t length)
+int m_sendmediainit(int friendnumber, uint8_t *message, uint32_t length)
 {
-    if (friendnumber < 0 || friendnumber >= numfriends)
-        return 0;
-    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_ONLINE)
-        /* this does not mean the maximum message length is MAX_DATA_SIZE - 1, it is actually 17 bytes less. */
-        return 0;
-    uint8_t temp[MAX_DATA_SIZE];
-    temp[0] = PACKET_ID_MEDIA;
-    memcpy(temp + 1, message, length);
-    return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, temp, length + 1);
+    return write_cryptpacket_id(friendnumber, PACKET_ID_MEDIA, message, length);
 }
 
 /* Starts the call flow.
@@ -558,7 +551,7 @@ int media_session_init ( IP_Port ip_port ) /* You get the idea */
     if ( _media_session == NULL )
         return -1;
 
-    media_session_register_callback_send(m_sendmediainitcallback);
+    media_session_register_callback_send(m_sendmediainit);
 
     return 0;
 }

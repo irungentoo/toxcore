@@ -67,11 +67,17 @@ typedef struct media_session_s {
  *
  * ALICE                        BOB
  *      | invite -->            |
+ *      |                       |
  *      |           <-- ringing |
+ *      |                       |
  *      |          <-- starting |
+ *      |                       |
  *      | started -->           |
+ *      |                       |
  *      | <-- MEDIA TRANS -->   |
+ *      |                       |
  *      | ending -->            |
+ *      |                       |
  *      |             <-- ended |
  *
  * Alice calls Bob by sending invite packet.

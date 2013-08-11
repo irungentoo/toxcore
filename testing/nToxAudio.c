@@ -36,10 +36,16 @@
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 
-char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
-             "(to send message)\n/s status (to change status)\n[i] /l list (l"
-             "ist friends)\n/h for help\n/i for info\n/n nick (to change nick"
-             "name)\n/q (to quit)";
+char *help = "[i] commands:\n"
+             "/f ID (to add friend)\n"
+             "/m friendnumber message (to send message)\n"
+             "/c friendnumber ( to start the call )\n"
+             "/s status (to change status)\n"
+             "/l list (list friends)\n"
+             "/h for help\n"
+             "/i for info\n"
+             "/n nick (to change nickname)\n"
+             "/q (to quit)";
 int x, y;
 
 typedef struct {
@@ -201,6 +207,18 @@ void line_eval(char *line)
             } else {
                 new_lines(format_message(message, -1));
             }
+        }
+        else if (inpt_command == 'c'){
+            size_t len = strlen(line);
+            if(len < 3)
+                return;
+
+            char* numstring = strtok(line, " ");
+            numstring = strtok(NULL, " ");
+
+            int num = atoi(numstring);
+
+            m_startcall(num);
         }
         else if (inpt_command == 'n') {
             uint8_t name[MAX_NAME_LENGTH];
@@ -428,7 +446,7 @@ void print_help(void)
     puts("\t-f\t-\tSpecify a keyfile to read (or write to) from.");
 }
 
-int _main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     int on = 0;
     int c = 0;

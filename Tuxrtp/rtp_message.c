@@ -213,7 +213,7 @@ void rtp_header_add_setting_marker ( rtp_header_t* _header, int value )
     if ( value > 1 )
         value = 1;
 
-    /*( _header->_marker_payload_t ) &= 0x7F;*/
+    ( _header->_marker_payload_t ) &= 0x7F;
     ( _header->_marker_payload_t ) |= ( ( ( value ) << 7 ) /*& 0x80 */ );
 }
 
@@ -222,7 +222,7 @@ void rtp_header_add_setting_payload ( rtp_header_t* _header, int value )
     if ( value > 127 )
         value = 127; /* Well set to maximum */
 
-    /*( _header->_marker_payload_t ) &= 0x80;*/
+    ( _header->_marker_payload_t ) &= 0x80;
     ( _header->_marker_payload_t ) |= ( ( value ) /* & 0x7F */ );
 }
 

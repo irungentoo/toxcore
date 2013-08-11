@@ -40,7 +40,7 @@ int print_help()
     return FAILURE;
     }
 */
-int main ( int argc, char* argv[] )
+int _main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;
@@ -82,8 +82,7 @@ int main ( int argc, char* argv[] )
 
             if ( _m_msg ) {
                 /**/
-                printf ( "Payload type: %d\n", rtp_header_get_setting_payload_type(_m_msg->_header) );
-
+                printf ( "Packets: %d\n", _m_session->_packets_recv );
                 /**/
                 rtp_free_msg(_m_session, _m_msg);
             }
@@ -123,6 +122,7 @@ int main ( int argc, char* argv[] )
         puts ( "Now sending for ~5 s" );
 
         rtp_set_payload_type(_m_session, 106);
+
         int i;
         for ( i = 0; i < 100; i++ ) {
             _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
