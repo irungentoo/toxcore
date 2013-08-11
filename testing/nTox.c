@@ -113,7 +113,7 @@ char *format_message(Messenger *m, char *message, int friendnum)
     if (friendnum != -1) {
             getname(m, friendnum, (uint8_t*)name);
     } else {
-            getself_name(m, (uint8_t*)name);
+            getself_name(m, (uint8_t*)name, sizeof(name));
     }
     char *msg = malloc(100+strlen(message)+strlen(name)+1);
 

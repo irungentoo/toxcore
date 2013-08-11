@@ -196,10 +196,18 @@ int m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t lengt
    return -1 if failure */
 int setname(Messenger *m, uint8_t *name, uint16_t length);
 
-/* get our nickname
-   put it in name
-   return the length of the name*/
-uint16_t getself_name(Messenger *m, uint8_t *name);
+/**
+ * @brief Get your nickname.
+ *
+ * @param[in]  m        The messanger context to use.
+ *
+ * @param[inout]  name    Pointer to a string for the name.
+ *
+ * @param[in]  nlen     The length of the string buffer.
+ *
+ * @return Return the length of the name, 0 on error.
+ */
+uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen);
 
 /* get name of friendnumber
     put it in name

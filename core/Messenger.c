@@ -267,10 +267,18 @@ int setname(Messenger *m, uint8_t * name, uint16_t length)
    put it in name
    name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
    return the length of the name */
-uint16_t getself_name(Messenger *m, uint8_t *name)
+uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen)
 {
+    uint16_t len;
+
+    if (name == NULL || nlen == 0) {
+        return 0;
+    }
+
+    len = MIN(nlen, m->name_length);
     memcpy(name, m->name, m->name_length);
-    return m->name_length;
+
+    return len;
 }
 
 /* get name of friendnumber
