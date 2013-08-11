@@ -11,6 +11,8 @@
  *      All of that is done in a separate test, with two local clients running. */
 
 #include "../toxcore/Messenger.h"
+#include "../toxcore/Lossless_UDP.h"
+#include <stdlib.h>
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>

@@ -18,6 +18,7 @@
 
 #include "../../toxcore/Messenger.h"
 #include "../../toxcore/network.h"
+#include "../../toxcore/DHT.h"
 
 #include "configdir.h"
 #include "windows.h"
