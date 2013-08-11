@@ -410,6 +410,7 @@ int main(int argc, char *argv[])
     strcat(DATA_FILE, CONFIGDIR);
     strcat(DATA_FILE, "data");
   }
+  free(user_config_dir);
 
   /* This is broken */
   int f_loadfromfile = 1;
