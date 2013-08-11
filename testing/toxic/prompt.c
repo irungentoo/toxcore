@@ -9,6 +9,7 @@
 
 #include "../../toxcore/Messenger.h"
 #include "../../toxcore/network.h"
+#include "../../toxcore/DHT.h"
 
 #include "windows.h"
 

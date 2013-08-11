@@ -22,6 +22,7 @@
  */
 #include "nTox.h"
 #include "misc_tools.h"
+#include "../toxcore/DHT.h"
 
 #include <stdio.h>
 #include <time.h>
