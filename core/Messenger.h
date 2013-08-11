@@ -211,9 +211,15 @@ void m_callback_userstatus(void (*function)(int, USERSTATUS));
     in that case, you should discard it. */
 void m_callback_read_receipt(void (*function)(int, uint32_t));
 
-/* set the callback for friend status changes
-    function(int friendnumber, uint8_t status) */
-void m_callback_friendstatus(void (*function)(int, uint8_t));
+/* set the callback for conenction status changes
+    function(int friendnumber, uint8_t status)
+    status:
+      0 -- friend went offline after being previously online
+      1 -- friend went online
+    note that this callback is not called when adding friends, thus the "after
+    being previously online" part. it's assumed that when adding friends,
+    their connection status is offline. */
+void m_callback_connectionstatus(void (*function)(int, uint8_t));
 
 /* run this at startup
     returns 0 if no connection problems
