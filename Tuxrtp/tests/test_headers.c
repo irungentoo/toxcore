@@ -23,7 +23,6 @@
  */
 
 #include "test_helper.h"
-#include "../rtp_helper.h"
 #include "../rtp_impl.h"
 
 #include <stdio.h>
@@ -124,7 +123,7 @@ void print_ext_header_info(rtp_ext_header_t* _ext_header)
     );
 }
 
-int _main ( int argc, char* argv[] )
+int ___main ( int argc, char* argv[] )
 {
     arg_t* _list = parse_args ( argc, argv );
 
@@ -133,7 +132,7 @@ int _main ( int argc, char* argv[] )
     }
 
     int status;
-    IP_Port     Ip_port[1];
+    IP_Port     Ip_port;
     const char* ip;
     uint16_t    port;
 
@@ -156,6 +155,7 @@ int _main ( int argc, char* argv[] )
         _m_session = rtp_init_session ( LOCAL_IP, -1 );
         status = init_networking ( LOCAL_IP.ip, RTP_PORT_LISTEN );
 
+
         if ( status < 0 ) {
             _m_session->_last_error = strerror ( errno );
             puts ( _m_session->_last_error );
@@ -168,9 +168,9 @@ int _main ( int argc, char* argv[] )
 
             /* _m_msg = rtp_session_get_message_queded ( _m_session ); DEPRECATED */
             if ( _m_msg ) {
-                rtp_free_msg(_m_session, _m_msg);
-                _m_msg = NULL;
-                /*break;*/
+                /*rtp_free_msg(_m_session, _m_msg);
+                _m_msg = NULL;*/
+                break;
             }
 
             usleep ( 100000 );
@@ -202,11 +202,11 @@ int _main ( int argc, char* argv[] )
             port = atoi ( _port );
         }
 
-        set_ip_port ( ip, port, Ip_port );
+        set_ip_port ( ip, port, &Ip_port );
         printf ( "Remote: %s:%d\n", ip, port );
-        status = init_networking ( Ip_port[0].ip, RTP_PORT );
+        status = init_networking ( Ip_port.ip, RTP_PORT );
 
-        _m_session = rtp_init_session ( Ip_port[0], -1 );
+        _m_session = rtp_init_session ( Ip_port, -1 );
         rtp_add_resolution_marking(_m_session, 1920, 1080);
 
         puts ( "Now sending payload!\n" );

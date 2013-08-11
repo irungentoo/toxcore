@@ -139,6 +139,8 @@ void shutdown_networking(void);
 */
 uint32_t resolve_addr(const char *address);
 
+int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
+
 #ifdef __cplusplus
 }
 #endif

@@ -26,18 +26,6 @@
                                                  * so no need to include Messenger.h */
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
-uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-
-static uint8_t self_name[MAX_NAME_LENGTH];
-static uint16_t self_name_length;
-
-static uint8_t *self_userstatus;
-static uint16_t self_userstatus_len;
-static USERSTATUS_KIND self_userstatus_kind;
-
-#define MAX_NUM_FRIENDS 256
-
-
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
@@ -56,9 +44,6 @@ typedef struct {
     uint8_t receives_read_receipts; /* shall we send read receipts to this person? */
 } Friend;
 
-<<<<<<< HEAD
-static Friend friendlist[MAX_NUM_FRIENDS];
-=======
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 static uint8_t self_name[MAX_NAME_LENGTH];
@@ -68,20 +53,16 @@ static uint8_t self_statusmessage[MAX_STATUSMESSAGE_LENGTH];
 static uint16_t self_statusmessage_length;
 
 static USERSTATUS self_userstatus;
->>>>>>> upstream/master
 
 static Friend *friendlist;
 static uint32_t numfriends;
 
-<<<<<<< HEAD
 /* This messenger's Media session descriptor */
 static media_session_t* _media_session;
 /**/
-=======
 
 static void set_friend_status(int friendnumber, uint8_t status);
 static int write_cryptpacket_id(int friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length);
->>>>>>> upstream/master
 
 /* 1 if we are online
    0 if we are offline
@@ -570,6 +551,18 @@ static int write_cryptpacket_id(int friendnumber, uint8_t packet_id, uint8_t *da
 
 #define PORT 33445
 
+int media_session_init ( IP_Port ip_port ) /* You get the idea */
+{
+    _media_session = media_init_session(ip_port);
+
+    if ( _media_session == NULL )
+        return -1;
+
+    media_session_register_callback_send(m_sendmediainitcallback);
+
+    return 0;
+}
+
 /* run this at startup */
 int initMessenger(void)
 {
@@ -582,20 +575,13 @@ int initMessenger(void)
     if(init_networking(ip,PORT) == -1)
         return -1;
 
-<<<<<<< HEAD
     IP_Port ip_port = { ip, PORT, -1 };
-    _media_session = media_init_session(ip_port);
 
-    if ( _media_session == NULL )
-        return -1;
-
-    media_session_register_callback_send(m_sendmediainitcallback);
-=======
+    media_session_init(ip_port); /* Why split initiations into functions when they are already split */
     DHT_init();
     LosslessUDP_init();
     friendreq_init();
     LANdiscovery_init();
->>>>>>> upstream/master
 
     return 0;
 }
@@ -763,35 +749,9 @@ static void LANdiscovery(void)
 /* the main loop that needs to be run at least 200 times per second. */
 void doMessenger(void)
 {
-<<<<<<< HEAD
-    IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
-    while (receivepacket(&ip_port, data, &length) != -1) {
-#ifdef DEBUG
-        /* if(rand() % 3 != 1) //simulate packet loss */
-        /* { */
-        if (DHT_handlepacket(data, length, ip_port) && LosslessUDP_handlepacket(data, length, ip_port) &&
-            friendreq_handlepacket(data, length, ip_port) && LANdiscovery_handlepacket(data, length, ip_port))
-            /* if packet is discarded */
-            printf("Received unhandled packet with length: %u\n", length);
-        else
-            printf("Received handled packet with length: %u\n", length);
-        /* } */
-        printf("Status: %u %u %u\n",friendlist[0].status ,is_cryptoconnected(friendlist[0].crypt_connection_id),  friendlist[0].crypt_connection_id);
-#else
-        if      ( media_session_handlepacket( _media_session, data, length ) ) break;
-        else if ( DHT_handlepacket(data, length, ip_port) ) break;
-        else if ( LosslessUDP_handlepacket(data, length, ip_port) ) break;
-        else if ( friendreq_handlepacket(data, length, ip_port) ) break;
-        else if ( LANdiscovery_handlepacket(data, length, ip_port) ) break;
-#endif
 
-    }
-=======
     networking_poll();
-	
->>>>>>> upstream/master
+
     doDHT();
     doLossless_UDP();
     doNetCrypto();

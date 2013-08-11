@@ -40,7 +40,7 @@ int print_help()
     return FAILURE;
     }
 */
-int ___main ( int argc, char* argv[] )
+int main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;
@@ -82,7 +82,8 @@ int ___main ( int argc, char* argv[] )
 
             if ( _m_msg ) {
                 /**/
-                printf ( "Bytes received: %d\n", _m_session->_bytes_recv );
+                printf ( "Payload type: %d\n", rtp_header_get_setting_payload_type(_m_msg->_header) );
+
                 /**/
                 rtp_free_msg(_m_session, _m_msg);
             }
@@ -121,6 +122,7 @@ int ___main ( int argc, char* argv[] )
         _m_session = rtp_init_session ( Ip_port, -1 );
         puts ( "Now sending for ~5 s" );
 
+        rtp_set_payload_type(_m_session, 106);
         int i;
         for ( i = 0; i < 100; i++ ) {
             _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen ( test_bytes ) + 1, NULL ) ;
@@ -128,6 +130,7 @@ int ___main ( int argc, char* argv[] )
             usleep ( 10000 );
         }
 
+        rtp_set_payload_type(_m_session, 107);
         /* Messages will have an external header from now on */
         rtp_add_resolution_marking(_m_session, 1920, 1080);
 
@@ -137,6 +140,7 @@ int ___main ( int argc, char* argv[] )
             usleep ( 10000 );
         }
 
+        rtp_set_payload_type(_m_session, 106);
         /* Messages no longer have external header */
         rtp_remove_resolution_marking(_m_session);
 

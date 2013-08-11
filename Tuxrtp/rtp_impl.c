@@ -27,6 +27,7 @@
 #include <assert.h>
 #include "rtp_allocator.h"
 #include "../core/util.h"
+#include "../core/network.h"
 
 /* Some defines */
 
@@ -259,10 +260,11 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
     IP_Port  _from;
     int status = receivepacket ( &_from, LAST_SOCKET_DATA, &_bytes );
 
-    LAST_SOCKET_DATA[_bytes] = '\0';
 
     if ( status == FAILURE )  /* nothing recved */
         return NULL;
+
+    LAST_SOCKET_DATA[_bytes] = '\0';
 
     _session->_bytes_recv += _bytes;
     _session->_packets_recv ++;
