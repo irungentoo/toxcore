@@ -16,8 +16,9 @@
 #include <sys/types.h>
 #endif
 
-#include "../../core/Messenger.h"
-#include "../../core/network.h"
+#include "../../toxcore/Messenger.h"
+#include "../../toxcore/network.h"
+#include "../../toxcore/DHT.h"
 
 #include "configdir.h"
 #include "windows.h"

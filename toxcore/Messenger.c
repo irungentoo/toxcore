@@ -22,6 +22,11 @@
  */
 
 #include "Messenger.h"
+#include "net_crypto.h"
+#include "DHT.h"
+#include "friend_requests.h"
+#include "LAN_discovery.h"
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 typedef struct {

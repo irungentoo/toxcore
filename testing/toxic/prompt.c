@@ -7,10 +7,15 @@
 #include <ctype.h>
 #include <curses.h>
 
-#include "../../core/Messenger.h"
-#include "../../core/network.h"
+#include "../../toxcore/Messenger.h"
+#include "../../toxcore/network.h"
+#include "../../toxcore/DHT.h"
 
 #include "windows.h"
+
+/* TODO: where should these two things go? some common public header? */
+#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
+extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 
 uint8_t pending_requests[MAX_STR_SIZE][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX

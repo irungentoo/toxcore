@@ -57,7 +57,7 @@ endmacro()
 
 cmake_policy(SET CMP0011 NEW)
 
-add_subdirectory(core)
+add_subdirectory(toxcore)
 add_subdirectory(testing)
 add_subdirectory(other)
 add_subdirectory(docs)

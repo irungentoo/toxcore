@@ -10,7 +10,9 @@
  *      checking that status changes are received, messages can be sent, etc.
  *      All of that is done in a separate test, with two local clients running. */
 
-#include "../core/Messenger.h"
+#include "../toxcore/Messenger.h"
+#include "../toxcore/Lossless_UDP.h"
+#include <stdlib.h>
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>

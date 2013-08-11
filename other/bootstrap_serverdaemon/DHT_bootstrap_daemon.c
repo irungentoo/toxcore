@@ -32,8 +32,8 @@
 #include <arpa/inet.h> /* htons() */
 #include <string.h> /* strcpy() */
 
-#include "../../core/DHT.h"
-#include "../../core/friend_requests.h"
+#include "../../toxcore/DHT.h"
+#include "../../toxcore/friend_requests.h"
 
 #define DEFAULT_PORT 33445
 #define DEFAULT_PID_FILE "bootstrap_server.pid"

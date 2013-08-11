@@ -27,8 +27,8 @@
  *  
  */
 
-#include "../core/DHT.h"
-#include "../core/friend_requests.h"
+#include "../toxcore/DHT.h"
+#include "../toxcore/friend_requests.h"
 #include "../testing/misc_tools.h"
 
 //Sleep function (x = milliseconds)

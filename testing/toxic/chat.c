@@ -9,8 +9,8 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "../../core/Messenger.h"
-#include "../../core/network.h"
+#include "../../toxcore/Messenger.h"
+#include "../../toxcore/network.h"
 
 #include "windows.h"
 
@@ -24,6 +24,7 @@ typedef struct {
   WINDOW* linewin;
 } ChatContext;
 
+extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
 extern int active_window;
 
 extern void del_window(ToxWindow *w, int f_num);
