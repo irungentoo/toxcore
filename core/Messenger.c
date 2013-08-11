@@ -571,6 +571,9 @@ static void doFriends(void)
                 break;
             case 3: /*  Connection is established */
                 set_friend_status(i, FRIEND_ONLINE);
+                friendlist[i].name_sent = 0;
+                friendlist[i].userstatus_sent = 0;
+                friendlist[i].statusmessage_sent = 0;
                 break;
             case 4:
                 crypto_kill(friendlist[i].crypt_connection_id);
