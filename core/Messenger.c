@@ -496,8 +496,8 @@ static void check_friend_connectionstatus(int friendnumber, uint8_t status)
         return;
     if (status == NOFRIEND)
         return;
-    const uint8_t is_connected = friendlist[friendnumber].status == FRIEND_ONLINE;
-    const uint8_t was_connected = status == FRIEND_ONLINE;
+    const uint8_t was_connected = friendlist[friendnumber].status == FRIEND_ONLINE;
+    const uint8_t is_connected = status == FRIEND_ONLINE;
     if (is_connected != was_connected)
         friend_connectionstatuschange(friendnumber, is_connected);
 }
