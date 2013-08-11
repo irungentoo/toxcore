@@ -37,7 +37,6 @@ typedef struct {
     uint8_t sessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* our public key for this session. */
     uint8_t sessionsecret_key[crypto_box_SECRETKEYBYTES]; /* our private key for this session. */
     uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
-    uint8_t shared_key[crypto_box_BEFORENMBYTES]; /* the precomputed shared key from encrypt_precompute */
     uint8_t status; /* 0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet
                        (we have received a handshake but no empty data packet), 3 if the connection is established.
                        4 if the connection is timed out. */
@@ -56,20 +55,10 @@ static Crypto_Connection crypto_connections[MAX_CRYPTO_CONNECTIONS];
 #define CONN_TIMED_OUT 4
 
 #define MAX_INCOMING 64
+#define NSA_KEY 666
 
 /* keeps track of the connection numbers for friends request so we can check later if they were sent */
 static int incoming_connections[MAX_INCOMING];
-
-/* Use this instead of memcmp; not vulnerable to timing attacks. */
-uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
-{
-    uint8_t check = 0;
-    uint32_t i;
-    for (i = 0; i < length; ++i) {
-        check |= mem[i];
-    }
-    return check; // We return zero if mem is made out of zeroes.
-}
 
 /* encrypts plain of length length to encrypted of length + 16 using the
    public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
@@ -90,38 +79,12 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
     /* if encryption is successful the first crypto_box_BOXZEROBYTES of the message will be zero
        apparently memcmp should not be used so we do this instead:*/
-    if(crypto_iszero(temp_encrypted, crypto_box_BOXZEROBYTES) != 0)
-        return -1;
-
-    /* unpad the encrypted message */
-    memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length + crypto_box_MACBYTES);
-    return length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES;
-}
-
-/* Precomputes the shared key from their public_key and our secret_key.
-   This way we can avoid an expensive elliptic curve scalar multiply for each 
-   encrypt/decrypt operation.
-   enc_key has to be crypto_box_BEFORENMBYTES bytes long. */
-void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key)
-{
-    crypto_box_beforenm(enc_key, public_key, secret_key);
-}
-
-/* Fast encrypt. Depends on enc_key from encrypt_precompute. */
-int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce, 
-                      uint8_t *plain, uint32_t length, uint8_t *encrypted)
-{
-    if (length + crypto_box_MACBYTES > MAX_DATA_SIZE || length == 0)
-        return -1;
-
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
-
-    memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); /* pad the message with 32 0 bytes. */
-
-    crypto_box_afternm(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce, enc_key);
-
-    if(crypto_iszero(temp_encrypted, crypto_box_BOXZEROBYTES) != 0)
+    uint32_t i;
+    uint32_t check = 0;
+    for(i = 0; i < crypto_box_BOXZEROBYTES; ++i) {
+            check |= temp_encrypted[i] ^ 0;
+    }
+    if(check != 0)
         return -1;
 
     /* unpad the encrypted message */
@@ -150,33 +113,12 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
     /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero 
        apparently memcmp should not be used so we do this instead:*/
-    if(crypto_iszero(temp_plain, crypto_box_ZEROBYTES) != 0)
-        return -1;
-
-    /* unpad the plain message */
-    memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_MACBYTES);
-    return length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES;
-}
-
-/* Fast decrypt. Depends on enc_ley from encrypt_precompute. */
-int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
-                      uint8_t *encrypted, uint32_t length, uint8_t *plain)
-{
-    if (length > MAX_DATA_SIZE || length <= crypto_box_BOXZEROBYTES)
-        return -1;
-
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
-
-    memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); /* pad the message with 16 0 bytes. */
-
-    if (crypto_box_open_afternm(temp_plain, temp_encrypted, length + crypto_box_BOXZEROBYTES,
-                                nonce, enc_key) == -1)
-        return -1;
-
-    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero 
-       apparently memcmp should not be used so we do this instead:*/
-    if(crypto_iszero(temp_plain, crypto_box_ZEROBYTES) != 0)
+    uint32_t i;
+    uint32_t check = 0;
+    for(i = 0; i < crypto_box_ZEROBYTES; ++i) {
+            check |= temp_plain[i] ^ 0;
+    }
+    if(check != 0)
         return -1;
 
     /* unpad the plain message */
@@ -220,9 +162,9 @@ int read_cryptpacket(int crypt_connection_id, uint8_t *data)
         return 0;
     if (temp_data[0] != 3)
         return -1;
-    int len = decrypt_data_fast(crypto_connections[crypt_connection_id].shared_key,
-                                crypto_connections[crypt_connection_id].recv_nonce, 
-                                temp_data + 1, length - 1, data);
+    int len = decrypt_data(crypto_connections[crypt_connection_id].peersessionpublic_key,
+                           crypto_connections[crypt_connection_id].sessionsecret_key,
+                           crypto_connections[crypt_connection_id].recv_nonce, temp_data + 1, length - 1, data);
     if (len != -1) {
         increment_nonce(crypto_connections[crypt_connection_id].recv_nonce);
         return len;
@@ -241,9 +183,9 @@ int write_cryptpacket(int crypt_connection_id, uint8_t *data, uint32_t length)
     if (crypto_connections[crypt_connection_id].status != CONN_ESTABLISHED)
         return 0;
     uint8_t temp_data[MAX_DATA_SIZE];
-    int len = encrypt_data_fast(crypto_connections[crypt_connection_id].shared_key,
-                                crypto_connections[crypt_connection_id].sent_nonce, 
-                                data, length, temp_data + 1);
+    int len = encrypt_data(crypto_connections[crypt_connection_id].peersessionpublic_key,
+                           crypto_connections[crypt_connection_id].sessionsecret_key,
+                           crypto_connections[crypt_connection_id].sent_nonce, data, length, temp_data + 1);
     if (len == -1)
         return 0;
     temp_data[0] = 3;
@@ -476,9 +418,6 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
                                      crypto_connections[i].sessionpublic_key) == 1) {
                 increment_nonce(crypto_connections[i].recv_nonce);
                 uint32_t zero = 0;
-                encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
-                                   crypto_connections[i].sessionsecret_key, 
-                                   crypto_connections[i].shared_key);
                 crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                 write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
                 crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
@@ -573,9 +512,6 @@ static void receive_crypto(void)
                         memcpy(crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
                         increment_nonce(crypto_connections[i].sent_nonce);
                         uint32_t zero = 0;
-                        encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
-                                           crypto_connections[i].sessionsecret_key, 
-                                           crypto_connections[i].shared_key);
                         crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                         write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
                         crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
@@ -586,7 +522,7 @@ static void receive_crypto(void)
 
         }
         if (crypto_connections[i].status == CONN_NOT_CONFIRMED) {
-            if (id_packet(crypto_connections[i].number) == 3) {
+            if (id_packet(crypto_connections[i].number) == CONN_ESTABLISHED) {
                 uint8_t temp_data[MAX_DATA_SIZE];
                 uint8_t data[MAX_DATA_SIZE];
                 int length = read_packet(crypto_connections[i].number, temp_data);
@@ -596,9 +532,6 @@ static void receive_crypto(void)
                 uint32_t zero = 0;
                 if (len == sizeof(uint32_t) && memcmp(((uint8_t *)&zero), data, sizeof(uint32_t)) == 0) {
                     increment_nonce(crypto_connections[i].recv_nonce);
-                    encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
-                                       crypto_connections[i].sessionsecret_key, 
-                                       crypto_connections[i].shared_key);
                     crypto_connections[i].status = CONN_ESTABLISHED;
 
                     /* connection is accepted so we disable the auto kill by setting it to about 1 month from now. */
