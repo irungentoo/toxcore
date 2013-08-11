@@ -85,12 +85,12 @@ void new_lines(char *line)
 }
 
 
-void print_friendlist()
+void print_friendlist(Messenger *m)
 {
     char name[MAX_NAME_LENGTH];
     int i = 0;
     new_lines("[i] Friend List:");
-    while(getname(i, (uint8_t *)name) != -1) {
+    while(getname(m, i, (uint8_t *)name) != -1) {
         /* account for the longest name and the longest "base" string */
         char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
 
@@ -107,13 +107,13 @@ void print_friendlist()
         new_lines("\tno friends! D:");
 }
 
-char *format_message(char *message, int friendnum)
+char *format_message(Messenger *m, char *message, int friendnum)
 {
     char name[MAX_NAME_LENGTH];
     if (friendnum != -1) {
-            getname(friendnum, (uint8_t*)name);
+            getname(m, friendnum, (uint8_t*)name);
     } else {
-            getself_name((uint8_t*)name);
+            getself_name(m, (uint8_t*)name);
     }
     char *msg = malloc(100+strlen(message)+strlen(name)+1);
 
@@ -133,7 +133,7 @@ char *format_message(char *message, int friendnum)
     return msg;
 }
 
-void line_eval(char *line)
+void line_eval(Messenger *m, char *line)
 {
     if (line[0] == '/') {
         char inpt_command = line[1];
@@ -148,7 +148,7 @@ void line_eval(char *line)
                 temp_id[i] = line[i+prompt_offset];
 
             unsigned char *bin_string = hex_string_to_bin(temp_id);
-            int num = m_addfriend(bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+            int num = m_addfriend(m, bin_string, (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
             free(bin_string);
             char numstring[100];
             switch (num) {
@@ -175,7 +175,7 @@ void line_eval(char *line)
             do_refresh();
         }
         else if (inpt_command == 'd') {
-            doMessenger();
+            doMessenger(m);
         }
         else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
@@ -196,10 +196,10 @@ void line_eval(char *line)
                 }
             }
             int num = atoi(numstring);
-            if (m_sendmessage(num, (uint8_t*) message, strlen(message) + 1) != 1) {
+            if (m_sendmessage(m, num, (uint8_t*) message, strlen(message) + 1) != 1) {
                 new_lines("[i] could not send message");
             } else {
-                new_lines(format_message(message, -1));
+                new_lines(format_message(m, message, -1));
             }
         }
         else if (inpt_command == 'n') {
@@ -211,13 +211,13 @@ void line_eval(char *line)
                 name[i-3] = line[i];
             }
             name[i-3] = 0;
-            setname(name, i - 2);
+            setname(m, name, i - 2);
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char*)name);
             new_lines(numstring);
         }
         else if (inpt_command == 'l') {
-            print_friendlist();
+            print_friendlist(m);
         }
         else if (inpt_command == 's') {
             uint8_t status[MAX_STATUSMESSAGE_LENGTH];
@@ -228,7 +228,7 @@ void line_eval(char *line)
                 status[i-3] = line[i];
             }
             status[i-3] = 0;
-            m_set_statusmessage(status, strlen((char*)status) + 1);
+            m_set_statusmessage(m, status, strlen((char*)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char*)status);
             new_lines(numstring);
@@ -240,7 +240,7 @@ void line_eval(char *line)
                 sprintf(numchar,"[i] you either didn't receive that request or you already accepted it");
                 new_lines(numchar);
             } else {
-                int num = m_addfriend_norequest(pending_requests[numf].id);
+                int num = m_addfriend_norequest(m, pending_requests[numf].id);
                 if (num != -1) {
                     pending_requests[numf].accepted = 1;
                     sprintf(numchar, "[i] friend request %u accepted", numf);
@@ -349,32 +349,32 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
     do_refresh();
 }
 
-void print_message(int friendnumber, uint8_t * string, uint16_t length)
+void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length)
 {
-    new_lines(format_message((char*)string, friendnumber));
+    new_lines(format_message(m, (char*)string, friendnumber));
 }
 
-void print_nickchange(int friendnumber, uint8_t *string, uint16_t length)
+void print_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    if(getname(friendnumber, (uint8_t*)name) != -1) {
+    if(getname(m, friendnumber, (uint8_t*)name) != -1) {
         char msg[100+length];
         sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
         new_lines(msg);
     }
 }
 
-void print_statuschange(int friendnumber, uint8_t *string, uint16_t length)
+void print_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
 {
     char name[MAX_NAME_LENGTH];
-    if(getname(friendnumber, (uint8_t*)name) != -1) {
+    if(getname(m, friendnumber, (uint8_t*)name) != -1) {
         char msg[100+length+strlen(name)+1];
         sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
         new_lines(msg);
     }
 }
 
-void load_key(char *path)
+void load_key(Messenger *m, char *path)
 {
     FILE *data_file = fopen(path, "r");
     int size = 0;
@@ -390,13 +390,13 @@ void load_key(char *path)
             fputs("[!] could not read data file! exiting...\n", stderr);
             goto FILE_ERROR;
         }
-        Messenger_load(data, size);
+        Messenger_load(m, data, size);
 
     } else {
         //else save new keys
-        int size = Messenger_size();
+        int size = Messenger_size(m);
         uint8_t data[size];
-        Messenger_save(data);
+        Messenger_save(m, data);
         data_file = fopen(path, "w");
 
         if(!data_file) {
@@ -435,6 +435,7 @@ int main(int argc, char *argv[])
     int i = 0;
     char *filename = "data";
     char idstring[200] = {0};
+    Messenger *m;
 
     if (argc < 4) {
         printf("[!] Usage: %s [IP] [port] [public_key] <keyfile>\n", argv[0]);
@@ -458,13 +459,18 @@ int main(int argc, char *argv[])
         }
     }
 
-    initMessenger();
-    load_key(filename);
+    m = initMessenger();
+    if( !m ){
+        fputs("Failed to allocate Messenger datastructure", stderr);
+        exit(0);
+    }
 
-    m_callback_friendrequest(print_request);
-    m_callback_friendmessage(print_message);
-    m_callback_namechange(print_nickchange);
-    m_callback_statusmessage(print_statuschange);
+    load_key(m, filename);
+
+    m_callback_friendrequest(m, print_request);
+    m_callback_friendmessage(m, print_message);
+    m_callback_namechange(m, print_nickchange);
+    m_callback_statusmessage(m, print_statuschange);
 
     initscr();
     noecho();
@@ -494,7 +500,7 @@ int main(int argc, char *argv[])
             on = 1;
         }
 
-        doMessenger();
+        doMessenger(m);
         c_sleep(1);
         do_refresh();
 
@@ -504,7 +510,7 @@ int main(int argc, char *argv[])
 
         getmaxyx(stdscr, y, x);
         if (c == '\n') {
-            line_eval(line);
+            line_eval(m, line);
             strcpy(line, "");
         } else if (c == 8 || c == 127) {
             line[strlen(line)-1] = '\0';
@@ -512,6 +518,7 @@ int main(int argc, char *argv[])
             strcpy(line, appender(line, (char) c));
         }
     }
+    cleanupMessenger(m);
     endwin();
     return 0;
 }
