@@ -105,22 +105,30 @@ typedef struct Messenger {
     Friend *friendlist;
     uint32_t numfriends;
 
-    void (*friend_message)(struct Messenger *m, int, uint8_t *, uint16_t);
+    void (*friend_message)(struct Messenger *m, int, uint8_t *, uint16_t, void*);
     uint8_t friend_message_isset;
-    void (*friend_action)(struct Messenger *m, int, uint8_t *, uint16_t);
+    void* friend_message_userdata;
+    void (*friend_action)(struct Messenger *m, int, uint8_t *, uint16_t, void*);
     uint8_t friend_action_isset;
-    void (*friend_namechange)(struct Messenger *m, int, uint8_t *, uint16_t);
+    void* friend_action_userdata;
+    void (*friend_namechange)(struct Messenger *m, int, uint8_t *, uint16_t, void*);
     uint8_t friend_namechange_isset;
-    void (*friend_statusmessagechange)(struct Messenger *m, int, uint8_t *, uint16_t);
+    void* friend_namechange_userdata;
+    void (*friend_statusmessagechange)(struct Messenger *m, int, uint8_t *, uint16_t, void*);
     uint8_t friend_statusmessagechange_isset;
-    void (*friend_userstatuschange)(struct Messenger *m, int, USERSTATUS);
+    void* friend_statusmessagechange_userdata;
+    void (*friend_userstatuschange)(struct Messenger *m, int, USERSTATUS, void*);
     uint8_t friend_userstatuschange_isset;
-    void (*read_receipt)(struct Messenger *m, int, uint32_t);
+    void* friend_userstatuschange_userdata;
+    void (*read_receipt)(struct Messenger *m, int, uint32_t, void*);
     uint8_t read_receipt_isset;
-    void (*friend_statuschange)(struct Messenger *m, int, uint8_t);
+    void* read_receipt_userdata;
+    void (*friend_statuschange)(struct Messenger *m, int, uint8_t, void*);
     uint8_t friend_statuschange_isset;
-    void (*friend_connectionstatuschange)(struct Messenger *m, int, uint8_t);
+    void* friend_statuschange_userdata;
+    void (*friend_connectionstatuschange)(struct Messenger *m, int, uint8_t, void*);
     uint8_t friend_connectionstatuschange_isset;
+    void* friend_connectionstatuschange_userdata;
 
 
 } Messenger;
@@ -230,29 +238,29 @@ void m_set_sends_receipts(Messenger *m, int friendnumber, int yesno);
 
 /* set the function that will be executed when a friend request is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
-void m_callback_friendrequest(Messenger *m, void (*function)(uint8_t *, uint8_t *, uint16_t));
+void m_callback_friendrequest(Messenger *m, void (*function)(uint8_t *, uint8_t *, uint16_t, void*), void* userdata);
 
 /* set the function that will be executed when a message from a friend is received.
     function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t));
+void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata);
 
 /* set the function that will be executed when an action from a friend is received.
     function format is: function(int friendnumber, uint8_t * action, uint32_t length) */
-void m_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t));
+void m_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata);
 
 /* set the callback for name changes
     function(int friendnumber, uint8_t *newname, uint16_t length)
     you are not responsible for freeing newname */
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t));
+void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata);
 
 /* set the callback for status message changes
     function(int friendnumber, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
-void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t));
+void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata);
 
 /* set the callback for status type changes
     function(int friendnumber, USERSTATUS kind) */
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USERSTATUS));
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USERSTATUS, void*), void* userdata);
 
 /* set the callback for read receipts
     function(int friendnumber, uint32_t receipt)
@@ -261,7 +269,7 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USE
     has been received on the other side. since core doesn't
     track ids for you, receipt may not correspond to any message
     in that case, you should discard it. */
-void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, uint32_t));
+void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void*), void* userdata);
 
 /* set the callback for connection status changes
     function(int friendnumber, uint8_t status)
@@ -271,7 +279,7 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, u
     note that this callback is not called when adding friends, thus the "after
     being previously online" part. it's assumed that when adding friends,
     their connection status is offline. */
-void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t));
+void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void*), void* userdata);
 
 /* run this at startup
  *  returns allocated instance of Messenger on success
