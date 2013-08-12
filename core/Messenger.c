@@ -395,52 +395,59 @@ void m_set_sends_receipts(Messenger *m, int friendnumber, int yesno)
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
 static uint8_t friend_request_isset = 0; */
 /* set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, void (*function)(uint8_t *, uint8_t *, uint16_t))
+void m_callback_friendrequest(Messenger *m, void (*function)(uint8_t *, uint8_t *, uint16_t, void*), void* userdata)
 {
-    callback_friendrequest(function);
+    callback_friendrequest(function, userdata);
 }
 
 /* set the function that will be executed when a message from a friend is received. */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t))
+void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_message = function;
     m->friend_message_isset = 1;
+    m->friend_message_userdata = userdata;
 }
 
-void m_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t))
+void m_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_action = function;
     m->friend_action_isset = 1;
+    m->friend_action_userdata = userdata;
 }
 
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t))
+void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_namechange = function;
     m->friend_namechange_isset = 1;
+    m->friend_namechange_userdata = userdata;
 }
 
-void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t))
+void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_statusmessagechange = function;
     m->friend_statusmessagechange_isset = 1;
+    m->friend_statuschange_userdata = userdata;
 }
 
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USERSTATUS))
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USERSTATUS, void*), void* userdata)
 {
     m->friend_userstatuschange = function;
     m->friend_userstatuschange_isset = 1;
+    m->friend_userstatuschange_userdata = userdata;
 }
 
-void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, uint32_t))
+void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void*), void* userdata)
 {
     m->read_receipt = function;
     m->read_receipt_isset = 1;
+    m->read_receipt_userdata = userdata;
 }
 
-void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t))
+void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void*), void* userdata)
 {
     m->friend_connectionstatuschange = function;
     m->friend_connectionstatuschange_isset = 1;
+    m->friend_connectionstatuschange_userdata = userdata;
 }
 
 static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_t status)
@@ -452,7 +459,7 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
     const uint8_t was_connected = m->friendlist[friendnumber].status == FRIEND_ONLINE;
     const uint8_t is_connected = status == FRIEND_ONLINE;
     if (is_connected != was_connected)
-        m->friend_connectionstatuschange(m, friendnumber, is_connected);
+        m->friend_connectionstatuschange(m, friendnumber, is_connected, m->friend_connectionstatuschange_userdata);
 }
 
 void set_friend_status(Messenger *m, int friendnumber, uint8_t status)
@@ -569,7 +576,7 @@ void doFriends(Messenger *m)
                     if (data_length >= MAX_NAME_LENGTH || data_length == 0)
                         break;
                     if(m->friend_namechange_isset)
-                        m->friend_namechange(m, i, data, data_length);
+                        m->friend_namechange(m, i, data, data_length, m->friend_namechange_userdata);
                     memcpy(m->friendlist[i].name, data, data_length);
                     m->friendlist[i].name[data_length - 1] = 0; /* make sure the NULL terminator is present. */
                     break;
@@ -580,7 +587,8 @@ void doFriends(Messenger *m)
                     uint8_t *status = calloc(MIN(data_length, MAX_STATUSMESSAGE_LENGTH), 1);
                     memcpy(status, data, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
                     if (m->friend_statusmessagechange_isset)
-                        m->friend_statusmessagechange(m, i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
+                        m->friend_statusmessagechange(m, i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH),
+                                                      m->friend_statuschange_userdata);
                     set_friend_statusmessage(m, i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
                     free(status);
                     break;
@@ -590,7 +598,7 @@ void doFriends(Messenger *m)
                         break;
                     USERSTATUS status = data[0];
                     if (m->friend_userstatuschange_isset)
-                        m->friend_userstatuschange(m, i, status);
+                        m->friend_userstatuschange(m, i, status, m->friend_userstatuschange_userdata);
                     set_friend_userstatus(m, i, status);
                     break;
                 }
@@ -603,12 +611,12 @@ void doFriends(Messenger *m)
                         write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
                     }
                     if (m->friend_message_isset)
-                        (*m->friend_message)(m, i, message, message_length);
+                        (*m->friend_message)(m, i, message, message_length, m->friend_message_userdata);
                     break;
                 }
                 case PACKET_ID_ACTION: {
                     if (m->friend_action_isset)
-                        (*m->friend_action)(m, i, data, data_length);
+                        (*m->friend_action)(m, i, data, data_length, m->friend_action_userdata);
                     break;
                 }
                 case PACKET_ID_RECEIPT: {
@@ -618,7 +626,7 @@ void doFriends(Messenger *m)
                     memcpy(&msgid, data, sizeof(msgid));
                     msgid = ntohl(msgid);
                     if (m->read_receipt_isset)
-                        (*m->read_receipt)(m, i, msgid);
+                        (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
                     break;
                 }
                 }

@@ -336,7 +336,7 @@ void do_refresh()
     refresh();
 }
 
-void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
+void print_request(uint8_t *public_key, uint8_t *data, uint16_t length, void* userdata)
 {
     new_lines("[i] received friend request with message:");
     new_lines((char *)data);
@@ -349,12 +349,12 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length)
     do_refresh();
 }
 
-void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length)
+void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length, void* userdata)
 {
     new_lines(format_message(m, (char*)string, friendnumber));
 }
 
-void print_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
+void print_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
 {
     char name[MAX_NAME_LENGTH];
     if(getname(m, friendnumber, (uint8_t*)name) != -1) {
@@ -364,7 +364,7 @@ void print_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t 
     }
 }
 
-void print_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
+void print_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
 {
     char name[MAX_NAME_LENGTH];
     if(getname(m, friendnumber, (uint8_t*)name) != -1) {
@@ -467,10 +467,10 @@ int main(int argc, char *argv[])
 
     load_key(m, filename);
 
-    m_callback_friendrequest(m, print_request);
-    m_callback_friendmessage(m, print_message);
-    m_callback_namechange(m, print_nickchange);
-    m_callback_statusmessage(m, print_statuschange);
+    m_callback_friendrequest(m, print_request, NULL);
+    m_callback_friendmessage(m, print_message, NULL);
+    m_callback_namechange(m, print_nickchange, NULL);
+    m_callback_statusmessage(m, print_statuschange, NULL);
 
     initscr();
     noecho();

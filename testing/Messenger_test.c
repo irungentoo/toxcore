@@ -55,7 +55,7 @@
  * networking_requesthandler and so cannot take a Messenger * */
 static Messenger *m;
 
-void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
+void print_request(uint8_t * public_key, uint8_t * data, uint16_t length, void* userdata)
 {
     printf("Friend request received from: \n");
     printf("ClientID: ");
@@ -80,7 +80,7 @@ void print_request(uint8_t * public_key, uint8_t * data, uint16_t length)
     }
 }
 
-void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length)
+void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length, void* userdata)
 {
     printf("Message with length %u received from %u: %s \n", length, friendnumber, string);
     m_sendmessage(m, friendnumber, (uint8_t*)"Test1", 6);
@@ -114,8 +114,8 @@ int main(int argc, char *argv[])
         fclose(file);
 
     }
-    m_callback_friendrequest(m, print_request);
-    m_callback_friendmessage(m, print_message);
+    m_callback_friendrequest(m, print_request, NULL);
+    m_callback_friendmessage(m, print_message, NULL);
 
     printf("OUR ID: ");
     uint32_t i;
