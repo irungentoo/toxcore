@@ -1,5 +1,5 @@
 /* nTox.h
- * 
+ *
  *Textual frontend for Tox.
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
@@ -18,7 +18,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
 #ifndef NTOX_H
@@ -43,7 +43,7 @@
 #define PUB_KEY_BYTES 32
 
 void new_lines(char *line);
-void line_eval(char *line);
+void line_eval(Messenger *m, char *line);
 void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width) ;
 int count_lines(char *string) ;
 char *appender(char *str, const char c);

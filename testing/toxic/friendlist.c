@@ -14,7 +14,7 @@
 
 extern char WINDOW_STATUS[TOXWINDOWS_MAX_NUM];
 extern int add_window(ToxWindow w, int n);
-extern ToxWindow new_chat(int friendnum);
+extern ToxWindow new_chat(Messenger *m, int friendnum);
 
 extern int active_window;
 
@@ -42,7 +42,7 @@ void fix_name(uint8_t *name)
   *q = 0;
 }
 
-void friendlist_onMessage(ToxWindow *self, int num, uint8_t *str, uint16_t len)
+void friendlist_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *str, uint16_t len)
 {
   if (num >= num_friends)
     return;
@@ -54,7 +54,7 @@ void friendlist_onMessage(ToxWindow *self, int num, uint8_t *str, uint16_t len)
     for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
       if (WINDOW_STATUS[i] == -1) {
         WINDOW_STATUS[i] = num;
-        add_window(new_chat(num), i);
+        add_window(new_chat(m, num), i);
         active_window = i;
         break;
       }
@@ -82,20 +82,20 @@ void friendlist_onStatusChange(ToxWindow *self, int num, uint8_t *str, uint16_t 
   fix_name(friends[num].status);
 }
 
-int friendlist_onFriendAdded(int num)
+int friendlist_onFriendAdded(Messenger *m, int num)
 {
   if (num_friends == MAX_FRIENDS_NUM)
     return -1;
 
   friends[num_friends].num = num;
-  getname(num, friends[num_friends].name);
+  getname(m, num, friends[num_friends].name);
   strcpy((char*) friends[num_friends].name, "unknown");
   strcpy((char*) friends[num_friends].status, "unknown");
   friends[num_friends++].chatwin = -1;
   return 0;
 }
 
-static void friendlist_onKey(ToxWindow *self, int key)
+static void friendlist_onKey(ToxWindow *self, Messenger *m, int key)
 {
   if (key == KEY_UP) {
     if (--num_selected < 0)
@@ -121,7 +121,7 @@ static void friendlist_onKey(ToxWindow *self, int key)
         if (WINDOW_STATUS[i] == -1) {
           WINDOW_STATUS[i] = num_selected;
           friends[num_selected].chatwin = num_selected;
-          add_window(new_chat(num_selected), i);
+          add_window(new_chat(m, num_selected), i);
           active_window = i;
           break;
         }
@@ -164,7 +164,7 @@ void disable_chatwin(int f_num)
   friends[f_num].chatwin = -1;
 }
 
-static void friendlist_onInit(ToxWindow *self) 
+static void friendlist_onInit(ToxWindow *self, Messenger *m)
 {
 
 }
