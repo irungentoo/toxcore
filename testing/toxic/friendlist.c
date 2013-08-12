@@ -13,7 +13,7 @@
 #include "windows.h"
 
 extern char WINDOW_STATUS[TOXWINDOWS_MAX_NUM];
-extern int add_window(ToxWindow w, int n);
+extern int add_window(Messenger *m, ToxWindow w, int n);
 extern ToxWindow new_chat(Messenger *m, int friendnum);
 
 extern int active_window;
@@ -54,7 +54,7 @@ void friendlist_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *str, 
     for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
       if (WINDOW_STATUS[i] == -1) {
         WINDOW_STATUS[i] = num;
-        add_window(new_chat(m, num), i);
+        add_window(m, new_chat(m, num), i);
         active_window = i;
         break;
       }
@@ -121,7 +121,7 @@ static void friendlist_onKey(ToxWindow *self, Messenger *m, int key)
         if (WINDOW_STATUS[i] == -1) {
           WINDOW_STATUS[i] = num_selected;
           friends[num_selected].chatwin = num_selected;
-          add_window(new_chat(m, num_selected), i);
+          add_window(m, new_chat(m, num_selected), i);
           active_window = i;
           break;
         }

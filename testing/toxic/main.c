@@ -40,8 +40,6 @@ char WINDOW_STATUS[MAX_WINDOW_SLOTS];
 static ToxWindow windows[MAX_WINDOW_SLOTS];
 static ToxWindow* prompt;
 
-static Messenger *m;
-
 int w_num;
 int active_window;
 
@@ -103,7 +101,7 @@ void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t l
   }
 }
 
-void on_friendadded(int friendnumber)
+void on_friendadded(Messenger *m, int friendnumber)
 {
   friendlist_onFriendAdded(m, friendnumber);
 }
@@ -129,10 +127,10 @@ static void init_term()
   refresh();
 }
 
-static void init_tox()
+static Messenger * init_tox()
 {
   /* Init core */
-  m = initMessenger();
+  Messenger *m = initMessenger();
 
   /* Callbacks */
   m_callback_friendrequest(m, on_request, NULL);
@@ -147,6 +145,7 @@ static void init_tox()
 #else
   setname(m, (uint8_t*) "Hipster", sizeof("Hipster"));
 #endif
+  return m;
 }
 
 #define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */
@@ -207,7 +206,7 @@ void init_window_status()
     WINDOW_STATUS[j] = -1;
 }
 
-int add_window(ToxWindow w, int n)
+int add_window(Messenger *m, ToxWindow w, int n)
 {
   if (w_num >= TOXWINDOWS_MAX_NUM)
     return -1;
@@ -241,13 +240,13 @@ void del_window(ToxWindow *w, int f_num)
   refresh();
 }
 
-static void init_windows()
+static void init_windows(Messenger *m)
 {
   w_num = 0;
   int n_prompt = 0;
   int n_friendslist = 1;
-  if (add_window(new_prompt(), n_prompt) == -1
-                        || add_window(new_friendlist(), n_friendslist) == -1) {
+  if (add_window(m, new_prompt(), n_prompt) == -1 
+                        || add_window(m, new_friendlist(), n_friendslist) == -1) {
     fprintf(stderr, "add_window() failed.\n");
     endwin();
     exit(1);
@@ -255,7 +254,7 @@ static void init_windows()
   prompt = &windows[n_prompt];
 }
 
-static void do_tox()
+static void do_tox(Messenger *m)
 {
   static int conn_try = 0;
   static int conn_err = 0;
@@ -279,7 +278,7 @@ static void do_tox()
   doMessenger(m);
 }
 
-static void load_data(char *path)
+static void load_data(Messenger *m, char *path)
 {
   FILE *fd;
   size_t len;
@@ -451,12 +450,12 @@ int main(int argc, char *argv[])
   }
 
   init_term();
-  init_tox();
-  init_windows();
+  Messenger *m = init_tox();
+  init_windows(m);
   init_window_status();
 
   if(f_loadfromfile)
-    load_data(DATA_FILE);
+    load_data(m, DATA_FILE);
   free(DATA_FILE);
 
   if (f_flag == -1) {
@@ -474,7 +473,7 @@ int main(int argc, char *argv[])
   }
   while(true) {
     /* Update tox */
-    do_tox();
+    do_tox(m);
 
     /* Draw */
     a = &windows[active_window];
