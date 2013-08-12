@@ -4,6 +4,16 @@
 
 #include <assert.h>
 
+size_t m_strlen ( uint8_t* _str )
+{
+    uint8_t* _it = _str;
+
+    size_t _count;
+    for ( _count = 0; *_it != '\0'; ++_it ) { _count ++; }
+
+    return _count + 1;
+}
+
 
 static media_session_t* _msession_handler = NULL;
 /* The same pointer handled through a session.
@@ -143,7 +153,7 @@ int media_session_handle_recv_invite( media_session_t* _session )
     media_msg_t* _msg_ringing = media_msg_new(TYPE_RESPONSE, _ringing );
 
     uint8_t* _msg_string = media_msg_to_string(_msg_ringing);
-    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, strlen(_msg_string) );
+    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, m_strlen(_msg_string) );
     free(_msg_string);
 
     free(_msg_ringing);
@@ -212,7 +222,7 @@ int media_session_handle_recv_end( media_session_t* _session )
     media_msg_t* _msg_ringing = media_msg_new(TYPE_RESPONSE, _ending );
 
     uint8_t* _msg_string = media_msg_to_string(_msg_ringing);
-    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, strlen(_msg_string) );
+    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, m_strlen(_msg_string) );
     free(_msg_string);
 
     return 0;
@@ -244,7 +254,7 @@ int media_session_handle_recv_starting ( media_session_t* _session )
     /* Do whatever with message */
 
     uint8_t* _msg_string = media_msg_to_string(_msg_start);
-    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, strlen(_msg_string) );
+    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, m_strlen(_msg_string) );
     free(_msg_string);
     free(_msg_start);
 
@@ -267,9 +277,9 @@ int media_session_invite ( media_session_t* _session )
 
     /* Do whatever with message */
 
-    char* _msg_string = media_msg_to_string(_msg_invite);
+    uint8_t* _msg_string = media_msg_to_string(_msg_invite);
 
-    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, strlen(_msg_string) );
+    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, m_strlen(_msg_string) );
 
     return 1;
 }
@@ -283,7 +293,7 @@ int media_session_answer ( media_session_t* _session )
     /* Do whatever with message */
 
     uint8_t* _msg_string = media_msg_to_string(_msg_starting);
-    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, strlen(_msg_string) );
+    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, m_strlen(_msg_string) );
     free(_msg_string);
     free(_msg_starting);
 
@@ -301,7 +311,7 @@ int media_session_hangup( media_session_t* _session )
     /* Do whatever with message */
 
     uint8_t* _msg_string = media_msg_to_string(_msg_starting);
-    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, strlen(_msg_string) );
+    (*media_session_send_message_callback)(_session->_friend_id, _msg_string, m_strlen(_msg_string) );
     free(_msg_string);
     free(_msg_starting);
 

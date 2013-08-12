@@ -36,6 +36,8 @@
 #define STATE_CALLBACK_ARGS void
 #define STATE_CALLBACK int (*callback) (STATE_CALLBACK_ARGS)
 
+size_t m_strlen ( uint8_t* str );
+
 typedef enum
 {
     call_active,
