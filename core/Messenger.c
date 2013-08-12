@@ -22,6 +22,8 @@
  */
 
 #include "Messenger.h"
+#include "timer.h"
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 typedef struct {
@@ -520,27 +522,6 @@ static int write_cryptpacket_id(int friendnumber, uint8_t packet_id, uint8_t *da
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
-#define PORT 33445
-/* run this at startup */
-int initMessenger(void)
-{
-    new_keys();
-    m_set_statusmessage((uint8_t*)"Online", sizeof("Online"));
-    initNetCrypto();
-    IP ip;
-    ip.i = 0;
-
-    if(init_networking(ip,PORT) == -1)
-        return -1;
-
-    DHT_init();
-    LosslessUDP_init();
-    friendreq_init();
-    LANdiscovery_init();
-
-    return 0;
-}
-
 //TODO: make this function not suck.
 static void doFriends(void)
 {
@@ -692,17 +673,37 @@ static void doInbound(void)
 /*Interval in seconds between LAN discovery packet sending*/
 #define LAN_DISCOVERY_INTERVAL 60
 
-static uint64_t last_LANdiscovery;
-
 /*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
-static void LANdiscovery(void)
+static int LANdiscovery_timercallback(timer* t, void*)
 {
-    if (last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(htons(PORT));
-        last_LANdiscovery = unix_time();
-    }
+    send_LANdiscovery(htons(PORT));
+    timer_start(t, LAN_DISCOVERY_INTERVAL);
+    return 0;
 }
 
+#define PORT 33445
+/* run this at startup */
+int initMessenger(void)
+{
+    timer_init();
+    new_keys();
+    m_set_statusmessage((uint8_t*)"Online", sizeof("Online"));
+    initNetCrypto();
+    IP ip;
+    ip.i = 0;
+
+    if(init_networking(ip,PORT) == -1)
+        return -1;
+
+    DHT_init();
+    LosslessUDP_init();
+    friendreq_init();
+    LANdiscovery_init();
+
+    timer_single(&LANdiscovery_timercallback, 0, LAN_DISCOVERY_INTERVAL);
+
+    return 0;
+}
 
 /* the main loop that needs to be run at least 200 times per second. */
 void doMessenger(void)
