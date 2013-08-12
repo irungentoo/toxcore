@@ -487,6 +487,17 @@ int main(int argc, char *argv[])
     m_callback_namechange(print_nickchange);
     m_callback_statusmessage(print_statuschange);
 
+    media_session_register_callback_recv_invite(invite_callback);
+    media_session_register_callback_call_started(started_callback);
+    media_session_register_callback_call_canceled(canceled_callback);
+    media_session_register_callback_call_rejected(rejected_callback);
+    media_session_register_callback_call_ended(ended_callback);
+
+    media_session_register_callback_recv_trying(trying_callback);
+    media_session_register_callback_recv_ringing(ringing_callback);
+    media_session_register_callback_recv_starting(starting_callback);
+    media_session_register_callback_recv_ending(ending_callback);
+
     initscr();
     noecho();
     raw();
