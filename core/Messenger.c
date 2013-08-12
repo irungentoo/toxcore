@@ -274,20 +274,16 @@ int m_startcall(int friendnumber)
     if ( !_media_session )
         return 0; /* Failed */
 
-    int _status;
     _media_session->_friend_id = friendnumber;
-
-    _status = pthread_create(&(_media_session->_thread_id), NULL, media_session_pool_stack, (void*) _media_session );
-
-    if ( _status != 0 )
-        return 0; /* Failed */
-
-    _status = pthread_detach(_media_session->_thread_id);
-
-    if ( _status != 0 )
-        return 0; /* Failed */
+    media_session_invite(_media_session);
 
     return 1;
+}
+
+int m_endcall()
+{
+    while ( _media_session->_call_info != call_active ){ usleep(10000); }
+    return media_session_hangup(_media_session);
 }
 
 /* send a name packet to friendnumber
@@ -552,6 +548,7 @@ int media_session_init ( IP_Port ip_port ) /* You get the idea */
         return -1;
 
     media_session_register_callback_send(m_sendmediainit);
+    networking_registerhandler(PACKET_ID_MEDIA, media_session_handlepacket);
 
     return 0;
 }
@@ -575,6 +572,17 @@ int initMessenger(void)
     LosslessUDP_init();
     friendreq_init();
     LANdiscovery_init();
+
+    /* pool started here for obvious reasons */
+    int _status = pthread_create(&(_media_session->_thread_id), NULL, media_session_pool_stack, (void*) _media_session );
+
+    if ( _status != 0 )
+        return 0; /* Failed */
+
+    _status = pthread_detach(_media_session->_thread_id);
+
+    if ( _status != 0 )
+        return 0; /* Failed */
 
     return 0;
 }

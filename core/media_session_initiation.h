@@ -31,31 +31,34 @@
 #include "Messenger.h"
 #include "../Tuxrtp/rtp_impl.h"
 #include <pthread.h>
+#include "media_session_message.h"
 
-#define PACKET_ID_MEDIA 65
+#define STATE_CALLBACK_ARGS void
+#define STATE_CALLBACK int (*callback) (STATE_CALLBACK_ARGS)
 
-typedef enum {
-    _none = 0,
-    _inviting,
-    _trying,
-    _ringing,
-    _starting,
-    _started,
-    _canceling,
-    _rejecting,
-    _ending,
-    _end,
+typedef enum
+{
+    call_active,
+    call_hold,
+    call_ended
 
-} state_t;
+} call_state;
 
 typedef struct media_session_s {
     rtp_session_t* _rtp_session;
 
-    state_t _last_recv_state;
 
     pthread_t _thread_id;
+
+    media_msg_t* _msg_list;
     int _friend_id;
-    /* Martijnvc add your media stuff here so this will be used in messenger */
+
+    int _last_request; /* It determines if state was active */
+    int _last_response; /* Same here */
+
+    call_state _call_info;
+
+    /* Martijnvdc add your media stuff here so this will be used in messenger */
 
 } media_session_t;
 
@@ -104,15 +107,27 @@ int media_terminate_session(media_session_t* _session);
 
 void media_session_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) );
 
-/* It's a function to register as a callback when the ringing state hits on */
-void media_session_register_callback_state_ringing(int (*callback) (void));
+/* Callbacks that handle the states */
+void media_session_register_callback_recv_invite(STATE_CALLBACK);
+void media_session_register_callback_call_started(STATE_CALLBACK);
+void media_session_register_callback_call_canceled(STATE_CALLBACK);
+void media_session_register_callback_call_rejected(STATE_CALLBACK);
+void media_session_register_callback_call_ended(STATE_CALLBACK);
 
+void media_session_register_callback_recv_trying(STATE_CALLBACK);
+void media_session_register_callback_recv_ringing(STATE_CALLBACK);
+void media_session_register_callback_recv_starting(STATE_CALLBACK);
+void media_session_register_callback_recv_ending(STATE_CALLBACK);
 /* -------- */
 
 
-
 /* Function handling receiving from core */
-int media_session_handlepacket ( media_session_t* _session, uint8_t* _data, uint16_t _lenght );
+int media_session_handlepacket ( IP_Port ip_port, uint8_t* _data, uint16_t _lenght );
+
+
+int media_session_invite ( media_session_t* _session );
+int media_session_answer ( media_session_t* _session );
+int media_session_hangup ( media_session_t* _session );
 
 
 #endif /* _MEDIA__SESSION__INITIATION_H_ */

@@ -133,6 +133,8 @@ int m_sendaction(int friendnumber, uint8_t *action, uint32_t length);
    Returns if the thread started */
 int m_startcall(int friendnumber);
 
+int m_endcall();
+
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
    length must be at least 1 byte

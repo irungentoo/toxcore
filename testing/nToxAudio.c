@@ -208,7 +208,7 @@ void line_eval(char *line)
                 new_lines(format_message(message, -1));
             }
         }
-        else if (inpt_command == 'c'){
+        else if (inpt_command == 'c'){ /* start the call */
             size_t len = strlen(line);
             if(len < 3)
                 return;
@@ -218,7 +218,10 @@ void line_eval(char *line)
 
             int num = atoi(numstring);
 
+            /* Now demonstrating call flow control */
+
             m_startcall(num);
+            m_endcall(); /* it will wait until the call is active and then end it */
         }
         else if (inpt_command == 'n') {
             uint8_t name[MAX_NAME_LENGTH];
