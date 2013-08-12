@@ -124,6 +124,7 @@ static void init_term()
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
     init_pair(3, COLOR_RED, COLOR_BLACK);
     init_pair(4, COLOR_BLUE, COLOR_BLACK);
+    init_pair(5, COLOR_YELLOW, COLOR_BLACK);
   }
   refresh();
 }
@@ -139,6 +140,7 @@ static void init_tox()
   m_callback_namechange(m, on_nickchange, NULL);
   m_callback_statusmessage(m, on_statuschange, NULL);
   m_callback_action(m, on_action, NULL);
+  setname(m, (uint8_t*) "n00b", strlen("n00b")+1);
 }
 
 #define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */
