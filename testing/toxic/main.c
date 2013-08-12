@@ -247,12 +247,11 @@ static void init_windows()
 
 static void do_tox()
 {
-  static int conn_try = 1;
+  static int conn_try = 0;
   static bool dht_on = false;
-  if (!dht_on && !DHT_isconnected()) {
+  if (!dht_on && !DHT_isconnected() && !(conn_try++ % 100)) {
     init_connection();
-    if (!(conn_try++ % 100))
-      wprintw(prompt->window, "\nAttempting to connect...\n");
+    wprintw(prompt->window, "\nEstablishing connection...\n");
   }
   else if (!dht_on && DHT_isconnected()) {
     dht_on = true;
