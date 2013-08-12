@@ -710,6 +710,7 @@ int initMessenger(void)
 void doMessenger(void)
 {
     networking_poll();
+    timer_poll();
 	
     doDHT();
     doLossless_UDP();
