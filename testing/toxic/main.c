@@ -159,8 +159,7 @@ int init_connection(void)
   char line[MAXLINE];
   int linecnt = 0;
   while (fgets(line, sizeof(line), fp) && linecnt < MAXSERVERS) {
-    int len = strlen(line);
-    if (len > MINLINE && len < MAXLINE)
+    if (strlen(line) > MINLINE)
       strcpy(servers[linecnt++], line);
   }
   if (linecnt < 1) {
@@ -250,14 +249,20 @@ static void init_windows()
 
 static void do_tox()
 {
+  static int conn_try = 0;
   static bool dht_on = false;
-  if (!dht_on && DHT_isconnected()) {
+  if (!dht_on && !DHT_isconnected() && !(conn_try++ % 100)) {
+    init_connection();
+    wprintw(prompt->window, "\nEstablishing connection...\n");
+  }
+  else if (!dht_on && DHT_isconnected()) {
     dht_on = true;
     wprintw(prompt->window, "\nDHT connected.\n");
   }
   else if (dht_on && !DHT_isconnected()) {
     dht_on = false;
-    wprintw(prompt->window, "\nDHT disconnected.\n");
+    wprintw(prompt->window, "\nDHT disconnected. Attempting to reconnect.\n");
+    init_connection();
   }
   doMessenger(m);
 }
@@ -441,10 +446,6 @@ int main(int argc, char *argv[])
   if(f_loadfromfile)
     load_data(DATA_FILE);
   free(DATA_FILE);
-
-  int connected = init_connection();
-  if (connected != 0)
-    wprintw(prompt->window, "Auto-connect failed (error code %d)\n", connected);
 
   if (f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
