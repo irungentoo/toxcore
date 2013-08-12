@@ -27,6 +27,7 @@
 #define MESSENGER_H
 
 #include <stdint.h>
+#include "DHT.h"
 
 #ifdef __cplusplus
 extern "C" {

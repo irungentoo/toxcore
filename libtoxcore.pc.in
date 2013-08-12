@@ -8,5 +8,5 @@ Description: Simple library that provides means of communication over a socket.
 Requires:
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ltoxcore @LIBS@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/tox
 
