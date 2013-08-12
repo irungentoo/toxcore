@@ -482,9 +482,20 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
     return write_cryptpacket(m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
-<<<<<<< HEAD
-=======
+
+/*Interval in seconds between LAN discovery packet sending*/
+#define LAN_DISCOVERY_INTERVAL 60
+
 #define PORT 33445
+
+/*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
+int LANdiscovery(timer* t, void* arg)
+{
+    send_LANdiscovery(htons(PORT));
+    timer_start(t, LAN_DISCOVERY_INTERVAL);
+    return 0;
+}
+
 /* run this at startup */
 Messenger * initMessenger(void)
 {
@@ -506,6 +517,8 @@ Messenger * initMessenger(void)
     friendreq_init();
     LANdiscovery_init();
 
+    timer_single(&LANdiscovery, 0, LAN_DISCOVERY_INTERVAL);
+
     return m;
 }
 
@@ -515,7 +528,6 @@ void cleanupMessenger(Messenger *m){
     free(m);
 }
 
->>>>>>> upstream/master
 //TODO: make this function not suck.
 void doFriends(Messenger *m)
 {
@@ -665,67 +677,19 @@ void doInbound(Messenger *m)
     }
 }
 
-#define PORT 33445
-
-/*Interval in seconds between LAN discovery packet sending*/
-#define LAN_DISCOVERY_INTERVAL 60
-
-/*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
-<<<<<<< HEAD
-static int LANdiscovery_timercallback(timer* t, void* ignore)
-=======
-void LANdiscovery(Messenger *m)
->>>>>>> upstream/master
-{
-    send_LANdiscovery(htons(PORT));
-    timer_start(t, LAN_DISCOVERY_INTERVAL);
-    return 0;
-}
-
-/* run this at startup */
-int initMessenger(void)
-{
-    timer_init();
-    new_keys();
-    m_set_statusmessage((uint8_t*)"Online", sizeof("Online"));
-    initNetCrypto();
-    IP ip;
-    ip.i = 0;
-
-    if(init_networking(ip,PORT) == -1)
-        return -1;
-
-    DHT_init();
-    LosslessUDP_init();
-    friendreq_init();
-    LANdiscovery_init();
-
-    timer_single(&LANdiscovery_timercallback, 0, LAN_DISCOVERY_INTERVAL);
-
-    return 0;
-}
 
 /* the main loop that needs to be run at least 200 times per second. */
 void doMessenger(Messenger *m)
 {
     networking_poll();
-<<<<<<< HEAD
-    timer_poll();
-	
-    doDHT();
-    doLossless_UDP();
-    doNetCrypto();
-    doInbound();
-    doFriends();
-=======
 
     doDHT();
     doLossless_UDP();
     doNetCrypto();
     doInbound(m);
     doFriends(m);
-    LANdiscovery(m);
->>>>>>> upstream/master
+    
+    timer_poll();
 }
 
 /* returns the size of the messenger data (for saving) */
