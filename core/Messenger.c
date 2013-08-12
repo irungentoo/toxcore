@@ -548,7 +548,7 @@ int media_session_init ( IP_Port ip_port ) /* You get the idea */
         return -1;
 
     media_session_register_callback_send(m_sendmediainit);
-    networking_registerhandler(PACKET_ID_MEDIA, media_session_handlepacket);
+    networking_registerhandler(PACKET_ID_MEDIA, &media_session_handlepacket);
 
     return 0;
 }

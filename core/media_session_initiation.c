@@ -56,7 +56,7 @@ void media_session_register_callback_call_started(STATE_CALLBACK)
  * This callback is all about what you do with it.
  * Everything else is done internally.
  */
-void media_session_register_callback_call_reject(STATE_CALLBACK)
+void media_session_register_callback_call_rejected(STATE_CALLBACK)
 {
     media_session_reject_call_callback = callback;
 }
@@ -65,10 +65,16 @@ void media_session_register_callback_call_reject(STATE_CALLBACK)
  * This callback is all about what you do with it.
  * Everything else is done internally.
  */
-void media_session_register_callback_call_cancel(STATE_CALLBACK)
+void media_session_register_callback_call_canceled(STATE_CALLBACK)
 {
     media_session_cancel_call_callback = callback;
 }
+
+void media_session_register_callback_call_ended(STATE_CALLBACK)
+{
+    media_session_cancel_call_callback = callback;
+}
+
 
 /* Functions to be called when gotten x response */
 void media_session_register_callback_recv_trying(STATE_CALLBACK)

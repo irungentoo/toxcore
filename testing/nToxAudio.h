@@ -50,44 +50,5 @@ int count_lines(char *string) ;
 char *appender(char *str, const char c);
 void do_refresh();
 
-/* MEDIA TEST CALLBACKS */
-
-static int invite_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Invite callback\n");
-}
-static int started_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Started callback\n");
-}
-static int canceled_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Canceled callback\n");
-}
-static int rejected_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Rejected callback\n");
-}
-static int ended_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Ended callback\n");
-}
-
-static int trying_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Trying callback\n");
-}
-static int ringing_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Ringing callback\n");
-}
-static int starting_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Starting callback\n");
-}
-static int ending_callback (STATE_CALLBACK_ARGS)
-{
-    printf("Ending callback\n");
-}
 
 #endif
