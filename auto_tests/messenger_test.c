@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
+#define CK_DEFAULT_TIMEOUT 0
 #include <check.h>
 
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
@@ -171,7 +172,7 @@ START_TEST(test_getself_name)
     setname(m, (uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check);
 
-    ck_assert_msg((!STRINGS_EQUAL(nickname, nick_check)),
+    ck_assert_msg((STRINGS_EQUAL(nickname, nick_check)),
         "getself_name failed to return the known name!\n"
         "known name: %s\nreturned: %s\n", nickname, nick_check);
 }
