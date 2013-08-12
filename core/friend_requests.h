@@ -37,7 +37,7 @@ int send_friendrequest(uint8_t *public_key, uint8_t *data, uint32_t length);
 
 /* set the function that will be executed when a friend request for us is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
-void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t));
+void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t, void*), void* userdata);
 
 /* sets up friendreq packet handlers */
 void friendreq_init(void);

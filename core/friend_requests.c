@@ -57,14 +57,15 @@ int send_friendrequest(uint8_t * public_key, uint8_t * data, uint32_t length)
     return num;
 }
 
-static void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t);
+static void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t, void*);
 static uint8_t handle_friendrequest_isset = 0;
-
+static void* handle_friendrequest_userdata;
 /* set the function that will be executed when a friend request is received. */
-void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t))
+void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t, void*), void* userdata)
 {
     handle_friendrequest = function;
     handle_friendrequest_isset = 1;
+    handle_friendrequest_userdata = userdata;
 }
 
 
@@ -121,7 +122,7 @@ static int friendreq_handlepacket(IP_Port source, uint8_t * packet, uint32_t len
                 return 1;
 
             addto_receivedlist(public_key);
-            (*handle_friendrequest)(public_key, data, len);
+            (*handle_friendrequest)(public_key, data, len, handle_friendrequest_userdata);
         } else { /* if request is not for us, try routing it. */
             if(route_packet(packet + 1, packet, length) == length)
                 return 0;

@@ -20,24 +20,24 @@ static char prompt_buf[MAX_STR_SIZE] = {0};
 static int prompt_buf_pos = 0;
 
 /* commands */
-void cmd_accept(ToxWindow *, char **);
-void cmd_add(ToxWindow *, char **);
-void cmd_clear(ToxWindow *, char **);
-void cmd_connect(ToxWindow *, char **);
-void cmd_help(ToxWindow *, char **);
-void cmd_msg(ToxWindow *, char **);
-void cmd_myid(ToxWindow *, char **);
-void cmd_nick(ToxWindow *, char **);
-void cmd_quit(ToxWindow *, char **);
-void cmd_status(ToxWindow *, char **);
-void cmd_statusmsg(ToxWindow *, char **);
+void cmd_accept(ToxWindow *, Messenger *m, char **);
+void cmd_add(ToxWindow *, Messenger *m, char **);
+void cmd_clear(ToxWindow *, Messenger *m, char **);
+void cmd_connect(ToxWindow *, Messenger *m, char **);
+void cmd_help(ToxWindow *, Messenger *m, char **);
+void cmd_msg(ToxWindow *, Messenger *m, char **);
+void cmd_myid(ToxWindow *, Messenger *m, char **);
+void cmd_nick(ToxWindow *, Messenger *m, char **);
+void cmd_quit(ToxWindow *, Messenger *m, char **);
+void cmd_status(ToxWindow *, Messenger *m, char **);
+void cmd_statusmsg(ToxWindow *, Messenger *m, char **);
 
 #define NUM_COMMANDS 13
 
 static struct {
   char *name;
   int numargs;
-  void (*func)(ToxWindow *, char **);
+  void (*func)(ToxWindow *, Messenger *m, char **);
 } commands[] = {
   { "accept",    1, cmd_accept    },
   { "add",       1, cmd_add       },
@@ -74,7 +74,7 @@ unsigned char *hex_string_to_bin(char hex_string[])
   return val;
 }
 
-void cmd_accept(ToxWindow *self, char **args)
+void cmd_accept(ToxWindow *self, Messenger *m, char **args)
 {
   int num = atoi(args[1]);
   if (num >= num_requests) {
@@ -82,7 +82,7 @@ void cmd_accept(ToxWindow *self, char **args)
     return;
   }
 
-  num = m_addfriend_norequest(pending_requests[num]);
+  num = m_addfriend_norequest(m, pending_requests[num]);
   if (num == -1)
     wprintw(self->window, "Failed to add friend.\n");
   else {
@@ -91,7 +91,7 @@ void cmd_accept(ToxWindow *self, char **args)
   }
 }
 
-void cmd_add(ToxWindow *self, char **args)
+void cmd_add(ToxWindow *self, Messenger *m, char **args)
 {
   uint8_t id_bin[KEY_SIZE_BYTES];
   char xx[3];
@@ -121,7 +121,7 @@ void cmd_add(ToxWindow *self, char **args)
     }
     id_bin[i] = x;
   }
-  int num = m_addfriend(id_bin, (uint8_t*) msg, strlen(msg)+1);
+  int num = m_addfriend(m, id_bin, (uint8_t*) msg, strlen(msg)+1);
   switch (num) {
   case FAERR_TOOLONG:
     wprintw(self->window, "Message is too long.\n");
@@ -145,12 +145,12 @@ void cmd_add(ToxWindow *self, char **args)
   }
 }
 
-void cmd_clear(ToxWindow *self, char **args)
+void cmd_clear(ToxWindow *self, Messenger *m, char **args)
 {
   wclear(self->window);
 }
 
-void cmd_connect(ToxWindow *self, char **args)
+void cmd_connect(ToxWindow *self, Messenger *m, char **args)
 {
   IP_Port dht;
   char *ip = args[1];
@@ -174,13 +174,13 @@ void cmd_connect(ToxWindow *self, char **args)
   free(binary_string);
 }
 
-void cmd_quit(ToxWindow *self, char **args)
+void cmd_quit(ToxWindow *self, Messenger *m, char **args)
 {
   endwin();
   exit(0);
 }
 
-void cmd_help(ToxWindow *self, char **args)
+void cmd_help(ToxWindow *self, Messenger *m, char **args)
 {
   wclear(self->window);
   wattron(self->window, COLOR_PAIR(2) | A_BOLD);
@@ -197,7 +197,7 @@ void cmd_help(ToxWindow *self, char **args)
   wprintw(self->window, "      quit/exit                 : Exit program\n");
   wprintw(self->window, "      help                      : Print this message again\n");
   wprintw(self->window, "      clear                     : Clear this window\n");
-  
+
   wattron(self->window, A_BOLD);
   wprintw(self->window, "TIP: Use the TAB key to navigate through the tabs.\n\n");
   wattroff(self->window, A_BOLD);
@@ -205,17 +205,17 @@ void cmd_help(ToxWindow *self, char **args)
   wattroff(self->window, COLOR_PAIR(2));
 }
 
-void cmd_msg(ToxWindow *self, char **args)
+void cmd_msg(ToxWindow *self, Messenger *m, char **args)
 {
   char *id = args[1];
   char *msg = args[2];
-  if (m_sendmessage(atoi(id), (uint8_t*) msg, strlen(msg)+1) == 0)
+  if (m_sendmessage(m, atoi(id), (uint8_t*) msg, strlen(msg)+1) == 0)
     wprintw(self->window, "Error occurred while sending message.\n");
   else
     wprintw(self->window, "Message successfully sent.\n");
 }
 
-void cmd_myid(ToxWindow *self, char **args)
+void cmd_myid(ToxWindow *self, Messenger *m, char **args)
 {
   char id[KEY_SIZE_BYTES*2 + 1] = {0};
   size_t i;
@@ -227,14 +227,14 @@ void cmd_myid(ToxWindow *self, char **args)
   wprintw(self->window, "Your ID: %s\n", id);
 }
 
-void cmd_nick(ToxWindow *self, char **args)
+void cmd_nick(ToxWindow *self, Messenger *m, char **args)
 {
   char *nick = args[1];
-  setname((uint8_t*) nick, strlen(nick)+1);
+  setname(m, (uint8_t*) nick, strlen(nick)+1);
   wprintw(self->window, "Nickname set to: %s\n", nick);
 }
 
-void cmd_status(ToxWindow *self, char **args)
+void cmd_status(ToxWindow *self, Messenger *m, char **args)
 {
   char *status = args[1];
   char *status_text;
@@ -260,24 +260,24 @@ void cmd_status(ToxWindow *self, char **args)
 
   char *msg = args[2];
   if (msg == NULL) {
-    m_set_userstatus(status_kind);
+    m_set_userstatus(m, status_kind);
     wprintw(self->window, "Status set to: %s\n", status_text);
   }
   else {
-    m_set_userstatus(status_kind);
-    m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
+    m_set_userstatus(m, status_kind);
+    m_set_statusmessage(m, (uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s, %s\n", status_text, msg);
   }
 }
 
-void cmd_statusmsg(ToxWindow *self, char **args)
+void cmd_statusmsg(ToxWindow *self, Messenger *m, char **args)
 {
     char *msg = args[1];
-    m_set_statusmessage((uint8_t*) msg, strlen(msg)+1);
+    m_set_statusmessage(m, (uint8_t*) msg, strlen(msg)+1);
     wprintw(self->window, "Status set to: %s\n", msg);
 }
 
-static void execute(ToxWindow *self, char *u_cmd)
+static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
 {
   int newlines = 0;
   char cmd[MAX_STR_SIZE] = {0};
@@ -341,13 +341,13 @@ static void execute(ToxWindow *self, char *u_cmd)
           return;
         }
       }
-      /* check for excess arguments */ 
+      /* check for excess arguments */
       if (strcmp(cmdargs[0], "add") && strlen(cmdargs[j]) != 0) {
         wprintw(self->window, "Invalid command: too many arguments to %s.\n", commands[i].name);
         return;
       }
       /* pass arguments to command function */
-      (commands[i].func)(self, cmdargs);
+      (commands[i].func)(self, m, cmdargs);
       return;
     }
   }
@@ -356,7 +356,7 @@ static void execute(ToxWindow *self, char *u_cmd)
   wprintw(self->window, "Invalid command.\n");
 }
 
-static void prompt_onKey(ToxWindow *self, int key)
+static void prompt_onKey(ToxWindow *self, Messenger *m, int key)
 {
   /* Add printable characters to line */
   if (isprint(key)) {
@@ -380,7 +380,7 @@ static void prompt_onKey(ToxWindow *self, int key)
   /* RETURN key: execute command */
   else if (key == '\n') {
     wprintw(self->window, "\n");
-    execute(self, prompt_buf);
+    execute(self, m, prompt_buf);
     prompt_buf_pos = 0;
     prompt_buf[0] = 0;
   }
@@ -413,10 +413,10 @@ static void prompt_onDraw(ToxWindow *self)
   wrefresh(self->window);
 }
 
-static void prompt_onInit(ToxWindow *self)
+static void prompt_onInit(ToxWindow *self, Messenger *m)
 {
   scrollok(self->window, 1);
-  cmd_help(self, NULL);
+  cmd_help(self, m, NULL);
   wclrtoeol(self->window);
 }
 
