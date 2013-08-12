@@ -13,6 +13,8 @@
 #include "../../core/network.h"
 
 #include "windows.h"
+#include "friendlist.h"
+#include "chat.h"
 
 #define CURS_Y_OFFSET 3
 
@@ -24,10 +26,8 @@ typedef struct {
   WINDOW* linewin;
 } ChatContext;
 
-extern int active_window;
+static delWindowFn *del_window;
 
-extern void del_window(ToxWindow *w, int f_num);
-extern void fix_name(uint8_t *name);
 void print_help(ChatContext *self);
 void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd);
 
@@ -320,7 +320,6 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd)
   }
 
   else if (strcmp(ctx->line, "/close") == 0) {
-    active_window = 0;    // Go to prompt screen
     int f_num = ctx->friendnum;
     delwin(ctx->linewin);
     del_window(self, f_num);
@@ -371,8 +370,9 @@ void print_help(ChatContext *self)
   wattroff(self->history, COLOR_PAIR(2));
 }
 
-ToxWindow new_chat(Messenger *m, int friendnum)
+ToxWindow new_chat(Messenger *m, int friendnum, delWindowFn *f)
 {
+  del_window = f;
   ToxWindow ret;
   memset(&ret, 0, sizeof(ret));
 

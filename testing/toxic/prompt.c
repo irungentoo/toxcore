@@ -11,11 +11,12 @@
 #include "../../core/network.h"
 
 #include "windows.h"
+#include "prompt.h"
 
 uint8_t pending_requests[MAX_STR_SIZE][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
-extern void on_friendadded(Messenger *m, int friendnumber);
+static friendAddedFn *on_friendadded;
 static char prompt_buf[MAX_STR_SIZE] = {0};
 static int prompt_buf_pos = 0;
 
@@ -428,8 +429,9 @@ static void prompt_onInit(ToxWindow *self, Messenger *m)
   wclrtoeol(self->window);
 }
 
-ToxWindow new_prompt()
+ToxWindow new_prompt(friendAddedFn *f)
 {
+  on_friendadded = f; 
   ToxWindow ret;
   memset(&ret, 0, sizeof(ret));
   ret.onKey = &prompt_onKey;

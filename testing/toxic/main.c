@@ -21,14 +21,9 @@
 
 #include "configdir.h"
 #include "windows.h"
+#include "prompt.h"
+#include "friendlist.h"
 
-extern ToxWindow new_prompt();
-extern ToxWindow new_friendlist();
-
-extern int friendlist_onFriendAdded(Messenger *m, int num);
-extern void disable_chatwin(int f_num);
-extern int add_req(uint8_t *public_key); // XXX
-extern unsigned char *hex_string_to_bin(char hex_string[]);
 
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
@@ -221,12 +216,14 @@ int add_window(Messenger *m, ToxWindow w, int n)
   windows[n] = w;
   w.onInit(&w, m);
   w_num++;
+  active_window = n;
   return n;
 }
 
 /* Deletes window w and cleans up */
 void del_window(ToxWindow *w, int f_num)
 {
+  active_window = 0; // Go to prompt screen
   delwin(w->window);
   int i;
   for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
@@ -240,13 +237,48 @@ void del_window(ToxWindow *w, int f_num)
   refresh();
 }
 
+/* Shows next window when tab or back-tab is pressed */
+void set_active_window(int ch)
+{
+  int f_inf = 0;
+  int max = MAX_WINDOW_SLOTS-1;
+  if (ch == '\t') {
+    int i = (active_window + 1) % max;
+    while (true) {
+      if (WINDOW_STATUS[i] != -1) {
+        active_window = i;
+        return;
+      }
+      i = (i  + 1) % max;
+      if (f_inf++ > max) {    // infinite loop check
+        endwin();
+        exit(2);
+      }
+    }
+  }else {
+    int i = active_window - 1;
+    if (i < 0) i = max;
+    while (true) {
+      if (WINDOW_STATUS[i] != -1) {
+        active_window = i;
+        return;
+      }
+      if (--i < 0) i = max;
+      if (f_inf++ > max) {
+        endwin();
+        exit(2);
+      }
+    }
+  }
+}
+
 static void init_windows(Messenger *m)
 {
   w_num = 0;
   int n_prompt = 0;
   int n_friendslist = 1;
-  if (add_window(m, new_prompt(), n_prompt) == -1 
-                        || add_window(m, new_friendlist(), n_friendslist) == -1) {
+  if (add_window(m, new_prompt(on_friendadded), n_prompt) == -1
+                        || add_window(m, new_friendlist(del_window, set_active_window, add_window, WINDOW_STATUS), n_friendslist) == -1) {
     fprintf(stderr, "add_window() failed.\n");
     endwin();
     exit(1);
@@ -378,40 +410,6 @@ void prepare_window(WINDOW *w)
   wresize(w, LINES-2, COLS);
 }
 
-/* Shows next window when tab or back-tab is pressed */
-void set_active_window(int ch)
-{
-  int f_inf = 0;
-  int max = MAX_WINDOW_SLOTS-1;
-  if (ch == '\t') {
-    int i = (active_window + 1) % max;
-    while (true) {
-      if (WINDOW_STATUS[i] != -1) {
-        active_window = i;
-        return;
-      }
-      i = (i  + 1) % max;
-      if (f_inf++ > max) {    // infinite loop check
-        endwin();
-        exit(2);
-      }
-    }
-  }else {
-    int i = active_window - 1;
-    if (i < 0) i = max;
-    while (true) {
-      if (WINDOW_STATUS[i] != -1) {
-        active_window = i;
-        return;
-      }
-      if (--i < 0) i = max;
-      if (f_inf++ > max) {
-        endwin();
-        exit(2);
-      }
-    }
-  }
-}
 
 int main(int argc, char *argv[])
 {
