@@ -670,18 +670,19 @@ static void doInbound(void)
     }
 }
 
+#define PORT 33445
+
 /*Interval in seconds between LAN discovery packet sending*/
 #define LAN_DISCOVERY_INTERVAL 60
 
 /*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
-static int LANdiscovery_timercallback(timer* t, void*)
+static int LANdiscovery_timercallback(timer* t, void* ignore)
 {
     send_LANdiscovery(htons(PORT));
     timer_start(t, LAN_DISCOVERY_INTERVAL);
     return 0;
 }
 
-#define PORT 33445
 /* run this at startup */
 int initMessenger(void)
 {
@@ -715,7 +716,6 @@ void doMessenger(void)
     doNetCrypto();
     doInbound();
     doFriends();
-    LANdiscovery();
 }
 
 /* returns the size of the messenger data (for saving) */
