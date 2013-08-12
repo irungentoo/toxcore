@@ -37,7 +37,6 @@
 #include <netdb.h>
 #include "../core/Messenger.h"
 #include "../core/network.h"
-#include "../core/media_session_message.h"
 
 #define STRING_LENGTH 256
 #define HISTORY 50

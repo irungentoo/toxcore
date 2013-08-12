@@ -20,8 +20,9 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "nTox.h"
+#include "nToxAudio.h"
 #include "misc_tools.h"
+#include "../core/media_session_initiation.h"
 
 #include <stdio.h>
 #include <time.h>
