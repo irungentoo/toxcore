@@ -65,13 +65,13 @@ void do_tox(void)
     doMessenger(m);
 }
 
-void parent_confirm_message(Messenger *m, int num, uint8_t *data, uint16_t length)
+void parent_confirm_message(Messenger *m, int num, uint8_t *data, uint16_t length, void* userdata)
 {
     puts("OK");
     request_flags |= SECOND_FLAG;
 }
 
-void parent_confirm_status(Messenger *m, int num, uint8_t *data, uint16_t length)
+void parent_confirm_status(Messenger *m, int num, uint8_t *data, uint16_t length, void* userdata)
 {
     puts("OK");
     request_flags |= FIRST_FLAG;
@@ -108,7 +108,7 @@ int parent_friend_request(void)
     return 0;
 }
 
-void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length)
+void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length, void* userdata)
 {
     fputs("OK\nsending status to parent", stdout);
     fflush(stdout);
@@ -116,7 +116,7 @@ void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length)
     request_flags |= FIRST_FLAG;
 }
 
-void child_got_statuschange(Messenger *m, int friend_num, uint8_t *string, uint16_t length)
+void child_got_statuschange(Messenger *m, int friend_num, uint8_t *string, uint16_t length, void* userdata)
 {
     request_flags |= SECOND_FLAG;
 }
@@ -175,8 +175,8 @@ int main(int argc, char *argv[])
         Messenger_save(m, child_id);
         msync(child_id, crypto_box_PUBLICKEYBYTES, MS_SYNC);
 
-        m_callback_friendrequest(m, child_got_request);
-        m_callback_statusmessage(m, child_got_statuschange);
+        m_callback_friendrequest(m, child_got_request, NULL);
+        m_callback_statusmessage(m, child_got_statuschange, NULL);
 
         /* wait on the friend request */
        while(!(request_flags & FIRST_FLAG))
@@ -207,8 +207,8 @@ int main(int argc, char *argv[])
     m = initMessenger();
 
     msync(parent_id, crypto_box_PUBLICKEYBYTES, MS_SYNC);
-    m_callback_statusmessage(m, parent_confirm_status);
-    m_callback_friendmessage(m, parent_confirm_message);
+    m_callback_statusmessage(m, parent_confirm_status, NULL);
+    m_callback_friendmessage(m, parent_confirm_message, NULL);
 
     /* hacky way to give the child time to set up */
     c_sleep(50);

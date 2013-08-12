@@ -46,7 +46,7 @@ int w_num;
 int active_window;
 
 /* CALLBACKS START */
-void on_request(uint8_t *public_key, uint8_t *data, uint16_t length)
+void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void* userdata)
 {
   int n = add_req(public_key);
   wprintw(prompt->window, "\nFriend request from:\n");
@@ -65,7 +65,7 @@ void on_request(uint8_t *public_key, uint8_t *data, uint16_t length)
   }
 }
 
-void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
+void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
 {
   int i;
   for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
@@ -74,7 +74,7 @@ void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length
   }
 }
 
-void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
+void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
 {
   int i;
   for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
@@ -83,7 +83,7 @@ void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
   }
 }
 
-void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
+void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
 {
   wprintw(prompt->window, "\n(nickchange) %d: %s\n", friendnumber, string);
   int i;
@@ -93,7 +93,7 @@ void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t len
   }
 }
 
-void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length)
+void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
 {
   wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
   int i;
@@ -134,11 +134,11 @@ static void init_tox()
   m = initMessenger();
 
   /* Callbacks */
-  m_callback_friendrequest(m, on_request);
-  m_callback_friendmessage(m, on_message);
-  m_callback_namechange(m, on_nickchange);
-  m_callback_statusmessage(m, on_statuschange);
-  m_callback_action(m, on_action);
+  m_callback_friendrequest(m, on_request, NULL);
+  m_callback_friendmessage(m, on_message, NULL);
+  m_callback_namechange(m, on_nickchange, NULL);
+  m_callback_statusmessage(m, on_statuschange, NULL);
+  m_callback_action(m, on_action, NULL);
 }
 
 #define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */
