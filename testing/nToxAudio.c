@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <assert.h>
 
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
@@ -270,7 +271,6 @@ void line_eval(char *line)
             int num = atoi(numstring);
 
             /* Now demonstrating call flow control */
-
             m_startcall(num);
             m_endcall(); /* it will wait until the call is active and then end it */
         }

@@ -26,6 +26,8 @@
                                                  * so no need to include Messenger.h */
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
+#include <assert.h>
+
 
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
@@ -282,8 +284,9 @@ int m_startcall(int friendnumber)
 
 int m_endcall()
 {
-    while ( _media_session->_call_info != call_active ){ usleep(10000); }
-    return media_session_hangup(_media_session);
+    media_session_hangup(_media_session);
+    while ( _media_session->_call_info == call_active ){ usleep(10000); }
+    return 0;
 }
 
 /* send a name packet to friendnumber
@@ -542,6 +545,7 @@ static int write_cryptpacket_id(int friendnumber, uint8_t packet_id, uint8_t *da
 
 static int media_session_handlepacket ( IP_Port ip_port, uint8_t* _data, uint32_t _length)
 {
+    assert(0);
     if ( _length < 3 ) /* still wonder how to settle this */
         return FAILURE;
 

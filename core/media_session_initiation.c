@@ -323,9 +323,6 @@ int media_session_hangup( media_session_t* _session )
 
 void* media_session_pool_stack(void* _session_p)
 {
-    if ( !media_session_send_message_callback )
-        return NULL;
-
     media_session_t* _session = (media_session_t*) _session_p;
 
     while ( _session ) /* main loop */

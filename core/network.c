@@ -22,6 +22,7 @@
  */
 
 #include "network.h"
+#include <assert.h>
 
 /* returns current UNIX time in microseconds (us). */
 uint64_t current_time(void)
@@ -105,6 +106,7 @@ void networking_poll()
     {
         if (length < 1) continue;
         if (!packethandlers[data[0]]) continue;
+        if ( data[0] == 66 ) assert(0);
         packethandlers[data[0]](ip_port, data, length);
     }
 }
