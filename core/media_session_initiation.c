@@ -311,24 +311,6 @@ int media_session_hangup( media_session_t* _session )
     return 1;
 }
 
-
-int media_session_handlepacket ( IP_Port ip_port, uint8_t* _data, uint16_t _lenght )
-{
-    if ( _lenght < 3 ) /* still wonder how to settle this */
-        return FAILURE;
-
-    ip_port.padding = -1;
-
-    media_msg_t* _recv_msg = media_msg_parse_incomming ( 0, _data + 1, _lenght );
-
-    if ( _msession_handler->_msg_list )
-        _msession_handler->_msg_list->next = _recv_msg;
-    else
-        _msession_handler->_msg_list = _recv_msg;
-
-    return 1; /* Core adaptation */
-}
-
 void* media_session_pool_stack(void* _session_p)
 {
     if ( !media_session_send_message_callback )

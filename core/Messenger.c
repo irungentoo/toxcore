@@ -540,6 +540,23 @@ static int write_cryptpacket_id(int friendnumber, uint8_t packet_id, uint8_t *da
 
 #define PORT 33445
 
+static int media_session_handlepacket ( IP_Port ip_port, uint8_t* _data, uint32_t _length)
+{
+    if ( _length < 3 ) /* still wonder how to settle this */
+        return FAILURE;
+
+    ip_port.padding = -1;
+
+    media_msg_t* _recv_msg = media_msg_parse_incomming ( 0, _data + 1, _length );
+
+    if ( _media_session->_msg_list )
+        _media_session->_msg_list->next = _recv_msg;
+    else
+        _media_session->_msg_list = _recv_msg;
+
+    return 1; /* Core adaptation */
+}
+
 int media_session_init ( IP_Port ip_port ) /* You get the idea */
 {
     _media_session = media_init_session(ip_port);

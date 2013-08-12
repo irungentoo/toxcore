@@ -122,7 +122,7 @@ void media_session_register_callback_recv_ending(STATE_CALLBACK);
 
 
 /* Function handling receiving from core */
-int media_session_handlepacket ( IP_Port ip_port, uint8_t* _data, uint16_t _lenght );
+/*static int media_session_handlepacket ( IP_Port ip_port, uint8_t* _data, uint16_t _lenght ); */
 
 
 int media_session_invite ( media_session_t* _session );
