@@ -22,6 +22,8 @@
  */
 
 #include "Messenger.h"
+#include "timer.h"
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 static void set_friend_status(Messenger *m, int friendnumber, uint8_t status);
@@ -488,7 +490,20 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
     return write_cryptpacket(m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
+
+/*Interval in seconds between LAN discovery packet sending*/
+#define LAN_DISCOVERY_INTERVAL 60
+
 #define PORT 33445
+
+/*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
+int LANdiscovery(timer* t, void* arg)
+{
+    send_LANdiscovery(htons(PORT));
+    timer_start(t, LAN_DISCOVERY_INTERVAL);
+    return 0;
+}
+
 /* run this at startup */
 Messenger * initMessenger(void)
 {
@@ -509,6 +524,8 @@ Messenger * initMessenger(void)
     LosslessUDP_init();
     friendreq_init();
     LANdiscovery_init();
+
+    timer_single(&LANdiscovery, 0, LAN_DISCOVERY_INTERVAL);
 
     return m;
 }
@@ -668,20 +685,6 @@ void doInbound(Messenger *m)
     }
 }
 
-/*Interval in seconds between LAN discovery packet sending*/
-#define LAN_DISCOVERY_INTERVAL 60
-
-static uint64_t last_LANdiscovery;
-
-/*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
-void LANdiscovery(Messenger *m)
-{
-    if (last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(htons(PORT));
-        last_LANdiscovery = unix_time();
-    }
-}
-
 
 /* the main loop that needs to be run at least 200 times per second. */
 void doMessenger(Messenger *m)
@@ -693,7 +696,8 @@ void doMessenger(Messenger *m)
     doNetCrypto();
     doInbound(m);
     doFriends(m);
-    LANdiscovery(m);
+    
+    timer_poll();
 }
 
 /* returns the size of the messenger data (for saving) */
