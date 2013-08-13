@@ -2,10 +2,11 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
-#include <check.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sodium.h>
+#define CK_DEFAULT_TIMEOUT 0
+#include <check.h>
 
 void rand_bytes(uint8_t *b, size_t blen)
 {
