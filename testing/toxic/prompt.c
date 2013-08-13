@@ -348,51 +348,33 @@ static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
         }
     }
 
-    /* excessive arguments */
-    if (numargs > 3) {
+    /* read arguments into array */
+    char **cmdargs = malloc((numargs + 2) * sizeof(char *));
+    if (!cmdargs) {
         wprintw(self->window, "Invalid command: too many arguments.\n");
         return;
     }
-
-    /* read arguments into array */
-    char *cmdargs[5];
     int pos = 0;
-
     for (i = 0; i < 5; i++) {
         cmdargs[i] = cmd + pos;
         pos += strlen(cmdargs[i]) + 1;
+        /* replace empty strings with NULL for easier error checking */
+        if (strlen(cmdargs[i]) == 0)
+            cmdargs[i] = NULL;
     }
 
     /* no input */
-    if (strlen(cmdargs[0]) == 0)
+    if (!cmdargs[0])
         return;
 
     /* match input to command list */
     for (i = 0; i < NUM_COMMANDS; i++) {
         if (!strcmp(cmdargs[0], commands[i].name)) {
-            /* check for missing arguments */
-            int j;
-
-            for (j = 0; j <= commands[i].numargs; j++) {
-                if (strlen(cmdargs[j]) == 0) {
-                    wprintw(self->window, "Invalid command: %s expected %d arguments, got %d.\n",
-                            commands[i].name, commands[i].numargs, j - 1);
-                    return;
-                }
-            }
-
-            /* check for excess arguments */
-            if (strcmp(cmdargs[0], "add") && strlen(cmdargs[j]) != 0) {
-                wprintw(self->window, "Invalid command: too many arguments to %s.\n", commands[i].name);
-                return;
-            }
-
-            /* pass arguments to command function */
-            (commands[i].func)(self, m, cmdargs);
+            (commands[i].func)(self, m, numargs, cmdargs);
             return;
         }
     }
-
+    
     /* no match */
     wprintw(self->window, "Invalid command.\n");
 }
