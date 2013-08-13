@@ -70,20 +70,20 @@ typedef struct media_session_s {
  *
  * BASIC call flow:
  *
- * ALICE                        BOB
+ *    ALICE                    BOB
  *      | invite -->            |
  *      |                       |
  *      |           <-- ringing |
  *      |                       |
  *      |          <-- starting |
  *      |                       |
- *      | started -->           |
+ *      | start -->             |
  *      |                       |
- *      | <-- MEDIA TRANS -->   |
+ *      |  <-- MEDIA TRANS -->  |
  *      |                       |
- *      | ending -->            |
+ *      | end -->               |
  *      |                       |
- *      |             <-- ended |
+ *      |            <-- ending |
  *
  * Alice calls Bob by sending invite packet.
  * Bob recvs the packet and sends an ringing packet;
@@ -93,9 +93,9 @@ typedef struct media_session_s {
  * Alice recvs the starting packet and sends the started packet to
  * inform Bob that she recved the starting packet.
  * Now the media transmission is established ( i.e. RTP transmission ).
- * Alice hangs up and sends ending packet.
- * Bob recves the ending packet and sends ended packet
- * as the acknowledgement that the call is ended.
+ * Alice hangs up and sends end packet.
+ * Bob recves the end packet and sends ending packet
+ * as the acknowledgement that the call is ending.
  *
  *
  */

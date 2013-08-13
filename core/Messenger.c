@@ -284,8 +284,8 @@ int m_startcall(int friendnumber)
 
 int m_endcall()
 {
+    while ( _media_session->_call_info != call_active ){ usleep(10000); }
     media_session_hangup(_media_session);
-    while ( _media_session->_call_info == call_active ){ usleep(10000); }
     return 0;
 }
 
@@ -531,13 +531,19 @@ static void set_friend_status(int friendnumber, uint8_t status)
 
 static int write_cryptpacket_id(int friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length)
 {
-    if (friendnumber < 0 || friendnumber >= numfriends)
+    if (friendnumber < 0 || friendnumber >= numfriends){
+        assert(0);
         return 0;
-    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_ONLINE)
+    }
+    if (length >= MAX_DATA_SIZE || friendlist[friendnumber].status != FRIEND_ONLINE){
+        assert(0);
         return 0;
+    }
     uint8_t packet[length + 1];
     packet[0] = packet_id;
     memcpy(packet + 1, data, length);
+
+
     return write_cryptpacket(friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 

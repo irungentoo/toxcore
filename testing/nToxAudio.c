@@ -85,6 +85,21 @@ static int ending_callback (STATE_CALLBACK_ARGS)
     return 0;
 }
 
+
+void* pool_messenger(void* _arg)
+{
+    unused(*_arg);
+
+    while ( 1 )
+    {
+        doMessenger();
+        usleep(10000);
+    }
+    return NULL;
+}
+
+
+
 char lines[HISTORY][STRING_LENGTH];
 char line[STRING_LENGTH];
 
@@ -530,6 +545,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    pthread_t thread_id;
+    int status = pthread_create(&thread_id, NULL, pool_messenger, NULL);
+    pthread_detach(thread_id);
+
     initMessenger();
     load_key(filename);
 
@@ -571,13 +590,14 @@ int main(int argc, char *argv[])
     DHT_bootstrap(bootstrap_ip_port, binary_string);
     free(binary_string);
     nodelay(stdscr, TRUE);
+
+    timeout(-1);
     while(true) {
         if (on == 0 && DHT_isconnected()) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
         }
 
-        doMessenger();
         c_sleep(1);
         do_refresh();
 

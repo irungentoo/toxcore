@@ -258,12 +258,17 @@ int media_session_handle_recv_starting ( media_session_t* _session )
     free(_msg_string);
     free(_msg_start);
 
+    _session->_call_info = call_active;
+
     return 0;
 }
 int media_session_handle_recv_ending ( media_session_t* _session )
 {
     (*media_session_ending_callback)();
     _session->_last_response = _ending;
+
+    _session->_call_info = call_ended;
+
     return 0;
 }
 /* ------------------ */
@@ -314,9 +319,6 @@ int media_session_hangup( media_session_t* _session )
     (*media_session_send_message_callback)(_session->_friend_id, _msg_string, m_strlen(_msg_string) );
     free(_msg_string);
     free(_msg_starting);
-
-
-    _session->_call_info = call_ended;
 
     return 1;
 }
