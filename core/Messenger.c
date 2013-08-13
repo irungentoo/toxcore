@@ -75,6 +75,21 @@ int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
 
     return -1;
 }
+/* 
+ * returns a uint16_t that represents the checksum of address of length len
+ * 
+ * TODO: Another checksum algorithm might be better.
+ */
+static uint16_t address_checksum(uint8_t *address, uint32_t len)
+{
+    uint8_t checksum[2] = {0};
+    uint16_t check;
+    uint32_t i;
+    for(i = 0; i < len; ++i)
+        checksum[i % 2] ^= address[i];
+    memcpy(&check, checksum, sizeof(check));
+    return check;
+}
 
 /*
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
@@ -88,6 +103,8 @@ void getaddress(Messenger *m, uint8_t *address)
     memcpy(address, self_public_key, crypto_box_PUBLICKEYBYTES);
     uint32_t nospam = get_nospam();
     memcpy(address + crypto_box_PUBLICKEYBYTES, &nospam, sizeof(nospam));
+    uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+    memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(nospam), &checksum, sizeof(checksum));
 }
 
 /*
@@ -101,6 +118,9 @@ void getaddress(Messenger *m, uint8_t *address)
  * return FAERR_OWNKEY if user's own key
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
  * return FAERR_UNKNOWN for unknown error
+ * return FAERR_BADCHECKSUM if bad checksum in address
+ * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different 
+ * (the nospam for that friend was set to the new one)
  */
 int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
 {
@@ -110,6 +130,10 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
         return FAERR_TOOLONG;
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
     memcpy(client_id, address, crypto_box_PUBLICKEYBYTES);
+    uint16_t check, checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+    memcpy(&check, address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), sizeof(check));
+    if (check != checksum)
+        return FAERR_BADCHECKSUM;
     if (length < 1)
         return FAERR_NOMESSAGE;
     if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
@@ -117,11 +141,11 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
     int friend_id = getfriend_id(m, client_id);
     if (friend_id != -1) {
         uint32_t nospam;
-        memcpy(&nospam, address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
+        memcpy(&nospam, address + crypto_box_PUBLICKEYBYTES, sizeof(nospam));
         if(m->friendlist[friend_id].friendrequest_nospam == nospam)
             return FAERR_ALREADYSENT;
         m->friendlist[friend_id].friendrequest_nospam = nospam;
-        return FAERR_ALREADYSENT; /*TODO: decide what to return when updating the nospam of a friend*/
+        return FAERR_SETNEWNOSPAM;
     }
 
     /* resize the friend list if necessary */
