@@ -147,7 +147,7 @@ void getaddress(Messenger *m, uint8_t *address);
 /*
  * add a friend
  * set the data that will be sent along with friend request
- * address is the address of the friend (returned by getaddress) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
+ * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length
  * returns the friend number if success
  * return -1 if message length is too long
