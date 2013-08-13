@@ -88,7 +88,9 @@ static int ending_callback (STATE_CALLBACK_ARGS)
 
 void* pool_messenger(void* _arg)
 {
-    unused(*_arg);
+    if ( !_arg ){
+        _arg = NULL;
+    }
 
     while ( 1 )
     {
@@ -547,6 +549,7 @@ int main(int argc, char *argv[])
 
     pthread_t thread_id;
     int status = pthread_create(&thread_id, NULL, pool_messenger, NULL);
+    if ( status < 0 ) return 1;
     pthread_detach(thread_id);
 
     initMessenger();
