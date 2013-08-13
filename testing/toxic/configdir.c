@@ -28,65 +28,83 @@
 #ifdef WIN32
 #include <shlobj.h>
 #include <direct.h>
-#endif
-
-#ifdef __APPLE__
+#else /* WIN32 */
 #include <unistd.h>
 #include <pwd.h>
-#endif
+#endif /* WIN32 */
 
 #include "configdir.h"
 
-/*
- * Retrieves a correct configuration directory, depending on the OS used, with a trailing slash
+/**
+ * @brief Get the users config directory.
+ *
+ * This is without a trailing slash.
+ *
+ * @return The users config dir or NULL on error.
  */
 char *get_user_config_dir(void)
 {
-  char *user_config_dir;
+    char *user_config_dir;
+#ifdef WIN32
+    char appdata[MAX_PATH];
+    BOOL ok;
 
-  #ifdef WIN32
-
-  char appdata[MAX_PATH];
-  HRESULT result = SHGetFolderPath(
-    NULL,
-    CSIDL_APPDATA,
-    NULL,
-    SHGFP_TYPE_CURRENT,
-    appdata
-  )
-  if (!result) return NULL;
-
-  user_config_dir = strdup(appdata);
-
-  return user_config_dir;
-
-  #elif defined __APPLE__
-
-  struct passwd *pass = getpwuid(getuid());
-  if (!pass) return NULL;
-  char *home = pass->pw_dir;
-  user_config_dir = malloc(strlen(home) + strlen("/Library/Application Support") + 1);
-  
-  if(user_config_dir) {
-    strcpy(user_config_dir, home);
-    strcat(user_config_dir, "/Library/Application Support");
-  }
-  return user_config_dir;
-
-  #else
-
-  if (getenv("XDG_CONFIG_HOME")) {
-    user_config_dir = strdup(getenv("XDG_CONFIG_HOME"));
-  } else {
-    user_config_dir = malloc(strlen(getenv("HOME")) + strlen("/.config") + 1);
-    if (user_config_dir) {
-      strcpy(user_config_dir, getenv("HOME"));
-      strcat(user_config_dir, "/.config");
+    ok = SHGetSpecialFolderPathA(NULL, appdata, CSIDL_PROFILE, TRUE);
+    if (!ok) {
+        return NULL;
     }
-  }
-  return user_config_dir;
 
-  #endif
+    user_config_dir = strdup(appdata);
+
+    return user_config_dir;
+
+#else /* WIN32 */
+
+#ifndef NSS_BUFLEN_PASSWD
+#define NSS_BUFLEN_PASSWD 4096
+#endif /* NSS_BUFLEN_PASSWD */
+
+    struct passwd pwd;
+    struct passwd *pwdbuf;
+    const char *home;
+    char buf[NSS_BUFLEN_PASSWD];
+    size_t len;
+    int rc;
+
+    rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
+    if (rc == 0) {
+        home = pwd.pw_dir;
+    } else {
+        home = getenv("HOME");
+        if (home == NULL) {
+            return NULL;
+        }
+        /* env variables can be tainted */
+        snprintf(buf, sizeof(buf), "%s", home);
+        home = buf;
+    }
+
+# if defined(__APPLE__)
+    len = strlen(home) + strlen("/Library/Application Support") + 1;
+    user_config_dir = malloc(len);
+    if (user_config_dir == NULL) {
+        return NULL;
+    }
+
+    snprintf(user_config_dir, len, "%s/Library/Application Support", home);
+# else /* __APPLE__ */
+    len = strlen(home) + strlen("/.config") + 1;
+    user_config_dir = malloc(len);
+    if (user_config_dir == NULL) {
+        return NULL;
+    }
+
+    snprintf(user_config_dir, len, "%s/.config", home);
+# endif /* __APPLE__ */
+
+    return user_config_dir;
+#undef NSS_BUFLEN_PASSWD
+#endif /* WIN32 */
 }
 
 /*

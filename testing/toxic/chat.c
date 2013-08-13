@@ -210,7 +210,7 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd, struct 
     wattroff(ctx->history, COLOR_PAIR(2));
 
     uint8_t selfname[MAX_NAME_LENGTH];
-    int len = getself_name(m, selfname);
+    int len = getself_name(m, selfname, sizeof(selfname));
     char msg[MAX_STR_SIZE-len-4];
     snprintf(msg, sizeof(msg), "* %s %s\n", (uint8_t*) selfname, action);
 
