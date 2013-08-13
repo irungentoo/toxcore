@@ -29,16 +29,21 @@ extern int active_window;
 extern void del_window(ToxWindow *w, int f_num);
 extern void fix_name(uint8_t *name);
 void print_help(ChatContext *self);
-void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd, struct tm *timeinfo);
+void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd);
+
+struct tm *get_time(void) {
+  struct tm *timeinfo;
+  time_t now;
+  time(&now);
+  timeinfo = localtime(&now);
+  return timeinfo;
+}
 
 static void chat_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *msg, uint16_t len)
 {
   ChatContext *ctx = (ChatContext*) self->x;
   uint8_t nick[MAX_NAME_LENGTH] = {0};
-  time_t now;
-  time(&now);
-  struct tm *timeinfo;
-  timeinfo = localtime(&now);
+  struct tm *timeinfo = get_time();
 
   if (ctx->friendnum != num)
     return;
@@ -64,10 +69,7 @@ static void chat_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *msg,
 static void chat_onAction(ToxWindow *self, Messenger *m, int num, uint8_t *action, uint16_t len)
 {
   ChatContext *ctx = (ChatContext*) self->x;
-  time_t now;
-  time(&now);
-  struct tm *timeinfo;
-  timeinfo = localtime(&now);
+  struct tm *timeinfo = get_time();
 
   if (ctx->friendnum != num)
     return;
@@ -90,30 +92,40 @@ static void chat_onAction(ToxWindow *self, Messenger *m, int num, uint8_t *actio
 static void chat_onNickChange(ToxWindow *self, int num, uint8_t *nick, uint16_t len)
 {
   ChatContext *ctx = (ChatContext*) self->x;
+  struct tm *timeinfo = get_time();
   if (ctx->friendnum != num)
     return;
+
+  wattron(ctx->history, COLOR_PAIR(2));
+  wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  wattroff(ctx->history, COLOR_PAIR(2));
 
   nick[len-1] = '\0';
   fix_name(nick);
   snprintf(self->title, sizeof(self->title), "[%s (%d)]", nick, num);
 
   wattron(ctx->history, COLOR_PAIR(3));
-  wprintw(ctx->history, " * Your partner changed nick to '%s'\n", nick);
+  wprintw(ctx->history, "* Your partner changed nick to '%s'\n", nick);
   wattroff(ctx->history, COLOR_PAIR(3));
 }
 
 static void chat_onStatusChange(ToxWindow *self, int num, uint8_t *status, uint16_t len)
 {
   ChatContext *ctx = (ChatContext*) self->x;
+  struct tm *timeinfo = get_time();
   if (ctx->friendnum != num)
     return;
-  
+
+  wattron(ctx->history, COLOR_PAIR(2));
+  wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  wattroff(ctx->history, COLOR_PAIR(2));
+
   status[len-1] = '\0';
   fix_name(status);
   snprintf(self->title, sizeof(self->title), "[%s (%d)]", status, num);
 
   wattron(ctx->history, COLOR_PAIR(3));
-  wprintw(ctx->history, " * Your partner changed status to '%s'\n", status);
+  wprintw(ctx->history, "* Your partner changed status to '%s'\n", status);
   wattroff(ctx->history, COLOR_PAIR(3));
   
 }
@@ -131,10 +143,7 @@ int string_is_empty(char *string)
 static void chat_onKey(ToxWindow *self, Messenger *m, int key)
 {
   ChatContext *ctx = (ChatContext*) self->x;
-  time_t now;
-  time(&now);
-  struct tm * timeinfo;
-  timeinfo = localtime(&now);
+  struct tm *timeinfo = get_time();
 
   int x, y, y2, x2;
   getyx(self->window, y, x);
@@ -166,7 +175,7 @@ static void chat_onKey(ToxWindow *self, Messenger *m, int key)
     wmove(self->window, y2-CURS_Y_OFFSET, 0);
     wclrtobot(self->window);
     if (ctx->line[0] == '/')
-      execute(self, ctx, m, ctx->line, timeinfo);
+      execute(self, ctx, m, ctx->line);
     else {
       /* make sure the string has at least non-space character */
       if (!string_is_empty(ctx->line)) {
@@ -193,7 +202,7 @@ static void chat_onKey(ToxWindow *self, Messenger *m, int key)
   }
 }
 
-void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd, struct tm *timeinfo)
+void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd)
 {
   if (!strcmp(cmd, "/clear") || !strcmp(cmd, "/c")) {
     wclear(self->window);
@@ -213,6 +222,7 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd, struct 
   }
 
   else if (!strncmp(cmd, "/me ", strlen("/me "))) {
+    struct tm *timeinfo = get_time();
     char *action = strchr(cmd, ' ');
     if (action == NULL) {
       wprintw(self->window, "Invalid syntax.\n");
