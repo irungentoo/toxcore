@@ -1,6 +1,8 @@
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 #include "timer.h"
 #include "network.h"
-#include <stdint.h>
 
 /* 
 A nested linked list increases efficiency of insertions.
@@ -267,7 +269,7 @@ void timer_debug_print()
     timer* t = timer_main_queue;
     printf("Queue:\n");
     while (t) {
-        printf("%lli (%lli) : %s\n", t->deadline, t->deadline/US_PER_SECOND, (char*)t->userdata);
+        printf("%" PRIu64 " (%" PRIu64 ") : %s\n", t->deadline, t->deadline/US_PER_SECOND, (char*)t->userdata);
         t = t->_next;
     }
 }
