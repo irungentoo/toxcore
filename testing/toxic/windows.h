@@ -38,5 +38,13 @@ struct ToxWindow_ {
   WINDOW* window;
 };
 
+void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void* userdata);
+void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void init_window_status();
+ToxWindow * init_windows();
+void draw_active_window(Messenger * m);
 #endif
 
