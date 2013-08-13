@@ -10,11 +10,9 @@
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
 
+#include "windows.h"
 #include "friendlist.h"
 
-static delWindowFn *del_window;
-static setActiveWindowFn *set_active_window;
-static addWindowFn *add_window;
 static char * WINDOW_STATUS;
 
 typedef struct {
@@ -53,7 +51,7 @@ void friendlist_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *str, 
     for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
       if (WINDOW_STATUS[i] == -1) {
         WINDOW_STATUS[i] = num;
-        add_window(m, new_chat(m, num, del_window), i);
+        add_window(m, new_chat(m, num), i);
         break;
       }
     }
@@ -119,7 +117,7 @@ static void friendlist_onKey(ToxWindow *self, Messenger *m, int key)
         if (WINDOW_STATUS[i] == -1) {
           WINDOW_STATUS[i] = num_selected;
           friends[num_selected].chatwin = num_selected;
-          add_window(m, new_chat(m, num_selected, del_window), i);
+          add_window(m, new_chat(m, num_selected), i);
           break;
         }
       }
@@ -166,10 +164,7 @@ static void friendlist_onInit(ToxWindow *self, Messenger *m)
 
 }
 
-ToxWindow new_friendlist(delWindowFn dw, setActiveWindowFn saw, addWindowFn aw, char * ws) {
-  del_window = dw;
-  set_active_window = saw;
-  add_window = aw;
+ToxWindow new_friendlist(char * ws) {
   WINDOW_STATUS = ws;
   ToxWindow ret;
   memset(&ret, 0, sizeof(ret));

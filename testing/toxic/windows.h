@@ -46,5 +46,8 @@ void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t l
 void init_window_status();
 ToxWindow * init_windows();
 void draw_active_window(Messenger * m);
+int add_window(Messenger *m, ToxWindow w, int n);
+void del_window(ToxWindow *w, int f_num);
+void set_active_window(int ch);
 #endif
 

@@ -165,7 +165,7 @@ ToxWindow * init_windows()
   int n_prompt = 0;
   int n_friendslist = 1;
   if (add_window(m, new_prompt(on_friendadded), n_prompt) == -1
-                        || add_window(m, new_friendlist(del_window, set_active_window, add_window, WINDOW_STATUS), n_friendslist) == -1) {
+                        || add_window(m, new_friendlist(WINDOW_STATUS), n_friendslist) == -1) {
     fprintf(stderr, "add_window() failed.\n");
     endwin();
     exit(1);

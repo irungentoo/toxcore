@@ -26,8 +26,6 @@ typedef struct {
   WINDOW* linewin;
 } ChatContext;
 
-static delWindowFn *del_window;
-
 void print_help(ChatContext *self);
 void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd);
 
@@ -370,9 +368,8 @@ void print_help(ChatContext *self)
   wattroff(self->history, COLOR_PAIR(2));
 }
 
-ToxWindow new_chat(Messenger *m, int friendnum, delWindowFn *f)
+ToxWindow new_chat(Messenger *m, int friendnum)
 {
-  del_window = f;
   ToxWindow ret;
   memset(&ret, 0, sizeof(ret));
 
