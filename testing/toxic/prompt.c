@@ -93,7 +93,7 @@ void cmd_accept(ToxWindow *self, Messenger *m, char **args)
 
 void cmd_add(ToxWindow *self, Messenger *m, char **args)
 {
-  uint8_t id_bin[KEY_SIZE_BYTES];
+  uint8_t id_bin[FRIEND_ADDRESS_SIZE];
   char xx[3];
   uint32_t x;
   char *id = args[1];
@@ -106,12 +106,12 @@ void cmd_add(ToxWindow *self, Messenger *m, char **args)
   if (!msg)
     msg = "";
 
-  if (strlen(id) != 2*KEY_SIZE_BYTES) {
+  if (strlen(id) != 2*FRIEND_ADDRESS_SIZE) {
     wprintw(self->window, "Invalid ID length.\n");
     return;
   }
   int i;
-  for (i = 0; i < KEY_SIZE_BYTES; ++i) {
+  for (i = 0; i < FRIEND_ADDRESS_SIZE; ++i) {
     xx[0] = id[2*i];
     xx[1] = id[2*i+1];
     xx[2] = '\0';
@@ -217,11 +217,13 @@ void cmd_msg(ToxWindow *self, Messenger *m, char **args)
 
 void cmd_myid(ToxWindow *self, Messenger *m, char **args)
 {
-  char id[KEY_SIZE_BYTES*2 + 1] = {0};
+  char id[FRIEND_ADDRESS_SIZE*2 + 1] = {0};
   size_t i;
-  for (i = 0; i < KEY_SIZE_BYTES; ++i) {
+  uint8_t address[FRIEND_ADDRESS_SIZE];
+  getaddress(m, address);
+  for (i = 0; i < FRIEND_ADDRESS_SIZE; ++i) {
     char xx[3];
-    snprintf(xx, sizeof(xx), "%02x", self_public_key[i] & 0xff);
+    snprintf(xx, sizeof(xx), "%02X", address[i] & 0xff);
     strcat(id, xx);
   }
   wprintw(self->window, "Your ID: %s\n", id);

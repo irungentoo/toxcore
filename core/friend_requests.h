@@ -33,7 +33,12 @@ extern "C" {
 
 /* Try to send a friendrequest to peer with public_key
     data is the data in the request and length is the length. */
-int send_friendrequest(uint8_t *public_key, uint8_t *data, uint32_t length);
+int send_friendrequest(uint8_t * public_key, uint32_t nospam_num, uint8_t * data, uint32_t length);
+/*
+ * Set and get the nospam variable used to prevent one type of friend request spam
+ */
+void set_nospam(uint32_t num);
+uint32_t get_nospam();
 
 /* set the function that will be executed when a friend request for us is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */

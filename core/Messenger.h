@@ -38,6 +38,8 @@ extern "C" {
 #define MAX_NAME_LENGTH 128
 #define MAX_STATUSMESSAGE_LENGTH 128
 
+#define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
+
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
@@ -89,6 +91,7 @@ typedef struct {
     uint16_t info_size; /* length of the info */
     uint32_t message_id; /* a semi-unique id used in read receipts */
     uint8_t receives_read_receipts; /* shall we send read receipts to this person? */
+    uint32_t friendrequest_nospam; /*The nospam number used in the friend request*/
 } Friend;
 
 typedef struct Messenger {
@@ -134,9 +137,17 @@ typedef struct Messenger {
 } Messenger;
 
 /*
+ * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
+ * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
+ * 
+ * TODO: add checksum.
+ */
+void getaddress(Messenger *m, uint8_t *address);
+
+/*
  * add a friend
  * set the data that will be sent along with friend request
- * client_id is the client id of the friend
+ * address is the address of the friend (returned by getaddress) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length
  * returns the friend number if success
  * return -1 if message length is too long
@@ -145,7 +156,7 @@ typedef struct Messenger {
  * return -4 if friend request already sent or already a friend
  * return -5 for unknown error
  */
-int m_addfriend(Messenger *m, uint8_t *client_id, uint8_t *data, uint16_t length);
+int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length);
 
 
 /* add a friend without sending a friendrequest.

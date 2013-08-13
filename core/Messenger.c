@@ -77,9 +77,23 @@ int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
 }
 
 /*
+ * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
+ * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
+ * 
+ * TODO: add checksum.
+ */
+void getaddress(Messenger *m, uint8_t *address)
+{
+    //memcpy(address, m->public_key, crypto_box_PUBLICKEYBYTES); //TODO
+    memcpy(address, self_public_key, crypto_box_PUBLICKEYBYTES);
+    uint32_t nospam = get_nospam();
+    memcpy(address + crypto_box_PUBLICKEYBYTES, &nospam, sizeof(nospam));
+}
+
+/*
  * add a friend
  * set the data that will be sent along with friend request
- * client_id is the client id of the friend
+ * address is the address of the friend (returned by getaddress) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length
  * returns the friend number if success
  * return FA_TOOLONG if message length is too long
@@ -88,12 +102,14 @@ int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
  * return FAERR_UNKNOWN for unknown error
  */
-int m_addfriend(Messenger *m, uint8_t *client_id, uint8_t *data, uint16_t length)
+int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
 {
     if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES
                          - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
                          + crypto_box_ZEROBYTES))
         return FAERR_TOOLONG;
+    uint8_t client_id[crypto_box_PUBLICKEYBYTES];
+    memcpy(client_id, address, crypto_box_PUBLICKEYBYTES);
     if (length < 1)
         return FAERR_NOMESSAGE;
     if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
@@ -119,6 +135,7 @@ int m_addfriend(Messenger *m, uint8_t *client_id, uint8_t *data, uint16_t length
             m->friendlist[i].info_size = length;
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* default: YES */
+            memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
 
             ++ m->numfriends;
             return i;
@@ -524,6 +541,7 @@ Messenger * initMessenger(void)
     LosslessUDP_init();
     friendreq_init();
     LANdiscovery_init();
+    set_nospam(random_int());
 
     timer_single(&LANdiscovery, 0, LAN_DISCOVERY_INTERVAL);
 
@@ -545,7 +563,7 @@ void doFriends(Messenger *m)
     uint8_t temp[MAX_DATA_SIZE];
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr = send_friendrequest(m->friendlist[i].client_id, m->friendlist[i].info, m->friendlist[i].info_size);
+            int fr = send_friendrequest(m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam, m->friendlist[i].info, m->friendlist[i].info_size);
             if (fr == 0) /* TODO: This needs to be fixed so that it sends the friend requests a couple of times in case of packet loss */
                 set_friend_status(m, i, FRIEND_REQUESTED);
             else if (fr > 0)
@@ -554,7 +572,7 @@ void doFriends(Messenger *m)
         if (m->friendlist[i].status == FRIEND_REQUESTED || m->friendlist[i].status == FRIEND_CONFIRMED) { /* friend is not online */
             if (m->friendlist[i].status == FRIEND_REQUESTED) {
                 if (m->friendlist[i].friend_request_id + 10 < unix_time()) { /*I know this is hackish but it should work.*/
-                    send_friendrequest(m->friendlist[i].client_id, m->friendlist[i].info, m->friendlist[i].info_size);
+                    send_friendrequest(m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam, m->friendlist[i].info, m->friendlist[i].info_size);
                     m->friendlist[i].friend_request_id = unix_time();
                 }
             }

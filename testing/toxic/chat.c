@@ -307,11 +307,13 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd)
   }
 
   else if (!strcmp(cmd, "/myid")) {
-    char id[KEY_SIZE_BYTES*2+1] = {0};
+    char id[FRIEND_ADDRESS_SIZE*2+1] = {0};
     int i;
-    for (i = 0; i < KEY_SIZE_BYTES; i++) {
+    uint8_t address[FRIEND_ADDRESS_SIZE];
+    getaddress(m, address);
+    for (i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
       char xx[3];
-      snprintf(xx, sizeof(xx), "%02x",  self_public_key[i] & 0xff);
+      snprintf(xx, sizeof(xx), "%02X",  address[i] & 0xff);
       strcat(id, xx);
     }
     wprintw(ctx->history, "Your ID: %s\n", id);
