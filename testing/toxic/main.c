@@ -140,7 +140,13 @@ static void init_tox()
   m_callback_namechange(m, on_nickchange, NULL);
   m_callback_statusmessage(m, on_statuschange, NULL);
   m_callback_action(m, on_action, NULL);
-  setname(m, (uint8_t*) "n00b", strlen("n00b")+1);
+#ifdef __linux__
+  setname(m, (uint8_t*) "Cool guy", sizeof("Cool guy"));
+#elif WIN32
+  setname(m, (uint8_t*) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
+#else
+  setname(m, (uint8_t*) "Hipster", sizeof("Hipster"));
+#endif
 }
 
 #define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */

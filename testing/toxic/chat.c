@@ -181,7 +181,7 @@ static void chat_onKey(ToxWindow *self, Messenger *m, int key)
       /* make sure the string has at least non-space character */
       if (!string_is_empty(ctx->line)) {
 	uint8_t selfname[MAX_NAME_LENGTH];
-	getself_name(m, selfname);
+	getself_name(m, selfname, sizeof(selfname));
 	fix_name(selfname);
 
         wattron(ctx->history, COLOR_PAIR(2));
