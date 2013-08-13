@@ -114,8 +114,15 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
         return FAERR_NOMESSAGE;
     if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
         return FAERR_OWNKEY;
-    if (getfriend_id(m, client_id) != -1)
-        return FAERR_ALREADYSENT;
+    int friend_id = getfriend_id(m, client_id);
+    if (friend_id != -1) {
+        uint32_t nospam;
+        memcpy(&nospam, address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
+        if(m->friendlist[friend_id].friendrequest_nospam == nospam)
+            return FAERR_ALREADYSENT;
+        m->friendlist[friend_id].friendrequest_nospam = nospam;
+        return FAERR_ALREADYSENT; /*TODO: decide what to return when updating the nospam of a friend*/
+    }
 
     /* resize the friend list if necessary */
     realloc_friendlist(m, m->numfriends + 1);
@@ -730,6 +737,9 @@ void Messenger_save(Messenger *m, uint8_t *data)
 {
     save_keys(data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    uint32_t nospam = get_nospam();
+    memcpy(data, &nospam, sizeof(nospam));
+    data += sizeof(nospam);
     uint32_t size = DHT_size();
     memcpy(data, &size, sizeof(size));
     data += sizeof(size);
@@ -746,11 +756,15 @@ int Messenger_load(Messenger *m, uint8_t * data, uint32_t length)
 {
     if (length == ~0)
         return -1;
-    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2)
+    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3)
         return -1;
-    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2;
+    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3;
     load_keys(data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    uint32_t nospam;
+    memcpy(&nospam, data, sizeof(nospam));
+    set_nospam(nospam);
+    data += sizeof(nospam);
     uint32_t size;
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
