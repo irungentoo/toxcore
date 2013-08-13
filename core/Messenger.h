@@ -142,7 +142,6 @@ typedef struct Messenger {
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  * 
- * TODO: add checksum.
  */
 void getaddress(Messenger *m, uint8_t *address);
 
