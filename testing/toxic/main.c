@@ -252,10 +252,15 @@ static void init_windows()
 static void do_tox()
 {
   static int conn_try = 0;
+  static int conn_err = 0;
   static bool dht_on = false;
   if (!dht_on && !DHT_isconnected() && !(conn_try++ % 100)) {
-    init_connection();
-    wprintw(prompt->window, "\nEstablishing connection...\n");
+    if (!conn_err) {
+      conn_err = init_connection();
+      wprintw(prompt->window, "\nEstablishing connection...\n");
+      if (conn_err)
+	wprintw(prompt->window, "\nAuto-connect failed with error code %d\n", conn_err);
+    }
   }
   else if (!dht_on && DHT_isconnected()) {
     dht_on = true;
@@ -264,7 +269,6 @@ static void do_tox()
   else if (dht_on && !DHT_isconnected()) {
     dht_on = false;
     wprintw(prompt->window, "\nDHT disconnected. Attempting to reconnect.\n");
-    init_connection();
   }
   doMessenger(m);
 }
