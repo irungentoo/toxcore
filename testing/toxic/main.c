@@ -30,6 +30,8 @@ extern void disable_chatwin(int f_num);
 extern int add_req(uint8_t *public_key); // XXX
 extern unsigned char *hex_string_to_bin(char hex_string[]);
 
+static int store_data(char*);
+
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
 
@@ -41,6 +43,7 @@ static ToxWindow windows[MAX_WINDOW_SLOTS];
 static ToxWindow* prompt;
 
 static Messenger *m;
+static char *DATA_FILE;
 
 int w_num;
 int active_window;
@@ -105,7 +108,11 @@ void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t l
 
 void on_friendadded(int friendnumber)
 {
-  friendlist_onFriendAdded(m, friendnumber);
+    friendlist_onFriendAdded(m, friendnumber);
+    int st;
+    if ((st = store_data(DATA_FILE)) != 0) {
+        wprintw(prompt->window, "\nCould not store messenger, error code: %d\n", st);
+    }
 }
 /* CALLBACKS END */
 
@@ -279,61 +286,76 @@ static void do_tox()
   doMessenger(m);
 }
 
-static void load_data(char *path)
+/*
+ * Store Messenger data to path
+ * Return 0 Messenger stored successfully
+ * Return 1 malloc failed
+ * Return 2 fopen failed
+ * Return 3 fwrite failed
+ */
+static int store_data(char *path)
 {
-  FILE *fd;
-  size_t len;
-  uint8_t *buf;
+    FILE *fd;
+    size_t len;
+    uint8_t *buf;
 
-  if ((fd = fopen(path, "r")) != NULL) {
-    fseek(fd, 0, SEEK_END);
-    len = ftell(fd);
-    fseek(fd, 0, SEEK_SET);
-
-    buf = malloc(len);
-    if (buf == NULL) {
-      fprintf(stderr, "malloc() failed.\n");
-      fclose(fd);
-      endwin();
-      exit(1);
-    }
-    if (fread(buf, len, 1, fd) != 1){
-      fprintf(stderr, "fread() failed.\n");
-      free(buf);
-      fclose(fd);
-      endwin();
-      exit(1);
-    }
-    Messenger_load(m, buf, len);
-  }
-  else {
     len = Messenger_size(m);
     buf = malloc(len);
     if (buf == NULL) {
-      fprintf(stderr, "malloc() failed.\n");
-      endwin();
-      exit(1);
+        return 1;
     }
     Messenger_save(m, buf);
 
     fd = fopen(path, "w");
     if (fd == NULL) {
-      fprintf(stderr, "fopen() failed.\n");
-      free(buf);
-      endwin();
-      exit(1);
+        return 2;
     }
 
-    if (fwrite(buf, len, 1, fd) != 1){
-      fprintf(stderr, "fwrite() failed.\n");
-      free(buf);
-      fclose(fd);
-      endwin();
-      exit(1);
+    if (fwrite(buf, len, 1, fd) != 1) {
+        return 3;
     }
-  }
-  free(buf);
-  fclose(fd);
+
+    free(buf);
+    fclose(fd);
+
+    return 0;
+}
+
+static void load_data(char *path) {
+    FILE *fd;
+    size_t len;
+    uint8_t *buf;
+
+    if ((fd = fopen(path, "r")) != NULL) {
+        fseek(fd, 0, SEEK_END);
+        len = ftell(fd);
+        fseek(fd, 0, SEEK_SET);
+
+        buf = malloc(len);
+        if (buf == NULL) {
+            fprintf(stderr, "malloc() failed.\n");
+            fclose(fd);
+            endwin();
+            exit(1);
+        }
+        if (fread(buf, len, 1, fd) != 1) {
+            fprintf(stderr, "fread() failed.\n");
+            free(buf);
+            fclose(fd);
+            endwin();
+            exit(1);
+        }
+        Messenger_load(m, buf, len);
+        free(buf);
+        fclose(fd);
+    } else {
+        int st;
+        if ((st = store_data(path)) != 0) {
+            fprintf(stderr, "storing messenger failed with error code: %d", st);
+            endwin();
+            exit(1);
+        }
+    }
 }
 
 static void draw_bar()
@@ -419,7 +441,6 @@ int main(int argc, char *argv[])
   int ch;
   ToxWindow* a;
   char *user_config_dir = get_user_config_dir();
-  char *DATA_FILE;
   int config_err = create_user_config_dir(user_config_dir);
   if(config_err) {
     DATA_FILE = "data";
@@ -457,7 +478,6 @@ int main(int argc, char *argv[])
 
   if(f_loadfromfile)
     load_data(DATA_FILE);
-  free(DATA_FILE);
 
   if (f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
@@ -490,6 +510,9 @@ int main(int argc, char *argv[])
     else if (ch != ERR)
       a->onKey(a, m, ch);
   }
+
   cleanupMessenger(m);
+  free(DATA_FILE);
+
   return 0;
 }
