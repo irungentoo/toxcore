@@ -50,23 +50,25 @@ typedef struct {
 Friend_request pending_requests[256];
 uint8_t num_requests = 0;
 
-void get_id(char *data)
+void get_id(Messenger *m, char *data)
 {
     char idstring0[200];
-    char idstring1[PUB_KEY_BYTES][5];
-    char idstring2[PUB_KEY_BYTES][5];
+    char idstring1[FRIEND_ADDRESS_SIZE][5];
+    char idstring2[FRIEND_ADDRESS_SIZE][5];
     int i = 0;
-    for(i = 0; i < PUB_KEY_BYTES; i++)
+    uint8_t address[FRIEND_ADDRESS_SIZE];
+    getaddress(m, address);
+    for(i = 0; i < FRIEND_ADDRESS_SIZE; i++)
     {
-        if (self_public_key[i] < (PUB_KEY_BYTES / 2))
+        if (address[i] < (FRIEND_ADDRESS_SIZE / 2))
             strcpy(idstring1[i],"0");
         else
             strcpy(idstring1[i], "");
-        sprintf(idstring2[i], "%hhX",self_public_key[i]);
+        sprintf(idstring2[i], "%hhX",address[i]);
     }
     strcpy(idstring0,"[i] ID: ");
     int j = 0;
-    for (j = 0; j < PUB_KEY_BYTES; j++) {
+    for (j = 0; j < FRIEND_ADDRESS_SIZE; j++) {
         strcat(idstring0,idstring1[j]);
         strcat(idstring0,idstring2[j]);
     }
@@ -259,7 +261,7 @@ void line_eval(Messenger *m, char *line)
         }
        else if (inpt_command == 'i') { //info
            char idstring[200];
-           get_id(idstring);
+           get_id(m, idstring);
            new_lines(idstring);
        }
 
@@ -478,7 +480,7 @@ int main(int argc, char *argv[])
     getmaxyx(stdscr, y, x);
 
     new_lines("/h for list of commands");
-    get_id(idstring);
+    get_id(m, idstring);
     new_lines(idstring);
     strcpy(line, "");
 

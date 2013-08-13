@@ -119,16 +119,18 @@ int main(int argc, char *argv[])
 
     printf("OUR ID: ");
     uint32_t i;
-    for(i = 0; i < 32; i++) {
-        if(self_public_key[i] < 16)
+    uint8_t address[FRIEND_ADDRESS_SIZE];
+    getaddress(m, address);
+    for(i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
+        if(address[i] < 16)
             printf("0");
-        printf("%hhX",self_public_key[i]);
+        printf("%hhX",address[i]);
     }
 
     setname(m, (uint8_t *)"Anon", 5);
 
     char temp_id[128];
-    printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
+    printf("\nEnter the address of the friend you wish to add (38 bytes HEX format):\n");
     if(scanf("%s", temp_id) != 1) {
         return 1;
     }
