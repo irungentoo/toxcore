@@ -104,7 +104,7 @@ void timer_init()
 /* Do not depend on fields being zeroed */
 static timer* timer_pool; /* timer_pool is SINGLY LINKED!! */
 
-timer* timer_new(void)
+timer* new_timer(void)
 {
     timer* ret;
     if (timer_pool) {
@@ -117,7 +117,7 @@ timer* timer_new(void)
     return ret;
 }
 
-void timer_delete(timer* t)
+void delete_timer(timer* t)
 {
     timer_dequeue(t, &timer_main_queue);
     t->_next = timer_pool;
@@ -203,7 +203,7 @@ bool timer_is_active(timer* t)
  * Creates a new timer, preforms setup and starts it. */
 void timer_single(timer_callback cb, void* userarg, int sec)
 {
-    timer* t = timer_new();
+    timer* t = new_timer();
     timer_setup(t, cb, userarg);
     timer_start(t, sec);
 }
@@ -211,7 +211,7 @@ void timer_single(timer_callback cb, void* userarg, int sec)
 /* Single-use microsecond timer. */
 void timer_us(timer_callback cb, void* userarg, int us)
 {
-    timer* t = timer_new();
+    timer* t = new_timer();
     timer_setup(t, cb, userarg);
     t->deadline = current_time() + us;
     t->state = STATE_ACTIVE;
@@ -229,7 +229,7 @@ void timer_poll(void)
         timer* t = timer_us_queue;
         timer_dequeue(t, &timer_us_queue);
         t->cb(0, t->userdata);
-        timer_delete(t);
+        delete_timer(t);
     }
 
     if (time - prevtime > US_PER_SECOND || prevtime == 0 || prevtime > time) { 
@@ -243,7 +243,7 @@ void timer_poll(void)
             int rv = t->cb(t, t->userdata);
             if (rv != 0) {
                 timer_dequeue(t, &timer_main_queue);
-                timer_delete(t);
+                delete_timer(t);
                 continue;
             }
             if (t->state != STATE_ACTIVE) {

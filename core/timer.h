@@ -53,10 +53,10 @@ void timer_init(void);
 void timer_poll(void);
 
 /* Creates a new timer. Does not enqueue/start it. */
-timer* timer_new(void);
+timer* new_timer(void);
 
 /* Destroys a timer instance. */
-void timer_delete(timer* t);
+void delete_timer(timer* t);
 
 /* Sets up the timer callback. */
 void timer_setup(timer* t, timer_callback cb, void* userarg);

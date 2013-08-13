@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     timer_init();
     timer_debug_print();
     
-    timer* t = timer_new();
+    timer* t = new_timer();
     timer_setup(t, &callback, "Long setup method, 4 seconds");
     timer_start(t, 4);
     timer_debug_print();
