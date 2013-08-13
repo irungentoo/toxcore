@@ -49,9 +49,9 @@ configure for the normal user or suffer from being way too centralized.
 
 - [Installation](/INSTALL.md)
 - [Commands](/docs/commands.rst)
-- [DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
-- [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
-- [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
-- [Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
+- [DHT Protocol](http://wiki.tox.im/index.php/DHT)<br />
+- [Lossless UDP Protocol](http://wiki.tox.im/index.php/Lossless_UDP)<br />
+- [Crypto](http://wiki.tox.im/index.php/Crypto)<br />
+- [Ideas](http://wiki.tox.im/index.php/Ideas)
 
 [String]: https://en.wikipedia.org/wiki/String_(computer_science)
