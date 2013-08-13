@@ -31,7 +31,8 @@ extern void fix_name(uint8_t *name);
 void print_help(ChatContext *self);
 void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd);
 
-struct tm *get_time(void) {
+struct tm *get_time(void) 
+{
   struct tm *timeinfo;
   time_t now;
   time(&now);

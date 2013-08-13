@@ -181,7 +181,7 @@ int init_connection(void)
   dht.port = htons(atoi(port));
   uint32_t resolved_address = resolve_addr(ip);
   if (resolved_address == 0)
-    return 4;
+    return 0;
   dht.ip.i = resolved_address;
   unsigned char *binary_string = hex_string_to_bin(key);
   DHT_bootstrap(dht, binary_string);
