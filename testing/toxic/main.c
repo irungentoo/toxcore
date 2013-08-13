@@ -124,6 +124,7 @@ static void init_term()
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
     init_pair(3, COLOR_RED, COLOR_BLACK);
     init_pair(4, COLOR_BLUE, COLOR_BLACK);
+    init_pair(5, COLOR_YELLOW, COLOR_BLACK);
   }
   refresh();
 }
@@ -139,6 +140,7 @@ static void init_tox()
   m_callback_namechange(m, on_nickchange, NULL);
   m_callback_statusmessage(m, on_statuschange, NULL);
   m_callback_action(m, on_action, NULL);
+  setname(m, (uint8_t*) "n00b", strlen("n00b")+1);
 }
 
 #define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */
@@ -179,7 +181,7 @@ int init_connection(void)
   dht.port = htons(atoi(port));
   uint32_t resolved_address = resolve_addr(ip);
   if (resolved_address == 0)
-    return 4;
+    return 0;
   dht.ip.i = resolved_address;
   unsigned char *binary_string = hex_string_to_bin(key);
   DHT_bootstrap(dht, binary_string);
@@ -250,10 +252,15 @@ static void init_windows()
 static void do_tox()
 {
   static int conn_try = 0;
+  static int conn_err = 0;
   static bool dht_on = false;
   if (!dht_on && !DHT_isconnected() && !(conn_try++ % 100)) {
-    init_connection();
-    wprintw(prompt->window, "\nEstablishing connection...\n");
+    if (!conn_err) {
+      conn_err = init_connection();
+      wprintw(prompt->window, "\nEstablishing connection...\n");
+      if (conn_err)
+	wprintw(prompt->window, "\nAuto-connect failed with error code %d\n", conn_err);
+    }
   }
   else if (!dht_on && DHT_isconnected()) {
     dht_on = true;
@@ -262,7 +269,6 @@ static void do_tox()
   else if (dht_on && !DHT_isconnected()) {
     dht_on = false;
     wprintw(prompt->window, "\nDHT disconnected. Attempting to reconnect.\n");
-    init_connection();
   }
   doMessenger(m);
 }
