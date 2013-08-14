@@ -138,6 +138,12 @@ void cmd_add(ToxWindow *self, Messenger *m, char **args)
   case FAERR_UNKNOWN:
     wprintw(self->window, "Undefined error when adding friend.\n");
     break;
+  case FAERR_BADCHECKSUM:
+    wprintw(self->window, "Bad checksum in address.\n");
+    break;
+  case FAERR_SETNEWNOSPAM:
+    wprintw(self->window, "Nospam was different.\n");
+    break;
   default:
     wprintw(self->window, "Friend added as %d.\n", num);
     on_friendadded(num);
