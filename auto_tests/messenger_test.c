@@ -223,7 +223,7 @@ Suite *messenger_suite(void)
     TCase *friendstatus = tcase_create("friendstatus");
     TCase *getself_name = tcase_create("getself_name");
     TCase *delfriend = tcase_create("delfriend");
-    TCase *addfriend = tcase_create("addfriend");
+    //TCase *addfriend = tcase_create("addfriend");
     TCase *setname = tcase_create("setname");
 
     tcase_add_test(userstatus_size, test_m_get_userstatus_size);
@@ -241,7 +241,7 @@ Suite *messenger_suite(void)
     suite_add_tcase(s, send_message);
     suite_add_tcase(s, getself_name);
     suite_add_tcase(s, delfriend);
-    suite_add_tcase(s, addfriend);
+    //suite_add_tcase(s, addfriend);
     suite_add_tcase(s, setname);
 
     return s;
