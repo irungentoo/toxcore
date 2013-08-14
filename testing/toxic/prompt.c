@@ -238,7 +238,7 @@ void cmd_myid(ToxWindow *self, Messenger *m, char **args)
     snprintf(xx, sizeof(xx), "%02X", address[i] & 0xff);
     strcat(id, xx);
   }
-  wprintw(self->window, "Your ID: %s\n", id);
+  wprintw(self->window, "%s\n", id);
 }
 
 void cmd_nick(ToxWindow *self, Messenger *m, char **args)

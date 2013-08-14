@@ -45,7 +45,7 @@ static void init_term()
   refresh();
 }
 
-static Messenger * init_tox()
+static Messenger *init_tox()
 {
   /* Init core */
   Messenger *m = initMessenger();
@@ -199,7 +199,6 @@ int main(int argc, char *argv[])
   char *DATA_FILE = NULL;
   int config_err = 0;
 
-  /* This is broken */
   int f_loadfromfile = 1;
   int f_flag = 0;
   int i = 0;
@@ -233,7 +232,7 @@ int main(int argc, char *argv[])
 
   init_term();
   Messenger *m = init_tox();
-  ToxWindow * prompt = init_windows(m);
+  ToxWindow *prompt = init_windows(m);
   init_window_status();
 
   if(f_loadfromfile)

@@ -159,7 +159,7 @@ void init_window_status()
     WINDOW_STATUS[j] = -1;
 }
 
-ToxWindow * init_windows()
+ToxWindow *init_windows()
 {
   w_num = 0;
   int n_prompt = 0;
@@ -170,6 +170,7 @@ ToxWindow * init_windows()
     endwin();
     exit(1);
   }
+  active_window = n_prompt;
   prompt = &windows[n_prompt];
   return prompt;
 }
@@ -217,7 +218,7 @@ void prepare_window(WINDOW *w)
   wresize(w, LINES-2, COLS);
 }
 
-void draw_active_window(Messenger * m)
+void draw_active_window(Messenger *m)
 {
 
   ToxWindow *a = &windows[active_window];
