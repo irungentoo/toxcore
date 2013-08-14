@@ -85,7 +85,7 @@ void cmd_accept(ToxWindow *self, Messenger *m, int argc, char **argv)
       return;
     }
 
-    int num = atoi(args[1]);
+    int num = atoi(argv[1]);
 
     if (num >= num_requests) {
         wprintw(self->window, "Invalid syntax.\n");
@@ -107,38 +107,77 @@ void cmd_add(ToxWindow *self, Messenger *m, int argc, char **argv)
     uint8_t id_bin[FRIEND_ADDRESS_SIZE];
     char xx[3];
     uint32_t x;
-    char *id = argv[1];
-    char *msg = argv[2];
+    char *id;
+    char *msg;
 
     /* check arguments */
     if (argc != 1 && argc != 2) {
-      wprintw(self->window, "Invalid syntax.\n");
-      return;
+        wprintw(self->window, "Invalid syntax.\n");
+        return;
     }
 
-    if (!id) {
-      wprintw(self->window, "Invalid command: add expected at least one argument.\n");
-      return;
-    }
+    id = argv[1];
+    msg = (argc == 2) ? argv[2] : "";
 
-    if (!msg)
-      msg = "";
-
-    if (strlen(id) != 2*FRIEND_ADDRESS_SIZE) {
-      wprintw(self->window, "Invalid ID length.\n");
-      return;
+    if (strlen(id) != 2 * FRIEND_ADDRESS_SIZE) {
+        wprintw(self->window, "Invalid ID length.\n");
+        return;
     }
 
     int i;
 
     for (i = 0; i < FRIEND_ADDRESS_SIZE; ++i) {
-      xx[0] = id[2*i];
-      xx[1] = id[2*i+1];
-      xx[2] = '\0';
-      if (sscanf(xx, "%02x", &x) != 1) {
-        wprintw(self->window, "Invalid ID.\n");
-        return;
-      }
+        xx[0] = id[2 * i];
+        xx[1] = id[2 * i + 1];
+        xx[2] = '\0';
+
+        if (sscanf(xx, "%02x", &x) != 1) {
+            wprintw(self->window, "Invalid ID.\n");
+            return;
+        }
+
+        id_bin[i] = x;
+    }
+
+    for (i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
+        id[i] = toupper(id[i]);
+    }
+
+    int num = m_addfriend(m, id_bin, (uint8_t *) msg, strlen(msg) + 1);
+
+    switch (num) {
+        case FAERR_TOOLONG:
+            wprintw(self->window, "Message is too long.\n");
+            break;
+
+        case FAERR_NOMESSAGE:
+            wprintw(self->window, "Please add a message to your request.\n");
+            break;
+
+        case FAERR_OWNKEY:
+            wprintw(self->window, "That appears to be your own ID.\n");
+            break;
+
+        case FAERR_ALREADYSENT:
+            wprintw(self->window, "Friend request already sent.\n");
+            break;
+
+        case FAERR_UNKNOWN:
+            wprintw(self->window, "Undefined error when adding friend.\n");
+            break;
+
+        case FAERR_BADCHECKSUM:
+            wprintw(self->window, "Bad checksum in address.\n");
+            break;
+
+        case FAERR_SETNEWNOSPAM:
+            wprintw(self->window, "Nospam was different.\n");
+            break;
+
+        default:
+            wprintw(self->window, "Friend added as %d.\n", num);
+            on_friendadded_cb(m, num);
+            break;
     }
 }
 
@@ -156,9 +195,9 @@ void cmd_connect(ToxWindow *self, Messenger *m, int argc, char **argv)
     }
 
     IP_Port dht;
-    char *ip = args[1];
-    char *port = args[2];
-    char *key = args[3];
+    char *ip = argv[1];
+    char *port = argv[2];
+    char *key = argv[3];
 
     if (atoi(port) == 0) {
         wprintw(self->window, "Invalid syntax.\n");
@@ -217,8 +256,8 @@ void cmd_msg(ToxWindow *self, Messenger *m, int argc, char **argv)
       return;
     }
 
-    char *id = args[1];
-    char *msg = args[2];
+    char *id = argv[1];
+    char *msg = argv[2];
 
     if (m_sendmessage(m, atoi(id), (uint8_t *) msg, strlen(msg) + 1) == 0)
         wprintw(self->window, "Error occurred while sending message.\n");
@@ -250,7 +289,7 @@ void cmd_nick(ToxWindow *self, Messenger *m, int argc, char **argv)
       return;
     }
 
-    char *nick = args[1];
+    char *nick = argv[1];
     setname(m, (uint8_t *) nick, strlen(nick) + 1);
     wprintw(self->window, "Nickname set to: %s\n", nick);
 }
@@ -263,7 +302,7 @@ void cmd_status(ToxWindow *self, Messenger *m, int argc, char **argv)
       return;
     }
 
-    char *status = args[1];
+    char *status = argv[1];
     char *status_text;
 
     USERSTATUS status_kind;
@@ -282,7 +321,7 @@ void cmd_status(ToxWindow *self, Messenger *m, int argc, char **argv)
         return;
     }
 
-    char *msg = args[2];
+    char *msg = argv[2];
 
     if (msg == NULL) {
         m_set_userstatus(m, status_kind);
@@ -302,7 +341,7 @@ void cmd_statusmsg(ToxWindow *self, Messenger *m, int argc, char **argv)
       return;
     }
 
-    char *msg = args[1];
+    char *msg = argv[1];
     m_set_statusmessage(m, (uint8_t *) msg, strlen(msg) + 1);
     wprintw(self->window, "Status set to: %s\n", msg);
 }
