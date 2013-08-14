@@ -349,13 +349,15 @@ static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
     }
 
     /* read arguments into array */
-    char **cmdargs = malloc((numargs + 2) * sizeof(char *));
+    char **cmdargs = malloc((numargs + 1) * sizeof(char *));
     if (!cmdargs) {
-        wprintw(self->window, "Invalid command: too many arguments.\n");
-        return;
+      wprintw(self->window, "Invalid command: too many arguments.\n");
+      return;
     }
+
     int pos = 0;
-    for (i = 0; i < 5; i++) {
+    
+    for (i = 0; i < numargs + 1; i++) {
         cmdargs[i] = cmd + pos;
         pos += strlen(cmdargs[i]) + 1;
         /* replace empty strings with NULL for easier error checking */
