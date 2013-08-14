@@ -52,28 +52,15 @@ uint8_t num_requests = 0;
 
 void get_id(Messenger *m, char *data)
 {
-    char idstring0[200];
-    char idstring1[FRIEND_ADDRESS_SIZE][5];
-    char idstring2[FRIEND_ADDRESS_SIZE][5];
+    sprintf(data, "[i] ID: ");
+    int offset = strlen(data);
     int i = 0;
     uint8_t address[FRIEND_ADDRESS_SIZE];
     getaddress(m, address);
-    for(i = 0; i < FRIEND_ADDRESS_SIZE; i++)
+    for(; i < FRIEND_ADDRESS_SIZE; i++)
     {
-        if (address[i] < (FRIEND_ADDRESS_SIZE / 2))
-            strcpy(idstring1[i],"0");
-        else
-            strcpy(idstring1[i], "");
-        sprintf(idstring2[i], "%hhX",address[i]);
+        sprintf(data + 2*i + offset, "%02X ", address[i]);
     }
-    strcpy(idstring0,"[i] ID: ");
-    int j = 0;
-    for (j = 0; j < FRIEND_ADDRESS_SIZE; j++) {
-        strcat(idstring0,idstring1[j]);
-        strcat(idstring0,idstring2[j]);
-    }
-
-    memcpy(data, idstring0, strlen(idstring0));
 }
 
 void new_lines(char *line)
