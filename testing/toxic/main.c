@@ -289,7 +289,8 @@ static void do_tox()
 static void populate_friends()
 {
     wprintw(prompt->window, "Populating friends...\n");
-    for (int i = 0; i < m->numfriends; i++) {
+    uint32_t i;
+    for (i = 0; i < m->numfriends; i++) {
         wprintw(prompt->window, "Added friend %d\n", i);
         friendlist_onFriendAdded(m, i);
     }
