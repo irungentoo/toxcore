@@ -196,17 +196,8 @@ static void load_data(Messenger *m, char *path)
 int main(int argc, char *argv[])
 {
   char *user_config_dir = get_user_config_dir();
-  char *DATA_FILE;
-  int config_err = create_user_config_dir(user_config_dir);
-  if(config_err) {
-    DATA_FILE = "data";
-  } else {
-    DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
-    strcpy(DATA_FILE, user_config_dir);
-    strcat(DATA_FILE, CONFIGDIR);
-    strcat(DATA_FILE, "data");
-  }
-  free(user_config_dir);
+  char *DATA_FILE = NULL;
+  int config_err = 0;
 
   /* This is broken */
   int f_loadfromfile = 1;
@@ -226,6 +217,19 @@ int main(int argc, char *argv[])
       }
     }
   }
+
+  if (DATA_FILE == NULL ) {
+    config_err = create_user_config_dir(user_config_dir);
+    if (config_err) {
+      DATA_FILE = strdup("data");
+    } else {
+      DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
+      strcpy(DATA_FILE, user_config_dir);
+      strcat(DATA_FILE, CONFIGDIR);
+      strcat(DATA_FILE, "data");
+    }
+  }
+  free(user_config_dir);
 
   init_term();
   Messenger *m = init_tox();
