@@ -75,12 +75,26 @@ int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
 
     return -1;
 }
+/* 
+ * returns a uint16_t that represents the checksum of address of length len
+ * 
+ * TODO: Another checksum algorithm might be better.
+ */
+static uint16_t address_checksum(uint8_t *address, uint32_t len)
+{
+    uint8_t checksum[2] = {0};
+    uint16_t check;
+    uint32_t i;
+    for(i = 0; i < len; ++i)
+        checksum[i % 2] ^= address[i];
+    memcpy(&check, checksum, sizeof(check));
+    return check;
+}
 
 /*
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  * 
- * TODO: add checksum.
  */
 void getaddress(Messenger *m, uint8_t *address)
 {
@@ -88,12 +102,14 @@ void getaddress(Messenger *m, uint8_t *address)
     memcpy(address, self_public_key, crypto_box_PUBLICKEYBYTES);
     uint32_t nospam = get_nospam();
     memcpy(address + crypto_box_PUBLICKEYBYTES, &nospam, sizeof(nospam));
+    uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+    memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(nospam), &checksum, sizeof(checksum));
 }
 
 /*
  * add a friend
  * set the data that will be sent along with friend request
- * address is the address of the friend (returned by getaddress) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
+ * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length
  * returns the friend number if success
  * return FA_TOOLONG if message length is too long
@@ -101,6 +117,9 @@ void getaddress(Messenger *m, uint8_t *address)
  * return FAERR_OWNKEY if user's own key
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
  * return FAERR_UNKNOWN for unknown error
+ * return FAERR_BADCHECKSUM if bad checksum in address
+ * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different 
+ * (the nospam for that friend was set to the new one)
  */
 int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
 {
@@ -110,12 +129,23 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
         return FAERR_TOOLONG;
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
     memcpy(client_id, address, crypto_box_PUBLICKEYBYTES);
+    uint16_t check, checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+    memcpy(&check, address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), sizeof(check));
+    if (check != checksum)
+        return FAERR_BADCHECKSUM;
     if (length < 1)
         return FAERR_NOMESSAGE;
     if (memcmp(client_id, self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
         return FAERR_OWNKEY;
-    if (getfriend_id(m, client_id) != -1)
-        return FAERR_ALREADYSENT;
+    int friend_id = getfriend_id(m, client_id);
+    if (friend_id != -1) {
+        uint32_t nospam;
+        memcpy(&nospam, address + crypto_box_PUBLICKEYBYTES, sizeof(nospam));
+        if(m->friendlist[friend_id].friendrequest_nospam == nospam)
+            return FAERR_ALREADYSENT;
+        m->friendlist[friend_id].friendrequest_nospam = nospam;
+        return FAERR_SETNEWNOSPAM;
+    }
 
     /* resize the friend list if necessary */
     realloc_friendlist(m, m->numfriends + 1);
@@ -730,6 +760,9 @@ void Messenger_save(Messenger *m, uint8_t *data)
 {
     save_keys(data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    uint32_t nospam = get_nospam();
+    memcpy(data, &nospam, sizeof(nospam));
+    data += sizeof(nospam);
     uint32_t size = DHT_size();
     memcpy(data, &size, sizeof(size));
     data += sizeof(size);
@@ -746,11 +779,15 @@ int Messenger_load(Messenger *m, uint8_t * data, uint32_t length)
 {
     if (length == ~0)
         return -1;
-    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2)
+    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3)
         return -1;
-    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2;
+    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3;
     load_keys(data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    uint32_t nospam;
+    memcpy(&nospam, data, sizeof(nospam));
+    set_nospam(nospam);
+    data += sizeof(nospam);
     uint32_t size;
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);

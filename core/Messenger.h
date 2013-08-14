@@ -61,6 +61,8 @@ extern "C" {
 #define FAERR_OWNKEY -3
 #define FAERR_ALREADYSENT -4
 #define FAERR_UNKNOWN -5
+#define FAERR_BADCHECKSUM -6
+#define FAERR_SETNEWNOSPAM -7
 
 /* don't assume MAX_STATUSMESSAGE_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
@@ -140,14 +142,13 @@ typedef struct Messenger {
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  * 
- * TODO: add checksum.
  */
 void getaddress(Messenger *m, uint8_t *address);
 
 /*
  * add a friend
  * set the data that will be sent along with friend request
- * address is the address of the friend (returned by getaddress) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
+ * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length
  * returns the friend number if success
  * return -1 if message length is too long
@@ -155,6 +156,9 @@ void getaddress(Messenger *m, uint8_t *address);
  * return -3 if user's own key
  * return -4 if friend request already sent or already a friend
  * return -5 for unknown error
+ * return -6 if bad checksum in address
+ * return -7 if the friend was already there but the nospam was different 
+ * (the nospam for that friend was set to the new one)
  */
 int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length);
 
