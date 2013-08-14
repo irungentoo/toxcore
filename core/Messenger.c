@@ -746,7 +746,7 @@ void doMessenger(Messenger *m)
 /* returns the size of the messenger data (for saving) */
 uint32_t Messenger_size(Messenger *m)
 {
-    return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+    return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)
            + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * m->numfriends;
 }
 
