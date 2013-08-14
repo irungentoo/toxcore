@@ -19,7 +19,7 @@
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
 #define STRINGS_EQUAL(X, Y) (strcmp(X, Y) == 0)
 
-char *friend_id_str = "e4b3d5030bc99494605aecc33ceec8875640c1d74aa32790e821b17e98771c4a1e2a72269dd7";
+char *friend_id_str = "e4b3d5030bc99494605aecc33ceec8875640c1d74aa32790e821b17e98771c4a00000000f1db";
 
 /* in case we need more than one ID for a test */
 char *good_id_a_str = "DB9B569D14850ED8364C3744CAC2C8FF78985D213E980C7C508D0E91E8E45441";
