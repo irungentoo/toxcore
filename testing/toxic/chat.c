@@ -314,7 +314,7 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd)
       snprintf(xx, sizeof(xx), "%02X",  address[i] & 0xff);
       strcat(id, xx);
     }
-    wprintw(ctx->history, "Your ID: %s\n", id);
+    wprintw(ctx->history, "%s\n", id);
   }
 
   else if (strcmp(ctx->line, "/close") == 0) {
