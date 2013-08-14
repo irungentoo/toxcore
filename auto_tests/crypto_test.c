@@ -197,6 +197,43 @@ START_TEST(test_endtoend)
 }
 END_TEST
 
+START_TEST(test_large_data)
+{
+    unsigned char k[crypto_box_BEFORENMBYTES];
+
+    unsigned char n[crypto_box_NONCEBYTES];
+
+    unsigned char m1[MAX_DATA_SIZE - ENCRYPTION_PADDING];
+    unsigned char c1[sizeof(m1) + ENCRYPTION_PADDING];
+    unsigned char m1prime[sizeof(m1)];
+
+    unsigned char m2[MAX_DATA_SIZE];
+    unsigned char c2[sizeof(m2) + ENCRYPTION_PADDING];
+
+    int c1len, c2len;
+    int m1plen;
+
+    //Generate random messages
+    rand_bytes(m1, sizeof(m1));
+    rand_bytes(m2, sizeof(m2));
+    rand_bytes(n, crypto_box_NONCEBYTES);
+    
+    //Generate key
+    rand_bytes(k, crypto_box_BEFORENMBYTES);
+    
+    c1len = encrypt_data_fast(k, n, m1, sizeof(m1), c1);
+    c2len = encrypt_data_fast(k, n, m2, sizeof(m2), c2);
+    
+    ck_assert_msg(c1len == sizeof(m1) + ENCRYPTION_PADDING, "Could not encrypt max size");
+    ck_assert_msg(c2len == -1, "incorrectly succeeded encrypting massive size");
+    
+    m1plen = decrypt_data_fast(k, n, c1, c1len, m1prime);
+    
+    ck_assert_msg(m1plen == sizeof(m1), "decrypted text lengths differ");
+    ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
+}
+END_TEST
+
 #define DEFTESTCASE(NAME) \
     TCase *NAME = tcase_create(#NAME); \
     tcase_add_test(NAME, test_##NAME); \
@@ -209,6 +246,7 @@ Suite* crypto_suite(void)
     DEFTESTCASE(known);
     DEFTESTCASE(fast_known);
     DEFTESTCASE(endtoend);
+    DEFTESTCASE(large_data);
 
     return s;
 }
