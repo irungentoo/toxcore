@@ -308,10 +308,13 @@ static int store_data(char *path)
 
     fd = fopen(path, "w");
     if (fd == NULL) {
+        free(buf);
         return 2;
     }
 
     if (fwrite(buf, len, 1, fd) != 1) {
+        free(buf);
+        fclose(fd);
         return 3;
     }
 
