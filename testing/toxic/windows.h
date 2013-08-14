@@ -1,8 +1,13 @@
 /*
  * Toxic -- Tox Curses Client
  */
+#ifndef _windows_h
+#define _windows_h
 
+#include <curses.h>
+#include <stdint.h>
 #include <stdbool.h>
+#include "../../core/Messenger.h"
 #define TOXWINDOWS_MAX_NUM 32
 #define MAX_FRIENDS_NUM 100
 #define MAX_STR_SIZE 256
@@ -32,3 +37,17 @@ struct ToxWindow_ {
 
   WINDOW* window;
 };
+
+void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void* userdata);
+void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void init_window_status();
+ToxWindow * init_windows();
+void draw_active_window(Messenger * m);
+int add_window(Messenger *m, ToxWindow w, int n);
+void del_window(ToxWindow *w, int f_num);
+void set_active_window(int ch);
+#endif
+
