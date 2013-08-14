@@ -633,6 +633,8 @@ static int handle_sendnodes(IP_Port source, uint8_t * packet, uint32_t length)
 
 int DHT_addfriend(uint8_t * client_id)
 {
+    if(friend_number(client_id) != -1) /*Is friend already in DHT?*/
+        return 1;
     Friend * temp;
     temp = realloc(friends_list, sizeof(Friend) * (num_friends + 1));
     if (temp == NULL)
