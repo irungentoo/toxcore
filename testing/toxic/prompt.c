@@ -121,6 +121,11 @@ void cmd_add(ToxWindow *self, Messenger *m, char **args)
     }
     id_bin[i] = x;
   }
+  
+  for (i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
+    id[i] = toupper(id[i]);
+  }
+  
   int num = m_addfriend(m, id_bin, (uint8_t*) msg, strlen(msg)+1);
   switch (num) {
   case FAERR_TOOLONG:
