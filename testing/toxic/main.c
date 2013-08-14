@@ -286,6 +286,15 @@ static void do_tox()
   doMessenger(m);
 }
 
+static void populate_friends()
+{
+    wprintw(prompt->window, "Populating friends...\n");
+    for (int i = 0; i < m->numfriends; i++) {
+        wprintw(prompt->window, "Added friend %d\n", i);
+        friendlist_onFriendAdded(m, i);
+    }
+}
+
 /*
  * Store Messenger data to path
  * Return 0 Messenger stored successfully
@@ -321,6 +330,8 @@ static int store_data(char *path)
     free(buf);
     fclose(fd);
 
+    wprintw(prompt->window, "Messenger stored\n");
+
     return 0;
 }
 
@@ -348,7 +359,9 @@ static void load_data(char *path) {
             endwin();
             exit(1);
         }
-        Messenger_load(m, buf, len);
+        if (Messenger_load(m, buf, len) != 0) {
+            fprintf(stderr, "Problem while loading messenger");
+        }
         free(buf);
         fclose(fd);
     } else {
@@ -479,8 +492,10 @@ int main(int argc, char *argv[])
   init_windows();
   init_window_status();
 
-  if(f_loadfromfile)
-    load_data(DATA_FILE);
+  if(f_loadfromfile) {
+      load_data(DATA_FILE);
+      populate_friends();
+  }
 
   if (f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
