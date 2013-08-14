@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     else if (argv[i][0] == '-') {
       if (argv[i][1] == 'f') {
         if (argv[i + 1] != NULL)
-          DATA_FILE = argv[i + 1];
+          DATA_FILE = strdup(argv[i + 1]);
         else
           f_flag = -1;
       } else if (argv[i][1] == 'n') {
