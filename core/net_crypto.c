@@ -71,33 +71,6 @@ uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
     return check; // We return zero if mem is made out of zeroes.
 }
 
-/* encrypts plain of length length to encrypted of length + 16 using the
-   public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
-   return -1 if there was a problem.
-   return length of encrypted data if everything was fine. */
-int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *plain, uint32_t length, uint8_t *encrypted)
-{
-    if (length + crypto_box_MACBYTES > MAX_DATA_SIZE || length == 0)
-        return -1;
-
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
-
-    memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); /* pad the message with 32 0 bytes. */
-
-    crypto_box(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce, public_key, secret_key);
-
-    /* if encryption is successful the first crypto_box_BOXZEROBYTES of the message will be zero
-       apparently memcmp should not be used so we do this instead:*/
-    if(crypto_iszero(temp_encrypted, crypto_box_BOXZEROBYTES) != 0)
-        return -1;
-
-    /* unpad the encrypted message */
-    memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length + crypto_box_MACBYTES);
-    return length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES;
-}
-
 /* Precomputes the shared key from their public_key and our secret_key.
    This way we can avoid an expensive elliptic curve scalar multiply for each 
    encrypt/decrypt operation.
@@ -129,35 +102,6 @@ int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
     return length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES;
 }
 
-/* decrypts encrypted of length length to plain of length length - 16 using the
-   public key(32 bytes) of the sender, the secret key of the receiver and a 24 byte nonce
-   return -1 if there was a problem(decryption failed)
-   return length of plain data if everything was fine. */
-int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *encrypted, uint32_t length, uint8_t *plain)
-{
-    if (length > MAX_DATA_SIZE || length <= crypto_box_BOXZEROBYTES)
-        return -1;
-
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES];
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
-
-    memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); /* pad the message with 16 0 bytes. */
-
-    if (crypto_box_open(temp_plain, temp_encrypted, length + crypto_box_BOXZEROBYTES,
-                        nonce, public_key, secret_key) == -1)
-        return -1;
-
-    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero 
-       apparently memcmp should not be used so we do this instead:*/
-    if(crypto_iszero(temp_plain, crypto_box_ZEROBYTES) != 0)
-        return -1;
-
-    /* unpad the plain message */
-    memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_MACBYTES);
-    return length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES;
-}
-
 /* Fast decrypt. Depends on enc_ley from encrypt_precompute. */
 int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
                       uint8_t *encrypted, uint32_t length, uint8_t *plain)
@@ -182,6 +126,22 @@ int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
     /* unpad the plain message */
     memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_MACBYTES);
     return length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES;
+}
+
+int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
+                 uint8_t *plain, uint32_t length, uint8_t *encrypted)
+{
+    uint8_t k[crypto_box_BEFORENMBYTES];
+    encrypt_precompute(public_key, secret_key, k);
+    return encrypt_data_fast(k, nonce, plain, length, encrypted);
+}
+
+int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
+                 uint8_t *encrypted, uint32_t length, uint8_t *plain)
+{
+    uint8_t k[crypto_box_BEFORENMBYTES];
+    encrypt_precompute(public_key, secret_key, k);
+    return decrypt_data_fast(k, nonce, encrypted, length, plain);
 }
 
 /* increment the given nonce by 1 */
