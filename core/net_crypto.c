@@ -81,7 +81,7 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     if (length + crypto_box_MACBYTES > MAX_DATA_SIZE || length == 0)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
+    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
     uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
 
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); /* pad the message with 32 0 bytes. */
@@ -114,7 +114,7 @@ int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
     if (length + crypto_box_MACBYTES > MAX_DATA_SIZE || length == 0)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
+    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
     uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
 
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); /* pad the message with 32 0 bytes. */
