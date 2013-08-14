@@ -572,7 +572,10 @@ Messenger * initMessenger(void)
 
 /* run this before closing shop */
 void cleanupMessenger(Messenger *m){
-    /* FIXME TODO it seems no one frees friendlist or all the elements status */
+    /* FIXME TODO ideally cleanupMessenger will mirror initMessenger
+     * this requires the other modules to expose cleanup functions
+     */
+    free(m->friendlist);
     free(m);
 }
 
