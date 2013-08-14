@@ -24,9 +24,6 @@
 #include "prompt.h"
 #include "friendlist.h"
 
-#ifndef TOXICVER
-#define TOXICVER "NOVER" //Use the -D flag to set this
-#endif
 
 static void init_term()
 {

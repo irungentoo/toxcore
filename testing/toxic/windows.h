@@ -19,6 +19,10 @@
 /* maximum window slots for WINDOW_STATUS array */
 #define MAX_WINDOW_SLOTS N_DEFAULT_WINS+MAX_FRIENDS_NUM
 
+#ifndef TOXICVER
+#define TOXICVER "NOVER" //Use the -D flag to set this
+#endif
+
 typedef struct ToxWindow_ ToxWindow;
 
 struct ToxWindow_ {
