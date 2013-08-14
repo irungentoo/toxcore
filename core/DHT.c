@@ -932,49 +932,30 @@ static int send_NATping(uint8_t * public_key, uint64_t ping_id, uint8_t type)
 }
 
 /* Handle a received ping request for */
-static int handle_NATping(IP_Port source, uint8_t * packet, uint32_t length) 
+static int handle_NATping(IP_Port source, uint8_t * source_pubkey, uint8_t * packet, uint32_t length) 
 {
-    if (length < crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING 
-            || length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
+    uint64_t ping_id;
+    memcpy(&ping_id, packet + 1, sizeof(uint64_t));
+
+    int friendnumber = friend_number(source_pubkey);
+    if (friendnumber == -1)
         return 1;
 
-    /* check if request is for us. */
-    if (id_equal(packet + 1, self_public_key)) {
-        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-        uint8_t data[MAX_DATA_SIZE];
+    Friend * friend = &friends_list[friendnumber];
 
-        int len = handle_request(public_key, data, packet, length);
-        if (len != sizeof(uint64_t) + 1)
-            return 1;
-
-        uint64_t ping_id;
-        memcpy(&ping_id, data + 1, sizeof(uint64_t));
-
-        int friendnumber = friend_number(public_key);
-        if (friendnumber == -1)
-            return 1;
-
-        Friend * friend = &friends_list[friendnumber];
-
-        if (data[0] == 0) {
-            /* 1 is reply */
-            send_NATping(public_key, ping_id, 1);
-            friend->recvNATping_timestamp = unix_time();
+    if (packet[0] == 0) {
+        /* 1 is reply */
+        send_NATping(source_pubkey, ping_id, 1);
+        friend->recvNATping_timestamp = unix_time();
+        return 0;
+    } else if (packet[0] == 1) {
+        if (friend->NATping_id == ping_id) {
+            friend->NATping_id = ((uint64_t)random_int() << 32) + random_int();
+            friend->hole_punching = 1;
             return 0;
-        } else if (data[0] == 1) {
-            if (friend->NATping_id == ping_id) {
-                friend->NATping_id = ((uint64_t)random_int() << 32) + random_int();
-                friend->hole_punching = 1;
-                return 0;
-            }
         }
-        return 1;
     }
-
-    /* if request is not for us, try routing it. */
-    route_packet(packet + 1, packet, length);
-
-    return 0;
+    return 1;
 }
 
 /* Get the most common ip in the ip_portlist
@@ -1082,7 +1063,7 @@ void DHT_init(void)
     networking_registerhandler(1, &handle_ping_response);
     networking_registerhandler(2, &handle_getnodes);
     networking_registerhandler(3, &handle_sendnodes);
-    networking_registerhandler(254, &handle_NATping);
+    cryptopacket_registerhandler(254, &handle_NATping);
 }
 
 void doDHT(void)

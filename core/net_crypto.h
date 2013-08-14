@@ -25,6 +25,7 @@
 #define NET_CRYPTO_H
 
 #include "Lossless_UDP.h"
+#include "DHT.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,11 +89,10 @@ int write_cryptpacket(int crypt_connection_id, uint8_t *data, uint32_t length);
     returns the length of the created packet on success */
 int create_request(uint8_t *packet, uint8_t * public_key, uint8_t *data, uint32_t length, uint8_t request_id);
 
-/* puts the senders public key in the request in public_key, the data from the request
-    in data if a friend or ping request was sent to us and returns the length of the data.
-    packet is the request packet and length is its length
-    return -1 if not valid request. */
-int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *packet, uint16_t length);
+
+typedef int (*cryptopacket_handler_callback)(IP_Port ip_port, uint8_t * source_pubkey, uint8_t *data, uint32_t len);
+/* Function to call when request beginning with byte is received */
+void cryptopacket_registerhandler(uint8_t byte, cryptopacket_handler_callback cb);
 
 /* Start a secure connection with other peer who has public_key and ip_port
     returns -1 if failure

@@ -221,15 +221,18 @@ int write_cryptpacket(int crypt_connection_id, uint8_t *data, uint32_t length)
    returns the length of the created packet on success */
 int create_request(uint8_t *packet, uint8_t *public_key, uint8_t *data, uint32_t length, uint8_t request_id)
 {
-    if (MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + ENCRYPTION_PADDING)
+    if (MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING)
         return -1;
     uint8_t nonce[crypto_box_NONCEBYTES];
+    uint8_t temp[MAX_DATA_SIZE];
+    memcpy(temp + 1, data, length);
+    temp[0] = request_id;
     random_nonce(nonce);
-    int len = encrypt_data(public_key, self_secret_key, nonce, data, length,
+    int len = encrypt_data(public_key, self_secret_key, nonce, temp, length,
                            1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
     if (len == -1)
         return -1;
-    packet[0] = request_id;
+    packet[0] = 32;
     memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES * 2, nonce, crypto_box_NONCEBYTES);
@@ -241,7 +244,7 @@ int create_request(uint8_t *packet, uint8_t *public_key, uint8_t *data, uint32_t
    in data if a friend or ping request was sent to us and returns the length of the data.
    packet is the request packet and length is its length
    return -1 if not valid request. */
-int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *packet, uint16_t length)
+static int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *request_id, uint8_t *packet, uint16_t length)
 {
 
     if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
@@ -249,14 +252,49 @@ int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *packet, uint16_t
         memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
         memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
         uint8_t nonce[crypto_box_NONCEBYTES];
+        uint8_t temp[MAX_DATA_SIZE];
         memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
         int len1 = decrypt_data(public_key, self_secret_key, nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
-                                length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), data);
-        if(len1 == -1)
+                                length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
+        if(len1 == -1 || len1 == 0)
             return -1;
+        request_id[0] = temp[0];
+        --len1;
+        memcpy(data, temp + 1, len1);
         return len1;
     } else
         return -1;
+}
+
+static cryptopacket_handler_callback cryptopackethandlers[256] = {0};
+
+void cryptopacket_registerhandler(uint8_t byte, cryptopacket_handler_callback cb)
+{
+    cryptopackethandlers[byte] = cb;
+}
+
+static int cryptopacket_handle(IP_Port source, uint8_t * packet, uint32_t length)
+{
+    if (packet[0] == 32) {
+        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
+            length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
+            return 1;
+        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.
+            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+            uint8_t data[MAX_DATA_SIZE];
+            uint8_t number;
+            int len = handle_request(public_key, data, &number, packet, length);
+            if (len == -1 || len == 0)
+                return 1;
+            if (!cryptopackethandlers[number]) return 1;
+            cryptopackethandlers[number](source, public_key, data, len - 1);
+            
+        } else { /* if request is not for us, try routing it. */
+            if(route_packet(packet + 1, packet, length) == length)
+                return 0;
+        }
+    }
+    return 1;
 }
 
 /* Send a crypto handshake packet containing an encrypted secret nonce and session public key
@@ -579,6 +617,7 @@ void initNetCrypto(void)
 {
     memset(crypto_connections, 0 ,sizeof(crypto_connections));
     memset(incoming_connections, -1 ,sizeof(incoming_connections));
+    networking_registerhandler(32, &cryptopacket_handle);
     uint32_t i;
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
         crypto_connections[i].number = ~0;
