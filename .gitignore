@@ -30,3 +30,6 @@ tags
 
 #netbeans
 nbproject
+
+#astyle
+*.orig
