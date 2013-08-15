@@ -12,7 +12,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/crypto_speed_test.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/timer_test.cmake)
 
 if(WIN32)
-	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox_win32.cmake)
+#	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox_win32.cmake)
 else()
 	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox.cmake)
 	add_subdirectory(toxic)
