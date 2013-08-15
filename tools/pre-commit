@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+#
+# An example hook script to verify what is about to be committed.
+# Called by "git commit" with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message if
+# it wants to stop the commit.
+#
+# To enable this hook, rename this file to "pre-commit".
+
+for file in `git diff-index --diff-filter=ACMR --name-only HEAD`; do
+    if [[ $file == *.c || $file == *.h ]]
+    then
+        echo $file
+        `which astyle` $file --options=tools/astylerc
+        git add $file
+    fi
+done
