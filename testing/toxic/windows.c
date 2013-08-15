@@ -3,6 +3,9 @@
 #include "dhtstatus.h"
 #include "windows.h"
 
+extern char *DATA_FILE;
+extern int store_data(Messenger *m, char *path);
+
 /* Holds status of chat windows */
 char WINDOW_STATUS[MAX_WINDOW_SLOTS];
 
@@ -74,6 +77,9 @@ void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t l
 void on_friendadded(Messenger *m, int friendnumber)
 {
   friendlist_onFriendAdded(m, friendnumber);
+  if (store_data(m, DATA_FILE) != 0) {
+      wprintw(prompt->window, "\nCould not store Messenger data\n");
+  }
 }
 /* CALLBACKS END */
 
