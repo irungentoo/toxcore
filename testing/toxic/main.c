@@ -25,6 +25,8 @@
 #include "prompt.h"
 #include "friendlist.h"
 
+/* Export for use in Callbacks */
+char *DATA_FILE = NULL;
 
 void on_window_resize(int sig) 
 {
@@ -145,67 +147,90 @@ static void do_tox(Messenger *m, ToxWindow * prompt)
   doMessenger(m);
 }
 
-static void load_data(Messenger *m, char *path)
+/*
+ * Store Messenger to given location
+ * Return 0 stored successfully
+ * Return 1 malloc failed
+ * Return 2 opening path failed
+ * Return 3 fwrite failed
+ */
+int store_data(Messenger *m, char *path)
 {
-  FILE *fd;
-  size_t len;
-  uint8_t *buf;
+    FILE *fd;
+    size_t len;
+    uint8_t *buf;
 
-  if ((fd = fopen(path, "r")) != NULL) {
-    fseek(fd, 0, SEEK_END);
-    len = ftell(fd);
-    fseek(fd, 0, SEEK_SET);
-
-    buf = malloc(len);
-    if (buf == NULL) {
-      fprintf(stderr, "malloc() failed.\n");
-      fclose(fd);
-      endwin();
-      exit(1);
-    }
-    if (fread(buf, len, 1, fd) != 1){
-      fprintf(stderr, "fread() failed.\n");
-      free(buf);
-      fclose(fd);
-      endwin();
-      exit(1);
-    }
-    Messenger_load(m, buf, len);
-  }
-  else {
     len = Messenger_size(m);
     buf = malloc(len);
     if (buf == NULL) {
-      fprintf(stderr, "malloc() failed.\n");
-      endwin();
-      exit(1);
+        return 1;
     }
     Messenger_save(m, buf);
 
     fd = fopen(path, "w");
     if (fd == NULL) {
-      fprintf(stderr, "fopen() failed.\n");
-      free(buf);
-      endwin();
-      exit(1);
+        free(buf);
+        return 2;
     }
 
-    if (fwrite(buf, len, 1, fd) != 1){
-      fprintf(stderr, "fwrite() failed.\n");
-      free(buf);
-      fclose(fd);
-      endwin();
-      exit(1);
+    if (fwrite(buf, len, 1, fd) != 1) {
+        free(buf);
+        fclose(fd);
+        return 3;
     }
-  }
-  free(buf);
-  fclose(fd);
+
+    free(buf);
+    fclose(fd);
+    return 0;
+}
+
+static void load_data(Messenger *m, char *path)
+{
+    FILE *fd;
+    size_t len;
+    uint8_t *buf;
+
+    if ((fd = fopen(path, "r")) != NULL) {
+        fseek(fd, 0, SEEK_END);
+        len = ftell(fd);
+        fseek(fd, 0, SEEK_SET);
+
+        buf = malloc(len);
+        if (buf == NULL) {
+            fprintf(stderr, "malloc() failed.\n");
+            fclose(fd);
+            endwin();
+            exit(1);
+        }
+        if (fread(buf, len, 1, fd) != 1) {
+            fprintf(stderr, "fread() failed.\n");
+            free(buf);
+            fclose(fd);
+            endwin();
+            exit(1);
+        }
+        Messenger_load(m, buf, len);
+
+        uint32_t i;
+        for (i = 0; i < m->numfriends; i++) {
+            on_friendadded(m, i);
+        }
+
+        free(buf);
+        fclose(fd);
+    } else {
+        int st;
+        if ((st = store_data(m, path)) != 0) {
+            fprintf(stderr, "Store messenger failed with return code: %d\n", st);
+            endwin();
+            exit(1);
+        }
+    }
 }
 
 int main(int argc, char *argv[])
 {
   char *user_config_dir = get_user_config_dir();
-  char *DATA_FILE = NULL;
   int config_err = 0;
 
   int f_loadfromfile = 1;
@@ -246,7 +271,6 @@ int main(int argc, char *argv[])
 
   if(f_loadfromfile)
     load_data(m, DATA_FILE);
-  free(DATA_FILE);
 
   if (f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
@@ -268,6 +292,8 @@ int main(int argc, char *argv[])
     /* Draw */
     draw_active_window(m);
   }
+
   cleanupMessenger(m);
+  free(DATA_FILE);
   return 0;
 }
