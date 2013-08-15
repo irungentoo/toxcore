@@ -33,7 +33,7 @@ uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
    return the number of peers it was routed through if it did not send it directly.*/
 int send_friendrequest(uint8_t * public_key, uint32_t nospam_num, uint8_t * data, uint32_t length)
 {
-    if(length - sizeof(nospam_num) > MAX_DATA_SIZE)
+    if(length + sizeof(nospam_num) > MAX_DATA_SIZE)
         return -1;
     
     uint8_t temp[MAX_DATA_SIZE];
