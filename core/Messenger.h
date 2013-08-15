@@ -152,6 +152,7 @@ void getaddress(Messenger *m, uint8_t *address);
  * return -6 if bad checksum in address
  * return -7 if the friend was already there but the nospam was different
  * (the nospam for that friend was set to the new one)
+ * return -8 if increasing the friend list size fails
  */
 int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length);
 
