@@ -43,13 +43,13 @@ static void dhtstatus_onDraw(ToxWindow *self)
   uint32_t i, j;
   ipbuf ipbuf;
   wprintw(self->window,"\n%llu  ______________________ CLOSE LIST ________________________  ___ IP ADDR ___ _PRT_   LST   PNG    ____ SELF ____ _PRT_  LST\n\n", now);
-  for(i = 0; i < CLIENT_ID_SIZE; i++) {
+  for(i = 0; i < 32; i++) { /*Number of nodes in closelist*/
     Client_data * client = close_clientlist + i;
     if (i == num_selected) wattron(self->window, COLOR_PAIR(3));
     wprintw(self->window,"[%02i]  ", i);
     uint16_t port = ntohs(client->ip_port.port);
     if(port) {
-      for(j = 0; j < 32; j++)
+      for(j = 0; j < CLIENT_ID_SIZE; j++)
         wprintw(self->window, "%02hhx", client->client_id[j]);
           
       printip(ipbuf, client->ip_port.ip);

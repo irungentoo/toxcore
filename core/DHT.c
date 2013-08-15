@@ -319,6 +319,28 @@ static int replace_bad(    Client_data *   list,
 
     return 1;
 }
+/*Sort the list. It will be sorted from furthest to closest. 
+  TODO: this is innefficient and needs to be optimized.*/
+static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_id)
+{
+    if(length == 0)
+        return;
+    uint32_t i, count;
+    while(1) {
+        count = 0;
+        for(i = 0; i < (length - 1); ++i) {
+            if(id_closest(comp_client_id, list[i].client_id, list[i + 1].client_id) == 1) {
+                Client_data temp = list[i + 1];
+                list[i + 1] = list[i];
+                list[i] = temp;
+                ++count;
+            }
+        }
+        if(count == 0)
+            return;
+    }
+}
+
 
 /* replace the first good node that is further to the comp_client_id than that of the client_id in the list */
 static int replace_good(   Client_data *   list,
@@ -329,6 +351,7 @@ static int replace_good(   Client_data *   list,
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
+    sort_list(list, length, comp_client_id);
 
     for(i = 0; i < length; ++i)
         if(id_closest(comp_client_id, list[i].client_id, client_id) == 2) {
