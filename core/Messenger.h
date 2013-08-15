@@ -63,6 +63,7 @@ extern "C" {
 #define FAERR_UNKNOWN -5
 #define FAERR_BADCHECKSUM -6
 #define FAERR_SETNEWNOSPAM -7
+#define FAERR_NOMEM -8
 
 /* don't assume MAX_STATUSMESSAGE_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
