@@ -23,7 +23,7 @@ On Fedora:
 
 ```bash
 yum groupinstall "Development Tools"
-yum install libtool autoconf automake libconfig-devel ncurses-devel cmake check
+yum install libtool autoconf automake libconfig-devel ncurses-devel cmake check check-devel
 ```
 
 Note that `libconfig-dev` should be >= 1.4.
@@ -61,8 +61,8 @@ mkdir build && cd build
 cmake ..
 ```
 Advance cmake options:
-  - `-DSHARED_TOXCORE=ON` (default `OFF`) — Build Core as a shared library.
-  - `-DUSE_NACL=ON` (default `OFF`) — Use NaCl library instead of libsodium.
+  - `-DSHARED_TOXCORE=ON` (default `OFF`) ï¿½ Build Core as a shared library.
+  - `-DUSE_NACL=ON` (default `OFF`) ï¿½ Use NaCl library instead of libsodium.
   
 Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
@@ -150,8 +150,8 @@ mkdir build && cd build
 cmake -G "MinGW Makefiles" ..
 ```
 Advance cmake options:
-  - `-DSHARED_TOXCORE=ON` (default OFF) — Build Core as a shared library.
-  - `-DSHARED_LIBSODIUM=ON` (default OFF) — Link libsodium as a shared library.
+  - `-DSHARED_TOXCORE=ON` (default OFF) ï¿½ Build Core as a shared library.
+  - `-DSHARED_LIBSODIUM=ON` (default OFF) ï¿½ Link libsodium as a shared library.
 
 Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
 
