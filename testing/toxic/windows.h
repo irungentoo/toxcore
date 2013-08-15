@@ -14,7 +14,7 @@
 #define KEY_SIZE_BYTES 32
 
 /* number of permanent default windows */
-#define N_DEFAULT_WINS 2
+#define N_DEFAULT_WINS 3
 
 /* maximum window slots for WINDOW_STATUS array */
 #define MAX_WINDOW_SLOTS N_DEFAULT_WINS+MAX_FRIENDS_NUM

@@ -65,17 +65,6 @@
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
-    IP_Port     ip_port;
-    uint64_t    timestamp;
-    uint64_t    last_pinged;
-
-    /* Returned by this node. Either our friend or us */
-    IP_Port     ret_ip_port;
-    uint64_t    ret_timestamp;
-} Client_data;
-
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* time at which the last get_nodes request was sent. */
@@ -114,6 +103,12 @@ static uint16_t     num_friends;
 static Pinged       send_nodes[LSEND_NODES_ARRAY];
 
 /*----------------------------------------------------------------------------------*/
+
+
+Client_data * DHT_get_close_list(void)
+{
+    return close_clientlist;
+}
 
 /* Compares client_id1 and client_id2 with client_id
  * return 0 if both are same distance

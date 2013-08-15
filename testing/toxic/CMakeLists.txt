@@ -11,6 +11,7 @@ add_executable(${exe_name}
 	windows.c
 	prompt.c
 	friendlist.c
+	dhtstatus.c
 	chat.c
 	configdir.c)
 

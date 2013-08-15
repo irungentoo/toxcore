@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <signal.h>
 
 #ifdef _win32
 #include <direct.h>
@@ -25,9 +26,17 @@
 #include "friendlist.h"
 
 
+void on_window_resize(int sig) 
+{
+    endwin();
+    refresh();
+    clear();
+}
+
 static void init_term()
 {
   /* Setup terminal */
+  signal(SIGWINCH, on_window_resize);
   initscr();
   cbreak();
   keypad(stdscr, 1);
