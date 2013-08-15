@@ -120,6 +120,7 @@ void getaddress(Messenger *m, uint8_t *address)
  * return FAERR_BADCHECKSUM if bad checksum in address
  * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different
  * (the nospam for that friend was set to the new one)
+ * return FAERR_NOMEM if increasing the friend list size fails
  */
 int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
 {
@@ -148,7 +149,8 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
     }
 
     /* resize the friend list if necessary */
-    realloc_friendlist(m, m->numfriends + 1);
+    if (realloc_friendlist(m, m->numfriends + 1) != 0)
+        return FAERR_NOMEM;
 
     uint32_t i;
     for (i = 0; i <= m->numfriends; ++i)  {
@@ -180,7 +182,8 @@ int m_addfriend_norequest(Messenger *m, uint8_t * client_id)
         return -1;
 
     /* resize the friend list if necessary */
-    realloc_friendlist(m, m->numfriends + 1);
+    if (realloc_friendlist(m, m->numfriends + 1) != 0)
+        return FAERR_NOMEM;
 
     uint32_t i;
     for (i = 0; i <= m->numfriends; ++i) {
@@ -221,7 +224,9 @@ int m_delfriend(Messenger *m, int friendnumber)
             break;
     }
     m->numfriends = i;
-    realloc_friendlist(m, m->numfriends + 1);
+
+    if (realloc_friendlist(m, m->numfriends + 1) != 0)
+        return FAERR_NOMEM;
 
     return 0;
 }
