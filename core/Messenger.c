@@ -75,9 +75,9 @@ int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
 
     return -1;
 }
-/* 
+/*
  * returns a uint16_t that represents the checksum of address of length len
- * 
+ *
  * TODO: Another checksum algorithm might be better.
  */
 static uint16_t address_checksum(uint8_t *address, uint32_t len)
@@ -94,7 +94,7 @@ static uint16_t address_checksum(uint8_t *address, uint32_t len)
 /*
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
- * 
+ *
  */
 void getaddress(Messenger *m, uint8_t *address)
 {
@@ -118,7 +118,7 @@ void getaddress(Messenger *m, uint8_t *address)
  * return FAERR_ALREADYSENT if friend request already sent or already a friend
  * return FAERR_UNKNOWN for unknown error
  * return FAERR_BADCHECKSUM if bad checksum in address
- * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different 
+ * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different
  * (the nospam for that friend was set to the new one)
  */
 int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
@@ -449,8 +449,7 @@ void m_set_sends_receipts(Messenger *m, int friendnumber, int yesno)
     m->friendlist[friendnumber].receives_read_receipts = yesno;
 }
 
-/* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t);
-static uint8_t friend_request_isset = 0; */
+/* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t); */
 /* set the function that will be executed when a friend request is received. */
 void m_callback_friendrequest(Messenger *m, void (*function)(uint8_t *, uint8_t *, uint16_t, void*), void* userdata)
 {
@@ -461,55 +460,48 @@ void m_callback_friendrequest(Messenger *m, void (*function)(uint8_t *, uint8_t 
 void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_message = function;
-    m->friend_message_isset = 1;
     m->friend_message_userdata = userdata;
 }
 
 void m_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_action = function;
-    m->friend_action_isset = 1;
     m->friend_action_userdata = userdata;
 }
 
 void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_namechange = function;
-    m->friend_namechange_isset = 1;
     m->friend_namechange_userdata = userdata;
 }
 
 void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void*), void* userdata)
 {
     m->friend_statusmessagechange = function;
-    m->friend_statusmessagechange_isset = 1;
     m->friend_statuschange_userdata = userdata;
 }
 
 void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USERSTATUS, void*), void* userdata)
 {
     m->friend_userstatuschange = function;
-    m->friend_userstatuschange_isset = 1;
     m->friend_userstatuschange_userdata = userdata;
 }
 
 void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void*), void* userdata)
 {
     m->read_receipt = function;
-    m->read_receipt_isset = 1;
     m->read_receipt_userdata = userdata;
 }
 
 void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void*), void* userdata)
 {
     m->friend_connectionstatuschange = function;
-    m->friend_connectionstatuschange_isset = 1;
     m->friend_connectionstatuschange_userdata = userdata;
 }
 
 static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_t status)
 {
-    if (!m->friend_connectionstatuschange_isset)
+    if (!m->friend_connectionstatuschange)
         return;
     if (status == NOFRIEND)
         return;
@@ -580,7 +572,10 @@ Messenger * initMessenger(void)
 
 /* run this before closing shop */
 void cleanupMessenger(Messenger *m){
-    /* FIXME TODO it seems no one frees friendlist or all the elements status */
+    /* FIXME TODO ideally cleanupMessenger will mirror initMessenger
+     * this requires the other modules to expose cleanup functions
+     */
+    free(m->friendlist);
     free(m);
 }
 
@@ -648,7 +643,7 @@ void doFriends(Messenger *m)
                 case PACKET_ID_NICKNAME: {
                     if (data_length >= MAX_NAME_LENGTH || data_length == 0)
                         break;
-                    if(m->friend_namechange_isset)
+                    if(m->friend_namechange)
                         m->friend_namechange(m, i, data, data_length, m->friend_namechange_userdata);
                     memcpy(m->friendlist[i].name, data, data_length);
                     m->friendlist[i].name[data_length - 1] = 0; /* make sure the NULL terminator is present. */
@@ -659,7 +654,7 @@ void doFriends(Messenger *m)
                         break;
                     uint8_t *status = calloc(MIN(data_length, MAX_STATUSMESSAGE_LENGTH), 1);
                     memcpy(status, data, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
-                    if (m->friend_statusmessagechange_isset)
+                    if (m->friend_statusmessagechange)
                         m->friend_statusmessagechange(m, i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH),
                                                       m->friend_statuschange_userdata);
                     set_friend_statusmessage(m, i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
@@ -670,7 +665,7 @@ void doFriends(Messenger *m)
                     if (data_length != 1)
                         break;
                     USERSTATUS status = data[0];
-                    if (m->friend_userstatuschange_isset)
+                    if (m->friend_userstatuschange)
                         m->friend_userstatuschange(m, i, status, m->friend_userstatuschange_userdata);
                     set_friend_userstatus(m, i, status);
                     break;
@@ -683,12 +678,12 @@ void doFriends(Messenger *m)
                     if (m->friendlist[i].receives_read_receipts) {
                         write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
                     }
-                    if (m->friend_message_isset)
+                    if (m->friend_message)
                         (*m->friend_message)(m, i, message, message_length, m->friend_message_userdata);
                     break;
                 }
                 case PACKET_ID_ACTION: {
-                    if (m->friend_action_isset)
+                    if (m->friend_action)
                         (*m->friend_action)(m, i, data, data_length, m->friend_action_userdata);
                     break;
                 }
@@ -698,7 +693,7 @@ void doFriends(Messenger *m)
                         break;
                     memcpy(&msgid, data, sizeof(msgid));
                     msgid = ntohl(msgid);
-                    if (m->read_receipt_isset)
+                    if (m->read_receipt)
                         (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
                     break;
                 }
@@ -744,7 +739,7 @@ void doMessenger(Messenger *m)
     doNetCrypto();
     doInbound(m);
     doFriends(m);
-    
+
     timer_poll();
 }
 

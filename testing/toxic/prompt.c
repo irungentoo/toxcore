@@ -11,11 +11,12 @@
 #include "../../core/network.h"
 
 #include "windows.h"
+#include "prompt.h"
 
 uint8_t pending_requests[MAX_STR_SIZE][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests=0; // XXX
 
-extern void on_friendadded(int friendnumber);
+static friendAddedFn *on_friendadded;
 static char prompt_buf[MAX_STR_SIZE] = {0};
 static int prompt_buf_pos = 0;
 
@@ -87,7 +88,7 @@ void cmd_accept(ToxWindow *self, Messenger *m, char **args)
     wprintw(self->window, "Failed to add friend.\n");
   else {
     wprintw(self->window, "Friend accepted as: %d.\n", num);
-    on_friendadded(num);
+    on_friendadded(m, num);
   }
 }
 
@@ -121,6 +122,11 @@ void cmd_add(ToxWindow *self, Messenger *m, char **args)
     }
     id_bin[i] = x;
   }
+  
+  for (i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
+    id[i] = toupper(id[i]);
+  }
+  
   int num = m_addfriend(m, id_bin, (uint8_t*) msg, strlen(msg)+1);
   switch (num) {
   case FAERR_TOOLONG:
@@ -138,9 +144,15 @@ void cmd_add(ToxWindow *self, Messenger *m, char **args)
   case FAERR_UNKNOWN:
     wprintw(self->window, "Undefined error when adding friend.\n");
     break;
+  case FAERR_BADCHECKSUM:
+    wprintw(self->window, "Bad checksum in address.\n");
+    break;
+  case FAERR_SETNEWNOSPAM:
+    wprintw(self->window, "Nospam was different.\n");
+    break;
   default:
     wprintw(self->window, "Friend added as %d.\n", num);
-    on_friendadded(num);
+    on_friendadded(m, num);
     break;
   }
 }
@@ -226,7 +238,7 @@ void cmd_myid(ToxWindow *self, Messenger *m, char **args)
     snprintf(xx, sizeof(xx), "%02X", address[i] & 0xff);
     strcat(id, xx);
   }
-  wprintw(self->window, "Your ID: %s\n", id);
+  wprintw(self->window, "%s\n", id);
 }
 
 void cmd_nick(ToxWindow *self, Messenger *m, char **args)
@@ -422,8 +434,9 @@ static void prompt_onInit(ToxWindow *self, Messenger *m)
   wclrtoeol(self->window);
 }
 
-ToxWindow new_prompt()
+ToxWindow new_prompt(friendAddedFn *f)
 {
+  on_friendadded = f; 
   ToxWindow ret;
   memset(&ret, 0, sizeof(ret));
   ret.onKey = &prompt_onKey;

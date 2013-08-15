@@ -123,39 +123,23 @@ static int request_received(uint8_t * client_id)
 }
 
 
-static int friendreq_handlepacket(IP_Port source, uint8_t * packet, uint32_t length)
+static int friendreq_handlepacket(IP_Port source, uint8_t * source_pubkey, uint8_t * packet, uint32_t length) 
 {
-    if (packet[0] == 32) {
-        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
-            length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
-            return 1;
-        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.
-            if (handle_friendrequest_isset == 0)
-                return 1;
+    if (handle_friendrequest_isset == 0)
+        return 1;
+    if (length <= sizeof(nospam))
+        return 1;
+    if (request_received(source_pubkey))
+        return 1;
+    if (memcmp(packet, &nospam, sizeof(nospam)) != 0)
+        return 1;
 
-            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-            uint8_t data[MAX_DATA_SIZE];
-            int len = handle_request(public_key, data, packet, length);
-            if (len == -1)
-                return 1;
-            if (len <= sizeof(nospam))
-                return 1;
-            if (request_received(public_key))
-                return 1;
-            if (memcmp(data, &nospam, sizeof(nospam)) != 0)
-                return 1;
-
-            addto_receivedlist(public_key);
-            (*handle_friendrequest)(public_key, data + 4, len - 4, handle_friendrequest_userdata);
-        } else { /* if request is not for us, try routing it. */
-            if(route_packet(packet + 1, packet, length) == length)
-                return 0;
-        }
-    }
-    return 1;
+    addto_receivedlist(source_pubkey);
+    (*handle_friendrequest)(source_pubkey, packet + 4, length - 4, handle_friendrequest_userdata);
+    return 0;
 }
 
 void friendreq_init(void)
 {
-    networking_registerhandler(32, &friendreq_handlepacket);
+    cryptopacket_registerhandler(32, &friendreq_handlepacket);
 }

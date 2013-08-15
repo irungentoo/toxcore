@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <signal.h>
 
 #ifdef _win32
 #include <direct.h>
@@ -21,104 +22,21 @@
 
 #include "configdir.h"
 #include "windows.h"
+#include "prompt.h"
+#include "friendlist.h"
 
-extern ToxWindow new_prompt();
-extern ToxWindow new_friendlist();
 
-extern int friendlist_onFriendAdded(Messenger *m, int num);
-extern void disable_chatwin(int f_num);
-extern int add_req(uint8_t *public_key); // XXX
-extern unsigned char *hex_string_to_bin(char hex_string[]);
-
-static int store_data(char*);
-
-/* Holds status of chat windows */
-char WINDOW_STATUS[MAX_WINDOW_SLOTS];
-
-#ifndef TOXICVER
-#define TOXICVER "NOVER" //Use the -D flag to set this
-#endif
-
-static ToxWindow windows[MAX_WINDOW_SLOTS];
-static ToxWindow* prompt;
-
-static Messenger *m;
-static char *DATA_FILE;
-
-int w_num;
-int active_window;
-
-/* CALLBACKS START */
-void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void* userdata)
+void on_window_resize(int sig) 
 {
-  int n = add_req(public_key);
-  wprintw(prompt->window, "\nFriend request from:\n");
-
-  int i;
-  for (i = 0; i < KEY_SIZE_BYTES; ++i) {
-    wprintw(prompt->window, "%02x", public_key[i] & 0xff);
-  }
-
-  wprintw(prompt->window, "\nWith the message: %s\n", data);
-  wprintw(prompt->window, "\nUse \"accept %d\" to accept it.\n", n);
-
-  for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
-    if (windows[i].onFriendRequest != NULL)
-      windows[i].onFriendRequest(&windows[i], public_key, data, length);
-  }
+    endwin();
+    refresh();
+    clear();
 }
-
-void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
-{
-  int i;
-  for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
-    if (windows[i].onMessage != NULL)
-      windows[i].onMessage(&windows[i], m, friendnumber, string, length);
-  }
-}
-
-void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
-{
-  int i;
-  for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
-    if (windows[i].onAction != NULL)
-      windows[i].onAction(&windows[i], m, friendnumber, string, length);
-  }
-}
-
-void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
-{
-  wprintw(prompt->window, "\n(nickchange) %d: %s\n", friendnumber, string);
-  int i;
-  for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
-    if (windows[i].onNickChange != NULL)
-      windows[i].onNickChange(&windows[i], friendnumber, string, length);
-  }
-}
-
-void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata)
-{
-  wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
-  int i;
-  for (i=0; i<MAX_WINDOW_SLOTS; ++i) {
-    if (windows[i].onStatusChange != NULL)
-      windows[i].onStatusChange(&windows[i], friendnumber, string, length);
-  }
-}
-
-void on_friendadded(int friendnumber)
-{
-    friendlist_onFriendAdded(m, friendnumber);
-    int st;
-    if ((st = store_data(DATA_FILE)) != 0) {
-        wprintw(prompt->window, "\nCould not store messenger, error code: %d\n", st);
-    }
-}
-/* CALLBACKS END */
 
 static void init_term()
 {
   /* Setup terminal */
+  signal(SIGWINCH, on_window_resize);
   initscr();
   cbreak();
   keypad(stdscr, 1);
@@ -136,10 +54,10 @@ static void init_term()
   refresh();
 }
 
-static void init_tox()
+static Messenger *init_tox()
 {
   /* Init core */
-  m = initMessenger();
+  Messenger *m = initMessenger();
 
   /* Callbacks */
   m_callback_friendrequest(m, on_request, NULL);
@@ -154,6 +72,7 @@ static void init_tox()
 #else
   setname(m, (uint8_t*) "Hipster", sizeof("Hipster"));
 #endif
+  return m;
 }
 
 #define MAXLINE 90    /* Approx max number of chars in a sever line (IP + port + key) */
@@ -202,67 +121,7 @@ int init_connection(void)
   return 0;
 }
 
-void init_window_status()
-{
-  /* Default window values decrement from -2 */
-  int i;
-  for (i = 0; i < N_DEFAULT_WINS; ++i)
-    WINDOW_STATUS[i] = -(i+2);
-
-  int j;
-  for (j = N_DEFAULT_WINS; j < MAX_WINDOW_SLOTS; j++)
-    WINDOW_STATUS[j] = -1;
-}
-
-int add_window(ToxWindow w, int n)
-{
-  if (w_num >= TOXWINDOWS_MAX_NUM)
-    return -1;
-
-  if (LINES < 2)
-    return -1;
-
-  w.window = newwin(LINES - 2, COLS, 0, 0);
-  if (w.window == NULL)
-    return -1;
-
-  windows[n] = w;
-  w.onInit(&w, m);
-  w_num++;
-  return n;
-}
-
-/* Deletes window w and cleans up */
-void del_window(ToxWindow *w, int f_num)
-{
-  delwin(w->window);
-  int i;
-  for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
-    if (WINDOW_STATUS[i] == f_num) {
-      WINDOW_STATUS[i] = -1;
-      disable_chatwin(f_num);
-      break;
-    }
-  }
-  clear();
-  refresh();
-}
-
-static void init_windows()
-{
-  w_num = 0;
-  int n_prompt = 0;
-  int n_friendslist = 1;
-  if (add_window(new_prompt(), n_prompt) == -1
-                        || add_window(new_friendlist(), n_friendslist) == -1) {
-    fprintf(stderr, "add_window() failed.\n");
-    endwin();
-    exit(1);
-  }
-  prompt = &windows[n_prompt];
-}
-
-static void do_tox()
+static void do_tox(Messenger *m, ToxWindow * prompt)
 {
   static int conn_try = 0;
   static int conn_err = 0;
@@ -286,190 +145,69 @@ static void do_tox()
   doMessenger(m);
 }
 
-static void populate_friends()
+static void load_data(Messenger *m, char *path)
 {
-    wprintw(prompt->window, "Populating friends...\n");
-    uint32_t i;
-    for (i = 0; i < m->numfriends; i++) {
-        wprintw(prompt->window, "Added friend %d\n", i);
-        friendlist_onFriendAdded(m, i);
+  FILE *fd;
+  size_t len;
+  uint8_t *buf;
+
+  if ((fd = fopen(path, "r")) != NULL) {
+    fseek(fd, 0, SEEK_END);
+    len = ftell(fd);
+    fseek(fd, 0, SEEK_SET);
+
+    buf = malloc(len);
+    if (buf == NULL) {
+      fprintf(stderr, "malloc() failed.\n");
+      fclose(fd);
+      endwin();
+      exit(1);
     }
-}
-
-/*
- * Store Messenger data to path
- * Return 0 Messenger stored successfully
- * Return 1 malloc failed
- * Return 2 fopen failed
- * Return 3 fwrite failed
- */
-static int store_data(char *path)
-{
-    FILE *fd;
-    size_t len;
-    uint8_t *buf;
-
+    if (fread(buf, len, 1, fd) != 1){
+      fprintf(stderr, "fread() failed.\n");
+      free(buf);
+      fclose(fd);
+      endwin();
+      exit(1);
+    }
+    Messenger_load(m, buf, len);
+  }
+  else {
     len = Messenger_size(m);
     buf = malloc(len);
     if (buf == NULL) {
-        return 1;
+      fprintf(stderr, "malloc() failed.\n");
+      endwin();
+      exit(1);
     }
     Messenger_save(m, buf);
 
     fd = fopen(path, "w");
     if (fd == NULL) {
-        free(buf);
-        return 2;
+      fprintf(stderr, "fopen() failed.\n");
+      free(buf);
+      endwin();
+      exit(1);
     }
 
-    if (fwrite(buf, len, 1, fd) != 1) {
-        free(buf);
-        fclose(fd);
-        return 3;
-    }
-
-    free(buf);
-    fclose(fd);
-
-    wprintw(prompt->window, "Messenger stored\n");
-
-    return 0;
-}
-
-static void load_data(char *path) {
-    FILE *fd;
-    size_t len;
-    uint8_t *buf;
-
-    if ((fd = fopen(path, "r")) != NULL) {
-        fseek(fd, 0, SEEK_END);
-        len = ftell(fd);
-        fseek(fd, 0, SEEK_SET);
-
-        buf = malloc(len);
-        if (buf == NULL) {
-            fprintf(stderr, "malloc() failed.\n");
-            fclose(fd);
-            endwin();
-            exit(1);
-        }
-        if (fread(buf, len, 1, fd) != 1) {
-            fprintf(stderr, "fread() failed.\n");
-            free(buf);
-            fclose(fd);
-            endwin();
-            exit(1);
-        }
-        if (Messenger_load(m, buf, len) != 0) {
-            fprintf(stderr, "Problem while loading messenger");
-        }
-        free(buf);
-        fclose(fd);
-    } else {
-        int st;
-        if ((st = store_data(path)) != 0) {
-            fprintf(stderr, "storing messenger failed with error code: %d", st);
-            endwin();
-            exit(1);
-        }
-    }
-}
-
-static void draw_bar()
-{
-  static int odd = 0;
-  int blinkrate = 30;
-
-  attron(COLOR_PAIR(4));
-  mvhline(LINES - 2, 0, '_', COLS);
-  attroff(COLOR_PAIR(4));
-
-  move(LINES - 1, 0);
-
-  attron(COLOR_PAIR(4) | A_BOLD);
-  printw(" TOXIC " TOXICVER "|");
-  attroff(COLOR_PAIR(4) | A_BOLD);
-
-  int i;
-  for (i = 0; i < (MAX_WINDOW_SLOTS); ++i) {
-    if (WINDOW_STATUS[i] != -1) {
-      if (i == active_window)
-        attron(A_BOLD);
-
-      odd = (odd+1) % blinkrate;
-      if (windows[i].blink && (odd < (blinkrate/2)))
-        attron(COLOR_PAIR(3));
-
-      printw(" %s", windows[i].title);
-      if (windows[i].blink && (odd < (blinkrate/2)))
-        attroff(COLOR_PAIR(3));
-
-      if (i == active_window) {
-        attroff(A_BOLD);
-      }
+    if (fwrite(buf, len, 1, fd) != 1){
+      fprintf(stderr, "fwrite() failed.\n");
+      free(buf);
+      fclose(fd);
+      endwin();
+      exit(1);
     }
   }
-  refresh();
-}
-
-void prepare_window(WINDOW *w)
-{
-  mvwin(w, 0, 0);
-  wresize(w, LINES-2, COLS);
-}
-
-/* Shows next window when tab or back-tab is pressed */
-void set_active_window(int ch)
-{
-  int f_inf = 0;
-  int max = MAX_WINDOW_SLOTS-1;
-  if (ch == '\t') {
-    int i = (active_window + 1) % max;
-    while (true) {
-      if (WINDOW_STATUS[i] != -1) {
-        active_window = i;
-        return;
-      }
-      i = (i  + 1) % max;
-      if (f_inf++ > max) {    // infinite loop check
-        endwin();
-        exit(2);
-      }
-    }
-  }else {
-    int i = active_window - 1;
-    if (i < 0) i = max;
-    while (true) {
-      if (WINDOW_STATUS[i] != -1) {
-        active_window = i;
-        return;
-      }
-      if (--i < 0) i = max;
-      if (f_inf++ > max) {
-        endwin();
-        exit(2);
-      }
-    }
-  }
+  free(buf);
+  fclose(fd);
 }
 
 int main(int argc, char *argv[])
 {
-  int ch;
-  ToxWindow* a;
   char *user_config_dir = get_user_config_dir();
-  int config_err = create_user_config_dir(user_config_dir);
-  if(config_err) {
-    DATA_FILE = "data";
-  } else {
-    DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
-    strcpy(DATA_FILE, user_config_dir);
-    strcat(DATA_FILE, CONFIGDIR);
-    strcat(DATA_FILE, "data");
-  }
-  free(user_config_dir);
+  char *DATA_FILE = NULL;
+  int config_err = 0;
 
-  /* This is broken */
   int f_loadfromfile = 1;
   int f_flag = 0;
   int i = 0;
@@ -479,7 +217,7 @@ int main(int argc, char *argv[])
     else if (argv[i][0] == '-') {
       if (argv[i][1] == 'f') {
         if (argv[i + 1] != NULL)
-          DATA_FILE = argv[i + 1];
+          DATA_FILE = strdup(argv[i + 1]);
         else
           f_flag = -1;
       } else if (argv[i][1] == 'n') {
@@ -488,15 +226,27 @@ int main(int argc, char *argv[])
     }
   }
 
+  if (DATA_FILE == NULL ) {
+    config_err = create_user_config_dir(user_config_dir);
+    if (config_err) {
+      DATA_FILE = strdup("data");
+    } else {
+      DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
+      strcpy(DATA_FILE, user_config_dir);
+      strcat(DATA_FILE, CONFIGDIR);
+      strcat(DATA_FILE, "data");
+    }
+  }
+  free(user_config_dir);
+
   init_term();
-  init_tox();
-  init_windows();
+  Messenger *m = init_tox();
+  ToxWindow *prompt = init_windows(m);
   init_window_status();
 
-  if(f_loadfromfile) {
-      load_data(DATA_FILE);
-      populate_friends();
-  }
+  if(f_loadfromfile)
+    load_data(m, DATA_FILE);
+  free(DATA_FILE);
 
   if (f_flag == -1) {
     attron(COLOR_PAIR(3) | A_BOLD);
@@ -513,25 +263,11 @@ int main(int argc, char *argv[])
   }
   while(true) {
     /* Update tox */
-    do_tox();
+    do_tox(m, prompt);
 
     /* Draw */
-    a = &windows[active_window];
-    prepare_window(a->window);
-    a->blink = false;
-    draw_bar();
-    a->onDraw(a);
-
-    /* Handle input */
-    ch = getch();
-    if (ch == '\t' || ch == KEY_BTAB)
-      set_active_window(ch);
-    else if (ch != ERR)
-      a->onKey(a, m, ch);
+    draw_active_window(m);
   }
-
   cleanupMessenger(m);
-  free(DATA_FILE);
-
   return 0;
 }

@@ -53,10 +53,10 @@ void print_clientlist()
     uint32_t i, j;
     IP_Port p_ip;
     printf("___________________CLOSE________________________________\n");
-    for(i = 0; i < 4; i++) {
+    for(i = 0; i < 32; i++) {
         printf("ClientID: ");
         for(j = 0; j < 32; j++) {
-            printf("%hhX", close_clientlist[i].client_id[j]);
+            printf("%02hhX", close_clientlist[i].client_id[j]);
         }
         p_ip = close_clientlist[i].ip_port;
         printf("\nIP: %u.%u.%u.%u Port: %u",p_ip.ip.c[0],p_ip.ip.c[1],p_ip.ip.c[2],p_ip.ip.c[3],ntohs(p_ip.port));

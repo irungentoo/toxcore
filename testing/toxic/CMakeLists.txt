@@ -8,8 +8,10 @@ set(exe_name toxic)
 
 add_executable(${exe_name}
 	main.c
+	windows.c
 	prompt.c
 	friendlist.c
+	dhtstatus.c
 	chat.c
 	configdir.c)
 
