@@ -75,6 +75,16 @@ void doDHT(void);
     Sends a get nodes request to the given node with ip port and public_key */
 void DHT_bootstrap(IP_Port ip_port, uint8_t *public_key);
 
+/* Add nodes to the toping list
+   all nodes in this list are pinged every TIME_TOPING seconds
+   and are then removed from the list.
+   if the list is full the nodes farthest from our client_id are replaced
+   the purpose of this list is to enable quick integration of new nodes into the
+   network while preventing amplification attacks. 
+   return 0 if node was added
+   return -1 if node was not added */
+int add_toping(uint8_t *client_id, IP_Port ip_port);
+
 /* ROUTING FUNCTIONS */
 
 /* send the given packet to node with client_id

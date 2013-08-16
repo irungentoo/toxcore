@@ -185,7 +185,7 @@ int handle_ping_request(IP_Port source, uint8_t* packet, uint32_t length)
 
     // Send response
     send_ping_response(source, &p->client_id, ping_id);
-    send_ping_request(source, &p->client_id); // Make this smarter?
+    add_toping((uint8_t*) &p->client_id, source);
 
     return 0;
 }
