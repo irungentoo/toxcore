@@ -34,7 +34,7 @@ else()
 
 	include_directories(${SODIUM_INCLUDE_DIR})
 
-	set(LINK_CRYPTO_LIBRARY ${SODIUM_LIBRARY})
+	set(LINK_CRYPTO_LIBRARY ${SODIUM_LIBRARIES})
 endif()
 
 #MinGW prints more warnings for -Wall than gcc does, thus causing build to fail
