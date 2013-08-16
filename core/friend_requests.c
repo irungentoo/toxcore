@@ -35,7 +35,7 @@ int send_friendrequest(uint8_t * public_key, uint32_t nospam_num, uint8_t * data
 {
     if(length - sizeof(nospam_num) > MAX_DATA_SIZE)
         return -1;
-    
+
     uint8_t temp[MAX_DATA_SIZE];
     memcpy(temp, &nospam_num, sizeof(nospam_num));
     memcpy(temp + sizeof(nospam_num), data, length);

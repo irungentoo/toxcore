@@ -147,6 +147,8 @@ static void do_tox(Messenger *m, ToxWindow * prompt)
   doMessenger(m);
 }
 
+int f_loadfromfile;
+
 /*
  * Store Messenger to given location
  * Return 0 stored successfully
@@ -156,6 +158,8 @@ static void do_tox(Messenger *m, ToxWindow * prompt)
  */
 int store_data(Messenger *m, char *path)
 {
+    if (f_loadfromfile == 0) /*If file loading/saving is disabled*/
+        return 0;
     FILE *fd;
     size_t len;
     uint8_t *buf;
@@ -186,6 +190,8 @@ int store_data(Messenger *m, char *path)
 
 static void load_data(Messenger *m, char *path)
 {
+    if (f_loadfromfile == 0) /*If file loading/saving is disabled*/
+        return;
     FILE *fd;
     size_t len;
     uint8_t *buf;
@@ -233,7 +239,7 @@ int main(int argc, char *argv[])
   char *user_config_dir = get_user_config_dir();
   int config_err = 0;
 
-  int f_loadfromfile = 1;
+  f_loadfromfile = 1;
   int f_flag = 0;
   int i = 0;
   for (i = 0; i < argc; ++i) {

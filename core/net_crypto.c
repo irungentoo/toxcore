@@ -228,7 +228,7 @@ int create_request(uint8_t *packet, uint8_t *public_key, uint8_t *data, uint32_t
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     random_nonce(nonce);
-    int len = encrypt_data(public_key, self_secret_key, nonce, temp, length,
+    int len = encrypt_data(public_key, self_secret_key, nonce, temp, length + 1,
                            1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
     if (len == -1)
         return -1;
@@ -287,7 +287,7 @@ static int cryptopacket_handle(IP_Port source, uint8_t * packet, uint32_t length
             if (len == -1 || len == 0)
                 return 1;
             if (!cryptopackethandlers[number]) return 1;
-            cryptopackethandlers[number](source, public_key, data, len - 1);
+            cryptopackethandlers[number](source, public_key, data, len);
             
         } else { /* if request is not for us, try routing it. */
             if(route_packet(packet + 1, packet, length) == length)

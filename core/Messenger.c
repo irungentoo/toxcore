@@ -810,10 +810,18 @@ int Messenger_load(Messenger *m, uint8_t * data, uint32_t length)
 
     uint32_t i;
     for (i = 0; i < num; ++i) {
-        if(temp[i].status != 0) {
+        if(temp[i].status >= 3) {
             int fnum = m_addfriend_norequest(m, temp[i].client_id);
             setfriendname(m, fnum, temp[i].name);
             /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
+        } else if (temp[i].status != 0) {
+            /* TODO: this is not a good way to do this. */
+            uint8_t address[FRIEND_ADDRESS_SIZE];
+            memcpy(address, temp[i].client_id, crypto_box_PUBLICKEYBYTES);
+            memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp[i].friendrequest_nospam), sizeof(uint32_t));
+            uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+            memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
+            m_addfriend(m, address, temp[i].info, temp[i].info_size);
         }
     }
     free(temp);
