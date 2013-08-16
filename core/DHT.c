@@ -741,8 +741,8 @@ IP_Port DHT_getfriendip(uint8_t *client_id)
     return empty;
 }
 
-/* Ping each client in the "friends" list every 60 seconds. Send a get nodes request
- * every 20 seconds to a random good node for each "friend" in our "friends" list.
+/* Ping each client in the "friends" list every PING_INTERVAL seconds. Send a get nodes request
+ * every GET_NODE_INTERVAL seconds to a random good node for each "friend" in our "friends" list.
  */
 static void doDHTFriends(void)
 {
@@ -783,8 +783,8 @@ static void doDHTFriends(void)
 
 static uint64_t close_lastgetnodes;
 
-/* Ping each client in the close nodes list every 60 seconds.
- * Send a get nodes request every 20 seconds to a random good node in the list.
+/* Ping each client in the close nodes list every PING_INTERVAL seconds.
+ * Send a get nodes request every GET_NODE_INTERVAL seconds to a random good node in the list.
  */
 static void doClose(void)
 {
@@ -823,6 +823,7 @@ static void doClose(void)
 void DHT_bootstrap(IP_Port ip_port, uint8_t *public_key)
 {
     getnodes(ip_port, public_key, self_public_key);
+    send_ping_request(ip_port, (clientid_t *) public_key);
 }
 
 /* send the given packet to node with client_id
@@ -875,8 +876,11 @@ static int friend_iplist(IP_Port *ip_portlist, uint16_t friend_num)
     return num_ips;
 }
 
+
 /* Send the following packet to everyone who tells us they are connected to friend_id
  * returns the number of nodes it sent the packet to
+ *
+ * Only works if more than (MAX_FRIEND_CLIENTS / 2) return an ip for friend.
  */
 int route_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t length)
 {
@@ -886,6 +890,13 @@ int route_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t length)
         return 0;
 
     uint32_t i, sent = 0;
+
+    IP_Port ip_list[MAX_FRIEND_CLIENTS];
+    int ip_num = friend_iplist(ip_list, num);
+
+    if (ip_num < (MAX_FRIEND_CLIENTS / 2))
+        return 0;
+
     uint64_t temp_time = unix_time();
     Friend *friend = &friends_list[num];
     Client_data *client;
@@ -895,7 +906,6 @@ int route_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t length)
 
         /*If ip is not zero and node is good */
         if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-
             if (sendpacket(client->ip_port, packet, length) == length)
                 ++sent;
         }

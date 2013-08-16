@@ -68,6 +68,9 @@ extern "C" {
 /* don't assume MAX_STATUSMESSAGE_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */
 
+/* Default start timeout in seconds between friend requests */
+#define FRIENDREQUEST_TIMEOUT 5;
+
 /* USERSTATUS
  * Represents userstatuses someone can have. */
 
@@ -82,7 +85,8 @@ USERSTATUS;
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
-    uint64_t friend_request_id; /* id of the friend request corresponding to the current friend request to the current friend. */
+    uint64_t friendrequest_lastsent; /* time at which the last friend request was sent. */
+    uint32_t friendrequest_timeout; /* The timeout between successful friendrequest sending attempts */
     uint8_t status; /* 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online. */
     uint8_t info[MAX_DATA_SIZE]; /* the data that is sent during the friend requests we do */
     uint8_t name[MAX_NAME_LENGTH];

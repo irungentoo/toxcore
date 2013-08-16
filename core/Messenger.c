@@ -172,7 +172,8 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
             DHT_addfriend(client_id);
             m->friendlist[i].status = FRIEND_ADDED;
             m->friendlist[i].crypt_connection_id = -1;
-            m->friendlist[i].friend_request_id = -1;
+            m->friendlist[i].friendrequest_lastsent = 0;
+            m->friendlist[i].friendrequest_timeout = FRIENDREQUEST_TIMEOUT;
             memcpy(m->friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             m->friendlist[i].statusmessage = calloc(1, 1);
             m->friendlist[i].statusmessage_length = 1;
@@ -205,9 +206,9 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
     for (i = 0; i <= m->numfriends; ++i) {
         if (m->friendlist[i].status == NOFRIEND) {
             DHT_addfriend(client_id);
-            m->friendlist[i].status = FRIEND_REQUESTED;
+            m->friendlist[i].status = FRIEND_CONFIRMED;
             m->friendlist[i].crypt_connection_id = -1;
-            m->friendlist[i].friend_request_id = -1;
+            m->friendlist[i].friendrequest_lastsent = 0;
             memcpy(m->friendlist[i].client_id, client_id, CLIENT_ID_SIZE);
             m->friendlist[i].statusmessage = calloc(1, 1);
             m->friendlist[i].statusmessage_length = 1;
@@ -622,6 +623,7 @@ Messenger *initMessenger(void)
     LANdiscovery_init();
     set_nospam(random_int());
 
+    send_LANdiscovery(htons(PORT));
     timer_single(&LANdiscovery, 0, LAN_DISCOVERY_INTERVAL);
 
     return m;
@@ -650,19 +652,22 @@ void doFriends(Messenger *m)
             int fr = send_friendrequest(m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam, m->friendlist[i].info,
                                         m->friendlist[i].info_size);
 
-            if (fr == 0) /* TODO: This needs to be fixed so that it sends the friend requests a couple of times in case of packet loss */
+            if (fr >= 0) {
                 set_friend_status(m, i, FRIEND_REQUESTED);
-            else if (fr > 0)
-                set_friend_status(m, i, FRIEND_REQUESTED);
+                m->friendlist[i].friendrequest_lastsent = unix_time();
+            }
         }
 
         if (m->friendlist[i].status == FRIEND_REQUESTED
                 || m->friendlist[i].status == FRIEND_CONFIRMED) { /* friend is not online */
             if (m->friendlist[i].status == FRIEND_REQUESTED) {
-                if (m->friendlist[i].friend_request_id + 10 < unix_time()) { /*I know this is hackish but it should work.*/
-                    send_friendrequest(m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam, m->friendlist[i].info,
-                                       m->friendlist[i].info_size);
-                    m->friendlist[i].friend_request_id = unix_time();
+                /* If we didn't connect to friend after successfully sending him a friend request the request is deemed
+                   unsuccessful so we set the status back to FRIEND_ADDED and try again.*/
+                if (m->friendlist[i].friendrequest_lastsent + m->friendlist[i].friendrequest_timeout < unix_time()) {
+                    set_friend_status(m, i, FRIEND_ADDED);
+                    /* Double the default timeout everytime if friendrequest is assumed to have been
+                       sent unsuccessfully. */
+                    m->friendlist[i].friendrequest_timeout *= 2;
                 }
             }
 
