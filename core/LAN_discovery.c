@@ -41,7 +41,7 @@ static uint32_t get_broadcast(void)
     int i = 0;
 
     /* configure ifconf for the ioctl call */
-    if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("[!] get_broadcast: socket() error");
         return 0;
     }
@@ -51,15 +51,16 @@ static uint32_t get_broadcast(void)
     ifconf.ifc_buf = (char *)i_faces;
     ifconf.ifc_len = sizeof(i_faces);
     count = ifconf.ifc_len / sizeof(struct ifreq);
-    if(ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
+
+    if (ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
         perror("get_broadcast: ioctl() error");
         return 0;
     }
 
-    for(i = 0; i < count; i++) {
+    for (i = 0; i < count; i++) {
         /* skip the loopback interface, as it's useless */
-        if(strcmp(i_faces[i].ifr_name, "lo") != 0) {
-            if(ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
+        if (strcmp(i_faces[i].ifr_name, "lo") != 0) {
+            if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
                 perror("[!] get_broadcast: ioctl error");
                 return 0;
             }
@@ -69,8 +70,10 @@ static uint32_t get_broadcast(void)
             break;
         }
     }
+
     close(sock);
-    if(sock_holder == NULL) {
+
+    if (sock_holder == NULL) {
         perror("[!] no broadcast device found");
         return 0;
     }
@@ -83,14 +86,16 @@ static uint32_t get_broadcast(void)
 static IP broadcast_ip(void)
 {
     IP ip;
-    #ifdef __linux
+#ifdef __linux
     ip.i = get_broadcast();
-    if(ip.i == 0)
+
+    if (ip.i == 0)
         /* error errored, but try anyway? */
         ip.i = ~0;
-    #else
+
+#else
     ip.i = ~0;
-    #endif
+#endif
     return ip;
 }
 
@@ -100,14 +105,19 @@ static int LAN_ip(IP ip)
 {
     if (ip.c[0] == 127)/* Loopback */
         return 0;
+
     if (ip.c[0] == 10)/* 10.0.0.0 to 10.255.255.255 range */
         return 0;
+
     if (ip.c[0] == 172 && ip.c[1] >= 16 && ip.c[1] <= 31)/* 172.16.0.0 to 172.31.255.255 range */
         return 0;
+
     if (ip.c[0] == 192 && ip.c[1] == 168) /* 192.168.0.0 to 192.168.255.255 range */
         return 0;
+
     if (ip.c[0] == 169 && ip.c[1] == 254 && ip.c[2] != 0 && ip.c[2] != 255)/* 169.254.1.0 to 169.254.254.255 range */
         return 0;
+
     return -1;
 }
 
@@ -115,8 +125,10 @@ static int handle_LANdiscovery(IP_Port source, uint8_t *packet, uint32_t length)
 {
     if (LAN_ip(source.ip) == -1)
         return 1;
+
     if (length != crypto_box_PUBLICKEYBYTES + 1)
         return 1;
+
     DHT_bootstrap(source, packet + 1);
     return 0;
 }

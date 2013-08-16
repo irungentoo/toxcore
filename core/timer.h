@@ -44,7 +44,7 @@ typedef struct timer timer;
  * You may call any of the timer functions within the callback:
  * For example, you may call timer_start to restart the timer from
  * within a callback. */
-typedef int (*timer_callback)(timer* t, void* userarg);
+typedef int (*timer_callback)(timer *t, void *userarg);
 
 /* Initisalise timer subsystem */
 void timer_init(void);
@@ -53,52 +53,52 @@ void timer_init(void);
 void timer_poll(void);
 
 /* Creates a new timer. Does not enqueue/start it. */
-timer* new_timer(void);
+timer *new_timer(void);
 
 /* Destroys a timer instance. */
-void delete_timer(timer* t);
+void delete_timer(timer *t);
 
 /* Sets up the timer callback. */
-void timer_setup(timer* t, timer_callback cb, void* userarg);
+void timer_setup(timer *t, timer_callback cb, void *userarg);
 
 /* Accessor Function. */
-void* timer_get_userdata(timer* t);
+void *timer_get_userdata(timer *t);
 
-/* Starts the timer so that it's called in sec seconds in the future from now. 
+/* Starts the timer so that it's called in sec seconds in the future from now.
  * A non-positive value of sec results in the callback being called immediately.
- * This function may be called again after a timer has been started to adjust 
+ * This function may be called again after a timer has been started to adjust
  * the expiry time. */
-void timer_start(timer* t, int sec);
+void timer_start(timer *t, int sec);
 
 /* Stops the timer. Returns -1 if the timer was not active. */
-int timer_stop(timer* t);
+int timer_stop(timer *t);
 
-/* Adds additionalsec seconds to the timer. 
+/* Adds additionalsec seconds to the timer.
  * Returns -1 and does nothing if the timer was not active. */
-int timer_delay(timer* t, int additonalsec);
+int timer_delay(timer *t, int additonalsec);
 
 /* Returns the time remaining on a timer in seconds.
  * Returns -1 if the timer is not active.
  * Returns 0 if the timer has expired and the callback hasn't been called yet. */
-int timer_time_remaining(timer* t);
+int timer_time_remaining(timer *t);
 
 /* Determines if timer is active. Returns TRUE if it is active */
-bool timer_is_active(timer* t);
+bool timer_is_active(timer *t);
 
 /* Single-use timer.
- * Creates a new timer, preforms setup and starts it. 
+ * Creates a new timer, preforms setup and starts it.
  * Callback must return a non-zero value to prevent memory leak. */
-void timer_single(timer_callback cb, void* userarg, int sec);
+void timer_single(timer_callback cb, void *userarg, int sec);
 
 /* Single-use microsecond timer.
- * Creates a new timer, preforms setup and starts it. 
+ * Creates a new timer, preforms setup and starts it.
  * Please do not use this when accuracy is not absolutely required.
  * Use when one needs to time a period < 1 s.
- * Use the more coarse timers above for periods > 5 s. 
+ * Use the more coarse timers above for periods > 5 s.
  * WARNING: the callback will be called with NULL as the first argument */
-void timer_us(timer_callback cb, void* userarg, int us);
+void timer_us(timer_callback cb, void *userarg, int us);
 
 /* Internal Testing */
-void timer_internal_tests(bool(*)(bool, char*));
+void timer_internal_tests(bool( *)(bool, char *));
 
 #endif

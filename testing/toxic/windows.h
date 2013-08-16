@@ -26,31 +26,31 @@
 typedef struct ToxWindow_ ToxWindow;
 
 struct ToxWindow_ {
-  void(*onKey)(ToxWindow*, Messenger*, int);
-  void(*onDraw)(ToxWindow*);
-  void(*onInit)(ToxWindow*, Messenger*);
-  void(*onFriendRequest)(ToxWindow*, uint8_t*, uint8_t*, uint16_t);
-  void(*onMessage)(ToxWindow*, Messenger*, int, uint8_t*, uint16_t);
-  void(*onNickChange)(ToxWindow*, int, uint8_t*, uint16_t);
-  void(*onStatusChange)(ToxWindow*, int, uint8_t*, uint16_t);
-  void(*onAction)(ToxWindow*, Messenger*, int, uint8_t*, uint16_t);
-  char title[256];
+    void(*onKey)(ToxWindow *, Messenger *, int);
+    void(*onDraw)(ToxWindow *);
+    void(*onInit)(ToxWindow *, Messenger *);
+    void(*onFriendRequest)(ToxWindow *, uint8_t *, uint8_t *, uint16_t);
+    void(*onMessage)(ToxWindow *, Messenger *, int, uint8_t *, uint16_t);
+    void(*onNickChange)(ToxWindow *, int, uint8_t *, uint16_t);
+    void(*onStatusChange)(ToxWindow *, int, uint8_t *, uint16_t);
+    void(*onAction)(ToxWindow *, Messenger *, int, uint8_t *, uint16_t);
+    char title[256];
 
-  void* x;
-  bool blink;
+    void *x;
+    bool blink;
 
-  WINDOW* window;
+    WINDOW *window;
 };
 
-void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void* userdata);
-void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
-void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
-void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
-void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void* userdata);
+void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata);
+void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata);
+void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata);
+void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata);
+void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata);
 void on_friendadded(Messenger *m, int friendnumber);
 void init_window_status();
-ToxWindow * init_windows();
-void draw_active_window(Messenger * m);
+ToxWindow *init_windows();
+void draw_active_window(Messenger *m);
 int add_window(Messenger *m, ToxWindow w, int n);
 void del_window(ToxWindow *w, int f_num);
 void set_active_window(int ch);

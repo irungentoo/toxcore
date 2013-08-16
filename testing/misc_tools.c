@@ -1,5 +1,5 @@
 /* misc_tools.c
- * 
+ *
  * Miscellaneous functions and data structures for doing random things.
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
@@ -18,9 +18,9 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
- 
+
 #include "misc_tools.h"
 
 #include <string.h>
@@ -32,14 +32,15 @@
 #endif // DEBUG
 
 /* TODO: rewrite */
-unsigned char * hex_string_to_bin(char hex_string[])
+unsigned char *hex_string_to_bin(char hex_string[])
 {
     size_t len = strlen(hex_string);
     unsigned char *val = malloc(len);
     char *pos = hex_string;
     int i;
-    for(i = 0; i < len; ++i, pos+=2)
-        sscanf(pos,"%2hhx",&val[i]);
+
+    for (i = 0; i < len; ++i, pos += 2)
+        sscanf(pos, "%2hhx", &val[i]);
 
     return val;
 }

@@ -55,35 +55,37 @@
  * networking_requesthandler and so cannot take a Messenger * */
 static Messenger *m;
 
-void print_request(uint8_t * public_key, uint8_t * data, uint16_t length, void* userdata)
+void print_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
 {
     printf("Friend request received from: \n");
     printf("ClientID: ");
     uint32_t j;
-    for(j = 0; j < 32; j++)
-    {
-        if(public_key[j] < 16)
+
+    for (j = 0; j < 32; j++) {
+        if (public_key[j] < 16)
             printf("0");
+
         printf("%hhX", public_key[j]);
     }
+
     printf("\nOf length: %u with data: %s \n", length, data);
 
-    if(length != sizeof("Install Gentoo"))
-    {
+    if (length != sizeof("Install Gentoo")) {
         return;
     }
-    if(memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
-    //if the request contained the message of peace the person is obviously a friend so we add him.
+
+    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
+        //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
         m_addfriend_norequest(m, public_key);
     }
 }
 
-void print_message(Messenger *m, int friendnumber, uint8_t * string, uint16_t length, void* userdata)
+void print_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
     printf("Message with length %u received from %u: %s \n", length, friendnumber, string);
-    m_sendmessage(m, friendnumber, (uint8_t*)"Test1", 6);
+    m_sendmessage(m, friendnumber, (uint8_t *)"Test1", 6);
 }
 
 int main(int argc, char *argv[])
@@ -94,19 +96,24 @@ int main(int argc, char *argv[])
     }
 
     m = initMessenger();
-    if( !m ){
+
+    if ( !m ) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
         exit(0);
     }
 
-    if(argc > 3) {
+    if (argc > 3) {
         IP_Port bootstrap_ip_port;
         bootstrap_ip_port.port = htons(atoi(argv[2]));
         bootstrap_ip_port.ip.i = inet_addr(argv[1]);
         DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
     } else {
         FILE *file = fopen(argv[1], "rb");
-        if ( file==NULL ){return 1;}
+
+        if ( file == NULL ) {
+            return 1;
+        }
+
         int read;
         uint8_t buffer[128000];
         read = fread(buffer, 1, 128000, file);
@@ -114,6 +121,7 @@ int main(int argc, char *argv[])
         fclose(file);
 
     }
+
     m_callback_friendrequest(m, print_request, NULL);
     m_callback_friendmessage(m, print_message, NULL);
 
@@ -121,39 +129,52 @@ int main(int argc, char *argv[])
     uint32_t i;
     uint8_t address[FRIEND_ADDRESS_SIZE];
     getaddress(m, address);
-    for(i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
-        if(address[i] < 16)
+
+    for (i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
+        if (address[i] < 16)
             printf("0");
-        printf("%hhX",address[i]);
+
+        printf("%hhX", address[i]);
     }
 
     setname(m, (uint8_t *)"Anon", 5);
 
     char temp_id[128];
     printf("\nEnter the address of the friend you wish to add (38 bytes HEX format):\n");
-    if(scanf("%s", temp_id) != 1) {
+
+    if (scanf("%s", temp_id) != 1) {
         return 1;
     }
-    int num = m_addfriend(m, hex_string_to_bin(temp_id), (uint8_t*)"Install Gentoo", sizeof("Install Gentoo"));
+
+    int num = m_addfriend(m, hex_string_to_bin(temp_id), (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
 
     perror("Initialization");
 
-    while(1) {
+    while (1) {
         uint8_t name[128];
         getname(m, num, name);
         printf("%s\n", name);
 
-        m_sendmessage(m, num, (uint8_t*)"Test", 5);
+        m_sendmessage(m, num, (uint8_t *)"Test", 5);
         doMessenger(m);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
-        if ( file==NULL ){return 1;}
-        uint8_t * buffer = malloc(Messenger_size(m));
+
+        if ( file == NULL ) {
+            return 1;
+        }
+
+        uint8_t *buffer = malloc(Messenger_size(m));
         Messenger_save(m, buffer);
         size_t write_result = fwrite(buffer, 1, Messenger_size(m), file);
-        if (write_result < Messenger_size(m)) {return 1;}
+
+        if (write_result < Messenger_size(m)) {
+            return 1;
+        }
+
         free(buffer);
         fclose(file);
     }
+
     cleanupMessenger(m);
 }

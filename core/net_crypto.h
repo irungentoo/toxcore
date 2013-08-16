@@ -38,14 +38,14 @@ extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 #define ENCRYPTION_PADDING (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 
 /* returns zero if the buffer contains only zeros */
-uint8_t crypto_iszero(uint8_t* buffer, uint32_t blen);
+uint8_t crypto_iszero(uint8_t *buffer, uint32_t blen);
 
 /* encrypts plain of length length to encrypted of length + 16 using the
     public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce
     return -1 if there was a problem.
     return length of encrypted data if everything was fine. */
 int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                    uint8_t *plain, uint32_t length, uint8_t *encrypted);
+                 uint8_t *plain, uint32_t length, uint8_t *encrypted);
 
 
 /* decrypts encrypted of length length to plain of length length - 16 using the
@@ -53,15 +53,15 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     return -1 if there was a problem(decryption failed)
     return length of plain data if everything was fine. */
 int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                    uint8_t *encrypted, uint32_t length, uint8_t *plain);
+                 uint8_t *encrypted, uint32_t length, uint8_t *plain);
 
-/* Fast encrypt/decrypt operations. Use if this is not a one-time communication. 
+/* Fast encrypt/decrypt operations. Use if this is not a one-time communication.
    encrypt_precompute does the shared-key generation once so it does not have
    to be preformed on every encrypt/decrypt. */
 void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key);
 
 /* Fast encrypt. Depends on enc_key from encrypt_precompute. */
-int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce, 
+int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
                       uint8_t *plain, uint32_t length, uint8_t *encrypted);
 
 /* Fast decrypt. Depends on enc_ley from encrypt_precompute. */
@@ -87,10 +87,10 @@ int write_cryptpacket(int crypt_connection_id, uint8_t *data, uint32_t length);
     request_id is the id of the request (32 = friend request, 254 = ping request)
     returns -1 on failure
     returns the length of the created packet on success */
-int create_request(uint8_t *packet, uint8_t * public_key, uint8_t *data, uint32_t length, uint8_t request_id);
+int create_request(uint8_t *packet, uint8_t *public_key, uint8_t *data, uint32_t length, uint8_t request_id);
 
 
-typedef int (*cryptopacket_handler_callback)(IP_Port ip_port, uint8_t * source_pubkey, uint8_t *data, uint32_t len);
+typedef int (*cryptopacket_handler_callback)(IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
 /* Function to call when request beginning with byte is received */
 void cryptopacket_registerhandler(uint8_t byte, cryptopacket_handler_callback cb);
 
@@ -111,12 +111,12 @@ int crypto_kill(int crypt_connection_id);
     and the session public key for the connection in session_key
     to accept it see: accept_crypto_inbound(...)
     to refuse it just call kill_connection(...) on the connection id */
-int crypto_inbound(uint8_t *public_key, uint8_t * secret_nonce, uint8_t *session_key);
+int crypto_inbound(uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key);
 
 /* accept an incoming connection using the parameters provided by crypto_inbound
     return -1 if not successful
     returns the crypt_connection_id if successful */
-int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t * secret_nonce, uint8_t *session_key);
+int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key);
 
 /* return 0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet
     (we have received a handshake but no empty data packet), 3 if the connection is established.
@@ -130,11 +130,11 @@ void new_keys(void);
 
 /* save the public and private keys to the keys array
     Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES */
-void save_keys(uint8_t * keys);
+void save_keys(uint8_t *keys);
 
 /* load the public and private keys from the keys array
     Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES */
-void load_keys(uint8_t * keys);
+void load_keys(uint8_t *keys);
 
 /* run this to (re)initialize net_crypto
     sets all the global connection variables to their default values. */

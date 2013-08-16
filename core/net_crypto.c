@@ -65,14 +65,16 @@ uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
 {
     uint8_t check = 0;
     uint32_t i;
+
     for (i = 0; i < length; ++i) {
         check |= mem[i];
     }
+
     return check; // We return zero if mem is made out of zeroes.
 }
 
 /* Precomputes the shared key from their public_key and our secret_key.
-   This way we can avoid an expensive elliptic curve scalar multiply for each 
+   This way we can avoid an expensive elliptic curve scalar multiply for each
    encrypt/decrypt operation.
    enc_key has to be crypto_box_BEFORENMBYTES bytes long. */
 void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key)
@@ -81,7 +83,7 @@ void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_k
 }
 
 /* Fast encrypt. Depends on enc_key from encrypt_precompute. */
-int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce, 
+int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
                       uint8_t *plain, uint32_t length, uint8_t *encrypted)
 {
     if (length + crypto_box_MACBYTES > MAX_DATA_SIZE || length == 0)
@@ -94,7 +96,7 @@ int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
 
     crypto_box_afternm(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce, enc_key);
 
-    if(crypto_iszero(temp_encrypted, crypto_box_BOXZEROBYTES) != 0)
+    if (crypto_iszero(temp_encrypted, crypto_box_BOXZEROBYTES) != 0)
         return -1;
 
     /* unpad the encrypted message */
@@ -118,9 +120,9 @@ int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
                                 nonce, enc_key) == -1)
         return -1;
 
-    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero 
+    /* if decryption is successful the first crypto_box_ZEROBYTES of the message will be zero
        apparently memcmp should not be used so we do this instead:*/
-    if(crypto_iszero(temp_plain, crypto_box_ZEROBYTES) != 0)
+    if (crypto_iszero(temp_plain, crypto_box_ZEROBYTES) != 0)
         return -1;
 
     /* unpad the plain message */
@@ -148,9 +150,11 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 static void increment_nonce(uint8_t *nonce)
 {
     uint32_t i;
+
     for (i = 0; i < crypto_box_NONCEBYTES; ++i) {
         ++nonce[i];
-        if(nonce[i] != 0)
+
+        if (nonce[i] != 0)
             break;
     }
 }
@@ -159,6 +163,7 @@ static void increment_nonce(uint8_t *nonce)
 void random_nonce(uint8_t *nonce)
 {
     uint32_t i, temp;
+
     for (i = 0; i < crypto_box_NONCEBYTES / 4; ++i) {
         temp = random_int();
         memcpy(nonce + 4 * i, &temp, 4);
@@ -172,21 +177,28 @@ int read_cryptpacket(int crypt_connection_id, uint8_t *data)
 {
     if (crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
         return 0;
+
     if (crypto_connections[crypt_connection_id].status != CONN_ESTABLISHED)
         return 0;
+
     uint8_t temp_data[MAX_DATA_SIZE];
     int length = read_packet(crypto_connections[crypt_connection_id].number, temp_data);
+
     if (length == 0)
         return 0;
+
     if (temp_data[0] != 3)
         return -1;
+
     int len = decrypt_data_fast(crypto_connections[crypt_connection_id].shared_key,
-                                crypto_connections[crypt_connection_id].recv_nonce, 
+                                crypto_connections[crypt_connection_id].recv_nonce,
                                 temp_data + 1, length - 1, data);
+
     if (len != -1) {
         increment_nonce(crypto_connections[crypt_connection_id].recv_nonce);
         return len;
     }
+
     return -1;
 }
 
@@ -196,19 +208,26 @@ int write_cryptpacket(int crypt_connection_id, uint8_t *data, uint32_t length)
 {
     if (crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
         return 0;
+
     if (length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES > MAX_DATA_SIZE - 1)
         return 0;
+
     if (crypto_connections[crypt_connection_id].status != CONN_ESTABLISHED)
         return 0;
+
     uint8_t temp_data[MAX_DATA_SIZE];
     int len = encrypt_data_fast(crypto_connections[crypt_connection_id].shared_key,
-                                crypto_connections[crypt_connection_id].sent_nonce, 
+                                crypto_connections[crypt_connection_id].sent_nonce,
                                 data, length, temp_data + 1);
+
     if (len == -1)
         return 0;
+
     temp_data[0] = 3;
+
     if (write_packet(crypto_connections[crypt_connection_id].number, temp_data, len + 1) == 0)
         return 0;
+
     increment_nonce(crypto_connections[crypt_connection_id].sent_nonce);
     return 1;
 }
@@ -223,6 +242,7 @@ int create_request(uint8_t *packet, uint8_t *public_key, uint8_t *data, uint32_t
 {
     if (MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING)
         return -1;
+
     uint8_t nonce[crypto_box_NONCEBYTES];
     uint8_t temp[MAX_DATA_SIZE];
     memcpy(temp + 1, data, length);
@@ -230,8 +250,10 @@ int create_request(uint8_t *packet, uint8_t *public_key, uint8_t *data, uint32_t
     random_nonce(nonce);
     int len = encrypt_data(public_key, self_secret_key, nonce, temp, length + 1,
                            1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
+
     if (len == -1)
         return -1;
+
     packet[0] = 32;
     memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, self_public_key, crypto_box_PUBLICKEYBYTES);
@@ -248,16 +270,19 @@ static int handle_request(uint8_t *public_key, uint8_t *data, uint8_t *request_i
 {
 
     if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
-        length <= MAX_DATA_SIZE + ENCRYPTION_PADDING &&
-        memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            length <= MAX_DATA_SIZE + ENCRYPTION_PADDING &&
+            memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
         memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
         uint8_t nonce[crypto_box_NONCEBYTES];
         uint8_t temp[MAX_DATA_SIZE];
         memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
-        int len1 = decrypt_data(public_key, self_secret_key, nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
+        int len1 = decrypt_data(public_key, self_secret_key, nonce,
+                                packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
                                 length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
-        if(len1 == -1 || len1 == 0)
+
+        if (len1 == -1 || len1 == 0)
             return -1;
+
         request_id[0] = temp[0];
         --len1;
         memcpy(data, temp + 1, len1);
@@ -273,27 +298,32 @@ void cryptopacket_registerhandler(uint8_t byte, cryptopacket_handler_callback cb
     cryptopackethandlers[byte] = cb;
 }
 
-static int cryptopacket_handle(IP_Port source, uint8_t * packet, uint32_t length)
+static int cryptopacket_handle(IP_Port source, uint8_t *packet, uint32_t length)
 {
     if (packet[0] == 32) {
         if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
-            length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
+                length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
             return 1;
+
         if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t data[MAX_DATA_SIZE];
             uint8_t number;
             int len = handle_request(public_key, data, &number, packet, length);
+
             if (len == -1 || len == 0)
                 return 1;
+
             if (!cryptopackethandlers[number]) return 1;
+
             cryptopackethandlers[number](source, public_key, data, len);
-            
+
         } else { /* if request is not for us, try routing it. */
-            if(route_packet(packet + 1, packet, length) == length)
+            if (route_packet(packet + 1, packet, length) == length)
                 return 0;
         }
     }
+
     return 1;
 }
 
@@ -312,8 +342,10 @@ static int send_cryptohandshake(int connection_id, uint8_t *public_key, uint8_t 
 
     int len = encrypt_data(public_key, self_secret_key, nonce, temp, crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
                            1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + temp_data);
+
     if (len == -1)
         return 0;
+
     temp_data[0] = 2;
     memcpy(temp_data + 1, self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(temp_data + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
@@ -324,15 +356,18 @@ static int send_cryptohandshake(int connection_id, uint8_t *public_key, uint8_t 
    return 1 if successful
    return 0 if failure */
 static int handle_cryptohandshake(uint8_t *public_key, uint8_t *secret_nonce,
-                           uint8_t *session_key, uint8_t *data, uint16_t length)
+                                  uint8_t *session_key, uint8_t *data, uint16_t length)
 {
     int pad = (- crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
+
     if (length != 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES
-        + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + pad) {
+            + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + pad) {
         return 0;
     }
+
     if (data[0] != 2)
         return 0;
+
     uint8_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
 
     memcpy(public_key, data + 1, crypto_box_PUBLICKEYBYTES);
@@ -355,11 +390,13 @@ static int handle_cryptohandshake(uint8_t *public_key, uint8_t *secret_nonce,
 static int getcryptconnection_id(uint8_t *public_key)
 {
     uint32_t i;
+
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
         if (crypto_connections[i].status != CONN_NO_CONNECTION)
             if (memcmp(public_key, crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
                 return i;
     }
+
     return -1;
 }
 
@@ -370,16 +407,21 @@ int crypto_connect(uint8_t *public_key, IP_Port ip_port)
 {
     uint32_t i;
     int id = getcryptconnection_id(public_key);
+
     if (id != -1) {
         IP_Port c_ip = connection_ip(crypto_connections[id].number);
-        if(c_ip.ip.i == ip_port.ip.i && c_ip.port == ip_port.port)
+
+        if (c_ip.ip.i == ip_port.ip.i && c_ip.port == ip_port.port)
             return -1;
     }
+
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
         if (crypto_connections[i].status == CONN_NO_CONNECTION) {
             int id = new_connection(ip_port);
+
             if (id == -1)
                 return -1;
+
             crypto_connections[i].number = id;
             crypto_connections[i].status = CONN_HANDSHAKE_SENT;
             random_nonce(crypto_connections[i].recv_nonce);
@@ -391,9 +433,11 @@ int crypto_connect(uint8_t *public_key, IP_Port ip_port)
                 increment_nonce(crypto_connections[i].recv_nonce);
                 return i;
             }
+
             return -1; /* this should never happen. */
         }
     }
+
     return -1;
 }
 
@@ -407,6 +451,7 @@ int crypto_connect(uint8_t *public_key, IP_Port ip_port)
 int crypto_inbound(uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
 {
     uint32_t i;
+
     for (i = 0; i < MAX_INCOMING; ++i) {
         if (incoming_connections[i] != -1) {
             if (is_connected(incoming_connections[i]) == 4 || is_connected(incoming_connections[i]) == 0) {
@@ -414,9 +459,11 @@ int crypto_inbound(uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_
                 incoming_connections[i] = -1;
                 continue;
             }
+
             if (id_packet(incoming_connections[i]) == 2) {
                 uint8_t temp_data[MAX_DATA_SIZE];
                 uint16_t len = read_packet(incoming_connections[i], temp_data);
+
                 if (handle_cryptohandshake(public_key, secret_nonce, session_key, temp_data, len)) {
                     int connection_id = incoming_connections[i];
                     incoming_connections[i] = -1; /* remove this connection from the incoming connection list. */
@@ -425,6 +472,7 @@ int crypto_inbound(uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_
             }
         }
     }
+
     return -1;
 }
 
@@ -435,13 +483,15 @@ int crypto_kill(int crypt_connection_id)
 {
     if (crypt_connection_id < 0 || crypt_connection_id >= MAX_CRYPTO_CONNECTIONS)
         return 1;
+
     if (crypto_connections[crypt_connection_id].status != CONN_NO_CONNECTION) {
         crypto_connections[crypt_connection_id].status = CONN_NO_CONNECTION;
         kill_connection(crypto_connections[crypt_connection_id].number);
-        memset(&crypto_connections[crypt_connection_id], 0 ,sizeof(Crypto_Connection));
+        memset(&crypto_connections[crypt_connection_id], 0 , sizeof(Crypto_Connection));
         crypto_connections[crypt_connection_id].number = ~0;
         return 0;
     }
+
     return 1;
 }
 
@@ -451,15 +501,17 @@ int crypto_kill(int crypt_connection_id)
 int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
 {
     uint32_t i;
+
     if (connection_id == -1)
         return -1;
+
     /*
     if(getcryptconnection_id(public_key) != -1)
     {
         return -1;
     }*/
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
-        if(crypto_connections[i].status == CONN_NO_CONNECTION) {
+        if (crypto_connections[i].status == CONN_NO_CONNECTION) {
             crypto_connections[i].number = connection_id;
             crypto_connections[i].status = CONN_NOT_CONFIRMED;
             random_nonce(crypto_connections[i].recv_nonce);
@@ -474,17 +526,19 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
                                      crypto_connections[i].sessionpublic_key) == 1) {
                 increment_nonce(crypto_connections[i].recv_nonce);
                 uint32_t zero = 0;
-                encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
-                                   crypto_connections[i].sessionsecret_key, 
+                encrypt_precompute(crypto_connections[i].peersessionpublic_key,
+                                   crypto_connections[i].sessionsecret_key,
                                    crypto_connections[i].shared_key);
                 crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                 write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
                 crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
                 return i;
             }
+
             return -1; /* this should never happen. */
         }
     }
+
     return -1;
 }
 
@@ -495,6 +549,7 @@ int is_cryptoconnected(int crypt_connection_id)
 {
     if (crypt_connection_id >= 0 && crypt_connection_id < MAX_CRYPTO_CONNECTIONS)
         return crypto_connections[crypt_connection_id].status;
+
     return CONN_NO_CONNECTION;
 }
 
@@ -502,7 +557,7 @@ int is_cryptoconnected(int crypt_connection_id)
    Only call this function the first time the program starts. */
 void new_keys(void)
 {
-    crypto_box_keypair(self_public_key,self_secret_key);
+    crypto_box_keypair(self_public_key, self_secret_key);
 }
 
 /* save the public and private keys to the keys array
@@ -528,12 +583,14 @@ void load_keys(uint8_t *keys)
 static int new_incoming(int id)
 {
     uint32_t i;
+
     for (i = 0; i < MAX_INCOMING; ++i) {
         if (incoming_connections[i] == -1) {
             incoming_connections[i] = id;
             return 0;
         }
     }
+
     return 1;
 }
 
@@ -542,9 +599,11 @@ static int new_incoming(int id)
 static void handle_incomings(void)
 {
     int income;
+
     while (1) {
         income = incoming_connection();
-        if(income == -1 || new_incoming(income) )
+
+        if (income == -1 || new_incoming(income) )
             break;
     }
 }
@@ -553,6 +612,7 @@ static void handle_incomings(void)
 static void receive_crypto(void)
 {
     uint32_t i;
+
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
         if (crypto_connections[i].status == CONN_HANDSHAKE_SENT) {
             uint8_t temp_data[MAX_DATA_SIZE];
@@ -560,19 +620,22 @@ static void receive_crypto(void)
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t session_key[crypto_box_PUBLICKEYBYTES];
             uint16_t len;
+
             if (id_packet(crypto_connections[i].number) == 1)
                 /* if the packet is a friend request drop it (because we are already friends) */
                 len = read_packet(crypto_connections[i].number, temp_data);
+
             if (id_packet(crypto_connections[i].number) == 2) { /* handle handshake packet. */
                 len = read_packet(crypto_connections[i].number, temp_data);
+
                 if (handle_cryptohandshake(public_key, secret_nonce, session_key, temp_data, len)) {
                     if (memcmp(public_key, crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
                         memcpy(crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
                         memcpy(crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
                         increment_nonce(crypto_connections[i].sent_nonce);
                         uint32_t zero = 0;
-                        encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
-                                           crypto_connections[i].sessionsecret_key, 
+                        encrypt_precompute(crypto_connections[i].peersessionpublic_key,
+                                           crypto_connections[i].sessionsecret_key,
                                            crypto_connections[i].shared_key);
                         crypto_connections[i].status = CONN_ESTABLISHED; /* connection status needs to be 3 for write_cryptpacket() to work */
                         write_cryptpacket(i, ((uint8_t *)&zero), sizeof(zero));
@@ -583,6 +646,7 @@ static void receive_crypto(void)
                 crypto_kill(crypto_connections[i].number);
 
         }
+
         if (crypto_connections[i].status == CONN_NOT_CONFIRMED) {
             if (id_packet(crypto_connections[i].number) == 3) {
                 uint8_t temp_data[MAX_DATA_SIZE];
@@ -592,10 +656,11 @@ static void receive_crypto(void)
                                        crypto_connections[i].sessionsecret_key,
                                        crypto_connections[i].recv_nonce, temp_data + 1, length - 1, data);
                 uint32_t zero = 0;
+
                 if (len == sizeof(uint32_t) && memcmp(((uint8_t *)&zero), data, sizeof(uint32_t)) == 0) {
                     increment_nonce(crypto_connections[i].recv_nonce);
-                    encrypt_precompute(crypto_connections[i].peersessionpublic_key, 
-                                       crypto_connections[i].sessionsecret_key, 
+                    encrypt_precompute(crypto_connections[i].peersessionpublic_key,
+                                       crypto_connections[i].sessionsecret_key,
                                        crypto_connections[i].shared_key);
                     crypto_connections[i].status = CONN_ESTABLISHED;
 
@@ -603,7 +668,7 @@ static void receive_crypto(void)
                     kill_connection_in(crypto_connections[i].number, 3000000);
                 } else
                     crypto_kill(crypto_connections[i].number); // This should not happen kill the connection if it does
-            } else if(id_packet(crypto_connections[i].number) != -1)
+            } else if (id_packet(crypto_connections[i].number) != -1)
                 /* This should not happen
                    kill the connection if it does */
                 crypto_kill(crypto_connections[i].number);
@@ -615,10 +680,11 @@ static void receive_crypto(void)
    sets all the global connection variables to their default values. */
 void initNetCrypto(void)
 {
-    memset(crypto_connections, 0 ,sizeof(crypto_connections));
-    memset(incoming_connections, -1 ,sizeof(incoming_connections));
+    memset(crypto_connections, 0 , sizeof(crypto_connections));
+    memset(incoming_connections, -1 , sizeof(incoming_connections));
     networking_registerhandler(32, &cryptopacket_handle);
     uint32_t i;
+
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
         crypto_connections[i].number = ~0;
 }
@@ -626,6 +692,7 @@ void initNetCrypto(void)
 static void killTimedout(void)
 {
     uint32_t i;
+
     for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
         if (crypto_connections[i].status != CONN_NO_CONNECTION && is_connected(crypto_connections[i].number) == 4)
             crypto_connections[i].status = CONN_TIMED_OUT;

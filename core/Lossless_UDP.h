@@ -33,7 +33,7 @@ extern "C" {
 /* maximum length of the data in the data packets */
 #define MAX_DATA_SIZE 1024
 
-/* 
+/*
  * Initialize a new connection to ip_port
  * Returns an integer corresponding to the connection id.
  * Return -1 if it could not initialize the connection.
@@ -41,51 +41,51 @@ extern "C" {
  */
 int new_connection(IP_Port ip_port);
 
-/* 
+/*
  * Get connection id from IP_Port.
  * Return -1 if there are no connections like we are looking for.
  * Return id if it found it .
  */
 int getconnection_id(IP_Port ip_port);
 
-/* 
+/*
  * Returns an int corresponding to the next connection in our imcoming connection list
  * Return -1 if there are no new incoming connections in the list.
  */
 int incoming_connection(void);
 
-/* 
+/*
  * Return -1 if it could not kill the connection.
  * Return 0 if killed successfully
  */
 int kill_connection(int connection_id);
 
-/* 
+/*
  * Kill connection in seconds seconds.
  * Return -1 if it can not kill the connection.
  * Return 0 if it will kill it
  */
 int kill_connection_in(int connection_id, uint32_t seconds);
 
-/* 
+/*
  * Returns the ip_port of the corresponding connection.
  * Return 0 if there is no such connection.
  */
 IP_Port connection_ip(int connection_id);
 
-/* 
- * Returns the id of the next packet in the queue 
- * Return -1 if no packet in queue 
+/*
+ * Returns the id of the next packet in the queue
+ * Return -1 if no packet in queue
  */
 char id_packet(int connection_id);
 
-/* 
+/*
  * Return 0 if there is no received data in the buffer.
- * Return length of received packet if successful 
+ * Return length of received packet if successful
  */
 int read_packet(int connection_id, uint8_t *data);
 
-/* 
+/*
  * Return 0 if data could not be put in packet queue
  * Return 1 if data was put into the queue
  */
@@ -94,8 +94,8 @@ int write_packet(int connection_id, uint8_t *data, uint32_t length);
 /* Returns the number of packets in the queue waiting to be successfully sent. */
 uint32_t sendqueue(int connection_id);
 
-/* 
- * returns the number of packets in the queue waiting to be successfully 
+/*
+ * returns the number of packets in the queue waiting to be successfully
  * read with read_packet(...)
  */
 uint32_t recvqueue(int connection_id);
@@ -112,7 +112,7 @@ int is_connected(int connection_id);
 /* Call this function a couple times per second It's the main loop. */
 void doLossless_UDP(void);
 
-/* 
+/*
  * This function sets up LosslessUDP packet handling.
  */
 void LosslessUDP_init(void);

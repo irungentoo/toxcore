@@ -4,7 +4,7 @@
 #include "timer.h"
 #include "network.h"
 
-/* 
+/*
 A nested linked list increases efficiency of insertions.
 Depending on the number of timers we have, we might need to have nested linked lists
 in order to improve insertion efficiency.
@@ -46,35 +46,37 @@ enum timer_state {
     STATE_CALLBACK
 };
 
-struct timer
-{
+struct timer {
     enum timer_state state;
-    timer* _prev;
-    timer* _next;
+    timer *_prev;
+    timer *_next;
     timer_callback cb;
-    void* userdata;
+    void *userdata;
     uint64_t deadline;
 };
 
-static timer* timer_main_queue;
-static timer* timer_us_queue; /* hi-speed queue */
+static timer *timer_main_queue;
+static timer *timer_us_queue; /* hi-speed queue */
 
-inline static void timer_dequeue(timer* t, timer** queue)
+inline static void timer_dequeue(timer *t, timer **queue)
 {
     if (t->state == STATE_INACTIVE) return; /* not in a queue */
-    
+
     if (t->_prev) {
         t->_prev->_next = t->_next;
     } else {
         *queue = t->_next;
     }
+
     if (t->_next) t->_next->_prev = t->_prev;
+
     t->state = STATE_INACTIVE;
 }
 
-static void timer_enqueue(timer* t, timer** queue, timer* prev)
+static void timer_enqueue(timer *t, timer **queue, timer *prev)
 {
     t->state = STATE_ACTIVE;
+
     while (true) {
         if (!*queue) {
             t->_next = 0;
@@ -104,22 +106,24 @@ void timer_init()
 }
 
 /* Do not depend on fields being zeroed */
-static timer* timer_pool; /* timer_pool is SINGLY LINKED!! */
+static timer *timer_pool; /* timer_pool is SINGLY LINKED!! */
 
-timer* new_timer(void)
+timer *new_timer(void)
 {
-    timer* ret;
+    timer *ret;
+
     if (timer_pool) {
         ret = timer_pool;
         timer_pool = timer_pool->_next;
     } else {
         ret = calloc(1, sizeof(struct timer));
     }
+
     ret->state = STATE_INACTIVE;
     return ret;
 }
 
-void delete_timer(timer* t)
+void delete_timer(timer *t)
 {
     timer_dequeue(t, &timer_main_queue);
     t->_next = timer_pool;
@@ -127,93 +131,99 @@ void delete_timer(timer* t)
     timer_pool = t;
 }
 
-void timer_setup(timer* t, timer_callback cb, void* userarg)
+void timer_setup(timer *t, timer_callback cb, void *userarg)
 {
     t->cb = cb;
     t->userdata = userarg;
 }
 
-void* timer_get_userdata(timer* t)
+void *timer_get_userdata(timer *t)
 {
     return t->userdata;
 }
 
-static void timer_delay_us(timer* t, int us)
+static void timer_delay_us(timer *t, int us)
 {
     t->deadline += us;
-    timer** queue = t->_prev ? &(t->_prev->_next) : &timer_main_queue;
+    timer **queue = t->_prev ? &(t->_prev->_next) : &timer_main_queue;
     timer_dequeue(t, &timer_main_queue);
     timer_enqueue(t, queue, t->_prev);
 }
 
-/* Starts the timer so that it's called in sec seconds in the future. 
+/* Starts the timer so that it's called in sec seconds in the future.
  * A non-positive value of sec results in the callback being called immediately.
- * This function may be called again after a timer has been started to adjust 
+ * This function may be called again after a timer has been started to adjust
  * the expiry time. */
-void timer_start(timer* t, int sec)
+void timer_start(timer *t, int sec)
 {
     uint64_t newdeadline = current_time() + sec * US_PER_SECOND;
-    if (timer_is_active(t)){
+
+    if (timer_is_active(t)) {
         if (t->deadline < newdeadline) {
             timer_delay_us(t, newdeadline - t->deadline);
             return;
         }
+
         timer_dequeue(t, &timer_main_queue);
     }
+
     t->deadline = newdeadline;
     timer_enqueue(t, &timer_main_queue, 0);
 }
 
 /* Stops the timer. Returns -1 if the timer was not active. */
-int timer_stop(timer* t)
+int timer_stop(timer *t)
 {
     int ret = timer_is_active(t) ? -1 : 0;
     timer_dequeue(t, &timer_main_queue);
     return ret;
 }
 
-/* Adds additionalsec seconds to the timer. 
+/* Adds additionalsec seconds to the timer.
  * Returns -1 and does nothing if the timer was not active. */
-int timer_delay(timer* t, int additonalsec)
+int timer_delay(timer *t, int additonalsec)
 {
     if (!timer_is_active(t)) return -1;
+
     timer_delay_us(t, additonalsec * US_PER_SECOND);
     return 0;
 }
 
-static uint64_t timer_diff(timer* t, uint64_t time)
+static uint64_t timer_diff(timer *t, uint64_t time)
 {
     if (t->deadline <= time) return 0;
+
     return time - t->deadline;
 }
 
 /* Returns the time remaining on a timer in seconds.
  * Returns -1 if the timer is not active.
  * Returns 0 if the timer has expired and will be called upon the next call to timer_poll. */
-int timer_time_remaining(timer* t)
+int timer_time_remaining(timer *t)
 {
     if (!timer_is_active(t)) return -1;
+
     return timer_diff(t, current_time()) / US_PER_SECOND;
 }
 
-bool timer_is_active(timer* t)
+bool timer_is_active(timer *t)
 {
     return t->state != STATE_INACTIVE;
 }
 
 /* Single-use timer.
  * Creates a new timer, preforms setup and starts it. */
-void timer_single(timer_callback cb, void* userarg, int sec)
+void timer_single(timer_callback cb, void *userarg, int sec)
 {
-    timer* t = new_timer();
+    timer *t = new_timer();
     timer_setup(t, cb, userarg);
     timer_start(t, sec);
 }
 
 /* Single-use microsecond timer. */
-void timer_us(timer_callback cb, void* userarg, int us)
+void timer_us(timer_callback cb, void *userarg, int us)
 {
-    timer* t = new_timer();
+    timer *t = new_timer();
     timer_setup(t, cb, userarg);
     t->deadline = current_time() + us;
     t->state = STATE_ACTIVE;
@@ -228,26 +238,30 @@ void timer_poll(void)
     /* Handle millisecond timers */
     while (timer_us_queue) {
         if (timer_diff(timer_us_queue, time) != 0) break;
-        timer* t = timer_us_queue;
+
+        timer *t = timer_us_queue;
         timer_dequeue(t, &timer_us_queue);
         t->cb(0, t->userdata);
         delete_timer(t);
     }
 
-    if (time - prevtime > US_PER_SECOND || prevtime == 0 || prevtime > time) { 
+    if (time - prevtime > US_PER_SECOND || prevtime == 0 || prevtime > time) {
         /* time moving backwards is just a sanity check */
         prevtime = time;
-        
+
         while (timer_main_queue) {
             if (timer_diff(timer_main_queue, time) != 0) break;
-            timer* t = timer_main_queue;
+
+            timer *t = timer_main_queue;
             t->state = STATE_CALLBACK;
             int rv = t->cb(t, t->userdata);
+
             if (rv != 0) {
                 timer_dequeue(t, &timer_main_queue);
                 delete_timer(t);
                 continue;
             }
+
             if (t->state != STATE_ACTIVE) {
                 timer_dequeue(t, &timer_main_queue);
             }
@@ -257,19 +271,20 @@ void timer_poll(void)
 
 /*** Internal Testing ***/
 
-/* I do not want to expose internals to the public, 
+/* I do not want to expose internals to the public,
  * which is why internals testing is done this way. */
-void timer_internal_tests(bool (*assert)(bool, char*))
+void timer_internal_tests(bool (*assert)(bool, char *))
 {
-    
+
 }
 
 void timer_debug_print()
 {
-    timer* t = timer_main_queue;
+    timer *t = timer_main_queue;
     printf("Queue:\n");
+
     while (t) {
-        printf("%" PRIu64 " (%" PRIu64 ") : %s\n", t->deadline, t->deadline/US_PER_SECOND, (char*)t->userdata);
+        printf("%" PRIu64 " (%" PRIu64 ") : %s\n", t->deadline, t->deadline / US_PER_SECOND, (char *)t->userdata);
         t = t->_next;
     }
 }

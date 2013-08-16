@@ -36,14 +36,16 @@ int friend_id_num = 0;
 
 Messenger *m;
 
-unsigned char * hex_string_to_bin(char hex_string[])
+unsigned char *hex_string_to_bin(char hex_string[])
 {
     size_t len = strlen(hex_string);
     unsigned char *val = calloc(1, len);
     char *pos = hex_string;
     int i = 0;
-    for(i = 0; i < len; ++i, pos+=2)
-        sscanf(pos,"%2hhx",&val[i]);
+
+    for (i = 0; i < len; ++i, pos += 2)
+        sscanf(pos, "%2hhx", &val[i]);
+
     return val;
 }
 
@@ -65,17 +67,17 @@ START_TEST(test_m_get_userstatus_size)
 {
     int rc = 0;
     ck_assert_msg((m_get_statusmessage_size(m, -1) == -1),
-                "m_get_statusmessage_size did NOT catch an argument of -1");
+                  "m_get_statusmessage_size did NOT catch an argument of -1");
     ck_assert_msg((m_get_statusmessage_size(m, REALLY_BIG_NUMBER) == -1),
-            "m_get_statusmessage_size did NOT catch the following argument: %d\n",
-                                                            REALLY_BIG_NUMBER);
+                  "m_get_statusmessage_size did NOT catch the following argument: %d\n",
+                  REALLY_BIG_NUMBER);
     rc = m_get_statusmessage_size(m, friend_id_num);
 
     /* this WILL error if the original m_addfriend_norequest() failed */
     ck_assert_msg((rc > 0 && rc <= MAX_STATUSMESSAGE_LENGTH),
-        "m_get_statusmessage_size is returning out of range values!\n"
-        "(this can be caused by the error of m_addfriend_norequest"
-        " in the beginning of the suite)\n");
+                  "m_get_statusmessage_size is returning out of range values!\n"
+                  "(this can be caused by the error of m_addfriend_norequest"
+                  " in the beginning of the suite)\n");
 }
 END_TEST
 
@@ -85,11 +87,11 @@ START_TEST(test_m_set_userstatus)
     uint16_t good_length = strlen(status);
     uint16_t bad_length = REALLY_BIG_NUMBER;
 
-    if(m_set_statusmessage(m, (uint8_t *)status, bad_length) != -1)
+    if (m_set_statusmessage(m, (uint8_t *)status, bad_length) != -1)
         ck_abort_msg("m_set_userstatus did NOT catch the following length: %d\n",
-                                                            REALLY_BIG_NUMBER);
+                     REALLY_BIG_NUMBER);
 
-    if((m_set_statusmessage(m, (uint8_t *)status, good_length)) != 0)
+    if ((m_set_statusmessage(m, (uint8_t *)status, good_length)) != 0)
         ck_abort_msg("m_set_userstatus did NOT return 0 on the following length: %d\n"
                      "MAX_STATUSMESSAGE_LENGTH: %d\n", good_length, MAX_STATUSMESSAGE_LENGTH);
 }
@@ -98,20 +100,20 @@ END_TEST
 START_TEST(test_m_friendstatus)
 {
     ck_assert_msg((m_friendstatus(m, -1) == NOFRIEND),
-        "m_friendstatus did NOT catch an argument of -1.\n");
+                  "m_friendstatus did NOT catch an argument of -1.\n");
     ck_assert_msg((m_friendstatus(m, REALLY_BIG_NUMBER) == NOFRIEND),
-        "m_friendstatus did NOT catch an argument of %d.\n",
-                                        REALLY_BIG_NUMBER);
+                  "m_friendstatus did NOT catch an argument of %d.\n",
+                  REALLY_BIG_NUMBER);
 }
 END_TEST
 
 START_TEST(test_m_delfriend)
 {
     ck_assert_msg((m_delfriend(m, -1) == -1),
-        "m_delfriend did NOT catch an argument of -1\n");
+                  "m_delfriend did NOT catch an argument of -1\n");
     ck_assert_msg((m_delfriend(m, REALLY_BIG_NUMBER) == -1),
-        "m_delfriend did NOT catch the following number: %d\n",
-                                            REALLY_BIG_NUMBER);
+                  "m_delfriend did NOT catch the following number: %d\n",
+                  REALLY_BIG_NUMBER);
 }
 END_TEST
 /*
@@ -124,12 +126,12 @@ START_TEST(test_m_addfriend)
     int bad_len = strlen(bad_data);
     int really_bad_len = (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES
                      - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
-                                      + crypto_box_ZEROBYTES + 100); */   
+                                      + crypto_box_ZEROBYTES + 100); */
 /* TODO: Update this properly to latest master
     if(m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG)
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", really_bad_len);
 */
-    /* this will error if the original m_addfriend_norequest() failed */
+/* this will error if the original m_addfriend_norequest() failed */
 /*    if(m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, good_len) != FAERR_ALREADYSENT)
         ck_abort_msg("m_addfriend did NOT catch adding a friend we already have.\n"
                      "(this can be caused by the error of m_addfriend_norequest in"
@@ -138,13 +140,13 @@ START_TEST(test_m_addfriend)
     if(m_addfriend(m, (uint8_t *)good_id_b, (uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE)
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", bad_len);
 */
-    /* this should REALLY error */
-    /*
-     * TODO: validate client_id in m_addfriend?
-    if(m_addfriend((uint8_t *)bad_id, (uint8_t *)good_data, good_len) >= 0)
-        ck_abort_msg("The following ID passed through "
-              "m_addfriend without an error:\n'%s'\n", bad_id_str);
-    
+/* this should REALLY error */
+/*
+ * TODO: validate client_id in m_addfriend?
+if(m_addfriend((uint8_t *)bad_id, (uint8_t *)good_data, good_len) >= 0)
+    ck_abort_msg("The following ID passed through "
+          "m_addfriend without an error:\n'%s'\n", bad_id_str);
+
 }
 END_TEST */
 
@@ -154,10 +156,11 @@ START_TEST(test_setname)
     int good_length = strlen(good_name);
     int bad_length = REALLY_BIG_NUMBER;
 
-    if(setname(m, (uint8_t *)good_name, bad_length) != -1)
+    if (setname(m, (uint8_t *)good_name, bad_length) != -1)
         ck_abort_msg("setname() did NOT error on %d as a length argument!\n",
-                                                                bad_length);
-    if(setname(m, (uint8_t *)good_name, good_length) != 0)
+                     bad_length);
+
+    if (setname(m, (uint8_t *)good_name, good_length) != 0)
         ck_abort_msg("setname() did NOT return 0 on good arguments!\n");
 }
 END_TEST
@@ -172,8 +175,8 @@ START_TEST(test_getself_name)
     getself_name(m, (uint8_t *)nick_check, len);
 
     ck_assert_msg((!STRINGS_EQUAL(nickname, nick_check)),
-        "getself_name failed to return the known name!\n"
-        "known name: %s\nreturned: %s\n", nickname, nick_check);
+                  "getself_name failed to return the known name!\n"
+                  "known name: %s\nreturned: %s\n", nickname, nick_check);
 }
 END_TEST
 
@@ -261,12 +264,12 @@ int main(int argc, char *argv[])
     m = initMessenger();
 
     /* setup a default friend and friendnum */
-    if(m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)
+    if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)
         fputs("m_addfriend_norequest() failed on a valid ID!\n"
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);
 
-    if((friend_id_num = getfriend_id(m, (uint8_t *)friend_id)) < 0)
+    if ((friend_id_num = getfriend_id(m, (uint8_t *)friend_id)) < 0)
         fputs("getfriend_id() failed on a valid ID!\n"
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);

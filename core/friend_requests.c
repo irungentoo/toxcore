@@ -31,16 +31,17 @@ uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
    return -1 if failure.
    return  0 if it sent the friend request directly to the friend.
    return the number of peers it was routed through if it did not send it directly.*/
-int send_friendrequest(uint8_t * public_key, uint32_t nospam_num, uint8_t * data, uint32_t length)
+int send_friendrequest(uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
 {
-    if(length + sizeof(nospam_num) > MAX_DATA_SIZE)
+    if (length + sizeof(nospam_num) > MAX_DATA_SIZE)
         return -1;
 
     uint8_t temp[MAX_DATA_SIZE];
     memcpy(temp, &nospam_num, sizeof(nospam_num));
     memcpy(temp + sizeof(nospam_num), data, length);
     uint8_t packet[MAX_DATA_SIZE];
-    int len = create_request(packet, public_key, temp, length + sizeof(nospam_num), 32); /* 32 is friend request packet id */
+    int len = create_request(packet, public_key, temp, length + sizeof(nospam_num),
+                             32); /* 32 is friend request packet id */
 
     if (len == -1)
         return -1;
@@ -53,6 +54,7 @@ int send_friendrequest(uint8_t * public_key, uint32_t nospam_num, uint8_t * data
     if (ip_port.ip.i != 0) {
         if (sendpacket(ip_port, packet, len) != -1)
             return 0;
+
         return -1;
     }
 
@@ -78,11 +80,11 @@ uint32_t get_nospam()
     return nospam;
 }
 
-static void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t, void*);
+static void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t, void *);
 static uint8_t handle_friendrequest_isset = 0;
-static void* handle_friendrequest_userdata;
+static void *handle_friendrequest_userdata;
 /* set the function that will be executed when a friend request is received. */
-void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t, void*), void* userdata)
+void callback_friendrequest(void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata)
 {
     handle_friendrequest = function;
     handle_friendrequest_isset = 1;
@@ -99,7 +101,7 @@ static uint8_t received_requests[MAX_RECEIVED_STORED][crypto_box_PUBLICKEYBYTES]
 static uint16_t received_requests_index;
 
 /*Add to list of received friend requests*/
-static void addto_receivedlist(uint8_t * client_id)
+static void addto_receivedlist(uint8_t *client_id)
 {
     if (received_requests_index >= MAX_RECEIVED_STORED)
         received_requests_index = 0;
@@ -110,7 +112,7 @@ static void addto_receivedlist(uint8_t * client_id)
 
 /* Check if a friend request was already received
    return 0 if not, 1 if we did  */
-static int request_received(uint8_t * client_id)
+static int request_received(uint8_t *client_id)
 {
     uint32_t i;
 
@@ -123,14 +125,17 @@ static int request_received(uint8_t * client_id)
 }
 
 
-static int friendreq_handlepacket(IP_Port source, uint8_t * source_pubkey, uint8_t * packet, uint32_t length) 
+static int friendreq_handlepacket(IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {
     if (handle_friendrequest_isset == 0)
         return 1;
+
     if (length <= sizeof(nospam))
         return 1;
+
     if (request_received(source_pubkey))
         return 1;
+
     if (memcmp(packet, &nospam, sizeof(nospam)) != 0)
         return 1;
 

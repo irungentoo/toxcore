@@ -50,6 +50,7 @@ char *get_user_config_dir(void)
     BOOL ok;
 
     ok = SHGetSpecialFolderPathA(NULL, appdata, CSIDL_PROFILE, TRUE);
+
     if (!ok) {
         return NULL;
     }
@@ -72,13 +73,16 @@ char *get_user_config_dir(void)
     int rc;
 
     rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
+
     if (rc == 0) {
         home = pwd.pw_dir;
     } else {
         home = getenv("HOME");
+
         if (home == NULL) {
             return NULL;
         }
+
         /* env variables can be tainted */
         snprintf(buf, sizeof(buf), "%s", home);
         home = buf;
@@ -87,6 +91,7 @@ char *get_user_config_dir(void)
 # if defined(__APPLE__)
     len = strlen(home) + strlen("/Library/Application Support") + 1;
     user_config_dir = malloc(len);
+
     if (user_config_dir == NULL) {
         return NULL;
     }
@@ -95,6 +100,7 @@ char *get_user_config_dir(void)
 # else /* __APPLE__ */
     len = strlen(home) + strlen("/.config") + 1;
     user_config_dir = malloc(len);
+
     if (user_config_dir == NULL) {
         return NULL;
     }
@@ -111,44 +117,45 @@ char *get_user_config_dir(void)
  * Creates the config directory.
  */
 int create_user_config_dir(char *path)
-{ 
+{
 
-  int mkdir_err;
+    int mkdir_err;
 
-  #ifdef WIN32
+#ifdef WIN32
 
-  char *fullpath = malloc(strlen(path) + strlen(CONFIGDIR) + 1);
-  strcpy(fullpath, path);
-  strcat(fullpath, CONFIGDIR);
+    char *fullpath = malloc(strlen(path) + strlen(CONFIGDIR) + 1);
+    strcpy(fullpath, path);
+    strcat(fullpath, CONFIGDIR);
 
-  mkdir_err = _mkdir(fullpath);
-  struct __stat64 buf;
-  if (mkdir_err && (errno != EEXIST || _wstat64(fullpath, &buf) || !S_ISDIR(buf.st_mode))) {
+    mkdir_err = _mkdir(fullpath);
+    struct __stat64 buf;
+
+    if (mkdir_err && (errno != EEXIST || _wstat64(fullpath, &buf) || !S_ISDIR(buf.st_mode))) {
+        free(fullpath);
+        return -1;
+    }
+
+#else
+
+    mkdir_err = mkdir(path, 0700);
+    struct stat buf;
+
+    if (mkdir_err && (errno != EEXIST || stat(path, &buf) || !S_ISDIR(buf.st_mode))) {
+        return -1;
+    }
+
+    char *fullpath = malloc(strlen(path) + strlen(CONFIGDIR) + 1);
+    strcpy(fullpath, path);
+    strcat(fullpath, CONFIGDIR);
+
+    mkdir_err = mkdir(fullpath, 0700);
+
+    if (mkdir_err && (errno != EEXIST || stat(fullpath, &buf) || !S_ISDIR(buf.st_mode))) {
+        free(fullpath);
+        return -1;
+    }
+
+#endif
     free(fullpath);
-    return -1;
-  }
-
-  #else
-
-  mkdir_err = mkdir(path, 0700);
-  struct stat buf;
-
-  if(mkdir_err && (errno != EEXIST || stat(path, &buf) || !S_ISDIR(buf.st_mode))) {
-    return -1;
-  }
-
-  char *fullpath = malloc(strlen(path) + strlen(CONFIGDIR) + 1);
-  strcpy(fullpath, path);
-  strcat(fullpath, CONFIGDIR);
-
-  mkdir_err = mkdir(fullpath, 0700);
-
-  if(mkdir_err && (errno != EEXIST || stat(fullpath, &buf) || !S_ISDIR(buf.st_mode))) {
-    free(fullpath);
-    return -1;
-  }
-    
-  #endif
-  free(fullpath);
-  return 0;
+    return 0;
 }

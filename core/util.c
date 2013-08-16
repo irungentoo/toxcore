@@ -34,12 +34,12 @@ bool ipp_eq(IP_Port a, IP_Port b)
     return (a.ip.i == b.ip.i) && (a.port == b.port);
 }
 
-bool id_eq(clientid_t* dest, clientid_t* src)
+bool id_eq(clientid_t *dest, clientid_t *src)
 {
     return memcmp(dest, src, sizeof(clientid_t)) == 0;
 }
 
-void id_cpy(clientid_t* dest, clientid_t* src)
+void id_cpy(clientid_t *dest, clientid_t *src)
 {
     memcpy(dest, src, sizeof(clientid_t));
 }
