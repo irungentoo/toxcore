@@ -166,7 +166,7 @@ void rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message)
 rtp_header_t* rtp_build_header ( rtp_session_t* _session )
 {
     rtp_header_t* _retu;
-    _retu = ( rtp_header_t* ) malloc ( sizeof ( rtp_header_t ) );
+    _retu = malloc ( sizeof *_retu );
 
     rtp_header_add_flag_version ( _retu, _session->_version );
     rtp_header_add_flag_padding ( _retu, _session->_padding );
@@ -284,7 +284,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
     _length += _retu->_header->_length;
 
     /* Allocate Memory for _retu->_data */
-    _retu->_data = ( uint8_t* ) malloc ( sizeof ( uint8_t ) * _length );
+    _retu->_data = malloc ( sizeof *_retu->_data * _length );
 
     /*
      * Parses header into _retu->_data starting from 0
@@ -375,7 +375,7 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _le
     }
 
     /* Get the payload */
-    _retu->_data = malloc ( sizeof ( uint8_t ) * _retu->_length );
+    _retu->_data = malloc ( sizeof  *_retu->_data  * _retu->_length );
     memcpy_from ( _retu->_data, _from_pos, _data, _length);
 
 

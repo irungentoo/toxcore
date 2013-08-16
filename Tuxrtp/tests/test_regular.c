@@ -40,7 +40,7 @@ int print_help()
     return FAILURE;
     }
 */
-int _main ( int argc, char* argv[] )
+int main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;
