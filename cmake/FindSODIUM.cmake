@@ -54,8 +54,8 @@ endif()
 
 find_library(SODIUM_LIBRARY
     NAMES
-        ${WIN32_LIBSODIUM_FILENAME}
         sodium
+        ${WIN32_LIBSODIUM_FILENAME}
     PATHS
         ${SODIUM_ROOT_DIR}/lib
 )
