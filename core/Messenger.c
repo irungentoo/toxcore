@@ -39,7 +39,7 @@ int realloc_friendlist(Messenger *m, uint32_t num)
 {
     Friend *newfriendlist = realloc(m->friendlist, num * sizeof(Friend));
 
-    if (newfriendlist == NULL)
+    if (newfriendlist == NULL && num != 0)
         return -1;
 
     m->friendlist = newfriendlist;
