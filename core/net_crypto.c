@@ -45,9 +45,11 @@ typedef struct {
 
 } Crypto_Connection;
 
-#define MAX_CRYPTO_CONNECTIONS 256
+static Crypto_Connection *crypto_connections;
 
-static Crypto_Connection crypto_connections[MAX_CRYPTO_CONNECTIONS];
+static uint32_t crypto_connections_length; /* Length of connections array */
+
+#define MAX_CRYPTO_CONNECTIONS crypto_connections_length
 
 #define CONN_NO_CONNECTION 0
 #define CONN_HANDSHAKE_SENT 1
@@ -400,6 +402,19 @@ static int getcryptconnection_id(uint8_t *public_key)
     return -1;
 }
 
+/* set the size of the friend list to numfriends
+   return -1 if realloc fails */
+int realloc_cryptoconnection(uint32_t num)
+{
+    Crypto_Connection *newcrypto_connections = realloc(crypto_connections, num * sizeof(Crypto_Connection));
+
+    if (newcrypto_connections == NULL)
+        return -1;
+
+    crypto_connections = newcrypto_connections;
+    return 0;
+}
+
 /* Start a secure connection with other peer who has public_key and ip_port
    returns -1 if failure
    returns crypt_connection_id of the initialized connection if everything went well. */
@@ -415,7 +430,13 @@ int crypto_connect(uint8_t *public_key, IP_Port ip_port)
             return -1;
     }
 
-    for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
+    if (realloc_cryptoconnection(crypto_connections_length + 1) == -1)
+        return -1;
+
+    memset(&crypto_connections[crypto_connections_length], 0, sizeof(Crypto_Connection));
+    crypto_connections[crypto_connections_length].number = ~0;
+
+    for (i = 0; i <= MAX_CRYPTO_CONNECTIONS; ++i) {
         if (crypto_connections[i].status == CONN_NO_CONNECTION) {
             int id = new_connection(ip_port);
 
@@ -427,6 +448,9 @@ int crypto_connect(uint8_t *public_key, IP_Port ip_port)
             random_nonce(crypto_connections[i].recv_nonce);
             memcpy(crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
             crypto_box_keypair(crypto_connections[i].sessionpublic_key, crypto_connections[i].sessionsecret_key);
+
+            if (crypto_connections_length == i)
+                ++crypto_connections_length;
 
             if (send_cryptohandshake(id, public_key, crypto_connections[i].recv_nonce,
                                      crypto_connections[i].sessionpublic_key) == 1) {
@@ -489,6 +513,15 @@ int crypto_kill(int crypt_connection_id)
         kill_connection(crypto_connections[crypt_connection_id].number);
         memset(&crypto_connections[crypt_connection_id], 0 , sizeof(Crypto_Connection));
         crypto_connections[crypt_connection_id].number = ~0;
+        uint32_t i;
+
+        for (i = crypto_connections_length; i != 0; --i) {
+            if (crypto_connections[i - 1].status != CONN_NO_CONNECTION)
+                break;
+        }
+
+        crypto_connections_length = i;
+        realloc_cryptoconnection(crypto_connections_length);
         return 0;
     }
 
@@ -510,7 +543,13 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
     {
         return -1;
     }*/
-    for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i) {
+    if (realloc_cryptoconnection(crypto_connections_length + 1) == -1)
+        return -1;
+
+    memset(&crypto_connections[crypto_connections_length], 0, sizeof(Crypto_Connection));
+    crypto_connections[crypto_connections_length].number = ~0;
+
+    for (i = 0; i <= MAX_CRYPTO_CONNECTIONS; ++i) {
         if (crypto_connections[i].status == CONN_NO_CONNECTION) {
             crypto_connections[i].number = connection_id;
             crypto_connections[i].status = CONN_NOT_CONFIRMED;
@@ -521,6 +560,9 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
             memcpy(crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
 
             crypto_box_keypair(crypto_connections[i].sessionpublic_key, crypto_connections[i].sessionsecret_key);
+
+            if (crypto_connections_length == i)
+                ++crypto_connections_length;
 
             if (send_cryptohandshake(connection_id, public_key, crypto_connections[i].recv_nonce,
                                      crypto_connections[i].sessionpublic_key) == 1) {
@@ -680,13 +722,8 @@ static void receive_crypto(void)
    sets all the global connection variables to their default values. */
 void initNetCrypto(void)
 {
-    memset(crypto_connections, 0 , sizeof(crypto_connections));
     memset(incoming_connections, -1 , sizeof(incoming_connections));
     networking_registerhandler(32, &cryptopacket_handle);
-    uint32_t i;
-
-    for (i = 0; i < MAX_CRYPTO_CONNECTIONS; ++i)
-        crypto_connections[i].number = ~0;
 }
 
 static void killTimedout(void)

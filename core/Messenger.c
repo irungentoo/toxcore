@@ -42,7 +42,6 @@ int realloc_friendlist(Messenger *m, uint32_t num)
     if (newfriendlist == NULL)
         return -1;
 
-    memset(&newfriendlist[num - 1], 0, sizeof(Friend));
     m->friendlist = newfriendlist;
     return 0;
 }
@@ -165,6 +164,8 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
     if (realloc_friendlist(m, m->numfriends + 1) != 0)
         return FAERR_NOMEM;
 
+    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
+
     uint32_t i;
 
     for (i = 0; i <= m->numfriends; ++i)  {
@@ -184,7 +185,9 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
             m->friendlist[i].receives_read_receipts = 1; /* default: YES */
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
 
-            ++ m->numfriends;
+            if (m->numfriends == i)
+                ++ m->numfriends;
+
             return i;
         }
     }
@@ -201,6 +204,8 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
     if (realloc_friendlist(m, m->numfriends + 1) != 0)
         return FAERR_NOMEM;
 
+    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
+
     uint32_t i;
 
     for (i = 0; i <= m->numfriends; ++i) {
@@ -215,7 +220,10 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
             m->friendlist[i].userstatus = USERSTATUS_NONE;
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* default: YES */
-            ++ m->numfriends;
+
+            if (m->numfriends == i)
+                ++ m->numfriends;
+
             return i;
         }
     }
@@ -244,7 +252,7 @@ int m_delfriend(Messenger *m, int friendnumber)
 
     m->numfriends = i;
 
-    if (realloc_friendlist(m, m->numfriends + 1) != 0)
+    if (realloc_friendlist(m, m->numfriends) != 0)
         return FAERR_NOMEM;
 
     return 0;
@@ -851,14 +859,14 @@ void doMessenger(Messenger *m)
 uint32_t Messenger_size(Messenger *m)
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
-            + sizeof(uint32_t)                  // nospam
-            + sizeof(uint32_t)                  // DHT size
-            + DHT_size()                        // DHT itself
-            + sizeof(uint32_t)                  // Friendlist size
-            + sizeof(Friend) * m->numfriends    // Friendlist itself
-            + sizeof(uint16_t)                  // Own nickname length
-            + m->name_length                    // Own nickname
-            ;
+           + sizeof(uint32_t)                  // nospam
+           + sizeof(uint32_t)                  // DHT size
+           + DHT_size()                        // DHT itself
+           + sizeof(uint32_t)                  // Friendlist size
+           + sizeof(Friend) * m->numfriends    // Friendlist itself
+           + sizeof(uint16_t)                  // Own nickname length
+           + m->name_length                    // Own nickname
+           ;
 }
 
 /* save the messenger in data of size Messenger_size() */
