@@ -19,7 +19,6 @@ extern int store_data(Messenger *m, char *path);
 uint8_t pending_requests[MAX_STR_SIZE][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests = 0; // XXX
 
-static friendAddedFn *on_friendadded_cb;
 static char prompt_buf[MAX_STR_SIZE] = {0};
 static int prompt_buf_pos = 0;
 
@@ -97,7 +96,7 @@ void cmd_accept(ToxWindow *self, Messenger *m, char **args)
         wprintw(self->window, "Failed to add friend.\n");
     else {
         wprintw(self->window, "Friend accepted as: %d.\n", num);
-        on_friendadded_cb(m, num);
+        on_friendadded(m, num);
     }
 }
 
@@ -174,7 +173,7 @@ void cmd_add(ToxWindow *self, Messenger *m, char **args)
 
         default:
             wprintw(self->window, "Friend added as %d.\n", num);
-            on_friendadded_cb(m, num);
+            on_friendadded(m, num);
             break;
     }
 }
@@ -480,9 +479,8 @@ static void prompt_onInit(ToxWindow *self, Messenger *m)
     wclrtoeol(self->window);
 }
 
-ToxWindow new_prompt(friendAddedFn *f)
+ToxWindow new_prompt()
 {
-    on_friendadded_cb = f;
     ToxWindow ret;
     memset(&ret, 0, sizeof(ret));
     ret.onKey = &prompt_onKey;

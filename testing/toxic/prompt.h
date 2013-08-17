@@ -3,9 +3,7 @@
 
 #include "windows.h"
 
-typedef void (friendAddedFn)(Messenger *m, int friendnumber);
-
-ToxWindow new_prompt(friendAddedFn *f);
+ToxWindow new_prompt();
 int add_req(uint8_t *public_key);
 unsigned char *hex_string_to_bin(char hex_string[]);
 
