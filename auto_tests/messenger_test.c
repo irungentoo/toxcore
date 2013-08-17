@@ -196,24 +196,20 @@ START_TEST(test_m_copy_userstatus)
 END_TEST
 */
 
-/* this test is excluded for now, due to lack of a way
- *  to set a friend's nickname for now.
- *  ideas:
- *      if we have access to the friends list, we could
- *      just add a name manually ourselves. */
-/*
 START_TEST(test_getname)
 {
     uint8_t name_buf[MAX_NAME_LENGTH];
+    uint8_t test_name[] = {'f', 'o', 'o'};
 
-    assert(getname(-1, name_buf) == -1);
-    assert(getname(REALLY_BIG_NUMBER, name_buf) == -1);
+    ck_assert(getname(m, -1, name_buf) == -1);
+    ck_assert(getname(m, REALLY_BIG_NUMBER, name_buf) == -1);
 
-    getname(friend_id_num, name_buf);
-    assert(name_buf[MAX_NAME_LENGTH] == '\0'); // something like this
+    memcpy(m->friendlist[0].name, &test_name[0], 3);
+    getname(m, 0, &name_buf[0]);
+
+    ck_assert(strcmp((char *)&name_buf[0], "foo") == 0);
 }
 END_TEST
-*/
 
 Suite *messenger_suite(void)
 {
@@ -227,6 +223,7 @@ Suite *messenger_suite(void)
     TCase *delfriend = tcase_create("delfriend");
     //TCase *addfriend = tcase_create("addfriend");
     TCase *setname = tcase_create("setname");
+    TCase *getname = tcase_create("getname");
 
     tcase_add_test(userstatus_size, test_m_get_userstatus_size);
     tcase_add_test(set_userstatus, test_m_set_userstatus);
@@ -235,6 +232,7 @@ Suite *messenger_suite(void)
     tcase_add_test(send_message, test_m_sendmesage);
     tcase_add_test(delfriend, test_m_delfriend);
     //tcase_add_test(addfriend, test_m_addfriend);
+    tcase_add_test(setname, test_getname);
     tcase_add_test(setname, test_setname);
 
     suite_add_tcase(s, userstatus_size);
@@ -244,6 +242,7 @@ Suite *messenger_suite(void)
     suite_add_tcase(s, getself_name);
     suite_add_tcase(s, delfriend);
     //suite_add_tcase(s, addfriend);
+    suite_add_tcase(s, getname);
     suite_add_tcase(s, setname);
 
     return s;
