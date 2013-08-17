@@ -850,8 +850,15 @@ void doMessenger(Messenger *m)
 /* returns the size of the messenger data (for saving) */
 uint32_t Messenger_size(Messenger *m)
 {
-    return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)
-           + sizeof(uint32_t) + DHT_size() + sizeof(uint32_t) + sizeof(Friend) * m->numfriends;
+    return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+            + sizeof(uint32_t)                  // nospam
+            + sizeof(uint32_t)                  // DHT size
+            + DHT_size()                        // DHT itself
+            + sizeof(uint32_t)                  // Friendlist size
+            + sizeof(Friend) * m->numfriends    // Friendlist itself
+            + sizeof(uint16_t)                  // Own nickname length
+            + m->name_length                    // Own nickname
+            ;
 }
 
 /* save the messenger in data of size Messenger_size() */
@@ -871,6 +878,11 @@ void Messenger_save(Messenger *m, uint8_t *data)
     memcpy(data, &size, sizeof(size));
     data += sizeof(size);
     memcpy(data, m->friendlist, sizeof(Friend) * m->numfriends);
+    data += size;
+    uint16_t small_size = m->name_length;
+    memcpy(data, &small_size, sizeof(small_size));
+    data += sizeof(small_size);
+    memcpy(data, m->name, small_size);
 }
 
 /* load the messenger from data of size length. */
@@ -905,7 +917,7 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
 
-    if (length != size || length % sizeof(Friend) != 0)
+    if (length < size || size % sizeof(Friend) != 0)
         return -1;
 
     Friend *temp = malloc(size);
@@ -930,6 +942,23 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
             m_addfriend(m, address, temp[i].info, temp[i].info_size);
         }
     }
+
+    data += size;
+    length -= size;
+
+    uint16_t small_size;
+
+    if (length < sizeof(small_size))
+        return -1;
+
+    memcpy(&small_size, data, sizeof(small_size));
+    data += sizeof(small_size);
+    length -= sizeof(small_size);
+
+    if (length != small_size)
+        return -1;
+
+    setname(m, data, small_size);
 
     free(temp);
     return 0;

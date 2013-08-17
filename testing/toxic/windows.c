@@ -83,7 +83,7 @@ void on_friendadded(Messenger *m, int friendnumber)
 {
     friendlist_onFriendAdded(m, friendnumber);
 
-    if (store_data(m, DATA_FILE) != 0) {
+    if (store_data(m, DATA_FILE)) {
         wprintw(prompt->window, "\nCould not store Messenger data\n");
     }
 }

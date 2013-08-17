@@ -13,6 +13,9 @@
 #include "windows.h"
 #include "prompt.h"
 
+extern char *DATA_FILE;
+extern int store_data(Messenger *m, char *path);
+
 uint8_t pending_requests[MAX_STR_SIZE][CLIENT_ID_SIZE]; // XXX
 uint8_t num_requests = 0; // XXX
 
@@ -29,11 +32,12 @@ void cmd_help(ToxWindow *, Messenger *m, char **);
 void cmd_msg(ToxWindow *, Messenger *m, char **);
 void cmd_myid(ToxWindow *, Messenger *m, char **);
 void cmd_nick(ToxWindow *, Messenger *m, char **);
+void cmd_mynick(ToxWindow *, Messenger *m, char **);
 void cmd_quit(ToxWindow *, Messenger *m, char **);
 void cmd_status(ToxWindow *, Messenger *m, char **);
 void cmd_statusmsg(ToxWindow *, Messenger *m, char **);
 
-#define NUM_COMMANDS 13
+#define NUM_COMMANDS 14
 
 static struct {
     char *name;
@@ -49,6 +53,7 @@ static struct {
     { "msg",       2, cmd_msg       },
     { "myid",      0, cmd_myid      },
     { "nick",      1, cmd_nick      },
+    { "mynick",    0, cmd_mynick    },
     { "q",         0, cmd_quit      },
     { "quit",      0, cmd_quit      },
     { "status",    2, cmd_status    },
@@ -222,6 +227,7 @@ void cmd_help(ToxWindow *self, Messenger *m, char **args)
     wprintw(self->window, "      status <type> <message>   : Set your status\n");
     wprintw(self->window, "      statusmsg  <message>      : Set your status\n");
     wprintw(self->window, "      nick <nickname>           : Set your nickname\n");
+    wprintw(self->window, "      mynick                    : Print your current nickname\n");
     wprintw(self->window, "      accept <number>           : Accept friend request\n");
     wprintw(self->window, "      myid                      : Print your ID\n");
     wprintw(self->window, "      quit/exit                 : Exit program\n");
@@ -267,6 +273,17 @@ void cmd_nick(ToxWindow *self, Messenger *m, char **args)
     char *nick = args[1];
     setname(m, (uint8_t *) nick, strlen(nick) + 1);
     wprintw(self->window, "Nickname set to: %s\n", nick);
+    if (store_data(m, DATA_FILE)) {
+        wprintw(self->window, "\nCould not store Messenger data\n");
+    }
+}
+
+void cmd_mynick(ToxWindow *self, Messenger *m, char **args)
+{
+    uint8_t *nick = malloc(m->name_length);
+    getself_name(m, nick, m->name_length);
+    wprintw(self->window, "Current nickname: %s\n", nick);
+    free(nick);
 }
 
 void cmd_status(ToxWindow *self, Messenger *m, char **args)
