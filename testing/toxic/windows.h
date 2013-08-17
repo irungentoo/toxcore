@@ -8,16 +8,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../../core/Messenger.h"
-#define TOXWINDOWS_MAX_NUM 32
+#define MAX_WINDOWS_NUM 32
 #define MAX_FRIENDS_NUM 100
 #define MAX_STR_SIZE 256
 #define KEY_SIZE_BYTES 32
 
 /* number of permanent default windows */
 #define N_DEFAULT_WINS 3
-
-/* maximum window slots for WINDOW_STATUS array */
-#define MAX_WINDOW_SLOTS N_DEFAULT_WINS+MAX_FRIENDS_NUM
 
 #ifndef TOXICVER
 #define TOXICVER "NOVER" //Use the -D flag to set this

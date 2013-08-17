@@ -6,7 +6,7 @@
 extern char *DATA_FILE;
 extern int store_data(Messenger *m, char *path);
 
-static ToxWindow windows[MAX_WINDOW_SLOTS];
+static ToxWindow windows[MAX_WINDOWS_NUM];
 static ToxWindow *active_window;
 static ToxWindow *prompt;
 static Messenger *m;
@@ -26,7 +26,7 @@ void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userd
     wprintw(prompt->window, "\nWith the message: %s\n", data);
     wprintw(prompt->window, "\nUse \"accept %d\" to accept it.\n", n);
 
-    for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
+    for (i = 0; i < MAX_WINDOWS_NUM; ++i) {
         if (windows[i].onFriendRequest != NULL)
             windows[i].onFriendRequest(&windows[i], public_key, data, length);
     }
@@ -36,7 +36,7 @@ void on_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length
 {
     int i;
 
-    for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
+    for (i = 0; i < MAX_WINDOWS_NUM; ++i) {
         if (windows[i].onMessage != NULL)
             windows[i].onMessage(&windows[i], m, friendnumber, string, length);
     }
@@ -46,7 +46,7 @@ void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length,
 {
     int i;
 
-    for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
+    for (i = 0; i < MAX_WINDOWS_NUM; ++i) {
         if (windows[i].onAction != NULL)
             windows[i].onAction(&windows[i], m, friendnumber, string, length);
     }
@@ -57,7 +57,7 @@ void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t len
     wprintw(prompt->window, "\n(nickchange) %d: %s\n", friendnumber, string);
     int i;
 
-    for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
+    for (i = 0; i < MAX_WINDOWS_NUM; ++i) {
         if (windows[i].onNickChange != NULL)
             windows[i].onNickChange(&windows[i], friendnumber, string, length);
     }
@@ -68,7 +68,7 @@ void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t l
     wprintw(prompt->window, "\n(statuschange) %d: %s\n", friendnumber, string);
     int i;
 
-    for (i = 0; i < MAX_WINDOW_SLOTS; ++i) {
+    for (i = 0; i < MAX_WINDOWS_NUM; ++i) {
         if (windows[i].onStatusChange != NULL)
             windows[i].onStatusChange(&windows[i], friendnumber, string, length);
     }
@@ -90,7 +90,7 @@ int add_window(Messenger *m, ToxWindow w)
         return -1;
  
     int i;
-    for(i = 0; i < MAX_WINDOW_SLOTS; i++) {
+    for(i = 0; i < MAX_WINDOWS_NUM; i++) {
         if (windows[i].window) 
             continue;
         
@@ -124,7 +124,7 @@ void del_window(ToxWindow *w)
 /* Shows next window when tab or back-tab is pressed */
 void set_next_window(int ch)
 {
-    ToxWindow *end = windows+MAX_WINDOW_SLOTS-1;
+    ToxWindow *end = windows+MAX_WINDOWS_NUM-1;
     ToxWindow *inf = active_window;
     while(true) {
         if (ch == '\t') {
@@ -146,7 +146,7 @@ void set_next_window(int ch)
 
 void set_active_window(int index)
 {
-    if (index < 0 || index >= MAX_WINDOW_SLOTS)
+    if (index < 0 || index >= MAX_WINDOWS_NUM)
         return;
     
     active_window = windows+index;
@@ -187,7 +187,7 @@ static void draw_bar()
 
     int i;
 
-    for (i = 0; i < (MAX_WINDOW_SLOTS); ++i) {
+    for (i = 0; i < (MAX_WINDOWS_NUM); ++i) {
         if (windows[i].window) {
             if (windows+i == active_window)
                 attron(A_BOLD);
