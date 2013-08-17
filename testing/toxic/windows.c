@@ -6,15 +6,10 @@
 extern char *DATA_FILE;
 extern int store_data(Messenger *m, char *path);
 
-/* Holds status of chat windows */
-char WINDOW_STATUS[MAX_WINDOW_SLOTS];
-
-static int w_num;
 static ToxWindow windows[MAX_WINDOW_SLOTS];
-static Messenger *m;
-int active_window;
-
+static ToxWindow *active_window;
 static ToxWindow *prompt;
+static Messenger *m;
 
 /* CALLBACKS START */
 void on_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
@@ -89,119 +84,89 @@ void on_friendadded(Messenger *m, int friendnumber)
 }
 /* CALLBACKS END */
 
-int add_window(Messenger *m, ToxWindow w, int n)
+int add_window(Messenger *m, ToxWindow w)
 {
-    if (w_num >= TOXWINDOWS_MAX_NUM)
-        return -1;
-
     if (LINES < 2)
         return -1;
+ 
+    int i;
+    for(i = 0; i < MAX_WINDOW_SLOTS; i++) {
+        if (windows[i].window) 
+            continue;
+        
+        w.window = newwin(LINES - 2, COLS, 0, 0);
+        if (w.window == NULL)
+            return -1;
 
-    w.window = newwin(LINES - 2, COLS, 0, 0);
-
-    if (w.window == NULL)
-        return -1;
-
-    windows[n] = w;
-    w.onInit(&w, m);
-    w_num++;
-    active_window = n;
-    return n;
+        windows[i] = w;
+        w.onInit(&w, m);
+    
+        active_window = windows+i;
+        return i;
+    }
+    
+    return -1;
 }
 
 /* Deletes window w and cleans up */
-void del_window(ToxWindow *w, int f_num)
+void del_window(ToxWindow *w)
 {
-    active_window = 0; // Go to prompt screen
+    active_window = windows; // Go to prompt screen
     delwin(w->window);
-    int i;
-
-    for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
-        if (WINDOW_STATUS[i] == f_num) {
-            WINDOW_STATUS[i] = -1;
-            disable_chatwin(f_num);
-            break;
-        }
-    }
-
+    if (w->x)
+        free(w->x);
+    w->window = NULL;
+    memset(w, 0, sizeof(ToxWindow));
     clear();
     refresh();
 }
 
 /* Shows next window when tab or back-tab is pressed */
-void set_active_window(int ch)
+void set_next_window(int ch)
 {
-    int f_inf = 0;
-    int max = MAX_WINDOW_SLOTS - 1;
-
-    if (ch == '\t') {
-        int i = (active_window + 1) % max;
-
-        while (true) {
-            if (WINDOW_STATUS[i] != -1) {
-                active_window = i;
-                return;
-            }
-
-            i = (i  + 1) % max;
-
-            if (f_inf++ > max) {    // infinite loop check
-                endwin();
-                exit(2);
-            }
-        }
-    } else {
-        int i = active_window - 1;
-
-        if (i < 0) i = max;
-
-        while (true) {
-            if (WINDOW_STATUS[i] != -1) {
-                active_window = i;
-                return;
-            }
-
-            if (--i < 0) i = max;
-
-            if (f_inf++ > max) {
-                endwin();
-                exit(2);
-            }
+    ToxWindow *end = windows+MAX_WINDOW_SLOTS-1;
+    ToxWindow *inf = active_window;
+    while(true) {
+        if (ch == '\t') {
+            if (++active_window > end)
+                active_window = windows;
+        } else 
+            if (--active_window < windows)
+                active_window = end;
+        
+        if (active_window->window)
+            return;
+    
+        if (active_window == inf) {    // infinite loop check
+            endwin();
+            exit(2);
         }
     }
 }
 
-void init_window_status()
+void set_active_window(int index)
 {
-    /* Default window values decrement from -2 */
-    int i;
-
-    for (i = 0; i < N_DEFAULT_WINS; ++i)
-        WINDOW_STATUS[i] = -(i + 2);
-
-    int j;
-
-    for (j = N_DEFAULT_WINS; j < MAX_WINDOW_SLOTS; j++)
-        WINDOW_STATUS[j] = -1;
+    if (index < 0 || index >= MAX_WINDOW_SLOTS)
+        return;
+    
+    active_window = windows+index;
 }
 
 ToxWindow *init_windows()
 {
-    w_num = 0;
-    int n_prompt = 0;
-    int n_friendslist = 1;
-    int n_dhtstatus = 2;
-
-    if (add_window(m, new_prompt(on_friendadded), n_prompt) == -1
-            || add_window(m, new_friendlist(WINDOW_STATUS), n_friendslist) == -1
-            || add_window(m, new_dhtstatus(), n_dhtstatus) == -1) {
+    int n_prompt = add_window(m, new_prompt(on_friendadded));
+    
+    if (n_prompt == -1
+            || add_window(m, new_friendlist()) == -1
+            || add_window(m, new_dhtstatus()) == -1) {
         fprintf(stderr, "add_window() failed.\n");
         endwin();
         exit(1);
     }
 
-    active_window = n_prompt;
     prompt = &windows[n_prompt];
+    active_window = prompt;
+    
     return prompt;
 }
 
@@ -223,8 +188,8 @@ static void draw_bar()
     int i;
 
     for (i = 0; i < (MAX_WINDOW_SLOTS); ++i) {
-        if (WINDOW_STATUS[i] != -1) {
-            if (i == active_window)
+        if (windows[i].window) {
+            if (windows+i == active_window)
                 attron(A_BOLD);
 
             odd = (odd + 1) % blinkrate;
@@ -237,7 +202,7 @@ static void draw_bar()
             if (windows[i].blink && (odd < (blinkrate / 2)))
                 attroff(COLOR_PAIR(3));
 
-            if (i == active_window) {
+            if (windows+i == active_window) {
                 attroff(A_BOLD);
             }
         }
@@ -255,7 +220,7 @@ void prepare_window(WINDOW *w)
 void draw_active_window(Messenger *m)
 {
 
-    ToxWindow *a = &windows[active_window];
+    ToxWindow *a = active_window;
     prepare_window(a->window);
     a->blink = false;
     draw_bar();
@@ -265,7 +230,7 @@ void draw_active_window(Messenger *m)
     int ch = getch();
 
     if (ch == '\t' || ch == KEY_BTAB)
-        set_active_window(ch);
+        set_next_window(ch);
     else if (ch != ERR)
         a->onKey(a, m, ch);
 }
