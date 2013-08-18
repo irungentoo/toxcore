@@ -406,6 +406,8 @@ static int getcryptconnection_id(uint8_t *public_key)
    return -1 if realloc fails */
 int realloc_cryptoconnection(uint32_t num)
 {
+    if (num * sizeof(Crypto_Connection) == 0) return -1;
+
     Crypto_Connection *newcrypto_connections = realloc(crypto_connections, num * sizeof(Crypto_Connection));
 
     if (newcrypto_connections == NULL && num != 0)
