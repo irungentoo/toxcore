@@ -289,12 +289,28 @@ int main(int argc, char *argv[])
         config_err = create_user_config_dir(user_config_dir);
 
         if (config_err) {
-            DATA_FILE = strdup("data");
+            #if WIN32 
+                DATA_FILE = strdup("%appdata/.tox/data");
+            #else
+            #if MAC_OSX
+                DATA_FILE = strdup("~Library/Application Support/data");
+            #else
+                DATA_FILE = strdup("~/.tox/data");
+            #endif
+            #endif
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
             strcat(DATA_FILE, CONFIGDIR);
-            strcat(DATA_FILE, "data");
+            #if WIN32 
+                DATA_FILE = strdup("%appdata/.tox/data");
+            #else
+            #if MAC_OSX
+                DATA_FILE = strdup("~Library/Application Support/data");
+            #else
+                DATA_FILE = strdup("~/.tox/data");
+            #endif
+            #endif
         }
     }
 
