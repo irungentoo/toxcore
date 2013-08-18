@@ -40,7 +40,7 @@ int print_help()
     return FAILURE;
     }
 */
-int main ( int argc, char* argv[] )
+int ___main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;
@@ -83,8 +83,8 @@ int main ( int argc, char* argv[] )
             _m_msg = rtp_recv_msg ( _m_session );
 
             if ( _m_msg ) {
-                /*
-                printf ( "Packets: %d\n", _m_session->_packets_recv );
+                /**/
+                printf ( "H: %d; W: %d\n", rtp_get_resolution_marking_width(_m_msg->_ext_header), rtp_get_resolution_marking_height(_m_msg->_ext_header) );
                 /**/
                 rtp_free_msg(_m_session, _m_msg);
             }

@@ -150,7 +150,8 @@ uint16_t rtp_get_resolution_marking_width(rtp_ext_header_t* _header)
 
 void rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message)
 {
-    free(_message->_data);
+    if ( _message->_data )
+        free(_message->_data);
 
     if ( _session->_csrc != _message->_header->_csrc )
         free(_message->_header->_csrc);
@@ -230,6 +231,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
             _session->_last_error = "Tried to send empty message";
         } else {
             _last = sendpacket ( _it->_dest, _msg->_data, _msg->_length );
+            _msg->_data = NULL;
 
             if ( _last < 0 ) {
                 _session->_last_error = strerror ( errno );
@@ -274,7 +276,7 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
 
 rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
 {
-    uint16_t _from_pos;
+    uint8_t* _from_pos;
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
 
@@ -287,13 +289,16 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
     if ( _retu->_ext_header ){
 
         _length += ( 4 + _retu->_ext_header->_ext_len * 4 );
-        /*SET_ALLOCATE(_retu->_data, _length ) */
+        /* Allocate Memory for _retu->_data */
         _retu->_data = malloc ( sizeof *_retu->_data * _length );
 
-        _from_pos = rtp_add_header ( _retu->_header, _retu->_data, 0 );
-
-        rtp_add_extention_header( _retu->_ext_header, _retu->_data + ( _from_pos - 1 ) );
-        _from_pos += _retu->_ext_header->_ext_len;
+        /*
+         * Parses header into _retu->_data starting from 0
+         * Will need to set this _from to 1 since the 0 byte
+         * Is used by the messenger to determine that this is rtp.
+         */
+        _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
+        _from_pos = rtp_add_extention_header( _retu->_ext_header, _from_pos );
     }
     else {
         /* Allocate Memory for _retu->_data */
@@ -304,7 +309,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
          * Will need to set this _from to 1 since the 0 byte
          * Is used by the messenger to determine that this is rtp.
          */
-        _from_pos = rtp_add_header ( _retu->_header, _retu->_data, 0 );
+        _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
     }
 
     /*
@@ -312,18 +317,10 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
      * Of course if any
      */
 
-
-
     /* Appends _data on to _retu->_data */
-    memadd ( _retu->_data, _from_pos, _data, _length - 1);
+    memcpy(_from_pos + 1, _data, _length);
 
     _retu->_length = _length;
-
-    if ( _from ) {
-        _retu->_from.ip = _from->ip;
-        _retu->_from.port = _from->port;
-        _retu->_from.padding = _from->padding;
-    }
 
     return _retu;
 }

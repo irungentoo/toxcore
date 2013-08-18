@@ -123,7 +123,7 @@ void print_ext_header_info(rtp_ext_header_t* _ext_header)
     );
 }
 
-int ___main ( int argc, char* argv[] )
+int main ( int argc, char* argv[] )
 {
     arg_t* _list = parse_args ( argc, argv );
 
@@ -137,10 +137,8 @@ int ___main ( int argc, char* argv[] )
     uint16_t    port;
 
 
-    const uint8_t* test_bytes = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
-                                "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
-                                "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
-                                "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf\0";
+    uint8_t* test_bytes [300];
+    memset(test_bytes, 'a', 300);
 
     rtp_session_t* _m_session;
     rtp_msg_t*     _m_msg;
@@ -213,15 +211,11 @@ int ___main ( int argc, char* argv[] )
         uint16_t _first_sequ = _m_session->_sequence_number;
 
         /* use already defined buffer lenght */
-        _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen(test_bytes), NULL );
-
-        rtp_send_msg ( _m_session, _m_msg );         /* It deallocates */
-
-        rtp_remove_resolution_marking(_m_session);
-
-        _m_msg = rtp_msg_new ( _m_session, test_bytes, strlen(test_bytes), NULL );
+        _m_msg = rtp_msg_new ( _m_session, test_bytes, 300, NULL );
+        print_ext_header_info(_m_msg->_ext_header);
 
         rtp_send_msg ( _m_session, _m_msg );
+
 
         printf ( "First sequence num :%d\n"
                  "Last sequence num  :%d\n\n"

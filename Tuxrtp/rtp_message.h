@@ -72,8 +72,8 @@ rtp_header_t*       rtp_extract_header ( uint8_t* _payload, size_t _from, size_t
 rtp_ext_header_t*   rtp_extract_ext_header ( uint8_t* _payload, size_t _from );
 
 
-size_t  rtp_add_header ( rtp_header_t* _header, uint8_t* _payload, size_t _from );
-void    rtp_add_extention_header ( rtp_ext_header_t* _header, uint8_t* _payload );
+uint8_t*  rtp_add_header ( rtp_header_t* _header, uint8_t* _payload );
+uint8_t*  rtp_add_extention_header ( rtp_ext_header_t* _header, uint8_t* _payload );
 
 /* Gets the size of the header _header in bytes */
 size_t  rtp_header_get_size ( rtp_header_t* _header );
