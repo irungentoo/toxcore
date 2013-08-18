@@ -48,7 +48,7 @@
 #define DYNAMIC_STRING(VAR, SIZE) { ALLOCATOR(VAR, char, SIZE) memset(VAR, '\0', SIZE); }
 
 
-#define SET_ALLOCATE(VAR, NUM)  unused(realloc(VAR, sizeof *VAR * NUM ));
+#define SET_ALLOCATE(VAR, NUM)  VAR = realloc(VAR, sizeof *VAR * NUM );
 #define ADD_ALLOCATE(VAR, PREV) SET_ALLOCATE(VAR, PREV + 1)
 #define REM_ALLOCATE(VAR, PREV) SET_ALLOCATE(VAR, PREV - 1)
 
