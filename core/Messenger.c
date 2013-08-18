@@ -951,6 +951,7 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
         }
     }
 
+    free(temp);
     data += size;
     length -= size;
 
@@ -968,7 +969,6 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 
     setname(m, data, small_size);
 
-    free(temp);
     return 0;
 }
 
