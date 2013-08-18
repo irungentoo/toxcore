@@ -8,16 +8,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../../core/Messenger.h"
-#define TOXWINDOWS_MAX_NUM 32
+#define MAX_WINDOWS_NUM 32
 #define MAX_FRIENDS_NUM 100
 #define MAX_STR_SIZE 256
 #define KEY_SIZE_BYTES 32
 
 /* number of permanent default windows */
 #define N_DEFAULT_WINS 3
-
-/* maximum window slots for WINDOW_STATUS array */
-#define MAX_WINDOW_SLOTS N_DEFAULT_WINS+MAX_FRIENDS_NUM
 
 #ifndef TOXICVER
 #define TOXICVER "NOVER" //Use the -D flag to set this
@@ -48,11 +45,10 @@ void on_action(Messenger *m, int friendnumber, uint8_t *string, uint16_t length,
 void on_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata);
 void on_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata);
 void on_friendadded(Messenger *m, int friendnumber);
-void init_window_status();
 ToxWindow *init_windows();
 void draw_active_window(Messenger *m);
-int add_window(Messenger *m, ToxWindow w, int n);
-void del_window(ToxWindow *w, int f_num);
+int add_window(Messenger *m, ToxWindow w);
+void del_window(ToxWindow *w);
 void set_active_window(int ch);
 #endif
 

@@ -295,7 +295,6 @@ int main(int argc, char *argv[])
     init_term();
     Messenger *m = init_tox();
     ToxWindow *prompt = init_windows(m);
-    init_window_status();
 
     if (f_loadfromfile)
         load_data(m, DATA_FILE);

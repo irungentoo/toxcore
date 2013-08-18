@@ -335,7 +335,8 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd)
     else if (strcmp(ctx->line, "/close") == 0) {
         int f_num = ctx->friendnum;
         delwin(ctx->linewin);
-        del_window(self, f_num);
+        del_window(self);
+        disable_chatwin(f_num);
     }
 
     else
