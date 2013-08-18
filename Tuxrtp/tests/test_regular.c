@@ -40,14 +40,16 @@ int print_help()
     return FAILURE;
     }
 */
-int ___main ( int argc, char* argv[] )
+int main ( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;
     const char* ip;
     uint16_t    port;
-    const char test_bytes [27901];
-    memset(test_bytes, 'e', 27901);
+    const char* test_bytes = "0123456789012345678901234567890123456789012345678901234567890123456789"
+                             "0123456789012345678901234567890123456789012345678901234567890123456789"
+                             "0123456789012345678901234567890123456789012345678901234567890123456789"
+                             "0123456789012345678901234567890123456789012345678901234567890123456789";
 
 
     rtp_session_t* _m_session;
@@ -83,7 +85,7 @@ int ___main ( int argc, char* argv[] )
             _m_msg = rtp_recv_msg ( _m_session );
 
             if ( _m_msg ) {
-                /**/
+                /*
                 printf ( "H: %d; W: %d\n", rtp_get_resolution_marking_width(_m_msg->_ext_header), rtp_get_resolution_marking_height(_m_msg->_ext_header) );
                 /**/
                 rtp_free_msg(_m_session, _m_msg);
@@ -127,19 +129,8 @@ int ___main ( int argc, char* argv[] )
         rtp_set_payload_type(_m_session, 106);
         rtp_add_resolution_marking(_m_session, 100, 100);
 
-        int i = 10;
-        int direction = 1;
         for ( ;; ) {
-            if ( direction )
-                i++;
-            else i--;
-
-            if ( direction && i == 27901 )
-                direction = 0;
-            else if ( !direction && i == 10 )
-                direction = 1;
-
-            _m_msg = rtp_msg_new ( _m_session, test_bytes, i, NULL ) ;
+            _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL ) ;
             rtp_send_msg ( _m_session, _m_msg );
             usleep ( 10000 );
         }

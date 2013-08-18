@@ -150,8 +150,7 @@ uint16_t rtp_get_resolution_marking_width(rtp_ext_header_t* _header)
 
 void rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message)
 {
-    if ( _message->_data )
-        free(_message->_data);
+    free(_message->_data);
 
     if ( _session->_csrc != _message->_header->_csrc )
         free(_message->_header->_csrc);
@@ -231,7 +230,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
             _session->_last_error = "Tried to send empty message";
         } else {
             _last = sendpacket ( _it->_dest, _msg->_data, _msg->_length );
-            _msg->_data = NULL;
+            /*_msg->_data = NULL;*/
 
             if ( _last < 0 ) {
                 _session->_last_error = strerror ( errno );
@@ -290,7 +289,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
 
         _length += ( 4 + _retu->_ext_header->_ext_len * 4 );
         /* Allocate Memory for _retu->_data */
-        _retu->_data = malloc ( sizeof *_retu->_data * _length );
+        _retu->_data = malloc ( sizeof _retu->_data * _length );
 
         /*
          * Parses header into _retu->_data starting from 0
@@ -302,7 +301,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
     }
     else {
         /* Allocate Memory for _retu->_data */
-        _retu->_data = malloc ( sizeof *_retu->_data * _length );
+        _retu->_data = malloc ( sizeof _retu->_data * _length );
 
         /*
          * Parses header into _retu->_data starting from 0

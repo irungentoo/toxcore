@@ -123,7 +123,7 @@ void print_ext_header_info(rtp_ext_header_t* _ext_header)
     );
 }
 
-int main ( int argc, char* argv[] )
+int ___main ( int argc, char* argv[] )
 {
     arg_t* _list = parse_args ( argc, argv );
 
