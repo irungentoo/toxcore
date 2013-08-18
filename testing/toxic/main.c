@@ -76,8 +76,10 @@ static Messenger *init_tox()
     setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
 #elif win32
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
+#elif MAC_OSX
+    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
 #else
-    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This implies users of other Unixes are hipsters
+    setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4")); 
 #endif
     return m;
 }
