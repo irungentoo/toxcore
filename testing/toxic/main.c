@@ -74,10 +74,10 @@ static Messenger *init_tox()
     m_callback_action(m, on_action, NULL);
 #ifdef __linux__
     setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
-#elif defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#elif win32
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
 #else
-    setname(m, (uint8_t *) "Hipster", sizeof("Hipster"));
+    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This implies users of other Unixes are hipsters
 #endif
     return m;
 }
@@ -92,8 +92,10 @@ int init_connection(void)
     if (DHT_isconnected())
         return 0;
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#if win32
     FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
+#elif MAC_OSX
+    FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
 #else
     FILE *fp = fopen("~/.tox/DHTservers", "r");
 #endif
@@ -291,12 +293,10 @@ int main(int argc, char *argv[])
         if (config_err) {
             #if WIN32 
                 DATA_FILE = strdup("%appdata/.tox/data");
-            #else
-            #if MAC_OSX
+            #elif MAC_OSX
                 DATA_FILE = strdup("~Library/Application Support/data");
             #else
                 DATA_FILE = strdup("~/.tox/data");
-            #endif
             #endif
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
@@ -304,12 +304,10 @@ int main(int argc, char *argv[])
             strcat(DATA_FILE, CONFIGDIR);
             #if WIN32 
                 DATA_FILE = strdup("%appdata/.tox/data");
-            #else
-            #if MAC_OSX
+            #elif MAC_OSX
                 DATA_FILE = strdup("~Library/Application Support/data");
             #else
                 DATA_FILE = strdup("~/.tox/data");
-            #endif
             #endif
         }
     }
