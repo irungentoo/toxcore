@@ -669,10 +669,6 @@ static void receive_crypto(void)
             uint8_t session_key[crypto_box_PUBLICKEYBYTES];
             uint16_t len;
 
-            if (id_packet(crypto_connections[i].number) == 1)
-                /* if the packet is a friend request drop it (because we are already friends) */
-                len = read_packet(crypto_connections[i].number, temp_data);
-
             if (id_packet(crypto_connections[i].number) == 2) { /* handle handshake packet. */
                 len = read_packet(crypto_connections[i].number, temp_data);
 
@@ -690,9 +686,10 @@ static void receive_crypto(void)
                         crypto_connections[i].status = CONN_NOT_CONFIRMED; /* set it to its proper value right after. */
                     }
                 }
-            } else if (id_packet(crypto_connections[i].number) != -1) // This should not happen kill the connection if it does
+            } else if (id_packet(crypto_connections[i].number) != -1) { // This should not happen kill the connection if it does
                 crypto_kill(crypto_connections[i].number);
-
+                return;
+            }
         }
 
         if (crypto_connections[i].status == CONN_NOT_CONFIRMED) {
@@ -714,12 +711,16 @@ static void receive_crypto(void)
 
                     /* connection is accepted so we disable the auto kill by setting it to about 1 month from now. */
                     kill_connection_in(crypto_connections[i].number, 3000000);
-                } else
+                } else {
                     crypto_kill(crypto_connections[i].number); // This should not happen kill the connection if it does
+                    return;
+                }
             } else if (id_packet(crypto_connections[i].number) != -1)
                 /* This should not happen
                    kill the connection if it does */
                 crypto_kill(crypto_connections[i].number);
+
+            return;
         }
     }
 }
