@@ -312,7 +312,8 @@ static void free_connections(void)
 {
     uint32_t i;
 
-    for (i = connections_length; i != 0; --i)
+    /* leave 1, lest a null connections be dereferenced */
+    for (i = connections_length; i != 1; --i)
         if (connections[i - 1].status != 0)
             break;
 
