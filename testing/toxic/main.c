@@ -27,7 +27,7 @@
 
 /* Export for use in Callbacks */
 char *DATA_FILE = NULL;
-char dir[31];
+char dir[256];
 
 void on_window_resize(int sig)
 {
@@ -38,13 +38,13 @@ void on_window_resize(int sig)
 
 void setdir()
 {
-    #ifdef WIN32 
-        strcpy(dir, "%appdata%/.tox/");
-    #elif defined(MAC_OSX)
-        strcpy(dir, "~/Library/Application Support/.tox/");
-    #elif defined(linux)
-        strcpy(dir, "~/.tox/");
-    #endif
+#ifdef WIN32
+    strcpy(dir, "%appdata%/.tox/");
+#elif defined(MAC_OSX)
+    strcpy(dir, "~/Library/Application Support/.tox/");
+#elif defined(linux)
+    strcpy(dir, "~/.tox/");
+#endif
 }
 
 static void init_term()
@@ -84,15 +84,15 @@ static Messenger *init_tox()
     m_callback_namechange(m, on_nickchange, NULL);
     m_callback_statusmessage(m, on_statuschange, NULL);
     m_callback_action(m, on_action, NULL);
-    #ifdef __linux__
-        setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
-    #elif defined(WIN32)
-        setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
-    #elif defined(MAC_OSX)
-        setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
-    #else
-        setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4")); 
-    #endif
+#ifdef __linux__
+    setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
+#elif defined(WIN32)
+    setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
+#elif defined(MAC_OSX)
+    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
+#else
+    setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
+#endif
     return m;
 }
 
@@ -106,13 +106,13 @@ int init_connection(void)
     if (DHT_isconnected())
         return 0;
 
-    #if WIN32
-        FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
-    #elif MAC_OSX
-        FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
-    #else
-        FILE *fp = fopen("~/.tox/DHTservers", "r");
-    #endif
+#if WIN32
+    FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
+#elif MAC_OSX
+    FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
+#else
+    FILE *fp = fopen("~/.tox/DHTservers", "r");
+#endif
 
     if (!fp)
         return 1;
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
             strcat(DATA_FILE, dir);
             DATA_FILE = strdup("data");
 
-        
+
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
