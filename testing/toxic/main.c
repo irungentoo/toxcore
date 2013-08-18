@@ -74,7 +74,7 @@ static Messenger *init_tox()
     m_callback_action(m, on_action, NULL);
 #ifdef __linux__
     setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
-#elif WIN32
+#elif defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
 #else
     setname(m, (uint8_t *) "Hipster", sizeof("Hipster"));
