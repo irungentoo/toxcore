@@ -40,7 +40,7 @@ void setdir()
 {
 #ifdef WIN32
     strcpy(dir, "%appdata%/.tox/");
-#elif defined(MAC_OSX)
+#elif __APPLE__
     strcpy(dir, "~/Library/Application Support/.tox/");
 #elif defined(linux)
     strcpy(dir, "~/.tox/");
@@ -88,7 +88,7 @@ static Messenger *init_tox()
     setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
 #elif defined(WIN32)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
-#elif defined(MAC_OSX)
+#elif __APPLE__
     setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
 #else
     setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
@@ -108,7 +108,7 @@ int init_connection(void)
 
 #if WIN32
     FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
-#elif MAC_OSX
+#elif __APPLE__
     FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
 #else
     FILE *fp = fopen("~/.tox/DHTservers", "r");
