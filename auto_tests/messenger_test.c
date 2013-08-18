@@ -88,12 +88,12 @@ START_TEST(test_m_set_userstatus)
     uint16_t bad_length = REALLY_BIG_NUMBER;
 
     ck_assert_msg((m_set_statusmessage(m, (uint8_t *)status, bad_length) == -1),
-        "m_set_userstatus did NOT catch the following length: %d\n",
-        REALLY_BIG_NUMBER);
+                  "m_set_userstatus did NOT catch the following length: %d\n",
+                  REALLY_BIG_NUMBER);
 
     ck_assert_msg((m_set_statusmessage(m, (uint8_t *)status, good_length) == 0),
-        "m_set_userstatus did NOT return 0 on the following length: %d\n"
-        "MAX_STATUSMESSAGE_LENGTH: %d\n", good_length, MAX_STATUSMESSAGE_LENGTH);
+                  "m_set_userstatus did NOT return 0 on the following length: %d\n"
+                  "MAX_STATUSMESSAGE_LENGTH: %d\n", good_length, MAX_STATUSMESSAGE_LENGTH);
 }
 END_TEST
 
@@ -157,10 +157,10 @@ START_TEST(test_setname)
     int bad_length = REALLY_BIG_NUMBER;
 
     ck_assert_msg((setname(m, (uint8_t *)good_name, bad_length) == -1),
-        "setname() did NOT error on %d as a length argument!\n", bad_length);
+                  "setname() did NOT error on %d as a length argument!\n", bad_length);
 
     ck_assert_msg((setname(m, (uint8_t *)good_name, good_length) == 0),
-        "setname() did NOT return 0 on good arguments!\n");
+                  "setname() did NOT return 0 on good arguments!\n");
 }
 END_TEST
 

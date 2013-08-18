@@ -37,6 +37,8 @@ static int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_i
    return -1 if realloc fails */
 int realloc_friendlist(Messenger *m, uint32_t num)
 {
+    if (num * sizeof(Friend) == 0) return -1;
+
     Friend *newfriendlist = realloc(m->friendlist, num * sizeof(Friend));
 
     if (newfriendlist == NULL && num != 0)
@@ -597,7 +599,6 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
 
 /*Interval in seconds between LAN discovery packet sending*/
 #define LAN_DISCOVERY_INTERVAL 60
-
 #define PORT 33445
 
 /*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
@@ -951,6 +952,7 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
         }
     }
 
+    free(temp);
     data += size;
     length -= size;
 
@@ -968,7 +970,5 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 
     setname(m, data, small_size);
 
-    free(temp);
     return 0;
 }
-

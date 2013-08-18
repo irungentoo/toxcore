@@ -272,6 +272,7 @@ void cmd_nick(ToxWindow *self, Messenger *m, char **args)
     char *nick = args[1];
     setname(m, (uint8_t *) nick, strlen(nick) + 1);
     wprintw(self->window, "Nickname set to: %s\n", nick);
+
     if (store_data(m, DATA_FILE)) {
         wprintw(self->window, "\nCould not store Messenger data\n");
     }

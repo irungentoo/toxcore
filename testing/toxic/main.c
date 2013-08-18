@@ -27,12 +27,24 @@
 
 /* Export for use in Callbacks */
 char *DATA_FILE = NULL;
+char dir[31];
 
 void on_window_resize(int sig)
 {
     endwin();
     refresh();
     clear();
+}
+
+void setdir()
+{
+    #ifdef WIN32 
+        strcpy(dir, "%appdata%/.tox/");
+    #elif defined(MAC_OSX)
+        strcpy(dir, "~/Library/Application Support/.tox/");
+    #elif defined(linux)
+        strcpy(dir, "~/.tox/");
+    #endif
 }
 
 static void init_term()
@@ -52,6 +64,10 @@ static void init_term()
         init_pair(3, COLOR_RED, COLOR_BLACK);
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
         init_pair(5, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(7, COLOR_BLACK, COLOR_BLACK);
+        init_pair(8, COLOR_BLACK, COLOR_WHITE);
+
     }
 
     refresh();
@@ -68,13 +84,15 @@ static Messenger *init_tox()
     m_callback_namechange(m, on_nickchange, NULL);
     m_callback_statusmessage(m, on_statuschange, NULL);
     m_callback_action(m, on_action, NULL);
-#ifdef __linux__
-    setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
-#elif WIN32
-    setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
-#else
-    setname(m, (uint8_t *) "Hipster", sizeof("Hipster"));
-#endif
+    #ifdef __linux__
+        setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
+    #elif defined(WIN32)
+        setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
+    #elif defined(MAC_OSX)
+        setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
+    #else
+        setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4")); 
+    #endif
     return m;
 }
 
@@ -88,7 +106,13 @@ int init_connection(void)
     if (DHT_isconnected())
         return 0;
 
-    FILE *fp = fopen("../../../other/DHTservers", "r");
+    #if WIN32
+        FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
+    #elif MAC_OSX
+        FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
+    #else
+        FILE *fp = fopen("~/.tox/DHTservers", "r");
+    #endif
 
     if (!fp)
         return 1;
@@ -255,6 +279,7 @@ static void load_data(Messenger *m, char *path)
 
 int main(int argc, char *argv[])
 {
+    setdir();
     char *user_config_dir = get_user_config_dir();
     int config_err = 0;
 
@@ -281,12 +306,16 @@ int main(int argc, char *argv[])
         config_err = create_user_config_dir(user_config_dir);
 
         if (config_err) {
+            strcat(DATA_FILE, dir);
             DATA_FILE = strdup("data");
+
+        
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
             strcat(DATA_FILE, CONFIGDIR);
-            strcat(DATA_FILE, "data");
+            strcat(DATA_FILE, dir);
+            DATA_FILE = strdup("data");
         }
     }
 
