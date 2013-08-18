@@ -48,8 +48,8 @@
 #define DYNAMIC_STRING(VAR, SIZE) { ALLOCATOR(VAR, char, SIZE) memset(VAR, '\0', SIZE); }
 
 
-#define SET_ALLOCATE(VAR, TYPE, NUM)  { TYPE* warn_evasion = realloc(VAR, sizeof(TYPE) * NUM ); unused(warn_evasion); }
-#define ADD_ALLOCATE(VAR, TYPE, PREV) SET_ALLOCATE(VAR, TYPE, PREV + 1)
-#define REM_ALLOCATE(VAR, TYPE, PREV) SET_ALLOCATE(VAR, TYPE, PREV - 1)
+#define SET_ALLOCATE(VAR, NUM)  unused(realloc(VAR, sizeof *VAR * NUM ));
+#define ADD_ALLOCATE(VAR, PREV) SET_ALLOCATE(VAR, PREV + 1)
+#define REM_ALLOCATE(VAR, PREV) SET_ALLOCATE(VAR, PREV - 1)
 
 #endif /* _RTP__ALLOCATOR_H_ */

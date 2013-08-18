@@ -154,7 +154,7 @@ void rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message)
 
     if ( _session->_csrc != _message->_header->_csrc )
         free(_message->_header->_csrc);
-    if ( _session->_ext_header != _message->_ext_header){
+    if ( _message->_ext_header && _session->_ext_header != _message->_ext_header){
         free(_message->_ext_header->_hd_ext);
         free(_message->_ext_header);
     }
@@ -274,40 +274,48 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
 
 rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
 {
+    uint16_t _from_pos;
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
 
     /* Sets header values and copies the extension header in _retu */
-    _retu->_header = ( rtp_header_t* ) rtp_build_header ( _session ); /* It allocates memory and all */
+    _retu->_header = rtp_build_header ( _session ); /* It allocates memory and all */
     _retu->_ext_header = _session->_ext_header;
 
     _length += _retu->_header->_length;
 
-    /* Allocate Memory for _retu->_data */
-    _retu->_data = malloc ( sizeof *_retu->_data * _length );
+    if ( _retu->_ext_header ){
 
-    /*
-     * Parses header into _retu->_data starting from 0
-     * Will need to set this _from to 1 since the 0 byte
-     * Is used by the messenger to determine that this is rtp.
-     */
-    uint16_t _from_pos = rtp_add_header ( _retu->_header, _retu->_data, 0, _length );
+        _length += ( 4 + _retu->_ext_header->_ext_len * 4 );
+        /*SET_ALLOCATE(_retu->_data, _length ) */
+        _retu->_data = malloc ( sizeof *_retu->_data * _length );
+
+        _from_pos = rtp_add_header ( _retu->_header, _retu->_data, 0 );
+
+        rtp_add_extention_header( _retu->_ext_header, _retu->_data + ( _from_pos - 1 ) );
+        _from_pos += _retu->_ext_header->_ext_len;
+    }
+    else {
+        /* Allocate Memory for _retu->_data */
+        _retu->_data = malloc ( sizeof *_retu->_data * _length );
+
+        /*
+         * Parses header into _retu->_data starting from 0
+         * Will need to set this _from to 1 since the 0 byte
+         * Is used by the messenger to determine that this is rtp.
+         */
+        _from_pos = rtp_add_header ( _retu->_header, _retu->_data, 0 );
+    }
 
     /*
      * Parses the extension header into the message
-     * Of course if there is any
+     * Of course if any
      */
 
-    if ( _retu->_ext_header ){
 
-        _length += ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
-        SET_ALLOCATE(_retu->_data, uint8_t, _length )
-
-        _from_pos = rtp_add_extention_header( _retu->_ext_header, _retu->_data, _from_pos - 1, _length );
-    }
 
     /* Appends _data on to _retu->_data */
-    memadd ( _retu->_data, _from_pos, _data, _length);
+    memadd ( _retu->_data, _from_pos, _data, _length - 1);
 
     _retu->_length = _length;
 
@@ -366,7 +374,7 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _le
     _session->_current_timestamp = _retu->_header->_timestamp;
 
     if ( rtp_header_get_flag_extension(_retu->_header) ){
-        _retu->_ext_header = rtp_extract_ext_header(_data, _from_pos - 1, _length);
+        _retu->_ext_header = rtp_extract_ext_header(_data, _from_pos - 1);
         _retu->_length -= ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
         _from_pos += ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
     }
@@ -397,7 +405,7 @@ int rtp_add_resolution_marking( rtp_session_t* _session, uint16_t _width, uint16
         _session->_ext_header->_ext_len = 0;
         ALLOCATOR_S(_session->_ext_header->_hd_ext, uint32_t)
     }
-    else ADD_ALLOCATE ( _session->_ext_header->_hd_ext, uint32_t, _session->_ext_header->_ext_len )
+    else ADD_ALLOCATE ( _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len )
 
     _session->_ext_header->_ext_len++; /* Just add one */
     _session->_ext_header->_ext_type = RTP_EXT_TYPE_RESOLUTION;

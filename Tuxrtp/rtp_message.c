@@ -88,7 +88,7 @@ rtp_header_t* rtp_extract_header ( uint8_t* _payload, size_t _from, size_t _size
     return _retu;
 }
 
-rtp_ext_header_t* rtp_extract_ext_header ( uint8_t* _payload, size_t _from, size_t _size )
+rtp_ext_header_t* rtp_extract_ext_header ( uint8_t* _payload, size_t _from )
 {
     uint8_t* _it = &(_payload[_from]);
 
@@ -111,7 +111,7 @@ rtp_ext_header_t* rtp_extract_ext_header ( uint8_t* _payload, size_t _from, size
     return _retu;
 }
 
-size_t rtp_add_header ( rtp_header_t* _header, uint8_t* _payload, size_t _from, size_t _size )
+size_t rtp_add_header ( rtp_header_t* _header, uint8_t* _payload, size_t _from)
 {
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _header );
 
@@ -143,22 +143,19 @@ size_t rtp_add_header ( rtp_header_t* _header, uint8_t* _payload, size_t _from, 
     return _from;
 }
 
-size_t rtp_add_extention_header(rtp_ext_header_t* _header, uint8_t* _payload, size_t _from, size_t _size)
+void rtp_add_extention_header(rtp_ext_header_t* _header, uint8_t* _payload)
 {
-    uint8_t* _it = &(_payload[_from]);
+    uint8_t* _it = _payload;
 
-    *_it = ( _header->_ext_len >> 8 ); ++_it;
-    *_it = ( _header->_ext_len ); ++_it;
+    *_it = ( _header->_ext_len >> 8 ); _it++;
+    *_it = ( _header->_ext_len ); _it++;
 
     *_it = ( _header->_ext_type >> 8 ); ++_it;
     *_it = ( _header->_ext_type );
 
-    _from += 4;
-
     size_t x;
     for ( x = 0; x < _header->_ext_len; x++ ) {
 
-        _from += 4;
         ++_it;
 
         *_it = ( _header->_hd_ext[x] >> 24 );  ++_it;
@@ -166,8 +163,6 @@ size_t rtp_add_extention_header(rtp_ext_header_t* _header, uint8_t* _payload, si
         *_it = ( _header->_hd_ext[x] >> 8 );  ++_it;
         *_it = ( _header->_hd_ext[x] );
     }
-
-    return _from;
 }
 
 size_t rtp_header_get_size ( rtp_header_t* _header )
