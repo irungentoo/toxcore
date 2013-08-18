@@ -93,7 +93,7 @@ int init_connection(void)
         return 0;
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-    FILE *fp = fopen("DHTservers", "r");
+    FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
 #else
     FILE *fp = fopen("~/.tox/DHTservers", "r");
 #endif
