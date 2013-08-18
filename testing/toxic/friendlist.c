@@ -13,7 +13,6 @@
 #include "windows.h"
 #include "friendlist.h"
 
-static char *WINDOW_STATUS;
 
 typedef struct {
     uint8_t name[MAX_NAME_LENGTH];
@@ -48,17 +47,7 @@ void friendlist_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *str, 
         return;
 
     if (friends[num].chatwin == -1) {
-        friends[num].chatwin = num;
-        int i;
-
-        /* Find first open slot to hold chat window */
-        for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
-            if (WINDOW_STATUS[i] == -1) {
-                WINDOW_STATUS[i] = num;
-                add_window(m, new_chat(m, num), i);
-                break;
-            }
-        }
+        friends[num].chatwin = add_window(m, new_chat(m, num));
     }
 }
 
@@ -106,25 +95,9 @@ static void friendlist_onKey(ToxWindow *self, Messenger *m, int key)
     } else if (key == '\n') {
         /* Jump to chat window if already open */
         if (friends[num_selected].chatwin != -1) {
-            int i;
-
-            for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
-                if (WINDOW_STATUS[i] == num_selected) {
-                    set_active_window(i);
-                    break;
-                }
-            }
+            set_active_window(friends[num_selected].chatwin);
         } else {
-            int i;
-
-            for (i = N_DEFAULT_WINS; i < MAX_WINDOW_SLOTS; ++i) {
-                if (WINDOW_STATUS[i] == -1) {
-                    WINDOW_STATUS[i] = num_selected;
-                    friends[num_selected].chatwin = num_selected;
-                    add_window(m, new_chat(m, num_selected), i);
-                    break;
-                }
-            }
+            friends[num_selected].chatwin = add_window(m, new_chat(m, num_selected));
         }
     }
 }
@@ -172,9 +145,8 @@ static void friendlist_onInit(ToxWindow *self, Messenger *m)
 
 }
 
-ToxWindow new_friendlist(char *ws)
+ToxWindow new_friendlist()
 {
-    WINDOW_STATUS = ws;
     ToxWindow ret;
     memset(&ret, 0, sizeof(ret));
 

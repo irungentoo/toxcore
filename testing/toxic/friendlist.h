@@ -4,7 +4,7 @@
 #include "windows.h"
 #include "chat.h"
 
-ToxWindow new_friendlist(char *ws);
+ToxWindow new_friendlist();
 int friendlist_onFriendAdded(Messenger *m, int num);
 void disable_chatwin(int f_num);
 void fix_name(uint8_t *name);
