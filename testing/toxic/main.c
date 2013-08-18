@@ -52,6 +52,10 @@ static void init_term()
         init_pair(3, COLOR_RED, COLOR_BLACK);
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
         init_pair(5, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(7, COLOR_BLACK, COLOR_BLACK);
+        init_pair(8, COLOR_BLACK, COLOR_WHITE);
+
     }
 
     refresh();
@@ -70,7 +74,7 @@ static Messenger *init_tox()
     m_callback_action(m, on_action, NULL);
 #ifdef __linux__
     setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
-#elif WIN32
+#elif defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
 #else
     setname(m, (uint8_t *) "Hipster", sizeof("Hipster"));
@@ -88,7 +92,11 @@ int init_connection(void)
     if (DHT_isconnected())
         return 0;
 
-    FILE *fp = fopen("../../../other/DHTservers", "r");
+    #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+        FILE *fp = fopen("DHTservers", "r");
+    #else
+        FILE *fp = fopen("~/.tox/DHTservers", "r"); 
+    #endif
 
     if (!fp)
         return 1;
