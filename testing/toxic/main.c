@@ -42,7 +42,7 @@ void setdir()
     strcpy(dir, "%appdata%/.tox/");
 #elif defined(MAC_OSX)
     strcpy(dir, "~/Library/Application Support/.tox/");
-#elif defined(linux)
+#elif defined(__linux__)
     strcpy(dir, "~/.tox/");
 #endif
 }
@@ -89,7 +89,7 @@ static Messenger *init_tox()
 #elif defined(WIN32)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
 #elif defined(MAC_OSX)
-    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
+    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to assume users of other Unixes are hipsters
 #else
     setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
 #endif
@@ -105,14 +105,10 @@ int init_connection(void)
 {
     if (DHT_isconnected())
         return 0;
-
-#if WIN32
-    FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
-#elif MAC_OSX
-    FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
-#else
-    FILE *fp = fopen("~/.tox/DHTservers", "r");
-#endif
+    char serverlist[50];
+    strcat(serverlist, dir);
+    strcpy(serverlist, "DHTservers");
+    FILE *fp = fopen(serverlist, "r");
 
     if (!fp)
         return 1;
