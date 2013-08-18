@@ -37,6 +37,7 @@ git checkout tags/0.4.2
 ./configure && make check
 sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
+cd ..
 ```
 
 Or if checkinstall is not easily available for your distribution (e.g. Fedora), 
@@ -50,6 +51,7 @@ git checkout tags/0.4.2
 ./configure
 make check
 sudo make install
+cd ..
 ```
 
 
