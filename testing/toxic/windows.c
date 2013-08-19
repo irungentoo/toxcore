@@ -197,6 +197,7 @@ static void draw_bar()
             if (windows[i].blink && (odd < (blinkrate / 2)))
                 attron(COLOR_PAIR(3));
 
+	    clrtoeol();
             printw(" %s", windows[i].title);
 
             if (windows[i].blink && (odd < (blinkrate / 2)))
