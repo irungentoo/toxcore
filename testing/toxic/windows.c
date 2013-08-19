@@ -221,16 +221,18 @@ void draw_active_window(Messenger *m)
 {
 
     ToxWindow *a = active_window;
+    wint_t ch = 0;
+
     prepare_window(a->window);
     a->blink = false;
     draw_bar();
     a->onDraw(a);
 
     /* Handle input */
-    int ch = getch();
+    get_wch(&ch);
 
     if (ch == '\t' || ch == KEY_BTAB)
-        set_next_window(ch);
+        set_next_window((int) ch);
     else if (ch != ERR)
         a->onKey(a, m, ch);
 }

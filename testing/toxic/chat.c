@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include <time.h>
+#include <limits.h>
 
 #include "../../core/Messenger.h"
 #include "../../core/network.h"
@@ -20,7 +21,7 @@
 
 typedef struct {
     int friendnum;
-    char line[MAX_STR_SIZE];
+    wchar_t line[MAX_STR_SIZE];
     size_t pos;
     WINDOW *history;
     WINDOW *linewin;
@@ -50,7 +51,6 @@ static void chat_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *msg,
     getname(m, num, (uint8_t *) &nick);
     msg[len - 1] = '\0';
     nick[MAX_NAME_LENGTH - 1] = '\0';
-    fix_name(msg);
     fix_name(nick);
 
     wattron(ctx->history, COLOR_PAIR(2));
@@ -141,7 +141,43 @@ int string_is_empty(char *string)
     return rc;
 }
 
-static void chat_onKey(ToxWindow *self, Messenger *m, int key)
+/* convert wide characters to null terminated string */
+static char *wcs_to_char(wchar_t *string)
+{
+    size_t len = 0;
+    char *ret = NULL;
+
+    len = wcstombs(NULL, string, 0);
+    if (len != (size_t) -1) {
+        len++;
+        ret = malloc(len);
+        wcstombs(ret, string, len);
+    } else {
+        ret = malloc(2);
+        ret[0] = ' ';
+        ret[1] = '\0';
+    }
+    return ret;
+}
+
+/* convert a wide char to null terminated string */
+static char *wc_to_char(wchar_t ch)
+{
+    int len = 0;
+    static char ret[MB_LEN_MAX + 1];
+
+    len = wctomb(ret, ch);
+    if (len == -1) {
+        ret[0] = ' ';
+        ret[1] = '\0';
+    } else {
+        ret[len] = '\0';
+    }
+
+    return ret;
+}
+
+static void chat_onKey(ToxWindow *self, Messenger *m, wint_t key)
 {
     ChatContext *ctx = (ChatContext *) self->x;
     struct tm *timeinfo = get_time();
@@ -151,18 +187,18 @@ static void chat_onKey(ToxWindow *self, Messenger *m, int key)
     getmaxyx(self->window, y2, x2);
 
     /* Add printable chars to buffer and print on input space */
-    if (isprint(key)) {
+    if (iswprint(key)) {
         if (ctx->pos != sizeof(ctx->line) - 1) {
-            mvwaddch(self->window, y, x, key);
+            mvwaddstr(self->window, y, x, wc_to_char(key));
             ctx->line[ctx->pos++] = key;
-            ctx->line[ctx->pos] = '\0';
+            ctx->line[ctx->pos] = L'\0';
         }
     }
 
     /* BACKSPACE key: Remove one character from line */
     else if (key == 0x107 || key == 0x8 || key == 0x7f) {
         if (ctx->pos > 0) {
-            ctx->line[--ctx->pos] = '\0';
+            ctx->line[--ctx->pos] = L'\0';
 
             if (x == 0)
                 mvwdelch(self->window, y - 1, x2 - 1);
@@ -173,15 +209,16 @@ static void chat_onKey(ToxWindow *self, Messenger *m, int key)
 
     /* RETURN key: Execute command or print line */
     else if (key == '\n') {
+        char *line = wcs_to_char(ctx->line);
         wclear(ctx->linewin);
         wmove(self->window, y2 - CURS_Y_OFFSET, 0);
         wclrtobot(self->window);
 
-        if (ctx->line[0] == '/')
-            execute(self, ctx, m, ctx->line);
+        if (line[0] == '/')
+            execute(self, ctx, m, line);
         else {
             /* make sure the string has at least non-space character */
-            if (!string_is_empty(ctx->line)) {
+            if (!string_is_empty(line)) {
                 uint8_t selfname[MAX_NAME_LENGTH];
                 getself_name(m, selfname, sizeof(selfname));
                 fix_name(selfname);
@@ -192,9 +229,9 @@ static void chat_onKey(ToxWindow *self, Messenger *m, int key)
                 wattron(ctx->history, COLOR_PAIR(1));
                 wprintw(ctx->history, "%s: ", selfname);
                 wattroff(ctx->history, COLOR_PAIR(1));
-                wprintw(ctx->history, "%s\n", ctx->line);
+                wprintw(ctx->history, "%s\n", line);
 
-                if (m_sendmessage(m, ctx->friendnum, (uint8_t *) ctx->line, strlen(ctx->line) + 1) == 0) {
+                if (m_sendmessage(m, ctx->friendnum, (uint8_t *) line, strlen(line) + 1) == 0) {
                     wattron(ctx->history, COLOR_PAIR(3));
                     wprintw(ctx->history, " * Failed to send message.\n");
                     wattroff(ctx->history, COLOR_PAIR(3));
@@ -202,8 +239,9 @@ static void chat_onKey(ToxWindow *self, Messenger *m, int key)
             }
         }
 
-        ctx->line[0] = '\0';
+        ctx->line[0] = L'\0';
         ctx->pos = 0;
+        free(line);
     }
 }
 
@@ -332,7 +370,7 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd)
         wprintw(ctx->history, "%s\n", id);
     }
 
-    else if (strcmp(ctx->line, "/close") == 0) {
+    else if (strcmp(cmd, "/close") == 0) {
         int f_num = ctx->friendnum;
         delwin(ctx->linewin);
         del_window(self);

@@ -11,7 +11,7 @@ static void printip(ipbuf buf, IP ip)
     sprintf((char *)buf, "%u.%u.%u.%u", ip.c[0], ip.c[1], ip.c[2], ip.c[3]);
 }
 
-static void dhtstatus_onKey(ToxWindow *self, Messenger *m, int key)
+static void dhtstatus_onKey(ToxWindow *self, Messenger *m, wint_t key)
 {
     switch (key) {
         case KEY_UP:

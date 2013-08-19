@@ -16,6 +16,6 @@ add_executable(${exe_name}
 	configdir.c)
 
 target_link_libraries(${exe_name}
-	curses)
+	cursesw)
 
 linkCoreLibraries(${exe_name})

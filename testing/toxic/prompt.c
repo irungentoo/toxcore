@@ -416,7 +416,7 @@ static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
     wprintw(self->window, "Invalid command.\n");
 }
 
-static void prompt_onKey(ToxWindow *self, Messenger *m, int key)
+static void prompt_onKey(ToxWindow *self, Messenger *m, wint_t key)
 {
     /* Add printable characters to line */
     if (isprint(key)) {
