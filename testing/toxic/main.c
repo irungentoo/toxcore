@@ -77,7 +77,7 @@ static Messenger *init_tox()
     setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
 #elif defined(WIN32)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
-#elif defined(MAC_OSX)
+#elif defined(__APPLE__)
     setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
 #else
     setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
@@ -292,8 +292,6 @@ int main(int argc, char *argv[])
         if (config_err) {
             DATA_FILE = strdup("data");
             SRVLIST_FILE = strdup("../../other/DHTservers");
-
-
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
