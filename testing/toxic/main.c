@@ -306,10 +306,7 @@ int main(int argc, char *argv[])
         config_err = create_user_config_dir(user_config_dir);
 
         if (config_err) {
-            strcat(DATA_FILE, dir);
             DATA_FILE = strdup("data");
-
-
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
