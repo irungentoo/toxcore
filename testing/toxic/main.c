@@ -40,7 +40,7 @@ void setdir()
 {
 #ifdef WIN32
     strcpy(dir, "%appdata%/.tox/");
-#elif __APPLE__
+#elif defined(__APPLE__)
     strcpy(dir, "~/Library/Application Support/.tox/");
 #elif defined(linux)
     strcpy(dir, "~/.tox/");
@@ -88,7 +88,7 @@ static Messenger *init_tox()
     setname(m, (uint8_t *) "Cool guy", sizeof("Cool guy"));
 #elif defined(WIN32)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
-#elif __APPLE__
+#elif defined(__APPLE__)
     setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
 #else
     setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
@@ -108,7 +108,7 @@ int init_connection(void)
 
 #if WIN32
     FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
-#elif __APPLE__
+#elif defined(__APPLE__)
     FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
 #else
     FILE *fp = fopen("~/.tox/DHTservers", "r");
@@ -314,8 +314,7 @@ int main(int argc, char *argv[])
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
             strcat(DATA_FILE, CONFIGDIR);
-            strcat(DATA_FILE, dir);
-            DATA_FILE = strdup("data");
+            strcat(DATA_FILE, "data");
         }
     }
 
