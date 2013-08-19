@@ -322,6 +322,7 @@ static void free_connections(void)
     if (i == 0) {
         free(connections);
         connections = NULL;
+        connections_length = i;
         return;
     }
 
