@@ -123,8 +123,7 @@ static void chat_onStatusChange(ToxWindow *self, int num, uint8_t *status, uint1
 
     status[len - 1] = '\0';
     fix_name(status);
-    snprintf(self->title, sizeof(self->title), "[%s (%d)]", status, num);
-
+    
     wattron(ctx->history, COLOR_PAIR(3));
     wprintw(ctx->history, "* Your partner changed status to '%s'\n", status);
     wattroff(ctx->history, COLOR_PAIR(3));
