@@ -27,24 +27,13 @@
 
 /* Export for use in Callbacks */
 char *DATA_FILE = NULL;
-char dir[256];
+char *SRVLIST_FILE = NULL;
 
 void on_window_resize(int sig)
 {
     endwin();
     refresh();
     clear();
-}
-
-void setdir()
-{
-#ifdef WIN32
-    strcpy(dir, "%appdata%/.tox/");
-#elif defined(__APPLE__)
-    strcpy(dir, "~/Library/Application Support/.tox/");
-#elif defined(linux)
-    strcpy(dir, "~/.tox/");
-#endif
 }
 
 static void init_term()
@@ -103,16 +92,12 @@ static Messenger *init_tox()
 /* Connects to a random DHT server listed in the DHTservers file */
 int init_connection(void)
 {
+    FILE *fp = NULL;
+    
     if (DHT_isconnected())
         return 0;
 
-#if WIN32
-    FILE *fp = fopen("%appdata%/.tox/DHTservers", "r");
-#elif defined(__APPLE__)
-    FILE *fp = fopen("~/Library/Application Support/.tox/DHTservers", "r");
-#else
-    FILE *fp = fopen("~/.tox/DHTservers", "r");
-#endif
+    fp = fopen(SRVLIST_FILE, "r");
 
     if (!fp)
         return 1;
@@ -279,7 +264,6 @@ static void load_data(Messenger *m, char *path)
 
 int main(int argc, char *argv[])
 {
-    setdir();
     char *user_config_dir = get_user_config_dir();
     int config_err = 0;
 
@@ -307,11 +291,17 @@ int main(int argc, char *argv[])
 
         if (config_err) {
             DATA_FILE = strdup("data");
+            SRVLIST_FILE = strdup("../../other/DHTservers");
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
             strcat(DATA_FILE, CONFIGDIR);
             strcat(DATA_FILE, "data");
+            
+            SRVLIST_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("DHTservers") + 1);
+            strcpy(SRVLIST_FILE, user_config_dir);
+            strcat(SRVLIST_FILE, CONFIGDIR);
+            strcat(SRVLIST_FILE, "DHTservers");
         }
     }
 
@@ -348,5 +338,6 @@ int main(int argc, char *argv[])
 
     cleanupMessenger(m);
     free(DATA_FILE);
+    free(SRVLIST_FILE);
     return 0;
 }

@@ -19,9 +19,9 @@
  */
 
 #ifdef _win32
-#define CONFIGDIR "\\toxic\\"
+#define CONFIGDIR "\\tox\\"
 #else
-#define CONFIGDIR "/toxic/"
+#define CONFIGDIR "/tox/"
 #endif
 
 #ifndef S_ISDIR
