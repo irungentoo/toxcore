@@ -21,6 +21,6 @@ endif()
 
 target_link_libraries(toxcore ${LINK_CRYPTO_LIBRARY})
 
-if(WIN32)
+if(("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows"))
 	target_link_libraries(toxcore ws2_32)
 endif()
