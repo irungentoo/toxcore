@@ -135,7 +135,7 @@ int send_ping_request(IP_Port ipp, clientid_t *client_id)
     if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
-    return sendpacket(ipp, (uint8_t *) &pk, sizeof(pk));
+    return sendpacket(temp_net->sock, ipp, (uint8_t *) &pk, sizeof(pk));
 }
 
 int send_ping_response(IP_Port ipp, clientid_t *client_id, uint64_t ping_id)
@@ -160,10 +160,10 @@ int send_ping_response(IP_Port ipp, clientid_t *client_id, uint64_t ping_id)
     if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
-    return sendpacket(ipp, (uint8_t *) &pk, sizeof(pk));
+    return sendpacket(temp_net->sock, ipp, (uint8_t *) &pk, sizeof(pk));
 }
 
-int handle_ping_request(IP_Port source, uint8_t *packet, uint32_t length)
+int handle_ping_request(void * object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     pingreq_t *p = (pingreq_t *) packet;
     int        rc;
@@ -190,7 +190,7 @@ int handle_ping_request(IP_Port source, uint8_t *packet, uint32_t length)
     return 0;
 }
 
-int handle_ping_response(IP_Port source, uint8_t *packet, uint32_t length)
+int handle_ping_response(void * object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     pingres_t *p = (pingres_t *) packet;
     int       rc;

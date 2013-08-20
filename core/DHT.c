@@ -544,7 +544,7 @@ static int getnodes(IP_Port ip_port, uint8_t *public_key, uint8_t *client_id)
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(ip_port, data, sizeof(data));
+    return sendpacket(temp_net->sock, ip_port, data, sizeof(data));
 }
 
 /* send a send nodes response */
@@ -586,10 +586,10 @@ static int sendnodes(IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, u
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
+    return sendpacket(temp_net->sock, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
-static int handle_getnodes(IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_getnodes(void * object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     uint64_t ping_id;
 
@@ -621,7 +621,7 @@ static int handle_getnodes(IP_Port source, uint8_t *packet, uint32_t length)
     return 0;
 }
 
-static int handle_sendnodes(IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_sendnodes(void * object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     uint64_t ping_id;
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
@@ -841,7 +841,7 @@ int route_packet(uint8_t *client_id, uint8_t *packet, uint32_t length)
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
         if (id_equal(client_id, close_clientlist[i].client_id))
-            return sendpacket(close_clientlist[i].ip_port, packet, length);
+            return sendpacket(temp_net->sock, close_clientlist[i].ip_port, packet, length);
     }
 
     return -1;
@@ -912,7 +912,7 @@ int route_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t length)
 
         /*If ip is not zero and node is good */
         if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-            if (sendpacket(client->ip_port, packet, length) == length)
+            if (sendpacket(temp_net->sock, client->ip_port, packet, length) == length)
                 ++sent;
         }
     }
@@ -951,7 +951,7 @@ static int routeone_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     if (n < 1)
         return 0;
 
-    if (sendpacket(ip_list[rand() % n], packet, length) == length)
+    if (sendpacket(temp_net->sock, ip_list[rand() % n], packet, length) == length)
         return 1;
 
     return 0;
@@ -989,7 +989,7 @@ static int send_NATping(uint8_t *public_key, uint64_t ping_id, uint8_t type)
     data[0] = type;
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
     /* 254 is NAT ping request packet id */
-    int len = create_request(packet, public_key, data, sizeof(uint64_t) + 1, 254);
+    int len = create_request(self_public_key, self_secret_key, packet, public_key, data, sizeof(uint64_t) + 1, 254);
 
     if (len == -1)
         return -1;
@@ -1201,11 +1201,11 @@ static void do_toping()
 
 void DHT_init(void)
 {
-    networking_registerhandler(0, &handle_ping_request);
-    networking_registerhandler(1, &handle_ping_response);
-    networking_registerhandler(2, &handle_getnodes);
-    networking_registerhandler(3, &handle_sendnodes);
-    cryptopacket_registerhandler(254, &handle_NATping);
+    networking_registerhandler(temp_net, 0, &handle_ping_request, NULL);
+    networking_registerhandler(temp_net, 1, &handle_ping_response, NULL);
+    networking_registerhandler(temp_net, 2, &handle_getnodes, NULL);
+    networking_registerhandler(temp_net, 3, &handle_sendnodes, NULL);
+    cryptopacket_registerhandler(temp_net_crypto, 254, &handle_NATping);
 }
 
 void doDHT(void)

@@ -246,7 +246,7 @@ int m_delfriend(Messenger *m, int friendnumber)
         return -1;
 
     DHT_delfriend(m->friendlist[friendnumber].client_id);
-    crypto_kill(m->friendlist[friendnumber].crypt_connection_id);
+    crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
     free(m->friendlist[friendnumber].statusmessage);
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
@@ -606,7 +606,7 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
     if (length != 0)
         memcpy(packet + 1, data, length);
 
-    return write_cryptpacket(m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
+    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
 
@@ -626,21 +626,25 @@ int LANdiscovery(timer *t, void *arg)
 Messenger *initMessenger(void)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
-
     if ( ! m )
         return 0;
-
-    new_keys();
-    m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
-    initNetCrypto();
     IP ip;
     ip.i = 0;
-
-    if (init_networking(ip, PORT) == -1)
-        return 0;
+    m->net = new_networking(ip, PORT);
+    if (m->net == NULL) {
+        free(m);
+        return NULL;
+    }
+    m->net_crypto = new_net_crypto(m->net);
+    if (m->net_crypto == NULL) {
+        free(m);
+        free(m->net);
+        return NULL;
+    }
+    new_keys(m->net_crypto);
+    m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
 
     DHT_init();
-    LosslessUDP_init();
     friendreq_init();
     LANdiscovery_init();
     set_nospam(random_int());
@@ -657,6 +661,7 @@ void cleanupMessenger(Messenger *m)
     /* FIXME TODO ideally cleanupMessenger will mirror initMessenger
      * this requires the other modules to expose cleanup functions
      */
+    kill_net_crypto(m->net_crypto);
     free(m->friendlist);
     free(m);
 }
@@ -696,10 +701,10 @@ void doFriends(Messenger *m)
 
             IP_Port friendip = DHT_getfriendip(m->friendlist[i].client_id);
 
-            switch (is_cryptoconnected(m->friendlist[i].crypt_connection_id)) {
+            switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
                 case 0:
                     if (friendip.ip.i > 1)
-                        m->friendlist[i].crypt_connection_id = crypto_connect(m->friendlist[i].client_id, friendip);
+                        m->friendlist[i].crypt_connection_id = crypto_connect(m->net_crypto, m->friendlist[i].client_id, friendip);
 
                     break;
 
@@ -712,7 +717,7 @@ void doFriends(Messenger *m)
                     break;
 
                 case 4:
-                    crypto_kill(m->friendlist[i].crypt_connection_id);
+                    crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                     m->friendlist[i].crypt_connection_id = -1;
                     break;
 
@@ -741,7 +746,7 @@ void doFriends(Messenger *m)
                 send_ping(m, i);
             }
 
-            len = read_cryptpacket(m->friendlist[i].crypt_connection_id, temp);
+            len = read_cryptpacket(m->net_crypto, m->friendlist[i].crypt_connection_id, temp);
             uint8_t packet_id = temp[0];
             uint8_t *data = temp + 1;
             int data_length = len - 1;
@@ -833,8 +838,8 @@ void doFriends(Messenger *m)
                     }
                 }
             } else {
-                if (is_cryptoconnected(m->friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
-                    crypto_kill(m->friendlist[i].crypt_connection_id);
+                if (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
+                    crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                     m->friendlist[i].crypt_connection_id = -1;
                     set_friend_status(m, i, FRIEND_CONFIRMED);
                 }
@@ -844,7 +849,7 @@ void doFriends(Messenger *m)
 
             if (m->friendlist[i].ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
                 /* if we stopped recieving ping packets kill it */
-                crypto_kill(m->friendlist[i].crypt_connection_id);
+                crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                 m->friendlist[i].crypt_connection_id = -1;
                 set_friend_status(m, i, FRIEND_CONFIRMED);
             }
@@ -857,15 +862,15 @@ void doInbound(Messenger *m)
     uint8_t secret_nonce[crypto_box_NONCEBYTES];
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t session_key[crypto_box_PUBLICKEYBYTES];
-    int inconnection = crypto_inbound(public_key, secret_nonce, session_key);
+    int inconnection = crypto_inbound(m->net_crypto, public_key, secret_nonce, session_key);
 
     if (inconnection != -1) {
         int friend_id = getfriend_id(m, public_key);
 
         if (friend_id != -1) {
-            crypto_kill(m->friendlist[friend_id].crypt_connection_id);
+            crypto_kill(m->net_crypto, m->friendlist[friend_id].crypt_connection_id);
             m->friendlist[friend_id].crypt_connection_id =
-                accept_crypto_inbound(inconnection, public_key, secret_nonce, session_key);
+                accept_crypto_inbound(m->net_crypto, inconnection, public_key, secret_nonce, session_key);
 
             set_friend_status(m, friend_id, FRIEND_CONFIRMED);
         }
@@ -873,14 +878,13 @@ void doInbound(Messenger *m)
 }
 
 
-/* the main loop that needs to be run at least 200 times per second. */
+/* the main loop that needs to be run at least 20 times per second. */
 void doMessenger(Messenger *m)
 {
-    networking_poll();
+    networking_poll(m->net);
 
     doDHT();
-    doLossless_UDP();
-    doNetCrypto();
+    do_net_crypto(m->net_crypto);
     doInbound(m);
     doFriends(m);
 
@@ -904,7 +908,7 @@ uint32_t Messenger_size(Messenger *m)
 /* save the messenger in data of size Messenger_size() */
 void Messenger_save(Messenger *m, uint8_t *data)
 {
-    save_keys(data);
+    save_keys(m->net_crypto, data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
     uint32_t nospam = get_nospam();
     memcpy(data, &nospam, sizeof(nospam));
@@ -935,7 +939,7 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
         return -1;
 
     length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3;
-    load_keys(data);
+    load_keys(m->net_crypto, data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
     uint32_t nospam;
     memcpy(&nospam, data, sizeof(nospam));

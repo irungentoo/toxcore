@@ -112,8 +112,9 @@ typedef struct {
 } Friend;
 
 typedef struct Messenger {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-
+    
+    Networking_Core *net;
+    Net_Crypto * net_crypto;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
 

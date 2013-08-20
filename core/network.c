@@ -56,12 +56,9 @@ uint32_t random_int(void)
 #endif
 }
 
-/* our UDP socket, a global variable. */
-static int sock;
-
 /* Basic network functions:
    Function to send packet(data) of length length to ip_port */
-int sendpacket(IP_Port ip_port, uint8_t *data, uint32_t length)
+int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
     return sendto(sock, (char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
@@ -71,7 +68,7 @@ int sendpacket(IP_Port ip_port, uint8_t *data, uint32_t length)
    the packet data into data
    the packet length into length.
    dump all empty packets. */
-static int receivepacket(IP_Port *ip_port, uint8_t *data, uint32_t *length)
+static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     ADDR addr;
 #ifdef WIN32
@@ -89,36 +86,32 @@ static int receivepacket(IP_Port *ip_port, uint8_t *data, uint32_t *length)
     return 0;
 }
 
-static packet_handler_callback packethandlers[256] = {0};
-
-void networking_registerhandler(uint8_t byte, packet_handler_callback cb)
+void networking_registerhandler(Networking_Core * net, uint8_t byte, packet_handler_callback cb, void * object)
 {
-    packethandlers[byte] = cb;
+    net->packethandlers[byte].function = cb;
+    net->packethandlers[byte].object = object;
 }
 
-void networking_poll()
+void networking_poll(Networking_Core * net)
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 
-    while (receivepacket(&ip_port, data, &length) != -1) {
+    while (receivepacket(net->sock, &ip_port, data, &length) != -1) {
         if (length < 1) continue;
 
-        if (!packethandlers[data[0]]) continue;
+        if (!(net->packethandlers[data[0]].function)) continue;
 
-        packethandlers[data[0]](ip_port, data, length);
+        net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length);
     }
 }
 
-/* initialize networking
-   bind to ip and port
-   ip must be in network order EX: 127.0.0.1 = (7F000001)
-   port is in host byte order (this means don't worry about it)
-   returns 0 if no problems
-   returns -1 if there are problems */
-int init_networking(IP ip, uint16_t port)
+uint8_t at_startup_ran;
+static void at_startup(void)
 {
+    if (at_startup_ran != 0)
+        return;
 #ifdef WIN32
     WSADATA wsaData;
 
@@ -128,21 +121,48 @@ int init_networking(IP ip, uint16_t port)
 #else
     srandom((uint32_t)current_time());
 #endif
-    srand((uint32_t)current_time());
+    srand((uint32_t)current_time()); 
+    at_startup_ran = 1;
+}
 
+/* TODO: put this somewhere
+static void at_shutdown(void)
+{
+#ifdef WIN32
+    WSACleanup();
+#endif  
+}
+*/
+
+/* initialize networking
+   bind to ip and port
+   ip must be in network order EX: 127.0.0.1 = (7F000001)
+   port is in host byte order (this means don't worry about it)
+   returns Networking_Core object if no problems
+   returns NULL if there are problems */
+Networking_Core * new_networking(IP ip, uint16_t port)
+{
+    at_startup();
     /* initialize our socket */
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    Networking_Core * temp = calloc(1, sizeof(Networking_Core));
+    if (temp == NULL)
+         return NULL;
+    temp->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     /* Check for socket error */
 #ifdef WIN32
 
-    if (sock == INVALID_SOCKET) /* MSDN recommends this */
-        return -1;
+    if (temp->sock == INVALID_SOCKET) { /* MSDN recommends this */
+        free(temp);
+        return NULL;
+    }
 
 #else
 
-    if (sock < 0)
-        return -1;
+    if (temp->sock < 0) {
+        free(temp);
+        return NULL;
+    }
 
 #endif
 
@@ -161,34 +181,34 @@ int init_networking(IP ip, uint16_t port)
 
     /* Enable broadcast on socket */
     int broadcast = 1;
-    setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
+    setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
 
     /* Set socket nonblocking */
 #ifdef WIN32
     /* I think this works for windows */
     u_long mode = 1;
     /* ioctl(sock, FIONBIO, &mode); */
-    ioctlsocket(sock, FIONBIO, &mode);
+    ioctlsocket(temp->sock, FIONBIO, &mode);
 #else
-    fcntl(sock, F_SETFL, O_NONBLOCK, 1);
+    fcntl(temp->sock, F_SETFL, O_NONBLOCK, 1);
 #endif
 
     /* Bind our socket to port PORT and address 0.0.0.0 */
     ADDR addr = {AF_INET, htons(port), ip};
-    bind(sock, (struct sockaddr *)&addr, sizeof(addr));
-
-    return 0;
+    bind(temp->sock, (struct sockaddr *)&addr, sizeof(addr));
+    temp_net = temp;
+    return temp;
 }
 
 /* function to cleanup networking stuff */
-void shutdown_networking(void)
+void kill_networking(Networking_Core * net)
 {
 #ifdef WIN32
-    closesocket(sock);
-    WSACleanup();
+    closesocket(net->sock);
 #else
-    close(sock);
+    close(net->sock);
 #endif
+    free(net);
     return;
 }
 

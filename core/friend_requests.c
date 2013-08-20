@@ -24,7 +24,7 @@
 #include "friend_requests.h"
 
 uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-
+uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
 /* Try to send a friendrequest to peer with public_key
    data is the data in the request and length is the length.
@@ -40,7 +40,7 @@ int send_friendrequest(uint8_t *public_key, uint32_t nospam_num, uint8_t *data, 
     memcpy(temp, &nospam_num, sizeof(nospam_num));
     memcpy(temp + sizeof(nospam_num), data, length);
     uint8_t packet[MAX_DATA_SIZE];
-    int len = create_request(packet, public_key, temp, length + sizeof(nospam_num),
+    int len = create_request(self_public_key, self_secret_key, packet, public_key, temp, length + sizeof(nospam_num),
                              32); /* 32 is friend request packet id */
 
     if (len == -1)
@@ -52,7 +52,7 @@ int send_friendrequest(uint8_t *public_key, uint32_t nospam_num, uint8_t *data, 
         return -1;
 
     if (ip_port.ip.i != 0) {
-        if (sendpacket(ip_port, packet, len) != -1)
+        if (sendpacket(temp_net->sock, ip_port, packet, len) != -1)
             return 0;
 
         return -1;
@@ -146,5 +146,5 @@ static int friendreq_handlepacket(IP_Port source, uint8_t *source_pubkey, uint8_
 
 void friendreq_init(void)
 {
-    cryptopacket_registerhandler(32, &friendreq_handlepacket);
+    cryptopacket_registerhandler(temp_net_crypto, 32, &friendreq_handlepacket);
 }
