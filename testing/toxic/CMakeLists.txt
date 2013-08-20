@@ -4,6 +4,7 @@ project(toxic C)
 execute_process(COMMAND git rev-list HEAD --count OUTPUT_VARIABLE COMMIT)
 SET(GCC_COVERAGE_COMPILE_FLAGS '-DTOXICVER="0.1.1_r${COMMIT}"')
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
+add_definitions(-D_XOPEN_SOURCE_EXTENDED)
 set(exe_name toxic)
 
 add_executable(${exe_name}
