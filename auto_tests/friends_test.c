@@ -44,6 +44,8 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+#define PORT 33445
+
 static Messenger *m;
 
 uint8_t *parent_id = NULL;
@@ -52,13 +54,13 @@ uint8_t *child_id = NULL;
 pid_t child_pid = 0;
 int request_flags = 0;
 
-void do_tox(void)
+void do_tox(DHT *dht)
 {
     static int dht_on = 0;
 
-    if (!dht_on && DHT_isconnected()) {
+    if (!dht_on && DHT_isconnected(dht)) {
         dht_on = 1;
-    } else if (dht_on && !DHT_isconnected()) {
+    } else if (dht_on && !DHT_isconnected(dht)) {
         dht_on = 0;
     }
 
@@ -77,7 +79,7 @@ void parent_confirm_status(Messenger *m, int num, uint8_t *data, uint16_t length
     request_flags |= FIRST_FLAG;
 }
 
-int parent_friend_request(void)
+int parent_friend_request(DHT *dht)
 {
     char *message = "Watson, come here, I need you.";
     int len = strlen(message);
@@ -90,7 +92,7 @@ int parent_friend_request(void)
 
     /* wait on the status change */
     for (i = 0; i < WAIT_COUNT; i++) {
-        do_tox();
+        do_tox(dht);
 
         if (request_flags & FIRST_FLAG)
             break;
@@ -123,7 +125,7 @@ void child_got_statuschange(Messenger *m, int friend_num, uint8_t *string, uint1
     request_flags |= SECOND_FLAG;
 }
 
-int parent_wait_for_message(void)
+int parent_wait_for_message(DHT *dht)
 {
     int i = 0;
 
@@ -131,7 +133,7 @@ int parent_wait_for_message(void)
     fflush(stdout);
 
     for (i = 0; i < WAIT_COUNT; i++) {
-        do_tox();
+        do_tox(dht);
 
         if (request_flags & SECOND_FLAG)
             break;
@@ -185,16 +187,16 @@ int main(int argc, char *argv[])
 
         /* wait on the friend request */
         while (!(request_flags & FIRST_FLAG))
-            do_tox();
+            do_tox(m->dht);
 
         /* wait for the status change */
         while (!(request_flags & SECOND_FLAG))
-            do_tox();
+            do_tox(m->dht);
 
         for (i = 0; i < 6; i++) {
             /* send the message six times, just to be sure */
             m_sendmessage(m, 0, (uint8_t *)message, strlen(message));
-            do_tox();
+            do_tox(m->dht);
         }
 
         cleanupMessenger(m);
@@ -220,10 +222,10 @@ int main(int argc, char *argv[])
 
     Messenger_save(m, parent_id);
 
-    if (parent_friend_request() == -1)
+    if (parent_friend_request(m->dht) == -1)
         return -1;
 
-    if (parent_wait_for_message() == -1)
+    if (parent_wait_for_message(m->dht) == -1)
         return -1;
 
     wait(NULL);
