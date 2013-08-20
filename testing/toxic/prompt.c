@@ -363,6 +363,11 @@ static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
 
         if (cmd[i] == ' ') {
             cmd[i] = '\0';
+
+            int j = i;
+            while (++j < MAX_STR_SIZE && isspace(cmd[j]));
+            i = j - 1;
+
             numargs++;
         }
     }
@@ -380,6 +385,9 @@ static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
     for (i = 0; i < 5; i++) {
         cmdargs[i] = cmd + pos;
         pos += strlen(cmdargs[i]) + 1;
+
+        while (isspace(cmd[pos]) && pos < MAX_STR_SIZE)
+            ++pos;
     }
 
     /* no input */
