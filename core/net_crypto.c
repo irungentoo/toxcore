@@ -265,34 +265,35 @@ static int handle_request(Net_Crypto *c, uint8_t *public_key, uint8_t *data, uin
         return -1;
 }
 
-void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb)
+void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object)
 {
-    c->cryptopackethandlers[byte] = cb;
+    c->cryptopackethandlers[byte].function = cb;
+    c->cryptopackethandlers[byte].object = object;
 }
 
 static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
-    Net_Crypto *c = object;
+    DHT *dht = object;
     if (packet[0] == 32) {
         if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
                 length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
             return 1;
 
-        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.
+        if (memcmp(packet + 1, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {// check if request is for us.
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t data[MAX_DATA_SIZE];
             uint8_t number;
-            int len = handle_request(c, public_key, data, &number, packet, length);
+            int len = handle_request(dht->c, public_key, data, &number, packet, length);
 
             if (len == -1 || len == 0)
                 return 1;
 
-            if (!c->cryptopackethandlers[number]) return 1;
+            if (!dht->c->cryptopackethandlers[number].function) return 1;
 
-            c->cryptopackethandlers[number](source, public_key, data, len);
+            dht->c->cryptopackethandlers[number].function(dht->c->cryptopackethandlers[number].object, source, public_key, data, len);
 
         } else { /* if request is not for us, try routing it. */
-            if (route_packet(packet + 1, packet, length) == length) //NOTE
+            if (route_packet(dht, packet + 1, packet, length) == length) //NOTE
                 return 0;
         }
     }
@@ -572,17 +573,9 @@ int is_cryptoconnected(Net_Crypto *c, int crypt_connection_id)
     return CONN_NO_CONNECTION;
 }
 
-/* Generate our public and private keys
-   Only call this function the first time the program starts. */
-
-extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];//TODO: Remove this
-extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
-
 void new_keys(Net_Crypto *c)
 {
     crypto_box_keypair(c->self_public_key, c->self_secret_key);
-    memcpy(self_public_key, c->self_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(self_secret_key, c->self_secret_key, crypto_box_PUBLICKEYBYTES);
 }
 
 /* save the public and private keys to the keys array
@@ -713,10 +706,14 @@ Net_Crypto * new_net_crypto(Networking_Core * net)
     if (temp->lossless_udp == NULL)
          return NULL;
     memset(temp->incoming_connections, -1 , sizeof(int) * MAX_INCOMING);
-    //networking_registerhandler(temp, 32, &cryptopacket_handle);
-    networking_registerhandler(net, 32, &cryptopacket_handle, temp);
     temp_net_crypto = temp; //TODO remove
     return temp;
+}
+
+void init_cryptopackets(void *dht)
+{
+    DHT *s_dht = dht;
+    networking_registerhandler(s_dht->c->lossless_udp->net, 32, &cryptopacket_handle, s_dht);
 }
 
 static void kill_timedout(Net_Crypto *c)

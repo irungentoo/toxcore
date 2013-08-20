@@ -204,7 +204,7 @@ void cmd_connect(ToxWindow *self, Messenger *m, char **args)
 
     dht.ip.i = resolved_address;
     unsigned char *binary_string = hex_string_to_bin(key);
-    DHT_bootstrap(dht, binary_string);
+    DHT_bootstrap(m->dht, dht, binary_string);
     free(binary_string);
 }
 

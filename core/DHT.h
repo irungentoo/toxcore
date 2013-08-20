@@ -34,6 +34,20 @@ extern "C" {
 /* size of the client_id in bytes */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
 
+/* maximum number of clients stored per friend. */
+#define MAX_FRIEND_CLIENTS 8
+
+/* A list of the clients mathematically closest to ours. */
+#define LCLIENT_LIST 32
+
+/* The list of ip ports along with the ping_id of what we sent them and a timestamp */
+#define LPING_ARRAY 256 //NOTE Deprecated (doesn't do anything)
+
+#define LSEND_NODES_ARRAY LPING_ARRAY/2
+
+/*Maximum newly announced nodes to ping per TIME_TOPING seconds*/
+#define MAX_TOPING 16
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -45,19 +59,64 @@ typedef struct {
     uint64_t    ret_timestamp;
 } Client_data;
 
-Client_data *DHT_get_close_list(void);
+/*----------------------------------------------------------------------------------*/
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    Client_data client_list[MAX_FRIEND_CLIENTS];
+
+    /* time at which the last get_nodes request was sent. */
+    uint64_t    lastgetnode;
+
+    /* Symetric NAT hole punching stuff */
+
+    /* 1 if currently hole punching, otherwise 0 */
+    uint8_t     hole_punching;
+    uint32_t    punching_index;
+    uint64_t    punching_timestamp;
+    uint64_t    recvNATping_timestamp;
+    uint64_t    NATping_id;
+    uint64_t    NATping_timestamp;
+} DHT_Friend;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IP_Port     ip_port;
+} Node_format;
+
+typedef struct {
+    IP_Port     ip_port;
+    uint64_t    ping_id;
+    uint64_t    timestamp;
+} Pinged;
+
+/*----------------------------------------------------------------------------------*/
+typedef struct {
+    Net_Crypto *c;
+    Client_data  close_clientlist[LCLIENT_LIST];
+    DHT_Friend      *friends_list;
+    uint16_t     num_friends;
+    Pinged       send_nodes[LSEND_NODES_ARRAY];
+    Node_format  toping[MAX_TOPING];
+    uint64_t     last_toping;
+    uint64_t close_lastgetnodes;
+} DHT;
+/*----------------------------------------------------------------------------------*/
+DHT * temp_DHT; //TODO: remove
+
+Client_data *DHT_get_close_list(DHT * dht);
 
 /* Add a new friend to the friends list
     client_id must be CLIENT_ID_SIZE bytes long.
     returns 0 if success
     returns 1 if failure (friends list is full) */
-int DHT_addfriend(uint8_t *client_id);
+int DHT_addfriend(DHT * dht, uint8_t *client_id);
 
 /* Delete a friend from the friends list
     client_id must be CLIENT_ID_SIZE bytes long.
     returns 0 if success
     returns 1 if failure (client_id not in friends list) */
-int DHT_delfriend(uint8_t *client_id);
+int DHT_delfriend(DHT * dht, uint8_t *client_id);
 
 /* Get ip of friend
     client_id must be CLIENT_ID_SIZE bytes long.
@@ -66,14 +125,14 @@ int DHT_delfriend(uint8_t *client_id);
     returns ip if success
     returns ip of 0 if failure (This means the friend is either offline or we have not found him yet.)
     returns ip of 1 if friend is not in list. */
-IP_Port DHT_getfriendip(uint8_t *client_id);
+IP_Port DHT_getfriendip(DHT * dht, uint8_t *client_id);
 
 /* Run this function at least a couple times per second (It's the main loop) */
-void doDHT(void);
+void do_DHT(DHT * dht);
 
 /* Use this function to bootstrap the client
     Sends a get nodes request to the given node with ip port and public_key */
-void DHT_bootstrap(IP_Port ip_port, uint8_t *public_key);
+void DHT_bootstrap(DHT * dht, IP_Port ip_port, uint8_t *public_key);
 
 /* Add nodes to the toping list
    all nodes in this list are pinged every TIME_TOPING seconds
@@ -83,17 +142,17 @@ void DHT_bootstrap(IP_Port ip_port, uint8_t *public_key);
    network while preventing amplification attacks.
    return 0 if node was added
    return -1 if node was not added */
-int add_toping(uint8_t *client_id, IP_Port ip_port);
+int add_toping(DHT * dht, uint8_t *client_id, IP_Port ip_port);
 
 /* ROUTING FUNCTIONS */
 
 /* send the given packet to node with client_id
     returns -1 if failure */
-int route_packet(uint8_t *client_id, uint8_t *packet, uint32_t length);
+int route_packet(DHT * dht, uint8_t *client_id, uint8_t *packet, uint32_t length);
 
 /* Send the following packet to everyone who tells us they are connected to friend_id
     returns the number of nodes it sent the packet to */
-int route_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t length);
+int route_tofriend(DHT * dht, uint8_t *friend_id, uint8_t *packet, uint32_t length);
 
 /* NAT PUNCHING FUNCTIONS */
 
@@ -101,29 +160,31 @@ int route_tofriend(uint8_t *friend_id, uint8_t *packet, uint32_t length);
     ip_portlist must be at least MAX_FRIEND_CLIENTS big
     returns the number of ips returned
     returns -1 if no such friend*/
-int friend_ips(IP_Port *ip_portlist, uint8_t *friend_id);
+int friend_ips(DHT * dht, IP_Port *ip_portlist, uint8_t *friend_id);
 
 /* SAVE/LOAD functions */
 
 /* get the size of the DHT (for saving) */
-uint32_t DHT_size(void);
+uint32_t DHT_size(DHT * dht);
 
 /* save the DHT in data where data is an array of size DHT_size() */
-void DHT_save(uint8_t *data);
+void DHT_save(DHT * dht, uint8_t *data);
 
 /* init DHT */
-void DHT_init(void);
+DHT * new_DHT(Net_Crypto *c);
+
+void kill_DHT(DHT * dht);
 
 /* load the DHT from data of size size;
     return -1 if failure
     return 0 if success */
-int DHT_load(uint8_t *data, uint32_t size);
+int DHT_load(DHT * dht, uint8_t *data, uint32_t size);
 
 /* returns 0 if we are not connected to the DHT
     returns 1 if we are */
-int DHT_isconnected();
+int DHT_isconnected(DHT * dht);
 
-void addto_lists(IP_Port ip_port, uint8_t *client_id);
+void addto_lists(DHT * dht, IP_Port ip_port, uint8_t *client_id);
 
 #ifdef __cplusplus
 }

@@ -112,7 +112,6 @@ typedef struct {
     int sock;
 }Networking_Core;
 
-Networking_Core * temp_net;
 /* returns current time in milleseconds since the epoch. */
 uint64_t current_time(void);
 

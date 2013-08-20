@@ -196,7 +196,6 @@ Networking_Core * new_networking(IP ip, uint16_t port)
     /* Bind our socket to port PORT and address 0.0.0.0 */
     ADDR addr = {AF_INET, htons(port), ip};
     bind(temp->sock, (struct sockaddr *)&addr, sizeof(addr));
-    temp_net = temp;
     return temp;
 }
 

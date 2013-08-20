@@ -36,7 +36,7 @@ static void dhtstatus_onKey(ToxWindow *self, Messenger *m, int key)
 
 static void dhtstatus_onDraw(ToxWindow *self)
 {
-    Client_data   *close_clientlist = DHT_get_close_list();
+    Client_data   *close_clientlist = DHT_get_close_list(temp_DHT);
     curs_set(0);
     werase(self->window);
 

@@ -26,7 +26,6 @@ typedef struct {
 static pinged_t    pings[PING_NUM_MAX];
 static size_t      num_pings;
 static size_t      pos_pings;
-static clientid_t *self_id = (clientid_t *) &self_public_key;
 
 extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES]; // DHT.c
 
@@ -115,19 +114,19 @@ int send_ping_request(IP_Port ipp, clientid_t *client_id)
     int       rc;
     uint64_t  ping_id;
 
-    if (is_pinging(ipp, 0) || id_eq(client_id, self_id))
+    if (is_pinging(ipp, 0) || id_eq(client_id, (clientid_t *)temp_net_crypto->self_public_key))
         return 1;
 
     // Generate random ping_id
     ping_id = add_ping(ipp);
 
     pk.magic = PACKET_PING_REQ;
-    id_cpy(&pk.client_id, self_id);     // Our pubkey
+    id_cpy(&pk.client_id, (clientid_t *)temp_net_crypto->self_public_key);     // Our pubkey
     random_nonce((uint8_t *) &pk.nonce); // Generate random nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data((uint8_t *) client_id,
-                      self_secret_key,
+                      temp_net_crypto->self_secret_key,
                       (uint8_t *) &pk.nonce,
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       (uint8_t *) &pk.ping_id);
@@ -135,7 +134,7 @@ int send_ping_request(IP_Port ipp, clientid_t *client_id)
     if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
-    return sendpacket(temp_net->sock, ipp, (uint8_t *) &pk, sizeof(pk));
+    return sendpacket(temp_net_crypto->lossless_udp->net->sock, ipp, (uint8_t *) &pk, sizeof(pk));
 }
 
 int send_ping_response(IP_Port ipp, clientid_t *client_id, uint64_t ping_id)
@@ -143,16 +142,16 @@ int send_ping_response(IP_Port ipp, clientid_t *client_id, uint64_t ping_id)
     pingres_t pk;
     int       rc;
 
-    if (id_eq(client_id, self_id))
+    if (id_eq(client_id, (clientid_t *)temp_net_crypto->self_public_key))
         return 1;
 
     pk.magic = PACKET_PING_RES;
-    id_cpy(&pk.client_id, self_id);     // Our pubkey
+    id_cpy(&pk.client_id, (clientid_t *)temp_net_crypto->self_public_key);     // Our pubkey
     random_nonce((uint8_t *) &pk.nonce); // Generate random nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data((uint8_t *) client_id,
-                      self_secret_key,
+                      temp_net_crypto->self_secret_key,
                       (uint8_t *) &pk.nonce,
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       (uint8_t *) &pk.ping_id);
@@ -160,21 +159,22 @@ int send_ping_response(IP_Port ipp, clientid_t *client_id, uint64_t ping_id)
     if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
-    return sendpacket(temp_net->sock, ipp, (uint8_t *) &pk, sizeof(pk));
+    return sendpacket(temp_net_crypto->lossless_udp->net->sock, ipp, (uint8_t *) &pk, sizeof(pk));
 }
 
 int handle_ping_request(void * object, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    DHT * dht = object;
     pingreq_t *p = (pingreq_t *) packet;
     int        rc;
     uint64_t   ping_id;
 
-    if (length != sizeof(pingreq_t) || id_eq(&p->client_id, self_id))
+    if (length != sizeof(pingreq_t) || id_eq(&p->client_id, (clientid_t *)dht->c->self_public_key))
         return 1;
 
     // Decrypt ping_id
     rc = decrypt_data((uint8_t *) &p->client_id,
-                      self_secret_key,
+                      dht->c->self_secret_key,
                       (uint8_t *) &p->nonce,
                       (uint8_t *) &p->ping_id,
                       sizeof(ping_id) + ENCRYPTION_PADDING,
@@ -185,23 +185,24 @@ int handle_ping_request(void * object, IP_Port source, uint8_t *packet, uint32_t
 
     // Send response
     send_ping_response(source, &p->client_id, ping_id);
-    add_toping((uint8_t *) &p->client_id, source);
+    add_toping(dht, (uint8_t *) &p->client_id, source);
 
     return 0;
 }
 
 int handle_ping_response(void * object, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    DHT * dht = object;
     pingres_t *p = (pingres_t *) packet;
     int       rc;
     uint64_t  ping_id;
 
-    if (length != sizeof(pingres_t) || id_eq(&p->client_id, self_id))
+    if (length != sizeof(pingres_t) || id_eq(&p->client_id, (clientid_t *)dht->c->self_public_key))
         return 1;
 
     // Decrypt ping_id
     rc = decrypt_data((uint8_t *) &p->client_id,
-                      self_secret_key,
+                      dht->c->self_secret_key,
                       (uint8_t *) &p->nonce,
                       (uint8_t *) &p->ping_id,
                       sizeof(ping_id) + ENCRYPTION_PADDING,
@@ -215,6 +216,6 @@ int handle_ping_response(void * object, IP_Port source, uint8_t *packet, uint32_
         return 1;
 
     // Associate source ip with client_id
-    addto_lists(source, (uint8_t *) &p->client_id);
+    addto_lists(dht, source, (uint8_t *) &p->client_id);
     return 0;
 }

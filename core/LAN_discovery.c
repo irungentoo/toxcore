@@ -123,28 +123,29 @@ static int LAN_ip(IP ip)
 
 static int handle_LANdiscovery(void * object, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    DHT *dht = object;
     if (LAN_ip(source.ip) == -1)
         return 1;
 
     if (length != crypto_box_PUBLICKEYBYTES + 1)
         return 1;
 
-    DHT_bootstrap(source, packet + 1);
+    DHT_bootstrap(dht, source, packet + 1);
     return 0;
 }
 
 
-int send_LANdiscovery(uint16_t port)
+int send_LANdiscovery(uint16_t port, Net_Crypto *c)
 {
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = 33;
-    memcpy(data + 1, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
     IP_Port ip_port = {broadcast_ip(), port};
-    return sendpacket(temp_net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
+    return sendpacket(c->lossless_udp->net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
 
 
-void LANdiscovery_init(void)
+void LANdiscovery_init(DHT *dht)
 {
-    networking_registerhandler(temp_net, 33, &handle_LANdiscovery, NULL);
+    networking_registerhandler(dht->c->lossless_udp->net, 33, &handle_LANdiscovery, dht);
 }

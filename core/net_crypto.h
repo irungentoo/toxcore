@@ -25,16 +25,12 @@
 #define NET_CRYPTO_H
 
 #include "Lossless_UDP.h"
-#include "DHT.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define MAX_INCOMING 64
-
-extern uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];//TODO: Remove this
-extern uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* the real public key of the peer. */
@@ -51,24 +47,31 @@ typedef struct {
 
 } Crypto_Connection;
 
-typedef int (*cryptopacket_handler_callback)(IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
+typedef int (*cryptopacket_handler_callback)(void * object, IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
 
 typedef struct {
-Lossless_UDP * lossless_udp;
+    cryptopacket_handler_callback function;
+    void * object;
+}Cryptopacket_Handles;
 
-Crypto_Connection *crypto_connections;
+typedef struct {
+    Lossless_UDP * lossless_udp;
 
-uint32_t crypto_connections_length; /* Length of connections array */
+    Crypto_Connection *crypto_connections;
 
-/* Our public and secret keys. */
-uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    uint32_t crypto_connections_length; /* Length of connections array */
 
-/* keeps track of the connection numbers for friends request so we can check later if they were sent */
-int incoming_connections[MAX_INCOMING];
+    /* Our public and secret keys. */
+    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
-cryptopacket_handler_callback cryptopackethandlers[256];
+    /* keeps track of the connection numbers for friends request so we can check later if they were sent */
+    int incoming_connections[MAX_INCOMING];
+
+    Cryptopacket_Handles cryptopackethandlers[256];
 } Net_Crypto;
+
+#include "DHT.h"
 
 Net_Crypto * temp_net_crypto; //TODO: remove this
 
@@ -130,7 +133,7 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
 
 
 /* Function to call when request beginning with byte is received */
-void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb);
+void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void * object);
 
 /* Start a secure connection with other peer who has public_key and ip_port
     returns -1 if failure
@@ -182,6 +185,9 @@ Net_Crypto * new_net_crypto(Networking_Core * net);
 void do_net_crypto(Net_Crypto *c);
 
 void kill_net_crypto(Net_Crypto *c);
+
+/* Init the cryptopacket handling */
+void init_cryptopackets(void *dht);
 
 #ifdef __cplusplus
 }
