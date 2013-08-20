@@ -34,15 +34,11 @@
 
 /* End of defines */
 
-rtp_header_t* rtp_extract_header ( uint8_t* _payload, size_t _from, size_t _size )
+rtp_header_t* rtp_extract_header ( const uint8_t* _payload )
 {
-    if ( _size < _MIN_HEADER_LENGHT || !_payload ) {
-        return NULL;
-    }
+    uint8_t* _it = _payload;
 
-    uint8_t* _it = &(_payload[_from]);
-
-    ALLOCATOR_VAR(_retu, rtp_header_t, 1)
+    ALLOCATOR_VAR ( _retu, rtp_header_t, 1 )
 
     _retu->_flags = *_it; ++_it;
 
@@ -52,25 +48,18 @@ rtp_header_t* rtp_extract_header ( uint8_t* _payload, size_t _from, size_t _size
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _retu );
 
     _retu->_length = 8 + ( cc * 4 );
-
-    if ( _retu->_length > _size ){
-        DEALLOCATOR(_retu)
-        return NULL;
-    }
-
     _retu->_marker_payload_t = *_it; ++_it;
-
-    _retu->_sequence_number = ( ( uint16_t ) *_it << 8 ) | *(_it + 1);
+    _retu->_sequence_number = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 );
 
     _it += 2;
 
-    _retu->_ssrc = ( ( uint32_t ) *_it       << 24 ) |
-                   ( ( uint32_t ) *(_it + 1) << 16 ) |
-                   ( ( uint32_t ) *(_it + 2) << 8 )  |
-                   ( ( uint32_t ) *(_it + 3) ) ;
+    _retu->_ssrc = ( ( uint32_t ) * _it       << 24 ) |
+                   ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
+                   ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
+                   ( ( uint32_t ) * ( _it + 3 ) ) ;
 
     if ( cc > 0 ) {
-        _retu->_csrc = ( uint32_t* ) malloc ( sizeof ( uint32_t ) * cc );
+        _retu->_csrc = malloc ( sizeof ( uint32_t ) * cc );
     } else { /* But this should not happen ever */
         _retu->_csrc = NULL;
         return _retu;
@@ -79,39 +68,39 @@ rtp_header_t* rtp_extract_header ( uint8_t* _payload, size_t _from, size_t _size
     size_t x;
     for ( x = 0; x < cc; x++ ) {
         _it += 4;
-        _retu->_csrc[x] = ( ( uint32_t ) *_it        << 24 ) |
-                          ( ( uint32_t ) *(_it + 1)  << 16 ) |
-                          ( ( uint32_t ) *(_it + 2)  << 8 )  |
-                          ( ( uint32_t ) *(_it + 3) ) ;
+        _retu->_csrc[x] = ( ( uint32_t ) * _it        << 24 ) |
+                          ( ( uint32_t ) * ( _it + 1 )  << 16 ) |
+                          ( ( uint32_t ) * ( _it + 2 )  << 8 )  |
+                          ( ( uint32_t ) * ( _it + 3 ) ) ;
     }
 
     return _retu;
 }
 
-rtp_ext_header_t* rtp_extract_ext_header ( uint8_t* _payload, size_t _from )
+rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload )
 {
-    uint8_t* _it = &(_payload[_from]);
+    uint8_t* _it = _payload;
 
-    ALLOCATOR_VAR(_retu, rtp_ext_header_t, 1)
+    ALLOCATOR_VAR ( _retu, rtp_ext_header_t, 1 )
 
-    _retu->_ext_len  = ( ( uint16_t ) *_it << 8 ) | *(_it + 1); _it+=2;
-    _retu->_ext_type = ( ( uint16_t ) *_it << 8 ) | *(_it + 1); _it-=2;
+    _retu->_ext_len  = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
+    _retu->_ext_type = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it -= 2;
 
-    ALLOCATOR(_retu->_hd_ext, uint32_t, _retu->_ext_len)
+    ALLOCATOR ( _retu->_hd_ext, uint32_t, _retu->_ext_len )
 
     size_t i;
-    for ( i = 0; i < _retu->_ext_len; i++ ){
+    for ( i = 0; i < _retu->_ext_len; i++ ) {
         _it += 4;
-        _retu->_hd_ext[i] = ( (uint32_t) *_it       << 24 ) |
-                            ( (uint32_t) *(_it + 1) << 16 ) |
-                            ( (uint32_t) *(_it + 2) << 8 )  |
-                            ( (uint32_t) *(_it + 3) ) ;
+        _retu->_hd_ext[i] = ( ( uint32_t ) * _it       << 24 ) |
+                            ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
+                            ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
+                            ( ( uint32_t ) * ( _it + 3 ) ) ;
     }
 
     return _retu;
 }
 
-uint8_t* rtp_add_header ( rtp_header_t* _header, uint8_t* _payload)
+uint8_t* rtp_add_header ( rtp_header_t* _header, const uint8_t* _payload )
 {
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _header );
 
@@ -140,7 +129,7 @@ uint8_t* rtp_add_header ( rtp_header_t* _header, uint8_t* _payload)
     return _it;
 }
 
-uint8_t* rtp_add_extention_header(rtp_ext_header_t* _header, uint8_t* _payload)
+uint8_t* rtp_add_extention_header ( rtp_ext_header_t* _header, const uint8_t* _payload )
 {
     uint8_t* _it = _payload;
 
@@ -165,19 +154,19 @@ uint8_t* rtp_add_extention_header(rtp_ext_header_t* _header, uint8_t* _payload)
     return _it;
 }
 
-size_t rtp_header_get_size ( rtp_header_t* _header )
+__inline size_t rtp_header_get_size ( const rtp_header_t* _header )
 {
     return ( 8 + ( rtp_header_get_flag_CSRC_count ( _header ) * 4 ) );
 }
 /* Setting flags */
 
-void rtp_header_add_flag_version ( rtp_header_t* _header, int value )
+__inline void rtp_header_add_flag_version ( rtp_header_t* _header, int value )
 {
     ( _header->_flags ) &= 0x3F;
     ( _header->_flags ) |= ( ( ( value ) << 6 ) & 0xC0 );
 }
 
-void rtp_header_add_flag_padding ( rtp_header_t* _header, int value )
+__inline void rtp_header_add_flag_padding ( rtp_header_t* _header, int value )
 {
     if ( value > 0 ) {
         value = 1; /* It can only be 1 */
@@ -187,7 +176,7 @@ void rtp_header_add_flag_padding ( rtp_header_t* _header, int value )
     ( _header->_flags ) |= ( ( ( value ) << 5 ) & 0x20 );
 }
 
-void rtp_header_add_flag_extension ( rtp_header_t* _header, int value )
+__inline void rtp_header_add_flag_extension ( rtp_header_t* _header, int value )
 {
     if ( value > 0 ) {
         value = 1; /* It can only be 1 */
@@ -197,13 +186,13 @@ void rtp_header_add_flag_extension ( rtp_header_t* _header, int value )
     ( _header->_flags ) |= ( ( ( value ) << 4 ) & 0x10 );
 }
 
-void rtp_header_add_flag_CSRC_count ( rtp_header_t* _header, int value )
+__inline void rtp_header_add_flag_CSRC_count ( rtp_header_t* _header, int value )
 {
     ( _header->_flags ) &= 0xF0;
     ( _header->_flags ) |= ( ( value ) & 0x0F );
 }
 
-void rtp_header_add_setting_marker ( rtp_header_t* _header, int value )
+__inline void rtp_header_add_setting_marker ( rtp_header_t* _header, int value )
 {
     if ( value > 1 )
         value = 1;
@@ -212,7 +201,7 @@ void rtp_header_add_setting_marker ( rtp_header_t* _header, int value )
     ( _header->_marker_payload_t ) |= ( ( ( value ) << 7 ) /*& 0x80 */ );
 }
 
-void rtp_header_add_setting_payload ( rtp_header_t* _header, int value )
+__inline void rtp_header_add_setting_payload ( rtp_header_t* _header, int value )
 {
     if ( value > 127 )
         value = 127; /* Well set to maximum */
@@ -222,41 +211,31 @@ void rtp_header_add_setting_payload ( rtp_header_t* _header, int value )
 }
 
 /* Getting values from flags */
-uint8_t rtp_header_get_flag_version ( rtp_header_t* _header )
+__inline uint8_t rtp_header_get_flag_version ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0xd0 ) >> 6;
 }
 
-uint8_t rtp_header_get_flag_padding ( rtp_header_t* _header )
+__inline uint8_t rtp_header_get_flag_padding ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0x20 ) >> 5;
 }
 
-uint8_t rtp_header_get_flag_extension ( rtp_header_t* _header )
+__inline uint8_t rtp_header_get_flag_extension ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0x10 ) >> 4;
 }
 
-uint8_t rtp_header_get_flag_CSRC_count ( rtp_header_t* _header )
+__inline uint8_t rtp_header_get_flag_CSRC_count ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0x0f );
 }
-
-
-/* TODO: MAKE THIS A BIT FASTER */
-uint8_t rtp_header_get_setting_marker ( rtp_header_t* _header )
+__inline uint8_t rtp_header_get_setting_marker ( const rtp_header_t* _header )
 {
-    uint8_t _retu = ( ( _header->_marker_payload_t ) >> 7 );
-
-    if ( _header->_marker_payload_t >> 7 == 1 ) {
-        _header->_marker_payload_t ^ 0x80;
-    }
-
-    return _retu;
+    return ( _header->_marker_payload_t ) >> 7;
 }
-
-uint8_t rtp_header_get_setting_payload_type ( rtp_header_t* _header )
-{
+__inline uint8_t rtp_header_get_setting_payload_type ( const rtp_header_t* _header )
+{/*
     uint8_t _retu;
 
     if ( _header->_marker_payload_t >> 7 == 1 ) {
@@ -266,9 +245,10 @@ uint8_t rtp_header_get_setting_payload_type ( rtp_header_t* _header )
     } else {
         _retu = _header->_marker_payload_t;
     }
-
-    /* return to start value */
-    return _retu;
+*/
+    /* return to start value
+    return _retu; */
+    return _header->_marker_payload_t & 0x7f;
 }
 
 /*  */

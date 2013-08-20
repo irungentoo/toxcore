@@ -128,7 +128,7 @@ int encode_thread(void *arg)
             if(is->frameFinished)
             {
                 encode_frame(is);
-                is->_m_msg = rtp_msg_new ( is->_m_session, is->packet.data, is->packet.size, NULL ) ;
+                is->_m_msg = rtp_msg_new ( is->_m_session, is->packet.data, is->packet.size ) ;
                 printf("%d\n",is->packet.size);
                 rtp_send_msg ( is->_m_session, is->_m_msg );
                 av_free_packet(&is->packet);

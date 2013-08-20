@@ -36,7 +36,12 @@
 
 /* End of defines */
 
-uint32_t _payload_table[] = /* PAYLOAD TABLE */
+
+uint8_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
+
+
+
+__inline static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
 {
     8000, 8000, 8000, 8000, 8000, 8000, 16000, 8000, 8000, 8000,    /*    0-9    */
     44100, 44100, 0, 0, 90000, 8000, 11025, 22050, 0, 0,            /*   10-19   */
@@ -53,14 +58,13 @@ uint32_t _payload_table[] = /* PAYLOAD TABLE */
     0, 0, 0, 0, 0, 0, 0, 0                                          /*  120-127  */
 };
 
-rtp_session_t* rtp_init_session ( IP_Port _dest, int max_users )
+rtp_session_t* rtp_init_session ( int max_users )
 {
     rtp_session_t* _retu;
     ALLOCATOR_S ( _retu, rtp_session_t )
-    ALLOCATOR_LIST_S ( _retu->_dest_list, rtp_dest_list_t, NULL )
 
-    _retu->_last_user = _retu->_dest_list; /* set tail */
-    _retu->_dest_list->_dest = _dest;
+    _retu->_dest_list = _retu->_last_user = NULL;
+
     _retu->_max_users = max_users;
     _retu->_packets_recv = 0;
     _retu->_packets_sent = 0;
@@ -73,7 +77,7 @@ rtp_session_t* rtp_init_session ( IP_Port _dest, int max_users )
      * SET HEADER FIELDS
      */
 
-    _retu->_version = RTP_VERSION; /* It's always 2 */
+    _retu->_version = RTP_VERSION;   /* It's always 2 */
     _retu->_padding = 0;             /* If some additional data is needed about
                                       * the packet */
     _retu->_extension = 0;           /* If extension to header is needed */
@@ -101,38 +105,37 @@ rtp_session_t* rtp_init_session ( IP_Port _dest, int max_users )
     return _retu;
 }
 
-int rtp_terminate_session(rtp_session_t* _session)
+int rtp_terminate_session ( rtp_session_t* _session )
 {
     if ( !_session )
         return FAILURE;
 
     if ( _session->_dest_list )
-        DEALLOCATOR_LIST_S(_session->_dest_list, rtp_dest_list_t)
+        DEALLOCATOR_LIST_S ( _session->_dest_list, rtp_dest_list_t )
 
-    if ( _session->_ext_header )
-        DEALLOCATOR(_session->_ext_header)
+        if ( _session->_ext_header )
+            DEALLOCATOR ( _session->_ext_header )
 
-    if ( _session->_csrc )
-        DEALLOCATOR(_session->_csrc)
+            if ( _session->_csrc )
+                DEALLOCATOR ( _session->_csrc )
 
 
-    /* And finally free session */
-    DEALLOCATOR(_session)
+                /* And finally free session */
+                DEALLOCATOR ( _session )
 
-    return SUCCESS;
+                return SUCCESS;
 }
 
-int rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source)
+int rtp_handlepacket ( uint8_t* packet, uint32_t length, IP_Port source )
 {
-    switch ( packet[0] )
-    {
+    switch ( packet[0] ) {
     case RTP_PACKET_ID:
         return SUCCESS;
     }
     return FAILURE;
 }
 
-uint16_t rtp_get_resolution_marking_height(rtp_ext_header_t* _header)
+__inline uint16_t rtp_get_resolution_marking_height ( rtp_ext_header_t* _header )
 {
     if ( _header->_ext_type == RTP_EXT_TYPE_RESOLUTION )
         return _header->_hd_ext[_header->_ext_len - 1];
@@ -140,7 +143,7 @@ uint16_t rtp_get_resolution_marking_height(rtp_ext_header_t* _header)
         return 0;
 }
 
-uint16_t rtp_get_resolution_marking_width(rtp_ext_header_t* _header)
+__inline uint16_t rtp_get_resolution_marking_width ( rtp_ext_header_t* _header )
 {
     if ( _header->_ext_type == RTP_EXT_TYPE_RESOLUTION )
         return ( _header->_hd_ext[_header->_ext_len - 1] >> 16 );
@@ -148,25 +151,25 @@ uint16_t rtp_get_resolution_marking_width(rtp_ext_header_t* _header)
         return 0;
 }
 
-void rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message)
+__inline void rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _message )
 {
-    free(_message->_data);
+    free ( _message->_data );
 
     if ( _session->_csrc != _message->_header->_csrc )
-        free(_message->_header->_csrc);
-    if ( _message->_ext_header && _session->_ext_header != _message->_ext_header){
-        free(_message->_ext_header->_hd_ext);
-        free(_message->_ext_header);
+        free ( _message->_header->_csrc );
+    if ( _message->_ext_header && _session->_ext_header != _message->_ext_header ) {
+        free ( _message->_ext_header->_hd_ext );
+        free ( _message->_ext_header );
     }
 
-    free(_message->_header);
-    free(_message);
+    free ( _message->_header );
+    free ( _message );
 }
 
 rtp_header_t* rtp_build_header ( rtp_session_t* _session )
 {
     rtp_header_t* _retu;
-    _retu = malloc ( sizeof *_retu );
+    _retu = malloc ( sizeof * _retu );
 
     rtp_header_add_flag_version ( _retu, _session->_version );
     rtp_header_add_flag_padding ( _retu, _session->_padding );
@@ -197,23 +200,33 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     return _retu;
 }
 
-void rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value )
+__inline void rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value )
 {
     _session->_payload_type = _payload_value;
 }
-uint32_t rtp_get_payload_type ( rtp_session_t* _session )
+__inline uint32_t rtp_get_payload_type ( rtp_session_t* _session )
 {
     return _payload_table[_session->_payload_type];
 }
 
-
-
-int rtp_add_user ( rtp_session_t* _session, IP_Port _dest )
+int rtp_add_receiver ( rtp_session_t* _session, IP_Port* _dest )
 {
+    if ( !_session )
+        return FAILURE;
+
     rtp_dest_list_t* _new_user;
     ALLOCATOR_LIST_S ( _new_user, rtp_dest_list_t, NULL )
-    _session->_last_user->next = _new_user;
-    _session->_last_user = _new_user;
+
+    _new_user->_dest = *_dest;
+
+    if ( _session->_last_user == NULL ){ /* New member */
+        _session->_dest_list = _session->_last_user = _new_user;
+
+    } else { /* Append */
+        _session->_last_user->next = _new_user;
+        _session->_last_user = _new_user;
+    }
+
     return SUCCESS;
 }
 
@@ -240,7 +253,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
                     _session->_sequence_number = 0;
                 } else {
                     _session->_sequence_number++;
-				}
+                }
 
 
                 _session->_packets_sent ++;
@@ -250,7 +263,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
 
     }
 
-    rtp_free_msg(_session, _msg);
+    rtp_free_msg ( _session, _msg );
     _session->_bytes_sent += _total;
     return SUCCESS;
 }
@@ -270,10 +283,10 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
     _session->_bytes_recv += _bytes;
     _session->_packets_recv ++;
 
-    return rtp_msg_parse ( _session, LAST_SOCKET_DATA, _bytes, &_from );
+    return rtp_msg_parse ( _session, LAST_SOCKET_DATA, _bytes );
 }
 
-rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
+rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
 {
     uint8_t* _from_pos;
     rtp_msg_t* _retu;
@@ -285,7 +298,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
 
     _length += _retu->_header->_length;
 
-    if ( _retu->_ext_header ){
+    if ( _retu->_ext_header ) {
 
         _length += ( 4 + _retu->_ext_header->_ext_len * 4 );
         /* Allocate Memory for _retu->_data */
@@ -297,9 +310,8 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
          * Is used by the messenger to determine that this is rtp.
          */
         _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
-        _from_pos = rtp_add_extention_header( _retu->_ext_header, _from_pos );
-    }
-    else {
+        _from_pos = rtp_add_extention_header ( _retu->_ext_header, _from_pos + 1 );
+    } else {
         /* Allocate Memory for _retu->_data */
         _retu->_data = malloc ( sizeof _retu->_data * _length );
 
@@ -317,36 +329,23 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _leng
      */
 
     /* Appends _data on to _retu->_data */
-    memcpy(_from_pos + 1, _data, _length);
+    t_memcpy ( _from_pos + 1, _data, _length );
 
     _retu->_length = _length;
 
     return _retu;
 }
 
-rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from )
+rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
 {
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
 
-    _retu->_header = rtp_extract_header ( _data, 0, _length ); /* It allocates memory and all */
-
-    if ( !_retu->_header )
-        return NULL;
-
-
+    _retu->_header = rtp_extract_header ( _data ); /* It allocates memory and all */
     _retu->_length = _length - _retu->_header->_length;
 
     uint16_t _from_pos = _retu->_header->_length;
 
- /*
-    if ( _session->_packets_recv == 0 ) {
-        ADD_ALLOCATE ( _session->_csrc, uint32_t, 1 )
-        _session->_cc = 2;
-        _session->_csrc[1] = _retu->_header->_csrc[0];
-        _retu->_header->_length += 4;
-    }
-  */
     /*
      * Check Sequence number. If this new msg has lesser number then expected drop it return
      * NULL and add stats _packet_loss into _session. RTP does not specify what you do when the packet is lost.
@@ -369,41 +368,32 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _le
     _session->_last_sequence_number = _retu->_header->_sequence_number;
     _session->_current_timestamp = _retu->_header->_timestamp;
 
-    if ( rtp_header_get_flag_extension(_retu->_header) ){
-        _retu->_ext_header = rtp_extract_ext_header(_data, _from_pos - 1);
-        _retu->_length -= ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
-        _from_pos += ( 4 + _retu->_ext_header->_ext_len * 4 ) - 1;
-    }
-    else {
+    if ( rtp_header_get_flag_extension ( _retu->_header ) ) {
+        _retu->_ext_header = rtp_extract_ext_header ( _data + _from_pos );
+        _retu->_length -= ( 4 + _retu->_ext_header->_ext_len * 4 );
+        _from_pos += ( 4 + _retu->_ext_header->_ext_len * 4 );
+    } else {
         _retu->_ext_header = NULL;
     }
 
     /* Get the payload */
-    _retu->_data = malloc ( sizeof  *_retu->_data  * _retu->_length );
-    memcpy_from ( _retu->_data, _from_pos, _data, _length);
-
-
-    if ( _from ) { /* Remove this is not need */
-        _retu->_from.ip = _from->ip;
-        _retu->_from.port = _from->port;
-        _retu->_from.padding = _from->padding;
-    }
+    _retu->_data = malloc ( sizeof ( uint8_t ) * _retu->_length );
+    t_memcpy ( _retu->_data, _data + _from_pos, _length - _from_pos );
 
     return _retu;
 }
 
 
-int rtp_add_resolution_marking( rtp_session_t* _session, uint16_t _width, uint16_t _height )
+int rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint16_t _height )
 {
-    if ( !(_session->_ext_header) ){
-        ALLOCATOR_S(_session->_ext_header, rtp_ext_header_t)
+    if ( ! ( _session->_ext_header ) ) {
+        ALLOCATOR_S ( _session->_ext_header, rtp_ext_header_t )
         _session->_extension = 1;
         _session->_ext_header->_ext_len = 0;
-        ALLOCATOR_S(_session->_ext_header->_hd_ext, uint32_t)
-    }
-    else ADD_ALLOCATE ( _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len )
+        ALLOCATOR_S ( _session->_ext_header->_hd_ext, uint32_t )
+    } else ADD_ALLOCATE ( _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len )
 
-    _session->_ext_header->_ext_len++; /* Just add one */
+        _session->_ext_header->_ext_len++; /* Just add one */
     _session->_ext_header->_ext_type = RTP_EXT_TYPE_RESOLUTION;
 
 
@@ -412,16 +402,16 @@ int rtp_add_resolution_marking( rtp_session_t* _session, uint16_t _width, uint16
     return SUCCESS;
 }
 
-int rtp_remove_resolution_marking( rtp_session_t* _session )
+int rtp_remove_resolution_marking ( rtp_session_t* _session )
 {
-    if ( _session->_extension == 0 || !(_session->_ext_header) )
+    if ( _session->_extension == 0 || ! ( _session->_ext_header ) )
         return FAILURE;
 
     if ( _session->_ext_header->_ext_type != RTP_EXT_TYPE_RESOLUTION )
         return FAILURE;
 
-    DEALLOCATOR(_session->_ext_header->_hd_ext)
-    DEALLOCATOR(_session->_ext_header)
+    DEALLOCATOR ( _session->_ext_header->_hd_ext )
+    DEALLOCATOR ( _session->_ext_header )
 
     _session->_ext_header = NULL; /* It's very important */
     _session->_extension = 0;

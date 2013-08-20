@@ -33,7 +33,6 @@
 
 #define RTP_VERSION 2
 
-uint8_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
 
 /* Extension header types */
 #define RTP_EXT_TYPE_RESOLUTION 1
@@ -119,15 +118,15 @@ typedef struct rtp_session_s {
  */
 
 
-void            rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _message);
+void            rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _msg);
 
 /* Functions handling receiving */
 rtp_msg_t*      rtp_recv_msg ( rtp_session_t* _session );
-rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from );
+rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
 
 /* Functions handling sending */
-int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* msg );
-rtp_msg_t*      rtp_msg_new ( rtp_session_t* _session, uint8_t* _data, uint32_t _length, IP_Port* _from );
+int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg );
+rtp_msg_t*      rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
 
 
 /* Convenient functions for creating a header */
@@ -139,11 +138,11 @@ rtp_header_t*   rtp_build_header ( rtp_session_t* _session );
 int             rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
 
     /* Session initiation and termination. */
-rtp_session_t*  rtp_init_session ( IP_Port _dest, int _max_users );
+rtp_session_t*  rtp_init_session ( int _max_users );
 int             rtp_terminate_session( rtp_session_t* _session );
 
     /* Adding receiver */
-int             rtp_add_user ( rtp_session_t* _session, IP_Port _dest );
+int             rtp_add_receiver ( rtp_session_t* _session, IP_Port* _dest );
 
     /* Convenient functions for marking the resolution */
 int             rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint16_t _height );

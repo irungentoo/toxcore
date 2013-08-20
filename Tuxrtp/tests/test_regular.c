@@ -67,7 +67,7 @@ int main ( int argc, char* argv[] )
 
         LOCAL_IP.port = htons( RTP_PORT );
         LOCAL_IP.padding = -1;
-        _m_session = rtp_init_session ( LOCAL_IP, -1 ); /* You can even init it at the starting session */
+        _m_session = rtp_init_session ( -1 ); /* You can even init it at the starting session */
         status     = init_networking ( LOCAL_IP.ip, RTP_PORT_LISTEN );
 
 
@@ -116,7 +116,8 @@ int main ( int argc, char* argv[] )
         status = init_networking ( REMOTE_IP.ip, RTP_PORT );
 
 
-        _m_session = rtp_init_session ( Ip_port, -1 );
+        _m_session = rtp_init_session ( -1 );
+        rtp_add_receiver( _m_session, &Ip_port );
         puts ( "Now sending for ~5 s" );
 
 
@@ -130,7 +131,7 @@ int main ( int argc, char* argv[] )
         rtp_add_resolution_marking(_m_session, 100, 100);
 
         for ( ;; ) {
-            _m_msg = rtp_msg_new ( _m_session, test_bytes, 280, NULL ) ;
+            _m_msg = rtp_msg_new ( _m_session, test_bytes, 280 ) ;
             rtp_send_msg ( _m_session, _m_msg );
             usleep ( 10000 );
         }

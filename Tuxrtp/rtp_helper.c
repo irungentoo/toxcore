@@ -30,7 +30,7 @@
 
 static int _seed = -1; /* Not initiated */
 
-int set_ip_port ( const char* _ip, short _port, void* _dest )
+int set_ip_port ( const char* _ip, unsigned short _port, void* _dest )
 {
     if ( !_dest ) {
         return FAILURE;
@@ -44,7 +44,7 @@ int set_ip_port ( const char* _ip, short _port, void* _dest )
     return SUCCESS;
 }
 
-uint32_t get_random_number ( uint32_t _max )
+__inline uint32_t get_random_number ( uint32_t _max )
 {
     if ( _seed < 0 ) {
         srand ( _time );
@@ -52,28 +52,21 @@ uint32_t get_random_number ( uint32_t _max )
     }
 
     if ( _max <= 0 ) {
-        return rand();
+        return (unsigned) rand();
     } else {
-        return rand() % _max;
+        return (unsigned) rand() % _max;
     }
 }
 
-void memadd ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size )
+__inline void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
 {
-    size_t it;
-
-    for ( it = 0; _from < _size; _from ++ ) {
-        _dest[_from] = _source[it];
-        it ++;
-    }
-}
-
-void memcpy_from ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size )
-{
-    size_t _it;
-
-    for ( _it = 0; _from < _size; _it++ ) {
-        _dest[_it] = _source[_from];
-        _from ++;
-    }
+    /*
+     * Using countdown do zero method
+     * It's quite much faster than for(_it = 0; _it < _size; _it++);
+     */
+    size_t _it = _size;
+    do{
+        _it--;
+        _dest[_it] = _source[_it];
+    } while ( _it );
 }

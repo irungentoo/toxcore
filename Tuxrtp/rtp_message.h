@@ -68,31 +68,31 @@ typedef struct rtp_msg_s {
 } rtp_msg_t;
 
 /* Extracts the header from the payload starting at _from */
-rtp_header_t*       rtp_extract_header ( uint8_t* _payload, size_t _from, size_t _size );
-rtp_ext_header_t*   rtp_extract_ext_header ( uint8_t* _payload, size_t _from );
+rtp_header_t*       rtp_extract_header      ( const uint8_t* _payload );
+rtp_ext_header_t*   rtp_extract_ext_header  ( const uint8_t* _payload );
 
 
-uint8_t*  rtp_add_header ( rtp_header_t* _header, uint8_t* _payload );
-uint8_t*  rtp_add_extention_header ( rtp_ext_header_t* _header, uint8_t* _payload );
+uint8_t*  rtp_add_header                    ( rtp_header_t* _header, const uint8_t* _payload );
+uint8_t*  rtp_add_extention_header          ( rtp_ext_header_t* _header, const uint8_t* _payload );
 
 /* Gets the size of the header _header in bytes */
-size_t  rtp_header_get_size ( rtp_header_t* _header );
+size_t  rtp_header_get_size                 ( const rtp_header_t* _header );
 
 /* Adding flags and settings */
-void    rtp_header_add_flag_version ( rtp_header_t* _header, int value );
-void    rtp_header_add_flag_padding ( rtp_header_t* _header, int value );
-void    rtp_header_add_flag_extension ( rtp_header_t* _header, int value );
-void    rtp_header_add_flag_CSRC_count ( rtp_header_t* _header, int value );
-void    rtp_header_add_setting_marker ( rtp_header_t* _header, int value );
-void    rtp_header_add_setting_payload ( rtp_header_t* _header, int value );
+void    rtp_header_add_flag_version         ( rtp_header_t* _header, int value );
+void    rtp_header_add_flag_padding         ( rtp_header_t* _header, int value );
+void    rtp_header_add_flag_extension       ( rtp_header_t* _header, int value );
+void    rtp_header_add_flag_CSRC_count      ( rtp_header_t* _header, int value );
+void    rtp_header_add_setting_marker       ( rtp_header_t* _header, int value );
+void    rtp_header_add_setting_payload      ( rtp_header_t* _header, int value );
 
 
 /* Getting values from flags and settings */
-uint8_t rtp_header_get_flag_version ( rtp_header_t* _header );
-uint8_t rtp_header_get_flag_padding ( rtp_header_t* _header );
-uint8_t rtp_header_get_flag_extension ( rtp_header_t* _header );
-uint8_t rtp_header_get_flag_CSRC_count ( rtp_header_t* _header );
-uint8_t rtp_header_get_setting_marker ( rtp_header_t* _header );
-uint8_t rtp_header_get_setting_payload_type ( rtp_header_t* _header );
+uint8_t rtp_header_get_flag_version         ( const rtp_header_t* _header );
+uint8_t rtp_header_get_flag_padding         ( const rtp_header_t* _header );
+uint8_t rtp_header_get_flag_extension       ( const rtp_header_t* _header );
+uint8_t rtp_header_get_flag_CSRC_count      ( const rtp_header_t* _header );
+uint8_t rtp_header_get_setting_marker       ( const rtp_header_t* _header );
+uint8_t rtp_header_get_setting_payload_type ( const rtp_header_t* _header );
 
 #endif /* _RTP__MESSAGE_H_ */

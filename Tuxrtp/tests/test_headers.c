@@ -32,7 +32,7 @@
 #include <assert.h>
 
 
-int _print_help()
+int print_help()
 {
     puts (
         " Usage: Tuxrtp [-s (send mode) -d IP ( destination ) -p PORT ( dest Port )] \n"
@@ -137,7 +137,7 @@ int ___main ( int argc, char* argv[] )
     uint16_t    port;
 
 
-    uint8_t* test_bytes [300];
+    const uint8_t* test_bytes [300];
     memset(test_bytes, 'a', 300);
 
     rtp_session_t* _m_session;
@@ -150,7 +150,7 @@ int ___main ( int argc, char* argv[] )
         LOCAL_IP.port = RTP_PORT;
         LOCAL_IP.padding = -1;
 
-        _m_session = rtp_init_session ( LOCAL_IP, -1 );
+        _m_session = rtp_init_session ( -1 );
         status = init_networking ( LOCAL_IP.ip, RTP_PORT_LISTEN );
 
 
@@ -204,15 +204,15 @@ int ___main ( int argc, char* argv[] )
         printf ( "Remote: %s:%d\n", ip, port );
         status = init_networking ( Ip_port.ip, RTP_PORT );
 
-        _m_session = rtp_init_session ( Ip_port, -1 );
+        _m_session = rtp_init_session ( -1 );
+        rtp_add_receiver( _m_session, &Ip_port );
         rtp_add_resolution_marking(_m_session, 1920, 1080);
 
         puts ( "Now sending payload!\n" );
         uint16_t _first_sequ = _m_session->_sequence_number;
 
         /* use already defined buffer lenght */
-        _m_msg = rtp_msg_new ( _m_session, test_bytes, 300, NULL );
-        print_ext_header_info(_m_msg->_ext_header);
+        _m_msg = rtp_msg_new ( _m_session, test_bytes, 300 );
 
         rtp_send_msg ( _m_session, _m_msg );
 
@@ -235,7 +235,6 @@ int ___main ( int argc, char* argv[] )
         if ( _m_session->_last_error ) {
             puts ( _m_session->_last_error );
         }
-        printf ( "Payload: ( %d ) \n%s\n", strlen(test_bytes), test_bytes );
 
         return rtp_terminate_session(_m_session);
 

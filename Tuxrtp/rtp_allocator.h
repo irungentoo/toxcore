@@ -26,7 +26,6 @@
 #define _RTP__ALLOCATOR_H_
 
 #include <malloc.h>
-#include "rtp_allocator.h"
 
 #define ALLOCATOR_VAR(VAR, TYPE, NUM) TYPE* VAR = malloc(sizeof(TYPE) * NUM);
 #define ALLOCATOR(VAR, TYPE, NUM) VAR = malloc(sizeof(TYPE) * NUM);
@@ -48,7 +47,7 @@
 #define DYNAMIC_STRING(VAR, SIZE) { ALLOCATOR(VAR, char, SIZE) memset(VAR, '\0', SIZE); }
 
 
-#define SET_ALLOCATE(VAR, NUM)  VAR = realloc(VAR, sizeof *VAR * NUM );
+#define SET_ALLOCATE(VAR, NUM)  VAR = realloc(VAR, sizeof VAR * NUM );
 #define ADD_ALLOCATE(VAR, PREV) SET_ALLOCATE(VAR, PREV + 1)
 #define REM_ALLOCATE(VAR, PREV) SET_ALLOCATE(VAR, PREV - 1)
 

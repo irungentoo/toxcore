@@ -37,11 +37,14 @@
 
 /* Core adaptation helper */
 
-int set_ip_port ( const char* _ip, short _port, void* _cont );
+int set_ip_port ( const char* _ip, unsigned short _port, void* _cont );
 uint32_t get_random_number ( uint32_t _max );
 
-void memadd ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size );
-void memcpy_from ( uint8_t* _dest, size_t _from, const uint8_t* _source, size_t _size );
+/* It's a bit faster than the memcpy it self and more optimized for using
+ * a uint8_t since memcpy has optimizations when copying "words" i.e. long type.
+ * Otherwise it just copies char's while we need uint8_t
+ */
+void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size );
 
 #define unused(x) (void)(x);
 
