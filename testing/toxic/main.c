@@ -78,7 +78,7 @@ static Messenger *init_tox()
 #elif defined(WIN32)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
 #elif defined(__APPLE__)
-    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
+    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to assume users of other Unixes are hipsters
 #else
     setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
 #endif
@@ -96,7 +96,6 @@ int init_connection(void)
     
     if (DHT_isconnected())
         return 0;
-
     fp = fopen(SRVLIST_FILE, "r");
 
     if (!fp)

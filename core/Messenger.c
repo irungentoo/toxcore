@@ -169,7 +169,7 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
     /* resize the friend list if necessary */
     if (realloc_friendlist(m, m->numfriends + 1) != 0)
         return FAERR_NOMEM;
-
+    if (&(m->friendlist[m->numfriends]) == NULL) return -1;
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
     uint32_t i;
@@ -209,7 +209,7 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
     /* resize the friend list if necessary */
     if (realloc_friendlist(m, m->numfriends + 1) != 0)
         return FAERR_NOMEM;
-
+    if (&(m->friendlist[m->numfriends]) == NULL) return -1;
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
     uint32_t i;
