@@ -40,11 +40,11 @@ extern "C" {
 #endif
 
 /*Send a LAN discovery pcaket to the broadcast address with port port*/
-int send_LANdiscovery(uint16_t port);
+int send_LANdiscovery(uint16_t port, Net_Crypto *c);
 
 
 /* sets up packet handlers */
-void LANdiscovery_init(void);
+void LANdiscovery_init(DHT *dht);
 
 
 

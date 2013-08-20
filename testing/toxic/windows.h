@@ -24,7 +24,7 @@ typedef struct ToxWindow_ ToxWindow;
 
 struct ToxWindow_ {
     void(*onKey)(ToxWindow *, Messenger *, int);
-    void(*onDraw)(ToxWindow *);
+    void(*onDraw)(ToxWindow *, Messenger *);
     void(*onInit)(ToxWindow *, Messenger *);
     void(*onFriendRequest)(ToxWindow *, uint8_t *, uint8_t *, uint16_t);
     void(*onMessage)(ToxWindow *, Messenger *, int, uint8_t *, uint16_t);

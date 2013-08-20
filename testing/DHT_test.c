@@ -28,8 +28,8 @@
  */
 
 //#include "../core/network.h"
-#include "../core/DHT.c"
-#include "../core/friend_requests.c"
+#include "../core/DHT.h"
+#include "../core/friend_requests.h"
 #include "misc_tools.h"
 
 #include <string.h>
@@ -48,7 +48,7 @@
 
 #define PORT 33445
 
-void print_clientlist()
+void print_clientlist(DHT * dht)
 {
     uint32_t i, j;
     IP_Port p_ip;
@@ -58,34 +58,34 @@ void print_clientlist()
         printf("ClientID: ");
 
         for (j = 0; j < 32; j++) {
-            printf("%02hhX", close_clientlist[i].client_id[j]);
+            printf("%02hhX", dht->close_clientlist[i].client_id[j]);
         }
 
-        p_ip = close_clientlist[i].ip_port;
+        p_ip = dht->close_clientlist[i].ip_port;
         printf("\nIP: %u.%u.%u.%u Port: %u", p_ip.ip.c[0], p_ip.ip.c[1], p_ip.ip.c[2], p_ip.ip.c[3], ntohs(p_ip.port));
-        printf("\nTimestamp: %llu", (long long unsigned int) close_clientlist[i].timestamp);
-        printf("\nLast pinged: %llu\n", (long long unsigned int) close_clientlist[i].last_pinged);
-        p_ip = close_clientlist[i].ret_ip_port;
+        printf("\nTimestamp: %llu", (long long unsigned int) dht->close_clientlist[i].timestamp);
+        printf("\nLast pinged: %llu\n", (long long unsigned int) dht->close_clientlist[i].last_pinged);
+        p_ip = dht->close_clientlist[i].ret_ip_port;
         printf("OUR IP: %u.%u.%u.%u Port: %u\n", p_ip.ip.c[0], p_ip.ip.c[1], p_ip.ip.c[2], p_ip.ip.c[3], ntohs(p_ip.port));
-        printf("Timestamp: %llu\n", (long long unsigned int) close_clientlist[i].ret_timestamp);
+        printf("Timestamp: %llu\n", (long long unsigned int) dht->close_clientlist[i].ret_timestamp);
     }
 }
 
-void print_friendlist()
+void print_friendlist(DHT * dht)
 {
     uint32_t i, j, k;
     IP_Port p_ip;
     printf("_________________FRIENDS__________________________________\n");
 
-    for (k = 0; k < num_friends; k++) {
+    for (k = 0; k < dht->num_friends; k++) {
         printf("FRIEND %u\n", k);
         printf("ID: ");
 
         for (j = 0; j < 32; j++) {
-            printf("%c", friends_list[k].client_id[j]);
+            printf("%c", dht->friends_list[k].client_id[j]);
         }
 
-        p_ip = DHT_getfriendip(friends_list[k].client_id);
+        p_ip = DHT_getfriendip(dht, dht->friends_list[k].client_id);
         printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.c[0], p_ip.ip.c[1], p_ip.ip.c[2], p_ip.ip.c[3], ntohs(p_ip.port));
 
         printf("\nCLIENTS IN LIST:\n\n");
@@ -94,19 +94,19 @@ void print_friendlist()
             printf("ClientID: ");
 
             for (j = 0; j < 32; j++) {
-                if (friends_list[k].client_list[i].client_id[j] < 16)
+                if (dht->friends_list[k].client_list[i].client_id[j] < 16)
                     printf("0");
 
-                printf("%hhX", friends_list[k].client_list[i].client_id[j]);
+                printf("%hhX", dht->friends_list[k].client_list[i].client_id[j]);
             }
 
-            p_ip = friends_list[k].client_list[i].ip_port;
+            p_ip = dht->friends_list[k].client_list[i].ip_port;
             printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.c[0], p_ip.ip.c[1], p_ip.ip.c[2], p_ip.ip.c[3], ntohs(p_ip.port));
-            printf("\nTimestamp: %llu", (long long unsigned int) friends_list[k].client_list[i].timestamp);
-            printf("\nLast pinged: %llu\n", (long long unsigned int) friends_list[k].client_list[i].last_pinged);
-            p_ip = friends_list[k].client_list[i].ret_ip_port;
+            printf("\nTimestamp: %llu", (long long unsigned int) dht->friends_list[k].client_list[i].timestamp);
+            printf("\nLast pinged: %llu\n", (long long unsigned int) dht->friends_list[k].client_list[i].last_pinged);
+            p_ip =dht->friends_list[k].client_list[i].ret_ip_port;
             printf("ret IP: %u.%u.%u.%u:%u\n", p_ip.ip.c[0], p_ip.ip.c[1], p_ip.ip.c[2], p_ip.ip.c[3], ntohs(p_ip.port));
-            printf("Timestamp: %llu\n", (long long unsigned int)friends_list[k].client_list[i].ret_timestamp);
+            printf("Timestamp: %llu\n", (long long unsigned int)dht->friends_list[k].client_list[i].ret_timestamp);
         }
     }
 }
@@ -130,21 +130,27 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 int main(int argc, char *argv[])
 {
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
-
+    /* initialize networking */
+    /* bind to ip 0.0.0.0:PORT */
+    IP ip;
+    ip.i = 0;
+    
+    DHT * dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+    init_cryptopackets(dht);
     if (argc < 4) {
         printf("usage %s ip port public_key\n", argv[0]);
         exit(0);
     }
 
-    new_keys();
+    new_keys(dht->c);
     printf("OUR ID: ");
     uint32_t i;
 
     for (i = 0; i < 32; i++) {
-        if (self_public_key[i] < 16)
+        if (dht->c->self_public_key[i] < 16)
             printf("0");
 
-        printf("%hhX", self_public_key[i]);
+        printf("%hhX", dht->c->self_public_key[i]);
     }
 
     char temp_id[128];
@@ -153,13 +159,7 @@ int main(int argc, char *argv[])
     if (scanf("%s", temp_id) != 1)
         exit(0);
 
-    DHT_addfriend(hex_string_to_bin(temp_id));
-
-    /* initialize networking */
-    /* bind to ip 0.0.0.0:PORT */
-    IP ip;
-    ip.i = 0;
-    init_networking(ip, PORT);
+    DHT_addfriend(dht, hex_string_to_bin(temp_id));
 
 
     perror("Initialization");
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
      * bootstrap_ip_port.ip.c[2] = 0;
      * bootstrap_ip_port.ip.c[3] = 1; */
     bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-    DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    DHT_bootstrap(dht, bootstrap_ip_port, hex_string_to_bin(argv[3]));
 
     /*
         IP_Port ip_port;
@@ -178,12 +178,9 @@ int main(int argc, char *argv[])
         uint32_t length;
     */
 
-    DHT_init();
-    friendreq_init();
-
     while (1) {
 
-        doDHT();
+        do_DHT(dht);
 
         /* slvrTODO:
                 while(receivepacket(&ip_port, data, &length) != -1) {
@@ -195,13 +192,11 @@ int main(int argc, char *argv[])
                     }
                 }
         */
-        networking_poll();
+        networking_poll(dht->c->lossless_udp->net);
 
-        print_clientlist();
-        print_friendlist();
+        print_clientlist(dht);
+        print_friendlist(dht);
         c_sleep(300);
     }
-
-    shutdown_networking();
     return 0;
 }

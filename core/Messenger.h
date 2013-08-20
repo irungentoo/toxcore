@@ -112,8 +112,11 @@ typedef struct {
 } Friend;
 
 typedef struct Messenger {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-
+    
+    Networking_Core *net;
+    Net_Crypto * net_crypto;
+    DHT * dht;
+    Friend_Requests fr;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
 
@@ -124,6 +127,8 @@ typedef struct Messenger {
 
     Friend *friendlist;
     uint32_t numfriends;
+
+    uint64_t last_LANdiscovery;
 
     void (*friend_message)(struct Messenger *m, int, uint8_t *, uint16_t, void *);
     void *friend_message_userdata;
@@ -219,17 +224,13 @@ int m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t lengt
    return -1 if failure */
 int setname(Messenger *m, uint8_t *name, uint16_t length);
 
-/**
- * @brief Get your nickname.
- *
- * @param[in]  m        The messanger context to use.
- *
- * @param[inout]  name    Pointer to a string for the name.
- *
- * @param[in]  nlen     The length of the string buffer.
- *
- * @return Return the length of the name, 0 on error.
- */
+/*
+   Get your nickname.
+   m        The messanger context to use.
+   name    Pointer to a string for the name.
+   nlen     The length of the string buffer.
+   returns Return the length of the name, 0 on error.
+*/
 uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen);
 
 /* get name of friendnumber

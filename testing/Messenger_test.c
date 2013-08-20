@@ -48,6 +48,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #define c_sleep(x) usleep(1000*x)
+#define PORT 33445
 
 #endif
 
@@ -103,10 +104,14 @@ int main(int argc, char *argv[])
     }
 
     if (argc > 3) {
+        IP ip;
+        ip.i = 0;
+
+        DHT * dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
         IP_Port bootstrap_ip_port;
         bootstrap_ip_port.port = htons(atoi(argv[2]));
         bootstrap_ip_port.ip.i = inet_addr(argv[1]);
-        DHT_bootstrap(bootstrap_ip_port, hex_string_to_bin(argv[3]));
+        DHT_bootstrap(dht, bootstrap_ip_port, hex_string_to_bin(argv[3]));
     } else {
         FILE *file = fopen(argv[1], "rb");
 

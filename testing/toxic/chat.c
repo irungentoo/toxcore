@@ -342,7 +342,7 @@ void execute(ToxWindow *self, ChatContext *ctx, Messenger *m, char *cmd)
         wprintw(ctx->history, "Invalid command.\n");
 }
 
-static void chat_onDraw(ToxWindow *self)
+static void chat_onDraw(ToxWindow *self, Messenger *m)
 {
     curs_set(1);
     int x, y;
