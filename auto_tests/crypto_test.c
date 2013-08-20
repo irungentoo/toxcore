@@ -5,7 +5,12 @@
 #include <check.h>
 #include <stdlib.h>
 #include <time.h>
+#ifndef VANILLA_NACL
 #include <sodium.h>
+#else
+#include <crypto_box.h>
+#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
+#endif
 
 void rand_bytes(uint8_t *b, size_t blen)
 {
