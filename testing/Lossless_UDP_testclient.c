@@ -122,8 +122,8 @@ void printconnection(int connection_id)
 
 /*( receive packets and send them to the packethandler */
 /*run doLossless_UDP(); */
-void Lossless_UDP()
-{
+//void Lossless_UDP()
+//{
     /*    IP_Port ip_port;
         uint8_t data[MAX_UDP_PACKET_SIZE];
         uint32_t length;
@@ -140,11 +140,11 @@ void Lossless_UDP()
     /* } */
     /* }*/
 
-    networking_poll();
+    //networking_poll();
 
-    doLossless_UDP();
+    //doLossless_UDP();
 
-}
+//}
 
 int main(int argc, char *argv[])
 {
@@ -166,25 +166,26 @@ int main(int argc, char *argv[])
     /* bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
-    init_networking(ip, PORT);
+    Lossless_UDP * ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
     IP_Port serverip;
     serverip.ip.i = inet_addr(argv[1]);
     serverip.port = htons(atoi(argv[2]));
     printip(serverip);
-    int connection = new_connection(serverip);
+    int connection = new_connection(ludp, serverip);
     uint64_t timer = current_time();
 
     while (1) {
         /* printconnection(connection); */
-        Lossless_UDP();
+        networking_poll(ludp->net);
+        do_lossless_udp(ludp);
 
-        if (is_connected(connection) == 3) {
+        if (is_connected(ludp, connection) == 3) {
             printf("Connecting took: %llu us\n", (unsigned long long)(current_time() - timer));
             break;
         }
 
-        if (is_connected(connection) == 0) {
+        if (is_connected(ludp, connection) == 0) {
             printf("Connection timeout after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 1;
         }
@@ -194,25 +195,24 @@ int main(int argc, char *argv[])
 
     timer = current_time();
 
-    LosslessUDP_init();
 
     /*read first part of file */
     read = fread(buffer, 1, 512, file);
 
     while (1) {
         /* printconnection(connection); */
-        Lossless_UDP();
+        networking_poll(ludp->net);
+        do_lossless_udp(ludp);
+        if (is_connected(ludp, connection) == 3) {
 
-        if (is_connected(connection) == 3) {
-
-            if (write_packet(connection, buffer, read)) {
+            if (write_packet(ludp, connection, buffer, read)) {
                 /* printf("Wrote data.\n"); */
                 read = fread(buffer, 1, 512, file);
 
             }
 
             /* printf("%u\n", sendqueue(connection)); */
-            if (sendqueue(connection) == 0) {
+            if (sendqueue(ludp, connection) == 0) {
                 if (read == 0) {
                     printf("Sent file successfully in: %llu us\n", (unsigned long long)(current_time() - timer));
                     break;
