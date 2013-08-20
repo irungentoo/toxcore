@@ -719,6 +719,8 @@ static int handle_data(void * object, IP_Port source, uint8_t *packet, uint32_t 
 
 Lossless_UDP * new_lossless_udp(Networking_Core * net)
 {
+    if(net == NULL)
+        return NULL;
     Lossless_UDP * temp = calloc(1, sizeof(Lossless_UDP));
     if (temp == NULL)
          return NULL;

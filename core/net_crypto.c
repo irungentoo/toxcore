@@ -699,6 +699,8 @@ static void receive_crypto(Net_Crypto *c)
    sets all the global connection variables to their default values. */
 Net_Crypto * new_net_crypto(Networking_Core * net)
 {
+    if (net == NULL)
+        return NULL;
     Net_Crypto * temp = calloc(1, sizeof(Net_Crypto));
     if (temp == NULL)
          return NULL;

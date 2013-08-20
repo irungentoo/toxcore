@@ -1145,6 +1145,8 @@ static void do_toping(DHT * dht)
 
 DHT * new_DHT(Net_Crypto *c)
 {
+    if (c == NULL)
+        return NULL;
     DHT * temp = calloc(1, sizeof(DHT));
     if (temp == NULL)
          return NULL;

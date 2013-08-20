@@ -625,7 +625,7 @@ Messenger *initMessenger(void)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
     if ( ! m )
-        return 0;
+        return NULL;
     IP ip;
     ip.i = 0;
     m->net = new_networking(ip, PORT);
