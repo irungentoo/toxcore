@@ -77,7 +77,7 @@ and connect to them.
 returns 1 if the connection to the DHT is up
 returns -1 if all attempts failed
 */
-int connect_to_servers(struct server_info_s *info)
+int connect_to_servers(DHT * dht, struct server_info_s *info)
 {
     int i;
     int c;
@@ -86,7 +86,7 @@ int connect_to_servers(struct server_info_s *info)
         if (info[i].valid) {
             /* Actual bootstrapping code goes here */
             //puts("Calling DHT_bootstrap");
-            DHT_bootstrap(info[i].conn, info[i].bs_pk);
+            DHT_bootstrap(dht, info[i].conn, info[i].bs_pk);
         }
     }
 
@@ -94,28 +94,28 @@ int connect_to_servers(struct server_info_s *info)
     for (c = 0; c != 100; ++c) {
         usleep(10000);
 
-        if (DHT_isconnected()) {
+        if (DHT_isconnected(dht)) {
             //puts("Connected");
             return 1;
             break;
         }
 
-        if (DHT_isconnected() == 0 && c == 99) {
+        if (DHT_isconnected(dht) == 0 && c == 99) {
             //puts("Not connected");
             return -1;
             break;
         }
 
-        doDHT();
+        do_DHT(dht);
 
-        networking_poll();
+        networking_poll(dht->c->lossless_udp->net);
     }
 
     /* This probably never happens */
     return 0;
 }
 
-void manage_keys(char *keys_file)
+void manage_keys(DHT * dht, char *keys_file)
 {
     const uint32_t KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
     uint8_t keys[KEYS_SIZE];
@@ -134,13 +134,13 @@ void manage_keys(char *keys_file)
             printf("Keys loaded successfully\n");
         }
 
-        load_keys(keys);
+        load_keys(dht->c, keys);
 
     } else {
         /* otherwise save new keys */
         /* Silly work-around to ignore any errors coming from new_keys() */
-        new_keys();
-        save_keys(keys);
+        new_keys(dht->c);
+        save_keys(dht->c, keys);
         keysf = fopen(keys_file, "w");
 
         if (fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keysf) != KEYS_SIZE) {
@@ -293,10 +293,14 @@ int main(int argc, char *argv[])
         printf("Please specify a configuration file.\n");
         exit(EXIT_FAILURE);
     }
-
-    /* Read the config file */
     server_conf = configure_server(argv[1]);
-
+    
+    /* initialize networking
+    bind to ip 0.0.0.0:PORT */
+    IP ip;
+    ip.i = 0;
+    DHT * dht = new_DHT(new_net_crypto(new_networking(ip, server_conf.port)));
+    /* Read the config file */
     printf("PID file: %s\n", server_conf.pid_file);
     printf("Key file: %s\n", server_conf.keys_file);
 
@@ -313,38 +317,32 @@ int main(int argc, char *argv[])
     /* Manage the keys */
     /* for now, just ignore any errors after this call. */
     int tmperr = errno;
-    manage_keys(server_conf.keys_file);
+    manage_keys(dht, server_conf.keys_file);
     errno = tmperr;
 
+    init_cryptopackets(dht);
     /* Public key */
     int i;
     printf("\nPublic Key: ");
 
     for (i = 0; i < 32; ++i) {
         uint8_t ln, hn;
-        ln = 0x0F & self_public_key[i];
-        hn = 0xF0 & self_public_key[i];
+        ln = 0x0F & dht->c->self_public_key[i];
+        hn = 0xF0 & dht->c->self_public_key[i];
         hn = hn >> 4;
         printf("%X%X", hn, ln);
     }
 
     printf("\n");
 
-    /* initialize networking
-    bind to ip 0.0.0.0:PORT */
-    IP ip;
-    ip.i = 0;
-    init_networking(ip, server_conf.port);
-
     /* Bootstrap the DHT
     This one throws odd errors, too. Ignore. I assume they come
     from somewhere in the core. */
-    DHT_init();
     tmperr = errno;
-    connect_to_servers(server_conf.info);
+    connect_to_servers(dht, server_conf.info);
     errno = tmperr;
 
-    if (!DHT_isconnected()) {
+    if (!DHT_isconnected(dht)) {
         puts("Could not establish DHT connection. Check server settings.\n");
         exit(EXIT_FAILURE);
     } else {
@@ -404,13 +402,10 @@ int main(int argc, char *argv[])
     close(STDIN_FILENO);
     close(STDERR_FILENO);
 
-    /* Main loop */
-    friendreq_init();
-
     while (1) {
-        doDHT();
+        do_DHT(dht);
 
-        networking_poll();
+        networking_poll(dht->c->lossless_udp->net);
         usleep(10000);
     }
 
