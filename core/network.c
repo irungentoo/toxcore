@@ -86,13 +86,13 @@ static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *le
     return 0;
 }
 
-void networking_registerhandler(Networking_Core * net, uint8_t byte, packet_handler_callback cb, void * object)
+void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object)
 {
     net->packethandlers[byte].function = cb;
     net->packethandlers[byte].object = object;
 }
 
-void networking_poll(Networking_Core * net)
+void networking_poll(Networking_Core *net)
 {
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
@@ -112,6 +112,7 @@ static void at_startup(void)
 {
     if (at_startup_ran != 0)
         return;
+
 #ifdef WIN32
     WSADATA wsaData;
 
@@ -121,7 +122,7 @@ static void at_startup(void)
 #else
     srandom((uint32_t)current_time());
 #endif
-    srand((uint32_t)current_time()); 
+    srand((uint32_t)current_time());
     at_startup_ran = 1;
 }
 
@@ -130,7 +131,7 @@ static void at_shutdown(void)
 {
 #ifdef WIN32
     WSACleanup();
-#endif  
+#endif
 }
 */
 
@@ -140,13 +141,15 @@ static void at_shutdown(void)
    port is in host byte order (this means don't worry about it)
    returns Networking_Core object if no problems
    returns NULL if there are problems */
-Networking_Core * new_networking(IP ip, uint16_t port)
+Networking_Core *new_networking(IP ip, uint16_t port)
 {
     at_startup();
     /* initialize our socket */
-    Networking_Core * temp = calloc(1, sizeof(Networking_Core));
+    Networking_Core *temp = calloc(1, sizeof(Networking_Core));
+
     if (temp == NULL)
-         return NULL;
+        return NULL;
+
     temp->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     /* Check for socket error */
@@ -200,7 +203,7 @@ Networking_Core * new_networking(IP ip, uint16_t port)
 }
 
 /* function to cleanup networking stuff */
-void kill_networking(Networking_Core * net)
+void kill_networking(Networking_Core *net)
 {
 #ifdef WIN32
     closesocket(net->sock);

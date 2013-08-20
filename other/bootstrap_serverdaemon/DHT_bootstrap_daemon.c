@@ -77,7 +77,7 @@ and connect to them.
 returns 1 if the connection to the DHT is up
 returns -1 if all attempts failed
 */
-int connect_to_servers(DHT * dht, struct server_info_s *info)
+int connect_to_servers(DHT *dht, struct server_info_s *info)
 {
     int i;
     int c;
@@ -115,7 +115,7 @@ int connect_to_servers(DHT * dht, struct server_info_s *info)
     return 0;
 }
 
-void manage_keys(DHT * dht, char *keys_file)
+void manage_keys(DHT *dht, char *keys_file)
 {
     const uint32_t KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
     uint8_t keys[KEYS_SIZE];
@@ -293,13 +293,14 @@ int main(int argc, char *argv[])
         printf("Please specify a configuration file.\n");
         exit(EXIT_FAILURE);
     }
+
     server_conf = configure_server(argv[1]);
-    
+
     /* initialize networking
     bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
-    DHT * dht = new_DHT(new_net_crypto(new_networking(ip, server_conf.port)));
+    DHT *dht = new_DHT(new_net_crypto(new_networking(ip, server_conf.port)));
     /* Read the config file */
     printf("PID file: %s\n", server_conf.pid_file);
     printf("Key file: %s\n", server_conf.keys_file);

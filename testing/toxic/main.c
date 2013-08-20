@@ -93,7 +93,7 @@ static Messenger *init_tox()
 int init_connection(Messenger *m)
 {
     FILE *fp = NULL;
-    
+
     if (DHT_isconnected(m->dht))
         return 0;
 
@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
             strcpy(DATA_FILE, user_config_dir);
             strcat(DATA_FILE, CONFIGDIR);
             strcat(DATA_FILE, "data");
-            
+
             SRVLIST_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("DHTservers") + 1);
             strcpy(SRVLIST_FILE, user_config_dir);
             strcat(SRVLIST_FILE, CONFIGDIR);

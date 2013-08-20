@@ -124,25 +124,25 @@ void printconnection(int connection_id)
 /*run doLossless_UDP(); */
 //void Lossless_UDP()
 //{
-    /*    IP_Port ip_port;
-        uint8_t data[MAX_UDP_PACKET_SIZE];
-        uint32_t length;
-        while (receivepacket(&ip_port, data, &length) != -1) {
-        printf("packet with length: %u\n", length); */
-    /* if(rand() % 3 != 1)//add packet loss
-     { */
-    /*
-                if (LosslessUDP_handlepacket(data, length, ip_port))
-                    printpacket(data, length, ip_port);
-                else
-                printf("Received handled packet with length: %u\n", length); //printconnection(0); */
+/*    IP_Port ip_port;
+    uint8_t data[MAX_UDP_PACKET_SIZE];
+    uint32_t length;
+    while (receivepacket(&ip_port, data, &length) != -1) {
+    printf("packet with length: %u\n", length); */
+/* if(rand() % 3 != 1)//add packet loss
+ { */
+/*
+            if (LosslessUDP_handlepacket(data, length, ip_port))
+                printpacket(data, length, ip_port);
+            else
+            printf("Received handled packet with length: %u\n", length); //printconnection(0); */
 
-    /* } */
-    /* }*/
+/* } */
+/* }*/
 
-    //networking_poll();
+//networking_poll();
 
-    //doLossless_UDP();
+//doLossless_UDP();
 
 //}
 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
     /* bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
-    Lossless_UDP * ludp = new_lossless_udp(new_networking(ip, PORT));
+    Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
     IP_Port serverip;
     serverip.ip.i = inet_addr(argv[1]);
@@ -203,6 +203,7 @@ int main(int argc, char *argv[])
         /* printconnection(connection); */
         networking_poll(ludp->net);
         do_lossless_udp(ludp);
+
         if (is_connected(ludp, connection) == 3) {
 
             if (write_packet(ludp, connection, buffer, read)) {

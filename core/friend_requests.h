@@ -40,7 +40,7 @@ typedef struct {
     /*NOTE: the following is just a temporary fix for the multiple friend requests received at the same time problem
     TODO: Make this better (This will most likely tie in with the way we will handle spam.)*/
 
-    #define MAX_RECEIVED_STORED 32
+#define MAX_RECEIVED_STORED 32
 
     uint8_t received_requests[MAX_RECEIVED_STORED][crypto_box_PUBLICKEYBYTES];
     uint16_t received_requests_index;
@@ -57,7 +57,8 @@ uint32_t get_nospam(Friend_Requests *fr);
 
 /* set the function that will be executed when a friend request for us is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata);
+void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *),
+                            void *userdata);
 
 /* sets up friendreq packet handlers */
 void friendreq_init(Friend_Requests *fr, Net_Crypto *c);

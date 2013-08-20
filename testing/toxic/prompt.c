@@ -365,7 +365,9 @@ static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
             cmd[i] = '\0';
 
             int j = i;
+
             while (++j < MAX_STR_SIZE && isspace(cmd[j]));
+
             i = j - 1;
 
             numargs++;

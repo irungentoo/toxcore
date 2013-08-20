@@ -54,7 +54,7 @@
 #define TIME_TOPING 5
 
 
-Client_data *DHT_get_close_list(DHT * dht)
+Client_data *DHT_get_close_list(DHT *dht)
 {
     return dht->close_clientlist;
 }
@@ -146,7 +146,7 @@ static int client_in_nodelist(Node_format *list, uint32_t length, uint8_t *clien
 
 /* Returns the friend number from the client_id, or -1 if a failure occurs
  */
-static int friend_number(DHT * dht, uint8_t *client_id)
+static int friend_number(DHT *dht, uint8_t *client_id)
 {
     uint32_t i;
 
@@ -163,7 +163,7 @@ static int friend_number(DHT * dht, uint8_t *client_id)
  *
  * TODO: For the love of based Allah make this function cleaner and much more efficient.
  */
-static int get_close_nodes(DHT * dht, uint8_t *client_id, Node_format *nodes_list)
+static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list)
 {
     uint32_t    i, j, k;
     uint64_t    temp_time = unix_time();
@@ -330,7 +330,7 @@ static int replace_good(   Client_data    *list,
 /* Attempt to add client with ip_port and client_id to the friends client list
  * and close_clientlist
  */
-void addto_lists(DHT * dht, IP_Port ip_port, uint8_t *client_id)
+void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
 {
     uint32_t i;
 
@@ -372,7 +372,7 @@ void addto_lists(DHT * dht, IP_Port ip_port, uint8_t *client_id)
 /* If client_id is a friend or us, update ret_ip_port
  * nodeclient_id is the id of the node that sent us this info
  */
-static void returnedip_ports(DHT * dht, IP_Port ip_port, uint8_t *client_id, uint8_t *nodeclient_id)
+static void returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8_t *nodeclient_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
@@ -406,7 +406,7 @@ static void returnedip_ports(DHT * dht, IP_Port ip_port, uint8_t *client_id, uin
 }
 
 /* Same as last function but for get_node requests. */
-static int is_gettingnodes(DHT * dht, IP_Port ip_port, uint64_t ping_id)
+static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
     uint8_t pinging;
@@ -431,7 +431,7 @@ static int is_gettingnodes(DHT * dht, IP_Port ip_port, uint64_t ping_id)
 }
 
 /* Same but for get node requests */
-static uint64_t add_gettingnodes(DHT * dht, IP_Port ip_port)
+static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
 {
     uint32_t i, j;
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
@@ -452,7 +452,7 @@ static uint64_t add_gettingnodes(DHT * dht, IP_Port ip_port)
 }
 
 /* send a getnodes request */
-static int getnodes(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id)
+static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id)
 {
     /* check if packet is gonna be sent to ourself */
     if (id_equal(public_key, dht->c->self_public_key) || is_gettingnodes(dht, ip_port, 0))
@@ -491,7 +491,7 @@ static int getnodes(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 }
 
 /* send a send nodes response */
-static int sendnodes(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id)
+static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id)
 {
     /* check if packet is gonna be sent to ourself */
     if (id_equal(public_key, dht->c->self_public_key))
@@ -532,9 +532,9 @@ static int sendnodes(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *c
     return sendpacket(dht->c->lossless_udp->net->sock, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
-static int handle_getnodes(void * object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
-    DHT * dht = object;
+    DHT *dht = object;
     uint64_t ping_id;
 
     if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES
@@ -565,9 +565,9 @@ static int handle_getnodes(void * object, IP_Port source, uint8_t *packet, uint3
     return 0;
 }
 
-static int handle_sendnodes(void * object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
-    DHT * dht = object;
+    DHT *dht = object;
     uint64_t ping_id;
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
     cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING;
@@ -613,7 +613,7 @@ static int handle_sendnodes(void * object, IP_Port source, uint8_t *packet, uint
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
-int DHT_addfriend(DHT * dht, uint8_t *client_id)
+int DHT_addfriend(DHT *dht, uint8_t *client_id)
 {
     if (friend_number(dht, client_id) != -1) /*Is friend already in DHT?*/
         return 1;
@@ -633,7 +633,7 @@ int DHT_addfriend(DHT * dht, uint8_t *client_id)
     return 0;
 }
 
-int DHT_delfriend(DHT * dht, uint8_t *client_id)
+int DHT_delfriend(DHT *dht, uint8_t *client_id)
 {
     uint32_t i;
     DHT_Friend *temp;
@@ -669,7 +669,7 @@ int DHT_delfriend(DHT * dht, uint8_t *client_id)
 }
 
 /* TODO: Optimize this. */
-IP_Port DHT_getfriendip(DHT * dht, uint8_t *client_id)
+IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
@@ -695,7 +695,7 @@ IP_Port DHT_getfriendip(DHT * dht, uint8_t *client_id)
 /* Ping each client in the "friends" list every PING_INTERVAL seconds. Send a get nodes request
  * every GET_NODE_INTERVAL seconds to a random good node for each "friend" in our "friends" list.
  */
-static void do_DHT_friends(DHT * dht)
+static void do_DHT_friends(DHT *dht)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
@@ -710,7 +710,7 @@ static void do_DHT_friends(DHT * dht)
             if (!is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, Kill_NODE_TIMEOUT)) {
                 if ((dht->friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
                     send_ping_request(dht->ping, dht->c, dht->friends_list[i].client_list[j].ip_port,
-                                       (clientid_t *) &dht->friends_list[i].client_list[j].client_id );
+                                      (clientid_t *) &dht->friends_list[i].client_list[j].client_id );
                     dht->friends_list[i].client_list[j].last_pinged = temp_time;
                 }
 
@@ -725,8 +725,8 @@ static void do_DHT_friends(DHT * dht)
         if (dht->friends_list[i].lastgetnode + GET_NODE_INTERVAL <= temp_time && num_nodes != 0) {
             rand_node = rand() % num_nodes;
             getnodes(dht, dht->friends_list[i].client_list[index[rand_node]].ip_port,
-                      dht->friends_list[i].client_list[index[rand_node]].client_id,
-                      dht->friends_list[i].client_id );
+                     dht->friends_list[i].client_list[index[rand_node]].client_id,
+                     dht->friends_list[i].client_id );
             dht->friends_list[i].lastgetnode = temp_time;
         }
     }
@@ -735,7 +735,7 @@ static void do_DHT_friends(DHT * dht)
 /* Ping each client in the close nodes list every PING_INTERVAL seconds.
  * Send a get nodes request every GET_NODE_INTERVAL seconds to a random good node in the list.
  */
-static void do_Close(DHT * dht)
+static void do_Close(DHT *dht)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -748,7 +748,7 @@ static void do_Close(DHT * dht)
         if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, Kill_NODE_TIMEOUT)) {
             if ((dht->close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
                 send_ping_request(dht->ping, dht->c, dht->close_clientlist[i].ip_port,
-                                   (clientid_t *) &dht->close_clientlist[i].client_id );
+                                  (clientid_t *) &dht->close_clientlist[i].client_id );
                 dht->close_clientlist[i].last_pinged = temp_time;
             }
 
@@ -763,13 +763,13 @@ static void do_Close(DHT * dht)
     if (dht->close_lastgetnodes + GET_NODE_INTERVAL <= temp_time && num_nodes != 0) {
         rand_node = rand() % num_nodes;
         getnodes(dht, dht->close_clientlist[index[rand_node]].ip_port,
-                  dht->close_clientlist[index[rand_node]].client_id,
-                  dht->c->self_public_key );
+                 dht->close_clientlist[index[rand_node]].client_id,
+                 dht->c->self_public_key );
         dht->close_lastgetnodes = temp_time;
     }
 }
 
-void DHT_bootstrap(DHT * dht, IP_Port ip_port, uint8_t *public_key)
+void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 {
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
     send_ping_request(dht->ping, dht->c, ip_port, (clientid_t *) public_key);
@@ -778,7 +778,7 @@ void DHT_bootstrap(DHT * dht, IP_Port ip_port, uint8_t *public_key)
 /* send the given packet to node with client_id
  * returns -1 if failure
  */
-int route_packet(DHT * dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
+int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 {
     uint32_t i;
 
@@ -796,7 +796,7 @@ int route_packet(DHT * dht, uint8_t *client_id, uint8_t *packet, uint32_t length
  * return 0 if we are connected to friend or if no ips were found.
  * returns -1 if no such friend
  */
-static int friend_iplist(DHT * dht, IP_Port *ip_portlist, uint16_t friend_num)
+static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 {
     int num_ips = 0;
     uint32_t i;
@@ -831,7 +831,7 @@ static int friend_iplist(DHT * dht, IP_Port *ip_portlist, uint16_t friend_num)
  *
  * Only works if more than (MAX_FRIEND_CLIENTS / 2) return an ip for friend.
  */
-int route_tofriend(DHT * dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
+int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
 {
     int num = friend_number(dht, friend_id);
 
@@ -866,7 +866,7 @@ int route_tofriend(DHT * dht, uint8_t *friend_id, uint8_t *packet, uint32_t leng
 /* Send the following packet to one random person who tells us they are connected to friend_id
 *  returns the number of nodes it sent the packet to
 */
-static int routeone_tofriend(DHT * dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
+static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
 {
     int num = friend_number(dht, friend_id);
 
@@ -906,7 +906,7 @@ static int routeone_tofriend(DHT * dht, uint8_t *friend_id, uint8_t *packet, uin
  * return 0 if we are connected to friend or if no ips were found.
  * returns -1 if no such friend
  */
-int friend_ips(DHT * dht, IP_Port *ip_portlist, uint8_t *friend_id)
+int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id)
 {
     uint32_t i;
 
@@ -922,7 +922,7 @@ int friend_ips(DHT * dht, IP_Port *ip_portlist, uint8_t *friend_id)
 /*----------------------------------------------------------------------------------*/
 /*---------------------BEGINNING OF NAT PUNCHING FUNCTIONS--------------------------*/
 
-static int send_NATping(DHT * dht, uint8_t *public_key, uint64_t ping_id, uint8_t type)
+static int send_NATping(DHT *dht, uint8_t *public_key, uint64_t ping_id, uint8_t type)
 {
     uint8_t data[sizeof(uint64_t) + 1];
     uint8_t packet[MAX_DATA_SIZE];
@@ -932,7 +932,8 @@ static int send_NATping(DHT * dht, uint8_t *public_key, uint64_t ping_id, uint8_
     data[0] = type;
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
     /* 254 is NAT ping request packet id */
-    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, data, sizeof(uint64_t) + 1, 254);
+    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, data,
+                             sizeof(uint64_t) + 1, 254);
 
     if (len == -1)
         return -1;
@@ -949,9 +950,9 @@ static int send_NATping(DHT * dht, uint8_t *public_key, uint64_t ping_id, uint8_
 }
 
 /* Handle a received ping request for */
-static int handle_NATping(void * object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
+static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {
-    DHT * dht = object;
+    DHT *dht = object;
     uint64_t ping_id;
     memcpy(&ping_id, packet + 1, sizeof(uint64_t));
 
@@ -1026,7 +1027,7 @@ static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t 
     return num;
 }
 
-static void punch_holes(DHT * dht, IP ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
+static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
 {
     if (numports > MAX_FRIEND_CLIENTS || numports == 0)
         return;
@@ -1044,7 +1045,7 @@ static void punch_holes(DHT * dht, IP ip, uint16_t *port_list, uint16_t numports
     dht->friends_list[friend_num].punching_index = i;
 }
 
-static void do_NAT(DHT * dht)
+static void do_NAT(DHT *dht)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -1093,7 +1094,7 @@ static void do_NAT(DHT * dht)
    network while preventing amplification attacks.
    return 0 if node was added
    return -1 if node was not added */
-int add_toping(DHT * dht, uint8_t *client_id, IP_Port ip_port)
+int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
 {
     if (ip_port.ip.i == 0)
         return -1;
@@ -1123,7 +1124,7 @@ int add_toping(DHT * dht, uint8_t *client_id, IP_Port ip_port)
 
 /*Ping all the valid nodes in the toping list every TIME_TOPING seconds
   this function must be run at least once every TIME_TOPING seconds*/
-static void do_toping(DHT * dht)
+static void do_toping(DHT *dht)
 {
     uint64_t temp_time = unix_time();
 
@@ -1143,18 +1144,23 @@ static void do_toping(DHT * dht)
 }
 
 
-DHT * new_DHT(Net_Crypto *c)
+DHT *new_DHT(Net_Crypto *c)
 {
     if (c == NULL)
         return NULL;
-    DHT * temp = calloc(1, sizeof(DHT));
+
+    DHT *temp = calloc(1, sizeof(DHT));
+
     if (temp == NULL)
-         return NULL;
+        return NULL;
+
     temp->ping = new_ping();
-    if (temp->ping == NULL){
-         kill_DHT(temp);
-         return NULL;
+
+    if (temp->ping == NULL) {
+        kill_DHT(temp);
+        return NULL;
     }
+
     temp->c = c;
     networking_registerhandler(c->lossless_udp->net, 0, &handle_ping_request, temp);
     networking_registerhandler(c->lossless_udp->net, 1, &handle_ping_response, temp);
@@ -1164,14 +1170,14 @@ DHT * new_DHT(Net_Crypto *c)
     return temp;
 }
 
-void do_DHT(DHT * dht)
+void do_DHT(DHT *dht)
 {
     do_Close(dht);
     do_DHT_friends(dht);
     do_NAT(dht);
     do_toping(dht);
 }
-void kill_DHT(DHT * dht)
+void kill_DHT(DHT *dht)
 {
     kill_ping(dht->ping);
     free(dht->friends_list);
@@ -1179,13 +1185,13 @@ void kill_DHT(DHT * dht)
 }
 
 /* get the size of the DHT (for saving) */
-uint32_t DHT_size(DHT * dht)
+uint32_t DHT_size(DHT *dht)
 {
     return sizeof(dht->close_clientlist) + sizeof(DHT_Friend) * dht->num_friends;
 }
 
 /* save the DHT in data where data is an array of size DHT_size() */
-void DHT_save(DHT * dht, uint8_t *data)
+void DHT_save(DHT *dht, uint8_t *data)
 {
     memcpy(data, dht->close_clientlist, sizeof(dht->close_clientlist));
     memcpy(data + sizeof(dht->close_clientlist), dht->friends_list, sizeof(DHT_Friend) * dht->num_friends);
@@ -1195,7 +1201,7 @@ void DHT_save(DHT * dht, uint8_t *data)
  * return -1 if failure
  * return 0 if success
  */
-int DHT_load(DHT * dht, uint8_t *data, uint32_t size)
+int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
 {
     if (size < sizeof(dht->close_clientlist))
         return -1;
@@ -1231,7 +1237,7 @@ int DHT_load(DHT * dht, uint8_t *data, uint32_t size)
     for (i = 0; i < LCLIENT_LIST; ++i) {
         if (tempclose_clientlist[i].timestamp != 0)
             DHT_bootstrap(dht, tempclose_clientlist[i].ip_port,
-                            tempclose_clientlist[i].client_id );
+                          tempclose_clientlist[i].client_id );
     }
 
     return 0;
@@ -1240,7 +1246,7 @@ int DHT_load(DHT * dht, uint8_t *data, uint32_t size)
 /* returns 0 if we are not connected to the DHT
  * returns 1 if we are
  */
-int DHT_isconnected(DHT * dht)
+int DHT_isconnected(DHT *dht)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();

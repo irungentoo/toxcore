@@ -37,7 +37,8 @@ int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8
     memcpy(temp, &nospam_num, sizeof(nospam_num));
     memcpy(temp + sizeof(nospam_num), data, length);
     uint8_t packet[MAX_DATA_SIZE];
-    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, temp, length + sizeof(nospam_num),
+    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, temp,
+                             length + sizeof(nospam_num),
                              32); /* 32 is friend request packet id */
 
     if (len == -1)
@@ -79,7 +80,8 @@ uint32_t get_nospam(Friend_Requests *fr)
 
 
 /* set the function that will be executed when a friend request is received. */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata)
+void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *),
+                            void *userdata)
 {
     fr->handle_friendrequest = function;
     fr->handle_friendrequest_isset = 1;
@@ -111,9 +113,11 @@ static int request_received(Friend_Requests *fr, uint8_t *client_id)
 }
 
 
-static int friendreq_handlepacket(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
+static int friendreq_handlepacket(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet,
+                                  uint32_t length)
 {
     Friend_Requests *fr = object;
+
     if (fr->handle_friendrequest_isset == 0)
         return 1;
 

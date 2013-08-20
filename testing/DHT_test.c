@@ -48,7 +48,7 @@
 
 #define PORT 33445
 
-void print_clientlist(DHT * dht)
+void print_clientlist(DHT *dht)
 {
     uint32_t i, j;
     IP_Port p_ip;
@@ -71,7 +71,7 @@ void print_clientlist(DHT * dht)
     }
 }
 
-void print_friendlist(DHT * dht)
+void print_friendlist(DHT *dht)
 {
     uint32_t i, j, k;
     IP_Port p_ip;
@@ -104,7 +104,7 @@ void print_friendlist(DHT * dht)
             printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.c[0], p_ip.ip.c[1], p_ip.ip.c[2], p_ip.ip.c[3], ntohs(p_ip.port));
             printf("\nTimestamp: %llu", (long long unsigned int) dht->friends_list[k].client_list[i].timestamp);
             printf("\nLast pinged: %llu\n", (long long unsigned int) dht->friends_list[k].client_list[i].last_pinged);
-            p_ip =dht->friends_list[k].client_list[i].ret_ip_port;
+            p_ip = dht->friends_list[k].client_list[i].ret_ip_port;
             printf("ret IP: %u.%u.%u.%u:%u\n", p_ip.ip.c[0], p_ip.ip.c[1], p_ip.ip.c[2], p_ip.ip.c[3], ntohs(p_ip.port));
             printf("Timestamp: %llu\n", (long long unsigned int)dht->friends_list[k].client_list[i].ret_timestamp);
         }
@@ -134,9 +134,10 @@ int main(int argc, char *argv[])
     /* bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
-    
-    DHT * dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+
+    DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
     init_cryptopackets(dht);
+
     if (argc < 4) {
         printf("usage %s ip port public_key\n", argv[0]);
         exit(0);
@@ -198,5 +199,6 @@ int main(int argc, char *argv[])
         print_friendlist(dht);
         c_sleep(300);
     }
+
     return 0;
 }

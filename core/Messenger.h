@@ -112,10 +112,10 @@ typedef struct {
 } Friend;
 
 typedef struct Messenger {
-    
+
     Networking_Core *net;
-    Net_Crypto * net_crypto;
-    DHT * dht;
+    Net_Crypto *net_crypto;
+    DHT *dht;
     Friend_Requests fr;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;

@@ -29,12 +29,12 @@ typedef struct {
     size_t      pos_pings;
 } PING;
 
-void * new_ping(void)
+void *new_ping(void)
 {
     return calloc(1, sizeof(PING));
 }
 
-void kill_ping(void * ping)
+void kill_ping(void *ping)
 {
     free(ping);
 }
@@ -44,9 +44,9 @@ static bool is_timeout(uint64_t time)
     return (time + PING_TIMEOUT) < now();
 }
 
-static void remove_timeouts(void * ping)   // O(n)
+static void remove_timeouts(void *ping)    // O(n)
 {
-    PING * png = ping;
+    PING *png = ping;
     size_t i, id;
     size_t new_pos = png->pos_pings;
     size_t new_num = png->num_pings;
@@ -69,9 +69,9 @@ static void remove_timeouts(void * ping)   // O(n)
     png->pos_pings = new_pos % PING_NUM_MAX;
 }
 
-uint64_t add_ping(void * ping, IP_Port ipp) // O(n)
+uint64_t add_ping(void *ping, IP_Port ipp)  // O(n)
 {
-    PING * png = ping;
+    PING *png = ping;
     size_t p;
 
     remove_timeouts(ping);
@@ -93,9 +93,10 @@ uint64_t add_ping(void * ping, IP_Port ipp) // O(n)
     return png->pings[p].id;
 }
 
-bool is_pinging(void * ping, IP_Port ipp, uint64_t ping_id)   // O(n) TODO: replace this with something else.
+bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: replace this with something else.
 {
-    PING * png = ping;
+    PING *png = ping;
+
     if (ipp.ip.i == 0 && ping_id == 0)
         return false;
 
@@ -115,7 +116,7 @@ bool is_pinging(void * ping, IP_Port ipp, uint64_t ping_id)   // O(n) TODO: repl
     return false;
 }
 
-int send_ping_request(void * ping, Net_Crypto *c, IP_Port ipp, clientid_t *client_id)
+int send_ping_request(void *ping, Net_Crypto *c, IP_Port ipp, clientid_t *client_id)
 {
     pingreq_t pk;
     int       rc;
@@ -169,9 +170,9 @@ int send_ping_response(Net_Crypto *c, IP_Port ipp, clientid_t *client_id, uint64
     return sendpacket(c->lossless_udp->net->sock, ipp, (uint8_t *) &pk, sizeof(pk));
 }
 
-int handle_ping_request(void * object, IP_Port source, uint8_t *packet, uint32_t length)
+int handle_ping_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
-    DHT * dht = object;
+    DHT *dht = object;
     pingreq_t *p = (pingreq_t *) packet;
     int        rc;
     uint64_t   ping_id;
@@ -197,9 +198,9 @@ int handle_ping_request(void * object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-int handle_ping_response(void * object, IP_Port source, uint8_t *packet, uint32_t length)
+int handle_ping_response(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
-    DHT * dht = object;
+    DHT *dht = object;
     pingres_t *p = (pingres_t *) packet;
     int       rc;
     uint64_t  ping_id;

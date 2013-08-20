@@ -118,14 +118,14 @@ typedef struct {
 } Connection;
 
 typedef struct {
-Networking_Core *net;
-Connection *connections;
+    Networking_Core *net;
+    Connection *connections;
 
-uint32_t connections_length; /* Length of connections array */
-uint32_t connections_number; /* Number of connections in connections array */
+    uint32_t connections_length; /* Length of connections array */
+    uint32_t connections_number; /* Number of connections in connections array */
 
-/* table of random numbers used in handshake_id. */
-uint32_t randtable[6][256];
+    /* table of random numbers used in handshake_id. */
+    uint32_t randtable[6][256];
 
 } Lossless_UDP;
 
@@ -135,66 +135,66 @@ uint32_t randtable[6][256];
  * Return -1 if it could not initialize the connection.
  * Return number if there already was an existing connection to that ip_port.
  */
-int new_connection(Lossless_UDP * ludp, IP_Port ip_port);
+int new_connection(Lossless_UDP *ludp, IP_Port ip_port);
 
 /*
  * Get connection id from IP_Port.
  * Return -1 if there are no connections like we are looking for.
  * Return id if it found it .
  */
-int getconnection_id(Lossless_UDP * ludp, IP_Port ip_port);
+int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port);
 
 /*
  * Returns an int corresponding to the next connection in our imcoming connection list
  * Return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection(Lossless_UDP * ludp);
+int incoming_connection(Lossless_UDP *ludp);
 
 /*
  * Return -1 if it could not kill the connection.
  * Return 0 if killed successfully
  */
-int kill_connection(Lossless_UDP * ludp, int connection_id);
+int kill_connection(Lossless_UDP *ludp, int connection_id);
 
 /*
  * Kill connection in seconds seconds.
  * Return -1 if it can not kill the connection.
  * Return 0 if it will kill it
  */
-int kill_connection_in(Lossless_UDP * ludp, int connection_id, uint32_t seconds);
+int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
 
 /*
  * Returns the ip_port of the corresponding connection.
  * Return 0 if there is no such connection.
  */
-IP_Port connection_ip(Lossless_UDP * ludp, int connection_id);
+IP_Port connection_ip(Lossless_UDP *ludp, int connection_id);
 
 /*
  * Returns the id of the next packet in the queue
  * Return -1 if no packet in queue
  */
-char id_packet(Lossless_UDP * ludp, int connection_id);
+char id_packet(Lossless_UDP *ludp, int connection_id);
 
 /*
  * Return 0 if there is no received data in the buffer.
  * Return length of received packet if successful
  */
-int read_packet(Lossless_UDP * ludp, int connection_id, uint8_t *data);
+int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data);
 
 /*
  * Return 0 if data could not be put in packet queue
  * Return 1 if data was put into the queue
  */
-int write_packet(Lossless_UDP * ludp, int connection_id, uint8_t *data, uint32_t length);
+int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t length);
 
 /* Returns the number of packets in the queue waiting to be successfully sent. */
-uint32_t sendqueue(Lossless_UDP * ludp, int connection_id);
+uint32_t sendqueue(Lossless_UDP *ludp, int connection_id);
 
 /*
  * returns the number of packets in the queue waiting to be successfully
  * read with read_packet(...)
  */
-uint32_t recvqueue(Lossless_UDP * ludp, int connection_id);
+uint32_t recvqueue(Lossless_UDP *ludp, int connection_id);
 
 /* Check if connection is connected:
  * Return 0 no.
@@ -203,17 +203,17 @@ uint32_t recvqueue(Lossless_UDP * ludp, int connection_id);
  * Return 3 if fully connected.
  * Return 4 if timed out and wating to be killed.
  */
-int is_connected(Lossless_UDP * ludp, int connection_id);
+int is_connected(Lossless_UDP *ludp, int connection_id);
 
 /* Call this function a couple times per second It's the main loop. */
-void do_lossless_udp(Lossless_UDP * ludp);
+void do_lossless_udp(Lossless_UDP *ludp);
 
 /*
  * This function sets up LosslessUDP packet handling.
  */
-Lossless_UDP * new_lossless_udp(Networking_Core * net);
+Lossless_UDP *new_lossless_udp(Networking_Core *net);
 
-void kill_lossless_udp(Lossless_UDP * ludp);
+void kill_lossless_udp(Lossless_UDP *ludp);
 
 #ifdef __cplusplus
 }

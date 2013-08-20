@@ -47,15 +47,16 @@ typedef struct {
 
 } Crypto_Connection;
 
-typedef int (*cryptopacket_handler_callback)(void * object, IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
+typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data,
+        uint32_t len);
 
 typedef struct {
     cryptopacket_handler_callback function;
-    void * object;
-}Cryptopacket_Handles;
+    void *object;
+} Cryptopacket_Handles;
 
 typedef struct {
-    Lossless_UDP * lossless_udp;
+    Lossless_UDP *lossless_udp;
 
     Crypto_Connection *crypto_connections;
 
@@ -127,11 +128,12 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
    request_id is the id of the request (32 = friend request, 254 = ping request)
    returns -1 on failure
    returns the length of the created packet on success */
-int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key, uint8_t *data, uint32_t length, uint8_t request_id);
+int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
+                   uint8_t *data, uint32_t length, uint8_t request_id);
 
 
 /* Function to call when request beginning with byte is received */
-void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void * object);
+void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object);
 
 /* Start a secure connection with other peer who has public_key and ip_port
     returns -1 if failure
@@ -155,7 +157,8 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
 /* accept an incoming connection using the parameters provided by crypto_inbound
     return -1 if not successful
     returns the crypt_connection_id if successful */
-int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key);
+int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
+                          uint8_t *session_key);
 
 /* return 0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet
     (we have received a handshake but no empty data packet), 3 if the connection is established.
@@ -177,7 +180,7 @@ void load_keys(Net_Crypto *c, uint8_t *keys);
 
 /* create new instance of Net_Crypto
     sets all the global connection variables to their default values. */
-Net_Crypto * new_net_crypto(Networking_Core * net);
+Net_Crypto *new_net_crypto(Networking_Core *net);
 
 /* main loop */
 void do_net_crypto(Net_Crypto *c);

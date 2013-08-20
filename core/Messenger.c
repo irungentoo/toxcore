@@ -624,28 +624,36 @@ static void LANdiscovery(Messenger *m)
 Messenger *initMessenger(void)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
+
     if ( ! m )
         return NULL;
+
     IP ip;
     ip.i = 0;
     m->net = new_networking(ip, PORT);
+
     if (m->net == NULL) {
         free(m);
         return NULL;
     }
+
     m->net_crypto = new_net_crypto(m->net);
+
     if (m->net_crypto == NULL) {
         kill_networking(m->net);
         free(m);
         return NULL;
     }
+
     m->dht = new_DHT(m->net_crypto);
+
     if (m->dht == NULL) {
         kill_net_crypto(m->net_crypto);
         kill_networking(m->net);
         free(m);
         return NULL;
     }
+
     new_keys(m->net_crypto);
     m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
 
@@ -681,7 +689,8 @@ void doFriends(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr = send_friendrequest(m->dht, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam, m->friendlist[i].info,
+            int fr = send_friendrequest(m->dht, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam,
+                                        m->friendlist[i].info,
                                         m->friendlist[i].info_size);
 
             if (fr >= 0) {
@@ -842,7 +851,8 @@ void doFriends(Messenger *m)
                     }
                 }
             } else {
-                if (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
+                if (is_cryptoconnected(m->net_crypto,
+                                       m->friendlist[i].crypt_connection_id) == 4) { /* if the connection timed out, kill it */
                     crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                     m->friendlist[i].crypt_connection_id = -1;
                     set_friend_status(m, i, FRIEND_CONFIRMED);

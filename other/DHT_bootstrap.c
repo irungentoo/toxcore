@@ -44,7 +44,7 @@
 
 
 
-void manage_keys(DHT * dht)
+void manage_keys(DHT *dht)
 {
     const uint32_t KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
     uint8_t keys[KEYS_SIZE];
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     //bind to ip 0.0.0.0:PORT
     IP ip;
     ip.i = 0;
-    DHT * dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+    DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
     init_cryptopackets(dht);
     manage_keys(dht);
     printf("Public key: ");
