@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     ip.i = 0;
     
     DHT * dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
-
+    init_cryptopackets(dht);
     if (argc < 4) {
         printf("usage %s ip port public_key\n", argv[0]);
         exit(0);
