@@ -603,7 +603,7 @@ static int handle_sendnodes(void * object, IP_Port source, uint8_t *packet, uint
     uint32_t i;
 
     for (i = 0; i < num_nodes; ++i)  {
-        send_ping_request(nodes_list[i].ip_port, (clientid_t *) &nodes_list[i].client_id);
+        send_ping_request(dht->ping, dht->c, nodes_list[i].ip_port, (clientid_t *) &nodes_list[i].client_id);
         returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
 
@@ -709,7 +709,7 @@ static void do_DHT_friends(DHT * dht)
             /* if node is not dead. */
             if (!is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, Kill_NODE_TIMEOUT)) {
                 if ((dht->friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
-                    send_ping_request( dht->friends_list[i].client_list[j].ip_port,
+                    send_ping_request(dht->ping, dht->c, dht->friends_list[i].client_list[j].ip_port,
                                        (clientid_t *) &dht->friends_list[i].client_list[j].client_id );
                     dht->friends_list[i].client_list[j].last_pinged = temp_time;
                 }
@@ -747,7 +747,7 @@ static void do_Close(DHT * dht)
         /* if node is not dead. */
         if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, Kill_NODE_TIMEOUT)) {
             if ((dht->close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
-                send_ping_request( dht->close_clientlist[i].ip_port,
+                send_ping_request(dht->ping, dht->c, dht->close_clientlist[i].ip_port,
                                    (clientid_t *) &dht->close_clientlist[i].client_id );
                 dht->close_clientlist[i].last_pinged = temp_time;
             }
@@ -772,8 +772,7 @@ static void do_Close(DHT * dht)
 void DHT_bootstrap(DHT * dht, IP_Port ip_port, uint8_t *public_key)
 {
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
-    //send_ping_request(dht, ip_port, (clientid_t *) public_key);
-    send_ping_request(ip_port, (clientid_t *) public_key);
+    send_ping_request(dht->ping, dht->c, ip_port, (clientid_t *) public_key);
 }
 
 /* send the given packet to node with client_id
@@ -1039,8 +1038,7 @@ static void punch_holes(DHT * dht, IP ip, uint16_t *port_list, uint16_t numports
         /*TODO: improve port guessing algorithm*/
         uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
         IP_Port pinging = {ip, htons(port)};
-        //send_ping_request(dht, pinging, (clientid_t *) &dht->friends_list[friend_num].client_id);
-        send_ping_request(pinging, (clientid_t *) &dht->friends_list[friend_num].client_id);
+        send_ping_request(dht->ping, dht->c, pinging, (clientid_t *) &dht->friends_list[friend_num].client_id);
     }
 
     dht->friends_list[friend_num].punching_index = i;
@@ -1139,8 +1137,7 @@ static void do_toping(DHT * dht)
         if (dht->toping[i].ip_port.ip.i == 0)
             return;
 
-        //send_ping_request(dht, dht->toping[i].ip_port, (clientid_t *) dht->toping[i].client_id);
-        send_ping_request(dht->toping[i].ip_port, (clientid_t *) dht->toping[i].client_id);
+        send_ping_request(dht->ping, dht->c, dht->toping[i].ip_port, (clientid_t *) dht->toping[i].client_id);
         dht->toping[i].ip_port.ip.i = 0;
     }
 }
@@ -1151,13 +1148,17 @@ DHT * new_DHT(Net_Crypto *c)
     DHT * temp = calloc(1, sizeof(DHT));
     if (temp == NULL)
          return NULL;
+    temp->ping = new_ping();
+    if (temp->ping == NULL){
+         kill_DHT(temp);
+         return NULL;
+    }
     temp->c = c;
     networking_registerhandler(c->lossless_udp->net, 0, &handle_ping_request, temp);
     networking_registerhandler(c->lossless_udp->net, 1, &handle_ping_response, temp);
     networking_registerhandler(c->lossless_udp->net, 2, &handle_getnodes, temp);
     networking_registerhandler(c->lossless_udp->net, 3, &handle_sendnodes, temp);
     cryptopacket_registerhandler(c, 254, &handle_NATping, temp);
-    temp_DHT = temp;
     return temp;
 }
 
@@ -1170,6 +1171,7 @@ void do_DHT(DHT * dht)
 }
 void kill_DHT(DHT * dht)
 {
+    kill_ping(dht->ping);
     free(dht->friends_list);
     free(dht);
 }
@@ -1193,8 +1195,6 @@ void DHT_save(DHT * dht, uint8_t *data)
  */
 int DHT_load(DHT * dht, uint8_t *data, uint32_t size)
 {
-    init_ping();
-
     if (size < sizeof(dht->close_clientlist))
         return -1;
 

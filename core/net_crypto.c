@@ -706,7 +706,6 @@ Net_Crypto * new_net_crypto(Networking_Core * net)
     if (temp->lossless_udp == NULL)
          return NULL;
     memset(temp->incoming_connections, -1 , sizeof(int) * MAX_INCOMING);
-    temp_net_crypto = temp; //TODO remove
     return temp;
 }
 

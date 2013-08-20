@@ -22,7 +22,6 @@
  */
 
 #include "Messenger.h"
-#include "timer.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -608,17 +607,17 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
     return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
-
 /*Interval in seconds between LAN discovery packet sending*/
 #define LAN_DISCOVERY_INTERVAL 60
 #define PORT 33445
 
 /*Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds*/
-int LANdiscovery(timer *t, void *arg)
+static void LANdiscovery(Messenger *m)
 {
-    send_LANdiscovery(htons(PORT), temp_net_crypto);
-    timer_start(t, LAN_DISCOVERY_INTERVAL);
-    return 0;
+    if (m->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
+        send_LANdiscovery(htons(PORT), m->net_crypto);
+        m->last_LANdiscovery = unix_time();
+    }
 }
 
 /* run this at startup */
@@ -654,9 +653,6 @@ Messenger *initMessenger(void)
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     init_cryptopackets(m->dht);
-
-    send_LANdiscovery(htons(PORT), m->net_crypto);
-    timer_single(&LANdiscovery, 0, LAN_DISCOVERY_INTERVAL);
 
     return m;
 }
@@ -885,7 +881,6 @@ void doInbound(Messenger *m)
     }
 }
 
-
 /* the main loop that needs to be run at least 20 times per second. */
 void doMessenger(Messenger *m)
 {
@@ -895,8 +890,7 @@ void doMessenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     doInbound(m);
     doFriends(m);
-
-    timer_poll();
+    LANdiscovery(m);
 }
 
 /* returns the size of the messenger data (for saving) */

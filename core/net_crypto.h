@@ -73,8 +73,6 @@ typedef struct {
 
 #include "DHT.h"
 
-Net_Crypto * temp_net_crypto; //TODO: remove this
-
 #define ENCRYPTION_PADDING (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 
 /* returns zero if the buffer contains only zeros */

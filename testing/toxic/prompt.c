@@ -460,7 +460,7 @@ static void prompt_onKey(ToxWindow *self, Messenger *m, int key)
     }
 }
 
-static void prompt_onDraw(ToxWindow *self)
+static void prompt_onDraw(ToxWindow *self, Messenger *m)
 {
     curs_set(1);
     int x, y;

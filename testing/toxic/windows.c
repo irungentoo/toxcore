@@ -225,7 +225,7 @@ void draw_active_window(Messenger *m)
     prepare_window(a->window);
     a->blink = false;
     draw_bar();
-    a->onDraw(a);
+    a->onDraw(a, m);
 
     /* Handle input */
     int ch = getch();

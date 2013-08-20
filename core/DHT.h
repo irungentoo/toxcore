@@ -100,9 +100,9 @@ typedef struct {
     Node_format  toping[MAX_TOPING];
     uint64_t     last_toping;
     uint64_t close_lastgetnodes;
+    void * ping;
 } DHT;
 /*----------------------------------------------------------------------------------*/
-DHT * temp_DHT; //TODO: remove
 
 Client_data *DHT_get_close_list(DHT * dht);
 
