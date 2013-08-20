@@ -482,6 +482,12 @@ static int send_userstatus(Messenger *m, int friendnumber, USERSTATUS status)
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &stat, sizeof(stat));
 }
 
+static int send_ping(Messenger *m, int friendnumber)
+{
+    m->friendlist[friendnumber].ping_lastsent = unix_time();
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_PING, 0, 0);
+}
+
 static int set_friend_statusmessage(Messenger *m, int friendnumber, uint8_t *status, uint16_t length)
 {
     if (friendnumber >= m->numfriends || friendnumber < 0)
@@ -596,7 +602,10 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
 
     uint8_t packet[length + 1];
     packet[0] = packet_id;
-    memcpy(packet + 1, data, length);
+
+    if (length != 0)
+        memcpy(packet + 1, data, length);
+
     return write_cryptpacket(m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
@@ -659,6 +668,7 @@ void doFriends(Messenger *m)
     uint32_t i;
     int len;
     uint8_t temp[MAX_DATA_SIZE];
+    uint64_t temp_time = unix_time();
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
@@ -667,7 +677,7 @@ void doFriends(Messenger *m)
 
             if (fr >= 0) {
                 set_friend_status(m, i, FRIEND_REQUESTED);
-                m->friendlist[i].friendrequest_lastsent = unix_time();
+                m->friendlist[i].friendrequest_lastsent = temp_time;
             }
         }
 
@@ -676,7 +686,7 @@ void doFriends(Messenger *m)
             if (m->friendlist[i].status == FRIEND_REQUESTED) {
                 /* If we didn't connect to friend after successfully sending him a friend request the request is deemed
                    unsuccessful so we set the status back to FRIEND_ADDED and try again.*/
-                if (m->friendlist[i].friendrequest_lastsent + m->friendlist[i].friendrequest_timeout < unix_time()) {
+                if (m->friendlist[i].friendrequest_lastsent + m->friendlist[i].friendrequest_timeout < temp_time) {
                     set_friend_status(m, i, FRIEND_ADDED);
                     /* Double the default timeout everytime if friendrequest is assumed to have been
                        sent unsuccessfully. */
@@ -698,6 +708,7 @@ void doFriends(Messenger *m)
                     m->friendlist[i].name_sent = 0;
                     m->friendlist[i].userstatus_sent = 0;
                     m->friendlist[i].statusmessage_sent = 0;
+                    m->friendlist[i].ping_lastrecv = temp_time;
                     break;
 
                 case 4:
@@ -726,6 +737,10 @@ void doFriends(Messenger *m)
                     m->friendlist[i].userstatus_sent = 1;
             }
 
+            if (m->friendlist[i].ping_lastsent + FRIEND_PING_INTERVAL < temp_time) {
+                send_ping(m, i);
+            }
+
             len = read_cryptpacket(m->friendlist[i].crypt_connection_id, temp);
             uint8_t packet_id = temp[0];
             uint8_t *data = temp + 1;
@@ -733,6 +748,11 @@ void doFriends(Messenger *m)
 
             if (len > 0) {
                 switch (packet_id) {
+                    case PACKET_ID_PING: {
+                        m->friendlist[i].ping_lastrecv = temp_time;
+                        break;
+                    }
+
                     case PACKET_ID_NICKNAME: {
                         if (data_length >= MAX_NAME_LENGTH || data_length == 0)
                             break;
@@ -820,6 +840,13 @@ void doFriends(Messenger *m)
                 }
 
                 break;
+            }
+
+            if (m->friendlist[i].ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
+                /* if we stopped recieving ping packets kill it */
+                crypto_kill(m->friendlist[i].crypt_connection_id);
+                m->friendlist[i].crypt_connection_id = -1;
+                set_friend_status(m, i, FRIEND_CONFIRMED);
             }
         }
     }

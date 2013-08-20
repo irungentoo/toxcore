@@ -40,6 +40,7 @@ extern "C" {
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
+#define PACKET_ID_PING 0
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
@@ -71,6 +72,12 @@ extern "C" {
 /* Default start timeout in seconds between friend requests */
 #define FRIENDREQUEST_TIMEOUT 5;
 
+/* interval between the sending of ping packets.*/
+#define FRIEND_PING_INTERVAL 5
+
+/* If no packets are recieved from friend in this time interval, kill the connection.*/
+#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
+
 /* USERSTATUS
  * Represents userstatuses someone can have. */
 
@@ -100,6 +107,8 @@ typedef struct {
     uint32_t message_id; /* a semi-unique id used in read receipts */
     uint8_t receives_read_receipts; /* shall we send read receipts to this person? */
     uint32_t friendrequest_nospam; /*The nospam number used in the friend request*/
+    uint64_t ping_lastrecv;
+    uint64_t ping_lastsent;
 } Friend;
 
 typedef struct Messenger {

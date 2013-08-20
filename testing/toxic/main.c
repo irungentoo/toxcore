@@ -27,7 +27,7 @@
 
 /* Export for use in Callbacks */
 char *DATA_FILE = NULL;
-char dir[256];
+char *SRVLIST_FILE = NULL;
 
 void on_window_resize(int sig)
 {
@@ -36,6 +36,7 @@ void on_window_resize(int sig)
     clear();
 }
 
+<<<<<<< HEAD
 void setdir()
 {
 #ifdef WIN32
@@ -47,6 +48,8 @@ void setdir()
 #endif
 }
 
+=======
+>>>>>>> b16906d5e42cf65e198de0ccd21155df4a364c56
 static void init_term()
 {
     /* Setup terminal */
@@ -89,7 +92,11 @@ static Messenger *init_tox()
 #elif defined(WIN32)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
 #elif defined(__APPLE__)
+<<<<<<< HEAD
     setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to assume users of other Unixes are hipsters
+=======
+    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
+>>>>>>> b16906d5e42cf65e198de0ccd21155df4a364c56
 #else
     setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
 #endif
@@ -103,12 +110,19 @@ static Messenger *init_tox()
 /* Connects to a random DHT server listed in the DHTservers file */
 int init_connection(void)
 {
+    FILE *fp = NULL;
+    
     if (DHT_isconnected())
         return 0;
+<<<<<<< HEAD
     char serverlist[50];
     strcat(serverlist, dir);
     strcpy(serverlist, "DHTservers");
     FILE *fp = fopen(serverlist, "r");
+=======
+
+    fp = fopen(SRVLIST_FILE, "r");
+>>>>>>> b16906d5e42cf65e198de0ccd21155df4a364c56
 
     if (!fp)
         return 1;
@@ -275,7 +289,6 @@ static void load_data(Messenger *m, char *path)
 
 int main(int argc, char *argv[])
 {
-    setdir();
     char *user_config_dir = get_user_config_dir();
     int config_err = 0;
 
@@ -302,16 +315,18 @@ int main(int argc, char *argv[])
         config_err = create_user_config_dir(user_config_dir);
 
         if (config_err) {
-            strcat(DATA_FILE, dir);
             DATA_FILE = strdup("data");
-
-
+            SRVLIST_FILE = strdup("../../other/DHTservers");
         } else {
             DATA_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("data") + 1);
             strcpy(DATA_FILE, user_config_dir);
             strcat(DATA_FILE, CONFIGDIR);
-            strcat(DATA_FILE, dir);
-            DATA_FILE = strdup("data");
+            strcat(DATA_FILE, "data");
+            
+            SRVLIST_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("DHTservers") + 1);
+            strcpy(SRVLIST_FILE, user_config_dir);
+            strcat(SRVLIST_FILE, CONFIGDIR);
+            strcat(SRVLIST_FILE, "DHTservers");
         }
     }
 
@@ -348,5 +363,6 @@ int main(int argc, char *argv[])
 
     cleanupMessenger(m);
     free(DATA_FILE);
+    free(SRVLIST_FILE);
     return 0;
 }

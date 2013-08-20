@@ -704,6 +704,12 @@ int DHT_delfriend(uint8_t *client_id)
                         CLIENT_ID_SIZE );
             }
 
+            if (num_friends == 0) {
+                free(friends_list);
+                friends_list = NULL;
+                return 0;
+            }
+
             temp = realloc(friends_list, sizeof(Friend) * (num_friends));
 
             if (temp == NULL)

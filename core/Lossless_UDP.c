@@ -319,6 +319,13 @@ static void free_connections(void)
     if (connections_length == i)
         return;
 
+    if (i == 0) {
+        free(connections);
+        connections = NULL;
+        connections_length = i;
+        return;
+    }
+
     Connection *temp;
     temp = realloc(connections, sizeof(Connection) * i);
 
