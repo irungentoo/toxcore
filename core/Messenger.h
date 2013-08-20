@@ -123,6 +123,7 @@ typedef struct Messenger {
     USERSTATUS userstatus;
 
     Friend *friendlist;
+    uint32_t friendlist_length;
     uint32_t numfriends;
 
     void (*friend_message)(struct Messenger *m, int, uint8_t *, uint16_t, void *);

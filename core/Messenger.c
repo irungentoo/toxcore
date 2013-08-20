@@ -40,15 +40,27 @@ int realloc_friendlist(Messenger *m, uint32_t num)
     if (num == 0) {
         free(m->friendlist);
         m->friendlist = NULL;
+        m->friendlist_length = 0;
         return 0;
     }
 
+    /* if we're asking to shrink, calc smallest size */
+    if (num < m->friendlist_length) {
+        int len = m->friendlist_length; 
+        do { 
+            if (m->friendlist[len-1].status != NOFRIEND)
+                break;
+        } while (--len > num);
+        num = len;
+    }
+    
     Friend *newfriendlist = realloc(m->friendlist, num * sizeof(Friend));
 
     if (newfriendlist == NULL)
         return -1;
 
     m->friendlist = newfriendlist;
+    m->friendlist_length = num;
     return 0;
 }
 
