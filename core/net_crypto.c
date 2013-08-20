@@ -438,7 +438,7 @@ int crypto_connect(uint8_t *public_key, IP_Port ip_port)
 
     if (realloc_cryptoconnection(crypto_connections_length + 1) == -1)
         return -1;
-
+    if (&crypto_connections[crypto_connections_length] == NULL) return -1;
     memset(&crypto_connections[crypto_connections_length], 0, sizeof(Crypto_Connection));
     crypto_connections[crypto_connections_length].number = ~0;
 
@@ -551,7 +551,7 @@ int accept_crypto_inbound(int connection_id, uint8_t *public_key, uint8_t *secre
     }*/
     if (realloc_cryptoconnection(crypto_connections_length + 1) == -1)
         return -1;
-
+    if (&crypto_connections[crypto_connections_length] == NULL) return -1;
     memset(&crypto_connections[crypto_connections_length], 0, sizeof(Crypto_Connection));
     crypto_connections[crypto_connections_length].number = ~0;
 
