@@ -36,20 +36,6 @@ void on_window_resize(int sig)
     clear();
 }
 
-<<<<<<< HEAD
-void setdir()
-{
-#ifdef WIN32
-    strcpy(dir, "%appdata%/.tox/");
-#elif defined(__APPLE__)
-    strcpy(dir, "~/Library/Application Support/.tox/");
-#elif defined(__linux__)
-    strcpy(dir, "~/.tox/");
-#endif
-}
-
-=======
->>>>>>> b16906d5e42cf65e198de0ccd21155df4a364c56
 static void init_term()
 {
     /* Setup terminal */
@@ -92,11 +78,7 @@ static Messenger *init_tox()
 #elif defined(WIN32)
     setname(m, (uint8_t *) "I should install GNU/Linux", sizeof("I should install GNU/Linux"));
 #elif defined(__APPLE__)
-<<<<<<< HEAD
     setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to assume users of other Unixes are hipsters
-=======
-    setname(m, (uint8_t *) "Hipster", sizeof("Hipster")); //This used to users of other Unixes are hipsters
->>>>>>> b16906d5e42cf65e198de0ccd21155df4a364c56
 #else
     setname(m, (uint8_t *) "Registered Minix user #4", sizeof("Registered Minix user #4"));
 #endif
@@ -114,15 +96,7 @@ int init_connection(void)
     
     if (DHT_isconnected())
         return 0;
-<<<<<<< HEAD
-    char serverlist[50];
-    strcat(serverlist, dir);
-    strcpy(serverlist, "DHTservers");
-    FILE *fp = fopen(serverlist, "r");
-=======
-
     fp = fopen(SRVLIST_FILE, "r");
->>>>>>> b16906d5e42cf65e198de0ccd21155df4a364c56
 
     if (!fp)
         return 1;
