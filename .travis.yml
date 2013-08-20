@@ -25,6 +25,8 @@ before_script:
   - sudo apt-get install python-sphinx
 # installing check, needed for unit tests
   - sudo apt-get install check
+# installing ncurses w
+  - sudo apt-get install libncursesw5 libncursesw5-dev
 
 script:
   - mkdir build && cd build
@@ -37,8 +39,8 @@ script:
 notifications:
   email: false
 
-  irc: 
-    channels:
-      - "chat.freenode.net#tox-dev"
-    on_success: always
-    on_failure: always
+#  irc: 
+#    channels:
+#      - "chat.freenode.net#tox-dev"
+#    on_success: always
+#    on_failure: always
