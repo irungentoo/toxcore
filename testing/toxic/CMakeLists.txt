@@ -15,7 +15,9 @@ add_executable(${exe_name}
 	chat.c
 	configdir.c)
 
+include_directories(${CURSES_INCLUDE_DIR})
+
 target_link_libraries(${exe_name}
-	curses)
+	${CURSES_LIBRARIES})
 
 linkCoreLibraries(${exe_name})
