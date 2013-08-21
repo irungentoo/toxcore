@@ -53,7 +53,7 @@ int main ( int argc, char* argv[] )
 
 
     rtp_session_t* _m_session;
-    rtp_msg_t*     _m_msg;
+    rtp_msg_t     *_m_msg_R, *_m_msg_S;
     arg_t* _list = parse_args ( argc, argv );
 
 
@@ -70,7 +70,8 @@ int main ( int argc, char* argv[] )
         _m_session = rtp_init_session ( -1 ); /* You can even init it at the starting session */
         status     = init_networking ( LOCAL_IP.ip, RTP_PORT_LISTEN );
 
-
+        set_ip_port ( "127.0.0.1", RTP_PORT, &Ip_port );
+        rtp_add_receiver( _m_session, &Ip_port );
 
         if ( status < 0 ) {
             _m_session->_last_error = strerror ( errno );
@@ -82,15 +83,18 @@ int main ( int argc, char* argv[] )
         rtp_add_resolution_marking(_m_session, 100, 100);
         /* start in recv mode */
         while ( 1 ) {
-            _m_msg = rtp_recv_msg ( _m_session );
+            _m_msg_R = rtp_recv_msg ( _m_session );
 
-            if ( _m_msg ) {
+            if ( _m_msg_R ) {
                 /*
                 printf ( "H: %d; W: %d\n", rtp_get_resolution_marking_width(_m_msg->_ext_header), rtp_get_resolution_marking_height(_m_msg->_ext_header) );
                 /**/
-                rtp_free_msg(_m_session, _m_msg);
+                puts ( "Received msg!" );
+                rtp_free_msg(_m_session, _m_msg_R);
             }
 
+            _m_msg_S = rtp_msg_new ( _m_session, test_bytes, 280 ) ;
+            rtp_send_msg ( _m_session, _m_msg_S );
             usleep ( 10000 );
         }
     } else if ( find_arg_simple ( _list, "-s" ) != FAILURE ) {
@@ -131,8 +135,18 @@ int main ( int argc, char* argv[] )
         rtp_add_resolution_marking(_m_session, 100, 100);
 
         for ( ;; ) {
-            _m_msg = rtp_msg_new ( _m_session, test_bytes, 280 ) ;
-            rtp_send_msg ( _m_session, _m_msg );
+            _m_msg_R = rtp_recv_msg ( _m_session );
+
+            if ( _m_msg_R ) {
+                /*
+                printf ( "H: %d; W: %d\n", rtp_get_resolution_marking_width(_m_msg->_ext_header), rtp_get_resolution_marking_height(_m_msg->_ext_header) );
+                /**/
+                puts ( "Received msg!" );
+                rtp_free_msg(_m_session, _m_msg_R);
+            }
+
+            _m_msg_S = rtp_msg_new ( _m_session, test_bytes, 280 ) ;
+            rtp_send_msg ( _m_session, _m_msg_S );
             usleep ( 10000 );
         }
 
