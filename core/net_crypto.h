@@ -32,6 +32,9 @@ extern "C" {
 
 #define MAX_INCOMING 64
 
+#define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID */
+#define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID */
+
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* the real public key of the peer. */
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* nonce of received packets */

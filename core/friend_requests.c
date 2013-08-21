@@ -39,7 +39,7 @@ int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8
     uint8_t packet[MAX_DATA_SIZE];
     int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, temp,
                              length + sizeof(nospam_num),
-                             32); /* 32 is friend request packet id */
+                             CRYPTO_PACKET_FRIEND_REQ);
 
     if (len == -1)
         return -1;
@@ -137,5 +137,5 @@ static int friendreq_handlepacket(void *object, IP_Port source, uint8_t *source_
 
 void friendreq_init(Friend_Requests *fr, Net_Crypto *c)
 {
-    cryptopacket_registerhandler(c, 32, &friendreq_handlepacket, fr);
+    cryptopacket_registerhandler(c, CRYPTO_PACKET_FRIEND_REQ, &friendreq_handlepacket, fr);
 }
