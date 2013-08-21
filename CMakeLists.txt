@@ -19,7 +19,7 @@ if(APPLE)
 endif()
 
 if(UNIX)
-	find_package(Curses REQUIRED)
+	find_package(Cursesw REQUIRED)
 endif()
 
 if(USE_NACL)
