@@ -10,15 +10,9 @@ typedef struct {
 
 } __attribute__((packed)) clientid_t;
 
-typedef enum {
-    PACKET_PING_REQ = 0,
-    PACKET_PING_RES = 1
-
-} packetid_t;
-
 // Ping packet
 typedef struct {
-    uint8_t    magic;
+    uint8_t    packet_id;
     clientid_t client_id;
     uint8_t    nonce[crypto_box_NONCEBYTES];
     uint64_t   ping_id;
@@ -28,7 +22,7 @@ typedef struct {
 
 // Pong packet
 typedef struct {
-    uint8_t    magic;
+    uint8_t    packet_id;
     clientid_t client_id;
     uint8_t    nonce[crypto_box_NONCEBYTES];
     uint64_t   ping_id;

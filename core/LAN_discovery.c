@@ -139,7 +139,7 @@ static int handle_LANdiscovery(void *object, IP_Port source, uint8_t *packet, ui
 int send_LANdiscovery(uint16_t port, Net_Crypto *c)
 {
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
-    data[0] = 33;
+    data[0] = NET_PACKET_LAN_DISCOVERY;
     memcpy(data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
     IP_Port ip_port = {broadcast_ip(), port};
     return sendpacket(c->lossless_udp->net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
@@ -148,5 +148,5 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
 
 void LANdiscovery_init(DHT *dht)
 {
-    networking_registerhandler(dht->c->lossless_udp->net, 33, &handle_LANdiscovery, dht);
+    networking_registerhandler(dht->c->lossless_udp->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
 }

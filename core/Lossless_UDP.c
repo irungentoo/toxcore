@@ -409,7 +409,7 @@ static int send_handshake(Lossless_UDP *ludp, IP_Port ip_port, uint32_t handshak
     uint8_t packet[1 + 4 + 4];
     uint32_t temp;
 
-    packet[0] = 16;
+    packet[0] = NET_PACKET_HANDSHAKE;
     temp = htonl(handshake_id1);
     memcpy(packet + 1, &temp, 4);
     temp = htonl(handshake_id2);
@@ -431,7 +431,7 @@ static int send_SYNC(Lossless_UDP *ludp, uint32_t connection_id)
     uint32_t requested[BUFFER_PACKET_NUM];
     uint32_t number         = missing_packets(ludp, connection_id, requested);
 
-    packet[0] = 17;
+    packet[0] = NET_PACKET_SYNC;
     index += 1;
     memcpy(packet + index, &counter, 1);
     index += 1;
@@ -450,7 +450,7 @@ static int send_data_packet(Lossless_UDP *ludp, uint32_t connection_id, uint32_t
     uint32_t index = packet_num % MAX_QUEUE_NUM;
     uint32_t temp;
     uint8_t packet[1 + 4 + MAX_DATA_SIZE];
-    packet[0] = 18;
+    packet[0] = NET_PACKET_DATA;
     temp = htonl(packet_num);
     memcpy(packet + 1, &temp, 4);
     memcpy(packet + 5, ludp->connections[connection_id].sendbuffer[index].data,
@@ -733,9 +733,9 @@ Lossless_UDP *new_lossless_udp(Networking_Core *net)
         return NULL;
 
     temp->net = net;
-    networking_registerhandler(net, 16, &handle_handshake, temp);
-    networking_registerhandler(net, 17, &handle_SYNC, temp);
-    networking_registerhandler(net, 18, &handle_data, temp);
+    networking_registerhandler(net, NET_PACKET_HANDSHAKE, &handle_handshake, temp);
+    networking_registerhandler(net, NET_PACKET_SYNC, &handle_SYNC, temp);
+    networking_registerhandler(net, NET_PACKET_DATA, &handle_data, temp);
     return temp;
 }
 
