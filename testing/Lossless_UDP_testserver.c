@@ -118,27 +118,27 @@ void printconnection(int connection_id)
 
 /* receive packets and send them to the packethandler
  * run doLossless_UDP(); */
-void Lossless_UDP()
-{
+//void Lossless_UDP()
+//{
 //    IP_Port ip_port;
 //    uint8_t data[MAX_UDP_PACKET_SIZE];
 //    uint32_t length;
 //    while (receivepacket(&ip_port, data, &length) != -1) {
-    //if(rand() % 3 != 1)//add packet loss
-    //{
+//if(rand() % 3 != 1)//add packet loss
+//{
 //            if (LosslessUDP_handlepacket(data, length, ip_port)) {
 //                    printpacket(data, length, ip_port);
 //            } else {
-    //printconnection(0);
+//printconnection(0);
 //                 printf("Received handled packet with length: %u\n", length);
 //            }
-    //}
+//}
 //    }
 
-    networking_poll();
+// networking_poll();
 
-    doLossless_UDP();
-}
+//doLossless_UDP();
+//}
 
 
 int main(int argc, char *argv[])
@@ -161,20 +161,19 @@ int main(int argc, char *argv[])
     //bind to ip 0.0.0.0:PORT
     IP ip;
     ip.i = 0;
-    init_networking(ip, PORT);
+    Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
 
     int connection;
     uint64_t timer = current_time();
 
-    LosslessUDP_init();
-
     while (1) {
-        Lossless_UDP();
-        connection = incoming_connection();
+        networking_poll(ludp->net);
+        do_lossless_udp(ludp);
+        connection = incoming_connection(ludp);
 
         if (connection != -1) {
-            if (is_connected(connection) == 2) {
+            if (is_connected(ludp, connection) == 2) {
                 printf("Received the connection.\n");
 
             }
@@ -189,11 +188,12 @@ int main(int argc, char *argv[])
 
     while (1) {
         //printconnection(0);
-        Lossless_UDP();
+        networking_poll(ludp->net);
+        do_lossless_udp(ludp);
 
-        if (is_connected(connection) >= 2) {
-            kill_connection_in(connection, 3000000);
-            read = read_packet(connection, buffer);
+        if (is_connected(ludp, connection) >= 2) {
+            kill_connection_in(ludp, connection, 3000000);
+            read = read_packet(ludp, connection, buffer);
 
             if (read != 0) {
                 // printf("Received data.\n");
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (is_connected(connection) == 4) {
+        if (is_connected(ludp, connection) == 4) {
             printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
             fclose(file);
             return 1;

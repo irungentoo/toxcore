@@ -204,7 +204,7 @@ void cmd_connect(ToxWindow *self, Messenger *m, char **args)
 
     dht.ip.i = resolved_address;
     unsigned char *binary_string = hex_string_to_bin(key);
-    DHT_bootstrap(dht, binary_string);
+    DHT_bootstrap(m->dht, dht, binary_string);
     free(binary_string);
 }
 
@@ -365,7 +365,9 @@ static void execute(ToxWindow *self, Messenger *m, char *u_cmd)
             cmd[i] = '\0';
 
             int j = i;
+
             while (++j < MAX_STR_SIZE && isspace(cmd[j]));
+
             i = j - 1;
 
             numargs++;
@@ -460,7 +462,7 @@ static void prompt_onKey(ToxWindow *self, Messenger *m, int key)
     }
 }
 
-static void prompt_onDraw(ToxWindow *self)
+static void prompt_onDraw(ToxWindow *self, Messenger *m)
 {
     curs_set(1);
     int x, y;

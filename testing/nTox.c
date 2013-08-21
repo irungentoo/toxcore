@@ -521,12 +521,12 @@ int main(int argc, char *argv[])
         exit(1);
 
     unsigned char *binary_string = hex_string_to_bin(argv[3]);
-    DHT_bootstrap(bootstrap_ip_port, binary_string);
+    DHT_bootstrap(m->dht, bootstrap_ip_port, binary_string);
     free(binary_string);
     nodelay(stdscr, TRUE);
 
     while (true) {
-        if (on == 0 && DHT_isconnected()) {
+        if (on == 0 && DHT_isconnected(m->dht)) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
         }
