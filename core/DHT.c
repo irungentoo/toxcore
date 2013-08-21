@@ -53,6 +53,9 @@
 /*Ping newly announced nodes to ping per TIME_TOPING seconds*/
 #define TIME_TOPING 5
 
+#define NAT_PING_REQUEST    0
+#define NAT_PING_RESPONSE   1
+
 
 Client_data *DHT_get_close_list(DHT *dht)
 {
@@ -933,7 +936,7 @@ static int send_NATping(DHT *dht, uint8_t *public_key, uint64_t ping_id, uint8_t
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
     /* 254 is NAT ping request packet id */
     int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, data,
-                             sizeof(uint64_t) + 1, 254);
+                             sizeof(uint64_t) + 1, CRYPTO_PACKET_NAT_PING);
 
     if (len == -1)
         return -1;
@@ -963,12 +966,12 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
 
     DHT_Friend *friend = &dht->friends_list[friendnumber];
 
-    if (packet[0] == 0) {
+    if (packet[0] == NAT_PING_REQUEST) {
         /* 1 is reply */
-        send_NATping(dht, source_pubkey, ping_id, 1);
+        send_NATping(dht, source_pubkey, ping_id, NAT_PING_RESPONSE);
         friend->recvNATping_timestamp = unix_time();
         return 0;
-    } else if (packet[0] == 1) {
+    } else if (packet[0] == NAT_PING_RESPONSE) {
         if (friend->NATping_id == ping_id) {
             friend->NATping_id = ((uint64_t)random_int() << 32) + random_int();
             friend->hole_punching = 1;
@@ -1059,7 +1062,7 @@ static void do_NAT(DHT *dht)
             continue;
 
         if (dht->friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time) {
-            send_NATping(dht, dht->friends_list[i].client_id, dht->friends_list[i].NATping_id, 0); /*0 is request*/
+            send_NATping(dht, dht->friends_list[i].client_id, dht->friends_list[i].NATping_id, NAT_PING_REQUEST);
             dht->friends_list[i].NATping_timestamp = temp_time;
         }
 
@@ -1166,7 +1169,7 @@ DHT *new_DHT(Net_Crypto *c)
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, temp);
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, temp);
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, temp);
-    cryptopacket_registerhandler(c, 254, &handle_NATping, temp);
+    cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, temp);
     return temp;
 }
 
