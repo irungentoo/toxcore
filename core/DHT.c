@@ -482,7 +482,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     if (len != sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING)
         return -1;
 
-    data[0] = 2;
+    data[0] = NET_PACKET_GET_NODES;
     memcpy(data + 1, dht->c->self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
@@ -524,7 +524,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     if (len != sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING)
         return -1;
 
-    data[0] = 3;
+    data[0] = NET_PACKET_SEND_NODES;
     memcpy(data + 1, dht->c->self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
@@ -1162,10 +1162,10 @@ DHT *new_DHT(Net_Crypto *c)
     }
 
     temp->c = c;
-    networking_registerhandler(c->lossless_udp->net, 0, &handle_ping_request, temp);
-    networking_registerhandler(c->lossless_udp->net, 1, &handle_ping_response, temp);
-    networking_registerhandler(c->lossless_udp->net, 2, &handle_getnodes, temp);
-    networking_registerhandler(c->lossless_udp->net, 3, &handle_sendnodes, temp);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_PING_REQUEST, &handle_ping_request, temp);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, temp);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, temp);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, temp);
     cryptopacket_registerhandler(c, 254, &handle_NATping, temp);
     return temp;
 }

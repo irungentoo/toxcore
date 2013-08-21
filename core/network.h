@@ -68,6 +68,16 @@ extern "C" {
 
 #define MAX_UDP_PACKET_SIZE 65507
 
+#define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID */
+#define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID */
+#define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID */
+#define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID */
+#define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID */
+#define NET_PACKET_SYNC            17  /* SYNC packet ID */
+#define NET_PACKET_DATA            18  /* Data packet ID */
+#define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID */
+#define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID */
+
 
 /* Current time, unix format */
 #define unix_time() ((uint64_t)time(NULL))
