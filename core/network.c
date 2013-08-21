@@ -108,10 +108,10 @@ void networking_poll(Networking_Core *net)
 }
 
 uint8_t at_startup_ran;
-static void at_startup(void)
+static int at_startup(void)
 {
     if (at_startup_ran != 0)
-        return;
+        return 0;
 
 #ifdef WIN32
     WSADATA wsaData;
@@ -124,6 +124,7 @@ static void at_startup(void)
 #endif
     srand((uint32_t)current_time());
     at_startup_ran = 1;
+    return 0;
 }
 
 /* TODO: put this somewhere
@@ -143,7 +144,8 @@ static void at_shutdown(void)
    returns NULL if there are problems */
 Networking_Core *new_networking(IP ip, uint16_t port)
 {
-    at_startup();
+    if(at_startup() != 0)
+        return NULL;
     /* initialize our socket */
     Networking_Core *temp = calloc(1, sizeof(Networking_Core));
 
