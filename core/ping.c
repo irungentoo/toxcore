@@ -128,7 +128,7 @@ int send_ping_request(void *ping, Net_Crypto *c, IP_Port ipp, clientid_t *client
     // Generate random ping_id
     ping_id = add_ping(ping, ipp);
 
-    pk.magic = PACKET_PING_REQ;
+    pk.packet_id = NET_PACKET_PING_REQUEST;
     id_cpy(&pk.client_id, (clientid_t *)c->self_public_key);     // Our pubkey
     random_nonce((uint8_t *) &pk.nonce); // Generate random nonce
 
@@ -153,7 +153,7 @@ int send_ping_response(Net_Crypto *c, IP_Port ipp, clientid_t *client_id, uint64
     if (id_eq(client_id, (clientid_t *)c->self_public_key))
         return 1;
 
-    pk.magic = PACKET_PING_RES;
+    pk.packet_id = NET_PACKET_PING_RESPONSE;
     id_cpy(&pk.client_id, (clientid_t *)c->self_public_key);     // Our pubkey
     random_nonce((uint8_t *) &pk.nonce); // Generate random nonce
 

@@ -229,7 +229,7 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
     if (len == -1)
         return -1;
 
-    packet[0] = 32;
+    packet[0] = NET_PACKET_CRYPTO;
     memcpy(packet + 1, recv_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, send_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES * 2, nonce, crypto_box_NONCEBYTES);
@@ -277,7 +277,7 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
 {
     DHT *dht = object;
 
-    if (packet[0] == 32) {
+    if (packet[0] == NET_PACKET_CRYPTO) {
         if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
                 length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
             return 1;
@@ -730,7 +730,7 @@ Net_Crypto *new_net_crypto(Networking_Core *net)
 void init_cryptopackets(void *dht)
 {
     DHT *s_dht = dht;
-    networking_registerhandler(s_dht->c->lossless_udp->net, 32, &cryptopacket_handle, s_dht);
+    networking_registerhandler(s_dht->c->lossless_udp->net, NET_PACKET_CRYPTO, &cryptopacket_handle, s_dht);
 }
 
 static void kill_timedout(Net_Crypto *c)
