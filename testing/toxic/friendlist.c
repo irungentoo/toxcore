@@ -24,21 +24,6 @@ static friend_t friends[MAX_FRIENDS_NUM];
 static int num_friends = 0;
 static int num_selected = 0;
 
-void fix_name(uint8_t *name)
-{
-    /* Remove all non alphanumeric characters */
-    uint8_t *p = name;
-    uint8_t *q = name;
-
-    while (*p != 0) {
-        if (isprint(*p))
-            *q++ = *p;
-
-        p++;
-    }
-
-    *q = 0;
-}
 
 void friendlist_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *str, uint16_t len)
 {
@@ -57,7 +42,6 @@ void friendlist_onNickChange(ToxWindow *self, int num, uint8_t *str, uint16_t le
 
     memcpy((char *) &friends[num].name, (char *) str, len);
     friends[num].name[len] = 0;
-    fix_name(friends[num].name);
 }
 
 void friendlist_onStatusChange(ToxWindow *self, int num, uint8_t *str, uint16_t len)
@@ -67,7 +51,6 @@ void friendlist_onStatusChange(ToxWindow *self, int num, uint8_t *str, uint16_t 
 
     memcpy((char *) &friends[num].status, (char *) str, len);
     friends[num].status[len] = 0;
-    fix_name(friends[num].status);
 }
 
 int friendlist_onFriendAdded(Messenger *m, int num)

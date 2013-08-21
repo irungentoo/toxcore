@@ -50,7 +50,6 @@ static void chat_onMessage(ToxWindow *self, Messenger *m, int num, uint8_t *msg,
     getname(m, num, (uint8_t *) &nick);
     msg[len - 1] = '\0';
     nick[MAX_NAME_LENGTH - 1] = '\0';
-    fix_name(nick);
 
     wattron(ctx->history, COLOR_PAIR(2));
     wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
@@ -73,7 +72,6 @@ static void chat_onAction(ToxWindow *self, Messenger *m, int num, uint8_t *actio
         return;
 
     action[len - 1] = '\0';
-    fix_name(action);
 
     wattron(ctx->history, COLOR_PAIR(2));
     wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
@@ -100,7 +98,6 @@ static void chat_onNickChange(ToxWindow *self, int num, uint8_t *nick, uint16_t 
     wattroff(ctx->history, COLOR_PAIR(2));
 
     nick[len - 1] = '\0';
-    fix_name(nick);
     snprintf(self->title, sizeof(self->title), "[%s (%d)]", nick, num);
 
     wattron(ctx->history, COLOR_PAIR(3));
@@ -121,7 +118,7 @@ static void chat_onStatusChange(ToxWindow *self, int num, uint8_t *status, uint1
     wattroff(ctx->history, COLOR_PAIR(2));
 
     status[len - 1] = '\0';
-    fix_name(status);
+    snprintf(self->title, sizeof(self->title), "[%s (%d)]", status, num);
 
     wattron(ctx->history, COLOR_PAIR(3));
     wprintw(ctx->history, "* Your partner changed status to '%s'\n", status);
@@ -219,7 +216,6 @@ static void chat_onKey(ToxWindow *self, Messenger *m, wint_t key)
             if (!string_is_empty(line)) {
                 uint8_t selfname[MAX_NAME_LENGTH];
                 getself_name(m, selfname, sizeof(selfname));
-                fix_name(selfname);
 
                 wattron(ctx->history, COLOR_PAIR(2));
                 wprintw(ctx->history, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
@@ -435,7 +431,6 @@ ToxWindow new_chat(Messenger *m, int friendnum)
 
     uint8_t nick[MAX_NAME_LENGTH] = {0};
     getname(m, friendnum, (uint8_t *) &nick);
-    fix_name(nick);
 
     snprintf(ret.title, sizeof(ret.title), "[%s (%d)]", nick, friendnum);
 
