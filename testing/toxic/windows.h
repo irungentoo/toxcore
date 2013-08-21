@@ -4,9 +4,12 @@
 #ifndef _windows_h
 #define _windows_h
 
+#define _XOPEN_SOURCE_EXTENDED
 #include <curses.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <wctype.h>
+#include <wchar.h>
 #include "../../core/Messenger.h"
 #define MAX_WINDOWS_NUM 32
 #define MAX_FRIENDS_NUM 100
@@ -23,7 +26,7 @@
 typedef struct ToxWindow_ ToxWindow;
 
 struct ToxWindow_ {
-    void(*onKey)(ToxWindow *, Messenger *, int);
+    void(*onKey)(ToxWindow *, Messenger *, wint_t);
     void(*onDraw)(ToxWindow *, Messenger *);
     void(*onInit)(ToxWindow *, Messenger *);
     void(*onFriendRequest)(ToxWindow *, uint8_t *, uint8_t *, uint16_t);

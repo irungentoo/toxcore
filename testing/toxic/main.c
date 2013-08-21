@@ -2,6 +2,7 @@
  * Toxic -- Tox Curses Client
  */
 
+#define _XOPEN_SOURCE_EXTENDED
 #include <curses.h>
 #include <errno.h>
 #include <stdio.h>
@@ -9,6 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <signal.h>
+#include <locale.h>
 
 #ifdef _win32
 #include <direct.h>
@@ -40,6 +42,7 @@ static void init_term()
 {
     /* Setup terminal */
     signal(SIGWINCH, on_window_resize);
+    setlocale(LC_ALL, "");
     initscr();
     cbreak();
     keypad(stdscr, 1);

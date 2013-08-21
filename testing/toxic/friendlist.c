@@ -2,7 +2,6 @@
  * Toxic -- Tox Curses Client
  */
 
-#include <curses.h>
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
@@ -84,7 +83,7 @@ int friendlist_onFriendAdded(Messenger *m, int num)
     return 0;
 }
 
-static void friendlist_onKey(ToxWindow *self, Messenger *m, int key)
+static void friendlist_onKey(ToxWindow *self, Messenger *m, wint_t key)
 {
     if (key == KEY_UP) {
         if (--num_selected < 0)
