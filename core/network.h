@@ -99,7 +99,18 @@ typedef struct {
 /* Function to receive data, ip and port of sender is put into ip_port
     the packet data into data
     the packet length into length. */
-typedef int (*packet_handler_callback)(IP_Port ip_port, uint8_t *data, uint32_t len);
+typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, uint8_t *data, uint32_t len);
+
+typedef struct {
+    packet_handler_callback function;
+    void *object;
+} Packet_Handles;
+
+typedef struct {
+    Packet_Handles packethandlers[256];
+    /* our UDP socket */
+    int sock;
+} Networking_Core;
 
 /* returns current time in milleseconds since the epoch. */
 uint64_t current_time(void);
@@ -111,13 +122,13 @@ uint32_t random_int(void);
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port */
-int sendpacket(IP_Port ip_port, uint8_t *data, uint32_t length);
+int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
 
 /* Function to call when packet beginning with byte is received */
-void networking_registerhandler(uint8_t byte, packet_handler_callback cb);
+void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
 
 /* call this several times a second */
-void networking_poll();
+void networking_poll(Networking_Core *net);
 
 /* initialize networking
     bind to ip and port
@@ -125,10 +136,10 @@ void networking_poll();
     port is in host byte order (this means don't worry about it)
     returns 0 if no problems
     returns -1 if there were problems */
-int init_networking(IP ip, uint16_t port);
+Networking_Core *new_networking(IP ip, uint16_t port);
 
 /* function to cleanup networking stuff(doesn't do much right now) */
-void shutdown_networking(void);
+void kill_networking(Networking_Core *net);
 
 /*
   resolve_addr():

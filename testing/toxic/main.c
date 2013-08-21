@@ -90,11 +90,11 @@ static Messenger *init_tox()
 #define MAXSERVERS 50
 
 /* Connects to a random DHT server listed in the DHTservers file */
-int init_connection(void)
+int init_connection(Messenger *m)
 {
     FILE *fp = NULL;
-    
-    if (DHT_isconnected())
+
+    if (DHT_isconnected(m->dht))
         return 0;
 
     fp = fopen(SRVLIST_FILE, "r");
@@ -135,7 +135,7 @@ int init_connection(void)
 
     dht.ip.i = resolved_address;
     unsigned char *binary_string = hex_string_to_bin(key);
-    DHT_bootstrap(dht, binary_string);
+    DHT_bootstrap(m->dht, dht, binary_string);
     free(binary_string);
     return 0;
 }
@@ -146,18 +146,18 @@ static void do_tox(Messenger *m, ToxWindow *prompt)
     static int conn_err = 0;
     static bool dht_on = false;
 
-    if (!dht_on && !DHT_isconnected() && !(conn_try++ % 100)) {
+    if (!dht_on && !DHT_isconnected(m->dht) && !(conn_try++ % 100)) {
         if (!conn_err) {
-            conn_err = init_connection();
+            conn_err = init_connection(m);
             wprintw(prompt->window, "\nEstablishing connection...\n");
 
             if (conn_err)
                 wprintw(prompt->window, "\nAuto-connect failed with error code %d\n", conn_err);
         }
-    } else if (!dht_on && DHT_isconnected()) {
+    } else if (!dht_on && DHT_isconnected(m->dht)) {
         dht_on = true;
         wprintw(prompt->window, "\nDHT connected.\n");
-    } else if (dht_on && !DHT_isconnected()) {
+    } else if (dht_on && !DHT_isconnected(m->dht)) {
         dht_on = false;
         wprintw(prompt->window, "\nDHT disconnected. Attempting to reconnect.\n");
     }
@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
             strcpy(DATA_FILE, user_config_dir);
             strcat(DATA_FILE, CONFIGDIR);
             strcat(DATA_FILE, "data");
-            
+
             SRVLIST_FILE = malloc(strlen(user_config_dir) + strlen(CONFIGDIR) + strlen("DHTservers") + 1);
             strcpy(SRVLIST_FILE, user_config_dir);
             strcat(SRVLIST_FILE, CONFIGDIR);

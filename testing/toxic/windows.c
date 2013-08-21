@@ -88,23 +88,25 @@ int add_window(Messenger *m, ToxWindow w)
 {
     if (LINES < 2)
         return -1;
- 
+
     int i;
-    for(i = 0; i < MAX_WINDOWS_NUM; i++) {
-        if (windows[i].window) 
+
+    for (i = 0; i < MAX_WINDOWS_NUM; i++) {
+        if (windows[i].window)
             continue;
-        
+
         w.window = newwin(LINES - 2, COLS, 0, 0);
+
         if (w.window == NULL)
             return -1;
 
         windows[i] = w;
         w.onInit(&w, m);
-    
-        active_window = windows+i;
+
+        active_window = windows + i;
         return i;
     }
-    
+
     return -1;
 }
 
@@ -113,8 +115,10 @@ void del_window(ToxWindow *w)
 {
     active_window = windows; // Go to prompt screen
     delwin(w->window);
+
     if (w->x)
         free(w->x);
+
     w->window = NULL;
     memset(w, 0, sizeof(ToxWindow));
     clear();
@@ -124,19 +128,19 @@ void del_window(ToxWindow *w)
 /* Shows next window when tab or back-tab is pressed */
 void set_next_window(int ch)
 {
-    ToxWindow *end = windows+MAX_WINDOWS_NUM-1;
+    ToxWindow *end = windows + MAX_WINDOWS_NUM - 1;
     ToxWindow *inf = active_window;
-    while(true) {
+
+    while (true) {
         if (ch == '\t') {
             if (++active_window > end)
                 active_window = windows;
-        } else 
-            if (--active_window < windows)
-                active_window = end;
-        
+        } else if (--active_window < windows)
+            active_window = end;
+
         if (active_window->window)
             return;
-    
+
         if (active_window == inf) {    // infinite loop check
             endwin();
             exit(2);
@@ -148,14 +152,14 @@ void set_active_window(int index)
 {
     if (index < 0 || index >= MAX_WINDOWS_NUM)
         return;
-    
-    active_window = windows+index;
+
+    active_window = windows + index;
 }
 
 ToxWindow *init_windows()
 {
     int n_prompt = add_window(m, new_prompt());
-    
+
     if (n_prompt == -1
             || add_window(m, new_friendlist()) == -1
             || add_window(m, new_dhtstatus()) == -1) {
@@ -166,7 +170,7 @@ ToxWindow *init_windows()
 
     prompt = &windows[n_prompt];
     active_window = prompt;
-    
+
     return prompt;
 }
 
@@ -189,7 +193,7 @@ static void draw_bar()
 
     for (i = 0; i < (MAX_WINDOWS_NUM); ++i) {
         if (windows[i].window) {
-            if (windows+i == active_window)
+            if (windows + i == active_window)
                 attron(A_BOLD);
 
             odd = (odd + 1) % blinkrate;
@@ -197,13 +201,13 @@ static void draw_bar()
             if (windows[i].blink && (odd < (blinkrate / 2)))
                 attron(COLOR_PAIR(3));
 
-	    clrtoeol();
+            clrtoeol();
             printw(" %s", windows[i].title);
 
             if (windows[i].blink && (odd < (blinkrate / 2)))
                 attroff(COLOR_PAIR(3));
 
-            if (windows+i == active_window) {
+            if (windows + i == active_window) {
                 attroff(A_BOLD);
             }
         }
@@ -225,7 +229,7 @@ void draw_active_window(Messenger *m)
     prepare_window(a->window);
     a->blink = false;
     draw_bar();
-    a->onDraw(a);
+    a->onDraw(a, m);
 
     /* Handle input */
     int ch = getch();

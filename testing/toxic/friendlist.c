@@ -102,7 +102,7 @@ static void friendlist_onKey(ToxWindow *self, Messenger *m, int key)
     }
 }
 
-static void friendlist_onDraw(ToxWindow *self)
+static void friendlist_onDraw(ToxWindow *self, Messenger *m)
 {
     curs_set(0);
     werase(self->window);
