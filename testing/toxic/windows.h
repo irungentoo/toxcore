@@ -4,7 +4,6 @@
 #ifndef _windows_h
 #define _windows_h
 
-#define _XOPEN_SOURCE_EXTENDED
 #include <curses.h>
 #include <stdint.h>
 #include <stdbool.h>

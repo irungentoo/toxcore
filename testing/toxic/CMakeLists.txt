@@ -15,6 +15,11 @@ add_executable(${exe_name}
 	chat.c
 	configdir.c)
 
+if(CURSES_HAVE_WIDE_CHAR)
+	add_definitions( -D_XOPEN_SOURCE_EXTENDED )
+	add_definitions( -DHAVE_WIDE_CHAR )
+endif()
+
 include_directories(${CURSES_INCLUDE_DIR})
 
 target_link_libraries(${exe_name}
