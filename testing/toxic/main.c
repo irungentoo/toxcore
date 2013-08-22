@@ -2,7 +2,6 @@
  * Toxic -- Tox Curses Client
  */
 
-#define _XOPEN_SOURCE_EXTENDED
 #include <curses.h>
 #include <errno.h>
 #include <stdio.h>
