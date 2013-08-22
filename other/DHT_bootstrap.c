@@ -86,7 +86,6 @@ int main(int argc, char *argv[])
     IP ip;
     ip.i = 0;
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
-    init_cryptopackets(dht);
     manage_keys(dht);
     printf("Public key: ");
     uint32_t i;

@@ -321,7 +321,6 @@ int main(int argc, char *argv[])
     manage_keys(dht, server_conf.keys_file);
     errno = tmperr;
 
-    init_cryptopackets(dht);
     /* Public key */
     int i;
     printf("\nPublic Key: ");

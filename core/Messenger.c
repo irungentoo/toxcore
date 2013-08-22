@@ -660,7 +660,6 @@ Messenger *initMessenger(void)
     friendreq_init(&(m->fr), m->net_crypto);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
-    init_cryptopackets(m->dht);
 
     return m;
 }
