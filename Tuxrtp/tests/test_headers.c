@@ -30,6 +30,7 @@
 #include <string.h>
 #include <utime.h>
 #include <assert.h>
+#include "../rtp_error.h"
 
 
 int print_help()
