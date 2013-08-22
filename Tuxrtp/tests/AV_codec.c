@@ -103,9 +103,9 @@ int init_receive_audio(call_state *cs)
     AVDictionary *options = NULL;
     av_dict_set(&options, "complexity", "10", 0);
     if(avcodec_open2(cs->audio_decoder_ctx,cs->audio_decoder,&options)<0) {
-      av_dict_free(&options);
-      printf("opening audio decoder failed\n");
-      return 0;
+	av_dict_free(&options);
+	printf("opening audio decoder failed\n");
+	return 0;
     }
     av_dict_free(&options);
     cs->audio_frame=avcodec_alloc_frame();
@@ -189,7 +189,6 @@ int init_send_video(call_state *cs)
     cs->video_encoder_ctx->bit_rate = VIDEO_BITRATE;
     cs->video_encoder_ctx->rc_min_rate = cs->video_encoder_ctx->rc_max_rate = cs->video_encoder_ctx->bit_rate;
     av_opt_set_double(cs->video_encoder_ctx->priv_data, "max-intra-rate", 90, 0);
-    //av_opt_set_double(cs->video_encoder_ctx->priv_data, "qcomp", 2, 0);
     av_opt_set(cs->video_encoder_ctx->priv_data, "quality", "realtime", 0);
     
     cs->video_encoder_ctx->thread_count = 4;
@@ -275,7 +274,6 @@ int init_encoder(call_state *cs)
     
     pthread_mutex_init(&cs->rtp_msg_mutex_lock, NULL);
     cs->support_send_video=init_send_video(cs);
-    //cs->support_send_video=0;
     cs->support_send_audio=init_send_audio(cs);
 
     cs->send_audio=1;
