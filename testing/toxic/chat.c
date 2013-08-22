@@ -182,7 +182,11 @@ static void chat_onKey(ToxWindow *self, Messenger *m, wint_t key)
     getmaxyx(self->window, y2, x2);
 
     /* Add printable chars to buffer and print on input space */
+#if HAVE_WIDECHAR
     if (iswprint(key)) {
+#else
+    if (isprint(key)) {
+#endif
         if (ctx->pos != sizeof(ctx->line) - 1) {
             mvwaddstr(self->window, y, x, wc_to_char(key));
             ctx->line[ctx->pos++] = key;

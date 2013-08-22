@@ -8,6 +8,7 @@ if(WIN32)
 	option(SHARED_LIBSODIUM "Links libsodium as a shared library")
 else()
 	option(USE_NACL "Use NaCl library instead of libsodium")
+	option(NO_WIDECHAR "Do not use wide char, even if supported")
 endif()
 
 #OS X specific
