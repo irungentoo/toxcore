@@ -64,7 +64,7 @@
 
 #ifdef __linux__
 #define VIDEO_DRIVER "video4linux2"
-#define DEFAULT_WEBCAM "/dev/video1"
+#define DEFAULT_WEBCAM "/dev/video0"
 #define AUDIO_DRIVER "alsa"
 #define DEFAULT_AUDIO_DEVICE "default"
 #endif
@@ -90,24 +90,24 @@ typedef struct
 typedef struct 
 {
   
-    int send_audio;
-    int receive_audio;
-    int send_video;
-    int receive_video;
+    uint8_t send_audio;
+    uint8_t receive_audio;
+    uint8_t send_video;
+    uint8_t receive_video;
     
-    int support_send_audio;
-    int support_send_video;
-    int support_receive_audio;
-    int support_receive_video;
+    uint8_t support_send_audio;
+    uint8_t support_send_video;
+    uint8_t support_receive_audio;
+    uint8_t support_receive_video;
    
    
     AVInputFormat   	*video_input_format;
     AVFormatContext 	*video_format_ctx;
-    int             	 video_stream;
+    uint8_t             	 video_stream;
     
     AVInputFormat   	*audio_input_format;
     AVFormatContext 	*audio_format_ctx;
-    int              	audio_stream;
+    uint8_t              	audio_stream;
     
     AVCodecContext  	*webcam_decoder_ctx;
     AVCodec         	*webcam_decoder;
@@ -132,30 +132,38 @@ typedef struct
     AVFrame         	*microphone_frame; 
 
     AVFrame         	*webcam_frame; 
-    AVFrame         	*scaled_webcam_frame; 
-    AVFrame         	*video_frame; 
+    AVFrame         	*s_video_frame; 
+    AVFrame         	*r_video_frame; 
+    
     AVPacket        	enc_video_packet;
     AVPacket        	enc_audio_packet;
     
     AVPacket        	dec_video_packet;
     AVPacket        	dec_audio_packet;
     
-    int req_video_refresh;
+    uint8_t req_video_refresh;
 
 
     int             	audio_frame_finished;
     int 		video_frame_finished;
     int 		dec_frame_finished;
-    struct SwsContext 	*sws_SDL_ctx;
+    
+    /* context for converting image format to something SDL can use*/
+    struct SwsContext 	*sws_SDL_r_ctx;
+    
+    /* context for converting webcam image format to something the video encoder can use */
     struct SwsContext 	*sws_ctx;
+    
+    /* rendered video picture, ready for display */
     VideoPicture	video_picture;
-    SDL_Thread      	*parse_tid;
+    
+    //SDL_Thread      	*parse_tid;
     rtp_msg_t*     	s_video_msg;
     rtp_msg_t*     	s_audio_msg;
     rtp_msg_t*     	r_msg; 
     rtp_session_t* 	_m_session;
-    int             	quit;
-    int SDL_initialised;
+    uint8_t             quit;
+    uint8_t 		SDL_initialised;
     SDL_Event       SDL_event;
     
     pthread_t encode_audio_thread;
@@ -172,7 +180,7 @@ typedef struct
     
 }call_state;
 
-int display_frame(call_state *cs);
+int display_received_frame(call_state *cs);
 int decode_video_frame(call_state *cs);
 int encode_audio_frame(call_state *cs);
 int init_receive_audio(call_state *cs);
