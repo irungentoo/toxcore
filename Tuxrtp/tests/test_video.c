@@ -90,16 +90,7 @@ int main ( int argc, char* argv[] )
 
 	init_encoder(cs);
 	init_decoder(cs);
-	
-	if(cs->support_send_video) {
-	    uint8_t *buffer;
-	    int numBytes;
-	    // Determine required buffer size and allocate buffer
-	    numBytes=avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height);
-	    buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
-	    avpicture_fill((AVPicture *)cs->scaled_webcam_frame, buffer, PIX_FMT_YUV420P,cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
-	    cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,cs->webcam_decoder_ctx->pix_fmt,cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
-	}
+
 	cs->quit = 0;
 	cs->SDL_initialised=0;
 	
