@@ -42,7 +42,7 @@
 #include "AV_codec.h"
 
 
-int display_frame(call_state *cs)
+int display_received_frame(call_state *cs)
 {
     AVPicture pict;
     SDL_LockYUVOverlay(cs->video_picture.bmp);
@@ -55,7 +55,7 @@ int display_frame(call_state *cs)
     pict.linesize[2] = cs->video_picture.bmp->pitches[1];
 
     //Convert the image into YUV format that SDL uses
-    sws_scale(cs->sws_SDL_ctx, (uint8_t const * const *)cs->video_frame->data, cs->video_frame->linesize, 0, cs->video_decoder_ctx->height, pict.data, pict.linesize );
+    sws_scale(cs->sws_SDL_r_ctx, (uint8_t const * const *)cs->r_video_frame->data, cs->r_video_frame->linesize, 0, cs->video_decoder_ctx->height, pict.data, pict.linesize );
     
     SDL_UnlockYUVOverlay(cs->video_picture.bmp);
     SDL_Rect rect;  
@@ -70,7 +70,7 @@ int display_frame(call_state *cs)
 
 int decode_video_frame(call_state *cs)
 {
-    avcodec_decode_video2(cs->video_decoder_ctx, cs->video_frame, &cs->dec_frame_finished, &cs->dec_video_packet);
+    avcodec_decode_video2(cs->video_decoder_ctx, cs->r_video_frame, &cs->dec_frame_finished, &cs->dec_video_packet);
     return 1;
 }
 
@@ -130,7 +130,7 @@ int init_receive_video(call_state *cs)
 	return 0;
     }
     cs->webcam_frame=avcodec_alloc_frame();
-    cs->video_frame=avcodec_alloc_frame();
+    cs->r_video_frame=avcodec_alloc_frame();
     printf("init video decoder successful\n");
     return 1;
 }
@@ -173,7 +173,7 @@ int init_send_video(call_state *cs)
 	return 0;
     }
     cs->webcam_frame=avcodec_alloc_frame();
-    cs->scaled_webcam_frame=avcodec_alloc_frame();
+    cs->s_video_frame=avcodec_alloc_frame();
     
     cs->video_encoder = avcodec_find_encoder(VIDEO_CODEC);
     if(!cs->video_encoder) {
@@ -368,24 +368,24 @@ void *encode_video_thread(void *arg)
 		  
 		}
 		av_free_packet(packet);
-		sws_scale(cs->sws_ctx,(uint8_t const * const *)cs->webcam_frame->data,cs->webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, cs->scaled_webcam_frame->data,cs->scaled_webcam_frame->linesize);
+		sws_scale(cs->sws_ctx,(uint8_t const * const *)cs->webcam_frame->data,cs->webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, cs->s_video_frame->data,cs->s_video_frame->linesize);
 		
 		/* create a new I-frame every 60 frames */
 		++p;
 		if(p==60) {
 	
-			cs->scaled_webcam_frame->pict_type=AV_PICTURE_TYPE_BI ;
+			cs->s_video_frame->pict_type=AV_PICTURE_TYPE_BI ;
 		} else if(p==61) {
-			cs->scaled_webcam_frame->pict_type=AV_PICTURE_TYPE_I ;
+			cs->s_video_frame->pict_type=AV_PICTURE_TYPE_I ;
 			p=0;
 		    }
 		    else {
-		    cs->scaled_webcam_frame->pict_type=AV_PICTURE_TYPE_P ;
+		    cs->s_video_frame->pict_type=AV_PICTURE_TYPE_P ;
 		}
 		
 		if(cs->video_frame_finished) {
 		      
-		    err= avcodec_encode_video2(cs->video_encoder_ctx,&cs->enc_video_packet,cs->scaled_webcam_frame,&got_packet);
+		    err= avcodec_encode_video2(cs->video_encoder_ctx,&cs->enc_video_packet,cs->s_video_frame,&got_packet);
 		    if(err<0) {
 			printf("could not encode video frame\n");
 			continue;
@@ -413,7 +413,7 @@ void *encode_video_thread(void *arg)
 	usleep(1000);
     }
     av_free(cs->webcam_frame);
-    av_free(cs->scaled_webcam_frame);
+    av_free(cs->s_video_frame);
     sws_freeContext(cs->sws_ctx);
     avcodec_close(cs->webcam_decoder_ctx);
     avcodec_close(cs->video_encoder_ctx);    
@@ -488,7 +488,7 @@ int video_decoder_refresh(call_state *cs, int width, int height)
     if(cs->video_picture.bmp)
 	  SDL_FreeYUVOverlay(cs->video_picture.bmp);
     cs->video_picture.bmp = SDL_CreateYUVOverlay(width,height,SDL_YV12_OVERLAY,screen);
-    cs->sws_SDL_ctx = sws_getContext(width,height,cs->video_decoder_ctx->pix_fmt,width,height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
+    cs->sws_SDL_r_ctx = sws_getContext(width,height,cs->video_decoder_ctx->pix_fmt,width,height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
     return 1;   
 }
 
@@ -559,9 +559,9 @@ void *decode_thread(void *arg)
 	     if(type==106&&cs->receive_video) {
 		memcpy(cs->dec_video_packet.data,cs->r_msg->_data,cs->r_msg->_length);
 		cs->dec_video_packet.size=cs->r_msg->_length;
-		avcodec_decode_video2(cs->video_decoder_ctx, cs->video_frame, &cs->dec_frame_finished, &cs->dec_video_packet);
+		avcodec_decode_video2(cs->video_decoder_ctx, cs->r_video_frame, &cs->dec_frame_finished, &cs->dec_video_packet);
 		if(cs->dec_frame_finished) {
-		    display_frame(cs);
+		    display_received_frame(cs);
 		    rtp_free_msg(cs->_m_session, cs->r_msg);
 		}
 		else {
@@ -607,7 +607,7 @@ void *decode_thread(void *arg)
     }
     
     /* clean up codecs */
-    av_free(cs->video_frame);
+    av_free(cs->r_video_frame);
     av_free(cs->webcam_frame);
     av_free(cs->audio_frame);
     sws_freeContext(cs->sws_ctx);
