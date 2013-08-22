@@ -1,262 +1,188 @@
+/* AV_codec.h
+ *
+ * Audio and video codec intitialisation, encoding/decoding and playback
+ *
+ *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *
+ *  This file is part of Tox.
+ *
+ *  Tox is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Tox is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/*----------------------------------------------------------------------------------*/
+
+#include <stdio.h>
+#include <math.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavdevice/avdevice.h>
 #include <libavutil/opt.h>
+#include <pthread.h>
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alut.h>
 
 #include <SDL.h>
-#include <SDL_thread.h>
 
-#ifdef __MINGW32__
-#undef main /* Prevents SDL from overriding main() */
-#endif
 
-#include <stdio.h>
+/* ffmpeg VP8 codec ID */
+#define VIDEO_CODEC 		AV_CODEC_ID_VP8
 
+/* ffmpeg Opus codec ID */
+#define AUDIO_CODEC 		AV_CODEC_ID_OPUS
+
+/* default video bitrate in bytes/s */
+#define VIDEO_BITRATE 	200*1000
+
+/* default audio bitrate in bytes/s */
+#define AUDIO_BITRATE	64000
+
+/* audio frame duration in miliseconds */
+#define AUDIO_FRAME_DURATION	20	
+
+/* audio sample rate recommended to be 48kHz for Opus */
+#define AUDIO_SAMPLE_RATE	48000
+
+/* the amount of samples in one audio frame */
+#define AUDIO_FRAME_SIZE	AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000
+
+/* the quit event for SDL */
 #define FF_QUIT_EVENT (SDL_USEREVENT + 2)
 
 #ifdef __linux__
-#define DRIVER "video4linux2"
-#define DEFAULT_WEBCAM "/dev/video0"
+#define VIDEO_DRIVER "video4linux2"
+#define DEFAULT_WEBCAM "/dev/video1"
+#define AUDIO_DRIVER "alsa"
+#define DEFAULT_AUDIO_DEVICE "default"
 #endif
 
-#define CODEC           AV_CODEC_ID_VP8
-#define BITRATE         5000*1000
+#ifdef WIN32
+#define VIDEO_DRIVER "vfwcap"
+#define DEFAULT_WEBCAM "0"
+#define AUDIO_DRIVER ""
+#define DEFAULT_AUDIO_DEVICE ""
+#endif
+
 SDL_Surface     *screen;
 
 
-typedef struct VideoPicture
+
+typedef struct 
 {
     SDL_Overlay *bmp;
     int width, height;
 }VideoPicture;
 
 
-typedef struct VideoState
+typedef struct 
 {
-    AVFormatContext *pFormatCtx;
-    int              videoStream;
-    AVInputFormat   *pIFormat;
+  
+    int send_audio;
+    int receive_audio;
+    int send_video;
+    int receive_video;
+    
+    int support_send_audio;
+    int support_send_video;
+    int support_receive_audio;
+    int support_receive_video;
+   
+   
+    AVInputFormat   	*video_input_format;
+    AVFormatContext 	*video_format_ctx;
+    int             	 video_stream;
+    
+    AVInputFormat   	*audio_input_format;
+    AVFormatContext 	*audio_format_ctx;
+    int              	audio_stream;
+    
+    AVCodecContext  	*webcam_decoder_ctx;
+    AVCodec         	*webcam_decoder;
 
-    AVCodecContext  *webcam_decoder_ctx;
-    AVCodec         *webcam_decoder;
+    AVCodecContext  	*video_encoder_ctx;
+    AVCodec         	*video_encoder;
 
-    AVCodecContext  *pECodecCtx2;
-    AVCodec         *pECodec2;
+    AVCodecContext  	*video_decoder_ctx;
+    AVCodec         	*video_decoder;
+    
+    AVCodecContext  	*microphone_decoder_ctx;
+    AVCodec         	*microphone_decoder;
+    
+    AVCodecContext  	*audio_encoder_ctx;
+    AVCodec         	*audio_encoder;
+    
+    AVCodecContext  	*audio_decoder_ctx;
+    AVCodec         	*audio_decoder;
+    
+    AVFrame         	*enc_audio_frame; 
+    AVFrame         	*audio_frame; 
+    AVFrame         	*microphone_frame; 
 
-    AVCodecContext  *pDCodecCtx2;
-    AVCodec         *pDCodec2;
-
-    AVFrame         *pFrameWebcam;
-    AVFrame         *pDFrame;
-    AVPacket        packet;
-    AVPacket        encoded_packet;
-
-    int             frameFinished;
-    AVDictionary    *optionsDict;
-    struct SwsContext *sws_ctx;
-    VideoPicture VP;
-    SDL_Thread      *parse_tid;
-    rtp_msg_t*     _m_msg;
-    rtp_session_t* _m_session;
-    int             quit;
-}VideoState;
-
-
-int display_frame(VideoState *is)
-{
-    AVPicture pict;
-    SDL_LockYUVOverlay(is->VP.bmp);
-
-    pict.data[0] = is->VP.bmp->pixels[0];
-    pict.data[1] = is->VP.bmp->pixels[2];
-    pict.data[2] = is->VP.bmp->pixels[1];
-    pict.linesize[0] = is->VP.bmp->pitches[0];
-    pict.linesize[1] = is->VP.bmp->pitches[2];
-    pict.linesize[2] = is->VP.bmp->pitches[1];
-
-    //Convert the image into YUV format that SDL uses
-    sws_scale(is->sws_ctx, (uint8_t const * const *)is->pDFrame->data, is->pDFrame->linesize, 0, is->pDCodecCtx2->height, pict.data, pict.linesize );
-
-    SDL_UnlockYUVOverlay(is->VP.bmp);
-    SDL_Rect rect;
-    rect.x = 0;
-    rect.y = 0;
-    rect.w = is->pDCodecCtx2->width;
-    rect.h = is->pDCodecCtx2->height;
-    SDL_DisplayYUVOverlay(is->VP.bmp, &rect);
-    return 1;
-}
-
-
-int encode_frame(VideoState *is)
-{
-    int got_packet_ptr=0;
-    avcodec_encode_video2(is->pECodecCtx2,&is->packet,is->pFrameWebcam,&got_packet_ptr);
-    return 1;
-}
+    AVFrame         	*webcam_frame; 
+    AVFrame         	*scaled_webcam_frame; 
+    AVFrame         	*video_frame; 
+    AVPacket        	enc_video_packet;
+    AVPacket        	enc_audio_packet;
+    
+    AVPacket        	dec_video_packet;
+    AVPacket        	dec_audio_packet;
+    
+    int req_video_refresh;
 
 
-int decode_frame(VideoState *is)
-{
-    avcodec_decode_video2(is->pDCodecCtx2, is->pDFrame, &is->frameFinished, &is->packet);
-    return 1;
-}
+    int             	audio_frame_finished;
+    int 		video_frame_finished;
+    int 		dec_frame_finished;
+    struct SwsContext 	*sws_SDL_ctx;
+    struct SwsContext 	*sws_ctx;
+    VideoPicture	video_picture;
+    SDL_Thread      	*parse_tid;
+    rtp_msg_t*     	s_video_msg;
+    rtp_msg_t*     	s_audio_msg;
+    rtp_msg_t*     	r_msg; 
+    rtp_session_t* 	_m_session;
+    int             	quit;
+    int SDL_initialised;
+    SDL_Event       SDL_event;
+    
+    pthread_t encode_audio_thread;
+    pthread_t encode_video_thread;
+    pthread_t decode_thread;
+    pthread_mutex_t rtp_msg_mutex_lock;
+    
+    ALCdevice *dev;
+    ALCcontext *ctx;
+    ALuint source, *buffers;
+    ALuint buf;
+    ALint val;
+    
+    
+}call_state;
 
-
-int encode_thread(void *arg)
-{
-    VideoState *is = (VideoState *)arg;
-    AVPacket pkt1, *packet = &pkt1;
-    SDL_Event       event;
-    is->videoStream=0;
-
-    while(1)
-    {
-        if(is->quit) break;
-
-        if(av_read_frame(is->pFormatCtx, packet) < 0)
-        {
-            if(is->pFormatCtx->pb->error != 0)
-            break;
-        }
-
-        /* Is this a packet from the video stream? */
-        if(packet->stream_index == is->videoStream)
-        {
-            avcodec_decode_video2(is->webcam_decoder_ctx, is->pFrameWebcam, &is->frameFinished, packet);
-            if(is->frameFinished)
-            {
-                encode_frame(is);
-                is->_m_msg = rtp_msg_new ( is->_m_session, is->packet.data, is->packet.size ) ;
-                printf("%d\n",is->packet.size);
-                rtp_send_msg ( is->_m_session, is->_m_msg );
-                av_free_packet(&is->packet);
-                av_free_packet(packet);
-            }
-        }
-        else
-        {
-            av_free_packet(packet);
-        }
-    }
-
-    event.type = FF_QUIT_EVENT;
-    event.user.data1 = is;
-    SDL_PushEvent(&event);
-    return 0;
-}
-
-
-int decode_thread(void *arg)
-{
-    VideoState *is = (VideoState *)arg;
-    is->videoStream=0;
-    av_new_packet (&is->packet, 50000);
-
-    while(1)
-    {
-        if(is->quit) break;
-        is->_m_msg = rtp_recv_msg ( is->_m_session );
-        if(is-> _m_msg)
-        {
-            // av_packet_from_data(is->packet,is->_m_msg->_data,is->_m_msg->_length);
-            memcpy(is->packet.data,is->_m_msg->_data,is->_m_msg->_length);
-            is->packet.size=is->_m_msg->_length;
-            avcodec_decode_video2(is->pDCodecCtx2, is->pDFrame, &is->frameFinished, &is->packet);
-            if(is->frameFinished)
-            {
-                printf("frame finished!\n");
-                display_frame(is);
-                rtp_free_msg(is->_m_session, is->_m_msg);
-            }
-            else
-            {
-                av_free_packet(&is->packet);
-                printf("freed packet\n");
-            }
-        }
-    }
-
-    return 0;
-}
-
-
-int init_webcam_decoder(VideoState *is)
-{
-    av_register_all();
-    avdevice_register_all();
-    is->pIFormat=av_find_input_format(DRIVER);
-    if(avformat_open_input(&is->pFormatCtx,DEFAULT_WEBCAM, is->pIFormat, NULL)!=0)
-    return -1;
-    avformat_find_stream_info(is->pFormatCtx, NULL);
-    av_dump_format(is->pFormatCtx, 0, DEFAULT_WEBCAM, 0);
-
-    int i;
-    for(i=0; i<is->pFormatCtx->nb_streams; i++)
-    {
-    if(is->pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
-      is->videoStream=i;
-      break;
-    }
-    }
-    printf("Streams: %d Video stream = %d\n",is->pFormatCtx->nb_streams,is->videoStream);
-    is->webcam_decoder_ctx=is->pFormatCtx->streams[is->videoStream]->codec;
-    is->webcam_decoder=avcodec_find_decoder(is->webcam_decoder_ctx->codec_id);
-    if(is->webcam_decoder==NULL)
-    {
-        fprintf(stderr, "Unsupported codec!\n");
-        return -1;
-    }
-    if(is->webcam_decoder_ctx==NULL)
-    {
-        fprintf(stderr, "webcam_decoder_ctx failed!\n");
-        return -1;
-    }
-
-    avcodec_open2(is->webcam_decoder_ctx, is->webcam_decoder, NULL);
-    return 1;
-}
-
-
-int init_encoder(VideoState *is)
-{
-    av_register_all();
-    avdevice_register_all();
-    avcodec_register_all();
-    is->pECodec2 = avcodec_find_encoder(CODEC);
-    if(!is->pECodec2){printf("init pECodec2 failed\n");}
-    is->pECodecCtx2 = avcodec_alloc_context3(is->pECodec2);
-    if(!is->pECodecCtx2){printf("init pECodecCtx2 failed\n");}
-    is->pECodecCtx2->bit_rate = BITRATE;
-    is->pECodecCtx2->rc_min_rate = is->pECodecCtx2->rc_max_rate = is->pECodecCtx2->bit_rate;
-    av_opt_set_double(is->pECodecCtx2->priv_data, "max-intra-rate", 90, 0);
-    av_opt_set(is->pECodecCtx2->priv_data, "quality", "realtime", 0);
-    is->pECodecCtx2->thread_count = 4;
-    is->pECodecCtx2->rc_buffer_aggressivity = 0.95;
-    is->pECodecCtx2->rc_buffer_size = BITRATE*6;
-    is->pECodecCtx2->profile = 3;
-    is->pECodecCtx2->qmax = 54;
-    is->pECodecCtx2->qmin = 4;
-    AVRational myrational = {1,25};
-    is->pECodecCtx2->time_base= myrational;
-    is->pECodecCtx2->gop_size = 99999;
-    //is->pECodecCtx2->pix_fmt = PIX_FMT_YUV420P;
-    is->pECodecCtx2->pix_fmt = is->webcam_decoder_ctx->pix_fmt;
-    is->pECodecCtx2->width = is->webcam_decoder_ctx->width;
-    is->pECodecCtx2->height = is->webcam_decoder_ctx->height;
-    avcodec_open2(is->pECodecCtx2,is->pECodec2,NULL);
-    return 1;
-}
-
-
-int init_decoder(VideoState *is)
-{
-    avdevice_register_all();
-    avcodec_register_all();
-    av_register_all();
-    is->pDCodec2 = avcodec_find_decoder(CODEC);
-    is->pDCodecCtx2 = avcodec_alloc_context3(is->pDCodec2);
-    avcodec_open2(is->pDCodecCtx2,is->pDCodec2,NULL);
-    return 1;
-}
+int display_frame(call_state *cs);
+int decode_video_frame(call_state *cs);
+int encode_audio_frame(call_state *cs);
+int init_receive_audio(call_state *cs);
+int init_decoder(call_state *cs);
+int init_send_video(call_state *cs);
+int init_send_audio(call_state *cs);
+int init_encoder(call_state *cs);
+int video_encoder_refresh(call_state *cs, int bps);
+void *encode_video_thread(void *arg);
+void *encode_audio_thread(void *arg);
+int video_decoder_refresh(call_state *cs, int width, int height);
+int decoder_handle_rtp_packet(call_state *cs);
+void *decode_thread(void *arg);
