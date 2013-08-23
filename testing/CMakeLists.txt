@@ -11,7 +11,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Messenger_test.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/crypto_speed_test.cmake)
 
 if(WIN32)
-#	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox_win32.cmake)
+  #Do nothing
 else()
 	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/nTox.cmake)
 endif()
