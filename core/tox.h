@@ -56,12 +56,12 @@ extern "C" {
  * Represents userstatuses someone can have. */
 
 typedef enum {
-    USERSTATUS_NONE,
-    USERSTATUS_AWAY,
-    USERSTATUS_BUSY,
-    USERSTATUS_INVALID
+    TOX_USERSTATUS_NONE,
+    TOX_USERSTATUS_AWAY,
+    TOX_USERSTATUS_BUSY,
+    TOX_USERSTATUS_INVALID
 }
-USERSTATUS;
+TOX_USERSTATUS;
 
 /*
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
@@ -174,8 +174,8 @@ int tox_copy_self_statusmessage(void *tox, uint8_t *buf, uint32_t maxlen);
  * Values unknown to your application should be represented as USERSTATUS_NONE.
  * As above, the self variant will return our own USERSTATUS.
  * If friendnumber is invalid, this shall return USERSTATUS_INVALID. */
-USERSTATUS tox_get_userstatus(void *tox, int friendnumber);
-USERSTATUS tox_get_selfuserstatus(void *tox);
+TOX_USERSTATUS tox_get_userstatus(void *tox, int friendnumber);
+TOX_USERSTATUS tox_get_selfuserstatus(void *tox);
 
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).*/
