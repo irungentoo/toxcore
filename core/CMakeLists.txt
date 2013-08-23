@@ -37,3 +37,9 @@ if(WIN32)
 	target_link_libraries(toxcore ws2_32)
 endif()
 
+execute_process(COMMAND git rev-list HEAD --count OUTPUT_VARIABLE COMMIT)
+
+# Write pkgconfig-file:
+include(InstallPkgConfigFile)
+install_pkg_config_file(toxcore CFLAGS LIBS -ltoxcore REQUIRES VERSION 0.1.1_r${COMMIT})
+ 
