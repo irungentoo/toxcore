@@ -151,16 +151,6 @@ Networking_Core *new_networking(IP ip, uint16_t port);
 /* function to cleanup networking stuff(doesn't do much right now) */
 void kill_networking(Networking_Core *net);
 
-/*
-  resolve_addr():
-    address should represent IPv4 or a hostname with A record
-
-    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
-    returns 0 on failure
-
-    TODO: Fix ipv6 support
-*/
-uint32_t resolve_addr(const char *address);
 
 #ifdef __cplusplus
 }

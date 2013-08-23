@@ -24,34 +24,53 @@
 #ifndef TOX_H
 #define TOX_H
 
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_NAME_LENGTH 128
-#define MAX_STATUSMESSAGE_LENGTH 128
+#define TOX_MAX_NAME_LENGTH 128
+#define TOX_MAX_STATUSMESSAGE_LENGTH 128
+#define TOX_CLIENT_ID_SIZE 32
 
-#define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
+#define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
+
+
+typedef union {
+    uint8_t c[4];
+    uint16_t s[2];
+    uint32_t i;
+} IP;
+
+typedef struct {
+    IP ip;
+    uint16_t port;
+    /* not used for anything right now */
+    uint16_t padding;
+} IP_Port;
 
 /* status definitions */
-#define FRIEND_ONLINE 4
-#define FRIEND_CONFIRMED 3
-#define FRIEND_REQUESTED 2
-#define FRIEND_ADDED 1
-#define NOFRIEND 0
+enum {
+    TOX_NOFRIEND,
+    TOX_FRIEND_ADDED,
+    TOX_FRIEND_REQUESTED,
+    TOX_FRIEND_CONFIRMED,
+    TOX_FRIEND_ONLINE,
+};
 
 /* errors for m_addfriend
  *  FAERR - Friend Add Error */
-#define FAERR_TOOLONG -1
-#define FAERR_NOMESSAGE -2
-#define FAERR_OWNKEY -3
-#define FAERR_ALREADYSENT -4
-#define FAERR_UNKNOWN -5
-#define FAERR_BADCHECKSUM -6
-#define FAERR_SETNEWNOSPAM -7
-#define FAERR_NOMEM -8
-
+enum {
+    TOX_FAERR_TOOLONG = -1,
+    TOX_FAERR_NOMESSAGE = -2,
+    TOX_FAERR_OWNKEY = -3,
+    TOX_FAERR_ALREADYSENT = -4,
+    TOX_FAERR_UNKNOWN = -5,
+    TOX_FAERR_BADCHECKSUM = -6,
+    TOX_FAERR_SETNEWNOSPAM = -7,
+    TOX_FAERR_NOMEM = -8
+};
 /* USERSTATUS
  * Represents userstatuses someone can have. */
 
@@ -63,12 +82,14 @@ typedef enum {
 }
 TOX_USERSTATUS;
 
+typedef void Tox;
+
 /*
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  *
  */
-void tox_getaddress(void *tox, uint8_t *address);
+void tox_getaddress(Tox *tox, uint8_t *address);
 
 /*
  * add a friend
@@ -76,43 +97,43 @@ void tox_getaddress(void *tox, uint8_t *address);
  * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length
  * returns the friend number if success
- * return -1 if message length is too long
- * return -2 if no message (message length must be >= 1 byte)
- * return -3 if user's own key
- * return -4 if friend request already sent or already a friend
- * return -5 for unknown error
- * return -6 if bad checksum in address
- * return -7 if the friend was already there but the nospam was different
+ * return FA_TOOLONG if message length is too long
+ * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
+ * return FAERR_OWNKEY if user's own key
+ * return FAERR_ALREADYSENT if friend request already sent or already a friend
+ * return FAERR_UNKNOWN for unknown error
+ * return FAERR_BADCHECKSUM if bad checksum in address
+ * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different
  * (the nospam for that friend was set to the new one)
- * return -8 if increasing the friend list size fails
+ * return FAERR_NOMEM if increasing the friend list size fails
  */
-int tox_addfriend(void *tox, uint8_t *address, uint8_t *data, uint16_t length);
+int tox_addfriend(Tox *tox, uint8_t *address, uint8_t *data, uint16_t length);
 
 
 /* add a friend without sending a friendrequest.
     returns the friend number if success
     return -1 if failure. */
-int tox_addfriend_norequest(void *tox, uint8_t *client_id);
+int tox_addfriend_norequest(Tox *tox, uint8_t *client_id);
 
 /* return the friend id associated to that client id.
     return -1 if no such friend */
-int tox_getfriend_id(void *tox, uint8_t *client_id);
+int tox_getfriend_id(Tox *tox, uint8_t *client_id);
 
 /* copies the public key associated to that friend id into client_id buffer.
     make sure that client_id is of size CLIENT_ID_SIZE.
     return 0 if success
     return -1 if failure */
-int tox_getclient_id(void *tox, int friend_id, uint8_t *client_id);
+int tox_getclient_id(Tox *tox, int friend_id, uint8_t *client_id);
 
 /* remove a friend */
-int tox_delfriend(void *tox, int friendnumber);
+int tox_delfriend(Tox *tox, int friendnumber);
 
 /* return 4 if friend is online
     return 3 if friend is confirmed
     return 2 if the friend request was sent
     return 1 if the friend was added
     return 0 if there is no friend with that number */
-int tox_friendstatus(void *tox, int friendnumber);
+int tox_friendstatus(Tox *tox, int friendnumber);
 
 /* send a text chat message to an online friend
     returns the message id if packet was successfully put into the send queue
@@ -121,13 +142,13 @@ int tox_friendstatus(void *tox, int friendnumber);
     if one is received.
     m_sendmessage_withid will send a message with the id of your choosing,
     however we can generate an id for you by calling plain m_sendmessage. */
-uint32_t tox_sendmessage(void *tox, int friendnumber, uint8_t *message, uint32_t length);
-uint32_t tox_sendmessage_withid(void *tox, int friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
+uint32_t tox_sendmessage(Tox *tox, int friendnumber, uint8_t *message, uint32_t length);
+uint32_t tox_sendmessage_withid(Tox *tox, int friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
 
 /* send an action to an online friend
     returns 1 if packet was successfully put into the send queue
     return 0 if it was not */
-int tox_sendaction(void *tox, int friendnumber, uint8_t *action, uint32_t length);
+int tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length);
 
 /* Set our nickname
    name must be a string of maximum MAX_NAME_LENGTH length.
@@ -135,7 +156,7 @@ int tox_sendaction(void *tox, int friendnumber, uint8_t *action, uint32_t length
    length is the length of name with the NULL terminator
    return 0 if success
    return -1 if failure */
-int tox_setname(void *tox, uint8_t *name, uint16_t length);
+int tox_setname(Tox *tox, uint8_t *name, uint16_t length);
 
 /*
    Get your nickname.
@@ -144,71 +165,71 @@ int tox_setname(void *tox, uint8_t *name, uint16_t length);
    nlen     The length of the string buffer.
    returns Return the length of the name, 0 on error.
 */
-uint16_t tox_getselfname(void *tox, uint8_t *name, uint16_t nlen);
+uint16_t tox_getselfname(Tox *tox, uint8_t *name, uint16_t nlen);
 
 /* get name of friendnumber
     put it in name
     name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
     return 0 if success
     return -1 if failure */
-int tox_getname(void *tox, int friendnumber, uint8_t *name);
+int tox_getname(Tox *tox, int friendnumber, uint8_t *name);
 
 /* set our user status
     you are responsible for freeing status after
     returns 0 on success, -1 on failure */
-int tox_set_statusmessage(void *tox, uint8_t *status, uint16_t length);
-int tox_set_userstatus(void *tox, USERSTATUS status);
+int tox_set_statusmessage(Tox *tox, uint8_t *status, uint16_t length);
+int tox_set_userstatus(Tox *tox, TOX_USERSTATUS status);
 
 /* return the length of friendnumber's status message,
     including null
     pass it into malloc */
-int tox_get_statusmessage_size(void *tox, int friendnumber);
+int tox_get_statusmessage_size(Tox *tox, int friendnumber);
 
 /* copy friendnumber's status message into buf, truncating if size is over maxlen
     get the size you need to allocate from m_get_statusmessage_size
     The self variant will copy our own status message. */
-int tox_copy_statusmessage(void *tox, int friendnumber, uint8_t *buf, uint32_t maxlen);
-int tox_copy_self_statusmessage(void *tox, uint8_t *buf, uint32_t maxlen);
+int tox_copy_statusmessage(Tox *tox, int friendnumber, uint8_t *buf, uint32_t maxlen);
+int tox_copy_self_statusmessage(Tox *tox, uint8_t *buf, uint32_t maxlen);
 
 /* Return one of USERSTATUS values.
  * Values unknown to your application should be represented as USERSTATUS_NONE.
  * As above, the self variant will return our own USERSTATUS.
  * If friendnumber is invalid, this shall return USERSTATUS_INVALID. */
-TOX_USERSTATUS tox_get_userstatus(void *tox, int friendnumber);
-TOX_USERSTATUS tox_get_selfuserstatus(void *tox);
+TOX_USERSTATUS tox_get_userstatus(Tox *tox, int friendnumber);
+TOX_USERSTATUS tox_get_selfuserstatus(Tox *tox);
 
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).*/
-void tox_set_sends_receipts(void *tox, int friendnumber, int yesno);
+void tox_set_sends_receipts(Tox *tox, int friendnumber, int yesno);
 
 /* set the function that will be executed when a friend request is received.
     function format is function(uint8_t * public_key, uint8_t * data, uint16_t length) */
-void tox_callback_friendrequest(void *tox, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata);
+void tox_callback_friendrequest(Tox *tox, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata);
 
 /* set the function that will be executed when a message from a friend is received.
     function format is: function(int friendnumber, uint8_t * message, uint32_t length) */
-void tox_callback_friendmessage(void *tox, void (*function)(void *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_friendmessage(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
                                 void *userdata);
 
 /* set the function that will be executed when an action from a friend is received.
     function format is: function(int friendnumber, uint8_t * action, uint32_t length) */
-void tox_callback_action(void *tox, void (*function)(void *tox, int, uint8_t *, uint16_t, void *), void *userdata);
+void tox_callback_action(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *), void *userdata);
 
 /* set the callback for name changes
     function(int friendnumber, uint8_t *newname, uint16_t length)
     you are not responsible for freeing newname */
-void tox_callback_namechange(void *tox, void (*function)(void *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_namechange(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
                              void *userdata);
 
 /* set the callback for status message changes
     function(int friendnumber, uint8_t *newstatus, uint16_t length)
     you are not responsible for freeing newstatus */
-void tox_callback_statusmessage(void *tox, void (*function)(void *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_statusmessage(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
                                 void *userdata);
 
 /* set the callback for status type changes
     function(int friendnumber, USERSTATUS kind) */
-void tox_callback_userstatus(void *tox, void (*function)(void *tox, int, USERSTATUS, void *), void *userdata);
+void tox_callback_userstatus(Tox *tox, void (*function)(Tox *tox, int, TOX_USERSTATUS, void *), void *userdata);
 
 /* set the callback for read receipts
     function(int friendnumber, uint32_t receipt)
@@ -217,7 +238,7 @@ void tox_callback_userstatus(void *tox, void (*function)(void *tox, int, USERSTA
     has been received on the other side. since core doesn't
     track ids for you, receipt may not correspond to any message
     in that case, you should discard it. */
-void tox_callback_read_receipt(void *tox, void (*function)(void *tox, int, uint32_t, void *), void *userdata);
+void tox_callback_read_receipt(Tox *tox, void (*function)(Tox *tox, int, uint32_t, void *), void *userdata);
 
 /* set the callback for connection status changes
     function(int friendnumber, uint8_t status)
@@ -227,38 +248,39 @@ void tox_callback_read_receipt(void *tox, void (*function)(void *tox, int, uint3
     note that this callback is not called when adding friends, thus the "after
     being previously online" part. it's assumed that when adding friends,
     their connection status is offline. */
-void tox_callback_connectionstatus(void *tox, void (*function)(void *tox, int, uint8_t, void *), void *userdata);
+void tox_callback_connectionstatus(Tox *tox, void (*function)(Tox *tox, int, uint8_t, void *), void *userdata);
 
 /* Use this function to bootstrap the client
     Sends a get nodes request to the given node with ip port and public_key */
-void tox_bootstrap(void *tox, IP_Port ip_port, uint8_t *public_key);
+void tox_bootstrap(Tox *tox, IP_Port ip_port, uint8_t *public_key);
 
 /* returns 0 if we are not connected to the DHT
     returns 1 if we are */
-int tox_isconnected(void *tox);
+int tox_isconnected(Tox *tox);
 
 /* run this at startup
  *  returns allocated instance of tox on success
  *  returns 0 if there are problems */
-void *tox_new(void);
+Tox *tox_new(void);
 
 /* run this before closing shop
  * free all datastructures */
-void tox_kill(void *tox);
+void tox_kill(Tox *tox);
 
 /* the main loop that needs to be run at least 20 times per second */
-void tox_do(void *tox);
+void tox_do(Tox *tox);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* returns the size of the messenger data (for saving) */
-uint32_t tox_size(void *tox);
+uint32_t tox_size(Tox *tox);
 
 /* save the messenger in data (must be allocated memory of size Messenger_size()) */
-void tox_save(void *tox, uint8_t *data);
+void tox_save(Tox *tox, uint8_t *data);
 
 /* load the messenger from data of size length */
-int tox_load(void *tox, uint8_t *data, uint32_t length);
+int tox_load(Tox *tox, uint8_t *data, uint32_t length);
+
 
 #ifdef __cplusplus
 }
