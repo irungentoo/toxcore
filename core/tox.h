@@ -97,15 +97,15 @@ void tox_getaddress(Tox *tox, uint8_t *address);
  * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length
  * returns the friend number if success
- * return FA_TOOLONG if message length is too long
- * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
- * return FAERR_OWNKEY if user's own key
- * return FAERR_ALREADYSENT if friend request already sent or already a friend
- * return FAERR_UNKNOWN for unknown error
- * return FAERR_BADCHECKSUM if bad checksum in address
- * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different
+ * return TOX_FA_TOOLONG if message length is too long
+ * return TOX_FAERR_NOMESSAGE if no message (message length must be >= 1 byte)
+ * return TOX_FAERR_OWNKEY if user's own key
+ * return TOX_FAERR_ALREADYSENT if friend request already sent or already a friend
+ * return TOX_FAERR_UNKNOWN for unknown error
+ * return TOX_FAERR_BADCHECKSUM if bad checksum in address
+ * return TOX_FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different
  * (the nospam for that friend was set to the new one)
- * return FAERR_NOMEM if increasing the friend list size fails
+ * return TOX_FAERR_NOMEM if increasing the friend list size fails
  */
 int tox_addfriend(Tox *tox, uint8_t *address, uint8_t *data, uint16_t length);
 
@@ -128,11 +128,11 @@ int tox_getclient_id(Tox *tox, int friend_id, uint8_t *client_id);
 /* remove a friend */
 int tox_delfriend(Tox *tox, int friendnumber);
 
-/* return 4 if friend is online
-    return 3 if friend is confirmed
-    return 2 if the friend request was sent
-    return 1 if the friend was added
-    return 0 if there is no friend with that number */
+/*  return TOX_FRIEND_ONLINE if friend is online
+    return TOX_FRIEND_CONFIRMED if friend is confirmed
+    return TOX_FRIEND_REQUESTED if the friend request was sent
+    return TOX_FRIEND_ADDED if the friend was added
+    return TOX_NOFRIEND if there is no friend with that number */
 int tox_friendstatus(Tox *tox, int friendnumber);
 
 /* send a text chat message to an online friend
