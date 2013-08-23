@@ -12,14 +12,27 @@ set(core_sources
 	util.c
 	ping.c)
 
-if(SHARED_TOXCORE)
-	add_library(toxcore SHARED ${core_sources})
-else()
-	add_library(toxcore ${core_sources})
-endif()
+set(core_headers
+	DHT.h
+	network.h
+	Lossless_UDP.h
+	net_crypto.h
+	friend_requests.h
+	LAN_discovery.h
+	Messenger.h
+	util.h
+	ping.h)
+
+add_library(toxcore SHARED ${core_sources})
+add_library(toxcore_static ${core_sources})
+set_target_properties(toxcore_static PROPERTIES OUTPUT_NAME toxcore)
 
 target_link_libraries(toxcore ${LINK_CRYPTO_LIBRARY})
+
+install(TARGETS toxcore toxcore_static DESTINATION lib)
+install(FILES ${core_headers} DESTINATION include)
 
 if(WIN32)
 	target_link_libraries(toxcore ws2_32)
 endif()
+
