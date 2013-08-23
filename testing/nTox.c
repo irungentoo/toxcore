@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
     new_lines(idstring);
     strcpy(line, "");
 
-    IP_Port bootstrap_ip_port;
+    tox_IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
 

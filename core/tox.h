@@ -41,14 +41,14 @@ typedef union {
     uint8_t c[4];
     uint16_t s[2];
     uint32_t i;
-} IP;
+} tox_IP;
 
 typedef struct {
-    IP ip;
+    tox_IP ip;
     uint16_t port;
     /* not used for anything right now */
     uint16_t padding;
-} IP_Port;
+} tox_IP_Port;
 
 /* status definitions */
 enum {
@@ -252,7 +252,7 @@ void tox_callback_connectionstatus(Tox *tox, void (*function)(Tox *tox, int, uin
 
 /* Use this function to bootstrap the client
     Sends a get nodes request to the given node with ip port and public_key */
-void tox_bootstrap(Tox *tox, IP_Port ip_port, uint8_t *public_key);
+void tox_bootstrap(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
 
 /* returns 0 if we are not connected to the DHT
     returns 1 if we are */
