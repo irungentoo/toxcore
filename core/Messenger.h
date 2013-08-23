@@ -48,23 +48,28 @@ extern "C" {
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 63
 
+
 /* status definitions */
-#define FRIEND_ONLINE 4
-#define FRIEND_CONFIRMED 3
-#define FRIEND_REQUESTED 2
-#define FRIEND_ADDED 1
-#define NOFRIEND 0
+enum {
+    NOFRIEND,
+    FRIEND_ADDED,
+    FRIEND_REQUESTED,
+    FRIEND_CONFIRMED,
+    FRIEND_ONLINE,
+};
 
 /* errors for m_addfriend
  *  FAERR - Friend Add Error */
-#define FAERR_TOOLONG -1
-#define FAERR_NOMESSAGE -2
-#define FAERR_OWNKEY -3
-#define FAERR_ALREADYSENT -4
-#define FAERR_UNKNOWN -5
-#define FAERR_BADCHECKSUM -6
-#define FAERR_SETNEWNOSPAM -7
-#define FAERR_NOMEM -8
+enum {
+    FAERR_TOOLONG = -1,
+    FAERR_NOMESSAGE = -2,
+    FAERR_OWNKEY = -3,
+    FAERR_ALREADYSENT = -4,
+    FAERR_UNKNOWN = -5,
+    FAERR_BADCHECKSUM = -6,
+    FAERR_SETNEWNOSPAM = -7,
+    FAERR_NOMEM = -8
+};
 
 /* don't assume MAX_STATUSMESSAGE_LENGTH will stay at 128, it may be increased
     to an absurdly large number later */

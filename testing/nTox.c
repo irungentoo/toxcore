@@ -43,22 +43,22 @@ char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
 int x, y;
 
 typedef struct {
-    uint8_t id[CLIENT_ID_SIZE];
+    uint8_t id[TOX_CLIENT_ID_SIZE];
     uint8_t accepted;
 } Friend_request;
 
 Friend_request pending_requests[256];
 uint8_t num_requests = 0;
 
-void get_id(Messenger *m, char *data)
+void get_id(Tox *m, char *data)
 {
     sprintf(data, "[i] ID: ");
     int offset = strlen(data);
     int i = 0;
-    uint8_t address[FRIEND_ADDRESS_SIZE];
-    getaddress(m, address);
+    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
+    tox_getaddress(m, address);
 
-    for (; i < FRIEND_ADDRESS_SIZE; i++) {
+    for (; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
         sprintf(data + 2 * i + offset, "%02X ", address[i]);
     }
 }
@@ -75,15 +75,15 @@ void new_lines(char *line)
 }
 
 
-void print_friendlist(Messenger *m)
+void print_friendlist(Tox *m)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH];
     int i = 0;
     new_lines("[i] Friend List:");
 
-    while (getname(m, i, (uint8_t *)name) != -1) {
+    while (tox_getname(m, i, (uint8_t *)name) != -1) {
         /* account for the longest name and the longest "base" string */
-        char fstring[MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
+        char fstring[TOX_MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
 
         if (strlen(name) <= 0) {
             sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
@@ -99,14 +99,14 @@ void print_friendlist(Messenger *m)
         new_lines("\tno friends! D:");
 }
 
-char *format_message(Messenger *m, char *message, int friendnum)
+char *format_message(Tox *m, char *message, int friendnum)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH];
 
     if (friendnum != -1) {
-        getname(m, friendnum, (uint8_t *)name);
+        tox_getname(m, friendnum, (uint8_t *)name);
     } else {
-        getself_name(m, (uint8_t *)name, sizeof(name));
+        tox_getselfname(m, (uint8_t *)name, sizeof(name));
     }
 
     char *msg = malloc(100 + strlen(message) + strlen(name) + 1);
@@ -129,7 +129,7 @@ char *format_message(Messenger *m, char *message, int friendnum)
     return msg;
 }
 
-void line_eval(Messenger *m, char *line)
+void line_eval(Tox *m, char *line)
 {
     if (line[0] == '/') {
         char inpt_command = line[1];
@@ -146,28 +146,28 @@ void line_eval(Messenger *m, char *line)
                 temp_id[i] = line[i + prompt_offset];
 
             unsigned char *bin_string = hex_string_to_bin(temp_id);
-            int num = m_addfriend(m, bin_string, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+            int num = tox_addfriend(m, bin_string, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
             free(bin_string);
             char numstring[100];
 
             switch (num) {
-                case FAERR_TOOLONG:
+                case TOX_FAERR_TOOLONG:
                     sprintf(numstring, "[i] Message is too long.");
                     break;
 
-                case FAERR_NOMESSAGE:
+                case TOX_FAERR_NOMESSAGE:
                     sprintf(numstring, "[i] Please add a message to your request.");
                     break;
 
-                case FAERR_OWNKEY:
+                case TOX_FAERR_OWNKEY:
                     sprintf(numstring, "[i] That appears to be your own ID.");
                     break;
 
-                case FAERR_ALREADYSENT:
+                case TOX_FAERR_ALREADYSENT:
                     sprintf(numstring, "[i] Friend request already sent.");
                     break;
 
-                case FAERR_UNKNOWN:
+                case TOX_FAERR_UNKNOWN:
                     sprintf(numstring, "[i] Undefined error when adding friend.");
                     break;
 
@@ -179,7 +179,7 @@ void line_eval(Messenger *m, char *line)
             new_lines(numstring);
             do_refresh();
         } else if (inpt_command == 'd') {
-            doMessenger(m);
+            tox_do(m);
         } else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             size_t len = strlen(line);
 
@@ -205,13 +205,13 @@ void line_eval(Messenger *m, char *line)
 
             int num = atoi(numstring);
 
-            if (m_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) != 1) {
+            if (tox_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) != 1) {
                 new_lines("[i] could not send message");
             } else {
                 new_lines(format_message(m, message, -1));
             }
         } else if (inpt_command == 'n') {
-            uint8_t name[MAX_NAME_LENGTH];
+            uint8_t name[TOX_MAX_NAME_LENGTH];
             int i = 0;
             size_t len = strlen(line);
 
@@ -222,14 +222,14 @@ void line_eval(Messenger *m, char *line)
             }
 
             name[i - 3] = 0;
-            setname(m, name, i - 2);
+            tox_setname(m, name, i - 2);
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char *)name);
             new_lines(numstring);
         } else if (inpt_command == 'l') {
             print_friendlist(m);
         } else if (inpt_command == 's') {
-            uint8_t status[MAX_STATUSMESSAGE_LENGTH];
+            uint8_t status[TOX_MAX_STATUSMESSAGE_LENGTH];
             int i = 0;
             size_t len = strlen(line);
 
@@ -240,7 +240,7 @@ void line_eval(Messenger *m, char *line)
             }
 
             status[i - 3] = 0;
-            m_set_statusmessage(m, status, strlen((char *)status) + 1);
+            tox_set_statusmessage(m, status, strlen((char *)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char *)status);
             new_lines(numstring);
@@ -252,7 +252,7 @@ void line_eval(Messenger *m, char *line)
                 sprintf(numchar, "[i] you either didn't receive that request or you already accepted it");
                 new_lines(numchar);
             } else {
-                int num = m_addfriend_norequest(m, pending_requests[numf].id);
+                int num = tox_addfriend_norequest(m, pending_requests[numf].id);
 
                 if (num != -1) {
                     pending_requests[numf].accepted = 1;
@@ -364,40 +364,40 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *us
     char numchar[100];
     sprintf(numchar, "[i] accept request with /a %u", num_requests);
     new_lines(numchar);
-    memcpy(pending_requests[num_requests].id, public_key, CLIENT_ID_SIZE);
+    memcpy(pending_requests[num_requests].id, public_key, TOX_CLIENT_ID_SIZE);
     pending_requests[num_requests].accepted = 0;
     ++num_requests;
     do_refresh();
 }
 
-void print_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
     new_lines(format_message(m, (char *)string, friendnumber));
 }
 
-void print_nickchange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH];
 
-    if (getname(m, friendnumber, (uint8_t *)name) != -1) {
+    if (tox_getname(m, friendnumber, (uint8_t *)name) != -1) {
         char msg[100 + length];
         sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
         new_lines(msg);
     }
 }
 
-void print_statuschange(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_statuschange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    char name[MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH];
 
-    if (getname(m, friendnumber, (uint8_t *)name) != -1) {
+    if (tox_getname(m, friendnumber, (uint8_t *)name) != -1) {
         char msg[100 + length + strlen(name) + 1];
         sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
         new_lines(msg);
     }
 }
 
-void load_key(Messenger *m, char *path)
+void load_key(Tox *m, char *path)
 {
     FILE *data_file = fopen(path, "r");
     int size = 0;
@@ -415,13 +415,13 @@ void load_key(Messenger *m, char *path)
             goto FILE_ERROR;
         }
 
-        Messenger_load(m, data, size);
+        tox_load(m, data, size);
 
     } else {
         //else save new keys
-        int size = Messenger_size(m);
+        int size = tox_size(m);
         uint8_t data[size];
-        Messenger_save(m, data);
+        tox_save(m, data);
         data_file = fopen(path, "w");
 
         if (!data_file) {
@@ -463,7 +463,7 @@ int main(int argc, char *argv[])
     int i = 0;
     char *filename = "data";
     char idstring[200] = {0};
-    Messenger *m;
+    Tox *m;
 
     if (argc < 4) {
         printf("[!] Usage: %s [IP] [port] [public_key] <keyfile>\n", argv[0]);
@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    m = initMessenger();
+    m = tox_new();
 
     if ( !m ) {
         fputs("Failed to allocate Messenger datastructure", stderr);
@@ -496,10 +496,10 @@ int main(int argc, char *argv[])
 
     load_key(m, filename);
 
-    m_callback_friendrequest(m, print_request, NULL);
-    m_callback_friendmessage(m, print_message, NULL);
-    m_callback_namechange(m, print_nickchange, NULL);
-    m_callback_statusmessage(m, print_statuschange, NULL);
+    tox_callback_friendrequest(m, print_request, NULL);
+    tox_callback_friendmessage(m, print_message, NULL);
+    tox_callback_namechange(m, print_nickchange, NULL);
+    tox_callback_statusmessage(m, print_statuschange, NULL);
 
     initscr();
     noecho();
@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
     new_lines(idstring);
     strcpy(line, "");
 
-    IP_Port bootstrap_ip_port;
+    tox_IP_Port bootstrap_ip_port;
     bootstrap_ip_port.port = htons(atoi(argv[2]));
     int resolved_address = resolve_addr(argv[1]);
 
@@ -521,17 +521,17 @@ int main(int argc, char *argv[])
         exit(1);
 
     unsigned char *binary_string = hex_string_to_bin(argv[3]);
-    DHT_bootstrap(m->dht, bootstrap_ip_port, binary_string);
+    tox_bootstrap(m, bootstrap_ip_port, binary_string);
     free(binary_string);
     nodelay(stdscr, TRUE);
 
     while (true) {
-        if (on == 0 && DHT_isconnected(m->dht)) {
+        if (on == 0 && tox_isconnected(m)) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
         }
 
-        doMessenger(m);
+        tox_do(m);
         c_sleep(1);
         do_refresh();
 
@@ -552,7 +552,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    cleanupMessenger(m);
+    tox_kill(m);
     endwin();
     return 0;
 }

@@ -72,6 +72,47 @@ int b16_to_key(char b16_string[], uint8_t *bs_pubkey)
     return 0;
 }
 
+/*
+  resolve_addr():
+    address should represent IPv4 or a hostname with A record
+
+    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+    returns 0 on failure
+
+    TODO: Fix ipv6 support
+*/
+
+uint32_t resolve_addr(const char *address)
+{
+    struct addrinfo *server = NULL;
+    struct addrinfo  hints;
+    int              rc;
+    uint32_t         addr;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_INET;    // IPv4 only right now.
+    hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
+
+    rc = getaddrinfo(address, "echo", &hints, &server);
+
+    // Lookup failed.
+    if (rc != 0) {
+        return 0;
+    }
+
+    // IPv4 records only..
+    if (server->ai_family != AF_INET) {
+        freeaddrinfo(server);
+        return 0;
+    }
+
+
+    addr = ((struct sockaddr_in *)server->ai_addr)->sin_addr.s_addr;
+
+    freeaddrinfo(server);
+    return addr;
+}
+
 /* This unction connects to all specified servers
 and connect to them.
 returns 1 if the connection to the DHT is up

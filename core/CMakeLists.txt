@@ -10,7 +10,8 @@ set(core_sources
 	LAN_discovery.c
 	Messenger.c
 	util.c
-	ping.c)
+	ping.c
+        tox.c)
 
 set(core_headers
 	DHT.h
