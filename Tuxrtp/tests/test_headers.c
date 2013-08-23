@@ -30,9 +30,9 @@
 #include <string.h>
 #include <utime.h>
 #include <assert.h>
-#include "../rtp_error.h"
+#include "../rtp_error_id.h"
 
-
+/*
 int print_help()
 {
     puts (
@@ -41,7 +41,7 @@ int print_help()
     );
     return FAILURE;
 }
-
+*/
 void print_session_stats ( rtp_session_t* _m_session )
 {
     printf
@@ -124,7 +124,11 @@ void print_ext_header_info(rtp_ext_header_t* _ext_header)
     );
 }
 
-int ___main ( int argc, char* argv[] )
+int
+___main
+/*main*/
+( int argc, char* argv[] )
+
 {
     arg_t* _list = parse_args ( argc, argv );
 
@@ -154,6 +158,7 @@ int ___main ( int argc, char* argv[] )
         _m_session = rtp_init_session ( -1 );
         status = init_networking ( LOCAL_IP.ip, RTP_PORT_LISTEN );
 
+        t_perror(13);
 
         if ( status < 0 ) {
             _m_session->_last_error = strerror ( errno );

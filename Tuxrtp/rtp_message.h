@@ -68,8 +68,8 @@ typedef struct rtp_msg_s {
 } rtp_msg_t;
 
 /* Extracts the header from the payload starting at _from */
-rtp_header_t*       rtp_extract_header      ( const data_t* _payload );
-rtp_ext_header_t*   rtp_extract_ext_header  ( const data_t* _payload );
+rtp_header_t*       rtp_extract_header      ( const data_t* _payload, size_t _bytes );
+rtp_ext_header_t*   rtp_extract_ext_header  ( const data_t* _payload, size_t _bytes );
 
 
 data_t*  rtp_add_header                    ( rtp_header_t* _header, const data_t* _payload );

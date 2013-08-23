@@ -24,7 +24,10 @@ int print_help( const char* name )
     return FAILURE;
 }
 
-int main ( int argc, char* argv[] )
+int
+/* _no__main */
+main
+( int argc, char* argv[] )
 {
     int status;
     IP_Port     Ip_port;

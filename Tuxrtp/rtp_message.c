@@ -27,28 +27,58 @@
 #include "rtp_allocator.h"
 #include "rtp_impl.h"
 
+#ifdef _USE_ERRORS
+#include "rtp_error_id.h"
+#endif /* _USE_ERRORS */
+
 #include <assert.h>
 
 /* Some defines */
-#define _MIN_HEADER_LENGHT 11
+#define _MIN_HEADER_LENGHT 12
 
 /* End of defines */
 
-rtp_header_t* rtp_extract_header ( const data_t* _payload )
+rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
 {
+    if ( !_payload ){
+#ifdef _USE_ERRORS
+        t_perror(RTP_ERROR_PAYLOAD_NULL);
+#endif /* _USE_ERRORS */
+        return NULL;
+    }
+
     data_t* _it = _payload;
 
     ALLOCATOR_VAR ( _retu, rtp_header_t, 1 )
 
     _retu->_flags = *_it; ++_it;
 
-    /* Added a check for the size of the header little sooner so
+    /*
+     * Added a check for the size of the header little sooner so
      * I don't need to parse the other stuff if it's bad
      */
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _retu );
+    uint32_t _lenght = 8 + ( cc * 4 );
 
-    _retu->_length = 8 + ( cc * 4 );
+    if ( _bytes < _lenght ) {
+#ifdef _USE_ERRORS
+        t_perror(RTP_ERROR_PAYLOAD_INVALID);
+#endif /* _USE_ERRORS */
+        return NULL;
+    }
+
+    if ( cc > 0 ) {
+        _retu->_csrc = malloc ( sizeof ( uint32_t ) * cc );
+    } else { /* But this should not happen ever */
+#ifdef _USE_ERRORS
+        t_perror(RTP_ERROR_HEADER_PARSING);
+#endif /* _USE_ERRORS */
+        return NULL;
+    }
+
+
     _retu->_marker_payload_t = *_it; ++_it;
+    _retu->_length = _lenght;
     _retu->_sequence_number = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 );
 
     _it += 2;
@@ -58,12 +88,6 @@ rtp_header_t* rtp_extract_header ( const data_t* _payload )
                    ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
                    ( ( uint32_t ) * ( _it + 3 ) ) ;
 
-    if ( cc > 0 ) {
-        _retu->_csrc = malloc ( sizeof ( uint32_t ) * cc );
-    } else { /* But this should not happen ever */
-        _retu->_csrc = NULL;
-        return _retu;
-    }
 
     size_t x;
     for ( x = 0; x < cc; x++ ) {
@@ -77,19 +101,37 @@ rtp_header_t* rtp_extract_header ( const data_t* _payload )
     return _retu;
 }
 
-rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload )
+rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload, size_t _bytes )
 {
+    if ( !_payload ){
+#ifdef _USE_ERRORS
+        t_perror(RTP_ERROR_PAYLOAD_NULL);
+#endif /* _USE_ERRORS */
+        return NULL;
+    }
+
+
+
     data_t* _it = _payload;
 
     ALLOCATOR_VAR ( _retu, rtp_ext_header_t, 1 )
 
-    _retu->_ext_len  = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
+    uint16_t _ext_len = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
+
+    if ( _bytes < _ext_len ){
+#ifdef _USE_ERRORS
+        t_perror(RTP_ERROR_PAYLOAD_INVALID);
+#endif /* _USE_ERRORS */
+        return NULL;
+    }
+
+    _retu->_ext_len  = _ext_len;
     _retu->_ext_type = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it -= 2;
 
-    ALLOCATOR ( _retu->_hd_ext, uint32_t, _retu->_ext_len )
+    ALLOCATOR ( _retu->_hd_ext, uint32_t, _ext_len )
 
     size_t i;
-    for ( i = 0; i < _retu->_ext_len; i++ ) {
+    for ( i = 0; i < _ext_len; i++ ) {
         _it += 4;
         _retu->_hd_ext[i] = ( ( uint32_t ) * _it       << 24 ) |
                             ( ( uint32_t ) * ( _it + 1 ) << 16 ) |

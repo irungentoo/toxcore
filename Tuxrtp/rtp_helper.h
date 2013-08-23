@@ -34,6 +34,8 @@
 #define SUCCESS 0
 #define FAILURE -1
 
+#define _USE_ERRORS
+
 /* Our data type */
 typedef uint8_t data_t;
 

@@ -36,10 +36,11 @@
 
 /* End of defines */
 
-
 data_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
 
-
+#ifdef _USE_ERRORS
+#include "rtp_error_id.h"
+#endif /* _USE_ERRORS */
 
 static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
 {
@@ -60,6 +61,10 @@ static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
 
 rtp_session_t* rtp_init_session ( int max_users )
 {
+#ifdef _USE_ERRORS
+    REGISTER_RTP_ERRORS
+#endif /* _USE_ERRORS */
+
     rtp_session_t* _retu;
     ALLOCATOR_S ( _retu, rtp_session_t )
 
@@ -240,12 +245,17 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
     for ( _it = _session->_dest_list; _it != NULL; _it = _it->next ) {
 
         if ( !_msg  || _msg->_data == NULL ) {
-            _session->_last_error = "Tried to send empty message";
+#ifdef _USE_ERRORS
+            t_perror(RTP_ERROR_EMPTY_MESSAGE);
+#endif /* _USE_ERRORS */
         } else {
             _last = sendpacket ( _it->_dest, _msg->_data, _msg->_length );
             /*_msg->_data = NULL;*/
 
             if ( _last < 0 ) {
+#ifdef _USE_ERRORS
+                t_perror(RTP_ERROR_STD_SEND_FAILURE);
+#endif /* _USE_ERRORS */
                 _session->_last_error = strerror ( errno );
             } else {
                 /* Set sequ number */
@@ -340,7 +350,7 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
 
-    _retu->_header = rtp_extract_header ( _data ); /* It allocates memory and all */
+    _retu->_header = rtp_extract_header ( _data, _length ); /* It allocates memory and all */
     _retu->_length = _length - _retu->_header->_length;
 
     uint16_t _from_pos = _retu->_header->_length;
@@ -351,8 +361,9 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_
      * You may for example play previous packet, show black screen etc.
      */
 
-    if ( _retu->_header->_sequence_number < _session->_last_sequence_number ) {
-        if ( _retu->_header->_timestamp < _session->_current_timestamp ) {
+    if ( _retu->_header->_sequence_number < _session->_last_sequence_number &&
+         _retu->_header->_timestamp < _session->_current_timestamp ) {
+
             /* Just to check if the sequence number reset */
 
             _session->_packet_loss++;
@@ -360,15 +371,19 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_
             free ( _retu->_header );
             free ( _retu );
 
+#ifdef _USE_ERRORS
+            t_perror(RTP_ERROR_PACKET_DROPED);
+#endif /* _USE_ERRORS */
+
             return NULL; /* Drop the packet. You can check if the packet dropped by checking _packet_loss increment. */
-        }
+
     }
 
     _session->_last_sequence_number = _retu->_header->_sequence_number;
     _session->_current_timestamp = _retu->_header->_timestamp;
 
     if ( rtp_header_get_flag_extension ( _retu->_header ) ) {
-        _retu->_ext_header = rtp_extract_ext_header ( _data + _from_pos );
+        _retu->_ext_header = rtp_extract_ext_header ( _data + _from_pos, _length );
         _retu->_length -= ( 4 + _retu->_ext_header->_ext_len * 4 );
         _from_pos += ( 4 + _retu->_ext_header->_ext_len * 4 );
     } else {
@@ -390,7 +405,9 @@ int rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint1
         _session->_extension = 1;
         _session->_ext_header->_ext_len = 0;
         ALLOCATOR_S ( _session->_ext_header->_hd_ext, uint32_t )
-    } else ADD_ALLOCATE ( _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len )
+    } else {
+        ADD_ALLOCATE ( _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len )
+    }
 
         _session->_ext_header->_ext_len++; /* Just add one */
     _session->_ext_header->_ext_type = RTP_EXT_TYPE_RESOLUTION;
@@ -403,11 +420,19 @@ int rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint1
 
 int rtp_remove_resolution_marking ( rtp_session_t* _session )
 {
-    if ( _session->_extension == 0 || ! ( _session->_ext_header ) )
+    if ( _session->_extension == 0 || ! ( _session->_ext_header ) ){
+#ifdef _USE_ERRORS
+        t_perror(RTP_ERROR_PAYLOAD_INVALID);
+#endif /* _USE_ERRORS */
         return FAILURE;
+    }
 
-    if ( _session->_ext_header->_ext_type != RTP_EXT_TYPE_RESOLUTION )
+    if ( _session->_ext_header->_ext_type != RTP_EXT_TYPE_RESOLUTION ){
+#ifdef _USE_ERRORS
+        t_perror(RTP_ERROR_INVALID_EXTERNAL_HEADER);
+#endif /* _USE_ERRORS */
         return FAILURE;
+    }
 
     DEALLOCATOR ( _session->_ext_header->_hd_ext )
     DEALLOCATOR ( _session->_ext_header )
