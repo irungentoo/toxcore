@@ -34,9 +34,9 @@
 
 /* End of defines */
 
-rtp_header_t* rtp_extract_header ( const uint8_t* _payload )
+rtp_header_t* rtp_extract_header ( const data_t* _payload )
 {
-    uint8_t* _it = _payload;
+    data_t* _it = _payload;
 
     ALLOCATOR_VAR ( _retu, rtp_header_t, 1 )
 
@@ -77,9 +77,9 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload )
     return _retu;
 }
 
-rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload )
+rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload )
 {
-    uint8_t* _it = _payload;
+    data_t* _it = _payload;
 
     ALLOCATOR_VAR ( _retu, rtp_ext_header_t, 1 )
 
@@ -100,11 +100,11 @@ rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload )
     return _retu;
 }
 
-uint8_t* rtp_add_header ( rtp_header_t* _header, const uint8_t* _payload )
+data_t* rtp_add_header ( rtp_header_t* _header, const data_t* _payload )
 {
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _header );
 
-    uint8_t* _it = _payload;
+    data_t* _it = _payload;
 
     *_it = _header->_flags; ++_it;
     *_it = _header->_marker_payload_t; ++_it;
@@ -129,9 +129,9 @@ uint8_t* rtp_add_header ( rtp_header_t* _header, const uint8_t* _payload )
     return _it;
 }
 
-uint8_t* rtp_add_extention_header ( rtp_ext_header_t* _header, const uint8_t* _payload )
+data_t* rtp_add_extention_header ( rtp_ext_header_t* _header, const data_t* _payload )
 {
-    uint8_t* _it = _payload;
+    data_t* _it = _payload;
 
     *_it = ( _header->_ext_len >> 8 ); _it++;
     *_it = ( _header->_ext_len ); _it++;
@@ -154,19 +154,19 @@ uint8_t* rtp_add_extention_header ( rtp_ext_header_t* _header, const uint8_t* _p
     return _it;
 }
 
-__inline size_t rtp_header_get_size ( const rtp_header_t* _header )
+size_t rtp_header_get_size ( const rtp_header_t* _header )
 {
     return ( 8 + ( rtp_header_get_flag_CSRC_count ( _header ) * 4 ) );
 }
 /* Setting flags */
 
-__inline void rtp_header_add_flag_version ( rtp_header_t* _header, int value )
+void rtp_header_add_flag_version ( rtp_header_t* _header, uint32_t value )
 {
     ( _header->_flags ) &= 0x3F;
     ( _header->_flags ) |= ( ( ( value ) << 6 ) & 0xC0 );
 }
 
-__inline void rtp_header_add_flag_padding ( rtp_header_t* _header, int value )
+void rtp_header_add_flag_padding ( rtp_header_t* _header, uint32_t value )
 {
     if ( value > 0 ) {
         value = 1; /* It can only be 1 */
@@ -176,7 +176,7 @@ __inline void rtp_header_add_flag_padding ( rtp_header_t* _header, int value )
     ( _header->_flags ) |= ( ( ( value ) << 5 ) & 0x20 );
 }
 
-__inline void rtp_header_add_flag_extension ( rtp_header_t* _header, int value )
+void rtp_header_add_flag_extension ( rtp_header_t* _header, uint32_t value )
 {
     if ( value > 0 ) {
         value = 1; /* It can only be 1 */
@@ -186,13 +186,13 @@ __inline void rtp_header_add_flag_extension ( rtp_header_t* _header, int value )
     ( _header->_flags ) |= ( ( ( value ) << 4 ) & 0x10 );
 }
 
-__inline void rtp_header_add_flag_CSRC_count ( rtp_header_t* _header, int value )
+void rtp_header_add_flag_CSRC_count ( rtp_header_t* _header, uint32_t value )
 {
     ( _header->_flags ) &= 0xF0;
     ( _header->_flags ) |= ( ( value ) & 0x0F );
 }
 
-__inline void rtp_header_add_setting_marker ( rtp_header_t* _header, int value )
+void rtp_header_add_setting_marker ( rtp_header_t* _header, uint32_t value )
 {
     if ( value > 1 )
         value = 1;
@@ -201,7 +201,7 @@ __inline void rtp_header_add_setting_marker ( rtp_header_t* _header, int value )
     ( _header->_marker_payload_t ) |= ( ( ( value ) << 7 ) /*& 0x80 */ );
 }
 
-__inline void rtp_header_add_setting_payload ( rtp_header_t* _header, int value )
+void rtp_header_add_setting_payload ( rtp_header_t* _header, uint32_t value )
 {
     if ( value > 127 )
         value = 127; /* Well set to maximum */
@@ -211,30 +211,30 @@ __inline void rtp_header_add_setting_payload ( rtp_header_t* _header, int value 
 }
 
 /* Getting values from flags */
-__inline uint8_t rtp_header_get_flag_version ( const rtp_header_t* _header )
+uint8_t rtp_header_get_flag_version ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0xd0 ) >> 6;
 }
 
-__inline uint8_t rtp_header_get_flag_padding ( const rtp_header_t* _header )
+uint8_t rtp_header_get_flag_padding ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0x20 ) >> 5;
 }
 
-__inline uint8_t rtp_header_get_flag_extension ( const rtp_header_t* _header )
+uint8_t rtp_header_get_flag_extension ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0x10 ) >> 4;
 }
 
-__inline uint8_t rtp_header_get_flag_CSRC_count ( const rtp_header_t* _header )
+uint8_t rtp_header_get_flag_CSRC_count ( const rtp_header_t* _header )
 {
     return ( _header->_flags & 0x0f );
 }
-__inline uint8_t rtp_header_get_setting_marker ( const rtp_header_t* _header )
+uint8_t rtp_header_get_setting_marker ( const rtp_header_t* _header )
 {
     return ( _header->_marker_payload_t ) >> 7;
 }
-__inline uint8_t rtp_header_get_setting_payload_type ( const rtp_header_t* _header )
+uint8_t rtp_header_get_setting_payload_type ( const rtp_header_t* _header )
 {/*
     uint8_t _retu;
 

@@ -1,4 +1,4 @@
-/*   Allocator.h
+/*   rtp_allocator.h
  *
  *   It contains some allocation macros.  !Red!
  *

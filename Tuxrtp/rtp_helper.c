@@ -44,7 +44,7 @@ int set_ip_port ( const char* _ip, unsigned short _port, void* _dest )
     return SUCCESS;
 }
 
-__inline uint32_t get_random_number ( uint32_t _max )
+uint32_t get_random_number ( uint32_t _max )
 {
     if ( _seed < 0 ) {
         srand ( _time );
@@ -58,15 +58,31 @@ __inline uint32_t get_random_number ( uint32_t _max )
     }
 }
 
-__inline void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
+void t_memcpy ( data_t* _dest, const data_t* _source, size_t _size )
 {
     /*
-     * Using countdown do zero method
+     * Using countdown to zero method
      * It's quite much faster than for(_it = 0; _it < _size; _it++);
      */
     size_t _it = _size;
+
     do{
         _it--;
         _dest[_it] = _source[_it];
     } while ( _it );
+}
+
+data_t* t_memset ( data_t* _dest, int _valu, size_t _size )
+{
+    /*
+     * Again using countdown to zero method
+     */
+    size_t _it = _size;
+
+    do{
+        _it--;
+        _dest[_it] = _valu;
+    } while ( _it );
+
+    return _dest;
 }

@@ -37,11 +37,11 @@
 /* End of defines */
 
 
-uint8_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
+data_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
 
 
 
-__inline static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
+static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
 {
     8000, 8000, 8000, 8000, 8000, 8000, 16000, 8000, 8000, 8000,    /*    0-9    */
     44100, 44100, 0, 0, 90000, 8000, 11025, 22050, 0, 0,            /*   10-19   */
@@ -113,17 +113,17 @@ int rtp_terminate_session ( rtp_session_t* _session )
     if ( _session->_dest_list )
         DEALLOCATOR_LIST_S ( _session->_dest_list, rtp_dest_list_t )
 
-        if ( _session->_ext_header )
-            DEALLOCATOR ( _session->_ext_header )
+    if ( _session->_ext_header )
+        DEALLOCATOR ( _session->_ext_header )
 
-            if ( _session->_csrc )
-                DEALLOCATOR ( _session->_csrc )
+    if ( _session->_csrc )
+        DEALLOCATOR ( _session->_csrc )
 
 
                 /* And finally free session */
-                DEALLOCATOR ( _session )
+    DEALLOCATOR ( _session )
 
-                return SUCCESS;
+    return SUCCESS;
 }
 
 int rtp_handlepacket ( uint8_t* packet, uint32_t length, IP_Port source )
@@ -135,7 +135,7 @@ int rtp_handlepacket ( uint8_t* packet, uint32_t length, IP_Port source )
     return FAILURE;
 }
 
-__inline uint16_t rtp_get_resolution_marking_height ( rtp_ext_header_t* _header )
+uint16_t rtp_get_resolution_marking_height ( rtp_ext_header_t* _header )
 {
     if ( _header->_ext_type == RTP_EXT_TYPE_RESOLUTION )
         return _header->_hd_ext[_header->_ext_len - 1];
@@ -143,7 +143,7 @@ __inline uint16_t rtp_get_resolution_marking_height ( rtp_ext_header_t* _header 
         return 0;
 }
 
-__inline uint16_t rtp_get_resolution_marking_width ( rtp_ext_header_t* _header )
+uint16_t rtp_get_resolution_marking_width ( rtp_ext_header_t* _header )
 {
     if ( _header->_ext_type == RTP_EXT_TYPE_RESOLUTION )
         return ( _header->_hd_ext[_header->_ext_len - 1] >> 16 );
@@ -151,7 +151,7 @@ __inline uint16_t rtp_get_resolution_marking_width ( rtp_ext_header_t* _header )
         return 0;
 }
 
-__inline void rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _message )
+void rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _message )
 {
     free ( _message->_data );
 
@@ -200,11 +200,11 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     return _retu;
 }
 
-__inline void rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value )
+void rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value )
 {
     _session->_payload_type = _payload_value;
 }
-__inline uint32_t rtp_get_payload_type ( rtp_session_t* _session )
+uint32_t rtp_get_payload_type ( rtp_session_t* _session )
 {
     return _payload_table[_session->_payload_type];
 }
@@ -219,7 +219,7 @@ int rtp_add_receiver ( rtp_session_t* _session, IP_Port* _dest )
 
     _new_user->_dest = *_dest;
 
-    if ( _session->_last_user == NULL ){ /* New member */
+    if ( _session->_last_user == NULL ) { /* New member */
         _session->_dest_list = _session->_last_user = _new_user;
 
     } else { /* Append */
@@ -255,7 +255,6 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
                     _session->_sequence_number++;
                 }
 
-
                 _session->_packets_sent ++;
                 _total += _last;
             }
@@ -286,9 +285,9 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
     return rtp_msg_parse ( _session, LAST_SOCKET_DATA, _bytes );
 }
 
-rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
+rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const data_t* _data, uint32_t _length )
 {
-    uint8_t* _from_pos;
+    data_t* _from_pos;
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
 
@@ -336,7 +335,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
     return _retu;
 }
 
-rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
+rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_t _length )
 {
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
@@ -377,7 +376,7 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
     }
 
     /* Get the payload */
-    _retu->_data = malloc ( sizeof ( uint8_t ) * _retu->_length );
+    _retu->_data = malloc ( sizeof ( data_t ) * _retu->_length );
     t_memcpy ( _retu->_data, _data + _from_pos, _length - _from_pos );
 
     return _retu;

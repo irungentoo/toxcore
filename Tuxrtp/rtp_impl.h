@@ -61,7 +61,6 @@ const uint8_t RTP_EXT_MARK_SOMETHING = 2;
 typedef struct rtp_dest_list_s {
     IP_Port                 _dest;
     struct rtp_dest_list_s* next;
-    /* int con_id; */
 
 } rtp_dest_list_t;
 
@@ -122,11 +121,11 @@ void            rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _msg);
 
 /* Functions handling receiving */
 rtp_msg_t*      rtp_recv_msg ( rtp_session_t* _session );
-rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_t _length );
 
 /* Functions handling sending */
 int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg );
-rtp_msg_t*      rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+rtp_msg_t*      rtp_msg_new ( rtp_session_t* _session, const data_t* _data, uint32_t _length );
 
 
 /* Convenient functions for creating a header */
