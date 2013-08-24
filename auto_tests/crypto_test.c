@@ -232,7 +232,7 @@ START_TEST(test_large_data)
     c1len = encrypt_data_fast(k, n, m1, sizeof(m1), c1);
     c2len = encrypt_data_fast(k, n, m2, sizeof(m2), c2);
 
-    ck_assert_msg(c1len == sizeof(m1) + ENCRYPTION_PADDING, "Could not encrypt max size");
+    ck_assert_msg(c1len == sizeof(m1) + ENCRYPTION_PADDING, "could not encrypt max size");
     ck_assert_msg(c2len == -1, "incorrectly succeeded encrypting massive size");
 
     m1plen = decrypt_data_fast(k, n, c1, c1len, m1prime);
