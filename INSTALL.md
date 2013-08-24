@@ -68,10 +68,14 @@ Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
   - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
-  - --BUILD_NTOX="yes"
-  - --BUILD_TESTS="yes"
-<a name="osx" />
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
+  <a name="osx" />
 ###OS X:
 
 You need the latest XCode with the Developer Tools (Preferences -> Downloads -> Command Line Tools).
@@ -99,7 +103,13 @@ Advance configure options:
   - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
   - --BUILD_NTOX="yes"
   - --BUILD_TESTS="yes"
-
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
 <a name="non-homebrew" />
 ####Non-homebrew:
 
@@ -137,7 +147,13 @@ Advance configure options:
   - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
   - --BUILD_NTOX="yes"
   - --BUILD_TESTS="yes"
-
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
 
 Do not install them from macports (or any dependencies for that matter) as they get shoved in the wrong directory
 (or the wrong version gets installed) and make your life more annoying.
@@ -175,3 +191,14 @@ Advance configure options:
   - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
   - --BUILD_NTOX="yes"
   - --BUILD_TESTS="yes"
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
+
+<a name="Clients" />
+####Clients:
+While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](http://wiki.tox.im/client)
