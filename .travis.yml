@@ -27,12 +27,10 @@ before_script:
   - sudo apt-get install check
 
 script:
-  - mkdir build && cd build
-  - cmake ..
+  - autoreconf -i
+  - ./configure
   - make -j3
-  - make test
-# build docs separately
-  - make docs
+  - make check
 
 notifications:
   email: false

@@ -28,8 +28,8 @@
  */
 
 //#include "../core/network.h"
-#include "../core/DHT.h"
-#include "../core/friend_requests.h"
+#include "../toxcore/DHT.h"
+#include "../toxcore/friend_requests.h"
 #include "misc_tools.h"
 
 #include <string.h>

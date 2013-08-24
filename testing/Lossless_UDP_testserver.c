@@ -28,8 +28,8 @@
  *
  */
 
-#include "../core/network.h"
-#include "../core/Lossless_UDP.h"
+#include "../toxcore/network.h"
+#include "../toxcore/Lossless_UDP.h"
 
 //Sleep function (x = milliseconds)
 #ifdef WIN32
