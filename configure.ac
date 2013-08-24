@@ -45,7 +45,7 @@ AC_ARG_ENABLE([ntox],
 )
 
 AC_ARG_ENABLE([dht-bootstrap-daemon],
-    [AC_HELP_STRING([--disable-dht-boostrap-daemon], [build DHT bootstrap daemon (default: auto)]) ],
+    [AC_HELP_STRING([--disable-dht-bootstrap-daemon], [build DHT bootstrap daemon (default: auto)]) ],
     [
         if test "x$enableval" = "xno"; then
             BUILD_DHT_BOOTSTRAP_DAEMON="no"
