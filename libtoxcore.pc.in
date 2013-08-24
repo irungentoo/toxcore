@@ -8,5 +8,5 @@ Description: Tox protocol library
 Requires:
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ltoxcore @LIBS@
-Cflags: -I${includedir}/tox
+Cflags: -I${includedir}
 
