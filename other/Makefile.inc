@@ -14,7 +14,5 @@ DHT_bootstrap_LDADD =   $(LIBSODIUM_LDFLAGS) \
                         $(LIBSODIUM_LIBS) \
                         $(WINSOCK2_LIBS)
 
-EXTRA_DIST +=           $(top_srcdir)/other/cmake/DHT_bootstrap.cmake \
-                        $(top_srcdir)/other/CMakeLists.txt \
-                        $(top_srcdir)/other/DHTservers \
+EXTRA_DIST +=           $(top_srcdir)/other/DHTservers \
                         $(top_srcdir)/other/tox.png

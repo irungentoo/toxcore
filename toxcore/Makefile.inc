@@ -38,5 +38,3 @@ libtoxcore_la_LDFLAGS = -version-info $(LIBTOXCORE_VERSION) \
 
 libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS) \
                         $(WINSOCK2_LIBS)
-
-EXTRA_DIST +=           $(top_srcdir)/toxcore/CMakeLists.txt

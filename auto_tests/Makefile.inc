@@ -30,10 +30,5 @@ crypto_test_LDADD =     $(LIBSODIUM_LDFLAGS) \
 
 endif
 
-EXTRA_DIST +=           $(top_srcdir)/auto_tests/CMakeLists.txt \
-                        $(top_srcdir)/auto_tests/run_tests \
-                        $(top_srcdir)/auto_tests/cmake/messenger_test.cmake \
-                        $(top_srcdir)/auto_tests/cmake/crypto_test.cmake \
-                        $(top_srcdir)/auto_tests/cmake/friends_test.cmake \
-                        $(top_srcdir)/auto_tests/friends_test.c
+EXTRA_DIST +=           $(top_srcdir)/auto_tests/friends_test.c
 

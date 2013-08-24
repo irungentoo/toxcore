@@ -87,11 +87,3 @@ crypto_speed_test_LDADD = \
                         $(LIBSODIUM_LIBS) \
                         $(WINSOCK2_LIBS)
 
-
-EXTRA_DIST +=           $(top_srcdir)/testing/cmake/Messenger_test.cmake \
-                        $(top_srcdir)/testing/cmake/DHT_test.cmake \
-                        $(top_srcdir)/testing/cmake/Lossless_UDP_testclient.cmake \
-                        $(top_srcdir)/testing/cmake/Lossless_UDP_testserver.cmake \
-                        $(top_srcdir)/testing/cmake/nTox.cmake \
-                        $(top_srcdir)/testing/cmake/crypto_speed_test.cmake \
-                        $(top_srcdir)/testing/CMakeLists.txt

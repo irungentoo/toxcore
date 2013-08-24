@@ -20,8 +20,4 @@ endif
 
 EXTRA_DIST += \
     $(top_srcdir)/other/bootstrap_serverdaemon/server.cfg \
-    $(top_srcdir)/other/bootstrap_serverdaemon/DHT_bootstrap_daemon.sh \
-    $(top_srcdir)/other/bootstrap_serverdaemon/cmake/Modules \
-    $(top_srcdir)/other/bootstrap_serverdaemon/cmake/Modules/FindLibConfig.cmake \
-    $(top_srcdir)/other/bootstrap_serverdaemon/cmake/Modules/FindLibConfig.cmake \
-    $(top_srcdir)/other/bootstrap_serverdaemon/CMakeLists.txt
+    $(top_srcdir)/other/bootstrap_serverdaemon/DHT_bootstrap_daemon.sh
