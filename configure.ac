@@ -208,7 +208,7 @@ if test -n "$PKG_CONFIG"; then
             ],
             [
                 AC_MSG_WARN([$LIBCONFIG_PKG_ERRORS])
-                AC_MSG_WARN([libconfig not available, will not build DHT botstrap daemon])
+                AC_MSG_WARN([libconfig not available, will not build DHT bootstrap daemon])
                 BUILD_DHT_BOOTSTRAP_DAEMON="no"
             ])
     fi
@@ -223,7 +223,7 @@ if test -n "$PKG_CONFIG"; then
             ])
     fi
 else
-    AC_MSG_WARN([pkg-config was not found on your sytem])
+    AC_MSG_WARN([pkg-config was not found on your system])
 fi
 
 if (test "x$BUILD_NTOX" = "xyes") && (test "x$NCURSES_FOUND" != "xyes"); then
