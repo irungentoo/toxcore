@@ -3,10 +3,10 @@ SUBDIRS = build
 ACLOCAL_AMFLAGS = -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = $(top_srcdir)/libtoxcore.pc
+pkgconfig_DATA = $(top_builddir)/libtoxcore.pc
 
-BUILT_SOURCES = $(top_srcdir)/libtoxcore.pc
-CLEANFILES = $(top_srcdir)/libtoxcore.pc
+BUILT_SOURCES = $(top_builddir)/libtoxcore.pc
+CLEANFILES = $(top_builddir)/libtoxcore.pc
 
 
 EXTRA_DIST = \
