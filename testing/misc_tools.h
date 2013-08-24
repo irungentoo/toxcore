@@ -153,6 +153,16 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
     arr->data = realloc(arr->data, arr->elem_size*arr->len);
 }
 
-#define tox_array_get(arr, i, type) ((type*)(arr)->data)[i]
+#define tox_array_get(arr, i, type) (((type*)(arr)->data)[i])
+
+/* TODO: what about nested for loops? */
+#define tox_array_for_each(arr, type) \
+    for ( \
+         struct { type tmp; uint32_t i; } tox_array_tmp = { tox_array_get(arr, 0, type), 0 }; \
+         tox_array_tmp.i != (arr)->len; \
+         tox_array_tmp.tmp = tox_array_get(arr, ++tox_array_tmp.i, type) \
+        )
+
+#define TOX_ARRAY_TMP (tox_array_tmp.tmp)
 
 #endif // MISC_TOOLS_H
