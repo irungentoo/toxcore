@@ -38,15 +38,6 @@
  */
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
 {
-    /*vx-t uint32_t i;
-
-    for (i = 0; i < ludp->connections_length; ++i) {
-        if (ludp->connections[i].ip_port.ip.i == ip_port.ip.i &&
-                ludp->connections[i].ip_port.port == ip_port.port &&
-                ludp->connections[i].status > 0)
-            return i;
-    }*/
-
     tox_array_for_each(&ludp->connections, Connection, tmp) {
         if (tmp.ip_port.ip.i == ip_port.ip.i &&
             tmp.ip_port.port == ip_port.port &&
@@ -107,79 +98,43 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
     if (connect != -1)
         return connect;
 
-    /* TODO: this allocates space regardless of whether it's needed or not
-     * Rewrite so it will first scan for empty, and if not found make a new one.
-     */
-    tox_array_push_ptr(&ludp->connections, 0);
-    memset(&tox_array_get(&ludp->connections, ludp->connections.len, Connection), 0, sizeof(Connection));
-    /*vx-t if (ludp->connections_number == ludp->connections_length) {
-        Connection *temp;
-        temp = realloc(ludp->connections, sizeof(Connection) * (ludp->connections_length + 1));
-
-        if (temp == NULL)
-            return -1;
-
-        memset(&temp[ludp->connections_length], 0, sizeof(Connection));
-        ++ludp->connections_length;
-        ludp->connections = temp;
-    }*/
-
+    uint32_t connection_id = -1;
     tox_array_for_each(&ludp->connections, Connection, tmp) {
         if (tmp.status == 0) {
-            memset(&tox_array_get(&ludp->connections, tmp_i, Connection), 0, sizeof(Connection));
-            uint32_t handshake_id1 = handshake_id(ludp, ip_port);
-
-            tox_array_get(&ludp->connections, tmp_i, Connection) = (Connection) {
-                .ip_port            = ip_port,
-                .status             = 1,
-                .inbound            = 0,
-                .handshake_id1      = handshake_id1,
-                .sent_packetnum     = handshake_id1,
-                .sendbuff_packetnum = handshake_id1,
-                .successful_sent    = handshake_id1,
-                .SYNC_rate          = SYNC_RATE,
-                .data_rate          = DATA_SYNC_RATE,
-                .last_recvSYNC      = current_time(),
-                .last_sent          = current_time(),
-                .killat             = ~0,
-                .send_counter       = 0,
-                /* add randomness to timeout to prevent connections getting stuck in a loop. */
-                .timeout            = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT
-            };
-            return tmp_i;
+            connection_id = tmp_i;
+            break;
         }
     }
-    /*vx-t uint32_t i;
 
-    for (i = 0; i < ludp->connections_length; ++i) {
-        if (ludp->connections[i].status == 0) {
-            memset(&ludp->connections[i], 0, sizeof(Connection));
-            uint32_t handshake_id1 = handshake_id(ludp, ip_port);
+    if (connection_id == -1) {
+        tox_array_push_ptr(&ludp->connections, 0); /* TODO: check return value */
+        connection_id = ludp->connections.len-1;
+    }
+    Connection* connection = &tox_array_get(&ludp->connections, connection_id, Connection);
 
-            ludp->connections[i] = (Connection) {
-                .ip_port            = ip_port,
-                 .status             = 1,
-                  .inbound            = 0,
-                   .handshake_id1      = handshake_id1,
-                    .sent_packetnum     = handshake_id1,
-                     .sendbuff_packetnum = handshake_id1,
-                      .successful_sent    = handshake_id1,
-                       .SYNC_rate          = SYNC_RATE,
-                        .data_rate          = DATA_SYNC_RATE,
-                         .last_recvSYNC      = current_time(),
-                          .last_sent          = current_time(),
-                           .killat             = ~0,
-                            .send_counter       = 0,
-                             /* add randomness to timeout to prevent connections getting stuck in a loop. /
-                             .timeout            = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT
-            };
-            ++ludp->connections_number;
+    memset(connection, 0, sizeof(Connection));
 
-            return i;
-        }
-    }*/
+    uint32_t handshake_id1 = handshake_id(ludp, ip_port);
 
-    return -1;
+    *connection = (Connection) {
+        .ip_port            = ip_port,
+        .status             = 1,
+        .inbound            = 0,
+        .handshake_id1      = handshake_id1,
+        .sent_packetnum     = handshake_id1,
+        .sendbuff_packetnum = handshake_id1,
+        .successful_sent    = handshake_id1,
+        .SYNC_rate          = SYNC_RATE,
+        .data_rate          = DATA_SYNC_RATE,
+        .last_recvSYNC      = current_time(),
+        .last_sent          = current_time(),
+        .killat             = ~0,
+        .send_counter       = 0,
+        /* add randomness to timeout to prevent connections getting stuck in a loop. */
+        .timeout            = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT
+    };
+
+    return connection_id;
 }
 
 /*
@@ -192,51 +147,41 @@ static int new_inconnection(Lossless_UDP *ludp, IP_Port ip_port)
     if (getconnection_id(ludp, ip_port) != -1)
         return -1;
 
-    /* TODO: See comment in int new_connection(Lossless_UDP *ludp, IP_Port ip_port) */
-    tox_array_push_ptr(&ludp->connections, 0);
-    memset(&tox_array_get(&ludp->connections, ludp->connections.len, Connection), 0, sizeof(Connection));
-
-    /*vx-t if (ludp->connections_number == ludp->connections_length) {
-        Connection *temp;
-        temp = realloc(ludp->connections, sizeof(Connection) * (ludp->connections_length + 1));
-
-        if (temp == NULL)
-            return -1;
-
-        memset(&temp[ludp->connections_length], 0, sizeof(Connection));
-        ++ludp->connections_length;
-        ludp->connections = temp;
-    }*/
-/* vx-k: IMPORTANT!!!!!!!!! DO THIS
-    uint32_t i;
-
-    for (i = 0; i < ludp->connections_length; ++i) {
-        if (ludp->connections[i].status == 0) {
-            memset(&ludp->connections[i], 0, sizeof(Connection));
-            uint64_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
-
-            ludp->connections[i] = (Connection) {
-                .ip_port       = ip_port,
-                 .status        = 2,
-                  .inbound       = 2,
-                   .SYNC_rate     = SYNC_RATE,
-                    .data_rate     = DATA_SYNC_RATE,
-                     .last_recvSYNC = current_time(),
-                      .last_sent     = current_time(),
-                       .send_counter  = 127,
-
-                        /* add randomness to timeout to prevent connections getting stuck in a loop. /
-                        .timeout       = timeout,
-
-                         /* if this connection isn't handled within the timeout kill it. /
-                         .killat        = current_time() + 1000000UL * timeout
-            };
-            ++ludp->connections_number;
-            return i;
+    uint32_t connection_id = -1;
+    tox_array_for_each(&ludp->connections, Connection, tmp) {
+        if (tmp.status == 0) {
+            connection_id = tmp_i;
+            break;
         }
     }
-*/
-    return -1;
+
+    if (connection_id == -1) {
+        tox_array_push_ptr(&ludp->connections, 0); /* TODO: check return value */
+        connection_id = ludp->connections.len-1;
+    }
+    Connection* connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+    memset(connection, 0, sizeof(Connection));
+
+    uint64_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
+
+    *connection = (Connection) {
+        .ip_port = ip_port,
+        .status = 2,
+        .inbound = 2,
+        .SYNC_rate = SYNC_RATE,
+        .data_rate = DATA_SYNC_RATE,
+        .last_recvSYNC = current_time(),
+        .last_sent = current_time(),
+        .send_counter = 127,
+
+        /* add randomness to timeout to prevent connections getting stuck in a loop. */
+        .timeout = timeout,
+
+        /* if this connection isn't handled within the timeout kill it. */
+        .killat = current_time() + 1000000UL * timeout
+    };
+
+    return connection_id;
 }
 
 /*
@@ -252,47 +197,7 @@ int incoming_connection(Lossless_UDP *ludp)
         }
     }
 
-    /*vx-k uint32_t i;
-
-    for (i = 0; i < ludp->connections_length; ++i) {
-        if (ludp->connections[i].inbound == 2) {
-            ludp->connections[i].inbound = 1;
-            return i;
-        }
-    }*/
-
     return -1;
-}
-
-/* Try to free some memory from the connections array. */
-static void free_connections(Lossless_UDP *ludp)
-{
-    /*vx-k: fix this to work with new tox_array
-    uint32_t i;
-
-    for (i = ludp->connections_length; i != 0; --i)
-        if (ludp->connections[i - 1].status != 0)
-            break;
-
-    if (ludp->connections_length == i)
-        return;
-
-    if (i == 0) {
-        free(ludp->connections);
-        ludp->connections = NULL;
-        ludp->connections_length = i;
-        return;
-    }
-
-    Connection *temp;
-    temp = realloc(ludp->connections, sizeof(Connection) * i);
-
-    if (temp == NULL && i != 0)
-        return;
-
-    ludp->connections = temp;
-    ludp->connections_length = i;
-    */
 }
 
 /*
@@ -306,7 +211,6 @@ int kill_connection(Lossless_UDP *ludp, int connection_id)
             tox_array_get(&ludp->connections, connection_id, Connection).status = 0;
             change_handshake(ludp, tox_array_get(&ludp->connections, connection_id, Connection).ip_port);
             tox_array_pop(&ludp->connections, 0);
-            free_connections(ludp);
             return 0;
         }
     }
