@@ -75,7 +75,8 @@ Advance configure options:
   - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
   - --enable-static[=PKGS]  build static libraries [default=yes]
-  <a name="osx" />
+
+<a name="osx" />
 ###OS X:
 
 You need the latest XCode with the Developer Tools (Preferences -> Downloads -> Command Line Tools).
@@ -110,6 +111,7 @@ Advance configure options:
   - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
   - --enable-static[=PKGS]  build static libraries [default=yes]
+
 <a name="non-homebrew" />
 ####Non-homebrew:
 
