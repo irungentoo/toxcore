@@ -34,36 +34,36 @@ unsigned char *hex_string_to_bin(char hex_string[]);
  * wiki.tox.im/index.php/Internal_functions_and_data_structures#Debugging
  *********************************************************/
 #ifdef DEBUG
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+    #include <assert.h>
+    #include <stdio.h>
+    #include <string.h>
 
-#define DEBUG_PRINT(str, ...) do { \
+    #define DEBUG_PRINT(str, ...) do { \
         char msg[1000]; \
         sprintf(msg, "%s(): line %d (file %s): %s%%c\n", __FUNCTION__, __LINE__, __FILE__, str); \
         fprintf(stderr, msg, __VA_ARGS__); \
     } while (0)
 
-#define WARNING(...) do { \
+    #define WARNING(...) do { \
         fprintf(stderr, "warning in "); \
         DEBUG_PRINT(__VA_ARGS__, ' '); \
     } while (0)
 
-#define INFO(...) do { \
+    #define INFO(...) do { \
         DEBUG_PRINT(__VA_ARGS__, ' '); \
     } while (0)
 
-#undef ERROR
-#define ERROR(exit_status, ...) do { \
+    #undef ERROR
+    #define ERROR(exit_status, ...) do { \
         fprintf(stderr, "error in "); \
         DEBUG_PRINT(__VA_ARGS__, ' '); \
         exit(exit_status); \
     } while (0)
 #else
-#define WARNING(...)
-#define INFO(...)
-#undef ERROR
-#define ERROR(...)
+    #define WARNING(...)
+    #define INFO(...)
+    #undef ERROR
+    #define ERROR(...)
 #endif // DEBUG
 
 /************************Linked List***********************
@@ -104,8 +104,7 @@ static inline void tox_list_add(tox_list *lst, tox_list *new_lst)
     new_lst->prev = lst;
 }
 
-static inline void
-tox_list_remove(tox_list *lst)
+static inline void tox_list_remove(tox_list *lst)
 {
     lst->prev->next = lst->next;
     lst->next->prev = lst->prev;
@@ -123,23 +122,20 @@ typedef struct tox_array {
     size_t elem_size; /* in bytes */
 } tox_array;
 
-static inline void
-tox_array_init(tox_array *arr, size_t elem_size)
+static inline void tox_array_init(tox_array *arr, size_t elem_size)
 {
     arr->len = 0;
     arr->elem_size = elem_size;
     arr->data = NULL;
 }
 
-static inline void
-tox_array_delete(tox_array *arr)
+static inline void tox_array_delete(tox_array *arr)
 {
     free(arr->data);
     arr->len = arr->elem_size = 0;
 }
 
-static inline void
-_tox_array_push(tox_array *arr, uint8_t *item)
+static inline void _tox_array_push(tox_array *arr, uint8_t *item)
 {
     arr->data = realloc(arr->data, arr->elem_size * (arr->len+1));
 
@@ -151,8 +147,7 @@ _tox_array_push(tox_array *arr, uint8_t *item)
 /* Deletes num items from array.
  * Not same as pop in stacks, because to access elements you use data.
  */
-static inline void
-tox_array_pop(tox_array *arr, uint32_t num)
+static inline void tox_array_pop(tox_array *arr, uint32_t num)
 {
     arr->len--;
     arr->data = realloc(arr->data, arr->elem_size*arr->len);
