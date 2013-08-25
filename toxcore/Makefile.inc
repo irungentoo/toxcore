@@ -34,7 +34,8 @@ libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         $(LIBSODIUM_CFLAGS)
 
 libtoxcore_la_LDFLAGS = -version-info $(LIBTOXCORE_VERSION) \
-                        $(LIBSODIUM_LDFLAGS)
-
-libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS) \
+                        -no-undefined \
+                        $(LIBSODIUM_LDFLAGS) \
                         $(WINSOCK2_LIBS)
+
+libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS)

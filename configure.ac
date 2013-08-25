@@ -96,6 +96,7 @@ AC_ARG_WITH(libsodium-libs,
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
+AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
 WIN32=no
