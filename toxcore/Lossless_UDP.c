@@ -299,11 +299,12 @@ char id_packet(Lossless_UDP *ludp, int connection_id)
 int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data)
 {
     if (recvqueue(ludp, connection_id) != 0) {
-        uint16_t index = tox_array_get(&ludp->connections, connection_id, Connection).successful_read % MAX_QUEUE_NUM;
-        uint16_t size  = tox_array_get(&ludp->connections, connection_id, Connection).recvbuffer[index].size;
-        memcpy(data, tox_array_get(&ludp->connections, connection_id, Connection).recvbuffer[index].data, size);
-        ++tox_array_get(&ludp->connections, connection_id, Connection).successful_read;
-        tox_array_get(&ludp->connections, connection_id, Connection).recvbuffer[index].size = 0;
+        Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+        uint16_t index = connection->successful_read % MAX_QUEUE_NUM;
+        uint16_t size  = connection->recvbuffer[index].size;
+        memcpy(data, connection->recvbuffer[index].data, size);
+        ++connection->successful_read;
+        connection->recvbuffer[index].size = 0;
         return size;
     }
 
@@ -319,11 +320,13 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
     if (length > MAX_DATA_SIZE || length == 0)
         return 0;
 
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
     if (sendqueue(ludp, connection_id) <  BUFFER_PACKET_NUM) {
-        uint32_t index = tox_array_get(&ludp->connections, connection_id, Connection).sendbuff_packetnum % MAX_QUEUE_NUM;
-        memcpy(tox_array_get(&ludp->connections, connection_id, Connection).sendbuffer[index].data, data, length);
-        tox_array_get(&ludp->connections, connection_id, Connection).sendbuffer[index].size = length;
-        tox_array_get(&ludp->connections, connection_id, Connection).sendbuff_packetnum++;
+        uint32_t index = connection->sendbuff_packetnum % MAX_QUEUE_NUM;
+        memcpy(connection->sendbuffer[index].data, data, length);
+        connection->sendbuffer[index].size = length;
+        connection->sendbuff_packetnum++;
         return 1;
     }
 
@@ -341,11 +344,13 @@ uint32_t missing_packets(Lossless_UDP *ludp, int connection_id, uint32_t *reques
     if (recvqueue(ludp, connection_id) >= (BUFFER_PACKET_NUM - 1))
         return 0;
 
-    for (i = tox_array_get(&ludp->connections, connection_id, Connection).recv_packetnum;
-         i != tox_array_get(&ludp->connections, connection_id, Connection).osent_packetnum;
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
+    for (i = connection->recv_packetnum;
+         i != connection->osent_packetnum;
          i++)
     {
-        if (tox_array_get(&ludp->connections, connection_id, Connection).recvbuffer[i % MAX_QUEUE_NUM].size == 0) {
+        if (connection->recvbuffer[i % MAX_QUEUE_NUM].size == 0) {
             temp = htonl(i);
             memcpy(requested + number, &temp, 4);
             ++number;
@@ -353,7 +358,7 @@ uint32_t missing_packets(Lossless_UDP *ludp, int connection_id, uint32_t *reques
     }
 
     if (number == 0)
-        tox_array_get(&ludp->connections, connection_id, Connection).recv_packetnum = tox_array_get(&ludp->connections, connection_id, Connection).osent_packetnum;
+        connection->recv_packetnum = connection->osent_packetnum;
 
     return number;
 }
@@ -380,13 +385,15 @@ static int send_handshake(Lossless_UDP *ludp, IP_Port ip_port, uint32_t handshak
 
 static int send_SYNC(Lossless_UDP *ludp, uint32_t connection_id)
 {
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
     uint8_t packet[(BUFFER_PACKET_NUM * 4 + 4 + 4 + 2)];
     uint16_t index = 0;
 
-    IP_Port ip_port         = tox_array_get(&ludp->connections, connection_id, Connection).ip_port;
-    uint8_t counter         = tox_array_get(&ludp->connections, connection_id, Connection).send_counter;
-    uint32_t recv_packetnum = htonl(tox_array_get(&ludp->connections, connection_id, Connection).recv_packetnum);
-    uint32_t sent_packetnum = htonl(tox_array_get(&ludp->connections, connection_id, Connection).sent_packetnum);
+    IP_Port ip_port         = connection->ip_port;
+    uint8_t counter         = connection->send_counter;
+    uint32_t recv_packetnum = htonl(connection->recv_packetnum);
+    uint32_t sent_packetnum = htonl(connection->sent_packetnum);
 
     uint32_t requested[BUFFER_PACKET_NUM];
     uint32_t number         = missing_packets(ludp, connection_id, requested);
@@ -407,16 +414,16 @@ static int send_SYNC(Lossless_UDP *ludp, uint32_t connection_id)
 
 static int send_data_packet(Lossless_UDP *ludp, uint32_t connection_id, uint32_t packet_num)
 {
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
     uint32_t index = packet_num % MAX_QUEUE_NUM;
     uint32_t temp;
     uint8_t packet[1 + 4 + MAX_DATA_SIZE];
     packet[0] = NET_PACKET_DATA;
     temp = htonl(packet_num);
     memcpy(packet + 1, &temp, 4);
-    memcpy(packet + 5, tox_array_get(&ludp->connections, connection_id, Connection).sendbuffer[index].data,
-           tox_array_get(&ludp->connections, connection_id, Connection).sendbuffer[index].size);
-    return sendpacket(ludp->net->sock, tox_array_get(&ludp->connections, connection_id, Connection).ip_port, packet,
-                      1 + 4 + tox_array_get(&ludp->connections, connection_id, Connection).sendbuffer[index].size);
+    memcpy(packet + 5, connection->sendbuffer[index].data, connection->sendbuffer[index].size);
+    return sendpacket(ludp->net->sock, connection->ip_port, packet, 1 + 4 + connection->sendbuffer[index].size);
 }
 
 /* sends 1 data packet */
