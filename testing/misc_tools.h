@@ -166,7 +166,7 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
 
 
 #define tox_array_for_each(arr, type, tmp_name) \
-    type tmp_name; uint32_t tmp_name ## _i = 0; \
-    for (; tmp_name ## _i != (arr)->len; tmp_name = tox_array_get(arr, ++ tmp_name ## _i, type))
+    type *tmp_name; uint32_t tmp_name ## _i = 0; \
+    for (; tmp_name ## _i != (arr)->len; tmp_name = &tox_array_get(arr, ++ tmp_name ## _i, type))
 
 #endif // MISC_TOOLS_H
