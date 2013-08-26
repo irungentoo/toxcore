@@ -161,19 +161,9 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
     arr->data = realloc(arr->data, arr->elem_size*arr->len);
 }
 
-/* TODO: do not use type, since we track the needed info in
- * elem_size (but array user will have to cast)
- */
+/* TODO: return ptr and do not take type */
 #define tox_array_get(arr, i, type) (((type*)(arr)->data)[i])
 
-/* This version requires C99 (declaring variables inside for loop)
-#define tox_array_for_each(arr, type, tmp_name) \
-    for ( \
-         struct { type val; uint32_t i; } tmp_name = { tox_array_get(arr, 0, type), 0 }; \
-         tmp_name.i != (arr)->len; \
-         tmp_name.val = tox_array_get(arr, ++tmp_name.i, type) \
-        )
-*/
 
 #define tox_array_for_each(arr, type, tmp_name) \
     type tmp_name; uint32_t tmp_name ## _i = 0; \

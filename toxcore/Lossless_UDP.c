@@ -206,11 +206,13 @@ int incoming_connection(Lossless_UDP *ludp)
  */
 int kill_connection(Lossless_UDP *ludp, int connection_id)
 {
+    Connection* connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
     if (connection_id >= 0 && connection_id < ludp->connections.len) {
-        if (tox_array_get(&ludp->connections, connection_id, Connection).status > 0) {
-            tox_array_get(&ludp->connections, connection_id, Connection).status = 0;
-            change_handshake(ludp, tox_array_get(&ludp->connections, connection_id, Connection).ip_port);
-            tox_array_pop(&ludp->connections, 0);
+        if (connection->status > 0) {
+            connection->status = 0;
+            change_handshake(ludp, connection->ip_port);
+            memset(connection, 0, sizeof(Connection));
             return 0;
         }
     }
@@ -320,9 +322,8 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
     if (length > MAX_DATA_SIZE || length == 0)
         return 0;
 
-    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
-
     if (sendqueue(ludp, connection_id) <  BUFFER_PACKET_NUM) {
+        Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
         uint32_t index = connection->sendbuff_packetnum % MAX_QUEUE_NUM;
         memcpy(connection->sendbuffer[index].data, data, length);
         connection->sendbuffer[index].size = length;
