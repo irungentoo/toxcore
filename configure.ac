@@ -137,7 +137,7 @@ else
     AC_CHECK_LIB(sodium, randombytes_random,
         [],
         [
-            AC_MSG_ERROR([required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/]) 
+            AC_MSG_ERROR([required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/])
         ]
     )
 fi
