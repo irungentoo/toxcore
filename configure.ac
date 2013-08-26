@@ -10,6 +10,17 @@ AM_INIT_AUTOMAKE([1.10 -Wall])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_MACRO_DIR([m4])
 
+LIBTOXCORE_LT_VERSION=0:0:0
+dnl
+dnl            current:revision:age
+dnl
+dnl current:  increment if interfaces have been added, removed or changed
+dnl revision: increment if source code has changed, set to zero if current is
+dnl           incremented
+dnl age:      increment if interfaces have been added, set to zero if
+dnl           interfaces have been removed or changed
+EXTRA_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
+
 if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
 fi
@@ -106,6 +117,7 @@ case $host_os in
         WIN32="yes"
         AC_MSG_WARN([nTox is not supported on $host_os yet, disabling])
         BUILD_NTOX="no"
+        EXTRA_LT_LDFLAGS="$EXTRA_LT_LDFLAGS -no-undefined"
     ;;
     *solaris*)
         LIBS="$LIBS -lssp -lsocket -lnsl"
@@ -117,6 +129,8 @@ case $host_os in
     ;;
 esac
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
+
+AC_SUBST(EXTRA_LT_LDFLAGS)
 
 # Checks for libraries.
 LIBSODIUM_LIBS=
