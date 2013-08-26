@@ -110,6 +110,11 @@ case $host_os in
     *solaris*)
         LIBS="$LIBS -lssp -lsocket -lnsl"
     ;;
+    *freebsd*)
+        LDFLAGS="$LDFLAGS -L/usr/local/lib"
+        CFLAGS="$CFLAGS -I/usr/local/include"
+        CPPFLAGS="$CPPFLAGS -I/usr/local/include"
+    ;;
 esac
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 
