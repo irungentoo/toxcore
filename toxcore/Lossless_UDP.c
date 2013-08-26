@@ -98,7 +98,7 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
     if (connect != -1)
         return connect;
 
-    uint32_t connection_id = -1;
+    int connection_id = -1;
     tox_array_for_each(&ludp->connections, Connection, tmp) {
         if (tmp.status == 0) {
             connection_id = tmp_i;
@@ -147,7 +147,7 @@ static int new_inconnection(Lossless_UDP *ludp, IP_Port ip_port)
     if (getconnection_id(ludp, ip_port) != -1)
         return -1;
 
-    uint32_t connection_id = -1;
+    int connection_id = -1;
     tox_array_for_each(&ludp->connections, Connection, tmp) {
         if (tmp.status == 0) {
             connection_id = tmp_i;
@@ -384,7 +384,7 @@ static int send_handshake(Lossless_UDP *ludp, IP_Port ip_port, uint32_t handshak
     return sendpacket(ludp->net->sock, ip_port, packet, sizeof(packet));
 }
 
-static int send_SYNC(Lossless_UDP *ludp, uint32_t connection_id)
+static int send_SYNC(Lossless_UDP *ludp, int connection_id)
 {
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
 
@@ -413,7 +413,7 @@ static int send_SYNC(Lossless_UDP *ludp, uint32_t connection_id)
 
 }
 
-static int send_data_packet(Lossless_UDP *ludp, uint32_t connection_id, uint32_t packet_num)
+static int send_data_packet(Lossless_UDP *ludp, int connection_id, uint32_t packet_num)
 {
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
 
@@ -428,7 +428,7 @@ static int send_data_packet(Lossless_UDP *ludp, uint32_t connection_id, uint32_t
 }
 
 /* sends 1 data packet */
-static int send_DATA(Lossless_UDP *ludp, uint32_t connection_id)
+static int send_DATA(Lossless_UDP *ludp, int connection_id)
 {
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
     int ret;

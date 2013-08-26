@@ -139,7 +139,7 @@ static inline uint8_t tox_array_push_ptr(tox_array *arr, uint8_t *item)
 {
     arr->data = realloc(arr->data, arr->elem_size * (arr->len+1));
 
-    if (arr->data == NULL)
+    if (arr->data == NULL) /* didn't call tox_array_init() */
         return 0;
 
     if (item != NULL)
