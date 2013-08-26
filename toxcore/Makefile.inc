@@ -1,5 +1,3 @@
-LIBTOXCORE_VERSION = 0:0:0
-
 lib_LTLIBRARIES = libtoxcore.la
 
 libtoxcore_la_include_HEADERS = \
@@ -33,8 +31,8 @@ libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
                         $(LIBSODIUM_CFLAGS)
 
-libtoxcore_la_LDFLAGS = -version-info $(LIBTOXCORE_VERSION) \
-                        $(LIBSODIUM_LDFLAGS)
-
-libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS) \
+libtoxcore_la_LDFLAGS = $(EXTRA_LT_LDFLAGS) \
+                        $(LIBSODIUM_LDFLAGS) \
                         $(WINSOCK2_LIBS)
+
+libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS)
