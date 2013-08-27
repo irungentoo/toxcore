@@ -291,8 +291,11 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
     Client_data newlist[length];
 
     /* Precompute distances to use for sorting. */
-    for (i = 0; i < length - 1; ++i)
-        dists[i] = abs(comp_client_id ^ list[i].client_id);
+    for (i = 0; i < length - 1; ++i) {
+        dists[i] = 0;
+        for (j = 0; j < CLIENT_ID_SIZE; ++j)
+            dists[i] += abs(comp_client_id[j] ^ list[i].client_id[j]) * (CLIENT_ID_SIZE - j);
+    }
     for (i = 0; i < length; ++i)
         newlist[i] = list[i];
  
