@@ -56,7 +56,7 @@
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
 
-#define MIN(a,b) ((a < b) ? a : b)
+#define MIN(a,b) (((a)<(b))?(a):(b))
 
 Client_data *DHT_get_close_list(DHT *dht)
 {
