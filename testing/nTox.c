@@ -20,13 +20,30 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#ifdef HAVE_CONFIG_H
+    #include "config.h"
+#endif
+
+#ifdef __WIN32__
+    #define _WIN32_WINNT 0x501
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <sys/types.h>
+    #include <netdb.h>
+#endif
+
+
 #include "nTox.h"
 #include "misc_tools.h"
 
 #include <stdio.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef __WIN32__
 #define c_sleep(x) Sleep(1*x)
 #else
 #include <unistd.h>
@@ -49,6 +66,67 @@ typedef struct {
 
 Friend_request pending_requests[256];
 uint8_t num_requests = 0;
+
+/*
+  resolve_addr():
+    address should represent IPv4 or a hostname with A record
+
+    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+    returns 0 on failure
+
+    TODO: Fix ipv6 support
+*/
+
+uint32_t resolve_addr(const char *address)
+{
+    struct addrinfo *server = NULL;
+    struct addrinfo  hints;
+    int              rc;
+    uint32_t         addr;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_INET;    // IPv4 only right now.
+    hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
+
+#ifdef __WIN32__
+    int res;
+    WSADATA wsa_data;
+
+    res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    if (res != 0)
+    {
+        return 0;
+    }
+#endif
+
+    rc = getaddrinfo(address, "echo", &hints, &server);
+
+    // Lookup failed.
+    if (rc != 0) {
+#ifdef __WIN32__
+        WSACleanup();
+#endif
+        return 0;
+    }
+
+    // IPv4 records only..
+    if (server->ai_family != AF_INET) {
+        freeaddrinfo(server);
+#ifdef __WIN32__
+        WSACleanup();
+#endif
+        return 0;
+    }
+
+
+    addr = ((struct sockaddr_in *)server->ai_addr)->sin_addr.s_addr;
+
+    freeaddrinfo(server);
+#ifdef __WIN32__
+        WSACleanup();
+#endif
+    return addr;
+}
 
 void get_id(Tox *m, char *data)
 {
@@ -525,7 +603,7 @@ int main(int argc, char *argv[])
     free(binary_string);
     nodelay(stdscr, TRUE);
 
-    while (true) {
+    while (1) {
         if (on == 0 && tox_isconnected(m)) {
             new_lines("[i] connected to DHT\n[i] define username with /n");
             on = 1;
@@ -542,7 +620,7 @@ int main(int argc, char *argv[])
 
         getmaxyx(stdscr, y, x);
 
-        if (c == '\n') {
+        if ((c == 0x0d) || (c == 0x0a)) {
             line_eval(m, line);
             strcpy(line, "");
         } else if (c == 8 || c == 127) {
