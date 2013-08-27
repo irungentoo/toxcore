@@ -23,6 +23,8 @@
 
 /*----------------------------------------------------------------------------------*/
 
+#include <string.h>
+
 #include "DHT.h"
 #include "packets.h"
 #include "ping.h"
