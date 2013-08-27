@@ -306,7 +306,7 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
             uint32_t i0 = i, i1 = MIN(i+width,length), iEnd = MIN(i+2*width,length);
             uint32_t iLeft = i, iRight = i1;
             for (j = iLeft; j < iEnd; ++j) {
-                if (i1 >= iEnd || (i0 < iRight && dists[i0] <= dists[i1])) {
+                if (i1 >= iEnd || (i0 < iRight && dists[i0] >= dists[i1])) {
                     newlist[j] = list[i0];
                     bdists[j] = dists[i0];
                     ++i0;
