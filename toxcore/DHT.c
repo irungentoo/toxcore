@@ -287,14 +287,15 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
         return;
 
     uint32_t i, j, width;
-    uint8_t dists[length], bdists[length];
+    uint64_t dists[length], bdists[length];
+    uint8_t tmpid[8];
     Client_data newlist[length];
 
-    /* Precompute distances to use for sorting. */
+    /* Precompute distances to use for sorting. Only take first 64 bits = 8 bytes.*/
     for (i = 0; i < length - 1; ++i) {
-        dists[i] = 0;
-        for (j = 0; j < CLIENT_ID_SIZE; ++j)
-            dists[i] += abs(comp_client_id[j] ^ list[i].client_id[j]) * (CLIENT_ID_SIZE - j);
+        for (j = 0; j < 8; ++j)
+            tmpid[j] = comp_client_id[j] ^ list[i].client_id[j];
+        memcpy(dists[i], tmpid, 8);
     }
     for (i = 0; i < length; ++i)
         newlist[i] = list[i];
