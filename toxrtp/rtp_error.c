@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct rtp_error_s {
     char* _message;

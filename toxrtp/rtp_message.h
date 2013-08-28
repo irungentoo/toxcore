@@ -26,7 +26,7 @@
 #ifndef _RTP__MESSAGE_H_
 #define _RTP__MESSAGE_H_
 
-#include "../toxcore/network.h"
+#include "toxcore/network.h"
 #include "rtp_helper.h"
 
 /* Defines */

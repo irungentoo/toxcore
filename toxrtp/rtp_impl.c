@@ -26,8 +26,8 @@
 #include "rtp_impl.h"
 #include <assert.h>
 #include "rtp_allocator.h"
-#include "../toxcore/util.h"
-#include "../toxcore/network.h"
+#include "toxcore/util.h"
+#include "toxcore/network.h"
 
 /* Some defines */
 

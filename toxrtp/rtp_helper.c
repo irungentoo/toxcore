@@ -24,7 +24,7 @@
 
 
 #include "rtp_helper.h"
-#include "../toxcore/network.h"
+#include "toxcore/network.h"
 
 #include <arpa/inet.h> /* Fixes implicit function warning. */
 

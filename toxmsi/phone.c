@@ -1,6 +1,5 @@
 #include "msi_impl.h"
-#include "../toxrtp/tests/test_helper.h"
-#include <curses.h>
+#include "toxrtp/tests/test_helper.h"
 #include <assert.h>
 
 

@@ -28,7 +28,7 @@
 #define _MSI_IMPL_H_
 
 #include <inttypes.h>
-#include "../toxrtp/rtp_impl.h"
+#include "toxrtp/rtp_impl.h"
 #include <pthread.h>
 #include "msi_message.h"
 
