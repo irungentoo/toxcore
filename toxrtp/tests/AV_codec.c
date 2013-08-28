@@ -37,7 +37,7 @@
 #include <SDL_thread.h>
 #include <pthread.h>
 
-#include "../rtp_impl.h"
+#include "toxrtp/rtp_impl.h"
 #include "test_helper.h"
 #include "AV_codec.h"
 

@@ -23,14 +23,14 @@
  */
 
 #include "test_helper.h"
-#include "../rtp_impl.h"
+#include "toxrtp/rtp_impl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <utime.h>
 #include <assert.h>
-#include "../rtp_error_id.h"
+#include "toxrtp/rtp_error_id.h"
 
 /*
 int print_help()

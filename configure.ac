@@ -44,6 +44,8 @@ NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
 LIBCHECK_FOUND="no"
 
+PKG_PROG_PKG_CONFIG
+
 AC_ARG_ENABLE([av],
     [AC_HELP_STRING([--disable-av], [build AV support libraries (default: auto)]) ],
     [
@@ -229,13 +231,81 @@ if test "x$BUILD_AV" = "xyes"; then
     AX_PTHREAD(
         [],
         [
-            AC_MSG_WARN([pthread library not found on your system, disabling AV support])
+            AC_MSG_WARN([disabling AV support: required pthread library not found])
+            BUILD_AV="no"
         ]
     )
 fi
 
-# pkg-config based tests
-PKG_PROG_PKG_CONFIG
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([AVFORMAT], [libavformat],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $AVFORMAT_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
+
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([AVCODEC], [libavcodec],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $AVCODEC_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
+
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([AVUTIL], [libavutil],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $AVUTIL_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
+
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([AVDEVICE], [libavdevice],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $AVDEVICE_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
+
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([SWSCALE], [libswscale],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $SWSCALE_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
+
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([SDL], [sdl],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $SDL_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
+
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([OPENAL], [openal],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $OPENAL_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
 
 if test -n "$PKG_CONFIG"; then
     if test "x$BUILD_TESTS" = "xyes"; then
@@ -271,7 +341,7 @@ if test -n "$PKG_CONFIG"; then
             ])
     fi
 else
-    AC_MSG_WARN([pkg-config was not found on your system])
+    AC_MSG_WARN([pkg-config was not found on your system, will search for libraries manually])
 fi
 
 if (test "x$BUILD_NTOX" = "xyes") && (test "x$NCURSES_FOUND" != "xyes"); then
