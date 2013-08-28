@@ -46,8 +46,7 @@ int main ( int argc, char* argv[] )
     call_state      *cs;
     cs = av_mallocz(sizeof(call_state));
     
-    
-    int status;
+
     IP_Port     Ip_port;
     const char* ip, *psend, *plisten;
     uint16_t    port_send, port_listen;
@@ -78,12 +77,16 @@ int main ( int argc, char* argv[] )
      */
     local.ip.i = htonl(INADDR_ANY);
     local.port = port_listen;
-    status = init_networking(local.ip, port_listen);
+    Networking_Core* _networking = new_networking(local.ip, port_listen);
     
+    if ( !_networking )
+    return FAILURE;
+
+    cs->socket = _networking->sock;
     /*
      * Now this is the remote. It's used by rtp_session_t to determine the receivers ip etc.
      */
-    set_ip_port ( ip, port_send, &remote );
+    t_setipport ( ip, port_send, &remote );
     cs->_m_session = rtp_init_session(-1);
     rtp_add_receiver( cs->_m_session, &remote );
 

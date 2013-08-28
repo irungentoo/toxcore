@@ -51,7 +51,7 @@
 #define AUDIO_BITRATE	64000
 
 /* audio frame duration in miliseconds */
-#define AUDIO_FRAME_DURATION	20	
+#define AUDIO_FRAME_DURATION	20
 
 /* audio sample rate recommended to be 48kHz for Opus */
 #define AUDIO_SAMPLE_RATE	48000
@@ -80,35 +80,35 @@ SDL_Surface     *screen;
 
 
 
-typedef struct 
+typedef struct
 {
     SDL_Overlay *bmp;
     int width, height;
-}VideoPicture;
+} VideoPicture;
 
 
-typedef struct 
+typedef struct
 {
-  
+
     uint8_t send_audio;
     uint8_t receive_audio;
     uint8_t send_video;
     uint8_t receive_video;
-    
+
     uint8_t support_send_audio;
     uint8_t support_send_video;
     uint8_t support_receive_audio;
     uint8_t support_receive_video;
-   
-   
+
+
     AVInputFormat   	*video_input_format;
     AVFormatContext 	*video_format_ctx;
     uint8_t             	 video_stream;
-    
+
     AVInputFormat   	*audio_input_format;
     AVFormatContext 	*audio_format_ctx;
     uint8_t              	audio_stream;
-    
+
     AVCodecContext  	*webcam_decoder_ctx;
     AVCodec         	*webcam_decoder;
 
@@ -117,68 +117,70 @@ typedef struct
 
     AVCodecContext  	*video_decoder_ctx;
     AVCodec         	*video_decoder;
-    
+
     AVCodecContext  	*microphone_decoder_ctx;
     AVCodec         	*microphone_decoder;
-    
+
     AVCodecContext  	*audio_encoder_ctx;
     AVCodec         	*audio_encoder;
-    
+
     AVCodecContext  	*audio_decoder_ctx;
     AVCodec         	*audio_decoder;
-    
-    AVFrame         	*enc_audio_frame; 
-    AVFrame         	*audio_frame; 
-    AVFrame         	*microphone_frame; 
 
-    AVFrame         	*webcam_frame; 
-    AVFrame         	*s_video_frame; 
-    AVFrame         	*r_video_frame; 
-    
+    AVFrame         	*enc_audio_frame;
+    AVFrame         	*audio_frame;
+    AVFrame         	*microphone_frame;
+
+    AVFrame         	*webcam_frame;
+    AVFrame         	*s_video_frame;
+    AVFrame         	*r_video_frame;
+
     AVPacket        	enc_video_packet;
     AVPacket        	enc_audio_packet;
-    
+
     AVPacket        	dec_video_packet;
     AVPacket        	dec_audio_packet;
-    
+
     uint8_t req_video_refresh;
 
 
     int             	audio_frame_finished;
     int 		video_frame_finished;
     int 		dec_frame_finished;
-    
+
     /* context for converting image format to something SDL can use*/
     struct SwsContext 	*sws_SDL_r_ctx;
-    
+
     /* context for converting webcam image format to something the video encoder can use */
     struct SwsContext 	*sws_ctx;
-    
+
     /* rendered video picture, ready for display */
     VideoPicture	video_picture;
-    
+
     //SDL_Thread      	*parse_tid;
     rtp_msg_t*     	s_video_msg;
     rtp_msg_t*     	s_audio_msg;
-    rtp_msg_t*     	r_msg; 
+    rtp_msg_t*     	r_msg;
     rtp_session_t* 	_m_session;
+    int socket;
+    
     uint8_t             quit;
     uint8_t 		SDL_initialised;
     SDL_Event       SDL_event;
-    
+
     pthread_t encode_audio_thread;
     pthread_t encode_video_thread;
     pthread_t decode_thread;
     pthread_mutex_t rtp_msg_mutex_lock;
-    
+
     ALCdevice *dev;
     ALCcontext *ctx;
     ALuint source, *buffers;
     ALuint buf;
     ALint val;
-    
-    
-}call_state;
+
+
+} call_state;
 
 int display_received_frame(call_state *cs);
 int decode_video_frame(call_state *cs);
