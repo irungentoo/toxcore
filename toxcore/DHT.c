@@ -300,7 +300,7 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
             for (j = 0; j < 8; ++j)
                 tmpid[j] = comp_client_id[j] ^ list[i].client_id[j];
         else
-            for (j = 7; j >= 0; --j)
+            for (j = 7; j < 8 && j >= 0; --j)
                 tmpid[j] = reverse_bits(comp_client_id[j] ^ list[i].client_id[j]);
         memcpy(dists[i], tmpid, 8);
     }
