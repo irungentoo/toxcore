@@ -696,9 +696,10 @@ Lossless_UDP *new_lossless_udp(Networking_Core *net)
         return NULL;
 
     Lossless_UDP *temp = calloc(1, sizeof(Lossless_UDP));
-
     if (temp == NULL)
         return NULL;
+
+    tox_array_init(&temp->connections, sizeof(Connection));
 
     temp->net = net;
     networking_registerhandler(net, NET_PACKET_HANDSHAKE, &handle_handshake, temp);
