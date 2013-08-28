@@ -31,10 +31,6 @@
 #include "friend_requests.h"
 #include "LAN_discovery.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define MAX_NAME_LENGTH 128
 #define MAX_STATUSMESSAGE_LENGTH 128
 
@@ -344,8 +340,5 @@ void Messenger_save(Messenger *m, uint8_t *data);
 /* load the messenger from data of size length */
 int Messenger_load(Messenger *m, uint8_t *data, uint32_t length);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

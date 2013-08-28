@@ -35,10 +35,6 @@
 #include <linux/netdevice.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*Send a LAN discovery pcaket to the broadcast address with port port*/
 int send_LANdiscovery(uint16_t port, Net_Crypto *c);
 
@@ -47,9 +43,5 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c);
 void LANdiscovery_init(DHT *dht);
 
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

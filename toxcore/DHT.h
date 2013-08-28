@@ -26,10 +26,6 @@
 
 #include "net_crypto.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /* size of the client_id in bytes */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
@@ -186,8 +182,5 @@ int DHT_isconnected(DHT *dht);
 
 void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -27,9 +27,6 @@
 #include "DHT.h"
 #include "net_crypto.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct {
     uint32_t nospam;
@@ -63,8 +60,5 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uin
 /* sets up friendreq packet handlers */
 void friendreq_init(Friend_Requests *fr, Net_Crypto *c);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

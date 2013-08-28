@@ -26,10 +26,6 @@
 
 #include "Lossless_UDP.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define MAX_INCOMING 64
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID */
@@ -193,8 +189,5 @@ void kill_net_crypto(Net_Crypto *c);
 /* Init the cryptopacket handling */
 void init_cryptopackets(void *dht);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

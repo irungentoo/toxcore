@@ -26,9 +26,6 @@
 
 #include "network.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* maximum length of the data in the data packets */
 #define MAX_DATA_SIZE 1024
@@ -215,8 +212,5 @@ Lossless_UDP *new_lossless_udp(Networking_Core *net);
 
 void kill_lossless_udp(Lossless_UDP *ludp);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

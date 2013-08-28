@@ -62,9 +62,6 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define MAX_UDP_PACKET_SIZE 65507
 
@@ -151,9 +148,5 @@ Networking_Core *new_networking(IP ip, uint16_t port);
 /* function to cleanup networking stuff(doesn't do much right now) */
 void kill_networking(Networking_Core *net);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
