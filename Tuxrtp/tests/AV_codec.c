@@ -207,6 +207,13 @@ int init_send_video(call_state *cs)
 	printf("opening video encoder failed\n");
 	return 0;
     }
+    uint8_t *buffer;
+    int numBytes;
+    // Determine required buffer size and allocate buffer
+    numBytes=avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height);
+    buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
+    avpicture_fill((AVPicture *)cs->s_video_frame, buffer, PIX_FMT_YUV420P,cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
+    cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,cs->webcam_decoder_ctx->pix_fmt,cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
     printf("init video encoder successful\n");  
     return 1;
 }
@@ -352,6 +359,7 @@ void *encode_video_thread(void *arg)
 	    break;
 	
 	if(cs->send_video) {
+	  
 	    if(av_read_frame(cs->video_format_ctx, packet) < 0) {
 	     printf("error reading frame\n");
 		if(cs->video_format_ctx->pb->error != 0) 
@@ -367,7 +375,6 @@ void *encode_video_thread(void *arg)
 		}
 		av_free_packet(packet);
 		sws_scale(cs->sws_ctx,(uint8_t const * const *)cs->webcam_frame->data,cs->webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, cs->s_video_frame->data,cs->s_video_frame->linesize);
-		
 		/* create a new I-frame every 60 frames */
 		++p;
 		if(p==60) {
@@ -608,7 +615,6 @@ void *decode_thread(void *arg)
     av_free(cs->r_video_frame);
     av_free(cs->webcam_frame);
     av_free(cs->audio_frame);
-    sws_freeContext(cs->sws_ctx);
     avcodec_close(cs->video_decoder_ctx);
     avcodec_close(cs->audio_decoder_ctx);
 
