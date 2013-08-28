@@ -142,7 +142,7 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
         _msg = rtp_recv_msg ( _rtp_session );
 
         if ( _msg ) {
-            /* Do what ever with msg */
+            /* Do whatever with msg */
             rtp_free_msg ( _rtp_session, _msg );
         }
         /* -------------------- */
@@ -323,7 +323,7 @@ int callback_call_canceled ( STATE_CALLBACK_ARGS )
 }
 int callback_call_rejected ( STATE_CALLBACK_ARGS )
 {
-    printf ( "On call rejected!\n" );
+    printf ( "Call rejected!\n" );
     return SUCCESS;
 }
 int callback_call_ended ( STATE_CALLBACK_ARGS )

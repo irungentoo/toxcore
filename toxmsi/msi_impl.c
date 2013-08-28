@@ -288,10 +288,18 @@ int msi_handle_recv_reject ( media_session_t* _session, media_msg_t* _msg )
 
     _session->_friend_id = _msg->_friend_id;
 
-    if ( _session->_last_request != _invite || !msi_reject_call_callback )
+    if ( !msi_reject_call_callback )
         return 0;
 
     _session->_last_request = _msg->_request;
+
+    media_msg_t* _msg_ending = msi_msg_new ( TYPE_REQUEST, _end );
+
+    /* Do whatever with message */
+
+    send_msg ( _session, _msg_ending );
+
+    free ( _msg_ending );
 
     return ( *msi_reject_call_callback ) ();
 }
