@@ -40,8 +40,8 @@
 typedef uint8_t data_t;
 
 /* Core adaptation helper */
-int set_ip_port ( const char* _ip, unsigned short _port, void* _cont );
-uint32_t get_random_number ( uint32_t _max );
+int t_setipport ( const char* _ip, unsigned short _port, void* _cont );
+uint32_t t_random ( uint32_t _max );
 
 
 /* It's a bit faster than the memcpy it self and more optimized for using

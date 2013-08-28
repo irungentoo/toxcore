@@ -7,7 +7,7 @@
 
 #include "test_helper.h"
 
-int print_help( const char* name )
+int _print_help( const char* name )
 {
     char* _help = malloc( 300 );
     memset(_help, '\0', 300);
@@ -25,8 +25,8 @@ int print_help( const char* name )
 }
 
 int
-/* _no__main */
-main
+ _no__main
+/*main*/
 ( int argc, char* argv[] )
 {
     int status;
@@ -48,7 +48,7 @@ main
     plisten = find_arg_duble(_list, "-l");
 
     if ( !ip || !plisten || !psend )
-        return print_help(argv[0]);
+        return _print_help(argv[0]);
 
     port_send = atoi(psend);
     port_listen = atoi(plisten);
@@ -62,13 +62,16 @@ main
      */
     local.ip.i = htonl(INADDR_ANY);
     local.port = port_listen;
-    status = init_networking(local.ip, port_listen);
+    Networking_Core* _networking = new_networking(local.ip, port_listen);
 
+    if ( !_networking )
+        return FAILURE;
 
+    int _socket = _networking->sock;
     /*
      * Now this is the remote. It's used by rtp_session_t to determine the receivers ip etc.
      */
-    set_ip_port ( ip, port_send, &remote );
+    t_setipport ( ip, port_send, &remote );
     _m_session = rtp_init_session(-1);
     rtp_add_receiver( _m_session, &remote );
 
@@ -92,7 +95,7 @@ main
          * This one makes a test msg and sends that message to the 'remote'
          */
         _m_msg_S = rtp_msg_new ( _m_session, test_bytes, 280 ) ;
-        rtp_send_msg ( _m_session, _m_msg_S );
+        rtp_send_msg ( _m_session, _m_msg_S, _socket );
         usleep ( 10000 );
         /* -------------------- */
     }

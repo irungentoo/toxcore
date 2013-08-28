@@ -3,7 +3,7 @@
 
 #include "rtp_error.h"
 
-typedef enum error_s{
+typedef enum error_s {
     RTP_ERROR_PACKET_DROPED = 1,
     RTP_ERROR_EMPTY_MESSAGE,
     RTP_ERROR_STD_SEND_FAILURE,
@@ -17,6 +17,7 @@ typedef enum error_s{
 
 
 /* Only needed to be called once */
+#ifndef REGISTER_RTP_ERRORS
 #define REGISTER_RTP_ERRORS \
     t_rtperr_register( RTP_ERROR_PACKET_DROPED, "Ivalid sequence number, packet is late" ); \
     t_rtperr_register( RTP_ERROR_EMPTY_MESSAGE, "Tried to send an empty message" ); \
@@ -26,6 +27,6 @@ typedef enum error_s{
     t_rtperr_register( RTP_ERROR_HEADER_PARSING, "While parsing header" ); \
     t_rtperr_register( RTP_ERROR_PAYLOAD_NULL, "Payload is NULL" ); \
     t_rtperr_register( RTP_ERROR_PAYLOAD_INVALID, "Invalid payload size" );
-
+#endif /* REGISTER_RTP_ERRORS */
 
 #endif /* _RTP_ERROR_ID_ */

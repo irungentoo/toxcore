@@ -69,11 +69,7 @@ int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
    the packet data into data
    the packet length into length.
    dump all empty packets. */
-<<<<<<< HEAD:core/network.c
-int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length)
-=======
-static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
->>>>>>> upstream/master:toxcore/network.c
+int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     ADDR addr;
 #ifdef WIN32
@@ -103,21 +99,12 @@ void networking_poll(Networking_Core *net)
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 
-<<<<<<< HEAD:core/network.c
-    while (receivepacket(&ip_port, data, &length) != -1)
-    {
-        if (length < 1) continue;
-        if (!packethandlers[data[0]]) continue;
-        if ( data[0] == 66 ) assert(0);
-        packethandlers[data[0]](ip_port, data, length);
-=======
     while (receivepacket(net->sock, &ip_port, data, &length) != -1) {
         if (length < 1) continue;
 
         if (!(net->packethandlers[data[0]].function)) continue;
 
         net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length);
->>>>>>> upstream/master:toxcore/network.c
     }
 }
 
@@ -215,15 +202,8 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
     /* Bind our socket to port PORT and address 0.0.0.0 */
     ADDR addr = {AF_INET, htons(port), ip};
-<<<<<<< HEAD:core/network.c
-    bind(sock, (struct sockaddr*)&addr, sizeof(addr));
-
-    return 0;
-
-=======
     bind(temp->sock, (struct sockaddr *)&addr, sizeof(addr));
     return temp;
->>>>>>> upstream/master:toxcore/network.c
 }
 
 /* function to cleanup networking stuff */
@@ -237,16 +217,15 @@ void kill_networking(Networking_Core *net)
     free(net);
     return;
 }
-<<<<<<< HEAD:core/network.c
 
 /*
-  resolve_addr():
-    address should represent IPv4 or a hostname with A record
+resolve_addr():
+address should represent IPv4 or a hostname with A record
 
-    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
-    returns 0 on failure
+returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
+returns 0 on failure
 
-    TODO: Fix ipv6 support
+TODO: Fix ipv6 support
 */
 uint32_t resolve_addr(const char *address)
 {
@@ -278,5 +257,3 @@ uint32_t resolve_addr(const char *address)
     freeaddrinfo(server);
     return addr;
 }
-=======
->>>>>>> upstream/master:toxcore/network.c

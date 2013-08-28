@@ -1,0 +1,110 @@
+/* msi_initiation.h
+*
+* Has function for session initiation along with session description.
+* It follows the Tox API ( http://wiki.tox.im/index.php/Messaging_Protocol ). !Red!
+*
+*
+* Copyright (C) 2013 Tox project All Rights Reserved.
+*
+* This file is part of Tox.
+*
+* Tox is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* Tox is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Tox. If not, see <http://www.gnu.org/licenses/>.
+*
+*/
+
+
+#ifndef _MSI_IMPL_H_
+#define _MSI_IMPL_H_
+
+#include <inttypes.h>
+#include "../toxrtp/rtp_impl.h"
+#include <pthread.h>
+#include "msi_message.h"
+
+#define STATE_CALLBACK_ARGS void
+#define STATE_CALLBACK int (*callback) (STATE_CALLBACK_ARGS)
+
+#define MSI_PACKET 69
+
+size_t m_strlen ( uint8_t* str );
+
+typedef enum {
+    call_inviting,
+    call_active,
+    call_hold,
+    call_ended
+
+} call_state;
+
+typedef struct media_session_s {
+    rtp_session_t* _rtp_session;
+
+
+    pthread_t _thread_id;
+
+    media_msg_t* _oldest_msg;
+    media_msg_t* _last_msg; /* tail */
+    /*int _friend_id;*/
+    IP_Port _friend_id;
+
+    int _last_request; /* It determines if state was active */
+    int _last_response; /* Same here */
+
+    call_state _call_info;
+
+    int _socket;
+
+    /* Martijnvdc add your media stuff here so this will be used in messenger */
+
+} media_session_t;
+
+
+
+media_session_t* msi_init_session ( int _socket );
+int msi_terminate_session ( media_session_t* _session );
+
+int msi_start_main_loop ( media_session_t* _session );
+
+/* Registering callbacks */
+
+/*void msi_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) );*/
+void msi_register_callback_send ( int ( *callback ) ( int _socket, IP_Port,  uint8_t*, uint32_t ) );
+
+/* Callbacks that handle the states */
+void msi_register_callback_call_started ( STATE_CALLBACK );
+void msi_register_callback_call_canceled ( STATE_CALLBACK );
+void msi_register_callback_call_rejected ( STATE_CALLBACK );
+void msi_register_callback_call_ended ( STATE_CALLBACK );
+
+void msi_register_callback_recv_invite ( STATE_CALLBACK );
+void msi_register_callback_recv_trying ( STATE_CALLBACK );
+void msi_register_callback_recv_ringing ( STATE_CALLBACK );
+void msi_register_callback_recv_starting ( STATE_CALLBACK );
+void msi_register_callback_recv_ending ( STATE_CALLBACK );
+/* -------- */
+
+
+/* Function handling receiving from core */
+/*static int msi_handlepacket ( IP_Port ip_port, uint8_t* _data, uint16_t _lenght ); */
+
+
+int msi_invite ( media_session_t* _session );
+int msi_hangup ( media_session_t* _session );
+
+int msi_answer ( media_session_t* _session );
+int msi_cancel ( media_session_t* _session );
+int msi_reject ( media_session_t* _session );
+
+
+#endif /* _MSI_IMPL_H_ */

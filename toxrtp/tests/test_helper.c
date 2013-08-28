@@ -29,10 +29,6 @@ arg_t* parse_args ( int argc, char* argv[] )
 {
     arg_t* _list;
 
-    if ( argc == 1 ) {
-        return NULL;
-    }
-
     ALLOCATOR_LIST_D ( _list, arg_t, NULL )
     arg_t* it = _list;
 

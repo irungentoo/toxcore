@@ -40,9 +40,9 @@
 
 rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
 {
-    if ( !_payload ){
+    if ( !_payload ) {
 #ifdef _USE_ERRORS
-        t_perror(RTP_ERROR_PAYLOAD_NULL);
+        t_perror ( RTP_ERROR_PAYLOAD_NULL );
 #endif /* _USE_ERRORS */
         return NULL;
     }
@@ -62,7 +62,7 @@ rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
 
     if ( _bytes < _lenght ) {
 #ifdef _USE_ERRORS
-        t_perror(RTP_ERROR_PAYLOAD_INVALID);
+        t_perror ( RTP_ERROR_PAYLOAD_INVALID );
 #endif /* _USE_ERRORS */
         return NULL;
     }
@@ -71,7 +71,7 @@ rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
         _retu->_csrc = malloc ( sizeof ( uint32_t ) * cc );
     } else { /* But this should not happen ever */
 #ifdef _USE_ERRORS
-        t_perror(RTP_ERROR_HEADER_PARSING);
+        t_perror ( RTP_ERROR_HEADER_PARSING );
 #endif /* _USE_ERRORS */
         return NULL;
     }
@@ -103,9 +103,9 @@ rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
 
 rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload, size_t _bytes )
 {
-    if ( !_payload ){
+    if ( !_payload ) {
 #ifdef _USE_ERRORS
-        t_perror(RTP_ERROR_PAYLOAD_NULL);
+        t_perror ( RTP_ERROR_PAYLOAD_NULL );
 #endif /* _USE_ERRORS */
         return NULL;
     }
@@ -118,9 +118,9 @@ rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload, size_t _bytes
 
     uint16_t _ext_len = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
 
-    if ( _bytes < _ext_len ){
+    if ( _bytes < _ext_len ) {
 #ifdef _USE_ERRORS
-        t_perror(RTP_ERROR_PAYLOAD_INVALID);
+        t_perror ( RTP_ERROR_PAYLOAD_INVALID );
 #endif /* _USE_ERRORS */
         return NULL;
     }
@@ -277,17 +277,18 @@ uint8_t rtp_header_get_setting_marker ( const rtp_header_t* _header )
     return ( _header->_marker_payload_t ) >> 7;
 }
 uint8_t rtp_header_get_setting_payload_type ( const rtp_header_t* _header )
-{/*
-    uint8_t _retu;
+{
+    /*
+       uint8_t _retu;
 
-    if ( _header->_marker_payload_t >> 7 == 1 ) {
-        _header->_marker_payload_t ^= 0x80;
-        _retu = _header->_marker_payload_t;
-        _header->_marker_payload_t ^= 0x80;
-    } else {
-        _retu = _header->_marker_payload_t;
-    }
-*/
+       if ( _header->_marker_payload_t >> 7 == 1 ) {
+           _header->_marker_payload_t ^= 0x80;
+           _retu = _header->_marker_payload_t;
+           _header->_marker_payload_t ^= 0x80;
+       } else {
+           _retu = _header->_marker_payload_t;
+       }
+    */
     /* return to start value
     return _retu; */
     return _header->_marker_payload_t & 0x7f;

@@ -44,7 +44,7 @@ const uint8_t RTP_EXT_MARK_SOMETHING = 2;
 
 /* Some defines */
 
-#define RTP_PACKET_ID 100
+#define RTP_PACKET 70
 
 /* Payload identifiers */
 
@@ -108,6 +108,12 @@ typedef struct rtp_session_s {
     struct rtp_dest_list_s* _dest_list;
     struct rtp_dest_list_s* _last_user; /* a tail for faster appending */
 
+    rtp_msg_t*              _oldest_msg;
+    rtp_msg_t*              _last_msg; /* tail */
+
+    uint16_t                _prefix_length;
+    uint8_t*                _prefix;
+
 } rtp_session_t;
 
 
@@ -117,14 +123,14 @@ typedef struct rtp_session_s {
  */
 
 
-void            rtp_free_msg(rtp_session_t* _session, rtp_msg_t* _msg);
+void            rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _msg );
 
 /* Functions handling receiving */
 rtp_msg_t*      rtp_recv_msg ( rtp_session_t* _session );
 rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_t _length );
 
 /* Functions handling sending */
-int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg );
+int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket );
 rtp_msg_t*      rtp_msg_new ( rtp_session_t* _session, const data_t* _data, uint32_t _length );
 
 
@@ -134,23 +140,26 @@ rtp_header_t*   rtp_build_header ( rtp_session_t* _session );
 /* Functions handling session control */
 
 /* Handling an rtp packet */
-int             rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source);
+/* int             rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source); */
 
-    /* Session initiation and termination. */
+/* Session initiation and termination. */
 rtp_session_t*  rtp_init_session ( int _max_users );
-int             rtp_terminate_session( rtp_session_t* _session );
+int             rtp_terminate_session ( rtp_session_t* _session );
 
-    /* Adding receiver */
+/* Adding receiver */
 int             rtp_add_receiver ( rtp_session_t* _session, IP_Port* _dest );
 
-    /* Convenient functions for marking the resolution */
+/* Convenient functions for marking the resolution */
 int             rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint16_t _height );
 int             rtp_remove_resolution_marking ( rtp_session_t* _session );
-uint16_t        rtp_get_resolution_marking_height(rtp_ext_header_t* _header);
-uint16_t        rtp_get_resolution_marking_width(rtp_ext_header_t* _header);
+uint16_t        rtp_get_resolution_marking_height ( rtp_ext_header_t* _header );
+uint16_t        rtp_get_resolution_marking_width ( rtp_ext_header_t* _header );
 
-    /* Convenient functions for marking the payload */
+/* Convenient functions for marking the payload */
 void            rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value );
 uint32_t        rtp_get_payload_type ( rtp_session_t* _session );
+
+/* When using RTP in core be sure to set prefix when sending via rtp_send_msg */
+int             rtp_set_prefix ( rtp_session_t* _session, uint8_t* _prefix, uint16_t _prefix_length );
 
 #endif /* _RTP__IMPL_H_ */

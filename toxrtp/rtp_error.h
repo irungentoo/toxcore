@@ -5,11 +5,11 @@
 #define PRINT_ARGS( _errno ) _errno, t_rtperr(_errno), __FILE__, __LINE__
 
 
-const char* t_rtperr(int _errno);
-void        t_rtperr_register( int _id, const char* _info );
+const char* t_rtperr ( int _errno );
+void        t_rtperr_register ( int _id, const char* _info );
 
-void        t_invoke_error( int _id );
-void        t_rtperr_print(const char* _val, ...);
+void        t_invoke_error ( int _id );
+void        t_rtperr_print ( const char* _val, ... );
 
 #define t_perror( _errno ) t_rtperr_print ( PRINT_FORMAT, PRINT_ARGS ( _errno ) )
 

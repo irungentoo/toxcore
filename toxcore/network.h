@@ -152,7 +152,9 @@ Networking_Core *new_networking(IP ip, uint16_t port);
 void kill_networking(Networking_Core *net);
 
 
-int receivepacket(IP_Port * ip_port, uint8_t * data, uint32_t * length);
+int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length);
+
+uint32_t resolve_addr(const char *address);
 
 #ifdef __cplusplus
 }

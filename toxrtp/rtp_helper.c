@@ -24,13 +24,13 @@
 
 
 #include "rtp_helper.h"
-#include "../core/network.h"
+#include "../toxcore/network.h"
 
 #include <arpa/inet.h> /* Fixes implicit function warning. */
 
 static int _seed = -1; /* Not initiated */
 
-int set_ip_port ( const char* _ip, unsigned short _port, void* _dest )
+int t_setipport ( const char* _ip, unsigned short _port, void* _dest )
 {
     if ( !_dest ) {
         return FAILURE;
@@ -44,7 +44,7 @@ int set_ip_port ( const char* _ip, unsigned short _port, void* _dest )
     return SUCCESS;
 }
 
-uint32_t get_random_number ( uint32_t _max )
+uint32_t t_random ( uint32_t _max )
 {
     if ( _seed < 0 ) {
         srand ( _time );
@@ -52,9 +52,9 @@ uint32_t get_random_number ( uint32_t _max )
     }
 
     if ( _max <= 0 ) {
-        return (unsigned) rand();
+        return ( unsigned ) rand();
     } else {
-        return (unsigned) rand() % _max;
+        return ( unsigned ) rand() % _max;
     }
 }
 
@@ -66,7 +66,7 @@ void t_memcpy ( data_t* _dest, const data_t* _source, size_t _size )
      */
     size_t _it = _size;
 
-    do{
+    do {
         _it--;
         _dest[_it] = _source[_it];
     } while ( _it );
@@ -79,7 +79,7 @@ data_t* t_memset ( data_t* _dest, int _valu, size_t _size )
      */
     size_t _it = _size;
 
-    do{
+    do {
         _it--;
         _dest[_it] = _valu;
     } while ( _it );

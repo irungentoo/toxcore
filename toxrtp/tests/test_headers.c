@@ -124,6 +124,17 @@ void print_ext_header_info(rtp_ext_header_t* _ext_header)
     );
 }
 
+/* NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE */
+/* NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE */
+/* NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE */
+/* NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE */
+/* NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE */
+/* NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE */
+/* NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE */
+/* Tests are broken for now while testing phone.c .
+ * If phone.c turns out to be working i will remove these
+ */
+
 int
 ___main
 /*main*/
@@ -156,7 +167,12 @@ ___main
         LOCAL_IP.padding = -1;
 
         _m_session = rtp_init_session ( -1 );
-        status = init_networking ( LOCAL_IP.ip, RTP_PORT_LISTEN );
+        Networking_Core* _networking = new_networking(LOCAL_IP.ip, RTP_PORT_LISTEN);
+
+        if ( !_networking )
+            return FAILURE;
+
+        int _socket = _networking->sock;
 
         t_perror(13);
 
@@ -206,9 +222,15 @@ ___main
             port = atoi ( _port );
         }
 
-        set_ip_port ( ip, port, &Ip_port );
+        t_setipport ( ip, port, &Ip_port );
         printf ( "Remote: %s:%d\n", ip, port );
-        status = init_networking ( Ip_port.ip, RTP_PORT );
+
+        Networking_Core* _networking = new_networking(Ip_port.ip, RTP_PORT);
+
+        if ( !_networking )
+            return FAILURE;
+
+        int _socket = _networking->sock;
 
         _m_session = rtp_init_session ( -1 );
         rtp_add_receiver( _m_session, &Ip_port );
@@ -220,7 +242,7 @@ ___main
         /* use already defined buffer lenght */
         _m_msg = rtp_msg_new ( _m_session, test_bytes, 300 );
 
-        rtp_send_msg ( _m_session, _m_msg );
+        rtp_send_msg ( _m_session, _m_msg, _socket );
 
 
         printf ( "First sequence num :%d\n"
