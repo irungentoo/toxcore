@@ -28,6 +28,7 @@
 #include "DHT.h"
 #include "packets.h"
 #include "ping.h"
+#include "util.h"
 
 /* the number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
@@ -295,8 +296,12 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
 
     /* Precompute distances to use for sorting. Only take first 64 bits = 8 bytes.*/
     for (i = 0; i < length - 1; ++i) {
-        for (j = 0; j < 8; ++j)
-            tmpid[j] = comp_client_id[j] ^ list[i].client_id[j];
+        if (!system_big_endian())
+            for (j = 0; j < 8; ++j)
+                tmpid[j] = comp_client_id[j] ^ list[i].client_id[j];
+        else
+            for (j = 7; j >= 0; --j)
+                tmpid[j] = reverse_bits(comp_client_id[j] ^ list[i].client_id[j]);
         memcpy(dists[i], tmpid, 8);
     }
     for (i = 0; i < length; ++i)
