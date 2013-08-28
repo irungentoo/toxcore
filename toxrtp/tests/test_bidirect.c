@@ -1,4 +1,5 @@
 #include "../rtp_impl.h"
+#include "../rtp_message.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +7,7 @@
 #include <assert.h>
 
 #include "test_helper.h"
+#include "../../toxcore/tox.h"
 
 int _print_help( const char* name )
 {
@@ -30,7 +32,7 @@ int
 ( int argc, char* argv[] )
 {
     int status;
-    IP_Port     Ip_port;
+    tox_IP_Port     Ip_port;
     const char* ip, *psend, *plisten;
     uint16_t    port_send, port_listen;
     const char* test_bytes = "0123456789012345678901234567890123456789012345678901234567890123456789"

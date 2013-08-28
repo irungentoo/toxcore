@@ -29,8 +29,8 @@
 
 #include <inttypes.h>
 #include "../toxrtp/rtp_impl.h"
+#include "../toxcore/tox.h"
 #include <pthread.h>
-#include "msi_message.h"
 
 #define STATE_CALLBACK_ARGS void
 #define STATE_CALLBACK int (*callback) (STATE_CALLBACK_ARGS)
@@ -53,10 +53,10 @@ typedef struct media_session_s {
 
     pthread_t _thread_id;
 
-    media_msg_t* _oldest_msg;
-    media_msg_t* _last_msg; /* tail */
+    struct media_msg_s* _oldest_msg;
+    struct media_msg_s* _last_msg; /* tail */
     /*int _friend_id;*/
-    IP_Port _friend_id;
+    tox_IP_Port _friend_id;
 
     int _last_request; /* It determines if state was active */
     int _last_response; /* Same here */
@@ -79,7 +79,7 @@ int msi_start_main_loop ( media_session_t* _session );
 /* Registering callbacks */
 
 /*void msi_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) );*/
-void msi_register_callback_send ( int ( *callback ) ( int _socket, IP_Port,  uint8_t*, uint32_t ) );
+void msi_register_callback_send ( int ( *callback ) ( int _socket, tox_IP_Port,  uint8_t*, uint32_t ) );
 
 /* Callbacks that handle the states */
 void msi_register_callback_call_started ( STATE_CALLBACK );
@@ -96,7 +96,7 @@ void msi_register_callback_recv_ending ( STATE_CALLBACK );
 
 
 /* Function handling receiving from core */
-/*static int msi_handlepacket ( IP_Port ip_port, uint8_t* _data, uint16_t _lenght ); */
+/*static int msi_handlepacket ( tox_IP_Port ip_port, uint8_t* _data, uint16_t _lenght ); */
 
 
 int msi_invite ( media_session_t* _session );

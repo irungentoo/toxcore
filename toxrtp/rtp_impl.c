@@ -24,6 +24,7 @@
  *
  */
 #include "rtp_impl.h"
+#include "rtp_message.h"
 #include <assert.h>
 #include "rtp_allocator.h"
 #include "../toxcore/util.h"
@@ -58,6 +59,17 @@ static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                   /*  110-119  */
     0, 0, 0, 0, 0, 0, 0, 0                                          /*  120-127  */
 };
+
+/* Current compatibility solution */
+int m_sendpacket(int sock, tox_IP_Port ip_port, uint8_t *data, uint32_t length)
+{
+    IP_Port _convert;
+
+    _convert.ip.i = ip_port.ip.i;
+    _convert.port = ip_port.port;
+
+    return sendpacket(sock, _convert, data, length);
+}
 
 rtp_session_t* rtp_init_session ( int max_users )
 {
@@ -208,7 +220,7 @@ uint32_t rtp_get_payload_type ( rtp_session_t* _session )
     return _payload_table[_session->_payload_type];
 }
 
-int rtp_add_receiver ( rtp_session_t* _session, IP_Port* _dest )
+int rtp_add_receiver ( rtp_session_t* _session, tox_IP_Port* _dest )
 {
     if ( !_session )
         return FAILURE;
@@ -267,7 +279,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
     rtp_dest_list_t* _it;
     for ( _it = _session->_dest_list; _it != NULL; _it = _it->next ) {
 
-        _last = sendpacket ( _socket, _it->_dest, _send_data, _length );
+        _last = m_sendpacket ( _socket, _it->_dest, _send_data, _length );
 
         if ( _last < 0 ) {
 #ifdef _USE_ERRORS

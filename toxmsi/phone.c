@@ -1,4 +1,6 @@
 #include "msi_impl.h"
+#include "msi_message.h"
+#include "../toxrtp/rtp_message.h"
 #include "../toxrtp/tests/test_helper.h"
 #include <curses.h>
 #include <assert.h>
@@ -29,7 +31,7 @@ int rtp_handlepacket ( rtp_session_t* _session, uint8_t* data, uint32_t length )
 
     return SUCCESS;
 }
-int msi_handlepacket ( media_session_t* _session, IP_Port ip_port, uint8_t* data, uint32_t length )
+int msi_handlepacket ( media_session_t* _session, tox_IP_Port ip_port, uint8_t* data, uint32_t length )
 {
     media_msg_t* _msg;
     _msg = msi_parse_msg ( 0, data, length );
@@ -54,7 +56,7 @@ void* phone_receivepacket ( void* _session_p )
     media_session_t* _session = _session_p;
 
     uint32_t  _bytes;
-    IP_Port   _from;
+    tox_IP_Port   _from;
     uint8_t _socket_data[MAX_UDP_PACKET_SIZE];
 
     int _m_socket = _socket;
@@ -354,7 +356,7 @@ int main ( int argc, char* argv [] )
     const char* _mode = find_arg_duble ( _args, "-m" );
     const char* _ip   = find_arg_duble ( _args, "-d" );
 
-    IP_Port _remote;
+    tox_IP_Port _remote;
 
     if ( !_mode )
         return print_help ( argv[0] );

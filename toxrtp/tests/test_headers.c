@@ -24,6 +24,7 @@
 
 #include "test_helper.h"
 #include "../rtp_impl.h"
+#include "../rtp_message.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -28,12 +28,19 @@
 
 #include "../toxcore/network.h"
 #include "rtp_helper.h"
-
+#include "../toxcore/tox.h"
 /* Defines */
 
 #define _MAX_SEQU_NUM 65535
 
 /* End of defines */
+
+
+typedef struct rtp_dest_list_s {
+    tox_IP_Port             _dest;
+    struct rtp_dest_list_s* next;
+
+} rtp_dest_list_t;
 
 typedef struct rtp_header_s {
     uint8_t      _flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
@@ -62,7 +69,7 @@ typedef struct rtp_msg_s {
 
     data_t*                  _data;
     uint32_t                 _length;
-    IP_Port                  _from;
+    tox_IP_Port              _from;
 
     struct rtp_msg_s*        _next;
 } rtp_msg_t;

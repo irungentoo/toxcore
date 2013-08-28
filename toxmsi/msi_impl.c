@@ -1,4 +1,5 @@
 #include "msi_impl.h"
+#include "msi_message.h"
 
 #include <assert.h>
 
@@ -23,8 +24,8 @@ static media_session_t* _msession_handler = NULL;
 
 /* CALLBACKS */
 /*int (*msi_send_message_callback) ( int, uint8_t*, uint32_t ) = NULL;*/
-int ( *msi_send_message_callback ) ( int _socket, IP_Port,  uint8_t*, uint32_t ) = NULL;
-int ( *msi_recv_message_callback ) ( IP_Port*, uint8_t*, uint32_t* ) = NULL;
+int ( *msi_send_message_callback ) ( int _socket, tox_IP_Port,  uint8_t*, uint32_t ) = NULL;
+int ( *msi_recv_message_callback ) ( tox_IP_Port*, uint8_t*, uint32_t* ) = NULL;
 
 int ( *msi_recv_invite_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
 int ( *msi_start_call_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
@@ -53,12 +54,12 @@ int ( *msi_ending_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
 
 /* REGISTER CALLBACKS */
 /*void msi_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) )*/
-void msi_register_callback_send ( int ( *callback ) ( int _socket, IP_Port, uint8_t*, uint32_t ) )
+void msi_register_callback_send ( int ( *callback ) ( int _socket, tox_IP_Port, uint8_t*, uint32_t ) )
 {
     msi_send_message_callback = callback;
 }
 
-void msi_register_callback_recv ( int ( *callback ) ( IP_Port*, uint8_t*, uint32_t* ) )
+void msi_register_callback_recv ( int ( *callback ) ( tox_IP_Port*, uint8_t*, uint32_t* ) )
 {
     msi_recv_message_callback = callback;
 }
