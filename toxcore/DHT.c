@@ -296,7 +296,7 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
 
     /* Precompute distances to use for sorting. Only take first 64 bits = 8 bytes.*/
     for (i = 0; i < length - 1; ++i) {
-        if (!system_big_endian())
+        if (system_big_endian())
             for (j = 0; j < 8; ++j)
                 tmpid[j] = comp_client_id[j] ^ list[i].client_id[j];
         else
