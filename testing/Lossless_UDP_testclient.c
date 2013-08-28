@@ -1,11 +1,11 @@
 /* Lossless_UDP testclient
  * A program that connects and sends a file using our lossless UDP algorithm.
  * NOTE: this program simulates a 33% packet loss.
- * 
+ *
  * Best used in combination with Lossless_UDP_testserver
- * 
+ *
  * Compile with: gcc -O2 -Wall -lsodium -o testclient ../core/network.c ../core/Lossless_UDP.c Lossless_UDP_testclient.c
- * 
+ *
  * Command line arguments are the ip and port to connect and send the file to.
  * EX: ./testclient 127.0.0.1 33445 filename.txt
  *
@@ -25,11 +25,11 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  */
 
-#include "../core/network.h"
-#include "../core/Lossless_UDP.h"
+#include "../toxcore/network.h"
+#include "../toxcore/Lossless_UDP.h"
 
 #ifdef WIN32
 
@@ -49,17 +49,21 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
     printf("--------------------BEGIN-----------------------------\n");
+
     for (i = 0; i < length; i++) {
         if (data[i] < 16)
             printf("0");
-        printf("%hhX",data[i]);
+
+        printf("%hhX", data[i]);
     }
+
     printf("\n--------------------END-----------------------------\n\n\n");
 }
 
 void printip(IP_Port ip_port)
 {
-    printf("\nIP: %u.%u.%u.%u Port: %u", ip_port.ip.c[0], ip_port.ip.c[1], ip_port.ip.c[2], ip_port.ip.c[3], ntohs(ip_port.port));
+    printf("\nIP: %u.%u.%u.%u Port: %u", ip_port.ip.c[0], ip_port.ip.c[1], ip_port.ip.c[2], ip_port.ip.c[3],
+           ntohs(ip_port.port));
 }
 /*
 void printpackets(Data test)
@@ -80,9 +84,9 @@ void printconnection(int connection_id)
     printf("--------------------BEGIN---------------------\n");
     IP_Port ip_port = connections[connection_id].ip_port;
     printf("IP: %u.%u.%u.%u Port: %u\n",ip_port.ip.c[0],ip_port.ip.c[1],ip_port.ip.c[2],ip_port.ip.c[3],ntohs(ip_port.port));
-    printf("status: %u, inbound: %u, SYNC_rate: %u\n", connections[connection_id].status, 
+    printf("status: %u, inbound: %u, SYNC_rate: %u\n", connections[connection_id].status,
     connections[connection_id].inbound, connections[connection_id].SYNC_rate);
-    printf("data rate: %u, last sync: %llu, last sent: %llu, last recv: %llu \n", connections[connection_id].data_rate, 
+    printf("data rate: %u, last sync: %llu, last sent: %llu, last recv: %llu \n", connections[connection_id].data_rate,
     connections[connection_id].last_SYNC, connections[connection_id].last_sent, connections[connection_id].last_recv);
     int i;
     for(i =0; i < MAX_QUEUE_NUM; i++)
@@ -97,12 +101,12 @@ void printconnection(int connection_id)
     }
     Data sendbuffer[MAX_QUEUE_NUM];
     Data recvbuffer[MAX_QUEUE_NUM];
-    printf("recv_num: %u, orecv_num: %u, sent_packetnum %u, osent_packetnum: %u, successful_sent: %u, successful_read: %u\n", 
-    connections[connection_id].recv_packetnum, 
+    printf("recv_num: %u, orecv_num: %u, sent_packetnum %u, osent_packetnum: %u, successful_sent: %u, successful_read: %u\n",
+    connections[connection_id].recv_packetnum,
     connections[connection_id].orecv_packetnum, connections[connection_id].sent_packetnum, connections[connection_id].osent_packetnum,
     connections[connection_id].successful_sent,
     connections[connection_id].successful_read);
-    
+
     printf("req packets: \n");
     for(i = 0; i < BUFFER_PACKET_NUM; i++)
     {
@@ -112,35 +116,35 @@ void printconnection(int connection_id)
     connections[connection_id].recv_counter, connections[connection_id].send_counter);
 
     printf("--------------------END---------------------\n");
-    
+
 }
 */
 
 /*( receive packets and send them to the packethandler */
 /*run doLossless_UDP(); */
-void Lossless_UDP()
-{
+//void Lossless_UDP()
+//{
 /*    IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
     while (receivepacket(&ip_port, data, &length) != -1) {
     printf("packet with length: %u\n", length); */
-        /* if(rand() % 3 != 1)//add packet loss
-         { */
+/* if(rand() % 3 != 1)//add packet loss
+ { */
 /*
             if (LosslessUDP_handlepacket(data, length, ip_port))
                 printpacket(data, length, ip_port);
-            else 
+            else
             printf("Received handled packet with length: %u\n", length); //printconnection(0); */
-            
-       /* } */
-	/* }*/
 
-    networking_poll();
-    
-    doLossless_UDP();   
-    
-}
+/* } */
+/* }*/
+
+//networking_poll();
+
+//doLossless_UDP();
+
+//}
 
 int main(int argc, char *argv[])
 {
@@ -148,71 +152,80 @@ int main(int argc, char *argv[])
         printf("usage: %s ip port filename\n", argv[0]);
         exit(0);
     }
-    
+
     uint8_t buffer[512];
     int read;
-    
+
     FILE *file = fopen(argv[3], "rb");
+
     if (file == NULL)
-      return 1;
-    
-    
+        return 1;
+
+
     /* initialize networking */
     /* bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
-    init_networking(ip, PORT);
+    Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
     IP_Port serverip;
     serverip.ip.i = inet_addr(argv[1]);
     serverip.port = htons(atoi(argv[2]));
     printip(serverip);
-    int connection = new_connection(serverip);
+    int connection = new_connection(ludp, serverip);
     uint64_t timer = current_time();
+
     while (1) {
-       /* printconnection(connection); */
-        Lossless_UDP();
-        if (is_connected(connection) == 3) {
+        /* printconnection(connection); */
+        networking_poll(ludp->net);
+        do_lossless_udp(ludp);
+
+        if (is_connected(ludp, connection) == 3) {
             printf("Connecting took: %llu us\n", (unsigned long long)(current_time() - timer));
             break;
         }
-        if (is_connected(connection) == 0) {
+
+        if (is_connected(ludp, connection) == 0) {
             printf("Connection timeout after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 1;
         }
+
         c_sleep(1);
     }
+
     timer = current_time();
-    
-    LosslessUDP_init();
-    
+
+
     /*read first part of file */
     read = fread(buffer, 1, 512, file);
-    
+
     while (1) {
         /* printconnection(connection); */
-        Lossless_UDP();
-        if (is_connected(connection) == 3) {
-            
-            if (write_packet(connection, buffer, read)) {
-               /* printf("Wrote data.\n"); */
+        networking_poll(ludp->net);
+        do_lossless_udp(ludp);
+
+        if (is_connected(ludp, connection) == 3) {
+
+            if (write_packet(ludp, connection, buffer, read)) {
+                /* printf("Wrote data.\n"); */
                 read = fread(buffer, 1, 512, file);
 
             }
+
             /* printf("%u\n", sendqueue(connection)); */
-            if (sendqueue(connection) == 0) {
+            if (sendqueue(ludp, connection) == 0) {
                 if (read == 0) {
                     printf("Sent file successfully in: %llu us\n", (unsigned long long)(current_time() - timer));
                     break;
                 }
             }
-        }
-        else {
+        } else {
             printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 0;
         }
+
         /* c_sleep(1); */
     }
-        
+
     return 0;
 }

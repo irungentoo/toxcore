@@ -18,8 +18,8 @@
  *      times. This is used both to ensure that we don't loop forever on a broken build,
  *      and that we don't get too slow with messaging. The current time is 15 seconds. */
 
-#include "../core/friend_requests.h"
-#include "../core/Messenger.h"
+#include "../toxcore/friend_requests.h"
+#include "../toxcore/Messenger.h"
 #include <assert.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -44,38 +44,42 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+#define PORT 33445
+
+static Messenger *m;
+
 uint8_t *parent_id = NULL;
 uint8_t *child_id = NULL;
 
 pid_t child_pid = 0;
 int request_flags = 0;
 
-void do_tox(void)
+void do_tox(DHT *dht)
 {
     static int dht_on = 0;
 
-    if(!dht_on && DHT_isconnected()) {
+    if (!dht_on && DHT_isconnected(dht)) {
         dht_on = 1;
-    } else if(dht_on && !DHT_isconnected()) {
+    } else if (dht_on && !DHT_isconnected(dht)) {
         dht_on = 0;
     }
 
-    doMessenger();
+    doMessenger(m);
 }
 
-void parent_confirm_message(int num, uint8_t *data, uint16_t length)
+void parent_confirm_message(Messenger *m, int num, uint8_t *data, uint16_t length, void *userdata)
 {
     puts("OK");
     request_flags |= SECOND_FLAG;
 }
 
-void parent_confirm_status(int num, uint8_t *data, uint16_t length)
+void parent_confirm_status(Messenger *m, int num, uint8_t *data, uint16_t length, void *userdata)
 {
     puts("OK");
     request_flags |= FIRST_FLAG;
 }
 
-int parent_friend_request(void)
+int parent_friend_request(DHT *dht)
 {
     char *message = "Watson, come here, I need you.";
     int len = strlen(message);
@@ -84,19 +88,21 @@ int parent_friend_request(void)
     fputs("Sending child request.", stdout);
     fflush(stdout);
 
-    m_addfriend(child_id, (uint8_t *)message, len);
+    m_addfriend(m, child_id, (uint8_t *)message, len);
 
     /* wait on the status change */
-    for(i = 0; i < WAIT_COUNT; i++) {
-        do_tox();
-        if(request_flags & FIRST_FLAG)
+    for (i = 0; i < WAIT_COUNT; i++) {
+        do_tox(dht);
+
+        if (request_flags & FIRST_FLAG)
             break;
+
         fputs(".", stdout);
         fflush(stdout);
         c_sleep(WAIT_TIME);
     }
 
-    if(!(request_flags & FIRST_FLAG)) {
+    if (!(request_flags & FIRST_FLAG)) {
         fputs("\nfriends_test: The child took to long to respond!\n"
               "Friend requests may be broken, failing build!\n", stderr);
         kill(child_pid, SIGKILL);
@@ -106,36 +112,38 @@ int parent_friend_request(void)
     return 0;
 }
 
-void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length)
+void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
 {
     fputs("OK\nsending status to parent", stdout);
     fflush(stdout);
-    m_addfriend_norequest(public_key);
+    m_addfriend_norequest(m, public_key);
     request_flags |= FIRST_FLAG;
 }
 
-void child_got_statuschange(int friend_num, uint8_t *string, uint16_t length)
+void child_got_statuschange(Messenger *m, int friend_num, uint8_t *string, uint16_t length, void *userdata)
 {
     request_flags |= SECOND_FLAG;
 }
 
-int parent_wait_for_message(void)
+int parent_wait_for_message(DHT *dht)
 {
     int i = 0;
 
     fputs("Parent waiting for message.", stdout);
     fflush(stdout);
 
-    for(i = 0; i < WAIT_COUNT; i++) {
-        do_tox();
-        if(request_flags & SECOND_FLAG)
+    for (i = 0; i < WAIT_COUNT; i++) {
+        do_tox(dht);
+
+        if (request_flags & SECOND_FLAG)
             break;
+
         fputs(".", stdout);
         fflush(stdout);
         c_sleep(WAIT_TIME);
     }
 
-    if(!(request_flags & SECOND_FLAG)) {
+    if (!(request_flags & SECOND_FLAG)) {
         fputs("\nParent hasn't received the message yet!\n"
               "Messaging may be broken, failing the build!\n", stderr);
         kill(child_pid, SIGKILL);
@@ -158,61 +166,66 @@ int main(int argc, char *argv[])
 
     /* set up the global memory */
     parent_id = mmap(NULL, crypto_box_PUBLICKEYBYTES, PROT_READ | PROT_WRITE,
-                        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     child_id = mmap(NULL, crypto_box_PUBLICKEYBYTES, PROT_READ | PROT_WRITE,
-                        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+                    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
     fputs("friends_test: Starting test...\n", stdout);
-    if((child_pid = fork()) == 0) {
+
+    if ((child_pid = fork()) == 0) {
         /* child */
         int i = 0;
         char *message = "Y-yes Mr. Watson?";
 
-        initMessenger();
-        Messenger_save(child_id);
+        m = initMessenger();
+
+        Messenger_save(m, child_id);
         msync(child_id, crypto_box_PUBLICKEYBYTES, MS_SYNC);
 
-        m_callback_friendrequest(child_got_request);
-        m_callback_statusmessage(child_got_statuschange);
+        m_callback_friendrequest(m, child_got_request, NULL);
+        m_callback_statusmessage(m, child_got_statuschange, NULL);
 
         /* wait on the friend request */
-       while(!(request_flags & FIRST_FLAG))
-            do_tox();
+        while (!(request_flags & FIRST_FLAG))
+            do_tox(m->dht);
 
         /* wait for the status change */
-        while(!(request_flags & SECOND_FLAG))
-            do_tox();
+        while (!(request_flags & SECOND_FLAG))
+            do_tox(m->dht);
 
-        for(i = 0; i < 6; i++) {
+        for (i = 0; i < 6; i++) {
             /* send the message six times, just to be sure */
-            m_sendmessage(0, (uint8_t *)message, strlen(message));
-            do_tox();
+            m_sendmessage(m, 0, (uint8_t *)message, strlen(message));
+            do_tox(m->dht);
         }
+
+        cleanupMessenger(m);
 
         return 0;
     }
 
     /* parent */
-    if(atexit(cleanup) != 0) {
+    if (atexit(cleanup) != 0) {
         fputs("friends_test: atexit() failed!\nFailing build...\n", stderr);
         kill(child_pid, SIGKILL);
         return -1;
     }
 
+    m = initMessenger();
+
     msync(parent_id, crypto_box_PUBLICKEYBYTES, MS_SYNC);
-    m_callback_statusmessage(parent_confirm_status);
-    m_callback_friendmessage(parent_confirm_message);
+    m_callback_statusmessage(m, parent_confirm_status, NULL);
+    m_callback_friendmessage(m, parent_confirm_message, NULL);
 
     /* hacky way to give the child time to set up */
     c_sleep(50);
 
-    initMessenger();
-    Messenger_save(parent_id);
+    Messenger_save(m, parent_id);
 
-    if(parent_friend_request() == -1)
+    if (parent_friend_request(m->dht) == -1)
         return -1;
 
-    if(parent_wait_for_message() == -1)
+    if (parent_wait_for_message(m->dht) == -1)
         return -1;
 
     wait(NULL);

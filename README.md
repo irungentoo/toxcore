@@ -1,4 +1,4 @@
-![Project Tox](https://rbt.asia/boards/g/img/0352/79/1373823047559.png "Project Tox")
+![Project Tox](https://raw.github.com/irungentoo/ProjectTox-Core/master/other/tox.png "Project Tox")
 Project Tox, _also known as Tox_, is a FOSS (Free and Open Source Software) instant messaging application aimed to replace Skype.<br />
 
 With the rise of governmental monitoring programs, Tox aims to be an easy to use, all-in-one communication platform (including audio, and videochats in the future) that ensures their users full privacy and secure message delivery.<br /> <br />
@@ -9,7 +9,7 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 **Website**: [http://tox.im](http://tox.im)
 **Developer Blog**: [http://dev.tox.im](http://dev.tox.im)
 
-**Website translations**: [see stal888's repository](https://github.com/stal888/ProjectTox-Website)<br/>
+**Website translations**: [here](https://github.com/Tox/tox.im)<br/>
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
 
 **How to build Tox on Linux**: [YouTube video](http://www.youtube.com/watch?v=M4WXE4VKmyg)<br />
@@ -49,9 +49,9 @@ configure for the normal user or suffer from being way too centralized.
 
 - [Installation](/INSTALL.md)
 - [Commands](/docs/commands.rst)
-- [DHT Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/DHT)<br />
-- [Lossless UDP Protocol](https://github.com/irungentoo/ProjectTox-Core/wiki/Lossless-UDP)<br />
-- [Crypto](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto)<br />
-- [Ideas](https://github.com/irungentoo/ProjectTox-Core/wiki/Ideas)
+- [DHT Protocol](http://wiki.tox.im/index.php/DHT)<br />
+- [Lossless UDP Protocol](http://wiki.tox.im/index.php/Lossless_UDP)<br />
+- [Crypto](http://wiki.tox.im/index.php/Crypto)<br />
+- [Ideas](http://wiki.tox.im/index.php/Ideas)
 
 [String]: https://en.wikipedia.org/wiki/String_(computer_science)

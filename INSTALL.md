@@ -16,14 +16,14 @@
 Build dependencies:
 
 ```bash
-apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev cmake checkinstall check
+apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check
 ```
 
 On Fedora:
 
 ```bash
 yum groupinstall "Development Tools"
-yum install libtool autoconf automake libconfig-devel ncurses-devel cmake check
+yum install libtool autoconf automake libconfig-devel ncurses-devel check check-devel
 ```
 
 Note that `libconfig-dev` should be >= 1.4.
@@ -37,6 +37,7 @@ git checkout tags/0.4.2
 ./configure && make check
 sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
 sudo ldconfig
+cd ..
 ```
 
 Or if checkinstall is not easily available for your distribution (e.g. Fedora), 
@@ -50,6 +51,7 @@ git checkout tags/0.4.2
 ./configure
 make check
 sudo make install
+cd ..
 ```
 
 
@@ -57,28 +59,22 @@ Then clone this repo and generate makefile:
 ```bash
 git clone git://github.com/irungentoo/ProjectTox-Core.git
 cd ProjectTox-Core
-mkdir build && cd build
-cmake ..
-```
-Advance cmake options:
-  - `-DSHARED_TOXCORE=ON` (default `OFF`) — Build Core as a shared library.
-  - `-DUSE_NACL=ON` (default `OFF`) — Use NaCl library instead of libsodium.
-  
-Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
-
-Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
-```bash
-make name_of_c_file
-```
-For example, to build [`Messenger_test.c`](/others/Messenger_test.c) you would run:
-```bash
-make Messenger_test
-```
-
-Or you could just build everything that is supported on your platform by running:
-```bash
+autoreconf -i
+./configure
 make
+make install
 ```
+Advance configure options:
+  - --prefix=/where/to/install
+  - --with-libsodium-headers=/path/to/libsodium/include/
+  - --with-libsodium-libs=/path/to/sodiumtest/lib/
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
 
 <a name="osx" />
 ###OS X:
@@ -87,14 +83,34 @@ You need the latest XCode with the Developer Tools (Preferences -> Downloads -> 
 The following libraries are required along with libsodium and cmake for Mountain Lion and XCode 4.6.3 install libtool, automake and autoconf. You can download them with Homebrew, or install them manually.
 
 There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch. See [Usage](#usage) below.
-
 <a name="homebrew" />
 ####Homebrew:
 ```
-brew install libtool automake autoconf libconfig libsodium cmake check
-cmake .
-make
+brew install libtool automake autoconf libconfig libsodium check
 ```
+Then clone this repo and generate makefile:
+```bash
+git clone git://github.com/irungentoo/ProjectTox-Core.git
+cd ProjectTox-Core
+autoreconf -i
+./configure
+make
+make install
+```
+Advance configure options:
+  - --prefix=/where/to/install
+  - --with-libsodium-headers=/path/to/libsodium/include/
+  - --with-libsodium-libs=/path/to/sodiumtest/lib/
+  - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
+  - --BUILD_NTOX="yes"
+  - --BUILD_TESTS="yes"
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
 
 <a name="non-homebrew" />
 ####Non-homebrew:
@@ -118,10 +134,28 @@ sudo make install
 
 In your local TOX repository:
 
+Then generate the makefile:
 ```bash
-cmake .
+cd ProjectTox-Core
+autoreconf -i
+./configure
 make
+make install
 ```
+Advance configure options:
+  - --prefix=/where/to/install
+  - --with-libsodium-headers=/path/to/libsodium/include/
+  - --with-libsodium-libs=/path/to/sodiumtest/lib/
+  - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
+  - --BUILD_NTOX="yes"
+  - --BUILD_TESTS="yes"
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
 
 Do not install them from macports (or any dependencies for that matter) as they get shoved in the wrong directory
 (or the wrong version gets installed) and make your life more annoying.
@@ -135,7 +169,6 @@ http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
 
 You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)'s C compiler
-  - [CMake](http://www.cmake.org/cmake/resources/software.html)
   - [check] (http://check.sourceforge.net/)
 
 You have to [modify your PATH environment variable](http://www.computerhope.com/issues/ch000549.htm) so that it contains MinGW's bin folder path. With default settings, the bin folder is located at `C:\MinGW\bin`, which means that you would have to append `;C:\MinGW\bin` to the PATH variable.
@@ -144,28 +177,30 @@ Then you should either clone this repo by using git, or just download a [zip of 
 
 After that you should get precompiled package of libsodium from [here](https://download.libsodium.org/libsodium/releases/libsodium-win32-0.4.2.tar.gz) and extract the archive into this repo's root. That is, `sodium` folder should be along with `core`, `testing` and other folders.
 
-Navigate in `cmd` to this repo and run:
+Then clone this repo and generate makefile:
 ```cmd
-mkdir build && cd build
-cmake -G "MinGW Makefiles" ..
+git clone git://github.com/irungentoo/ProjectTox-Core.git
+cd ProjectTox-Core
+autoreconf -i
+./configure
+make
+make install
 ```
-Advance cmake options:
-  - `-DSHARED_TOXCORE=ON` (default OFF) — Build Core as a shared library.
-  - `-DSHARED_LIBSODIUM=ON` (default OFF) — Link libsodium as a shared library.
+Advance configure options:
+  - --prefix=/where/to/install
+  - --with-libsodium-headers=/path/to/libsodium/include/
+  - --with-libsodium-libs=/path/to/sodiumtest/lib/
+  - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
+  - --BUILD_NTOX="yes"
+  - --BUILD_TESTS="yes"
+  - --enable-silent-rules less verbose build output (undo: "make V=1")
+  - --disable-silent-rules verbose build output (undo: "make V=0")
+  - --disable-tests build unit tests (default: auto)
+  - --disable-ntox build nTox client (default: auto)
+  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --enable-shared[=PKGS]  build shared libraries [default=yes]
+  - --enable-static[=PKGS]  build static libraries [default=yes]
 
-Note that you should call cmake on the root [`CMakeLists.txt`](/CMakeLists.txt) file only.
-
-Then you can build any of the [`/testing`](/testing) and [`/other`](/other) that are currently supported on your platform by running:
-```cmd
-mingw32-make name_of_c_file
-```
-For example, to build [`Messenger_test.c`](/others/Messenger_test.c) you would run:
-```cmd
-mingw32-make Messenger_test
-```
-
-Or you could just build everything that is supported on your platform by running:
-```bash
-mingw32-make
-```
-
+<a name="Clients" />
+####Clients:
+While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](http://wiki.tox.im/client)

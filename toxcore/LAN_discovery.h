@@ -1,6 +1,6 @@
-/* misc_tools.c
+/*  LAN_discovery.h
  *
- * Miscellaneous functions and data structures for doing random things.
+ *  LAN discovery implementation.
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -21,32 +21,35 @@
  *
  */
 
-#include "misc_tools.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef LAN_DISCOVERY_H
+#define LAN_DISCOVERY_H
 
-#ifdef DEBUG
-#include <assert.h>
-#endif // DEBUG
 
-/* TODO: rewrite */
-unsigned char *hex_string_to_bin(char hex_string[])
-{
-    size_t len = strlen(hex_string);
-    unsigned char *val = malloc(len);
-    char *pos = hex_string;
-    int i;
+#include "DHT.h"
 
-    for (i = 0; i < len; ++i, pos += 2)
-        sscanf(pos, "%2hhx", &val[i]);
+/* used for get_broadcast() */
+#ifdef __linux
+#include <sys/ioctl.h>
+#include <arpa/inet.h>
+#include <linux/netdevice.h>
+#endif
 
-    return val;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*Send a LAN discovery pcaket to the broadcast address with port port*/
+int send_LANdiscovery(uint16_t port, Net_Crypto *c);
+
+
+/* sets up packet handlers */
+void LANdiscovery_init(DHT *dht);
+
+
+
+#ifdef __cplusplus
 }
+#endif
 
-
-
-
-
-
+#endif
