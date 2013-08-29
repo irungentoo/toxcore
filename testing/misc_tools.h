@@ -117,7 +117,7 @@ static inline void tox_list_remove(tox_list *lst)
  ************************************************************/
 
 typedef struct tox_array {
-    void *data;
+    uint8_t *data; /* last elem is data[len-1] */
     uint32_t len;
     size_t elem_size; /* in bytes */
 } tox_array;
@@ -135,24 +135,34 @@ static inline void tox_array_delete(tox_array *arr)
     arr->len = arr->elem_size = 0;
 }
 
-static inline void _tox_array_push(tox_array *arr, uint8_t *item)
+static inline uint8_t tox_array_push_ptr(tox_array *arr, uint8_t *item)
 {
     arr->data = realloc(arr->data, arr->elem_size * (arr->len+1));
-
-    memcpy(arr->data + arr->elem_size*arr->len, item, arr->elem_size);
+    if (item != NULL)
+        memcpy(arr->data + arr->elem_size*arr->len, item, arr->elem_size);
     arr->len++;
+
+    return 1;
 }
-#define tox_array_push(arr, item) _tox_array_push(arr, (void*)(&(item)))
+#define tox_array_push(arr, item) tox_array_push_ptr(arr, (uint8_t*)(&(item)))
 
 /* Deletes num items from array.
  * Not same as pop in stacks, because to access elements you use data.
  */
 static inline void tox_array_pop(tox_array *arr, uint32_t num)
 {
-    arr->len--;
+    if (num == 0)
+        num = 1;
+    arr->len -= num;
     arr->data = realloc(arr->data, arr->elem_size*arr->len);
 }
 
-#define tox_array_get(arr, i, type) ((type*)(arr)->data)[i]
+/* TODO: return ptr and do not take type */
+#define tox_array_get(arr, i, type) (((type*)(arr)->data)[i])
+
+
+#define tox_array_for_each(arr, type, tmp_name) \
+    type *tmp_name = &tox_array_get(arr, 0, type); uint32_t tmp_name ## _i = 0; \
+    for (; tmp_name ## _i < (arr)->len; tmp_name = &tox_array_get(arr, ++ tmp_name ## _i, type))
 
 #endif // MISC_TOOLS_H
