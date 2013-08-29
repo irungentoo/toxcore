@@ -45,7 +45,7 @@
 #define AUDIO_CODEC 		AV_CODEC_ID_OPUS
 
 /* default video bitrate in bytes/s */
-#define VIDEO_BITRATE 	200*1000
+#define VIDEO_BITRATE 	20*1000
 
 /* default audio bitrate in bytes/s */
 #define AUDIO_BITRATE	64000
@@ -128,7 +128,7 @@ typedef struct
     AVCodec         	*audio_decoder;
 
     AVFrame         	*enc_audio_frame;
-    AVFrame         	*audio_frame;
+    AVFrame         	*r_audio_frame;
     AVFrame         	*microphone_frame;
 
     AVFrame         	*webcam_frame;

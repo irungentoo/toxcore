@@ -38,7 +38,6 @@
 #include <pthread.h>
 
 #include "../toxrtp/rtp_impl.h"
-//#include "test_helper.h"
 #include "AV_codec.h"
 
 
@@ -110,7 +109,7 @@ int init_receive_audio(codec_state *cs)
         return 0;
     }
     av_dict_free(&options);
-    cs->audio_frame=avcodec_alloc_frame();
+    cs->r_audio_frame=avcodec_alloc_frame();
     printf("init audio decoder successful\n");
     return 1;
 }
@@ -423,6 +422,7 @@ void *encode_video_thread(void *arg)
     sws_freeContext(cs->sws_ctx);
     avcodec_close(cs->webcam_decoder_ctx);
     avcodec_close(cs->video_encoder_ctx);
+    pthread_exit ( NULL );
 }
 
 void *encode_audio_thread(void *arg)
@@ -432,7 +432,6 @@ void *encode_audio_thread(void *arg)
     uint8_t samples_buffer[4096];
     int samples_buffer_size=0;
     int got_packet_ptr=0;
-    // int frame_size=AUDIO_FRAME_SIZE;
     int frame_size=cs->audio_encoder_ctx->frame_size;
     if(frame_size!=AUDIO_FRAME_SIZE)
         printf("expect audio issues...\n");
@@ -484,6 +483,7 @@ void *encode_audio_thread(void *arg)
     av_free(cs->enc_audio_frame);
     avcodec_close(cs->microphone_decoder_ctx);
     avcodec_close(cs->audio_encoder_ctx);
+    pthread_exit ( NULL );
 }
 
 
@@ -578,17 +578,16 @@ void *decode_thread(void *arg)
             if(type==96&&cs->receive_audio) {
                 memcpy(cs->dec_audio_packet.data,cs->r_msg->_data,cs->r_msg->_length);
                 cs->dec_audio_packet.size=cs->r_msg->_length;
-                avcodec_decode_audio4(cs->audio_decoder_ctx, cs->audio_frame, &cs->dec_frame_finished, &cs->dec_audio_packet);
+                avcodec_decode_audio4(cs->audio_decoder_ctx, cs->r_audio_frame, &cs->dec_frame_finished, &cs->dec_audio_packet);
                 if(cs->dec_frame_finished) {
                     ALuint buffer;
                     ALint val;
                     alGetSourcei(cs->source, AL_BUFFERS_PROCESSED, &val);
                     if(val <= 0)
                         continue;
-
                     alSourceUnqueueBuffers(cs->source, 1, &buffer);
-                    data_size = av_samples_get_buffer_size(NULL,cs->audio_frame->channels, cs->audio_frame->nb_samples, cs->audio_decoder_ctx->sample_fmt, 1);
-                    alBufferData(buffer, AL_FORMAT_MONO16, cs->audio_frame->data[0], data_size, 48000);
+                    data_size = av_samples_get_buffer_size(NULL,cs->r_audio_frame->channels, cs->r_audio_frame->nb_samples, cs->audio_decoder_ctx->sample_fmt, 1);
+                    alBufferData(buffer, AL_FORMAT_MONO16, cs->r_audio_frame->data[0], data_size, 48000);
                     int error=alGetError();
                     if(error != AL_NO_ERROR) {
                         fprintf(stderr, "Error setting buffer %d\n",error);
@@ -613,8 +612,7 @@ void *decode_thread(void *arg)
 
     /* clean up codecs */
     av_free(cs->r_video_frame);
-    av_free(cs->webcam_frame);
-    av_free(cs->audio_frame);
+    av_free(cs->r_audio_frame);
     avcodec_close(cs->video_decoder_ctx);
     avcodec_close(cs->audio_decoder_ctx);
 
@@ -624,4 +622,5 @@ void *decode_thread(void *arg)
     alcMakeContextCurrent(NULL);
     alcDestroyContext(cs->ctx);
     alcCloseDevice(cs->dev);
+    pthread_exit ( NULL );
 }

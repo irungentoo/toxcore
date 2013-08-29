@@ -9,7 +9,7 @@ static media_session_t* _m_session = NULL; /* for the sake of test */
 pthread_mutex_t _mutex;
 
 static int _socket;
-    codec_state      *cs;
+codec_state      *cs;
     
 
 /* My recv functions */
@@ -31,6 +31,7 @@ int rtp_handlepacket ( rtp_session_t* _session, uint8_t* data, uint32_t length )
 
     return SUCCESS;
 }
+
 int msi_handlepacket ( media_session_t* _session, IP_Port ip_port, uint8_t* data, uint32_t length )
 {
     media_msg_t* _msg;
@@ -78,10 +79,11 @@ void* phone_receivepacket ( void* _session_p )
                 rtp_handlepacket ( _session->_rtp_session, _socket_data + _session->_rtp_session->_prefix_length, _bytes );
             break;
         default:
-            break;
+            usleep ( 2000 );
+	    break;
         };
         pthread_mutex_unlock ( &_mutex );
-
+	
     }
     pthread_exit ( NULL );
 }
@@ -125,43 +127,6 @@ typedef struct hmtc_args_s {
     int* _thread_running;
 } hmtc_args_t;
 
-void* handle_media_transport_callback ( void* _hmtc_args_p )
-{
-    rtp_msg_t* _msg;
-
-    hmtc_args_t* _hmtc_args = _hmtc_args_p;
-
-    rtp_session_t* _rtp_session = _hmtc_args->_rtp_session;
-    int* _thread_running = _hmtc_args->_thread_running;
-
-    int _m_socket = _socket;
-
-    while ( *_thread_running == 1 ) {
-        /*
-         * This part checks for received messages and if gotten one
-         * display 'Received msg!' indicator and free message
-         */
-      //  _msg = rtp_recv_msg ( _rtp_session );
-
-      //  if ( _msg ) {
-            /* Do whatever with msg */
-         //   rtp_free_msg ( _rtp_session, _msg );
-        //}
-        /* -------------------- */
-
-        /*
-         * This one makes a test msg and sends that message to the 'remote'
-         */
-        //_msg = rtp_msg_new ( _rtp_session, "abcd", 4 ) ;
-        //rtp_send_msg ( _rtp_session, _msg, _m_socket );
-        usleep ( 10000 );
-        /* -------------------- */
-    }
-
-    _thread_running = -1;
-
-    pthread_exit ( NULL );
-}
 
 /* This is call control callback */
 void* handle_call_callback ( void* _p )
@@ -169,66 +134,40 @@ void* handle_call_callback ( void* _p )
     int _status;
 
     pthread_t _rtp_tid;
-    int _rtp_thread_running = 1;
     rtp_session_t* _rtp_session = _m_session->_rtp_session = rtp_init_session ( -1 );
 
     rtp_add_receiver ( _rtp_session, &_m_session->_friend_id );
     uint8_t _prefix = RTP_PACKET;
     rtp_set_prefix ( _rtp_session, &_prefix, 1 );
-
-    hmtc_args_t rtp_targs = { _rtp_session, &_rtp_thread_running };
-
-    _status = pthread_create ( &_rtp_tid, NULL, handle_media_transport_callback, &rtp_targs );
     
-    /* HIER */
-    printf("negers\n");
     cs->_m_session=_rtp_session;
     cs->socket=_socket;
-    
     cs->quit = 0;
-    cs->SDL_initialised=0;
-    if(cs->support_send_audio) pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);
-    if(cs->support_send_video) pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
+
+    if(cs->support_send_audio)
+	pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);    
+    if(cs->support_send_video) 
+	pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD);
-    if(cs->support_receive_video||cs->support_receive_audio) pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
-    cs->SDL_initialised=1;
+    if(cs->support_receive_video||cs->support_receive_audio) 
+	pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
     
-    
-
-    if ( _status < 0 ) {
-        printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
-        return _status;
-    }
-
-    _status = pthread_detach ( _rtp_tid );
-
-    if ( _status < 0 ) {
-        printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
-        return _status;
-    }
-
     _p = NULL;
-
     char _choice [10];
-
-    /* Start media transport thread */
 
     do {
         gets ( _choice );
         if ( strcmp ( _choice, "h" ) == 0 ) {
             printf ( "Hanging up...\n" );
+	    cs->quit=1;
             _status = msi_hangup ( _m_session );
             break;
         }
 
     } while ( strcmp ( _choice, "c" ) == 0 );
-
+    
+    sleep(100000);
     _handle_call_tid = 0;
-
-    _rtp_thread_running = 0;
-
-    while ( _rtp_thread_running != -1 );
-
     pthread_exit ( &_status );
 }
 
@@ -346,6 +285,12 @@ int callback_call_rejected ( STATE_CALLBACK_ARGS )
 int callback_call_ended ( STATE_CALLBACK_ARGS )
 {
     printf ( "On call ended (exiting)!\n" );
+   
+    cs->quit=1;
+    pthread_join(cs->encode_video_thread,NULL);
+    pthread_join(cs->encode_audio_thread,NULL);
+    pthread_join(cs->decode_thread,NULL);    
+    
     pthread_mutex_destroy ( &_mutex );
     exit ( SUCCESS );
     return SUCCESS;
