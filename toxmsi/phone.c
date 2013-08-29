@@ -1,8 +1,7 @@
 #include "msi_impl.h"
 #include "msi_message.h"
-#include "../toxrtp/rtp_message.h"
-#include "../toxrtp/tests/test_helper.h"
-#include <curses.h>
+#include "rtp_message.h"
+#include "toxrtp/tests/test_helper.h"
 #include <assert.h>
 
 

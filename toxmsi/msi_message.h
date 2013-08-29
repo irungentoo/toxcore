@@ -2,8 +2,8 @@
 #define _MSI_MESSAGE_H_
 
 #include <inttypes.h>
-#include "../toxcore/network.h"
-#include "../toxcore/tox.h"
+#include "network.h"
+#include "tox.h"
 
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2
