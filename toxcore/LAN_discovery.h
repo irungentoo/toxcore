@@ -28,7 +28,7 @@
 
 #include "DHT.h"
 
-/* used for get_broadcast() */
+/* used for get_broadcast(). */
 #ifdef __linux
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
@@ -39,11 +39,11 @@
 extern "C" {
 #endif
 
-/*Send a LAN discovery pcaket to the broadcast address with port port*/
+/* Send a LAN discovery pcaket to the broadcast address with port port. */
 int send_LANdiscovery(uint16_t port, Net_Crypto *c);
 
 
-/* sets up packet handlers */
+/* Sets up packet handlers. */
 void LANdiscovery_init(DHT *dht);
 
 

@@ -80,7 +80,7 @@ AC_ARG_WITH(libsodium-headers,
                        [search for libsodium header files in DIR]),
         [
             LIBSODIUM_SEARCH_HEADERS="$withval"
-            AC_MSG_NOTICE([Will search for libsodium header files in $withval])
+            AC_MSG_NOTICE([will search for libsodium header files in $withval])
         ]
 )
 
@@ -89,7 +89,7 @@ AC_ARG_WITH(libsodium-libs,
                        [search for libsodium libraries in DIR]),
         [
             LIBSODIUM_SEARCH_LIBS="$withval"
-            AC_MSG_NOTICE([Will search for libsodium libraries in $withval])
+            AC_MSG_NOTICE([will search for libsodium libraries in $withval])
         ]
 )
 

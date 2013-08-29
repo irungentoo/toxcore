@@ -27,30 +27,30 @@
 #include "packets.h"
 #include "ping.h"
 
-/* the number of seconds for a non responsive node to become bad. */
+/* The number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
 
-/* the max number of nodes to send with send nodes. */
+/* The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 8
 
-/* ping timeout in seconds */
+/* Ping timeout in seconds */
 #define PING_TIMEOUT 5
 
 /* The timeout after which a node is discarded completely. */
 #define Kill_NODE_TIMEOUT 300
 
-/* ping interval in seconds for each node in our lists. */
+/* Ping interval in seconds for each node in our lists. */
 #define PING_INTERVAL 60
 
-/* ping interval in seconds for each random sending of a get nodes request. */
+/* Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 10
 
 #define MAX_PUNCHING_PORTS 32
 
-/*Interval in seconds between punching attempts*/
+/* Interval in seconds between punching attempts*/
 #define PUNCH_INTERVAL 10
 
-/*Ping newly announced nodes to ping per TIME_TOPING seconds*/
+/* Ping newly announced nodes to ping per TIME_TOPING seconds*/
 #define TIME_TOPING 5
 
 #define NAT_PING_REQUEST    0
@@ -102,9 +102,9 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
     return timestamp + timeout <= time_now;
 }
 
-/* check if client with client_id is already in list of length length.
- * if it is then set its corresponding timestamp to current time.
- * if the id is already in the list with a different ip_port, update it.
+/* Check if client with client_id is already in list of length length.
+ * If it is then set its corresponding timestamp to current time.
+ * If the id is already in the list with a different ip_port, update it.
  * return True(1) or False(0)
  *
  * TODO: maybe optimize this.
@@ -115,7 +115,7 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < length; ++i) {
-        /*If ip_port is assigned to a different client_id replace it*/
+        /* If ip_port is assigned to a different client_id replace it */
         if (ipport_equal(list[i].ip_port, ip_port)) {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
         }
@@ -132,7 +132,7 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
     return 0;
 }
 
-/* check if client with client_id is already in node format list of length length.
+/* Check if client with client_id is already in node format list of length length.
  * return True(1) or False(0)
  */
 static int client_in_nodelist(Node_format *list, uint32_t length, uint8_t *client_id)
@@ -176,7 +176,7 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
         tout = is_timeout(temp_time, dht->close_clientlist[i].timestamp, BAD_NODE_TIMEOUT);
         inlist = client_in_nodelist(nodes_list, MAX_SENT_NODES, dht->close_clientlist[i].client_id);
 
-        /* if node isn't good or is already in list. */
+        /* If node isn't good or is already in list. */
         if (tout || inlist)
             continue;
 
@@ -216,7 +216,7 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
                                             MAX_SENT_NODES,
                                             dht->friends_list[i].client_list[j].client_id);
 
-            /* if node isn't good or is already in list. */
+            /* If node isn't good or is already in list. */
             if (tout || inlist)
                 continue;
 
@@ -251,7 +251,7 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
     return num_nodes;
 }
 
-/* replace first bad (or empty) node with this one
+/* Replace first bad (or empty) node with this one
  * return 0 if successful
  * return 1 if not (list contains no bad nodes)
  */
@@ -264,7 +264,7 @@ static int replace_bad(    Client_data    *list,
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < length; ++i) {
-        /* if node is bad */
+        /* If node is bad */
         if (is_timeout(temp_time, list[i].timestamp, BAD_NODE_TIMEOUT)) {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
@@ -278,8 +278,8 @@ static int replace_bad(    Client_data    *list,
 
     return 1;
 }
-/*Sort the list. It will be sorted from furthest to closest.
-  TODO: this is innefficient and needs to be optimized.*/
+/* Sort the list. It will be sorted from furthest to closest.
+  TODO: this is innefficient and needs to be optimized. */
 static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_id)
 {
     if (length == 0)
@@ -305,7 +305,7 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
 }
 
 
-/* replace the first good node that is further to the comp_client_id than that of the client_id in the list */
+/* Replace the first good node that is further to the comp_client_id than that of the client_id in the list */
 static int replace_good(   Client_data    *list,
                            uint32_t        length,
                            uint8_t        *client_id,
@@ -337,12 +337,12 @@ void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
 {
     uint32_t i;
 
-    /* NOTE: current behavior if there are two clients with the same id is
+    /* NOTE: Current behavior if there are two clients with the same id is
      * to replace the first ip by the second.
      */
     if (!client_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
         if (replace_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
-            /* if we can't replace bad nodes we try replacing good ones */
+            /* If we can't replace bad nodes we try replacing good ones */
             replace_good(   dht->close_clientlist,
                             LCLIENT_LIST,
                             client_id,
@@ -361,7 +361,7 @@ void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
                                 MAX_FRIEND_CLIENTS,
                                 client_id,
                                 ip_port )) {
-                /* if we can't replace bad nodes we try replacing good ones. */
+                /* If we can't replace bad nodes we try replacing good ones. */
                 replace_good(   dht->friends_list[i].client_list,
                                 MAX_FRIEND_CLIENTS,
                                 client_id,
@@ -373,7 +373,7 @@ void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
 }
 
 /* If client_id is a friend or us, update ret_ip_port
- * nodeclient_id is the id of the node that sent us this info
+ * nodeclient_id is the id of the node that sent us this info.
  */
 static void returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8_t *nodeclient_id)
 {
@@ -433,7 +433,7 @@ static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
     return 0;
 }
 
-/* Same but for get node requests */
+/* Same but for get node requests. */
 static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
 {
     uint32_t i, j;
@@ -454,10 +454,10 @@ static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
     return 0;
 }
 
-/* send a getnodes request */
+/* Send a getnodes request. */
 static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id)
 {
-    /* check if packet is gonna be sent to ourself */
+    /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->c->self_public_key) || is_gettingnodes(dht, ip_port, 0))
         return 1;
 
@@ -493,10 +493,10 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     return sendpacket(dht->c->lossless_udp->net->sock, ip_port, data, sizeof(data));
 }
 
-/* send a send nodes response */
+/* Send a send nodes response. */
 static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id)
 {
-    /* check if packet is gonna be sent to ourself */
+    /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->c->self_public_key))
         return 1;
 
@@ -544,7 +544,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
                     + sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING ))
         return 1;
 
-    /* check if packet is from ourself. */
+    /* Check if packet is from ourself. */
     if (id_equal(packet + 1, dht->c->self_public_key))
         return 1;
 
@@ -563,7 +563,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
 
-    //send_ping_request(dht, source, (clientid_t*) (packet + 1)); /* TODO: make this smarter? */
+    // send_ping_request(dht, source, (clientid_t*) (packet + 1)); /* TODO: make this smarter? */
 
     return 0;
 }
@@ -618,7 +618,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 
 int DHT_addfriend(DHT *dht, uint8_t *client_id)
 {
-    if (friend_number(dht, client_id) != -1) /*Is friend already in DHT?*/
+    if (friend_number(dht, client_id) != -1) /* Is friend already in DHT? */
         return 1;
 
     DHT_Friend *temp;
@@ -709,7 +709,7 @@ static void do_DHT_friends(DHT *dht)
         uint32_t num_nodes = 0;
 
         for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-            /* if node is not dead. */
+            /* If node is not dead. */
             if (!is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, Kill_NODE_TIMEOUT)) {
                 if ((dht->friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
                     send_ping_request(dht->ping, dht->c, dht->friends_list[i].client_list[j].ip_port,
@@ -717,7 +717,7 @@ static void do_DHT_friends(DHT *dht)
                     dht->friends_list[i].client_list[j].last_pinged = temp_time;
                 }
 
-                /* if node is good. */
+                /* If node is good. */
                 if (!is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, BAD_NODE_TIMEOUT)) {
                     index[num_nodes] = j;
                     ++num_nodes;
@@ -747,7 +747,7 @@ static void do_Close(DHT *dht)
     uint32_t index[LCLIENT_LIST];
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
-        /* if node is not dead. */
+        /* If node is not dead. */
         if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, Kill_NODE_TIMEOUT)) {
             if ((dht->close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
                 send_ping_request(dht->ping, dht->c, dht->close_clientlist[i].ip_port,
@@ -755,7 +755,7 @@ static void do_Close(DHT *dht)
                 dht->close_clientlist[i].last_pinged = temp_time;
             }
 
-            /* if node is good. */
+            /* If node is good. */
             if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, BAD_NODE_TIMEOUT)) {
                 index[num_nodes] = i;
                 ++num_nodes;
@@ -778,8 +778,8 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
     send_ping_request(dht->ping, dht->c, ip_port, (clientid_t *) public_key);
 }
 
-/* send the given packet to node with client_id
- * returns -1 if failure
+/* Send the given packet to node with client_id
+ * returns -1 if failure.
  */
 int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 {
@@ -814,7 +814,7 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &friend->client_list[i];
 
-        /*If ip is not zero and node is good */
+        /* If ip is not zero and node is good */
         if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
 
             if (id_equal(client->client_id, friend->client_id))
@@ -829,8 +829,8 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 }
 
 
-/* Send the following packet to everyone who tells us they are connected to friend_id
- * returns the number of nodes it sent the packet to
+/* Send the following packet to everyone who tells us they are connected to friend_id.
+ * returns the number of nodes it sent the packet to.
  *
  * Only works if more than (MAX_FRIEND_CLIENTS / 2) return an ip for friend.
  */
@@ -856,7 +856,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &friend->client_list[i];
 
-        /*If ip is not zero and node is good */
+        /* If ip is not zero and node is good */
         if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
             if (sendpacket(dht->c->lossless_udp->net->sock, client->ip_port, packet, length) == length)
                 ++sent;
@@ -866,7 +866,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     return sent;
 }
 
-/* Send the following packet to one random person who tells us they are connected to friend_id
+/* Send the following packet to one random person who tells us they are connected to friend_id.
 *  returns the number of nodes it sent the packet to
 */
 static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
@@ -887,7 +887,7 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &friend->client_list[i];
 
-        /*If ip is not zero and node is good */
+        /* If ip is not zero and node is good. */
         if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
             ip_list[n] = client->ip_port;
             ++n;
@@ -903,8 +903,8 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
     return 0;
 }
 
-/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist
- * ip_portlist must be at least MAX_FRIEND_CLIENTS big
+/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.
+ * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
  * returns the number of ips returned
  * return 0 if we are connected to friend or if no ips were found.
  * returns -1 if no such friend
@@ -941,9 +941,9 @@ static int send_NATping(DHT *dht, uint8_t *public_key, uint64_t ping_id, uint8_t
     if (len == -1)
         return -1;
 
-    if (type == 0) /*If packet is request use many people to route it*/
+    if (type == 0) /* If packet is request use many people to route it. */
         num = route_tofriend(dht, public_key, packet, len);
-    else if (type == 1) /*If packet is response use only one person to route it*/
+    else if (type == 1) /* If packet is response use only one person to route it */
         num = routeone_tofriend(dht, public_key, packet, len);
 
     if (num == 0)
@@ -952,7 +952,7 @@ static int send_NATping(DHT *dht, uint8_t *public_key, uint64_t ping_id, uint8_t
     return num;
 }
 
-/* Handle a received ping request for */
+/* Handle a received ping request for. */
 static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
@@ -982,10 +982,10 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
     return 1;
 }
 
-/* Get the most common ip in the ip_portlist
- * Only return ip if it appears in list min_num or more
- * len must not be bigger than MAX_FRIEND_CLIENTS
- * return ip of 0 if failure
+/* Get the most common ip in the ip_portlist.
+ * Only return ip if it appears in list min_num or more.
+ * len must not be bigger than MAX_FRIEND_CLIENTS.
+ * return ip of 0 if failure.
  */
 static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
 {
@@ -1010,10 +1010,10 @@ static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
     return zero;
 }
 
-/* Return all the ports for one ip in a list
+/* Return all the ports for one ip in a list.
  * portlist must be at least len long
  * where len is the length of ip_portlist
- * returns the number of ports and puts the list of ports in portlist
+ * returns the number of ports and puts the list of ports in portlist.
  */
 static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t len, IP ip)
 {
@@ -1039,7 +1039,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     uint32_t top = dht->friends_list[friend_num].punching_index + MAX_PUNCHING_PORTS;
 
     for (i = dht->friends_list[friend_num].punching_index; i != top; i++) {
-        /*TODO: improve port guessing algorithm*/
+        /* TODO: improve port guessing algorithm */
         uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
         IP_Port pinging = {ip, htons(port)};
         send_ping_request(dht->ping, dht->c, pinging, (clientid_t *) &dht->friends_list[friend_num].client_id);
@@ -1057,7 +1057,7 @@ static void do_NAT(DHT *dht)
         IP_Port ip_list[MAX_FRIEND_CLIENTS];
         int num = friend_iplist(dht, ip_list, i);
 
-        /*If already connected or friend is not online don't try to hole punch*/
+        /* If already connected or friend is not online don't try to hole punch */
         if (num < MAX_FRIEND_CLIENTS / 2)
             continue;
 
@@ -1089,14 +1089,15 @@ static void do_NAT(DHT *dht)
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
 
-/* Add nodes to the toping list
-   all nodes in this list are pinged every TIME_TOPING seconds
-   and are then removed from the list.
-   if the list is full the nodes farthest from our client_id are replaced
-   the purpose of this list is to enable quick integration of new nodes into the
-   network while preventing amplification attacks.
-   return 0 if node was added
-   return -1 if node was not added */
+/* Add nodes to the toping list.
+ * All nodes in this list are pinged every TIME_TOPING seconds
+ * and are then removed from the list.
+ * If the list is full the nodes farthest from our client_id are replaced.
+ * The purpose of this list is to enable quick integration of new nodes into the
+ * network while preventing amplification attacks.
+ * return 0 if node was added.
+ * return -1 if node was not added.
+ */
 int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
 {
     if (ip_port.ip.i == 0)
@@ -1125,8 +1126,9 @@ int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
     return -1;
 }
 
-/*Ping all the valid nodes in the toping list every TIME_TOPING seconds
-  this function must be run at least once every TIME_TOPING seconds*/
+/* Ping all the valid nodes in the toping list every TIME_TOPING seconds.
+ * This function must be run at least once every TIME_TOPING seconds
+ */
 static void do_toping(DHT *dht)
 {
     uint64_t temp_time = unix_time();
@@ -1188,22 +1190,22 @@ void kill_DHT(DHT *dht)
     free(dht);
 }
 
-/* get the size of the DHT (for saving) */
+/* Get the size of the DHT (for saving). */
 uint32_t DHT_size(DHT *dht)
 {
     return sizeof(dht->close_clientlist) + sizeof(DHT_Friend) * dht->num_friends;
 }
 
-/* save the DHT in data where data is an array of size DHT_size() */
+/* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data)
 {
     memcpy(data, dht->close_clientlist, sizeof(dht->close_clientlist));
     memcpy(data + sizeof(dht->close_clientlist), dht->friends_list, sizeof(DHT_Friend) * dht->num_friends);
 }
 
-/* load the DHT from data of size size;
- * return -1 if failure
- * return 0 if success
+/* Load the DHT from data of size size.
+ * return -1 if failure.
+ * return 0 if success.
  */
 int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
 {
@@ -1247,8 +1249,8 @@ int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
     return 0;
 }
 
-/* returns 0 if we are not connected to the DHT
- * returns 1 if we are
+/* returns 0 if we are not connected to the DHT.
+ * returns 1 if we are.
  */
 int DHT_isconnected(DHT *dht)
 {

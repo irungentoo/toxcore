@@ -31,7 +31,7 @@
 #include "../toxcore/friend_requests.h"
 #include "../testing/misc_tools.h"
 
-//Sleep function (x = milliseconds)
+/* Sleep function (x = milliseconds) */
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -52,7 +52,8 @@ void manage_keys(DHT *dht)
     FILE *keys_file = fopen("key", "r");
 
     if (keys_file != NULL) {
-        //if file was opened successfully -- load keys
+        /* If file was opened successfully -- load keys,
+           otherwise save new keys */
         size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (read_size != KEYS_SIZE) {
@@ -61,9 +62,8 @@ void manage_keys(DHT *dht)
         }
 
         load_keys(dht->c, keys);
-        printf("Keys loaded successfully\n");
+        printf("Keys loaded successfully.\n");
     } else {
-        //otherwise save new keys
         new_keys(dht->c);
         save_keys(dht->c, keys);
         keys_file = fopen("key", "w");
@@ -73,7 +73,7 @@ void manage_keys(DHT *dht)
             exit(1);
         }
 
-        printf("Keys saved successfully\n");
+        printf("Keys saved successfully.\n");
     }
 
     fclose(keys_file);
@@ -81,8 +81,8 @@ void manage_keys(DHT *dht)
 
 int main(int argc, char *argv[])
 {
-    //initialize networking
-    //bind to ip 0.0.0.0:PORT
+    /* Initialize networking -
+       Bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     printf("\n");
     printf("Port: %u\n", PORT);
 
-    perror("Initialization");
+    perror("Initialization.");
 
     if (argc > 3) {
         printf("Trying to bootstrap into the network...\n");

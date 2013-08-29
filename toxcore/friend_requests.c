@@ -23,11 +23,12 @@
 
 #include "friend_requests.h"
 
-/* Try to send a friendrequest to peer with public_key
-   data is the data in the request and length is the length.
-   return -1 if failure.
-   return  0 if it sent the friend request directly to the friend.
-   return the number of peers it was routed through if it did not send it directly.*/
+/* Try to send a friend request to peer with public_key.
+ * data is the data in the request and length is the length.
+ * return -1 if failure.
+ * return  0 if it sent the friend request directly to the friend.
+ * return the number of peers it was routed through if it did not send it directly.
+ */
 int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
 {
     if (length + sizeof(nospam_num) > MAX_DATA_SIZE)
@@ -65,9 +66,7 @@ int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8
 }
 
 
-/*
- * Set and get the nospam variable used to prevent one type of friend request spam
- */
+/* Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num)
 {
     fr->nospam = num;
@@ -79,7 +78,7 @@ uint32_t get_nospam(Friend_Requests *fr)
 }
 
 
-/* set the function that will be executed when a friend request is received. */
+/* Set the function that will be executed when a friend request is received. */
 void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *),
                             void *userdata)
 {
@@ -88,7 +87,7 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uin
     fr->handle_friendrequest_userdata = userdata;
 }
 
-/*Add to list of received friend requests*/
+/* Add to list of received friend requests. */
 static void addto_receivedlist(Friend_Requests *fr, uint8_t *client_id)
 {
     if (fr->received_requests_index >= MAX_RECEIVED_STORED)
@@ -98,8 +97,10 @@ static void addto_receivedlist(Friend_Requests *fr, uint8_t *client_id)
     ++fr->received_requests_index;
 }
 
-/* Check if a friend request was already received
-   return 0 if not, 1 if we did  */
+/* Check if a friend request was already received.
+ * return 0 if it did not.
+ * return 1 if it did.
+ */
 static int request_received(Friend_Requests *fr, uint8_t *client_id)
 {
     uint32_t i;
