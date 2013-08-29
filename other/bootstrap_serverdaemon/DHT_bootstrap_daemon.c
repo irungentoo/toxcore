@@ -74,7 +74,7 @@ int b16_to_key(char b16_string[], uint8_t *bs_pubkey)
 
 /*
   resolve_addr():
-    address should represent IPv4 or a hostname with A record
+    address should represent IPv4 or a hostname with a record
 
     returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
     returns 0 on failure
@@ -91,7 +91,7 @@ uint32_t resolve_addr(const char *address)
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_INET;    // IPv4 only right now.
-    hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
+    hints.ai_socktype = SOCK_DGRAM; // Type of socket Tox uses.
 
     rc = getaddrinfo(address, "echo", &hints, &server);
 
@@ -113,7 +113,7 @@ uint32_t resolve_addr(const char *address)
     return addr;
 }
 
-/* This unction connects to all specified servers
+/* This function connects to all specified servers
 and connect to them.
 returns 1 if the connection to the DHT is up
 returns -1 if all attempts failed
@@ -178,7 +178,7 @@ void manage_keys(DHT *dht, char *keys_file)
         load_keys(dht->c, keys);
 
     } else {
-        /* otherwise save new keys */
+        /* Otherwise save new keys */
         /* Silly work-around to ignore any errors coming from new_keys() */
         new_keys(dht->c);
         save_keys(dht->c, keys);
@@ -273,7 +273,7 @@ struct server_conf_s configure_server(char *cfg_file)
 
         for (i = 0; i < count; ++i) {
             config_setting_t *server = config_setting_get_elem(server_list, i);
-            /* Get a pointer on the key aray */
+            /* Get a pointer on the key array */
             uint8_t *bs_pk_p = server_conf.info[i].bs_pk;
 
             /* Only output the record if all of the expected fields are present. */
@@ -288,17 +288,17 @@ struct server_conf_s configure_server(char *cfg_file)
 
             if (resolve_addr(strcpy(tmp_ip, bs_ip)) == 0) {
                 server_conf.info[i].valid = 0;
-                printf("bootstrap_server %d: Invalid IP\n", i);
+                printf("bootstrap_server %d: Invalid IP.\n", i);
             }
 
             if (strlen(bs_pk) != 64) {
                 server_conf.info[i].valid = 0;
-                printf("bootstrap_server %d: Invalid public key\n", i);
+                printf("bootstrap_server %d: Invalid public key.\n", i);
             }
 
             if (!bs_port) {
                 server_conf.info[i].valid = 0;
-                printf("bootstrap_server %d: Invalid port\n", i);
+                printf("bootstrap_server %d: Invalid port.\n", i);
             }
 
             server_conf.info[i].conn.ip.i = resolve_addr(strcpy(tmp_ip, bs_ip));
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
 
     server_conf = configure_server(argv[1]);
 
-    /* initialize networking
+    /* Initialize networking
     bind to ip 0.0.0.0:PORT */
     IP ip;
     ip.i = 0;
@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
     /* If we got a good PID, then
     we can exit the parent process. */
     if (pid > 0) {
-        printf("Forked successfully: %d\n", pid);
+        printf("Forked successfully: %d.\n", pid);
 
         /* Write the PID file */
         fprintf(pidf, "%d\n", pid);

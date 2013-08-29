@@ -23,7 +23,7 @@
 
 #include "network.h"
 
-/* returns current UNIX time in microseconds (us). */
+/* return current UNIX time in microseconds (us). */
 uint64_t current_time(void)
 {
     uint64_t time;
@@ -44,12 +44,13 @@ uint64_t current_time(void)
 #endif
 }
 
-/* return a random number
-   NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary */
+/* return a random number.
+ * NOTE: This function should probably not be used where cryptographic randomness is absolutely necessary.
+ */
 uint32_t random_int(void)
 {
 #ifndef VANILLA_NACL
-    //NOTE: this function comes from libsodium
+    /* NOTE: this function comes from libsodium. */
     return randombytes_random();
 #else
     return random();
@@ -57,17 +58,20 @@ uint32_t random_int(void)
 }
 
 /* Basic network functions:
-   Function to send packet(data) of length length to ip_port */
+ * Function to send packet(data) of length length to ip_port.
+ */
 int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
     return sendto(sock, (char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
 
-/* Function to receive data, ip and port of sender is put into ip_port
-   the packet data into data
-   the packet length into length.
-   dump all empty packets. */
+/* Function to receive data
+ *  ip and port of sender is put into ip_port.
+ *  Packet data is put into data.
+ *  Packet length is put into length.
+ *  Dump all empty packets.
+ */
 static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     ADDR addr;
@@ -79,7 +83,7 @@ static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *le
     (*(int32_t *)length) = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
     if (*(int32_t *)length <= 0)
-        return -1; /* nothing received or empty packet */
+        return -1; /* Nothing received or empty packet. */
 
     ip_port->ip = addr.ip;
     ip_port->port = addr.port;
@@ -127,7 +131,7 @@ static int at_startup(void)
     return 0;
 }
 
-/* TODO: put this somewhere
+/* TODO: Put this somewhere
 static void at_shutdown(void)
 {
 #ifdef WIN32
@@ -136,18 +140,20 @@ static void at_shutdown(void)
 }
 */
 
-/* initialize networking
-   bind to ip and port
-   ip must be in network order EX: 127.0.0.1 = (7F000001)
-   port is in host byte order (this means don't worry about it)
-   returns Networking_Core object if no problems
-   returns NULL if there are problems */
+/* Initialize networking.
+ * Bind to ip and port.
+ * ip must be in network order EX: 127.0.0.1 = (7F000001).
+ * port is in host byte order (this means don't worry about it).
+ *
+ * returns Networking_Core object if no problems
+ * returns NULL if there are problems.
+ */
 Networking_Core *new_networking(IP ip, uint16_t port)
 {
     if (at_startup() != 0)
         return NULL;
 
-    /* initialize our socket */
+    /* Initialize our socket. */
     Networking_Core *temp = calloc(1, sizeof(Networking_Core));
 
     if (temp == NULL)
@@ -155,10 +161,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
     temp->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-    /* Check for socket error */
+    /* Check for socket error. */
 #ifdef WIN32
 
-    if (temp->sock == INVALID_SOCKET) { /* MSDN recommends this */
+    if (temp->sock == INVALID_SOCKET) { /* MSDN recommends this. */
         free(temp);
         return NULL;
     }
@@ -172,8 +178,9 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
 #endif
 
-    /* Functions to increase the size of the send and receive UDP buffers
-       NOTE: uncomment if necessary */
+    /* Functions to increase the size of the send and receive UDP buffers.
+     * NOTE: Uncomment if necessary.
+     */
     /*
     int n = 1024 * 1024 * 2;
     if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&n, sizeof(n)) == -1)
@@ -185,13 +192,13 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         return -1;
     */
 
-    /* Enable broadcast on socket */
+    /* Enable broadcast on socket. */
     int broadcast = 1;
     setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
 
-    /* Set socket nonblocking */
+    /* Set socket nonblocking. */
 #ifdef WIN32
-    /* I think this works for windows */
+    /* I think this works for Windows. */
     u_long mode = 1;
     /* ioctl(sock, FIONBIO, &mode); */
     ioctlsocket(temp->sock, FIONBIO, &mode);
@@ -205,7 +212,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     return temp;
 }
 
-/* function to cleanup networking stuff */
+/* Function to cleanup networking stuff. */
 void kill_networking(Networking_Core *net)
 {
 #ifdef WIN32

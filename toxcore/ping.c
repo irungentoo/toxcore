@@ -51,7 +51,7 @@ static void remove_timeouts(void *ping)    // O(n)
     size_t new_pos = png->pos_pings;
     size_t new_num = png->num_pings;
 
-    // Loop through buffer, oldest first
+    // Loop through buffer, oldest first.
     for (i = 0; i < png->num_pings; i++) {
         id = (png->pos_pings + i) % PING_NUM_MAX;
 
@@ -76,13 +76,13 @@ uint64_t add_ping(void *ping, IP_Port ipp)  // O(n)
 
     remove_timeouts(ping);
 
-    // Remove oldest ping if full buffer
+    /* Remove oldest ping if full buffer. */
     if (png->num_pings == PING_NUM_MAX) {
         png->num_pings--;
         png->pos_pings = (png->pos_pings + 1) % PING_NUM_MAX;
     }
 
-    // Insert new ping at end of list
+    /* Insert new ping at end of list. */
     p = (png->pos_pings + png->num_pings) % PING_NUM_MAX;
 
     png->pings[p].ipp       = ipp;
@@ -93,7 +93,7 @@ uint64_t add_ping(void *ping, IP_Port ipp)  // O(n)
     return png->pings[p].id;
 }
 
-bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: replace this with something else.
+bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: Replace this with something else.
 {
     PING *png = ping;
 
@@ -107,7 +107,7 @@ bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: repl
     for (i = 0; i < png->num_pings; i++) {
         id = (png->pos_pings + i) % PING_NUM_MAX;
 
-        // ping_id = 0 means match any id
+        /* ping_id = 0 means match any id. */
         if ((ipp_eq(png->pings[id].ipp, ipp) || ipp.ip.i == 0) && (png->pings[id].id == ping_id || ping_id == 0)) {
             return true;
         }
@@ -125,14 +125,14 @@ int send_ping_request(void *ping, Net_Crypto *c, IP_Port ipp, clientid_t *client
     if (is_pinging(ping, ipp, 0) || id_eq(client_id, (clientid_t *)c->self_public_key))
         return 1;
 
-    // Generate random ping_id
+    // Generate random ping_id.
     ping_id = add_ping(ping, ipp);
 
     pk.packet_id = NET_PACKET_PING_REQUEST;
-    id_cpy(&pk.client_id, (clientid_t *)c->self_public_key);     // Our pubkey
-    random_nonce((uint8_t *) &pk.nonce); // Generate random nonce
+    id_cpy(&pk.client_id, (clientid_t *)c->self_public_key);     // Our pubkey.
+    random_nonce((uint8_t *) &pk.nonce); // Generate random nonce.
 
-    // Encrypt ping_id using recipient privkey
+    /* Encrypt ping_id using recipient privkey. */
     rc = encrypt_data((uint8_t *) client_id,
                       c->self_secret_key,
                       (uint8_t *) &pk.nonce,
@@ -154,10 +154,10 @@ int send_ping_response(Net_Crypto *c, IP_Port ipp, clientid_t *client_id, uint64
         return 1;
 
     pk.packet_id = NET_PACKET_PING_RESPONSE;
-    id_cpy(&pk.client_id, (clientid_t *)c->self_public_key);     // Our pubkey
-    random_nonce((uint8_t *) &pk.nonce); // Generate random nonce
+    id_cpy(&pk.client_id, (clientid_t *)c->self_public_key);     // Our pubkey.
+    random_nonce((uint8_t *) &pk.nonce); // Generate random nonce.
 
-    // Encrypt ping_id using recipient privkey
+    /* Encrypt ping_id using recipient privkey */
     rc = encrypt_data((uint8_t *) client_id,
                       c->self_secret_key,
                       (uint8_t *) &pk.nonce,
@@ -180,7 +180,7 @@ int handle_ping_request(void *object, IP_Port source, uint8_t *packet, uint32_t 
     if (length != sizeof(pingreq_t) || id_eq(&p->client_id, (clientid_t *)dht->c->self_public_key))
         return 1;
 
-    // Decrypt ping_id
+    /* Decrypt ping_id. */
     rc = decrypt_data((uint8_t *) &p->client_id,
                       dht->c->self_secret_key,
                       (uint8_t *) &p->nonce,
@@ -191,7 +191,7 @@ int handle_ping_request(void *object, IP_Port source, uint8_t *packet, uint32_t 
     if (rc != sizeof(ping_id))
         return 1;
 
-    // Send response
+    /* Send response. */
     send_ping_response(dht->c, source, &p->client_id, ping_id);
     add_toping(dht, (uint8_t *) &p->client_id, source);
 
@@ -208,7 +208,7 @@ int handle_ping_response(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (length != sizeof(pingres_t) || id_eq(&p->client_id, (clientid_t *)dht->c->self_public_key))
         return 1;
 
-    // Decrypt ping_id
+    /* Decrypt ping_id. */
     rc = decrypt_data((uint8_t *) &p->client_id,
                       dht->c->self_secret_key,
                       (uint8_t *) &p->nonce,
@@ -219,11 +219,11 @@ int handle_ping_response(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (rc != sizeof(ping_id))
         return 1;
 
-    // Make sure ping_id is correct
+    /* Make sure ping_id is correct. */
     if (!is_pinging(dht->ping, source, ping_id))
         return 1;
 
-    // Associate source ip with client_id
+    /* Associate source ip with client_id. */
     addto_lists(dht, source, (uint8_t *) &p->client_id);
     return 0;
 }

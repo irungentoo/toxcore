@@ -26,13 +26,15 @@
 #define MAX_INTERFACES 16
 
 #ifdef __linux
-/* get the first working broadcast address that's not from "lo"
- *  returns higher than 0 on success
- *  returns 0 on error */
+/* Get the first working broadcast address that's not from "lo".
+ *  returns higher than 0 on success.
+ *  returns 0 on error.
+ */
 static uint32_t get_broadcast(void)
 {
-    /* not sure how many platforms this will
-     *  run on, so it's wrapped in __linux for now */
+    /* Not sure how many platforms this will run on,
+     * so it's wrapped in __linux for now.
+     */
     struct sockaddr_in *sock_holder = NULL;
     struct ifreq i_faces[MAX_INTERFACES];
     struct ifconf ifconf;
@@ -40,7 +42,7 @@ static uint32_t get_broadcast(void)
     int sock = 0;
     int i = 0;
 
-    /* configure ifconf for the ioctl call */
+    /* Configure ifconf for the ioctl call. */
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("[!] get_broadcast: socket() error");
         return 0;
@@ -58,14 +60,14 @@ static uint32_t get_broadcast(void)
     }
 
     for (i = 0; i < count; i++) {
-        /* skip the loopback interface, as it's useless */
+        /* Skip the loopback interface, as it's useless. */
         if (strcmp(i_faces[i].ifr_name, "lo") != 0) {
             if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
                 perror("[!] get_broadcast: ioctl error");
                 return 0;
             }
 
-            /* just to clarify where we're getting the values from */
+            /* Just to clarify where we're getting the values from. */
             sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
             break;
         }
@@ -82,7 +84,7 @@ static uint32_t get_broadcast(void)
 }
 #endif
 
-/* Return the broadcast ip */
+/* Return the broadcast ip. */
 static IP broadcast_ip(void)
 {
     IP ip;
@@ -90,7 +92,7 @@ static IP broadcast_ip(void)
     ip.i = get_broadcast();
 
     if (ip.i == 0)
-        /* error errored, but try anyway? */
+        /* Error occured, but try anyway? */
         ip.i = ~0;
 
 #else
@@ -99,23 +101,24 @@ static IP broadcast_ip(void)
     return ip;
 }
 
-/*return 0 if ip is a LAN ip
-  return -1 if it is not */
+/* return 0 if ip is a LAN ip.
+ * return -1 if it is not.
+ */
 static int LAN_ip(IP ip)
 {
-    if (ip.c[0] == 127)/* Loopback */
+    if (ip.c[0] == 127) /* Loopback. */
         return 0;
 
-    if (ip.c[0] == 10)/* 10.0.0.0 to 10.255.255.255 range */
+    if (ip.c[0] == 10) /* 10.0.0.0 to 10.255.255.255 range. */
         return 0;
 
-    if (ip.c[0] == 172 && ip.c[1] >= 16 && ip.c[1] <= 31)/* 172.16.0.0 to 172.31.255.255 range */
+    if (ip.c[0] == 172 && ip.c[1] >= 16 && ip.c[1] <= 31) /* 172.16.0.0 to 172.31.255.255 range. */
         return 0;
 
-    if (ip.c[0] == 192 && ip.c[1] == 168) /* 192.168.0.0 to 192.168.255.255 range */
+    if (ip.c[0] == 192 && ip.c[1] == 168) /* 192.168.0.0 to 192.168.255.255 range. */
         return 0;
 
-    if (ip.c[0] == 169 && ip.c[1] == 254 && ip.c[2] != 0 && ip.c[2] != 255)/* 169.254.1.0 to 169.254.254.255 range */
+    if (ip.c[0] == 169 && ip.c[1] == 254 && ip.c[2] != 0 && ip.c[2] != 255)/* 169.254.1.0 to 169.254.254.255 range. */
         return 0;
 
     return -1;

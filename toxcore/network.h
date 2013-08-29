@@ -39,9 +39,9 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#undef VANILLA_NACL /* make sure on windows we use libsodium */
+#undef VANILLA_NACL /* Make sure on Windows we use libsodium. */
 
-#else //Linux includes
+#else // Linux includes
 
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -55,7 +55,7 @@
 #endif
 
 #ifndef VANILLA_NACL
-/* we use libsodium by default */
+/* We use libsodium by default. */
 #include <sodium.h>
 #else
 #include <crypto_box.h>
@@ -65,15 +65,15 @@
 
 #define MAX_UDP_PACKET_SIZE 65507
 
-#define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID */
-#define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID */
-#define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID */
-#define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID */
-#define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID */
-#define NET_PACKET_SYNC            17  /* SYNC packet ID */
-#define NET_PACKET_DATA            18  /* Data packet ID */
-#define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID */
-#define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID */
+#define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID. */
+#define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID. */
+#define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
+#define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID. */
+#define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
+#define NET_PACKET_SYNC            17  /* SYNC packet ID. */
+#define NET_PACKET_DATA            18  /* Data packet ID. */
+#define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
+#define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
 
 
 /* Current time, unix format */
@@ -89,7 +89,7 @@ typedef union {
 typedef struct {
     IP ip;
     uint16_t port;
-    /* not used for anything right now */
+    /* Not used for anything right now. */
     uint16_t padding;
 } IP_Port;
 
@@ -103,9 +103,10 @@ typedef struct {
 #endif
 } ADDR;
 
-/* Function to receive data, ip and port of sender is put into ip_port
-    the packet data into data
-    the packet length into length. */
+/* Function to receive data, ip and port of sender is put into ip_port.
+ * Packet data is put into data.
+ * Packet length is put into length.
+ */
 typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, uint8_t *data, uint32_t len);
 
 typedef struct {
@@ -115,37 +116,40 @@ typedef struct {
 
 typedef struct {
     Packet_Handles packethandlers[256];
-    /* our UDP socket */
+    /* Our UDP socket. */
     int sock;
 } Networking_Core;
 
-/* returns current time in milleseconds since the epoch. */
+/* return current time in milleseconds since the epoch. */
 uint64_t current_time(void);
 
-/* return a random number
-    NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary */
+/* return a random number.
+ * NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary.
+ */
 uint32_t random_int(void);
 
 /* Basic network functions: */
 
-/* Function to send packet(data) of length length to ip_port */
+/* Function to send packet(data) of length length to ip_port. */
 int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
 
-/* Function to call when packet beginning with byte is received */
+/* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
 
-/* call this several times a second */
+/* Call this several times a second. */
 void networking_poll(Networking_Core *net);
 
-/* initialize networking
-    bind to ip and port
-    ip must be in network order EX: 127.0.0.1 = (7F000001)
-    port is in host byte order (this means don't worry about it)
-    returns 0 if no problems
-    returns -1 if there were problems */
+/* Initialize networking.
+ *  bind to ip and port.
+ *  ip must be in network order EX: 127.0.0.1 = (7F000001).
+ *  port is in host byte order (this means don't worry about it).
+ *
+ *  returns 0 if no problems.
+ *  returns -1 if there were problems.
+ */
 Networking_Core *new_networking(IP ip, uint16_t port);
 
-/* function to cleanup networking stuff(doesn't do much right now) */
+/* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
 
 

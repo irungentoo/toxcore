@@ -19,7 +19,7 @@ guide for how you *use* Tox. Here's a user-friendly attempt at it.
    -  You need to connect to a bootstrapping server, to give you a
       public key.
    -  Where can I find a public server? Right here, as of now: (the help
-      message from running ``nTox`` with no args will help)
+      message from running ``nTox`` with no args will help).
 
       -  ``198.46.136.167 33445 728925473812C7AAC482BE7250BCCAD0B8CB9F737BF3D42ABD34459C1768F854``
       -  ``192.81.133.111 33445 8CD5A9BF0A6CE358BA36F7A653F99FA6B258FF756E490F52C1F98CC420F78858``

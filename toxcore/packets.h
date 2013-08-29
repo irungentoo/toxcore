@@ -10,7 +10,7 @@ typedef struct {
 
 } __attribute__((packed)) clientid_t;
 
-// Ping packet
+// Ping packet.
 typedef struct {
     uint8_t    packet_id;
     clientid_t client_id;
@@ -20,7 +20,7 @@ typedef struct {
 
 } __attribute__((packed)) pingreq_t;
 
-// Pong packet
+// Pong packet.
 typedef struct {
     uint8_t    packet_id;
     clientid_t client_id;
