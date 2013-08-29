@@ -54,10 +54,10 @@ void print_clientlist(DHT *dht)
     IP_Port p_ip;
     printf("___________________CLOSE________________________________\n");
 
-    for (i = 0; i < 32; i++) {
+    for (i = 0; i < LCLIENT_LIST; i++) {
         printf("ClientID: ");
 
-        for (j = 0; j < 32; j++) {
+        for (j = 0; j < CLIENT_ID_SIZE; j++) {
             printf("%02hhX", dht->close_clientlist[i].client_id[j]);
         }
 
@@ -81,7 +81,7 @@ void print_friendlist(DHT *dht)
         printf("FRIEND %u\n", k);
         printf("ID: ");
 
-        for (j = 0; j < 32; j++) {
+        for (j = 0; j < CLIENT_ID_SIZE; j++) {
             printf("%c", dht->friends_list[k].client_id[j]);
         }
 
@@ -90,10 +90,10 @@ void print_friendlist(DHT *dht)
 
         printf("\nCLIENTS IN LIST:\n\n");
 
-        for (i = 0; i < 4; i++) {
+        for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
             printf("ClientID: ");
 
-            for (j = 0; j < 32; j++) {
+            for (j = 0; j < CLIENT_ID_SIZE; j++) {
                 if (dht->friends_list[k].client_list[i].client_id[j] < 16)
                     printf("0");
 
