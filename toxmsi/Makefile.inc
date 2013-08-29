@@ -19,15 +19,31 @@ libtoxmsi_la_LDFLAGS =  $(TOXMSI_LT_LDFLAGS) \
 
 noinst_PROGRAMS +=     	phone
 
-phone_SOURCES =         $(top_srcdir)/toxmsi/phone.c
+phone_SOURCES =         $(top_srcdir)/toxmsi/phone.c \
+                        $(top_srcdir)/toxmsi/AV_codec.h \
+                        $(top_srcdir)/toxmsi/AV_codec.c
 
 phone_CFLAGS =			-I$(top_srcdir) \
 						-I$(top_srcdir)/toxcore \
 						-I$(top_srcdir)/toxrtp \
+						$(AVFORMAT_CFLAGS) \
+						$(AVCODEC_CFLAGS) \
+						$(AVUTIL_CFLAGS) \
+						$(AVDEVICE_CFLAGS) \
+						$(SWSCALE_CFLAGS) \
+						$(SDL_CFLAGS) \
+						$(OPENAL_CFLAGS) \
 						$(PTHREAD_CFLAGS)
 
 phone_LDADD =			$(PTHREAD_LIBS) \
 						libtoxrtp.la \
-						libtoxmsi.la
+						libtoxmsi.la \
+						$(AVFORMAT_LIBS) \
+						$(AVCODEC_LIBS) \
+						$(AVUTIL_LIBS) \
+						$(AVDEVICE_LIBS) \
+						$(SWSCALE_LIBS) \
+						$(SDL_LIBS) \
+						$(OPENAL_LIBS)
 
 endif
