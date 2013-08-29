@@ -28,8 +28,8 @@
 #define _MSI_IMPL_H_
 
 #include <inttypes.h>
-#include "../toxrtp/rtp_impl.h"
-#include "../toxcore/tox.h"
+#include "rtp_impl.h"
+#include "tox.h"
 #include <pthread.h>
 
 #define STATE_CALLBACK_ARGS void

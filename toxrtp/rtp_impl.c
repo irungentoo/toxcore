@@ -1,4 +1,4 @@
-/*   rtp_impl.h
+/*   rtp_impl.c
  *
  *   Rtp implementation includes rtp_session_s struct which is a session identifier.
  *   It contains session information and it's a must for every session.
@@ -27,8 +27,8 @@
 #include "rtp_message.h"
 #include <assert.h>
 #include "rtp_allocator.h"
-#include "../toxcore/util.h"
-#include "../toxcore/network.h"
+#include "util.h"
+#include "network.h"
 
 /* Some defines */
 
