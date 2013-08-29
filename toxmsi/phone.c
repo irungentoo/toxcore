@@ -1,4 +1,5 @@
 #include "msi_impl.h"
+#include "AV_codec.h"
 #include "toxrtp/tests/test_helper.h"
 #include <assert.h>
 
@@ -8,6 +9,8 @@ static media_session_t* _m_session = NULL; /* for the sake of test */
 pthread_mutex_t _mutex;
 
 static int _socket;
+    codec_state      *cs;
+    
 
 /* My recv functions */
 int rtp_handlepacket ( rtp_session_t* _session, uint8_t* data, uint32_t length )
@@ -138,19 +141,19 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
          * This part checks for received messages and if gotten one
          * display 'Received msg!' indicator and free message
          */
-        _msg = rtp_recv_msg ( _rtp_session );
+      //  _msg = rtp_recv_msg ( _rtp_session );
 
-        if ( _msg ) {
+      //  if ( _msg ) {
             /* Do whatever with msg */
-            rtp_free_msg ( _rtp_session, _msg );
-        }
+         //   rtp_free_msg ( _rtp_session, _msg );
+        //}
         /* -------------------- */
 
         /*
          * This one makes a test msg and sends that message to the 'remote'
          */
-        _msg = rtp_msg_new ( _rtp_session, "abcd", 4 ) ;
-        rtp_send_msg ( _rtp_session, _msg, _m_socket );
+        //_msg = rtp_msg_new ( _rtp_session, "abcd", 4 ) ;
+        //rtp_send_msg ( _rtp_session, _msg, _m_socket );
         usleep ( 10000 );
         /* -------------------- */
     }
@@ -176,6 +179,21 @@ void* handle_call_callback ( void* _p )
     hmtc_args_t rtp_targs = { _rtp_session, &_rtp_thread_running };
 
     _status = pthread_create ( &_rtp_tid, NULL, handle_media_transport_callback, &rtp_targs );
+    
+    /* HIER */
+    printf("negers\n");
+    cs->_m_session=_rtp_session;
+    cs->socket=_socket;
+    
+    cs->quit = 0;
+    cs->SDL_initialised=0;
+    if(cs->support_send_audio) pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);
+    if(cs->support_send_video) pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD);
+    if(cs->support_receive_video||cs->support_receive_audio) pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
+    cs->SDL_initialised=1;
+    
+    
 
     if ( _status < 0 ) {
         printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
@@ -345,6 +363,8 @@ int main ( int argc, char* argv [] )
 {
     int _status;
     unsigned short _send_port, _recv_port;
+ 
+    cs = av_mallocz(sizeof(codec_state));
 
     pthread_mutex_init ( &_mutex, NULL );
 
@@ -403,7 +423,19 @@ int main ( int argc, char* argv [] )
     msi_register_callback_recv_starting ( callback_recv_starting );
     msi_register_callback_recv_ending ( callback_recv_ending );
     /* ------------------ */
-
+    
+    /* Initiate codecs */
+    init_encoder(cs);
+    init_decoder(cs);
+    /*
+    cs->quit = 0;
+    cs->SDL_initialised=0;
+    if(cs->support_send_audio) pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);
+    if(cs->support_send_video) pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD);
+    if(cs->support_receive_video||cs->support_receive_audio) pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
+    cs->SDL_initialised=1;
+*/
     /* Start receive thread */
     pthread_t _recv_thread;
     _status = pthread_create ( &_recv_thread, NULL, phone_receivepacket, _m_session );
