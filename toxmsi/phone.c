@@ -372,15 +372,7 @@ int main ( int argc, char* argv [] )
     /* Initiate codecs */
     init_encoder(cs);
     init_decoder(cs);
-    /*
-    cs->quit = 0;
-    cs->SDL_initialised=0;
-    if(cs->support_send_audio) pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);
-    if(cs->support_send_video) pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD);
-    if(cs->support_receive_video||cs->support_receive_audio) pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
-    cs->SDL_initialised=1;
-*/
+
     /* Start receive thread */
     pthread_t _recv_thread;
     _status = pthread_create ( &_recv_thread, NULL, phone_receivepacket, _m_session );

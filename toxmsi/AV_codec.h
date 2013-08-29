@@ -45,7 +45,7 @@
 #define AUDIO_CODEC 		AV_CODEC_ID_OPUS
 
 /* default video bitrate in bytes/s */
-#define VIDEO_BITRATE 	20*1000
+#define VIDEO_BITRATE 	10*1000
 
 /* default audio bitrate in bytes/s */
 #define AUDIO_BITRATE	64000

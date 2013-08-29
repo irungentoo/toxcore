@@ -210,7 +210,7 @@ int init_send_video(codec_state *cs)
     }
     uint8_t *buffer;
     int numBytes;
-    // Determine required buffer size and allocate buffer
+    /* Determine required buffer size and allocate buffer */
     numBytes=avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height);
     buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
     avpicture_fill((AVPicture *)cs->s_video_frame, buffer, PIX_FMT_YUV420P,cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
@@ -372,7 +372,6 @@ void *encode_video_thread(void *arg)
                 {
                     printf("couldn't decode\n");
                     continue;
-
                 }
                 av_free_packet(packet);
                 sws_scale(cs->sws_ctx,(uint8_t const * const *)cs->webcam_frame->data,cs->webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, cs->s_video_frame->data,cs->s_video_frame->linesize);
@@ -399,9 +398,7 @@ void *encode_video_thread(void *arg)
                     if(!got_packet) {
                         continue;
                     }
-
                     pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                    //rtp_remove_resolution_marking(cs->_m_session);
                     rtp_add_resolution_marking(cs->_m_session, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
                     rtp_set_payload_type(cs->_m_session,106);
                     if(!cs->enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
@@ -415,7 +412,7 @@ void *encode_video_thread(void *arg)
                 av_free_packet(packet);
             }
         }
-        usleep(1000);
+        usleep(2000);
     }
     av_free(cs->webcam_frame);
     av_free(cs->s_video_frame);
@@ -465,7 +462,6 @@ void *encode_audio_thread(void *arg)
                         if(!got_packet_ptr)
                             printf("Could not encode audio packet\n");
                         pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                        //rtp_remove_resolution_marking(cs->_m_session);
                         rtp_set_payload_type(cs->_m_session,96);
                         cs->s_audio_msg = rtp_msg_new ( cs->_m_session, cs->enc_audio_packet.data, cs->enc_audio_packet.size ) ;
                         rtp_send_msg ( cs->_m_session, cs->s_audio_msg, cs->socket );
@@ -478,7 +474,7 @@ void *encode_audio_thread(void *arg)
                 av_free_packet(packet);
             }
         }
-        usleep(1000);
+        usleep(2000);
     }
     av_free(cs->enc_audio_frame);
     avcodec_close(cs->microphone_decoder_ctx);
@@ -605,9 +601,8 @@ void *decode_thread(void *arg)
                 }
                 rtp_free_msg(cs->_m_session, cs->r_msg);
             }
-
         }
-        usleep(10000);
+        usleep(2000);
     }
 
     /* clean up codecs */
@@ -618,7 +613,7 @@ void *decode_thread(void *arg)
 
     /* clean up openal */
     alDeleteSources(1, &cs->source);
-    alDeleteBuffers(6, cs->buffers);
+    alDeleteBuffers(openal_buffers, cs->buffers);
     alcMakeContextCurrent(NULL);
     alcDestroyContext(cs->ctx);
     alcCloseDevice(cs->dev);
