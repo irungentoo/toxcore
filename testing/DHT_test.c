@@ -30,7 +30,7 @@
 //#include "../core/network.h"
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
-#include "misc_tools.h"
+#include "../toxcore/misc_tools.h"
 
 #include <string.h>
 

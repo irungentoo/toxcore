@@ -25,7 +25,9 @@ libtoxcore_la_SOURCES = $(top_srcdir)/toxcore/DHT.h \
                         $(top_srcdir)/toxcore/tox.h \
                         $(top_srcdir)/toxcore/tox.c \
                         $(top_srcdir)/toxcore/util.h \
-                        $(top_srcdir)/toxcore/util.c
+                        $(top_srcdir)/toxcore/util.c \
+                        $(top_srcdir)/toxcore/misc_tools.h \
+                        $(top_srcdir)/toxcore/misc_tools.c
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \

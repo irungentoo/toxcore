@@ -25,7 +25,7 @@
 #define LOSSLESS_UDP_H
 
 #include "network.h"
-#include "../testing/misc_tools.h"
+#include "misc_tools.h"
 
 #ifdef __cplusplus
 extern "C" {

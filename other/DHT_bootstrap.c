@@ -29,7 +29,7 @@
 
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
-#include "../testing/misc_tools.h"
+#include "../toxcore/misc_tools.h"
 
 //Sleep function (x = milliseconds)
 #ifdef WIN32
