@@ -23,9 +23,12 @@
 
 /*----------------------------------------------------------------------------------*/
 
+#include <string.h>
+
 #include "DHT.h"
 #include "packets.h"
 #include "ping.h"
+#include "util.h"
 
 /* the number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
@@ -56,6 +59,7 @@
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
 
 Client_data *DHT_get_close_list(DHT *dht)
 {
@@ -278,32 +282,60 @@ static int replace_bad(    Client_data    *list,
 
     return 1;
 }
-/*Sort the list. It will be sorted from furthest to closest.
-  TODO: this is innefficient and needs to be optimized.*/
+
+/*Sort the list. It will be sorted from furthest to closest. */
 static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_id)
 {
     if (length == 0)
         return;
 
-    uint32_t i, count;
+    uint32_t i, j, width;
+    uint64_t dists[length], bdists[length];
+    uint8_t tmpid[8];
+    Client_data newlist[length];
 
-    while (1) {
-        count = 0;
-
-        for (i = 0; i < (length - 1); ++i) {
-            if (id_closest(comp_client_id, list[i].client_id, list[i + 1].client_id) == 1) {
-                Client_data temp = list[i + 1];
-                list[i + 1] = list[i];
-                list[i] = temp;
-                ++count;
+    /* Precompute distances to use for sorting. Only take first 64 bits = 8 bytes.*/
+    for (i = 0; i < length - 1; ++i) {
+        if (system_big_endian())
+            for (j = 0; j < 8; ++j)
+                tmpid[j] = comp_client_id[j] ^ list[i].client_id[j];
+        else
+            for (j = 7; j < 8 && j >= 0; --j)
+                tmpid[j] = reverse_bits(comp_client_id[j] ^ list[i].client_id[j]);
+        memcpy(dists[i], tmpid, 8);
+    }
+    for (i = 0; i < length; ++i)
+        newlist[i] = list[i];
+ 
+    /* Merge sort complexity: O(nlogn) */
+    for (width = 1; width < length; width *= 2) {
+        for (i = 0; i < length; i += 2 * width) {
+            /* Perform merge of array into work array newlist. */
+            uint32_t i0 = i, i1 = MIN(i+width,length), iEnd = MIN(i+2*width,length);
+            uint32_t iLeft = i, iRight = i1;
+            for (j = iLeft; j < iEnd; ++j) {
+                if (i1 >= iEnd || (i0 < iRight && dists[i0] >= dists[i1])) {
+                    newlist[j] = list[i0];
+                    bdists[j] = dists[i0];
+                    ++i0;
+                } else {
+                    newlist[j] = list[i1];
+                    bdists[j] = dists[i1];
+                    ++i1;
+                }
             }
         }
-
-        if (count == 0)
-            return;
+        /* Swap the two lists. */
+        for (i = 0; i < length; ++i) {
+            Client_data tmp = list[i];
+            uint8_t dtmp = dists[i];
+            list[i] = newlist[i];
+            newlist[i] = tmp;
+            dists[i] = bdists[i];
+            bdists[i] = dtmp;
+        }
     }
 }
-
 
 /* replace the first good node that is further to the comp_client_id than that of the client_id in the list */
 static int replace_good(   Client_data    *list,
