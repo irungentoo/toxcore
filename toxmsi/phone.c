@@ -2,6 +2,7 @@
 #include "msi_message.h"
 #include "rtp_message.h"
 #include "toxrtp/tests/test_helper.h"
+#include <curses.h>
 #include <assert.h>
 
 
@@ -17,7 +18,7 @@ int rtp_handlepacket ( rtp_session_t* _session, uint8_t* data, uint32_t length )
     rtp_msg_t* _msg = rtp_msg_parse ( _session, data, length );
 
     if ( !_msg )
-        return NULL;
+        return FAILURE;
 
 
     if ( _session->_last_msg ) {

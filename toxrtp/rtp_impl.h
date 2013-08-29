@@ -107,6 +107,12 @@ typedef struct rtp_session_s {
     uint16_t                    _prefix_length;
     uint8_t*                    _prefix;
 
+    /* Specifies multiple session use.
+     * When using one session it uses default value ( -1 )
+     * Otherwise it's set to 1 and rtp_register_msg () is required
+     */
+    int                         _multi_session;
+
 } rtp_session_t;
 
 
@@ -121,6 +127,7 @@ void                    rtp_free_msg ( rtp_session_t* _session, struct rtp_msg_s
 /* Functions handling receiving */
 struct rtp_msg_s*       rtp_recv_msg ( rtp_session_t* _session );
 struct rtp_msg_s*       rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+int                     rtp_register_msg ( rtp_session_t* _session, struct rtp_msg_s* );
 
 /* Functions handling sending */
 int                     rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, int _socket );
