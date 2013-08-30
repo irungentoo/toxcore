@@ -67,7 +67,7 @@ typedef struct rtp_msg_s {
     struct rtp_ext_header_s* _ext_header;
     uint32_t                 _header_lenght;
 
-    data_t*                  _data;
+    uint8_t*                 _data;
     uint32_t                 _length;
     tox_IP_Port              _from;
 
@@ -75,12 +75,12 @@ typedef struct rtp_msg_s {
 } rtp_msg_t;
 
 /* Extracts the header from the payload starting at _from */
-rtp_header_t*       rtp_extract_header ( const data_t* _payload, size_t _bytes );
-rtp_ext_header_t*   rtp_extract_ext_header ( const data_t* _payload, size_t _bytes );
+rtp_header_t*       rtp_extract_header ( const uint8_t* _payload, size_t _bytes );
+rtp_ext_header_t*   rtp_extract_ext_header ( const uint8_t* _payload, size_t _bytes );
 
 
-data_t*  rtp_add_header ( rtp_header_t* _header, const data_t* _payload );
-data_t*  rtp_add_extention_header ( rtp_ext_header_t* _header, const data_t* _payload );
+uint8_t*  rtp_add_header ( rtp_header_t* _header, uint8_t* _payload );
+uint8_t*  rtp_add_extention_header ( rtp_ext_header_t* _header, uint8_t* _payload );
 
 /* Gets the size of the header _header in bytes */
 size_t  rtp_header_get_size ( const rtp_header_t* _header );

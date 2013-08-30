@@ -1,7 +1,10 @@
+#define _BSD_SOURCE
+
 #include "msi_impl.h"
 #include "msi_message.h"
 
 #include <assert.h>
+#include <unistd.h>
 
 size_t m_strlen ( uint8_t* _str )
 {
@@ -27,16 +30,16 @@ static media_session_t* _msession_handler = NULL;
 int ( *msi_send_message_callback ) ( int _socket, tox_IP_Port,  uint8_t*, uint32_t ) = NULL;
 int ( *msi_recv_message_callback ) ( tox_IP_Port*, uint8_t*, uint32_t* ) = NULL;
 
-int ( *msi_recv_invite_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
-int ( *msi_start_call_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
-int ( *msi_reject_call_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
-int ( *msi_cancel_call_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
-int ( *msi_end_call_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
+MCBTYPE ( *msi_recv_invite_callback ) ( MCBARGS ) = NULL;
+MCBTYPE ( *msi_start_call_callback ) ( MCBARGS ) = NULL;
+MCBTYPE ( *msi_reject_call_callback ) ( MCBARGS ) = NULL;
+MCBTYPE ( *msi_cancel_call_callback ) ( MCBARGS ) = NULL;
+MCBTYPE ( *msi_end_call_callback ) ( MCBARGS ) = NULL;
 
-int ( *msi_trying_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
-int ( *msi_ringing_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
-int ( *msi_starting_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
-int ( *msi_ending_callback ) ( STATE_CALLBACK_ARGS ) = NULL;
+MCBTYPE ( *msi_trying_callback ) ( MCBARGS ) = NULL;
+MCBTYPE ( *msi_ringing_callback ) ( MCBARGS ) = NULL;
+MCBTYPE ( *msi_starting_callback ) ( MCBARGS ) = NULL;
+MCBTYPE ( *msi_ending_callback ) ( MCBARGS ) = NULL;
 /* End of CALLBACKS */
 
 /*------------------------*/
@@ -68,7 +71,7 @@ void msi_register_callback_recv ( int ( *callback ) ( tox_IP_Port*, uint8_t*, ui
  * This callback is all about what you do with it.
  * Everything else is done internally.
  */
-void msi_register_callback_recv_invite ( STATE_CALLBACK )
+void msi_register_callback_recv_invite ( MCALLBACK )
 {
     msi_recv_invite_callback = callback;
 }
@@ -77,7 +80,7 @@ void msi_register_callback_recv_invite ( STATE_CALLBACK )
  * This callback is all about what you do with it.
  * Everything else is done internally.
  */
-void msi_register_callback_call_started ( STATE_CALLBACK )
+void msi_register_callback_call_started ( MCALLBACK )
 {
     msi_start_call_callback = callback;
 }
@@ -86,7 +89,7 @@ void msi_register_callback_call_started ( STATE_CALLBACK )
  * This callback is all about what you do with it.
  * Everything else is done internally.
  */
-void msi_register_callback_call_rejected ( STATE_CALLBACK )
+void msi_register_callback_call_rejected ( MCALLBACK )
 {
     msi_reject_call_callback = callback;
 }
@@ -95,31 +98,31 @@ void msi_register_callback_call_rejected ( STATE_CALLBACK )
  * This callback is all about what you do with it.
  * Everything else is done internally.
  */
-void msi_register_callback_call_canceled ( STATE_CALLBACK )
+void msi_register_callback_call_canceled ( MCALLBACK )
 {
     msi_cancel_call_callback = callback;
 }
 
-void msi_register_callback_call_ended ( STATE_CALLBACK )
+void msi_register_callback_call_ended ( MCALLBACK )
 {
     msi_end_call_callback = callback;
 }
 
 
 /* Functions to be called when gotten x response */
-void msi_register_callback_recv_trying ( STATE_CALLBACK )
+void msi_register_callback_recv_trying ( MCALLBACK )
 {
     msi_trying_callback = callback;
 }
-void msi_register_callback_recv_ringing ( STATE_CALLBACK )
+void msi_register_callback_recv_ringing ( MCALLBACK )
 {
     msi_ringing_callback = callback;
 }
-void msi_register_callback_recv_starting ( STATE_CALLBACK )
+void msi_register_callback_recv_starting ( MCALLBACK )
 {
     msi_starting_callback = callback;
 }
-void msi_register_callback_recv_ending ( STATE_CALLBACK )
+void msi_register_callback_recv_ending ( MCALLBACK )
 {
     msi_ending_callback = callback;
 }
@@ -128,7 +131,7 @@ void msi_register_callback_recv_ending ( STATE_CALLBACK )
  * This callback is all about what you do with it.
  * Everything else is done internally.
  */
-void msi_register_callback_call_end ( STATE_CALLBACK )
+void msi_register_callback_call_end ( MCALLBACK )
 {
     msi_end_call_callback = callback;
 }

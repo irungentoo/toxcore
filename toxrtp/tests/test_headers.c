@@ -33,7 +33,8 @@
 #include <assert.h>
 #include "toxrtp/rtp_error_id.h"
 
-/*
+#ifdef _CT_HEADERS
+
 int print_help()
 {
     puts (
@@ -42,7 +43,7 @@ int print_help()
     );
     return FAILURE;
 }
-*/
+
 void print_session_stats ( rtp_session_t* _m_session )
 {
     printf
@@ -136,11 +137,7 @@ void print_ext_header_info(rtp_ext_header_t* _ext_header)
  * If phone.c turns out to be working i will remove these
  */
 
-int
-___main
-/*main*/
-( int argc, char* argv[] )
-
+int main ( int argc, char* argv[] )
 {
     arg_t* _list = parse_args ( argc, argv );
 
@@ -273,3 +270,5 @@ ___main
 
     return SUCCESS;
 }
+
+#endif /* _CT_HEADERS */

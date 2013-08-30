@@ -24,6 +24,7 @@
 
 #include "test_helper.h"
 
+#include <string.h>
 
 arg_t* parse_args ( int argc, char* argv[] )
 {

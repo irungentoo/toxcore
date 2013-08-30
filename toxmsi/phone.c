@@ -1,8 +1,11 @@
+#define _BSD_SOURCE
+
 #include "msi_impl.h"
 #include "msi_message.h"
 #include "rtp_message.h"
 #include "toxrtp/tests/test_helper.h"
 #include <assert.h>
+#include <unistd.h>
 
 
 static media_session_t* _m_session = NULL; /* for the sake of test */
@@ -79,23 +82,24 @@ void* phone_receivepacket ( void* _session_p )
             msi_handlepacket ( _session, _from, _socket_data + 1, _bytes );
             break;
         case RTP_PACKET:
-            /* this will parse a data into rtp_message_t form but
-             * it will not be registered into a session. For that
-             * we need to call a rtp_register_msg ()
-             */
-            _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes );
+            if ( _session->_call_info == call_active ){
+                /* this will parse a data into rtp_message_t form but
+                 * it will not be registered into a session. For that
+                 * we need to call a rtp_register_msg ()
+                 */
+                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes );
 
-            if ( !_msg )
-                break;
+                if ( !_msg )
+                    break;
 
-            _payload_id = rtp_header_get_setting_payload_type(_msg->_header);
+                _payload_id = rtp_header_get_setting_payload_type(_msg->_header);
 
-            if ( _payload_id == _PAYLOAD_OPUS && _session->_rtp_audio )
-                rtp_handlepacket ( _session->_rtp_audio, _msg );
-            else if ( _payload_id == _PAYLOAD_VP8 && _session->_rtp_video )
-                rtp_handlepacket ( _session->_rtp_video, _msg );
-            else rtp_free_msg( NULL, _msg);
-
+                if ( _payload_id == _PAYLOAD_OPUS && _session->_rtp_audio )
+                    rtp_handlepacket ( _session->_rtp_audio, _msg );
+                else if ( _payload_id == _PAYLOAD_VP8 && _session->_rtp_video )
+                    rtp_handlepacket ( _session->_rtp_video, _msg );
+                else rtp_free_msg( NULL, _msg);
+            }
             break;
         default:
             usleep ( 2000 );
@@ -160,13 +164,14 @@ typedef struct hmtc_args_s {
             /* Do whatever with msg */
             puts("video");
             rtp_free_msg ( _rtp_video, _video_msg );
-        _audio_msg = rtp_msg_new ( _rtp_audio, "abcd", 4 ) ;
+        _audio_msg = rtp_msg_new ( _rtp_audio, (const uint8_t*)"abcd", 4 ) ;
         rtp_send_msg ( _rtp_audio, _audio_msg, _m_socket );
 
-        _video_msg = rtp_msg_new ( _rtp_video, "abcd", 4 ) ;
+        _video_msg = rtp_msg_new ( _rtp_video, (const uint8_t*)"abcd", 4 ) ;
         rtp_send_msg ( _rtp_video, _video_msg, _m_socket );
 
 
+    _thread_running = -1;
 
 /* This is call control callback */
 void* handle_call_callback ( void* _p )
@@ -199,9 +204,10 @@ void* handle_call_callback ( void* _p )
 	pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);    
     if(cs->support_send_video) 
 	pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD);
+        return _status;
     if(cs->support_receive_video||cs->support_receive_audio) 
 	pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
+        return _status;
     
     _p = NULL;
     char _choice [10];
@@ -224,7 +230,7 @@ void* handle_call_callback ( void* _p )
 
 /* Some example callbacks */
 
-int callback_recv_invite ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_recv_invite ( MCBARGS )
 {
     int _status = SUCCESS;
 
@@ -251,17 +257,17 @@ int callback_recv_invite ( STATE_CALLBACK_ARGS )
 
     return _status;
 }
-int callback_recv_trying ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_recv_trying ( MCBARGS )
 {
     printf ( "Trying...\n" );
     return SUCCESS;
 }
-int callback_recv_ringing ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_recv_ringing ( MCBARGS )
 {
     printf ( "Ringing...\n" );
     return SUCCESS;
 }
-int callback_recv_starting ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_recv_starting ( MCBARGS )
 {
     int _status = SUCCESS;
 
@@ -287,7 +293,7 @@ int callback_recv_starting ( STATE_CALLBACK_ARGS )
 
     return SUCCESS;
 }
-int callback_recv_ending ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_recv_ending ( MCBARGS )
 {
     printf ( "Call ended! (exiting)\n" );
     pthread_mutex_destroy ( &_mutex );
@@ -296,7 +302,7 @@ int callback_recv_ending ( STATE_CALLBACK_ARGS )
 }
 
 
-int callback_call_started ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_call_started ( MCBARGS )
 {
     int _status = SUCCESS;
 
@@ -322,17 +328,17 @@ int callback_call_started ( STATE_CALLBACK_ARGS )
 
     return SUCCESS;
 }
-int callback_call_canceled ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_call_canceled ( MCBARGS )
 {
     printf ( "On call canceled!\n" );
     return SUCCESS;
 }
-int callback_call_rejected ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_call_rejected ( MCBARGS )
 {
     printf ( "Call rejected!\n" );
     return SUCCESS;
 }
-int callback_call_ended ( STATE_CALLBACK_ARGS )
+MCBTYPE callback_call_ended ( MCBARGS )
 {
     printf ( "On call ended (exiting)!\n" );
    
@@ -384,7 +390,8 @@ int main ( int argc, char* argv [] )
 
 
     /* Bind local receive port to any address */
-    IP_Port _local = { { htonl ( INADDR_ANY ) }, _recv_port };
+    IP_Port _local;
+    _local.ip.i = htonl ( INADDR_ANY );
     Networking_Core* _networking = new_networking ( _local.ip, _recv_port );
 
     if ( !_networking ) {

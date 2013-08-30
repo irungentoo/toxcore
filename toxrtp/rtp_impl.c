@@ -37,8 +37,6 @@
 
 /* End of defines */
 
-data_t LAST_SOCKET_DATA[MAX_UDP_PACKET_SIZE];
-
 #ifdef _USE_ERRORS
 #include "rtp_error_id.h"
 #endif /* _USE_ERRORS */
@@ -123,7 +121,6 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     /*
      *
      */
-    memset ( LAST_SOCKET_DATA, '\0', MAX_UDP_PACKET_SIZE );
     return _retu;
 }
 
@@ -309,22 +306,6 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
 
 rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
 {
-    /*
-        uint32_t  _bytes;
-        IP_Port  _from;
-        int status = receivepacket ( &_from, LAST_SOCKET_DATA, &_bytes );
-
-
-        if ( status == FAILURE )  /* nothing recved */ /*
-        return NULL;
-
-    LAST_SOCKET_DATA[_bytes] = '\0';
-
-    _session->_bytes_recv += _bytes;
-    _session->_packets_recv ++;
-
-    return rtp_msg_parse ( _session, LAST_SOCKET_DATA, _bytes ); */
-
     rtp_msg_t* _retu = _session->_oldest_msg;
 
     if ( _retu )
@@ -336,12 +317,12 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
     return _retu;
 }
 
-rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const data_t* _data, uint32_t _length )
+rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
 {
     if ( !_session )
         return NULL;
 
-    data_t* _from_pos;
+    uint8_t* _from_pos;
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
 
@@ -391,7 +372,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const data_t* _data, uint32_t 
     return _retu;
 }
 
-rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_t _length )
+rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
 {
     rtp_msg_t* _retu;
     ALLOCATOR_S ( _retu, rtp_msg_t )
@@ -421,7 +402,7 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_
     }
 
     /* Get the payload */
-    _retu->_data = malloc ( sizeof ( data_t ) * _retu->_length );
+    _retu->_data = malloc ( sizeof ( uint8_t ) * _retu->_length );
     t_memcpy ( _retu->_data, _data + _from_pos, _length - _from_pos );
 
     _retu->_next = NULL;

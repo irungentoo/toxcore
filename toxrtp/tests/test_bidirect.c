@@ -1,4 +1,5 @@
-#include "toxrtp/rtp_impl.h"
+#define _BSD_SOURCE
+
 #include "../rtp_message.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +9,8 @@
 
 #include "test_helper.h"
 #include "../../toxcore/tox.h"
+
+#ifdef _CT_BIDIRECT
 
 int _print_help( const char* name )
 {
@@ -26,16 +29,13 @@ int _print_help( const char* name )
     return FAILURE;
 }
 
-int
- _no__main
-/*main*/
-( int argc, char* argv[] )
+int main( int argc, char* argv[] )
 {
     int status;
     tox_IP_Port     Ip_port;
     const char* ip, *psend, *plisten;
     uint16_t    port_send, port_listen;
-    const char* test_bytes = "0123456789012345678901234567890123456789012345678901234567890123456789"
+    const uint8_t* test_bytes = "0123456789012345678901234567890123456789012345678901234567890123456789"
                              "0123456789012345678901234567890123456789012345678901234567890123456789"
                              "0123456789012345678901234567890123456789012345678901234567890123456789"
                              "0123456789012345678901234567890123456789012345678901234567890123456789";
@@ -104,3 +104,5 @@ int
 
     return SUCCESS;
 }
+
+#endif /* _CT_BIDIRECT */
