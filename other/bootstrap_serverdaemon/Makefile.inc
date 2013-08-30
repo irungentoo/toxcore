@@ -3,7 +3,7 @@ if BUILD_DHT_BOOTSTRAP_DAEMON
 noinst_PROGRAMS +=      DHT_bootstrap_daemon
 
 DHT_bootstrap_daemon_SOURCES = \
-                        $(top_srcdir)/other/bootstrap_serverdaemon/DHT_bootstrap_daemon.c
+                        ../other/bootstrap_serverdaemon/DHT_bootstrap_daemon.c
 
 DHT_bootstrap_daemon_CFLAGS = \
                         -I$(top_srcdir)/other/bootstrap_serverdaemon \
