@@ -81,9 +81,9 @@
 
 
 typedef union {
-    uint8_t c[4];
-    uint16_t s[2];
-    uint32_t i;
+    uint8_t uint8[4];
+    uint16_t uint16[2];
+    uint32_t uint32;
 } IP;
 
 typedef union {
