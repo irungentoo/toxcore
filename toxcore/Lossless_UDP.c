@@ -62,10 +62,10 @@ static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
     uint32_t id = 0, i;
 
     for (i = 0; i < 6; ++i) {
-        if (ludp->randtable[i][((uint8_t *)&source)[i]] == 0)
-            ludp->randtable[i][((uint8_t *)&source)[i]] = random_int();
+        if (ludp->randtable[i][source.uint8[i]] == 0)
+            ludp->randtable[i][source.uint8[i]] = random_int();
 
-        id ^= ludp->randtable[i][((uint8_t *)&source)[i]];
+        id ^= ludp->randtable[i][source.uint8[i]];
     }
 
     /* id can't be zero. */
