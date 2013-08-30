@@ -41,7 +41,7 @@ int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
     uint32_t i;
 
     for (i = 0; i < ludp->connections_length; ++i) {
-        if (ludp->connections[i].ip_port.ip.i == ip_port.ip.i &&
+        if (ludp->connections[i].ip_port.ip.uint32 == ip_port.ip.uint32 &&
                 ludp->connections[i].ip_port.port == ip_port.port &&
                 ludp->connections[i].status > 0)
             return i;
@@ -62,10 +62,10 @@ static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
     uint32_t id = 0, i;
 
     for (i = 0; i < 6; ++i) {
-        if (ludp->randtable[i][((uint8_t *)&source)[i]] == 0)
-            ludp->randtable[i][((uint8_t *)&source)[i]] = random_int();
+        if (ludp->randtable[i][source.uint8[i]] == 0)
+            ludp->randtable[i][source.uint8[i]] = random_int();
 
-        id ^= ludp->randtable[i][((uint8_t *)&source)[i]];
+        id ^= ludp->randtable[i][source.uint8[i]];
     }
 
     /* id can't be zero. */
@@ -302,7 +302,7 @@ IP_Port connection_ip(Lossless_UDP *ludp, int connection_id)
     if (connection_id >= 0 && connection_id < ludp->connections_length)
         return ludp->connections[connection_id].ip_port;
 
-    IP_Port zero = {{{0}}, 0};
+    IP_Port zero = { .ip = {0}, .port = 0, .padding = 0 };
     return zero;
 }
 

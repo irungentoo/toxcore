@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     /* Initialize networking -
        Bind to ip 0.0.0.0:PORT */
     IP ip;
-    ip.i = 0;
+    ip.uint32 = 0;
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
     manage_keys(dht);
     printf("Public key: ");
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     if (argc > 3) {
         printf("Trying to bootstrap into the network...\n");
         IP_Port bootstrap_info;
-        bootstrap_info.ip.i = inet_addr(argv[1]);
+        bootstrap_info.ip.uint32 = inet_addr(argv[1]);
         bootstrap_info.port = htons(atoi(argv[2]));
         uint8_t *bootstrap_key = hex_string_to_bin(argv[3]);
         DHT_bootstrap(dht, bootstrap_info, bootstrap_key);
