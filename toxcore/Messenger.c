@@ -643,7 +643,7 @@ Messenger *initMessenger(void)
         return NULL;
 
     IP ip;
-    ip.i = 0;
+    ip.uint32 = 0;
     m->net = new_networking(ip, PORT);
 
     if (m->net == NULL) {
@@ -731,7 +731,7 @@ void doFriends(Messenger *m)
 
             switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
                 case 0:
-                    if (friendip.ip.i > 1)
+                    if (friendip.ip.uint32 > 1)
                         m->friendlist[i].crypt_connection_id = crypto_connect(m->net_crypto, m->friendlist[i].client_id, friendip);
 
                     break;

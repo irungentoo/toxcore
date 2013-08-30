@@ -81,16 +81,19 @@
 
 
 typedef union {
-    uint8_t c[4];
-    uint16_t s[2];
-    uint32_t i;
+    uint8_t uint8[4];
+    uint16_t uint16[2];
+    uint32_t uint32;
 } IP;
 
-typedef struct {
-    IP ip;
-    uint16_t port;
-    /* Not used for anything right now. */
-    uint16_t padding;
+typedef union {
+    struct {
+        IP ip;
+        uint16_t port;
+        /* Not used for anything right now. */
+        uint16_t padding;
+    };
+    uint8_t uint8[8];
 } IP_Port;
 
 typedef struct {

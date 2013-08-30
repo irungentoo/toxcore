@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     //initialize networking
     //bind to ip 0.0.0.0:PORT
     IP ip;
-    ip.i = 0;
+    ip.uint32 = 0;
     Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
 

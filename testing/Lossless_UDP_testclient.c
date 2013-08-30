@@ -62,7 +62,7 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 
 void printip(IP_Port ip_port)
 {
-    printf("\nIP: %u.%u.%u.%u Port: %u", ip_port.ip.c[0], ip_port.ip.c[1], ip_port.ip.c[2], ip_port.ip.c[3],
+    printf("\nIP: %u.%u.%u.%u Port: %u", ip_port.ip.uint8[0], ip_port.ip.uint8[1], ip_port.ip.uint8[2], ip_port.ip.uint8[3],
            ntohs(ip_port.port));
 }
 /*
@@ -165,11 +165,11 @@ int main(int argc, char *argv[])
     /* initialize networking */
     /* bind to ip 0.0.0.0:PORT */
     IP ip;
-    ip.i = 0;
+    ip.uint32 = 0;
     Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
     IP_Port serverip;
-    serverip.ip.i = inet_addr(argv[1]);
+    serverip.ip.uint32 = inet_addr(argv[1]);
     serverip.port = htons(atoi(argv[2]));
     printip(serverip);
     int connection = new_connection(ludp, serverip);

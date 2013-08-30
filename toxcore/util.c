@@ -30,7 +30,7 @@ uint64_t random_64b()
 
 bool ipp_eq(IP_Port a, IP_Port b)
 {
-    return (a.ip.i == b.ip.i) && (a.port == b.port);
+    return (a.ip.uint32 == b.ip.uint32) && (a.port == b.port);
 }
 
 bool id_eq(uint8_t *dest, uint8_t *src)

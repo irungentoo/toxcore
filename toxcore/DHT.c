@@ -88,7 +88,7 @@ static int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2)
 
 static int ipport_equal(IP_Port a, IP_Port b)
 {
-    return (a.ip.i == b.ip.i) && (a.port == b.port);
+    return (a.ip.uint32 == b.ip.uint32) && (a.port == b.port);
 }
 
 static int id_equal(uint8_t *a, uint8_t *b)
@@ -122,7 +122,7 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
         if (id_equal(list[i].client_id, client_id)) {
             /* Refresh the client timestamp. */
             list[i].timestamp = temp_time;
-            list[i].ip_port.ip.i = ip_port.ip.i;
+            list[i].ip_port.ip.uint32 = ip_port.ip.uint32;
             list[i].ip_port.port = ip_port.port;
             return 1;
         }
@@ -268,7 +268,7 @@ static int replace_bad(    Client_data    *list,
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
             list[i].timestamp = temp_time;
-            list[i].ret_ip_port.ip.i = 0;
+            list[i].ret_ip_port.ip.uint32 = 0;
             list[i].ret_ip_port.port = 0;
             list[i].ret_timestamp = 0;
             return 0;
@@ -320,7 +320,7 @@ static int replace_good(   Client_data    *list,
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
             list[i].timestamp = temp_time;
-            list[i].ret_ip_port.ip.i = 0;
+            list[i].ret_ip_port.ip.uint32 = 0;
             list[i].ret_ip_port.port = 0;
             list[i].ret_timestamp = 0;
             return 0;
@@ -418,13 +418,13 @@ static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
         if (!is_timeout(temp_time, dht->send_nodes[i].timestamp, PING_TIMEOUT)) {
             pinging = 0;
 
-            if (ip_port.ip.i != 0 && ipport_equal(dht->send_nodes[i].ip_port, ip_port))
+            if (ip_port.ip.uint32 != 0 && ipport_equal(dht->send_nodes[i].ip_port, ip_port))
                 ++pinging;
 
             if (ping_id != 0 && dht->send_nodes[i].ping_id == ping_id)
                 ++pinging;
 
-            if (pinging == (ping_id != 0) + (ip_port.ip.i != 0))
+            if (pinging == (ping_id != 0) + (ip_port.ip.uint32 != 0))
                 return 1;
         }
     }
@@ -675,7 +675,7 @@ IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
-    IP_Port empty = {{{0}}, 0};
+    IP_Port empty = { .ip = {0}, .port = 0, .padding = 0 };
 
     for (i = 0; i < dht->num_friends; ++i) {
         /* Equal */
@@ -690,7 +690,7 @@ IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id)
         }
     }
 
-    empty.ip.i = 1;
+    empty.ip.uint32 = 1;
     return empty;
 }
 
@@ -814,7 +814,7 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
         client = &friend->client_list[i];
 
         /* If ip is not zero and node is good */
-        if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
+        if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
 
             if (id_equal(client->client_id, friend->client_id))
                 return 0;
@@ -856,7 +856,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
         client = &friend->client_list[i];
 
         /* If ip is not zero and node is good */
-        if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
+        if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
             if (sendpacket(dht->c->lossless_udp->net->sock, client->ip_port, packet, length) == length)
                 ++sent;
         }
@@ -887,7 +887,7 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
         client = &friend->client_list[i];
 
         /* If ip is not zero and node is good. */
-        if (client->ret_ip_port.ip.i != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
+        if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
             ip_list[n] = client->ip_port;
             ++n;
         }
@@ -998,7 +998,7 @@ static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
 
     for (i = 0; i < len; ++i) {
         for (j = 0; j < len; ++j) {
-            if (ip_portlist[i].ip.i == ip_portlist[j].ip.i)
+            if (ip_portlist[i].ip.uint32 == ip_portlist[j].ip.uint32)
                 ++numbers[i];
         }
 
@@ -1020,7 +1020,7 @@ static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t 
     uint16_t num = 0;
 
     for (i = 0; i < len; ++i) {
-        if (ip_portlist[i].ip.i == ip.i) {
+        if (ip_portlist[i].ip.uint32 == ip.uint32) {
             portlist[num] = ntohs(ip_portlist[i].port);
             ++num;
         }
@@ -1071,7 +1071,7 @@ static void do_NAT(DHT *dht)
 
             IP ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS / 2);
 
-            if (ip.i == 0)
+            if (ip.uint32 == 0)
                 continue;
 
             uint16_t port_list[MAX_FRIEND_CLIENTS];
@@ -1099,15 +1099,15 @@ static void do_NAT(DHT *dht)
  */
 int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
 {
-    if (ip_port.ip.i == 0)
+    if (ip_port.ip.uint32 == 0)
         return -1;
 
     uint32_t i;
 
     for (i = 0; i < MAX_TOPING; ++i) {
-        if (dht->toping[i].ip_port.ip.i == 0) {
+        if (dht->toping[i].ip_port.ip.uint32 == 0) {
             memcpy(dht->toping[i].client_id, client_id, CLIENT_ID_SIZE);
-            dht->toping[i].ip_port.ip.i = ip_port.ip.i;
+            dht->toping[i].ip_port.ip.uint32 = ip_port.ip.uint32;
             dht->toping[i].ip_port.port = ip_port.port;
             return 0;
         }
@@ -1116,7 +1116,7 @@ int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
     for (i = 0; i < MAX_TOPING; ++i) {
         if (id_closest(dht->c->self_public_key, dht->toping[i].client_id, client_id) == 2) {
             memcpy(dht->toping[i].client_id, client_id, CLIENT_ID_SIZE);
-            dht->toping[i].ip_port.ip.i = ip_port.ip.i;
+            dht->toping[i].ip_port.ip.uint32 = ip_port.ip.uint32;
             dht->toping[i].ip_port.port = ip_port.port;
             return 0;
         }
@@ -1139,11 +1139,11 @@ static void do_toping(DHT *dht)
     uint32_t i;
 
     for (i = 0; i < MAX_TOPING; ++i) {
-        if (dht->toping[i].ip_port.ip.i == 0)
+        if (dht->toping[i].ip_port.ip.uint32 == 0)
             return;
 
         send_ping_request(dht->ping, dht->c, dht->toping[i].ip_port, dht->toping[i].client_id);
-        dht->toping[i].ip_port.ip.i = 0;
+        dht->toping[i].ip_port.ip.uint32 = 0;
     }
 }
 
