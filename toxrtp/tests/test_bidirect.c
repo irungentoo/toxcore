@@ -74,7 +74,7 @@ int
      * Now this is the remote. It's used by rtp_session_t to determine the receivers ip etc.
      */
     t_setipport ( ip, port_send, &remote );
-    _m_session = rtp_init_session(-1);
+    _m_session = rtp_init_session(-1, -1);
     rtp_add_receiver( _m_session, &remote );
 
     /* Now let's start our main loop in both recv and send mode */

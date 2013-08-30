@@ -142,8 +142,10 @@ struct rtp_header_s*    rtp_build_header ( rtp_session_t* _session );
 /* Handling an rtp packet */
 /* int             rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source); */
 
-/* Session initiation and termination. */
-rtp_session_t*          rtp_init_session ( int _max_users );
+/* Session initiation and termination.
+ * Set _multi_session to -1 if not using multiple sessions
+ */
+rtp_session_t*          rtp_init_session ( int _max_users, int _multi_session );
 int                     rtp_terminate_session ( rtp_session_t* _session );
 
 /* Adding receiver */

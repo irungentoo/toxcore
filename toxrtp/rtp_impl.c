@@ -71,7 +71,7 @@ int m_sendpacket(int sock, tox_IP_Port ip_port, uint8_t *data, uint32_t length)
     return sendpacket(sock, _convert, data, length);
 }
 
-rtp_session_t* rtp_init_session ( int max_users )
+rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
 {
 #ifdef _USE_ERRORS
     REGISTER_RTP_ERRORS
@@ -118,6 +118,8 @@ rtp_session_t* rtp_init_session ( int max_users )
 
     _retu->_prefix_length = 0;
     _retu->_prefix = NULL;
+
+    _retu->_multi_session = _multi_session;
     /*
      *
      */
@@ -131,17 +133,17 @@ int rtp_terminate_session ( rtp_session_t* _session )
         return FAILURE;
 
     if ( _session->_dest_list )
-        DEALLOCATOR_LIST_S ( _session->_dest_list, rtp_dest_list_t )
+        DEALLOCATOR_LIST_S ( _session->_dest_list, rtp_dest_list_t );
 
         if ( _session->_ext_header )
-            DEALLOCATOR ( _session->_ext_header )
+            DEALLOCATOR ( _session->_ext_header );
 
             if ( _session->_csrc )
-                DEALLOCATOR ( _session->_csrc )
+                DEALLOCATOR ( _session->_csrc );
 
-                DEALLOCATOR ( _session->_prefix )
+                DEALLOCATOR ( _session->_prefix );
                 /* And finally free session */
-                DEALLOCATOR ( _session )
+                DEALLOCATOR ( _session );
 
                 return SUCCESS;
 }
@@ -166,11 +168,19 @@ void rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _message )
 {
     free ( _message->_data );
 
-    if ( _session->_csrc != _message->_header->_csrc )
+    if ( !_session ){
         free ( _message->_header->_csrc );
-    if ( _message->_ext_header && _session->_ext_header != _message->_ext_header ) {
-        free ( _message->_ext_header->_hd_ext );
-        free ( _message->_ext_header );
+        if ( _message->_ext_header ){
+            free ( _message->_ext_header->_hd_ext );
+            free ( _message->_ext_header );
+        }
+    } else {
+        if ( _session->_csrc != _message->_header->_csrc )
+            free ( _message->_header->_csrc );
+        if ( _message->_ext_header && _session->_ext_header != _message->_ext_header ) {
+            free ( _message->_ext_header->_hd_ext );
+            free ( _message->_ext_header );
+        }
     }
 
     free ( _message->_header );

@@ -203,7 +203,10 @@ media_session_t* msi_init_session ( int _socket )
         return _msession_handler;
 
     _msession_handler = malloc ( sizeof ( media_session_t ) );
-    _msession_handler->_rtp_session = NULL;
+
+    _msession_handler->_rtp_audio = NULL;
+    _msession_handler->_rtp_video = NULL;
+
     _msession_handler->_oldest_msg = _msession_handler->_last_msg = NULL;
     _msession_handler->_call_info = -1;
     _msession_handler->_socket = _socket;
@@ -218,8 +221,11 @@ int msi_terminate_session ( media_session_t* _session )
     if ( !_session )
         return -1;
 
-    if ( _session->_rtp_session )
-        _status = rtp_terminate_session ( _session->_rtp_session );
+    if ( _session->_rtp_audio )
+        _status = rtp_terminate_session ( _session->_rtp_audio );
+
+    if ( _session->_rtp_video )
+        _status = rtp_terminate_session ( _session->_rtp_video );
 
     free ( _session );
 

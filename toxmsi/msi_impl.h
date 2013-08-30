@@ -48,7 +48,8 @@ typedef enum {
 } call_state;
 
 typedef struct media_session_s {
-    rtp_session_t* _rtp_session;
+    rtp_session_t* _rtp_audio;
+    rtp_session_t* _rtp_video;
 
 
     pthread_t _thread_id;
