@@ -675,7 +675,7 @@ IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
-    IP_Port empty = {{{0}}, 0};
+    IP_Port empty = { .ip = {0}, .port = 0, .padding = 0 };
 
     for (i = 0; i < dht->num_friends; ++i) {
         /* Equal */

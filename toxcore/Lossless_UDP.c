@@ -302,7 +302,7 @@ IP_Port connection_ip(Lossless_UDP *ludp, int connection_id)
     if (connection_id >= 0 && connection_id < ludp->connections_length)
         return ludp->connections[connection_id].ip_port;
 
-    IP_Port zero = {{{0}}, 0};
+    IP_Port zero = { .ip = {0}, .port = 0, .padding = 0 };
     return zero;
 }
 
