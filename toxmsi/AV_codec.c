@@ -360,7 +360,7 @@ void *encode_video_thread(void *arg)
     while(1) {
         if(cs->quit)
             break;
-rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
+        rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
         if(cs->send_video) {
 
             if(av_read_frame(cs->video_format_ctx, packet) < 0) {
@@ -401,11 +401,11 @@ rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->vide
                         continue;
                     }
                     pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                    //rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
-                    //rtp_set_payload_type(cs->_rtp_video,106);
                     if(!cs->enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
                     cs->s_video_msg = rtp_msg_new ( cs->_rtp_video, cs->enc_video_packet.data, cs->enc_video_packet.size ) ;
-		    if(!cs->s_video_msg){printf("invalid message\n");}
+                    if(!cs->s_video_msg) {
+                        printf("invalid message\n");
+                    }
                     rtp_send_msg ( cs->_rtp_video, cs->s_video_msg, cs->socket );
                     pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
                     av_free_packet(&cs->enc_video_packet);
@@ -415,7 +415,6 @@ rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->vide
                 av_free_packet(packet);
             }
         }
-        usleep(2000);
     }
     av_free(cs->webcam_frame);
     av_free(cs->s_video_frame);
@@ -477,7 +476,6 @@ void *encode_audio_thread(void *arg)
                 av_free_packet(packet);
             }
         }
-        usleep(2000);
     }
     av_free(cs->enc_audio_frame);
     avcodec_close(cs->microphone_decoder_ctx);
@@ -576,44 +574,43 @@ void *decode_thread(void *arg)
                 }
             }
         }
-        
-        cs->r_msg = rtp_recv_msg ( cs->_rtp_audio );
-        if(cs-> r_msg) {     
-     int type = decoder_handle_rtp_packet(cs);   
-if(type==96&&cs->receive_audio) {
-memcpy(cs->dec_audio_packet.data,cs->r_msg->_data,cs->r_msg->_length);
-cs->dec_audio_packet.size=cs->r_msg->_length;
-avcodec_decode_audio4(cs->audio_decoder_ctx, cs->r_audio_frame, &cs->dec_frame_finished, &cs->dec_audio_packet);
-if(cs->dec_frame_finished) {
-ALuint buffer;
-ALint val;
-alGetSourcei(cs->source, AL_BUFFERS_PROCESSED, &val);
-if(val <= 0)
-continue;
-alSourceUnqueueBuffers(cs->source, 1, &buffer);
-data_size = av_samples_get_buffer_size(NULL,cs->r_audio_frame->channels, cs->r_audio_frame->nb_samples, cs->audio_decoder_ctx->sample_fmt, 1);
-alBufferData(buffer, AL_FORMAT_MONO16, cs->r_audio_frame->data[0], data_size, 48000);
-int error=alGetError();
-if(error != AL_NO_ERROR) {
-fprintf(stderr, "Error setting buffer %d\n",error);
-break;
-}
-alSourceQueueBuffers(cs->source, 1, &buffer);
-if(alGetError() != AL_NO_ERROR) {
-fprintf(stderr, "error: could not buffer audio\n");
-break;
-}
-alGetSourcei(cs->source, AL_SOURCE_STATE, &val);
-if(val != AL_PLAYING)
-alSourcePlay(cs->source);
 
-}
-rtp_free_msg(cs->_rtp_audio, cs->r_msg);
-}
-	}
-	  
-            
-        usleep(2000);
+        cs->r_msg = rtp_recv_msg ( cs->_rtp_audio );
+        if(cs-> r_msg) {
+            int type = decoder_handle_rtp_packet(cs);
+            if(type==96&&cs->receive_audio) {
+                memcpy(cs->dec_audio_packet.data,cs->r_msg->_data,cs->r_msg->_length);
+                cs->dec_audio_packet.size=cs->r_msg->_length;
+                avcodec_decode_audio4(cs->audio_decoder_ctx, cs->r_audio_frame, &cs->dec_frame_finished, &cs->dec_audio_packet);
+                if(cs->dec_frame_finished) {
+                    ALuint buffer;
+                    ALint val;
+                    alGetSourcei(cs->source, AL_BUFFERS_PROCESSED, &val);
+                    if(val <= 0)
+                        continue;
+                    alSourceUnqueueBuffers(cs->source, 1, &buffer);
+                    data_size = av_samples_get_buffer_size(NULL,cs->r_audio_frame->channels, cs->r_audio_frame->nb_samples, cs->audio_decoder_ctx->sample_fmt, 1);
+                    alBufferData(buffer, AL_FORMAT_MONO16, cs->r_audio_frame->data[0], data_size, 48000);
+                    int error=alGetError();
+                    if(error != AL_NO_ERROR) {
+                        fprintf(stderr, "Error setting buffer %d\n",error);
+                        break;
+                    }
+                    alSourceQueueBuffers(cs->source, 1, &buffer);
+                    if(alGetError() != AL_NO_ERROR) {
+                        fprintf(stderr, "error: could not buffer audio\n");
+                        break;
+                    }
+                    alGetSourcei(cs->source, AL_SOURCE_STATE, &val);
+                    if(val != AL_PLAYING)
+                        alSourcePlay(cs->source);
+                }
+                rtp_free_msg(cs->_rtp_audio, cs->r_msg);
+            }
+        }
+
+
+        usleep(1000);
     }
 
     /* clean up codecs */

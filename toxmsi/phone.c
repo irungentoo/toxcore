@@ -16,7 +16,7 @@ pthread_mutex_t _mutex;
 
 static int _socket;
 codec_state      *cs;
-    
+
 
 /* My recv functions */
 int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
@@ -24,7 +24,7 @@ int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
     if ( !_msg )
         return FAILURE;
 
-    if ( rtp_register_msg(_session, _msg) < 0 ){
+    if ( rtp_register_msg(_session, _msg) < 0 ) {
         return FAILURE;
     }
 
@@ -72,18 +72,21 @@ void* phone_receivepacket ( void* _session_p )
     uint16_t _payload_id;
 
     while ( _session ) {
-      	usleep ( 2000 );
+
         int _status = receivepacket ( _m_socket, &_from, _socket_data, &_bytes );
-        if ( _status == FAILURE )  /* nothing recved */
+        if ( _status == FAILURE ) { /* nothing recved */
+            usleep(2000);
             continue;
+        }
 
         pthread_mutex_lock ( &_mutex );
         switch ( _socket_data[0] ) {
         case MSI_PACKET:
             msi_handlepacket ( _session, _from, _socket_data + 1, _bytes );
+            usleep(1000);
             break;
         case RTP_PACKET:
-            if ( _session->_call_info == call_active ){
+            if ( _session->_call_info == call_active ) {
                 /* this will parse a data into rtp_message_t form but
                  * it will not be registered into a session. For that
                  * we need to call a rtp_register_msg ()
@@ -101,12 +104,13 @@ void* phone_receivepacket ( void* _session_p )
                     rtp_handlepacket ( _session->_rtp_video, _msg );
                 else rtp_free_msg( NULL, _msg);
             }
+            usleep(1000);
             break;
         default:
-	    break;
+            break;
         };
         pthread_mutex_unlock ( &_mutex );
-	
+
     }
     pthread_exit ( NULL );
 }
@@ -166,9 +170,9 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
 
     while ( *_thread_running ) {
         /*
-* This part checks for received messages and if gotten one
-* display 'Received msg!' indicator and free message
-*/
+        * This part checks for received messages and if gotten one
+        * display 'Received msg!' indicator and free message
+        */
         _audio_msg = rtp_recv_msg ( _rtp_audio );
         _video_msg = rtp_recv_msg ( _rtp_video );
 
@@ -186,8 +190,8 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
         /* -------------------- */
 
         /*
-* This one makes a test msg and sends that message to the 'remote'
-*/
+        * This one makes a test msg and sends that message to the 'remote'
+        */
         _audio_msg = rtp_msg_new ( _rtp_audio, (const uint8_t*)"abcd", 4 ) ;
         rtp_send_msg ( _rtp_audio, _audio_msg, _m_socket );
 
@@ -211,7 +215,6 @@ void* handle_call_callback ( void* _p )
 
     pthread_t _rtp_tid;
     int _rtp_thread_running = 1;
-    //rtp_session_t* _rtp_audio, *_rtp_video;
     cs->_rtp_audio = _m_session->_rtp_audio = rtp_init_session ( -1, 1 );
     cs->_rtp_video = _m_session->_rtp_video = rtp_init_session ( -1, 1 );
 
@@ -221,23 +224,21 @@ void* handle_call_callback ( void* _p )
     uint8_t _prefix = RTP_PACKET;
     rtp_set_prefix ( cs->_rtp_audio, &_prefix, 1 );
     rtp_set_prefix ( cs->_rtp_video, &_prefix, 1 );
-    
+
     rtp_set_payload_type(cs->_rtp_audio, _PAYLOAD_OPUS);
     rtp_set_payload_type(cs->_rtp_video, _PAYLOAD_VP8);
-
-    //rtp_add_resolution_marking(_rtp_video, 1000, 1000);
 
     hmtc_args_t rtp_targs = { cs->_rtp_audio, cs->_rtp_video, &_rtp_thread_running };
 
     cs->socket=_socket;
     cs->quit = 0;
-    if(cs->support_send_audio)
-	pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);    
-    if(cs->support_send_video) 
-	pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
-    if(cs->support_receive_video||cs->support_receive_audio) 
-	pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
-    
+    if(cs->support_send_audio&&cs->support_send_video) /* quick fix */
+        pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);
+    if(cs->support_send_video)
+        pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
+    if(cs->support_receive_video||cs->support_receive_audio)
+        pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
+
     _p = NULL;
     char _choice [10];
 
@@ -245,12 +246,12 @@ void* handle_call_callback ( void* _p )
         gets ( _choice );
         if ( strcmp ( _choice, "h" ) == 0 ) {
             printf ( "Hanging up...\n" );
-	    cs->quit=1;
+            cs->quit=1;
             _status = msi_hangup ( _m_session );
             break;
         }
     } while ( strcmp ( _choice, "c" ) == 0 );
-    
+
     sleep(100000);
     _handle_call_tid = 0;
     pthread_exit ( &_status );
@@ -370,12 +371,12 @@ MCBTYPE callback_call_rejected ( MCBARGS )
 MCBTYPE callback_call_ended ( MCBARGS )
 {
     printf ( "On call ended (exiting)!\n" );
-   
+
     cs->quit=1;
     pthread_join(cs->encode_video_thread,NULL);
     pthread_join(cs->encode_audio_thread,NULL);
-    pthread_join(cs->decode_thread,NULL);    
-    
+    pthread_join(cs->decode_thread,NULL);
+
     pthread_mutex_destroy ( &_mutex );
     exit ( SUCCESS );
     return SUCCESS;
@@ -393,7 +394,7 @@ int main ( int argc, char* argv [] )
 {
     int _status;
     unsigned short _send_port, _recv_port;
- 
+
     cs = av_mallocz(sizeof(codec_state));
 
     pthread_mutex_init ( &_mutex, NULL );
@@ -454,7 +455,7 @@ int main ( int argc, char* argv [] )
     msi_register_callback_recv_starting ( callback_recv_starting );
     msi_register_callback_recv_ending ( callback_recv_ending );
     /* ------------------ */
-    
+
     /* Initiate codecs */
     init_encoder(cs);
     init_decoder(cs);
@@ -487,13 +488,17 @@ int main ( int argc, char* argv [] )
         msi_invite ( _m_session );
         printf ( "Started call. Press ctrl+c to exit!\n" );
 
-        while ( 1 ) { usleep ( 1000000 ); }
+        while ( 1 ) {
+            usleep ( 1000000 );
+        }
 
     } else {
 
         printf ( "Waiting for call. Press ctrl+c to exit!\n" );
 
-        while ( 1 ) { usleep ( 1000000 ); }
+        while ( 1 ) {
+            usleep ( 1000000 );
+        }
 
     }
     pthread_mutex_destroy ( &_mutex );
