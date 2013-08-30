@@ -95,7 +95,7 @@ static IP broadcast_ip(void)
         ip.uint32 = ~0; /* Error occured, but try anyway? */
 
 #else
-    ip.i = ~0;
+    ip.uint32 = ~0;
 #endif
     return ip;
 }
