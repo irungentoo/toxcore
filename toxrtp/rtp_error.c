@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+#include <malloc.h>
 
 typedef struct rtp_error_s {
     char* _message;
@@ -27,7 +29,7 @@ void t_rtperr_register ( int _id, const char* _info )
 
     _current->_id = _id;
     _current->_message = malloc ( _info_size );
-    t_memcpy ( _current->_message, _info, _info_size );
+    t_memcpy ( (uint8_t*)_current->_message, (const uint8_t*)_info, _info_size );
     _it ++;
 }
 

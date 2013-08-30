@@ -32,8 +32,9 @@
 #include "tox.h"
 #include <pthread.h>
 
-#define STATE_CALLBACK_ARGS void
-#define STATE_CALLBACK int (*callback) (STATE_CALLBACK_ARGS)
+#define MCBARGS void
+#define MCBTYPE int
+#define MCALLBACK MCBTYPE (*callback) (MCBARGS)
 
 #define MSI_PACKET 69
 
@@ -83,16 +84,16 @@ int msi_start_main_loop ( media_session_t* _session );
 void msi_register_callback_send ( int ( *callback ) ( int _socket, tox_IP_Port,  uint8_t*, uint32_t ) );
 
 /* Callbacks that handle the states */
-void msi_register_callback_call_started ( STATE_CALLBACK );
-void msi_register_callback_call_canceled ( STATE_CALLBACK );
-void msi_register_callback_call_rejected ( STATE_CALLBACK );
-void msi_register_callback_call_ended ( STATE_CALLBACK );
+void msi_register_callback_call_started ( MCALLBACK );
+void msi_register_callback_call_canceled ( MCALLBACK );
+void msi_register_callback_call_rejected ( MCALLBACK );
+void msi_register_callback_call_ended ( MCALLBACK );
 
-void msi_register_callback_recv_invite ( STATE_CALLBACK );
-void msi_register_callback_recv_trying ( STATE_CALLBACK );
-void msi_register_callback_recv_ringing ( STATE_CALLBACK );
-void msi_register_callback_recv_starting ( STATE_CALLBACK );
-void msi_register_callback_recv_ending ( STATE_CALLBACK );
+void msi_register_callback_recv_invite ( MCALLBACK );
+void msi_register_callback_recv_trying ( MCALLBACK );
+void msi_register_callback_recv_ringing ( MCALLBACK );
+void msi_register_callback_recv_starting ( MCALLBACK );
+void msi_register_callback_recv_ending ( MCALLBACK );
 /* -------- */
 
 

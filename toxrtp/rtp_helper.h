@@ -36,25 +36,22 @@
 
 #define _USE_ERRORS
 
-/* Our data type */
-typedef uint8_t data_t;
-
 /* Core adaptation helper */
 int t_setipport ( const char* _ip, unsigned short _port, void* _cont );
 uint32_t t_random ( uint32_t _max );
 
 
 /* It's a bit faster than the memcpy it self and more optimized for using
- * a data_t since memcpy has optimizations when copying "words" i.e. long type.
- * Otherwise it just copies char's while we need data_t
+ * a uint8_t since memcpy has optimizations when copying "words" i.e. long type.
+ * Otherwise it just copies char's while we need uint8_t
  */
-void t_memcpy ( data_t* _dest, const data_t* _source, size_t _size );
+void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size );
 
 
 /* This is our memset. It's also a bit faster than the memset for it
  * does not cast _dest to char* and uses faster loop algorithm.
  */
-data_t* t_memset ( data_t* _dest, int _valu, size_t _size );
+uint8_t* t_memset ( uint8_t* _dest, int _valu, size_t _size );
 
 #define unused(x) (void)(x);
 

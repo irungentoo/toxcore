@@ -58,7 +58,7 @@ uint32_t t_random ( uint32_t _max )
     }
 }
 
-void t_memcpy ( data_t* _dest, const data_t* _source, size_t _size )
+void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
 {
     /*
      * Using countdown to zero method
@@ -72,7 +72,7 @@ void t_memcpy ( data_t* _dest, const data_t* _source, size_t _size )
     } while ( _it );
 }
 
-data_t* t_memset ( data_t* _dest, int _valu, size_t _size )
+uint8_t* t_memset ( uint8_t* _dest, int _valu, size_t _size )
 {
     /*
      * Again using countdown to zero method

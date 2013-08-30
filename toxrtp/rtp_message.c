@@ -38,7 +38,7 @@
 
 /* End of defines */
 
-rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
+rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
 {
     if ( !_payload ) {
 #ifdef _USE_ERRORS
@@ -47,7 +47,7 @@ rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
         return NULL;
     }
 
-    data_t* _it = _payload;
+    const uint8_t* _it = _payload;
 
     ALLOCATOR_VAR ( _retu, rtp_header_t, 1 )
 
@@ -101,7 +101,7 @@ rtp_header_t* rtp_extract_header ( const data_t* _payload, size_t _bytes )
     return _retu;
 }
 
-rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload, size_t _bytes )
+rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload, size_t _bytes )
 {
     if ( !_payload ) {
 #ifdef _USE_ERRORS
@@ -112,7 +112,7 @@ rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload, size_t _bytes
 
 
 
-    data_t* _it = _payload;
+    const uint8_t* _it = _payload;
 
     ALLOCATOR_VAR ( _retu, rtp_ext_header_t, 1 )
 
@@ -142,11 +142,11 @@ rtp_ext_header_t* rtp_extract_ext_header ( const data_t* _payload, size_t _bytes
     return _retu;
 }
 
-data_t* rtp_add_header ( rtp_header_t* _header, const data_t* _payload )
+uint8_t* rtp_add_header ( rtp_header_t* _header, uint8_t* _payload )
 {
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _header );
 
-    data_t* _it = _payload;
+    uint8_t* _it = _payload;
 
     *_it = _header->_flags; ++_it;
     *_it = _header->_marker_payload_t; ++_it;
@@ -171,9 +171,9 @@ data_t* rtp_add_header ( rtp_header_t* _header, const data_t* _payload )
     return _it;
 }
 
-data_t* rtp_add_extention_header ( rtp_ext_header_t* _header, const data_t* _payload )
+uint8_t* rtp_add_extention_header ( rtp_ext_header_t* _header, uint8_t* _payload )
 {
-    data_t* _it = _payload;
+    uint8_t* _it = _payload;
 
     *_it = ( _header->_ext_len >> 8 ); _it++;
     *_it = ( _header->_ext_len ); _it++;
