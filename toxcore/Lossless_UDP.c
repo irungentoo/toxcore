@@ -703,7 +703,10 @@ static int handle_data(void *object, IP_Port source, uint8_t *packet, uint32_t l
     int connection_id = getconnection_id(ludp, source);
 
     /* Drop the data packet if connection is not connected. */
-    if (connection_id == -1 || tox_array_get(&ludp->connections, connection_id, Connection).status != 3)
+    if (connection_id == -1)
+        return 1;
+
+    if (tox_array_get(&ludp->connections, connection_id, Connection).status != 3)
         return 1;
 
     if (length > 1 + 4 + MAX_DATA_SIZE || length < 1 + 4 + 1)
