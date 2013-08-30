@@ -41,7 +41,7 @@ int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
     uint32_t i;
 
     for (i = 0; i < ludp->connections_length; ++i) {
-        if (ludp->connections[i].ip_port.ip.i == ip_port.ip.i &&
+        if (ludp->connections[i].ip_port.ip.uint32 == ip_port.ip.uint32 &&
                 ludp->connections[i].ip_port.port == ip_port.port &&
                 ludp->connections[i].status > 0)
             return i;
