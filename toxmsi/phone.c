@@ -1,11 +1,13 @@
 #define _BSD_SOURCE
 
+
 #include "msi_impl.h"
 #include "msi_message.h"
 #include "rtp_message.h"
 #include "toxrtp/tests/test_helper.h"
 #include <assert.h>
 #include <unistd.h>
+#include "AV_codec.h"
 
 
 static media_session_t* _m_session = NULL; /* for the sake of test */
@@ -70,9 +72,8 @@ void* phone_receivepacket ( void* _session_p )
     uint16_t _payload_id;
 
     while ( _session ) {
-
+      	usleep ( 2000 );
         int _status = receivepacket ( _m_socket, &_from, _socket_data, &_bytes );
-
         if ( _status == FAILURE )  /* nothing recved */
             continue;
 
@@ -102,7 +103,6 @@ void* phone_receivepacket ( void* _session_p )
             }
             break;
         default:
-            usleep ( 2000 );
 	    break;
         };
         pthread_mutex_unlock ( &_mutex );
@@ -151,11 +151,29 @@ typedef struct hmtc_args_s {
     int* _thread_running;
 } hmtc_args_t;
 
+void* handle_media_transport_callback ( void* _hmtc_args_p )
+{
+    rtp_msg_t* _audio_msg, * _video_msg;
+
+    hmtc_args_t* _hmtc_args = _hmtc_args_p;
+
+    rtp_session_t* _rtp_audio = _hmtc_args->_rtp_audio;
     rtp_session_t* _rtp_video = _hmtc_args->_rtp_video;
 
+    int* _thread_running = _hmtc_args->_thread_running;
+
+    int _m_socket = _socket;
+
+    while ( *_thread_running ) {
+        /*
+* This part checks for received messages and if gotten one
+* display 'Received msg!' indicator and free message
+*/
         _audio_msg = rtp_recv_msg ( _rtp_audio );
         _video_msg = rtp_recv_msg ( _rtp_video );
+
         if ( _audio_msg ) {
+            /* Do whatever with msg */
             puts("audio");
             rtp_free_msg ( _rtp_audio, _audio_msg );
         }
@@ -164,6 +182,12 @@ typedef struct hmtc_args_s {
             /* Do whatever with msg */
             puts("video");
             rtp_free_msg ( _rtp_video, _video_msg );
+        }
+        /* -------------------- */
+
+        /*
+* This one makes a test msg and sends that message to the 'remote'
+*/
         _audio_msg = rtp_msg_new ( _rtp_audio, (const uint8_t*)"abcd", 4 ) ;
         rtp_send_msg ( _rtp_audio, _audio_msg, _m_socket );
 
@@ -171,7 +195,14 @@ typedef struct hmtc_args_s {
         rtp_send_msg ( _rtp_video, _video_msg, _m_socket );
 
 
-    _thread_running = -1;
+        usleep ( 10000 );
+        /* -------------------- */
+    }
+
+    *_thread_running = -1;
+
+    pthread_exit ( NULL );
+}
 
 /* This is call control callback */
 void* handle_call_callback ( void* _p )
@@ -179,35 +210,33 @@ void* handle_call_callback ( void* _p )
     int _status;
 
     pthread_t _rtp_tid;
-    rtp_session_t* _rtp_audio, *_rtp_video;
-    _rtp_audio = _m_session->_rtp_audio = rtp_init_session ( -1, 1 );
-    _rtp_video = _m_session->_rtp_video = rtp_init_session ( -1, 1 );
+    int _rtp_thread_running = 1;
+    //rtp_session_t* _rtp_audio, *_rtp_video;
+    cs->_rtp_audio = _m_session->_rtp_audio = rtp_init_session ( -1, 1 );
+    cs->_rtp_video = _m_session->_rtp_video = rtp_init_session ( -1, 1 );
 
-    rtp_add_receiver ( _rtp_audio, &_m_session->_friend_id );
-    rtp_add_receiver ( _rtp_video, &_m_session->_friend_id );
+    rtp_add_receiver ( cs->_rtp_audio, &_m_session->_friend_id );
+    rtp_add_receiver ( cs->_rtp_video, &_m_session->_friend_id );
 
     uint8_t _prefix = RTP_PACKET;
-    rtp_set_prefix ( _rtp_audio, &_prefix, 1 );
-    rtp_set_prefix ( _rtp_video, &_prefix, 1 );
+    rtp_set_prefix ( cs->_rtp_audio, &_prefix, 1 );
+    rtp_set_prefix ( cs->_rtp_video, &_prefix, 1 );
     
-    cs->_m_session=_rtp_session;
+    rtp_set_payload_type(cs->_rtp_audio, _PAYLOAD_OPUS);
+    rtp_set_payload_type(cs->_rtp_video, _PAYLOAD_VP8);
+
+    //rtp_add_resolution_marking(_rtp_video, 1000, 1000);
+
+    hmtc_args_t rtp_targs = { cs->_rtp_audio, cs->_rtp_video, &_rtp_thread_running };
+
     cs->socket=_socket;
     cs->quit = 0;
-    rtp_set_payload_type(_rtp_audio, _PAYLOAD_OPUS);
-    rtp_set_payload_type(_rtp_video, _PAYLOAD_VP8);
-
-    rtp_add_resolution_marking(_rtp_video, 1000, 1000);
-
-    hmtc_args_t rtp_targs = { _rtp_audio, _rtp_video, &_rtp_thread_running };
-
     if(cs->support_send_audio)
 	pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);    
     if(cs->support_send_video) 
 	pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
-        return _status;
     if(cs->support_receive_video||cs->support_receive_audio) 
 	pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
-        return _status;
     
     _p = NULL;
     char _choice [10];

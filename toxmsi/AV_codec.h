@@ -34,6 +34,8 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <AL/alut.h>
+#include "rtp_impl.h"
+#include "tox.h"
 
 #include <SDL.h>
 
@@ -162,6 +164,7 @@ typedef struct
     rtp_msg_t*     	s_audio_msg;
     rtp_msg_t*     	r_msg;
     rtp_session_t* 	_m_session;
+    rtp_session_t* _rtp_audio, *_rtp_video;
     int socket;
     
     uint8_t             quit;
