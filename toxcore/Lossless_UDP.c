@@ -106,7 +106,9 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
     }
 
     if (connection_id == -1) {
-        tox_array_push_ptr(&ludp->connections, 0); /* TODO: check return value */
+        if (tox_array_push_ptr(&ludp->connections, 0) == 0)
+            return -1;
+
         connection_id = ludp->connections.len - 1;
     }
 
@@ -156,7 +158,9 @@ static int new_inconnection(Lossless_UDP *ludp, IP_Port ip_port)
     }
 
     if (connection_id == -1) {
-        tox_array_push_ptr(&ludp->connections, 0); /* TODO: check return value */
+        if (tox_array_push_ptr(&ludp->connections, 0) == 0)
+            return -1;
+
         connection_id = ludp->connections.len - 1;
     }
 
