@@ -675,7 +675,7 @@ IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
-    IP_Port empty = { .ip = {0}, .port = 0, .padding = 0 };
+    IP_Port empty = { .ip = {{0}}, .port = 0, .padding = 0 };
 
     for (i = 0; i < dht->num_friends; ++i) {
         /* Equal */
@@ -1040,7 +1040,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     for (i = dht->friends_list[friend_num].punching_index; i != top; i++) {
         /* TODO: improve port guessing algorithm */
         uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
-        IP_Port pinging = {ip, htons(port)};
+        IP_Port pinging = {.ip = ip, .port = htons(port)};
         send_ping_request(dht->ping, dht->c, pinging, dht->friends_list[friend_num].client_id);
     }
 

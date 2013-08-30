@@ -39,7 +39,7 @@
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
 {
     tox_array_for_each(&ludp->connections, Connection, tmp) {
-        if (tmp->ip_port.ip.i == ip_port.ip.i &&
+        if (tmp->ip_port.ip.uint32 == ip_port.ip.uint32 &&
                 tmp->ip_port.port == ip_port.port &&
                 tmp->status > 0) {
             return tmp_i;
@@ -261,7 +261,7 @@ IP_Port connection_ip(Lossless_UDP *ludp, int connection_id)
     if (connection_id >= 0 && connection_id < ludp->connections.len)
         return tox_array_get(&ludp->connections, connection_id, Connection).ip_port;
 
-    IP_Port zero = { .ip = {0}, .port = 0, .padding = 0 };
+    IP_Port zero = { .ip = {{0}}, .port = 0, .padding = 0 };
     return zero;
 }
 

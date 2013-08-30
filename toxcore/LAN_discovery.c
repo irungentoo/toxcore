@@ -117,7 +117,8 @@ static int LAN_ip(IP ip)
     if (ip.uint8[0] == 192 && ip.uint8[1] == 168) /* 192.168.0.0 to 192.168.255.255 range. */
         return 0;
 
-    if (ip.uint8[0] == 169 && ip.uint8[1] == 254 && ip.uint8[2] != 0 && ip.uint8[2] != 255)/* 169.254.1.0 to 169.254.254.255 range. */
+    if (ip.uint8[0] == 169 && ip.uint8[1] == 254 && ip.uint8[2] != 0
+            && ip.uint8[2] != 255)/* 169.254.1.0 to 169.254.254.255 range. */
         return 0;
 
     return -1;
@@ -143,7 +144,7 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
     memcpy(data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
-    IP_Port ip_port = {broadcast_ip(), port};
+    IP_Port ip_port = {.ip = broadcast_ip(), .port = port};
     return sendpacket(c->lossless_udp->net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
 

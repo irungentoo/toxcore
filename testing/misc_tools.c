@@ -21,8 +21,6 @@
  *
  */
 
-#include "misc_tools.h"
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

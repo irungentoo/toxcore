@@ -38,7 +38,7 @@
 
 
 #include "nTox.h"
-#include "../toxcore/misc_tools.h"
+#include "misc_tools.c"
 
 #include <stdio.h>
 #include <time.h>
