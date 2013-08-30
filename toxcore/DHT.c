@@ -25,6 +25,7 @@
 
 #include "DHT.h"
 #include "ping.h"
+#include "misc_tools.h"
 
 /* The number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
@@ -84,6 +85,17 @@ static int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2)
     }
 
     return 0;
+}
+
+/* Turns the result of id_closest into something quick_sort can use.
+ * Assumes p1->c1 == p2->c1.
+ */
+static int client_id_cmp(ClientPair p1, ClientPair p2)
+{
+    int c = id_closest(p1.c1.client_id, p1.c2.client_id, p2.c2.client_id);
+    if (c == 2)
+        return -1;
+    return c;
 }
 
 static int ipport_equal(IP_Port a, IP_Port b)
@@ -277,32 +289,27 @@ static int replace_bad(    Client_data    *list,
 
     return 1;
 }
-/* Sort the list. It will be sorted from furthest to closest.
-  TODO: this is innefficient and needs to be optimized. */
+
+/*Sort the list. It will be sorted from furthest to closest. 
+ * Turns list into data that quick sort can use and reverts it back.
+ */
 static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_id)
 {
-    if (length == 0)
-        return;
+    Client_data cd;
+    ClientPair pairs[length];
+    uint32_t i;
 
-    uint32_t i, count;
-
-    while (1) {
-        count = 0;
-
-        for (i = 0; i < (length - 1); ++i) {
-            if (id_closest(comp_client_id, list[i].client_id, list[i + 1].client_id) == 1) {
-                Client_data temp = list[i + 1];
-                list[i + 1] = list[i];
-                list[i] = temp;
-                ++count;
-            }
-        }
-
-        if (count == 0)
-            return;
+    /* Create the quicksort function. See misc_tools.h for the definition. */
+    make_quick_sort(ClientPair); 
+    memcpy(cd.client_id, comp_client_id, CLIENT_ID_SIZE);
+    for (i = 0; i < length; ++i) {
+        pairs[i].c1 = cd;
+        pairs[i].c2 = list[i];
     }
+    ClientPair_quick_sort(pairs, length, client_id_cmp);
+    for (i = 0; i < length; ++i)
+        list[i] = pairs[i].c2;
 }
-
 
 /* Replace the first good node that is further to the comp_client_id than that of the client_id in the list */
 static int replace_good(   Client_data    *list,
