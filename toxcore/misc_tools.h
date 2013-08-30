@@ -135,7 +135,12 @@ static inline void tox_array_delete(tox_array *arr)
 
 static inline uint8_t tox_array_push_ptr(tox_array *arr, uint8_t *item)
 {
-    arr->data = realloc(arr->data, arr->elem_size * (arr->len + 1));
+    uint8_t *temp = realloc(arr->data, arr->elem_size * (arr->len + 1));
+
+    if (temp == NULL)
+        return 0;
+
+    arr->data = temp;
 
     if (item != NULL)
         memcpy(arr->data + arr->elem_size * arr->len, item, arr->elem_size);
@@ -152,10 +157,25 @@ static inline uint8_t tox_array_push_ptr(tox_array *arr, uint8_t *item)
 static inline void tox_array_pop(tox_array *arr, uint32_t num)
 {
     if (num == 0)
-        num = 1;
+        return;
+
+    if (num > arr->len)
+        return;
+
+    if (arr->len == num) {
+        free(arr->data);
+        arr->data = NULL;
+        arr->len = 0;
+        return;
+    }
+
+    uint8_t *temp = realloc(arr->data, arr->elem_size * (arr->len - num));
+
+    if (temp == NULL)
+        return;
 
     arr->len -= num;
-    arr->data = realloc(arr->data, arr->elem_size * arr->len);
+    arr->data = temp;
 }
 
 /* TODO: return ptr and do not take type */
