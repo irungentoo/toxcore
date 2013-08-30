@@ -2,7 +2,8 @@
 #define _MSI_MESSAGE_H_
 
 #include <inttypes.h>
-#include "toxcore/network.h"
+#include "network.h"
+#include "tox.h"
 
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2
@@ -48,7 +49,7 @@ typedef struct media_msg_s {
     /* Here headers can be added describing the session */
     media_msg_header_t* _headers;
 
-    IP_Port _friend_id; /* This should be like friend id */
+    tox_IP_Port _friend_id; /* This should be like friend id */
 
     struct media_msg_s* _next;
 

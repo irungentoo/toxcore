@@ -24,6 +24,7 @@
 
 #include "test_helper.h"
 #include "toxrtp/rtp_impl.h"
+#include "../rtp_message.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,7 +167,7 @@ ___main
         LOCAL_IP.port = RTP_PORT;
         LOCAL_IP.padding = -1;
 
-        _m_session = rtp_init_session ( -1 );
+        _m_session = rtp_init_session ( -1, -1 );
         Networking_Core* _networking = new_networking(LOCAL_IP.ip, RTP_PORT_LISTEN);
 
         if ( !_networking )
@@ -232,7 +233,7 @@ ___main
 
         int _socket = _networking->sock;
 
-        _m_session = rtp_init_session ( -1 );
+        _m_session = rtp_init_session ( -1, -1 );
         rtp_add_receiver( _m_session, &Ip_port );
         rtp_add_resolution_marking(_m_session, 1920, 1080);
 

@@ -1,5 +1,6 @@
 #include "msi_impl.h"
-#include "AV_codec.h"
+#include "msi_message.h"
+#include "rtp_message.h"
 #include "toxrtp/tests/test_helper.h"
 #include <assert.h>
 
@@ -13,13 +14,14 @@ codec_state      *cs;
     
 
 /* My recv functions */
-int rtp_handlepacket ( rtp_session_t* _session, uint8_t* data, uint32_t length )
+int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
 {
-    rtp_msg_t* _msg = rtp_msg_parse ( _session, data, length );
-
     if ( !_msg )
-        return NULL;
+        return FAILURE;
 
+    if ( rtp_register_msg(_session, _msg) < 0 ){
+        return FAILURE;
+    }
 
     if ( _session->_last_msg ) {
         _session->_last_msg->_next = _msg;
@@ -31,8 +33,7 @@ int rtp_handlepacket ( rtp_session_t* _session, uint8_t* data, uint32_t length )
 
     return SUCCESS;
 }
-
-int msi_handlepacket ( media_session_t* _session, IP_Port ip_port, uint8_t* data, uint32_t length )
+int msi_handlepacket ( media_session_t* _session, tox_IP_Port ip_port, uint8_t* data, uint32_t length )
 {
     media_msg_t* _msg;
     _msg = msi_parse_msg ( 0, data, length );
@@ -55,12 +56,15 @@ int msi_handlepacket ( media_session_t* _session, IP_Port ip_port, uint8_t* data
 void* phone_receivepacket ( void* _session_p )
 {
     media_session_t* _session = _session_p;
+    rtp_msg_t* _msg;
 
     uint32_t  _bytes;
-    IP_Port   _from;
+    tox_IP_Port   _from;
     uint8_t _socket_data[MAX_UDP_PACKET_SIZE];
 
     int _m_socket = _socket;
+
+    uint16_t _payload_id;
 
     while ( _session ) {
 
@@ -75,8 +79,23 @@ void* phone_receivepacket ( void* _session_p )
             msi_handlepacket ( _session, _from, _socket_data + 1, _bytes );
             break;
         case RTP_PACKET:
-            if ( _session->_rtp_session )
-                rtp_handlepacket ( _session->_rtp_session, _socket_data + _session->_rtp_session->_prefix_length, _bytes );
+            /* this will parse a data into rtp_message_t form but
+             * it will not be registered into a session. For that
+             * we need to call a rtp_register_msg ()
+             */
+            _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes );
+
+            if ( !_msg )
+                break;
+
+            _payload_id = rtp_header_get_setting_payload_type(_msg->_header);
+
+            if ( _payload_id == _PAYLOAD_OPUS && _session->_rtp_audio )
+                rtp_handlepacket ( _session->_rtp_audio, _msg );
+            else if ( _payload_id == _PAYLOAD_VP8 && _session->_rtp_video )
+                rtp_handlepacket ( _session->_rtp_video, _msg );
+            else rtp_free_msg( NULL, _msg);
+
             break;
         default:
             usleep ( 2000 );
@@ -123,9 +142,30 @@ void* handle_receive_callback ( void* _p )
 
 /* Media transport callback */
 typedef struct hmtc_args_s {
-    rtp_session_t* _rtp_session;
+    rtp_session_t* _rtp_audio;
+    rtp_session_t* _rtp_video;
     int* _thread_running;
 } hmtc_args_t;
+
+    rtp_session_t* _rtp_video = _hmtc_args->_rtp_video;
+
+        _audio_msg = rtp_recv_msg ( _rtp_audio );
+        _video_msg = rtp_recv_msg ( _rtp_video );
+        if ( _audio_msg ) {
+            puts("audio");
+            rtp_free_msg ( _rtp_audio, _audio_msg );
+        }
+
+        if ( _video_msg ) {
+            /* Do whatever with msg */
+            puts("video");
+            rtp_free_msg ( _rtp_video, _video_msg );
+        _audio_msg = rtp_msg_new ( _rtp_audio, "abcd", 4 ) ;
+        rtp_send_msg ( _rtp_audio, _audio_msg, _m_socket );
+
+        _video_msg = rtp_msg_new ( _rtp_video, "abcd", 4 ) ;
+        rtp_send_msg ( _rtp_video, _video_msg, _m_socket );
+
 
 
 /* This is call control callback */
@@ -134,15 +174,26 @@ void* handle_call_callback ( void* _p )
     int _status;
 
     pthread_t _rtp_tid;
-    rtp_session_t* _rtp_session = _m_session->_rtp_session = rtp_init_session ( -1 );
+    rtp_session_t* _rtp_audio, *_rtp_video;
+    _rtp_audio = _m_session->_rtp_audio = rtp_init_session ( -1, 1 );
+    _rtp_video = _m_session->_rtp_video = rtp_init_session ( -1, 1 );
 
-    rtp_add_receiver ( _rtp_session, &_m_session->_friend_id );
+    rtp_add_receiver ( _rtp_audio, &_m_session->_friend_id );
+    rtp_add_receiver ( _rtp_video, &_m_session->_friend_id );
+
     uint8_t _prefix = RTP_PACKET;
-    rtp_set_prefix ( _rtp_session, &_prefix, 1 );
+    rtp_set_prefix ( _rtp_audio, &_prefix, 1 );
+    rtp_set_prefix ( _rtp_video, &_prefix, 1 );
     
     cs->_m_session=_rtp_session;
     cs->socket=_socket;
     cs->quit = 0;
+    rtp_set_payload_type(_rtp_audio, _PAYLOAD_OPUS);
+    rtp_set_payload_type(_rtp_video, _PAYLOAD_VP8);
+
+    rtp_add_resolution_marking(_rtp_video, 1000, 1000);
+
+    hmtc_args_t rtp_targs = { _rtp_audio, _rtp_video, &_rtp_thread_running };
 
     if(cs->support_send_audio)
 	pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);    
@@ -163,7 +214,6 @@ void* handle_call_callback ( void* _p )
             _status = msi_hangup ( _m_session );
             break;
         }
-
     } while ( strcmp ( _choice, "c" ) == 0 );
     
     sleep(100000);
@@ -318,7 +368,7 @@ int main ( int argc, char* argv [] )
     const char* _mode = find_arg_duble ( _args, "-m" );
     const char* _ip   = find_arg_duble ( _args, "-d" );
 
-    IP_Port _remote;
+    tox_IP_Port _remote;
 
     if ( !_mode )
         return print_help ( argv[0] );

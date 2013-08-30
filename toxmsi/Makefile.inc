@@ -2,6 +2,11 @@ if BUILD_AV
 
 lib_LTLIBRARIES += 		libtoxmsi.la
 
+libtoxmsi_la_include_HEADERS = \
+                        $(top_srcdir)/toxmsi/msi_impl.h
+
+libtoxmsi_la_includedir = $(includedir)/tox
+
 libtoxmsi_la_SOURCES =  $(top_srcdir)/toxmsi/msi_impl.h \
                         $(top_srcdir)/toxmsi/msi_impl.c \
                         $(top_srcdir)/toxmsi/msi_message.h \
@@ -10,7 +15,9 @@ libtoxmsi_la_SOURCES =  $(top_srcdir)/toxmsi/msi_impl.h \
 						$(top_srcdir)/toxrtp/tests/test_helper.c
 
 libtoxmsi_la_CFLAGS =   -I$(top_srcdir) \
+						-I$(top_srcdir)/toxcore \
                         -I$(top_srcdir)/toxmsi \
+                        -I$(top_srcdir)/toxrtp \
 						$(PTHREAD_CFLAGS)
 
 libtoxmsi_la_LDFLAGS =  $(TOXMSI_LT_LDFLAGS) \

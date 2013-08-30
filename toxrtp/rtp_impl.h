@@ -1,4 +1,4 @@
-/*   rtp_impl.c
+/*   rtp_impl.h
  *
  *   Rtp implementation includes rtp_session_s struct which is a session identifier.
  *   It contains session information and it's a must for every session.
@@ -28,11 +28,9 @@
 #ifndef _RTP__IMPL_H_
 #define _RTP__IMPL_H_
 
-#include "rtp_allocator.h"
-#include "rtp_message.h"
-
 #define RTP_VERSION 2
-
+#include <inttypes.h>
+#include "tox.h"
 
 /* Extension header types */
 #define RTP_EXT_TYPE_RESOLUTION 1
@@ -58,11 +56,6 @@ const uint8_t RTP_EXT_MARK_SOMETHING = 2;
 
 /* End of defines */
 
-typedef struct rtp_dest_list_s {
-    IP_Port                 _dest;
-    struct rtp_dest_list_s* next;
-
-} rtp_dest_list_t;
 
 /* Our main session descriptor.
  * It measures the session variables and controls
@@ -91,28 +84,34 @@ typedef struct rtp_session_s {
      * automatically placing it within a message.
      */
 
-    rtp_ext_header_t*       _ext_header;
+    struct rtp_ext_header_s*    _ext_header;
 
-    int                     _max_users;    /* -1 undefined */
+    int                         _max_users;    /* -1 undefined */
 
-    uint64_t                _packets_sent; /* measure packets */
-    uint64_t                _packets_recv;
+    uint64_t                    _packets_sent; /* measure packets */
+    uint64_t                    _packets_recv;
 
-    uint64_t                _bytes_sent;
-    uint64_t                _bytes_recv;
+    uint64_t                    _bytes_sent;
+    uint64_t                    _bytes_recv;
 
-    uint64_t                _packet_loss;
+    uint64_t                    _packet_loss;
 
-    const char*             _last_error;
+    const char*                 _last_error;
 
-    struct rtp_dest_list_s* _dest_list;
-    struct rtp_dest_list_s* _last_user; /* a tail for faster appending */
+    struct rtp_dest_list_s*     _dest_list;
+    struct rtp_dest_list_s*     _last_user; /* a tail for faster appending */
 
-    rtp_msg_t*              _oldest_msg;
-    rtp_msg_t*              _last_msg; /* tail */
+    struct rtp_msg_s*           _oldest_msg;
+    struct rtp_msg_s*           _last_msg; /* tail */
 
-    uint16_t                _prefix_length;
-    uint8_t*                _prefix;
+    uint16_t                    _prefix_length;
+    uint8_t*                    _prefix;
+
+    /* Specifies multiple session use.
+     * When using one session it uses default value ( -1 )
+     * Otherwise it's set to 1 and rtp_register_msg () is required
+     */
+    int                         _multi_session;
 
 } rtp_session_t;
 
@@ -123,37 +122,40 @@ typedef struct rtp_session_s {
  */
 
 
-void            rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _msg );
+void                    rtp_free_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg );
 
 /* Functions handling receiving */
-rtp_msg_t*      rtp_recv_msg ( rtp_session_t* _session );
-rtp_msg_t*      rtp_msg_parse ( rtp_session_t* _session, const data_t* _data, uint32_t _length );
+struct rtp_msg_s*       rtp_recv_msg ( rtp_session_t* _session );
+struct rtp_msg_s*       rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+int                     rtp_register_msg ( rtp_session_t* _session, struct rtp_msg_s* );
 
 /* Functions handling sending */
-int             rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket );
-rtp_msg_t*      rtp_msg_new ( rtp_session_t* _session, const data_t* _data, uint32_t _length );
+int                     rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, int _socket );
+struct rtp_msg_s*       rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
 
 
 /* Convenient functions for creating a header */
-rtp_header_t*   rtp_build_header ( rtp_session_t* _session );
+struct rtp_header_s*    rtp_build_header ( rtp_session_t* _session );
 
 /* Functions handling session control */
 
 /* Handling an rtp packet */
 /* int             rtp_handlepacket(uint8_t * packet, uint32_t length, IP_Port source); */
 
-/* Session initiation and termination. */
-rtp_session_t*  rtp_init_session ( int _max_users );
-int             rtp_terminate_session ( rtp_session_t* _session );
+/* Session initiation and termination.
+ * Set _multi_session to -1 if not using multiple sessions
+ */
+rtp_session_t*          rtp_init_session ( int _max_users, int _multi_session );
+int                     rtp_terminate_session ( rtp_session_t* _session );
 
 /* Adding receiver */
-int             rtp_add_receiver ( rtp_session_t* _session, IP_Port* _dest );
+int                     rtp_add_receiver ( rtp_session_t* _session, tox_IP_Port* _dest );
 
 /* Convenient functions for marking the resolution */
 int             rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint16_t _height );
 int             rtp_remove_resolution_marking ( rtp_session_t* _session );
-uint16_t        rtp_get_resolution_marking_height ( rtp_ext_header_t* _header );
-uint16_t        rtp_get_resolution_marking_width ( rtp_ext_header_t* _header );
+uint16_t        rtp_get_resolution_marking_height ( struct rtp_ext_header_s* _header );
+uint16_t        rtp_get_resolution_marking_width ( struct rtp_ext_header_s* _header );
 
 /* Convenient functions for marking the payload */
 void            rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value );
