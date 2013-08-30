@@ -30,7 +30,7 @@
 //#include "../core/network.h"
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
-#include "misc_tools.h"
+#include "../toxcore/misc_tools.h"
 
 #include <string.h>
 
@@ -62,11 +62,13 @@ void print_clientlist(DHT *dht)
         }
 
         p_ip = dht->close_clientlist[i].ip_port;
-        printf("\nIP: %u.%u.%u.%u Port: %u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3], ntohs(p_ip.port));
+        printf("\nIP: %u.%u.%u.%u Port: %u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
+               ntohs(p_ip.port));
         printf("\nTimestamp: %llu", (long long unsigned int) dht->close_clientlist[i].timestamp);
         printf("\nLast pinged: %llu\n", (long long unsigned int) dht->close_clientlist[i].last_pinged);
         p_ip = dht->close_clientlist[i].ret_ip_port;
-        printf("OUR IP: %u.%u.%u.%u Port: %u\n", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3], ntohs(p_ip.port));
+        printf("OUR IP: %u.%u.%u.%u Port: %u\n", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
+               ntohs(p_ip.port));
         printf("Timestamp: %llu\n", (long long unsigned int) dht->close_clientlist[i].ret_timestamp);
     }
 }
@@ -86,7 +88,8 @@ void print_friendlist(DHT *dht)
         }
 
         p_ip = DHT_getfriendip(dht, dht->friends_list[k].client_id);
-        printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3], ntohs(p_ip.port));
+        printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
+               ntohs(p_ip.port));
 
         printf("\nCLIENTS IN LIST:\n\n");
 
@@ -101,11 +104,13 @@ void print_friendlist(DHT *dht)
             }
 
             p_ip = dht->friends_list[k].client_list[i].ip_port;
-            printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3], ntohs(p_ip.port));
+            printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
+                   ntohs(p_ip.port));
             printf("\nTimestamp: %llu", (long long unsigned int) dht->friends_list[k].client_list[i].timestamp);
             printf("\nLast pinged: %llu\n", (long long unsigned int) dht->friends_list[k].client_list[i].last_pinged);
             p_ip = dht->friends_list[k].client_list[i].ret_ip_port;
-            printf("ret IP: %u.%u.%u.%u:%u\n", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3], ntohs(p_ip.port));
+            printf("ret IP: %u.%u.%u.%u:%u\n", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
+                   ntohs(p_ip.port));
             printf("Timestamp: %llu\n", (long long unsigned int)dht->friends_list[k].client_list[i].ret_timestamp);
         }
     }

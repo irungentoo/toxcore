@@ -21,24 +21,24 @@
  *
  */
 #ifdef HAVE_CONFIG_H
-    #include "config.h"
+#include "config.h"
 #endif
 
 #ifdef __WIN32__
-    #define _WIN32_WINNT 0x501
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
+#define _WIN32_WINNT 0x501
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <sys/types.h>
-    #include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <netdb.h>
 #endif
 
 
 #include "nTox.h"
-#include "misc_tools.h"
+#include "../toxcore/misc_tools.h"
 
 #include <stdio.h>
 #include <time.h>
@@ -93,10 +93,11 @@ uint32_t resolve_addr(const char *address)
     WSADATA wsa_data;
 
     res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-    if (res != 0)
-    {
+
+    if (res != 0) {
         return 0;
     }
+
 #endif
 
     rc = getaddrinfo(address, "echo", &hints, &server);
@@ -123,7 +124,7 @@ uint32_t resolve_addr(const char *address)
 
     freeaddrinfo(server);
 #ifdef __WIN32__
-        WSACleanup();
+    WSACleanup();
 #endif
     return addr;
 }

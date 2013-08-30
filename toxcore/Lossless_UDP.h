@@ -25,6 +25,7 @@
 #define LOSSLESS_UDP_H
 
 #include "network.h"
+#include "misc_tools.h"
 
 
 /* Maximum length of the data in the data packets. */
@@ -118,10 +119,8 @@ typedef struct {
 
 typedef struct {
     Networking_Core *net;
-    Connection *connections;
 
-    uint32_t connections_length; /* Length of connections array. */
-    uint32_t connections_number; /* Number of connections in connections array. */
+    tox_array connections;
 
     /* Table of random numbers used in handshake_id. */
     uint32_t randtable[6][256];
