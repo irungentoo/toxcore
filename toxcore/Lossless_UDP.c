@@ -203,7 +203,23 @@ int incoming_connection(Lossless_UDP *ludp)
     }
     return -1;
 }
+/* Try to free some memory from the connections array. */
+static void free_connections(Lossless_UDP *ludp)
+{
+    uint32_t i;
 
+    for (i = ludp->connections.len; i != 0; --i) {
+        Connection *connection = &tox_array_get(&ludp->connections, i, Connection);
+
+        if (connection->status != 0)
+            break;
+    }
+
+    if (ludp->connections.len == i)
+        return;
+
+    return tox_array_pop(&ludp->connections, ludp->connections.len - i);
+}
 /*
  * return -1 if it could not kill the connection.
  * return 0 if killed successfully.
@@ -217,6 +233,7 @@ int kill_connection(Lossless_UDP *ludp, int connection_id)
             connection->status = 0;
             change_handshake(ludp, connection->ip_port);
             memset(connection, 0, sizeof(Connection));
+            free_connections(ludp);
             return 0;
         }
     }
