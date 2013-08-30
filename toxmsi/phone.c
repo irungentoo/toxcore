@@ -72,13 +72,16 @@ void* phone_receivepacket ( void* _session_p )
 
         int _status = receivepacket ( _m_socket, &_from, _socket_data, &_bytes );
 
-        if ( _status == FAILURE )  /* nothing recved */
+        if ( _status == FAILURE ) { /* nothing recved */
+            usleep(10000);
             continue;
+        }
 
         pthread_mutex_lock ( &_mutex );
         switch ( _socket_data[0] ) {
         case MSI_PACKET:
             msi_handlepacket ( _session, _from, _socket_data + 1, _bytes );
+            usleep(1000);
             break;
         case RTP_PACKET:
             if ( _session->_call_info == call_active ){
@@ -99,6 +102,7 @@ void* phone_receivepacket ( void* _session_p )
                     rtp_handlepacket ( _session->_rtp_video, _msg );
                 else rtp_free_msg( NULL, _msg);
             }
+            usleep(1000);
             break;
         default:
             break;
