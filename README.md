@@ -48,7 +48,6 @@ configure for the normal user or suffer from being way too centralized.
 ### Documentation:
 
 - [Installation](/INSTALL.md)
-- [Commands](/docs/commands.rst)
 - [DHT Protocol](http://wiki.tox.im/index.php/DHT)<br />
 - [Lossless UDP Protocol](http://wiki.tox.im/index.php/Lossless_UDP)<br />
 - [Crypto](http://wiki.tox.im/index.php/Crypto)<br />
