@@ -383,7 +383,7 @@ uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen)
     }
 
     len = MIN(nlen, m->name_length);
-    memcpy(name, m->name, m->name_length);
+    memcpy(name, m->name, len);
 
     return len;
 }
