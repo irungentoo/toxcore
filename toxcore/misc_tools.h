@@ -186,4 +186,47 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
     type *tmp_name = &tox_array_get(arr, 0, type); uint32_t tmp_name ## _i = 0; \
     for (; tmp_name ## _i < (arr)->len; tmp_name = &tox_array_get(arr, ++ tmp_name ## _i, type))
 
+/****************************Algorithms***************************
+ * Macro/generic definitions for useful algorithms
+ *****************************************************************/
+
+/* Creates a new quick_sort implementation for arrays of the specified type.
+ * For a type T (eg: int, char), creates a function named T_quick_sort.
+ *
+ * Quick Sort: Complexity O(nlogn)
+ * arr   - the array to sort
+ * n     - the sort index (should be called with n = length(arr))
+ * cmpfn - a function that compares two values of type type. 
+ *         Must return -1, 0, 1 for a < b, a == b, and a > b respectively.
+ */
+/* Must be called in the header file. */ 
+#define declare_quick_sort(type) \
+void type##_quick_sort(type *arr, int n, int (*cmpfn)(type, type));
+
+/* Must be called in the C file. */
+#define make_quick_sort(type) \
+void type##_quick_sort(type *arr, int n, int (*cmpfn)(type, type)) \
+{ \
+    if ((n) < 2) \
+        return; \
+    type _p_ = (arr)[(n) / 2]; \
+    type *_l_ = (arr); \
+    type *_r_ = (arr) + n - 1; \
+    while (_l_ <= _r_) { \
+        if (cmpfn(*_l_, _p_) == -1) { \
+            ++_l_; \
+            continue; \
+        } \
+        if (cmpfn(*_r_, _p_) == 1) { \
+            --_r_; \
+            continue; \
+        } \
+        type _t_ = *_l_; \
+        *_l_++ = *_r_; \
+        *_r_-- = _t_; \
+    } \
+    type##_quick_sort((arr), _r_ - (arr) + 1, cmpfn); \
+    type##_quick_sort(_l_, (arr) + n - _l_, cmpfn); \
+}
+
 #endif // MISC_TOOLS_H

@@ -55,6 +55,12 @@ typedef struct {
     uint64_t    ret_timestamp;
 } Client_data;
 
+/* Used in the comparison function for sorting lists of Client_data. */
+typedef struct {
+    Client_data c1;
+    Client_data c2;
+} ClientPair;
+
 /*----------------------------------------------------------------------------------*/
 
 typedef struct {
@@ -99,6 +105,9 @@ typedef struct {
     void *ping;
 } DHT;
 /*----------------------------------------------------------------------------------*/
+
+/* Create the declaration for a quick sort for ClientPair structures. */
+declare_quick_sort(ClientPair);
 
 Client_data *DHT_get_close_list(DHT *dht);
 
