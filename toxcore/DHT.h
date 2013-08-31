@@ -106,6 +106,9 @@ typedef struct {
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
+/* Create the declaration for a quick sort for ClientPair structures. */
+declare_quick_sort(ClientPair);
+
 Client_data *DHT_get_close_list(DHT *dht);
 
 /* Add a new friend to the friends list.

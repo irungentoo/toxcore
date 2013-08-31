@@ -56,6 +56,8 @@
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
 
+/* Create the quicksort function. See misc_tools.h for the definition. */
+make_quick_sort(ClientPair); 
 
 Client_data *DHT_get_close_list(DHT *dht)
 {
@@ -299,8 +301,6 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
     ClientPair pairs[length];
     uint32_t i;
 
-    /* Create the quicksort function. See misc_tools.h for the definition. */
-    make_quick_sort(ClientPair); 
     memcpy(cd.client_id, comp_client_id, CLIENT_ID_SIZE);
     for (i = 0; i < length; ++i) {
         pairs[i].c1 = cd;

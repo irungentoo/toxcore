@@ -199,6 +199,11 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
  * cmpfn - a function that compares two values of type type. 
  *         Must return -1, 0, 1 for a < b, a == b, and a > b respectively.
  */
+/* Must be called in the header file. */ 
+#define declare_quick_sort(type) \
+void type##_quick_sort(type *arr, int n, int (*cmpfn)(type, type));
+
+/* Must be called in the C file. */
 #define make_quick_sort(type) \
 void type##_quick_sort(type *arr, int n, int (*cmpfn)(type, type)) \
 { \
