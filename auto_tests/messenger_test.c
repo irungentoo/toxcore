@@ -174,7 +174,7 @@ START_TEST(test_getself_name)
     setname(m, (uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check, len);
 
-    ck_assert_msg((!STRINGS_EQUAL(nickname, nick_check)),
+    ck_assert_msg((memcmp(nickname, nick_check, len) != 0),
                   "getself_name failed to return the known name!\n"
                   "known name: %s\nreturned: %s\n", nickname, nick_check);
 }
