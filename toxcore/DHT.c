@@ -56,8 +56,16 @@
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
 
+/* Used in the comparison function for sorting lists of Client_data. */
+typedef struct {
+    Client_data c1;
+    Client_data c2;
+} ClientPair;
+
+/* Create the declaration for a quick sort for ClientPair structures. */
+declare_quick_sort(ClientPair);
 /* Create the quicksort function. See misc_tools.h for the definition. */
-make_quick_sort(ClientPair); 
+make_quick_sort(ClientPair);
 
 Client_data *DHT_get_close_list(DHT *dht)
 {
@@ -95,8 +103,10 @@ static int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2)
 static int client_id_cmp(ClientPair p1, ClientPair p2)
 {
     int c = id_closest(p1.c1.client_id, p1.c2.client_id, p2.c2.client_id);
+
     if (c == 2)
         return -1;
+
     return c;
 }
 
@@ -292,7 +302,7 @@ static int replace_bad(    Client_data    *list,
     return 1;
 }
 
-/*Sort the list. It will be sorted from furthest to closest. 
+/*Sort the list. It will be sorted from furthest to closest.
  * Turns list into data that quick sort can use and reverts it back.
  */
 static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_id)
@@ -302,11 +312,14 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
     uint32_t i;
 
     memcpy(cd.client_id, comp_client_id, CLIENT_ID_SIZE);
+
     for (i = 0; i < length; ++i) {
         pairs[i].c1 = cd;
         pairs[i].c2 = list[i];
     }
+
     ClientPair_quick_sort(pairs, length, client_id_cmp);
+
     for (i = 0; i < length; ++i)
         list[i] = pairs[i].c2;
 }
