@@ -16,7 +16,7 @@
 Build dependencies:
 
 ```bash
-apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check
+sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check
 ```
 
 On Fedora:
@@ -62,7 +62,7 @@ cd ProjectTox-Core
 autoreconf -i
 ./configure
 make
-make install
+sudo make install
 ```
 Advance configure options:
   - --prefix=/where/to/install
