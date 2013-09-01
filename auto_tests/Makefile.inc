@@ -5,7 +5,7 @@ TESTS = messenger_autotest crypto_test
 check_PROGRAMS = messenger_autotest crypto_test
 
 messenger_autotest_SOURCES = \
-                        $(top_srcdir)/auto_tests/messenger_test.c
+                        ../auto_tests/messenger_test.c
 
 messenger_autotest_CFLAGS = \
                         $(LIBSODIUM_CFLAGS) \
@@ -18,7 +18,7 @@ messenger_autotest_LDADD = \
                         $(CHECK_LIBS)
 
 
-crypto_test_SOURCES =   $(top_srcdir)/auto_tests/crypto_test.c
+crypto_test_SOURCES =   ../auto_tests/crypto_test.c
 
 crypto_test_CFLAGS =    $(LIBSODIUM_CFLAGS) \
                         $(CHECK_CFLAGS)
