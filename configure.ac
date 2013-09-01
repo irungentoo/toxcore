@@ -6,7 +6,7 @@ AC_INIT([tox], [0.0.0], [http://tox.im])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([1.10 -Wall])
+AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -107,6 +107,7 @@ AC_ARG_WITH(libsodium-libs,
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 

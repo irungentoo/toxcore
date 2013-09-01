@@ -2,8 +2,8 @@ if BUILD_NTOX
 
 bin_PROGRAMS += nTox
 
-nTox_SOURCES =          $(top_srcdir)/testing/nTox.h \
-                        $(top_srcdir)/testing/nTox.c
+nTox_SOURCES =          ../testing/nTox.h \
+                        ../testing/nTox.c
 
 nTox_CFLAGS =           $(LIBSODIUM_CFLAGS) \
                         $(NCURSES_CFLAGS)
@@ -22,7 +22,7 @@ noinst_PROGRAMS +=      DHT_test \
                         Messenger_test \
                         crypto_speed_test
 
-DHT_test_SOURCES =      $(top_srcdir)/testing/DHT_test.c
+DHT_test_SOURCES =      ../testing/DHT_test.c
 
 DHT_test_CFLAGS =       $(LIBSODIUM_CFLAGS) 
 
@@ -33,7 +33,7 @@ DHT_test_LDADD =        $(LIBSODIUM_LDFLAGS) \
 
 
 Lossless_UDP_testclient_SOURCES = \
-                        $(top_srcdir)/testing/Lossless_UDP_testclient.c
+                        ../testing/Lossless_UDP_testclient.c
 
 Lossless_UDP_testclient_CFLAGS = \
                         $(LIBSODIUM_CFLAGS)
@@ -46,7 +46,7 @@ Lossless_UDP_testclient_LDADD = \
 
 
 Lossless_UDP_testserver_SOURCES = \
-                        $(top_srcdir)/testing/Lossless_UDP_testserver.c
+                        ../testing/Lossless_UDP_testserver.c
 
 Lossless_UDP_testserver_CFLAGS = \
                         $(LIBSODIUM_CFLAGS)
@@ -59,7 +59,7 @@ Lossless_UDP_testserver_LDADD = \
 
 
 Messenger_test_SOURCES = \
-                        $(top_srcdir)/testing/Messenger_test.c
+                        ../testing/Messenger_test.c
 
 Messenger_test_CFLAGS = $(LIBSODIUM_CFLAGS)
 
@@ -70,7 +70,7 @@ Messenger_test_LDADD =  $(LIBSODIUM_LDFLAGS) \
 
 
 crypto_speed_test_SOURCES = \
-                        $(top_srcdir)/testing/crypto_speed_test.c
+                        ../testing/crypto_speed_test.c
 
 crypto_speed_test_CFLAGS = \
                         $(LIBSODIUM_CFLAGS)
@@ -81,3 +81,4 @@ crypto_speed_test_LDADD = \
                         $(LIBSODIUM_LIBS) \
                         $(WINSOCK2_LIBS)
 
+EXTRA_DIST += 			$(top_srcdir)/testing/misc_tools.c
