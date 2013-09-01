@@ -67,6 +67,9 @@ typedef struct media_session_s {
 
     int _socket;
 
+    uint8_t  _call_type;
+    uint32_t _frame_rate;
+
     /* Martijnvdc add your media stuff here so this will be used in messenger */
 
 } media_session_t;

@@ -4,7 +4,6 @@
 #include "msi_message.h"
 #include "rtp_message.h"
 #include "toxrtp/tests/test_helper.h"
-#include <curses.h>
 #include <assert.h>
 #include <unistd.h>
 
@@ -164,6 +163,8 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
 
     int* _thread_running = _hmtc_args->_thread_running;
 
+    int* _res_position = &_rtp_video->_exthdr_resolution;
+
     int _m_socket = _socket;
 
     while ( *_thread_running ) {
@@ -182,7 +183,25 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
 
         if ( _video_msg ) {
             /* Do whatever with msg */
-            puts("video");
+            /* Some example use of marker setters */
+            printf("H:%d | W:%d\t",
+                   rtp_get_resolution_marking_height(_video_msg->_ext_header, *_res_position),
+                   rtp_get_resolution_marking_width(_video_msg->_ext_header, *_res_position));
+
+            if ( rtp_get_resolution_marking_height(_video_msg->_ext_header, *_res_position) < 4000 ){
+                //rtp_remove_resolution_marking(_rtp_video);
+                rtp_add_resolution_marking(_rtp_video,
+                                           rtp_get_resolution_marking_width(_video_msg->_ext_header, *_res_position) + 1,
+                                           rtp_get_resolution_marking_width(_video_msg->_ext_header, *_res_position) + 1);
+            }
+
+            printf("RM:%d\t", rtp_get_framerate_marking(_video_msg->_ext_header));
+
+            if ( rtp_get_framerate_marking(_video_msg->_ext_header) < 4000 ){
+                //rtp_remove_framerate_marking(_rtp_video);
+                rtp_add_framerate_marking(_rtp_video, rtp_remove_framerate_marking(_rtp_video));
+            }
+
             rtp_free_msg ( _rtp_video, _video_msg );
         }
         /* -------------------- */
@@ -219,6 +238,9 @@ void* handle_call_callback ( void* _p )
 
     rtp_add_receiver ( _rtp_audio, &_m_session->_friend_id );
     rtp_add_receiver ( _rtp_video, &_m_session->_friend_id );
+
+    rtp_add_resolution_marking(_rtp_video, 1000, 1000);
+    rtp_add_framerate_marking( _rtp_video, 100000023);
 
     uint8_t _prefix = RTP_PACKET;
     rtp_set_prefix ( _rtp_audio, &_prefix, 1 );
