@@ -25,9 +25,10 @@
 
 /* Try to send a friend request to peer with public_key.
  * data is the data in the request and length is the length.
- * return -1 if failure.
- * return  0 if it sent the friend request directly to the friend.
- * return the number of peers it was routed through if it did not send it directly.
+ *
+ *  return -1 if failure.
+ *  return  0 if it sent the friend request directly to the friend.
+ *  return the number of peers it was routed through if it did not send it directly.
  */
 int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
 {
@@ -98,8 +99,9 @@ static void addto_receivedlist(Friend_Requests *fr, uint8_t *client_id)
 }
 
 /* Check if a friend request was already received.
- * return 0 if it did not.
- * return 1 if it did.
+ *
+ *  return 0 if it did not.
+ *  return 1 if it did.
  */
 static int request_received(Friend_Requests *fr, uint8_t *client_id)
 {
