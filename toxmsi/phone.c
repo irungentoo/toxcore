@@ -234,10 +234,14 @@ void* handle_call_callback ( void* _p )
     cs->quit = 0;
     if(cs->support_send_audio&&cs->support_send_video) /* quick fix */
         pthread_create(&cs->encode_audio_thread, NULL, encode_audio_thread, cs);
+    if(cs->support_receive_audio)
+	pthread_create(&cs->decode_audio_thread, NULL, decode_audio_thread, cs);
     if(cs->support_send_video)
         pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
-    if(cs->support_receive_video||cs->support_receive_audio)
-        pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
+    if(cs->support_receive_video)
+     	pthread_create(&cs->decode_video_thread, NULL, decode_video_thread, cs); 
+    //if(cs->support_receive_video||cs->support_receive_audio)
+      //  pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
 
     _p = NULL;
     char _choice [10];

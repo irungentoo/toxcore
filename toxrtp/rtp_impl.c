@@ -121,6 +121,7 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     /*
      *
      */
+    _retu->_oldest_msg = _retu->_last_msg = NULL;
     return _retu;
 }
 

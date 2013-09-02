@@ -160,9 +160,7 @@ typedef struct
     VideoPicture	video_picture;
 
     //SDL_Thread      	*parse_tid;
-    rtp_msg_t*     	s_video_msg;
-    rtp_msg_t*     	s_audio_msg;
-    rtp_msg_t*     	r_msg;
+
     rtp_session_t* 	_m_session;
     rtp_session_t* _rtp_audio, *_rtp_video;
     int socket;
@@ -173,6 +171,9 @@ typedef struct
 
     pthread_t encode_audio_thread;
     pthread_t encode_video_thread;
+    
+    pthread_t decode_audio_thread;
+    pthread_t decode_video_thread;
     pthread_t decode_thread;
     pthread_mutex_t rtp_msg_mutex_lock;
 
@@ -197,5 +198,6 @@ int video_encoder_refresh(codec_state *cs, int bps);
 void *encode_video_thread(void *arg);
 void *encode_audio_thread(void *arg);
 int video_decoder_refresh(codec_state *cs, int width, int height);
-int decoder_handle_rtp_packet(codec_state *cs);
-void *decode_thread(void *arg);
+int handle_rtp_video_packet(codec_state *cs,rtp_msg_t* r_msg);
+void *decode_video_thread(void *arg);
+void *decode_audio_thread(void *arg);
