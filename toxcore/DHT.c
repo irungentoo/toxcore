@@ -72,10 +72,11 @@ Client_data *DHT_get_close_list(DHT *dht)
     return dht->close_clientlist;
 }
 
-/* Compares client_id1 and client_id2 with client_id
- * return 0 if both are same distance
- * return 1 if client_id1 is closer
- * return 2 if client_id2 is closer
+/* Compares client_id1 and client_id2 with client_id.
+ *
+ *  return 0 if both are same distance.
+ *  return 1 if client_id1 is closer.
+ *  return 2 if client_id2 is closer.
  */
 static int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2)
 {
@@ -128,9 +129,9 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
 /* Check if client with client_id is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
  * If the id is already in the list with a different ip_port, update it.
- * return True(1) or False(0)
+ *  TODO: Maybe optimize this.
  *
- * TODO: maybe optimize this.
+ *  return True(1) or False(0)
  */
 static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Port ip_port)
 {
@@ -156,7 +157,9 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
 }
 
 /* Check if client with client_id is already in node format list of length length.
- * return True(1) or False(0)
+ *
+ *  return 1 if true.
+ *  return 2 if false.
  */
 static int client_in_nodelist(Node_format *list, uint32_t length, uint8_t *client_id)
 {
@@ -170,7 +173,8 @@ static int client_in_nodelist(Node_format *list, uint32_t length, uint8_t *clien
     return 0;
 }
 
-/* Returns the friend number from the client_id, or -1 if a failure occurs
+/*  return friend number from the client_id.
+ *  return -1 if a failure occurs.
  */
 static int friend_number(DHT *dht, uint8_t *client_id)
 {
@@ -274,9 +278,10 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
     return num_nodes;
 }
 
-/* Replace first bad (or empty) node with this one
- * return 0 if successful
- * return 1 if not (list contains no bad nodes)
+/* Replace first bad (or empty) node with this one.
+ *
+ *  return 0 if successful.
+ *  return 1 if not (list contains no bad nodes).
  */
 static int replace_bad(    Client_data    *list,
                            uint32_t        length,
@@ -302,8 +307,8 @@ static int replace_bad(    Client_data    *list,
     return 1;
 }
 
-/*Sort the list. It will be sorted from furthest to closest.
- * Turns list into data that quick sort can use and reverts it back.
+/* Sort the list. It will be sorted from furthest to closest.
+ *  Turns list into data that quick sort can use and reverts it back.
  */
 static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_id)
 {
@@ -350,7 +355,7 @@ static int replace_good(   Client_data    *list,
 }
 
 /* Attempt to add client with ip_port and client_id to the friends client list
- * and close_clientlist
+ * and close_clientlist.
  */
 void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
 {
@@ -361,7 +366,7 @@ void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
      */
     if (!client_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
         if (replace_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
-            /* If we can't replace bad nodes we try replacing good ones */
+            /* If we can't replace bad nodes we try replacing good ones. */
             replace_good(   dht->close_clientlist,
                             LCLIENT_LIST,
                             client_id,
@@ -801,7 +806,8 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 }
 
 /* Send the given packet to node with client_id
- * returns -1 if failure.
+ *
+ *  return -1 if failure.
  */
 int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 {
@@ -815,11 +821,12 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
     return -1;
 }
 
-/* Puts all the different ips returned by the nodes for a friend_num into array ip_portlist
- * ip_portlist must be at least MAX_FRIEND_CLIENTS big
- * returns the number of ips returned
- * return 0 if we are connected to friend or if no ips were found.
- * returns -1 if no such friend
+/* Puts all the different ips returned by the nodes for a friend_num into array ip_portlist.
+ * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
+ *
+ *  return the number of ips returned.
+ *  return 0 if we are connected to friend or if no ips were found.
+ *  return -1 if no such friend.
  */
 static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 {
@@ -836,7 +843,7 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &friend->client_list[i];
 
-        /* If ip is not zero and node is good */
+        /* If ip is not zero and node is good. */
         if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
 
             if (id_equal(client->client_id, friend->client_id))
@@ -852,9 +859,9 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 
 
 /* Send the following packet to everyone who tells us they are connected to friend_id.
- * returns the number of nodes it sent the packet to.
  *
- * Only works if more than (MAX_FRIEND_CLIENTS / 2) return an ip for friend.
+ *  return ip for friend.
+ *  return number of nodes the packet was sent to. (Only works if more than (MAX_FRIEND_CLIENTS / 2).
  */
 int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
 {
@@ -878,7 +885,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &friend->client_list[i];
 
-        /* If ip is not zero and node is good */
+        /* If ip is not zero and node is good. */
         if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
             int retval = sendpacket(dht->c->lossless_udp->net->sock, client->ip_port, packet, length);
 
@@ -891,8 +898,9 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
 }
 
 /* Send the following packet to one random person who tells us they are connected to friend_id.
-*  returns the number of nodes it sent the packet to
-*/
+ *
+ *  return number of nodes the packet was sent to.
+ */
 static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
 {
     int num = friend_number(dht, friend_id);
@@ -931,9 +939,10 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
 
 /* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.
  * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
- * returns the number of ips returned
- * return 0 if we are connected to friend or if no ips were found.
- * returns -1 if no such friend
+ *
+ *  return number of ips returned.
+ *  return 0 if we are connected to friend or if no ips were found.
+ *  return -1 if no such friend.
  */
 int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id)
 {
@@ -1014,7 +1023,8 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
 /* Get the most common ip in the ip_portlist.
  * Only return ip if it appears in list min_num or more.
  * len must not be bigger than MAX_FRIEND_CLIENTS.
- * return ip of 0 if failure.
+ *
+ *  return ip of 0 if failure.
  */
 static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
 {
@@ -1040,9 +1050,10 @@ static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
 }
 
 /* Return all the ports for one ip in a list.
- * portlist must be at least len long
- * where len is the length of ip_portlist
- * returns the number of ports and puts the list of ports in portlist.
+ * portlist must be at least len long,
+ * where len is the length of ip_portlist.
+ *
+ *  return number of ports and puts the list of ports in portlist.
  */
 static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t len, IP ip)
 {
@@ -1068,7 +1079,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     uint32_t top = dht->friends_list[friend_num].punching_index + MAX_PUNCHING_PORTS;
 
     for (i = dht->friends_list[friend_num].punching_index; i != top; i++) {
-        /* TODO: improve port guessing algorithm */
+        /* TODO: Improve port guessing algorithm. */
         uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
         IP_Port pinging = {{ip, htons(port), 0}};
         send_ping_request(dht->ping, dht->c, pinging, dht->friends_list[friend_num].client_id);
@@ -1086,7 +1097,7 @@ static void do_NAT(DHT *dht)
         IP_Port ip_list[MAX_FRIEND_CLIENTS];
         int num = friend_iplist(dht, ip_list, i);
 
-        /* If already connected or friend is not online don't try to hole punch */
+        /* If already connected or friend is not online don't try to hole punch. */
         if (num < MAX_FRIEND_CLIENTS / 2)
             continue;
 
@@ -1124,8 +1135,9 @@ static void do_NAT(DHT *dht)
  * If the list is full the nodes farthest from our client_id are replaced.
  * The purpose of this list is to enable quick integration of new nodes into the
  * network while preventing amplification attacks.
- * return 0 if node was added.
- * return -1 if node was not added.
+ *
+ *  return 0 if node was added.
+ *  return -1 if node was not added.
  */
 int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
 {
@@ -1156,7 +1168,7 @@ int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
 }
 
 /* Ping all the valid nodes in the toping list every TIME_TOPING seconds.
- * This function must be run at least once every TIME_TOPING seconds
+ * This function must be run at least once every TIME_TOPING seconds.
  */
 static void do_toping(DHT *dht)
 {
@@ -1233,8 +1245,9 @@ void DHT_save(DHT *dht, uint8_t *data)
 }
 
 /* Load the DHT from data of size size.
- * return -1 if failure.
- * return 0 if success.
+ *
+ *  return -1 if failure.
+ *  return 0 if success.
  */
 int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
 {
@@ -1278,8 +1291,8 @@ int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
     return 0;
 }
 
-/* returns 0 if we are not connected to the DHT.
- * returns 1 if we are.
+/*  return 0 if we are not connected to the DHT.
+ *  return 1 if we are.
  */
 int DHT_isconnected(DHT *dht)
 {

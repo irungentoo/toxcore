@@ -84,7 +84,7 @@ typedef struct tox_list {
     struct tox_list *prev, *next;
 } tox_list;
 
-/* Returns a new tox_list_t. */
+/*  return new tox_list_t. */
 static inline void tox_list_new(tox_list *lst)
 {
     lst->prev = lst->next = lst;
@@ -196,10 +196,10 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
  * Quick Sort: Complexity O(nlogn)
  * arr   - the array to sort
  * n     - the sort index (should be called with n = length(arr))
- * cmpfn - a function that compares two values of type type. 
+ * cmpfn - a function that compares two values of type type.
  *         Must return -1, 0, 1 for a < b, a == b, and a > b respectively.
  */
-/* Must be called in the header file. */ 
+/* Must be called in the header file. */
 #define declare_quick_sort(type) \
 void type##_quick_sort(type *arr, int n, int (*cmpfn)(type, type));
 

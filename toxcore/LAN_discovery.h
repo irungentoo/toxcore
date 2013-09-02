@@ -28,7 +28,7 @@
 
 #include "DHT.h"
 
-/* used for get_broadcast(). */
+/* Used for get_broadcast(). */
 #ifdef __linux
 #include <sys/ioctl.h>
 #include <arpa/inet.h>

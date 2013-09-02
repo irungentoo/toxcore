@@ -23,7 +23,7 @@
 
 #include "network.h"
 
-/* return current UNIX time in microseconds (us). */
+/*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void)
 {
     uint64_t time;
@@ -44,7 +44,7 @@ uint64_t current_time(void)
 #endif
 }
 
-/* return a random number.
+/*  return a random number.
  * NOTE: This function should probably not be used where cryptographic randomness is absolutely necessary.
  */
 uint32_t random_int(void)
@@ -153,8 +153,8 @@ static void at_shutdown(void)
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
  *
- * returns Networking_Core object if no problems
- * returns NULL if there are problems.
+ *  return Networking_Core object if no problems
+ *  return NULL if there are problems.
  */
 Networking_Core *new_networking(IP ip, uint16_t port)
 {

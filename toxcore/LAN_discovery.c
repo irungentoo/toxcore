@@ -27,8 +27,9 @@
 
 #ifdef __linux
 /* Get the first working broadcast address that's not from "lo".
- *  returns higher than 0 on success.
- *  returns 0 on error.
+ *
+ *  return higher than 0 on success.
+ *  return 0 on error.
  */
 static uint32_t get_broadcast(void)
 {
@@ -100,8 +101,8 @@ static IP broadcast_ip(void)
     return ip;
 }
 
-/* return 0 if ip is a LAN ip.
- * return -1 if it is not.
+/*  return 0 if ip is a LAN ip.
+ *  return -1 if it is not.
  */
 static int LAN_ip(IP ip)
 {

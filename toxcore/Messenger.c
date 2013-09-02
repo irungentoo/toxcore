@@ -34,13 +34,9 @@ static uint8_t friend_not_valid(Messenger *m, int friendnumber)
     return (unsigned int)friendnumber >= m->numfriends;
 }
 
-/* return 1 if we are online.
- * return 0 if we are offline.
- * static uint8_t online;
- */
-
 /* Set the size of the friend list to numfriends.
- * return -1 if realloc fails.
+ *
+ *  return -1 if realloc fails.
  */
 int realloc_friendlist(Messenger *m, uint32_t num)
 {
@@ -59,8 +55,8 @@ int realloc_friendlist(Messenger *m, uint32_t num)
     return 0;
 }
 
-/* return the friend id associated to that public key.
- * return -1 if no such friend.
+/*  return the friend id associated to that public key.
+ *  return -1 if no such friend.
  */
 int getfriend_id(Messenger *m, uint8_t *client_id)
 {
@@ -77,8 +73,9 @@ int getfriend_id(Messenger *m, uint8_t *client_id)
 
 /* Copies the public key associated to that friend id into client_id buffer.
  * Make sure that client_id is of size CLIENT_ID_SIZE.
- * return 0 if success.
- * return -1 if failure.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
  */
 int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
 {
@@ -92,10 +89,9 @@ int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
 
     return -1;
 }
-/*
- * return a uint16_t that represents the checksum of address of length len.
+/* TODO: Another checksum algorithm might be better.
  *
- * TODO: Another checksum algorithm might be better.
+ *  return a uint16_t that represents the checksum of address of length len.
  */
 static uint16_t address_checksum(uint8_t *address, uint32_t len)
 {
@@ -110,10 +106,9 @@ static uint16_t address_checksum(uint8_t *address, uint32_t len)
     return check;
 }
 
-/*
- * return FRIEND_ADDRESS_SIZE byte address to give to others.
- * Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
+/* Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  *
+ *  return FRIEND_ADDRESS_SIZE byte address to give to others.
  */
 void getaddress(Messenger *m, uint8_t *address)
 {
@@ -130,16 +125,17 @@ void getaddress(Messenger *m, uint8_t *address)
  * Address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes.
  * TODO: add checksum.
  * data is the data and length is the length.
- * return the friend number if success.
- * return FA_TOOLONG if message length is too long.
- * return FAERR_NOMESSAGE if no message (message length must be >= 1 byte).
- * return FAERR_OWNKEY if user's own key.
- * return FAERR_ALREADYSENT if friend request already sent or already a friend.
- * return FAERR_UNKNOWN for unknown error.
- * return FAERR_BADCHECKSUM if bad checksum in address.
- * return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different.
- * (the nospam for that friend was set to the new one).
- * return FAERR_NOMEM if increasing the friend list size fails.
+ *
+ *  return the friend number if success.
+ *  return FA_TOOLONG if message length is too long.
+ *  return FAERR_NOMESSAGE if no message (message length must be >= 1 byte).
+ *  return FAERR_OWNKEY if user's own key.
+ *  return FAERR_ALREADYSENT if friend request already sent or already a friend.
+ *  return FAERR_UNKNOWN for unknown error.
+ *  return FAERR_BADCHECKSUM if bad checksum in address.
+ *  return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different.
+ *  (the nospam for that friend was set to the new one).
+ *  return FAERR_NOMEM if increasing the friend list size fails.
  */
 int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
 {
@@ -247,6 +243,7 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
 }
 
 /* Remove a friend.
+ *
  *  return 0 if success.
  *  return -1 if failure.
  */
@@ -274,11 +271,11 @@ int m_delfriend(Messenger *m, int friendnumber)
     return 0;
 }
 
-/* return FRIEND_ONLINE if friend is online.
- * return FRIEND_CONFIRMED if friend is confirmed.
- * return FRIEND_REQUESTED if the friend request was sent.
- * return FRIEND_ADDED if the friend was added.
- * return NOFRIEND if there is no friend with that number.
+/*  return FRIEND_ONLINE if friend is online.
+ *  return FRIEND_CONFIRMED if friend is confirmed.
+ *  return FRIEND_REQUESTED if the friend request was sent.
+ *  return FRIEND_ADDED if the friend was added.
+ *  return NOFRIEND if there is no friend with that number.
  */
 int m_friendstatus(Messenger *m, int friendnumber)
 {
@@ -289,8 +286,9 @@ int m_friendstatus(Messenger *m, int friendnumber)
 }
 
 /* Send a text chat message to an online friend.
- * return the message id if packet was successfully put into the send queue.
- * return 0 if it was not.
+ *
+ *  return the message id if packet was successfully put into the send queue.
+ *  return 0 if it was not.
  */
 uint32_t m_sendmessage(Messenger *m, int friendnumber, uint8_t *message, uint32_t length)
 {
@@ -322,8 +320,9 @@ uint32_t m_sendmessage_withid(Messenger *m, int friendnumber, uint32_t theid, ui
 }
 
 /* Send an action to an online friend.
- * return 1 if packet was successfully put into the send queue.
- * return 0 if it was not.
+ *
+ *  return 1 if packet was successfully put into the send queue.
+ *  return 0 if it was not.
  */
 int m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t length)
 {
@@ -342,8 +341,9 @@ static int m_sendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t le
 }
 
 /* Set the name of a friend.
- * return 0 if success.
- * return -1 if failure.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
  */
 static int setfriendname(Messenger *m, int friendnumber, uint8_t *name)
 {
@@ -358,8 +358,9 @@ static int setfriendname(Messenger *m, int friendnumber, uint8_t *name)
  * name must be a string of maximum MAX_NAME_LENGTH length.
  * length must be at least 1 byte.
  * length is the length of name with the NULL terminator.
- * return 0 if success.
- * return -1 if failure.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
  */
 int setname(Messenger *m, uint8_t *name, uint16_t length)
 {
@@ -377,8 +378,9 @@ int setname(Messenger *m, uint8_t *name, uint16_t length)
 }
 
 /* Get our nickname and put it in name.
- * Name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
- * return the length of the name.
+ * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+ *
+ *  return the length of the name.
  */
 uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen)
 {
@@ -395,9 +397,10 @@ uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen)
 }
 
 /* Get name of friendnumber and put it in name.
- * Name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
- * return 0 if success.
- * return -1 if failure.
+ * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
  */
 int getname(Messenger *m, int friendnumber, uint8_t *name)
 {
@@ -924,7 +927,7 @@ void doMessenger(Messenger *m)
     LANdiscovery(m);
 }
 
-/* return the size of the messenger data (for saving) */
+/*  return size of the messenger data (for saving) */
 uint32_t Messenger_size(Messenger *m)
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
