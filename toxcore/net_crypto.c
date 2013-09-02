@@ -782,10 +782,6 @@ static void kill_timedout(Net_Crypto *c)
         if (c->crypto_connections[i].status != CONN_NO_CONNECTION
                 && is_connected(c->lossless_udp, c->crypto_connections[i].number) == 4)
             c->crypto_connections[i].status = CONN_TIMED_OUT;
-        else if (is_connected(c->lossless_udp, c->crypto_connections[i].number) == 4) {
-            kill_connection(c->lossless_udp, c->crypto_connections[i].number);
-            c->crypto_connections[i].number = ~0;
-        }
     }
 }
 
@@ -794,8 +790,8 @@ void do_net_crypto(Net_Crypto *c)
 {
     do_lossless_udp(c->lossless_udp);
     handle_incomings(c);
-    receive_crypto(c);
     kill_timedout(c);
+    receive_crypto(c);
 }
 
 void kill_net_crypto(Net_Crypto *c)
