@@ -66,7 +66,7 @@ int sendpacket(unsigned int sock, IP_Port ip_port, uint8_t *data, uint32_t lengt
 int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
 #endif
 {
-    ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
+    ADDR addr = {AF_INET, ip_port.port, ip_port.ip, {0}};
     return sendto(sock, (char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
 
@@ -215,7 +215,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #endif
 
     /* Bind our socket to port PORT and address 0.0.0.0 */
-    ADDR addr = {AF_INET, htons(port), ip};
+    ADDR addr = {AF_INET, htons(port), ip, {0}};
     bind(temp->sock, (struct sockaddr *)&addr, sizeof(addr));
     return temp;
 }

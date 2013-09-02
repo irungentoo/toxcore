@@ -1070,7 +1070,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     for (i = dht->friends_list[friend_num].punching_index; i != top; i++) {
         /* TODO: improve port guessing algorithm */
         uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
-        IP_Port pinging = {{ip, htons(port)}};
+        IP_Port pinging = {{ip, htons(port), 0}};
         send_ping_request(dht->ping, dht->c, pinging, dht->friends_list[friend_num].client_id);
     }
 
