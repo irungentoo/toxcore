@@ -144,7 +144,7 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
     memcpy(data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
-    IP_Port ip_port = {{broadcast_ip(), port}};
+    IP_Port ip_port = {{broadcast_ip(), port, 0}};
     return sendpacket(c->lossless_udp->net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
 
