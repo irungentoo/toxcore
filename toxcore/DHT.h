@@ -104,16 +104,18 @@ typedef struct {
 Client_data *DHT_get_close_list(DHT *dht);
 
 /* Add a new friend to the friends list.
- *  client_id must be CLIENT_ID_SIZE bytes long.
- *  returns 0 if success.
- *  returns 1 if failure (friends list is full).
+ * client_id must be CLIENT_ID_SIZE bytes long.
+ *
+ *  return 0 if success.
+ *  return 1 if failure (friends list is full).
  */
 int DHT_addfriend(DHT *dht, uint8_t *client_id);
 
 /* Delete a friend from the friends list.
- *  client_id must be CLIENT_ID_SIZE bytes long.
- *  returns 0 if success.
- *  returns 1 if failure (client_id not in friends list).
+ * client_id must be CLIENT_ID_SIZE bytes long.
+ *
+ *  return 0 if success.
+ *  return 1 if failure (client_id not in friends list).
  */
 int DHT_delfriend(DHT *dht, uint8_t *client_id);
 
@@ -121,9 +123,10 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id);
  *  client_id must be CLIENT_ID_SIZE bytes long.
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
- *  returns ip if success.
- *  returns ip of 0 if failure (This means the friend is either offline or we have not found him yet).
- *  returns ip of 1 if friend is not in list.
+ *
+ *  return ip if success.
+ *  return ip of 0 if failure (This means the friend is either offline or we have not found him yet).
+ *  return ip of 1 if friend is not in list.
  */
 IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id);
 
@@ -141,27 +144,32 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
  * If the list is full the nodes farthest from our client_id are replaced.
  * The purpose of this list is to enable quick integration of new nodes into the
  * network while preventing amplification attacks.
- * return 0 if node was added.
- * return -1 if node was not added.
+ *
+ *  return 0 if node was added.
+ *  return -1 if node was not added.
  */
 int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port);
 
 /* ROUTING FUNCTIONS */
 
 /* Send the given packet to node with client_id.
-    returns -1 if failure. */
+ *
+ *  return -1 if failure.
+ */
 int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length);
 
 /* Send the following packet to everyone who tells us they are connected to friend_id.
- *  returns the number of nodes it sent the packet to.
+ *
+ *  return number of nodes it sent the packet to.
  */
 int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length);
 
 /* NAT PUNCHING FUNCTIONS */
 
 /* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.
- *  ip_portlist must be at least MAX_FRIEND_CLIENTS big.
- *  returns the number of ips returned.
+ * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
+ *
+ *  returns number of ips returned.
  *  returns -1 if no such friend.
  */
 int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id);
@@ -180,13 +188,14 @@ DHT *new_DHT(Net_Crypto *c);
 void kill_DHT(DHT *dht);
 
 /* Load the DHT from data of size size.
+ *
  *  return -1 if failure.
  *  return 0 if success.
  */
 int DHT_load(DHT *dht, uint8_t *data, uint32_t size);
 
-/* returns 0 if we are not connected to the DHT
- * returns 1 if we are
+/*  return 0 if we are not connected to the DHT.
+ *  return 1 if we are.
  */
 int DHT_isconnected(DHT *dht);
 
