@@ -226,7 +226,7 @@ static void free_connections(Lossless_UDP *ludp)
  */
 int kill_connection(Lossless_UDP *ludp, int connection_id)
 {
-    if (connection_id >= 0 && connection_id < ludp->connections.len) {
+    if (connection_id >= 0 && (uint32_t)connection_id < ludp->connections.len) {
         Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
 
         if (connection->status > 0) {
@@ -248,7 +248,7 @@ int kill_connection(Lossless_UDP *ludp, int connection_id)
  */
 int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds)
 {
-    if (connection_id >= 0 && connection_id < ludp->connections.len) {
+    if (connection_id >= 0 && (uint32_t)connection_id < ludp->connections.len) {
         Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
 
         if (connection->status > 0) {
@@ -270,7 +270,7 @@ int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds)
  */
 int is_connected(Lossless_UDP *ludp, int connection_id)
 {
-    if (connection_id >= 0 && connection_id < ludp->connections.len)
+    if (connection_id >= 0 && (uint32_t)connection_id < ludp->connections.len)
         return tox_array_get(&ludp->connections, connection_id, Connection).status;
 
     return 0;
@@ -279,7 +279,7 @@ int is_connected(Lossless_UDP *ludp, int connection_id)
 /* return the ip_port of the corresponding connection. */
 IP_Port connection_ip(Lossless_UDP *ludp, int connection_id)
 {
-    if (connection_id >= 0 && connection_id < ludp->connections.len)
+    if (connection_id >= 0 && (uint32_t)connection_id < ludp->connections.len)
         return tox_array_get(&ludp->connections, connection_id, Connection).ip_port;
 
     IP_Port zero = {{{{0}}, 0, 0}};
@@ -289,7 +289,7 @@ IP_Port connection_ip(Lossless_UDP *ludp, int connection_id)
 /* returns the number of packets in the queue waiting to be successfully sent. */
 uint32_t sendqueue(Lossless_UDP *ludp, int connection_id)
 {
-    if (connection_id < 0 || connection_id >= ludp->connections.len)
+    if (connection_id < 0 || (uint32_t)connection_id >= ludp->connections.len)
         return 0;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
@@ -299,7 +299,7 @@ uint32_t sendqueue(Lossless_UDP *ludp, int connection_id)
 /* returns the number of packets in the queue waiting to be successfully read with read_packet(...). */
 uint32_t recvqueue(Lossless_UDP *ludp, int connection_id)
 {
-    if (connection_id < 0 || connection_id >= ludp->connections.len)
+    if (connection_id < 0 || (uint32_t)connection_id >= ludp->connections.len)
         return 0;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
@@ -311,7 +311,7 @@ uint32_t recvqueue(Lossless_UDP *ludp, int connection_id)
  */
 char id_packet(Lossless_UDP *ludp, int connection_id)
 {
-    if (connection_id < 0 || connection_id >= ludp->connections.len || recvqueue(ludp, connection_id) == 0)
+    if (connection_id < 0 || (uint32_t)connection_id >= ludp->connections.len || recvqueue(ludp, connection_id) == 0)
         return -1;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
