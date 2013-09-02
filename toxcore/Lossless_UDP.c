@@ -297,6 +297,10 @@ uint32_t sendqueue(Lossless_UDP *ludp, int connection_id)
         return 0;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
+    if (connection->status == 0)
+        return 0;
+
     return connection->sendbuff_packetnum - connection->successful_sent;
 }
 
@@ -307,6 +311,10 @@ uint32_t recvqueue(Lossless_UDP *ludp, int connection_id)
         return 0;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
+    if (connection->status == 0)
+        return 0;
+
     return connection->recv_packetnum - connection->successful_read;
 }
 
@@ -335,6 +343,10 @@ int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data)
         return 0;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
+    if (connection->status == 0)
+        return 0;
+
     uint16_t index = connection->successful_read % MAX_QUEUE_NUM;
     uint16_t size  = connection->recvbuffer[index].size;
     memcpy(data, connection->recvbuffer[index].data, size);
@@ -349,10 +361,17 @@ int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data)
  */
 int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t length)
 {
+    if ((unsigned int)connection_id >= ludp->connections.len)
+        return 0;
+
     if (length > MAX_DATA_SIZE || length == 0 || sendqueue(ludp, connection_id) >= BUFFER_PACKET_NUM)
         return 0;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
+    if (connection->status == 0)
+        return 0;
+
     uint32_t index = connection->sendbuff_packetnum % MAX_QUEUE_NUM;
     memcpy(connection->sendbuffer[index].data, data, length);
     connection->sendbuffer[index].size = length;
