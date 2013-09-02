@@ -982,6 +982,9 @@ static int send_NATping(DHT *dht, uint8_t *public_key, uint64_t ping_id, uint8_t
 /* Handle a received ping request for. */
 static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {
+    if (length != sizeof(uint64_t) + 1)
+        return 1;
+
     DHT *dht = object;
     uint64_t ping_id;
     memcpy(&ping_id, packet + 1, sizeof(uint64_t));
