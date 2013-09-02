@@ -120,7 +120,12 @@ typedef struct {
 typedef struct {
     Packet_Handles packethandlers[256];
     /* Our UDP socket. */
+#ifdef WIN32
+    unsigned int sock;
+#else
     int sock;
+#endif
+
 } Networking_Core;
 
 /* return current time in milleseconds since the epoch. */
@@ -134,7 +139,12 @@ uint32_t random_int(void);
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port. */
+#ifdef WIN32
+int sendpacket(unsigned int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
+#else
 int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
+#endif
+
 
 /* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);

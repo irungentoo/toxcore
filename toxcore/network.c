@@ -60,7 +60,11 @@ uint32_t random_int(void)
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
  */
+#ifdef WIN32
+int sendpacket(unsigned int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
+#else
 int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
+#endif
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip};
     return sendto(sock, (char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
@@ -72,7 +76,11 @@ int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
  *  Packet length is put into length.
  *  Dump all empty packets.
  */
+#ifdef WIN32
+static int receivepacket(unsigned int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+#else
 static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+#endif
 {
     ADDR addr;
 #ifdef WIN32
