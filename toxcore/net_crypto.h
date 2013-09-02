@@ -80,7 +80,8 @@ typedef struct {
 uint8_t crypto_iszero(uint8_t *buffer, uint32_t blen);
 
 /* Encrypts plain of length length to encrypted of length + 16 using the
- *  public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
+ * public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
+ *
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
@@ -89,7 +90,8 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
 
 /* Decrypts encrypted of length length to plain of length length - 16 using the
- *  public key(32 bytes) of the sender, the secret key of the receiver and a 24 byte nonce.
+ * public key(32 bytes) of the sender, the secret key of the receiver and a 24 byte nonce.
+ *
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
@@ -113,14 +115,14 @@ int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce);
 
-/* return 0 if there is no received data in the buffer.
+/*  return 0 if there is no received data in the buffer.
  *  return -1  if the packet was discarded.
  *  return length of received data if successful.
  */
 int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data);
 
-/* return 0 if data could not be put in packet queue
- * return 1 if data was put into the queue
+/*  return 0 if data could not be put in packet queue.
+ *  return 1 if data was put into the queue.
  */
 int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
 
@@ -131,8 +133,8 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
  * Data represents the data we send with the request with length being the length of the data.
  * request_id is the id of the request (32 = friend request, 254 = ping request).
  *
- * returns -1 on failure.
- * returns the length of the created packet on success.
+ * return -1 on failure.
+ * return the length of the created packet on success.
  */
 int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
                    uint8_t *data, uint32_t length, uint8_t request_id);
@@ -142,18 +144,21 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
 void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object);
 
 /* Start a secure connection with other peer who has public_key and ip_port.
- *  returns -1 if failure.
- *  returns crypt_connection_id of the initialized connection if everything went well.
+ *
+ *  return -1 if failure.
+ *  return crypt_connection_id of the initialized connection if everything went well.
  */
 int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port);
 
 /* Kill a crypto connection.
+ *
  *  return 0 if killed successfully.
  *  return 1 if there was a problem.
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 
 /* Handle an incoming connection.
+ *
  *  return -1 if no crypto inbound connection.
  *  return incoming connection id (Lossless_UDP one) if there is an incoming crypto connection.
  *
@@ -165,17 +170,18 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key);
 
 /* Accept an incoming connection using the parameters provided by crypto_inbound.
+ *
  *  return -1 if not successful.
- *  returns the crypt_connection_id if successful.
+ *  return crypt_connection_id if successful.
  */
 int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
                           uint8_t *session_key);
 
-/* return 0 if no connection.
- * return 1 we have sent a handshake
- * return 2 if connexion is not confirmed yet (we have received a handshake but no empty data packet).
- * return 3 if the connection is established.
- * return 4 if the connection is timed out and waiting to be killed.
+/*  return 0 if no connection.
+ *  return 1 we have sent a handshake
+ *  return 2 if connexion is not confirmed yet (we have received a handshake but no empty data packet).
+ *  return 3 if the connection is established.
+ *  return 4 if the connection is timed out and waiting to be killed.
  */
 int is_cryptoconnected(Net_Crypto *c, int crypt_connection_id);
 

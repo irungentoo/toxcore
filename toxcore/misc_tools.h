@@ -84,7 +84,7 @@ typedef struct tox_list {
     struct tox_list *prev, *next;
 } tox_list;
 
-/* Returns a new tox_list_t. */
+/*  return new tox_list_t. */
 static inline void tox_list_new(tox_list *lst)
 {
     lst->prev = lst->next = lst;
