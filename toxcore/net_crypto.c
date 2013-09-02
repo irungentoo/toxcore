@@ -32,7 +32,10 @@
 #define CONN_ESTABLISHED 3
 #define CONN_TIMED_OUT 4
 
-static uint8_t crypt_id_valid(int crypt_connection_id, Net_Crypto *c) { return crypt_connection_id < 0 || (uint32_t)crypt_connection_id >= c->crypto_connections_length; }
+static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection_id)
+{
+    return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
+}
 
 /* Use this instead of memcmp; not vulnerable to timing attacks. */
 uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
@@ -152,7 +155,7 @@ void random_nonce(uint8_t *nonce)
  */
 int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
 {
-    if (crypt_id_valid(crypt_connection_id,c))
+    if (crypt_connection_id_not_valid(c, crypt_connection_id))
         return 0;
 
     if (c->crypto_connections[crypt_connection_id].status != CONN_ESTABLISHED)
@@ -184,7 +187,7 @@ int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
  */
 int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
 {
-    if (crypt_id_valid(crypt_connection_id,c))
+    if (crypt_connection_id_not_valid(c, crypt_connection_id))
         return 0;
 
     if (length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES > MAX_DATA_SIZE - 1)
@@ -307,7 +310,8 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
 
         } else { /* If request is not for us, try routing it. */
             int retval = route_packet(dht, packet + 1, packet, length);
-            if (retval < 0 || (uint32_t)retval == length)
+
+            if ((unsigned int)retval == length)
                 return 0;
         }
     }
@@ -508,7 +512,7 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
-    if (crypt_id_valid(crypt_connection_id,c))
+    if (crypt_connection_id_not_valid(c, crypt_connection_id))
         return 1;
 
     if (c->crypto_connections[crypt_connection_id].status != CONN_NO_CONNECTION) {
@@ -599,7 +603,7 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
  */
 int is_cryptoconnected(Net_Crypto *c, int crypt_connection_id)
 {
-    if (crypt_connection_id >= 0 && (uint32_t)crypt_connection_id < c->crypto_connections_length)
+    if ((unsigned int)crypt_connection_id < c->crypto_connections_length)
         return c->crypto_connections[crypt_connection_id].status;
 
     return CONN_NO_CONNECTION;

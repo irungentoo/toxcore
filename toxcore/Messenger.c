@@ -28,8 +28,11 @@
 static void set_friend_status(Messenger *m, int friendnumber, uint8_t status);
 static int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length);
 
-// friend_is_valid determines if the friendnumber passed is valid in the Messenger object
-static uint8_t friend_is_valid(int friendnumber, Messenger *m) { return friendnumber < 0 || (uint32_t)friendnumber >= m->numfriends; }
+// friend_not_valid determines if the friendnumber passed is valid in the Messenger object
+static uint8_t friend_not_valid(Messenger *m, int friendnumber)
+{
+    return (unsigned int)friendnumber >= m->numfriends;
+}
 
 /* return 1 if we are online.
  * return 0 if we are offline.
@@ -79,7 +82,7 @@ int getfriend_id(Messenger *m, uint8_t *client_id)
  */
 int getclient_id(Messenger *m, int friend_id, uint8_t *client_id)
 {
-		if (friend_is_valid(friend_id,m))
+    if (friend_not_valid(m, friend_id))
         return -1;
 
     if (m->friendlist[friend_id].status > 0) {
@@ -249,7 +252,7 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
  */
 int m_delfriend(Messenger *m, int friendnumber)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return -1;
 
     DHT_delfriend(m->dht, m->friendlist[friendnumber].client_id);
@@ -279,7 +282,7 @@ int m_delfriend(Messenger *m, int friendnumber)
  */
 int m_friendstatus(Messenger *m, int friendnumber)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return NOFRIEND;
 
     return m->friendlist[friendnumber].status;
@@ -291,7 +294,7 @@ int m_friendstatus(Messenger *m, int friendnumber)
  */
 uint32_t m_sendmessage(Messenger *m, int friendnumber, uint8_t *message, uint32_t length)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return 0;
 
     uint32_t msgid = ++m->friendlist[friendnumber].message_id;
@@ -344,7 +347,7 @@ static int m_sendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t le
  */
 static int setfriendname(Messenger *m, int friendnumber, uint8_t *name)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return -1;
 
     memcpy(m->friendlist[friendnumber].name, name, MAX_NAME_LENGTH);
@@ -398,7 +401,7 @@ uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen)
  */
 int getname(Messenger *m, int friendnumber, uint8_t *name)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return -1;
 
     memcpy(name, m->friendlist[friendnumber].name, MAX_NAME_LENGTH);
@@ -441,7 +444,7 @@ int m_set_userstatus(Messenger *m, USERSTATUS status)
  */
 int m_get_statusmessage_size(Messenger *m, int friendnumber)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return -1;
 
     return m->friendlist[friendnumber].statusmessage_length;
@@ -452,7 +455,7 @@ int m_get_statusmessage_size(Messenger *m, int friendnumber)
  */
 int m_copy_statusmessage(Messenger *m, int friendnumber, uint8_t *buf, uint32_t maxlen)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return -1;
 
     memset(buf, 0, maxlen);
@@ -469,7 +472,7 @@ int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen)
 
 USERSTATUS m_get_userstatus(Messenger *m, int friendnumber)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return USERSTATUS_INVALID;
 
     USERSTATUS status = m->friendlist[friendnumber].userstatus;
@@ -505,7 +508,7 @@ static int send_ping(Messenger *m, int friendnumber)
 
 static int set_friend_statusmessage(Messenger *m, int friendnumber, uint8_t *status, uint16_t length)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return -1;
 
     uint8_t *newstatus = calloc(length, 1);
@@ -527,7 +530,7 @@ void m_set_sends_receipts(Messenger *m, int friendnumber, int yesno)
     if (yesno != 0 || yesno != 1)
         return;
 
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return;
 
     m->friendlist[friendnumber].receives_read_receipts = yesno;
@@ -609,7 +612,7 @@ void set_friend_status(Messenger *m, int friendnumber, uint8_t status)
 
 int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length)
 {
-    if (friend_is_valid(friendnumber,m))
+    if (friend_not_valid(m, friendnumber))
         return 0;
 
     if (length >= MAX_DATA_SIZE || m->friendlist[friendnumber].status != FRIEND_ONLINE)
@@ -780,7 +783,7 @@ void doFriends(Messenger *m)
             len = read_cryptpacket(m->net_crypto, m->friendlist[i].crypt_connection_id, temp);
             uint8_t packet_id = temp[0];
             uint8_t *data = temp + 1;
-            int data_length = len - 1;
+            uint32_t data_length = len - 1;
 
             if (len > 0) {
                 switch (packet_id) {
@@ -856,7 +859,7 @@ void doFriends(Messenger *m)
                     case PACKET_ID_RECEIPT: {
                         uint32_t msgid;
 
-                        if (data_length < 0 || (uint32_t)data_length < sizeof(msgid))
+                        if (data_length < sizeof(msgid))
                             break;
 
                         memcpy(&msgid, data, sizeof(msgid));

@@ -544,9 +544,9 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
                             encrypt );
 
     if (len == -1)
-    	return -1;
+        return -1;
 
-    if ((uint32_t)len != sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING)
+    if ((unsigned int)len != sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING)
         return -1;
 
     data[0] = NET_PACKET_SEND_NODES;
@@ -612,10 +612,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
                   packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                   sizeof(ping_id) + num_nodes * sizeof(Node_format) + ENCRYPTION_PADDING, plain );
 
-    if (len == -1)
-    	return -1;
-
-    if ((uint32_t)len != sizeof(ping_id) + num_nodes * sizeof(Node_format))
+    if ((unsigned int)len != sizeof(ping_id) + num_nodes * sizeof(Node_format))
         return 1;
 
     memcpy(&ping_id, plain, sizeof(ping_id));
@@ -883,8 +880,9 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
 
         /* If ip is not zero and node is good */
         if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-        		int retval = sendpacket(dht->c->lossless_udp->net->sock, client->ip_port, packet, length);
-            if (retval != -1 && (uint32_t)retval == length)
+            int retval = sendpacket(dht->c->lossless_udp->net->sock, client->ip_port, packet, length);
+
+            if ((unsigned int)retval == length)
                 ++sent;
         }
     }
@@ -924,7 +922,8 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
         return 0;
 
     int retval = sendpacket(dht->c->lossless_udp->net->sock, ip_list[rand() % n], packet, length);
-    if (retval != -1 && (uint32_t)retval == length)
+
+    if ((unsigned int)retval == length)
         return 1;
 
     return 0;
