@@ -45,7 +45,6 @@ static uint32_t get_broadcast(void)
 
     /* Configure ifconf for the ioctl call. */
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("[!] get_broadcast: socket() error");
         return 0;
     }
 
@@ -56,7 +55,6 @@ static uint32_t get_broadcast(void)
     count = ifconf.ifc_len / sizeof(struct ifreq);
 
     if (ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
-        perror("get_broadcast: ioctl() error");
         return 0;
     }
 
@@ -64,7 +62,6 @@ static uint32_t get_broadcast(void)
         /* Skip the loopback interface, as it's useless. */
         if (strcmp(i_faces[i].ifr_name, "lo") != 0) {
             if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
-                perror("[!] get_broadcast: ioctl error");
                 return 0;
             }
 
@@ -77,7 +74,6 @@ static uint32_t get_broadcast(void)
     close(sock);
 
     if (sock_holder == NULL) {
-        perror("[!] no broadcast device found");
         return 0;
     }
 
