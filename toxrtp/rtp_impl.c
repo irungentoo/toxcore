@@ -418,38 +418,24 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
     return _retu;
 }
 
-int rtp_register_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
+int rtp_check_late_message (rtp_session_t* _session, rtp_msg_t* _msg)
 {
     /*
-     * Check Sequence number. If this new msg has lesser number then expected drop it return
-     * NULL and add stats _packet_loss into _session. RTP does not specify what you do when the packet is lost.
-     * You may for example play previous packet, show black screen etc.
+     * Check Sequence number. If this new msg has lesser number then the _session->_last_sequence_number
+     * it shows that the message came in late
      */
-
-
     if ( _msg->_header->_sequence_number < _session->_last_sequence_number &&
          _msg->_header->_timestamp < _session->_current_timestamp
        ) {
-
-        /* Just to check if the sequence number reset */
-
-        _session->_packet_loss++;
-
-        free ( _msg->_header );
-        free ( _msg );
-
-#ifdef _USE_ERRORS
-        t_perror ( RTP_ERROR_PACKET_DROPED );
-#endif /* _USE_ERRORS */
-
-        return FAILURE; /* Drop the packet. You can check if the packet dropped by checking _packet_loss increment. */
-
+        return SUCCESS; /* Drop the packet. You can check if the packet dropped by checking _packet_loss increment. */
     }
+    return FAILURE;
+}
 
+void rtp_register_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
+{
     _session->_last_sequence_number = _msg->_header->_sequence_number;
     _session->_current_timestamp = _msg->_header->_timestamp;
-
-    return SUCCESS;
 }
 
 

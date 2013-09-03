@@ -128,7 +128,8 @@ void                    rtp_free_msg ( rtp_session_t* _session, struct rtp_msg_s
 /* Functions handling receiving */
 struct rtp_msg_s*       rtp_recv_msg ( rtp_session_t* _session );
 struct rtp_msg_s*       rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
-int                     rtp_register_msg ( rtp_session_t* _session, struct rtp_msg_s* );
+int                     rtp_check_late_message (rtp_session_t* _session, struct rtp_msg_s* _msg);
+void                    rtp_register_msg ( rtp_session_t* _session, struct rtp_msg_s* );
 
 /* Functions handling sending */
 int                     rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, int _socket );
