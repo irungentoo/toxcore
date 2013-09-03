@@ -392,10 +392,6 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
         return NULL;
     }
 
-    if ( _session && !_session->_multi_session && rtp_register_msg(_session, _retu) < 0 ){
-        return NULL;
-    }
-
     _retu->_length = _length - _retu->_header->_length;
 
     uint16_t _from_pos = _retu->_header->_length;
@@ -414,6 +410,11 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
     t_memcpy ( _retu->_data, _data + _from_pos, _length - _from_pos );
 
     _retu->_next = NULL;
+
+
+    if ( _session && !_session->_multi_session && rtp_check_late_message(_session, _retu) < 0 ){
+        rtp_register_msg(_session, _retu);
+    }
 
     return _retu;
 }
