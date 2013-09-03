@@ -808,18 +808,16 @@ void doFriends(Messenger *m)
                     }
 
                     case PACKET_ID_STATUSMESSAGE: {
-                        if (data_length == 0)
+                        if (data_length == 0 || data_length > MAX_STATUSMESSAGE_LENGTH)
                             break;
 
-                        uint8_t *status = calloc(MIN(data_length, MAX_STATUSMESSAGE_LENGTH), 1);
-                        memcpy(status, data, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
+                        data[data_length - 1] = 0; /* Make sure the NULL terminator is present. */
 
                         if (m->friend_statusmessagechange)
-                            m->friend_statusmessagechange(m, i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH),
+                            m->friend_statusmessagechange(m, i, data, data_length,
                                                           m->friend_statuschange_userdata);
 
-                        set_friend_statusmessage(m, i, status, MIN(data_length, MAX_STATUSMESSAGE_LENGTH));
-                        free(status);
+                        set_friend_statusmessage(m, i, data, data_length);
                         break;
                     }
 
@@ -839,8 +837,14 @@ void doFriends(Messenger *m)
                     case PACKET_ID_MESSAGE: {
                         uint8_t *message_id = data;
                         uint8_t message_id_length = 4;
+
+                        if (data_length <= message_id_length)
+                            break;
+
                         uint8_t *message = data + message_id_length;
                         uint16_t message_length = data_length - message_id_length;
+
+                        message[message_length - 1] = 0;/* Make sure the NULL terminator is present. */
 
                         if (m->friendlist[i].receives_read_receipts) {
                             write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
@@ -853,6 +857,11 @@ void doFriends(Messenger *m)
                     }
 
                     case PACKET_ID_ACTION: {
+                        if (data_length == 0)
+                            break;
+
+                        data[data_length - 1] = 0;/* Make sure the NULL terminator is present. */
+
                         if (m->friend_action)
                             (*m->friend_action)(m, i, data, data_length, m->friend_action_userdata);
 
