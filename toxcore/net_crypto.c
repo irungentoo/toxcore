@@ -713,7 +713,7 @@ static void receive_crypto(Net_Crypto *c)
             }
         }
 
-        if (c->crypto_connections[i].status == CONN_NOT_CONFIRMED) {
+        else if (c->crypto_connections[i].status == CONN_NOT_CONFIRMED) {
             if (id_packet(c->lossless_udp, c->crypto_connections[i].number) == 3) {
                 uint8_t temp_data[MAX_DATA_SIZE];
                 uint8_t data[MAX_DATA_SIZE];
