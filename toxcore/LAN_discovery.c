@@ -26,12 +26,12 @@
 #define MAX_INTERFACES 16
 
 #ifdef __linux
-/* Get the first working broadcast address that's not from "lo".
+/* Send packet to all broadcast addresses
  *
  *  return higher than 0 on success.
  *  return 0 on error.
  */
-static uint32_t get_broadcast(void)
+static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t * data, uint16_t length)
 {
     /* Not sure how many platforms this will run on,
      * so it's wrapped in __linux for now.
@@ -45,7 +45,7 @@ static uint32_t get_broadcast(void)
 
     /* Configure ifconf for the ioctl call. */
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        return 0;
+        return 1;
     }
 
     memset(i_faces, 0, sizeof(struct ifreq) * MAX_INTERFACES);
@@ -55,29 +55,24 @@ static uint32_t get_broadcast(void)
     count = ifconf.ifc_len / sizeof(struct ifreq);
 
     if (ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
-        return 0;
+        return 1;
     }
 
     for (i = 0; i < count; i++) {
-        /* Skip the loopback interface, as it's useless. */
-        if (strcmp(i_faces[i].ifr_name, "lo") != 0) {
             if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
-                return 0;
+                return 1;
             }
 
             /* Just to clarify where we're getting the values from. */
             sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
-            break;
-        }
+            if (sock_holder != NULL) {
+                IP_Port ip_port = {{{{sock_holder->sin_addr.s_addr}}, port, 0}};
+                sendpacket(net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
+            }
     }
 
     close(sock);
-
-    if (sock_holder == NULL) {
-        return 0;
-    }
-
-    return sock_holder->sin_addr.s_addr;
+    return 0;
 }
 #endif
 
@@ -85,15 +80,7 @@ static uint32_t get_broadcast(void)
 static IP broadcast_ip(void)
 {
     IP ip;
-#ifdef __linux
-    ip.uint32 = get_broadcast();
-
-    if (ip.uint32 == 0)
-        ip.uint32 = ~0; /* Error occured, but try anyway? */
-
-#else
     ip.uint32 = ~0;
-#endif
     return ip;
 }
 
@@ -141,6 +128,9 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
     memcpy(data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
+#ifdef __linux
+    send_broadcasts(c->lossless_udp->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
+#endif
     IP_Port ip_port = {{broadcast_ip(), port, 0}};
     return sendpacket(c->lossless_udp->net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
