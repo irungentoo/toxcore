@@ -247,6 +247,17 @@ void tox_set_sends_receipts(void *tox, int friendnumber, int yesno)
     m_set_sends_receipts(m, friendnumber, yesno);
 }
 
+/* Allocate and return a list of valid friend id's. List must be freed by the
+ * caller.
+ *
+ * retun 0 if success.
+ * return -1 if failure.
+ */
+int tox_get_friendlist(void *tox, int **out_list, uint32_t *out_list_length)
+{
+    Messenger *m = tox;
+    return get_friendlist(m, out_list, out_list_length);
+}
 
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
