@@ -377,5 +377,12 @@ void Messenger_save(Messenger *m, uint8_t *data);
 /* Load the messenger from data of size length. */
 int Messenger_load(Messenger *m, uint8_t *data, uint32_t length);
 
+/* Allocate and return a list of valid friend id's. List must be freed by the
+ * caller.
+ *
+ * retun 0 if success.
+ * return -1 if failure.
+ */
+int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length);
 
 #endif
