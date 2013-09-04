@@ -737,11 +737,11 @@ static void receive_crypto(Net_Crypto *c)
                     crypto_kill(c, i);
                     return;
                 }
-            } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != -1)
+            } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != -1) {
                 /* This should not happen, kill the connection if it does. */
                 crypto_kill(c, i);
-
-            return;
+                return;
+            }
         }
     }
 }
