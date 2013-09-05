@@ -139,6 +139,12 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
 int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
                    uint8_t *data, uint32_t length, uint8_t request_id);
 
+/* puts the senders public key in the request in public_key, the data from the request
+   in data if a friend or ping request was sent to us and returns the length of the data.
+   packet is the request packet and length is its length
+   return -1 if not valid request. */
+int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, uint8_t *packet, uint16_t length);
 
 /* Function to call when request beginning with byte is received. */
 void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object);

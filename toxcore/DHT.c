@@ -483,12 +483,12 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->c->self_public_key) || is_gettingnodes(dht, ip_port, 0))
-        return 1;
+        return -1;
 
     uint64_t ping_id = add_gettingnodes(dht, ip_port);
 
     if (ping_id == 0)
-        return 1;
+        return -1;
 
     uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING];
     uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE];
@@ -522,7 +522,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->c->self_public_key))
-        return 1;
+        return -1;
 
     uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
                  + sizeof(Node_format) * MAX_SENT_NODES + ENCRYPTION_PADDING];

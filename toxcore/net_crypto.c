@@ -254,30 +254,31 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
  *
  *  return -1 if not valid request.
  */
-static int handle_request(Net_Crypto *c, uint8_t *public_key, uint8_t *data, uint8_t *request_id, uint8_t *packet,
-                          uint16_t length)
+int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, uint8_t *packet, uint16_t length)
 {
-
     if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
-            length <= MAX_DATA_SIZE + ENCRYPTION_PADDING &&
-            memcmp(packet + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
-        memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
-        uint8_t nonce[crypto_box_NONCEBYTES];
-        uint8_t temp[MAX_DATA_SIZE];
-        memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
-        int len1 = decrypt_data(public_key, c->self_secret_key, nonce,
-                                packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
-                                length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
+            length <= MAX_DATA_SIZE) {
+        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
+            uint8_t nonce[crypto_box_NONCEBYTES];
+            uint8_t temp[MAX_DATA_SIZE];
+            memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
+            int len1 = decrypt_data(public_key, self_secret_key, nonce,
+                                    packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
+                                    length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
 
-        if (len1 == -1 || len1 == 0)
-            return -1;
+            if (len1 == -1 || len1 == 0)
+                return -1;
 
-        request_id[0] = temp[0];
-        --len1;
-        memcpy(data, temp + 1, len1);
-        return len1;
-    } else
-        return -1;
+            request_id[0] = temp[0];
+            --len1;
+            memcpy(data, temp + 1, len1);
+            return len1;
+        }
+    }
+
+    return -1;
 }
 
 void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object)
@@ -299,7 +300,7 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t data[MAX_DATA_SIZE];
             uint8_t number;
-            int len = handle_request(dht->c, public_key, data, &number, packet, length);
+            int len = handle_request(dht->c->self_public_key, dht->c->self_secret_key, public_key, data, &number, packet, length);
 
             if (len == -1 || len == 0)
                 return 1;
