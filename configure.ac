@@ -32,6 +32,18 @@ BUILD_TESTS="yes"
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
 LIBCHECK_FOUND="no"
+WANT_NACL="no"
+
+AC_ARG_ENABLE([nacl],
+    [AC_HELP_STRING([--enable-tests], [use nacl instead of libsodium (default: disabled)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            WANT_NACL="no"
+        elif test "x$enableval" = "xyes"; then
+            WANT_NACL="yes"
+        fi
+    ]
+)
 
 AC_ARG_ENABLE([tests],
     [AC_HELP_STRING([--disable-tests], [build unit tests (default: auto)]) ],
@@ -69,6 +81,8 @@ AC_ARG_ENABLE([dht-bootstrap-daemon],
 DEPSEARCH=
 LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
+NACL_SEARCH_HEADERS=
+NACL_SEARCH_LIBS=
 
 AC_ARG_WITH(dependency-search,
     AC_HELP_STRING([--with-dependency-search=DIR],
@@ -85,6 +99,24 @@ if test -n "$DEPSEARCH"; then
     LDFLAGS="$LDFLAGS -L$DEPSEARCH/lib"
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$DEPSEARCH/lib/pkgconfig
 fi
+
+AC_ARG_WITH(nacl-headers,
+        AC_HELP_STRING([--with-nacl-headers=DIR],
+                       [search for nacl<F2> header files in DIR]),
+        [
+            NACL_SEARCH_HEADERS="$withval"
+            AC_MSG_NOTICE([will search for nacl header files in $withval])
+        ]
+)
+
+AC_ARG_WITH(nacl-libs,
+        AC_HELP_STRING([--with-nacl-libs=DIR],
+                       [search for nacl libraries in DIR]),
+        [
+            NACL_SEARCH_LIBS="$withval"
+            AC_MSG_NOTICE([will search for nacl libraries in $withval])
+        ]
+)
 
 AC_ARG_WITH(libsodium-headers,
         AC_HELP_STRING([--with-libsodium-headers=DIR],
@@ -132,61 +164,128 @@ AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 AC_SUBST(EXTRA_LT_LDFLAGS)
 
 # Checks for libraries.
-LIBSODIUM_LIBS=
-LIBSODIUM_LDFLAGS=
-LDFLAGS_SAVE="$LDFLAGS"
-if test -n "$LIBSODIUM_SEARCH_LIBS"; then
-    LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS $LDFLAGS"
-    AC_CHECK_LIB(sodium, randombytes_random,
-        [
-            LIBSODIUM_LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS"
-            LIBSODIUM_LIBS="-lsodium"
-        ],
-        [
-            AC_MSG_ERROR([required library libsodium was not found in requested location $LIBSODIUM_SEARCH_LIBS])
-        ]
-    )
-else
-    AC_CHECK_LIB(sodium, randombytes_random,
-        [],
-        [
-            AC_MSG_ERROR([required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/])
-        ]
-    )
-fi
 
-LDFLAGS="$LDFLAGS_SAVE"
-AC_SUBST(LIBSODIUM_LIBS)
-AC_SUBST(LIBSODIUM_LDFLAGS)
+if test "x$WANT_NACL" = "xyes"; then
+    NACL_LIBS=
+    NACL_LDFLAGS=
+    LDFLAGS_SAVE="$LDFLAGS"
+    if test -n "$NACL_SEARCH_LIBS"; then
+        LDFLAGS="-L$NACL_SEARCH_LIBS $LDFLAGS"
+        AC_CHECK_LIB(nacl, random,
+            [
+                NACL_LDFLAGS="-L$NACL_SEARCH_LIBS"
+                NACL_LIBS="-lnacl"
+            ],
+            [
+                AC_MSG_ERROR([library nacl was not found in requested location $NACL_SEARCH_LIBS])
+            ]
+        )
+    else
+        AC_CHECK_LIB(nacl, random,
+            [],
+            [
+                AC_MSG_ERROR([you enabled nacl support, but library nacl was not found on your system])
+            ]
+        )
+    fi
+
+    if (test -f "$NACL_SEARCH_LIBS/cpucycles.o") &&
+       (test -f "$NACL_SEARCH_LIBS/randombytes.o"); then
+        NACL_LIBS="$NACL_LIBS $NACL_SEARCH_LIBS/cpucycles.o $NACL_SEARCH_LIBS/randombytes.o"
+    else
+        AC_MSG_ERROR([nacl weirdness: required object files cpucycles.o randombytes.o not found])
+    fi
+
+    LDFLAGS="$LDFLAGS_SAVE"
+    AC_SUBST(NACL_LIBS)
+    AC_SUBST(NACL_LDFLAGS)
+else
+    LIBSODIUM_LIBS=
+    LIBSODIUM_LDFLAGS=
+    LDFLAGS_SAVE="$LDFLAGS"
+    if test -n "$LIBSODIUM_SEARCH_LIBS"; then
+        LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS $LDFLAGS"
+        AC_CHECK_LIB(sodium, randombytes_random,
+            [
+                LIBSODIUM_LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS"
+                LIBSODIUM_LIBS="-lsodium"
+            ],
+            [
+                AC_MSG_ERROR([required library libsodium was not found in requested location $LIBSODIUM_SEARCH_LIBS])
+            ]
+        )
+    else
+        AC_CHECK_LIB(sodium, randombytes_random,
+            [],
+            [
+                AC_MSG_ERROR([required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/])
+            ]
+        )
+    fi
+
+    LDFLAGS="$LDFLAGS_SAVE"
+    AC_SUBST(LIBSODIUM_LIBS)
+    AC_SUBST(LIBSODIUM_LDFLAGS)
+fi
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
 
-LIBSODIUM_CFLAGS=
-CFLAGS_SAVE="$CFLAGS"
-CPPFLAGS_SAVE="$CPPFLAGS"
-if test -n "$LIBSODIUM_SEARCH_HEADERS"; then
-    CFLAGS="-I$LIBSODIUM_SEARCH_HEADERS $CFLAGS"
-    CPPFLAGS="-I$LIBSODIUM_SEARCH_HEADERS $CPPFLAGS"
-    AC_CHECK_HEADER(sodium.h,
-        [
-            LIBSODIUM_CFLAGS="-I$LIBSODIUM_SEARCH_HEADERS"
-        ],
-        [
-            AC_MSG_ERROR([header files for required library libsodium was not found in requested location $LIBSODIUM_SEARCH_HEADERS])
-        ]
-    )
+
+if test "x$WANT_NACL" = "xyes"; then
+    NACL_CFLAGS=
+    CFLAGS_SAVE="$CFLAGS"
+    CPPFLAGS_SAVE="$CPPFLAGS"
+    if test -n "$NACL_SEARCH_HEADERS"; then
+        CFLAGS="-I$NACL_SEARCH_HEADERS $CFLAGS"
+        CPPFLAGS="-I$NACL_SEARCH_HEADERS $CPPFLAGS"
+        AC_CHECK_HEADER(crypto_box.h,
+            [
+                NACL_CFLAGS="-I$NACL_SEARCH_HEADERS"
+            ],
+            [
+                AC_MSG_ERROR([header files for library nacl were not found in requested location $NACL_SEARCH_HEADERS])
+            ]
+        )
+    else
+        AC_CHECK_HEADER(crypto_box.h,
+            [],
+            [
+                AC_MSG_ERROR([you enabled nacl support, but nacl header files were not found on your system])
+            ]
+        )
+    fi
+    CFLAGS="$CFLAGS_SAVE"
+    CPPFLAGS="$CPPFLAGS_SAVE"
+    AC_SUBST(NACL_CFLAGS)
+    AC_DEFINE([VANILLA_NACL], [1], [use nacl instead of libsodium])
 else
-    AC_CHECK_HEADER(sodium.h,
-        [],
-        [
-            AC_MSG_ERROR([header files for required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/])
-        ]
-    )
+    LIBSODIUM_CFLAGS=
+    CFLAGS_SAVE="$CFLAGS"
+    CPPFLAGS_SAVE="$CPPFLAGS"
+    if test -n "$LIBSODIUM_SEARCH_HEADERS"; then
+        CFLAGS="-I$LIBSODIUM_SEARCH_HEADERS $CFLAGS"
+        CPPFLAGS="-I$LIBSODIUM_SEARCH_HEADERS $CPPFLAGS"
+        AC_CHECK_HEADER(sodium.h,
+            [
+                LIBSODIUM_CFLAGS="-I$LIBSODIUM_SEARCH_HEADERS"
+            ],
+            [
+                AC_MSG_ERROR([header files for required library libsodium were not found in requested location $LIBSODIUM_SEARCH_HEADERS])
+            ]
+        )
+    else
+        AC_CHECK_HEADER(sodium.h,
+            [],
+            [
+                AC_MSG_ERROR([header files for required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/])
+            ]
+        )
+    fi
+    CFLAGS="$CFLAGS_SAVE"
+    CPPFLAGS="$CPPFLAGS_SAVE"
+    AC_SUBST(LIBSODIUM_CFLAGS)
 fi
-CFLAGS="$CFLAGS_SAVE"
-CPPFLAGS="$CPPFLAGS_SAVE"
-AC_SUBST(LIBSODIUM_CFLAGS)
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -201,7 +300,6 @@ AC_TYPE_UINT8_T
 
 # Checks for library functions.
 AC_FUNC_FORK
-AC_FUNC_REALLOC
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
 
 # pkg-config based tests

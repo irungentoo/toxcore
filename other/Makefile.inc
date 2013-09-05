@@ -5,11 +5,14 @@ DHT_bootstrap_SOURCES = ../other/DHT_bootstrap.c \
                         ../toxcore/friend_requests.h
 
 DHT_bootstrap_CFLAGS = -I$(top_srcdir)/other \
-                        $(LIBSODIUM_CFLAGS)
+                        $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS)
 
 DHT_bootstrap_LDADD =   $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
 EXTRA_DIST +=           $(top_srcdir)/other/DHTservers \

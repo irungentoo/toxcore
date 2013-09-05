@@ -29,10 +29,13 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
-                        $(LIBSODIUM_CFLAGS)
+                        $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS)
 
 libtoxcore_la_LDFLAGS = $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
                         $(WINSOCK2_LIBS)
 
-libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS)
+libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS) \
+                        $(NAC_LIBS)

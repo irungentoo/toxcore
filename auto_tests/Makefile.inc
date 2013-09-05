@@ -9,23 +9,29 @@ messenger_autotest_SOURCES = \
 
 messenger_autotest_CFLAGS = \
                         $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS) \
                         $(CHECK_CFLAGS)
 
 messenger_autotest_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_LIBS) \
                         $(CHECK_LIBS)
 
 
 crypto_test_SOURCES =   ../auto_tests/crypto_test.c
 
 crypto_test_CFLAGS =    $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS) \
                         $(CHECK_CFLAGS)
 
 crypto_test_LDADD =     $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_LIBS) \
                         $(CHECK_LIBS)
 
 endif

@@ -28,6 +28,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../toxcore/network.h"
 #include "../toxcore/Lossless_UDP.h"
 
