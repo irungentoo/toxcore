@@ -110,6 +110,8 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     _retu->_time_elapsed = 0;        /* In seconds */
 
     _retu->_ext_header = NULL;       /* When needed allocate */
+    _retu->_exthdr_framerate = -1;
+    _retu->_exthdr_resolution = -1;
 
     ALLOCATOR_S ( _retu->_csrc, uint32_t )
     _retu->_csrc[0] = _retu->_ssrc;  /* Set my ssrc to the list receive */
@@ -118,6 +120,12 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     _retu->_prefix = NULL;
 
     _retu->_multi_session = _multi_session;
+
+    /* Initial */
+    _retu->_current_framerate = 0;
+
+
+    _retu->_oldest_msg = _retu->_last_msg = NULL;
     /*
      *
      */
@@ -146,18 +154,18 @@ int rtp_terminate_session ( rtp_session_t* _session )
                 return SUCCESS;
 }
 
-uint16_t rtp_get_resolution_marking_height ( rtp_ext_header_t* _header )
+uint16_t rtp_get_resolution_marking_height ( rtp_ext_header_t* _header, uint32_t _position )
 {
-    if ( _header->_ext_type == RTP_EXT_TYPE_RESOLUTION )
-        return _header->_hd_ext[_header->_ext_len - 1];
+    if ( _header->_ext_type & RTP_EXT_TYPE_RESOLUTION )
+        return _header->_hd_ext[_position];
     else
         return 0;
 }
 
-uint16_t rtp_get_resolution_marking_width ( rtp_ext_header_t* _header )
+uint16_t rtp_get_resolution_marking_width ( rtp_ext_header_t* _header, uint32_t _position )
 {
-    if ( _header->_ext_type == RTP_EXT_TYPE_RESOLUTION )
-        return ( _header->_hd_ext[_header->_ext_len - 1] >> 16 );
+    if ( _header->_ext_type & RTP_EXT_TYPE_RESOLUTION )
+        return ( _header->_hd_ext[_position] >> 16 );
     else
         return 0;
 }
@@ -385,10 +393,6 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
         return NULL;
     }
 
-    if ( _session && !_session->_multi_session && rtp_register_msg(_session, _retu) < 0 ){
-        return NULL;
-    }
-
     _retu->_length = _length - _retu->_header->_length;
 
     uint16_t _from_pos = _retu->_header->_length;
@@ -408,60 +412,70 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
 
     _retu->_next = NULL;
 
+
+    if ( _session && !_session->_multi_session && rtp_check_late_message(_session, _retu) < 0 ){
+        rtp_register_msg(_session, _retu);
+    }
+
     return _retu;
 }
 
-int rtp_register_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
+int rtp_check_late_message (rtp_session_t* _session, rtp_msg_t* _msg)
 {
     /*
-     * Check Sequence number. If this new msg has lesser number then expected drop it return
-     * NULL and add stats _packet_loss into _session. RTP does not specify what you do when the packet is lost.
-     * You may for example play previous packet, show black screen etc.
+     * Check Sequence number. If this new msg has lesser number then the _session->_last_sequence_number
+     * it shows that the message came in late
      */
-
-
     if ( _msg->_header->_sequence_number < _session->_last_sequence_number &&
          _msg->_header->_timestamp < _session->_current_timestamp
        ) {
-
-        /* Just to check if the sequence number reset */
-
-        _session->_packet_loss++;
-
-        free ( _msg->_header );
-        free ( _msg );
-
-#ifdef _USE_ERRORS
-        t_perror ( RTP_ERROR_PACKET_DROPED );
-#endif /* _USE_ERRORS */
-
-        return FAILURE; /* Drop the packet. You can check if the packet dropped by checking _packet_loss increment. */
-
+        return SUCCESS; /* Drop the packet. You can check if the packet dropped by checking _packet_loss increment. */
     }
+    return FAILURE;
+}
 
+void rtp_register_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
+{
     _session->_last_sequence_number = _msg->_header->_sequence_number;
     _session->_current_timestamp = _msg->_header->_timestamp;
-
-    return SUCCESS;
 }
 
 
 int rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint16_t _height )
 {
-    if ( ! ( _session->_ext_header ) ) {
+    if ( !_session )
+        return FAILURE;
+
+    rtp_ext_header_t* _ext_header = _session->_ext_header;
+    _session->_exthdr_resolution = 0;
+
+    if ( ! ( _ext_header ) ) {
         ALLOCATOR_S ( _session->_ext_header, rtp_ext_header_t )
         _session->_extension = 1;
-        _session->_ext_header->_ext_len = 0;
+        _session->_ext_header->_ext_len = 1;
+        _ext_header = _session->_ext_header;
         ALLOCATOR_S ( _session->_ext_header->_hd_ext, uint32_t )
-    } else {
-        ADD_ALLOCATE ( _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len )
+    } else { /* If there is need for more headers this will be needed to change */
+        if ( !(_ext_header->_ext_type & RTP_EXT_TYPE_RESOLUTION) ){
+            uint32_t _exthdr_framerate = _ext_header->_hd_ext[_session->_exthdr_framerate];
+            /* it's position is at 2nd place by default */
+            _session->_exthdr_framerate ++;
+
+            /* Allocate the value */
+            ADD_ALLOCATE ( _ext_header->_hd_ext, _ext_header->_ext_len )
+
+            /* Update length */
+            _ext_header->_ext_len++;
+
+            /* Reset other values */
+            _ext_header->_hd_ext[_session->_exthdr_framerate] = _exthdr_framerate;
+        }
     }
 
-    _session->_ext_header->_ext_len++; /* Just add one */
-    _session->_ext_header->_ext_type = RTP_EXT_TYPE_RESOLUTION;
+    /* Add flag */
+    _ext_header->_ext_type |= RTP_EXT_TYPE_RESOLUTION;
 
-
-    _session->_ext_header->_hd_ext[_session->_ext_header->_ext_len - 1] = _width << 16 | ( uint32_t ) _height;
+    _ext_header->_hd_ext[_session->_exthdr_resolution] = _width << 16 | ( uint32_t ) _height;
 
     return SUCCESS;
 }
@@ -470,25 +484,126 @@ int rtp_remove_resolution_marking ( rtp_session_t* _session )
 {
     if ( _session->_extension == 0 || ! ( _session->_ext_header ) ) {
 #ifdef _USE_ERRORS
-        t_perror ( RTP_ERROR_PAYLOAD_INVALID );
+        t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
 #endif /* _USE_ERRORS */
         return FAILURE;
     }
 
-    if ( _session->_ext_header->_ext_type != RTP_EXT_TYPE_RESOLUTION ) {
+    if ( !( _session->_ext_header->_ext_type & RTP_EXT_TYPE_RESOLUTION ) ) {
 #ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
 #endif /* _USE_ERRORS */
         return FAILURE;
     }
 
-    DEALLOCATOR ( _session->_ext_header->_hd_ext )
-    DEALLOCATOR ( _session->_ext_header )
+    _session->_ext_header->_ext_type &= ~RTP_EXT_TYPE_RESOLUTION; /* Remove the flag */
+    _session->_exthdr_resolution = -1; /* Remove identifier */
 
-    _session->_ext_header = NULL; /* It's very important */
-    _session->_extension = 0;
+    /* Check if extension is empty */
+    if ( _session->_ext_header->_ext_type == 0 ){
+
+        DEALLOCATOR ( _session->_ext_header->_hd_ext )
+        DEALLOCATOR ( _session->_ext_header )
+
+        _session->_ext_header = NULL; /* It's very important */
+        _session->_extension = 0;
+
+    } else {
+        _session->_ext_header->_ext_len --;
+
+        /* this will also be needed to change if there are more than 2 headers */
+        if ( _session->_ext_header->_ext_type & RTP_EXT_TYPE_FRAMERATE ){
+            memcpy(_session->_ext_header->_hd_ext + 1, _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len);
+            _session->_exthdr_framerate = 0;
+            SET_ALLOCATE(_session->_ext_header->_hd_ext, _session->_ext_header->_ext_len);
+        }
+    }
 
     return SUCCESS;
+}
+
+int rtp_add_framerate_marking ( rtp_session_t* _session, uint32_t _value )
+{
+    if ( !_session )
+        return FAILURE;
+
+    rtp_ext_header_t* _ext_header = _session->_ext_header;
+    _session->_exthdr_framerate = 0;
+
+    if ( ! ( _ext_header ) ) {
+        ALLOCATOR_S ( _session->_ext_header, rtp_ext_header_t )
+        _session->_extension = 1;
+        _session->_ext_header->_ext_len = 1;
+        _ext_header = _session->_ext_header;
+        ALLOCATOR_S ( _session->_ext_header->_hd_ext, uint32_t )
+    } else { /* If there is need for more headers this will be needed to change */
+        if ( !(_ext_header->_ext_type & RTP_EXT_TYPE_FRAMERATE) ){
+            /* it's position is at 2nd place by default */
+            _session->_exthdr_framerate ++;
+
+            /* Allocate the value */
+            ADD_ALLOCATE ( _ext_header->_hd_ext, _ext_header->_ext_len )
+
+            /* Update length */
+            _ext_header->_ext_len++;
+        }
+    }
+
+    /* Add flag */
+    _ext_header->_ext_type |= RTP_EXT_TYPE_FRAMERATE;
+
+    _ext_header->_hd_ext[_session->_exthdr_framerate] = _value;
+
+    return SUCCESS;
+}
+
+
+int rtp_remove_framerate_marking ( rtp_session_t* _session )
+{
+    if ( _session->_extension == 0 || ! ( _session->_ext_header ) ) {
+#ifdef _USE_ERRORS
+        t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
+#endif /* _USE_ERRORS */
+        return FAILURE;
+    }
+
+    if ( !( _session->_ext_header->_ext_type & RTP_EXT_TYPE_FRAMERATE ) ) {
+#ifdef _USE_ERRORS
+        t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
+#endif /* _USE_ERRORS */
+        return FAILURE;
+    }
+
+    _session->_ext_header->_ext_type &= ~RTP_EXT_TYPE_FRAMERATE; /* Remove the flag */
+    _session->_exthdr_framerate = -1; /* Remove identifier */
+    _session->_ext_header->_ext_len --;
+
+    /* Check if extension is empty */
+    if ( _session->_ext_header->_ext_type == 0 ){
+
+        DEALLOCATOR ( _session->_ext_header->_hd_ext )
+        DEALLOCATOR ( _session->_ext_header )
+
+        _session->_ext_header = NULL; /* It's very important */
+        _session->_extension = 0;
+
+    } else if ( !_session->_ext_header->_ext_len ) {
+
+        /* this will also be needed to change if there are more than 2 headers */
+        SET_ALLOCATE(_session->_ext_header->_hd_ext, _session->_ext_header->_ext_len);
+
+    }
+
+    return SUCCESS;
+}
+
+uint32_t rtp_get_framerate_marking ( rtp_ext_header_t* _header )
+{
+    if ( _header->_ext_len == 1 ){
+        return _header->_hd_ext[0];
+    } else {
+        return _header->_hd_ext[1];
+    }
 }
 
 int rtp_set_prefix ( rtp_session_t* _session, uint8_t* _prefix, uint16_t _prefix_length )
