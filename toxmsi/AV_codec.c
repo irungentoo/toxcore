@@ -608,7 +608,6 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
 	    q->current_ts=next_ts;
 	} else {
 	    if(sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
-	    printf("packet lost %d %d\n",next_id, q->current_id);
 	    q->current_id=(q->current_id+1)%_MAX_SEQU_NUM;
 	    *success=2; /* tell the decoder the packet is lost */
 	    return NULL;
