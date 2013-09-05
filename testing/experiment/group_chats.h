@@ -76,7 +76,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  * Send a message to the group.
  *
  */
-uint32_t m_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
+uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
 
 /* Create a new group chat.
  *
@@ -93,6 +93,10 @@ Group_Chat *new_groupchat(Networking_Core *net);
  */
 void kill_groupchat(Group_Chat *chat);
 
+/*
+ * This is the main loop.
+ */
+void do_groupchat(Group_Chat *chat);
 
 /* if we receive a group chat packet we call this function so it can be handled.
     return 0 if packet is handled correctly.
@@ -100,7 +104,7 @@ void kill_groupchat(Group_Chat *chat);
 int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, uint32_t length);
 
 
-void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, int peernum);
+void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id);
 
 #ifdef __cplusplus
 }
