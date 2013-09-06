@@ -44,7 +44,7 @@
 #include "AV_codec.h"
 
 
-int display_received_frame(codec_state *cs)
+int display_received_frame(codec_state *cs, AVFrame *r_video_frame)
 {
     AVPicture pict;
     SDL_LockYUVOverlay(cs->video_picture.bmp);
@@ -57,7 +57,7 @@ int display_received_frame(codec_state *cs)
     pict.linesize[2] = cs->video_picture.bmp->pitches[1];
 
     //Convert the image into YUV format that SDL uses
-    sws_scale(cs->sws_SDL_r_ctx, (uint8_t const * const *)cs->r_video_frame->data, cs->r_video_frame->linesize, 0, cs->video_decoder_ctx->height, pict.data, pict.linesize );
+    sws_scale(cs->sws_SDL_r_ctx, (uint8_t const * const *)r_video_frame->data, r_video_frame->linesize, 0, cs->video_decoder_ctx->height, pict.data, pict.linesize );
 
     SDL_UnlockYUVOverlay(cs->video_picture.bmp);
     SDL_Rect rect;
@@ -215,7 +215,6 @@ int init_receive_audio(codec_state *cs)
         printf("opening audio decoder failed\n");
         return 0;
     }
-    cs->r_audio_frame=avcodec_alloc_frame();
     printf("init audio decoder successful\n");
     return 1;
 }
@@ -236,8 +235,6 @@ int init_receive_video(codec_state *cs)
         printf("opening video decoder failed\n");
         return 0;
     }
-    cs->webcam_frame=avcodec_alloc_frame();
-    cs->r_video_frame=avcodec_alloc_frame();
     printf("init video decoder successful\n");
     return 1;
 }
@@ -279,8 +276,6 @@ int init_send_video(codec_state *cs)
         printf("opening webcam decoder failed\n");
         return 0;
     }
-    cs->webcam_frame=avcodec_alloc_frame();
-    cs->s_video_frame=avcodec_alloc_frame();
 
     cs->video_encoder = avcodec_find_encoder(VIDEO_CODEC);
     if(!cs->video_encoder) {
@@ -314,13 +309,6 @@ int init_send_video(codec_state *cs)
         printf("opening video encoder failed\n");
         return 0;
     }
-    uint8_t *buffer;
-    int numBytes;
-    /* Determine required buffer size and allocate buffer */
-    numBytes=avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height);
-    buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
-    avpicture_fill((AVPicture *)cs->s_video_frame, buffer, PIX_FMT_YUV420P,cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
-    cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,cs->webcam_decoder_ctx->pix_fmt,cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
     printf("init video encoder successful\n");
     return 1;
 }
@@ -344,7 +332,6 @@ int init_send_audio(codec_state *cs)
         printf("opening microphone decoder failed\n");
         return 0;
     }
-    cs->microphone_frame=avcodec_alloc_frame();
 
     printf("init microphone decoder successful\n");
 
@@ -461,6 +448,21 @@ void *encode_video_thread(void *arg)
     int err;
     int got_packet;
     rtp_msg_t* s_video_msg;
+    int video_frame_finished;
+    AVFrame *s_video_frame;
+    AVFrame *webcam_frame;
+    s_video_frame=avcodec_alloc_frame();
+    webcam_frame=avcodec_alloc_frame();
+    AVPacket enc_video_packet;
+    
+    uint8_t *buffer;
+    int numBytes;
+    /* Determine required buffer size and allocate buffer */
+    numBytes=avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height);
+    buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
+    avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P,cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
+    cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,cs->webcam_decoder_ctx->pix_fmt,cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
+   
     
     while(1) {
         if(cs->quit||!cs->send_video)
@@ -475,29 +477,27 @@ void *encode_video_thread(void *arg)
                 continue;
             }
             if(packet->stream_index == cs->video_stream) {
-                if(avcodec_decode_video2(cs->webcam_decoder_ctx, cs->webcam_frame, &cs->video_frame_finished, packet)<0)
-                {
+                if(avcodec_decode_video2(cs->webcam_decoder_ctx, webcam_frame, &video_frame_finished, packet)<0) {
                     printf("couldn't decode\n");
                     continue;
                 }
                 av_free_packet(packet);
-                sws_scale(cs->sws_ctx,(uint8_t const * const *)cs->webcam_frame->data,cs->webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, cs->s_video_frame->data,cs->s_video_frame->linesize);
+                sws_scale(cs->sws_ctx,(uint8_t const * const *)webcam_frame->data,webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, s_video_frame->data,s_video_frame->linesize);
                 /* create a new I-frame every 60 frames */
                 ++p;
                 if(p==60) {
 
-                    cs->s_video_frame->pict_type=AV_PICTURE_TYPE_BI ;
+                    s_video_frame->pict_type=AV_PICTURE_TYPE_BI ;
                 } else if(p==61) {
-                    cs->s_video_frame->pict_type=AV_PICTURE_TYPE_I ;
+                    s_video_frame->pict_type=AV_PICTURE_TYPE_I ;
                     p=0;
                 }
                 else {
-                    cs->s_video_frame->pict_type=AV_PICTURE_TYPE_P ;
+                    s_video_frame->pict_type=AV_PICTURE_TYPE_P ;
                 }
 
-                if(cs->video_frame_finished) {
-
-                    err= avcodec_encode_video2(cs->video_encoder_ctx,&cs->enc_video_packet,cs->s_video_frame,&got_packet);
+                if(video_frame_finished) {
+                    err= avcodec_encode_video2(cs->video_encoder_ctx,&enc_video_packet,s_video_frame,&got_packet);
                     if(err<0) {
                         printf("could not encode video frame\n");
                         continue;
@@ -506,14 +506,15 @@ void *encode_video_thread(void *arg)
                         continue;
                     }
                     pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                    if(!cs->enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
-                    s_video_msg = rtp_msg_new ( cs->_rtp_video, cs->enc_video_packet.data, cs->enc_video_packet.size ) ;
+                    if(!enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
+		    printf("video packet size: %d\n",enc_video_packet.size);
+                    s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
                     if(!s_video_msg) {
                         printf("invalid message\n");
                     }
                     rtp_send_msg ( cs->_rtp_video, s_video_msg, cs->socket );
                     pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
-                    av_free_packet(&cs->enc_video_packet);
+                    av_free_packet(&enc_video_packet);
                 }
             }
             else {
@@ -523,8 +524,9 @@ void *encode_video_thread(void *arg)
     }
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);	
-    av_free(cs->webcam_frame);
-    av_free(cs->s_video_frame);
+    av_free(buffer);
+    av_free(webcam_frame);
+    av_free(s_video_frame);
     sws_freeContext(cs->sws_ctx);
     avcodec_close(cs->webcam_decoder_ctx);
     avcodec_close(cs->video_encoder_ctx);
@@ -630,33 +632,37 @@ void *decode_video_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
     cs->video_stream=0;
-    av_new_packet (&cs->dec_video_packet, 80000);
     rtp_msg_t* r_msg;
+    int dec_frame_finished;
+    AVFrame *r_video_frame;
+    r_video_frame=avcodec_alloc_frame();
+    AVPacket dec_video_packet;
+    av_new_packet (&dec_video_packet, 65536);
     while(1) {
         if(cs->quit||!cs->receive_video)
 	    break;
         r_msg = rtp_recv_msg ( cs->_rtp_video );
         if(r_msg) {
             if(handle_rtp_video_packet(cs,r_msg)) {
-                memcpy(cs->dec_video_packet.data,r_msg->_data,r_msg->_length);
-                cs->dec_video_packet.size=r_msg->_length;
-                avcodec_decode_video2(cs->video_decoder_ctx, cs->r_video_frame, &cs->dec_frame_finished, &cs->dec_video_packet);
-                if(cs->dec_frame_finished) {
-                    display_received_frame(cs);
-                    rtp_free_msg(cs->_rtp_video, r_msg);
+	      printf("video packet size: %d\n",r_msg->_length);
+                memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
+                dec_video_packet.size=r_msg->_length;
+                avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
+                if(dec_frame_finished) {
+                    display_received_frame(cs,r_video_frame);
                 }
                 else {
                     /* TODO: request the sender to create a new i-frame immediatly */
                     printf("freed video packet\n");
-                    rtp_free_msg(cs->_rtp_video, r_msg);
                 }
+                rtp_free_msg(cs->_rtp_video, r_msg);
             }
         }
         usleep(1000);
     }
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);	
-    av_free(cs->r_video_frame);
+    av_free(r_video_frame);
     avcodec_close(cs->video_decoder_ctx);
     pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
@@ -665,22 +671,29 @@ void *decode_video_thread(void *arg)
 void *decode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
-    av_new_packet (&cs->dec_audio_packet, 2000);
+    AVPacket dec_audio_packet;
+    av_new_packet (&dec_audio_packet, 2000);
     AVPacket *dec_audio_packet2;
     rtp_msg_t* r_msg;
     
     int frame_size=AUDIO_FRAME_SIZE;
     int data_size;
-
-    cs->dev = alcOpenDevice(NULL);
-    cs->ctx = alcCreateContext(cs->dev, NULL);
-    alcMakeContextCurrent(cs->ctx);
+    
+    AVFrame *r_audio_frame;
+    r_audio_frame=avcodec_alloc_frame();
+  
+    ALCdevice *dev;
+    ALCcontext *ctx;
+    ALuint source, *buffers;
+    dev = alcOpenDevice(NULL);
+    ctx = alcCreateContext(dev, NULL);
+    alcMakeContextCurrent(ctx);
     int openal_buffers=5;
 
-    cs->buffers=malloc(sizeof(ALuint)*openal_buffers);
-    alGenBuffers(openal_buffers, cs->buffers);
-    alGenSources((ALuint)1, &cs->source);
-    alSourcei(cs->source, AL_LOOPING, AL_FALSE);
+    buffers=malloc(sizeof(ALuint)*openal_buffers);
+    alGenBuffers(openal_buffers, buffers);
+    alGenSources((ALuint)1, &source);
+    alSourcei(source, AL_LOOPING, AL_FALSE);
     
     ALuint buffer;
     ALint val;
@@ -692,11 +705,11 @@ void *decode_audio_thread(void *arg)
         zeros[i]=0;
     }
     for(i=0; i<openal_buffers; ++i) {
-        alBufferData(cs->buffers[i], AL_FORMAT_MONO16, zeros, frame_size, 48000);
+        alBufferData(buffers[i], AL_FORMAT_MONO16, zeros, frame_size, 48000);
     }
 
-    alSourceQueueBuffers(cs->source, openal_buffers, cs->buffers);
-    alSourcePlay(cs->source);
+    alSourceQueueBuffers(source, openal_buffers, buffers);
+    alSourcePlay(source);
     if(alGetError() != AL_NO_ERROR) {
         fprintf(stderr, "Error starting audio\n");
         cs->quit=1;
@@ -705,6 +718,7 @@ void *decode_audio_thread(void *arg)
     struct jitter_buffer *j_buf=NULL;
     j_buf = create_queue(20);
     int success=0;
+    int dec_frame_finished;
         
     while(1) {
         if(cs->quit||!cs->receive_audio)
@@ -718,7 +732,7 @@ void *decode_audio_thread(void *arg)
         
 	/* pop a packet from the queue if there's an audio buffer available */
 	success=0;
-	alGetSourcei(cs->source, AL_BUFFERS_PROCESSED, &val);
+	alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
 	if(val > 0)
 	    r_msg=dequeue(j_buf,&success);
 	
@@ -728,30 +742,30 @@ void *decode_audio_thread(void *arg)
 	  if(success==2) {
 	      /* lost packets are not handled correctly yet */
 	  } else {
-	      memcpy(cs->dec_audio_packet.data,r_msg->_data,r_msg->_length-1);
-	      cs->dec_audio_packet.size=r_msg->_length-1;
+	      memcpy(dec_audio_packet.data,r_msg->_data,r_msg->_length-1);
+	      dec_audio_packet.size=r_msg->_length-1;
 	      rtp_free_msg(cs->_rtp_audio, r_msg); 
-	      avcodec_decode_audio4(cs->audio_decoder_ctx, cs->r_audio_frame, &cs->dec_frame_finished, &cs->dec_audio_packet);
-	      if(cs->dec_frame_finished) {	 
-		  alGetSourcei(cs->source, AL_BUFFERS_PROCESSED, &val);
+	      avcodec_decode_audio4(cs->audio_decoder_ctx, r_audio_frame, &dec_frame_finished, &dec_audio_packet);
+	      if(dec_frame_finished) {	 
+		  alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
 		  if(val <= 0)
 		      continue;
-		  alSourceUnqueueBuffers(cs->source, 1, &buffer);
-		  data_size = av_samples_get_buffer_size(NULL,cs->r_audio_frame->channels, cs->r_audio_frame->nb_samples, cs->audio_decoder_ctx->sample_fmt, 1);
-		  alBufferData(buffer, AL_FORMAT_MONO16, cs->r_audio_frame->data[0], data_size, 48000);
+		  alSourceUnqueueBuffers(source, 1, &buffer);
+		  data_size = av_samples_get_buffer_size(NULL,r_audio_frame->channels, r_audio_frame->nb_samples, cs->audio_decoder_ctx->sample_fmt, 1);
+		  alBufferData(buffer, AL_FORMAT_MONO16, r_audio_frame->data[0], data_size, 48000);
 		  int error=alGetError();
 		  if(error != AL_NO_ERROR) {
 		      fprintf(stderr, "Error setting buffer %d\n",error);
 		      break;
 		  }
-		  alSourceQueueBuffers(cs->source, 1, &buffer);
+		  alSourceQueueBuffers(source, 1, &buffer);
 		  if(alGetError() != AL_NO_ERROR) {
 		      fprintf(stderr, "error: could not buffer audio\n");
 		      break;
 		  }
-		  alGetSourcei(cs->source, AL_SOURCE_STATE, &val);
+		  alGetSourcei(source, AL_SOURCE_STATE, &val);
 		  if(val != AL_PLAYING)
-		      alSourcePlay(cs->source);
+		      alSourcePlay(source);
 	      
 	      }
 	  }
@@ -761,15 +775,15 @@ void *decode_audio_thread(void *arg)
     }
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);	
-    av_free(cs->r_audio_frame);
+    av_free(r_audio_frame);
     avcodec_close(cs->audio_decoder_ctx);
 
     /* clean up openal */
-    alDeleteSources(1, &cs->source);
-    alDeleteBuffers(openal_buffers, cs->buffers);
+    alDeleteSources(1, &source);
+    alDeleteBuffers(openal_buffers, buffers);
     alcMakeContextCurrent(NULL);
-    alcDestroyContext(cs->ctx);
-    alcCloseDevice(cs->dev);
+    alcDestroyContext(ctx);
+    alcCloseDevice(dev);
     pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
 }

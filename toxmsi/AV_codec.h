@@ -91,7 +91,6 @@ typedef struct
 
 typedef struct
 {
-
     uint8_t send_audio;
     uint8_t receive_audio;
     uint8_t send_video;
@@ -102,53 +101,33 @@ typedef struct
     uint8_t support_receive_audio;
     uint8_t support_receive_video;
 
-
+    /* video encoding */
     AVInputFormat   	*video_input_format;
     AVFormatContext 	*video_format_ctx;
-    uint8_t             	 video_stream;
-
-    AVInputFormat   	*audio_input_format;
-    AVFormatContext 	*audio_format_ctx;
-    uint8_t              	audio_stream;
-
+    uint8_t              video_stream;
     AVCodecContext  	*webcam_decoder_ctx;
     AVCodec         	*webcam_decoder;
-
     AVCodecContext  	*video_encoder_ctx;
     AVCodec         	*video_encoder;
-
+    
+    /* video decoding */
     AVCodecContext  	*video_decoder_ctx;
     AVCodec         	*video_decoder;
-
+    
+    /* audio encoding */
+    AVInputFormat   	*audio_input_format;
+    AVFormatContext 	*audio_format_ctx;
+    uint8_t              audio_stream;
     AVCodecContext  	*microphone_decoder_ctx;
     AVCodec         	*microphone_decoder;
-
     AVCodecContext  	*audio_encoder_ctx;
     AVCodec         	*audio_encoder;
 
+    /* audio decoding */
     AVCodecContext  	*audio_decoder_ctx;
     AVCodec         	*audio_decoder;
-
-    AVFrame         	*enc_audio_frame;
-    AVFrame         	*r_audio_frame;
-    AVFrame         	*microphone_frame;
-
-    AVFrame         	*webcam_frame;
-    AVFrame         	*s_video_frame;
-    AVFrame         	*r_video_frame;
-
-    AVPacket        	enc_video_packet;
-    AVPacket        	enc_audio_packet;
-
-    AVPacket        	dec_video_packet;
-    AVPacket        	dec_audio_packet;
-
+    
     uint8_t req_video_refresh;
-
-
-    int             	audio_frame_finished;
-    int 		video_frame_finished;
-    int 		dec_frame_finished;
 
     /* context for converting image format to something SDL can use*/
     struct SwsContext 	*sws_SDL_r_ctx;
@@ -159,34 +138,24 @@ typedef struct
     /* rendered video picture, ready for display */
     VideoPicture	video_picture;
 
-    //SDL_Thread      	*parse_tid;
-
-    rtp_session_t* 	_m_session;
-    rtp_session_t* _rtp_audio, *_rtp_video;
+    rtp_session_t* _rtp_video;
+    rtp_session_t* _rtp_audio;
     int socket;
-    
-    uint8_t             quit;
-    uint8_t 		SDL_initialised;
-    SDL_Event       SDL_event;
 
     pthread_t encode_audio_thread;
     pthread_t encode_video_thread;
     
     pthread_t decode_audio_thread;
     pthread_t decode_video_thread;
+    
     pthread_mutex_t rtp_msg_mutex_lock;
     pthread_mutex_t avcodec_mutex_lock;
-
-    ALCdevice *dev;
-    ALCcontext *ctx;
-    ALuint source, *buffers;
-    ALuint buf;
-    ALint val;
-
-
+    
+    uint8_t             quit;
+    SDL_Event       	SDL_event;
 } codec_state;
 
-int display_received_frame(codec_state *cs);
+int display_received_frame(codec_state *cs, AVFrame *r_video_frame);
 int init_receive_audio(codec_state *cs);
 int init_decoder(codec_state *cs);
 int init_send_video(codec_state *cs);
