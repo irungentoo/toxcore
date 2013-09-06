@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 // Hi-resolution timer
 #ifdef WIN32
 #ifndef WINVER

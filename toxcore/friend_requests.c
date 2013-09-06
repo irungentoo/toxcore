@@ -21,6 +21,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "friend_requests.h"
 
 /* Try to send a friend request to peer with public_key.

@@ -21,6 +21,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "Messenger.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))

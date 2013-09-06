@@ -21,6 +21,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "LAN_discovery.h"
 
 #define MAX_INTERFACES 16

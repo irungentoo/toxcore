@@ -21,6 +21,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "network.h"
 
 /*  return current UNIX time in microseconds (us). */
