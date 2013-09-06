@@ -5,6 +5,10 @@
  * Copyright 2013  plutooo
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <time.h>
 #include <stdint.h>
 #include <stdbool.h>

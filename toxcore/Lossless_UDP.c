@@ -26,6 +26,10 @@
  * There are a couple of useless variables to get rid of.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "Lossless_UDP.h"
 
 

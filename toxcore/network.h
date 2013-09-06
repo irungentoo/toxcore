@@ -39,8 +39,6 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#undef VANILLA_NACL /* Make sure on Windows we use libsodium. */
-
 #else // Linux includes
 
 #include <fcntl.h>

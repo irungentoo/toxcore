@@ -23,6 +23,10 @@
 
 /*----------------------------------------------------------------------------------*/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "DHT.h"
 #include "ping.h"
 #include "misc_tools.h"

@@ -24,6 +24,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "net_crypto.h"
 
 #define CONN_NO_CONNECTION 0

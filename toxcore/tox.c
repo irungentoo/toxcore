@@ -21,6 +21,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "Messenger.h"
 /*
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.

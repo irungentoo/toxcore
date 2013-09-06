@@ -27,6 +27,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 //#include "../core/network.h"
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
