@@ -174,8 +174,8 @@ typedef struct
     
     pthread_t decode_audio_thread;
     pthread_t decode_video_thread;
-    pthread_t decode_thread;
     pthread_mutex_t rtp_msg_mutex_lock;
+    pthread_mutex_t avcodec_mutex_lock;
 
     ALCdevice *dev;
     ALCcontext *ctx;
@@ -187,8 +187,6 @@ typedef struct
 } codec_state;
 
 int display_received_frame(codec_state *cs);
-int decode_video_frame(codec_state *cs);
-int encode_audio_frame(codec_state *cs);
 int init_receive_audio(codec_state *cs);
 int init_decoder(codec_state *cs);
 int init_send_video(codec_state *cs);

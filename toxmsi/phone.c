@@ -400,10 +400,15 @@ MCBTYPE callback_call_ended ( MCBARGS )
     printf ( "On call ended (exiting)!\n" );
 
     cs->quit=1;
-    pthread_join(cs->encode_video_thread,NULL);
-    pthread_join(cs->encode_audio_thread,NULL);
-    pthread_join(cs->decode_thread,NULL);
-
+    if(cs->encode_video_thread)
+	pthread_join(cs->encode_video_thread,NULL);
+    if(cs->encode_audio_thread)
+	pthread_join(cs->encode_audio_thread,NULL);
+    if(cs->decode_video_thread)
+	pthread_join(cs->decode_video_thread,NULL);
+    if(cs->decode_audio_thread)
+	pthread_join(cs->decode_audio_thread,NULL);
+    printf("All media threads have successfully shut down\n");
     pthread_mutex_destroy ( &_mutex );
     exit ( SUCCESS );
     return SUCCESS;

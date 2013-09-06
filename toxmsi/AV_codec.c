@@ -69,22 +69,130 @@ int display_received_frame(codec_state *cs)
     return 1;
 }
 
+struct jitter_buffer {
+    rtp_msg_t **queue;
+    uint16_t capacity;
+    uint16_t size;
+    uint16_t front;
+    uint16_t rear;
+    uint8_t queue_ready;
+    uint16_t current_id;
+    uint32_t current_ts;
+    uint8_t id_set;
+};
 
-int decode_video_frame(codec_state *cs)
+struct jitter_buffer * create_queue(int capacity)
 {
-    avcodec_decode_video2(cs->video_decoder_ctx, cs->r_video_frame, &cs->dec_frame_finished, &cs->dec_video_packet);
-    return 1;
+    struct jitter_buffer * q;
+    q = (struct jitter_buffer*)malloc(sizeof(struct jitter_buffer));
+    q->queue = (rtp_msg_t **)malloc(sizeof(rtp_msg_t)*capacity);
+    int i=0;
+    for(i=0;i<capacity;++i) {
+	q->queue[i]=NULL;
+    }
+    q->size=0;
+    q->capacity = capacity;
+    q->front=0;
+    q->rear=-1;
+    q->queue_ready=0;
+    q->current_id=0;
+    q->current_ts=0;
+    q->id_set=0;
+    return q;  
 }
 
-
-int encode_audio_frame(codec_state *cs)
+/* returns 1 if 'a' has a higher sequence number than 'b' */
+uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a,uint32_t ts_b)
 {
-    int got_packet_ptr=0;
-    avcodec_encode_audio2(cs->audio_encoder_ctx,&cs->enc_audio_packet,cs->enc_audio_frame,&got_packet_ptr);
-    if(!got_packet_ptr) {
-        printf("Could not encode audio packet\n");
+    /* should be stable enough */
+    return (sn_a>sn_b);//||ts_a>ts_b);
+}
+
+/* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
+rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
+{
+    if(q->size==0||q->queue_ready==0)
+    {
+	q->queue_ready=0;
+	*success=0;
+	return NULL;
     }
+    int front=q->front;
+    
+    if(q->id_set==0) {
+	q->current_id=q->queue[front]->_header->_sequence_number;
+	q->current_ts=q->queue[front]->_header->_timestamp;
+        q->id_set=1;
+    } else {
+	int next_id = q->queue[front]->_header->_sequence_number;
+	int next_ts = q->queue[front]->_header->_timestamp;
+	/* if this packet is indeed the expected packet */
+	if(next_id==(q->current_id+1)%_MAX_SEQU_NUM) {
+	    q->current_id=next_id;
+	    q->current_ts=next_ts;
+	    printf("nextts: %d\n",next_ts);
+	} else {
+	    if(sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
+	    q->current_id=(q->current_id+1)%_MAX_SEQU_NUM;
+	    *success=2; /* tell the decoder the packet is lost */
+	    return NULL;
+	    } else {
+	      /* packet too old */
+	      printf("packet too old\n");
+	      *success=0;
+	      return NULL;
+	    }
+	}
+    }
+    
+    q->size--;
+    q->front++;
+    if(q->front==q->capacity)
+	q->front=0;
+    *success=1;
+    q->current_id=q->queue[front]->_header->_sequence_number;
+    q->current_ts=q->queue[front]->_header->_timestamp;
+    return q->queue[front];
+}
+
+int queue(struct jitter_buffer *q, rtp_msg_t *pk)
+{
+    if(q->size==q->capacity)
+	return 0;
+
+    if(q->size>8)
+	q->queue_ready=1;
+
+    ++q->size;
+    ++q->rear;
+    if(q->rear==q->capacity)
+	q->rear=0;
+    q->queue[q->rear]=pk;
+
+    int a;
+    int b;
+    int j;
+    a=q->rear;
+    for(j=0;j<q->size-1;++j) {
+	b=a-1;
+	if(b<0)
+	    b+=q->capacity;
+	if(sequence_number_older(q->queue[b]->_header->_sequence_number,q->queue[a]->_header->_sequence_number,q->queue[b]->_header->_timestamp,q->queue[a]->_header->_timestamp)) {
+		rtp_msg_t *temp;
+		temp=q->queue[a];
+		q->queue[a]=q->queue[b];
+		q->queue[b]=temp;
+		printf("had to swap\n");
+	} else {
+	    break;
+	}
+	a-=1;
+	if(a<0)
+	    a+=q->capacity;
+    }
+    if(pk)
     return 1;
+    return 0;
 }
 
 int init_receive_audio(codec_state *cs)
@@ -103,15 +211,10 @@ int init_receive_audio(codec_state *cs)
     cs->audio_decoder_ctx->channels=1;
     cs->audio_decoder_ctx->channel_layout=av_get_default_channel_layout(1);
     cs->audio_decoder_ctx->request_sample_fmt=AV_SAMPLE_FMT_S16;
-   // av_opt_set(cs->audio_decoder_ctx->priv_data, "complexity", "10", 0);
-    //AVDictionary *options = NULL;
-   // av_dict_set(&options, "complexity", "10", 0);
     if(avcodec_open2(cs->audio_decoder_ctx,cs->audio_decoder,NULL)<0) {
-        //av_dict_free(&options);
         printf("opening audio decoder failed\n");
         return 0;
     }
-    //av_dict_free(&options);
     cs->r_audio_frame=avcodec_alloc_frame();
     printf("init audio decoder successful\n");
     return 1;
@@ -267,7 +370,6 @@ int init_send_audio(codec_state *cs)
         printf("opening audio encoder failed\n");
         return 0;
     }
-    cs->enc_audio_frame=avcodec_alloc_frame();
     printf("init audio encoder successful\n");
 
     if(cs->audio_encoder_ctx->frame_size!=AUDIO_FRAME_SIZE)
@@ -302,7 +404,9 @@ int init_decoder(codec_state *cs)
 
     cs->receive_video=0;
     cs->receive_audio=0;
-
+    
+    pthread_mutex_init(&cs->avcodec_mutex_lock, NULL);
+    
     cs->support_receive_video=init_receive_video(cs);
     cs->support_receive_audio=init_receive_audio(cs);
     cs->receive_audio=1;
@@ -310,7 +414,6 @@ int init_decoder(codec_state *cs)
 
     return 1;
 }
-
 
 int video_encoder_refresh(codec_state *cs, int bps)
 {
@@ -360,7 +463,7 @@ void *encode_video_thread(void *arg)
     rtp_msg_t* s_video_msg;
     
     while(1) {
-        if(cs->quit)
+        if(cs->quit||!cs->send_video)
             break;
         rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
         if(cs->send_video) {
@@ -418,11 +521,14 @@ void *encode_video_thread(void *arg)
             }
         }
     }
+    /* clean up codecs */
+    pthread_mutex_lock(&cs->avcodec_mutex_lock);	
     av_free(cs->webcam_frame);
     av_free(cs->s_video_frame);
     sws_freeContext(cs->sws_ctx);
     avcodec_close(cs->webcam_decoder_ctx);
     avcodec_close(cs->video_encoder_ctx);
+    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
 }
 
@@ -430,59 +536,68 @@ void *encode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
     AVPacket pkt1, *packet = &pkt1;
+    int got_packet_ptr;
     uint8_t samples_buffer[4096];
     int samples_buffer_size=0;
-    int got_packet_ptr=0;
+    
     int frame_size=cs->audio_encoder_ctx->frame_size;
     if(frame_size!=AUDIO_FRAME_SIZE)
-        printf("expect audio issues...\n");
+        printf("unexpected frame size! expect audio issues...\n");
     int buffer_full;
     rtp_msg_t* s_audio_msg;
+    AVFrame *enc_audio_frame;
+    enc_audio_frame=avcodec_alloc_frame();
+    int audio_frame_finished;
+     AVPacket enc_audio_packet;
     
     while(1) {
-        if(cs->quit)
+        if(cs->quit||!cs->send_audio)
             break;
-        if(cs->send_audio) {
-            if(av_read_frame(cs->audio_format_ctx, packet) < 0) {
-                if(cs->audio_format_ctx->pb->error != 0)
-                    break;
-            }
-            if(packet->size>frame_size*2)
-                printf("error: audio packet too large\n");
-            if(packet->stream_index == cs->audio_stream) {
-                int len=avcodec_decode_audio4(cs->microphone_decoder_ctx, cs->enc_audio_frame, &cs->audio_frame_finished, packet);
-                if(!cs->audio_frame_finished) {
-                    printf("error: cannot decode microphone stream\n");
-                } else {
-                    memcpy(&samples_buffer[samples_buffer_size],cs->enc_audio_frame->data[0],len);
-                    samples_buffer_size+=len;
-                    buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
-                    av_free_packet(packet);
-                    while(buffer_full) {
-                        cs->enc_audio_frame->nb_samples=frame_size;
-                        avcodec_fill_audio_frame(cs->enc_audio_frame,1,AV_SAMPLE_FMT_S16,&samples_buffer[0],frame_size*2,0);
-                        memcpy(&samples_buffer[0],&samples_buffer[frame_size*2],(samples_buffer_size-frame_size*2));
-                        samples_buffer_size-=frame_size*2;
-                        avcodec_encode_audio2(cs->audio_encoder_ctx,&cs->enc_audio_packet,cs->enc_audio_frame,&got_packet_ptr);
-                        if(!got_packet_ptr)
-                            printf("Could not encode audio packet\n");
-                        pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                        rtp_set_payload_type(cs->_rtp_audio,96);
-                        s_audio_msg = rtp_msg_new ( cs->_rtp_audio, cs->enc_audio_packet.data, cs->enc_audio_packet.size ) ;
-			rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
-                        pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
-                        buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
-                    }
-                    av_free_packet(&cs->enc_audio_packet);
-                }
-            } else {
-                av_free_packet(packet);
-            }
-        }
+	if(av_read_frame(cs->audio_format_ctx, packet) < 0) {
+	    if(cs->audio_format_ctx->pb->error != 0)
+		break;
+	}
+	if(packet->size>frame_size*2)
+	    printf("error: audio packet too large\n");
+	if(packet->stream_index == cs->audio_stream) {
+	    int len=avcodec_decode_audio4(cs->microphone_decoder_ctx, enc_audio_frame, &audio_frame_finished, packet);
+	    if(!audio_frame_finished) {
+		printf("error: cannot decode microphone stream\n");
+	    } else {
+		memcpy(&samples_buffer[samples_buffer_size],enc_audio_frame->data[0],len);
+		samples_buffer_size+=len;
+		buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
+		av_free_packet(packet);
+		while(buffer_full) {
+		    enc_audio_frame->nb_samples=frame_size;
+		    avcodec_fill_audio_frame(enc_audio_frame,1,AV_SAMPLE_FMT_S16,&samples_buffer[0],frame_size*2,0);
+		    memcpy(&samples_buffer[0],&samples_buffer[frame_size*2],(samples_buffer_size-frame_size*2));
+		    samples_buffer_size-=frame_size*2;
+		    avcodec_encode_audio2(cs->audio_encoder_ctx,&enc_audio_packet,enc_audio_frame,&got_packet_ptr);
+		    if(!got_packet_ptr)
+			printf("Could not encode audio packet\n");
+		    pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
+		    rtp_set_payload_type(cs->_rtp_audio,96);
+		    s_audio_msg = rtp_msg_new ( cs->_rtp_audio, enc_audio_packet.data, enc_audio_packet.size ) ;
+		    rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
+		    pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
+		    buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
+		}
+		av_free_packet(&enc_audio_packet);
+	    }
+	} else {
+	    av_free_packet(packet);
+	}
     }
-    av_free(cs->enc_audio_frame);
+    /* clean up codecs */
+    pthread_mutex_lock(&cs->avcodec_mutex_lock);
+    /* get the last frame from the encoder, otherwise ffmpeg will complain about it */
+    avcodec_encode_audio2(cs->audio_encoder_ctx,&enc_audio_packet,NULL,&got_packet_ptr);
+    
+    av_free(enc_audio_frame);
     avcodec_close(cs->microphone_decoder_ctx);
     avcodec_close(cs->audio_encoder_ctx);
+    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
 }
 
@@ -518,7 +633,8 @@ void *decode_video_thread(void *arg)
     av_new_packet (&cs->dec_video_packet, 80000);
     rtp_msg_t* r_msg;
     while(1) {
-        if(cs->quit) break;
+        if(cs->quit||!cs->receive_video)
+	    break;
         r_msg = rtp_recv_msg ( cs->_rtp_video );
         if(r_msg) {
             if(handle_rtp_video_packet(cs,r_msg)) {
@@ -539,133 +655,11 @@ void *decode_video_thread(void *arg)
         usleep(1000);
     }
     /* clean up codecs */
+    pthread_mutex_lock(&cs->avcodec_mutex_lock);	
     av_free(cs->r_video_frame);
     avcodec_close(cs->video_decoder_ctx);
+    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
-}
-
-struct jitter_buffer {
-    rtp_msg_t **queue;
-    uint16_t capacity;
-    uint16_t size;
-    uint16_t front;
-    uint16_t rear;
-    uint8_t queue_ready;
-    uint16_t current_id;
-    uint32_t current_ts;
-    uint8_t id_set;
-};
-
-struct jitter_buffer * create_queue(int capacity)
-{
-
-    struct jitter_buffer * q;
-    q = (struct jitter_buffer*)malloc(sizeof(struct jitter_buffer));
-    q->queue = (rtp_msg_t **)malloc(sizeof(rtp_msg_t)*capacity);
-    int i=0;
-    for(i=0;i<capacity;++i) {
-	q->queue[i]=NULL;
-    }
-    q->size=0;
-    q->capacity = capacity;
-    q->front=0;
-    q->rear=-1;
-    q->queue_ready=0;
-    q->current_id=0;
-    q->current_ts=0;
-    q->id_set=0;
-    return q;  
-}
-
-/* returns 1 if 'a' has a higher sequence number than 'b' */
-uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a,uint32_t ts_b)
-{
-    /* should be stable enough */
-    return (sn_a>sn_b);//||ts_a>ts_b);
-}
-
-/* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
-rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
-{
-    if(q->size==0||q->queue_ready==0)
-    {
-	q->queue_ready=0;
-	*success=0;
-	return NULL;
-    }
-    int front=q->front;
-    
-    if(q->id_set==0) {
-	q->current_id=q->queue[front]->_header->_sequence_number;
-	q->current_ts=q->queue[front]->_header->_timestamp;
-        q->id_set=1;
-    } else {
-	int next_id = q->queue[front]->_header->_sequence_number;
-	int next_ts = q->queue[front]->_header->_timestamp;
-	/* if this packet is indeed the expected packet */
-	if(next_id==(q->current_id+1)%_MAX_SEQU_NUM) {
-	    q->current_id=next_id;
-	    q->current_ts=next_ts;
-	} else {
-	    if(sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
-	    q->current_id=(q->current_id+1)%_MAX_SEQU_NUM;
-	    *success=2; /* tell the decoder the packet is lost */
-	    return NULL;
-	    } else {
-	      /* packet too old */
-	      printf("packet too old\n");
-	      *success=0;
-	      return NULL;
-	    }
-	}
-    }
-    
-    q->size--;
-    q->front++;
-    if(q->front==q->capacity)
-	q->front=0;
-    *success=1;
-    q->current_id=q->queue[front]->_header->_sequence_number;
-    q->current_ts=q->queue[front]->_header->_timestamp;
-    return q->queue[front];
-}
-
-int queue(struct jitter_buffer *q, rtp_msg_t *pk)
-{
-    if(q->size==q->capacity)
-	return 0;
-
-    if(q->size>8)
-	q->queue_ready=1;
-
-    ++q->size;
-    ++q->rear;
-    if(q->rear==q->capacity)
-	q->rear=0;
-    q->queue[q->rear]=pk;
-
-    int a;
-    int b;
-    int j;
-    a=q->rear;
-    for(j=0;j<q->size-1;++j) {
-	b=a-1;
-	if(b<0)
-	    b+=q->capacity;
-	if(q->queue[b]->_header->_sequence_number>q->queue[a]->_header->_sequence_number) {
-		rtp_msg_t *temp;
-		temp=q->queue[a];
-		q->queue[a]=q->queue[b];
-		q->queue[b]=temp;
-		printf("had to swap!\n");
-	}
-	a-=1;
-	if(a<0)
-	    a+=q->capacity;
-    }
-    if(pk)
-    return 1;
-    return 0;
 }
 
 void *decode_audio_thread(void *arg)
@@ -713,7 +707,8 @@ void *decode_audio_thread(void *arg)
     int success=0;
         
     while(1) {
-        if(cs->quit) break;
+        if(cs->quit||!cs->receive_audio)
+	    break;
 
         r_msg = rtp_recv_msg ( cs->_rtp_audio );
         if(r_msg) {
@@ -725,7 +720,8 @@ void *decode_audio_thread(void *arg)
 	success=0;
 	alGetSourcei(cs->source, AL_BUFFERS_PROCESSED, &val);
 	if(val > 0)
-	r_msg=dequeue(j_buf,&success);
+	    r_msg=dequeue(j_buf,&success);
+	
 	if(success>0)
 	{
 	  /* lost packet */
@@ -761,10 +757,10 @@ void *decode_audio_thread(void *arg)
 	  }
 	}
 
-        usleep(100);
+        usleep(1000);
     }
-
     /* clean up codecs */
+    pthread_mutex_lock(&cs->avcodec_mutex_lock);	
     av_free(cs->r_audio_frame);
     avcodec_close(cs->audio_decoder_ctx);
 
@@ -774,5 +770,6 @@ void *decode_audio_thread(void *arg)
     alcMakeContextCurrent(NULL);
     alcDestroyContext(cs->ctx);
     alcCloseDevice(cs->dev);
+    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
 }
