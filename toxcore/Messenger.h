@@ -101,6 +101,7 @@ typedef struct {
     uint8_t status; // 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
     uint8_t info[MAX_DATA_SIZE]; // the data that is sent during the friend requests we do.
     uint8_t name[MAX_NAME_LENGTH];
+    uint16_t name_length;
     uint8_t name_sent; // 0 if we didn't send our name to this friend 1 if we have.
     uint8_t *statusmessage;
     uint16_t statusmessage_length;
@@ -253,7 +254,7 @@ uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen);
 /* Get name of friendnumber and put it in name.
  * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
  *
- *  return 0 if success.
+ *  return length of name if success.
  *  return -1 if failure.
  */
 int getname(Messenger *m, int friendnumber, uint8_t *name);

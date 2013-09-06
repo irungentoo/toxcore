@@ -399,7 +399,7 @@ uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen)
 /* Get name of friendnumber and put it in name.
  * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
  *
- *  return 0 if success.
+ *  return length of name if success.
  *  return -1 if failure.
  */
 int getname(Messenger *m, int friendnumber, uint8_t *name)
@@ -407,8 +407,8 @@ int getname(Messenger *m, int friendnumber, uint8_t *name)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    memcpy(name, m->friendlist[friendnumber].name, MAX_NAME_LENGTH);
-    return 0;
+    memcpy(name, m->friendlist[friendnumber].name, m->friendlist[friendnumber].name_length);
+    return m->friendlist[friendnumber].name_length;
 }
 
 int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length)
@@ -799,11 +799,13 @@ void doFriends(Messenger *m)
                         if (data_length >= MAX_NAME_LENGTH || data_length == 0)
                             break;
 
-                        if (m->friend_namechange)
-                            m->friend_namechange(m, i, data, data_length, m->friend_namechange_userdata);
-
                         memcpy(m->friendlist[i].name, data, data_length);
+                        m->friendlist[i].name_length = data_length;
                         m->friendlist[i].name[data_length - 1] = 0; /* Make sure the NULL terminator is present. */
+
+                        if (m->friend_namechange)
+                            m->friend_namechange(m, i, m->friendlist[i].name, data_length, m->friend_namechange_userdata);
+
                         break;
                     }
 
