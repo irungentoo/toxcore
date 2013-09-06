@@ -206,7 +206,8 @@ START_TEST(test_getname)
     ck_assert(getname(m, REALLY_BIG_NUMBER, name_buf) == -1);
 
     memcpy(m->friendlist[0].name, &test_name[0], 3);
-    getname(m, 0, &name_buf[0]);
+    m->friendlist[0].name_length = 4;
+    ck_assert(getname(m, 0, &name_buf[0]) == 4);
 
     ck_assert(strcmp((char *)&name_buf[0], "foo") == 0);
 }

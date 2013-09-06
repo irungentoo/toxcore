@@ -32,7 +32,7 @@
 #include "LAN_discovery.h"
 
 #define MAX_NAME_LENGTH 128
-#define MAX_STATUSMESSAGE_LENGTH 128
+#define MAX_STATUSMESSAGE_LENGTH 1007
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
