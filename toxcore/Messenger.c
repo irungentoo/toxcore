@@ -519,6 +519,7 @@ static int set_friend_statusmessage(Messenger *m, int friendnumber, uint8_t *sta
     free(m->friendlist[friendnumber].statusmessage);
     m->friendlist[friendnumber].statusmessage = newstatus;
     m->friendlist[friendnumber].statusmessage_length = length;
+    free(newstatus);
     return 0;
 }
 
