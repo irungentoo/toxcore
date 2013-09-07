@@ -98,12 +98,22 @@ START_TEST(test_m_set_userstatus)
 }
 END_TEST
 
-START_TEST(test_m_friendstatus)
+START_TEST(test_m_get_friend_connectionstatus)
 {
-    ck_assert_msg((m_friendstatus(m, -1) == NOFRIEND),
-                  "m_friendstatus did NOT catch an argument of -1.\n");
-    ck_assert_msg((m_friendstatus(m, REALLY_BIG_NUMBER) == NOFRIEND),
-                  "m_friendstatus did NOT catch an argument of %d.\n",
+    ck_assert_msg((m_get_friend_connectionstatus(m, -1) == -1),
+                  "m_get_friend_connectionstatus did NOT catch an argument of -1.\n");
+    ck_assert_msg((m_get_friend_connectionstatus(m, REALLY_BIG_NUMBER) == -1),
+                  "m_get_friend_connectionstatus did NOT catch an argument of %d.\n",
+                  REALLY_BIG_NUMBER);
+}
+END_TEST
+
+START_TEST(test_m_friend_exists)
+{
+    ck_assert_msg((m_friend_exists(m, -1) == 0),
+                  "m_friend_exists did NOT catch an argument of -1.\n");
+    ck_assert_msg((m_friend_exists(m, REALLY_BIG_NUMBER) == 0),
+                  "m_friend_exists did NOT catch an argument of %d.\n",
                   REALLY_BIG_NUMBER);
 }
 END_TEST
@@ -220,7 +230,8 @@ Suite *messenger_suite(void)
     TCase *userstatus_size = tcase_create("userstatus_size");
     TCase *set_userstatus = tcase_create("set_userstatus");
     TCase *send_message = tcase_create("send_message");
-    TCase *friendstatus = tcase_create("friendstatus");
+    TCase *friend_exists = tcase_create("friend_exists");
+    TCase *get_friend_connectionstatus = tcase_create("get_friend_connectionstatus");
     TCase *getself_name = tcase_create("getself_name");
     TCase *delfriend = tcase_create("delfriend");
     //TCase *addfriend = tcase_create("addfriend");
@@ -229,7 +240,8 @@ Suite *messenger_suite(void)
 
     tcase_add_test(userstatus_size, test_m_get_userstatus_size);
     tcase_add_test(set_userstatus, test_m_set_userstatus);
-    tcase_add_test(friendstatus, test_m_friendstatus);
+    tcase_add_test(get_friend_connectionstatus, test_m_get_friend_connectionstatus);
+    tcase_add_test(friend_exists, test_m_friend_exists);
     tcase_add_test(getself_name, test_getself_name);
     tcase_add_test(send_message, test_m_sendmesage);
     tcase_add_test(delfriend, test_m_delfriend);
@@ -239,7 +251,8 @@ Suite *messenger_suite(void)
 
     suite_add_tcase(s, userstatus_size);
     suite_add_tcase(s, set_userstatus);
-    suite_add_tcase(s, friendstatus);
+    suite_add_tcase(s, get_friend_connectionstatus);
+    suite_add_tcase(s, friend_exists);
     suite_add_tcase(s, send_message);
     suite_add_tcase(s, getself_name);
     suite_add_tcase(s, delfriend);
