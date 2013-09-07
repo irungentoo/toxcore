@@ -99,16 +99,27 @@ int tox_delfriend(void *tox, int friendnumber)
     return m_delfriend(m, friendnumber);
 }
 
-/*  return 4 if friend is online.
- *  return 3 if friend is confirmed.
- *  return 2 if the friend request was sent.
- *  return 1 if the friend was added.
- *  return 0 if there is no friend with that number.
+/* Checks friend's connecting status.
+ *
+ *  return 1 if friend is connected to us (Online).
+ *  return 0 if friend is not connected to us (Offline).
+ *  return -1 on failure.
  */
-int tox_friendstatus(void *tox, int friendnumber)
+int tox_get_friend_connectionstatus(void *tox, int friendnumber)
 {
     Messenger *m = tox;
-    return m_friendstatus(m, friendnumber);
+    return m_get_friend_connectionstatus(m, friendnumber);
+}
+
+/* Checks if there exists a friend with given friendnumber.
+ *
+ *  return 1 if friend exists.
+ *  return 0 if friend doesn't exist.
+ */
+int tox_friend_exists(void *tox, int friendnumber)
+{
+    Messenger *m = tox;
+    return m_friend_exists(m, friendnumber);
 }
 
 /* Send a text chat message to an online friend.

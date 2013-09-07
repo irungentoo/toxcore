@@ -50,15 +50,6 @@ typedef struct {
     uint16_t padding;
 } tox_IP_Port;
 
-/* Status definitions. */
-enum {
-    TOX_NOFRIEND,
-    TOX_FRIEND_ADDED,
-    TOX_FRIEND_REQUESTED,
-    TOX_FRIEND_CONFIRMED,
-    TOX_FRIEND_ONLINE,
-};
-
 /* Errors for m_addfriend
  * FAERR - Friend Add Error
  */
@@ -130,13 +121,20 @@ int tox_getclient_id(Tox *tox, int friend_id, uint8_t *client_id);
 /* Remove a friend. */
 int tox_delfriend(Tox *tox, int friendnumber);
 
-/*  return TOX_FRIEND_ONLINE if friend is online.
- *  return TOX_FRIEND_CONFIRMED if friend is confirmed.
- *  return TOX_FRIEND_REQUESTED if the friend request was sent.
- *  return TOX_FRIEND_ADDED if the friend was added.
- *  return TOX_NOFRIEND if there is no friend with that number.
+/* Checks friend's connecting status.
+ *
+ *  return 1 if friend is connected to us (Online).
+ *  return 0 if friend is not connected to us (Offline).
+ *  return -1 on failure.
  */
-int tox_friendstatus(Tox *tox, int friendnumber);
+int tox_get_friend_connectionstatus(Tox *tox, int friendnumber);
+
+/* Checks if there exists a friend with given friendnumber.
+ *
+ *  return 1 if friend exists.
+ *  return 0 if friend doesn't exist.
+ */
+int tox_friend_exists(Tox *tox, int friendnumber);
 
 /* Send a text chat message to an online friend.
  *
