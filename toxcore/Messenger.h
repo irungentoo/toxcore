@@ -276,6 +276,9 @@ int m_get_statusmessage_size(Messenger *m, int friendnumber);
 /* Copy friendnumber's status message into buf, truncating if size is over maxlen.
  * Get the size you need to allocate from m_get_statusmessage_size.
  * The self variant will copy our own status message.
+ *
+ * returns the length of the copied data on success
+ * retruns -1 on failure.
  */
 int m_copy_statusmessage(Messenger *m, int friendnumber, uint8_t *buf, uint32_t maxlen);
 int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen);

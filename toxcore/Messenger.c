@@ -462,15 +462,15 @@ int m_copy_statusmessage(Messenger *m, int friendnumber, uint8_t *buf, uint32_t 
         return -1;
 
     memset(buf, 0, maxlen);
-    memcpy(buf, m->friendlist[friendnumber].statusmessage, MIN(maxlen, MAX_STATUSMESSAGE_LENGTH) - 1);
-    return 0;
+    memcpy(buf, m->friendlist[friendnumber].statusmessage, MIN(maxlen, m->friendlist[friendnumber].statusmessage_length));
+    return MIN(maxlen, m->friendlist[friendnumber].statusmessage_length);
 }
 
 int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen)
 {
     memset(buf, 0, maxlen);
-    memcpy(buf, m->statusmessage, MIN(maxlen, MAX_STATUSMESSAGE_LENGTH) - 1);
-    return 0;
+    memcpy(buf, m->statusmessage, MIN(maxlen, m->statusmessage_length));
+    return MIN(maxlen, m->statusmessage_length);
 }
 
 USERSTATUS m_get_userstatus(Messenger *m, int friendnumber)

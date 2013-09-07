@@ -1,0 +1,23 @@
+TODO list.
+
+[IN PROGRESS] Add what is left to do to the TODO list.
+
+DHT:
+    [IN PROGRESS] Metadata collection prevention.
+    [IN PROGRESS] Hardening against attacks.
+    [IN PROGRESS] Optimizing the code.
+
+Lossless UDP:
+    [TODO] Increase data send/receive rates.
+
+[IN PROGRESS] Massive IRC like group chats (text only)
+[IN PROGRESS] Audio/Video
+    [DONE] Capture/encoding/streaming/decoding/displaying
+    [IN PROGRESS] Call initiation
+    [NOT STARTED] Encryption
+
+[NOT STARTED] Offline messaging
+[NOT STARTED] Friends list syncing
+[NOT STARTED] Small group chats (group audio/video chats.)
+
+
