@@ -202,13 +202,20 @@ int getclient_id(Messenger *m, int friend_id, uint8_t *client_id);
 /* Remove a friend. */
 int m_delfriend(Messenger *m, int friendnumber);
 
-/*  return 4 if friend is online.
- *  return 3 if friend is confirmed.
- *  return 2 if the friend request was sent.
- *  return 1 if the friend was added.
- *  return 0 if there is no friend with that number.
+/* Checks friend's connecting status.
+ *
+ *  return 1 if friend is connected to us (Online).
+ *  return 0 if friend is not connected to us (Offline).
+ *  return -1 on failure.
  */
-int m_friendstatus(Messenger *m, int friendnumber);
+int m_get_friend_connectionstatus(Messenger *m, int friendnumber);
+
+/* Checks if there exists a friend with given friendnumber.
+ *
+ *  return 1 if friend exists.
+ *  return 0 if friend doesn't exist.
+ */
+int m_friend_exists(Messenger *m, int friendnumber);
 
 /* Send a text chat message to an online friend.
  *

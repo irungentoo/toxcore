@@ -275,18 +275,20 @@ int m_delfriend(Messenger *m, int friendnumber)
     return 0;
 }
 
-/*  return FRIEND_ONLINE if friend is online.
- *  return FRIEND_CONFIRMED if friend is confirmed.
- *  return FRIEND_REQUESTED if the friend request was sent.
- *  return FRIEND_ADDED if the friend was added.
- *  return NOFRIEND if there is no friend with that number.
- */
-int m_friendstatus(Messenger *m, int friendnumber)
+int m_get_friend_connectionstatus(Messenger *m, int friendnumber)
 {
     if (friend_not_valid(m, friendnumber))
-        return NOFRIEND;
+        return -1;
 
-    return m->friendlist[friendnumber].status;
+    return m->friendlist[friendnumber].status == FRIEND_ONLINE;
+}
+
+int m_friend_exists(Messenger *m, int friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    return m->friendlist[friendnumber].status > NOFRIEND;
 }
 
 /* Send a text chat message to an online friend.
