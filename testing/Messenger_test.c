@@ -37,6 +37,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../toxcore/Messenger.h"
 #include "misc_tools.c"
 
