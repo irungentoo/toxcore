@@ -36,6 +36,7 @@
 #include <SDL.h>
 #include <SDL_thread.h>
 #include <pthread.h>
+#include <opus/opus.h>
 
 #include "msi_impl.h"
 #include "msi_message.h"
@@ -104,6 +105,7 @@ struct jitter_buffer * create_queue(int capacity)
 /* returns 1 if 'a' has a higher sequence number than 'b' */
 uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a,uint32_t ts_b)
 {
+    printf("tsa: %d tsb: %d\n",ts_a,ts_b);
     /* should be stable enough */
     return (sn_a>sn_b);//||ts_a>ts_b);
 }
@@ -130,7 +132,6 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
 	if(next_id==(q->current_id+1)%_MAX_SEQU_NUM) {
 	    q->current_id=next_id;
 	    q->current_ts=next_ts;
-	    printf("nextts: %d\n",next_ts);
 	} else {
 	    if(sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
 	    q->current_id=(q->current_id+1)%_MAX_SEQU_NUM;
@@ -197,24 +198,9 @@ int queue(struct jitter_buffer *q, rtp_msg_t *pk)
 
 int init_receive_audio(codec_state *cs)
 {
-    cs->audio_decoder = avcodec_find_decoder(AUDIO_CODEC);
-    if(!cs->audio_decoder) {
-        printf("init audio_decoder failed\n");
-        return 0;
-    }
-    cs->audio_decoder_ctx = avcodec_alloc_context3(cs->audio_decoder);
-    if(!cs->audio_decoder_ctx) {
-        printf("init audio_decoder_ctx failed\n");
-        return 0;
-    }
-    cs->audio_decoder_ctx->sample_rate=48000;
-    cs->audio_decoder_ctx->channels=1;
-    cs->audio_decoder_ctx->channel_layout=av_get_default_channel_layout(1);
-    cs->audio_decoder_ctx->request_sample_fmt=AV_SAMPLE_FMT_S16;
-    if(avcodec_open2(cs->audio_decoder_ctx,cs->audio_decoder,NULL)<0) {
-        printf("opening audio decoder failed\n");
-        return 0;
-    }
+    int err = OPUS_OK;
+    cs->audio_decoder = opus_decoder_create(48000, 1, &err);
+    opus_decoder_init(cs->audio_decoder, 48000, 1);
     printf("init audio decoder successful\n");
     return 1;
 }
@@ -238,9 +224,6 @@ int init_receive_video(codec_state *cs)
     printf("init video decoder successful\n");
     return 1;
 }
-
-
-
 
 int init_send_video(codec_state *cs)
 {
@@ -332,35 +315,21 @@ int init_send_audio(codec_state *cs)
         printf("opening microphone decoder failed\n");
         return 0;
     }
-
     printf("init microphone decoder successful\n");
+    
+    int err = OPUS_OK;
+    cs->audio_bitrate=AUDIO_BITRATE;
+    cs->audio_encoder = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &err);
+    err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_bitrate));
+    err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
+    err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
 
-    cs->audio_encoder = avcodec_find_encoder(AUDIO_CODEC);
-    if(!cs->audio_encoder) {
-        printf("init audio_encoder failed\n");
-        return 0;
-    }
-    cs->audio_encoder_ctx = avcodec_alloc_context3(cs->audio_encoder);
-    if(!cs->audio_encoder_ctx) {
-        printf("init audio_encoder_ctx failed\n");
-        return 0;
-    }
-    cs->audio_encoder_ctx->channels=1;
-    cs->audio_encoder_ctx->channel_layout=av_get_default_channel_layout(1);
-    cs->audio_encoder_ctx->bit_rate = AUDIO_BITRATE;
-    cs->audio_encoder_ctx->sample_rate = AUDIO_SAMPLE_RATE;
-    cs->audio_encoder_ctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    cs->audio_encoder_ctx->frame_size = AUDIO_FRAME_SIZE;
-    av_opt_set_double(cs->audio_encoder_ctx->priv_data, "frame_duration", AUDIO_FRAME_DURATION, 0);
-    av_opt_set(cs->audio_encoder_ctx->priv_data, "vbr","constrained",0);
-    if(avcodec_open2(cs->audio_encoder_ctx,cs->audio_encoder,NULL)<0) {
-        printf("opening audio encoder failed\n");
-        return 0;
-    }
+    opus_encoder_init(cs->audio_encoder, 48000, 1, OPUS_APPLICATION_VOIP);
+
+    int nfo;
+    err = opus_encoder_ctl(cs->audio_encoder, OPUS_GET_LOOKAHEAD(&nfo));
+    /* printf("Encoder lookahead delay : %d\n", nfo); */
     printf("init audio encoder successful\n");
-
-    if(cs->audio_encoder_ctx->frame_size!=AUDIO_FRAME_SIZE)
-        printf("frame size is not equal to requested frame size, expect audio issues.\n");
 
     return 1;
 }
@@ -373,6 +342,8 @@ int init_encoder(codec_state *cs)
     av_register_all();
 
     pthread_mutex_init(&cs->rtp_msg_mutex_lock, NULL);
+    pthread_mutex_init(&cs->avcodec_mutex_lock, NULL);
+    
     cs->support_send_video=init_send_video(cs);
     cs->support_send_audio=init_send_audio(cs);
 
@@ -392,10 +363,9 @@ int init_decoder(codec_state *cs)
     cs->receive_video=0;
     cs->receive_audio=0;
     
-    pthread_mutex_init(&cs->avcodec_mutex_lock, NULL);
-    
     cs->support_receive_video=init_receive_video(cs);
     cs->support_receive_audio=init_receive_audio(cs);
+    
     cs->receive_audio=1;
     cs->receive_video=1;
 
@@ -462,8 +432,7 @@ void *encode_video_thread(void *arg)
     buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P,cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
     cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,cs->webcam_decoder_ctx->pix_fmt,cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
-   
-    
+
     while(1) {
         if(cs->quit||!cs->send_video)
             break;
@@ -541,16 +510,18 @@ void *encode_audio_thread(void *arg)
     int got_packet_ptr;
     uint8_t samples_buffer[4096];
     int samples_buffer_size=0;
-    
-    int frame_size=cs->audio_encoder_ctx->frame_size;
-    if(frame_size!=AUDIO_FRAME_SIZE)
-        printf("unexpected frame size! expect audio issues...\n");
+
     int buffer_full;
     rtp_msg_t* s_audio_msg;
     AVFrame *enc_audio_frame;
     enc_audio_frame=avcodec_alloc_frame();
     int audio_frame_finished;
-     AVPacket enc_audio_packet;
+
+    unsigned char OP[1024];
+    int OP_size=0;
+
+    int16_t frame[1024];
+    int frame_size=AUDIO_FRAME_SIZE;
     
     while(1) {
         if(cs->quit||!cs->send_audio)
@@ -575,17 +546,17 @@ void *encode_audio_thread(void *arg)
 		    avcodec_fill_audio_frame(enc_audio_frame,1,AV_SAMPLE_FMT_S16,&samples_buffer[0],frame_size*2,0);
 		    memcpy(&samples_buffer[0],&samples_buffer[frame_size*2],(samples_buffer_size-frame_size*2));
 		    samples_buffer_size-=frame_size*2;
-		    avcodec_encode_audio2(cs->audio_encoder_ctx,&enc_audio_packet,enc_audio_frame,&got_packet_ptr);
-		    if(!got_packet_ptr)
+		    memcpy(&frame[0],enc_audio_frame->data[0],frame_size*2);
+		    OP_size=opus_encode(cs->audio_encoder,frame,frame_size,OP,1024);
+		    if(OP_size==0)
 			printf("Could not encode audio packet\n");
 		    pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
 		    rtp_set_payload_type(cs->_rtp_audio,96);
-		    s_audio_msg = rtp_msg_new ( cs->_rtp_audio, enc_audio_packet.data, enc_audio_packet.size ) ;
+		    s_audio_msg = rtp_msg_new ( cs->_rtp_audio, OP, OP_size ) ;
 		    rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
 		    pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
 		    buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
 		}
-		av_free_packet(&enc_audio_packet);
 	    }
 	} else {
 	    av_free_packet(packet);
@@ -593,12 +564,9 @@ void *encode_audio_thread(void *arg)
     }
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);
-    /* get the last frame from the encoder, otherwise ffmpeg will complain about it */
-    avcodec_encode_audio2(cs->audio_encoder_ctx,&enc_audio_packet,NULL,&got_packet_ptr);
     
     av_free(enc_audio_frame);
     avcodec_close(cs->microphone_decoder_ctx);
-    avcodec_close(cs->audio_encoder_ctx);
     pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
 }
@@ -653,7 +621,7 @@ void *decode_video_thread(void *arg)
                 }
                 else {
                     /* TODO: request the sender to create a new i-frame immediatly */
-                    printf("freed video packet\n");
+                    printf("bad video packet\n");
                 }
                 rtp_free_msg(cs->_rtp_video, r_msg);
             }
@@ -671,8 +639,6 @@ void *decode_video_thread(void *arg)
 void *decode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
-    AVPacket dec_audio_packet;
-    av_new_packet (&dec_audio_packet, 2000);
     AVPacket *dec_audio_packet2;
     rtp_msg_t* r_msg;
     
@@ -719,6 +685,8 @@ void *decode_audio_thread(void *arg)
     j_buf = create_queue(20);
     int success=0;
     int dec_frame_finished;
+    opus_int16 PCM[frame_size];
+    
         
     while(1) {
         if(cs->quit||!cs->receive_audio)
@@ -730,7 +698,7 @@ void *decode_audio_thread(void *arg)
 	    queue(j_buf,r_msg);   
         }
         
-	/* pop a packet from the queue if there's an audio buffer available */
+	/* grab a packet from the queue */
 	success=0;
 	alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
 	if(val > 0)
@@ -742,17 +710,15 @@ void *decode_audio_thread(void *arg)
 	  if(success==2) {
 	      /* lost packets are not handled correctly yet */
 	  } else {
-	      memcpy(dec_audio_packet.data,r_msg->_data,r_msg->_length-1);
-	      dec_audio_packet.size=r_msg->_length-1;
+	      dec_frame_finished=opus_decode(cs->audio_decoder,r_msg->_data,r_msg->_length-1,PCM,frame_size,0);
 	      rtp_free_msg(cs->_rtp_audio, r_msg); 
-	      avcodec_decode_audio4(cs->audio_decoder_ctx, r_audio_frame, &dec_frame_finished, &dec_audio_packet);
-	      if(dec_frame_finished) {	 
+	      if(dec_frame_finished>0) {	 
 		  alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
 		  if(val <= 0)
 		      continue;
 		  alSourceUnqueueBuffers(source, 1, &buffer);
-		  data_size = av_samples_get_buffer_size(NULL,r_audio_frame->channels, r_audio_frame->nb_samples, cs->audio_decoder_ctx->sample_fmt, 1);
-		  alBufferData(buffer, AL_FORMAT_MONO16, r_audio_frame->data[0], data_size, 48000);
+		  data_size = av_samples_get_buffer_size(NULL,1, dec_frame_finished, AV_SAMPLE_FMT_S16, 1);
+		  alBufferData(buffer, AL_FORMAT_MONO16, PCM, data_size, 48000);
 		  int error=alGetError();
 		  if(error != AL_NO_ERROR) {
 		      fprintf(stderr, "Error setting buffer %d\n",error);
@@ -775,8 +741,6 @@ void *decode_audio_thread(void *arg)
     }
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);	
-    av_free(r_audio_frame);
-    avcodec_close(cs->audio_decoder_ctx);
 
     /* clean up openal */
     alDeleteSources(1, &source);

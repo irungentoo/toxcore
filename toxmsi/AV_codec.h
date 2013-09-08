@@ -38,7 +38,7 @@
 #include "tox.h"
 
 #include <SDL.h>
-
+#include <opus/opus.h>
 
 /* ffmpeg VP8 codec ID */
 #define VIDEO_CODEC 		AV_CODEC_ID_VP8
@@ -120,12 +120,11 @@ typedef struct
     uint8_t              audio_stream;
     AVCodecContext  	*microphone_decoder_ctx;
     AVCodec         	*microphone_decoder;
-    AVCodecContext  	*audio_encoder_ctx;
-    AVCodec         	*audio_encoder;
+    OpusEncoder 	*audio_encoder;
+    int 		audio_bitrate;
 
     /* audio decoding */
-    AVCodecContext  	*audio_decoder_ctx;
-    AVCodec         	*audio_decoder;
+    OpusDecoder 	*audio_decoder;
     
     uint8_t req_video_refresh;
 

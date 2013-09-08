@@ -51,6 +51,7 @@ phone_LDADD =			$(PTHREAD_LIBS) \
 						$(AVDEVICE_LIBS) \
 						$(SWSCALE_LIBS) \
 						$(SDL_LIBS) \
-						$(OPENAL_LIBS)
+						$(OPENAL_LIBS) \
+						-lopus
 
 endif
