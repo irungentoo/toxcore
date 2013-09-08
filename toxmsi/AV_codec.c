@@ -105,7 +105,7 @@ struct jitter_buffer * create_queue(int capacity)
 /* returns 1 if 'a' has a higher sequence number than 'b' */
 uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a,uint32_t ts_b)
 {
-    printf("tsa: %d tsb: %d\n",ts_a,ts_b);
+    //printf("tsa: %d tsb: %d\n",ts_a,ts_b);
     /* should be stable enough */
     return (sn_a>sn_b);//||ts_a>ts_b);
 }
@@ -335,7 +335,6 @@ int init_encoder(codec_state *cs)
     pthread_mutex_init(&cs->avcodec_mutex_lock, NULL);
     
     cs->support_send_video=init_send_video(cs);
-    if(cs->support_send_video)
     cs->support_send_audio=init_send_audio(cs);
 
     cs->send_audio=1;
@@ -467,7 +466,7 @@ void *encode_video_thread(void *arg)
                     }
                     pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
                     if(!enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
-		    printf("video packet size: %d\n",enc_video_packet.size);
+		    //printf("video packet size: %d\n",enc_video_packet.size);
                     s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
                     if(!s_video_msg) {
                         printf("invalid message\n");
@@ -574,7 +573,7 @@ void *decode_video_thread(void *arg)
         r_msg = rtp_recv_msg ( cs->_rtp_video );
         if(r_msg) {
             if(handle_rtp_video_packet(cs,r_msg)) {
-	      printf("video packet size: %d\n",r_msg->_length);
+	      //printf("video packet size: %d\n",r_msg->_length);
                 memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
                 dec_video_packet.size=r_msg->_length;
                 avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
