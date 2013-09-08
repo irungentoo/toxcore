@@ -497,9 +497,9 @@ void *encode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
     rtp_msg_t* s_audio_msg;
-    unsigned char encoded_data[1024];
+    unsigned char encoded_data[4096];
     int encoded_size=0;
-    int16_t frame[1024];
+    int16_t frame[4096];
     int frame_size=AUDIO_FRAME_SIZE;
     ALint sample;
     
