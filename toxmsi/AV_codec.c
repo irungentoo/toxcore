@@ -335,6 +335,7 @@ int init_encoder(codec_state *cs)
     pthread_mutex_init(&cs->avcodec_mutex_lock, NULL);
     
     cs->support_send_video=init_send_video(cs);
+    if(cs->support_send_video)
     cs->support_send_audio=init_send_audio(cs);
 
     cs->send_audio=1;
@@ -505,13 +506,12 @@ void *encode_audio_thread(void *arg)
     
     alcCaptureStart(cs->audio_capture_device);
     while(1) {
-      
         if(cs->quit||!cs->send_audio)
             break;
 	alcGetIntegerv(cs->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
 	if(sample>=frame_size)
 	{
-	    alcCaptureSamples(cs->audio_capture_device, frame, sample);
+	    alcCaptureSamples(cs->audio_capture_device, frame, frame_size);
 	    encoded_size=opus_encode(cs->audio_encoder,frame,frame_size,encoded_data,480);
 	    if(encoded_size<=0) {
 		printf("Could not encode audio packet\n");
