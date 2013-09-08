@@ -506,10 +506,10 @@ void *encode_video_thread(void *arg)
 void *encode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
-    AVPacket pkt1, *packet = &pkt1;
     int got_packet_ptr;
     uint8_t samples_buffer[4096];
     int samples_buffer_size=0;
+    AVPacket pkt1, *packet=&pkt1;
 
     int buffer_full;
     rtp_msg_t* s_audio_msg;
@@ -542,19 +542,19 @@ void *encode_audio_thread(void *arg)
 		buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
 		av_free_packet(packet);
 		while(buffer_full) {
-		    enc_audio_frame->nb_samples=frame_size;
-		    avcodec_fill_audio_frame(enc_audio_frame,1,AV_SAMPLE_FMT_S16,&samples_buffer[0],frame_size*2,0);
+		    memcpy(&frame[0],&samples_buffer[0],frame_size*2);
 		    memcpy(&samples_buffer[0],&samples_buffer[frame_size*2],(samples_buffer_size-frame_size*2));
 		    samples_buffer_size-=frame_size*2;
-		    memcpy(&frame[0],enc_audio_frame->data[0],frame_size*2);
 		    OP_size=opus_encode(cs->audio_encoder,frame,frame_size,OP,1024);
-		    if(OP_size==0)
+		    if(OP_size==0) {
 			printf("Could not encode audio packet\n");
-		    pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-		    rtp_set_payload_type(cs->_rtp_audio,96);
-		    s_audio_msg = rtp_msg_new ( cs->_rtp_audio, OP, OP_size ) ;
-		    rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
-		    pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
+		    } else {
+			pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
+			rtp_set_payload_type(cs->_rtp_audio,96);
+			s_audio_msg = rtp_msg_new ( cs->_rtp_audio, OP, OP_size ) ;
+			rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
+			pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
+		    }
 		    buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
 		}
 	    }
@@ -639,14 +639,10 @@ void *decode_video_thread(void *arg)
 void *decode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
-    AVPacket *dec_audio_packet2;
     rtp_msg_t* r_msg;
     
     int frame_size=AUDIO_FRAME_SIZE;
     int data_size;
-    
-    AVFrame *r_audio_frame;
-    r_audio_frame=avcodec_alloc_frame();
   
     ALCdevice *dev;
     ALCcontext *ctx;
@@ -667,10 +663,10 @@ void *decode_audio_thread(void *arg)
     ALenum error;
     uint16_t zeros[frame_size];
     int i;
-    for(i=0; i<frame_size; i++) {
+    for(i=0; i < frame_size; i++) {
         zeros[i]=0;
     }
-    for(i=0; i<openal_buffers; ++i) {
+    for(i=0; i < openal_buffers; ++i) {
         alBufferData(buffers[i], AL_FORMAT_MONO16, zeros, frame_size, 48000);
     }
 
@@ -684,7 +680,7 @@ void *decode_audio_thread(void *arg)
     struct jitter_buffer *j_buf=NULL;
     j_buf = create_queue(20);
     int success=0;
-    int dec_frame_finished;
+    int dec_frame_len;
     opus_int16 PCM[frame_size];
     
         
@@ -710,14 +706,14 @@ void *decode_audio_thread(void *arg)
 	  if(success==2) {
 	      /* lost packets are not handled correctly yet */
 	  } else {
-	      dec_frame_finished=opus_decode(cs->audio_decoder,r_msg->_data,r_msg->_length-1,PCM,frame_size,0);
+	      dec_frame_len=opus_decode(cs->audio_decoder,r_msg->_data,r_msg->_length-1,PCM,frame_size,0);
 	      rtp_free_msg(cs->_rtp_audio, r_msg); 
-	      if(dec_frame_finished>0) {	 
+	      if(dec_frame_len>0) {	 
 		  alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
 		  if(val <= 0)
 		      continue;
 		  alSourceUnqueueBuffers(source, 1, &buffer);
-		  data_size = av_samples_get_buffer_size(NULL,1, dec_frame_finished, AV_SAMPLE_FMT_S16, 1);
+		  data_size = av_samples_get_buffer_size(NULL,1, dec_frame_len, AV_SAMPLE_FMT_S16, 1);
 		  alBufferData(buffer, AL_FORMAT_MONO16, PCM, data_size, 48000);
 		  int error=alGetError();
 		  if(error != AL_NO_ERROR) {
