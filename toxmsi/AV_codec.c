@@ -299,23 +299,13 @@ int init_send_video(codec_state *cs)
 int init_send_audio(codec_state *cs)
 {
     cs->support_send_audio=0;
-    cs->audio_input_format=av_find_input_format(AUDIO_DRIVER);
-    AVDictionary *mic_options=NULL;
-    av_dict_set(&mic_options, "channels", "1", 0);
-    char *rate = (char *) av_malloc(100);
-    snprintf(rate, 100, "%d", AUDIO_SAMPLE_RATE);
-    av_dict_set(&mic_options, "sample_rate", rate, AV_DICT_DONT_STRDUP_VAL);
-    if(avformat_open_input(&cs->audio_format_ctx,DEFAULT_AUDIO_DEVICE, cs->audio_input_format, &mic_options)!=0)
-        return 0;
-    cs->audio_format_ctx->max_analyze_duration= AV_TIME_BASE;
-    av_dict_free(&mic_options);
-    cs->audio_stream = av_find_best_stream(cs->audio_format_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, &cs->microphone_decoder, 0);
-    cs->microphone_decoder_ctx=cs->audio_format_ctx->streams[cs->audio_stream]->codec;
-    if(avcodec_open2(cs->microphone_decoder_ctx, cs->microphone_decoder, NULL)<0) {
-        printf("opening microphone decoder failed\n");
+    
+    printf("Default audio capture device is: %s\n", alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER));
+    cs->audio_capture_device = alcCaptureOpenDevice(NULL, 48000, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE);
+    if (alcGetError(cs->audio_capture_device) != AL_NO_ERROR) {
+	printf("could not start capture device! %d\n",alcGetError(cs->audio_capture_device));
         return 0;
     }
-    printf("init microphone decoder successful\n");
     
     int err = OPUS_OK;
     cs->audio_bitrate=AUDIO_BITRATE;
@@ -506,67 +496,39 @@ void *encode_video_thread(void *arg)
 void *encode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
-    int got_packet_ptr;
-    uint8_t samples_buffer[4096];
-    int samples_buffer_size=0;
-    AVPacket pkt1, *packet=&pkt1;
-
-    int buffer_full;
     rtp_msg_t* s_audio_msg;
-    AVFrame *enc_audio_frame;
-    enc_audio_frame=avcodec_alloc_frame();
-    int audio_frame_finished;
-
-    unsigned char OP[1024];
-    int OP_size=0;
-
+    unsigned char encoded_data[1024];
+    int encoded_size=0;
     int16_t frame[1024];
     int frame_size=AUDIO_FRAME_SIZE;
+    ALint sample;
     
+    alcCaptureStart(cs->audio_capture_device);
     while(1) {
+      
         if(cs->quit||!cs->send_audio)
             break;
-	if(av_read_frame(cs->audio_format_ctx, packet) < 0) {
-	    if(cs->audio_format_ctx->pb->error != 0)
-		break;
-	}
-	if(packet->size>frame_size*2)
-	    printf("error: audio packet too large\n");
-	if(packet->stream_index == cs->audio_stream) {
-	    int len=avcodec_decode_audio4(cs->microphone_decoder_ctx, enc_audio_frame, &audio_frame_finished, packet);
-	    if(!audio_frame_finished) {
-		printf("error: cannot decode microphone stream\n");
+	alcGetIntegerv(cs->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
+	if(sample>=frame_size)
+	{
+	    alcCaptureSamples(cs->audio_capture_device, frame, sample);
+	    encoded_size=opus_encode(cs->audio_encoder,frame,frame_size,encoded_data,480);
+	    if(encoded_size<=0) {
+		printf("Could not encode audio packet\n");
 	    } else {
-		memcpy(&samples_buffer[samples_buffer_size],enc_audio_frame->data[0],len);
-		samples_buffer_size+=len;
-		buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
-		av_free_packet(packet);
-		while(buffer_full) {
-		    memcpy(&frame[0],&samples_buffer[0],frame_size*2);
-		    memcpy(&samples_buffer[0],&samples_buffer[frame_size*2],(samples_buffer_size-frame_size*2));
-		    samples_buffer_size-=frame_size*2;
-		    OP_size=opus_encode(cs->audio_encoder,frame,frame_size,OP,1024);
-		    if(OP_size==0) {
-			printf("Could not encode audio packet\n");
-		    } else {
-			pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-			rtp_set_payload_type(cs->_rtp_audio,96);
-			s_audio_msg = rtp_msg_new ( cs->_rtp_audio, OP, OP_size ) ;
-			rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
-			pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
-		    }
-		    buffer_full=(samples_buffer_size>=frame_size*2)? 1:0;
-		}
+		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
+		rtp_set_payload_type(cs->_rtp_audio,96);
+		s_audio_msg = rtp_msg_new ( cs->_rtp_audio, encoded_data, encoded_size ) ;
+		rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
+		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
 	    }
-	} else {
-	    av_free_packet(packet);
 	}
     }
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);
+    alcCaptureStop(cs->audio_capture_device);
+    alcCaptureCloseDevice(cs->audio_capture_device);
     
-    av_free(enc_audio_frame);
-    avcodec_close(cs->microphone_decoder_ctx);
     pthread_mutex_unlock(&cs->avcodec_mutex_lock);
     pthread_exit ( NULL );
 }

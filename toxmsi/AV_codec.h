@@ -67,15 +67,11 @@
 #ifdef __linux__
 #define VIDEO_DRIVER "video4linux2"
 #define DEFAULT_WEBCAM "/dev/video0"
-#define AUDIO_DRIVER "alsa"
-#define DEFAULT_AUDIO_DEVICE "default"
 #endif
 
 #ifdef WIN32
 #define VIDEO_DRIVER "vfwcap"
 #define DEFAULT_WEBCAM "0"
-#define AUDIO_DRIVER ""
-#define DEFAULT_AUDIO_DEVICE ""
 #endif
 
 SDL_Surface     *screen;
@@ -115,11 +111,7 @@ typedef struct
     AVCodec         	*video_decoder;
     
     /* audio encoding */
-    AVInputFormat   	*audio_input_format;
-    AVFormatContext 	*audio_format_ctx;
-    uint8_t              audio_stream;
-    AVCodecContext  	*microphone_decoder_ctx;
-    AVCodec         	*microphone_decoder;
+    ALCdevice 		*audio_capture_device;
     OpusEncoder 	*audio_encoder;
     int 		audio_bitrate;
 
