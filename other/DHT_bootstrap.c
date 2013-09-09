@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 {
     /* Initialize networking -
        Bind to ip 0.0.0.0:PORT */
-    IP ip;
+    IP4 ip;
     ip.uint32 = 0;
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
     manage_keys(dht);

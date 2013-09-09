@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     /* initialize networking */
     /* bind to ip 0.0.0.0:PORT */
-    IP ip;
+    IP4 ip;
     ip.uint32 = 0;
 
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));

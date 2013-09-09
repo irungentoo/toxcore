@@ -657,7 +657,7 @@ Messenger *initMessenger(void)
     if ( ! m )
         return NULL;
 
-    IP ip;
+    IP4 ip;
     ip.uint32 = 0;
     m->net = new_networking(ip, PORT);
 

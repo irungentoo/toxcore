@@ -1030,9 +1030,9 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
  *
  *  return ip of 0 if failure.
  */
-static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
+static IP4 NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
 {
-    IP zero = {{0}};
+    IP4 zero = {{0}};
 
     if (len > MAX_FRIEND_CLIENTS)
         return zero;
@@ -1059,7 +1059,7 @@ static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
  *
  *  return number of ports and puts the list of ports in portlist.
  */
-static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t len, IP ip)
+static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t len, IP4 ip)
 {
     uint32_t i;
     uint16_t num = 0;
@@ -1074,7 +1074,7 @@ static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t 
     return num;
 }
 
-static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
+static void punch_holes(DHT *dht, IP4 ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
 {
     if (numports > MAX_FRIEND_CLIENTS || numports == 0)
         return;
@@ -1114,7 +1114,7 @@ static void do_NAT(DHT *dht)
                 dht->friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time &&
                 dht->friends_list[i].recvNATping_timestamp + PUNCH_INTERVAL * 2 >= temp_time) {
 
-            IP ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS / 2);
+            IP4 ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS / 2);
 
             if (ip.uint32 == 0)
                 continue;

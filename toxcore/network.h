@@ -86,11 +86,12 @@ typedef union {
     uint8_t uint8[4];
     uint16_t uint16[2];
     uint32_t uint32;
-} IP;
+    in_addr_t in_addr;
+} IP4;
 
 typedef union {
     struct {
-        IP ip;
+        IP4 ip;
         uint16_t port;
         /* Not used for anything right now. */
         uint16_t padding;
@@ -101,7 +102,7 @@ typedef union {
 typedef struct {
     int16_t family;
     uint16_t port;
-    IP ip;
+    IP4 ip;
     uint8_t zeroes[8];
 #ifdef ENABLE_IPV6
     uint8_t zeroes2[12];
@@ -155,7 +156,7 @@ void networking_poll(Networking_Core *net);
  *  return 0 if no problems.
  *  return -1 if there were problems.
  */
-Networking_Core *new_networking(IP ip, uint16_t port);
+Networking_Core *new_networking(IP4 ip, uint16_t port);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);

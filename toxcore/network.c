@@ -156,7 +156,7 @@ static void at_shutdown(void)
  *  return Networking_Core object if no problems
  *  return NULL if there are problems.
  */
-Networking_Core *new_networking(IP ip, uint16_t port)
+Networking_Core *new_networking(IP4 ip, uint16_t port)
 {
     if (at_startup() != 0)
         return NULL;
