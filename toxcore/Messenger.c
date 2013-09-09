@@ -351,12 +351,11 @@ static int m_sendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t le
  *  return 0 if success.
  *  return -1 if failure.
  */
-static int setfriendname(Messenger *m, int friendnumber, uint8_t *name)
+static int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint8_t len)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    uint16_t len = strlen(name) + 1;
     m->friendlist[friendnumber].name_length = len;
     memcpy(m->friendlist[friendnumber].name, name, len);
     return 0;
@@ -1029,7 +1028,7 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     for (i = 0; i < num; ++i) {
         if (temp[i].status >= 3) {
             int fnum = m_addfriend_norequest(m, temp[i].client_id);
-            setfriendname(m, fnum, temp[i].name);
+            setfriendname(m, fnum, temp[i].name, temp[i].name_length);
             /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
         } else if (temp[i].status != 0) {
             /* TODO: This is not a good way to do this. */
