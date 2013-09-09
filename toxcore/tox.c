@@ -394,9 +394,13 @@ int tox_isconnected(void *tox)
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
+void *tox_new_ex(uint8_t ipv6enabled)
+{
+    return initMessenger(ipv6enabled);
+}
 void *tox_new(void)
 {
-    return initMessenger();
+    return tox_new_ex(0);
 }
 
 /* Run this before closing shop.

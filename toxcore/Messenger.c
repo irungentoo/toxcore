@@ -650,15 +650,21 @@ static void LANdiscovery(Messenger *m)
 }
 
 /* Run this at startup. */
-Messenger *initMessenger(void)
+Messenger *initMessenger(uint8_t ipv6enabled)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
     if ( ! m )
         return NULL;
 
+#ifdef NETWORK_IP_PORT_IS_IPV6
+    IPAny ip;
+    memset(&ip, 0, sizeof(ip));
+    ip.family = ipv6enabled ? AF_INET6 : AF_INET;
+#else
     IP4 ip;
     ip.uint32 = 0;
+#endif
     m->net = new_networking(ip, PORT);
 
     if (m->net == NULL) {

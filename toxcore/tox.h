@@ -50,6 +50,8 @@ typedef struct {
     uint16_t padding;
 } tox_IP_Port;
 
+#define TOX_IP_IS_IPV6 0
+
 /* Errors for m_addfriend
  * FAERR - Friend Add Error
  */
@@ -307,6 +309,7 @@ int tox_isconnected(Tox *tox);
  *  return 0 if there are problems.
  */
 Tox *tox_new(void);
+Tox *tox_new_ex(uint8_t ipv6enabled);
 
 /* Run this before closing shop.
  * Free all datastructures. */

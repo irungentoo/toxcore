@@ -367,7 +367,7 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, in
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
  */
-Messenger *initMessenger(void);
+Messenger *initMessenger(uint8_t ipv6enabled);
 
 /* Run this before closing shop
  * Free all datastructures.

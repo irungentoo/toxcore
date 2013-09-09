@@ -274,7 +274,8 @@ int main(int argc, char *argv[])
     good_id_b = hex_string_to_bin(good_id_b_str);
     bad_id    = hex_string_to_bin(bad_id_str);
 
-    m = initMessenger();
+    /* no IPv6 enabled yet */
+    m = initMessenger(0);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)
