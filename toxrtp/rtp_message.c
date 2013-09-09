@@ -26,6 +26,7 @@
 #include "rtp_message.h"
 #include "rtp_allocator.h"
 #include "rtp_impl.h"
+#include <stdio.h>
 
 #ifdef _USE_ERRORS
 #include "rtp_error_id.h"
@@ -34,9 +35,36 @@
 #include <assert.h>
 
 /* Some defines */
-#define _MIN_HEADER_LENGHT 12
 
 /* End of defines */
+
+void rtp_header_print (const rtp_header_t* _header)
+{
+    printf("Header:      \n"
+           "Version:    %d\n"
+           "Padding:    %d\n"
+           "Ext:        %d\n"
+           "CC:         %d\n"
+           "marker:     %d\n"
+           "payload typ:%d\n\n"
+           "sequ num:   %d\n"
+           "Timestamp:  %d\n"
+           "SSrc:       %d\n"
+           "CSrc:       %d\n"
+           "Lenght:     %d\n"
+           ,rtp_header_get_flag_version(_header)
+           ,rtp_header_get_flag_padding(_header)
+           ,rtp_header_get_flag_extension(_header)
+           ,rtp_header_get_flag_CSRC_count(_header)
+           ,rtp_header_get_setting_marker(_header)
+           ,rtp_header_get_setting_payload_type(_header)
+           ,_header->_sequence_number
+           ,_header->_timestamp
+           ,_header->_ssrc
+           ,_header->_csrc[0]
+           ,_header->_length
+           );
+}
 
 rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
 {
@@ -53,12 +81,25 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
 
     _retu->_flags = *_it; ++_it;
 
+
+    /* This indicates if the first 2 bytes are valid.
+     * Now it my happen that this is out of order but
+     * it cuts down chances of parsing some invalid value
+     */
+    if ( rtp_header_get_flag_version(_retu) != RTP_VERSION ){
+        printf("Invalid version: %d\n", rtp_header_get_flag_version(_retu));
+        //assert(rtp_header_get_flag_version(_retu) == RTP_VERSION);
+        /* Deallocate */
+        //DEALLOCATOR(_retu);
+        //return NULL;
+    }
+
     /*
      * Added a check for the size of the header little sooner so
      * I don't need to parse the other stuff if it's bad
      */
     uint8_t cc = rtp_header_get_flag_CSRC_count ( _retu );
-    uint32_t _lenght = 8 + ( cc * 4 );
+    uint32_t _lenght = _MIN_HEADER_LENGTH + ( cc * 4 );
 
     if ( _bytes < _lenght ) {
 #ifdef _USE_ERRORS
@@ -83,7 +124,14 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
 
     _it += 2;
 
-    _retu->_ssrc = ( ( uint32_t ) * _it       << 24 ) |
+    _retu->_timestamp = ( ( uint32_t ) * _it         << 24 ) |
+                        ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
+                        ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
+                        (              * ( _it + 3 ) ) ;
+
+    _it += 4;
+
+    _retu->_ssrc = ( ( uint32_t ) * _it         << 24 ) |
                    ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
                    ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
                    ( ( uint32_t ) * ( _it + 3 ) ) ;
@@ -92,7 +140,7 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
     size_t x;
     for ( x = 0; x < cc; x++ ) {
         _it += 4;
-        _retu->_csrc[x] = ( ( uint32_t ) * _it        << 24 ) |
+        _retu->_csrc[x] = ( ( uint32_t ) * _it          << 24 ) |
                           ( ( uint32_t ) * ( _it + 1 )  << 16 ) |
                           ( ( uint32_t ) * ( _it + 2 )  << 8 )  |
                           ( ( uint32_t ) * ( _it + 3 ) ) ;
@@ -118,7 +166,7 @@ rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload, size_t _byte
 
     uint16_t _ext_len = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
 
-    if ( _bytes < _ext_len ) {
+    if ( _bytes < ( _ext_len * sizeof(uint32_t) ) ) {
 #ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_PAYLOAD_INVALID );
 #endif /* _USE_ERRORS */
@@ -130,13 +178,14 @@ rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload, size_t _byte
 
     ALLOCATOR ( _retu->_hd_ext, uint32_t, _ext_len )
 
+    uint32_t* _hd_ext = _retu->_hd_ext;
     size_t i;
     for ( i = 0; i < _ext_len; i++ ) {
         _it += 4;
-        _retu->_hd_ext[i] = ( ( uint32_t ) * _it       << 24 ) |
-                            ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
-                            ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
-                            ( ( uint32_t ) * ( _it + 3 ) ) ;
+        _hd_ext[i] = ( ( uint32_t ) * _it         << 24 ) |
+                     ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
+                     ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
+                     ( ( uint32_t ) * ( _it + 3 ) ) ;
     }
 
     return _retu;
@@ -154,18 +203,26 @@ uint8_t* rtp_add_header ( rtp_header_t* _header, uint8_t* _payload )
     *_it = ( _header->_sequence_number >> 8 ); ++_it;
     *_it = ( _header->_sequence_number ); ++_it;
 
-    *_it = ( _header->_ssrc >> 24 ); ++_it;
-    *_it = ( _header->_ssrc >> 16 ); ++_it;
-    *_it = ( _header->_ssrc >> 8 ); ++_it;
-    *_it = ( _header->_ssrc );
+    uint32_t _timestamp = _header->_timestamp;
+    *_it = ( _timestamp >> 24 ); ++_it;
+    *_it = ( _timestamp >> 16 ); ++_it;
+    *_it = ( _timestamp >> 8 ); ++_it;
+    *_it = ( _timestamp ); ++_it;
 
+    uint32_t _ssrc = _header->_ssrc;
+    *_it = ( _ssrc >> 24 ); ++_it;
+    *_it = ( _ssrc >> 16 ); ++_it;
+    *_it = ( _ssrc >> 8 ); ++_it;
+    *_it = ( _ssrc );
+
+    uint32_t *_csrc = _header->_csrc;
     size_t x;
     for ( x = 0; x < cc; x++ ) {
         ++_it;
-        *_it = ( _header->_csrc[x] >> 24 );  ++_it;
-        *_it = ( _header->_csrc[x] >> 16 );  ++_it;
-        *_it = ( _header->_csrc[x] >> 8 );   ++_it;
-        *_it = ( _header->_csrc[x] );
+        *_it = ( _csrc[x] >> 24 );  ++_it;
+        *_it = ( _csrc[x] >> 16 );  ++_it;
+        *_it = ( _csrc[x] >> 8 );   ++_it;
+        *_it = ( _csrc[x] );
     }
 
     return _it;
@@ -183,14 +240,13 @@ uint8_t* rtp_add_extention_header ( rtp_ext_header_t* _header, uint8_t* _payload
 
     size_t x;
 
+    uint32_t* _hd_ext = _header->_hd_ext;
     for ( x = 0; x < _header->_ext_len; x++ ) {
-
         ++_it;
-
-        *_it = ( _header->_hd_ext[x] >> 24 );  ++_it;
-        *_it = ( _header->_hd_ext[x] >> 16 );  ++_it;
-        *_it = ( _header->_hd_ext[x] >> 8 );  ++_it;
-        *_it = ( _header->_hd_ext[x] );
+        *_it = ( _hd_ext[x] >> 24 );  ++_it;
+        *_it = ( _hd_ext[x] >> 16 );  ++_it;
+        *_it = ( _hd_ext[x] >> 8 );  ++_it;
+        *_it = ( _hd_ext[x] );
     }
 
     return _it;
