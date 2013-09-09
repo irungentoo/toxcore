@@ -71,7 +71,8 @@ typedef int sock_t;
 #define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID. */
 #define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID. */
 #define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
-#define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID. */
+#define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID for IPv4 addresses. */
+#define NET_PACKET_SEND_NODES_EX   4   /* Send nodes response packet ID for other addresses. */
 #define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
 #define NET_PACKET_SYNC            17  /* SYNC packet ID. */
 #define NET_PACKET_DATA            18  /* Data packet ID. */
@@ -114,8 +115,7 @@ typedef union {
         uint16_t padding;
     };
     uint8_t uint8[8];
-} IP_Port;
-
+} IP4_Port;
 
 /* will replace IP_Port as soon as the complete infrastructure is in place
  * removed the unused union and padding also */
@@ -123,6 +123,12 @@ typedef struct {
     IPAny ip;
     uint16_t port;
 } IPAny_Port;
+
+#ifdef NETWORK_IP_PORT_IS_IPV6
+typedef IPAny_Port IP_Port;
+#else
+typedef IP4_Port IP_Port;
+#endif
 
 /* ipport_equal
  *  compares two IPAny_Port structures

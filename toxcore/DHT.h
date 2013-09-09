@@ -75,10 +75,21 @@ typedef struct {
     uint64_t    NATping_timestamp;
 } DHT_Friend;
 
+/* this must be kept even if IP_Port is expanded: wire compatibility */
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
-    IP_Port     ip_port;
-} Node_format;
+    IP4_Port    ip_port;
+} Node4_format;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IPAny_Port  ip_port;
+} Node46_format;
+/* IPAny temporary: change to 46 */
+#define DHT_NODEFORMAT 4
+typedef Node4_format Node_format;
+/* #define DHT_NODEFORMAT 46 */
+/* typedef Node46_format Node_format; */
 
 typedef struct {
     IP_Port     ip_port;
@@ -88,15 +99,15 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 typedef struct {
-    Net_Crypto *c;
+    Net_Crypto  *c;
     Client_data  close_clientlist[LCLIENT_LIST];
-    DHT_Friend      *friends_list;
+    DHT_Friend  *friends_list;
     uint16_t     num_friends;
     Pinged       send_nodes[LSEND_NODES_ARRAY];
     Node_format  toping[MAX_TOPING];
     uint64_t     last_toping;
-    uint64_t close_lastgetnodes;
-    void *ping;
+    uint64_t     close_lastgetnodes;
+    void        *ping;
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
@@ -137,6 +148,7 @@ void do_DHT(DHT *dht);
  *  Sends a get nodes request to the given node with ip port and public_key.
  */
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
+void DHT_bootstrap_ex(DHT *dht, const char *address, uint16_t port, uint8_t *public_key);
 
 /* Add nodes to the toping list.
  * All nodes in this list are pinged every TIME_TOPING seconds

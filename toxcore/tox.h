@@ -291,8 +291,10 @@ void tox_callback_connectionstatus(Tox *tox, void (*function)(Tox *tox, int, uin
 
 /* Use this function to bootstrap the client.
  * Sends a get nodes request to the given node with ip port and public_key.
+ * tox_bootstrap_ex converts the address into an IP_Port structure internally
  */
 void tox_bootstrap(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
+void tox_bootstrap_ex(Tox *tox, const char *address, uint16_t port, uint8_t *public_key);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
