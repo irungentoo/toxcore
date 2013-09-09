@@ -33,9 +33,11 @@ extern "C" {
 
 typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
-    uint64_t    last_recv;
     uint64_t    pingid;
     uint64_t    last_pinged;
+
+    uint64_t    last_recv;
+    uint64_t    last_recv_msgping;
     uint32_t    last_message_number;
 } Group_Peer;
 
@@ -77,6 +79,14 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  *
  */
 uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
+
+
+/*
+ * Tell everyone about a new peer (a person we are inviting for example.)
+ *
+ */
+uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
+
 
 /* Create a new group chat.
  *
