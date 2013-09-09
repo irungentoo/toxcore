@@ -234,3 +234,181 @@ void kill_networking(Networking_Core *net)
     free(net);
     return;
 }
+
+/*
+ * addr_parse_ip
+ *  directly parses the input into an IP structure
+ *  tries IPv4 first, then IPv6
+ *
+ * input
+ *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
+ *
+ * output
+ *  IP: family and the value is set on success
+ *
+ * returns 1 on success, 0 on failure
+ */
+
+int addr_parse_ip(const char *address, IPAny *to)
+{
+    struct in_addr addr4;
+    if (1 == inet_pton(AF_INET, address, &addr4))
+    {
+        to->family = AF_INET;
+        to->ip4.in_addr = addr4;
+        return 1;
+    };
+
+    struct in6_addr addr6;
+    if (1 == inet_pton(AF_INET6, address, &addr6))
+    {
+        to->family = AF_INET6;
+        to->ip6 = addr6;
+        return 1;
+    };
+
+    return 0;
+};
+
+/*
+ * addr_resolve():
+ *  uses getaddrinfo to resolve an address into an IP address
+ *  uses the first IPv4/IPv6 addresses returned by getaddrinfo
+ *
+ * input
+ *  address: a hostname (or something parseable to an IP address)
+ *  ip: ip.family MUST be initialized, either set to a specific IP version
+ *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
+ *     IP versions are acceptable
+ *
+ * returns in ip a valid IPAny (v4/v6),
+ *     prefers v6 if ip.family was AF_UNSPEC and both available
+ * returns 0 on failure
+ */
+
+int addr_resolve(const char *address, IPAny *ip)
+{
+    struct addrinfo *server = NULL;
+    struct addrinfo *walker = NULL;
+    struct addrinfo  hints;
+    int              rc;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = ip->family;
+    hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
+
+#ifdef __WIN32__
+    WSADATA wsa_data;
+
+    /* CLEANUP: really not the best place to put this */
+    rc = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+
+    if (rc != 0) {
+        return 0;
+    }
+
+#endif
+
+    rc = getaddrinfo(address, NULL, &hints, &server);
+    // Lookup failed.
+    if (rc != 0) {
+#ifdef __WIN32__
+        WSACleanup();
+#endif
+        return 0;
+    }
+
+    IP4 ip4;
+    memset(&ip4, 0, sizeof(ip4));
+    IP6 ip6;
+    memset(&ip6, 0, sizeof(ip6));
+
+    walker = server;
+    while (walker && (rc != 3))
+    {
+        if (ip->family != AF_UNSPEC)
+        {
+            if (walker->ai_family == ip->family) {
+                if (ip->family == AF_INET)
+                {
+                    if (walker->ai_addrlen == sizeof(struct sockaddr_in))
+                    {
+                        struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+                        ip->ip4.in_addr = addr->sin_addr;
+                        rc = 3;
+                    }
+                }
+                else if (ip->family == AF_INET6)
+                {
+                    if (walker->ai_addrlen == sizeof(struct sockaddr_in6))
+                    {
+                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
+                        ip->ip6 = addr->sin6_addr;
+                        rc = 3;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (walker->ai_family == AF_INET)
+            {
+                if (walker->ai_addrlen == sizeof(struct sockaddr_in))
+                {
+                    struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+                    ip4.in_addr = addr->sin_addr;
+                    rc |= 1;
+                }
+            }
+            else if (walker->ai_family == AF_INET6)
+            {
+                if (walker->ai_addrlen == sizeof(struct sockaddr_in6))
+                {
+                    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
+                    ip6 = addr->sin6_addr;
+                    rc |= 2;
+                }
+            }
+        }
+
+        walker = walker->ai_next;
+    }
+
+    if (ip->family == AF_UNSPEC)
+    {
+        if (rc & 2)
+        {
+            ip->family = AF_INET6;
+            ip->ip6 = ip6;
+        } else if (rc & 1)
+        {
+            ip->family = AF_INET;
+            ip->ip4 = ip4;
+        }
+        else
+            rc = 0;
+    }
+
+    
+    freeaddrinfo(server);
+#ifdef __WIN32__
+    WSACleanup();
+#endif
+    return rc;
+}
+
+/*
+ * addr_resolve_or_parse_ip
+ *  resolves string into an IP address
+ *
+ * to->family MUST be set (AF_UNSPEC, AF_INET, AF_INET6)
+ * returns 1 on success, 0 on failure
+ */
+int addr_resolve_or_parse_ip(const char *address, IPAny *to)
+{
+    if (!addr_resolve(address, to))
+        if (!addr_parse_ip(address, to))
+            return 0;
+
+    return 1;
+};

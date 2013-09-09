@@ -86,8 +86,18 @@ typedef union {
     uint8_t uint8[4];
     uint16_t uint16[2];
     uint32_t uint32;
-    in_addr_t in_addr;
+    struct in_addr in_addr;
 } IP4;
+
+typedef struct in6_addr IP6;
+
+typedef struct {
+    sa_family_t family;
+    union {
+        IP4 ip4;
+        IP6 ip6;
+    };
+} IPAny;
 
 typedef union {
     struct {
@@ -108,6 +118,15 @@ typedef struct {
     uint8_t zeroes2[12];
 #endif
 } ADDR;
+
+/*
+ * addr_resolve_or_parse_ip
+ *  resolves string into an IP address
+ *
+ * to->family MUST be set (AF_UNSPEC, AF_INET, AF_INET6)
+ * returns 1 on success, 0 on failure
+ */
+int addr_resolve_or_parse_ip(const char *address, IPAny *to);
 
 /* Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
@@ -160,6 +179,5 @@ Networking_Core *new_networking(IP4 ip, uint16_t port);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
-
 
 #endif
