@@ -184,7 +184,7 @@ uint16_t tox_getselfname(void *tox, uint8_t *name, uint16_t nlen)
 /* Get name of friendnumber and put it in name.
  * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
  *
- *  return 0 if success.
+ *  return length of name (with the NULL terminator) if success.
  *  return -1 if failure.
  */
 int tox_getname(void *tox, int friendnumber, uint8_t *name)
