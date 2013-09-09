@@ -71,7 +71,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t * d
             sock_holder = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
             if (sock_holder != NULL) {
                 IP_Port ip_port = {{{{sock_holder->sin_addr.s_addr}}, port, 0}};
-                sendpacket(net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
+                sendpacket(net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
             }
     }
 
