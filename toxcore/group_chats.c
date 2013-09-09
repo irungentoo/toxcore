@@ -278,7 +278,7 @@ static int delpeer(Group_Chat *chat, uint8_t *client_id)
 #define PING_TIMEOUT 5
 static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
 {
-    if (peernum < 0 || peernum >= chat->numpeers)
+    if ((uint32_t)peernum >= chat->numpeers)
         return -1;
 
     uint64_t temp_time = unix_time();
@@ -296,7 +296,7 @@ static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
 
 static int send_sendnodes(Group_Chat *chat, IP_Port ip_port, int peernum, uint64_t pingid)
 {
-    if (peernum < 0 || peernum >= chat->numpeers)
+    if ((uint32_t)peernum >= chat->numpeers)
         return -1;
 
     sendnodes_data contents;
@@ -321,7 +321,7 @@ static int handle_getnodes(Group_Chat *chat, IP_Port source, int peernum, uint8_
     if (len != sizeof(getnodes_data))
         return 1;
 
-    if (peernum < 0 || peernum >= chat->numpeers)
+    if ((uint32_t)peernum >= chat->numpeers)
         return 1;
 
     getnodes_data contents;
@@ -336,7 +336,7 @@ static int handle_getnodes(Group_Chat *chat, IP_Port source, int peernum, uint8_
 
 static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8_t *data, uint32_t len)
 {
-    if (peernum < 0 || peernum >= chat->numpeers)
+    if ((uint32_t)peernum >= chat->numpeers)
         return 1;
 
     if (len > sizeof(sendnodes_data) || len < sizeof(uint64_t))
@@ -391,6 +391,14 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     if (peernum == -1)
         return 1;
 
+    uint64_t temp_time = unix_time();
+    /* Spam prevention (1 message per peer per second limit.)
+
+        if (chat->group[peernum].last_recv == temp_time)
+            return 1;
+
+        chat->group[peernum].last_recv = temp_time;
+    */
     uint32_t message_num;
     memcpy(&message_num, data + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
     message_num = ntohl(message_num);
@@ -403,14 +411,34 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
 
     chat->group[peernum].last_message_number = message_num;
 
-    int handled = 0;
+    int handled = 1;
+    uint8_t *contents = data + GROUP_DATA_MIN_SIZE;
+    uint16_t contents_len = len - GROUP_DATA_MIN_SIZE;
 
-    if (data[crypto_box_PUBLICKEYBYTES + sizeof(message_num)] == 64) {
-        if (chat->group_message != NULL)  /* If message is chat message */
-            (*chat->group_message)(chat, peernum, data + GROUP_DATA_MIN_SIZE, len - GROUP_DATA_MIN_SIZE,
-                                   chat->group_message_userdata);
+    switch (data[crypto_box_PUBLICKEYBYTES + sizeof(message_num)]) {
+        case 0: /* If message is ping */
+            if (contents_len != 0)
+                return 1;
 
-        handled = 1;
+            chat->group[peernum].last_recv_msgping = temp_time;
+
+        case 16: /* If message is new peer */
+            if (contents_len != crypto_box_PUBLICKEYBYTES)
+                return 1;
+
+            addpeer(chat, contents);
+            break;
+
+        case 64: /* If message is chat message */
+            if (chat->group_message != NULL)
+                (*chat->group_message)(chat, peernum, contents, contents_len, chat->group_message_userdata);
+
+            break;
+
+        default:
+            handled = 0;
+            break;
+
     }
 
     if (handled == 1) {
@@ -465,9 +493,6 @@ int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, ui
 
     int peernum = peer_in_chat(chat, public_key);
 
-    if (peernum == -1)/*NOTE: This is just for testing and will be removed later.*/
-        peernum = addpeer(chat, public_key);
-
     if (peernum == -1)
         return 1;
 
@@ -491,6 +516,12 @@ int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, ui
 uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length)
 {
     return send_data(chat, message, length, 64); //TODO: better return values?
+}
+
+uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id)
+{
+    addpeer(chat, client_id);
+    return send_data(chat, client_id, crypto_box_PUBLICKEYBYTES, 16); //TODO: better return values?
 }
 
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),

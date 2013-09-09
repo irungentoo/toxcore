@@ -30,6 +30,7 @@
 #include "DHT.h"
 #include "friend_requests.h"
 #include "LAN_discovery.h"
+#include "group_chats.h"
 
 #define MAX_NAME_LENGTH 128
 #define MAX_STATUSMESSAGE_LENGTH 1007
@@ -132,6 +133,9 @@ typedef struct Messenger {
 
     Friend *friendlist;
     uint32_t numfriends;
+
+    Group_Chat *chats;
+    uint32_t numchats;
 
     uint64_t last_LANdiscovery;
 

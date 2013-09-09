@@ -1,4 +1,4 @@
-#include "group_chats.h"
+#include "../../toxcore/group_chats.h"
 #define NUM_CHATS 8
 
 #ifdef WIN32
@@ -84,6 +84,7 @@ int main()
     ip_port.port = htons(12745);
 
     for (i = 0; i < NUM_CHATS; ++i) {
+        group_newpeer(chats[0], chats[i]->self_public_key);
         chat_bootstrap(chats[i], ip_port, chats[0]->self_public_key);
         printf("%u\n", i);
     }
