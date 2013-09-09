@@ -185,7 +185,7 @@ static int send_groupchatpacket(Group_Chat *chat, IP_Port ip_port, uint8_t *publ
     if (len == -1)
         return -1;
 
-    if (sendpacket(chat->net->sock, ip_port, packet, len) == len)
+    if (sendpacket(chat->net, ip_port, packet, len) == len)
         return 0;
 
     return -1;
