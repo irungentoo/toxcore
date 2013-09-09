@@ -235,6 +235,43 @@ void kill_networking(Networking_Core *net)
     return;
 }
 
+/* ip_equal
+ *  compares two IPAny structures
+ *  unset means unequal
+ *
+ * returns 0 when not equal or when uninitialized
+ */
+int ip_equal(IPAny *a, IPAny *b)
+{
+    if (!a || !b)
+        return 0;
+
+    if (a->family == AF_INET)
+        return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
+
+    if (a->family == AF_INET6)
+        return IN6_ARE_ADDR_EQUAL(&a->ip6, &b->ip6);
+
+    return 0;
+};
+
+/* ipport_equal
+ *  compares two IPAny_Port structures
+ *  unset means unequal
+ *
+ * returns 0 when not equal or when uninitialized
+ */
+int ipport_equal(IPAny_Port *a, IPAny_Port *b)
+{
+    if (!a || !b)
+        return 0;
+
+    if (!a->port || (a->port != b->port))
+        return 0;
+
+    return ip_equal(&a->ip, &b->ip);
+};
+
 /* ipany_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output

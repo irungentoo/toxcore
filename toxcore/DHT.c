@@ -115,7 +115,7 @@ static int client_id_cmp(ClientPair p1, ClientPair p2)
     return c;
 }
 
-static int ipport_equal(IP_Port a, IP_Port b)
+static int ip4port_equal(IP_Port a, IP_Port b)
 {
     return (a.ip.uint32 == b.ip.uint32) && (a.port == b.port);
 }
@@ -144,7 +144,7 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
 
     for (i = 0; i < length; ++i) {
         /* If ip_port is assigned to a different client_id replace it */
-        if (ipport_equal(list[i].ip_port, ip_port)) {
+        if (ip4port_equal(list[i].ip_port, ip_port)) {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
         }
 
@@ -447,7 +447,7 @@ static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
         if (!is_timeout(temp_time, dht->send_nodes[i].timestamp, PING_TIMEOUT)) {
             pinging = 0;
 
-            if (ip_port.ip.uint32 != 0 && ipport_equal(dht->send_nodes[i].ip_port, ip_port))
+            if (ip_port.ip.uint32 != 0 && ip4port_equal(dht->send_nodes[i].ip_port, ip_port))
                 ++pinging;
 
             if (ping_id != 0 && dht->send_nodes[i].ping_id == ping_id)

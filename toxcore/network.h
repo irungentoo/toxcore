@@ -115,6 +115,22 @@ typedef union {
     uint8_t uint8[8];
 } IP_Port;
 
+
+/* will replace IP_Port as soon as the complete infrastructure is in place
+ * removed the unused union and padding also */
+typedef struct {
+    IPAny ip;
+    uint16_t port;
+} IPAny_Port;
+
+/* ipport_equal
+ *  compares two IPAny_Port structures
+ *  unset means unequal
+ *
+ * returns 0 when not equal or when uninitialized
+ */
+int ipport_equal(IPAny_Port *a, IPAny_Port *b);
+
 typedef struct {
     int16_t family;
     uint16_t port;
