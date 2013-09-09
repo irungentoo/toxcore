@@ -110,6 +110,9 @@ static int peer_okping(Group_Chat *chat, uint8_t *client_id)
     uint32_t i, j = 0;
     uint64_t temp_time = unix_time();
 
+    if (memcmp(chat->self_public_key, client_id, crypto_box_PUBLICKEYBYTES) == 0)
+        return -1;
+
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) {
         if (chat->close[i].last_recv + BAD_NODE_TIMEOUT < temp_time) {
             ++j;
@@ -201,7 +204,7 @@ static uint8_t sendto_allpeers(Group_Chat *chat, uint8_t *data, uint16_t length,
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) {
-        if (chat->close[i].ip_port.ip.uint32 != 0 && chat->close[i].last_recv > temp_time + BAD_NODE_TIMEOUT) {
+        if (chat->close[i].ip_port.ip.uint32 != 0 && chat->close[i].last_recv + BAD_NODE_TIMEOUT > temp_time) {
             if (send_groupchatpacket(chat, chat->close[i].ip_port, chat->close[i].client_id, data, length, request_id) == 0)
                 ++sent;
         }
@@ -392,17 +395,21 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     memcpy(&message_num, data + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
     message_num = ntohl(message_num);
 
-    if (message_num - chat->group[peernum].last_message_number > 64 ||
-            message_num == chat->group[peernum].last_message_number)
+    if (chat->group[peernum].last_message_number == 0) {
+        chat->group[peernum].last_message_number = message_num;
+    } else if (message_num - chat->group[peernum].last_message_number > 64 ||
+               message_num == chat->group[peernum].last_message_number)
         return 1;
 
     chat->group[peernum].last_message_number = message_num;
 
     int handled = 0;
 
-    if (data[crypto_box_PUBLICKEYBYTES + sizeof(message_num)] == 64
-            && chat->group_message != NULL) { /* If message is chat message */
-        (*chat->group_message)(chat, peernum, data + GROUP_DATA_MIN_SIZE, len - 1, chat->group_message_userdata);
+    if (data[crypto_box_PUBLICKEYBYTES + sizeof(message_num)] == 64) {
+        if (chat->group_message != NULL)  /* If message is chat message */
+            (*chat->group_message)(chat, peernum, data + GROUP_DATA_MIN_SIZE, len - GROUP_DATA_MIN_SIZE,
+                                   chat->group_message_userdata);
+
         handled = 1;
     }
 
@@ -420,10 +427,16 @@ static uint8_t send_data(Group_Chat *chat, uint8_t *data, uint32_t len, uint8_t 
         return 1;
 
     uint8_t packet[MAX_DATA_SIZE];
+    ++chat->message_number;
+
+    if (chat->message_number == 0)
+        chat->message_number = 1;
+
     uint32_t message_num = htonl(chat->message_number);
 //TODO
     memcpy(packet, chat->self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + crypto_box_PUBLICKEYBYTES, &message_num, sizeof(message_num));
+    memcpy(packet + GROUP_DATA_MIN_SIZE, data, len);
     packet[crypto_box_PUBLICKEYBYTES + sizeof(message_num)] = message_id;
     return sendto_allpeers(chat, packet, len + GROUP_DATA_MIN_SIZE, 50);
 }

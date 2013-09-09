@@ -6,7 +6,7 @@
 #else
 #define c_sleep(x) usleep(1000*x)
 #endif
-Group_Chat *chats[NUM_CHATS];
+Group_Chat *chat;
 
 void print_close(Group_Close *close)
 {
@@ -54,48 +54,58 @@ void print_group(Group_Chat *chat)
     }
 }
 
+unsigned char *hex_string_to_bin(char hex_string[])
+{
+    size_t len = strlen(hex_string);
+    unsigned char *val = malloc(len);
+    char *pos = hex_string;
+    int i;
+
+    for (i = 0; i < len; ++i, pos += 2)
+        sscanf(pos, "%2hhx", &val[i]);
+
+    return val;
+}
+
 void print_message(Group_Chat *chat, int peer_number, uint8_t *message, uint16_t length, void *userdata)
 {
     printf("%u: %s | %u\n", peer_number, message, length);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     IP ip;
     ip.uint32 = 0;
     uint32_t i;
 
+    chat = new_groupchat(new_networking(ip, 12745));
 
-    for (i = 0; i < NUM_CHATS; ++i) {
-        chats[i] = new_groupchat(new_networking(ip, 12745));
+    if (chat == 0)
+        exit(1);
 
-        if (chats[i] == 0)
-            exit(1);
+    networking_registerhandler(chat->net, 48, &handle_groupchatpacket, chat);
 
-        networking_registerhandler(chats[i]->net, 48, &handle_groupchatpacket, chats[i]);
-        callback_groupmessage(chats[i], &print_message, 0);
-    }
+    callback_groupmessage(chat, &print_message, 0);
 
     printf("ok\n");
-    IP_Port ip_port;
-    ip_port.ip.uint32 = 0;
-    ip_port.ip.uint8[0] = 127;
-    ip_port.ip.uint8[3] = 1;
-    ip_port.port = htons(12745);
+    IP_Port bootstrap_ip_port;
+    bootstrap_ip_port.port = htons(atoi(argv[2]));
+    /* bootstrap_ip_port.ip.c[0] = 127;
+     * bootstrap_ip_port.ip.c[1] = 0;
+     * bootstrap_ip_port.ip.c[2] = 0;
+     * bootstrap_ip_port.ip.c[3] = 1; */
+    bootstrap_ip_port.ip.uint32 = inet_addr(argv[1]);
 
-    for (i = 0; i < NUM_CHATS; ++i) {
-        chat_bootstrap(chats[i], ip_port, chats[0]->self_public_key);
-        printf("%u\n", i);
-    }
+    chat_bootstrap(chat, bootstrap_ip_port, hex_string_to_bin(argv[3]));
 
     while (1) {
-        for (i = 0; i < NUM_CHATS; ++i) {
-            networking_poll(chats[i]->net);
-            do_groupchat(chats[i]);
-            printf("%u\n", chats[i]->numpeers);
-            print_close(chats[i]->close);
-            print_group(chats[i]);
-        }
+
+        networking_poll(chat->net);
+        do_groupchat(chat);
+        printf("%u ", chat->numpeers);
+        printf("%u\n", group_sendmessage(chat, "Install Gentoo", sizeof("Install Gentoo")));
+        //print_close(chat->close);
+        // print_group(chat);
 
         c_sleep(100);
     }
