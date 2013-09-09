@@ -235,6 +235,38 @@ void kill_networking(Networking_Core *net)
     return;
 }
 
+/* ipany_ntoa
+ *   converts ip into a string
+ *   uses a static buffer, so mustn't used multiple times in the same output
+ */
+/* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
+static char addresstext[96];
+const char *ipany_ntoa(IPAny *ip)
+{
+    if (ip) {
+        if (ip->family == AF_INET) {
+            addresstext[0] = 0;
+            struct in_addr *addr = (struct in_addr *)&ip->ip4;
+            inet_ntop(ip->family, addr, addresstext, sizeof(addresstext));
+        }
+        else if (ip->family == AF_INET6) {
+            addresstext[0] = '[';
+            struct in6_addr *addr = (struct in6_addr *)&ip->ip6;
+            inet_ntop(ip->family, addr, &addresstext[1], sizeof(addresstext) - 3);
+            size_t len = strlen(addresstext);
+            addresstext[len] = ']';
+            addresstext[len + 1] = 0;
+        }
+        else
+            snprintf(addresstext, sizeof(addresstext), "(IP invalid, family %u)", ip->family);
+    }
+    else
+        snprintf(addresstext, sizeof(addresstext), "(IP invalid: NULL)");
+
+    addresstext[INET6_ADDRSTRLEN + 2] = 0;
+    return addresstext;
+};
+
 /*
  * addr_parse_ip
  *  directly parses the input into an IP structure
@@ -252,16 +284,14 @@ void kill_networking(Networking_Core *net)
 int addr_parse_ip(const char *address, IPAny *to)
 {
     struct in_addr addr4;
-    if (1 == inet_pton(AF_INET, address, &addr4))
-    {
+    if (1 == inet_pton(AF_INET, address, &addr4)) {
         to->family = AF_INET;
         to->ip4.in_addr = addr4;
         return 1;
     };
 
     struct in6_addr addr6;
-    if (1 == inet_pton(AF_INET6, address, &addr6))
-    {
+    if (1 == inet_pton(AF_INET6, address, &addr6)) {
         to->family = AF_INET6;
         to->ip6 = addr6;
         return 1;
@@ -324,24 +354,18 @@ int addr_resolve(const char *address, IPAny *ip)
     memset(&ip6, 0, sizeof(ip6));
 
     walker = server;
-    while (walker && (rc != 3))
-    {
-        if (ip->family != AF_UNSPEC)
-        {
+    while (walker && (rc != 3)) {
+        if (ip->family != AF_UNSPEC) {
             if (walker->ai_family == ip->family) {
-                if (ip->family == AF_INET)
-                {
-                    if (walker->ai_addrlen == sizeof(struct sockaddr_in))
-                    {
+                if (ip->family == AF_INET) {
+                    if (walker->ai_addrlen == sizeof(struct sockaddr_in)) {
                         struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
                         ip->ip4.in_addr = addr->sin_addr;
                         rc = 3;
                     }
                 }
-                else if (ip->family == AF_INET6)
-                {
-                    if (walker->ai_addrlen == sizeof(struct sockaddr_in6))
-                    {
+                else if (ip->family == AF_INET6) {
+                    if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
                         ip->ip6 = addr->sin6_addr;
                         rc = 3;
@@ -349,21 +373,16 @@ int addr_resolve(const char *address, IPAny *ip)
                 }
             }
         }
-        else
-        {
-            if (walker->ai_family == AF_INET)
-            {
-                if (walker->ai_addrlen == sizeof(struct sockaddr_in))
-                {
+        else {
+            if (walker->ai_family == AF_INET) {
+                if (walker->ai_addrlen == sizeof(struct sockaddr_in)) {
                     struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
                     ip4.in_addr = addr->sin_addr;
                     rc |= 1;
                 }
             }
-            else if (walker->ai_family == AF_INET6)
-            {
-                if (walker->ai_addrlen == sizeof(struct sockaddr_in6))
-                {
+            else if (walker->ai_family == AF_INET6) {
+                if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
                     ip6 = addr->sin6_addr;
                     rc |= 2;
@@ -374,14 +393,12 @@ int addr_resolve(const char *address, IPAny *ip)
         walker = walker->ai_next;
     }
 
-    if (ip->family == AF_UNSPEC)
-    {
-        if (rc & 2)
-        {
+    if (ip->family == AF_UNSPEC) {
+        if (rc & 2) {
             ip->family = AF_INET6;
             ip->ip6 = ip6;
-        } else if (rc & 1)
-        {
+        }
+        else if (rc & 1) {
             ip->family = AF_INET;
             ip->ip4 = ip4;
         }

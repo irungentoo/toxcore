@@ -99,6 +99,12 @@ typedef struct {
     };
 } IPAny;
 
+/* ipany_ntoa
+ *   converts ip into a string
+ *   uses a static buffer, so mustn't used multiple times in the same output
+ */
+const char *ipany_ntoa(IPAny *ip);
+
 typedef union {
     struct {
         IP4 ip;
