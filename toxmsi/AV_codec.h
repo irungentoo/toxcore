@@ -50,7 +50,7 @@
 #define VIDEO_BITRATE 	10*1000
 
 /* default audio bitrate in bytes/s */
-#define AUDIO_BITRATE	128000
+#define AUDIO_BITRATE	64000
 
 /* audio frame duration in miliseconds */
 #define AUDIO_FRAME_DURATION	20

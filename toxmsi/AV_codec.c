@@ -301,7 +301,7 @@ int init_send_audio(codec_state *cs)
     cs->support_send_audio=0;
     
     printf("Default audio capture device is: %s\n", alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER));
-    cs->audio_capture_device = alcCaptureOpenDevice(NULL, 48000, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE);
+    cs->audio_capture_device = alcCaptureOpenDevice(NULL, AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
     if (alcGetError(cs->audio_capture_device) != AL_NO_ERROR) {
 	printf("could not start capture device! %d\n",alcGetError(cs->audio_capture_device));
         return 0;
@@ -309,12 +309,12 @@ int init_send_audio(codec_state *cs)
     
     int err = OPUS_OK;
     cs->audio_bitrate=AUDIO_BITRATE;
-    cs->audio_encoder = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &err);
+    cs->audio_encoder = opus_encoder_create(AUDIO_SAMPLE_RATE, 1, OPUS_APPLICATION_VOIP, &err);
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_bitrate));
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
 
-    opus_encoder_init(cs->audio_encoder, 48000, 1, OPUS_APPLICATION_VOIP);
+    opus_encoder_init(cs->audio_encoder, AUDIO_SAMPLE_RATE, 1, OPUS_APPLICATION_VOIP);
 
     int nfo;
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_GET_LOOKAHEAD(&nfo));
@@ -423,63 +423,60 @@ void *encode_video_thread(void *arg)
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P,cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
     cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,cs->webcam_decoder_ctx->pix_fmt,cs->webcam_decoder_ctx->width,cs->webcam_decoder_ctx->height,PIX_FMT_YUV420P,SWS_BILINEAR,NULL,NULL,NULL);
 
-    while(1) {
-        if(cs->quit||!cs->send_video)
-            break;
+    while(!cs->quit&&cs->send_video) {
+
         rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
-        if(cs->send_video) {
 
-            if(av_read_frame(cs->video_format_ctx, packet) < 0) {
-                printf("error reading frame\n");
-                if(cs->video_format_ctx->pb->error != 0)
-                    break;
-                continue;
-            }
-            if(packet->stream_index == cs->video_stream) {
-                if(avcodec_decode_video2(cs->webcam_decoder_ctx, webcam_frame, &video_frame_finished, packet)<0) {
-                    printf("couldn't decode\n");
-                    continue;
-                }
-                av_free_packet(packet);
-                sws_scale(cs->sws_ctx,(uint8_t const * const *)webcam_frame->data,webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, s_video_frame->data,s_video_frame->linesize);
-                /* create a new I-frame every 60 frames */
-                ++p;
-                if(p==60) {
+	if(av_read_frame(cs->video_format_ctx, packet) < 0) {
+	    printf("error reading frame\n");
+	    if(cs->video_format_ctx->pb->error != 0)
+		break;
+	    continue;
+	}
+	if(packet->stream_index == cs->video_stream) {
+	    if(avcodec_decode_video2(cs->webcam_decoder_ctx, webcam_frame, &video_frame_finished, packet)<0) {
+		printf("couldn't decode\n");
+		continue;
+	    }
+	    av_free_packet(packet);
+	    sws_scale(cs->sws_ctx,(uint8_t const * const *)webcam_frame->data,webcam_frame->linesize, 0, cs->webcam_decoder_ctx->height, s_video_frame->data,s_video_frame->linesize);
+	    /* create a new I-frame every 60 frames */
+	    ++p;
+	    if(p==60) {
 
-                    s_video_frame->pict_type=AV_PICTURE_TYPE_BI ;
-                } else if(p==61) {
-                    s_video_frame->pict_type=AV_PICTURE_TYPE_I ;
-                    p=0;
-                }
-                else {
-                    s_video_frame->pict_type=AV_PICTURE_TYPE_P ;
-                }
+		s_video_frame->pict_type=AV_PICTURE_TYPE_BI ;
+	    } else if(p==61) {
+		s_video_frame->pict_type=AV_PICTURE_TYPE_I ;
+		p=0;
+	    }
+	    else {
+		s_video_frame->pict_type=AV_PICTURE_TYPE_P ;
+	    }
 
-                if(video_frame_finished) {
-                    err= avcodec_encode_video2(cs->video_encoder_ctx,&enc_video_packet,s_video_frame,&got_packet);
-                    if(err<0) {
-                        printf("could not encode video frame\n");
-                        continue;
-                    }
-                    if(!got_packet) {
-                        continue;
-                    }
-                    pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                    if(!enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
-		    //printf("video packet size: %d\n",enc_video_packet.size);
-                    s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
-                    if(!s_video_msg) {
-                        printf("invalid message\n");
-                    }
-                    rtp_send_msg ( cs->_rtp_video, s_video_msg, cs->socket );
-                    pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
-                    av_free_packet(&enc_video_packet);
-                }
-            }
-            else {
-                av_free_packet(packet);
-            }
-        }
+	    if(video_frame_finished) {
+		err= avcodec_encode_video2(cs->video_encoder_ctx,&enc_video_packet,s_video_frame,&got_packet);
+		if(err<0) {
+		    printf("could not encode video frame\n");
+		    continue;
+		}
+		if(!got_packet) {
+		    continue;
+		}
+		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
+		if(!enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
+		//printf("video packet size: %d\n",enc_video_packet.size);
+		s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
+		if(!s_video_msg) {
+		    printf("invalid message\n");
+		}
+		rtp_send_msg ( cs->_rtp_video, s_video_msg, cs->socket );
+		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
+		av_free_packet(&enc_video_packet);
+	    }
+	}
+	else {
+	    av_free_packet(packet);
+	}
     }
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);	
@@ -501,15 +498,11 @@ void *encode_audio_thread(void *arg)
     int encoded_size=0;
     int16_t frame[4096];
     int frame_size=AUDIO_FRAME_SIZE;
-    ALint sample;
-    
+    ALint sample=0;
     alcCaptureStart(cs->audio_capture_device);
-    while(1) {
-        if(cs->quit||!cs->send_audio)
-            break;
+    while(!cs->quit&&cs->send_audio) {
 	alcGetIntegerv(cs->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
-	if(sample>=frame_size)
-	{
+	if(sample>frame_size) {
 	    alcCaptureSamples(cs->audio_capture_device, frame, frame_size);
 	    encoded_size=opus_encode(cs->audio_encoder,frame,frame_size,encoded_data,480);
 	    if(encoded_size<=0) {
@@ -567,9 +560,8 @@ void *decode_video_thread(void *arg)
     r_video_frame=avcodec_alloc_frame();
     AVPacket dec_video_packet;
     av_new_packet (&dec_video_packet, 65536);
-    while(1) {
-        if(cs->quit||!cs->receive_video)
-	    break;
+    while(!cs->quit&&cs->receive_video) {
+
         r_msg = rtp_recv_msg ( cs->_rtp_video );
         if(r_msg) {
             if(handle_rtp_video_packet(cs,r_msg)) {
@@ -645,9 +637,7 @@ void *decode_audio_thread(void *arg)
     opus_int16 PCM[frame_size];
     
         
-    while(1) {
-        if(cs->quit||!cs->receive_audio)
-	    break;
+    while(!cs->quit&&cs->receive_audio) {
 
         r_msg = rtp_recv_msg ( cs->_rtp_audio );
         if(r_msg) {
@@ -663,34 +653,38 @@ void *decode_audio_thread(void *arg)
 	
 	if(success>0)
 	{
-	  /* lost packet */
-	  if(success==2) {
-	      /* lost packets are not handled correctly yet */
-	  } else {
+	  /* good packet */
+	  if(success==1)
+	  {
 	      dec_frame_len=opus_decode(cs->audio_decoder,r_msg->_data,r_msg->_length-1,PCM,frame_size,0);
 	      rtp_free_msg(cs->_rtp_audio, r_msg); 
-	      if(dec_frame_len>0) {	 
-		  alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
-		  if(val <= 0)
-		      continue;
-		  alSourceUnqueueBuffers(source, 1, &buffer);
-		  data_size = av_samples_get_buffer_size(NULL,1, dec_frame_len, AV_SAMPLE_FMT_S16, 1);
-		  alBufferData(buffer, AL_FORMAT_MONO16, PCM, data_size, 48000);
-		  int error=alGetError();
-		  if(error != AL_NO_ERROR) {
-		      fprintf(stderr, "Error setting buffer %d\n",error);
-		      break;
-		  }
-		  alSourceQueueBuffers(source, 1, &buffer);
-		  if(alGetError() != AL_NO_ERROR) {
-		      fprintf(stderr, "error: could not buffer audio\n");
-		      break;
-		  }
-		  alGetSourcei(source, AL_SOURCE_STATE, &val);
-		  if(val != AL_PLAYING)
-		      alSourcePlay(source);
-	      
+	  }
+	  /* lost packet  */
+	  if(success==2) {
+	      dec_frame_len=opus_decode(cs->audio_decoder,NULL,0,PCM,frame_size,1);
+	  } 
+	  if(dec_frame_len>0) {	 
+	      alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
+	      if(val <= 0)
+		  continue;
+	      alSourceUnqueueBuffers(source, 1, &buffer);
+	      data_size = av_samples_get_buffer_size(NULL,1, dec_frame_len, AV_SAMPLE_FMT_S16, 1);
+	      alBufferData(buffer, AL_FORMAT_MONO16, PCM, data_size, 48000);
+	      int error=alGetError();
+	      if(error != AL_NO_ERROR) {
+		  fprintf(stderr, "Error setting buffer %d\n",error);
+		  break;
 	      }
+	      alSourceQueueBuffers(source, 1, &buffer);
+	      if(alGetError() != AL_NO_ERROR) {
+		  fprintf(stderr, "error: could not buffer audio\n");
+		  break;
+	      }
+	      alGetSourcei(source, AL_SOURCE_STATE, &val);
+	      if(val != AL_PLAYING)
+		  alSourcePlay(source);
+	      
+	      
 	  }
 	}
 
