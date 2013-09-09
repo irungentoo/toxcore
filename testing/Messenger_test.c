@@ -100,7 +100,8 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    m = initMessenger();
+    /* IPv6: maybe allow from cmdline --ipv6? sticking to IPv4 for now */
+    m = initMessenger(0);
 
     if ( !m ) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
@@ -108,10 +109,8 @@ int main(int argc, char *argv[])
     }
 
     if (argc > 3) {
-        IP_Port bootstrap_ip_port;
-        bootstrap_ip_port.port = htons(atoi(argv[2]));
-        bootstrap_ip_port.ip.uint32 = inet_addr(argv[1]);
-        DHT_bootstrap(m->dht, bootstrap_ip_port, hex_string_to_bin(argv[3]));
+        uint16_t port = htons(atoi(argv[2]));
+        DHT_bootstrap_ex(m->dht, argv[1], port, hex_string_to_bin(argv[3]));
     } else {
         FILE *file = fopen(argv[1], "rb");
 
