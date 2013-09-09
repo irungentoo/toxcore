@@ -351,7 +351,7 @@ static int m_sendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t le
  *  return 0 if success.
  *  return -1 if failure.
  */
-static int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint8_t len)
+static int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t len)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
