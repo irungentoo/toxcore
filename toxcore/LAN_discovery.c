@@ -136,7 +136,7 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
     send_broadcasts(c->lossless_udp->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
 #endif
     IP_Port ip_port = {{broadcast_ip(), port, 0}};
-    return sendpacket(c->lossless_udp->net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
+    return sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
 
 

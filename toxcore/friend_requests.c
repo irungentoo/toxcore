@@ -56,7 +56,7 @@ int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8
         return -1;
 
     if (ip_port.ip.uint32 != 0) {
-        if (sendpacket(dht->c->lossless_udp->net->sock, ip_port, packet, len) != -1)
+        if (sendpacket(dht->c->lossless_udp->net, ip_port, packet, len) != -1)
             return 0;
 
         return -1;

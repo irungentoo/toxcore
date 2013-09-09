@@ -64,14 +64,10 @@ uint32_t random_int(void)
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
  */
-#ifdef WIN32
-int sendpacket(unsigned int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
-#else
-int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length)
-#endif
+int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length)
 {
     ADDR addr = {AF_INET, ip_port.port, ip_port.ip, {0}};
-    return sendto(sock, (char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
+    return sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
 
 /* Function to receive data
@@ -171,7 +167,8 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     if (temp == NULL)
         return NULL;
 
-    temp->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    temp->family = AF_INET;
+    temp->sock = socket(temp->family, SOCK_DGRAM, IPPROTO_UDP);
 
     /* Check for socket error. */
 #ifdef WIN32
@@ -219,8 +216,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #endif
 
     /* Bind our socket to port PORT and address 0.0.0.0 */
-    ADDR addr = {AF_INET, htons(port), ip, {0}};
-    bind(temp->sock, (struct sockaddr *)&addr, sizeof(addr));
+    ADDR addr = {temp->family, htons(port), ip, {0}};
+    if (!bind(temp->sock, (struct sockaddr *)&addr, sizeof(addr)))
+        temp->port = port;
+
     return temp;
 }
 

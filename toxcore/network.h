@@ -39,6 +39,8 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
+typedef unsigned int sock_t;
+
 #else // Linux includes
 
 #include <fcntl.h>
@@ -49,6 +51,8 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>
+
+typedef int sock_t;
 
 #endif
 
@@ -117,13 +121,11 @@ typedef struct {
 
 typedef struct {
     Packet_Handles packethandlers[256];
-    /* Our UDP socket. */
-#ifdef WIN32
-    unsigned int sock;
-#else
-    int sock;
-#endif
 
+    /* Our UDP socket. */
+    sa_family_t family;
+    uint16_t port;
+    sock_t sock;
 } Networking_Core;
 
 /*  return current time in milleseconds since the epoch. */
@@ -137,12 +139,7 @@ uint32_t random_int(void);
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port. */
-#ifdef WIN32
-int sendpacket(unsigned int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
-#else
-int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
-#endif
-
+int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length);
 
 /* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);

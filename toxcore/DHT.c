@@ -518,7 +518,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(dht->c->lossless_udp->net->sock, ip_port, data, sizeof(data));
+    return sendpacket(dht->c->lossless_udp->net, ip_port, data, sizeof(data));
 }
 
 /* Send a send nodes response. */
@@ -563,7 +563,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(dht->c->lossless_udp->net->sock, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
+    return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
 static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
@@ -819,7 +819,7 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
         if (id_equal(client_id, dht->close_clientlist[i].client_id))
-            return sendpacket(dht->c->lossless_udp->net->sock, dht->close_clientlist[i].ip_port, packet, length);
+            return sendpacket(dht->c->lossless_udp->net, dht->close_clientlist[i].ip_port, packet, length);
     }
 
     return -1;
@@ -891,7 +891,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
 
         /* If ip is not zero and node is good. */
         if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-            int retval = sendpacket(dht->c->lossless_udp->net->sock, client->ip_port, packet, length);
+            int retval = sendpacket(dht->c->lossless_udp->net, client->ip_port, packet, length);
 
             if ((unsigned int)retval == length)
                 ++sent;
@@ -933,7 +933,7 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
     if (n < 1)
         return 0;
 
-    int retval = sendpacket(dht->c->lossless_udp->net->sock, ip_list[rand() % n], packet, length);
+    int retval = sendpacket(dht->c->lossless_udp->net, ip_list[rand() % n], packet, length);
 
     if ((unsigned int)retval == length)
         return 1;
