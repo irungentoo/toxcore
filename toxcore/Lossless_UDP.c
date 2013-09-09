@@ -429,7 +429,7 @@ static int send_handshake(Lossless_UDP *ludp, IP_Port ip_port, uint32_t handshak
     temp = htonl(handshake_id2);
     memcpy(packet + 5, &temp, 4);
 
-    return sendpacket(ludp->net->sock, ip_port, packet, sizeof(packet));
+    return sendpacket(ludp->net, ip_port, packet, sizeof(packet));
 }
 
 static int send_SYNC(Lossless_UDP *ludp, int connection_id)
@@ -456,7 +456,7 @@ static int send_SYNC(Lossless_UDP *ludp, int connection_id)
     index += 4;
     memcpy(packet + index, requested, 4 * number);
 
-    return sendpacket(ludp->net->sock, ip_port, packet, (number * 4 + 4 + 4 + 2));
+    return sendpacket(ludp->net, ip_port, packet, (number * 4 + 4 + 4 + 2));
 
 }
 
@@ -471,7 +471,7 @@ static int send_data_packet(Lossless_UDP *ludp, int connection_id, uint32_t pack
     temp = htonl(packet_num);
     memcpy(packet + 1, &temp, 4);
     memcpy(packet + 5, connection->sendbuffer[index].data, connection->sendbuffer[index].size);
-    return sendpacket(ludp->net->sock, connection->ip_port, packet, 1 + 4 + connection->sendbuffer[index].size);
+    return sendpacket(ludp->net, connection->ip_port, packet, 1 + 4 + connection->sendbuffer[index].size);
 }
 
 /* Sends 1 data packet. */

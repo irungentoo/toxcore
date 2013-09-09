@@ -39,6 +39,8 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
+typedef unsigned int sock_t;
+
 #else // Linux includes
 
 #include <fcntl.h>
@@ -49,6 +51,8 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>
+
+typedef int sock_t;
 
 #endif
 
@@ -82,11 +86,28 @@ typedef union {
     uint8_t uint8[4];
     uint16_t uint16[2];
     uint32_t uint32;
-} IP;
+    struct in_addr in_addr;
+} IP4;
+
+typedef struct in6_addr IP6;
+
+typedef struct {
+    sa_family_t family;
+    union {
+        IP4 ip4;
+        IP6 ip6;
+    };
+} IPAny;
+
+/* ipany_ntoa
+ *   converts ip into a string
+ *   uses a static buffer, so mustn't used multiple times in the same output
+ */
+const char *ipany_ntoa(IPAny *ip);
 
 typedef union {
     struct {
-        IP ip;
+        IP4 ip;
         uint16_t port;
         /* Not used for anything right now. */
         uint16_t padding;
@@ -97,12 +118,21 @@ typedef union {
 typedef struct {
     int16_t family;
     uint16_t port;
-    IP ip;
+    IP4 ip;
     uint8_t zeroes[8];
 #ifdef ENABLE_IPV6
     uint8_t zeroes2[12];
 #endif
 } ADDR;
+
+/*
+ * addr_resolve_or_parse_ip
+ *  resolves string into an IP address
+ *
+ * to->family MUST be set (AF_UNSPEC, AF_INET, AF_INET6)
+ * returns 1 on success, 0 on failure
+ */
+int addr_resolve_or_parse_ip(const char *address, IPAny *to);
 
 /* Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
@@ -117,13 +147,11 @@ typedef struct {
 
 typedef struct {
     Packet_Handles packethandlers[256];
-    /* Our UDP socket. */
-#ifdef WIN32
-    unsigned int sock;
-#else
-    int sock;
-#endif
 
+    /* Our UDP socket. */
+    sa_family_t family;
+    uint16_t port;
+    sock_t sock;
 } Networking_Core;
 
 /*  return current time in milleseconds since the epoch. */
@@ -137,12 +165,7 @@ uint32_t random_int(void);
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port. */
-#ifdef WIN32
-int sendpacket(unsigned int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
-#else
-int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
-#endif
-
+int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length);
 
 /* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
@@ -158,10 +181,9 @@ void networking_poll(Networking_Core *net);
  *  return 0 if no problems.
  *  return -1 if there were problems.
  */
-Networking_Core *new_networking(IP ip, uint16_t port);
+Networking_Core *new_networking(IP4 ip, uint16_t port);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
-
 
 #endif

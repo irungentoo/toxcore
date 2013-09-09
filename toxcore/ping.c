@@ -147,7 +147,7 @@ int send_ping_request(void *ping, Net_Crypto *c, IP_Port ipp, uint8_t *client_id
     if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
-    return sendpacket(c->lossless_udp->net->sock, ipp, pk, sizeof(pk));
+    return sendpacket(c->lossless_udp->net, ipp, pk, sizeof(pk));
 }
 
 int send_ping_response(Net_Crypto *c, IP_Port ipp, uint8_t *client_id, uint64_t ping_id)
@@ -172,7 +172,7 @@ int send_ping_response(Net_Crypto *c, IP_Port ipp, uint8_t *client_id, uint64_t 
     if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
         return 1;
 
-    return sendpacket(c->lossless_udp->net->sock, ipp, pk, sizeof(pk));
+    return sendpacket(c->lossless_udp->net, ipp, pk, sizeof(pk));
 }
 
 int handle_ping_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)

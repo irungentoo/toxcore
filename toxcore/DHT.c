@@ -518,7 +518,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(dht->c->lossless_udp->net->sock, ip_port, data, sizeof(data));
+    return sendpacket(dht->c->lossless_udp->net, ip_port, data, sizeof(data));
 }
 
 /* Send a send nodes response. */
@@ -563,7 +563,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(dht->c->lossless_udp->net->sock, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
+    return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
 static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
@@ -819,7 +819,7 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
         if (id_equal(client_id, dht->close_clientlist[i].client_id))
-            return sendpacket(dht->c->lossless_udp->net->sock, dht->close_clientlist[i].ip_port, packet, length);
+            return sendpacket(dht->c->lossless_udp->net, dht->close_clientlist[i].ip_port, packet, length);
     }
 
     return -1;
@@ -891,7 +891,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
 
         /* If ip is not zero and node is good. */
         if (client->ret_ip_port.ip.uint32 != 0 && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-            int retval = sendpacket(dht->c->lossless_udp->net->sock, client->ip_port, packet, length);
+            int retval = sendpacket(dht->c->lossless_udp->net, client->ip_port, packet, length);
 
             if ((unsigned int)retval == length)
                 ++sent;
@@ -933,7 +933,7 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
     if (n < 1)
         return 0;
 
-    int retval = sendpacket(dht->c->lossless_udp->net->sock, ip_list[rand() % n], packet, length);
+    int retval = sendpacket(dht->c->lossless_udp->net, ip_list[rand() % n], packet, length);
 
     if ((unsigned int)retval == length)
         return 1;
@@ -1030,9 +1030,9 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
  *
  *  return ip of 0 if failure.
  */
-static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
+static IP4 NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
 {
-    IP zero = {{0}};
+    IP4 zero = {{0}};
 
     if (len > MAX_FRIEND_CLIENTS)
         return zero;
@@ -1059,7 +1059,7 @@ static IP NAT_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
  *
  *  return number of ports and puts the list of ports in portlist.
  */
-static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t len, IP ip)
+static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t len, IP4 ip)
 {
     uint32_t i;
     uint16_t num = 0;
@@ -1074,7 +1074,7 @@ static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t 
     return num;
 }
 
-static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
+static void punch_holes(DHT *dht, IP4 ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
 {
     if (numports > MAX_FRIEND_CLIENTS || numports == 0)
         return;
@@ -1114,7 +1114,7 @@ static void do_NAT(DHT *dht)
                 dht->friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time &&
                 dht->friends_list[i].recvNATping_timestamp + PUNCH_INTERVAL * 2 >= temp_time) {
 
-            IP ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS / 2);
+            IP4 ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS / 2);
 
             if (ip.uint32 == 0)
                 continue;

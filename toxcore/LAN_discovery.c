@@ -81,9 +81,9 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t * d
 #endif
 
 /* Return the broadcast ip. */
-static IP broadcast_ip(void)
+static IP4 broadcast_ip(void)
 {
-    IP ip;
+    IP4 ip;
     ip.uint32 = ~0;
     return ip;
 }
@@ -91,7 +91,7 @@ static IP broadcast_ip(void)
 /*  return 0 if ip is a LAN ip.
  *  return -1 if it is not.
  */
-static int LAN_ip(IP ip)
+static int LAN_ip(IP4 ip)
 {
     if (ip.uint8[0] == 127) /* Loopback. */
         return 0;
@@ -136,7 +136,7 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
     send_broadcasts(c->lossless_udp->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
 #endif
     IP_Port ip_port = {{broadcast_ip(), port, 0}};
-    return sendpacket(c->lossless_udp->net->sock, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
+    return sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
 }
 
 
