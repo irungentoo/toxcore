@@ -25,7 +25,7 @@
 #ifndef GROUP_CHATS_H
 #define GROUP_CHATS_H
 
-#include "../../toxcore/net_crypto.h"
+#include "net_crypto.h"
 
 #ifdef __cplusplus
 extern "C" {

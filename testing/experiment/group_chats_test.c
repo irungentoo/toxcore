@@ -1,4 +1,4 @@
-#include "group_chats.h"
+#include "../../toxcore/group_chats.h"
 #define NUM_CHATS 8
 
 #ifdef WIN32

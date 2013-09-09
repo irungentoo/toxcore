@@ -384,6 +384,10 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
 //TODO:
     int peernum = peer_in_chat(chat, data);
 
+    if (peernum == -1) { /*NOTE: This is just for testing and will be removed later.*/
+        peernum = addpeer(chat, data);
+    }
+
     if (peernum == -1)
         return 1;
 
