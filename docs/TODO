@@ -21,3 +21,6 @@ Lossless UDP:
 
 [NOT STARTED] Offline messaging
 [NOT STARTED] Friends list syncing
+[IN PROGRESS] IPV6 support
+[IN PROGRESS] GUI (https://github.com/nurupo/ProjectTox-Qt-GUI)
+[NOT STARTED] Security audit from professionals
