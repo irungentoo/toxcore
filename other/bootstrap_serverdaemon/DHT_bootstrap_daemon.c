@@ -455,6 +455,6 @@ int main(int argc, char *argv[])
         usleep(10000);
     }
 
-    shutdown_networking();
+    //shutdown_networking();
     exit(EXIT_SUCCESS);
 }
