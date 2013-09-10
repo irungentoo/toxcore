@@ -32,6 +32,10 @@
 #include <arpa/inet.h> /* htons() */
 #include <string.h> /* strcpy() */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../../toxcore/DHT.h"
 #include "../../toxcore/friend_requests.h"
 

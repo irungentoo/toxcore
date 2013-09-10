@@ -18,6 +18,10 @@
  *      times. This is used both to ensure that we don't loop forever on a broken build,
  *      and that we don't get too slow with messaging. The current time is 15 seconds. */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../toxcore/friend_requests.h"
 #include "../toxcore/Messenger.h"
 #include <assert.h>

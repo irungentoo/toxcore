@@ -26,6 +26,9 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
