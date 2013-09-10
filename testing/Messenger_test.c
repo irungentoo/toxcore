@@ -95,13 +95,44 @@ void print_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t len
 
 int main(int argc, char *argv[])
 {
-    if (argc < 4 && argc != 2) {
-        printf("usage %s ip port public_key (of the DHT bootstrap node)\n or\n %s Save.bak\n", argv[0], argv[0]);
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+
+    int argvoffset = 0, argi;
+    for(argi = 1; argi < argc; argi++)
+        if (!strncasecmp(argv[argi], "--ipv", 5)) {
+            if (argv[argi][5] && !argv[argi][6]) {
+                char c = argv[argi][5];
+                if (c == '4')
+                    ipv6enabled = 0;
+                else if (c == '6')
+                    ipv6enabled = 1;
+                else {
+                    printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                    exit(1);
+                }
+            }
+            else {
+                printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                exit(1);
+            }
+
+            if (argvoffset != argi - 1) {
+                printf("Argument must come first: %s.\n", argv[argi]);
+                exit(1);
+            }
+
+            argvoffset++;
+        }
+
+    /* with optional --ipvx, now it can be 1-4 arguments... */
+    if ((argc != argvoffset + 2) && (argc != argvoffset + 4)) {
+        printf("Usage: %s [--ipv4|--ipv6] ip port public_key (of the DHT bootstrap node)\n", argv[0]);
+        printf("or\n");
+        printf("       %s [--ipv4|--ipv6] Save.bak (to read Save.bak as state file)\n", argv[0], argv[0]);
         exit(0);
     }
 
-    /* IPv6: maybe allow from cmdline --ipv6? sticking to IPv4 for now */
-    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     m = initMessenger(ipv6enabled);
 
     if ( !m ) {
@@ -109,13 +140,19 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    if (argc > 3) {
-        uint16_t port = htons(atoi(argv[2]));
-        DHT_bootstrap_ex(m->dht, argv[1], ipv6enabled, port, hex_string_to_bin(argv[3]));
+    if (argc == argvoffset + 4) {
+        uint16_t port = htons(atoi(argv[argvoffset + 2]));
+        uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
+        int res = DHT_bootstrap_ex(m->dht, argv[argvoffset + 1], ipv6enabled, port, bootstrap_key);
+        free(bootstrap_key);
+        if (!res) {
+            printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
+            exit(1);
+        }
     } else {
-        FILE *file = fopen(argv[1], "rb");
-
+        FILE *file = fopen(argv[argvoffset + 1], "rb");
         if ( file == NULL ) {
+            printf("Failed to open \"%s\" - does it exist?\n", argv[argvoffset + 1]);
             return 1;
         }
 

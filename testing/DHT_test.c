@@ -133,8 +133,40 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 
 int main(int argc, char *argv[])
 {
-    /* let use decide by cmdline: TODO */
-    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    if (argc < 4) {
+        printf("Usage: %s [--ipv4|--ipv6] ip port public_key\n", argv[0]);
+        exit(0);
+    }
+
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+
+    int argvoffset = 0, argi;
+    for(argi = 1; argi < argc; argi++)
+        if (!strncasecmp(argv[argi], "--ipv", 5)) {
+            if (argv[argi][5] && !argv[argi][6]) {
+                char c = argv[argi][5];
+                if (c == '4')
+                    ipv6enabled = 0;
+                else if (c == '6')
+                    ipv6enabled = 1;
+                else {
+                    printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                    exit(1);
+                }
+            }
+            else {
+                printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                exit(1);
+            }
+
+            if (argvoffset != argi - 1) {
+                printf("Argument must come first: %s.\n", argv[argi]);
+                exit(1);
+            }
+
+            argvoffset++;
+        }
 
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     /* initialize networking */
@@ -143,11 +175,6 @@ int main(int argc, char *argv[])
     ip_init(&ip, ipv6enabled);
 
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
-
-    if (argc < 4) {
-        printf("usage %s ip port public_key\n", argv[0]);
-        exit(0);
-    }
 
     new_keys(dht->c);
     printf("OUR ID: ");
@@ -168,9 +195,16 @@ int main(int argc, char *argv[])
 
     DHT_addfriend(dht, hex_string_to_bin(temp_id));
 
-
     perror("Initialization");
-    DHT_bootstrap_ex(dht, argv[1], ipv6enabled, htons(atoi(argv[2])), hex_string_to_bin(argv[3]));
+
+    uint16_t port = htons(atoi(argv[argvoffset + 2]));
+    unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
+    int res = DHT_bootstrap_ex(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
+    free(binary_string);
+    if (!res) {
+        printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
+        return 1;
+    }
 
     /*
         IP_Port ip_port;

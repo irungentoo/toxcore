@@ -537,8 +537,40 @@ void print_help(void)
 
 int main(int argc, char *argv[])
 {
-    /* let use decide by cmdline: TODO */
-    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    if (argc < 4) {
+        printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile]\n", argv[0]);
+        exit(0);
+    }
+
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+
+    int argvoffset = 0, argi;
+    for(argi = 1; argi < argc; argi++)
+        if (!strncasecmp(argv[argi], "--ipv", 5)) {
+            if (argv[argi][5] && !argv[argi][6]) {
+                char c = argv[argi][5];
+                if (c == '4')
+                    ipv6enabled = 0;
+                else if (c == '6')
+                    ipv6enabled = 1;
+                else {
+                    printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                    exit(1);
+                }
+            }
+            else {
+                printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                exit(1);
+            }
+
+            if (argvoffset != argi - 1) {
+                printf("Argument must come first: %s.\n", argv[argi]);
+                exit(1);
+            }
+
+            argvoffset++;
+        }
 
     int on = 0;
     int c = 0;
@@ -547,27 +579,16 @@ int main(int argc, char *argv[])
     char idstring[200] = {0};
     Tox *m;
 
-    if (argc < 4) {
-        printf("[!] Usage: %s [IP] [port] [public_key] <keyfile>\n", argv[0]);
+    if ((argc == 2) && !strcmp(argv[1], "-h")) {
+        print_help();
         exit(0);
     }
 
-    for (i = 0; i < argc; i++) {
-        if (argv[i] == NULL) {
-            break;
-        } else if (argv[i][0] == '-') {
-            if (argv[i][1] == 'h') {
-                print_help();
-                exit(0);
-            } else if (argv[i][1] == 'f') {
-                if (argv[i + 1] != NULL)
-                    filename = argv[i + 1];
-                else {
-                    fputs("[!] you passed '-f' without giving an argument!\n", stderr);
-                }
-            }
-        }
-    }
+    /* [-f keyfile] MUST be last two arguments, no point in walking over the list
+     * especially not a good idea to accept it anywhere in the middle */
+    if (argc > argvoffset + 3)
+        if (!strcmp(argv[argc - 2], "-f"))
+            filename = argv[argc - 1];
 
     m = tox_new_ex(ipv6enabled);
 
@@ -593,10 +614,16 @@ int main(int argc, char *argv[])
     new_lines(idstring);
     strcpy(line, "");
 
-    uint16_t port = htons(atoi(argv[2]));
-    unsigned char *binary_string = hex_string_to_bin(argv[3]);
-    tox_bootstrap_ex(m, argv[1], ipv6enabled, port, binary_string);
+    uint16_t port = htons(atoi(argv[argvoffset + 2]));
+    unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
+    int res = tox_bootstrap_ex(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);
+
+    if (!res) {
+        printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
+        endwin();
+        exit(1);
+    }
 
     nodelay(stdscr, TRUE);
     while (1) {

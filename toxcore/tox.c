@@ -374,11 +374,11 @@ void tox_bootstrap(void *tox, IP_Port ip_port, uint8_t *public_key)
     Messenger *m = tox;
     DHT_bootstrap(m->dht, ip_port, public_key);
 }
-void tox_bootstrap_ex(void *tox, const char *address, uint8_t ipv6enabled,
+int tox_bootstrap_ex(void *tox, const char *address, uint8_t ipv6enabled,
                       uint16_t port, uint8_t *public_key)
 {
     Messenger *m = tox;
-    DHT_bootstrap_ex(m->dht, address, ipv6enabled, port, public_key);
+    return DHT_bootstrap_ex(m->dht, address, ipv6enabled, port, public_key);
 };
 
 /*  return 0 if we are not connected to the DHT.

@@ -978,14 +978,17 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
     send_ping_request(dht->ping, dht->c, ip_port, public_key);
 }
-void DHT_bootstrap_ex(DHT *dht, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
+int DHT_bootstrap_ex(DHT *dht, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
 {
     IP_Port ip_port;
     ip_init(&ip_port.ip, ipv6enabled);
     if (addr_resolve_or_parse_ip(address, &ip_port.ip)) {
         ip_port.port = port;
         DHT_bootstrap(dht, ip_port, public_key);
+        return 1;
     }
+    else
+        return 0;
 }
 
 /* Send the given packet to node with client_id

@@ -151,21 +151,50 @@ void printconnection(int connection_id)
 
 int main(int argc, char *argv[])
 {
-    /* let use decide by cmdline: TODO */
-    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
 
-    if (argc < 4) {
-        printf("usage: %s ip port filename\n", argv[0]);
+    int argvoffset = 0, argi;
+    for(argi = 1; argi < argc; argi++)
+        if (!strncasecmp(argv[argi], "--ipv", 5)) {
+            if (argv[argi][5] && !argv[argi][6]) {
+                char c = argv[argi][5];
+                if (c == '4')
+                    ipv6enabled = 0;
+                else if (c == '6')
+                    ipv6enabled = 1;
+                else {
+                    printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                    exit(1);
+                }
+            }
+            else {
+                printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                exit(1);
+            }
+
+            if (argvoffset != argi - 1) {
+                printf("Argument must come first: %s.\n", argv[argi]);
+                exit(1);
+            }
+
+            argvoffset++;
+        }
+
+    if (argc < argvoffset + 4) {
+        printf("Usage: %s [--ipv4|--ipv6] ip port filename\n", argv[0]);
         exit(0);
     }
 
     uint8_t buffer[512];
     int read;
 
-    FILE *file = fopen(argv[3], "rb");
+    FILE *file = fopen(argv[argvoffset + 3], "rb");
 
-    if (file == NULL)
+    if (file == NULL) {
+        printf("Failed to open file \"%s\".\n", argv[argvoffset + 3]);
         return 1;
+    }
 
 
     /* initialize networking */
@@ -178,8 +207,11 @@ int main(int argc, char *argv[])
 
     IP_Port serverip;
     ip_init(&serverip.ip, ipv6enabled);
-    addr_resolve(argv[1], &serverip.ip);
-    serverip.port = htons(atoi(argv[2]));
+    if (!addr_resolve(argv[argvoffset + 1], &serverip.ip)) {
+        printf("Failed to convert \"%s\" into an IP address.\n", argv[argvoffset + 1]);
+        return 1;
+    }
+    serverip.port = htons(atoi(argv[argvoffset + 2]));
     printip(serverip);
 
     int connection = new_connection(ludp, serverip);

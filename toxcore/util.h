@@ -17,7 +17,7 @@ bool id_eq(uint8_t *dest, uint8_t *src);
 void id_cpy(uint8_t *dest, uint8_t *src);
 
 #undef LOGGING
-// #define LOGGING
+/* #define LOGGING */
 #ifdef LOGGING
 extern char logbuffer[512];
 void loginit(uint16_t port);

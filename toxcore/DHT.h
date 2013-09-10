@@ -157,9 +157,10 @@ void do_DHT(DHT *dht);
 
 /* Use this function to bootstrap the client.
  *  Sends a get nodes request to the given node with ip port and public_key.
+ * DHT_bootstrap_ex() returns 1 if the address could be converted, 0 otherwise
  */
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
-void DHT_bootstrap_ex(DHT *dht, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key);
+int DHT_bootstrap_ex(DHT *dht, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key);
 
 /* Add nodes to the toping list.
  * All nodes in this list are pinged every TIME_TOPING seconds

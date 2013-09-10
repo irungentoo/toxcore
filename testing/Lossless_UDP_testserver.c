@@ -147,21 +147,50 @@ void printconnection(int connection_id)
 
 int main(int argc, char *argv[])
 {
-    /* let use decide by cmdline: TODO */
-    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
 
-    if (argc < 2) {
-        printf("usage: %s filename\n", argv[0]);
+    int argvoffset = 0, argi;
+    for(argi = 1; argi < argc; argi++)
+        if (!strncasecmp(argv[argi], "--ipv", 5)) {
+            if (argv[argi][5] && !argv[argi][6]) {
+                char c = argv[argi][5];
+                if (c == '4')
+                    ipv6enabled = 0;
+                else if (c == '6')
+                    ipv6enabled = 1;
+                else {
+                    printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                    exit(1);
+                }
+            }
+            else {
+                printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
+                exit(1);
+            }
+
+            if (argvoffset != argi - 1) {
+                printf("Argument must come first: %s.\n", argv[argi]);
+                exit(1);
+            }
+
+            argvoffset++;
+        }
+
+    if (argc < argvoffset + 2) {
+        printf("Usage: %s [--ipv4|--ipv6] filename\n", argv[0]);
         exit(0);
     }
 
     uint8_t buffer[512];
     int read;
 
-    FILE *file = fopen(argv[1], "wb");
+    FILE *file = fopen(argv[argvoffset + 1], "wb");
 
-    if (file == NULL)
+    if (file == NULL) {
+        printf("Failed to open file \"%s\".\n", argv[argvoffset + 1]);
         return 1;
+    }
 
 
     //initialize networking
