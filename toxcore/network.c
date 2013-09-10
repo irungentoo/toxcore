@@ -307,7 +307,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     fcntl(temp->sock, F_SETFL, O_NONBLOCK, 1);
 #endif
 
-    /* Bind our socket to port PORT and address 0.0.0.0 */
+    /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
     uint16_t *portptr = NULL;
     struct sockaddr_storage addr;
     size_t addrsize;
@@ -371,7 +371,8 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         *portptr = htons(port);
     }
 
-    printf("Failed to bind socket: %s (IP/Port: %s:%u\n", strerror(errno), ip_ntoa(&ip), port);
+    fprintf(stderr, "Failed to bind socket: %u, %s (IP/Port: %s:%u\n", errno,
+                    strerror(errno), ip_ntoa(&ip), port);
     free(temp);
     return NULL;
 }
@@ -436,7 +437,7 @@ void ip_reset(IP *ip)
         return;
 
 #ifdef TOX_ENABLE_IPV6
-    memset(ip, 0, sizeof(*ip));
+    memset(ip, 0, sizeof(IP));
 #else
     ip->uint32 = 0;
 #endif
@@ -449,7 +450,7 @@ void ip_init(IP *ip, uint8_t ipv6enabled)
         return;
 
 #ifdef TOX_ENABLE_IPV6
-    memset(ip, 0, sizeof(ip));
+    memset(ip, 0, sizeof(IP));
     ip->family = ipv6enabled ? AF_INET6 : AF_INET;
 #else
     ip->uint32 = 0;
