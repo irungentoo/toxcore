@@ -211,7 +211,7 @@ void networking_poll(Networking_Core *net)
     }
 }
 
-uint8_t at_startup_ran;
+uint8_t at_startup_ran = 0;
 static int at_startup(void)
 {
     if (at_startup_ran != 0)
@@ -252,8 +252,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 {
 #ifdef TOX_ENABLE_IPV6
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
-    if (ip.family != AF_INET && ip.family != AF_INET6)
+    if (ip.family != AF_INET && ip.family != AF_INET6) {
+        fprintf(stderr, "Invalid address family: %u\n", ip.family);
         return NULL;
+    }
 #endif
 
     if (at_startup() != 0)
@@ -287,6 +289,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #else
 
     if (temp->sock < 0) {
+        fprintf(stderr, "Failed to get a scoket?! %u, %s\n", errno, strerror(errno));
         free(temp);
         return NULL;
     }
@@ -409,6 +412,12 @@ Networking_Core *new_networking(IP ip, uint16_t port)
             sprintf(logbuffer, "Bound successfully to %s:%u.\n", ip_ntoa(&ip), ntohs(temp->port));
             loglog(logbuffer);
 #endif
+            /* errno isn't reset on success, only set on failure, the failed
+             * binds with parallel clients yield a -EPERM to the outside if
+             * errno isn't cleared here */
+            if (tries > 0)
+                errno = 0;
+
             return temp;
         }
 

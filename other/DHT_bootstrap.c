@@ -102,6 +102,8 @@ int main(int argc, char *argv[])
     ip_init(&ip, ipv6enabled);
 
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+    perror("Initialization");
+
     manage_keys(dht);
     printf("Public key: ");
     uint32_t i;
@@ -121,8 +123,6 @@ int main(int argc, char *argv[])
 
     printf("\n");
     printf("Port: %u\n", PORT);
-
-    perror("Initialization.");
 
     if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
