@@ -137,19 +137,23 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
     uint32_t i;
     uint64_t temp_time = unix_time();
 
-    for (i = 0; i < length; ++i) {
-        /* If ip_port is assigned to a different client_id replace it */
-        if (ipport_equal(&list[i].ip_port, &ip_port)) {
-            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-        }
-
+    /* if client_id is in list, find it and maybe overwrite ip_port */
+    for (i = 0; i < length; ++i)
         if (id_equal(list[i].client_id, client_id)) {
             /* Refresh the client timestamp. */
             list[i].timestamp = temp_time;
-            ipport_copy(&list[i].ip_port, &ip_port);
+            list[i].ip_port = ip_port;
             return 1;
         }
-    }
+
+    /* client_id not in list yet: find ip_port to overwrite */
+    for (i = 0; i < length; ++i)
+        if (ipport_equal(&list[i].ip_port, &ip_port)) {
+            /* Refresh the client timestamp. */
+            list[i].timestamp = temp_time;
+            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+            return 1;
+        }
 
     return 0;
 }
@@ -610,6 +614,54 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
+#ifdef TOX_ENABLE_IPV6
+/* Send a send nodes response: message for IPv6 nodes */
+static int sendnodes_ex(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id)
+{
+    /* Check if packet is going to be sent to ourself. */
+    if (id_equal(public_key, dht->c->self_public_key))
+        return -1;
+
+    size_t Node_format_size = sizeof(Node_format);
+    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
+                 + Node_format_size * MAX_SENT_NODES + ENCRYPTION_PADDING];
+
+    Node_format nodes_list[MAX_SENT_NODES];
+    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET6);
+
+    if (num_nodes == 0)
+        return 0;
+
+    uint8_t plain[sizeof(ping_id) + Node_format_size * MAX_SENT_NODES];
+    uint8_t encrypt[sizeof(ping_id) + Node_format_size * MAX_SENT_NODES + ENCRYPTION_PADDING];
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    random_nonce(nonce);
+
+    memcpy(plain, &ping_id, sizeof(ping_id));
+    memcpy(plain + sizeof(ping_id), nodes_list, num_nodes * Node_format_size);
+
+    int len = encrypt_data( public_key,
+                            dht->c->self_secret_key,
+                            nonce,
+                            plain,
+                            sizeof(ping_id) + num_nodes * Node_format_size,
+                            encrypt );
+
+    if (len == -1)
+        return -1;
+
+    if ((unsigned int)len != sizeof(ping_id) + num_nodes * Node_format_size + ENCRYPTION_PADDING)
+        return -1;
+
+    data[0] = NET_PACKET_SEND_NODES_EX;
+    memcpy(data + 1, dht->c->self_public_key, CLIENT_ID_SIZE);
+    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+
+    return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
+}
+#endif
+
 static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
@@ -637,6 +689,9 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
 
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
+#ifdef TOX_ENABLE_IPV6
+    sendnodes_ex(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
+#endif
 
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
 
@@ -708,6 +763,53 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 
     return 0;
 }
+
+#ifdef TOX_ENABLE_IPV6
+static int handle_sendnodes_ex(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+{
+    DHT *dht = object;
+    uint64_t ping_id;
+    uint32_t cid_size = 1 + CLIENT_ID_SIZE;
+    cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING;
+
+    size_t Node_format_size = sizeof(Node4_format);
+    if (length > (cid_size + Node_format_size * MAX_SENT_NODES) ||
+            ((length - cid_size) % Node_format_size) != 0 ||
+            (length < cid_size + Node_format_size))
+        return 1;
+
+    uint32_t num_nodes = (length - cid_size) / Node_format_size;
+    uint8_t plain[sizeof(ping_id) + Node_format_size * MAX_SENT_NODES];
+
+    int len = decrypt_data(
+                  packet + 1,
+                  dht->c->self_secret_key,
+                  packet + 1 + CLIENT_ID_SIZE,
+                  packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                  sizeof(ping_id) + num_nodes * Node_format_size + ENCRYPTION_PADDING, plain );
+
+    if ((unsigned int)len != sizeof(ping_id) + num_nodes * Node_format_size)
+        return 1;
+
+    memcpy(&ping_id, plain, sizeof(ping_id));
+
+    if (!is_gettingnodes(dht, source, ping_id))
+        return 1;
+
+    uint32_t i;
+    Node_format nodes_list[MAX_SENT_NODES];
+    memcpy(nodes_list, plain + sizeof(ping_id), num_nodes * sizeof(Node_format));
+
+    addto_lists(dht, source, packet + 1);
+
+    for (i = 0; i < num_nodes; ++i)  {
+        send_ping_request(dht->ping, dht->c, nodes_list[i].ip_port, nodes_list[i].client_id);
+        returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
+    }
+
+    return 0;
+}
+#endif
 
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
@@ -1293,6 +1395,9 @@ DHT *new_DHT(Net_Crypto *c)
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, temp);
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, temp);
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, temp);
+#ifdef TOX_ENABLE_IPV6
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_EX, &handle_sendnodes_ex, temp);
+#endif
     init_cryptopackets(temp);
     cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, temp);
     return temp;
