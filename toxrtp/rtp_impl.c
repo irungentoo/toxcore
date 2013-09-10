@@ -25,6 +25,7 @@
  */
 #include "rtp_impl.h"
 #include "rtp_message.h"
+#include "rtp_helper.h"
 #include <assert.h>
 #include "rtp_allocator.h"
 #include "util.h"
@@ -35,6 +36,7 @@
 #define PAYLOAD_ID_VALUE_OPUS 1
 #define PAYLOAD_ID_VALUE_VP8  2
 
+#define size_32 4
 /* End of defines */
 
 #ifdef _USE_ERRORS
@@ -106,7 +108,8 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     _retu->_sequence_number = t_random ( _MAX_SEQU_NUM );
     _retu->_last_sequence_number = _retu->_sequence_number; /* Do not touch this variable */
 
-    _retu->_initial_time = now();    /* In seconds */
+    _retu->_initial_time = _time;    /* In seconds */
+    assert(_retu->_initial_time);
     _retu->_time_elapsed = 0;        /* In seconds */
 
     _retu->_ext_header = NULL;       /* When needed allocate */
@@ -141,17 +144,18 @@ int rtp_terminate_session ( rtp_session_t* _session )
     if ( _session->_dest_list )
         DEALLOCATOR_LIST_S ( _session->_dest_list, rtp_dest_list_t );
 
-        if ( _session->_ext_header )
-            DEALLOCATOR ( _session->_ext_header );
+    if ( _session->_ext_header )
+        DEALLOCATOR ( _session->_ext_header );
 
-            if ( _session->_csrc )
-                DEALLOCATOR ( _session->_csrc );
+    if ( _session->_csrc )
+        DEALLOCATOR ( _session->_csrc );
 
-                DEALLOCATOR ( _session->_prefix );
+    if ( _session->_prefix )
+        DEALLOCATOR ( _session->_prefix );
                 /* And finally free session */
-                DEALLOCATOR ( _session );
+    DEALLOCATOR ( _session );
 
-                return SUCCESS;
+    return SUCCESS;
 }
 
 uint16_t rtp_get_resolution_marking_height ( rtp_ext_header_t* _header, uint32_t _position )
@@ -206,8 +210,8 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     rtp_header_add_setting_payload ( _retu, _session->_payload_type );
 
     _retu->_sequence_number = _session->_sequence_number;
-    _session->_time_elapsed = now() - _session->_initial_time;
-    _retu->_timestamp = _session->_initial_time + _session->_time_elapsed; /* It's equivalent of now() */
+    _session->_time_elapsed = _time - _session->_initial_time;
+    _retu->_timestamp = _time;
     _retu->_ssrc = _session->_ssrc;
 
     if ( _session->_cc > 0 ) {
@@ -222,7 +226,7 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
         _retu->_csrc = NULL;
     }
 
-    _retu->_length = 8 + ( _session->_cc * 4 );
+    _retu->_length = _MIN_HEADER_LENGTH + ( _session->_cc * size_32 );
 
     return _retu;
 }
@@ -274,18 +278,16 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
 
     uint16_t _prefix_length = _session->_prefix_length;
 
-    if ( _session->_prefix && _msg->_length + _prefix_length < MAX_UDP_PACKET_SIZE ) {
+    if ( _session->_prefix && _length + _prefix_length < MAX_UDP_PACKET_SIZE ) {
         /*t_memcpy(_send_data, _session->_prefix, _prefix_length);*/
         _send_data[0] = 70;
-        _length += _prefix_length;
-
-        t_memcpy ( _send_data + _prefix_length, _msg->_data, _length );
+        t_memcpy ( _send_data + _prefix_length, _msg->_data, _length - 1 );
     } else {
         t_memcpy ( _send_data, _msg->_data, _length );
     }
 
     /* Set sequ number */
-    if ( _session->_sequence_number == _MAX_SEQU_NUM ) {
+    if ( _session->_sequence_number >= _MAX_SEQU_NUM ) {
         _session->_sequence_number = 0;
     } else {
         _session->_sequence_number++;
@@ -315,6 +317,9 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
 
 rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
 {
+    if ( !_session )
+        return NULL;
+
     rtp_msg_t* _retu = _session->_oldest_msg;
 
     if ( _retu )
@@ -343,7 +348,7 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
 
     if ( _retu->_ext_header ) {
 
-        _length += ( 4 + _retu->_ext_header->_ext_len * 4 );
+        _length += ( _MIN_EXT_HEADER_LENGTH + _retu->_ext_header->_ext_len * size_32 );
         /* Allocate Memory for _retu->_data */
         _retu->_data = malloc ( sizeof _retu->_data * _length );
 
@@ -400,8 +405,15 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
 
     if ( rtp_header_get_flag_extension ( _retu->_header ) ) {
         _retu->_ext_header = rtp_extract_ext_header ( _data + _from_pos, _length );
-        _retu->_length -= ( 4 + _retu->_ext_header->_ext_len * 4 );
-        _from_pos += ( 4 + _retu->_ext_header->_ext_len * 4 );
+        if ( _retu->_ext_header ){
+            _retu->_length -= ( _MIN_EXT_HEADER_LENGTH + _retu->_ext_header->_ext_len * size_32 );
+            _from_pos += ( _MIN_EXT_HEADER_LENGTH + _retu->_ext_header->_ext_len * size_32 );
+        } else {
+            DEALLOCATOR(_retu->_ext_header);
+            DEALLOCATOR(_retu->_header);
+            DEALLOCATOR(_retu);
+            return NULL;
+        }
     } else {
         _retu->_ext_header = NULL;
     }

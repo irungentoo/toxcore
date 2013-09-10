@@ -12,7 +12,7 @@
 #include "DHT.h"
 #include "packets.h"
 
-uint64_t now()
+long int now()
 {
     return time(NULL);
 }

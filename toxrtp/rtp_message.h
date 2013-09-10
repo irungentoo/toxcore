@@ -33,6 +33,10 @@
 
 #define _MAX_SEQU_NUM 65535
 
+/* Minimum size */
+#define _MIN_HEADER_LENGTH 12
+#define _MIN_EXT_HEADER_LENGTH 4
+
 /* End of defines */
 
 
@@ -84,6 +88,8 @@ uint8_t*  rtp_add_extention_header ( rtp_ext_header_t* _header, uint8_t* _payloa
 
 /* Gets the size of the header _header in bytes */
 size_t  rtp_header_get_size ( const rtp_header_t* _header );
+
+void    rtp_header_print (const rtp_header_t* _header);
 
 /* Adding flags and settings */
 void    rtp_header_add_flag_version ( rtp_header_t* _header, uint32_t value );

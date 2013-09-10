@@ -72,7 +72,7 @@ void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
     } while ( _it );
 }
 
-uint8_t* t_memset ( uint8_t* _dest, int _valu, size_t _size )
+uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size )
 {
     /*
      * Again using countdown to zero method
@@ -83,6 +83,28 @@ uint8_t* t_memset ( uint8_t* _dest, int _valu, size_t _size )
         _it--;
         _dest[_it] = _valu;
     } while ( _it );
+
+    return _dest;
+}
+
+size_t t_memlen ( const uint8_t* _valu)
+{
+    const uint8_t* _it = _valu;
+    size_t _retu;
+
+    for ( _retu = 0; *_it; ++_it ){ _retu++; }
+
+    return _retu;
+}
+
+uint8_t* t_strallcpy ( const uint8_t* _source ) /* string alloc and copy */
+{
+    size_t _length = t_memlen(_source);
+    assert(_length); /* Leave this assert */
+
+    uint8_t* _dest = malloc( sizeof ( uint8_t ) * _length );
+
+    t_memcpy(_dest, _source, _length);
 
     return _dest;
 }

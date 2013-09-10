@@ -36,6 +36,11 @@
 
 #define _USE_ERRORS
 
+#define RUN_IN_THREAD(_func, _thread_id, _arg_ptr) \
+if ( pthread_create ( &_thread_id, NULL, _func, _arg_ptr ) ) { \
+    pthread_detach ( _thread_id ); \
+}
+
 /* Core adaptation helper */
 int t_setipport ( const char* _ip, unsigned short _port, void* _cont );
 uint32_t t_random ( uint32_t _max );
@@ -51,8 +56,14 @@ void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size );
 /* This is our memset. It's also a bit faster than the memset for it
  * does not cast _dest to char* and uses faster loop algorithm.
  */
-uint8_t* t_memset ( uint8_t* _dest, int _valu, size_t _size );
+uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size );
 
+/* Get null terminated len */
+size_t t_memlen ( const uint8_t* _valu );
+
+
+/* string alloc and copy ( ! must be null terminated ) */
+uint8_t* t_strallcpy ( const uint8_t* _source );
 #define unused(x) (void)(x);
 
 #endif /* _RTP__HELPER_H_ */
