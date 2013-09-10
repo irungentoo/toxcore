@@ -16,6 +16,8 @@ uint64_t random_64b();
 bool id_eq(uint8_t *dest, uint8_t *src);
 void id_cpy(uint8_t *dest, uint8_t *src);
 
+int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled);
+
 #undef LOGGING
 /* #define LOGGING */
 #ifdef LOGGING

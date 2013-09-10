@@ -153,33 +153,9 @@ int main(int argc, char *argv[])
 {
     /* let user override default by cmdline */
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
-
-    int argvoffset = 0, argi;
-    for(argi = 1; argi < argc; argi++)
-        if (!strncasecmp(argv[argi], "--ipv", 5)) {
-            if (argv[argi][5] && !argv[argi][6]) {
-                char c = argv[argi][5];
-                if (c == '4')
-                    ipv6enabled = 0;
-                else if (c == '6')
-                    ipv6enabled = 1;
-                else {
-                    printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
-                    exit(1);
-                }
-            }
-            else {
-                printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
-                exit(1);
-            }
-
-            if (argvoffset != argi - 1) {
-                printf("Argument must come first: %s.\n", argv[argi]);
-                exit(1);
-            }
-
-            argvoffset++;
-        }
+    int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+    if (argvoffset < 0)
+        exit(1);
 
     if (argc < argvoffset + 4) {
         printf("Usage: %s [--ipv4|--ipv6] ip port filename\n", argv[0]);
