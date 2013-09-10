@@ -10,10 +10,11 @@
 #endif
 
 #include <time.h>
-#include <stdint.h>
-#include <stdbool.h>
 
+/* for CLIENT_ID_SIZE */
 #include "DHT.h"
+
+#include "util.h"
 
 uint64_t now()
 {
@@ -41,3 +42,30 @@ void id_cpy(uint8_t *dest, uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
 }
+
+#ifdef LOGGING
+char logbuffer[512];
+static FILE *logfile = NULL;
+void loginit(uint16_t port)
+{
+    if (logfile)
+        fclose(logfile);
+
+    sprintf(logbuffer, "%u-%u.log", ntohs(port), now);
+    logfile = fopen(logbuffer, "w");
+};
+void loglog(char *text)
+{
+    if (logfile) {
+        fprintf(logfile, text);
+        fflush(logfile);
+    }
+};
+void logexit()
+{
+    if (logfile) {
+        fclose(logfile);
+        logfile = NULL;
+    }
+};
+#endif

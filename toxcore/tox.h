@@ -26,6 +26,22 @@
 
 #include <stdint.h>
 
+#ifdef WIN32
+#ifndef WINVER
+//Windows XP
+#define WINVER 0x0501
+#endif
+
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+
+#else
+
+#include <netinet/ip.h>
+
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,6 +87,7 @@ typedef struct {
 } tox_IPAny_Port;
 
 #undef TOX_ENABLE_IPV6
+/* #define TOX_ENABLE_IPV6 */
 #ifdef TOX_ENABLE_IPV6
 #define TOX_ENABLE_IPV6_DEFAULT 1
 typedef tox_IPAny tox_IP;

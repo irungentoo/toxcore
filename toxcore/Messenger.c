@@ -965,19 +965,23 @@ void Messenger_save(Messenger *m, uint8_t *data)
 {
     save_keys(m->net_crypto, data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+
     uint32_t nospam = get_nospam(&(m->fr));
     memcpy(data, &nospam, sizeof(nospam));
     data += sizeof(nospam);
+
     uint32_t size = DHT_size(m->dht);
     memcpy(data, &size, sizeof(size));
     data += sizeof(size);
     DHT_save(m->dht, data);
     data += size;
+
     size = sizeof(Friend) * m->numfriends;
     memcpy(data, &size, sizeof(size));
     data += sizeof(size);
     memcpy(data, m->friendlist, sizeof(Friend) * m->numfriends);
     data += size;
+
     uint16_t small_size = m->name_length;
     memcpy(data, &small_size, sizeof(small_size));
     data += sizeof(small_size);
@@ -990,59 +994,64 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     if (length == ~((uint32_t)0))
         return -1;
 
-    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3)
+    /* BLOCK1: PUBKEY, SECKEY, NOSPAM, SIZE */
+    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2)
         return -1;
 
-    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3;
     load_keys(m->net_crypto, data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+
     uint32_t nospam;
     memcpy(&nospam, data, sizeof(nospam));
     set_nospam(&(m->fr), nospam);
     data += sizeof(nospam);
+    length -= sizeof(nospam);
+
     uint32_t size;
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
+    length -= sizeof(size);
 
     if (length < size)
         return -1;
 
-    length -= size;
-
     if (DHT_load(m->dht, data, size) == -1)
-        return -1;
+        fprintf(stderr, "Data file: Something wicked happened to the stored connections.\n");
+
+    /* go on, friends still might be intact */
 
     data += size;
+    length -= size;
+
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
-
-    if (length < size || size % sizeof(Friend) != 0)
+    if (length < size)
         return -1;
 
-    Friend *temp = malloc(size);
-    memcpy(temp, data, size);
+    if (!(size % sizeof(Friend))) {
+        uint16_t num = size / sizeof(Friend);
+        Friend temp[num];
+        memcpy(temp, data, size);
 
-    uint16_t num = size / sizeof(Friend);
-
-    uint32_t i;
-
-    for (i = 0; i < num; ++i) {
-        if (temp[i].status >= 3) {
-            int fnum = m_addfriend_norequest(m, temp[i].client_id);
-            setfriendname(m, fnum, temp[i].name, temp[i].name_length);
-            /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
-        } else if (temp[i].status != 0) {
-            /* TODO: This is not a good way to do this. */
-            uint8_t address[FRIEND_ADDRESS_SIZE];
-            memcpy(address, temp[i].client_id, crypto_box_PUBLICKEYBYTES);
-            memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp[i].friendrequest_nospam), sizeof(uint32_t));
-            uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
-            memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
-            m_addfriend(m, address, temp[i].info, temp[i].info_size);
+        uint32_t i;
+        for (i = 0; i < num; ++i) {
+            if (temp[i].status >= 3) {
+                int fnum = m_addfriend_norequest(m, temp[i].client_id);
+                setfriendname(m, fnum, temp[i].name, temp[i].name_length);
+                /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
+            } else if (temp[i].status != 0) {
+                /* TODO: This is not a good way to do this. */
+                uint8_t address[FRIEND_ADDRESS_SIZE];
+                memcpy(address, temp[i].client_id, crypto_box_PUBLICKEYBYTES);
+                memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp[i].friendrequest_nospam), sizeof(uint32_t));
+                uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+                memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
+                m_addfriend(m, address, temp[i].info, temp[i].info_size);
+            }
         }
     }
 
-    free(temp);
     data += size;
     length -= size;
 

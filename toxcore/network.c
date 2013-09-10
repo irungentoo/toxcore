@@ -26,6 +26,7 @@
 #endif
 
 #include "network.h"
+#include "util.h"
 
 /*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void)
@@ -60,6 +61,10 @@ uint32_t random_int(void)
     return random();
 #endif
 }
+
+#ifdef LOGGING
+static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res);
+#endif
 
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
@@ -122,7 +127,11 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
     }
 #endif
 
-    return sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
+    int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
+#ifdef LOGGING
+    loglogdata("O=>", data, length, &ip_port, res);
+#endif
+    return res;
 }
 
 /* Function to receive data
@@ -131,11 +140,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
  *  Packet length is put into length.
  *  Dump all empty packets.
  */
-#ifdef WIN32
-static int receivepacket(unsigned int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
-#else
-static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
-#endif
+static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     struct sockaddr_storage addr;
 #ifdef WIN32
@@ -145,8 +150,13 @@ static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *le
 #endif
     (*(int32_t *)length) = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
-    if (*(int32_t *)length <= 0)
+    if (*(int32_t *)length <= 0) {
+#ifdef LOGGING
+        if ((length < 0) && (errno != EWOULDBLOCK))
+            sprintf(logbuffer, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
+#endif
         return -1; /* Nothing received or empty packet. */
+    }
 
 #ifdef TOX_ENABLE_IPV6
     if (addr.ss_family == AF_INET) {
@@ -171,6 +181,10 @@ static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *le
     }
     else
         return -1;
+#endif
+
+#ifdef LOGGING
+    loglogdata("=>O", data, *length, ip_port, 0);
 #endif
 
     return 0;
@@ -307,6 +321,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     fcntl(temp->sock, F_SETFL, O_NONBLOCK, 1);
 #endif
 
+#ifdef LOGGING
+    loginit(ntohs(port));
+#endif
+
     /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
     uint16_t *portptr = NULL;
     struct sockaddr_storage addr;
@@ -346,9 +364,33 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     if (ip.family == AF_INET6) {
         char ipv6only = 0;
         int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
+#ifdef LOGGING
         if (res < 0) {
-            /* add log message*/
+            sprintf(logbuffer, "Failed to enable dual-stack on IPv6 socket, won't be able to receive from/send to IPv4 addresses. (%u, %s)\n",
+                    errno, strerror(errno));
+            loglog(logbuffer);
         }
+        else
+            loglog("Embedded IPv4 addresses enabled successfully.\n");
+#endif
+
+        /* multicast local nodes */
+        struct ipv6_mreq mreq;
+        memset(&mreq, 0, sizeof(mreq));
+        mreq.ipv6mr_multiaddr.s6_addr[ 0] = 0xFF;
+        mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
+        mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
+        mreq.ipv6mr_interface = 0;
+        res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+#ifdef LOGGING
+        if (res < 0) {
+            sprintf(logbuffer, "Failed to activate local multicast membership. (%u, %s)\n",
+                    errno, strerror(errno));
+            loglog(logbuffer);
+        }
+        else
+            loglog("Local multicast group FF02::1 joined successfully.\n");
+#endif
     }
 #endif
 
@@ -363,6 +405,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         if (!res)
         {
             temp->port = *portptr;
+#ifdef LOGGING
+            sprintf(logbuffer, "Bound successfully to %s:%u.\n", ip_ntoa(&ip), ntohs(temp->port));
+            loglog(logbuffer);
+#endif
             return temp;
         }
 
@@ -733,3 +779,17 @@ int addr_resolve_or_parse_ip(const char *address, IP *to)
 
     return 1;
 };
+
+#ifdef LOGGING
+static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
+{
+    snprintf(logbuffer, sizeof(logbuffer), "[%2u] %3u%c %s %s:%u (%u: %s) | %04x%04x\n",
+        buffer[0], res < 0 ? (buflen & 0xFF) : res,
+        res < 0 ? '-' : (res == buflen ? '=' : '+'),
+        message, ip_ntoa(&ip_port->ip), ntohs(ip_port->port), res < 0 ? errno : 0,
+        res < 0 ? strerror(errno) : "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
+        buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+    logbuffer[sizeof(logbuffer) - 1] = 0;
+    loglog(logbuffer);
+}
+#endif

@@ -119,6 +119,7 @@ typedef struct {
 } IPAny_Port;
 
 #undef TOX_ENABLE_IPV6
+/* #define TOX_ENABLE_IPV6 */
 #ifdef TOX_ENABLE_IPV6
 #define TOX_ENABLE_IPV6_DEFAULT 1
 typedef IPAny IP;
