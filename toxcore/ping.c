@@ -100,7 +100,8 @@ bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: Repl
 {
     PING *png = ping;
 
-    if (ipp.ip.uint32 == 0 && ping_id == 0)
+    /* shouldn't that be an OR ? */
+    if (!ip_isset(&ipp.ip) && ping_id == 0)
         return false;
 
     size_t i, id;
@@ -111,7 +112,8 @@ bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: Repl
         id = (png->pos_pings + i) % PING_NUM_MAX;
 
         /* ping_id = 0 means match any id. */
-        if ((ipp_eq(png->pings[id].ipp, ipp) || ipp.ip.uint32 == 0) && (png->pings[id].id == ping_id || ping_id == 0)) {
+        if ((!ip_isset(&ipp.ip) || ipport_equal(&png->pings[id].ipp, &ipp)) &&
+                            (png->pings[id].id == ping_id || ping_id == 0)) {
             return true;
         }
     }

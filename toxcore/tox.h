@@ -36,21 +36,51 @@ extern "C" {
 
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
-
 typedef union {
     uint8_t c[4];
     uint16_t s[2];
     uint32_t i;
-} tox_IP;
+} tox_IP4;
+
+
+typedef struct in6_addr tox_IP6;
 
 typedef struct {
-    tox_IP ip;
-    uint16_t port;
-    /* Not used for anything right now. */
-    uint16_t padding;
-} tox_IP_Port;
+    sa_family_t family;
+    union {
+        tox_IP4 ip4;
+        tox_IP6 ip6;
+    };
+} tox_IPAny;
 
-#define TOX_IP_IS_IPV6 0
+typedef union {
+    struct {
+        tox_IP4 ip;
+        uint16_t port;
+        /* Not used for anything right now. */
+        uint16_t padding;
+    };
+    uint8_t uint8[8];
+} tox_IP4_Port;
+
+/* will replace IP_Port as soon as the complete infrastructure is in place
+ * removed the unused union and padding also */
+typedef struct {
+    tox_IPAny ip;
+    uint16_t port;
+} tox_IPAny_Port;
+
+#undef TOX_ENABLE_IPV6
+#ifdef TOX_ENABLE_IPV6
+#define TOX_ENABLE_IPV6_DEFAULT 1
+typedef tox_IPAny tox_IP;
+typedef tox_IPAny_Port tox_IP_Port;
+#else
+#define TOX_ENABLE_IPV6_DEFAULT 0
+typedef tox_IP4 tox_IP;
+typedef tox_IP4_Port tox_IP_Port;
+#endif
+
 
 /* Errors for m_addfriend
  * FAERR - Friend Add Error
@@ -296,7 +326,8 @@ void tox_callback_connectionstatus(Tox *tox, void (*function)(Tox *tox, int, uin
  * tox_bootstrap_ex converts the address into an IP_Port structure internally
  */
 void tox_bootstrap(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
-void tox_bootstrap_ex(Tox *tox, const char *address, uint16_t port, uint8_t *public_key);
+void tox_bootstrap_ex(Tox *tox, const char *address, uint8_t ipv6enabled,
+                      uint16_t port, uint8_t *public_key);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.

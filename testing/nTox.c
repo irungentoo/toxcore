@@ -537,6 +537,9 @@ void print_help(void)
 
 int main(int argc, char *argv[])
 {
+    /* let use decide by cmdline: TODO */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+
     int on = 0;
     int c = 0;
     int i = 0;
@@ -566,7 +569,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    m = tox_new();
+    m = tox_new_ex(ipv6enabled);
 
     if ( !m ) {
         fputs("Failed to allocate Messenger datastructure", stderr);
@@ -590,20 +593,12 @@ int main(int argc, char *argv[])
     new_lines(idstring);
     strcpy(line, "");
 
-    tox_IP_Port bootstrap_ip_port;
-    bootstrap_ip_port.port = htons(atoi(argv[2]));
-    int resolved_address = resolve_addr(argv[1]);
-
-    if (resolved_address != 0)
-        bootstrap_ip_port.ip.i = resolved_address;
-    else
-        exit(1);
-
+    uint16_t port = htons(atoi(argv[2]));
     unsigned char *binary_string = hex_string_to_bin(argv[3]);
-    tox_bootstrap(m, bootstrap_ip_port, binary_string);
+    tox_bootstrap_ex(m, argv[1], ipv6enabled, port, binary_string);
     free(binary_string);
-    nodelay(stdscr, TRUE);
 
+    nodelay(stdscr, TRUE);
     while (1) {
         if (on == 0 && tox_isconnected(m)) {
             new_lines("[i] connected to DHT\n[i] define username with /n");

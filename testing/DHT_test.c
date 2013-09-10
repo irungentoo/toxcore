@@ -66,13 +66,11 @@ void print_clientlist(DHT *dht)
         }
 
         p_ip = dht->close_clientlist[i].ip_port;
-        printf("\nIP: %u.%u.%u.%u Port: %u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
-               ntohs(p_ip.port));
+        printf("\nIP: %s Port: %u", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
         printf("\nTimestamp: %llu", (long long unsigned int) dht->close_clientlist[i].timestamp);
         printf("\nLast pinged: %llu\n", (long long unsigned int) dht->close_clientlist[i].last_pinged);
         p_ip = dht->close_clientlist[i].ret_ip_port;
-        printf("OUR IP: %u.%u.%u.%u Port: %u\n", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
-               ntohs(p_ip.port));
+        printf("OUR IP: %s Port: %u\n", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
         printf("Timestamp: %llu\n", (long long unsigned int) dht->close_clientlist[i].ret_timestamp);
     }
 }
@@ -91,9 +89,8 @@ void print_friendlist(DHT *dht)
             printf("%c", dht->friends_list[k].client_id[j]);
         }
 
-        p_ip = DHT_getfriendip(dht, dht->friends_list[k].client_id);
-        printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
-               ntohs(p_ip.port));
+        int friendok = DHT_getfriendip(dht, dht->friends_list[k].client_id, &p_ip);
+        printf("\nIP: %s:%u", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
 
         printf("\nCLIENTS IN LIST:\n\n");
 
@@ -108,13 +105,11 @@ void print_friendlist(DHT *dht)
             }
 
             p_ip = dht->friends_list[k].client_list[i].ip_port;
-            printf("\nIP: %u.%u.%u.%u:%u", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
-                   ntohs(p_ip.port));
+            printf("\nIP: %s:%u", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
             printf("\nTimestamp: %llu", (long long unsigned int) dht->friends_list[k].client_list[i].timestamp);
             printf("\nLast pinged: %llu\n", (long long unsigned int) dht->friends_list[k].client_list[i].last_pinged);
             p_ip = dht->friends_list[k].client_list[i].ret_ip_port;
-            printf("ret IP: %u.%u.%u.%u:%u\n", p_ip.ip.uint8[0], p_ip.ip.uint8[1], p_ip.ip.uint8[2], p_ip.ip.uint8[3],
-                   ntohs(p_ip.port));
+            printf("ret IP: %s:%u\n", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
             printf("Timestamp: %llu\n", (long long unsigned int)dht->friends_list[k].client_list[i].ret_timestamp);
         }
     }
@@ -138,11 +133,14 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 
 int main(int argc, char *argv[])
 {
+    /* let use decide by cmdline: TODO */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     /* initialize networking */
     /* bind to ip 0.0.0.0:PORT */
-    IP4 ip;
-    ip.uint32 = 0;
+    IP ip;
+    ip_init(&ip, ipv6enabled);
 
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
 
@@ -172,14 +170,7 @@ int main(int argc, char *argv[])
 
 
     perror("Initialization");
-    IP_Port bootstrap_ip_port;
-    bootstrap_ip_port.port = htons(atoi(argv[2]));
-    /* bootstrap_ip_port.ip.c[0] = 127;
-     * bootstrap_ip_port.ip.c[1] = 0;
-     * bootstrap_ip_port.ip.c[2] = 0;
-     * bootstrap_ip_port.ip.c[3] = 1; */
-    bootstrap_ip_port.ip.uint32 = inet_addr(argv[1]);
-    DHT_bootstrap(dht, bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    DHT_bootstrap_ex(dht, argv[1], ipv6enabled, htons(atoi(argv[2])), hex_string_to_bin(argv[3]));
 
     /*
         IP_Port ip_port;

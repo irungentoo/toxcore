@@ -101,12 +101,6 @@ typedef struct {
     };
 } IPAny;
 
-/* ipany_ntoa
- *   converts ip into a string
- *   uses a static buffer, so mustn't used multiple times in the same output
- */
-const char *ipany_ntoa(IPAny *ip);
-
 typedef union {
     struct {
         IP4 ip;
@@ -124,11 +118,22 @@ typedef struct {
     uint16_t port;
 } IPAny_Port;
 
-#ifdef NETWORK_IP_PORT_IS_IPV6
+#undef TOX_ENABLE_IPV6
+#ifdef TOX_ENABLE_IPV6
+#define TOX_ENABLE_IPV6_DEFAULT 1
+typedef IPAny IP;
 typedef IPAny_Port IP_Port;
 #else
+#define TOX_ENABLE_IPV6_DEFAULT 0
+typedef IP4 IP;
 typedef IP4_Port IP_Port;
 #endif
+
+/* ip_ntoa
+ *   converts ip into a string
+ *   uses a static buffer, so mustn't used multiple times in the same output
+ */
+const char *ip_ntoa(IP *ip);
 
 /* ipport_equal
  *  compares two IPAny_Port structures
@@ -136,17 +141,20 @@ typedef IP4_Port IP_Port;
  *
  * returns 0 when not equal or when uninitialized
  */
-int ipport_equal(IPAny_Port *a, IPAny_Port *b);
+int ipport_equal(IP_Port *a, IP_Port *b);
 
-typedef struct {
-    int16_t family;
-    uint16_t port;
-    IP4 ip;
-    uint8_t zeroes[8];
-#ifdef ENABLE_IPV6
-    uint8_t zeroes2[12];
-#endif
-} ADDR;
+/* nulls out ip */
+void ip_reset(IP *ip);
+/* nulls out ip, sets family according to flag */
+void ip_init(IP *ip, uint8_t ipv6enabled);
+/* checks if ip is valid */
+int ip_isset(IP *ip);
+/* checks if ip is valid */
+int ipport_isset(IP_Port *ipport);
+/* copies an ip structure */
+void ip_copy(IP *target, IP *source);
+/* copies an ip_port structure */
+void ipport_copy(IP_Port *target, IP_Port *source);
 
 /*
  * addr_resolve_or_parse_ip
@@ -155,7 +163,7 @@ typedef struct {
  * to->family MUST be set (AF_UNSPEC, AF_INET, AF_INET6)
  * returns 1 on success, 0 on failure
  */
-int addr_resolve_or_parse_ip(const char *address, IPAny *to);
+int addr_resolve_or_parse_ip(const char *address, IP *to);
 
 /* Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
@@ -204,7 +212,7 @@ void networking_poll(Networking_Core *net);
  *  return 0 if no problems.
  *  return -1 if there were problems.
  */
-Networking_Core *new_networking(IP4 ip, uint16_t port);
+Networking_Core *new_networking(IP ip, uint16_t port);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);

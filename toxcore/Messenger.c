@@ -658,14 +658,8 @@ Messenger *initMessenger(uint8_t ipv6enabled)
     if ( ! m )
         return NULL;
 
-#ifdef NETWORK_IP_PORT_IS_IPV6
-    IPAny ip;
-    memset(&ip, 0, sizeof(ip));
-    ip.family = ipv6enabled ? AF_INET6 : AF_INET;
-#else
-    IP4 ip;
-    ip.uint32 = 0;
-#endif
+    IP ip;
+    ip_init(&ip, ipv6enabled);
     m->net = new_networking(ip, PORT);
 
     if (m->net == NULL) {
@@ -749,11 +743,12 @@ void doFriends(Messenger *m)
                 }
             }
 
-            IP_Port friendip = DHT_getfriendip(m->dht, m->friendlist[i].client_id);
+            IP_Port friendip;
+            int friendok = DHT_getfriendip(m->dht, m->friendlist[i].client_id, &friendip);
 
             switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
                 case 0:
-                    if (friendip.ip.uint32 > 1)
+                    if (friendok == 1)
                         m->friendlist[i].crypt_connection_id = crypto_connect(m->net_crypto, m->friendlist[i].client_id, friendip);
 
                     break;

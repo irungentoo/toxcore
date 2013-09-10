@@ -50,18 +50,22 @@ int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8
     if (len == -1)
         return -1;
 
-    IP_Port ip_port = DHT_getfriendip(dht, public_key);
+    IP_Port ip_port;
+    int friendok = DHT_getfriendip(dht, public_key, &ip_port);
 
-    if (ip_port.ip.uint32 == 1)
+    // not a friend
+    if (friendok == -1)
         return -1;
 
-    if (ip_port.ip.uint32 != 0) {
+    // is a friend and we know how to reach him
+    if (friendok == 1) {
         if (sendpacket(dht->c->lossless_udp->net, ip_port, packet, len) != -1)
             return 0;
 
         return -1;
     }
 
+    // is a friend, we DON'T know how to reach him
     int num = route_tofriend(dht, public_key, packet, len);
 
     if (num == 0)

@@ -81,10 +81,14 @@ void manage_keys(DHT *dht)
 
 int main(int argc, char *argv[])
 {
+    /* let use decide by cmdline: TODO */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+
     /* Initialize networking -
        Bind to ip 0.0.0.0:PORT */
-    IP4 ip;
-    ip.uint32 = 0;
+    IP ip;
+    ip_init(&ip, ipv6enabled);
+
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
     manage_keys(dht);
     printf("Public key: ");
@@ -110,11 +114,8 @@ int main(int argc, char *argv[])
 
     if (argc > 3) {
         printf("Trying to bootstrap into the network...\n");
-        IP_Port bootstrap_info;
-        bootstrap_info.ip.uint32 = inet_addr(argv[1]);
-        bootstrap_info.port = htons(atoi(argv[2]));
         uint8_t *bootstrap_key = hex_string_to_bin(argv[3]);
-        DHT_bootstrap(dht, bootstrap_info, bootstrap_key);
+        DHT_bootstrap_ex(dht, argv[1], ipv6enabled, htons(atoi(argv[2])), bootstrap_key);
         free(bootstrap_key);
     }
 

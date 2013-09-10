@@ -66,8 +66,63 @@ uint32_t random_int(void)
  */
 int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length)
 {
-    ADDR addr = {AF_INET, ip_port.port, ip_port.ip, {0}};
-    return sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, sizeof(addr));
+#ifdef TOX_ENABLE_IPV6
+    /* socket AF_INET, but target IP NOT: can't send */
+   if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
+        return 0;
+#endif
+ 
+    struct sockaddr_storage addr;
+    size_t addrsize = 0;
+
+#ifdef TOX_ENABLE_IPV6
+    if (ip_port.ip.family == AF_INET) {
+        if (net->family == AF_INET6) {
+            /* must convert to IPV4-in-IPV6 address */
+            addrsize = sizeof(struct sockaddr_in6);
+            struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
+            addr6->sin6_family = AF_INET6;
+            addr6->sin6_port = ip_port.port;
+
+            /* there should be a macro for this in a standards compliant
+             * environment, not found */
+            addr6->sin6_addr.s6_addr32[0] = 0;
+            addr6->sin6_addr.s6_addr32[1] = 0;
+            addr6->sin6_addr.s6_addr32[2] = htonl(0xFFFF);
+            addr6->sin6_addr.s6_addr32[3] = ip_port.ip.ip4.uint32;
+
+            addr6->sin6_flowinfo = 0;
+            addr6->sin6_scope_id = 0;
+        }
+        else {
+            IP4 ip4 = ip_port.ip.ip4;
+#else
+            IP4 ip4 = ip_port.ip;
+#endif
+            addrsize = sizeof(struct sockaddr_in);
+            struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
+            addr4->sin_family = AF_INET;
+            addr4->sin_addr = ip4.in_addr;
+            addr4->sin_port = ip_port.port;
+#ifdef TOX_ENABLE_IPV6
+        }
+    }
+    else if (ip_port.ip.family == AF_INET6) {
+        addrsize = sizeof(struct sockaddr_in6);
+        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
+        addr6->sin6_family = AF_INET6;
+        addr6->sin6_port = ip_port.port;
+        addr6->sin6_addr = ip_port.ip.ip6;
+
+        addr6->sin6_flowinfo = 0;
+        addr6->sin6_scope_id = 0;
+    } else {
+        /* unknown address type*/
+        return 0;
+    }
+#endif
+
+    return sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 }
 
 /* Function to receive data
@@ -82,7 +137,7 @@ static int receivepacket(unsigned int sock, IP_Port *ip_port, uint8_t *data, uin
 static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 #endif
 {
-    ADDR addr;
+    struct sockaddr_storage addr;
 #ifdef WIN32
     int addrlen = sizeof(addr);
 #else
@@ -93,8 +148,31 @@ static int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *le
     if (*(int32_t *)length <= 0)
         return -1; /* Nothing received or empty packet. */
 
-    ip_port->ip = addr.ip;
-    ip_port->port = addr.port;
+#ifdef TOX_ENABLE_IPV6
+    if (addr.ss_family == AF_INET) {
+        struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+        ip_port->ip.family = addr_in->sin_family;
+        ip_port->ip.ip4.in_addr = addr_in->sin_addr;
+        ip_port->port = addr_in->sin_port;
+    }
+    else if (addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
+        ip_port->ip.family = addr_in6->sin6_family;
+        ip_port->ip.ip6 = addr_in6->sin6_addr;
+        ip_port->port = addr_in6->sin6_port;
+    }
+    else
+        return -1;
+#else
+    if (addr.ss_family == AF_INET) {
+        struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+        ip_port->ip.in_addr = addr_in->sin_addr;
+        ip_port->port = addr_in->sin_port;
+    }
+    else
+        return -1;
+#endif
+
     return 0;
 }
 
@@ -156,18 +234,32 @@ static void at_shutdown(void)
  *  return Networking_Core object if no problems
  *  return NULL if there are problems.
  */
-Networking_Core *new_networking(IP4 ip, uint16_t port)
+Networking_Core *new_networking(IP ip, uint16_t port)
 {
+#ifdef TOX_ENABLE_IPV6
+    /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
+    if (ip.family != AF_INET && ip.family != AF_INET6)
+        return NULL;
+#endif
+
     if (at_startup() != 0)
         return NULL;
 
-    /* Initialize our socket. */
     Networking_Core *temp = calloc(1, sizeof(Networking_Core));
-
     if (temp == NULL)
         return NULL;
 
-    temp->family = AF_INET;
+    sa_family_t family = 0;
+#ifdef TOX_ENABLE_IPV6
+    family = ip.family;
+#else
+    family = AF_INET;
+#endif
+    temp->family = family;
+    temp->port = 0;
+
+    /* Initialize our socket. */
+    /* add log message what we're creating */
     temp->sock = socket(temp->family, SOCK_DGRAM, IPPROTO_UDP);
 
     /* Check for socket error. */
@@ -201,7 +293,7 @@ Networking_Core *new_networking(IP4 ip, uint16_t port)
         return -1;
     */
 
-    /* Enable broadcast on socket. */
+    /* Enable broadcast on socket? */
     int broadcast = 1;
     setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
 
@@ -216,11 +308,72 @@ Networking_Core *new_networking(IP4 ip, uint16_t port)
 #endif
 
     /* Bind our socket to port PORT and address 0.0.0.0 */
-    ADDR addr = {temp->family, htons(port), ip, {0}};
-    if (!bind(temp->sock, (struct sockaddr *)&addr, sizeof(addr)))
-        temp->port = port;
+    uint16_t *portptr = NULL;
+    struct sockaddr_storage addr;
+    size_t addrsize;
+#ifdef TOX_ENABLE_IPV6
+    if (temp->family == AF_INET)
+    {
+        IP4 ip4 = ip.ip4;
+#else
+        IP4 ip4 = ip;
+#endif
+        addrsize = sizeof(struct sockaddr_in);
+        struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
+        addr4->sin_family = AF_INET;
+        addr4->sin_port = htons(port);
+        addr4->sin_addr = ip4.in_addr;
 
-    return temp;
+        portptr = &addr4->sin_port;
+#ifdef TOX_ENABLE_IPV6
+    }
+    else if (temp->family == AF_INET6)
+    {
+        addrsize = sizeof(struct sockaddr_in6);
+        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
+        addr6->sin6_family = AF_INET6;
+        addr6->sin6_port = htons(port);
+        addr6->sin6_addr = ip.ip6;
+
+        addr6->sin6_flowinfo = 0;
+        addr6->sin6_scope_id = 0;
+
+        portptr = &addr6->sin6_port;
+    }
+    else
+        return NULL;
+
+    if (ip.family == AF_INET6) {
+        char ipv6only = 0;
+        int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
+        if (res < 0) {
+            /* add log message*/
+        }
+    }
+#endif
+
+    /* a hanging program or a different user might block the standard port;
+     * as long as it isn't a parameter coming from the commandline,
+     * try a few ports after it, to see if we can find a "free" one
+     */
+    int tries, res;
+    for(tries = 0; tries < 9; tries++)
+    {
+        res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
+        if (!res)
+        {
+            temp->port = *portptr;
+            return temp;
+        }
+
+        uint16_t port = ntohs(*portptr);
+        port++;
+        *portptr = htons(port);
+    }
+
+    printf("Failed to bind socket: %s (IP/Port: %s:%u\n", strerror(errno), ip_ntoa(&ip), port);
+    free(temp);
+    return NULL;
 }
 
 /* Function to cleanup networking stuff. */
@@ -241,11 +394,12 @@ void kill_networking(Networking_Core *net)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ip_equal(IPAny *a, IPAny *b)
+int ip_equal(IP *a, IP *b)
 {
     if (!a || !b)
         return 0;
 
+#ifdef TOX_ENABLE_IPV6
     if (a->family == AF_INET)
         return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
 
@@ -253,6 +407,9 @@ int ip_equal(IPAny *a, IPAny *b)
         return IN6_ARE_ADDR_EQUAL(&a->ip6, &b->ip6);
 
     return 0;
+#else
+    return (a->uint32 == b->uint32);
+#endif
 };
 
 /* ipport_equal
@@ -261,7 +418,7 @@ int ip_equal(IPAny *a, IPAny *b)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ipport_equal(IPAny_Port *a, IPAny_Port *b)
+int ipport_equal(IP_Port *a, IP_Port *b)
 {
     if (!a || !b)
         return 0;
@@ -272,15 +429,86 @@ int ipport_equal(IPAny_Port *a, IPAny_Port *b)
     return ip_equal(&a->ip, &b->ip);
 };
 
-/* ipany_ntoa
+/* nulls out ip */
+void ip_reset(IP *ip)
+{
+    if (!ip)
+        return;
+
+#ifdef TOX_ENABLE_IPV6
+    memset(ip, 0, sizeof(*ip));
+#else
+    ip->uint32 = 0;
+#endif
+};
+
+/* nulls out ip, sets family according to flag */
+void ip_init(IP *ip, uint8_t ipv6enabled)
+{
+    if (!ip)
+        return;
+
+#ifdef TOX_ENABLE_IPV6
+    memset(ip, 0, sizeof(ip));
+    ip->family = ipv6enabled ? AF_INET6 : AF_INET;
+#else
+    ip->uint32 = 0;
+#endif
+};
+
+/* checks if ip is valid */
+int ip_isset(IP *ip)
+{
+    if (!ip)
+        return 0;
+
+#ifdef TOX_ENABLE_IPV6
+    return (ip->family != 0);
+#else
+    return (ip->uint32 != 0);
+#endif
+};
+
+/* checks if ip is valid */
+int ipport_isset(IP_Port *ipport)
+{
+    if (!ipport)
+        return 0;
+
+    if (!ipport->port)
+        return 0;
+
+    return ip_isset(&ipport->ip);
+};
+
+/* copies an ip structure (careful about direction!) */
+void ip_copy(IP *target, IP *source)
+{
+    if (!source || !target)
+        return;
+
+    memcpy(target, source, sizeof(IP));
+};
+
+/* copies an ip_port structure (careful about direction!) */
+void ipport_copy(IP_Port *target, IP_Port *source)
+{
+    if (!source || !target)
+        return;
+
+    memcpy(target, source, sizeof(IP_Port));
+};
+
+/* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
 static char addresstext[96];
-const char *ipany_ntoa(IPAny *ip)
+const char *ip_ntoa(IP *ip)
 {
     if (ip) {
+#ifdef TOX_ENABLE_IPV6
         if (ip->family == AF_INET) {
             addresstext[0] = 0;
             struct in_addr *addr = (struct in_addr *)&ip->ip4;
@@ -296,6 +524,11 @@ const char *ipany_ntoa(IPAny *ip)
         }
         else
             snprintf(addresstext, sizeof(addresstext), "(IP invalid, family %u)", ip->family);
+#else
+        addresstext[0] = 0;
+        struct in_addr *addr = (struct in_addr *)&ip;
+        inet_ntop(AF_INET, addr, addresstext, sizeof(addresstext));
+#endif
     }
     else
         snprintf(addresstext, sizeof(addresstext), "(IP invalid: NULL)");
@@ -318,8 +551,12 @@ const char *ipany_ntoa(IPAny *ip)
  * returns 1 on success, 0 on failure
  */
 
-int addr_parse_ip(const char *address, IPAny *to)
+int addr_parse_ip(const char *address, IP *to)
 {
+    if (!address || !to)
+        return 0;
+
+#ifdef TOX_ENABLE_IPV6
     struct in_addr addr4;
     if (1 == inet_pton(AF_INET, address, &addr4)) {
         to->family = AF_INET;
@@ -333,6 +570,13 @@ int addr_parse_ip(const char *address, IPAny *to)
         to->ip6 = addr6;
         return 1;
     };
+#else
+    struct in_addr addr4;
+    if (1 == inet_pton(AF_INET, address, &addr4)) {
+        to->in_addr = addr4;
+        return 1;
+    };
+#endif
 
     return 0;
 };
@@ -353,15 +597,25 @@ int addr_parse_ip(const char *address, IPAny *to)
  * returns 0 on failure
  */
 
-int addr_resolve(const char *address, IPAny *ip)
+int addr_resolve(const char *address, IP *to)
 {
+    if (!address || !to)
+        return 0;
+
+    sa_family_t family;
+#ifdef TOX_ENABLE_IPV6
+    family = to->family;
+#else
+    family = AF_INET;
+#endif
+
     struct addrinfo *server = NULL;
     struct addrinfo *walker = NULL;
     struct addrinfo  hints;
     int              rc;
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = ip->family;
+    hints.ai_family   = family;
     hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
 
 #ifdef __WIN32__
@@ -385,31 +639,40 @@ int addr_resolve(const char *address, IPAny *ip)
         return 0;
     }
 
+#ifdef TOX_ENABLE_IPV6
     IP4 ip4;
     memset(&ip4, 0, sizeof(ip4));
     IP6 ip6;
     memset(&ip6, 0, sizeof(ip6));
+#endif
 
     walker = server;
     while (walker && (rc != 3)) {
-        if (ip->family != AF_UNSPEC) {
-            if (walker->ai_family == ip->family) {
-                if (ip->family == AF_INET) {
+        if (family != AF_UNSPEC) {
+            if (walker->ai_family == family) {
+                if (family == AF_INET) {
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in)) {
                         struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
-                        ip->ip4.in_addr = addr->sin_addr;
+#ifdef TOX_ENABLE_IPV6
+                        to->ip4.in_addr = addr->sin_addr;
+#else
+                        to->in_addr = addr->sin_addr;
+#endif
                         rc = 3;
                     }
                 }
-                else if (ip->family == AF_INET6) {
+#ifdef TOX_ENABLE_IPV6
+                else if (family == AF_INET6) {
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
-                        ip->ip6 = addr->sin6_addr;
+                        to->ip6 = addr->sin6_addr;
                         rc = 3;
                     }
                 }
+#endif
             }
         }
+#ifdef TOX_ENABLE_IPV6
         else {
             if (walker->ai_family == AF_INET) {
                 if (walker->ai_addrlen == sizeof(struct sockaddr_in)) {
@@ -426,22 +689,25 @@ int addr_resolve(const char *address, IPAny *ip)
                 }
             }
         }
+#endif
 
         walker = walker->ai_next;
     }
 
-    if (ip->family == AF_UNSPEC) {
+#ifdef TOX_ENABLE_IPV6
+    if (to->family == AF_UNSPEC) {
         if (rc & 2) {
-            ip->family = AF_INET6;
-            ip->ip6 = ip6;
+            to->family = AF_INET6;
+            to->ip6 = ip6;
         }
         else if (rc & 1) {
-            ip->family = AF_INET;
-            ip->ip4 = ip4;
+            to->family = AF_INET;
+            to->ip4 = ip4;
         }
         else
             rc = 0;
     }
+#endif
 
     
     freeaddrinfo(server);
@@ -458,7 +724,7 @@ int addr_resolve(const char *address, IPAny *ip)
  * to->family MUST be set (AF_UNSPEC, AF_INET, AF_INET6)
  * returns 1 on success, 0 on failure
  */
-int addr_resolve_or_parse_ip(const char *address, IPAny *to)
+int addr_resolve_or_parse_ip(const char *address, IP *to)
 {
     if (!addr_resolve(address, to))
         if (!addr_parse_ip(address, to))

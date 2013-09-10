@@ -147,6 +147,9 @@ void printconnection(int connection_id)
 
 int main(int argc, char *argv[])
 {
+    /* let use decide by cmdline: TODO */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+
     if (argc < 2) {
         printf("usage: %s filename\n", argv[0]);
         exit(0);
@@ -163,8 +166,9 @@ int main(int argc, char *argv[])
 
     //initialize networking
     //bind to ip 0.0.0.0:PORT
-    IP4 ip;
-    ip.uint32 = 0;
+    IP ip;
+    ip_init(&ip, ipv6enabled);
+
     Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
 

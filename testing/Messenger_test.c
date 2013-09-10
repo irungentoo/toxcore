@@ -101,7 +101,8 @@ int main(int argc, char *argv[])
     }
 
     /* IPv6: maybe allow from cmdline --ipv6? sticking to IPv4 for now */
-    m = initMessenger(0);
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    m = initMessenger(ipv6enabled);
 
     if ( !m ) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
@@ -110,7 +111,7 @@ int main(int argc, char *argv[])
 
     if (argc > 3) {
         uint16_t port = htons(atoi(argv[2]));
-        DHT_bootstrap_ex(m->dht, argv[1], port, hex_string_to_bin(argv[3]));
+        DHT_bootstrap_ex(m->dht, argv[1], ipv6enabled, port, hex_string_to_bin(argv[3]));
     } else {
         FILE *file = fopen(argv[1], "rb");
 
