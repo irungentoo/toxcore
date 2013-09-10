@@ -10,6 +10,10 @@
  *      checking that status changes are received, messages can be sent, etc.
  *      All of that is done in a separate test, with two local clients running. */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../toxcore/Messenger.h"
 #include "../toxcore/Lossless_UDP.h"
 #include <sys/types.h>
