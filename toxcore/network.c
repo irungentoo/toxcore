@@ -114,7 +114,7 @@ void networking_poll(Networking_Core *net)
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 
-    while (receivepacket(net->sock, &ip_port, data, &length) != -1) {
+    while (length = sizeof(data), receivepacket(net->sock, &ip_port, data, &length) != -1) {
         if (length < 1) continue;
 
         if (!(net->packethandlers[data[0]].function)) continue;
