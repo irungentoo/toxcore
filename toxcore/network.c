@@ -148,7 +148,6 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 #else
     uint32_t addrlen = sizeof(addr);
 #endif
-    uint32_t bufflen = *length;
     (*(int32_t *)length) = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
     if (*(int32_t *)length <= 0) {
@@ -187,7 +186,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 #endif
 
 #ifdef LOGGING
-    loglogdata("=>O", data, bufflen, ip_port, *length);
+    loglogdata("=>O", data, MAX_UDP_PACKET_SIZE, ip_port, *length);
 #endif
 
     return 0;
@@ -204,18 +203,14 @@ void networking_poll(Networking_Core *net)
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
-    int recverr;
-    do {
-        length = sizeof(data);
-        recverr = receivepacket(net->sock, &ip_port, data, &length);
-        if (!recverr && (length > 0)) {
-            if (!(net->packethandlers[data[0]].function))
-                continue;
 
-            net->packethandlers[data[0]].function(net->packethandlers[data[0]].object,
-                                                  ip_port, data, length);
-        }
-    } while (recverr != -1);
+    while (receivepacket(net->sock, &ip_port, data, &length) != -1) {
+        if (length < 1) continue;
+
+        if (!(net->packethandlers[data[0]].function)) continue;
+
+        net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length);
+    }
 }
 
 uint8_t at_startup_ran = 0;
