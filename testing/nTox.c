@@ -208,6 +208,9 @@ char *format_message(Tox *m, char *message, int friendnum)
     return msg;
 }
 
+/* forward declaration */
+int save_data(Tox *m);
+
 void line_eval(Tox *m, char *line)
 {
     if (line[0] == '/') {
@@ -251,7 +254,10 @@ void line_eval(Tox *m, char *line)
                     break;
 
                 default:
-                    sprintf(numstring, "[i] Added friend as %d.", num);
+                    if (num >= 0)
+                        sprintf(numstring, "[i] Added friend as %d.", num);
+                    else
+                        sprintf(numstring, "[i] Unknown error %i.", num);
                     break;
             }
 
@@ -355,6 +361,7 @@ void line_eval(Tox *m, char *line)
         }
 
         else if (inpt_command == 'q') { //exit
+            save_data(m);
             endwin();
             exit(EXIT_SUCCESS);
         } else {
@@ -476,55 +483,69 @@ void print_statuschange(Tox *m, int friendnumber, uint8_t *string, uint16_t leng
     }
 }
 
-void load_key(Tox *m, char *path)
-{
-    FILE *data_file = fopen(path, "r");
-    int size = 0;
+static char *data_file_name = NULL;
 
+int load_data(Tox *m)
+{
+    FILE *data_file = fopen(data_file_name, "r");
+    int size = 0;
     if (data_file) {
-        //load keys
         fseek(data_file, 0, SEEK_END);
         size = ftell(data_file);
         rewind(data_file);
 
         uint8_t data[size];
-
         if (fread(data, sizeof(uint8_t), size, data_file) != size) {
             fputs("[!] could not read data file! exiting...\n", stderr);
-            goto FILE_ERROR;
+            return 0;
         }
 
         tox_load(m, data, size);
 
-    } else {
-        //else save new keys
-        int size = tox_size(m);
-        uint8_t data[size];
-        tox_save(m, data);
-        data_file = fopen(path, "w");
-
-        if (!data_file) {
-            perror("[!] load_key");
-            exit(1);
+        if (fclose(data_file) < 0) {
+            perror("[!] fclose failed");
+            return 0;
         }
 
-        if (fwrite(data, sizeof(uint8_t), size, data_file) != size) {
-            fputs("[!] could not write data file! exiting...", stderr);
-            goto FILE_ERROR;
-        }
+        return 1;
     }
 
-    if (fclose(data_file) < 0)
-        perror("[!] fclose failed");
+    return 0;
+}
 
-    return;
+int save_data(Tox *m)
+{
+    FILE *data_file = fopen(data_file_name, "w");
+    if (!data_file) {
+        perror("[!] load_key");
+        return 0;
+    }
 
-FILE_ERROR:
+    int size = tox_size(m);
+    uint8_t data[size];
+    tox_save(m, data);
 
-    if (fclose(data_file) < 0)
-        perror("[!] fclose failed");
+    if (fwrite(data, sizeof(uint8_t), size, data_file) != size) {
+        fputs("[!] could not write data file (1)!", stderr);
+        return 0;
+    }
 
-    exit(1);
+    if (fclose(data_file) < 0) {
+        perror("[!] could not write data file (2)");
+        return 0;
+    }
+}
+
+int load_old_key_or_save_new_one(Tox *m, char *path)
+{
+    data_file_name = path;
+    if (load_data(m))
+        return 1;
+
+    if (save_data(m))
+        return 1;
+
+    return 0;
 }
 
 void print_help(void)
@@ -573,7 +594,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    load_key(m, filename);
+    load_old_key_or_save_new_one(m, filename);
 
     tox_callback_friendrequest(m, print_request, NULL);
     tox_callback_friendmessage(m, print_message, NULL);
@@ -604,9 +625,18 @@ int main(int argc, char *argv[])
     free(binary_string);
     nodelay(stdscr, TRUE);
 
+    new_lines("[i] change username with /n");
+    char name[TOX_MAX_NAME_LENGTH];
+    uint16_t namelen = tox_getselfname(m, name, sizeof(name));
+    if (namelen > 0) {
+        char whoami[128 + TOX_MAX_NAME_LENGTH];
+        snprintf(whoami, sizeof(whoami), "[i] your current username is: %s", name);
+        new_lines(whoami);
+    }
+
     while (1) {
         if (on == 0 && tox_isconnected(m)) {
-            new_lines("[i] connected to DHT\n[i] define username with /n");
+            new_lines("[i] connected to DHT");
             on = 1;
         }
 
