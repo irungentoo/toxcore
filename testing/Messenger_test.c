@@ -43,7 +43,6 @@
 
 #include "../toxcore/Messenger.h"
 #include "misc_tools.c"
-#include "../toxcore/util.h"
 
 #ifdef WIN32
 
