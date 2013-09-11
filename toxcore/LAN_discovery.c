@@ -81,27 +81,35 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t * d
 #endif
 
 /* Return the broadcast ip. */
-static IP broadcast_ip(sa_family_t sa_family)
+static IP broadcast_ip(sa_family_t family_socket, sa_family_t family_broadcast)
 {
     IP ip;
     ip_reset(&ip);
 
 #ifdef TOX_ENABLE_IPV6
-    if (sa_family == AF_INET)
-    {
-        ip.family = AF_INET;
-        ip.ip4.uint32 = INADDR_BROADCAST;
+    if (family_socket == AF_INET6) {
+        if (family_broadcast == AF_INET6) {
+            ip.family = AF_INET6;
+            /* FF02::1 is - according to RFC 4291 - multicast all-nodes link-local */
+            /* FE80::*: MUST be exact, for that we would need to look over all
+             * interfaces and check in which status they are */
+            ip.ip6.s6_addr[ 0] = 0xFF;
+            ip.ip6.s6_addr[ 1] = 0x02;
+            ip.ip6.s6_addr[15] = 0x01;
+        }
+        else if (family_broadcast == AF_INET) {
+            ip.family = AF_INET6;
+            ip.ip6.s6_addr32[0] = 0;
+            ip.ip6.s6_addr32[1] = 0;
+            ip.ip6.s6_addr32[2] = htonl(0xFFFF);
+            ip.ip6.s6_addr32[3] = INADDR_BROADCAST;
+        }
     }
-
-    if (sa_family == AF_INET6)
-    {
-        ip.family = AF_INET6;
-        /* FF02::1 is - according to RFC 4291 - multicast all-nodes link-local */
-        /* FE80::*: MUST be exact, for that we would need to look over all
-         * interfaces and check in which status they are */
-        ip.ip6.s6_addr[ 0] = 0xFF;
-        ip.ip6.s6_addr[ 1] = 0x02;
-        ip.ip6.s6_addr[15] = 0x01;
+    else if (family_socket == AF_INET) {
+        if (family_broadcast == AF_INET) {
+            ip.family = AF_INET;
+            ip.ip4.uint32 = INADDR_BROADCAST;
+        }
     }
 #else
     ip.uint32 = INADDR_BROADCAST;
@@ -175,13 +183,35 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
     memcpy(data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
+
 #ifdef __linux
     send_broadcasts(c->lossless_udp->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
 #endif
+
+    int res = -1;
     IP_Port ip_port;
-    ip_port.ip = broadcast_ip(c->lossless_udp->net->family);
     ip_port.port = port;
-    return sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES);
+
+#ifdef TOX_ENABLE_IPV6
+    if (c->lossless_udp->net->family == AF_INET6) {
+        ip_port.ip = broadcast_ip(c->lossless_udp->net->family, AF_INET6);
+        if (ip_isset(&ip_port.ip))
+            if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES) > 0)
+                res = 1;
+    }
+
+    ip_port.ip = broadcast_ip(c->lossless_udp->net->family, AF_INET);
+    if (ip_isset(&ip_port.ip))
+        if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES))
+            res = 1;
+#else
+    ip_port.ip = broadcast_ip(c->lossless_udp->net->family, AF_INET);
+    if (ip_isset(&ip_port.ip))
+        if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES))
+            res = 1;
+#endif
+
+    return res;
 }
 
 

@@ -148,12 +148,15 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 #else
     uint32_t addrlen = sizeof(addr);
 #endif
+    uint32_t bufflen = *length;
     (*(int32_t *)length) = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
     if (*(int32_t *)length <= 0) {
 #ifdef LOGGING
-        if ((length < 0) && (errno != EWOULDBLOCK))
+        if ((length < 0) && (errno != EWOULDBLOCK)) {
             sprintf(logbuffer, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
+            loglog(logbuffer);
+        }
 #endif
         return -1; /* Nothing received or empty packet. */
     }
@@ -184,7 +187,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 #endif
 
 #ifdef LOGGING
-    loglogdata("=>O", data, *length, ip_port, 0);
+    loglogdata("=>O", data, bufflen, ip_port, *length);
 #endif
 
     return 0;
@@ -202,10 +205,12 @@ void networking_poll(Networking_Core *net)
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 
-    while (receivepacket(net->sock, &ip_port, data, &length) != -1) {
-        if (length < 1) continue;
+    while (length = sizeof(data), receivepacket(net->sock, &ip_port, data, &length) != -1) {
+        if (length < 1)
+            continue;
 
-        if (!(net->packethandlers[data[0]].function)) continue;
+        if (!(net->packethandlers[data[0]].function))
+            continue;
 
         net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length);
     }
@@ -792,12 +797,25 @@ int addr_resolve_or_parse_ip(const char *address, IP *to)
 #ifdef LOGGING
 static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
 {
-    snprintf(logbuffer, sizeof(logbuffer), "[%2u] %3u%c %s %s:%u (%u: %s) | %04x%04x\n",
-        buffer[0], res < 0 ? (buflen & 0xFF) : res,
-        res < 0 ? '-' : (res == buflen ? '=' : '+'),
-        message, ip_ntoa(&ip_port->ip), ntohs(ip_port->port), res < 0 ? errno : 0,
-        res < 0 ? strerror(errno) : "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-        buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+    if (res < 0)
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
+            buffer[0], message, buflen < 999 ? buflen : 999, 'E',
+            ip_ntoa(&ip_port->ip), ntohs(ip_port->port), errno,
+            strerror(errno), buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
+            buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+    else if ((res > 0) && (res <= buflen))
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
+            buffer[0], message, res < 999 ? res : 999, res < buflen ? '<' : '=',
+            ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
+            "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
+            buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+    else /* empty or overwrite */
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x\n",
+            buffer[0], message, res, !res ? '0' : '>', buflen,
+            ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
+            "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
+            buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+
     logbuffer[sizeof(logbuffer) - 1] = 0;
     loglog(logbuffer);
 }
