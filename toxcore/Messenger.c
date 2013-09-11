@@ -1024,8 +1024,13 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     data += size;
     length -= size;
 
+    if (length < sizeof(size))
+        return -1;
+
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
+    length -= sizeof(size);
+
     if (length < size)
         return -1;
 
