@@ -33,6 +33,7 @@
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
 #include "../testing/misc_tools.c"
+#include "../toxcore/util.h"
 
 /* Sleep function (x = milliseconds) */
 #ifdef WIN32

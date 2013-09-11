@@ -34,6 +34,7 @@
 //#include "../core/network.h"
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
+#include "../toxcore/util.h"
 #include "misc_tools.c"
 
 #include <string.h>

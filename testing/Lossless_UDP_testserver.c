@@ -34,6 +34,7 @@
 
 #include "../toxcore/network.h"
 #include "../toxcore/Lossless_UDP.h"
+#include "../toxcore/util.h"
 
 //Sleep function (x = milliseconds)
 #ifdef WIN32

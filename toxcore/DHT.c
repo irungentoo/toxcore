@@ -28,6 +28,7 @@
 #endif
 
 #include "DHT.h"
+#include "network.h"
 #include "ping.h"
 #include "misc_tools.h"
 
