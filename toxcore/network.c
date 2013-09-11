@@ -267,13 +267,11 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     if (temp == NULL)
         return NULL;
 
-    sa_family_t family = 0;
 #ifdef TOX_ENABLE_IPV6
-    family = ip.family;
+    temp->family = ip.family;
 #else
-    family = AF_INET;
+    temp->family = AF_INET;
 #endif
-    temp->family = family;
     temp->port = 0;
 
     /* Initialize our socket. */
