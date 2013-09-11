@@ -51,7 +51,7 @@ void loginit(uint16_t port)
     if (logfile)
         fclose(logfile);
 
-    sprintf(logbuffer, "%u-%u.log", ntohs(port), now);
+    sprintf(logbuffer, "%u-%u.log", ntohs(port), now());
     logfile = fopen(logbuffer, "w");
 };
 void loglog(char *text)

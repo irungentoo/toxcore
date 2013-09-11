@@ -136,7 +136,7 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id);
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
  *
- * !!! Signature changed!!!
+ * !!! Signature changed !!!
  *
  * OLD: IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id);
  *
@@ -155,12 +155,26 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);
 
-/* Use this function to bootstrap the client.
- *  Sends a get nodes request to the given node with ip port and public_key.
- * DHT_bootstrap_ex() returns 1 if the address could be converted, 0 otherwise
+/*
+ *  Use these two functions to bootstrap the client.
+ */
+/* Sends a "get nodes" request to the given node with ip, port and public_key
+ *   to setup connections
  */
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
-int DHT_bootstrap_ex(DHT *dht, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key);
+/* Resolves address into an IP address. If successful, sends a "get nodes"
+ *   request to the given node with ip, port and public_key to setup connections
+ *
+ * address can be a hostname or an IP address (IPv4 or IPv6).
+ * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
+ * if ipv6enabled is not 0 (zero), the resolving looks for IPv6 addresses first,
+ *   then IPv4 addresses.
+ * 
+ *  returns 1 if the address could be converted into an IP address
+ *  returns 0 otherwise
+ */
+int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+                                            uint16_t port, uint8_t *public_key);
 
 /* Add nodes to the toping list.
  * All nodes in this list are pinged every TIME_TOPING seconds

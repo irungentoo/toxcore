@@ -617,7 +617,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 
 #ifdef TOX_ENABLE_IPV6
 /* Send a send nodes response: message for IPv6 nodes */
-static int sendnodes_ex(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id)
+static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->c->self_public_key))
@@ -691,7 +691,9 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
 #ifdef TOX_ENABLE_IPV6
-    sendnodes_ex(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
+    /* only try to send IPv6 nodes if the ipv6enabled flag was given */
+    if (dht->c->lossless_udp->net->family == AF_INET6)
+        sendnodes_ipv6(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
 #endif
 
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
@@ -766,7 +768,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 }
 
 #ifdef TOX_ENABLE_IPV6
-static int handle_sendnodes_ex(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
     uint64_t ping_id;
@@ -979,7 +981,8 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
     send_ping_request(dht->ping, dht->c, ip_port, public_key);
 }
-int DHT_bootstrap_ex(DHT *dht, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
+int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+                                            uint16_t port, uint8_t *public_key)
 {
     IP_Port ip_port;
     ip_init(&ip_port.ip, ipv6enabled);
@@ -1400,7 +1403,7 @@ DHT *new_DHT(Net_Crypto *c)
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, temp);
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, temp);
 #ifdef TOX_ENABLE_IPV6
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_EX, &handle_sendnodes_ex, temp);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_EX, &handle_sendnodes_ipv6, temp);
 #endif
     init_cryptopackets(temp);
     cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, temp);

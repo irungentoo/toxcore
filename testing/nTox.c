@@ -592,7 +592,7 @@ int main(int argc, char *argv[])
 
     uint16_t port = htons(atoi(argv[argvoffset + 2]));
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    int res = tox_bootstrap_ex(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
+    int res = tox_bootstrap_from_address(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);
 
     if (!res) {

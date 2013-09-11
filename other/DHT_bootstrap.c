@@ -122,13 +122,14 @@ int main(int argc, char *argv[])
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", PORT);
+    printf("Port: %u\n", ntohs(dht->c->lossless_udp->net->port));
 
     if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
         uint16_t port = htons(atoi(argv[argvoffset + 2]));
         uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
-        int res = DHT_bootstrap_ex(dht, argv[argvoffset + 1], ipv6enabled, port, bootstrap_key);
+        int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1],
+                                            ipv6enabled, port, bootstrap_key);
         free(bootstrap_key);
 
         if (!res) {

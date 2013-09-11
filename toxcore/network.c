@@ -312,7 +312,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         return -1;
     */
 
-    /* Enable broadcast on socket? */
+    /* Enable broadcast on socket */
     int broadcast = 1;
     setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
 
@@ -402,6 +402,18 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     /* a hanging program or a different user might block the standard port;
      * as long as it isn't a parameter coming from the commandline,
      * try a few ports after it, to see if we can find a "free" one
+     *
+     * if we go on without binding, the first sendto() automatically binds to
+     * a free port chosen by the system (i.e. anything from 1024 to 65535)
+     *
+     * returning NULL after bind fails has both advantages and disadvantages:
+     * advantage:
+     *   we can rely on getting the port in the range 33445..33450, which
+     *   enables us to tell joe user to open their firewall to a small range
+     *
+     * disadvantage:
+     *   some clients might not test return of tox_new(), blindly assuming that
+     *   it worked ok (which it did previously without a successful bind)
      */
     int tries, res;
     for(tries = 0; tries < 9; tries++)

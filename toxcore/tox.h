@@ -338,12 +338,25 @@ void tox_callback_read_receipt(Tox *tox, void (*function)(Tox *tox, int, uint32_
  */
 void tox_callback_connectionstatus(Tox *tox, void (*function)(Tox *tox, int, uint8_t, void *), void *userdata);
 
-/* Use this function to bootstrap the client.
- * Sends a get nodes request to the given node with ip port and public_key.
- * tox_bootstrap_ex() returns 1 if the address could be converted, 0 otherwise
+/*
+ * Use these two functions to bootstrap the client.
+ */
+/* Sends a "get nodes" request to the given node with ip, port and public_key
+ *   to setup connections
  */
 void tox_bootstrap(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
-int tox_bootstrap_ex(Tox *tox, const char *address, uint8_t ipv6enabled,
+/* Resolves address into an IP address. If successful, sends a "get nodes"
+ *   request to the given node with ip, port and public_key to setup connections
+ *
+ * address can be a hostname or an IP address (IPv4 or IPv6).
+ * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
+ * if ipv6enabled is not 0 (zero), the resolving looks for IPv6 addresses first,
+ *   then IPv4 addresses.
+ * 
+ *  returns 1 if the address could be converted into an IP address
+ *  returns 0 otherwise
+ */
+int tox_bootstrap_from_address(Tox *tox, const char *address, uint8_t ipv6enabled,
                       uint16_t port, uint8_t *public_key);
 
 /*  return 0 if we are not connected to the DHT.
@@ -351,12 +364,27 @@ int tox_bootstrap_ex(Tox *tox, const char *address, uint8_t ipv6enabled,
  */
 int tox_isconnected(Tox *tox);
 
-/* Run this at startup.
+/*
+ *  Run one of the following two functions at startup.
+ */
+/* Initializes a tox structure
+ *  Defaults to using ipv4 connections only.
  *
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
 Tox *tox_new(void);
+
+/* Initializes a tox structure
+ *  The type of communication socket depends on ipv6enabled:
+ *  If set to 0 (zero), creates an IPv4 socket which subsequently only allows
+ *    IPv4 communication
+ *  If set to anything else, creates an IPv6 socket which allows both IPv4 AND
+ *    IPv6 communication
+ *
+ *  return allocated instance of tox on success.
+ *  return 0 if there are problems.
+ */
 Tox *tox_new_ex(uint8_t ipv6enabled);
 
 /* Run this before closing shop.

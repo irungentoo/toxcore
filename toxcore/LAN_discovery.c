@@ -112,7 +112,9 @@ static IP broadcast_ip(sa_family_t family_socket, sa_family_t family_broadcast)
         }
     }
 #else
-    ip.uint32 = INADDR_BROADCAST;
+    if (family_socket == AF_INET)
+        if (family_broadcast == AF_INET)
+            ip.uint32 = INADDR_BROADCAST;
 #endif
 
     return ip;
@@ -193,23 +195,22 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
     ip_port.port = port;
 
 #ifdef TOX_ENABLE_IPV6
+    /* IPv6 multicast */
     if (c->lossless_udp->net->family == AF_INET6) {
-        ip_port.ip = broadcast_ip(c->lossless_udp->net->family, AF_INET6);
+        ip_port.ip = broadcast_ip(AF_INET6, AF_INET6);
         if (ip_isset(&ip_port.ip))
             if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES) > 0)
                 res = 1;
     }
 
+    /* IPv4 broadcast (has to be IPv4-in-IPv6 mapping if socket is AF_INET6 */
     ip_port.ip = broadcast_ip(c->lossless_udp->net->family, AF_INET);
-    if (ip_isset(&ip_port.ip))
-        if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES))
-            res = 1;
 #else
-    ip_port.ip = broadcast_ip(c->lossless_udp->net->family, AF_INET);
+    ip_port.ip = broadcast_ip(AF_INET, AF_INET);
+#endif
     if (ip_isset(&ip_port.ip))
         if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES))
             res = 1;
-#endif
 
     return res;
 }
