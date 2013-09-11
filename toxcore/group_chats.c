@@ -581,3 +581,10 @@ void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id)
 {
     send_getnodes(chat, ip_port, addpeer(chat, client_id));
 }
+
+void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id)
+{
+    send_getnodes(chat, ip_port, addpeer(chat, client_id));
+    add_closepeer(chat, client_id, ip_port);
+}
+

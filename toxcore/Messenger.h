@@ -44,7 +44,9 @@
 #define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 63
-
+#define PACKET_ID_INVITE_GROUPCHAT 144
+#define PACKET_ID_JOIN_GROUPCHAT 145
+#define PACKET_ID_ACCEPT_GROUPCHAT 146
 
 /* Status definitions. */
 enum {
@@ -134,7 +136,7 @@ typedef struct Messenger {
     Friend *friendlist;
     uint32_t numfriends;
 
-    Group_Chat *chats;
+    Group_Chat **chats;
     uint32_t numchats;
 
     uint64_t last_LANdiscovery;
