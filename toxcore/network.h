@@ -136,6 +136,14 @@ typedef IP4_Port IP_Port;
  */
 const char *ip_ntoa(IP *ip);
 
+/* ip_equal
+ *  compares two IPAny structures
+ *  unset means unequal
+ *
+ * returns 0 when not equal or when uninitialized
+ */
+int ip_equal(IP *a, IP *b);
+
 /* ipport_equal
  *  compares two IPAny_Port structures
  *  unset means unequal
@@ -156,6 +164,24 @@ int ipport_isset(IP_Port *ipport);
 void ip_copy(IP *target, IP *source);
 /* copies an ip_port structure */
 void ipport_copy(IP_Port *target, IP_Port *source);
+
+/*
+ * addr_resolve():
+ *  uses getaddrinfo to resolve an address into an IP address
+ *  uses the first IPv4/IPv6 addresses returned by getaddrinfo
+ *
+ * input
+ *  address: a hostname (or something parseable to an IP address)
+ *  ip: ip.family MUST be initialized, either set to a specific IP version
+ *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
+ *     IP versions are acceptable
+ *
+ * returns in ip a valid IPAny (v4/v6),
+ *     prefers v6 if ip.family was AF_UNSPEC and both available
+ * returns 0 on failure
+ */
+
+int addr_resolve(const char *address, IP *to);
 
 /*
  * addr_resolve_or_parse_ip

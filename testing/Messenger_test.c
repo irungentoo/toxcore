@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     if ((argc != argvoffset + 2) && (argc != argvoffset + 4)) {
         printf("Usage: %s [--ipv4|--ipv6] ip port public_key (of the DHT bootstrap node)\n", argv[0]);
         printf("or\n");
-        printf("       %s [--ipv4|--ipv6] Save.bak (to read Save.bak as state file)\n", argv[0], argv[0]);
+        printf("       %s [--ipv4|--ipv6] Save.bak (to read Save.bak as state file)\n", argv[0]);
         exit(0);
     }
 
