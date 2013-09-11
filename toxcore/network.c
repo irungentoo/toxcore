@@ -204,16 +204,18 @@ void networking_poll(Networking_Core *net)
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
+    int recverr;
+    do {
+        length = sizeof(data);
+        recverr = receivepacket(net->sock, &ip_port, data, &length);
+        if (!recverr && (length > 0)) {
+            if (!(net->packethandlers[data[0]].function))
+                continue;
 
-    while (length = sizeof(data), receivepacket(net->sock, &ip_port, data, &length) != -1) {
-        if (length < 1)
-            continue;
-
-        if (!(net->packethandlers[data[0]].function))
-            continue;
-
-        net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length);
-    }
+            net->packethandlers[data[0]].function(net->packethandlers[data[0]].object,
+                                                  ip_port, data, length);
+        }
+    } while (recverr != -1);
 }
 
 uint8_t at_startup_ran = 0;
