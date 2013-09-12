@@ -78,6 +78,7 @@ typedef int sock_t;
 #define NET_PACKET_DATA            18  /* Data packet ID. */
 #define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
 #define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
+#define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
 
 #define TOX_PORTRANGE_FROM 33445
 #define TOX_PORTRANGE_TO   33455
