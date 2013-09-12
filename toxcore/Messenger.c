@@ -901,8 +901,6 @@ static void do_allgroupchats(Messenger *m)
 
 /*********************************/
 
-/* Interval in seconds between LAN discovery packet sending. */
-#define LAN_DISCOVERY_INTERVAL 60
 #define PORT 33445
 
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
