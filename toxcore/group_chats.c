@@ -184,7 +184,7 @@ static int send_groupchatpacket(Group_Chat *chat, IP_Port ip_port, uint8_t *publ
 
     uint8_t packet[MAX_DATA_SIZE];
     int len = create_request(chat->self_public_key, chat->self_secret_key, packet, public_key, data, length, request_id);
-    packet[0] = 48;
+    packet[0] = NET_PACKET_GROUP_CHATS;
 
     if (len == -1)
         return -1;
