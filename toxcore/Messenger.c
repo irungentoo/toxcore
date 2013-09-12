@@ -637,6 +637,178 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
     return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
+/**********GROUP CHATS************/
+
+/* returns valid ip port of connected friend on success
+ * returns zeroed out IP_Port on failure
+ */
+static IP_Port get_friend_ipport(Messenger *m, int friendnumber)
+{
+    IP_Port zero;
+    memset(&zero, 0, sizeof(zero));
+
+    if (friend_not_valid(m, friendnumber))
+        return zero;
+
+    int crypt_id = m->friendlist[friendnumber].crypt_connection_id;
+
+    if (is_cryptoconnected(m->net_crypto, crypt_id) != 3)
+        return zero;
+
+    return connection_ip(m->net_crypto->lossless_udp, m->net_crypto->crypto_connections[crypt_id].number);
+}
+
+/* returns the group number of the chat with public key group_public_key.
+ * returns -1 on failure.
+ */
+static int group_num(Messenger *m, uint8_t *group_public_key)
+{
+    uint32_t i;
+
+    for (i = 0; i < m->numchats; ++i) {
+        if (memcmp(m->chats[i]->self_public_key, group_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+            return i;
+    }
+
+    return -1;
+}
+
+/* Creates a new groupchat and puts it in the chats array.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ */
+int add_groupchat(Messenger *m)
+{
+    uint32_t i;
+
+    for (i = 0; i < m->numchats; ++i) {
+        if (m->chats[i] == NULL) {
+            Group_Chat *newchat = new_groupchat(m->net);
+
+            if (newchat == NULL)
+                return -1;
+
+            m->chats[i] = newchat;
+            return i;
+        }
+    }
+
+    Group_Chat **temp;
+    temp = realloc(m->chats, sizeof(Group_Chat *) * (m->numchats + 1));
+
+    if (temp == NULL)
+        return -1;
+
+    temp[m->numchats] = new_groupchat(m->net);
+
+    if (temp[m->numchats] == NULL)
+        return -1;
+
+    ++m->numchats;
+    return (m->numchats - 1);
+}
+
+/* Delete a groupchat from the chats array.
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+static int del_groupchat(Messenger *m, int groupnumber)
+{
+    if ((unsigned int)groupnumber >= m->numchats)
+        return -1;
+
+    if (m->chats == NULL)
+        return -1;
+
+    if (m->chats[groupnumber] == NULL)
+        return -1;
+
+    kill_groupchat(m->chats[groupnumber]);
+    m->chats[groupnumber] = NULL;
+
+    uint32_t i;
+
+    for (i = m->numchats; i != 0; --i) {
+        if (m->chats[i - 1] != NULL)
+            break;
+    }
+
+    if (i == 0) {
+        free(m->chats);
+        m->chats = NULL;
+    } else {
+        Group_Chat **temp = realloc(m->chats, sizeof(Group_Chat *) * i);
+
+        if (temp != NULL)
+            m->chats = temp;
+    }
+
+    return 0;
+}
+
+/* Join a group (you need to have been invited first.)
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_key)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    uint8_t data[crypto_box_PUBLICKEYBYTES * 2];
+    int groupnum = add_groupchat(m);
+
+    if (groupnum == -1)
+        return -1;
+
+    memcpy(data, friend_group_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(data + crypto_box_PUBLICKEYBYTES, m->chats[groupnum]->self_public_key, crypto_box_PUBLICKEYBYTES);
+
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_JOIN_GROUPCHAT, data, sizeof(data))) {
+        chat_bootstrap_nonlazy(m->chats[groupnum], get_friend_ipport(m, friendnumber),
+                               friend_group_public_key); //TODO: check if ip returned is zero?
+        return 0;
+    }
+
+    return -1;
+}
+
+static int handle_group(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+{
+    Messenger *m = object;
+
+    if (length < crypto_box_PUBLICKEYBYTES + 1) {
+        return 1;
+    }
+
+    uint32_t i;
+
+    for (i = 0; i < m->numchats; ++i) {
+        if (m->chats[i] == NULL)
+            continue;
+
+        if (memcmp(packet + 1, m->chats[i]->self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+            return handle_groupchatpacket(m->chats[i], source, packet, length);
+    }
+
+    return 1;
+}
+
+static void do_allgroupchats(Messenger *m)
+{
+    uint32_t i;
+
+    for (i = 0; i < m->numchats; ++i) {
+        if (m->chats[i] != NULL)
+            do_groupchat(m->chats[i]);
+    }
+}
+
+/*********************************/
+
 #define PORT 33445
 
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
@@ -688,6 +860,7 @@ Messenger *initMessenger(void)
     friendreq_init(&(m->fr), m->net_crypto);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
+    networking_registerhandler(m->net, NET_PACKET_GROUP_CHATS, &handle_group, m);
 
     return m;
 }
@@ -940,6 +1113,7 @@ void doMessenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     doInbound(m);
     doFriends(m);
+    do_allgroupchats(m);
     LANdiscovery(m);
 }
 
