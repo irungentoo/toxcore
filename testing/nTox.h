@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "../toxcore/tox.h"
-
+#include "../toxcore/Messenger.h" //TODO: remove this
 #define STRING_LENGTH 256
 #define HISTORY 50
 #define PUB_KEY_BYTES 32
