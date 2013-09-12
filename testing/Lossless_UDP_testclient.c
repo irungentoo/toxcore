@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 
     IP_Port serverip;
     ip_init(&serverip.ip, ipv6enabled);
-    if (!addr_resolve(argv[argvoffset + 1], &serverip.ip)) {
+    if (!addr_resolve(argv[argvoffset + 1], &serverip.ip, NULL)) {
         printf("Failed to convert \"%s\" into an IP address.\n", argv[argvoffset + 1]);
         return 1;
     }

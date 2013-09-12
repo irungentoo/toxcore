@@ -159,6 +159,14 @@ static int LAN_ip(IP ip)
         if (((ip.ip6.s6_addr[0] == 0xFF) && (ip.ip6.s6_addr[1] < 3) && (ip.ip6.s6_addr[15] == 1)) ||
              ((ip.ip6.s6_addr[0] == 0xFE) && ((ip.ip6.s6_addr[1] & 0xC0) == 0x80)))
             return 0;
+
+        /* embedded IPv4-in-IPv6 */
+        if (!ip.ip6.s6_addr32[0] && !ip.ip6.s6_addr32[1] && ip.ip6.s6_addr32[2] == htonl(0xFFFF)) {
+            IP ip4;
+            ip4.family = AF_INET;
+            ip4.ip4.uint32 = ip.ip6.s6_addr32[3];
+            return LAN_ip(ip4);
+        }
     }
 #endif
 

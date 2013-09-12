@@ -35,6 +35,8 @@
 #include <linux/netdevice.h>
 #endif
 
+/* standard interval in seconds between LAN discovery packet sending. */
+#define LAN_DISCOVERY_INTERVAL 60
 
 /* Send a LAN discovery pcaket to the broadcast address with port port. */
 int send_LANdiscovery(uint16_t port, Net_Crypto *c);

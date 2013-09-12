@@ -982,11 +982,28 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                             uint16_t port, uint8_t *public_key)
 {
-    IP_Port ip_port;
-    ip_init(&ip_port.ip, ipv6enabled);
-    if (addr_resolve_or_parse_ip(address, &ip_port.ip)) {
-        ip_port.port = port;
-        DHT_bootstrap(dht, ip_port, public_key);
+    IP_Port ip_port_v64, ip_port_v4;
+    IP *ip_extra = NULL;
+#ifdef TOX_ENABLE_IPV6
+    ip_init(&ip_port_v64.ip, ipv6enabled);
+    if (ipv6enabled) {
+        ip_port_v64.ip.family = AF_UNSPEC;
+        ip_reset(&ip_port_v4.ip);
+        ip_extra = &ip_port_v4.ip;
+    }
+#else
+    ip_init(&ip_port_v64.ip, 0);
+#endif
+
+    if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
+        ip_port_v64.port = port;
+        DHT_bootstrap(dht, ip_port_v64, public_key);
+#ifdef TOX_ENABLE_IPV6
+        if ((ip_extra != NULL) && ip_isset(ip_extra)) {
+            ip_port_v4.port = port;
+            DHT_bootstrap(dht, ip_port_v4, public_key);
+        }
+#endif
         return 1;
     }
     else

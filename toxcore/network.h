@@ -175,25 +175,34 @@ void ipport_copy(IP_Port *target, IP_Port *source);
  *
  * input
  *  address: a hostname (or something parseable to an IP address)
- *  ip: ip.family MUST be initialized, either set to a specific IP version
+ *  to: to.family MUST be initialized, either set to a specific IP version
  *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
  *     IP versions are acceptable
+ *  extra can be NULL and is only set in special circumstances, see returns
  *
- * returns in ip a valid IPAny (v4/v6),
+ * returns in *to a valid IPAny (v4/v6),
  *     prefers v6 if ip.family was AF_UNSPEC and both available
+ * returns in *extra an IPv4 address, if family was AF_UNSPEC and *to is AF_INET6
  * returns 0 on failure
  */
-
-int addr_resolve(const char *address, IP *to);
+int addr_resolve(const char *address, IP *to, IP *extra);
 
 /*
  * addr_resolve_or_parse_ip
  *  resolves string into an IP address
  *
- * to->family MUST be set (AF_UNSPEC, AF_INET, AF_INET6)
- * returns 1 on success, 0 on failure
+ *  address: a hostname (or something parseable to an IP address)
+ *  to: to.family MUST be initialized, either set to a specific IP version
+ *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
+ *     IP versions are acceptable
+ *  extra can be NULL and is only set in special circumstances, see returns
+ *
+ *  returns in *tro a matching address (IPv6 or IPv4)
+ *  returns in *extra, if not NULL, an IPv4 address, if to->family was AF_UNSPEC
+ *  returns 1 on success
+ *  returns 0 on failure
  */
-int addr_resolve_or_parse_ip(const char *address, IP *to);
+int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
 
 /* Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.

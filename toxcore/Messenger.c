@@ -637,14 +637,11 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
     return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
 }
 
-/* Interval in seconds between LAN discovery packet sending. */
-#define LAN_DISCOVERY_INTERVAL 60
-
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
 static void LANdiscovery(Messenger *m)
 {
     if (m->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(TOX_PORT_DEFAULT, m->net_crypto);
+        send_LANdiscovery(htons(TOX_PORT_DEFAULT), m->net_crypto);
         m->last_LANdiscovery = unix_time();
     }
 }
@@ -1016,7 +1013,7 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
         return -1;
 
     if (DHT_load(m->dht, data, size) == -1)
-        fprintf(stderr, "Data file: Something wicked happened to the stored connections.\n");
+        fprintf(stderr, "Data file: Something wicked happened to the stored connections...\n");
 
     /* go on, friends still might be intact */
 
