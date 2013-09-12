@@ -654,7 +654,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
     if ((unsigned int)len != sizeof(ping_id) + num_nodes * Node_format_size + ENCRYPTION_PADDING)
         return -1;
 
-    data[0] = NET_PACKET_SEND_NODES_EX;
+    data[0] = NET_PACKET_SEND_NODES_IPV6;
     memcpy(data + 1, dht->c->self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
@@ -691,9 +691,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
 #ifdef TOX_ENABLE_IPV6
-    /* only try to send IPv6 nodes if the ipv6enabled flag was given */
-    if (dht->c->lossless_udp->net->family == AF_INET6)
-        sendnodes_ipv6(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
+    sendnodes_ipv6(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
 #endif
 
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
@@ -1403,7 +1401,7 @@ DHT *new_DHT(Net_Crypto *c)
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, temp);
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, temp);
 #ifdef TOX_ENABLE_IPV6
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_EX, &handle_sendnodes_ipv6, temp);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, temp);
 #endif
     init_cryptopackets(temp);
     cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, temp);

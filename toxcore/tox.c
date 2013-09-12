@@ -366,10 +366,10 @@ void tox_callback_connectionstatus(void *tox, void (*function)(Messenger *tox, i
     m_callback_connectionstatus(m, function, userdata);
 }
 
-/* Use this function to bootstrap the client.
+/* Use these functions to bootstrap the client.
  * Sends a get nodes request to the given node with ip port and public_key.
  */
-void tox_bootstrap(void *tox, IP_Port ip_port, uint8_t *public_key)
+void tox_bootstrap_from_ip(void *tox, IP_Port ip_port, uint8_t *public_key)
 {
     Messenger *m = tox;
     DHT_bootstrap(m->dht, ip_port, public_key);

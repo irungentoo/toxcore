@@ -566,7 +566,7 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[argc - 2], "-f"))
             filename = argv[argc - 1];
 
-    m = tox_new_ex(ipv6enabled);
+    m = tox_new(ipv6enabled);
 
     if ( !m ) {
         fputs("Failed to allocate Messenger datastructure", stderr);

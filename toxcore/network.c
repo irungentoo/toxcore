@@ -213,6 +213,7 @@ void networking_poll(Networking_Core *net)
     }
 }
 
+
 uint8_t at_startup_ran = 0;
 static int at_startup(void)
 {
@@ -342,7 +343,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         addrsize = sizeof(struct sockaddr_in);
         struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
         addr4->sin_family = AF_INET;
-        addr4->sin_port = htons(port);
+        addr4->sin_port = 0;
         addr4->sin_addr = ip4.in_addr;
 
         portptr = &addr4->sin_port;
@@ -353,7 +354,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         addrsize = sizeof(struct sockaddr_in6);
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
         addr6->sin6_family = AF_INET6;
-        addr6->sin6_port = htons(port);
+        addr6->sin6_port = 0;
         addr6->sin6_addr = ip.ip6;
 
         addr6->sin6_flowinfo = 0;
@@ -413,8 +414,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
      *   some clients might not test return of tox_new(), blindly assuming that
      *   it worked ok (which it did previously without a successful bind)
      */
+    uint16_t port_to_try = port;
+    *portptr = htons(port_to_try);
     int tries, res;
-    for(tries = 0; tries < 9; tries++)
+    for(tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++)
     {
         res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
         if (!res)
@@ -433,9 +436,11 @@ Networking_Core *new_networking(IP ip, uint16_t port)
             return temp;
         }
 
-        uint16_t port = ntohs(*portptr);
-        port++;
-        *portptr = htons(port);
+        port_to_try++;
+        if (port_to_try > TOX_PORTRANGE_TO)
+            port_to_try = TOX_PORTRANGE_FROM;
+
+        *portptr = htons(port_to_try);
     }
 
     fprintf(stderr, "Failed to bind socket: %u, %s (IP/Port: %s:%u\n", errno,

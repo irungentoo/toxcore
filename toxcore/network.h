@@ -72,13 +72,16 @@ typedef int sock_t;
 #define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID. */
 #define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
 #define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID for IPv4 addresses. */
-#define NET_PACKET_SEND_NODES_EX   4   /* Send nodes response packet ID for other addresses. */
+#define NET_PACKET_SEND_NODES_IPV6 4   /* Send nodes response packet ID for other addresses. */
 #define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
 #define NET_PACKET_SYNC            17  /* SYNC packet ID. */
 #define NET_PACKET_DATA            18  /* Data packet ID. */
 #define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
 #define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
 
+#define TOX_PORTRANGE_FROM 33445
+#define TOX_PORTRANGE_TO   33455
+#define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 /* Current time, unix format */
 #define unix_time() ((uint64_t)time(NULL))

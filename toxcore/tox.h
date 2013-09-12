@@ -52,8 +52,12 @@ extern "C" {
 
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
+#define TOX_PORTRANGE_FROM 33445
+#define TOX_PORTRANGE_TO   33455
+#define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
+
 typedef union {
-    uint8_t c[4];
+    uint8_t  c[4];
     uint16_t s[2];
     uint32_t i;
 } tox_IP4;
@@ -71,7 +75,7 @@ typedef struct {
 
 typedef union {
     struct {
-        tox_IP4 ip;
+        tox_IP4  ip;
         uint16_t port;
         /* Not used for anything right now. */
         uint16_t padding;
@@ -83,7 +87,7 @@ typedef union {
  * removed the unused union and padding also */
 typedef struct {
     tox_IPAny ip;
-    uint16_t port;
+    uint16_t  port;
 } tox_IPAny_Port;
 
 #undef TOX_ENABLE_IPV6
@@ -344,7 +348,7 @@ void tox_callback_connectionstatus(Tox *tox, void (*function)(Tox *tox, int, uin
 /* Sends a "get nodes" request to the given node with ip, port and public_key
  *   to setup connections
  */
-void tox_bootstrap(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
+void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
 /* Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections
  *
@@ -365,17 +369,9 @@ int tox_bootstrap_from_address(Tox *tox, const char *address, uint8_t ipv6enable
 int tox_isconnected(Tox *tox);
 
 /*
- *  Run one of the following two functions at startup.
- */
-/* Initializes a tox structure
- *  Defaults to using ipv4 connections only.
+ *  Run this function at startup.
  *
- *  return allocated instance of tox on success.
- *  return 0 if there are problems.
- */
-Tox *tox_new(void);
-
-/* Initializes a tox structure
+ * Initializes a tox structure
  *  The type of communication socket depends on ipv6enabled:
  *  If set to 0 (zero), creates an IPv4 socket which subsequently only allows
  *    IPv4 communication
@@ -385,7 +381,7 @@ Tox *tox_new(void);
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
-Tox *tox_new_ex(uint8_t ipv6enabled);
+Tox *tox_new(uint8_t ipv6enabled);
 
 /* Run this before closing shop.
  * Free all datastructures. */
