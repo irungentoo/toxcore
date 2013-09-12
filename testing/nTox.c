@@ -496,7 +496,7 @@ int load_data(Tox *m)
 
         uint8_t data[size];
         if (fread(data, sizeof(uint8_t), size, data_file) != size) {
-            fputs("[!] could not read data file! exiting...\n", stderr);
+            fputs("[!] could not read data file!\n", stderr);
             return 0;
         }
 
@@ -504,7 +504,8 @@ int load_data(Tox *m)
 
         if (fclose(data_file) < 0) {
             perror("[!] fclose failed");
-            return 0;
+            /* we got it open and the expected data read... let it be ok */
+            /* return 0; */
         }
 
         return 1;
