@@ -14,6 +14,7 @@
 #include <stdbool.h>
 
 #include "DHT.h"
+#include "util.h"
 
 uint64_t now()
 {
@@ -46,3 +47,44 @@ void id_cpy(uint8_t *dest, uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
 }
+
+int load_state(load_state_callback_func load_state_callback, void *outer,
+        uint8_t *data, uint32_t length, uint16_t cookie_inner)
+{
+    if (!load_state_callback || !data) {
+        fprintf(stderr, "load_state() called with invalid args.\n");
+        return -1;
+    }
+
+    state_length_sub_t length_sub;
+    uint16_t type;
+    uint32_t size32 = sizeof(uint32_t), length_sub_len = sizeof(state_length_sub_t);
+    uint32_t size_head = length_sub_len + size32, cookie_type;
+    while (length > size_head) {
+        length_sub = *(state_length_sub_t *)data;
+        cookie_type = *(uint32_t *)(data + length_sub_len);
+        data += size_head;
+        length -= size_head;
+
+        if (length < length_sub) {
+            /* file truncated */
+            fprintf(stderr, "state file too short: %u < %u\n", length, length_sub);
+            return -1;
+        }
+
+        if ((cookie_type >> 16) != cookie_inner) {
+            /* something is not matching up in a bad way, give up */
+            fprintf(stderr, "state file garbeled: %04hx != %04hx\n", (cookie_type >> 16), cookie_inner);
+            return -1;
+        }
+
+        type = cookie_type & 0xFFFF;
+        if (-1 == load_state_callback(outer, data, length_sub, type))
+            return -1;
+
+        data += length_sub;
+        length -= length_sub;
+    }
+
+    return length == 0 ? 0 : - 1;
+};

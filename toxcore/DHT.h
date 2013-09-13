@@ -188,11 +188,13 @@ DHT *new_DHT(Net_Crypto *c);
 void kill_DHT(DHT *dht);
 
 /* Load the DHT from data of size size.
+ *  old/new: version of config file
  *
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load(DHT *dht, uint8_t *data, uint32_t size);
+int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size);
+int DHT_load_new(DHT *dht, uint8_t *data, uint32_t size);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
