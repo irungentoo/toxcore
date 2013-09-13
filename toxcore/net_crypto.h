@@ -115,6 +115,9 @@ int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce);
 
+/*Gives a nonce guaranteed to be different from previous ones.*/
+void new_nonce(uint8_t *nonce);
+
 /*  return 0 if there is no received data in the buffer.
  *  return -1  if the packet was discarded.
  *  return length of received data if successful.

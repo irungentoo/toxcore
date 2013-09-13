@@ -50,7 +50,6 @@ uint64_t current_time(void)
 }
 
 /*  return a random number.
- * NOTE: This function should probably not be used where cryptographic randomness is absolutely necessary.
  */
 uint32_t random_int(void)
 {
@@ -58,7 +57,9 @@ uint32_t random_int(void)
     /* NOTE: this function comes from libsodium. */
     return randombytes_random();
 #else
-    return random();
+    uint32_t randnum;
+    randombytes((uint8_t *)&randnum , sizeof(randnum));
+    return randnum;
 #endif
 }
 
