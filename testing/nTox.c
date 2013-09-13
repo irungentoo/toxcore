@@ -354,7 +354,7 @@ void line_eval(Tox *m, char *line)
             new_lines(idstring);
         } else if (inpt_command == 'g') { //create new group chat
             char msg[256];
-            sprintf(msg, "[g] Created new group chat with number: %u", add_groupchat(m));
+            sprintf(msg, "[g] Created new group chat with number: %u", tox_add_groupchat(m));
             new_lines(msg);
         } else if (inpt_command == 'i') { //invite friendnum to groupnum
             char *posi[1];
@@ -362,7 +362,7 @@ void line_eval(Tox *m, char *line)
             int groupnumber = strtoul(*posi + 1, NULL, 0);
             char msg[256];
             sprintf(msg, "[g] Invited friend number %u to group number %u, returned: %u (0 means success)", friendnumber,
-                    groupnumber, invite_friend(m, friendnumber, groupnumber));
+                    groupnumber, tox_invite_friend(m, friendnumber, groupnumber));
             new_lines(msg);
         } else if (inpt_command == 'z') { //send message to groupnum
             char *posi[1];
@@ -371,7 +371,7 @@ void line_eval(Tox *m, char *line)
             if (**posi != 0) {
                 char msg[256 + 1024];
                 sprintf(msg, "[g] sent message: %s to group num: %u returned: %u (0 means success)", *posi + 1, groupnumber,
-                        group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1));
+                        tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1));
                 new_lines(msg);
             }
 
@@ -556,15 +556,15 @@ void print_help(void)
     puts("\t-f\t-\tSpecify a keyfile to read (or write to) from.");
 }
 
-void print_invite(Messenger *m, int friendnumber, uint8_t *group_public_key, void *userdata)
+void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *userdata)
 {
     char msg[256];
     sprintf(msg, "[i] recieved group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
-            join_groupchat(m, friendnumber, group_public_key));
+            tox_join_groupchat(m, friendnumber, group_public_key));
     new_lines(msg);
 }
 
-void print_groupmessage(Messenger *m, int groupnumber, uint8_t *message, uint16_t length, void *userdata)
+void print_groupmessage(Tox *m, int groupnumber, uint8_t *message, uint16_t length, void *userdata)
 {
     char msg[256 + length];
     sprintf(msg, "[g] %u: %s", groupnumber, message);
@@ -616,8 +616,8 @@ int main(int argc, char *argv[])
     tox_callback_friendmessage(m, print_message, NULL);
     tox_callback_namechange(m, print_nickchange, NULL);
     tox_callback_statusmessage(m, print_statuschange, NULL);
-    m_callback_group_invite(m, print_invite, NULL);
-    m_callback_group_message(m, print_groupmessage, NULL);
+    tox_callback_group_invite(m, print_invite, NULL);
+    tox_callback_group_message(m, print_groupmessage, NULL);
 
     initscr();
     noecho();
