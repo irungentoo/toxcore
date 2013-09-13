@@ -57,6 +57,7 @@
 #include <sodium.h>
 #else
 #include <crypto_box.h>
+#include <randombytes.h>
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
@@ -130,7 +131,6 @@ typedef struct {
 uint64_t current_time(void);
 
 /*  return a random number.
- * NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary.
  */
 uint32_t random_int(void);
 

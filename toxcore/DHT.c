@@ -498,7 +498,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE];
     uint8_t encrypt[sizeof(ping_id) + CLIENT_ID_SIZE + ENCRYPTION_PADDING];
     uint8_t nonce[crypto_box_NONCEBYTES];
-    random_nonce(nonce);
+    new_nonce(nonce);
 
     memcpy(plain, &ping_id, sizeof(ping_id));
     memcpy(plain + sizeof(ping_id), client_id, CLIENT_ID_SIZE);
@@ -540,7 +540,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     uint8_t plain[sizeof(ping_id) + sizeof(Node_format) * MAX_SENT_NODES];
     uint8_t encrypt[sizeof(ping_id) + sizeof(Node_format) * MAX_SENT_NODES + ENCRYPTION_PADDING];
     uint8_t nonce[crypto_box_NONCEBYTES];
-    random_nonce(nonce);
+    new_nonce(nonce);
 
     memcpy(plain, &ping_id, sizeof(ping_id));
     memcpy(plain + sizeof(ping_id), nodes_list, num_nodes * sizeof(Node_format));

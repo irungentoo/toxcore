@@ -157,7 +157,10 @@ typedef struct Messenger {
     void *friend_statuschange_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, int, uint8_t, void *);
     void *friend_connectionstatuschange_userdata;
-
+    void (*group_invite)(struct Messenger *m, int, uint8_t *, void *);
+    void *group_invite_userdata;
+    void (*group_message)(struct Messenger *m, int, uint8_t *, uint16_t, void *);
+    void *group_message_userdata;
 
 } Messenger;
 
@@ -368,6 +371,57 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, u
  *  It's assumed that when adding friends, their connection status is offline.
  */
 void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void *), void *userdata);
+
+/**********GROUP CHATS************/
+
+/* Set the callback for group invites.
+ *
+ *  Function(Messenger *m, int friendnumber, uint8_t *group_public_key, void *userdata)
+ */
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, void *), void *userdata);
+
+/* Set the callback for group messages.
+ *
+ *  Function(Messenger *m, int groupnumber, uint8_t * message, uint16_t length, void *userdata)
+ */
+void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void *),
+                              void *userdata);
+
+/* Creates a new groupchat and puts it in the chats array.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ */
+int add_groupchat(Messenger *m);
+
+/* Delete a groupchat from the chats array.
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+int del_groupchat(Messenger *m, int groupnumber);
+
+/* invite friendnumber to groupnumber
+ * return 0 on success
+ * return -1 on failure
+ */
+int invite_friend(Messenger *m, int friendnumber, int groupnumber);
+
+/* Join a group (you need to have been invited first.)
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ */
+int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_key);
+
+/* send a group message
+ * return 0 on success
+ * return -1 on failure
+ */
+
+int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
+
+/*********************************/
 
 /* Run this at startup.
  *  return allocated instance of Messenger on success.
