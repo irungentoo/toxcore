@@ -31,6 +31,7 @@
 #endif
 
 #include "../toxcore/DHT.h"
+#include "../toxcore/LAN_discovery.h"
 #include "../toxcore/friend_requests.h"
 #include "../testing/misc_tools.c"
 
@@ -140,6 +141,9 @@ int main(int argc, char *argv[])
 
     int is_waiting_for_dht_connection = 1;
 
+    uint64_t last_LANdiscovery = 0;
+    LANdiscovery_init(dht);
+
     while (1) {
         if (is_waiting_for_dht_connection && DHT_isconnected(dht)) {
             printf("Connected to other bootstrap server successfully.\n");
@@ -147,6 +151,10 @@ int main(int argc, char *argv[])
         }
 
         do_DHT(dht);
+        if (last_LANdiscovery + (is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL) < unix_time()) {
+            send_LANdiscovery(htons(PORT), dht->c);
+            last_LANdiscovery = unix_time();
+        }
 
         networking_poll(dht->c->lossless_udp->net);
 

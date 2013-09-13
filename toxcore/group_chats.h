@@ -77,6 +77,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
 /*
  * Send a message to the group.
  *
+ * returns the number of peers it has sent it to.
  */
 uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
 

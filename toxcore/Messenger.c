@@ -674,6 +674,40 @@ static int group_num(Messenger *m, uint8_t *group_public_key)
     return -1;
 }
 
+/* Set the callback for group invites.
+ *
+ *  Function(Messenger *m, int friendnumber, uint8_t *group_public_key, void *userdata)
+ */
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, void *), void *userdata)
+{
+    m->group_invite = function;
+    m->group_invite_userdata = userdata;
+}
+
+/* Set the callback for group messages.
+ *
+ *  Function(Messenger *m, int groupnumber, uint8_t * message, uint16_t length, void *userdata)
+ */
+void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void *),
+                              void *userdata)
+{
+    m->group_message = function;
+    m->group_message_userdata = userdata;
+}
+static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *message, uint16_t length, void *userdata)
+{
+    Messenger *m = userdata;
+    uint32_t i;
+
+    for (i = 0; i < m->numchats; ++i) { //TODO: remove this
+        if (m->chats[i] == chat)
+            break;
+    }
+
+    if (m->group_message)
+        (*m->group_message)(m, i, message, length, m->group_invite_userdata);
+}
+
 /* Creates a new groupchat and puts it in the chats array.
  *
  * return group number on success.
@@ -690,6 +724,7 @@ int add_groupchat(Messenger *m)
             if (newchat == NULL)
                 return -1;
 
+            callback_groupmessage(newchat, &group_message_function, m);
             m->chats[i] = newchat;
             return i;
         }
@@ -706,6 +741,8 @@ int add_groupchat(Messenger *m)
     if (temp[m->numchats] == NULL)
         return -1;
 
+    m->chats = temp;
+    callback_groupmessage(temp[m->numchats], &group_message_function, m);
     ++m->numchats;
     return (m->numchats - 1);
 }
@@ -715,7 +752,7 @@ int add_groupchat(Messenger *m)
  * return 0 on success.
  * return -1 if failure.
  */
-static int del_groupchat(Messenger *m, int groupnumber)
+int del_groupchat(Messenger *m, int groupnumber)
 {
     if ((unsigned int)groupnumber >= m->numchats)
         return -1;
@@ -749,9 +786,42 @@ static int del_groupchat(Messenger *m, int groupnumber)
     return 0;
 }
 
+/* return 1 if that friend was invited to the group
+ * return 0 if the friend was not or error.
+ */
+static uint8_t group_invited(Messenger *m, int friendnumber, int groupnumber)
+{
+    //TODO: this function;
+    return 1;
+}
+
+/* invite friendnumber to groupnumber
+ * return 0 on success
+ * return -1 on failure
+ */
+int invite_friend(Messenger *m, int friendnumber, int groupnumber)
+{
+    if (friend_not_valid(m, friendnumber) || (unsigned int)groupnumber >= m->numchats)
+        return -1;
+
+    if (m->chats == NULL)
+        return -1;
+
+    if (m->friendlist[friendnumber].status == NOFRIEND || m->chats[groupnumber] == NULL)
+        return -1;
+
+    //TODO: store invited friends.
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, m->chats[groupnumber]->self_public_key,
+                             crypto_box_PUBLICKEYBYTES) == 0)
+        return -1;
+
+    return 0;
+}
+
+
 /* Join a group (you need to have been invited first.)
  *
- * returns 0 on success
+ * returns group number on success
  * returns -1 on failure.
  */
 int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_key)
@@ -771,8 +841,30 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
     if (write_cryptpacket_id(m, friendnumber, PACKET_ID_JOIN_GROUPCHAT, data, sizeof(data))) {
         chat_bootstrap_nonlazy(m->chats[groupnum], get_friend_ipport(m, friendnumber),
                                friend_group_public_key); //TODO: check if ip returned is zero?
-        return 0;
+        return groupnum;
     }
+
+    return -1;
+}
+
+/* send a group message
+ * return 0 on success
+ * return -1 on failure
+ */
+
+int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length)
+{
+    if ((unsigned int)groupnumber >= m->numchats)
+        return -1;
+
+    if (m->chats == NULL)
+        return -1;
+
+    if (m->chats[groupnumber] == NULL)
+        return -1;
+
+    if (group_sendmessage(m->chats[groupnumber], message, length) > 0)
+        return 0;
 
     return -1;
 }
@@ -809,9 +901,6 @@ static void do_allgroupchats(Messenger *m)
 }
 
 /*********************************/
-
-/* Interval in seconds between LAN discovery packet sending. */
-#define LAN_DISCOVERY_INTERVAL 60
 
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
 static void LANdiscovery(Messenger *m)
@@ -1064,6 +1153,29 @@ void doFriends(Messenger *m)
                             (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
 
                         break;
+                    }
+
+                    case PACKET_ID_INVITE_GROUPCHAT: {
+                        if (data_length != crypto_box_PUBLICKEYBYTES)
+                            break;
+
+                        if (m->group_invite)
+                            (*m->group_invite)(m, i, data, m->group_invite_userdata);
+                    }
+
+                    case PACKET_ID_JOIN_GROUPCHAT: {
+                        if (data_length != crypto_box_PUBLICKEYBYTES * 2)
+                            break;
+
+                        int groupnum = group_num(m, data);
+
+                        if (groupnum == -1)
+                            break;
+
+                        if (!group_invited(m, i, groupnum))
+                            break;
+
+                        group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
                     }
                 }
             } else {
