@@ -557,7 +557,7 @@ static int save_data(Tox *m)
     }
 }
 
-static int load_old_key_or_save_new_one(Tox *m, char *path)
+static int load_data_or_init(Tox *m, char *path)
 {
     data_file_name = path;
     if (load_data(m))
@@ -631,7 +631,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    load_old_key_or_save_new_one(m, filename);
+    load_data_or_init(m, filename);
 
     tox_callback_friendrequest(m, print_request, NULL);
     tox_callback_friendmessage(m, print_message, NULL);
