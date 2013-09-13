@@ -31,6 +31,7 @@
 #include "network.h"
 #include "ping.h"
 #include "misc_tools.h"
+#include "Messenger.h"
 
 /* The number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
@@ -1459,24 +1460,24 @@ void DHT_save(DHT *dht, uint8_t *data)
  */
 int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
 {
-    if (size < sizeof(dht->close_clientlist))
+   if (size < sizeof(dht->close_clientlist)) {
+		fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
         return -1;
+    }
 
-    if ((size - sizeof(dht->close_clientlist)) % sizeof(DHT_Friend) != 0)
+	uint32_t friendlistsize = size - sizeof(dht->close_clientlist);
+    if (friendlistsize % sizeof(DHT_Friend) != 0) {
+		fprintf(stderr, "DHT_load: Expected a multiple of %u, got %u.\n", sizeof(DHT_Friend), friendlistsize);
         return -1;
+    }
 
     uint32_t i, j;
-    uint16_t temp;
-    /* uint64_t temp_time = unix_time(); */
-
     Client_data *client;
-
-    temp = (size - sizeof(dht->close_clientlist)) / sizeof(DHT_Friend);
-
-    if (temp != 0) {
+    uint16_t friends_num = friendlistsize / sizeof(DHT_Friend);
+    if (friends_num != 0) {
         DHT_Friend *tempfriends_list = (DHT_Friend *)(data + sizeof(dht->close_clientlist));
 
-        for (i = 0; i < temp; ++i) {
+        for (i = 0; i < friends_num; ++i) {
             DHT_addfriend(dht, tempfriends_list[i].client_id);
 
             for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
@@ -1489,7 +1490,6 @@ int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
     }
 
     Client_data *tempclose_clientlist = (Client_data *)data;
-
     for (i = 0; i < LCLIENT_LIST; ++i) {
         if (tempclose_clientlist[i].timestamp != 0)
             DHT_bootstrap(dht, tempclose_clientlist[i].ip_port,

@@ -44,6 +44,7 @@ void id_cpy(uint8_t *dest, uint8_t *src)
 }
 
 #ifdef LOGGING
+time_t starttime = 0;
 char logbuffer[512];
 static FILE *logfile = NULL;
 void loginit(uint16_t port)
@@ -53,10 +54,12 @@ void loginit(uint16_t port)
 
     sprintf(logbuffer, "%u-%u.log", ntohs(port), now());
     logfile = fopen(logbuffer, "w");
+    starttime = now();
 };
 void loglog(char *text)
 {
     if (logfile) {
+        fprintf(logfile, "%4u ", now() - starttime);
         fprintf(logfile, text);
         fflush(logfile);
     }
