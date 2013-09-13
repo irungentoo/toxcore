@@ -209,7 +209,7 @@ char *format_message(Tox *m, char *message, int friendnum)
 }
 
 /* forward declaration */
-int save_data(Tox *m);
+static int save_data(Tox *m);
 
 void line_eval(Tox *m, char *line)
 {
@@ -505,7 +505,7 @@ void print_statuschange(Tox *m, int friendnumber, uint8_t *string, uint16_t leng
 
 static char *data_file_name = NULL;
 
-int load_data(Tox *m)
+static int load_data(Tox *m)
 {
     FILE *data_file = fopen(data_file_name, "r");
     int size = 0;
@@ -534,7 +534,7 @@ int load_data(Tox *m)
     return 0;
 }
 
-int save_data(Tox *m)
+static int save_data(Tox *m)
 {
     FILE *data_file = fopen(data_file_name, "w");
     if (!data_file) {
@@ -557,7 +557,7 @@ int save_data(Tox *m)
     }
 }
 
-int load_old_key_or_save_new_one(Tox *m, char *path)
+static int load_old_key_or_save_new_one(Tox *m, char *path)
 {
     data_file_name = path;
     if (load_data(m))
