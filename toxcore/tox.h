@@ -289,6 +289,59 @@ void tox_callback_read_receipt(Tox *tox, void (*function)(Tox *tox, int, uint32_
  */
 void tox_callback_connectionstatus(Tox *tox, void (*function)(Tox *tox, int, uint8_t, void *), void *userdata);
 
+/**********GROUP CHAT FUNCTIONS: WARNING WILL BREAK A LOT************/
+
+/* Set the callback for group invites.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t *group_public_key, void *userdata)
+ */
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, void *), void *userdata);
+
+/* Set the callback for group messages.
+ *
+ *  Function(Tox *tox, int groupnumber, uint8_t * message, uint16_t length, void *userdata)
+ */
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
+                                void *userdata);
+
+/* Creates a new groupchat and puts it in the chats array.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ */
+int tox_add_groupchat(Tox *tox);
+
+/* Delete a groupchat from the chats array.
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+int tox_del_groupchat(Tox *tox, int groupnumber);
+
+/* invite friendnumber to groupnumber
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_invite_friend(Tox *tox, int friendnumber, int groupnumber);
+
+/* Join a group (you need to have been invited first.)
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ */
+int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_key);
+
+
+/* send a group message
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t length);
+
+
+
+/******************END OF GROUP CHAT FUNCTIONS************************/
+
 /* Use this function to bootstrap the client.
  * Sends a get nodes request to the given node with ip port and public_key.
  */
