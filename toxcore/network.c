@@ -73,15 +73,18 @@ static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *i
 int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length)
 {
 #ifdef TOX_ENABLE_IPV6
+
     /* socket AF_INET, but target IP NOT: can't send */
-   if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
-        return 0;
+    if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
+        return -1;
+
 #endif
- 
+
     struct sockaddr_storage addr;
     size_t addrsize = 0;
 
 #ifdef TOX_ENABLE_IPV6
+
     if (ip_port.ip.family == AF_INET) {
         if (net->family == AF_INET6) {
             /* must convert to IPV4-in-IPV6 address */
@@ -99,11 +102,10 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
 
             addr6->sin6_flowinfo = 0;
             addr6->sin6_scope_id = 0;
-        }
-        else {
+        } else {
             IP4 ip4 = ip_port.ip.ip4;
 #else
-            IP4 ip4 = ip_port.ip;
+    IP4 ip4 = ip_port.ip;
 #endif
             addrsize = sizeof(struct sockaddr_in);
             struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
@@ -112,8 +114,8 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
             addr4->sin_port = ip_port.port;
 #ifdef TOX_ENABLE_IPV6
         }
-    }
-    else if (ip_port.ip.family == AF_INET6) {
+    } else if (ip_port.ip.family == AF_INET6)
+    {
         addrsize = sizeof(struct sockaddr_in6);
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
         addr6->sin6_family = AF_INET6;
@@ -122,10 +124,12 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
 
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
-    } else {
+    } else
+    {
         /* unknown address type*/
-        return 0;
+        return -1;
     }
+
 #endif
 
     int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
@@ -153,37 +157,40 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 
     if (*(int32_t *)length <= 0) {
 #ifdef LOGGING
+
         if ((length < 0) && (errno != EWOULDBLOCK)) {
             sprintf(logbuffer, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
             loglog(logbuffer);
         }
+
 #endif
         return -1; /* Nothing received or empty packet. */
     }
 
 #ifdef TOX_ENABLE_IPV6
+
     if (addr.ss_family == AF_INET) {
         struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
         ip_port->ip.family = addr_in->sin_family;
         ip_port->ip.ip4.in_addr = addr_in->sin_addr;
         ip_port->port = addr_in->sin_port;
-    }
-    else if (addr.ss_family == AF_INET6) {
+    } else if (addr.ss_family == AF_INET6) {
         struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
         ip_port->ip.family = addr_in6->sin6_family;
         ip_port->ip.ip6 = addr_in6->sin6_addr;
         ip_port->port = addr_in6->sin6_port;
-    }
-    else
+    } else
         return -1;
+
 #else
+
     if (addr.ss_family == AF_INET) {
         struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
         ip_port->ip.in_addr = addr_in->sin_addr;
         ip_port->port = addr_in->sin_port;
-    }
-    else
+    } else
         return -1;
+
 #endif
 
 #ifdef LOGGING
@@ -261,17 +268,20 @@ static void at_shutdown(void)
 Networking_Core *new_networking(IP ip, uint16_t port)
 {
 #ifdef TOX_ENABLE_IPV6
+
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != AF_INET && ip.family != AF_INET6) {
         fprintf(stderr, "Invalid address family: %u\n", ip.family);
         return NULL;
     }
+
 #endif
 
     if (at_startup() != 0)
         return NULL;
 
     Networking_Core *temp = calloc(1, sizeof(Networking_Core));
+
     if (temp == NULL)
         return NULL;
 
@@ -341,11 +351,11 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     struct sockaddr_storage addr;
     size_t addrsize;
 #ifdef TOX_ENABLE_IPV6
-    if (temp->family == AF_INET)
-    {
+
+    if (temp->family == AF_INET) {
         IP4 ip4 = ip.ip4;
 #else
-        IP4 ip4 = ip;
+    IP4 ip4 = ip;
 #endif
         addrsize = sizeof(struct sockaddr_in);
         struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
@@ -355,8 +365,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
         portptr = &addr4->sin_port;
 #ifdef TOX_ENABLE_IPV6
-    }
-    else if (temp->family == AF_INET6)
+    } else if (temp->family == AF_INET6)
     {
         addrsize = sizeof(struct sockaddr_in6);
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
@@ -368,21 +377,23 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         addr6->sin6_scope_id = 0;
 
         portptr = &addr6->sin6_port;
-    }
-    else
+    } else
         return NULL;
 
-    if (ip.family == AF_INET6) {
+    if (ip.family == AF_INET6)
+    {
         char ipv6only = 0;
         int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
 #ifdef LOGGING
+
         if (res < 0) {
-            sprintf(logbuffer, "Failed to enable dual-stack on IPv6 socket, won't be able to receive from/send to IPv4 addresses. (%u, %s)\n",
+            sprintf(logbuffer,
+                    "Failed to enable dual-stack on IPv6 socket, won't be able to receive from/send to IPv4 addresses. (%u, %s)\n",
                     errno, strerror(errno));
             loglog(logbuffer);
-        }
-        else
+        } else
             loglog("Embedded IPv4 addresses enabled successfully.\n");
+
 #endif
 
         /* multicast local nodes */
@@ -394,15 +405,17 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         mreq.ipv6mr_interface = 0;
         res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 #ifdef LOGGING
+
         if (res < 0) {
             sprintf(logbuffer, "Failed to activate local multicast membership. (%u, %s)\n",
                     errno, strerror(errno));
             loglog(logbuffer);
-        }
-        else
+        } else
             loglog("Local multicast group FF02::1 joined successfully.\n");
+
 #endif
     }
+
 #endif
 
     /* a hanging program or a different user might block the standard port;
@@ -424,16 +437,18 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     uint16_t port_to_try = port;
     *portptr = htons(port_to_try);
     int tries, res;
-    for(tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++)
+
+    for (tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++)
     {
         res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
-        if (!res)
-        {
+
+        if (!res) {
             temp->port = *portptr;
 #ifdef LOGGING
             sprintf(logbuffer, "Bound successfully to %s:%u.\n", ip_ntoa(&ip), ntohs(temp->port));
             loglog(logbuffer);
 #endif
+
             /* errno isn't reset on success, only set on failure, the failed
              * binds with parallel clients yield a -EPERM to the outside if
              * errno isn't cleared here */
@@ -444,6 +459,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         }
 
         port_to_try++;
+
         if (port_to_try > TOX_PORTRANGE_TO)
             port_to_try = TOX_PORTRANGE_FROM;
 
@@ -451,7 +467,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     }
 
     fprintf(stderr, "Failed to bind socket: %u, %s (IP/Port: %s:%u\n", errno,
-                    strerror(errno), ip_ntoa(&ip), port);
+            strerror(errno), ip_ntoa(&ip), port);
     free(temp);
     return NULL;
 }
@@ -480,6 +496,7 @@ int ip_equal(IP *a, IP *b)
         return 0;
 
 #ifdef TOX_ENABLE_IPV6
+
     if (a->family == AF_INET)
         return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
 
@@ -589,28 +606,27 @@ const char *ip_ntoa(IP *ip)
 {
     if (ip) {
 #ifdef TOX_ENABLE_IPV6
+
         if (ip->family == AF_INET) {
             addresstext[0] = 0;
             struct in_addr *addr = (struct in_addr *)&ip->ip4;
             inet_ntop(ip->family, addr, addresstext, sizeof(addresstext));
-        }
-        else if (ip->family == AF_INET6) {
+        } else if (ip->family == AF_INET6) {
             addresstext[0] = '[';
             struct in6_addr *addr = (struct in6_addr *)&ip->ip6;
             inet_ntop(ip->family, addr, &addresstext[1], sizeof(addresstext) - 3);
             size_t len = strlen(addresstext);
             addresstext[len] = ']';
             addresstext[len + 1] = 0;
-        }
-        else
+        } else
             snprintf(addresstext, sizeof(addresstext), "(IP invalid, family %u)", ip->family);
+
 #else
         addresstext[0] = 0;
         struct in_addr *addr = (struct in_addr *)&ip;
         inet_ntop(AF_INET, addr, addresstext, sizeof(addresstext));
 #endif
-    }
-    else
+    } else
         snprintf(addresstext, sizeof(addresstext), "(IP invalid: NULL)");
 
     /* brute force protection against lacking termination */
@@ -639,6 +655,7 @@ int addr_parse_ip(const char *address, IP *to)
 
 #ifdef TOX_ENABLE_IPV6
     struct in_addr addr4;
+
     if (1 == inet_pton(AF_INET, address, &addr4)) {
         to->family = AF_INET;
         to->ip4.in_addr = addr4;
@@ -646,17 +663,21 @@ int addr_parse_ip(const char *address, IP *to)
     };
 
     struct in6_addr addr6;
+
     if (1 == inet_pton(AF_INET6, address, &addr6)) {
         to->family = AF_INET6;
         to->ip6 = addr6;
         return 1;
     };
+
 #else
     struct in_addr addr4;
+
     if (1 == inet_pton(AF_INET, address, &addr4)) {
         to->in_addr = addr4;
         return 1;
     };
+
 #endif
 
     return 0;
@@ -714,6 +735,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
 #endif
 
     rc = getaddrinfo(address, NULL, &hints, &server);
+
     // Lookup failed.
     if (rc != 0) {
 #ifdef __WIN32__
@@ -729,67 +751,71 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     memset(&ip6, 0, sizeof(ip6));
 #endif
 
-    for(walker = server; (walker != NULL) && (rc != 3); walker = walker->ai_next) {
-        switch(walker->ai_family) {
-        case AF_INET:
-            if (walker->ai_family == family) {
-                struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+    for (walker = server; (walker != NULL) && (rc != 3); walker = walker->ai_next) {
+        switch (walker->ai_family) {
+            case AF_INET:
+                if (walker->ai_family == family) {
+                    struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
 #ifdef TOX_ENABLE_IPV6
-                to->ip4.in_addr = addr->sin_addr;
+                    to->ip4.in_addr = addr->sin_addr;
 #else
-                to->in_addr = addr->sin_addr;
+                    to->in_addr = addr->sin_addr;
 #endif
-                rc = 3;
-            }
-#ifdef TOX_ENABLE_IPV6
-            else if (!(rc & 1)) {
-                struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
-                to->ip4.in_addr = addr->sin_addr;
-                rc |= 1;
-            }
-#endif
-            break; /* switch */
-
-#ifdef TOX_ENABLE_IPV6
-        case AF_INET6:
-            if (walker->ai_family == family) {
-                if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
-                    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
-                    to->ip6 = addr->sin6_addr;
                     rc = 3;
                 }
-            } else if (!(rc & 2)) {
-                if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
-                    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
-                    ip6 = addr->sin6_addr;
-                    rc |= 2;
+
+#ifdef TOX_ENABLE_IPV6
+                else if (!(rc & 1)) {
+                    struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+                    to->ip4.in_addr = addr->sin_addr;
+                    rc |= 1;
                 }
-            }
-            break; /* switch */
+
+#endif
+                break; /* switch */
+#ifdef TOX_ENABLE_IPV6
+
+            case AF_INET6:
+                if (walker->ai_family == family) {
+                    if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
+                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
+                        to->ip6 = addr->sin6_addr;
+                        rc = 3;
+                    }
+                } else if (!(rc & 2)) {
+                    if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
+                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
+                        ip6 = addr->sin6_addr;
+                        rc |= 2;
+                    }
+                }
+
+                break; /* switch */
 #endif
         }
     }
 
 #ifdef TOX_ENABLE_IPV6
+
     if (to->family == AF_UNSPEC) {
         if (rc & 2) {
             to->family = AF_INET6;
             to->ip6 = ip6;
+
             if ((rc & 1) && (extra != NULL)) {
                 extra->family = AF_INET;
                 extra->ip4 = ip4;
             }
-        }
-        else if (rc & 1) {
+        } else if (rc & 1) {
             to->family = AF_INET;
             to->ip4 = ip4;
-        }
-        else
+        } else
             rc = 0;
     }
+
 #endif
 
-    
+
     freeaddrinfo(server);
 #ifdef __WIN32__
     WSACleanup();
@@ -826,22 +852,22 @@ static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *i
 {
     if (res < 0)
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
-            buffer[0], message, buflen < 999 ? buflen : 999, 'E',
-            ip_ntoa(&ip_port->ip), ntohs(ip_port->port), errno,
-            strerror(errno), buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-            buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+                 buffer[0], message, buflen < 999 ? buflen : 999, 'E',
+                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), errno,
+                 strerror(errno), buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
+                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
     else if ((res > 0) && (res <= buflen))
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
-            buffer[0], message, res < 999 ? res : 999, res < buflen ? '<' : '=',
-            ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
-            "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-            buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+                 buffer[0], message, res < 999 ? res : 999, res < buflen ? '<' : '=',
+                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
+                 "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
+                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
     else /* empty or overwrite */
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x\n",
-            buffer[0], message, res, !res ? '0' : '>', buflen,
-            ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
-            "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-            buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+                 buffer[0], message, res, !res ? '0' : '>', buflen,
+                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
+                 "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
+                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
 
     logbuffer[sizeof(logbuffer) - 1] = 0;
     loglog(logbuffer);
