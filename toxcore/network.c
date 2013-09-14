@@ -307,7 +307,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #else
 
     if (temp->sock < 0) {
-        fprintf(stderr, "Failed to get a scoket?! %u, %s\n", errno, strerror(errno));
+        fprintf(stderr, "Failed to get a socket?! %u, %s\n", errno, strerror(errno));
         free(temp);
         return NULL;
     }
@@ -474,7 +474,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
     fprintf(stderr, "Failed to bind socket: %u, %s (IP/Port: %s:%u\n", errno,
             strerror(errno), ip_ntoa(&ip), port);
-    free(temp);
+    kill_networking(temp);
     return NULL;
 }
 
@@ -728,25 +728,13 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     hints.ai_family   = family;
     hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
 
-#ifdef __WIN32__
-    WSADATA wsa_data;
-
-    /* CLEANUP: really not the best place to put this */
-    rc = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-
-    if (rc != 0) {
+    if (at_startup() != 0)
         return 0;
-    }
-
-#endif
 
     rc = getaddrinfo(address, NULL, &hints, &server);
 
     // Lookup failed.
     if (rc != 0) {
-#ifdef __WIN32__
-        WSACleanup();
-#endif
         return 0;
     }
 
@@ -823,9 +811,6 @@ int addr_resolve(const char *address, IP *to, IP *extra)
 
 
     freeaddrinfo(server);
-#ifdef __WIN32__
-    WSACleanup();
-#endif
     return rc;
 }
 
