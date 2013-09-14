@@ -1304,8 +1304,6 @@ int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
 #define DHT_STATE_TYPE_FRIENDS     1
 #define DHT_STATE_TYPE_CLIENTS     2
 
-typedef uint16_t statelensub_t;
-
 /* Get the size of the DHT (for saving). */
 uint32_t DHT_size(DHT *dht)
 {
@@ -1314,26 +1312,25 @@ uint32_t DHT_size(DHT *dht)
         if (dht->close_clientlist[i].timestamp != 0)
             num++;
 
-    uint32_t size32 = sizeof(uint32_t), lengthsublen = sizeof(statelensub_t);
-    uint32_t sizesubhead = lengthsublen + size32;
+    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return size32
          + sizesubhead + sizeof(DHT_Friend) * dht->num_friends
          + sizesubhead + sizeof(Client_data) * num;
 }
 
-static uint8_t *z_state_save_subheader(uint8_t *data, statelensub_t len, uint16_t type)
+static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
-    *(statelensub_t *)data = len;
-    data += sizeof(statelensub_t);
-    *(uint32_t *)data = (DHT_STATE_COOKIE_TYPE << 16) | type;
-    data += sizeof(uint32_t);
+    uint32_t *data32 = (uint32_t *)data;
+    data32[0] = len;
+    data32[1] = (DHT_STATE_COOKIE_TYPE << 16) | type;
+    data += sizeof(uint32_t) * 2;
     return data;
 }
 
 /* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data)
 {
-    statelensub_t len;
+    uint32_t len;
     uint16_t type;
     *(uint32_t *)data = DHT_STATE_COOKIE_GLOBAL;
     data += sizeof(uint32_t);

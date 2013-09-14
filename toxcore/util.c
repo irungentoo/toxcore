@@ -56,13 +56,13 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
         return -1;
     }
 
-    state_length_sub_t length_sub;
+
     uint16_t type;
-    uint32_t size32 = sizeof(uint32_t), length_sub_len = sizeof(state_length_sub_t);
-    uint32_t size_head = length_sub_len + size32, cookie_type;
+    uint32_t length_sub, cookie_type;
+    uint32_t size32 = sizeof(uint32_t), size_head = size32 * 2;
     while (length > size_head) {
-        length_sub = *(state_length_sub_t *)data;
-        cookie_type = *(uint32_t *)(data + length_sub_len);
+        length_sub = *(uint32_t *)data;
+        cookie_type = *(uint32_t *)(data + size32);
         data += size_head;
         length -= size_head;
 

@@ -1361,13 +1361,10 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
 #define MESSENGER_STATE_TYPE_FRIENDS     3
 #define MESSENGER_STATE_TYPE_NAME        4
 
-typedef uint16_t statelensub_t;
-
 /*  return size of the messenger data (for saving) */
 uint32_t Messenger_size(Messenger *m)
 {
-    uint32_t size32 = sizeof(uint32_t), lengthsublen = sizeof(statelensub_t);
-    uint32_t sizesubhead = lengthsublen + size32;
+    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return   size32 * 2                                      // global cookie
            + sizesubhead + sizeof(uint32_t) +  crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
            + sizesubhead + DHT_size(m->dht)                  // DHT
@@ -1376,19 +1373,19 @@ uint32_t Messenger_size(Messenger *m)
            ;
 }
 
-static uint8_t *z_state_save_subheader(uint8_t *data, statelensub_t len, uint16_t type)
+static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
-    *(statelensub_t *)data = len;
-    data += sizeof(statelensub_t);
-    *(uint32_t *)data = (MESSENGER_STATE_COOKIE_TYPE << 16) | type;
-    data += sizeof(uint32_t);
+    uint32_t *data32 = (uint32_t *)data;
+    data32[0] = len;
+    data32[1] = (MESSENGER_STATE_COOKIE_TYPE << 16) | type;
+    data += sizeof(uint32_t) * 2;
     return data;
 }
 
 /* Save the messenger in data of size Messenger_size(). */
 void Messenger_save(Messenger *m, uint8_t *data)
 {
-    statelensub_t len;
+    uint32_t len;
     uint16_t type;
     uint32_t *data32, size32 = sizeof(uint32_t);
 
@@ -1484,17 +1481,15 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 {
     uint32_t cookie_len = 2 * sizeof(uint32_t);
-    if (length > cookie_len) {
-        uint32_t *data32 = (uint32_t *)data;
-        if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL)) {
-            return load_state(messenger_load_state_callback, m, data + cookie_len,
-                              length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
-        }
+    if (length < cookie_len)
+        return -1;
 
-        /* old state file or too short */
-    }
-
-    return Messenger_load_old(m, data, length);
+    uint32_t *data32 = (uint32_t *)data;
+    if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL))
+        return load_state(messenger_load_state_callback, m, data + cookie_len,
+                          length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
+    else       /* old state file */
+        return Messenger_load_old(m, data, length);
 }
 
 /* Allocate and return a list of valid friend id's. List must be freed by the
