@@ -161,7 +161,7 @@ static int LAN_ip(IP ip)
             return 0;
 
         /* embedded IPv4-in-IPv6 */
-        if (!ip.ip6.s6_addr32[0] && !ip.ip6.s6_addr32[1] && ip.ip6.s6_addr32[2] == htonl(0xFFFF)) {
+        if (IN6_IS_ADDR_V4MAPPED(&ip.ip6)) {
             IP ip4;
             ip4.family = AF_INET;
             ip4.ip4.uint32 = ip.ip6.s6_addr32[3];
