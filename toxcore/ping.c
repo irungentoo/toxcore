@@ -135,7 +135,7 @@ int send_ping_request(void *ping, Net_Crypto *c, IP_Port ipp, uint8_t *client_id
 
     pk[0] = NET_PACKET_PING_REQUEST;
     id_cpy(pk + 1, c->self_public_key);     // Our pubkey
-    random_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate random nonce
+    new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data(client_id,
@@ -160,7 +160,7 @@ int send_ping_response(Net_Crypto *c, IP_Port ipp, uint8_t *client_id, uint64_t 
 
     pk[0] = NET_PACKET_PING_RESPONSE;
     id_cpy(pk + 1, c->self_public_key);     // Our pubkey
-    random_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate random nonce
+    new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data(client_id,

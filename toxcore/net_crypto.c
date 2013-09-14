@@ -145,13 +145,25 @@ static void increment_nonce(uint8_t *nonce)
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce)
 {
-    uint32_t i, temp;
-
-    for (i = 0; i < crypto_box_NONCEBYTES / 4; ++i) {
-        temp = random_int();
-        memcpy(nonce + 4 * i, &temp, 4);
-    }
+    randombytes(nonce, crypto_box_NONCEBYTES);
 }
+
+
+static uint8_t base_nonce[crypto_box_NONCEBYTES];
+static uint8_t nonce_set = 0;
+
+/*Gives a nonce guaranteed to be different from previous ones.*/
+void new_nonce(uint8_t *nonce)
+{
+    if (nonce_set == 0) {
+        random_nonce(base_nonce);
+        nonce_set = 1;
+    }
+
+    increment_nonce(base_nonce);
+    memcpy(nonce, base_nonce, crypto_box_NONCEBYTES);
+}
+
 
 /*  return 0 if there is no received data in the buffer.
  *  return -1  if the packet was discarded.
@@ -237,7 +249,7 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
     uint8_t temp[MAX_DATA_SIZE];
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
-    random_nonce(nonce);
+    new_nonce(nonce);
     int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
                            1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
 
@@ -336,7 +348,7 @@ static int send_cryptohandshake(Net_Crypto *c, int connection_id, uint8_t *publi
     uint8_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
 
-    random_nonce(nonce);
+    new_nonce(nonce);
     memcpy(temp, secret_nonce, crypto_box_NONCEBYTES);
     memcpy(temp + crypto_box_NONCEBYTES, session_key, crypto_box_PUBLICKEYBYTES);
 
