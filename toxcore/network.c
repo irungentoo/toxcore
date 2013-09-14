@@ -210,11 +210,11 @@ void networking_poll(Networking_Core *net)
 
         if (!(net->packethandlers[data[0]].function)) {
 #ifdef LOGGING
-			sprintf(logbuffer, "[%02u] -- Packet has no handler.\n", data[0]);
-			loglog(logbuffer);
+            sprintf(logbuffer, "[%02u] -- Packet has no handler.\n", data[0]);
+            loglog(logbuffer);
 #endif
-			continue;
-		}
+            continue;
+        }
 
         net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length);
     }
@@ -613,7 +613,8 @@ const char *ip_ntoa(IP *ip)
     else
         snprintf(addresstext, sizeof(addresstext), "(IP invalid: NULL)");
 
-    addresstext[INET6_ADDRSTRLEN + 2] = 0;
+    /* brute force protection against lacking termination */
+    addresstext[sizeof(addresstext) - 1] = 0;
     return addresstext;
 };
 
@@ -728,52 +729,45 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     memset(&ip6, 0, sizeof(ip6));
 #endif
 
-    walker = server;
-    while (walker && (rc != 3)) {
-        if (family != AF_UNSPEC) {
+    for(walker = server; (walker != NULL) && (rc != 3); walker = walker->ai_next) {
+        switch(walker->ai_family) {
+        case AF_INET:
             if (walker->ai_family == family) {
-                if (family == AF_INET) {
-                    if (walker->ai_addrlen == sizeof(struct sockaddr_in)) {
-                        struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+                struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
 #ifdef TOX_ENABLE_IPV6
-                        to->ip4.in_addr = addr->sin_addr;
+                to->ip4.in_addr = addr->sin_addr;
 #else
-                        to->in_addr = addr->sin_addr;
+                to->in_addr = addr->sin_addr;
 #endif
-                        rc = 3;
-                    }
-                }
+                rc = 3;
+            }
 #ifdef TOX_ENABLE_IPV6
-                else if (family == AF_INET6) {
-                    if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
-                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
-                        to->ip6 = addr->sin6_addr;
-                        rc = 3;
-                    }
-                }
+            else if (!(rc & 1)) {
+                struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+                to->ip4.in_addr = addr->sin_addr;
+                rc |= 1;
+            }
 #endif
-            }
-        }
+            break; /* switch */
+
 #ifdef TOX_ENABLE_IPV6
-        else {
-            if (walker->ai_family == AF_INET) {
-                if (walker->ai_addrlen == sizeof(struct sockaddr_in)) {
-                    struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
-                    ip4.in_addr = addr->sin_addr;
-                    rc |= 1;
+        case AF_INET6:
+            if (walker->ai_family == family) {
+                if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
+                    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
+                    to->ip6 = addr->sin6_addr;
+                    rc = 3;
                 }
-            }
-            else if (walker->ai_family == AF_INET6) {
+            } else if (!(rc & 2)) {
                 if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
                     ip6 = addr->sin6_addr;
                     rc |= 2;
                 }
             }
-        }
+            break; /* switch */
 #endif
-
-        walker = walker->ai_next;
+        }
     }
 
 #ifdef TOX_ENABLE_IPV6
