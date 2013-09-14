@@ -588,7 +588,6 @@ int main(int argc, char *argv[])
 
     int on = 0;
     int c = 0;
-    int i = 0;
     char *filename = "data";
     char idstring[200] = {0};
     Tox *m;
