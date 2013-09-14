@@ -195,9 +195,9 @@ static int friend_number(DHT *dht, uint8_t *client_id)
 /*
  * helper for get_close_nodes(). argument list is a monster :D
  */
-static int get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nodes_list,
-                                 sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
-                                 time_t timestamp, int *num_nodes_ptr)
+static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nodes_list,
+                                  sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
+                                  time_t timestamp, int *num_nodes_ptr)
 {
     int num_nodes = 0;
     int i, tout, inlist, ipv46x, j, closest;
@@ -974,9 +974,10 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, uint8_t *public_key)
 {
-    IP_Port ip_port_v64, ip_port_v4;
+    IP_Port ip_port_v64;
     IP *ip_extra = NULL;
 #ifdef TOX_ENABLE_IPV6
+    IP_Port ip_port_v4;
     ip_init(&ip_port_v64.ip, ipv6enabled);
 
     if (ipv6enabled) {
@@ -1456,14 +1457,14 @@ void DHT_save(DHT *dht, uint8_t *data)
 int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
 {
     if (size < sizeof(dht->close_clientlist)) {
-        fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
+        fprintf(stderr, "DHT_load: Expected at least %lu bytes, got %u.\n", sizeof(dht->close_clientlist), size);
         return -1;
     }
 
     uint32_t friendlistsize = size - sizeof(dht->close_clientlist);
 
     if (friendlistsize % sizeof(DHT_Friend) != 0) {
-        fprintf(stderr, "DHT_load: Expected a multiple of %u, got %u.\n", sizeof(DHT_Friend), friendlistsize);
+        fprintf(stderr, "DHT_load: Expected a multiple of %lu, got %u.\n", sizeof(DHT_Friend), friendlistsize);
         return -1;
     }
 

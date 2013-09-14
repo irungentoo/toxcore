@@ -383,7 +383,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     if (ip.family == AF_INET6)
     {
         char ipv6only = 0;
-        int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
+#ifdef LOGGING
+        int res =
+#endif
+            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
 #ifdef LOGGING
 
         if (res < 0) {
@@ -403,7 +406,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
-        res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+#ifdef LOGGING
+        res =
+#endif
+            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 #ifdef LOGGING
 
         if (res < 0) {
