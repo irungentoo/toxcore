@@ -254,8 +254,10 @@ void line_eval(Tox *m, char *line)
                     break;
 
                 default:
-                    if (num >= 0)
+                    if (num >= 0) {
                         sprintf(numstring, "[i] Added friend as %d.", num);
+                        save_data(m);
+                    }
                     else
                         sprintf(numstring, "[i] Unknown error %i.", num);
                     break;
@@ -345,6 +347,7 @@ void line_eval(Tox *m, char *line)
                     new_lines(numchar);
                     sprintf(numchar, "[i] added friendnumber %d", num);
                     new_lines(numchar);
+                    save_data(m);
                 } else {
                     sprintf(numchar, "[i] failed to add friend");
                     new_lines(numchar);
