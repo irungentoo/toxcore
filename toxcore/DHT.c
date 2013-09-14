@@ -199,7 +199,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
                                   sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
                                   time_t timestamp, int *num_nodes_ptr)
 {
-    int num_nodes = 0;
+    int num_nodes = *num_nodes_ptr;
     int i, tout, inlist, ipv46x, j, closest;
 
     for (i = 0; i < client_list_length; i++) {
@@ -459,7 +459,7 @@ static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
             if (ip_isset(&ip_port.ip) && ipport_equal(&dht->send_nodes[i].ip_port, &ip_port))
                 ++pinging;
 
-            if (pinging == (ping_id != 0) + (ip_isset(&ip_port.ip) != 0))
+            if (pinging == (ping_id != 0) + ip_isset(&ip_port.ip))
                 return 1;
         }
     }
@@ -679,7 +679,8 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     memcpy(&ping_id, plain, sizeof(ping_id));
     sendnodes(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
 #ifdef TOX_ENABLE_IPV6
-    sendnodes_ipv6(dht, source, packet + 1, plain + sizeof(ping_id), ping_id);
+    sendnodes_ipv6(dht, source, packet + 1, plain + sizeof(ping_id),
+                   ping_id); /* TODO: prevent possible amplification attacks */
 #endif
 
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
@@ -764,7 +765,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
     cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + ENCRYPTION_PADDING;
 
-    size_t Node_format_size = sizeof(Node4_format);
+    size_t Node_format_size = sizeof(Node_format);
 
     if (length > (cid_size + Node_format_size * MAX_SENT_NODES) ||
             ((length - cid_size) % Node_format_size) != 0 ||
