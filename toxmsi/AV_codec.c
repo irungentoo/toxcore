@@ -134,6 +134,7 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
 	    q->current_ts=next_ts;
 	} else {
 	    if(sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
+	      printf("nextid: %d current: %d\n",next_id, q->current_id);
 	    q->current_id=(q->current_id+1)%_MAX_SEQU_NUM;
 	    *success=2; /* tell the decoder the packet is lost */
 	    return NULL;
@@ -145,7 +146,7 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
 	    }
 	}
     }
-    
+
     q->size--;
     q->front++;
     if(q->front==q->capacity)
@@ -156,10 +157,27 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
     return q->queue[front];
 }
 
+int empty_queue(struct jitter_buffer *q)
+{
+   while(q->size>0)
+   {
+    q->size--;
+    //rtp_free_msg(cs->_rtp_video, q->queue[q->front]);
+    q->front++; 
+    if(q->front==q->capacity)
+    q->front=0;
+   }
+   q->id_set=0;
+   q->queue_ready=0;
+}
+
 int queue(struct jitter_buffer *q, rtp_msg_t *pk)
 {
-    if(q->size==q->capacity)
+    if(q->size==q->capacity) {
+	printf("buffer full, emptying buffer...\n");
+	empty_queue(q);
 	return 0;
+    }
 
     if(q->size>8)
 	q->queue_ready=1;
@@ -464,7 +482,6 @@ void *encode_video_thread(void *arg)
 		}
 		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
 		if(!enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
-		//printf("video packet size: %d\n",enc_video_packet.size);
 		s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
 		if(!s_video_msg) {
 		    printf("invalid message\n");
@@ -502,7 +519,7 @@ void *encode_audio_thread(void *arg)
     alcCaptureStart(cs->audio_capture_device);
     while(!cs->quit&&cs->send_audio) {
 	alcGetIntegerv(cs->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
-	if(sample>frame_size) {
+	if(sample>=frame_size) {
 	    alcCaptureSamples(cs->audio_capture_device, frame, frame_size);
 	    encoded_size=opus_encode(cs->audio_encoder,frame,frame_size,encoded_data,480);
 	    if(encoded_size<=0) {
@@ -510,7 +527,7 @@ void *encode_audio_thread(void *arg)
 	    } else {
 		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
 		rtp_set_payload_type(cs->_rtp_audio,96);
-		s_audio_msg = rtp_msg_new ( cs->_rtp_audio, encoded_data, encoded_size ) ;
+		s_audio_msg = rtp_msg_new (cs->_rtp_audio, encoded_data, encoded_size) ;
 		rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
 		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
 	    }
@@ -565,7 +582,6 @@ void *decode_video_thread(void *arg)
         r_msg = rtp_recv_msg ( cs->_rtp_video );
         if(r_msg) {
             if(handle_rtp_video_packet(cs,r_msg)) {
-	      //printf("video packet size: %d\n",r_msg->_length);
                 memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
                 dec_video_packet.size=r_msg->_length;
                 avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
@@ -635,8 +651,7 @@ void *decode_audio_thread(void *arg)
     int success=0;
     int dec_frame_len;
     opus_int16 PCM[frame_size];
-    
-        
+         
     while(!cs->quit&&cs->receive_audio) {
 
         r_msg = rtp_recv_msg ( cs->_rtp_audio );
@@ -656,11 +671,12 @@ void *decode_audio_thread(void *arg)
 	  /* good packet */
 	  if(success==1)
 	  {
-	      dec_frame_len=opus_decode(cs->audio_decoder,r_msg->_data,r_msg->_length-1,PCM,frame_size,0);
+	      dec_frame_len=opus_decode(cs->audio_decoder,r_msg->_data,r_msg->_length,PCM,frame_size,0);
 	      rtp_free_msg(cs->_rtp_audio, r_msg); 
 	  }
 	  /* lost packet  */
 	  if(success==2) {
+	      printf("lost packet\n");
 	      dec_frame_len=opus_decode(cs->audio_decoder,NULL,0,PCM,frame_size,1);
 	  } 
 	  if(dec_frame_len>0) {	 

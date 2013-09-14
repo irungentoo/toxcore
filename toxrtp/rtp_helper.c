@@ -61,9 +61,9 @@ uint32_t t_random ( uint32_t _max )
 void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
 {
     /*
-     * Using countdown to zero method
-     * It's quite much faster than for(_it = 0; _it < _size; _it++);
-     */
+* Using countdown to zero method
+* It's quite much faster than for(_it = 0; _it < _size; _it++);
+*/
     size_t _it = _size;
 
     do {
@@ -75,8 +75,8 @@ void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
 uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size )
 {
     /*
-     * Again using countdown to zero method
-     */
+* Again using countdown to zero method
+*/
     size_t _it = _size;
 
     do {

@@ -1,28 +1,28 @@
-/*   rtp_impl.c
- *
- *   Rtp implementation includes rtp_session_s struct which is a session identifier.
- *   It contains session information and it's a must for every session.
- *   It's best if you don't touch any variable directly but use callbacks to do so. !Red!
- *
- *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *   This file is part of Tox.
- *
- *   Tox is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Tox is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+/* rtp_impl.c
+*
+* Rtp implementation includes rtp_session_s struct which is a session identifier.
+* It contains session information and it's a must for every session.
+* It's best if you don't touch any variable directly but use callbacks to do so. !Red!
+*
+*
+* Copyright (C) 2013 Tox project All Rights Reserved.
+*
+* This file is part of Tox.
+*
+* Tox is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* Tox is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Tox. If not, see <http://www.gnu.org/licenses/>.
+*
+*/
 #include "rtp_impl.h"
 #include "rtp_message.h"
 #include "rtp_helper.h"
@@ -34,7 +34,7 @@
 /* Some defines */
 
 #define PAYLOAD_ID_VALUE_OPUS 1
-#define PAYLOAD_ID_VALUE_VP8  2
+#define PAYLOAD_ID_VALUE_VP8 2
 
 #define size_32 4
 /* End of defines */
@@ -45,19 +45,19 @@
 
 static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
 {
-    8000, 8000, 8000, 8000, 8000, 8000, 16000, 8000, 8000, 8000,    /*    0-9    */
-    44100, 44100, 0, 0, 90000, 8000, 11025, 22050, 0, 0,            /*   10-19   */
-    0, 0, 0, 0, 0, 90000, 90000, 0, 90000, 0,                       /*   20-29   */
-    0, 90000, 90000, 90000, 90000, 0, 0, 0, 0, 0,                   /*   30-39   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                   /*   40-49   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                   /*   50-59   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                   /*   60-69   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                   /*   70-79   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                   /*   80-89   */
-    0, 0, 0, 0, 0, 0, PAYLOAD_ID_VALUE_OPUS, 0, 0, 0,               /*   90-99   */
-    0, 0, 0, 0, 0, 0, PAYLOAD_ID_VALUE_VP8, 0, 0, 0,                /*  100-109  */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                   /*  110-119  */
-    0, 0, 0, 0, 0, 0, 0, 0                                          /*  120-127  */
+    8000, 8000, 8000, 8000, 8000, 8000, 16000, 8000, 8000, 8000, /* 0-9 */
+    44100, 44100, 0, 0, 90000, 8000, 11025, 22050, 0, 0, /* 10-19 */
+    0, 0, 0, 0, 0, 90000, 90000, 0, 90000, 0, /* 20-29 */
+    0, 90000, 90000, 90000, 90000, 0, 0, 0, 0, 0, /* 30-39 */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 40-49 */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 50-59 */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 60-69 */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 70-79 */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 80-89 */
+    0, 0, 0, 0, 0, 0, PAYLOAD_ID_VALUE_OPUS, 0, 0, 0, /* 90-99 */
+    0, 0, 0, 0, 0, 0, PAYLOAD_ID_VALUE_VP8, 0, 0, 0, /* 100-109 */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 110-119 */
+    0, 0, 0, 0, 0, 0, 0, 0 /* 120-127 */
 };
 
 /* Current compatibility solution */
@@ -91,33 +91,33 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     _retu->_packet_loss = 0;
 
     /*
-     * SET HEADER FIELDS
-     */
+* SET HEADER FIELDS
+*/
 
-    _retu->_version = RTP_VERSION;   /* It's always 2 */
-    _retu->_padding = 0;             /* If some additional data is needed about
-                                      * the packet */
-    _retu->_extension = 0;           /* If extension to header is needed */
-    _retu->_cc        = 1;           /* It basically represents amount of contributors */
-    _retu->_csrc      = NULL;        /* Container */
-    _retu->_ssrc      = t_random ( -1 );
-    _retu->_marker    = 0;
-    _retu->_payload_type = 0;        /* You should specify payload type */
+    _retu->_version = RTP_VERSION; /* It's always 2 */
+    _retu->_padding = 0; /* If some additional data is needed about
+* the packet */
+    _retu->_extension = 0; /* If extension to header is needed */
+    _retu->_cc = 1; /* It basically represents amount of contributors */
+    _retu->_csrc = NULL; /* Container */
+    _retu->_ssrc = t_random ( -1 );
+    _retu->_marker = 0;
+    _retu->_payload_type = 0; /* You should specify payload type */
 
     /* Sequence starts at random number and goes to _MAX_SEQU_NUM */
     _retu->_sequence_number = t_random ( _MAX_SEQU_NUM );
     _retu->_last_sequence_number = _retu->_sequence_number; /* Do not touch this variable */
 
-    _retu->_initial_time = _time;    /* In seconds */
+    _retu->_initial_time = _time; /* In seconds */
     assert(_retu->_initial_time);
-    _retu->_time_elapsed = 0;        /* In seconds */
+    _retu->_time_elapsed = 0; /* In seconds */
 
-    _retu->_ext_header = NULL;       /* When needed allocate */
+    _retu->_ext_header = NULL; /* When needed allocate */
     _retu->_exthdr_framerate = -1;
     _retu->_exthdr_resolution = -1;
 
     ALLOCATOR_S ( _retu->_csrc, uint32_t )
-    _retu->_csrc[0] = _retu->_ssrc;  /* Set my ssrc to the list receive */
+    _retu->_csrc[0] = _retu->_ssrc; /* Set my ssrc to the list receive */
 
     _retu->_prefix_length = 0;
     _retu->_prefix = NULL;
@@ -130,9 +130,8 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
 
     _retu->_oldest_msg = _retu->_last_msg = NULL;
     /*
-     *
-     */
-    _retu->_oldest_msg = _retu->_last_msg = NULL;
+*
+*/
     return _retu;
 }
 
@@ -263,7 +262,7 @@ int rtp_add_receiver ( rtp_session_t* _session, tox_IP_Port* _dest )
 
 int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
 {
-    if ( !_msg  || _msg->_data == NULL || _msg->_length <= 0 ) {
+    if ( !_msg || _msg->_data == NULL || _msg->_length <= 0 ) {
 #ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_EMPTY_MESSAGE );
 #endif /* _USE_ERRORS */
@@ -353,10 +352,10 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
         _retu->_data = malloc ( sizeof _retu->_data * _length );
 
         /*
-         * Parses header into _retu->_data starting from 0
-         * Will need to set this _from to 1 since the 0 byte
-         * Is used by the messenger to determine that this is rtp.
-         */
+* Parses header into _retu->_data starting from 0
+* Will need to set this _from to 1 since the 0 byte
+* Is used by the messenger to determine that this is rtp.
+*/
         _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
         _from_pos = rtp_add_extention_header ( _retu->_ext_header, _from_pos + 1 );
     } else {
@@ -364,17 +363,17 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
         _retu->_data = malloc ( sizeof _retu->_data * _length );
 
         /*
-         * Parses header into _retu->_data starting from 0
-         * Will need to set this _from to 1 since the 0 byte
-         * Is used by the messenger to determine that this is rtp.
-         */
+* Parses header into _retu->_data starting from 0
+* Will need to set this _from to 1 since the 0 byte
+* Is used by the messenger to determine that this is rtp.
+*/
         _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
     }
 
     /*
-     * Parses the extension header into the message
-     * Of course if any
-     */
+* Parses the extension header into the message
+* Of course if any
+*/
 
     /* Appends _data on to _retu->_data */
     t_memcpy ( _from_pos + 1, _data, _length );
@@ -435,9 +434,9 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
 int rtp_check_late_message (rtp_session_t* _session, rtp_msg_t* _msg)
 {
     /*
-     * Check Sequence number. If this new msg has lesser number then the _session->_last_sequence_number
-     * it shows that the message came in late
-     */
+* Check Sequence number. If this new msg has lesser number then the _session->_last_sequence_number
+* it shows that the message came in late
+*/
     if ( _msg->_header->_sequence_number < _session->_last_sequence_number &&
          _msg->_header->_timestamp < _session->_current_timestamp
        ) {

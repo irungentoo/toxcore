@@ -1,6 +1,5 @@
 #define _BSD_SOURCE
 
-
 #include "msi_impl.h"
 #include "msi_message.h"
 #include "rtp_message.h"
@@ -91,7 +90,7 @@ void* phone_receivepacket ( void* _session_p )
                  * it will not be registered into a session. For that
                  * we need to call a rtp_register_msg ()
                  */
-                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes );
+                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes-1 );
 
                 if ( !_msg )
                     break;
