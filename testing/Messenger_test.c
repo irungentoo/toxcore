@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
     /* let user override default by cmdline */
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
     if (argvoffset < 0)
         exit(1);
 
@@ -120,14 +121,16 @@ int main(int argc, char *argv[])
         uint16_t port = htons(atoi(argv[argvoffset + 2]));
         uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
         int res = DHT_bootstrap_from_address(m->dht, argv[argvoffset + 1],
-                                              ipv6enabled, port, bootstrap_key);
+                                             ipv6enabled, port, bootstrap_key);
         free(bootstrap_key);
+
         if (!res) {
             printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
             exit(1);
         }
     } else {
         FILE *file = fopen(argv[argvoffset + 1], "rb");
+
         if ( file == NULL ) {
             printf("Failed to open \"%s\" - does it exist?\n", argv[argvoffset + 1]);
             return 1;

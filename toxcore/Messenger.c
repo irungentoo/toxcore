@@ -1225,11 +1225,13 @@ static time_t lastdump = 0;
 static char IDString[CLIENT_ID_SIZE * 2 + 1];
 static char *ID2String(uint8_t *client_id)
 {
-	uint32_t i;
-	for(i = 0; i < CLIENT_ID_SIZE; i++)
-		sprintf(&IDString[i], "%02X", client_id[i]);
-	IDString[CLIENT_ID_SIZE * 2] = 0;
-	return IDString;
+    uint32_t i;
+
+    for (i = 0; i < CLIENT_ID_SIZE; i++)
+        sprintf(&IDString[i], "%02X", client_id[i]);
+
+    IDString[CLIENT_ID_SIZE * 2] = 0;
+    return IDString;
 }
 #endif
 
@@ -1246,73 +1248,85 @@ void doMessenger(Messenger *m)
     LANdiscovery(m);
 
 #ifdef LOGGING
-	if (now() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
-		loglog(" = = = = = = = = \n");
 
-		lastdump = now();
-		uint32_t client, last_pinged;
-		for(client = 0; client < LCLIENT_LIST; client++) {
-			Client_data *cptr = &m->dht->close_clientlist[client];
-			if (ip_isset(&cptr->ip_port.ip)) {
-				last_pinged = lastdump - cptr->last_pinged;
-				if (last_pinged > 999)
-					last_pinged = 999;
-				snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
-						client, ip_ntoa(&cptr->ip_port.ip), ntohs(cptr->ip_port.port),
-						last_pinged, ID2String(cptr->client_id));
-				loglog(logbuffer);
-			}
-		}
+    if (now() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
+        loglog(" = = = = = = = = \n");
 
-		loglog(" = = = = = = = = \n");
+        lastdump = now();
+        uint32_t client, last_pinged;
 
-		uint32_t num_friends = MIN(m->numfriends, m->dht->num_friends);
-		if (m->numfriends != m->dht->num_friends) {
-			sprintf(logbuffer, "Friend num in DHT %u != friend num in msger %u\n",
-					m->dht->num_friends, m->numfriends);
-			loglog(logbuffer);
-		}
+        for (client = 0; client < LCLIENT_LIST; client++) {
+            Client_data *cptr = &m->dht->close_clientlist[client];
 
-		uint32_t friend, ping_lastrecv;
-		for(friend = 0; friend < num_friends; friend++) {
-			Friend *msgfptr = &m->friendlist[friend];
-			DHT_Friend *dhtfptr = &m->dht->friends_list[friend];
-			if (memcmp(msgfptr->client_id, dhtfptr->client_id, CLIENT_ID_SIZE)) {
-				if (sizeof(logbuffer) > 2 * CLIENT_ID_SIZE + 64) {
-					sprintf(logbuffer, "F[%2u] ID(m) %s != ID(d) ", friend,
-													ID2String(msgfptr->client_id));
-					strcat(logbuffer + strlen(logbuffer), ID2String(dhtfptr->client_id));
-					strcat(logbuffer + strlen(logbuffer), "\n");
-				}
-				else
-					sprintf(logbuffer, "F[%2u] ID(m) != ID(d) ", friend);
+            if (ip_isset(&cptr->ip_port.ip)) {
+                last_pinged = lastdump - cptr->last_pinged;
 
-				loglog(logbuffer);
-			}
+                if (last_pinged > 999)
+                    last_pinged = 999;
 
-			ping_lastrecv = lastdump - msgfptr->ping_lastrecv;
-			if (ping_lastrecv > 999)
-				ping_lastrecv = 999;
-			snprintf(logbuffer, sizeof(logbuffer), "F[%2u] <%s> %02u [%03u] %s\n",
-					friend, msgfptr->name, msgfptr->crypt_connection_id,
-					ping_lastrecv, ID2String(msgfptr->client_id));
-			loglog(logbuffer);
+                snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
+                         client, ip_ntoa(&cptr->ip_port.ip), ntohs(cptr->ip_port.port),
+                         last_pinged, ID2String(cptr->client_id));
+                loglog(logbuffer);
+            }
+        }
 
-			for(client = 0; client < MAX_FRIEND_CLIENTS; client++) {
-				Client_data *cptr = &dhtfptr->client_list[client];
-				last_pinged = lastdump - cptr->last_pinged;
-				if (last_pinged > 999)
-					last_pinged = 999;
-				snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
-						friend, client, ip_ntoa(&cptr->ip_port.ip),
-						ntohs(cptr->ip_port.port), last_pinged,
-						ID2String(cptr->client_id));
-				loglog(logbuffer);
-			}
-		}
+        loglog(" = = = = = = = = \n");
 
-		loglog(" = = = = = = = = \n");
-	}
+        uint32_t num_friends = MIN(m->numfriends, m->dht->num_friends);
+
+        if (m->numfriends != m->dht->num_friends) {
+            sprintf(logbuffer, "Friend num in DHT %u != friend num in msger %u\n",
+                    m->dht->num_friends, m->numfriends);
+            loglog(logbuffer);
+        }
+
+        uint32_t friend, ping_lastrecv;
+
+        for (friend = 0; friend < num_friends; friend++) {
+            Friend *msgfptr = &m->friendlist[friend];
+            DHT_Friend *dhtfptr = &m->dht->friends_list[friend];
+
+            if (memcmp(msgfptr->client_id, dhtfptr->client_id, CLIENT_ID_SIZE)) {
+                if (sizeof(logbuffer) > 2 * CLIENT_ID_SIZE + 64) {
+                    sprintf(logbuffer, "F[%2u] ID(m) %s != ID(d) ", friend,
+                            ID2String(msgfptr->client_id));
+                    strcat(logbuffer + strlen(logbuffer), ID2String(dhtfptr->client_id));
+                    strcat(logbuffer + strlen(logbuffer), "\n");
+                } else
+                    sprintf(logbuffer, "F[%2u] ID(m) != ID(d) ", friend);
+
+                loglog(logbuffer);
+            }
+
+            ping_lastrecv = lastdump - msgfptr->ping_lastrecv;
+
+            if (ping_lastrecv > 999)
+                ping_lastrecv = 999;
+
+            snprintf(logbuffer, sizeof(logbuffer), "F[%2u] <%s> %02u [%03u] %s\n",
+                     friend, msgfptr->name, msgfptr->crypt_connection_id,
+                     ping_lastrecv, ID2String(msgfptr->client_id));
+            loglog(logbuffer);
+
+            for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
+                Client_data *cptr = &dhtfptr->client_list[client];
+                last_pinged = lastdump - cptr->last_pinged;
+
+                if (last_pinged > 999)
+                    last_pinged = 999;
+
+                snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
+                         friend, client, ip_ntoa(&cptr->ip_port.ip),
+                         ntohs(cptr->ip_port.port), last_pinged,
+                         ID2String(cptr->client_id));
+                loglog(logbuffer);
+            }
+        }
+
+        loglog(" = = = = = = = = \n");
+    }
+
 #endif
 }
 
@@ -1410,6 +1424,7 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
         memcpy(temp, data, size);
 
         uint32_t i;
+
         for (i = 0; i < num; ++i) {
             if (temp[i].status >= 3) {
                 int fnum = m_addfriend_norequest(m, temp[i].client_id);

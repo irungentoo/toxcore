@@ -582,6 +582,7 @@ int main(int argc, char *argv[])
     /* let user override default by cmdline */
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
     if (argvoffset < 0)
         exit(1);
 
@@ -641,6 +642,7 @@ int main(int argc, char *argv[])
     }
 
     nodelay(stdscr, TRUE);
+
     while (1) {
         if (on == 0 && tox_isconnected(m)) {
             new_lines("[i] connected to DHT\n[i] define username with /n");

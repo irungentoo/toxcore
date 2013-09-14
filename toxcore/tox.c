@@ -450,7 +450,7 @@ void tox_bootstrap_from_ip(void *tox, IP_Port ip_port, uint8_t *public_key)
     DHT_bootstrap(m->dht, ip_port, public_key);
 }
 int tox_bootstrap_from_address(void *tox, const char *address,
-                        uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
+                               uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
 {
     Messenger *m = tox;
     return DHT_bootstrap_from_address(m->dht, address, ipv6enabled, port, public_key);

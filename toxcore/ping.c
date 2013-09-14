@@ -113,7 +113,7 @@ bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: Repl
 
         /* ping_id = 0 means match any id. */
         if ((!ip_isset(&ipp.ip) || ipport_equal(&png->pings[id].ipp, &ipp)) &&
-                            (png->pings[id].id == ping_id || ping_id == 0)) {
+                (png->pings[id].id == ping_id || ping_id == 0)) {
             return true;
         }
     }
