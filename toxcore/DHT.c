@@ -193,137 +193,96 @@ static int friend_number(DHT *dht, uint8_t *client_id)
     return -1;
 }
 
+/*
+ * helper for get_close_nodes(). argument list is a monster :D
+ */
+static int get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nodes_list,
+		sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
+		time_t timestamp, int *num_nodes_ptr)
+{
+    int num_nodes = 0;
+	int i, tout, inlist, ipv46x, j, closest;
+	for(i = 0; i < client_list_length; i++) {
+		Client_data *client = &client_list[i];
+		tout = is_timeout(timestamp, client->timestamp, BAD_NODE_TIMEOUT);
+		inlist = client_in_nodelist(nodes_list, MAX_SENT_NODES, client->client_id);
+
+#ifdef TOX_ENABLE_IPV6
+		IP *client_ip = &client->ip_port.ip;
+
+		/*
+		 * Careful: AF_INET isn't seen as AF_INET on dual-stack sockets for
+		 * our connections, instead we have to look if it is an embedded
+		 * IPv4-in-IPv6 here and convert it down in sendnodes().
+		 */
+		sa_family_t ip_treat_as_family = client_ip->family;
+		if ((dht->c->lossless_udp->net->family == AF_INET6) &&
+			(client_ip->family == AF_INET6)) {
+			/* socket is AF_INET6, address claims AF_INET6:
+			 * check for embedded IPv4-in-IPv6 */
+			if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6))
+				ip_treat_as_family = AF_INET;
+		}
+
+		ipv46x = !(sa_family == ip_treat_as_family);
+#else
+		ipv46x = !(sa_family == AF_INET);
+#endif
+
+		/* If node isn't good or is already in list. */
+		if (tout || inlist || ipv46x)
+			continue;
+
+		if (num_nodes < MAX_SENT_NODES) {
+			memcpy(nodes_list[num_nodes].client_id,
+					client->client_id,
+					CLIENT_ID_SIZE );
+
+			nodes_list[num_nodes].ip_port = client->ip_port;
+			num_nodes++;
+		} else {
+			/* see if node_list contains a client_id that's "further away"
+			 * compared to the one we're looking at at the moment, if there
+			 * is, replace it
+			 */
+			for (j = 0; j < MAX_SENT_NODES; ++j) {
+				closest = id_closest(   client_id,
+										nodes_list[j].client_id,
+										client->client_id );
+
+				/* second client_id is closer than current: change to it */
+				if (closest == 2) {
+					memcpy( nodes_list[j].client_id,
+							client->client_id,
+							CLIENT_ID_SIZE);
+
+					nodes_list[j].ip_port = client->ip_port;
+					break;
+				}
+			}
+		}
+	}
+
+	*num_nodes_ptr = num_nodes;
+}
+
 /* Find MAX_SENT_NODES nodes closest to the client_id for the send nodes request:
  * put them in the nodes_list and return how many were found.
  *
- * TODO: For the love of based Allah make this function cleaner and much more efficient.
+ * TODO: For the love of based <your favorite deity, in doubt use "love"> make
+ * this function cleaner and much more efficient.
  */
 static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family)
 {
-    uint32_t    i, j, k;
-    uint64_t    temp_time = unix_time();
-    int         num_nodes = 0, closest, tout, inlist, ipv46x;
+	time_t timestamp = unix_time();
+	int num_nodes = 0, i;
+	get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
+					dht->close_clientlist, LCLIENT_LIST, timestamp, &num_nodes);
 
-    for (i = 0; i < LCLIENT_LIST; ++i) {
-        tout = is_timeout(temp_time, dht->close_clientlist[i].timestamp, BAD_NODE_TIMEOUT);
-        inlist = client_in_nodelist(nodes_list, MAX_SENT_NODES, dht->close_clientlist[i].client_id);
-
-        /*
-         * NET_PACKET_SEND_NODES sends ONLY AF_INET
-         * NET_PACKET_SEND_NODES_EX sends ALL BUT AF_INET (i.e. AF_INET6),
-         *    it could send both, but then a) packet size is an issue and
-         *    b) duplicates the traffic (NET_PACKET_SEND_NODES has to be
-         *    sent anyways for backwards compatibility)
-         * we COULD send ALL as NET_PACKET_SEND_NODES_EX if we KNEW that the
-         * partner node understands - that's true if *they* are on IPv6
-         *
-         * Careful: AF_INET isn't seen as AF_INET on dual-stack sockets for
-         * our connections, instead we have to look if it is an embedded
-         * IPv4-in-IPv6 here and convert it down in sendnodes().
-         */
-#ifdef TOX_ENABLE_IPV6
-        IP *client_ip = &dht->close_clientlist[i].ip_port.ip;
-        sa_family_t ip_treat_as_family = client_ip->family;
-        if ((dht->c->lossless_udp->net->family == AF_INET6) &&
-            (client_ip->family == AF_INET6)) {
-            /* socket is AF_INET6, address claims AF_INET6:
-             * check for embedded IPv4-in-IPv6 */
-            if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6))
-                ip_treat_as_family = AF_INET;
-        }
-
-        ipv46x = !(sa_family == ip_treat_as_family);
-#else
-        ipv46x = !(sa_family == AF_INET);
-#endif
-
-        /* If node isn't good or is already in list. */
-        if (tout || inlist || ipv46x)
-            continue;
-
-        if (num_nodes < MAX_SENT_NODES) {
-
-            memcpy( nodes_list[num_nodes].client_id,
-                    dht->close_clientlist[i].client_id,
-                    CLIENT_ID_SIZE );
-
-            nodes_list[num_nodes].ip_port = dht->close_clientlist[i].ip_port;
-            num_nodes++;
-
-        } else {
-
-            for (j = 0; j < MAX_SENT_NODES; ++j) {
-                closest = id_closest(   client_id,
-                                        nodes_list[j].client_id,
-                                        dht->close_clientlist[i].client_id );
-
-                if (closest == 2) {
-                    memcpy( nodes_list[j].client_id,
-                            dht->close_clientlist[i].client_id,
-                            CLIENT_ID_SIZE);
-
-                    nodes_list[j].ip_port = dht->close_clientlist[i].ip_port;
-                    break;
-                }
-            }
-        }
-    }
-
-    for (i = 0; i < dht->num_friends; ++i) {
-        for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-
-            tout = is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, BAD_NODE_TIMEOUT);
-            inlist = client_in_nodelist(    nodes_list,
-                                            MAX_SENT_NODES,
-                                            dht->friends_list[i].client_list[j].client_id);
-
-#ifdef TOX_ENABLE_IPV6
-            IP *client_ip = &dht->friends_list[i].client_list[j].ip_port.ip;
-            sa_family_t ip_treat_as_family = client_ip->family;
-            if ((dht->c->lossless_udp->net->family == AF_INET6) &&
-                (client_ip->family == AF_INET6)) {
-                /* socket is AF_INET6, address claims AF_INET6:
-                 * check for embedded IPv4-in-IPv6 */
-                if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6))
-                    ip_treat_as_family = AF_INET;
-            }
-
-            ipv46x = !(sa_family == ip_treat_as_family);
-#else
-            ipv46x = sa_family != AF_INET;
-#endif
-
-            /* If node isn't good or is already in list. */
-            if (tout || inlist || ipv46x)
-                continue;
-
-            if (num_nodes < MAX_SENT_NODES) {
-
-                memcpy( nodes_list[num_nodes].client_id,
-                        dht->friends_list[i].client_list[j].client_id,
-                        CLIENT_ID_SIZE);
-
-                nodes_list[num_nodes].ip_port = dht->friends_list[i].client_list[j].ip_port;
-                num_nodes++;
-            } else  {
-                for (k = 0; k < MAX_SENT_NODES; ++k) {
-
-                    closest = id_closest(   client_id,
-                                            nodes_list[k].client_id,
-                                            dht->friends_list[i].client_list[j].client_id );
-
-                    if (closest == 2) {
-                        memcpy( nodes_list[k].client_id,
-                                dht->friends_list[i].client_list[j].client_id,
-                                CLIENT_ID_SIZE );
-
-                        nodes_list[k].ip_port = dht->friends_list[i].client_list[j].ip_port;
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    for (i = 0; i < dht->num_friends; ++i)
+		get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
+				dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+														timestamp, &num_nodes);
 
     return num_nodes;
 }
