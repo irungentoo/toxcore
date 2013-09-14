@@ -451,7 +451,7 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
     if (id != -1) {
         IP_Port c_ip = connection_ip(c->lossless_udp, c->crypto_connections[id].number);
 
-        if (c_ip.ip.uint32 == ip_port.ip.uint32 && c_ip.port == ip_port.port)
+        if (ipport_equal(&c_ip, &ip_port))
             return -1;
     }
 

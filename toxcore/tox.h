@@ -26,6 +26,22 @@
 
 #include <stdint.h>
 
+#ifdef WIN32
+#ifndef WINVER
+//Windows XP
+#define WINVER 0x0501
+#endif
+
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+
+#else
+
+#include <netinet/ip.h>
+
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,19 +52,56 @@ extern "C" {
 
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
+#define TOX_PORTRANGE_FROM 33445
+#define TOX_PORTRANGE_TO   33455
+#define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 typedef union {
-    uint8_t c[4];
+    uint8_t  c[4];
     uint16_t s[2];
     uint32_t i;
-} tox_IP;
+} tox_IP4;
+
+
+typedef struct in6_addr tox_IP6;
 
 typedef struct {
-    tox_IP ip;
-    uint16_t port;
-    /* Not used for anything right now. */
-    uint16_t padding;
-} tox_IP_Port;
+    sa_family_t family;
+    union {
+        tox_IP4 ip4;
+        tox_IP6 ip6;
+    };
+} tox_IPAny;
+
+typedef union {
+    struct {
+        tox_IP4  ip;
+        uint16_t port;
+        /* Not used for anything right now. */
+        uint16_t padding;
+    };
+    uint8_t uint8[8];
+} tox_IP4_Port;
+
+/* will replace IP_Port as soon as the complete infrastructure is in place
+ * removed the unused union and padding also */
+typedef struct {
+    tox_IPAny ip;
+    uint16_t  port;
+} tox_IPAny_Port;
+
+/* #undef TOX_ENABLE_IPV6 */
+#define TOX_ENABLE_IPV6
+#ifdef TOX_ENABLE_IPV6
+#define TOX_ENABLE_IPV6_DEFAULT 1
+typedef tox_IPAny tox_IP;
+typedef tox_IPAny_Port tox_IP_Port;
+#else
+#define TOX_ENABLE_IPV6_DEFAULT 0
+typedef tox_IP4 tox_IP;
+typedef tox_IP4_Port tox_IP_Port;
+#endif
+
 
 /* Errors for m_addfriend
  * FAERR - Friend Add Error
@@ -342,22 +395,46 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
 
 /******************END OF GROUP CHAT FUNCTIONS************************/
 
-/* Use this function to bootstrap the client.
- * Sends a get nodes request to the given node with ip port and public_key.
+/*
+ * Use these two functions to bootstrap the client.
  */
-void tox_bootstrap(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
+/* Sends a "get nodes" request to the given node with ip, port and public_key
+ *   to setup connections
+ */
+void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
+/* Resolves address into an IP address. If successful, sends a "get nodes"
+ *   request to the given node with ip, port and public_key to setup connections
+ *
+ * address can be a hostname or an IP address (IPv4 or IPv6).
+ * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
+ * if ipv6enabled is not 0 (zero), the resolving looks for IPv6 addresses first,
+ *   then IPv4 addresses.
+ * 
+ *  returns 1 if the address could be converted into an IP address
+ *  returns 0 otherwise
+ */
+int tox_bootstrap_from_address(Tox *tox, const char *address, uint8_t ipv6enabled,
+                      uint16_t port, uint8_t *public_key);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
  */
 int tox_isconnected(Tox *tox);
 
-/* Run this at startup.
+/*
+ *  Run this function at startup.
+ *
+ * Initializes a tox structure
+ *  The type of communication socket depends on ipv6enabled:
+ *  If set to 0 (zero), creates an IPv4 socket which subsequently only allows
+ *    IPv4 communication
+ *  If set to anything else, creates an IPv6 socket which allows both IPv4 AND
+ *    IPv6 communication
  *
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
-Tox *tox_new(void);
+Tox *tox_new(uint8_t ipv6enabled);
 
 /* Run this before closing shop.
  * Free all datastructures. */

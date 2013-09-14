@@ -574,6 +574,17 @@ void print_groupmessage(Tox *m, int groupnumber, uint8_t *message, uint16_t leng
 
 int main(int argc, char *argv[])
 {
+    if (argc < 4) {
+        printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile]\n", argv[0]);
+        exit(0);
+    }
+
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+    int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+    if (argvoffset < 0)
+        exit(1);
+
     int on = 0;
     int c = 0;
     int i = 0;
@@ -581,29 +592,18 @@ int main(int argc, char *argv[])
     char idstring[200] = {0};
     Tox *m;
 
-    if (argc < 4) {
-        printf("[!] Usage: %s [IP] [port] [public_key] <keyfile>\n", argv[0]);
+    if ((argc == 2) && !strcmp(argv[1], "-h")) {
+        print_help();
         exit(0);
     }
 
-    for (i = 0; i < argc; i++) {
-        if (argv[i] == NULL) {
-            break;
-        } else if (argv[i][0] == '-') {
-            if (argv[i][1] == 'h') {
-                print_help();
-                exit(0);
-            } else if (argv[i][1] == 'f') {
-                if (argv[i + 1] != NULL)
-                    filename = argv[i + 1];
-                else {
-                    fputs("[!] you passed '-f' without giving an argument!\n", stderr);
-                }
-            }
-        }
-    }
+    /* [-f keyfile] MUST be last two arguments, no point in walking over the list
+     * especially not a good idea to accept it anywhere in the middle */
+    if (argc > argvoffset + 3)
+        if (!strcmp(argv[argc - 2], "-f"))
+            filename = argv[argc - 1];
 
-    m = tox_new();
+    m = tox_new(ipv6enabled);
 
     if ( !m ) {
         fputs("Failed to allocate Messenger datastructure", stderr);
@@ -629,20 +629,18 @@ int main(int argc, char *argv[])
     new_lines(idstring);
     strcpy(line, "");
 
-    tox_IP_Port bootstrap_ip_port;
-    bootstrap_ip_port.port = htons(atoi(argv[2]));
-    int resolved_address = resolve_addr(argv[1]);
-
-    if (resolved_address != 0)
-        bootstrap_ip_port.ip.i = resolved_address;
-    else
-        exit(1);
-
-    unsigned char *binary_string = hex_string_to_bin(argv[3]);
-    tox_bootstrap(m, bootstrap_ip_port, binary_string);
+    uint16_t port = htons(atoi(argv[argvoffset + 2]));
+    unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
+    int res = tox_bootstrap_from_address(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);
-    nodelay(stdscr, TRUE);
 
+    if (!res) {
+        printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
+        endwin();
+        exit(1);
+    }
+
+    nodelay(stdscr, TRUE);
     while (1) {
         if (on == 0 && tox_isconnected(m)) {
             new_lines("[i] connected to DHT\n[i] define username with /n");

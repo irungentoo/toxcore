@@ -85,11 +85,26 @@ void manage_keys(DHT *dht)
 
 int main(int argc, char *argv[])
 {
+    if (argc == 2 && !strncasecmp(argv[1], "-h", 3)) {
+        printf("Usage (connected)  : %s [--ipv4|--ipv6] IP PORT KEY\n", argv[0]);
+        printf("Usage (unconnected): %s [--ipv4|--ipv6]\n", argv[0]);
+        exit(0);
+    }
+
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+    int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+    if (argvoffset < 0)
+        exit(1);
+
     /* Initialize networking -
-       Bind to ip 0.0.0.0:PORT */
+       Bind to ip 0.0.0.0 / [::] : PORT */
     IP ip;
-    ip.uint32 = 0;
+    ip_init(&ip, ipv6enabled);
+
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+    perror("Initialization");
+
     manage_keys(dht);
     printf("Public key: ");
     uint32_t i;
@@ -108,18 +123,20 @@ int main(int argc, char *argv[])
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", PORT);
+    printf("Port: %u\n", ntohs(dht->c->lossless_udp->net->port));
 
-    perror("Initialization.");
-
-    if (argc > 3) {
+    if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
-        IP_Port bootstrap_info;
-        bootstrap_info.ip.uint32 = inet_addr(argv[1]);
-        bootstrap_info.port = htons(atoi(argv[2]));
-        uint8_t *bootstrap_key = hex_string_to_bin(argv[3]);
-        DHT_bootstrap(dht, bootstrap_info, bootstrap_key);
+        uint16_t port = htons(atoi(argv[argvoffset + 2]));
+        uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
+        int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1],
+                                            ipv6enabled, port, bootstrap_key);
         free(bootstrap_key);
+
+        if (!res) {
+            printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
+            exit(1);
+        }
     }
 
     int is_waiting_for_dht_connection = 1;

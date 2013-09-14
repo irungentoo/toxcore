@@ -75,10 +75,22 @@ typedef struct {
     uint64_t    NATping_timestamp;
 } DHT_Friend;
 
+/* this must be kept even if IP_Port is expanded: wire compatibility */
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IP4_Port    ip_port;
+} Node4_format;
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
-} Node_format;
+} Node46_format;
+
+#ifdef TOX_ENABLE_IPV6
+typedef Node46_format Node_format;
+#else
+typedef Node4_format Node_format;
+#endif
 
 typedef struct {
     IP_Port     ip_port;
@@ -88,15 +100,15 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 typedef struct {
-    Net_Crypto *c;
+    Net_Crypto  *c;
     Client_data  close_clientlist[LCLIENT_LIST];
-    DHT_Friend      *friends_list;
+    DHT_Friend  *friends_list;
     uint16_t     num_friends;
     Pinged       send_nodes[LSEND_NODES_ARRAY];
     Node_format  toping[MAX_TOPING];
     uint64_t     last_toping;
-    uint64_t close_lastgetnodes;
-    void *ping;
+    uint64_t     close_lastgetnodes;
+    void        *ping;
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
@@ -124,19 +136,45 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id);
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
  *
+ * !!! Signature changed !!!
+ *
+ * OLD: IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id);
+ *
  *  return ip if success.
  *  return ip of 0 if failure (This means the friend is either offline or we have not found him yet).
  *  return ip of 1 if friend is not in list.
+ *
+ * NEW: int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
+ *
+ *  return -1, -- if client_id does NOT refer to a friend
+ *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
+ *  return  1, ip if client_id refers to a friend and we found him
  */
-IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id);
+int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
 
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);
 
-/* Use this function to bootstrap the client.
- *  Sends a get nodes request to the given node with ip port and public_key.
+/*
+ *  Use these two functions to bootstrap the client.
+ */
+/* Sends a "get nodes" request to the given node with ip, port and public_key
+ *   to setup connections
  */
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
+/* Resolves address into an IP address. If successful, sends a "get nodes"
+ *   request to the given node with ip, port and public_key to setup connections
+ *
+ * address can be a hostname or an IP address (IPv4 or IPv6).
+ * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
+ * if ipv6enabled is not 0 (zero), the resolving looks for IPv6 addresses first,
+ *   then IPv4 addresses.
+ * 
+ *  returns 1 if the address could be converted into an IP address
+ *  returns 0 otherwise
+ */
+int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+                                            uint16_t port, uint8_t *public_key);
 
 /* Add nodes to the toping list.
  * All nodes in this list are pinged every TIME_TOPING seconds

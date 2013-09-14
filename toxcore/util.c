@@ -10,10 +10,11 @@
 #endif
 
 #include <time.h>
-#include <stdint.h>
-#include <stdbool.h>
 
+/* for CLIENT_ID_SIZE */
 #include "DHT.h"
+
+#include "util.h"
 
 uint64_t now()
 {
@@ -32,11 +33,6 @@ uint64_t random_64b()
     return r;
 }
 
-bool ipp_eq(IP_Port a, IP_Port b)
-{
-    return (a.ip.uint32 == b.ip.uint32) && (a.port == b.port);
-}
-
 bool id_eq(uint8_t *dest, uint8_t *src)
 {
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
@@ -46,3 +42,33 @@ void id_cpy(uint8_t *dest, uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
 }
+
+#ifdef LOGGING
+time_t starttime = 0;
+char logbuffer[512];
+static FILE *logfile = NULL;
+void loginit(uint16_t port)
+{
+    if (logfile)
+        fclose(logfile);
+
+    sprintf(logbuffer, "%u-%u.log", ntohs(port), now());
+    logfile = fopen(logbuffer, "w");
+    starttime = now();
+};
+void loglog(char *text)
+{
+    if (logfile) {
+        fprintf(logfile, "%4u ", now() - starttime);
+        fprintf(logfile, text);
+        fflush(logfile);
+    }
+};
+void logexit()
+{
+    if (logfile) {
+        fclose(logfile);
+        logfile = NULL;
+    }
+};
+#endif

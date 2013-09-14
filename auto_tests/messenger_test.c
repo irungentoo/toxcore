@@ -278,7 +278,8 @@ int main(int argc, char *argv[])
     good_id_b = hex_string_to_bin(good_id_b_str);
     bad_id    = hex_string_to_bin(bad_id_str);
 
-    m = initMessenger();
+    /* IPv6 status from global define */
+    m = initMessenger(TOX_ENABLE_IPV6_DEFAULT);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)
