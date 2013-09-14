@@ -1220,6 +1220,7 @@ void doInbound(Messenger *m)
 }
 
 #ifdef LOGGING
+#define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60
 static time_t lastdump = 0;
 static char IDString[CLIENT_ID_SIZE * 2 + 1];
 static char *ID2String(uint8_t *client_id)
@@ -1245,7 +1246,7 @@ void doMessenger(Messenger *m)
     LANdiscovery(m);
 
 #ifdef LOGGING
-	if (now() > lastdump + 60) {
+	if (now() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
 		loglog(" = = = = = = = = \n");
 
 		lastdump = now();
@@ -1292,8 +1293,9 @@ void doMessenger(Messenger *m)
 			ping_lastrecv = lastdump - msgfptr->ping_lastrecv;
 			if (ping_lastrecv > 999)
 				ping_lastrecv = 999;
-			snprintf(logbuffer, sizeof(logbuffer), "F[%2u] <%s> %02u [%03u] %s\n", friend, msgfptr->name,
-					msgfptr->crypt_connection_id, ping_lastrecv, msgfptr->client_id);
+			snprintf(logbuffer, sizeof(logbuffer), "F[%2u] <%s> %02u [%03u] %s\n",
+					friend, msgfptr->name, msgfptr->crypt_connection_id,
+					ping_lastrecv, ID2String(msgfptr->client_id));
 			loglog(logbuffer);
 
 			for(client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -1304,7 +1306,7 @@ void doMessenger(Messenger *m)
 				snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
 						friend, client, ip_ntoa(&cptr->ip_port.ip),
 						ntohs(cptr->ip_port.port), last_pinged,
-						cptr->client_id);
+						ID2String(cptr->client_id));
 				loglog(logbuffer);
 			}
 		}

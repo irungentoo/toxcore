@@ -32,6 +32,7 @@
 #include "ping.h"
 #include "misc_tools.h"
 #include "Messenger.h"
+#include "util.h"
 
 /* The number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
@@ -215,15 +216,25 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
          *    sent anyways for backwards compatibility)
          * we COULD send ALL as NET_PACKET_SEND_NODES_EX if we KNEW that the
          * partner node understands - that's true if *they* are on IPv6
+         *
+         * Careful: AF_INET isn't seen as AF_INET on dual-stack sockets for
+         * our connections, instead we have to look if it is an embedded
+         * IPv4-in-IPv6 here and convert it down in sendnodes().
          */
 #ifdef TOX_ENABLE_IPV6
-        ipv46x = 0;
-        if (sa_family == AF_INET)
-            ipv46x = dht->close_clientlist[i].ip_port.ip.family != AF_INET;
-        else
-            ipv46x = dht->close_clientlist[i].ip_port.ip.family == AF_INET;
+        IP *client_ip = &dht->close_clientlist[i].ip_port.ip;
+        sa_family_t ip_treat_as_family = client_ip->family;
+        if ((dht->c->lossless_udp->net->family == AF_INET6) &&
+            (client_ip->family == AF_INET6)) {
+            /* socket is AF_INET6, address claims AF_INET6:
+             * check for embedded IPv4-in-IPv6 */
+            if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6))
+                ip_treat_as_family = AF_INET;
+        }
+
+        ipv46x = !(sa_family == ip_treat_as_family);
 #else
-        ipv46x = sa_family != AF_INET;
+        ipv46x = !(sa_family == AF_INET);
 #endif
 
         /* If node isn't good or is already in list. */
@@ -267,11 +278,17 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
                                             dht->friends_list[i].client_list[j].client_id);
 
 #ifdef TOX_ENABLE_IPV6
-            ipv46x = 0;
-            if (sa_family == AF_INET)
-                ipv46x = dht->friends_list[i].client_list[j].ip_port.ip.family != AF_INET;
-            else
-                ipv46x = dht->friends_list[i].client_list[j].ip_port.ip.family == AF_INET;
+            IP *client_ip = &dht->friends_list[i].client_list[j].ip_port.ip;
+            sa_family_t ip_treat_as_family = client_ip->family;
+            if ((dht->c->lossless_udp->net->family == AF_INET6) &&
+                (client_ip->family == AF_INET6)) {
+                /* socket is AF_INET6, address claims AF_INET6:
+                 * check for embedded IPv4-in-IPv6 */
+                if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6))
+                    ip_treat_as_family = AF_INET;
+            }
+
+            ipv46x = !(sa_family == ip_treat_as_family);
 #else
             ipv46x = sa_family != AF_INET;
 #endif
@@ -578,14 +595,21 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 #ifdef TOX_ENABLE_IPV6
     Node4_format *nodes4_list = (Node4_format *)(plain + sizeof(ping_id));
     int i, num_nodes_ok = 0;
-    for(i = 0; i < num_nodes; i++)
-        if (nodes_list[i].ip_port.ip.family == AF_INET) {
-            memcpy(nodes4_list[num_nodes_ok].client_id, nodes_list[i].client_id, CLIENT_ID_SIZE);
-            nodes4_list[num_nodes_ok].ip_port.ip.uint32 = nodes_list[i].ip_port.ip.ip4.uint32;
-            nodes4_list[num_nodes_ok].ip_port.port = nodes_list[i].ip_port.port;
+    for(i = 0; i < num_nodes; i++) {
+        memcpy(nodes4_list[num_nodes_ok].client_id, nodes_list[i].client_id, CLIENT_ID_SIZE);
+        nodes4_list[num_nodes_ok].ip_port.port = nodes_list[i].ip_port.port;
 
-            num_nodes_ok++;
-        }
+        IP *node_ip = &nodes_list[i].ip_port.ip;
+        if ((node_ip->family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&node_ip->ip6))
+            /* embedded IPv4-in-IPv6 address: return it in regular sendnodes packet */
+            nodes4_list[num_nodes_ok].ip_port.ip.uint32 = node_ip->ip6.s6_addr32[3];
+        else if (node_ip->family == AF_INET)
+            nodes4_list[num_nodes_ok].ip_port.ip.uint32 = node_ip->ip4.uint32;
+        else /* shouldn't happen */
+            continue;
+
+        num_nodes_ok++;
+    }
 
     if (num_nodes_ok < num_nodes) {
         /* shouldn't happen */
@@ -1461,13 +1485,13 @@ void DHT_save(DHT *dht, uint8_t *data)
 int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
 {
    if (size < sizeof(dht->close_clientlist)) {
-		fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
+        fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
         return -1;
     }
 
-	uint32_t friendlistsize = size - sizeof(dht->close_clientlist);
+    uint32_t friendlistsize = size - sizeof(dht->close_clientlist);
     if (friendlistsize % sizeof(DHT_Friend) != 0) {
-		fprintf(stderr, "DHT_load: Expected a multiple of %u, got %u.\n", sizeof(DHT_Friend), friendlistsize);
+        fprintf(stderr, "DHT_load: Expected a multiple of %u, got %u.\n", sizeof(DHT_Friend), friendlistsize);
         return -1;
     }
 
