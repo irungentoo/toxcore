@@ -455,7 +455,8 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
             return -1;
     }
 
-    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1)
+    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1
+        || c->crypto_connections == NULL)
         return -1;
 
     memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
@@ -578,7 +579,8 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
      *     return -1;
      * }
      */
-    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1)
+    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1
+        || c->crypto_connections == NULL)
         return -1;
 
     memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
@@ -778,8 +780,10 @@ Net_Crypto *new_net_crypto(Networking_Core *net)
 
     temp->lossless_udp = new_lossless_udp(net);
 
-    if (temp->lossless_udp == NULL)
+    if (temp->lossless_udp == NULL) {
+        free(temp);
         return NULL;
+    }
 
     memset(temp->incoming_connections, -1 , sizeof(int) * MAX_INCOMING);
     return temp;
