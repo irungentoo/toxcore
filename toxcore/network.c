@@ -502,6 +502,7 @@ int ip_equal(IP *a, IP *b)
         return 0;
 
 #ifdef TOX_ENABLE_IPV6
+
     /* same family */
     if (a->family == b->family) {
         if (a->family == AF_INET)
@@ -515,10 +516,10 @@ int ip_equal(IP *a, IP *b)
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
     if ((a->family == AF_INET) && (b->family == AF_INET6)) {
         if (IN6_IS_ADDR_V4COMPAT(&b->ip6))
-            return (a->ip4.in_addr.s_addr == b->ip6.s6_addr32[3]);
+            return (a->ip4.in_addr.s_addr == b->ip6.uint32[3]);
     } else if ((a->family == AF_INET6)  && (b->family == AF_INET)) {
         if (IN6_IS_ADDR_V4COMPAT(&a->ip6))
-            return (a->ip6.s6_addr32[3] == b->ip4.in_addr.s_addr);
+            return (a->ip6.uint32[3] == b->ip4.in_addr.s_addr);
     }
 
     return 0;
@@ -776,6 +777,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                     ip4.in_addr = addr->sin_addr;
                     rc |= 1;
                 }
+
 #endif
                 break; /* switch */
 #ifdef TOX_ENABLE_IPV6
