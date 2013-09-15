@@ -744,7 +744,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
 #ifdef TOX_ENABLE_IPV6
             else if (!(rc & 1)) {
                 struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
-                to->ip4.in_addr = addr->sin_addr;
+                ip4.in_addr = addr->sin_addr;
                 rc |= 1;
             }
 #endif
