@@ -95,10 +95,13 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
 
             /* there should be a macro for this in a standards compliant
              * environment, not found */
-            addr6->sin6_addr.s6_addr32[0] = 0;
-            addr6->sin6_addr.s6_addr32[1] = 0;
-            addr6->sin6_addr.s6_addr32[2] = htonl(0xFFFF);
-            addr6->sin6_addr.s6_addr32[3] = ip_port.ip.ip4.uint32;
+            IP6 ip6;
+
+            ip6.uint32[0] = 0;
+            ip6.uint32[1] = 0;
+            ip6.uint32[2] = htonl(0xFFFF);
+            ip6.uint32[3] = ip_port.ip.ip4.uint32;
+            addr6->sin6_addr = ip6.in6_addr;
 
             addr6->sin6_flowinfo = 0;
             addr6->sin6_scope_id = 0;
@@ -508,17 +511,17 @@ int ip_equal(IP *a, IP *b)
         if (a->family == AF_INET)
             return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
         else if (a->family == AF_INET6)
-            return IN6_ARE_ADDR_EQUAL(&a->ip6, &b->ip6);
+            return IN6_ARE_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
         else
             return 0;
     }
 
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
     if ((a->family == AF_INET) && (b->family == AF_INET6)) {
-        if (IN6_IS_ADDR_V4COMPAT(&b->ip6))
+        if (IN6_IS_ADDR_V4COMPAT(&b->ip6.in6_addr))
             return (a->ip4.in_addr.s_addr == b->ip6.uint32[3]);
     } else if ((a->family == AF_INET6)  && (b->family == AF_INET)) {
-        if (IN6_IS_ADDR_V4COMPAT(&a->ip6))
+        if (IN6_IS_ADDR_V4COMPAT(&a->ip6.in6_addr))
             return (a->ip6.uint32[3] == b->ip4.in_addr.s_addr);
     }
 
