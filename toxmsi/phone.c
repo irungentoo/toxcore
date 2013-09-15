@@ -90,7 +90,7 @@ void* phone_receivepacket ( void* _session_p )
                  * it will not be registered into a session. For that
                  * we need to call a rtp_register_msg ()
                  */
-                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes-1 );
+                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes );
 
                 if ( !_msg )
                     break;
@@ -262,8 +262,6 @@ void* handle_call_callback ( void* _p )
         pthread_create(&cs->encode_video_thread, NULL, encode_video_thread, cs);
     if(cs->support_receive_video)
      	pthread_create(&cs->decode_video_thread, NULL, decode_video_thread, cs); 
-    //if(cs->support_receive_video||cs->support_receive_audio)
-      //  pthread_create(&cs->decode_thread, NULL, decode_thread, cs);
 
     _p = NULL;
     char _choice [10];

@@ -120,7 +120,6 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
 	return NULL;
     }
     int front=q->front;
-    
     if(q->id_set==0) {
 	q->current_id=q->queue[front]->_header->_sequence_number;
 	q->current_ts=q->queue[front]->_header->_timestamp;
@@ -319,7 +318,7 @@ int init_send_audio(codec_state *cs)
     cs->support_send_audio=0;
 
     //printf("Default audio capture device is: %s\n", alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER));
-    //cs->audio_capture_device = alcCaptureOpenDevice(NULL, AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
+   //cs->audio_capture_device = alcCaptureOpenDevice(NULL, AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
     
     const ALchar *pDeviceList = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
     int i=0;
@@ -538,7 +537,7 @@ void *encode_audio_thread(void *arg)
     int encoded_size=0;
     int16_t frame[4096];
     int frame_size=AUDIO_FRAME_SIZE;
-    ALint sample=0;
+    ALint sample=0;  
     alcCaptureStart(cs->audio_capture_device);
     while(!cs->quit&&cs->send_audio) {
 	alcGetIntegerv(cs->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
