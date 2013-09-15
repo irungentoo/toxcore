@@ -221,7 +221,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
                 (client_ip->family == AF_INET6)) {
             /* socket is AF_INET6, address claims AF_INET6:
              * check for embedded IPv4-in-IPv6 */
-            if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6))
+            if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6.in6_addr))
                 ip_treat_as_family = AF_INET;
         }
 
@@ -562,7 +562,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 
         IP *node_ip = &nodes_list[i].ip_port.ip;
 
-        if ((node_ip->family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&node_ip->ip6))
+        if ((node_ip->family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&node_ip->ip6.in6_addr))
             /* embedded IPv4-in-IPv6 address: return it in regular sendnodes packet */
             nodes4_list[num_nodes_ok].ip_port.ip.uint32 = node_ip->ip6.uint32[3];
         else if (node_ip->family == AF_INET)
