@@ -502,12 +502,24 @@ int ip_equal(IP *a, IP *b)
         return 0;
 
 #ifdef TOX_ENABLE_IPV6
+    /* same family */
+    if (a->family == b->family) {
+        if (a->family == AF_INET)
+            return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
+        else if (a->family == AF_INET6)
+            return IN6_ARE_ADDR_EQUAL(&a->ip6, &b->ip6);
+        else
+            return 0;
+    }
 
-    if (a->family == AF_INET)
-        return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
-
-    if (a->family == AF_INET6)
-        return IN6_ARE_ADDR_EQUAL(&a->ip6, &b->ip6);
+    /* different family: check on the IPv6 one if it is the IPv4 one embedded */
+    if ((a->family == AF_INET) && (b->family == AF_INET6)) {
+        if (IN6_IS_ADDR_V4COMPAT(&b->ip6))
+            return (a->ip4.in_addr.s_addr == b->ip6.s6_addr32[3]);
+    } else if ((a->family == AF_INET6)  && (b->family == AF_INET)) {
+        if (IN6_IS_ADDR_V4COMPAT(&a->ip6))
+            return (a->ip6.s6_addr32[3] == b->ip4.in_addr.s_addr);
+    }
 
     return 0;
 #else
@@ -748,7 +760,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     for (walker = server; (walker != NULL) && (rc != 3); walker = walker->ai_next) {
         switch (walker->ai_family) {
             case AF_INET:
-                if (walker->ai_family == family) {
+                if (walker->ai_family == family) { /* AF_INET requested, done */
                     struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
 #ifdef TOX_ENABLE_IPV6
                     to->ip4.in_addr = addr->sin_addr;
@@ -759,24 +771,23 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                 }
 
 #ifdef TOX_ENABLE_IPV6
-                else if (!(rc & 1)) {
+                else if (!(rc & 1)) { /* AF_UNSPEC requested, store away */
                     struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
-                    to->ip4.in_addr = addr->sin_addr;
+                    ip4.in_addr = addr->sin_addr;
                     rc |= 1;
                 }
-
 #endif
                 break; /* switch */
 #ifdef TOX_ENABLE_IPV6
 
             case AF_INET6:
-                if (walker->ai_family == family) {
+                if (walker->ai_family == family) { /* AF_INET6 requested, done */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
                         to->ip6.in6_addr = addr->sin6_addr;
                         rc = 3;
                     }
-                } else if (!(rc & 2)) {
+                } else if (!(rc & 2)) { /* AF_UNSPEC requested, store away */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
                         ip6.in6_addr = addr->sin6_addr;
