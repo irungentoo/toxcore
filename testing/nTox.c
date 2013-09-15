@@ -284,7 +284,7 @@ void line_eval(Tox *m, char *line)
 
             int num = atoi(numstring);
 
-            if (tox_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) != 1) {
+            if (tox_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) < 1) {
                 new_lines("[i] could not send message");
             } else {
                 new_lines(format_message(m, message, -1));

@@ -808,6 +808,24 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
+/*
+ * Send get nodes requests with client_id to max_num peers in list of length length
+ */
+static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_t max_num, uint8_t *client_id)
+{
+    uint64_t temp_time = unix_time();
+    uint32_t i, num = 0;
+
+    for (i = 0; i < length; ++i)
+        if (ipport_isset(&(list[i].ip_port)) && !is_timeout(temp_time, list[i].ret_timestamp, BAD_NODE_TIMEOUT)) {
+            getnodes(dht, list[i].ip_port, list[i].client_id, client_id);
+            ++num;
+
+            if (num >= max_num)
+                return;
+        }
+}
+
 int DHT_addfriend(DHT *dht, uint8_t *client_id)
 {
     if (friend_number(dht, client_id) != -1) /* Is friend already in DHT? */
@@ -825,6 +843,7 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
 
     dht->friends_list[dht->num_friends].NATping_id = ((uint64_t)random_int() << 32) + random_int();
     ++dht->num_friends;
+    get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);/*TODO: make this better?*/
     return 0;
 }
 
