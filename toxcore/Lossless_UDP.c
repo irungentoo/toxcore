@@ -100,7 +100,7 @@ static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
         int k;
 
         for (k = 0; k < 16; k++) {
-            id ^= randtable_initget(ludp, i++, source.ip.ip6.s6_addr[k]);
+            id ^= randtable_initget(ludp, i++, source.ip.ip6.uint8[k]);
         }
     }
 

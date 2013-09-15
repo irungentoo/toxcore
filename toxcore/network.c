@@ -120,7 +120,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = ip_port.port;
-        addr6->sin6_addr = ip_port.ip.ip6;
+        addr6->sin6_addr = ip_port.ip.ip6.in6_addr;
 
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
@@ -177,7 +177,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     } else if (addr.ss_family == AF_INET6) {
         struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
         ip_port->ip.family = addr_in6->sin6_family;
-        ip_port->ip.ip6 = addr_in6->sin6_addr;
+        ip_port->ip.ip6.in6_addr = addr_in6->sin6_addr;
         ip_port->port = addr_in6->sin6_port;
     } else
         return -1;
@@ -371,7 +371,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = 0;
-        addr6->sin6_addr = ip.ip6;
+        addr6->sin6_addr = ip.ip6.in6_addr;
 
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
@@ -672,7 +672,7 @@ int addr_parse_ip(const char *address, IP *to)
 
     if (1 == inet_pton(AF_INET6, address, &addr6)) {
         to->family = AF_INET6;
-        to->ip6 = addr6;
+        to->ip6.in6_addr = addr6;
         return 1;
     };
 
@@ -773,13 +773,13 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                 if (walker->ai_family == family) {
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
-                        to->ip6 = addr->sin6_addr;
+                        to->ip6.in6_addr = addr->sin6_addr;
                         rc = 3;
                     }
                 } else if (!(rc & 2)) {
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
-                        ip6 = addr->sin6_addr;
+                        ip6.in6_addr = addr->sin6_addr;
                         rc |= 2;
                     }
                 }

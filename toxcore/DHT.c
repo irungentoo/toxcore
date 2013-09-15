@@ -564,7 +564,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 
         if ((node_ip->family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&node_ip->ip6))
             /* embedded IPv4-in-IPv6 address: return it in regular sendnodes packet */
-            nodes4_list[num_nodes_ok].ip_port.ip.uint32 = node_ip->ip6.s6_addr32[3];
+            nodes4_list[num_nodes_ok].ip_port.ip.uint32 = node_ip->ip6.uint32[3];
         else if (node_ip->family == AF_INET)
             nodes4_list[num_nodes_ok].ip_port.ip.uint32 = node_ip->ip4.uint32;
         else /* shouldn't happen */

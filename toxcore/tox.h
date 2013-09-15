@@ -63,7 +63,12 @@ typedef union {
 } tox_IP4;
 
 
-typedef struct in6_addr tox_IP6;
+typedef union {
+    uint8_t uint8[16];
+    uint16_t uint16[8];
+    uint32_t uint32[4];
+    struct in6_addr in6_addr;
+} tox_IP6;
 
 typedef struct {
     sa_family_t family;
