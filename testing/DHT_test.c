@@ -141,6 +141,7 @@ int main(int argc, char *argv[])
     /* let user override default by cmdline */
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
     if (argvoffset < 0)
         exit(1);
 
@@ -177,6 +178,7 @@ int main(int argc, char *argv[])
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
     int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);
+
     if (!res) {
         printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
         return 1;

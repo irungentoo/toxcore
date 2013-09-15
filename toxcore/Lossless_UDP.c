@@ -80,26 +80,30 @@ static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
     i++;
 
 #ifdef TOX_ENABLE_IPV6
-    if (source.ip.family == AF_INET)
-    {
+
+    if (source.ip.family == AF_INET) {
         IP4 ip4 = source.ip.ip4;
 #else
-        IP4 ip4 = source.ip;
+    IP4 ip4 = source.ip;
 #endif
         int k;
+
         for (k = 0; k < 4; k++) {
             id ^= randtable_initget(ludp, i++, ip4.uint8[k]);
         }
+
 #ifdef TOX_ENABLE_IPV6
     }
 
     if (source.ip.family == AF_INET6)
     {
         int k;
+
         for (k = 0; k < 16; k++) {
             id ^= randtable_initget(ludp, i++, source.ip.ip6.s6_addr[k]);
         }
     }
+
 #endif
 
     /* id can't be zero. */
@@ -116,8 +120,21 @@ static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
  */
 static void change_handshake(Lossless_UDP *ludp, IP_Port source)
 {
-    uint8_t rand = random_int() % 4;
-    ludp->randtable[rand][((uint8_t *)&source)[rand]] = random_int();
+#ifdef TOX_ENABLE_IPV6
+    uint8_t rand;
+
+    if (source.ip.family == AF_INET) {
+        rand = 2 + random_int() % 4;
+    } else if (source.ip.family == AF_INET6) {
+        rand = 2 + random_int() % 16;
+    } else {
+        return;
+    }
+
+#else
+    uint8_t rand = 2 + random_int() % 4;
+#endif
+    ludp->randtable[rand][((uint8_t *)&source.ip)[rand]] = random_int();
 }
 
 /*

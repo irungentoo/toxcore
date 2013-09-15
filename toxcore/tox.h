@@ -409,12 +409,12 @@ void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
  * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
  * if ipv6enabled is not 0 (zero), the resolving looks for IPv6 addresses first,
  *   then IPv4 addresses.
- * 
+ *
  *  returns 1 if the address could be converted into an IP address
  *  returns 0 otherwise
  */
 int tox_bootstrap_from_address(Tox *tox, const char *address, uint8_t ipv6enabled,
-                      uint16_t port, uint8_t *public_key);
+                               uint16_t port, uint8_t *public_key);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.

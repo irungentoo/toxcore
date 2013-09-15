@@ -284,7 +284,7 @@ void line_eval(Tox *m, char *line)
 
             int num = atoi(numstring);
 
-            if (tox_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) != 1) {
+            if (tox_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) < 1) {
                 new_lines("[i] could not send message");
             } else {
                 new_lines(format_message(m, message, -1));
@@ -582,12 +582,12 @@ int main(int argc, char *argv[])
     /* let user override default by cmdline */
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
     if (argvoffset < 0)
         exit(1);
 
     int on = 0;
     int c = 0;
-    int i = 0;
     char *filename = "data";
     char idstring[200] = {0};
     Tox *m;
@@ -641,6 +641,7 @@ int main(int argc, char *argv[])
     }
 
     nodelay(stdscr, TRUE);
+
     while (1) {
         if (on == 0 && tox_isconnected(m)) {
             new_lines("[i] connected to DHT\n[i] define username with /n");

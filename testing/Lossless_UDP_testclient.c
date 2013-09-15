@@ -155,6 +155,7 @@ int main(int argc, char *argv[])
     /* let user override default by cmdline */
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
     if (argvoffset < 0)
         exit(1);
 
@@ -184,10 +185,12 @@ int main(int argc, char *argv[])
 
     IP_Port serverip;
     ip_init(&serverip.ip, ipv6enabled);
+
     if (!addr_resolve(argv[argvoffset + 1], &serverip.ip, NULL)) {
         printf("Failed to convert \"%s\" into an IP address.\n", argv[argvoffset + 1]);
         return 1;
     }
+
     serverip.port = htons(atoi(argv[argvoffset + 2]));
     printip(serverip);
 
