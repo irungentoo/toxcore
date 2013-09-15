@@ -317,9 +317,32 @@ int init_send_video(codec_state *cs)
 int init_send_audio(codec_state *cs)
 {
     cs->support_send_audio=0;
+
+    //printf("Default audio capture device is: %s\n", alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER));
+    //cs->audio_capture_device = alcCaptureOpenDevice(NULL, AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
     
-    printf("Default audio capture device is: %s\n", alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER));
-    cs->audio_capture_device = alcCaptureOpenDevice(NULL, AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
+    const ALchar *pDeviceList = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
+    int i=0;
+    const ALchar *device_names[20];
+    if (pDeviceList) {
+	printf("\nAvailable Capture Devices are:\n");
+	while (*pDeviceList)
+	{
+	    device_names[i]=pDeviceList;
+	    printf("%d) %s\n", i, device_names[i]);
+	    pDeviceList += strlen(pDeviceList) + 1;
+	    ++i;
+	}
+    }
+    printf("enter capture device number: \n");
+    
+    /* pig disgusting hack: */
+    uint8_t dev;
+    char c[10];
+    gets(c);
+    dev=c[0]-48;
+    
+    cs->audio_capture_device = alcCaptureOpenDevice(device_names[dev], AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
     if (alcGetError(cs->audio_capture_device) != AL_NO_ERROR) {
 	printf("could not start capture device! %d\n",alcGetError(cs->audio_capture_device));
         return 0;
@@ -338,7 +361,7 @@ int init_send_audio(codec_state *cs)
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_GET_LOOKAHEAD(&nfo));
     /* printf("Encoder lookahead delay : %d\n", nfo); */
     printf("init audio encoder successful\n");
-
+    
     return 1;
 }
 

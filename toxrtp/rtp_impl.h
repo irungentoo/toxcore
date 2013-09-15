@@ -31,6 +31,7 @@
 #define RTP_VERSION 2
 #include <inttypes.h>
 #include "tox.h"
+#include <assert.h>
 
 /* Extension header flags */
 #define RTP_EXT_TYPE_RESOLUTION 0x01

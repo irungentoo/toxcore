@@ -25,6 +25,8 @@
 
 #include "rtp_helper.h"
 #include "network.h"
+#include <assert.h>
+
 
 #include <arpa/inet.h> /* Fixes implicit function warning. */
 
