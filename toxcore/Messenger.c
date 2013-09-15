@@ -26,6 +26,7 @@
 #endif
 
 #include "Messenger.h"
+#include "util.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -901,19 +902,17 @@ static void do_allgroupchats(Messenger *m)
 
 /*********************************/
 
-#define PORT 33445
-
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
 static void LANdiscovery(Messenger *m)
 {
     if (m->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(htons(PORT), m->net_crypto);
+        send_LANdiscovery(htons(TOX_PORT_DEFAULT), m->net_crypto);
         m->last_LANdiscovery = unix_time();
     }
 }
 
 /* Run this at startup. */
-Messenger *initMessenger(void)
+Messenger *initMessenger(uint8_t ipv6enabled)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
@@ -921,8 +920,8 @@ Messenger *initMessenger(void)
         return NULL;
 
     IP ip;
-    ip.uint32 = 0;
-    m->net = new_networking(ip, PORT);
+    ip_init(&ip, ipv6enabled);
+    m->net = new_networking(ip, TOX_PORT_DEFAULT);
 
     if (m->net == NULL) {
         free(m);
@@ -1006,11 +1005,12 @@ void doFriends(Messenger *m)
                 }
             }
 
-            IP_Port friendip = DHT_getfriendip(m->dht, m->friendlist[i].client_id);
+            IP_Port friendip;
+            int friendok = DHT_getfriendip(m->dht, m->friendlist[i].client_id, &friendip);
 
             switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
                 case 0:
-                    if (friendip.ip.uint32 > 1)
+                    if (friendok == 1)
                         m->friendlist[i].crypt_connection_id = crypto_connect(m->net_crypto, m->friendlist[i].client_id, friendip);
 
                     break;
@@ -1219,6 +1219,22 @@ void doInbound(Messenger *m)
     }
 }
 
+#ifdef LOGGING
+#define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60
+static time_t lastdump = 0;
+static char IDString[CLIENT_ID_SIZE * 2 + 1];
+static char *ID2String(uint8_t *client_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < CLIENT_ID_SIZE; i++)
+        sprintf(&IDString[i], "%02X", client_id[i]);
+
+    IDString[CLIENT_ID_SIZE * 2] = 0;
+    return IDString;
+}
+#endif
+
 /* The main loop that needs to be run at least 20 times per second. */
 void doMessenger(Messenger *m)
 {
@@ -1230,6 +1246,88 @@ void doMessenger(Messenger *m)
     doFriends(m);
     do_allgroupchats(m);
     LANdiscovery(m);
+
+#ifdef LOGGING
+
+    if (now() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
+        loglog(" = = = = = = = = \n");
+
+        lastdump = now();
+        uint32_t client, last_pinged;
+
+        for (client = 0; client < LCLIENT_LIST; client++) {
+            Client_data *cptr = &m->dht->close_clientlist[client];
+
+            if (ip_isset(&cptr->ip_port.ip)) {
+                last_pinged = lastdump - cptr->last_pinged;
+
+                if (last_pinged > 999)
+                    last_pinged = 999;
+
+                snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
+                         client, ip_ntoa(&cptr->ip_port.ip), ntohs(cptr->ip_port.port),
+                         last_pinged, ID2String(cptr->client_id));
+                loglog(logbuffer);
+            }
+        }
+
+        loglog(" = = = = = = = = \n");
+
+        uint32_t num_friends = MIN(m->numfriends, m->dht->num_friends);
+
+        if (m->numfriends != m->dht->num_friends) {
+            sprintf(logbuffer, "Friend num in DHT %u != friend num in msger %u\n",
+                    m->dht->num_friends, m->numfriends);
+            loglog(logbuffer);
+        }
+
+        uint32_t friend, ping_lastrecv;
+
+        for (friend = 0; friend < num_friends; friend++) {
+            Friend *msgfptr = &m->friendlist[friend];
+            DHT_Friend *dhtfptr = &m->dht->friends_list[friend];
+
+            if (memcmp(msgfptr->client_id, dhtfptr->client_id, CLIENT_ID_SIZE)) {
+                if (sizeof(logbuffer) > 2 * CLIENT_ID_SIZE + 64) {
+                    sprintf(logbuffer, "F[%2u] ID(m) %s != ID(d) ", friend,
+                            ID2String(msgfptr->client_id));
+                    strcat(logbuffer + strlen(logbuffer), ID2String(dhtfptr->client_id));
+                    strcat(logbuffer + strlen(logbuffer), "\n");
+                } else
+                    sprintf(logbuffer, "F[%2u] ID(m) != ID(d) ", friend);
+
+                loglog(logbuffer);
+            }
+
+            ping_lastrecv = lastdump - msgfptr->ping_lastrecv;
+
+            if (ping_lastrecv > 999)
+                ping_lastrecv = 999;
+
+            snprintf(logbuffer, sizeof(logbuffer), "F[%2u] <%s> %02u [%03u] %s\n",
+                     friend, msgfptr->name, msgfptr->crypt_connection_id,
+                     ping_lastrecv, ID2String(msgfptr->client_id));
+            loglog(logbuffer);
+
+            for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
+                Client_data *cptr = &dhtfptr->client_list[client];
+                last_pinged = lastdump - cptr->last_pinged;
+
+                if (last_pinged > 999)
+                    last_pinged = 999;
+
+                snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
+                         friend, client, ip_ntoa(&cptr->ip_port.ip),
+                         ntohs(cptr->ip_port.port), last_pinged,
+                         ID2String(cptr->client_id));
+                loglog(logbuffer);
+            }
+        }
+
+        loglog(" = = = = = = = = \n");
+    }
+
+#endif
 }
 
 /*  return size of the messenger data (for saving) */
@@ -1251,19 +1349,23 @@ void Messenger_save(Messenger *m, uint8_t *data)
 {
     save_keys(m->net_crypto, data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+
     uint32_t nospam = get_nospam(&(m->fr));
     memcpy(data, &nospam, sizeof(nospam));
     data += sizeof(nospam);
+
     uint32_t size = DHT_size(m->dht);
     memcpy(data, &size, sizeof(size));
     data += sizeof(size);
     DHT_save(m->dht, data);
     data += size;
+
     size = sizeof(Friend) * m->numfriends;
     memcpy(data, &size, sizeof(size));
     data += sizeof(size);
     memcpy(data, m->friendlist, sizeof(Friend) * m->numfriends);
     data += size;
+
     uint16_t small_size = m->name_length;
     memcpy(data, &small_size, sizeof(small_size));
     data += sizeof(small_size);
@@ -1276,59 +1378,70 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     if (length == ~((uint32_t)0))
         return -1;
 
-    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3)
+    /* BLOCK1: PUBKEY, SECKEY, NOSPAM, SIZE */
+    if (length < crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 2)
         return -1;
 
-    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) * 3;
     load_keys(m->net_crypto, data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    length -= crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+
     uint32_t nospam;
     memcpy(&nospam, data, sizeof(nospam));
     set_nospam(&(m->fr), nospam);
     data += sizeof(nospam);
+    length -= sizeof(nospam);
+
     uint32_t size;
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
+    length -= sizeof(size);
 
     if (length < size)
         return -1;
 
-    length -= size;
-
     if (DHT_load(m->dht, data, size) == -1)
-        return -1;
+        fprintf(stderr, "Data file: Something wicked happened to the stored connections...\n");
+
+    /* go on, friends still might be intact */
 
     data += size;
-    memcpy(&size, data, sizeof(size));
-    data += sizeof(size);
+    length -= size;
 
-    if (length < size || size % sizeof(Friend) != 0)
+    if (length < sizeof(size))
         return -1;
 
-    Friend *temp = malloc(size);
-    memcpy(temp, data, size);
+    memcpy(&size, data, sizeof(size));
+    data += sizeof(size);
+    length -= sizeof(size);
 
-    uint16_t num = size / sizeof(Friend);
+    if (length < size)
+        return -1;
 
-    uint32_t i;
+    if (!(size % sizeof(Friend))) {
+        uint16_t num = size / sizeof(Friend);
+        Friend temp[num];
+        memcpy(temp, data, size);
 
-    for (i = 0; i < num; ++i) {
-        if (temp[i].status >= 3) {
-            int fnum = m_addfriend_norequest(m, temp[i].client_id);
-            setfriendname(m, fnum, temp[i].name, temp[i].name_length);
-            /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
-        } else if (temp[i].status != 0) {
-            /* TODO: This is not a good way to do this. */
-            uint8_t address[FRIEND_ADDRESS_SIZE];
-            memcpy(address, temp[i].client_id, crypto_box_PUBLICKEYBYTES);
-            memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp[i].friendrequest_nospam), sizeof(uint32_t));
-            uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
-            memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
-            m_addfriend(m, address, temp[i].info, temp[i].info_size);
+        uint32_t i;
+
+        for (i = 0; i < num; ++i) {
+            if (temp[i].status >= 3) {
+                int fnum = m_addfriend_norequest(m, temp[i].client_id);
+                setfriendname(m, fnum, temp[i].name, temp[i].name_length);
+                /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
+            } else if (temp[i].status != 0) {
+                /* TODO: This is not a good way to do this. */
+                uint8_t address[FRIEND_ADDRESS_SIZE];
+                memcpy(address, temp[i].client_id, crypto_box_PUBLICKEYBYTES);
+                memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp[i].friendrequest_nospam), sizeof(uint32_t));
+                uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+                memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
+                m_addfriend(m, address, temp[i].info, temp[i].info_size);
+            }
         }
     }
 
-    free(temp);
     data += size;
     length -= size;
 

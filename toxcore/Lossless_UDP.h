@@ -123,7 +123,13 @@ typedef struct {
     tox_array connections;
 
     /* Table of random numbers used in handshake_id. */
+#ifdef TOX_ENABLE_IPV6
+    /* IPv6 (16) + port (2)*/
+    uint32_t randtable[18][256];
+#else
+    /* IPv4 (4) + port (2) */
     uint32_t randtable[6][256];
+#endif
 
 } Lossless_UDP;
 

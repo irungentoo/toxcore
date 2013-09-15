@@ -44,9 +44,7 @@
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
 {
     tox_array_for_each(&ludp->connections, Connection, tmp) {
-        if (tmp->ip_port.ip.uint32 == ip_port.ip.uint32 &&
-                tmp->ip_port.port == ip_port.port &&
-                tmp->status > 0) {
+        if (tmp-> status > 0 && ipport_equal(&tmp->ip_port, &ip_port)) {
             return tmp_i;
         }
     }
@@ -61,16 +59,52 @@ int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
  *
  * TODO: make this better
  */
+
+static uint8_t randtable_initget(Lossless_UDP *ludp, uint32_t index,  uint8_t value)
+{
+    if (ludp->randtable[index][value] == 0)
+        ludp->randtable[index][value] = random_int();
+
+    return ludp->randtable[index][value];
+}
+
 static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
 {
-    uint32_t id = 0, i;
+    uint32_t id = 0, i = 0;
 
-    for (i = 0; i < 6; ++i) {
-        if (ludp->randtable[i][source.uint8[i]] == 0)
-            ludp->randtable[i][source.uint8[i]] = random_int();
+    uint8_t *uint8;
+    uint8 = (uint8_t *)&source.port;
+    id ^= randtable_initget(ludp, i, *uint8);
+    i++, uint8++;
+    id ^= randtable_initget(ludp, i, *uint8);
+    i++;
 
-        id ^= ludp->randtable[i][source.uint8[i]];
+#ifdef TOX_ENABLE_IPV6
+
+    if (source.ip.family == AF_INET) {
+        IP4 ip4 = source.ip.ip4;
+#else
+    IP4 ip4 = source.ip;
+#endif
+        int k;
+
+        for (k = 0; k < 4; k++) {
+            id ^= randtable_initget(ludp, i++, ip4.uint8[k]);
+        }
+
+#ifdef TOX_ENABLE_IPV6
     }
+
+    if (source.ip.family == AF_INET6)
+    {
+        int k;
+
+        for (k = 0; k < 16; k++) {
+            id ^= randtable_initget(ludp, i++, source.ip.ip6.uint8[k]);
+        }
+    }
+
+#endif
 
     /* id can't be zero. */
     if (id == 0)
@@ -86,8 +120,21 @@ static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
  */
 static void change_handshake(Lossless_UDP *ludp, IP_Port source)
 {
-    uint8_t rand = random_int() % 4;
-    ludp->randtable[rand][((uint8_t *)&source)[rand]] = random_int();
+#ifdef TOX_ENABLE_IPV6
+    uint8_t rand;
+
+    if (source.ip.family == AF_INET) {
+        rand = 2 + random_int() % 4;
+    } else if (source.ip.family == AF_INET6) {
+        rand = 2 + random_int() % 16;
+    } else {
+        return;
+    }
+
+#else
+    uint8_t rand = 2 + random_int() % 4;
+#endif
+    ludp->randtable[rand][((uint8_t *)&source.ip)[rand]] = random_int();
 }
 
 /*
@@ -290,7 +337,9 @@ IP_Port connection_ip(Lossless_UDP *ludp, int connection_id)
     if ((unsigned int)connection_id < ludp->connections.len)
         return tox_array_get(&ludp->connections, connection_id, Connection).ip_port;
 
-    IP_Port zero = {{{{0}}, 0, 0}};
+    IP_Port zero;
+    ip_reset(&zero.ip);
+    zero.port = 0;
     return zero;
 }
 
@@ -429,7 +478,7 @@ static int send_handshake(Lossless_UDP *ludp, IP_Port ip_port, uint32_t handshak
     temp = htonl(handshake_id2);
     memcpy(packet + 5, &temp, 4);
 
-    return sendpacket(ludp->net->sock, ip_port, packet, sizeof(packet));
+    return sendpacket(ludp->net, ip_port, packet, sizeof(packet));
 }
 
 static int send_SYNC(Lossless_UDP *ludp, int connection_id)
@@ -456,7 +505,7 @@ static int send_SYNC(Lossless_UDP *ludp, int connection_id)
     index += 4;
     memcpy(packet + index, requested, 4 * number);
 
-    return sendpacket(ludp->net->sock, ip_port, packet, (number * 4 + 4 + 4 + 2));
+    return sendpacket(ludp->net, ip_port, packet, (number * 4 + 4 + 4 + 2));
 
 }
 
@@ -471,7 +520,7 @@ static int send_data_packet(Lossless_UDP *ludp, int connection_id, uint32_t pack
     temp = htonl(packet_num);
     memcpy(packet + 1, &temp, 4);
     memcpy(packet + 5, connection->sendbuffer[index].data, connection->sendbuffer[index].size);
-    return sendpacket(ludp->net->sock, connection->ip_port, packet, 1 + 4 + connection->sendbuffer[index].size);
+    return sendpacket(ludp->net, connection->ip_port, packet, 1 + 4 + connection->sendbuffer[index].size);
 }
 
 /* Sends 1 data packet. */

@@ -34,6 +34,7 @@
 
 #include "../toxcore/network.h"
 #include "../toxcore/Lossless_UDP.h"
+#include "misc_tools.c"
 
 #ifdef WIN32
 
@@ -66,8 +67,7 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 
 void printip(IP_Port ip_port)
 {
-    printf("\nIP: %u.%u.%u.%u Port: %u", ip_port.ip.uint8[0], ip_port.ip.uint8[1], ip_port.ip.uint8[2], ip_port.ip.uint8[3],
-           ntohs(ip_port.port));
+    printf("\nIP: %s Port: %u", ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
 }
 /*
 void printpackets(Data test)
@@ -152,30 +152,48 @@ void printconnection(int connection_id)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 4) {
-        printf("usage: %s ip port filename\n", argv[0]);
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+    int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
+    if (argvoffset < 0)
+        exit(1);
+
+    if (argc < argvoffset + 4) {
+        printf("Usage: %s [--ipv4|--ipv6] ip port filename\n", argv[0]);
         exit(0);
     }
 
     uint8_t buffer[512];
     int read;
 
-    FILE *file = fopen(argv[3], "rb");
+    FILE *file = fopen(argv[argvoffset + 3], "rb");
 
-    if (file == NULL)
+    if (file == NULL) {
+        printf("Failed to open file \"%s\".\n", argv[argvoffset + 3]);
         return 1;
+    }
 
 
     /* initialize networking */
     /* bind to ip 0.0.0.0:PORT */
     IP ip;
-    ip.uint32 = 0;
+    ip_init(&ip, ipv6enabled);
+
     Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
+
     IP_Port serverip;
-    serverip.ip.uint32 = inet_addr(argv[1]);
-    serverip.port = htons(atoi(argv[2]));
+    ip_init(&serverip.ip, ipv6enabled);
+
+    if (!addr_resolve(argv[argvoffset + 1], &serverip.ip, NULL)) {
+        printf("Failed to convert \"%s\" into an IP address.\n", argv[argvoffset + 1]);
+        return 1;
+    }
+
+    serverip.port = htons(atoi(argv[argvoffset + 2]));
     printip(serverip);
+
     int connection = new_connection(ludp, serverip);
     uint64_t timer = current_time();
 

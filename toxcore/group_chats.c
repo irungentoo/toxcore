@@ -189,7 +189,7 @@ static int send_groupchatpacket(Group_Chat *chat, IP_Port ip_port, uint8_t *publ
     if (len == -1)
         return -1;
 
-    if (sendpacket(chat->net->sock, ip_port, packet, len) == len)
+    if (sendpacket(chat->net, ip_port, packet, len) == len)
         return 0;
 
     return -1;
@@ -208,7 +208,7 @@ static uint8_t sendto_allpeers(Group_Chat *chat, uint8_t *data, uint16_t length,
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) {
-        if (chat->close[i].ip_port.ip.uint32 != 0 && chat->close[i].last_recv + BAD_NODE_TIMEOUT > temp_time) {
+        if (ip_isset(&chat->close[i].ip_port.ip) && chat->close[i].last_recv + BAD_NODE_TIMEOUT > temp_time) {
             if (send_groupchatpacket(chat, chat->close[i].ip_port, chat->close[i].client_id, data, length, request_id) == 0)
                 ++sent;
         }

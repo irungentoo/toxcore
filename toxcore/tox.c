@@ -441,14 +441,20 @@ int tox_group_message_send(void *tox, int groupnumber, uint8_t *message, uint32_
 
 /******************END OF GROUP CHAT FUNCTIONS************************/
 
-/* Use this function to bootstrap the client.
+/* Use these functions to bootstrap the client.
  * Sends a get nodes request to the given node with ip port and public_key.
  */
-void tox_bootstrap(void *tox, IP_Port ip_port, uint8_t *public_key)
+void tox_bootstrap_from_ip(void *tox, IP_Port ip_port, uint8_t *public_key)
 {
     Messenger *m = tox;
     DHT_bootstrap(m->dht, ip_port, public_key);
 }
+int tox_bootstrap_from_address(void *tox, const char *address,
+                               uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
+{
+    Messenger *m = tox;
+    return DHT_bootstrap_from_address(m->dht, address, ipv6enabled, port, public_key);
+};
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
@@ -464,9 +470,9 @@ int tox_isconnected(void *tox)
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
-void *tox_new(void)
+void *tox_new(uint8_t ipv6enabled)
 {
-    return initMessenger();
+    return initMessenger(ipv6enabled);
 }
 
 /* Run this before closing shop.
