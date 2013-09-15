@@ -518,10 +518,10 @@ int ip_equal(IP *a, IP *b)
 
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
     if ((a->family == AF_INET) && (b->family == AF_INET6)) {
-        if (IN6_IS_ADDR_V4COMPAT(&b->ip6.in6_addr))
+        if (IN6_IS_ADDR_V4MAPPED(&b->ip6.in6_addr))
             return (a->ip4.in_addr.s_addr == b->ip6.uint32[3]);
     } else if ((a->family == AF_INET6)  && (b->family == AF_INET)) {
-        if (IN6_IS_ADDR_V4COMPAT(&a->ip6.in6_addr))
+        if (IN6_IS_ADDR_V4MAPPED(&a->ip6.in6_addr))
             return (a->ip6.uint32[3] == b->ip4.in_addr.s_addr);
     }
 
