@@ -133,10 +133,10 @@ void get_id(Tox *m, char *data)
 {
     sprintf(data, "[i] ID: ");
     int offset = strlen(data);
-    int i = 0;
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
     tox_getaddress(m, address);
 
+    uint32_t i = 0;
     for (; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
         sprintf(data + 2 * i + offset, "%02X ", address[i]);
     }
@@ -275,13 +275,13 @@ void line_eval(Tox *m, char *line)
 
             char numstring[len - 3];
             char message[len - 3];
-            int i;
+            uint32_t i;
 
             for (i = 0; i < len; i++) {
                 if (line[i + 3] != ' ') {
                     numstring[i] = line[i + 3];
                 } else {
-                    int j;
+                    uint32_t j;
 
                     for (j = (i + 1); j < (len + 1); j++)
                         message[j - i - 1] = line[j + 3];
@@ -299,8 +299,7 @@ void line_eval(Tox *m, char *line)
             }
         } else if (inpt_command == 'n') {
             uint8_t name[TOX_MAX_NAME_LENGTH];
-            int i = 0;
-            size_t len = strlen(line);
+            size_t i, len = strlen(line);
 
             for (i = 3; i < len; i++) {
                 if (line[i] == 0 || line[i] == '\n') break;
@@ -317,8 +316,7 @@ void line_eval(Tox *m, char *line)
             print_friendlist(m);
         } else if (inpt_command == 's') {
             uint8_t status[TOX_MAX_STATUSMESSAGE_LENGTH];
-            int i = 0;
-            size_t len = strlen(line);
+            size_t i, len = strlen(line);
 
             for (i = 3; i < len; i++) {
                 if (line[i] == 0 || line[i] == '\n') break;
@@ -399,8 +397,7 @@ void line_eval(Tox *m, char *line)
 void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 {
     strcpy(output, input);
-    size_t len = strlen(output);
-    int i = 0;
+    size_t i, len = strlen(output);
 
     for (i = line_width; i < len; i = i + line_width) {
         while (output[i] != ' ' && i != 0) {
@@ -415,9 +412,8 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 
 int count_lines(char *string)
 {
-    size_t len = strlen(string);
+    size_t i, len = strlen(string);
     int count = 1;
-    int i;
 
     for (i = 0; i < len; i++) {
         if (string[i] == '\n')
@@ -511,7 +507,7 @@ static char *data_file_name = NULL;
 static int load_data(Tox *m)
 {
     FILE *data_file = fopen(data_file_name, "r");
-    int size = 0;
+    size_t size = 0;
     if (data_file) {
         fseek(data_file, 0, SEEK_END);
         size = ftell(data_file);
@@ -520,6 +516,7 @@ static int load_data(Tox *m)
         uint8_t data[size];
         if (fread(data, sizeof(uint8_t), size, data_file) != size) {
             fputs("[!] could not read data file!\n", stderr);
+            fclose(data_file);
             return 0;
         }
 
@@ -545,19 +542,22 @@ static int save_data(Tox *m)
         return 0;
     }
 
-    int size = tox_size(m);
+    int res = 1;
+    size_t size = tox_size(m);
     uint8_t data[size];
     tox_save(m, data);
 
     if (fwrite(data, sizeof(uint8_t), size, data_file) != size) {
         fputs("[!] could not write data file (1)!", stderr);
-        return 0;
+        res = 0;
     }
 
     if (fclose(data_file) < 0) {
         perror("[!] could not write data file (2)");
-        return 0;
+        res = 0;
     }
+
+    return res;
 }
 
 static int load_data_or_init(Tox *m, char *path)
@@ -667,7 +667,7 @@ int main(int argc, char *argv[])
     nodelay(stdscr, TRUE);
 
     new_lines("[i] change username with /n");
-    char name[TOX_MAX_NAME_LENGTH];
+    uint8_t name[TOX_MAX_NAME_LENGTH];
     uint16_t namelen = tox_getselfname(m, name, sizeof(name));
     if (namelen > 0) {
         char whoami[128 + TOX_MAX_NAME_LENGTH];

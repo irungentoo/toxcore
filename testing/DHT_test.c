@@ -90,7 +90,7 @@ void print_friendlist(DHT *dht)
         }
 
         int friendok = DHT_getfriendip(dht, dht->friends_list[k].client_id, &p_ip);
-        printf("\nIP: %s:%u", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
+        printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip), ntohs(p_ip.port), friendok);
 
         printf("\nCLIENTS IN LIST:\n\n");
 
