@@ -1576,18 +1576,16 @@ void DHT_save(DHT *dht, uint8_t *data)
         if (dht->close_clientlist[i].timestamp != 0)
             num++;
 
-    if (!num)
-        return;
-
     len = num * sizeof(Client_data);
     type = DHT_STATE_TYPE_CLIENTS;
     data = z_state_save_subheader(data, len, type);
-    Client_data *clients = (Client_data *)data;
+    if (num) {
+        Client_data *clients = (Client_data *)data;
 
-    for (num = 0, i = 0; i < LCLIENT_LIST; ++i)
-        if (dht->close_clientlist[i].timestamp != 0)
-            memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
-
+        for (num = 0, i = 0; i < LCLIENT_LIST; ++i)
+            if (dht->close_clientlist[i].timestamp != 0)
+                memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
+    }
     data += len;
 }
 

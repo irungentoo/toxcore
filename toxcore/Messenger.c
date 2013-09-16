@@ -1483,7 +1483,7 @@ uint32_t Messenger_size(Messenger *m)
 {
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return   size32 * 2                                      // global cookie
-             + sizesubhead + sizeof(uint32_t) +  crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+             + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
              + sizesubhead + DHT_size(m->dht)                  // DHT
              + sizesubhead + sizeof(Friend) * m->numfriends    // Friendlist itself.
              + sizesubhead + m->name_length                    // Own nickname.
@@ -1595,6 +1595,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
                     length, type);
 #endif
+            break;
     }
 
     return 0;
