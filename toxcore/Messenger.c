@@ -1393,6 +1393,9 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
     length -= sizeof(nospam);
 
     uint32_t size;
+    if (length < sizeof(size))
+        return -1;
+
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
     length -= sizeof(size);
@@ -1419,24 +1422,22 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
 
     if (!(size % sizeof(Friend))) {
         uint16_t num = size / sizeof(Friend);
-        Friend temp[num];
-        memcpy(temp, data, size);
+        Friend *friend_list = (Friend *)data;
 
         uint32_t i;
-
         for (i = 0; i < num; ++i) {
-            if (temp[i].status >= 3) {
-                int fnum = m_addfriend_norequest(m, temp[i].client_id);
-                setfriendname(m, fnum, temp[i].name, temp[i].name_length);
+            if (friend_list[i].status >= 3) {
+                int fnum = m_addfriend_norequest(m, friend_list[i].client_id);
+                setfriendname(m, fnum, friend_list[i].name, friend_list[i].name_length);
                 /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
-            } else if (temp[i].status != 0) {
+            } else if (friend_list[i].status != 0) {
                 /* TODO: This is not a good way to do this. */
                 uint8_t address[FRIEND_ADDRESS_SIZE];
-                memcpy(address, temp[i].client_id, crypto_box_PUBLICKEYBYTES);
-                memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp[i].friendrequest_nospam), sizeof(uint32_t));
+                memcpy(address, friend_list[i].client_id, crypto_box_PUBLICKEYBYTES);
+                memcpy(address + crypto_box_PUBLICKEYBYTES, &(friend_list[i].friendrequest_nospam), sizeof(uint32_t));
                 uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
                 memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
-                m_addfriend(m, address, temp[i].info, temp[i].info_size);
+                m_addfriend(m, address, friend_list[i].info, friend_list[i].info_size);
             }
         }
     }
@@ -1453,7 +1454,7 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
     data += sizeof(small_size);
     length -= sizeof(small_size);
 
-    if (length != small_size)
+    if (length < small_size)
         return -1;
 
     setname(m, data, small_size);

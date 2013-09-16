@@ -13,6 +13,7 @@
 
 /* for CLIENT_ID_SIZE */
 #include "DHT.h"
+
 #include "util.h"
 
 uint64_t now()
