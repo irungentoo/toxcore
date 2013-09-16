@@ -305,7 +305,12 @@ struct server_conf_s configure_server(char *cfg_file)
                 printf("bootstrap_server %d: Invalid port.\n", i);
             }
 
+#ifdef TOX_ENABLE_IPV6
+            server_conf.info[i].conn.ip.family = AF_INET;
+            server_conf.info[i].conn.ip.ip4.uint32 = resolve_addr(strcpy(tmp_ip, bs_ip));
+#else
             server_conf.info[i].conn.ip.uint32 = resolve_addr(strcpy(tmp_ip, bs_ip));
+#endif
             server_conf.info[i].conn.port = htons(bs_port);
             b16_to_key(strcpy(tmp_pk, bs_pk), bs_pk_p);
         }
@@ -344,7 +349,7 @@ int main(int argc, char *argv[])
     /* Initialize networking
     bind to ip 0.0.0.0:PORT */
     IP ip;
-    ip.uint32 = 0;
+    ip_init(&ip, 0);
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, server_conf.port)));
     /* Read the config file */
     printf("PID file: %s\n", server_conf.pid_file);

@@ -427,7 +427,7 @@ int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
  */
-Messenger *initMessenger(void);
+Messenger *initMessenger(uint8_t ipv6enabled);
 
 /* Run this before closing shop
  * Free all datastructures.

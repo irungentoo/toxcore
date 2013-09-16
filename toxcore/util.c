@@ -10,9 +10,8 @@
 #endif
 
 #include <time.h>
-#include <stdint.h>
-#include <stdbool.h>
 
+/* for CLIENT_ID_SIZE */
 #include "DHT.h"
 #include "util.h"
 
@@ -31,11 +30,6 @@ uint64_t random_64b()
     r |= random_int();
 
     return r;
-}
-
-bool ipp_eq(IP_Port a, IP_Port b)
-{
-    return (a.ip.uint32 == b.ip.uint32) && (a.port == b.port);
 }
 
 bool id_eq(uint8_t *dest, uint8_t *src)
@@ -88,3 +82,33 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
     return length == 0 ? 0 : - 1;
 };
+
+#ifdef LOGGING
+time_t starttime = 0;
+char logbuffer[512];
+static FILE *logfile = NULL;
+void loginit(uint16_t port)
+{
+    if (logfile)
+        fclose(logfile);
+
+    sprintf(logbuffer, "%u-%u.log", ntohs(port), now());
+    logfile = fopen(logbuffer, "w");
+    starttime = now();
+};
+void loglog(char *text)
+{
+    if (logfile) {
+        fprintf(logfile, "%4u ", now() - starttime);
+        fprintf(logfile, text);
+        fflush(logfile);
+    }
+};
+void logexit()
+{
+    if (logfile) {
+        fclose(logfile);
+        logfile = NULL;
+    }
+};
+#endif
