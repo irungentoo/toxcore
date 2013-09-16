@@ -1589,9 +1589,8 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             }
 
             break;
-
-        default:
 #ifdef DEBUG
+        default:
             fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
                     length, type);
 #endif
