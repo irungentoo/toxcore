@@ -16,6 +16,10 @@ uint64_t random_64b();
 bool id_eq(uint8_t *dest, uint8_t *src);
 void id_cpy(uint8_t *dest, uint8_t *src);
 
+typedef int (*load_state_callback_func)(void *outer, uint8_t *data, uint32_t len, uint16_t type);
+int load_state(load_state_callback_func load_state_callback, void *outer,
+                        uint8_t *data, uint32_t length, uint16_t cookie_inner);
+
 #undef LOGGING
 /* #define LOGGING */
 #ifdef LOGGING

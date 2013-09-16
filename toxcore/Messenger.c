@@ -1331,7 +1331,7 @@ void doMessenger(Messenger *m)
 }
 
 /*  return size of the messenger data (for saving) */
-uint32_t Messenger_size(Messenger *m)
+uint32_t Messenger_size_old(Messenger *m)
 {
     return crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
            + sizeof(uint32_t)                  // nospam.
@@ -1344,8 +1344,8 @@ uint32_t Messenger_size(Messenger *m)
            ;
 }
 
-/* Save the messenger in data of size Messenger_size(). */
-void Messenger_save(Messenger *m, uint8_t *data)
+/* Save the messenger in data of size Messenger_size(). Old version without cookies. */
+static void Messenger_save_old(Messenger *m, uint8_t *data)
 {
     save_keys(m->net_crypto, data);
     data += crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
@@ -1372,8 +1372,8 @@ void Messenger_save(Messenger *m, uint8_t *data)
     memcpy(data, m->name, small_size);
 }
 
-/* Load the messenger from data of size length. */
-int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
+/* Load the messenger from data of size length. Old version without cookies. */
+static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
 {
     if (length == ~((uint32_t)0))
         return -1;
@@ -1393,6 +1393,9 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     length -= sizeof(nospam);
 
     uint32_t size;
+    if (length < sizeof(size))
+        return -1;
+
     memcpy(&size, data, sizeof(size));
     data += sizeof(size);
     length -= sizeof(size);
@@ -1400,10 +1403,9 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     if (length < size)
         return -1;
 
-    if (DHT_load(m->dht, data, size) == -1)
+    if (DHT_load_old(m->dht, data, size) == -1)
         fprintf(stderr, "Data file: Something wicked happened to the stored connections...\n");
-
-    /* go on, friends still might be intact */
+     /* DO go on, friends/name still might be intact */
 
     data += size;
     length -= size;
@@ -1420,24 +1422,22 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 
     if (!(size % sizeof(Friend))) {
         uint16_t num = size / sizeof(Friend);
-        Friend temp[num];
-        memcpy(temp, data, size);
+        Friend *friend_list = (Friend *)data;
 
         uint32_t i;
-
         for (i = 0; i < num; ++i) {
-            if (temp[i].status >= 3) {
-                int fnum = m_addfriend_norequest(m, temp[i].client_id);
-                setfriendname(m, fnum, temp[i].name, temp[i].name_length);
+            if (friend_list[i].status >= 3) {
+                int fnum = m_addfriend_norequest(m, friend_list[i].client_id);
+                setfriendname(m, fnum, friend_list[i].name, friend_list[i].name_length);
                 /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
-            } else if (temp[i].status != 0) {
+            } else if (friend_list[i].status != 0) {
                 /* TODO: This is not a good way to do this. */
                 uint8_t address[FRIEND_ADDRESS_SIZE];
-                memcpy(address, temp[i].client_id, crypto_box_PUBLICKEYBYTES);
-                memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp[i].friendrequest_nospam), sizeof(uint32_t));
+                memcpy(address, friend_list[i].client_id, crypto_box_PUBLICKEYBYTES);
+                memcpy(address + crypto_box_PUBLICKEYBYTES, &(friend_list[i].friendrequest_nospam), sizeof(uint32_t));
                 uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
                 memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
-                m_addfriend(m, address, temp[i].info, temp[i].info_size);
+                m_addfriend(m, address, friend_list[i].info, friend_list[i].info_size);
             }
         }
     }
@@ -1454,12 +1454,154 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     data += sizeof(small_size);
     length -= sizeof(small_size);
 
-    if (length != small_size)
+    if (length < small_size)
         return -1;
 
     setname(m, data, small_size);
 
     return 0;
+}
+
+
+/* new messenger format for load/save, more robust and forward compatible */
+
+#define MESSENGER_STATE_COOKIE_GLOBAL 0x15ed1b1e
+
+#define MESSENGER_STATE_COOKIE_TYPE      0x01ce
+#define MESSENGER_STATE_TYPE_NOSPAMKEYS  1
+#define MESSENGER_STATE_TYPE_DHT         2
+#define MESSENGER_STATE_TYPE_FRIENDS     3
+#define MESSENGER_STATE_TYPE_NAME        4
+
+/*  return size of the messenger data (for saving) */
+uint32_t Messenger_size(Messenger *m)
+{
+    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
+    return   size32 * 2                                      // global cookie
+           + sizesubhead + sizeof(uint32_t) +  crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+           + sizesubhead + DHT_size(m->dht)                  // DHT
+           + sizesubhead + sizeof(Friend) * m->numfriends    // Friendlist itself.
+           + sizesubhead + m->name_length                    // Own nickname.
+           ;
+}
+
+static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
+{
+    uint32_t *data32 = (uint32_t *)data;
+    data32[0] = len;
+    data32[1] = (MESSENGER_STATE_COOKIE_TYPE << 16) | type;
+    data += sizeof(uint32_t) * 2;
+    return data;
+}
+
+/* Save the messenger in data of size Messenger_size(). */
+void Messenger_save(Messenger *m, uint8_t *data)
+{
+    uint32_t len;
+    uint16_t type;
+    uint32_t *data32, size32 = sizeof(uint32_t);
+
+    data32 = (uint32_t *)data;
+    data32[0] = 0;
+    data32[1] = MESSENGER_STATE_COOKIE_GLOBAL;
+    data += size32 * 2;
+
+#ifdef DEBUG
+    assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
+#endif
+    len = size32 + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
+    data = z_state_save_subheader(data, len, type);
+    *(uint32_t *)data = get_nospam(&(m->fr));
+    save_keys(m->net_crypto, data + size32);
+    data += len;
+
+    len = DHT_size(m->dht);
+    type = MESSENGER_STATE_TYPE_DHT;
+    data = z_state_save_subheader(data, len, type);
+    DHT_save(m->dht, data);
+    data += len;
+
+    len = sizeof(Friend) * m->numfriends;
+    type = MESSENGER_STATE_TYPE_FRIENDS;
+    data = z_state_save_subheader(data, len, type);
+    memcpy(data, m->friendlist, len);
+    data += len;
+
+    len = m->name_length;
+    type = MESSENGER_STATE_TYPE_NAME;
+    data = z_state_save_subheader(data, len, type);
+    memcpy(data, m->name, len);
+    data += len;
+}
+
+static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
+{
+    Messenger *m = outer;
+    switch(type) {
+        case MESSENGER_STATE_TYPE_NOSPAMKEYS:
+            if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
+                set_nospam(&(m->fr), *(uint32_t *)data);
+                load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
+            }
+            else
+                return -1;    /* critical */
+            break;
+
+        case MESSENGER_STATE_TYPE_DHT:
+            DHT_load_new(m->dht, data, length);
+            break;
+
+        case MESSENGER_STATE_TYPE_FRIENDS:
+            if (!(length % sizeof(Friend))) {
+                uint16_t num = length / sizeof(Friend);
+                Friend *friends = (Friend *)data;
+                uint32_t i;
+                for (i = 0; i < num; ++i) {
+                    if (friends[i].status >= 3) {
+                        int fnum = m_addfriend_norequest(m, friends[i].client_id);
+                        setfriendname(m, fnum, friends[i].name, friends[i].name_length);
+                        /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
+                    } else if (friends[i].status != 0) {
+                        /* TODO: This is not a good way to do this. */
+                        uint8_t address[FRIEND_ADDRESS_SIZE];
+                        memcpy(address, friends[i].client_id, crypto_box_PUBLICKEYBYTES);
+                        memcpy(address + crypto_box_PUBLICKEYBYTES, &(friends[i].friendrequest_nospam), sizeof(uint32_t));
+                        uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+                        memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
+                        m_addfriend(m, address, friends[i].info, friends[i].info_size);
+                    }
+                }
+            }
+            break;
+
+        case MESSENGER_STATE_TYPE_NAME:
+            if ((length > 0) && (length < MAX_NAME_LENGTH)) {
+                setname(m, data, length);
+            }
+            break;
+
+        default:
+            fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
+                            length, type);
+    }
+
+    return 0;
+}
+
+/* Load the messenger from data of size length. */
+int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
+{
+    uint32_t cookie_len = 2 * sizeof(uint32_t);
+    if (length < cookie_len)
+        return -1;
+
+    uint32_t *data32 = (uint32_t *)data;
+    if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL))
+        return load_state(messenger_load_state_callback, m, data + cookie_len,
+                          length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
+    else       /* old state file */
+        return Messenger_load_old(m, data, length);
 }
 
 /* Allocate and return a list of valid friend id's. List must be freed by the
