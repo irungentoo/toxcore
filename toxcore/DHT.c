@@ -202,6 +202,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
     int num_nodes = *num_nodes_ptr;
     int tout, inlist, ipv46x, j, closest;
     uint32_t i;
+
     for (i = 0; i < client_list_length; i++) {
         Client_data *client = &client_list[i];
         tout = is_timeout(timestamp, client->timestamp, BAD_NODE_TIMEOUT);
@@ -1477,14 +1478,18 @@ void DHT_save_old(DHT *dht, uint8_t *data)
 int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
 {
     if (size < sizeof(dht->close_clientlist)) {
+#ifdef DEBUG
         fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
+#endif
         return -1;
     }
 
     uint32_t friendlistsize = size - sizeof(dht->close_clientlist);
 
     if (friendlistsize % sizeof(DHT_Friend) != 0) {
+#ifdef DEBUG
         fprintf(stderr, "DHT_load: Expected a multiple of %u, got %u.\n", sizeof(DHT_Friend), friendlistsize);
+#endif
         return -1;
     }
 
@@ -1531,14 +1536,15 @@ int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
 uint32_t DHT_size(DHT *dht)
 {
     uint32_t num = 0, i;
+
     for (i = 0; i < LCLIENT_LIST; ++i)
         if (dht->close_clientlist[i].timestamp != 0)
             num++;
 
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return size32
-         + sizesubhead + sizeof(DHT_Friend) * dht->num_friends
-         + sizesubhead + sizeof(Client_data) * num;
+           + sizesubhead + sizeof(DHT_Friend) * dht->num_friends
+           + sizesubhead + sizeof(Client_data) * num;
 }
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
@@ -1565,6 +1571,7 @@ void DHT_save(DHT *dht, uint8_t *data)
     data += len;
 
     uint32_t num = 0, i;
+
     for (i = 0; i < LCLIENT_LIST; ++i)
         if (dht->close_clientlist[i].timestamp != 0)
             num++;
@@ -1576,9 +1583,11 @@ void DHT_save(DHT *dht, uint8_t *data)
     type = DHT_STATE_TYPE_CLIENTS;
     data = z_state_save_subheader(data, len, type);
     Client_data *clients = (Client_data *)data;
+
     for (num = 0, i = 0; i < LCLIENT_LIST; ++i)
         if (dht->close_clientlist[i].timestamp != 0)
             memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
+
     data += len;
 }
 
@@ -1586,17 +1595,21 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
 {
     DHT *dht = outer;
     uint32_t num, i, j;
-    switch(type) {
+
+    switch (type) {
         case DHT_STATE_TYPE_FRIENDS:
             if (length % sizeof(DHT_Friend) != 0)
                 break;
 
             DHT_Friend *friend_list = (DHT_Friend *)data;
             num = length / sizeof(DHT_Friend);
+
             for (i = 0; i < num; ++i) {
                 DHT_addfriend(dht, friend_list[i].client_id);
+
                 for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
                     Client_data *client = &friend_list[i].client_list[j];
+
                     if (client->timestamp != 0)
                         getnodes(dht, client->ip_port, client->client_id, friend_list[i].client_id);
                 }
@@ -1610,6 +1623,7 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
 
             num = length / sizeof(Client_data);
             Client_data *client_list = (Client_data *)data;
+
             for (i = 0; i < num; ++i)
                 if (client_list[i].timestamp != 0)
                     DHT_bootstrap(dht, client_list[i].ip_port, client_list[i].client_id);
@@ -1618,7 +1632,7 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
 
         default:
             fprintf(stderr, "Load state (DHT): contains unrecognized part (len %u, type %u)\n",
-                            length, type);
+                    length, type);
     }
 
     return 0;
@@ -1632,11 +1646,13 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
 int DHT_load_new(DHT *dht, uint8_t *data, uint32_t length)
 {
     uint32_t cookie_len = sizeof(uint32_t);
+
     if (length > cookie_len) {
         uint32_t *data32 = (uint32_t *)data;
+
         if (data32[0] == DHT_STATE_COOKIE_GLOBAL)
             return load_state(dht_load_state_callback, dht, data + cookie_len,
-                                    length - cookie_len, DHT_STATE_COOKIE_TYPE);
+                              length - cookie_len, DHT_STATE_COOKIE_TYPE);
     }
 
     return DHT_load_old(dht, data, length);

@@ -277,7 +277,9 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != AF_INET && ip.family != AF_INET6) {
+#ifdef DEBUG
         fprintf(stderr, "Invalid address family: %u\n", ip.family);
+#endif
         return NULL;
     }
 
@@ -313,7 +315,9 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #else
 
     if (temp->sock < 0) {
+#ifdef DEBUG
         fprintf(stderr, "Failed to get a socket?! %u, %s\n", errno, strerror(errno));
+#endif
         free(temp);
         return NULL;
     }
@@ -478,8 +482,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         *portptr = htons(port_to_try);
     }
 
+#ifdef DEBUG
     fprintf(stderr, "Failed to bind socket: %u, %s (IP/Port: %s:%u\n", errno,
             strerror(errno), ip_ntoa(&ip), port);
+#endif
     kill_networking(temp);
     return NULL;
 }

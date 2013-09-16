@@ -44,10 +44,12 @@ void id_cpy(uint8_t *dest, uint8_t *src)
 }
 
 int load_state(load_state_callback_func load_state_callback, void *outer,
-        uint8_t *data, uint32_t length, uint16_t cookie_inner)
+               uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {
     if (!load_state_callback || !data) {
+#ifdef DEBUG
         fprintf(stderr, "load_state() called with invalid args.\n");
+#endif
         return -1;
     }
 
@@ -55,6 +57,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     uint16_t type;
     uint32_t length_sub, cookie_type;
     uint32_t size32 = sizeof(uint32_t), size_head = size32 * 2;
+
     while (length > size_head) {
         length_sub = *(uint32_t *)data;
         cookie_type = *(uint32_t *)(data + size32);
@@ -63,17 +66,22 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
         if (length < length_sub) {
             /* file truncated */
+#ifdef DEBUG
             fprintf(stderr, "state file too short: %u < %u\n", length, length_sub);
+#endif
             return -1;
         }
 
         if ((cookie_type >> 16) != cookie_inner) {
             /* something is not matching up in a bad way, give up */
+#ifdef DEBUG
             fprintf(stderr, "state file garbeled: %04hx != %04hx\n", (cookie_type >> 16), cookie_inner);
+#endif
             return -1;
         }
 
         type = cookie_type & 0xFFFF;
+
         if (-1 == load_state_callback(outer, data, length_sub, type))
             return -1;
 

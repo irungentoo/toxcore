@@ -1393,6 +1393,7 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
     length -= sizeof(nospam);
 
     uint32_t size;
+
     if (length < sizeof(size))
         return -1;
 
@@ -1404,8 +1405,11 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
         return -1;
 
     if (DHT_load_old(m->dht, data, size) == -1)
+#ifdef DEBUG
         fprintf(stderr, "Data file: Something wicked happened to the stored connections...\n");
-     /* DO go on, friends/name still might be intact */
+
+#endif
+    /* DO go on, friends/name still might be intact */
 
     data += size;
     length -= size;
@@ -1425,6 +1429,7 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
         Friend *friend_list = (Friend *)data;
 
         uint32_t i;
+
         for (i = 0; i < num; ++i) {
             if (friend_list[i].status >= 3) {
                 int fnum = m_addfriend_norequest(m, friend_list[i].client_id);
@@ -1478,11 +1483,11 @@ uint32_t Messenger_size(Messenger *m)
 {
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return   size32 * 2                                      // global cookie
-           + sizesubhead + sizeof(uint32_t) +  crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
-           + sizesubhead + DHT_size(m->dht)                  // DHT
-           + sizesubhead + sizeof(Friend) * m->numfriends    // Friendlist itself.
-           + sizesubhead + m->name_length                    // Own nickname.
-           ;
+             + sizesubhead + sizeof(uint32_t) +  crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+             + sizesubhead + DHT_size(m->dht)                  // DHT
+             + sizesubhead + sizeof(Friend) * m->numfriends    // Friendlist itself.
+             + sizesubhead + m->name_length                    // Own nickname.
+             ;
 }
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
@@ -1538,14 +1543,15 @@ void Messenger_save(Messenger *m, uint8_t *data)
 static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
 {
     Messenger *m = outer;
-    switch(type) {
+
+    switch (type) {
         case MESSENGER_STATE_TYPE_NOSPAMKEYS:
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
-            }
-            else
+            } else
                 return -1;    /* critical */
+
             break;
 
         case MESSENGER_STATE_TYPE_DHT:
@@ -1557,6 +1563,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
                 uint16_t num = length / sizeof(Friend);
                 Friend *friends = (Friend *)data;
                 uint32_t i;
+
                 for (i = 0; i < num; ++i) {
                     if (friends[i].status >= 3) {
                         int fnum = m_addfriend_norequest(m, friends[i].client_id);
@@ -1573,17 +1580,21 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
                     }
                 }
             }
+
             break;
 
         case MESSENGER_STATE_TYPE_NAME:
             if ((length > 0) && (length < MAX_NAME_LENGTH)) {
                 setname(m, data, length);
             }
+
             break;
 
         default:
+#ifdef DEBUG
             fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
-                            length, type);
+                    length, type);
+#endif
     }
 
     return 0;
@@ -1593,10 +1604,12 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 {
     uint32_t cookie_len = 2 * sizeof(uint32_t);
+
     if (length < cookie_len)
         return -1;
 
     uint32_t *data32 = (uint32_t *)data;
+
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL))
         return load_state(messenger_load_state_callback, m, data + cookie_len,
                           length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
