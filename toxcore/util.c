@@ -52,14 +52,14 @@ void loginit(uint16_t port)
     if (logfile)
         fclose(logfile);
 
-    sprintf(logbuffer, "%u-%u.log", ntohs(port), now());
+    sprintf(logbuffer, "%u-%u.log", ntohs(port), (uint32_t)now());
     logfile = fopen(logbuffer, "w");
     starttime = now();
 };
 void loglog(char *text)
 {
     if (logfile) {
-        fprintf(logfile, "%4u ", now() - starttime);
+        fprintf(logfile, "%4u ", (uint32_t)(now() - starttime));
         fprintf(logfile, text);
         fflush(logfile);
     }

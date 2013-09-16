@@ -200,8 +200,8 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
                                   time_t timestamp, int *num_nodes_ptr)
 {
     int num_nodes = *num_nodes_ptr;
-    int i, tout, inlist, ipv46x, j, closest;
-
+    int tout, inlist, ipv46x, j, closest;
+    uint32_t i;
     for (i = 0; i < client_list_length; i++) {
         Client_data *client = &client_list[i];
         tout = is_timeout(timestamp, client->timestamp, BAD_NODE_TIMEOUT);
@@ -726,10 +726,10 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 #ifdef TOX_ENABLE_IPV6
     Node4_format *nodes4_list = (Node4_format *)(plain + sizeof(ping_id));
 
-    int num_nodes_ok = 0;
+    uint32_t num_nodes_ok = 0;
 
     for (i = 0; i < num_nodes; i++)
-        if ((nodes4_list[i].ip_port.ip.uint32 != 0) && (nodes4_list[i].ip_port.ip.uint32 != ~0)) {
+        if ((nodes4_list[i].ip_port.ip.uint32 != 0) && (nodes4_list[i].ip_port.ip.uint32 != (uint32_t)~0)) {
             memcpy(nodes_list[num_nodes_ok].client_id, nodes4_list[i].client_id, CLIENT_ID_SIZE);
             nodes_list[num_nodes_ok].ip_port.ip.family = AF_INET;
             nodes_list[num_nodes_ok].ip_port.ip.ip4.uint32 = nodes4_list[i].ip_port.ip.uint32;
@@ -1477,14 +1477,14 @@ void DHT_save(DHT *dht, uint8_t *data)
 int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
 {
     if (size < sizeof(dht->close_clientlist)) {
-        fprintf(stderr, "DHT_load: Expected at least %lu bytes, got %u.\n", sizeof(dht->close_clientlist), size);
+        fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
         return -1;
     }
 
     uint32_t friendlistsize = size - sizeof(dht->close_clientlist);
 
     if (friendlistsize % sizeof(DHT_Friend) != 0) {
-        fprintf(stderr, "DHT_load: Expected a multiple of %lu, got %u.\n", sizeof(DHT_Friend), friendlistsize);
+        fprintf(stderr, "DHT_load: Expected a multiple of %u, got %u.\n", sizeof(DHT_Friend), friendlistsize);
         return -1;
     }
 

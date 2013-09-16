@@ -1220,7 +1220,7 @@ void doInbound(Messenger *m)
 }
 
 #ifdef LOGGING
-#define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60
+#define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60UL
 static time_t lastdump = 0;
 static char IDString[CLIENT_ID_SIZE * 2 + 1];
 static char *ID2String(uint8_t *client_id)

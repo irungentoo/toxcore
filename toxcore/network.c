@@ -154,14 +154,15 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 #ifdef WIN32
     int addrlen = sizeof(addr);
 #else
-    uint32_t addrlen = sizeof(addr);
+    socklen_t addrlen = sizeof(addr);
 #endif
-    (*(int32_t *)length) = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    *length = 0;
+    int fail_or_len = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
-    if (*(int32_t *)length <= 0) {
+    if (fail_or_len <= 0) {
 #ifdef LOGGING
 
-        if ((length < 0) && (errno != EWOULDBLOCK)) {
+        if ((fail_or_len < 0) && (errno != EWOULDBLOCK)) {
             sprintf(logbuffer, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
             loglog(logbuffer);
         }
@@ -169,6 +170,8 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 #endif
         return -1; /* Nothing received or empty packet. */
     }
+
+    *length = (uint32_t)fail_or_len;
 
 #ifdef TOX_ENABLE_IPV6
 
@@ -863,15 +866,15 @@ static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *i
                  ip_ntoa(&ip_port->ip), ntohs(ip_port->port), errno,
                  strerror(errno), buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
                  buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
-    else if ((res > 0) && (res <= buflen))
+    else if ((res > 0) && ((size_t)res <= buflen))
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
-                 buffer[0], message, res < 999 ? res : 999, res < buflen ? '<' : '=',
+                 buffer[0], message, res < 999 ? res : 999, (size_t)res < buflen ? '<' : '=',
                  ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
                  "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
                  buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
     else /* empty or overwrite */
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x\n",
-                 buffer[0], message, res, !res ? '0' : '>', buflen,
+                 buffer[0], message, res, !res ? '!' : '>', buflen,
                  ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
                  "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
                  buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
