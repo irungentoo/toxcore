@@ -1457,13 +1457,13 @@ void kill_DHT(DHT *dht)
 }
 
 /* Get the size of the DHT (for saving). */
-uint32_t DHT_size(DHT *dht)
+uint32_t DHT_size_old(DHT *dht)
 {
     return sizeof(dht->close_clientlist) + sizeof(DHT_Friend) * dht->num_friends;
 }
 
 /* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(DHT *dht, uint8_t *data)
+void DHT_save_old(DHT *dht, uint8_t *data)
 {
     memcpy(data, dht->close_clientlist, sizeof(dht->close_clientlist));
     memcpy(data + sizeof(dht->close_clientlist), dht->friends_list, sizeof(DHT_Friend) * dht->num_friends);
@@ -1474,7 +1474,7 @@ void DHT_save(DHT *dht, uint8_t *data)
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
+int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
 {
     if (size < sizeof(dht->close_clientlist)) {
         fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
@@ -1518,6 +1518,129 @@ int DHT_load(DHT *dht, uint8_t *data, uint32_t size)
     return 0;
 }
 
+
+/* new DHT format for load/save, more robust and forward compatible */
+
+#define DHT_STATE_COOKIE_GLOBAL 0x159000d
+
+#define DHT_STATE_COOKIE_TYPE      0x11ce
+#define DHT_STATE_TYPE_FRIENDS     1
+#define DHT_STATE_TYPE_CLIENTS     2
+
+/* Get the size of the DHT (for saving). */
+uint32_t DHT_size(DHT *dht)
+{
+    uint32_t num = 0, i;
+    for (i = 0; i < LCLIENT_LIST; ++i)
+        if (dht->close_clientlist[i].timestamp != 0)
+            num++;
+
+    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
+    return size32
+         + sizesubhead + sizeof(DHT_Friend) * dht->num_friends
+         + sizesubhead + sizeof(Client_data) * num;
+}
+
+static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
+{
+    uint32_t *data32 = (uint32_t *)data;
+    data32[0] = len;
+    data32[1] = (DHT_STATE_COOKIE_TYPE << 16) | type;
+    data += sizeof(uint32_t) * 2;
+    return data;
+}
+
+/* Save the DHT in data where data is an array of size DHT_size(). */
+void DHT_save(DHT *dht, uint8_t *data)
+{
+    uint32_t len;
+    uint16_t type;
+    *(uint32_t *)data = DHT_STATE_COOKIE_GLOBAL;
+    data += sizeof(uint32_t);
+
+    len = sizeof(DHT_Friend) * dht->num_friends;
+    type = DHT_STATE_TYPE_FRIENDS;
+    data = z_state_save_subheader(data, len, type);
+    memcpy(data, dht->friends_list, len);
+    data += len;
+
+    uint32_t num = 0, i;
+    for (i = 0; i < LCLIENT_LIST; ++i)
+        if (dht->close_clientlist[i].timestamp != 0)
+            num++;
+
+    if (!num)
+        return;
+
+    len = num * sizeof(Client_data);
+    type = DHT_STATE_TYPE_CLIENTS;
+    data = z_state_save_subheader(data, len, type);
+    Client_data *clients = (Client_data *)data;
+    for (num = 0, i = 0; i < LCLIENT_LIST; ++i)
+        if (dht->close_clientlist[i].timestamp != 0)
+            memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
+    data += len;
+}
+
+static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
+{
+    DHT *dht = outer;
+    uint32_t num, i, j;
+    switch(type) {
+        case DHT_STATE_TYPE_FRIENDS:
+            if (length % sizeof(DHT_Friend) != 0)
+                break;
+
+            DHT_Friend *friend_list = (DHT_Friend *)data;
+            num = length / sizeof(DHT_Friend);
+            for (i = 0; i < num; ++i) {
+                DHT_addfriend(dht, friend_list[i].client_id);
+                for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+                    Client_data *client = &friend_list[i].client_list[j];
+                    if (client->timestamp != 0)
+                        getnodes(dht, client->ip_port, client->client_id, friend_list[i].client_id);
+                }
+            }
+
+            break;
+
+        case DHT_STATE_TYPE_CLIENTS:
+            if ((length % sizeof(Client_data)) != 0)
+                break;
+
+            num = length / sizeof(Client_data);
+            Client_data *client_list = (Client_data *)data;
+            for (i = 0; i < num; ++i)
+                if (client_list[i].timestamp != 0)
+                    DHT_bootstrap(dht, client_list[i].ip_port, client_list[i].client_id);
+
+            break;
+
+        default:
+            fprintf(stderr, "Load state (DHT): contains unrecognized part (len %u, type %u)\n",
+                            length, type);
+    }
+
+    return 0;
+}
+
+/* Load the DHT from data of size size.
+ *
+ *  return -1 if failure.
+ *  return 0 if success.
+ */
+int DHT_load_new(DHT *dht, uint8_t *data, uint32_t length)
+{
+    uint32_t cookie_len = sizeof(uint32_t);
+    if (length > cookie_len) {
+        uint32_t *data32 = (uint32_t *)data;
+        if (data32[0] == DHT_STATE_COOKIE_GLOBAL)
+            return load_state(dht_load_state_callback, dht, data + cookie_len,
+                                    length - cookie_len, DHT_STATE_COOKIE_TYPE);
+    }
+
+    return DHT_load_old(dht, data, length);
+}
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
  */
