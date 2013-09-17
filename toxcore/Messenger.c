@@ -788,7 +788,7 @@ int del_groupchat(Messenger *m, int groupnumber)
 
 /* Copy the name of peernumber who is in groupnumber to name.
  * name must be at least MAX_NICK_BYTES long.
- * 
+ *
  * return length of name if success
  * return -1 if failure
  */
@@ -802,6 +802,7 @@ int m_group_peername(Messenger *m, int groupnumber, int peernumber, uint8_t *nam
 
     if (m->chats[groupnumber] == NULL)
         return -1;
+
     return group_peername(m->chats[groupnumber], peernumber, name);
 }
 /* return 1 if that friend was invited to the group
@@ -1609,6 +1610,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             break;
 
 #ifdef DEBUG
+
         default:
             fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
                     length, type);

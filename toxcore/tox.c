@@ -410,7 +410,7 @@ int tox_del_groupchat(void *tox, int groupnumber)
 
 /* Copy the name of peernumber who is in groupnumber to name.
  * name must be at least MAX_NICK_BYTES long.
- * 
+ *
  * return length of name if success
  * return -1 if failure
  */

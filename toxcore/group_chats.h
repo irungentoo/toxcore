@@ -41,7 +41,7 @@ typedef struct {
     uint64_t    last_recv;
     uint64_t    last_recv_msgping;
     uint32_t    last_message_number;
-    
+
     uint8_t     nick[MAX_NICK_BYTES];
     uint16_t    nick_len;
 } Group_Peer;
@@ -72,7 +72,7 @@ typedef struct Group_Chat {
 
 /* Copy the name of peernum to name.
  * name must be at least MAX_NICK_BYTES long.
- * 
+ *
  * return length of name if success
  * return -1 if failure
  */
