@@ -278,6 +278,26 @@ static int delpeer(Group_Chat *chat, uint8_t *client_id)
 
     return -1;
 }
+
+/* Copy the name of peernum to name.
+ * name must be at least MAX_NICK_BYTES long.
+ * 
+ * return length of name if success
+ * return -1 if failure
+ */
+int group_peername(Group_Chat *chat, int peernum, uint8_t *name)
+{
+    if ((uint32_t)peernum >= chat->numpeers)
+        return -1;
+    if (chat->group[peernum].nick_len == 0) {
+        memcpy(name, "NSA Agent", 10); /* Kindly remind the user that someone with no name might be a NSA agent.*/
+        return 10;
+    }
+    memcpy(name, chat->group[peernum].nick, chat->group[peernum].nick_len);
+    return chat->group[peernum].nick_len;
+}
+
+
 /* min time between pings sent to one peer in seconds */
 #define PING_TIMEOUT 5
 static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)

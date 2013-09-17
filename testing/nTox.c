@@ -588,10 +588,12 @@ void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *use
     new_lines(msg);
 }
 
-void print_groupmessage(Tox *m, int groupnumber, uint8_t *message, uint16_t length, void *userdata)
+void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *message, uint16_t length, void *userdata)
 {
     char msg[256 + length];
-    sprintf(msg, "[g] %u: %s", groupnumber, message);
+    uint8_t name[TOX_MAX_NAME_LENGTH];
+    tox_group_peername(m, groupnumber, peernumber, name);
+    sprintf(msg, "[g] %u: <%s>: %s", groupnumber, name, message);
     new_lines(msg);
 }
 

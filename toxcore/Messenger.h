@@ -159,7 +159,7 @@ typedef struct Messenger {
     void *friend_connectionstatuschange_userdata;
     void (*group_invite)(struct Messenger *m, int, uint8_t *, void *);
     void *group_invite_userdata;
-    void (*group_message)(struct Messenger *m, int, uint8_t *, uint16_t, void *);
+    void (*group_message)(struct Messenger *m, int, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
 
 } Messenger;
@@ -382,9 +382,9 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int, u
 
 /* Set the callback for group messages.
  *
- *  Function(Messenger *m, int groupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
-void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void *),
+void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
                               void *userdata);
 
 /* Creates a new groupchat and puts it in the chats array.
@@ -400,6 +400,14 @@ int add_groupchat(Messenger *m);
  * return -1 if failure.
  */
 int del_groupchat(Messenger *m, int groupnumber);
+
+/* Copy the name of peernumber who is in groupnumber to name.
+ * name must be at least MAX_NICK_BYTES long.
+ * 
+ * return length of name if success
+ * return -1 if failure
+ */
+int m_group_peername(Messenger *m, int groupnumber, int peernumber, uint8_t *name);
 
 /* invite friendnumber to groupnumber
  * return 0 on success
