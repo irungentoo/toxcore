@@ -190,7 +190,7 @@ START_TEST(test_endtoend)
         c4len = encrypt_data_fast(k2, n, m, mlen, c4);
 
         ck_assert_msg(c1len == c2len && c1len == c3len && c1len == c4len, "cyphertext lengths differ");
-        ck_assert_msg(c1len == mlen + ENCRYPTION_PADDING, "wrong cyphertext length");
+        ck_assert_msg(c1len == mlen + (int)ENCRYPTION_PADDING, "wrong cyphertext length");
         ck_assert_msg(memcmp(c1, c2, c1len) == 0 && memcmp(c1, c3, c1len) == 0
                       && memcmp(c1, c4, c1len) == 0, "crypertexts differ");
 
@@ -251,13 +251,17 @@ END_TEST
     tcase_add_test(NAME, test_##NAME); \
     suite_add_tcase(s, NAME);
 
+#define DEFTESTCASE_SLOW(NAME, TIMEOUT) \
+    DEFTESTCASE(NAME) \
+    tcase_set_timeout(NAME, TIMEOUT);
+
 Suite *crypto_suite(void)
 {
     Suite *s = suite_create("Crypto");
 
     DEFTESTCASE(known);
     DEFTESTCASE(fast_known);
-    DEFTESTCASE(endtoend);
+    DEFTESTCASE_SLOW(endtoend, 15); /* waiting up to 15 seconds */
     DEFTESTCASE(large_data);
 
     return s;
