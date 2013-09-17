@@ -773,6 +773,8 @@ int del_groupchat(Messenger *m, int groupnumber)
             break;
     }
 
+    m->numchats = i;
+
     if (i == 0) {
         free(m->chats);
         m->chats = NULL;
