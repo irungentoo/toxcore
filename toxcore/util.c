@@ -58,7 +58,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     uint32_t length_sub, cookie_type;
     uint32_t size32 = sizeof(uint32_t), size_head = size32 * 2;
 
-    while (length > size_head) {
+    while (length >= size_head) {
         length_sub = *(uint32_t *)data;
         cookie_type = *(uint32_t *)(data + size32);
         data += size_head;
@@ -89,7 +89,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
         length -= length_sub;
     }
 
-    return length == 0 ? 0 : - 1;
+    return length == 0 ? 0 : -1;
 };
 
 #ifdef LOGGING

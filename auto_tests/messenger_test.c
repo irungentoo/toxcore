@@ -43,10 +43,9 @@ Messenger *m;
 
 unsigned char *hex_string_to_bin(char hex_string[])
 {
-    size_t len = strlen(hex_string);
+    size_t i, len = strlen(hex_string);
     unsigned char *val = calloc(1, len);
     char *pos = hex_string;
-    int i = 0;
 
     for (i = 0; i < len; ++i, pos += 2)
         sscanf(pos, "%2hhx", &val[i]);
@@ -227,6 +226,86 @@ START_TEST(test_getname)
 }
 END_TEST
 
+START_TEST(test_dht_state_saveloadsave)
+{
+    /* validate that:
+     * a) saving stays within the confined space
+     * b) a save()d state can be load()ed back successfully
+     * c) a second save() is of equal size
+     * d) the second save() is of equal content */
+    size_t i, extra = 64;
+    size_t size = DHT_size(m->dht);
+    uint8_t buffer[size + 2 * extra];
+    memset(buffer, 0xCD, extra);
+    memset(buffer + extra + size, 0xCD, extra);
+    DHT_save(m->dht, buffer + extra);
+    for(i = 0; i < extra; i++) {
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", i);
+    }
+
+    int res = DHT_load_new(m->dht, buffer + extra, size);
+    if (res == -1)
+        ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
+    else {
+        char msg[128];
+        size_t offset = res >> 4;
+        uint8_t *ptr = buffer + extra + offset;
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+                ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
+        ck_assert_msg(res == 0, msg);
+    }
+
+    size_t size2 = DHT_size(m->dht);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+
+    uint8_t buffer2[size2];
+    DHT_save(m->dht, buffer2);
+
+    ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "DHT state changed by store/load/store cycle");
+}
+END_TEST
+
+START_TEST(test_messenger_state_saveloadsave)
+{
+    /* validate that:
+     * a) saving stays within the confined space
+     * b) a save()d state can be load()ed back successfully
+     * c) a second save() is of equal size
+     * d) the second save() is of equal content */
+    size_t i, extra = 64;
+    size_t size = Messenger_size(m);
+    uint8_t buffer[size + 2 * extra];
+    memset(buffer, 0xCD, extra);
+    memset(buffer + extra + size, 0xCD, extra);
+    Messenger_save(m, buffer + extra);
+    for(i = 0; i < extra; i++) {
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from Messenger_save() @%u", i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from Messenger_save() @%u", i);
+    }
+
+    int res = Messenger_load(m, buffer + extra, size);
+    if (res == -1)
+        ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
+    else {
+        char msg[128];
+        size_t offset = res >> 4;
+        uint8_t *ptr = buffer + extra + offset;
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+                ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
+        ck_assert_msg(res == 0, msg);
+    }
+
+    size_t size2 = Messenger_size(m);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+
+    uint8_t buffer2[size2];
+    Messenger_save(m, buffer2);
+
+    ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "Messenger state changed by store/load/store cycle");
+}
+END_TEST
+
 Suite *messenger_suite(void)
 {
     Suite *s = suite_create("Messenger");
@@ -241,6 +320,8 @@ Suite *messenger_suite(void)
     //TCase *addfriend = tcase_create("addfriend");
     TCase *setname = tcase_create("setname");
     TCase *getname = tcase_create("getname");
+    TCase *dht_state_saveloadsave = tcase_create("dht_state_saveloadsave");
+    TCase *messenger_state_saveloadsave = tcase_create("messenger_state_saveloadsave");
 
     tcase_add_test(userstatus_size, test_m_get_userstatus_size);
     tcase_add_test(set_userstatus, test_m_set_userstatus);
@@ -252,6 +333,8 @@ Suite *messenger_suite(void)
     //tcase_add_test(addfriend, test_m_addfriend);
     tcase_add_test(setname, test_getname);
     tcase_add_test(setname, test_setname);
+    tcase_add_test(dht_state_saveloadsave, test_dht_state_saveloadsave);
+    tcase_add_test(messenger_state_saveloadsave, test_messenger_state_saveloadsave);
 
     suite_add_tcase(s, userstatus_size);
     suite_add_tcase(s, set_userstatus);
@@ -263,6 +346,8 @@ Suite *messenger_suite(void)
     //suite_add_tcase(s, addfriend);
     suite_add_tcase(s, getname);
     suite_add_tcase(s, setname);
+    suite_add_tcase(s, messenger_state_saveloadsave);
+    suite_add_tcase(s, dht_state_saveloadsave);
 
     return s;
 }
