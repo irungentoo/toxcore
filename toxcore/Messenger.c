@@ -686,9 +686,9 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int, u
 
 /* Set the callback for group messages.
  *
- *  Function(Messenger *m, int groupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
-void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void *),
+void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
                               void *userdata)
 {
     m->group_message = function;
@@ -705,7 +705,7 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
     }
 
     if (m->group_message)
-        (*m->group_message)(m, i, message, length, m->group_invite_userdata);
+        (*m->group_message)(m, i, peer_number, message, length, m->group_invite_userdata);
 }
 
 /* Creates a new groupchat and puts it in the chats array.
@@ -788,6 +788,25 @@ int del_groupchat(Messenger *m, int groupnumber)
     return 0;
 }
 
+/* Copy the name of peernumber who is in groupnumber to name.
+ * name must be at least MAX_NICK_BYTES long.
+ *
+ * return length of name if success
+ * return -1 if failure
+ */
+int m_group_peername(Messenger *m, int groupnumber, int peernumber, uint8_t *name)
+{
+    if ((unsigned int)groupnumber >= m->numchats)
+        return -1;
+
+    if (m->chats == NULL)
+        return -1;
+
+    if (m->chats[groupnumber] == NULL)
+        return -1;
+
+    return group_peername(m->chats[groupnumber], peernumber, name);
+}
 /* return 1 if that friend was invited to the group
  * return 0 if the friend was not or error.
  */
@@ -1593,6 +1612,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             break;
 
 #ifdef DEBUG
+
         default:
             fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
                     length, type);

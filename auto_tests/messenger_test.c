@@ -239,12 +239,14 @@ START_TEST(test_dht_state_saveloadsave)
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
     DHT_save(m->dht, buffer + extra);
-    for(i = 0; i < extra; i++) {
+
+    for (i = 0; i < extra; i++) {
         ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", i);
         ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", i);
     }
 
     int res = DHT_load_new(m->dht, buffer + extra, size);
+
     if (res == -1)
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
     else {
@@ -279,12 +281,14 @@ START_TEST(test_messenger_state_saveloadsave)
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
     Messenger_save(m, buffer + extra);
-    for(i = 0; i < extra; i++) {
+
+    for (i = 0; i < extra; i++) {
         ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from Messenger_save() @%u", i);
         ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from Messenger_save() @%u", i);
     }
 
     int res = Messenger_load(m, buffer + extra, size);
+
     if (res == -1)
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
     else {
