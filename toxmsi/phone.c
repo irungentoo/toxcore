@@ -1,20 +1,19 @@
-#define _BSD_SOURCE
+#define _BSD_SOURCE /* What? */
+#define _GNU_SOURCE
 
-#include "msi_impl.h"
-#include "msi_message.h"
-#include "rtp_message.h"
-#include "toxrtp/tests/test_helper.h"
-#include <assert.h>
+#define _CT_PHONE
+
+#ifdef _CT_PHONE
+#include "phone.h"
+#include <stdarg.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <termios.h>
 
+#define INFO(_str, ...) printf("\r[!] " _str "\n\r >> ",  ##__VA_ARGS__); fflush(stdout);
 
-static media_session_t* _m_session = NULL; /* for the sake of test */
-
-pthread_mutex_t _mutex;
-
-static int _socket;
-
-/* My recv functions */
 int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
 {
     if ( !_msg )
@@ -34,13 +33,17 @@ int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
 
     return SUCCESS;
 }
-int msi_handlepacket ( media_session_t* _session, tox_IP_Port ip_port, uint8_t* data, uint32_t length )
+int msi_handlepacket ( msi_session_t* _session, tox_IP_Port ip_port, uint8_t* data, uint32_t length )
 {
-    media_msg_t* _msg;
-    _msg = msi_parse_msg ( 0, data, length );
+    msi_msg_t* _msg;
+
+    /*printf("Got: \n%s\n", data);*/
+
+    _msg = msi_parse_msg ( data );
 
     if ( _msg ) {
-        _msg->_friend_id = ip_port;
+        /* my current solution for "hole punching" */
+        _session->_friend_id = ip_port;
     } else {
         return FAILURE;
     }
@@ -54,20 +57,25 @@ int msi_handlepacket ( media_session_t* _session, tox_IP_Port ip_port, uint8_t* 
 
     return SUCCESS;
 }
-void* phone_receivepacket ( void* _session_p )
+
+void* phone_receivepacket ( void* _phone_p )
 {
-    media_session_t* _session = _session_p;
+    phone_t* _phone = _phone_p;
     rtp_msg_t* _msg;
 
     uint32_t  _bytes;
     tox_IP_Port   _from;
-    uint8_t _socket_data[MAX_UDP_PACKET_SIZE];
+    uint8_t* _socket_data = malloc(sizeof (uint8_t) * MSI_MAXMSG_SIZE );
+    t_memset(_socket_data, '\0', MSI_MAXMSG_SIZE);
 
-    int _m_socket = _socket;
+    int _m_socket = _phone->_tox_sock;
 
     uint16_t _payload_id;
 
-    while ( _session ) {
+    rtp_session_t** _rtp_audio = &_phone->_rtp_audio;
+    rtp_session_t** _rtp_video = &_phone->_rtp_video;
+
+    while ( _phone ) {
 
         int _status = receivepacket ( _m_socket, &_from, _socket_data, &_bytes );
 
@@ -76,83 +84,52 @@ void* phone_receivepacket ( void* _session_p )
             continue;
         }
 
-        pthread_mutex_lock ( &_mutex );
         switch ( _socket_data[0] ) {
         case MSI_PACKET:
-            msi_handlepacket ( _session, _from, _socket_data + 1, _bytes );
-            usleep(1000);
+            msi_handlepacket ( _phone->_msi, _from, _socket_data + 1, _bytes - 1 );
             break;
         case RTP_PACKET:
-            if ( _session->_call_info == call_active ){
+            if ( _phone->_msi->_call_info == call_active ){
                 /* this will parse a data into rtp_message_t form but
                  * it will not be registered into a session. For that
                  * we need to call a rtp_register_msg ()
                  */
-                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes );
+                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes - 1 );
 
                 if ( !_msg )
                     break;
 
                 _payload_id = rtp_header_get_setting_payload_type(_msg->_header);
 
-                if ( _payload_id == _PAYLOAD_OPUS && _session->_rtp_audio )
-                    rtp_handlepacket ( _session->_rtp_audio, _msg );
-                else if ( _payload_id == _PAYLOAD_VP8 && _session->_rtp_video )
-                    rtp_handlepacket ( _session->_rtp_video, _msg );
+                if ( _payload_id == _PAYLOAD_OPUS && *_rtp_audio )
+                    rtp_handlepacket ( *_rtp_audio, _msg );
+                else if ( _payload_id == _PAYLOAD_VP8 && *_rtp_video )
+                    rtp_handlepacket ( *_rtp_video, _msg );
                 else rtp_free_msg( NULL, _msg);
             }
             usleep(1000);
+
             break;
         default:
             break;
         };
-        pthread_mutex_unlock ( &_mutex );
+
+        t_memset(_socket_data, '\0', _bytes);
 
     }
     pthread_exit ( NULL );
-}
-
-/* ---------------- */
-
-/* My answering callback */
-static pthread_t _handle_receive_tid = 0;
-static pthread_t _handle_call_tid = 0;
-
-void* handle_receive_callback ( void* _p )
-{
-    int _status;
-
-    _p = NULL;
-
-    char _choice [10];
-
-    do {
-        gets ( _choice );
-        if ( strcmp ( _choice, "a" ) == 0 ) {
-            printf ( "Answering...\n" );
-            _status = msi_answer ( _m_session );
-            break;
-        } else if ( strcmp ( _choice, "r" ) == 0 ) {
-            printf ( "Rejecting...\n" );
-            _status = msi_reject ( _m_session );
-            break;
-        }
-
-    } while ( strcmp ( _choice, "c" ) == 0 );
-
-    _handle_receive_tid = 0;
-
-    pthread_exit ( &_status );
 }
 
 /* Media transport callback */
 typedef struct hmtc_args_s {
     rtp_session_t* _rtp_audio;
     rtp_session_t* _rtp_video;
-    int* _thread_running;
+    call_type* _local_type_call;
+    call_state* _this_call;
+    int _socket;
 } hmtc_args_t;
 
-void* handle_media_transport_callback ( void* _hmtc_args_p )
+void* phone_handle_media_transport_poll ( void* _hmtc_args_p )
 {
     rtp_msg_t* _audio_msg, * _video_msg;
 
@@ -161,17 +138,16 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
     rtp_session_t* _rtp_audio = _hmtc_args->_rtp_audio;
     rtp_session_t* _rtp_video = _hmtc_args->_rtp_video;
 
-    int* _thread_running = _hmtc_args->_thread_running;
+    call_type* _type = _hmtc_args->_local_type_call;
+    int _m_socket = _hmtc_args->_socket;
 
-    int* _res_position = &_rtp_video->_exthdr_resolution;
 
-    int _m_socket = _socket;
+    call_state* _this_call = _hmtc_args->_this_call;
 
-    while ( *_thread_running ) {
-        /*
-         * This part checks for received messages and if gotten one
-         * display 'Received msg!' indicator and free message
-         */
+    while ( *_this_call == call_active ) {
+
+        THREADLOCK()
+
         _audio_msg = rtp_recv_msg ( _rtp_audio );
         _video_msg = rtp_recv_msg ( _rtp_video );
 
@@ -183,77 +159,84 @@ void* handle_media_transport_callback ( void* _hmtc_args_p )
 
         if ( _video_msg ) {
             /* Do whatever with msg */
-            /* Some example use of marker setters */
-            printf("H:%d | W:%d\t",
-                   rtp_get_resolution_marking_height(_video_msg->_ext_header, *_res_position),
-                   rtp_get_resolution_marking_width(_video_msg->_ext_header, *_res_position));
-
-            if ( rtp_get_resolution_marking_height(_video_msg->_ext_header, *_res_position) < 4000 ){
-                //rtp_remove_resolution_marking(_rtp_video);
-                rtp_add_resolution_marking(_rtp_video,
-                                           rtp_get_resolution_marking_width(_video_msg->_ext_header, *_res_position) + 1,
-                                           rtp_get_resolution_marking_width(_video_msg->_ext_header, *_res_position) + 1);
-            }
-
-            printf("RM:%d\t", rtp_get_framerate_marking(_video_msg->_ext_header));
-
-            if ( rtp_get_framerate_marking(_video_msg->_ext_header) < 4000 ){
-                //rtp_remove_framerate_marking(_rtp_video);
-                rtp_add_framerate_marking(_rtp_video, rtp_remove_framerate_marking(_rtp_video));
-            }
-
+            puts("video");
             rtp_free_msg ( _rtp_video, _video_msg );
+            _video_msg = NULL;
         }
         /* -------------------- */
 
         /*
-         * This one makes a test msg and sends that message to the 'remote'
+         * Make a test msg and send that message to the 'remote'
          */
         _audio_msg = rtp_msg_new ( _rtp_audio, (const uint8_t*)"abcd", 4 ) ;
         rtp_send_msg ( _rtp_audio, _audio_msg, _m_socket );
+        _audio_msg = NULL;
 
-        _video_msg = rtp_msg_new ( _rtp_video, (const uint8_t*)"abcd", 4 ) ;
-        rtp_send_msg ( _rtp_video, _video_msg, _m_socket );
+        if ( *_type == type_video ){ /* if local call send video */
+            _video_msg = rtp_msg_new ( _rtp_video, (const uint8_t*)"abcd", 4 ) ;
+            rtp_send_msg ( _rtp_video, _video_msg, _m_socket );
+            _video_msg = NULL;
+        }
 
+        THREADUNLOCK()
 
         usleep ( 10000 );
         /* -------------------- */
     }
 
-    *_thread_running = -1;
+    THREADLOCK()
+
+    if ( _audio_msg ){
+        rtp_free_msg(_rtp_audio, _audio_msg);
+    }
+
+    if ( _video_msg ) {
+        rtp_free_msg(_rtp_video, _video_msg);
+    }
+
+    rtp_release_session_recv(_rtp_video);
+    rtp_release_session_recv(_rtp_audio);
+
+    free(_hmtc_args_p);
+
+    THREADUNLOCK()
 
     pthread_exit ( NULL );
 }
 
-/* This is call control callback */
-void* handle_call_callback ( void* _p )
+pthread_t phone_startmedia_loop ( phone_t* _phone )
 {
+    if ( !_phone ){
+        return 0;
+    }
+
     int _status;
+
+    uint8_t _prefix = RTP_PACKET;
 
     pthread_t _rtp_tid;
     int _rtp_thread_running = 1;
-    rtp_session_t* _rtp_audio, *_rtp_video;
-    _rtp_audio = _m_session->_rtp_audio = rtp_init_session ( -1, 1 );
-    _rtp_video = _m_session->_rtp_video = rtp_init_session ( -1, 1 );
 
-    rtp_add_receiver ( _rtp_audio, &_m_session->_friend_id );
-    rtp_add_receiver ( _rtp_video, &_m_session->_friend_id );
+    _phone->_rtp_audio = rtp_init_session ( -1, 1 );
+    rtp_set_prefix ( _phone->_rtp_audio, &_prefix, 1 );
+    rtp_add_receiver ( _phone->_rtp_audio, &_phone->_msi->_friend_id );
+    rtp_set_payload_type(_phone->_rtp_audio, _PAYLOAD_OPUS);
 
-    rtp_add_resolution_marking(_rtp_video, 1000, 1000);
-    rtp_add_framerate_marking( _rtp_video, 100000023);
+    _phone->_rtp_video = rtp_init_session ( -1, 1 );
+    rtp_set_payload_type(_phone->_rtp_video, _PAYLOAD_VP8);
+    rtp_add_receiver ( _phone->_rtp_video, &_phone->_msi->_friend_id );
+    rtp_set_prefix ( _phone->_rtp_video, &_prefix, 1 );
 
-    uint8_t _prefix = RTP_PACKET;
-    rtp_set_prefix ( _rtp_audio, &_prefix, 1 );
-    rtp_set_prefix ( _rtp_video, &_prefix, 1 );
+    hmtc_args_t* rtp_targs = malloc(sizeof(hmtc_args_t));
 
-    rtp_set_payload_type(_rtp_audio, _PAYLOAD_OPUS);
-    rtp_set_payload_type(_rtp_video, _PAYLOAD_VP8);
+    rtp_targs->_rtp_audio = _phone->_rtp_audio;
+    rtp_targs->_rtp_video = _phone->_rtp_video;
+    rtp_targs->_local_type_call = &_phone->_msi->_local_call_type;
+    rtp_targs->_this_call = &_phone->_msi->_call_info;
+    rtp_targs->_socket = _phone->_tox_sock;
 
-    rtp_add_resolution_marking(_rtp_video, 1000, 1000);
 
-    hmtc_args_t rtp_targs = { _rtp_audio, _rtp_video, &_rtp_thread_running };
-
-    _status = pthread_create ( &_rtp_tid, NULL, handle_media_transport_callback, &rtp_targs );
+    _status = pthread_create ( &_rtp_tid, NULL, phone_handle_media_transport_poll, rtp_targs );
 
     if ( _status < 0 ) {
         printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
@@ -267,28 +250,7 @@ void* handle_call_callback ( void* _p )
         pthread_exit ( &_status );
     }
 
-    _p = NULL;
-
-    char _choice [10];
-
-    /* Start media transport thread */
-
-    do {
-        gets ( _choice );
-        if ( strcmp ( _choice, "h" ) == 0 ) {
-            printf ( "Hanging up...\n" );
-            _status = msi_hangup ( _m_session );
-            break;
-        }
-    } while ( strcmp ( _choice, "c" ) == 0 );
-
-    _handle_call_tid = 0;
-
-    _rtp_thread_running = 0;
-
-    while ( _rtp_thread_running != -1 );
-
-    pthread_exit ( &_status );
+    return _rtp_tid;
 }
 
 
@@ -297,178 +259,118 @@ void* handle_call_callback ( void* _p )
 MCBTYPE callback_recv_invite ( MCBARGS )
 {
     int _status = SUCCESS;
+    const char* _call_type;
 
-    printf ( "Incomming call! \n" );
-    printf ( "Options: a-(answer) r-(reject ) \n" );
+    msi_session_t* _msi = _arg;
 
-    if ( _handle_receive_tid == 0 ) {
-        _status = pthread_create ( &_handle_receive_tid, NULL, handle_receive_callback, NULL );
+    call_type _type = _msi->_peer_call_type;
 
-        if ( _status < 0 ) {
-            printf ( "Error while starting receive call: %d, %s\n", errno, strerror ( errno ) );
-            return _status;
-        }
-
-        _status = pthread_detach ( _handle_receive_tid );
-
-        if ( _status < 0 ) {
-            printf ( "Error while starting receive call: %d, %s\n", errno, strerror ( errno ) );
-        }
-    } else {
-        /* Reject */
-        return FAILURE;
+    switch ( _type ){
+    case type_audio:
+        _call_type = "audio";
+        break;
+    case type_video:
+        _call_type = "video";
+        break;
     }
+
+    INFO( "Incoming %s call!", _call_type );
 
     return _status;
 }
 MCBTYPE callback_recv_trying ( MCBARGS )
 {
-    printf ( "Trying...\n" );
+    INFO ( "Trying...");
     return SUCCESS;
 }
 MCBTYPE callback_recv_ringing ( MCBARGS )
 {
-    printf ( "Ringing...\n" );
+    INFO ( "Ringing!" );
     return SUCCESS;
 }
 MCBTYPE callback_recv_starting ( MCBARGS )
 {
-    int _status = SUCCESS;
-
-    printf ( "Call started... ( press h to hangup ) \n" );
-
-    if ( _handle_call_tid == 0 ) {
-        _status = pthread_create ( &_handle_call_tid, NULL, handle_call_callback, NULL );
-
-        if ( _status < 0 ) {
-            printf ( "Error while starting handle call: %d, %s\n", errno, strerror ( errno ) );
-            return _status;
-        }
-
-        _status = pthread_detach ( _handle_call_tid );
-
-        if ( _status < 0 ) {
-            printf ( "Error while starting handle call: %d, %s\n", errno, strerror ( errno ) );
-        }
+    msi_session_t* _session = _arg;
+    if ( !phone_startmedia_loop(_session->_agent_handler) ){
+        INFO("Starting call failed!");
     } else {
-        /* Reject */
-        return FAILURE;
+        INFO ("Call started! ( press h to hangup )");
     }
-
     return SUCCESS;
 }
 MCBTYPE callback_recv_ending ( MCBARGS )
 {
-    printf ( "Call ended! (exiting)\n" );
-    pthread_mutex_destroy ( &_mutex );
-    exit ( SUCCESS );
+    INFO ( "Call ended!" );
     return SUCCESS;
 }
 
 
 MCBTYPE callback_call_started ( MCBARGS )
 {
-    int _status = SUCCESS;
-
-    printf ( "Call started... ( press h to hangup ) \n" );
-
-    if ( _handle_call_tid == 0 ) {
-        _status = pthread_create ( &_handle_call_tid, NULL, handle_call_callback, NULL );
-
-        if ( _status < 0 ) {
-            printf ( "Error while starting handle call: %d, %s\n", errno, strerror ( errno ) );
-            return _status;
-        }
-
-        _status = pthread_detach ( _handle_call_tid );
-
-        if ( _status < 0 ) {
-            printf ( "Error while starting handle call: %d, %s\n", errno, strerror ( errno ) );
-        }
+    msi_session_t* _session = _arg;
+    if ( !phone_startmedia_loop(_session->_agent_handler) ){
+        INFO("Starting call failed!");
     } else {
-        /* Reject */
-        return FAILURE;
+        INFO ("Call started! ( press h to hangup )");
     }
 
     return SUCCESS;
 }
 MCBTYPE callback_call_canceled ( MCBARGS )
 {
-    printf ( "On call canceled!\n" );
+    INFO ( "Call canceled!" );
     return SUCCESS;
 }
 MCBTYPE callback_call_rejected ( MCBARGS )
 {
-    printf ( "Call rejected!\n" );
+    INFO ( "Call rejected!\n" );
     return SUCCESS;
 }
 MCBTYPE callback_call_ended ( MCBARGS )
 {
-    printf ( "On call ended (exiting)!\n" );
-    pthread_mutex_destroy ( &_mutex );
-    exit ( SUCCESS );
+    INFO ( "Call ended!" );
     return SUCCESS;
 }
 
-/* ---------------------- */
-
-int print_help ( const char* _name )
+phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
 {
-    printf ( "Usage: %s -m [ r/s ( mode ) ] [ -d ( destination IP ) ] \n", _name );
-    return FAILURE;
-}
+    phone_t* _retu = malloc(sizeof(phone_t));
 
-int main ( int argc, char* argv [] )
-{
-    int _status;
-    unsigned short _send_port, _recv_port;
-
+    /* Initialize our mutex */
     pthread_mutex_init ( &_mutex, NULL );
 
-    arg_t* _args = parse_args ( argc, argv );
-
-    const char* _mode = find_arg_duble ( _args, "-m" );
-    const char* _ip   = find_arg_duble ( _args, "-d" );
-
-    tox_IP_Port _remote;
-
-    if ( !_mode )
-        return print_help ( argv[0] );
-
-    if ( _mode[0] == 'r' ) {
-        _send_port = 31000;
-        _recv_port = 31001;
-    } else if ( _mode[0] == 's' && _ip ) {
-        _send_port = 31001;
-        _recv_port = 31000;
-        t_setipport ( _ip, _send_port, &_remote );
-    } else return print_help ( argv[0] );
-
-
-    /* Bind local receive port to any address */
     IP_Port _local;
     _local.ip.i = htonl ( INADDR_ANY );
-    Networking_Core* _networking = new_networking ( _local.ip, _recv_port );
 
-    if ( !_networking ) {
+    /* Bind local receive port to any address */
+    _retu->_networking = new_networking ( _local.ip, _listen_port );
+
+    if ( !_retu->_networking ) {
         fprintf ( stderr, "new_networking() failed!\n" );
-        return FAILURE;
+        return NULL;
     }
 
-    _socket = _networking->sock;
+    _retu->_send_port = _send_port;
+    _retu->_recv_port = _listen_port;
 
-    _m_session = msi_init_session ( _socket );
+    _retu->_tox_sock = _retu->_networking->sock;
 
-    if ( !_m_session ) {
+    _retu->_rtp_audio = NULL;
+    _retu->_rtp_video = NULL;
+
+
+    /* Initialize msi */
+    _retu->_msi = msi_init_session ( _retu->_tox_sock, (const uint8_t*)_USERAGENT );
+
+    if ( !_retu->_msi ) {
         fprintf ( stderr, "msi_init_session() failed\n" );
-        return FAILURE;
+        return NULL;
     }
 
+
+    _retu->_msi->_agent_handler = _retu;
     /* Initiate callbacks */
     msi_register_callback_send ( sendpacket ); /* Using core's send */
-    /*msi_register_callback_recv(receivepacket);*/
-
-
 
     msi_register_callback_call_started ( callback_call_started );
     msi_register_callback_call_canceled ( callback_call_canceled );
@@ -482,67 +384,214 @@ int main ( int argc, char* argv [] )
     msi_register_callback_recv_ending ( callback_recv_ending );
     /* ------------------ */
 
+    /* Now start msi main loop. It's a must! */
+    msi_start_main_loop ( _retu->_msi );
+
+    return _retu;
+}
+
+pthread_t phone_startmain_loop(phone_t* _phone)
+{
+    int _status;
     /* Start receive thread */
-    pthread_t _recv_thread;
-    _status = pthread_create ( &_recv_thread, NULL, phone_receivepacket, _m_session );
+    pthread_t _recv_thread, _phone_loop_thread;
+    _status = pthread_create ( &_recv_thread, NULL, phone_receivepacket, _phone );
 
     if ( _status < 0 ) {
         printf ( "Error while starting handle call: %d, %s\n", errno, strerror ( errno ) );
-        return _status;
+        return 0;
     }
 
     _status = pthread_detach ( _recv_thread );
 
     if ( _status < 0 ) {
         printf ( "Error while starting handle call: %d, %s\n", errno, strerror ( errno ) );
+        return 0;
     }
-    /* -------------------- */
 
-    /* Now start main loop. It's a must! */
-    msi_start_main_loop ( _m_session );
+    _status = pthread_create ( &_phone_loop_thread, NULL, phone_poll, _phone );
+
+    if ( _status < 0 ) {
+        printf ( "Error while starting main phone loop: %d, %s\n", errno, strerror ( errno ) );
+        return 0;
+    }
+
+    _status = pthread_join ( _phone_loop_thread, NULL );
+
+    if ( _status < 0 ) {
+        printf ( "Error while starting main phone loop: %d, %s\n", errno, strerror ( errno ) );
+        return 0;
+    }
+
+    return _phone_loop_thread;
+}
+
+void* phone_poll ( void* _p_phone )
+{
+    phone_t* _phone = _p_phone;
+
+    int _status = SUCCESS;
+
+    char* _line;
+    size_t _len;
 
 
-    /* This is basically how you handle the protocol */
+    char _dest[17]; /* For parsing destination ip */
+    memset(_dest, '\0', 17);
 
-    if ( _mode[0] == 's' ) { /* Do sender protocol */
-        _m_session->_friend_id = _remote;
+    INFO("Welcome to tox_phone version: " _USERAGENT "\n"
+         "Usage: \n"
+         "c [a/v] (type) [0.0.0.0] (dest ip) (calls dest ip)\n"
+         "h (if call is active hang up)\n"
+         "a [a/v] (answer incoming call: a - audio / v - audio + video (audio is default))\n"
+         "r (reject incoming call)\n"
+         "q (quit)\n"
+         "================================================================================"
+         );
 
-        msi_invite ( _m_session );
-        printf ( "Started call. Press ctrl+c to exit!\n" );
+    for ( ;; )
+    {
+        getline(&_line, &_len, stdin);
 
-        while ( 1 ) { usleep ( 1000000 ); }
+        if ( !_len ){
+            printf(" >> "); fflush(stdout);
+            continue;
+        }
 
-    } else {
+        if ( _len > 1 && _line[1] != ' ' && _line[1] != '\n' ){
+            INFO("Invalid input!");
+            continue;
+        }
 
-        printf ( "Waiting for call. Press ctrl+c to exit!\n" );
+        switch (_line[0]){
 
-        while ( 1 ) { usleep ( 1000000 ); }
+        case 'c':
+        {
+            if ( _phone->_msi->_call_info != call_inactive ){
+                INFO("Already in a call...");
+                break;
+            }
+
+            call_type _ctype;
+            if ( _len < 11 ){
+                INFO("Invalid input; usage: c a/v 0.0.0.0");
+                break;
+            }
+            else if ( _line[2] == 'a' || _line[2] != 'v' ){ /* default and audio */
+                _ctype = type_audio;
+            }
+            else { /* video */
+                _ctype = type_video;
+            }
+
+            strcpy(_dest, _line + 4 );
+            _status = t_setipport(_dest, _phone->_send_port, &(_phone->_msi->_friend_id));
+
+            if ( _status < 0 ){
+                INFO("Could not resolve address!");
+            } else {
+                msi_invite ( _phone->_msi, _ctype );
+                INFO("Calling!");
+            }
+
+            t_memset((uint8_t*)_dest, '\0', 17);
+
+        } break;
+        case 'h':
+        {
+            if ( _phone->_msi->_call_info == call_inactive ){
+                break;
+            }
+
+            msi_hangup(_phone->_msi);
+            INFO("Hung up...");
+
+        } break;
+        case 'a':
+        {
+            if ( _phone->_msi->_call_info != call_starting ) {
+                assert(0);
+                break;
+            }
+
+            if ( _len > 1 && _line[2] == 'v' )
+                msi_answer(_phone->_msi, type_video);
+            else
+                msi_answer(_phone->_msi, type_audio);
+
+        } break;
+        case 'r':
+        {
+            if ( _phone->_msi->_call_info != call_starting ){
+                break;
+            }
+
+            msi_reject(_phone->_msi);
+
+            INFO("Call Rejected...");
+
+        } break;
+        case 'q':
+        {
+            INFO("Quitting!");
+            pthread_exit(NULL);
+        }
+        default:
+        {
+            INFO("Invalid command!");
+        } break;
+
+        }
 
     }
+
+    pthread_exit(NULL);
+}
+
+int quitPhone(phone_t* _phone)
+{
     pthread_mutex_destroy ( &_mutex );
+
+    INFO("Quit!");
+    return SUCCESS;
+}
+
+/* ---------------------- */
+
+int print_help ( const char* _name )
+{
+    printf ( "Usage: %s -m (mode) -r/s ( for setting the ports on test version )\n", _name );
+    return FAILURE;
+}
+
+int main ( int argc, char* argv [] )
+{
+    arg_t* _args = parse_args ( argc, argv );
+
+    const char* _mode = find_arg_duble ( _args, "-m" );
+    uint16_t _listen_port;
+    uint16_t _send_port;
+
+    if ( !_mode )
+        return print_help ( argv[0] );
+
+    if ( _mode[0] == 'r' ) {
+        _send_port = 31000;
+        _listen_port = 31001;
+    } else if ( _mode[0] == 's' ) {
+        _send_port = 31001;
+        _listen_port = 31000;
+    } else return print_help ( argv[0] );
+
+    phone_t* _phone = initPhone(_listen_port, _send_port);
+
+    if ( _phone ){
+        phone_startmain_loop(_phone);
+
+        quitPhone(_phone);
+    }
 
     return SUCCESS;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif /* _CT_PHONE */
