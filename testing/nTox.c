@@ -280,8 +280,8 @@ void line_eval(Tox *m, char *line)
                 } else {
                     new_lines(format_message(m, *posi + 1, -1));
                 }
+            } else
                 new_lines("Error, bad input.");
-            }
         } else if (inpt_command == 'n') {
             uint8_t name[TOX_MAX_NAME_LENGTH];
             size_t i, len = strlen(line);
