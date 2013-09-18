@@ -269,34 +269,18 @@ void line_eval(Tox *m, char *line)
         } else if (inpt_command == 'd') {
             tox_do(m);
         } else if (inpt_command == 'm') { //message command: /m friendnumber messsage
-            size_t len = strlen(line);
+            char *posi[1];
+            int num = strtoul(line + prompt_offset, posi, 0);
 
-            if (len < 3)
-                return;
-
-            char numstring[len - 3];
-            char message[len - 3];
-            uint32_t i;
-
-            for (i = 0; i < len; i++) {
-                if (line[i + 3] != ' ') {
-                    numstring[i] = line[i + 3];
+            if (**posi != 0) {
+                if (tox_sendmessage(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1) + 1) < 1) {
+                    char sss[256];
+                    sprintf(sss, "[i] could not send message to friend num %u", num);
+                    new_lines(sss);
                 } else {
-                    uint32_t j;
-
-                    for (j = (i + 1); j < (len + 1); j++)
-                        message[j - i - 1] = line[j + 3];
-
-                    break;
+                    new_lines(format_message(m, *posi + 1, -1));
                 }
-            }
-
-            int num = atoi(numstring);
-
-            if (tox_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) < 1) {
-                new_lines("[i] could not send message");
-            } else {
-                new_lines(format_message(m, message, -1));
+                new_lines("Error, bad input.");
             }
         } else if (inpt_command == 'n') {
             uint8_t name[TOX_MAX_NAME_LENGTH];
