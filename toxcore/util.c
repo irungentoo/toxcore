@@ -94,6 +94,9 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
 #ifdef LOGGING
 time_t starttime = 0;
+size_t logbufferprelen = 0;
+char *logbufferpredata = NULL;
+char *logbufferprehead = NULL;
 char logbuffer[512];
 static FILE *logfile = NULL;
 void loginit(uint16_t port)
@@ -101,9 +104,23 @@ void loginit(uint16_t port)
     if (logfile)
         fclose(logfile);
 
-    sprintf(logbuffer, "%u-%u.log", ntohs(port), (uint32_t)now());
+    if (!starttime)
+        starttime = now();
+
+    struct tm *tm = localtime(&starttime);
+    if (strftime(logbuffer + 32, sizeof(logbuffer) - 32, "%F %T", tm))
+        sprintf(logbuffer, "%u-%s.log", ntohs(port), logbuffer + 32);
+    else
+        sprintf(logbuffer, "%u-%lu.log", ntohs(port), starttime);
     logfile = fopen(logbuffer, "w");
-    starttime = now();
+    if (logbufferpredata) {
+        if (logfile)
+            fprintf(logfile, logbufferpredata);
+
+        free(logbufferpredata);
+        logbufferpredata = NULL;
+    }
+
 };
 void loglog(char *text)
 {
@@ -111,8 +128,37 @@ void loglog(char *text)
         fprintf(logfile, "%4u ", (uint32_t)(now() - starttime));
         fprintf(logfile, text);
         fflush(logfile);
+
+        return;
     }
-};
+
+    /* log messages before file was opened: store */
+
+    size_t len = strlen(text);
+    if (!starttime) {
+        starttime = now();
+        logbufferprelen = 1024 + len - (len % 1024);
+        logbufferpredata = malloc(logbufferprelen);
+        logbufferprehead = logbufferpredata;
+    }
+
+    /* loginit() called meanwhile? (but failed to open) */
+    if (!logbufferpredata)
+        return;
+
+    if (len + logbufferprehead - logbufferpredata + 16U < logbufferprelen) {
+        size_t logpos = logbufferprehead - logbufferpredata;
+        size_t lennew = logbufferprelen * 1.4;
+        logbufferpredata = realloc(logbufferpredata, lennew);
+        logbufferprehead = logbufferpredata + logpos;
+        logbufferprelen = lennew;
+    }
+
+    size_t written;
+    sprintf(logbufferprehead, "%4u %s%n", (uint32_t)(now() - starttime), text, &written);
+    logbufferprehead += written;
+}
+
 void logexit()
 {
     if (logfile) {
