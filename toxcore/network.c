@@ -352,10 +352,6 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     fcntl(temp->sock, F_SETFL, O_NONBLOCK, 1);
 #endif
 
-#ifdef LOGGING
-    loginit(ntohs(port));
-#endif
-
     /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
     uint16_t *portptr = NULL;
     struct sockaddr_storage addr;
@@ -461,6 +457,8 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         if (!res) {
             temp->port = *portptr;
 #ifdef LOGGING
+            loginit(temp->port);
+
             sprintf(logbuffer, "Bound successfully to %s:%u.\n", ip_ntoa(&ip), ntohs(temp->port));
             loglog(logbuffer);
 #endif
