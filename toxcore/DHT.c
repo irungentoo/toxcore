@@ -134,7 +134,7 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
  *
  *  return True(1) or False(0)
  */
-static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Port ip_port)
+static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Port ip_port)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -299,10 +299,14 @@ static int replace_bad(    Client_data    *list,
                            uint8_t        *client_id,
                            IP_Port         ip_port )
 {
-    uint32_t i;
+    uint32_t i = 0;
     uint64_t temp_time = unix_time();
 
-    for (i = 0; i < length; ++i) {
+    /* reserve the lower end to IPv4 for now */
+    if (ip_port.ip.family == AF_INET6)
+        i = length / 2;
+
+    for (; i < length; ++i) {
         /* If node is bad */
         if (is_timeout(temp_time, list[i].timestamp, BAD_NODE_TIMEOUT)) {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
@@ -347,11 +351,15 @@ static int replace_good(   Client_data    *list,
                            IP_Port         ip_port,
                            uint8_t        *comp_client_id )
 {
-    uint32_t i;
+    uint32_t i = 0;
     uint64_t temp_time = unix_time();
     sort_list(list, length, comp_client_id);
 
-    for (i = 0; i < length; ++i)
+    /* reserve the lower end to IPv4 for now */
+    if (ip_port.ip.family == AF_INET6)
+        i = length / 2;
+
+    for (; i < length; ++i)
         if (id_closest(comp_client_id, list[i].client_id, client_id) == 2) {
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
             list[i].ip_port = ip_port;
@@ -372,36 +380,32 @@ void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
 {
     uint32_t i;
 
+    /* convert IPv4-in-IPv6 to IPv4 */
+    if ((ip_port.ip.family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&ip_port.ip.ip6)) {
+        ip_port.ip.family = AF_INET;
+        ip_port.ip.ip4.uint32 = ip_port.ip.ip6.uint32[3];
+    }
+
     /* NOTE: Current behavior if there are two clients with the same id is
      * to replace the first ip by the second.
      */
-    if (!client_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
+    if (!client_or_ip_port_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
         if (replace_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
             /* If we can't replace bad nodes we try replacing good ones. */
-            replace_good(   dht->close_clientlist,
-                            LCLIENT_LIST,
-                            client_id,
-                            ip_port,
-                            dht->c->self_public_key );
+            replace_good(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
+                         dht->c->self_public_key);
         }
     }
 
     for (i = 0; i < dht->num_friends; ++i) {
-        if (!client_in_list(    dht->friends_list[i].client_list,
-                                MAX_FRIEND_CLIENTS,
-                                client_id,
-                                ip_port )) {
+        if (!client_or_ip_port_in_list(dht->friends_list[i].client_list,
+                                       MAX_FRIEND_CLIENTS, client_id, ip_port)) {
 
-            if (replace_bad(    dht->friends_list[i].client_list,
-                                MAX_FRIEND_CLIENTS,
-                                client_id,
-                                ip_port )) {
+            if (replace_bad(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                            client_id, ip_port)) {
                 /* If we can't replace bad nodes we try replacing good ones. */
-                replace_good(   dht->friends_list[i].client_list,
-                                MAX_FRIEND_CLIENTS,
-                                client_id,
-                                ip_port,
-                                dht->friends_list[i].client_id );
+                replace_good(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                             client_id, ip_port, dht->friends_list[i].client_id);
             }
         }
     }
