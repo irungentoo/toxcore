@@ -685,7 +685,7 @@ static int handle_SYNC3(Lossless_UDP *ludp, int connection_id, uint8_t counter, 
 
         for (i = 0; i < number; ++i) {
             temp = ntohl(req_packets[i]);
-            memcpy(connection->req_packets + i, &temp, 4 * number);
+            memcpy(connection->req_packets + i, &temp, sizeof(uint32_t));
         }
 
         connection->num_req_paquets = number;
