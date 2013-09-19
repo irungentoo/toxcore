@@ -170,6 +170,7 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
     memset(connection, 0, sizeof(Connection));
 
     uint32_t handshake_id1 = handshake_id(ludp, ip_port);
+    uint64_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
 
     *connection = (Connection) {
         .ip_port            = ip_port,
@@ -186,7 +187,7 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
                    .killat             = ~0,
                     .send_counter       = 0,
                      /* add randomness to timeout to prevent connections getting stuck in a loop. */
-                     .timeout            = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT
+                     .timeout            = timeout
     };
 
     return connection_id;
