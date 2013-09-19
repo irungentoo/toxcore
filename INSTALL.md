@@ -16,7 +16,7 @@
 Build dependencies:
 
 ```bash
-apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check
+sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check
 ```
 
 On Fedora:
@@ -62,7 +62,7 @@ cd ProjectTox-Core
 autoreconf -i
 ./configure
 make
-make install
+sudo make install
 ```
 Advance configure options:
   - --prefix=/where/to/install
@@ -101,9 +101,6 @@ Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
   - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
-  - --BUILD_NTOX="yes"
-  - --BUILD_TESTS="yes"
   - --enable-silent-rules less verbose build output (undo: "make V=1")
   - --disable-silent-rules verbose build output (undo: "make V=0")
   - --disable-tests build unit tests (default: auto)
@@ -119,7 +116,6 @@ Grab the following packages:
   * http://www.gnu.org/software/libtool/
   * http://www.gnu.org/software/autoconf/ 
   * http://www.gnu.org/software/automake/
-  * http://www.cmake.org/
   * https://github.com/jedisct1/libsodium
   * http://www.hyperrealm.com/libconfig/
   * http://check.sourceforge.net/
@@ -146,9 +142,6 @@ Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
   - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
-  - --BUILD_NTOX="yes"
-  - --BUILD_TESTS="yes"
   - --enable-silent-rules less verbose build output (undo: "make V=1")
   - --disable-silent-rules verbose build output (undo: "make V=0")
   - --disable-tests build unit tests (default: auto)
@@ -168,18 +161,29 @@ http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
 ###Windows:
 
 You should install:
-  - [MinGW](http://sourceforge.net/projects/mingw/)'s C compiler
-  - [check] (http://check.sourceforge.net/)
+  - [MinGW](http://sourceforge.net/projects/mingw/)
 
-You have to [modify your PATH environment variable](http://www.computerhope.com/issues/ch000549.htm) so that it contains MinGW's bin folder path. With default settings, the bin folder is located at `C:\MinGW\bin`, which means that you would have to append `;C:\MinGW\bin` to the PATH variable.
+When installing MinGW, make sure to select the MSYS option in the installer.
+MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all opeartions (i.e. generating/running configure script, compiling, etc.) from the MinGW shell.
 
-Then you should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
-
-After that you should get precompiled package of libsodium from [here](https://download.libsodium.org/libsodium/releases/libsodium-win32-0.4.2.tar.gz) and extract the archive into this repo's root. That is, `sodium` folder should be along with `core`, `testing` and other folders.
-
-Then clone this repo and generate makefile:
+First download the source tarball from http://download.libsodium.org/libsodium/releases/ and build it.
+Assuming that you got the libsodium-0.4.2.tar.gz release:
 ```cmd
-git clone git://github.com/irungentoo/ProjectTox-Core.git
+tar -zxvf libsodium-0.4.2.tar.gz
+cd libsodium-0.4.2
+./configure
+make
+make install
+cd ..
+```
+
+You can also use a precompiled win32 binary of libsodium, however you will have to place the files in places where they can be found, i.e. dll's go to /bin headers to /include and libraries to /lib directories in your MinGW shell.
+
+Next, install ProjectTox-Core library, should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
+
+Assuming that you now have the sources in the ProjectTox-Core directory:
+
+```cmd
 cd ProjectTox-Core
 autoreconf -i
 ./configure
@@ -190,9 +194,6 @@ Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
   - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --BUILD_DHT_BOOTSTRAP_DAEMON="yes"
-  - --BUILD_NTOX="yes"
-  - --BUILD_TESTS="yes"
   - --enable-silent-rules less verbose build output (undo: "make V=1")
   - --disable-silent-rules verbose build output (undo: "make V=0")
   - --disable-tests build unit tests (default: auto)

@@ -28,15 +28,8 @@ Keep everything really simple.
 + When both peers are securely connected, they can exchange messages, initiate a video chat, send files, etc, all using encrypted communications.
 + Current build status: [![Build Status](https://travis-ci.org/irungentoo/ProjectTox-Core.png?branch=master)](https://travis-ci.org/irungentoo/ProjectTox-Core)
 
-## Roadmap:
-- [x] Get our DHT working perfectly. (Done, needs large scale testing though)
-- [x] Reliable connection (See Lossless UDP protocol) to other peers according to client ID. (Done, see `DHT_sendfiletest.c` for an example)
-- [x] Encryption. (Done)
-- [  ] Get a simple text only IM client working perfectly. (This is where we are)
-- [  ] Streaming media
-- [  ] ???
-
-For further information, check our [To-do list](http://wiki.tox.im/index.php/TODO)
+## TODO:
+- [TODO](/docs/TODO)
 
 ### Why are you doing this? There are already a bunch of free skype alternatives.
 The goal of this project is to create a configuration-free P2P skype 
@@ -48,7 +41,6 @@ configure for the normal user or suffer from being way too centralized.
 ### Documentation:
 
 - [Installation](/INSTALL.md)
-- [Commands](/docs/commands.rst)
 - [DHT Protocol](http://wiki.tox.im/index.php/DHT)<br />
 - [Lossless UDP Protocol](http://wiki.tox.im/index.php/Lossless_UDP)<br />
 - [Crypto](http://wiki.tox.im/index.php/Crypto)<br />

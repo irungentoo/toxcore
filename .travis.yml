@@ -21,8 +21,6 @@ before_script:
   - cd ..
 # creating librarys' links and updating cache
   - sudo ldconfig
-# installing sphinx, needed for documentation
-  - sudo apt-get install python-sphinx
 # installing check, needed for unit tests
   - sudo apt-get install check
 
@@ -31,6 +29,7 @@ script:
   - ./configure
   - make -j3
   - make check
+  - make dist
 
 notifications:
   email: false
