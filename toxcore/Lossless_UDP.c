@@ -674,7 +674,7 @@ static int handle_SYNC3(Lossless_UDP *ludp, int connection_id, uint8_t counter, 
     /* Packet valid. */
     if (comp_1 <= BUFFER_PACKET_NUM &&
             comp_2 <= BUFFER_PACKET_NUM &&
-            comp_counter < 10 && comp_counter != 0) {
+            comp_counter == 1) {
         connection->orecv_packetnum = recv_packetnum;
         connection->osent_packetnum = sent_packetnum;
         connection->successful_sent = recv_packetnum;
