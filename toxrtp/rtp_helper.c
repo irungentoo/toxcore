@@ -40,10 +40,11 @@ int t_setipport ( const char* _ip, unsigned short _port, void* _dest )
     }
 
     IP_Port* _dest_c = ( IP_Port* ) _dest;
+    ip_init(&_dest_c->ip, 0);
 
-    _dest_c->ip.i = resolve_addr ( _ip );
+    IP_Port _ipv6_garbage;
 
-    if ( !_dest_c->ip.i )
+    if ( !addr_resolve(_ip, &_dest_c->ip, &_ipv6_garbage.ip) )
         return FAILURE;
 
     _dest_c->port = htons ( _port );

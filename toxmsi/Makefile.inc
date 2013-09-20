@@ -11,6 +11,8 @@ libtoxmsi_la_SOURCES =  $(top_srcdir)/toxmsi/msi_impl.h \
                         $(top_srcdir)/toxmsi/msi_impl.c \
                         $(top_srcdir)/toxmsi/msi_message.h \
                         $(top_srcdir)/toxmsi/msi_message.c \
+                        $(top_srcdir)/toxmsi/msi_header.h \
+                        $(top_srcdir)/toxmsi/msi_header.c \
 						$(top_srcdir)/toxrtp/tests/test_helper.h \
 						$(top_srcdir)/toxrtp/tests/test_helper.c
 

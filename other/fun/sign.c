@@ -1,5 +1,5 @@
 /* Binary signer/checker using ed25519
- * 
+ *
  * Compile with:
  *  gcc -o sign sign.c -lsodium
  *
@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
 {
     unsigned char pk[crypto_sign_ed25519_PUBLICKEYBYTES];
     unsigned char sk[crypto_sign_ed25519_SECRETKEYBYTES];
+
     if (argc == 2 && argv[1][0] == 'g') {
         crypto_sign_ed25519_keypair(pk, sk);
         printf("Public key:\n");
@@ -89,19 +90,22 @@ int main(int argc, char *argv[])
         unsigned long long smlen;
         char *sm = malloc(size + crypto_sign_ed25519_BYTES * 2);
         crypto_sign_ed25519(sm, &smlen, data, size, secret_key);
+
         if (smlen - size != crypto_sign_ed25519_BYTES)
             goto fail;
+
         FILE *f = fopen(argv[4], "wb");
 
         if (f == NULL)
             goto fail;
-        memcpy(sm + smlen, sm, crypto_sign_ed25519_BYTES); //Move signature from beginning to end of file.
+
+        memcpy(sm + smlen, sm, crypto_sign_ed25519_BYTES); // Move signature from beginning to end of file.
 
         if (fwrite(sm + (smlen - size), 1, smlen, f) != smlen)
             goto fail;
 
         fclose(f);
-        printf("Signed successfully\n");
+        printf("Signed successfully.\n");
     }
 
     if (argc == 4 && argv[1][0] == 'c') {
@@ -113,22 +117,24 @@ int main(int argc, char *argv[])
             goto fail;
 
         char *signe = malloc(size + crypto_sign_ed25519_BYTES);
-        memcpy(signe, data + size - crypto_sign_ed25519_BYTES, crypto_sign_ed25519_BYTES);//Move signature from end to beginning of file.
+        memcpy(signe, data + size - crypto_sign_ed25519_BYTES,
+               crypto_sign_ed25519_BYTES); // Move signature from end to beginning of file.
         memcpy(signe + crypto_sign_ed25519_BYTES, data, size - crypto_sign_ed25519_BYTES);
         unsigned long long smlen;
         char *m = malloc(size);
         unsigned long long mlen;
 
         if (crypto_sign_ed25519_open(m, &mlen, signe, size, public_key) == -1) {
-            printf("Failed checking sig\n");
+            printf("Failed checking sig.\n");
             goto fail;
         }
-        printf("Checked successfully\n");
+
+        printf("Checked successfully.\n");
     }
 
     return 0;
-    
-    fail:
-        printf("FAIL\n");
-        return 1;
+
+fail:
+    printf("FAIL\n");
+    return 1;
 }

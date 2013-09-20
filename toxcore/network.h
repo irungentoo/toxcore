@@ -39,76 +39,188 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#undef VANILLA_NACL /* make sure on windows we use libsodium */
+typedef unsigned int sock_t;
 
-#else /* Linux includes */
+#else // Linux includes
 
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>
 
+typedef int sock_t;
+
 #endif
 
 #ifndef VANILLA_NACL
-/* we use libsodium by default */
+/* We use libsodium by default. */
 #include <sodium.h>
 #else
 #include <crypto_box.h>
+#include <randombytes.h>
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
-#ifdef __cplusplus
-extern "C" {
+#ifndef IPV6_ADD_MEMBERSHIP
+#ifdef  IPV6_JOIN_GROUP
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+#endif
 #endif
 
 #define MAX_UDP_PACKET_SIZE 65507
 
-#define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID */
-#define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID */
-#define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID */
-#define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID */
-#define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID */
-#define NET_PACKET_SYNC            17  /* SYNC packet ID */
-#define NET_PACKET_DATA            18  /* Data packet ID */
-#define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID */
-#define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID */
+#define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID. */
+#define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID. */
+#define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
+#define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID for IPv4 addresses. */
+#define NET_PACKET_SEND_NODES_IPV6 4   /* Send nodes response packet ID for other addresses. */
+#define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
+#define NET_PACKET_SYNC            17  /* SYNC packet ID. */
+#define NET_PACKET_DATA            18  /* Data packet ID. */
+#define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
+#define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
+#define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
 
+#define TOX_PORTRANGE_FROM 33445
+#define TOX_PORTRANGE_TO   33455
+#define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 /* Current time, unix format */
 #define unix_time() ((uint64_t)time(NULL))
 
 
 typedef union {
-    uint8_t c[4];
-    uint16_t s[2];
-    uint32_t i;
-} IP;
+    uint8_t uint8[4];
+    uint16_t uint16[2];
+    uint32_t uint32;
+    struct in_addr in_addr;
+} IP4;
+
+typedef union {
+    uint8_t uint8[16];
+    uint16_t uint16[8];
+    uint32_t uint32[4];
+    struct in6_addr in6_addr;
+} IP6;
 
 typedef struct {
-    IP ip;
-    uint16_t port;
-    /* not used for anything right now */
-    uint16_t padding;
-} IP_Port;
+    sa_family_t family;
+    union {
+        IP4 ip4;
+        IP6 ip6;
+    };
+} IPAny;
 
+typedef union {
+    struct {
+        IP4 ip;
+        uint16_t port;
+        /* Not used for anything right now. */
+        uint16_t padding;
+    };
+    uint8_t uint8[8];
+} IP4_Port;
+
+/* will replace IP_Port as soon as the complete infrastructure is in place
+ * removed the unused union and padding also */
 typedef struct {
-    int16_t family;
+    IPAny ip;
     uint16_t port;
-    IP ip;
-    uint8_t zeroes[8];
-#ifdef ENABLE_IPV6
-    uint8_t zeroes2[12];
+} IPAny_Port;
+
+/* #undef TOX_ENABLE_IPV6 */
+#define TOX_ENABLE_IPV6
+#ifdef TOX_ENABLE_IPV6
+#define TOX_ENABLE_IPV6_DEFAULT 1
+typedef IPAny IP;
+typedef IPAny_Port IP_Port;
+#else
+#define TOX_ENABLE_IPV6_DEFAULT 0
+typedef IP4 IP;
+typedef IP4_Port IP_Port;
 #endif
-} ADDR;
 
-/* Function to receive data, ip and port of sender is put into ip_port
-    the packet data into data
-    the packet length into length. */
+/* ip_ntoa
+ *   converts ip into a string
+ *   uses a static buffer, so mustn't used multiple times in the same output
+ */
+const char *ip_ntoa(IP *ip);
+
+/* ip_equal
+ *  compares two IPAny structures
+ *  unset means unequal
+ *
+ * returns 0 when not equal or when uninitialized
+ */
+int ip_equal(IP *a, IP *b);
+
+/* ipport_equal
+ *  compares two IPAny_Port structures
+ *  unset means unequal
+ *
+ * returns 0 when not equal or when uninitialized
+ */
+int ipport_equal(IP_Port *a, IP_Port *b);
+
+/* nulls out ip */
+void ip_reset(IP *ip);
+/* nulls out ip, sets family according to flag */
+void ip_init(IP *ip, uint8_t ipv6enabled);
+/* checks if ip is valid */
+int ip_isset(IP *ip);
+/* checks if ip is valid */
+int ipport_isset(IP_Port *ipport);
+/* copies an ip structure */
+void ip_copy(IP *target, IP *source);
+/* copies an ip_port structure */
+void ipport_copy(IP_Port *target, IP_Port *source);
+
+/*
+ * addr_resolve():
+ *  uses getaddrinfo to resolve an address into an IP address
+ *  uses the first IPv4/IPv6 addresses returned by getaddrinfo
+ *
+ * input
+ *  address: a hostname (or something parseable to an IP address)
+ *  to: to.family MUST be initialized, either set to a specific IP version
+ *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
+ *     IP versions are acceptable
+ *  extra can be NULL and is only set in special circumstances, see returns
+ *
+ * returns in *to a valid IPAny (v4/v6),
+ *     prefers v6 if ip.family was AF_UNSPEC and both available
+ * returns in *extra an IPv4 address, if family was AF_UNSPEC and *to is AF_INET6
+ * returns 0 on failure
+ */
+int addr_resolve(const char *address, IP *to, IP *extra);
+
+/*
+ * addr_resolve_or_parse_ip
+ *  resolves string into an IP address
+ *
+ *  address: a hostname (or something parseable to an IP address)
+ *  to: to.family MUST be initialized, either set to a specific IP version
+ *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
+ *     IP versions are acceptable
+ *  extra can be NULL and is only set in special circumstances, see returns
+ *
+ *  returns in *tro a matching address (IPv6 or IPv4)
+ *  returns in *extra, if not NULL, an IPv4 address, if to->family was AF_UNSPEC
+ *  returns 1 on success
+ *  returns 0 on failure
+ */
+int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
+
+/* Function to receive data, ip and port of sender is put into ip_port.
+ * Packet data is put into data.
+ * Packet length is put into length.
+ */
 typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, uint8_t *data, uint32_t len);
 
 typedef struct {
@@ -118,46 +230,44 @@ typedef struct {
 
 typedef struct {
     Packet_Handles packethandlers[256];
-    /* our UDP socket */
-    int sock;
+
+    /* Our UDP socket. */
+    sa_family_t family;
+    uint16_t port;
+    sock_t sock;
 } Networking_Core;
 
-/* returns current time in milleseconds since the epoch. */
+/*  return current time in milleseconds since the epoch. */
 uint64_t current_time(void);
 
-/* return a random number
-    NOTE: this function should probably not be used where cryptographic randomness is absolutely necessary */
+/*  return a random number.
+ */
 uint32_t random_int(void);
 
 /* Basic network functions: */
 
-/* Function to send packet(data) of length length to ip_port */
-int sendpacket(int sock, IP_Port ip_port, uint8_t *data, uint32_t length);
+/* Function to send packet(data) of length length to ip_port. */
+int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length);
 
-/* Function to call when packet beginning with byte is received */
+/* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
 
-/* call this several times a second */
+/* Call this several times a second. */
 void networking_poll(Networking_Core *net);
 
-/* initialize networking
-    bind to ip and port
-    ip must be in network order EX: 127.0.0.1 = (7F000001)
-    port is in host byte order (this means don't worry about it)
-    returns 0 if no problems
-    returns -1 if there were problems */
+/* Initialize networking.
+ * bind to ip and port.
+ * ip must be in network order EX: 127.0.0.1 = (7F000001).
+ * port is in host byte order (this means don't worry about it).
+ *
+ *  return 0 if no problems.
+ *  return -1 if there were problems.
+ */
 Networking_Core *new_networking(IP ip, uint16_t port);
 
-/* function to cleanup networking stuff(doesn't do much right now) */
+/* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
 
-
-int receivepacket(int sock, IP_Port *ip_port, uint8_t *data, uint32_t *length);
-
-uint32_t resolve_addr(const char *address);
-
-#ifdef __cplusplus
-}
-#endif
+int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length);
 
 #endif

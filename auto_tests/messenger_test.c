@@ -10,6 +10,10 @@
  *      checking that status changes are received, messages can be sent, etc.
  *      All of that is done in a separate test, with two local clients running. */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../toxcore/Messenger.h"
 #include "../toxcore/Lossless_UDP.h"
 #include <sys/types.h>
@@ -39,10 +43,9 @@ Messenger *m;
 
 unsigned char *hex_string_to_bin(char hex_string[])
 {
-    size_t len = strlen(hex_string);
+    size_t i, len = strlen(hex_string);
     unsigned char *val = calloc(1, len);
     char *pos = hex_string;
-    int i = 0;
 
     for (i = 0; i < len; ++i, pos += 2)
         sscanf(pos, "%2hhx", &val[i]);
@@ -98,12 +101,22 @@ START_TEST(test_m_set_userstatus)
 }
 END_TEST
 
-START_TEST(test_m_friendstatus)
+START_TEST(test_m_get_friend_connectionstatus)
 {
-    ck_assert_msg((m_friendstatus(m, -1) == NOFRIEND),
-                  "m_friendstatus did NOT catch an argument of -1.\n");
-    ck_assert_msg((m_friendstatus(m, REALLY_BIG_NUMBER) == NOFRIEND),
-                  "m_friendstatus did NOT catch an argument of %d.\n",
+    ck_assert_msg((m_get_friend_connectionstatus(m, -1) == -1),
+                  "m_get_friend_connectionstatus did NOT catch an argument of -1.\n");
+    ck_assert_msg((m_get_friend_connectionstatus(m, REALLY_BIG_NUMBER) == -1),
+                  "m_get_friend_connectionstatus did NOT catch an argument of %d.\n",
+                  REALLY_BIG_NUMBER);
+}
+END_TEST
+
+START_TEST(test_m_friend_exists)
+{
+    ck_assert_msg((m_friend_exists(m, -1) == 0),
+                  "m_friend_exists did NOT catch an argument of -1.\n");
+    ck_assert_msg((m_friend_exists(m, REALLY_BIG_NUMBER) == 0),
+                  "m_friend_exists did NOT catch an argument of %d.\n",
                   REALLY_BIG_NUMBER);
 }
 END_TEST
@@ -174,7 +187,7 @@ START_TEST(test_getself_name)
     setname(m, (uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check, len);
 
-    ck_assert_msg((!STRINGS_EQUAL(nickname, nick_check)),
+    ck_assert_msg((memcmp(nickname, nick_check, len) == 0),
                   "getself_name failed to return the known name!\n"
                   "known name: %s\nreturned: %s\n", nickname, nick_check);
 }
@@ -206,9 +219,94 @@ START_TEST(test_getname)
     ck_assert(getname(m, REALLY_BIG_NUMBER, name_buf) == -1);
 
     memcpy(m->friendlist[0].name, &test_name[0], 3);
-    getname(m, 0, &name_buf[0]);
+    m->friendlist[0].name_length = 4;
+    ck_assert(getname(m, 0, &name_buf[0]) == 4);
 
     ck_assert(strcmp((char *)&name_buf[0], "foo") == 0);
+}
+END_TEST
+
+START_TEST(test_dht_state_saveloadsave)
+{
+    /* validate that:
+     * a) saving stays within the confined space
+     * b) a save()d state can be load()ed back successfully
+     * c) a second save() is of equal size
+     * d) the second save() is of equal content */
+    size_t i, extra = 64;
+    size_t size = DHT_size(m->dht);
+    uint8_t buffer[size + 2 * extra];
+    memset(buffer, 0xCD, extra);
+    memset(buffer + extra + size, 0xCD, extra);
+    DHT_save(m->dht, buffer + extra);
+
+    for (i = 0; i < extra; i++) {
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", i);
+    }
+
+    int res = DHT_load_new(m->dht, buffer + extra, size);
+
+    if (res == -1)
+        ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
+    else {
+        char msg[128];
+        size_t offset = res >> 4;
+        uint8_t *ptr = buffer + extra + offset;
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+                ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
+        ck_assert_msg(res == 0, msg);
+    }
+
+    size_t size2 = DHT_size(m->dht);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+
+    uint8_t buffer2[size2];
+    DHT_save(m->dht, buffer2);
+
+    ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "DHT state changed by store/load/store cycle");
+}
+END_TEST
+
+START_TEST(test_messenger_state_saveloadsave)
+{
+    /* validate that:
+     * a) saving stays within the confined space
+     * b) a save()d state can be load()ed back successfully
+     * c) a second save() is of equal size
+     * d) the second save() is of equal content */
+    size_t i, extra = 64;
+    size_t size = Messenger_size(m);
+    uint8_t buffer[size + 2 * extra];
+    memset(buffer, 0xCD, extra);
+    memset(buffer + extra + size, 0xCD, extra);
+    Messenger_save(m, buffer + extra);
+
+    for (i = 0; i < extra; i++) {
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from Messenger_save() @%u", i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from Messenger_save() @%u", i);
+    }
+
+    int res = Messenger_load(m, buffer + extra, size);
+
+    if (res == -1)
+        ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
+    else {
+        char msg[128];
+        size_t offset = res >> 4;
+        uint8_t *ptr = buffer + extra + offset;
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+                ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
+        ck_assert_msg(res == 0, msg);
+    }
+
+    size_t size2 = Messenger_size(m);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+
+    uint8_t buffer2[size2];
+    Messenger_save(m, buffer2);
+
+    ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "Messenger state changed by store/load/store cycle");
 }
 END_TEST
 
@@ -219,32 +317,41 @@ Suite *messenger_suite(void)
     TCase *userstatus_size = tcase_create("userstatus_size");
     TCase *set_userstatus = tcase_create("set_userstatus");
     TCase *send_message = tcase_create("send_message");
-    TCase *friendstatus = tcase_create("friendstatus");
+    TCase *friend_exists = tcase_create("friend_exists");
+    TCase *get_friend_connectionstatus = tcase_create("get_friend_connectionstatus");
     TCase *getself_name = tcase_create("getself_name");
     TCase *delfriend = tcase_create("delfriend");
     //TCase *addfriend = tcase_create("addfriend");
     TCase *setname = tcase_create("setname");
     TCase *getname = tcase_create("getname");
+    TCase *dht_state_saveloadsave = tcase_create("dht_state_saveloadsave");
+    TCase *messenger_state_saveloadsave = tcase_create("messenger_state_saveloadsave");
 
     tcase_add_test(userstatus_size, test_m_get_userstatus_size);
     tcase_add_test(set_userstatus, test_m_set_userstatus);
-    tcase_add_test(friendstatus, test_m_friendstatus);
+    tcase_add_test(get_friend_connectionstatus, test_m_get_friend_connectionstatus);
+    tcase_add_test(friend_exists, test_m_friend_exists);
     tcase_add_test(getself_name, test_getself_name);
     tcase_add_test(send_message, test_m_sendmesage);
     tcase_add_test(delfriend, test_m_delfriend);
     //tcase_add_test(addfriend, test_m_addfriend);
     tcase_add_test(setname, test_getname);
     tcase_add_test(setname, test_setname);
+    tcase_add_test(dht_state_saveloadsave, test_dht_state_saveloadsave);
+    tcase_add_test(messenger_state_saveloadsave, test_messenger_state_saveloadsave);
 
     suite_add_tcase(s, userstatus_size);
     suite_add_tcase(s, set_userstatus);
-    suite_add_tcase(s, friendstatus);
+    suite_add_tcase(s, get_friend_connectionstatus);
+    suite_add_tcase(s, friend_exists);
     suite_add_tcase(s, send_message);
     suite_add_tcase(s, getself_name);
     suite_add_tcase(s, delfriend);
     //suite_add_tcase(s, addfriend);
     suite_add_tcase(s, getname);
     suite_add_tcase(s, setname);
+    suite_add_tcase(s, messenger_state_saveloadsave);
+    suite_add_tcase(s, dht_state_saveloadsave);
 
     return s;
 }
@@ -260,7 +367,8 @@ int main(int argc, char *argv[])
     good_id_b = hex_string_to_bin(good_id_b_str);
     bad_id    = hex_string_to_bin(bad_id_str);
 
-    m = initMessenger();
+    /* IPv6 status from global define */
+    m = initMessenger(TOX_ENABLE_IPV6_DEFAULT);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)

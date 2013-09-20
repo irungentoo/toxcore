@@ -30,6 +30,8 @@ typedef struct phone_s {
 
     int _tox_sock;
 
+    pthread_id _medialoop_id;
+
     Networking_Core* _networking;
 } phone_t;
 

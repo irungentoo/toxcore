@@ -128,7 +128,7 @@ typedef struct hmtc_args_s {
     rtp_session_t* _rtp_video;
     call_type* _local_type_call;
     call_state* _this_call;
-    int _socket;
+    void *_core_handler;
 } hmtc_args_t;
 
 void* phone_handle_media_transport_poll ( void* _hmtc_args_p )
@@ -141,7 +141,7 @@ void* phone_handle_media_transport_poll ( void* _hmtc_args_p )
     rtp_session_t* _rtp_video = _hmtc_args->_rtp_video;
 
     call_type* _type = _hmtc_args->_local_type_call;
-    int _m_socket = _hmtc_args->_socket;
+    void* _core_handler = _hmtc_args->_core_handler;
 
 
     call_state* _this_call = _hmtc_args->_this_call;
@@ -171,12 +171,12 @@ void* phone_handle_media_transport_poll ( void* _hmtc_args_p )
 * Make a test msg and send that message to the 'remote'
 */
         _audio_msg = rtp_msg_new ( _rtp_audio, (const uint8_t*)"abcd", 4 ) ;
-        rtp_send_msg ( _rtp_audio, _audio_msg, _m_socket );
+        rtp_send_msg ( _rtp_audio, _audio_msg, _core_handler );
         _audio_msg = NULL;
 
         if ( *_type == type_video ){ /* if local call send video */
             _video_msg = rtp_msg_new ( _rtp_video, (const uint8_t*)"abcd", 4 ) ;
-            rtp_send_msg ( _rtp_video, _video_msg, _m_socket );
+            rtp_send_msg ( _rtp_video, _video_msg, _core_handler );
             _video_msg = NULL;
         }
 
@@ -235,23 +235,25 @@ pthread_t phone_startmedia_loop ( phone_t* _phone )
     rtp_targs->_rtp_video = _phone->_rtp_video;
     rtp_targs->_local_type_call = &_phone->_msi->_local_call_type;
     rtp_targs->_this_call = &_phone->_msi->_call_info;
-    rtp_targs->_socket = _phone->_tox_sock;
+    rtp_targs->_core_handler = _phone->_networking;
 
 
     _status = pthread_create ( &_rtp_tid, NULL, phone_handle_media_transport_poll, rtp_targs );
 
     if ( _status < 0 ) {
         printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
-        pthread_exit ( &_status );
+        return FAILURE;
     }
 
     _status = pthread_detach ( _rtp_tid );
 
     if ( _status < 0 ) {
         printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
-        pthread_exit ( &_status );
+        return FAILURE;
     }
 
+
+    _phone->_medialoop_id = _rtp_tid;
     return _rtp_tid;
 }
 
@@ -342,7 +344,8 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
     pthread_mutex_init ( &_mutex, NULL );
 
     IP_Port _local;
-    _local.ip.i = htonl ( INADDR_ANY );
+    ip_init(&_local.ip, 0);
+    _local.ip.ip4.uint32 = htonl ( INADDR_ANY );
 
     /* Bind local receive port to any address */
     _retu->_networking = new_networking ( _local.ip, _listen_port );
@@ -362,7 +365,7 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
 
 
     /* Initialize msi */
-    _retu->_msi = msi_init_session ( _retu->_tox_sock, (const uint8_t*)_USERAGENT );
+    _retu->_msi = msi_init_session ( _retu->_networking, (const uint8_t*)_USERAGENT );
 
     if ( !_retu->_msi ) {
         fprintf ( stderr, "msi_init_session() failed\n" );
@@ -506,6 +509,7 @@ void* phone_poll ( void* _p_phone )
             }
 
             msi_hangup(_phone->_msi);
+
             INFO("Hung up...");
 
         } break;

@@ -28,8 +28,13 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../toxcore/network.h"
 #include "../toxcore/Lossless_UDP.h"
+#include "misc_tools.c"
 
 //Sleep function (x = milliseconds)
 #ifdef WIN32
@@ -143,24 +148,34 @@ void printconnection(int connection_id)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        printf("usage: %s filename\n", argv[0]);
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+    int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
+    if (argvoffset < 0)
+        exit(1);
+
+    if (argc < argvoffset + 2) {
+        printf("Usage: %s [--ipv4|--ipv6] filename\n", argv[0]);
         exit(0);
     }
 
     uint8_t buffer[512];
     int read;
 
-    FILE *file = fopen(argv[1], "wb");
+    FILE *file = fopen(argv[argvoffset + 1], "wb");
 
-    if (file == NULL)
+    if (file == NULL) {
+        printf("Failed to open file \"%s\".\n", argv[argvoffset + 1]);
         return 1;
+    }
 
 
     //initialize networking
     //bind to ip 0.0.0.0:PORT
     IP ip;
-    ip.i = 0;
+    ip_init(&ip, ipv6enabled);
+
     Lossless_UDP *ludp = new_lossless_udp(new_networking(ip, PORT));
     perror("Initialization");
 

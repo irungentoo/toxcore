@@ -49,6 +49,7 @@ libtool
 
 .deps
 .libs
+.dirstamp
 
 #netbeans
 nbproject

@@ -26,12 +26,16 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "../toxcore/DHT.h"
+#include "../toxcore/LAN_discovery.h"
 #include "../toxcore/friend_requests.h"
-#include "../testing/misc_tools.h"
+#include "../testing/misc_tools.c"
 
-//Sleep function (x = milliseconds)
+/* Sleep function (x = milliseconds) */
 #ifdef WIN32
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -52,7 +56,8 @@ void manage_keys(DHT *dht)
     FILE *keys_file = fopen("key", "r");
 
     if (keys_file != NULL) {
-        //if file was opened successfully -- load keys
+        /* If file was opened successfully -- load keys,
+           otherwise save new keys */
         size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (read_size != KEYS_SIZE) {
@@ -61,9 +66,8 @@ void manage_keys(DHT *dht)
         }
 
         load_keys(dht->c, keys);
-        printf("Keys loaded successfully\n");
+        printf("Keys loaded successfully.\n");
     } else {
-        //otherwise save new keys
         new_keys(dht->c);
         save_keys(dht->c, keys);
         keys_file = fopen("key", "w");
@@ -73,7 +77,7 @@ void manage_keys(DHT *dht)
             exit(1);
         }
 
-        printf("Keys saved successfully\n");
+        printf("Keys saved successfully.\n");
     }
 
     fclose(keys_file);
@@ -81,11 +85,27 @@ void manage_keys(DHT *dht)
 
 int main(int argc, char *argv[])
 {
-    //initialize networking
-    //bind to ip 0.0.0.0:PORT
+    if (argc == 2 && !strncasecmp(argv[1], "-h", 3)) {
+        printf("Usage (connected)  : %s [--ipv4|--ipv6] IP PORT KEY\n", argv[0]);
+        printf("Usage (unconnected): %s [--ipv4|--ipv6]\n", argv[0]);
+        exit(0);
+    }
+
+    /* let user override default by cmdline */
+    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+    int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+
+    if (argvoffset < 0)
+        exit(1);
+
+    /* Initialize networking -
+       Bind to ip 0.0.0.0 / [::] : PORT */
     IP ip;
-    ip.i = 0;
+    ip_init(&ip, ipv6enabled);
+
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+    perror("Initialization");
+
     manage_keys(dht);
     printf("Public key: ");
     uint32_t i;
@@ -104,21 +124,26 @@ int main(int argc, char *argv[])
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", PORT);
+    printf("Port: %u\n", ntohs(dht->c->lossless_udp->net->port));
 
-    perror("Initialization");
-
-    if (argc > 3) {
+    if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
-        IP_Port bootstrap_info;
-        bootstrap_info.ip.i = inet_addr(argv[1]);
-        bootstrap_info.port = htons(atoi(argv[2]));
-        uint8_t *bootstrap_key = hex_string_to_bin(argv[3]);
-        DHT_bootstrap(dht, bootstrap_info, bootstrap_key);
+        uint16_t port = htons(atoi(argv[argvoffset + 2]));
+        uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
+        int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1],
+                                             ipv6enabled, port, bootstrap_key);
         free(bootstrap_key);
+
+        if (!res) {
+            printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
+            exit(1);
+        }
     }
 
     int is_waiting_for_dht_connection = 1;
+
+    uint64_t last_LANdiscovery = 0;
+    LANdiscovery_init(dht);
 
     while (1) {
         if (is_waiting_for_dht_connection && DHT_isconnected(dht)) {
@@ -127,6 +152,11 @@ int main(int argc, char *argv[])
         }
 
         do_DHT(dht);
+
+        if (last_LANdiscovery + (is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL) < unix_time()) {
+            send_LANdiscovery(htons(PORT), dht->c);
+            last_LANdiscovery = unix_time();
+        }
 
         networking_poll(dht->c->lossless_udp->net);
 
