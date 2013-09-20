@@ -325,18 +325,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #endif
 
     /* Functions to increase the size of the send and receive UDP buffers.
-     * NOTE: Uncomment if necessary.
      */
-    /*
     int n = 1024 * 1024 * 2;
-    if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&n, sizeof(n)) == -1)
-    {
-        return -1;
-    }
-
-    if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&n, sizeof(n)) == -1)
-        return -1;
-    */
+    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (char *)&n, sizeof(n));
+    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (char *)&n, sizeof(n));
 
     /* Enable broadcast on socket */
     int broadcast = 1;
