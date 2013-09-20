@@ -60,7 +60,7 @@ int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
  * TODO: make this better
  */
 
-static uint8_t randtable_initget(Lossless_UDP *ludp, uint32_t index,  uint8_t value)
+static uint32_t randtable_initget(Lossless_UDP *ludp, uint32_t index,  uint8_t value)
 {
     if (ludp->randtable[index][value] == 0)
         ludp->randtable[index][value] = random_int();
