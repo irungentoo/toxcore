@@ -133,7 +133,7 @@ int                     rtp_check_late_message (rtp_session_t* _session, struct 
 void                    rtp_register_msg ( rtp_session_t* _session, struct rtp_msg_s* );
 
 /* Functions handling sending */
-int                     rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, int _socket );
+int                     rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, void* _core_handler );
 struct rtp_msg_s*       rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
 
 

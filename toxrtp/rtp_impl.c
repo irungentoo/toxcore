@@ -61,14 +61,9 @@ static const uint32_t _payload_table[] = /* PAYLOAD TABLE */
 };
 
 /* Current compatibility solution */
-int m_sendpacket(int sock, tox_IP_Port ip_port, uint8_t *data, uint32_t length)
+int m_sendpacket(Networking_Core* _core_handler, void *ip_port, uint8_t *data, uint32_t length)
 {
-    IP_Port _convert;
-
-    _convert.ip.i = ip_port.ip.i;
-    _convert.port = ip_port.port;
-
-    return sendpacket(sock, _convert, data, length);
+    return sendpacket(_core_handler, *((IP_Port*) ip_port), data, length);
 }
 
 rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
@@ -260,7 +255,7 @@ int rtp_add_receiver ( rtp_session_t* _session, tox_IP_Port* _dest )
     return SUCCESS;
 }
 
-int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
+int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, void* _core_handler )
 {
     if ( !_msg  || _msg->_data == NULL || _msg->_length <= 0 ) {
         t_perror ( RTP_ERROR_EMPTY_MESSAGE );
@@ -295,7 +290,7 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
     rtp_dest_list_t* _it;
     for ( _it = _session->_dest_list; _it != NULL; _it = _it->next ) {
 
-        _last = m_sendpacket ( _socket, _it->_dest, _send_data, _length + 1);
+        _last = m_sendpacket ( _core_handler, &_it->_dest, _send_data, _length + 1);
 
         if ( _last < 0 ) {
             t_perror ( RTP_ERROR_STD_SEND_FAILURE );

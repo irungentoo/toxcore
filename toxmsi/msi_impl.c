@@ -20,7 +20,7 @@ static msi_session_t* _msession_handler = NULL;
 
 /* CALLBACKS */
 /*int (*msi_send_message_callback) ( int, uint8_t*, uint32_t ) = NULL;*/
-int ( *msi_send_message_callback ) ( int _socket, tox_IP_Port,  uint8_t*, uint32_t ) = NULL;
+int ( *msi_send_message_callback ) ( void* _core_handler, tox_IP_Port,  uint8_t*, uint32_t ) = NULL;
 int ( *msi_recv_message_callback ) ( tox_IP_Port*, uint8_t*, uint32_t* ) = NULL;
 
 MCBTYPE ( *msi_recv_invite_callback ) ( MCBARGS ) = NULL;
@@ -50,7 +50,7 @@ MCBTYPE ( *msi_ending_callback ) ( MCBARGS ) = NULL;
 
 /* REGISTER CALLBACKS */
 /*void msi_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) )*/
-void msi_register_callback_send ( int ( *callback ) ( int _socket, tox_IP_Port, uint8_t*, uint32_t ) )
+void msi_register_callback_send ( int ( *callback ) ( void* _core_handler, tox_IP_Port, uint8_t*, uint32_t ) )
 {
     msi_send_message_callback = callback;
 }
@@ -174,7 +174,7 @@ int msi_send_msg ( msi_session_t* _session, msi_msg_t* _msg )
 
     _lenght += 1;
 
-    _status = ( *msi_send_message_callback ) ( _session->_socket, _session->_friend_id, _msg_string_final, _lenght );
+    _status = ( *msi_send_message_callback ) ( _session->_core_handler, _session->_friend_id, _msg_string_final, _lenght );
 
     free ( _msg_string );
 
@@ -209,7 +209,7 @@ void flush_session_type ( msi_session_t* _session, msi_msg_t* _msg )
 /*------------------------*/
 /*------------------------*/
 
-msi_session_t* msi_init_session ( int _socket, const uint8_t* _user_agent )
+msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agent )
 {
     if ( _msession_handler ) /* Only one session possible for now? */
         return _msession_handler;
@@ -218,7 +218,7 @@ msi_session_t* msi_init_session ( int _socket, const uint8_t* _user_agent )
 
     _session->_oldest_msg = _session->_last_msg = NULL;
     _session->_call_info = call_inactive;
-    _session->_socket = _socket;
+    _session->_core_handler = _core_handler;
 
     _session->_local_call_type = type_audio;
     _session->_peer_call_type  = type_audio;

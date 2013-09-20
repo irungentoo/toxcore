@@ -71,7 +71,7 @@ typedef struct msi_session_s {
 
     call_state _call_info;
 
-    int _socket;
+    void* _core_handler;
 
     call_type  _local_call_type;
     call_type  _peer_call_type;
@@ -84,7 +84,7 @@ typedef struct msi_session_s {
 
 
 
-msi_session_t* msi_init_session ( int _socket, const uint8_t* _user_agent );
+msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agent );
 int msi_terminate_session ( msi_session_t* _session );
 
 pthread_t msi_start_main_loop ( msi_session_t* _session );
@@ -92,7 +92,7 @@ pthread_t msi_start_main_loop ( msi_session_t* _session );
 /* Registering callbacks */
 
 /*void msi_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) );*/
-void msi_register_callback_send ( int ( *callback ) ( int _socket, tox_IP_Port,  uint8_t*, uint32_t ) );
+void msi_register_callback_send ( int ( *callback ) ( void* _core_handler, tox_IP_Port,  uint8_t*, uint32_t ) );
 
 /* Callbacks that handle the states */
 void msi_register_callback_call_started ( MCALLBACK );

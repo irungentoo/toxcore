@@ -16,7 +16,7 @@
 
 #include "util.h"
 
-long int now()
+uint64_t now()
 {
     return time(NULL);
 }
