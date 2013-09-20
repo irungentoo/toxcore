@@ -28,6 +28,10 @@
 #include "network.h"
 #include "util.h"
 
+#ifndef IPV6_V6ONLY
+#define IPV6_V6ONLY 27
+#endif
+
 /*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void)
 {
@@ -407,7 +411,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #ifdef LOGGING
         res =
 #endif
-            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
 #ifdef LOGGING
 
         if (res < 0) {
