@@ -29,6 +29,7 @@
 
 
 #include <arpa/inet.h> /* Fixes implicit function warning. */
+#include <assert.h>
 
 static int _seed = -1; /* Not initiated */
 
@@ -41,6 +42,10 @@ int t_setipport ( const char* _ip, unsigned short _port, void* _dest )
     IP_Port* _dest_c = ( IP_Port* ) _dest;
 
     _dest_c->ip.i = resolve_addr ( _ip );
+
+    if ( !_dest_c->ip.i )
+        return FAILURE;
+
     _dest_c->port = htons ( _port );
 
     return SUCCESS;
@@ -64,7 +69,7 @@ void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
 {
     /*
 * Using countdown to zero method
-* It's quite much faster than for(_it = 0; _it < _size; _it++);
+     * It's faster than for(_it = 0; _it < _size; _it++);
 */
     size_t _it = _size;
 
@@ -72,6 +77,7 @@ void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
         _it--;
         _dest[_it] = _source[_it];
     } while ( _it );
+
 }
 
 uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size )
@@ -91,22 +97,47 @@ uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size )
 
 size_t t_memlen ( const uint8_t* _valu)
 {
-    const uint8_t* _it = _valu;
-    size_t _retu;
+    const uint8_t* _it;
+    size_t _retu = 0;
 
-    for ( _retu = 0; *_it; ++_it ){ _retu++; }
+    for ( _it = _valu; *_it; ++_it ) ++_retu;
 
     return _retu;
 }
 
 uint8_t* t_strallcpy ( const uint8_t* _source ) /* string alloc and copy */
 {
-    size_t _length = t_memlen(_source);
-    assert(_length); /* Leave this assert */
+    if ( !_source )
+        return NULL;
+
+    size_t _length = t_memlen(_source) + 1; /* make space for null character */
 
     uint8_t* _dest = malloc( sizeof ( uint8_t ) * _length );
 
     t_memcpy(_dest, _source, _length);
 
     return _dest;
+}
+
+size_t t_strfind ( const uint8_t* _str, const uint8_t* _substr )
+{
+    size_t _pos = 0;
+    size_t _it, _delit = 0;
+
+    for ( _it = 0; _str[_it] != '\0'; _it++ ){
+        if ( _str[_it] == _substr[_delit] ){
+            _pos = _it;
+            while ( _str[_it] == _substr[_delit] && _str[_it] != '\0' ){
+                _it ++;
+                _delit++;
+
+                if ( _substr[_delit] == '\0' ){
+                    return _pos;
+                }
+            }
+            _delit = 0;
+            _pos = 0;
+        }
+    }
+    return _pos;
 }

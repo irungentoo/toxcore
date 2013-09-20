@@ -125,6 +125,7 @@ typedef struct rtp_session_s {
 
 
 void                    rtp_free_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg );
+int                     rtp_release_session_recv ( rtp_session_t* _session );
 
 /* Functions handling receiving */
 struct rtp_msg_s*       rtp_recv_msg ( rtp_session_t* _session );

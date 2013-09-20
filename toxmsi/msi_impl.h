@@ -32,31 +32,37 @@
 #include "tox.h"
 #include <pthread.h>
 
-#define MCBARGS void
+#define MCBARGS void* _arg
 #define MCBTYPE int
 #define MCALLBACK MCBTYPE (*callback) (MCBARGS)
 
 #define MSI_PACKET 69
 
+#define CT_AUDIO_HEADER_VALUE "AUDIO"
+#define CT_VIDEO_HEADER_VALUE "VIDEO"
+
+
 size_t m_strlen ( uint8_t* str );
 
 typedef enum {
-    call_inviting,
+    type_audio = 1,
+    type_video,
+} call_type;
+
+typedef enum {
+    call_inviting, /* when sending call invite */
+    call_starting, /* when getting call invite */
     call_active,
     call_hold,
-    call_ended
+    call_inactive
 
 } call_state;
 
-typedef struct media_session_s {
-    rtp_session_t* _rtp_audio;
-    rtp_session_t* _rtp_video;
-
-
+typedef struct msi_session_s {
     pthread_t _thread_id;
 
-    struct media_msg_s* _oldest_msg;
-    struct media_msg_s* _last_msg; /* tail */
+    struct msi_msg_s* _oldest_msg;
+    struct msi_msg_s* _last_msg; /* tail */
     /*int _friend_id;*/
     tox_IP_Port _friend_id;
 
@@ -67,19 +73,21 @@ typedef struct media_session_s {
 
     int _socket;
 
-    uint8_t  _call_type;
-    uint32_t _frame_rate;
+    call_type  _local_call_type;
+    call_type  _peer_call_type;
 
-    /* Martijnvdc add your media stuff here so this will be used in messenger */
+    const uint8_t* _user_agent;
 
-} media_session_t;
+    void* _agent_handler;
+
+} msi_session_t;
 
 
 
-media_session_t* msi_init_session ( int _socket );
-int msi_terminate_session ( media_session_t* _session );
+msi_session_t* msi_init_session ( int _socket, const uint8_t* _user_agent );
+int msi_terminate_session ( msi_session_t* _session );
 
-int msi_start_main_loop ( media_session_t* _session );
+pthread_t msi_start_main_loop ( msi_session_t* _session );
 
 /* Registering callbacks */
 
@@ -103,13 +111,14 @@ void msi_register_callback_recv_ending ( MCALLBACK );
 /* Function handling receiving from core */
 /*static int msi_handlepacket ( tox_IP_Port ip_port, uint8_t* _data, uint16_t _lenght ); */
 
+/* functions describing the usage of msi */
+int msi_invite ( msi_session_t* _session, call_type _call_type );
+int msi_hangup ( msi_session_t* _session );
 
-int msi_invite ( media_session_t* _session );
-int msi_hangup ( media_session_t* _session );
+int msi_answer ( msi_session_t* _session, call_type _call_type );
+int msi_cancel ( msi_session_t* _session );
+int msi_reject ( msi_session_t* _session );
 
-int msi_answer ( media_session_t* _session );
-int msi_cancel ( media_session_t* _session );
-int msi_reject ( media_session_t* _session );
-
+int msi_send_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
 
 #endif /* _MSI_IMPL_H_ */

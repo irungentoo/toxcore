@@ -105,9 +105,9 @@ struct jitter_buffer * create_queue(int capacity)
 /* returns 1 if 'a' has a higher sequence number than 'b' */
 uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a,uint32_t ts_b)
 {
-    //printf("tsa: %d tsb: %d\n",ts_a,ts_b);
+  //  printf("tsa: %d tsb: %d\n",ts_a,ts_b);
     /* should be stable enough */
-    return (sn_a>sn_b);//||ts_a>ts_b);
+    return (sn_a>sn_b||ts_a>ts_b);
 }
 
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */

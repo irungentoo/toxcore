@@ -45,10 +45,9 @@ if ( pthread_create ( &_thread_id, NULL, _func, _arg_ptr ) ) { \
 int t_setipport ( const char* _ip, unsigned short _port, void* _cont );
 uint32_t t_random ( uint32_t _max );
 
-
 /* It's a bit faster than the memcpy it self and more optimized for using
  * a uint8_t since memcpy has optimizations when copying "words" i.e. long type.
- * Otherwise it just copies char's while we need uint8_t
+ * Otherwise it just copies char's while we need only uint8_t
  */
 void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size );
 
@@ -61,6 +60,8 @@ uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size );
 /* Get null terminated len */
 size_t t_memlen ( const uint8_t* _valu );
 
+/* finds location of substring */
+size_t t_strfind ( const uint8_t* _str, const uint8_t* _substr );
 
 /* string alloc and copy ( ! must be null terminated ) */
 uint8_t* t_strallcpy ( const uint8_t* _source );

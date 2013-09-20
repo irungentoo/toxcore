@@ -69,9 +69,7 @@ void rtp_header_print (const rtp_header_t* _header)
 rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
 {
     if ( !_payload ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_PAYLOAD_NULL );
-#endif /* _USE_ERRORS */
         return NULL;
     }
 
@@ -102,18 +100,14 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
     uint32_t _lenght = _MIN_HEADER_LENGTH + ( cc * 4 );
 
     if ( _bytes < _lenght ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_PAYLOAD_INVALID );
-#endif /* _USE_ERRORS */
         return NULL;
     }
 
     if ( cc > 0 ) {
         _retu->_csrc = malloc ( sizeof ( uint32_t ) * cc );
     } else { /* But this should not happen ever */
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_HEADER_PARSING );
-#endif /* _USE_ERRORS */
         return NULL;
     }
 
@@ -152,9 +146,7 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
 rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload, size_t _bytes )
 {
     if ( !_payload ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_PAYLOAD_NULL );
-#endif /* _USE_ERRORS */
         return NULL;
     }
 
@@ -167,9 +159,7 @@ rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload, size_t _byte
     uint16_t _ext_len = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
 
     if ( _bytes < ( _ext_len * sizeof(uint32_t) ) ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_PAYLOAD_INVALID );
-#endif /* _USE_ERRORS */
         return NULL;
     }
 

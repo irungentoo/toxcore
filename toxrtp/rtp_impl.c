@@ -263,9 +263,7 @@ int rtp_add_receiver ( rtp_session_t* _session, tox_IP_Port* _dest )
 int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
 {
     if ( !_msg || _msg->_data == NULL || _msg->_length <= 0 ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_EMPTY_MESSAGE );
-#endif /* _USE_ERRORS */
         return FAILURE;
     }
 
@@ -277,12 +275,13 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
 
     uint16_t _prefix_length = _session->_prefix_length;
 
+    _send_data[0] = 70;
+
     if ( _session->_prefix && _length + _prefix_length < MAX_UDP_PACKET_SIZE ) {
         /*t_memcpy(_send_data, _session->_prefix, _prefix_length);*/
-        _send_data[0] = 70;
-        t_memcpy ( _send_data + _prefix_length, _msg->_data, _length - 1 );
+        t_memcpy ( _send_data + 1, _msg->_data, _length );
     } else {
-        t_memcpy ( _send_data, _msg->_data, _length );
+        t_memcpy ( _send_data + 1, _msg->_data, _length );
     }
 
     /* Set sequ number */
@@ -296,12 +295,11 @@ int rtp_send_msg ( rtp_session_t* _session, rtp_msg_t* _msg, int _socket )
     rtp_dest_list_t* _it;
     for ( _it = _session->_dest_list; _it != NULL; _it = _it->next ) {
 
-        _last = m_sendpacket ( _socket, _it->_dest, _send_data, _length );
+        _last = m_sendpacket ( _socket, _it->_dest, _send_data, _length + 1);
 
         if ( _last < 0 ) {
-#ifdef _USE_ERRORS
             t_perror ( RTP_ERROR_STD_SEND_FAILURE );
-#endif /* _USE_ERRORS */
+            printf("Stderror: %s", strerror(errno));
         } else {
             _session->_packets_sent ++;
             _total += _last;
@@ -328,6 +326,22 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
         _session->_last_msg = NULL;
 
     return _retu;
+}
+
+int rtp_release_session_recv ( rtp_session_t* _session )
+{
+    if ( !_session ){
+        return FAILURE;
+    }
+
+    rtp_msg_t* _tmp,* _it;
+
+    for ( _it = _session->_oldest_msg; _it; _it = _tmp ){
+        _tmp = _it->_next;
+        rtp_free_msg(_session, _it);
+    }
+
+    return SUCCESS;
 }
 
 rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
@@ -494,16 +508,12 @@ int rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint1
 int rtp_remove_resolution_marking ( rtp_session_t* _session )
 {
     if ( _session->_extension == 0 || ! ( _session->_ext_header ) ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
-#endif /* _USE_ERRORS */
         return FAILURE;
     }
 
     if ( !( _session->_ext_header->_ext_type & RTP_EXT_TYPE_RESOLUTION ) ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
-#endif /* _USE_ERRORS */
         return FAILURE;
     }
 
@@ -572,16 +582,12 @@ int rtp_add_framerate_marking ( rtp_session_t* _session, uint32_t _value )
 int rtp_remove_framerate_marking ( rtp_session_t* _session )
 {
     if ( _session->_extension == 0 || ! ( _session->_ext_header ) ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
-#endif /* _USE_ERRORS */
         return FAILURE;
     }
 
     if ( !( _session->_ext_header->_ext_type & RTP_EXT_TYPE_FRAMERATE ) ) {
-#ifdef _USE_ERRORS
         t_perror ( RTP_ERROR_INVALID_EXTERNAL_HEADER );
-#endif /* _USE_ERRORS */
         return FAILURE;
     }
 
