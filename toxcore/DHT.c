@@ -1658,6 +1658,7 @@ void DHT_save(DHT *dht, uint8_t *data)
     len = num * sizeof(Client_data);
     type = DHT_STATE_TYPE_CLIENTS;
     data = z_state_save_subheader(data, len, type);
+
     if (num) {
         Client_data *clients = (Client_data *)data;
 
@@ -1665,6 +1666,7 @@ void DHT_save(DHT *dht, uint8_t *data)
             if (dht->close_clientlist[i].timestamp != 0)
                 memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
     }
+
     data += len;
 }
 

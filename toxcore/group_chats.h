@@ -31,6 +31,8 @@
 extern "C" {
 #endif
 
+#define MAX_NICK_BYTES 128
+
 typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     uint64_t    pingid;
@@ -39,6 +41,9 @@ typedef struct {
     uint64_t    last_recv;
     uint64_t    last_recv_msgping;
     uint32_t    last_message_number;
+
+    uint8_t     nick[MAX_NICK_BYTES];
+    uint16_t    nick_len;
 } Group_Peer;
 
 typedef struct {
@@ -64,6 +69,14 @@ typedef struct Group_Chat {
     void *group_message_userdata;
 
 } Group_Chat;
+
+/* Copy the name of peernum to name.
+ * name must be at least MAX_NICK_BYTES long.
+ *
+ * return length of name if success
+ * return -1 if failure
+ */
+int group_peername(Group_Chat *chat, int peernum, uint8_t *name);
 
 /*
  * Set callback function for chat messages.

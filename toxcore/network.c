@@ -325,18 +325,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #endif
 
     /* Functions to increase the size of the send and receive UDP buffers.
-     * NOTE: Uncomment if necessary.
      */
-    /*
     int n = 1024 * 1024 * 2;
-    if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&n, sizeof(n)) == -1)
-    {
-        return -1;
-    }
-
-    if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&n, sizeof(n)) == -1)
-        return -1;
-    */
+    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (char *)&n, sizeof(n));
+    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (char *)&n, sizeof(n));
 
     /* Enable broadcast on socket */
     int broadcast = 1;
@@ -350,10 +342,6 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     ioctlsocket(temp->sock, FIONBIO, &mode);
 #else
     fcntl(temp->sock, F_SETFL, O_NONBLOCK, 1);
-#endif
-
-#ifdef LOGGING
-    loginit(ntohs(port));
 #endif
 
     /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
@@ -461,6 +449,8 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         if (!res) {
             temp->port = *portptr;
 #ifdef LOGGING
+            loginit(temp->port);
+
             sprintf(logbuffer, "Bound successfully to %s:%u.\n", ip_ntoa(&ip), ntohs(temp->port));
             loglog(logbuffer);
 #endif

@@ -60,7 +60,7 @@ int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
  * TODO: make this better
  */
 
-static uint8_t randtable_initget(Lossless_UDP *ludp, uint32_t index,  uint8_t value)
+static uint32_t randtable_initget(Lossless_UDP *ludp, uint32_t index,  uint8_t value)
 {
     if (ludp->randtable[index][value] == 0)
         ludp->randtable[index][value] = random_int();
@@ -170,6 +170,7 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
     memset(connection, 0, sizeof(Connection));
 
     uint32_t handshake_id1 = handshake_id(ludp, ip_port);
+    uint64_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
 
     *connection = (Connection) {
         .ip_port            = ip_port,
@@ -186,7 +187,7 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
                    .killat             = ~0,
                     .send_counter       = 0,
                      /* add randomness to timeout to prevent connections getting stuck in a loop. */
-                     .timeout            = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT
+                     .timeout            = timeout
     };
 
     return connection_id;
@@ -673,7 +674,7 @@ static int handle_SYNC3(Lossless_UDP *ludp, int connection_id, uint8_t counter, 
     /* Packet valid. */
     if (comp_1 <= BUFFER_PACKET_NUM &&
             comp_2 <= BUFFER_PACKET_NUM &&
-            comp_counter < 10 && comp_counter != 0) {
+            comp_counter == 1) {
         connection->orecv_packetnum = recv_packetnum;
         connection->osent_packetnum = sent_packetnum;
         connection->successful_sent = recv_packetnum;
@@ -684,7 +685,7 @@ static int handle_SYNC3(Lossless_UDP *ludp, int connection_id, uint8_t counter, 
 
         for (i = 0; i < number; ++i) {
             temp = ntohl(req_packets[i]);
-            memcpy(connection->req_packets + i, &temp, 4 * number);
+            memcpy(connection->req_packets + i, &temp, sizeof(uint32_t));
         }
 
         connection->num_req_paquets = number;

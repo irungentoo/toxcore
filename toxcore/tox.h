@@ -357,9 +357,9 @@ void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int, uint8_t
 
 /* Set the callback for group messages.
  *
- *  Function(Tox *tox, int groupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
-void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t *, uint16_t, void *),
                                 void *userdata);
 
 /* Creates a new groupchat and puts it in the chats array.
@@ -375,6 +375,14 @@ int tox_add_groupchat(Tox *tox);
  * return -1 if failure.
  */
 int tox_del_groupchat(Tox *tox, int groupnumber);
+
+/* Copy the name of peernumber who is in groupnumber to name.
+ * name must be at least TOX_MAX_NAME_LENGTH long.
+ *
+ * return length of name if success
+ * return -1 if failure
+ */
+int tox_group_peername(Tox *tox, int groupnumber, int peernumber, uint8_t *name);
 
 /* invite friendnumber to groupnumber
  * return 0 on success

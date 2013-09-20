@@ -137,6 +137,7 @@ void get_id(Tox *m, char *data)
     tox_getaddress(m, address);
 
     uint32_t i = 0;
+
     for (; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
         sprintf(data + 2 * i + offset, "%02X ", address[i]);
     }
@@ -257,9 +258,9 @@ void line_eval(Tox *m, char *line)
                     if (num >= 0) {
                         sprintf(numstring, "[i] Added friend as %d.", num);
                         save_data(m);
-                    }
-                    else
+                    } else
                         sprintf(numstring, "[i] Unknown error %i.", num);
+
                     break;
             }
 
@@ -268,35 +269,19 @@ void line_eval(Tox *m, char *line)
         } else if (inpt_command == 'd') {
             tox_do(m);
         } else if (inpt_command == 'm') { //message command: /m friendnumber messsage
-            size_t len = strlen(line);
+            char *posi[1];
+            int num = strtoul(line + prompt_offset, posi, 0);
 
-            if (len < 3)
-                return;
-
-            char numstring[len - 3];
-            char message[len - 3];
-            uint32_t i;
-
-            for (i = 0; i < len; i++) {
-                if (line[i + 3] != ' ') {
-                    numstring[i] = line[i + 3];
+            if (**posi != 0) {
+                if (tox_sendmessage(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1) + 1) < 1) {
+                    char sss[256];
+                    sprintf(sss, "[i] could not send message to friend num %u", num);
+                    new_lines(sss);
                 } else {
-                    uint32_t j;
-
-                    for (j = (i + 1); j < (len + 1); j++)
-                        message[j - i - 1] = line[j + 3];
-
-                    break;
+                    new_lines(format_message(m, *posi + 1, -1));
                 }
-            }
-
-            int num = atoi(numstring);
-
-            if (tox_sendmessage(m, num, (uint8_t *) message, strlen(message) + 1) < 1) {
-                new_lines("[i] could not send message");
-            } else {
-                new_lines(format_message(m, message, -1));
-            }
+            } else
+                new_lines("Error, bad input.");
         } else if (inpt_command == 'n') {
             uint8_t name[TOX_MAX_NAME_LENGTH];
             size_t i, len = strlen(line);
@@ -508,12 +493,14 @@ static int load_data(Tox *m)
 {
     FILE *data_file = fopen(data_file_name, "r");
     size_t size = 0;
+
     if (data_file) {
         fseek(data_file, 0, SEEK_END);
         size = ftell(data_file);
         rewind(data_file);
 
         uint8_t data[size];
+
         if (fread(data, sizeof(uint8_t), size, data_file) != size) {
             fputs("[!] could not read data file!\n", stderr);
             fclose(data_file);
@@ -537,6 +524,7 @@ static int load_data(Tox *m)
 static int save_data(Tox *m)
 {
     FILE *data_file = fopen(data_file_name, "w");
+
     if (!data_file) {
         perror("[!] load_key");
         return 0;
@@ -563,6 +551,7 @@ static int save_data(Tox *m)
 static int load_data_or_init(Tox *m, char *path)
 {
     data_file_name = path;
+
     if (load_data(m))
         return 1;
 
@@ -588,10 +577,12 @@ void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *use
     new_lines(msg);
 }
 
-void print_groupmessage(Tox *m, int groupnumber, uint8_t *message, uint16_t length, void *userdata)
+void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *message, uint16_t length, void *userdata)
 {
     char msg[256 + length];
-    sprintf(msg, "[g] %u: %s", groupnumber, message);
+    uint8_t name[TOX_MAX_NAME_LENGTH];
+    tox_group_peername(m, groupnumber, peernumber, name);
+    sprintf(msg, "[g] %u: <%s>: %s", groupnumber, name, message);
     new_lines(msg);
 }
 
@@ -669,6 +660,7 @@ int main(int argc, char *argv[])
     new_lines("[i] change username with /n");
     uint8_t name[TOX_MAX_NAME_LENGTH];
     uint16_t namelen = tox_getselfname(m, name, sizeof(name));
+
     if (namelen > 0) {
         char whoami[128 + TOX_MAX_NAME_LENGTH];
         snprintf(whoami, sizeof(whoami), "[i] your current username is: %s", name);
