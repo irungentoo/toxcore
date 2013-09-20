@@ -139,9 +139,27 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
     uint32_t i;
     uint64_t temp_time = unix_time();
 
+    uint8_t candropipv4 = 1;
+    if (ip_port.ip.family == AF_INET6) {
+        uint8_t ipv6cnt = 0;
+
+        /* ipv6: count how many spots are used */
+        for(i = 0; i < length; i++)
+            if (list[i].ip_port.ip.family == AF_INET6)
+                ipv6cnt++;
+
+        /* more than half the list filled with ipv6: block ipv4->ipv6 overwrite */
+        if (ipv6cnt > length / 2)
+            candropipv4 = 0;
+    }
+
     /* if client_id is in list, find it and maybe overwrite ip_port */
     for (i = 0; i < length; ++i)
         if (id_equal(list[i].client_id, client_id)) {
+            /* if we got "too many" ipv6 addresses already, keep the ipv4 address */
+            if (!candropipv4 && (list[i].ip_port.ip.family == AF_INET))
+                return 1;
+
             /* Refresh the client timestamp. */
             list[i].timestamp = temp_time;
             list[i].ip_port = ip_port;
@@ -299,22 +317,34 @@ static int replace_bad(    Client_data    *list,
                            uint8_t        *client_id,
                            IP_Port         ip_port )
 {
-    uint32_t i = 0;
+    uint32_t i;
     uint64_t temp_time = unix_time();
 
-    /* reserve the lower end to IPv4 for now */
-    if (ip_port.ip.family == AF_INET6)
-        i = length / 2;
+    uint8_t candropipv4 = 1;
+    if (ip_port.ip.family == AF_INET6) {
+        uint32_t ipv6cnt = 0;
 
-    for (; i < length; ++i) {
+        /* ipv6: count how many spots are used */
+        for(i = 0; i < length; i++)
+            if (list[i].ip_port.ip.family == AF_INET6)
+                ipv6cnt++;
+
+        /* more than half the list filled with ipv6: block ipv4->ipv6 overwrite */
+        if (ipv6cnt > length / 2)
+            candropipv4 = 0;
+    }
+
+    for (i = 0; i < length; ++i) {
         /* If node is bad */
-        if (is_timeout(temp_time, list[i].timestamp, BAD_NODE_TIMEOUT)) {
-            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-            list[i].ip_port = ip_port;
-            list[i].timestamp = temp_time;
-            ip_reset(&list[i].ret_ip_port.ip);
-            list[i].ret_ip_port.port = 0;
-            list[i].ret_timestamp = 0;
+        Client_data *client = &list[i];
+        if ((candropipv4 || (client->ip_port.ip.family == AF_INET6)) &&
+            is_timeout(temp_time, client->timestamp, BAD_NODE_TIMEOUT)) {
+            memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
+            client->ip_port = ip_port;
+            client->timestamp = temp_time;
+            ip_reset(&client->ret_ip_port.ip);
+            client->ret_ip_port.port = 0;
+            client->ret_timestamp = 0;
             return 0;
         }
     }
@@ -351,24 +381,69 @@ static int replace_good(   Client_data    *list,
                            IP_Port         ip_port,
                            uint8_t        *comp_client_id )
 {
-    uint32_t i = 0;
-    uint64_t temp_time = unix_time();
     sort_list(list, length, comp_client_id);
 
-    /* reserve the lower end to IPv4 for now */
-    if (ip_port.ip.family == AF_INET6)
-        i = length / 2;
+    uint8_t candropipv4 = 1;
+    if (ip_port.ip.family == AF_INET6) {
+        uint32_t i, ipv6cnt = 0;
 
-    for (; i < length; ++i)
-        if (id_closest(comp_client_id, list[i].client_id, client_id) == 2) {
-            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-            list[i].ip_port = ip_port;
-            list[i].timestamp = temp_time;
-            ip_reset(&list[i].ret_ip_port.ip);
-            list[i].ret_ip_port.port = 0;
-            list[i].ret_timestamp = 0;
-            return 0;
+        /* ipv6: count how many spots are used */
+        for(i = 0; i < length; i++)
+            if (list[i].ip_port.ip.family == AF_INET6)
+                ipv6cnt++;
+
+        /* more than half the list filled with ipv6: block ipv4->ipv6 overwrite */
+        if (ipv6cnt > length / 2)
+            candropipv4 = 0;
+    }
+
+    int8_t replace = -1;
+    uint32_t i;
+
+    if (candropipv4) {
+        /* either we got an ipv4 address, or we're "allowed" to push out an ipv4
+         * address in favor of an ipv6 one
+         *
+         * because the list is sorted, we can simply check the last client_id,
+         * either it is closer, then every other one is as well, or it is further,
+         * then it gets pushed out in favor of the new address, which will with
+         * the next sort() move to its "rightful" position
+         *
+         * we should NOT replace the best worse client_id (original implementation),
+         * because that one was still better than any later in the field, and
+         * we don't want to lose it, but the worst
+         */
+        if (id_closest(comp_client_id, list[length - 1].client_id, client_id) == 2)
+            replace = length - 1;
+    } else {
+        /* ipv6 case without a right to push out an ipv4: only look for ipv6
+         * addresses, the first one we find is either closer (then we can skip
+         * out like above) or further (then we can replace it, like above)
+         */
+        for (i = length - 1; i < length; i--) {
+            Client_data *client = &list[i];
+            if (client->ip_port.ip.family == AF_INET6) {
+                if (id_closest(comp_client_id, list[i].client_id, client_id) == 2)
+                    replace = i;
+
+                break;
+            }
         }
+    }
+
+    if (replace != -1) {
+#ifdef DEBUG
+        assert(replace >= 0 && replace < length);
+#endif
+        Client_data *client = &list[replace];
+        memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
+        client->ip_port = ip_port;
+        client->timestamp = unix_time();
+        ip_reset(&client->ret_ip_port.ip);
+        client->ret_ip_port.port = 0;
+        client->ret_timestamp = 0;
+        return 0;
+    }
 
     return 1;
 }
