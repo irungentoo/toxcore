@@ -1425,12 +1425,12 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
     if (length < size)
         return -1;
 
-    if (DHT_load_old(m->dht, data, size) == -1)
+    if (DHT_load_old(m->dht, data, size) == -1) {
 #ifdef DEBUG
         fprintf(stderr, "Data file: Something wicked happened to the stored connections...\n");
-
+        /* DO go on, friends/name still might be intact */
 #endif
-    /* DO go on, friends/name still might be intact */
+    }
 
     data += size;
     length -= size;
