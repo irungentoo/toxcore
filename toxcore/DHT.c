@@ -404,23 +404,23 @@ static int replace_good(   Client_data    *list,
         /* either we got an ipv4 address, or we're "allowed" to push out an ipv4
          * address in favor of an ipv6 one
          *
-         * because the list is sorted, we can simply check the last client_id,
-         * either it is closer, then every other one is as well, or it is further,
-         * then it gets pushed out in favor of the new address, which will with
-         * the next sort() move to its "rightful" position
+         * because the list is sorted, we can simply check the client_id at the
+         * border, either it is closer, then every other one is as well, or it is
+         * further, then it gets pushed out in favor of the new address, which
+         * will with the next sort() move to its "rightful" position
          *
-         * we should NOT replace the best worse client_id (original implementation),
-         * because that one was still better than any later in the field, and
-         * we don't want to lose it, but the worst
+         * CAVEAT: weirdly enough, the list is sorted DESCENDING in distance
+         * so the furthest element is the first, NOT the last (at least that's
+         * what the comment above sort_list() claims)
          */
-        if (id_closest(comp_client_id, list[length - 1].client_id, client_id) == 2)
-            replace = length - 1;
+        if (id_closest(comp_client_id, list[0].client_id, client_id) == 2)
+            replace = 0;
     } else {
         /* ipv6 case without a right to push out an ipv4: only look for ipv6
          * addresses, the first one we find is either closer (then we can skip
          * out like above) or further (then we can replace it, like above)
          */
-        for (i = length - 1; i < length; i--) {
+        for (i = 0; i < length; i++) {
             Client_data *client = &list[i];
             if (client->ip_port.ip.family == AF_INET6) {
                 if (id_closest(comp_client_id, list[i].client_id, client_id) == 2)
