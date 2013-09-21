@@ -667,10 +667,19 @@ int main(int argc, char *argv[])
         new_lines(whoami);
     }
 
+    time_t timestamp0 = time(NULL);
     while (1) {
-        if (on == 0 && tox_isconnected(m)) {
-            new_lines("[i] connected to DHT");
-            on = 1;
+        if (on == 0) {
+            if (tox_isconnected(m)) {
+                new_lines("[i] connected to DHT");
+                on = 1;
+            } else {
+                time_t timestamp1 = time(NULL);
+                if (timestamp0 + 10 < timestamp1) {
+                    timestamp0 = timestamp1;
+                    tox_bootstrap_from_address(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
+                }
+            }
         }
 
         tox_do(m);
