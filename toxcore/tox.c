@@ -262,16 +262,24 @@ void tox_set_sends_receipts(void *tox, int friendnumber, int yesno)
     m_set_sends_receipts(m, friendnumber, yesno);
 }
 
-/* Allocate and return a list of valid friend id's. List must be freed by the
- * caller.
- *
- * retun 0 if success.
- * return -1 if failure.
- */
-int tox_get_friendlist(void *tox, int **out_list, uint32_t *out_list_length)
+/* Return the number of friends in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_friendlist. */
+size_t tox_count_friendlist(void *tox)
 {
     Messenger *m = tox;
-    return get_friendlist(m, out_list, out_list_length);
+    return count_friendlist(m);
+}
+
+/* Copy a list of valid friend IDs into the array out_list.
+ * If out_list is NULL, returns -1.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+size_t tox_copy_friendlist(void *tox, int *out_list, size_t list_size)
+{
+    Messenger *m = tox;
+    return copy_friendlist(m, out_list, list_size);
 }
 
 /* Set the function that will be executed when a friend request is received.
