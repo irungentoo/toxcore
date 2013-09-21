@@ -749,8 +749,8 @@ static void receive_crypto(Net_Crypto *c)
                                        c->crypto_connections[i].shared_key);
                     c->crypto_connections[i].status = CONN_ESTABLISHED;
 
-                    /* Connection is accepted so we disable the auto kill by setting it to about 1 month from now. */
-                    kill_connection_in(c->lossless_udp, c->crypto_connections[i].number, 3000000);
+                    /* Connection is accepted. */
+                    confirm_connection(c->lossless_udp, c->crypto_connections[i].number);
                 } else {
                     /* This should not happen, kill the connection if it does. */
                     crypto_kill(c, i);
