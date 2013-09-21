@@ -1231,6 +1231,11 @@ void doInbound(Messenger *m)
         int friend_id = getfriend_id(m, public_key);
 
         if (friend_id != -1) {
+            if (m_get_friend_connectionstatus(m, friend_id) == 1) {
+                crypto_kill(m->net_crypto, inconnection);
+                return;
+            }
+
             crypto_kill(m->net_crypto, m->friendlist[friend_id].crypt_connection_id);
             m->friendlist[friend_id].crypt_connection_id =
                 accept_crypto_inbound(m->net_crypto, inconnection, public_key, secret_nonce, session_key);
@@ -1263,8 +1268,8 @@ void doMessenger(Messenger *m)
 
     do_DHT(m->dht);
     do_net_crypto(m->net_crypto);
-    doInbound(m);
     doFriends(m);
+    doInbound(m);
     do_allgroupchats(m);
     LANdiscovery(m);
 
