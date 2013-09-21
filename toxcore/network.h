@@ -277,4 +277,6 @@ Networking_Core *new_networking(IP ip, uint16_t port);
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
 
+int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length);
+
 #endif

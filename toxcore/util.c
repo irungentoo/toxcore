@@ -25,7 +25,7 @@ uint64_t random_64b()
 {
     uint64_t r;
 
-    // This is probably not random enough?
+    /* This is probably not random enough? */
     r = random_int();
     r <<= 32;
     r |= random_int();
