@@ -871,7 +871,8 @@ static void do_data(Lossless_UDP *ludp)
         if (tmp->status == 3 && sendqueue(ludp, tmp_i) != 0 &&
                 (tmp->last_sent + (1000000UL / tmp->data_rate)) <= temp_time) {
             for (j = tmp->last_sent; j < temp_time; j +=  (1000000UL / tmp->data_rate))
-                send_DATA(ludp, tmp_i);
+                if (send_DATA(ludp, tmp_i) <= 0)
+                    break;
 
             tmp->last_sent = temp_time;
 
