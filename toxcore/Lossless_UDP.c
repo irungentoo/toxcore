@@ -185,8 +185,10 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
 {
     int connection_id = getconnection_id(ludp, ip_port);
 
-    if (connection_id != -1)
+    if (connection_id != -1) {
+        confirm_connection(ludp, connection_id);
         return connection_id;
+    }
 
     tox_array_for_each(&ludp->connections, Connection, tmp) {
         if (tmp->status == 0) {
@@ -486,7 +488,41 @@ int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data)
     ++connection->successful_read;
     connection->recvbuffer[index].size = 0;
     return size;
+}
 
+/* Like read_packet() but does leaves the queue as is.
+ *  return 0 if there is no received data in the buffer.
+ *  return length of received packet if successful.
+ */
+int read_packet_silent(Lossless_UDP *ludp, int connection_id, uint8_t *data)
+{
+    if (recvqueue(ludp, connection_id) == 0)
+        return 0;
+
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
+    if (connection->status == 0)
+        return 0;
+
+    uint16_t index = connection->successful_read % connection->recvbuffer_length;
+    uint16_t size  = connection->recvbuffer[index].size;
+    memcpy(data, connection->recvbuffer[index].data, size);
+    return size;
+}
+/* Discard the next packet to be read from the queue
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int discard_packet(Lossless_UDP *ludp, int connection_id)
+{
+    if (recvqueue(ludp, connection_id) == 0)
+        return -1;
+
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+    uint16_t index = connection->successful_read % connection->recvbuffer_length;
+    ++connection->successful_read;
+    connection->recvbuffer[index].size = 0;
+    return 0;
 }
 
 /*  return 0 if data could not be put in packet queue.

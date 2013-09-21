@@ -196,6 +196,18 @@ char id_packet(Lossless_UDP *ludp, int connection_id);
  */
 int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data);
 
+/* Like read_packet() but does leaves the queue as is.
+ *  return 0 if there is no received data in the buffer.
+ *  return length of received packet if successful.
+ */
+int read_packet_silent(Lossless_UDP *ludp, int connection_id, uint8_t *data);
+
+/* Discard the next packet to be read from the queue
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int discard_packet(Lossless_UDP *ludp, int connection_id);
+
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
