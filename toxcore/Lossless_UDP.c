@@ -535,10 +535,13 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
 
+    if (connection->status == 0)
+        return 0;
+
     if (length > MAX_DATA_SIZE || length == 0 || sendqueue(ludp, connection_id) >= MAX_QUEUE_NUM)
         return 0;
 
-    if (sendqueue(ludp, connection_id) >= connection->sendbuffer_length) {
+    if (sendqueue(ludp, connection_id) >= connection->sendbuffer_length && connection->sendbuffer_length != 0) {
         uint32_t newlen = connection->sendbuffer_length = resize_queue(&connection->sendbuffer, connection->sendbuffer_length,
                           connection->sendbuffer_length * 2, connection->successful_sent, connection->sendbuff_packetnum);
 
@@ -549,9 +552,6 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
         return write_packet(ludp, connection_id, data, length);
     }
 
-
-    if (connection->status == 0)
-        return 0;
 
     uint32_t index = connection->sendbuff_packetnum % connection->sendbuffer_length;
     memcpy(connection->sendbuffer[index].data, data, length);
