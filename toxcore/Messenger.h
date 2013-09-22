@@ -456,6 +456,18 @@ void Messenger_save(Messenger *m, uint8_t *data);
 /* Load the messenger from data of size length. */
 int Messenger_load(Messenger *m, uint8_t *data, uint32_t length);
 
+/* Return the number of friends in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_friendlist. */
+size_t count_friendlist(Messenger *m);
+
+/* Copy a list of valid friend IDs into the array out_list.
+ * If out_list is NULL, returns -1.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+size_t copy_friendlist(Messenger *m, int *out_list, size_t list_size);
+
 /* Allocate and return a list of valid friend id's. List must be freed by the
  * caller.
  *

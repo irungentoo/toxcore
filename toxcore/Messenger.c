@@ -1653,6 +1653,50 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
         return Messenger_load_old(m, data, length);
 }
 
+/* Return the number of friends in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_friendlist. */
+size_t count_friendlist(Messenger *m)
+{
+    size_t ret = 0;
+    uint32_t i;
+    for (i = 0; i < m->numfriends; i++) {
+        if (m->friendlist[i].status > 0) {
+            ret++;
+        }
+    }
+    return ret;
+}
+
+/* Copy a list of valid friend IDs into the array out_list.
+ * If out_list is NULL, returns -1.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+size_t copy_friendlist(Messenger *m, int *out_list, size_t list_size)
+{
+    if (!out_list)
+        return -1;
+        
+    if (m->numfriends == 0) {
+        return 0;
+    }
+    
+    uint32_t i;
+    size_t ret = 0;
+    for (i = 0; i < m->numfriends; i++) {
+        if (i >= list_size) {
+            break; /* Abandon ship */
+        }
+        if (m->friendlist[i].status > 0) {
+            out_list[i] = i;
+            ret++;
+        }
+    }
+    
+    return ret;
+}
+
 /* Allocate and return a list of valid friend id's. List must be freed by the
  * caller.
  *
