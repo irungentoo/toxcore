@@ -538,7 +538,7 @@ static void set_friend_userstatus(Messenger *m, int friendnumber, USERSTATUS sta
 /* Sets whether we send read receipts for friendnumber. */
 void m_set_sends_receipts(Messenger *m, int friendnumber, int yesno)
 {
-    if (yesno != 0 || yesno != 1)
+    if (yesno != 0 && yesno != 1)
         return;
 
     if (friend_not_valid(m, friendnumber))
