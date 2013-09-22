@@ -1232,7 +1232,7 @@ void doInbound(Messenger *m)
 
         if (friend_id != -1) {
             if (m_get_friend_connectionstatus(m, friend_id) == 1) {
-                crypto_kill(m->net_crypto, inconnection);
+                kill_connection(m->net_crypto->lossless_udp, inconnection);
                 return;
             }
 
@@ -1242,8 +1242,6 @@ void doInbound(Messenger *m)
 
             set_friend_status(m, friend_id, FRIEND_CONFIRMED);
         }
-
-        crypto_kill(m->net_crypto, inconnection);
     }
 }
 

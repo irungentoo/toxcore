@@ -503,27 +503,28 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
  */
 int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
 {
-    uint32_t i;
+    uint32_t i, j;
 
-    for (i = 0; i < MAX_INCOMING; ++i) {
-        if (c->incoming_connections[i] != -1) {
-            if (is_connected(c->lossless_udp, c->incoming_connections[i]) == 4
-                    || is_connected(c->lossless_udp, c->incoming_connections[i]) == 0) {
-                kill_connection(c->lossless_udp, c->incoming_connections[i]);
-                c->incoming_connections[i] = -1;
+    while (1) {
+        int incoming_con = incoming_connection(c->lossless_udp, 1);
+
+        if (incoming_con != -1) {
+            if (is_connected(c->lossless_udp, incoming_con) == 4
+                    || is_connected(c->lossless_udp, incoming_con) == 0) {
+                kill_connection(c->lossless_udp, incoming_con);
                 continue;
             }
 
-            if (id_packet(c->lossless_udp, c->incoming_connections[i]) == 2) {
+            if (id_packet(c->lossless_udp, incoming_con) == 2) {
                 uint8_t temp_data[MAX_DATA_SIZE];
-                uint16_t len = read_packet_silent(c->lossless_udp, c->incoming_connections[i], temp_data);
+                uint16_t len = read_packet_silent(c->lossless_udp, incoming_con, temp_data);
 
                 if (handle_cryptohandshake(c, public_key, secret_nonce, session_key, temp_data, len)) {
-                    int connection_id = c->incoming_connections[i];
-                    c->incoming_connections[i] = -1; /* Remove this connection from the incoming connection list. */
-                    return connection_id;
+                    return incoming_con;
                 }
             }
+        } else {
+            break;
         }
     }
 
@@ -579,6 +580,10 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
      *     return -1;
      * }
      */
+
+    /* Connection is accepted. */
+    confirm_connection(c->lossless_udp, connection_id);
+
     if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1
             || c->crypto_connections == NULL)
         return -1;
@@ -659,41 +664,6 @@ void load_keys(Net_Crypto *c, uint8_t *keys)
     memcpy(c->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
 }
 
-/* Adds an incoming connection to the incoming_connection list.
- * TODO: Optimize this.
- *
- *  returns 0 if successful
- *  returns 1 if failure.
- */
-static int new_incoming(Net_Crypto *c, int id)
-{
-    uint32_t i;
-
-    for (i = 0; i < MAX_INCOMING; ++i) {
-        if (c->incoming_connections[i] == -1) {
-            c->incoming_connections[i] = id;
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-/* Handle all new incoming connections.
- * TODO: Optimize this.
- */
-static void handle_incomings(Net_Crypto *c)
-{
-    int income;
-
-    while (1) {
-        income = incoming_connection(c->lossless_udp);
-
-        if (income == -1 || new_incoming(c, income) )
-            break;
-    }
-}
-
 /* Handle received packets for not yet established crypto connections. */
 static void receive_crypto(Net_Crypto *c)
 {
@@ -748,9 +718,6 @@ static void receive_crypto(Net_Crypto *c)
                                        c->crypto_connections[i].sessionsecret_key,
                                        c->crypto_connections[i].shared_key);
                     c->crypto_connections[i].status = CONN_ESTABLISHED;
-
-                    /* Connection is accepted. */
-                    confirm_connection(c->lossless_udp, c->crypto_connections[i].number);
                 } else {
                     /* This should not happen, kill the connection if it does. */
                     crypto_kill(c, i);
@@ -785,7 +752,6 @@ Net_Crypto *new_net_crypto(Networking_Core *net)
         return NULL;
     }
 
-    memset(temp->incoming_connections, -1 , sizeof(int) * MAX_INCOMING);
     return temp;
 }
 
@@ -810,7 +776,6 @@ static void kill_timedout(Net_Crypto *c)
 void do_net_crypto(Net_Crypto *c)
 {
     do_lossless_udp(c->lossless_udp);
-    handle_incomings(c);
     kill_timedout(c);
     receive_crypto(c);
 }

@@ -303,13 +303,13 @@ static int new_inconnection(Lossless_UDP *ludp, IP_Port ip_port)
 }
 
 /*
- *  return an integer corresponding to the next connection in our incoming connection list.
+ *  return an integer corresponding to the next connection in our incoming connection list with at least numpackets in the recieve queue.
  *  return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection(Lossless_UDP *ludp)
+int incoming_connection(Lossless_UDP *ludp, uint32_t numpackets)
 {
     tox_array_for_each(&ludp->connections, Connection, tmp) {
-        if (tmp->inbound == 2) {
+        if (tmp->inbound == 2 && tmp->recv_packetnum - tmp->successful_read >= numpackets) {
             tmp->inbound = 1;
             return tmp_i;
         }
@@ -392,6 +392,27 @@ int is_connected(Lossless_UDP *ludp, int connection_id)
     return 0;
 }
 
+/* Check if connection is confirmed.
+ *
+ *  returns 1 if yes.
+ *  returns 0 if no/failure.
+ */
+int connection_confirmed(Lossless_UDP *ludp, int connection_id)
+{
+    if ((unsigned int)connection_id >= ludp->connections.len)
+        return 0;
+
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+
+    if (connection->status == 0)
+        return 0;
+
+    if (connection->confirmed == 1)
+        return 1;
+
+    return 0;
+}
+
 /* Confirm an incoming connection.
  * Also disables the auto kill timeout on incomming connections.
  *
@@ -410,6 +431,7 @@ int confirm_connection(Lossless_UDP *ludp, int connection_id)
 
     connection->killat = ~0;
     connection->confirmed = 1;
+    connection->inbound = 0;
     return 0;
 }
 

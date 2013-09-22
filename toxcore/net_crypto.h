@@ -26,8 +26,6 @@
 
 #include "Lossless_UDP.h"
 
-#define MAX_INCOMING 64
-
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
 
@@ -65,9 +63,6 @@ typedef struct {
     /* Our public and secret keys. */
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
-
-    /* keeps track of the connection numbers for friends request so we can check later if they were sent. */
-    int incoming_connections[MAX_INCOMING];
 
     Cryptopacket_Handles cryptopackethandlers[256];
 } Net_Crypto;

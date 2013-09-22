@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
     while (1) {
         networking_poll(ludp->net);
         do_lossless_udp(ludp);
-        connection = incoming_connection(ludp);
+        connection = incoming_connection(ludp, 0);
 
         if (connection != -1) {
             if (is_connected(ludp, connection) == 2) {

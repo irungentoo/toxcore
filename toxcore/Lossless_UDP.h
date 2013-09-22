@@ -155,10 +155,11 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port);
  */
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port);
 
-/*  return an integer corresponding to the next connection in our imcoming connection list.
+/*
+ *  return an integer corresponding to the next connection in our incoming connection list with at least numpackets in the recieve queue.
  *  return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection(Lossless_UDP *ludp);
+int incoming_connection(Lossless_UDP *ludp, uint32_t numpackets);
 
 /*  return -1 if it could not kill the connection.
  *  return 0 if killed successfully.
@@ -172,6 +173,14 @@ int kill_connection(Lossless_UDP *ludp, int connection_id);
  *  return 0 if it will kill it.
  */
 int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
+
+
+/* Check if connection is confirmed.
+ *
+ *  returns 1 if yes.
+ *  returns 0 if no.
+ */
+int connection_confirmed(Lossless_UDP *ludp, int connection_id);
 
 /* Confirm an incoming connection.
  * Also disables the auto kill timeout on incomming connections.
