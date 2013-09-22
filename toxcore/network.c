@@ -32,6 +32,72 @@
 #define IPV6_V6ONLY 27
 #endif
 
+#ifdef WIN32
+
+static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
+{
+    if(family == AF_INET)
+    {
+        struct sockaddr_in saddr = { 0 };
+        saddr.sin_family = AF_INET;
+        saddr.sin_addr = *(struct in_addr*)addr;
+
+        DWORD len = bufsize;
+        if(WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len))
+            return NULL;
+
+        return buf;
+    }
+    else if(family == AF_INET6)
+    {
+        struct sockaddr_in6 saddr = { 0 };
+        saddr.sin6_family = AF_INET6;
+        saddr.sin6_addr = *(struct in6_addr*)addr;
+
+        DWORD len = bufsize;
+        if(WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len))
+            return NULL;
+        
+        return buf;
+    }
+
+    return NULL;
+}
+
+static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
+{
+    if(family == AF_INET)
+    {
+        struct sockaddr_in saddr = { 0 };
+        
+        INT len = sizeof(saddr);
+        
+        if(WSAStringToAddress((LPTSTR)addrString, AF_INET, NULL, (LPSOCKADDR)&saddr, &len))
+            return 0;
+        
+        *(struct in_addr*)addrbuf = saddr.sin_addr;
+
+        return 1;
+    }
+    else if(family == AF_INET6)
+    {
+        struct sockaddr_in6 saddr = { 0 };
+    
+        INT len = sizeof(saddr);
+        
+        if(WSAStringToAddress((LPTSTR)addrString, AF_INET6, NULL, (LPSOCKADDR)&saddr, &len))
+            return 0;
+    
+        *(struct in6_addr*)addrbuf = saddr.sin6_addr;
+    
+        return 1;
+    }
+
+    return 0;
+}
+
+#endif
+
 /*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void)
 {
