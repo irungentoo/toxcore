@@ -503,8 +503,6 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
  */
 int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
 {
-    uint32_t i, j;
-
     while (1) {
         int incoming_con = incoming_connection(c->lossless_udp, 1);
 
