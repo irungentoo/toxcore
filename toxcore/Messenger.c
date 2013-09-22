@@ -1182,6 +1182,8 @@ void doFriends(Messenger *m)
 
                         if (m->group_invite)
                             (*m->group_invite)(m, i, data, m->group_invite_userdata);
+                        
+                        break;
                     }
 
                     case PACKET_ID_JOIN_GROUPCHAT: {
@@ -1197,6 +1199,12 @@ void doFriends(Messenger *m)
                             break;
 
                         group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
+                        
+                        break;
+                    }
+                        
+                    default: {
+                        break;
                     }
                 }
             } else {
