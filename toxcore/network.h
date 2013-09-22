@@ -40,7 +40,7 @@
 #include <ws2tcpip.h>
 
 typedef unsigned int sock_t;
-typedef unsigned int sa_family_t;
+typedef INT sa_family_t;
 
 #ifndef IN6_ARE_ADDR_EQUAL
 #define IN6_ARE_ADDR_EQUAL(a,b) \
