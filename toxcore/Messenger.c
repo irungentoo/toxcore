@@ -1242,6 +1242,8 @@ void doInbound(Messenger *m)
 
             set_friend_status(m, friend_id, FRIEND_CONFIRMED);
         }
+
+        crypto_kill(m->net_crypto, inconnection);
     }
 }
 
