@@ -357,6 +357,9 @@ int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t length
     if (friend_not_valid(m, friendnumber))
         return -1;
 
+    if (length > MAX_NAME_LENGTH || length == 0)
+        return -1;
+
     m->friendlist[friendnumber].name_length = length;
     memcpy(m->friendlist[friendnumber].name, name, length);
     return 0;
