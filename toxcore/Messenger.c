@@ -705,7 +705,7 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
     }
 
     if (m->group_message)
-        (*m->group_message)(m, i, peer_number, message, length, m->group_invite_userdata);
+        (*m->group_message)(m, i, peer_number, message, length, m->group_message_userdata);
 }
 
 /* Creates a new groupchat and puts it in the chats array.
