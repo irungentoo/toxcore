@@ -214,6 +214,16 @@ uint32_t tox_sendmessage_withid(Tox *tox, int friendnumber, uint32_t theid, uint
  */
 int tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length);
 
+/* Set friendnumber's nickname.
+ * name must be a string of maximum MAX_NAME_LENGTH length.
+ * length must be at least 1 byte.
+ * length is the length of name with the NULL terminator.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int tox_setfriendname(void *tox, int friendnumber, uint8_t *name, uint16_t length);
+
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
  * length must be at least 1 byte.

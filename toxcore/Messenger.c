@@ -352,13 +352,16 @@ static int m_sendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t le
  *  return 0 if success.
  *  return -1 if failure.
  */
-static int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t len)
+int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t length)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    m->friendlist[friendnumber].name_length = len;
-    memcpy(m->friendlist[friendnumber].name, name, len);
+    if (length > MAX_NAME_LENGTH || length == 0)
+        return -1;
+
+    m->friendlist[friendnumber].name_length = length;
+    memcpy(m->friendlist[friendnumber].name, name, length);
     return 0;
 }
 
