@@ -246,6 +246,13 @@ uint32_t m_sendmessage_withid(Messenger *m, int friendnumber, uint32_t theid, ui
  */
 int m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t length);
 
+/* Set the name and name_length of a friend.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t length);
+
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
  * length must be at least 1 byte.
