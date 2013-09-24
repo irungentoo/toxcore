@@ -36,6 +36,13 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
+typedef INT sa_family_t;
+#ifndef true
+#define true 1
+#endif
+#ifndef false
+#define false 0
+#endif
 #else
 
 #include <netinet/ip.h>
