@@ -22,6 +22,8 @@
  */
 
 /*----------------------------------------------------------------------------------*/
+#ifndef _AVCODEC_H_
+#define _AVCODEC_H_
 
 #include <stdio.h>
 #include <math.h>
@@ -66,7 +68,7 @@
 
 #ifdef __linux__
 #define VIDEO_DRIVER "video4linux2"
-#define DEFAULT_WEBCAM "/dev/video0"
+#define DEFAULT_WEBCAM "/dev/video1"
 #endif
 
 #ifdef WIN32
@@ -132,6 +134,7 @@ typedef struct
     rtp_session_t* _rtp_video;
     rtp_session_t* _rtp_audio;
     int socket;
+    Networking_Core* _networking;
 
     pthread_t encode_audio_thread;
     pthread_t encode_video_thread;
@@ -144,6 +147,13 @@ typedef struct
     
     uint8_t             quit;
     SDL_Event       	SDL_event;
+    
+    msi_session_t* _msi;
+    uint32_t _frame_rate;
+    uint16_t _send_port, _recv_port;
+    int _tox_sock;
+    //pthread_id _medialoop_id;
+    
 } codec_state;
 
 int display_received_frame(codec_state *cs, AVFrame *r_video_frame);
@@ -159,3 +169,5 @@ int video_decoder_refresh(codec_state *cs, int width, int height);
 int handle_rtp_video_packet(codec_state *cs,rtp_msg_t* r_msg);
 void *decode_video_thread(void *arg);
 void *decode_audio_thread(void *arg);
+
+#endif

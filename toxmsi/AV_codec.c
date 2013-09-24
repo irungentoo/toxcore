@@ -244,7 +244,6 @@ int init_receive_video(codec_state *cs)
 
 int init_send_video(codec_state *cs)
 {
-
     cs->video_input_format=av_find_input_format(VIDEO_DRIVER);
     if(avformat_open_input(&cs->video_format_ctx,DEFAULT_WEBCAM, cs->video_input_format, NULL)!=0) {
         printf("opening video_input_format failed\n");
@@ -260,7 +259,6 @@ int init_send_video(codec_state *cs)
             break;
         }
     }
-
     cs->webcam_decoder_ctx=cs->video_format_ctx->streams[cs->video_stream]->codec;
     cs->webcam_decoder=avcodec_find_decoder(cs->webcam_decoder_ctx->codec_id);
     if(cs->webcam_decoder==NULL) {
@@ -508,7 +506,7 @@ void *encode_video_thread(void *arg)
 		if(!s_video_msg) {
 		    printf("invalid message\n");
 		}
-		rtp_send_msg ( cs->_rtp_video, s_video_msg, cs->socket );
+		rtp_send_msg ( cs->_rtp_video, s_video_msg, cs->_networking );
 		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
 		av_free_packet(&enc_video_packet);
 	    }
@@ -550,7 +548,7 @@ void *encode_audio_thread(void *arg)
 		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
 		rtp_set_payload_type(cs->_rtp_audio,96);
 		s_audio_msg = rtp_msg_new (cs->_rtp_audio, encoded_data, encoded_size) ;
-		rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->socket ); 
+		rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->_networking ); 
 		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
 	    }
 	}
@@ -567,6 +565,7 @@ void *encode_audio_thread(void *arg)
 
 int video_decoder_refresh(codec_state *cs, int width, int height)
 {
+  printf("need to refresh\n");
     screen = SDL_SetVideoMode(width, height, 0, 0);
     if(cs->video_picture.bmp)
         SDL_FreeYUVOverlay(cs->video_picture.bmp);
@@ -577,11 +576,15 @@ int video_decoder_refresh(codec_state *cs, int width, int height)
 
 int handle_rtp_video_packet(codec_state *cs,rtp_msg_t* r_msg)
 {
-    if(!cs->video_decoder_ctx)
-        init_receive_video(cs);
+
+
+  return 1;
+   // if(!cs->video_decoder_ctx)
+    //    init_receive_video(cs);
     if(cs->receive_video) {
         int width=rtp_get_resolution_marking_width(r_msg->_ext_header,cs->_rtp_video->_exthdr_resolution);
         int height=rtp_get_resolution_marking_height(r_msg->_ext_header,cs->_rtp_video->_exthdr_resolution);
+	printf("width: %d height: %d\n",width,height);
         if(cs->video_decoder_ctx->width!=width||cs->video_decoder_ctx->height!=height||!screen) {
             video_decoder_refresh(cs,width,height);
         }
@@ -591,6 +594,7 @@ int handle_rtp_video_packet(codec_state *cs,rtp_msg_t* r_msg)
 
 void *decode_video_thread(void *arg)
 {
+      printf("v0\n");
     codec_state *cs = (codec_state *)arg;
     cs->video_stream=0;
     rtp_msg_t* r_msg;
@@ -599,26 +603,33 @@ void *decode_video_thread(void *arg)
     r_video_frame=avcodec_alloc_frame();
     AVPacket dec_video_packet;
     av_new_packet (&dec_video_packet, 65536);
+    printf("v1\n");
+    int width=0;
+    int height=0;
     while(!cs->quit&&cs->receive_video) {
-
         r_msg = rtp_recv_msg ( cs->_rtp_video );
-        if(r_msg) {
-            if(handle_rtp_video_packet(cs,r_msg)) {
-                memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
-                dec_video_packet.size=r_msg->_length;
-                avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
-                if(dec_frame_finished) {
-                    display_received_frame(cs,r_video_frame);
-                }
-                else {
-                    /* TODO: request the sender to create a new i-frame immediatly */
-                    printf("bad video packet\n");
-                }
-                rtp_free_msg(cs->_rtp_video, r_msg);
-            }
+	if(r_msg) {
+	    memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
+	    dec_video_packet.size=r_msg->_length;
+	    avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
+	    if(dec_frame_finished) {
+		if(cs->video_decoder_ctx->width!=width||cs->video_decoder_ctx->height!=height) {
+		    width=cs->video_decoder_ctx->width;
+		    height=cs->video_decoder_ctx->height;
+		    printf("w: %d h%d \n",width,height);
+		    video_decoder_refresh(cs,width,height);
+		}
+		display_received_frame(cs,r_video_frame);
+	    }
+	    else {
+		/* TODO: request the sender to create a new i-frame immediatly */
+		printf("bad video packet\n");
+	    }
+	    rtp_free_msg(cs->_rtp_video, r_msg);
         }
         usleep(1000);
     }
+    printf("vend\n");
     /* clean up codecs */
     pthread_mutex_lock(&cs->avcodec_mutex_lock);	
     av_free(r_video_frame);
@@ -629,6 +640,7 @@ void *decode_video_thread(void *arg)
 
 void *decode_audio_thread(void *arg)
 {
+   printf("a0\n");
     codec_state *cs = (codec_state *)arg;
     rtp_msg_t* r_msg;
     

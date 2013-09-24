@@ -10,7 +10,7 @@ CLEANFILES = $(top_builddir)/libtoxcore.pc
 
 
 EXTRA_DIST = \
-	$(top_srcdir)/libtoxcore.pc.in \
+	../libtoxcore.pc.in \
 	$(top_srcdir)/docs/updates/Crypto.md \
 	$(top_srcdir)/docs/updates/Spam-Prevention.md \
 	$(top_srcdir)/docs/updates/Symmetric-NAT-Transversal.md \

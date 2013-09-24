@@ -11,8 +11,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>
+#include <pthread.h>
 #include "AV_codec.h"
-codec_state *cs;
 
 #define INFO(_str, ...) printf("\r[!] " _str "\n\r >> ", ##__VA_ARGS__); fflush(stdout);
 
@@ -237,24 +237,26 @@ pthread_t phone_startmedia_loop ( phone_t* _phone )
     rtp_targs->_this_call = &_phone->_msi->_call_info;
     rtp_targs->_core_handler = _phone->_networking;
 
-
-    _status = pthread_create ( &_rtp_tid, NULL, phone_handle_media_transport_poll, rtp_targs );
-
-    if ( _status < 0 ) {
-        printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
-        return FAILURE;
-    }
-
-    _status = pthread_detach ( _rtp_tid );
-
-    if ( _status < 0 ) {
-        printf ( "Error while starting media transport: %d, %s\n", errno, strerror ( errno ) );
-        return FAILURE;
-    }
-
-
-    _phone->_medialoop_id = _rtp_tid;
-    return _rtp_tid;
+    codec_state *cs;
+    cs=_phone->cs;
+    //_status = pthread_create ( &_rtp_tid, NULL, phone_handle_media_transport_poll, rtp_targs );
+    cs->_rtp_audio=_phone->_rtp_audio;
+    cs->_rtp_video=_phone->_rtp_video;
+    cs->_networking=_phone->_networking;
+    cs->socket=_phone->_tox_sock;
+    cs->quit = 0;
+    
+    printf("support: %d %d\n",cs->support_send_audio,cs->support_send_video);
+    if(cs->support_send_audio&&cs->support_send_video) /* quick fix */
+        pthread_create(&_phone->cs->encode_audio_thread, NULL, encode_audio_thread, _phone->cs);
+    if(cs->support_receive_audio)
+	pthread_create(&_phone->cs->decode_audio_thread, NULL, decode_audio_thread, _phone->cs);
+//     if(cs->support_send_video)
+//        pthread_create(&_phone->cs->encode_video_thread, NULL, encode_video_thread, _phone->cs);
+//     if(cs->support_receive_video)
+//     	pthread_create(&_phone->cs->decode_video_thread, NULL, decode_video_thread, _phone->cs); 
+//     
+    return 1;
 }
 
 
@@ -339,6 +341,7 @@ MCBTYPE callback_call_ended ( MCBARGS )
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
 {
     phone_t* _retu = malloc(sizeof(phone_t));
+    _retu->cs = av_malloc(sizeof(codec_state));
 
     /* Initialize our mutex */
     pthread_mutex_init ( &_mutex, NULL );
@@ -371,7 +374,10 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
         fprintf ( stderr, "msi_init_session() failed\n" );
         return NULL;
     }
-
+    
+    /* Initiate codecs */
+    init_encoder(_retu->cs);
+    init_decoder(_retu->cs);
 
     _retu->_msi->_agent_handler = _retu;
     /* Initiate callbacks */
