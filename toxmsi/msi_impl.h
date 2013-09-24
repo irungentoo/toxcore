@@ -42,8 +42,6 @@
 #define CT_VIDEO_HEADER_VALUE "VIDEO"
 
 
-size_t m_strlen ( uint8_t* str );
-
 typedef enum {
     type_audio = 1,
     type_video,
@@ -58,27 +56,41 @@ typedef enum {
 
 } call_state;
 
-typedef struct msi_session_s {
-    pthread_t _thread_id;
+typedef int crypto_key;
 
+typedef struct msi_call_s {     /* Call info structure */
+    call_state  _state;
+    call_type   _type_local;
+    call_type*  _type_peer;     /* Support for conference starts with this */
+    uint32_t    _id;            /* Random value identifying the call */
+    crypto_key  _key;           /* What is the type again? */
+    uint16_t    _participants;  /* Number of participants */
+
+} msi_call_t;
+
+typedef struct msi_session_s {
+    pthread_t _thread_id; /* Do i need this? */
+
+    crypto_key _key; /* The key */
+
+    /* Call information/handler. ( Maybe only information? ) */
+    msi_call_t* _call;
+
+    /* Storage for message receiving */
     struct msi_msg_s* _oldest_msg;
     struct msi_msg_s* _last_msg; /* tail */
+
     /*int _friend_id;*/
     tox_IP_Port _friend_id;
 
-    int _last_request; /* It determines if state was active */
-    int _last_response; /* Same here */
-
-    call_state _call_info;
-
-    void* _core_handler;
-
-    call_type  _local_call_type;
-    call_type  _peer_call_type;
+    int _last_error; /* Determine the last error */
 
     const uint8_t* _user_agent;
 
-    void* _agent_handler;
+    void* _agent_handler; /* Pointer to an object that is handling msi */
+    void* _core_handler;  /* Pointer to networking core or to anything that
+                           * should handle interaction with core/networking
+                           */
 
 } msi_session_t;
 
@@ -105,6 +117,7 @@ void msi_register_callback_recv_trying ( MCALLBACK );
 void msi_register_callback_recv_ringing ( MCALLBACK );
 void msi_register_callback_recv_starting ( MCALLBACK );
 void msi_register_callback_recv_ending ( MCALLBACK );
+void msi_register_callback_recv_error ( MCALLBACK );
 /* -------- */
 
 

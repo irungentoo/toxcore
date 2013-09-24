@@ -16,13 +16,15 @@
 static const char* _RAW_TERMINATOR = "\n\r";
 
 /* define string formats for the identifiers */
-#define _VERSION_FIELD "Version"
-#define _REQUEST_FIELD "Request"
-#define _RESPONSE_FIELD "Response"
-#define _FRIENDID_FIELD "Friend-id"
-#define _CALLTYPE_FIELD "Call-type"
-#define _USERAGENT_FIELD "User-agent"
-#define _INFO_FIELD "INFO"
+#define _VERSION_FIELD          "Version"
+#define _REQUEST_FIELD          "Request"
+#define _RESPONSE_FIELD         "Response"
+#define _FRIENDID_FIELD         "Friend-id"
+#define _CALLTYPE_FIELD         "Call-type"
+#define _USERAGENT_FIELD        "User-agent"
+#define _INFO_FIELD             "INFO"
+#define _REASON_FIELD           "Reason"
+#define _CALL_ID                "Call-id"
 
 #define HEADER_VALUES   \
 /*uint8_t* _header_field */ \
@@ -68,10 +70,20 @@ typedef struct msi_header_user_agent_s { /* Defines the device of the participan
 
 } msi_header_user_agent_t;
 
+typedef struct msi_header_call_id_s { /* Call id that is used to identify the call */
+    HEADER_VALUES
+
+} msi_header_call_id_t;
+
 typedef struct msi_header_info_s { /* Defines informational message header */
     HEADER_VALUES
 
 } msi_header_info_t;
+
+typedef struct msi_header_reason_s { /* Defines reason mostly for error messages */
+    HEADER_VALUES
+
+} msi_header_reason_t;
 
 struct msi_msg_s;
 

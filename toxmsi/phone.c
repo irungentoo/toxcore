@@ -100,7 +100,7 @@ void* phone_receivepacket ( void* _phone_p )
             msi_handlepacket ( _phone->_msi, _from, _socket_data + 1, _bytes - 1 );
             break;
         case RTP_PACKET:
-            if ( _phone->_msi->_call_info == call_active ){
+            if ( _phone->_msi->_call && _phone->_msi->_call->_state == call_active ){
                 /* this will parse a data into rtp_message_t form but
                  * it will not be registered into a session. For that
                  * we need to call a rtp_register_msg ()
@@ -249,8 +249,8 @@ pthread_t phone_startmedia_loop ( phone_t* _phone )
 
     rtp_targs->_rtp_audio = &_phone->_rtp_audio;
     rtp_targs->_rtp_video = &_phone->_rtp_video;
-    rtp_targs->_local_type_call = &_phone->_msi->_local_call_type;
-    rtp_targs->_this_call = &_phone->_msi->_call_info;
+    rtp_targs->_local_type_call = &_phone->_msi->_call->_type_local;
+    rtp_targs->_this_call = &_phone->_msi->_call->_state;
     rtp_targs->_core_handler = _phone->_networking;
 
 
@@ -284,7 +284,8 @@ MCBTYPE callback_recv_invite ( MCBARGS )
 
     msi_session_t* _msi = _arg;
 
-    call_type _type = _msi->_peer_call_type;
+    /* Get the last one */
+    call_type _type = _msi->_call->_type_peer[_msi->_call->_participants - 1];
 
     switch ( _type ){
     case type_audio:
@@ -489,7 +490,7 @@ void* phone_poll ( void* _p_phone )
 
         case 'c':
         {
-            if ( _phone->_msi->_call_info != call_inactive ){
+            if ( _phone->_msi->_call ){
                 INFO("Already in a call...");
                 break;
             }
@@ -521,7 +522,7 @@ void* phone_poll ( void* _p_phone )
         } break;
         case 'h':
         {
-            if ( _phone->_msi->_call_info == call_inactive ){
+            if ( !_phone->_msi->_call ){
                 break;
             }
 
@@ -532,8 +533,7 @@ void* phone_poll ( void* _p_phone )
         } break;
         case 'a':
         {
-            if ( _phone->_msi->_call_info != call_starting ) {
-                assert(0);
+            if ( _phone->_msi->_call && _phone->_msi->_call->_state != call_starting ) {
                 break;
             }
 
@@ -545,7 +545,7 @@ void* phone_poll ( void* _p_phone )
         } break;
         case 'r':
         {
-            if ( _phone->_msi->_call_info != call_starting ){
+            if ( _phone->_msi->_call && _phone->_msi->_call->_state != call_starting ){
                 break;
             }
 
@@ -573,11 +573,8 @@ void* phone_poll ( void* _p_phone )
 
 int quitPhone(phone_t* _phone)
 {
-    if ( _phone->_msi->_call_info != call_inactive ){
+    if ( _phone->_msi->_call->_state != call_inactive ){
         msi_hangup(_phone->_msi); /* Hangup the phone first */
-        /* wait for hangup and then close it */
-        int i;
-        for ( i = 0; i < 10 || _phone->_msi->_call_info != call_inactive; i++ ) { usleep(100000); }
     }
 
     msi_terminate_session(_phone->_msi);

@@ -80,6 +80,11 @@ msi_msg_t* msi_parse_msg ( const uint8_t* _data )
         return NULL;
     }
 
+    if ( !_retu->_version || strcmp(_retu->_version->_header_value, VERSION_STRING) != 0 ){
+        msi_free_msg(_retu);
+        return NULL;
+    }
+
     return _retu;
 }
 
@@ -153,6 +158,14 @@ int msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _type_field )
     ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _type_field )
 
     return SUCCESS;
+}
+int msi_msg_set_info ( msi_msg_t* _msg, const uint8_t* _header_field )
+{
+
+}
+int msi_msg_set_reason ( msi_msg_t* _msg, const uint8_t* _header_field )
+{
+
 }
 
 uint8_t* msi_msg_to_string ( msi_msg_t* _msg )

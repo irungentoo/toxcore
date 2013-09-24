@@ -10,7 +10,7 @@
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2
 
-#define VERSION_STRING "0.1.1"
+#define VERSION_STRING "0.1.2"
 
 #define MSI_MAXMSG_SIZE 1024
 
@@ -22,7 +22,7 @@ typedef enum {
     _end,
 
 } msi_request_t;
-/**/
+
 static inline const uint8_t *stringify_request(msi_request_t _request)
 {
     static const uint8_t* strings[] =
@@ -42,10 +42,10 @@ typedef enum {
     _ringing,
     _starting,
     _ending,
+    _error
 
 } msi_response_t;
 
-/**/
 static inline const uint8_t *stringify_response(msi_response_t _response)
 {
     static const uint8_t* strings[] =
@@ -53,7 +53,8 @@ static inline const uint8_t *stringify_response(msi_response_t _response)
         (uint8_t*)"trying",
         (uint8_t*)"ringing",
         (uint8_t*)"starting",
-        (uint8_t*)"ending"
+        (uint8_t*)"ending",
+        (uint8_t*)"error"
     };
 
     return strings[_response];
@@ -72,6 +73,7 @@ typedef struct msi_msg_s {
     msi_header_call_type_t* _call_type;
     msi_header_user_agent_t* _user_agent;
     msi_header_info_t* _info;
+    msi_header_reason_t* _reason;
 
     /* Pointer to next member since it's list duuh */
     struct msi_msg_s* _next;
@@ -90,9 +92,11 @@ msi_msg_t*      msi_parse_msg          ( const uint8_t* _data );
 msi_msg_t*      msi_msg_new            ( uint8_t _type, const uint8_t* _type_field );
 
 /* Header setting */
-int             msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _type_field );
-int             msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _type_field );
-int             msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _type_field );
+int             msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _header_field );
+int             msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _header_field );
+int             msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header_field );
+int             msi_msg_set_info       ( msi_msg_t* _msg, const uint8_t* _header_field );
+int             msi_msg_set_reason     ( msi_msg_t* _msg, const uint8_t* _header_field );
 
 /*
  * Parses message struct to string.
