@@ -516,8 +516,10 @@ static int send_userstatus(Messenger *m, int friendnumber, USERSTATUS status)
 
 static int send_ping(Messenger *m, int friendnumber)
 {
-    m->friendlist[friendnumber].ping_lastsent = unix_time();
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_PING, 0, 0);
+    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_PING, 0, 0);
+    if (ret == 1)
+            m->friendlist[friendnumber].ping_lastsent = unix_time();
+    return ret;
 }
 
 static int set_friend_statusmessage(Messenger *m, int friendnumber, uint8_t *status, uint16_t length)
