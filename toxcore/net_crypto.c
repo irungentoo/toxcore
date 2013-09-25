@@ -694,9 +694,8 @@ static void receive_crypto(Net_Crypto *c)
                     }
                 }
             } else if (id_packet(c->lossless_udp,
-                                 c->crypto_connections[i].number) != -1) { // This should not happen, kill the connection if it does.
-                crypto_kill(c, i);
-                return;
+                                 c->crypto_connections[i].number) != -1) { // This should not happen, timeout the connection if it does.
+                c->crypto_connections[i].status = CONN_TIMED_OUT;
             }
         }
 
@@ -717,14 +716,12 @@ static void receive_crypto(Net_Crypto *c)
                                        c->crypto_connections[i].shared_key);
                     c->crypto_connections[i].status = CONN_ESTABLISHED;
                 } else {
-                    /* This should not happen, kill the connection if it does. */
-                    crypto_kill(c, i);
-                    return;
+                    /* This should not happen, timeout the connection if it does. */
+                    c->crypto_connections[i].status = CONN_TIMED_OUT;
                 }
             } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != -1) {
-                /* This should not happen, kill the connection if it does. */
-                crypto_kill(c, i);
-                return;
+                /* This should not happen, timeout the connection if it does. */
+                c->crypto_connections[i].status = CONN_TIMED_OUT;
             }
         }
     }
