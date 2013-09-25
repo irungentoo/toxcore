@@ -56,9 +56,6 @@
 /* Interval in seconds between punching attempts*/
 #define PUNCH_INTERVAL 10
 
-/* Ping newly announced nodes to ping per TIME_TOPING seconds*/
-#define TIME_TOPING 5
-
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
 
@@ -84,7 +81,7 @@ Client_data *DHT_get_close_list(DHT *dht)
  *  return 1 if client_id1 is closer.
  *  return 2 if client_id2 is closer.
  */
-static int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2)
+int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2)
 {
     size_t   i;
     uint8_t distance1, distance2;
@@ -522,7 +519,6 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint
     }
 }
 
-/* Same as last function but for get_node requests. */
 static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
@@ -533,7 +529,7 @@ static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
         if (!is_timeout(temp_time, dht->send_nodes[i].timestamp, PING_TIMEOUT)) {
             pinging = 0;
 
-            if (ping_id != 0 && dht->send_nodes[i].ping_id == ping_id)
+            if (ping_id != 0 && dht->send_nodes[i].id == ping_id)
                 ++pinging;
 
             if (ip_isset(&ip_port.ip) && ipport_equal(&dht->send_nodes[i].ip_port, &ip_port))
@@ -559,7 +555,7 @@ static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
             if (is_timeout(temp_time, dht->send_nodes[j].timestamp, PING_TIMEOUT - i)) {
                 dht->send_nodes[j].timestamp = temp_time;
                 dht->send_nodes[j].ip_port = ip_port;
-                dht->send_nodes[j].ping_id = ping_id;
+                dht->send_nodes[j].id = ping_id;
                 return ping_id;
             }
         }
@@ -830,7 +826,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
     addto_lists(dht, source, packet + 1);
 
     for (i = 0; i < num_nodes; ++i)  {
-        send_ping_request(dht->ping, dht->c, nodes_list[i].ip_port, nodes_list[i].client_id);
+        send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
         returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
 
@@ -877,7 +873,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
     addto_lists(dht, source, packet + 1);
 
     for (i = 0; i < num_nodes; ++i)  {
-        send_ping_request(dht->ping, dht->c, nodes_list[i].ip_port, nodes_list[i].client_id);
+        send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
         returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
 
@@ -1006,7 +1002,7 @@ static void do_DHT_friends(DHT *dht)
             /* If node is not dead. */
             if (!is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, Kill_NODE_TIMEOUT)) {
                 if ((dht->friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
-                    send_ping_request(dht->ping, dht->c, dht->friends_list[i].client_list[j].ip_port,
+                    send_ping_request(dht->ping, dht->friends_list[i].client_list[j].ip_port,
                                       dht->friends_list[i].client_list[j].client_id );
                     dht->friends_list[i].client_list[j].last_pinged = temp_time;
                 }
@@ -1044,7 +1040,7 @@ static void do_Close(DHT *dht)
         /* If node is not dead. */
         if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, Kill_NODE_TIMEOUT)) {
             if ((dht->close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
-                send_ping_request(dht->ping, dht->c, dht->close_clientlist[i].ip_port,
+                send_ping_request(dht->ping, dht->close_clientlist[i].ip_port,
                                   dht->close_clientlist[i].client_id );
                 dht->close_clientlist[i].last_pinged = temp_time;
             }
@@ -1069,7 +1065,7 @@ static void do_Close(DHT *dht)
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 {
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
-    send_ping_request(dht->ping, dht->c, ip_port, public_key);
+    send_ping_request(dht->ping, ip_port, public_key);
 }
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, uint8_t *public_key)
@@ -1386,7 +1382,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         IP_Port pinging;
         ip_copy(&pinging.ip, &ip);
         pinging.port = htons(port);
-        send_ping_request(dht->ping, dht->c, pinging, dht->friends_list[friend_num].client_id);
+        send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
     }
 
     dht->friends_list[friend_num].punching_index = i;
@@ -1432,94 +1428,34 @@ static void do_NAT(DHT *dht)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
-
-/* Add nodes to the toping list.
- * All nodes in this list are pinged every TIME_TOPING seconds
- * and are then removed from the list.
- * If the list is full the nodes farthest from our client_id are replaced.
- * The purpose of this list is to enable quick integration of new nodes into the
- * network while preventing amplification attacks.
- *
- *  return 0 if node was added.
- *  return -1 if node was not added.
- */
-int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port)
-{
-    if (!ip_isset(&ip_port.ip))
-        return -1;
-
-    uint32_t i;
-
-    for (i = 0; i < MAX_TOPING; ++i) {
-        if (!ip_isset(&dht->toping[i].ip_port.ip)) {
-            memcpy(dht->toping[i].client_id, client_id, CLIENT_ID_SIZE);
-            ipport_copy(&dht->toping[i].ip_port, &ip_port);
-            return 0;
-        }
-    }
-
-    for (i = 0; i < MAX_TOPING; ++i) {
-        if (id_closest(dht->c->self_public_key, dht->toping[i].client_id, client_id) == 2) {
-            memcpy(dht->toping[i].client_id, client_id, CLIENT_ID_SIZE);
-            ipport_copy(&dht->toping[i].ip_port, &ip_port);
-            return 0;
-        }
-    }
-
-    return -1;
-}
-
-/* Ping all the valid nodes in the toping list every TIME_TOPING seconds.
- * This function must be run at least once every TIME_TOPING seconds.
- */
-static void do_toping(DHT *dht)
-{
-    uint64_t temp_time = unix_time();
-
-    if (!is_timeout(temp_time, dht->last_toping, TIME_TOPING))
-        return;
-
-    dht->last_toping = temp_time;
-    uint32_t i;
-
-    for (i = 0; i < MAX_TOPING; ++i) {
-        if (!ip_isset(&dht->toping[i].ip_port.ip))
-            return;
-
-        send_ping_request(dht->ping, dht->c, dht->toping[i].ip_port, dht->toping[i].client_id);
-        ip_reset(&dht->toping[i].ip_port.ip);
-    }
-}
-
-
 DHT *new_DHT(Net_Crypto *c)
 {
     if (c == NULL)
         return NULL;
 
-    DHT *temp = calloc(1, sizeof(DHT));
+    DHT *dht = calloc(1, sizeof(DHT));
 
-    if (temp == NULL)
+    if (dht == NULL)
         return NULL;
 
-    temp->ping = new_ping();
+    dht->ping = new_ping(dht, c);
 
-    if (temp->ping == NULL) {
-        kill_DHT(temp);
+    if (dht->ping == NULL) {
+        kill_DHT(dht);
         return NULL;
     }
 
-    temp->c = c;
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_PING_REQUEST, &handle_ping_request, temp);
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, temp);
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, temp);
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, temp);
+    dht->c = c;
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, dht);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, dht);
 #ifdef TOX_ENABLE_IPV6
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, temp);
+    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
 #endif
-    init_cryptopackets(temp);
-    cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, temp);
-    return temp;
+
+    init_cryptopackets(dht);
+    cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
+
+    return dht;
 }
 
 void do_DHT(DHT *dht)
@@ -1527,7 +1463,7 @@ void do_DHT(DHT *dht)
     do_Close(dht);
     do_DHT_friends(dht);
     do_NAT(dht);
-    do_toping(dht);
+    do_toping(dht->ping);
 }
 void kill_DHT(DHT *dht)
 {
