@@ -503,10 +503,8 @@ void *encode_video_thread(void *arg)
 		}
 		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
 		THREADLOCK()
-		printf("encoding and sending...\n");
 		if(!enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
 		s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
-		printf("packet sent: %d\n",enc_video_packet.size);
 		if(!s_video_msg) {
 		    printf("invalid message\n");
 		}
@@ -601,7 +599,6 @@ int handle_rtp_video_packet(codec_state *cs,rtp_msg_t* r_msg)
 
 void *decode_video_thread(void *arg)
 {
-      printf("v0\n");
     codec_state *cs = (codec_state *)arg;
     cs->video_stream=0;
     rtp_msg_t* r_msg;
@@ -610,15 +607,12 @@ void *decode_video_thread(void *arg)
     r_video_frame=avcodec_alloc_frame();
     AVPacket dec_video_packet;
     av_new_packet (&dec_video_packet, 65536);
-    printf("v1\n");
     int width=0;
     int height=0;
     while(!cs->quit&&cs->receive_video) {
       THREADLOCK()
         r_msg = rtp_recv_msg ( cs->_rtp_video );
-	printf("almost got message\n");
 	if(r_msg) {
-	  printf("got message\n");
 	    memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
 	    dec_video_packet.size=r_msg->_length;
 	    avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
@@ -651,7 +645,6 @@ void *decode_video_thread(void *arg)
 
 void *decode_audio_thread(void *arg)
 {
-   printf("a0\n");
     codec_state *cs = (codec_state *)arg;
     rtp_msg_t* r_msg;
     

@@ -96,19 +96,14 @@ void* phone_receivepacket ( void* _phone_p )
                  * it will not be registered into a session. For that
                  * we need to call a rtp_register_msg ()
                  */
-		printf("negers %d\n",_bytes);
                 _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes - 1 );
-		printf("negers2\n");
                 if ( !_msg )
                     break;
                 _payload_id = rtp_header_get_setting_payload_type(_msg->_header);
-		printf("payload type: %d\n",_payload_id);
                 if ( _payload_id == _PAYLOAD_OPUS && *_rtp_audio )
                     rtp_handlepacket ( *_rtp_audio, _msg );
-                else if ( _payload_id == _PAYLOAD_VP8 && *_rtp_video ) {
-		    printf("a video packet!\n");
+                else if ( _payload_id == _PAYLOAD_VP8 && *_rtp_video )
                     rtp_handlepacket ( *_rtp_video, _msg );
-		}
                 else rtp_free_msg( NULL, _msg);
             }
             usleep(1000);
