@@ -46,6 +46,7 @@ int msi_parse_headers ( msi_msg_t* _msg )
     ALLOC_ADD_DATA(_field_current, _list, _USERAGENT_FIELD, _msg->_user_agent, msi_header_user_agent_t)
     ALLOC_ADD_DATA(_field_current, _list, _INFO_FIELD, _msg->_info, msi_header_info_t)
     ALLOC_ADD_DATA(_field_current, _list, _REASON_FIELD, _msg->_reason, msi_header_reason_t)
+    ALLOC_ADD_DATA(_field_current, _list, _CALL_ID, _msg->_call_id, msi_header_call_id_t)
 
     /* Since we don't need the raw header anymore remove it */
     msi_header_t* _temp;

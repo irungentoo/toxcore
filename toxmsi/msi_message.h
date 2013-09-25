@@ -74,6 +74,7 @@ typedef struct msi_msg_s {
     msi_header_user_agent_t* _user_agent;
     msi_header_info_t* _info;
     msi_header_reason_t* _reason;
+    msi_header_call_id_t* _call_id;
 
     /* Pointer to next member since it's list duuh */
     struct msi_msg_s* _next;
@@ -98,6 +99,9 @@ int             msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header
 int             msi_msg_set_info       ( msi_msg_t* _msg, const uint8_t* _header_field );
 int             msi_msg_set_reason     ( msi_msg_t* _msg, const uint8_t* _header_field );
 
+/* This one is exception to the rule */
+int             msi_msg_set_call_id    ( msi_msg_t* _msg, const uint32_t _value );
+uint32_t        msi_msg_get_call_id    ( msi_msg_t* _msg );
 /*
  * Parses message struct to string.
  * Allocates memory so don't forget to free it

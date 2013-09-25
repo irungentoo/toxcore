@@ -12,8 +12,6 @@
 #include <stdlib.h>
 #include <termios.h>
 
-#define _INFO(_str, ...) printf("\r[!] " _str "\n\r >> ",  ##__VA_ARGS__); fflush(stdout);
-
 void INFO (const char* _format, ...)
 {
     printf("\r[!] ");
@@ -34,13 +32,7 @@ int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
         rtp_register_msg(_session, _msg);
     }
 
-    if ( _session->_last_msg ) {
-        _session->_last_msg->_next = _msg;
-        _session->_last_msg = _msg;
-    } else {
-        _session->_last_msg = _session->_oldest_msg = _msg;
-    }
-
+    rtp_store_msg(_session, _msg);
 
     return SUCCESS;
 }
@@ -59,12 +51,8 @@ int msi_handlepacket ( msi_session_t* _session, tox_IP_Port ip_port, uint8_t* da
         return FAILURE;
     }
 
-    if ( _session->_last_msg ) {
-        _session->_last_msg->_next = _msg;
-        _session->_last_msg = _msg;
-    } else {
-        _session->_last_msg = _session->_oldest_msg = _msg;
-    }
+    /* place message in a session */
+    msi_store_msg(_session, _msg);
 
     return SUCCESS;
 }
@@ -401,7 +389,6 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
     msi_register_callback_call_ended ( callback_call_ended );
 
     msi_register_callback_recv_invite ( callback_recv_invite );
-    msi_register_callback_recv_trying ( callback_recv_trying );
     msi_register_callback_recv_ringing ( callback_recv_ringing );
     msi_register_callback_recv_starting ( callback_recv_starting );
     msi_register_callback_recv_ending ( callback_recv_ending );
@@ -491,7 +478,7 @@ void* phone_poll ( void* _p_phone )
         case 'c':
         {
             if ( _phone->_msi->_call ){
-                INFO("Already in a call...");
+                INFO("Already in a call(%d)...", _phone->_msi->_call);
                 break;
             }
 
@@ -573,7 +560,7 @@ void* phone_poll ( void* _p_phone )
 
 int quitPhone(phone_t* _phone)
 {
-    if ( _phone->_msi->_call->_state != call_inactive ){
+    if ( _phone->_msi->_call ){
         msi_hangup(_phone->_msi); /* Hangup the phone first */
     }
 

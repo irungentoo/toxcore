@@ -51,8 +51,7 @@ typedef enum {
     call_inviting, /* when sending call invite */
     call_starting, /* when getting call invite */
     call_active,
-    call_hold,
-    call_inactive
+    call_hold
 
 } call_state;
 
@@ -69,7 +68,7 @@ typedef struct msi_call_s {     /* Call info structure */
 } msi_call_t;
 
 typedef struct msi_session_s {
-    pthread_t _thread_id; /* Do i need this? */
+    pthread_mutex_t _mutex;
 
     crypto_key _key; /* The key */
 
@@ -113,7 +112,6 @@ void msi_register_callback_call_rejected ( MCALLBACK );
 void msi_register_callback_call_ended ( MCALLBACK );
 
 void msi_register_callback_recv_invite ( MCALLBACK );
-void msi_register_callback_recv_trying ( MCALLBACK );
 void msi_register_callback_recv_ringing ( MCALLBACK );
 void msi_register_callback_recv_starting ( MCALLBACK );
 void msi_register_callback_recv_ending ( MCALLBACK );
@@ -133,5 +131,6 @@ int msi_cancel ( msi_session_t* _session );
 int msi_reject ( msi_session_t* _session );
 
 int msi_send_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
+int msi_store_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
 
 #endif /* _MSI_IMPL_H_ */

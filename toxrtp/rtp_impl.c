@@ -124,6 +124,8 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
 
 
     _retu->_oldest_msg = _retu->_last_msg = NULL;
+
+    pthread_mutex_init(&_retu->_mutex, NULL);
     /*
      *
      */
@@ -146,6 +148,8 @@ int rtp_terminate_session ( rtp_session_t* _session )
 
     if ( _session->_prefix )
         DEALLOCATOR ( _session->_prefix );
+
+    pthread_mutex_destroy(&_session->_mutex);
 
     /* And finally free session */
     DEALLOCATOR ( _session );
@@ -315,13 +319,31 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
 
     rtp_msg_t* _retu = _session->_oldest_msg;
 
+    pthread_mutex_lock(&_session->_mutex);
+
     if ( _retu )
         _session->_oldest_msg = _retu->_next;
 
     if ( !_session->_oldest_msg )
         _session->_last_msg = NULL;
 
+    pthread_mutex_unlock(&_session->_mutex);
+
     return _retu;
+}
+
+int rtp_store_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
+{
+    pthread_mutex_lock(&_session->_mutex);
+
+    if ( _session->_last_msg ) {
+        _session->_last_msg->_next = _msg;
+        _session->_last_msg = _msg;
+    } else {
+        _session->_last_msg = _session->_oldest_msg = _msg;
+    }
+
+    pthread_mutex_unlock(&_session->_mutex);
 }
 
 int rtp_release_session_recv ( rtp_session_t* _session )
@@ -332,10 +354,16 @@ int rtp_release_session_recv ( rtp_session_t* _session )
 
     rtp_msg_t* _tmp,* _it;
 
+    pthread_mutex_lock(_session->_mutex);
+
     for ( _it = _session->_oldest_msg; _it; _it = _tmp ){
         _tmp = _it->_next;
         rtp_free_msg(_session, _it);
     }
+
+    _session->_last_msg = _session->_oldest_msg = NULL;
+
+    pthread_mutex_unlock(_session->_mutex);
 
     return SUCCESS;
 }

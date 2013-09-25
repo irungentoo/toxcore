@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../toxrtp/rtp_helper.h"
 #include <assert.h>
+#include <stdlib.h>
 
 #define ALLOCATE_HEADER(_header_type, _var, _m_header_value) \
 _var = malloc( sizeof(_header_type) ); \
@@ -25,6 +26,8 @@ void set_msg ( msi_msg_t* _msg )
     _msg->_response = NULL;
     _msg->_friend_id = NULL;
     _msg->_user_agent = NULL;
+    _msg->_call_id = NULL;
+    _msg->_reason = NULL;
     _msg->_info = NULL;
     _msg->_next = NULL;
     _msg->_headers = NULL;
@@ -119,43 +122,43 @@ msi_msg_t* msi_msg_new ( uint8_t _type, const uint8_t* _typeid )
     return _retu;
 }
 
-int msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _type_field )
+int msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-    if ( !_msg || !_type_field )
+    if ( !_msg || !_header_field )
         return FAILURE;
 
     if ( _msg->_call_type ){ /* already there */
         free(_msg->_call_type->_header_value);
         free(_msg->_call_type);
     }
-    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _type_field )
+    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _header_field )
 
 
     return SUCCESS;
 }
-int msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _type_field )
+int msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-    if ( !_msg || !_type_field  )
+    if ( !_msg || !_header_field  )
         return FAILURE;
 
     if ( _msg->_user_agent ){ /* already there */
         free(_msg->_call_type->_header_value);
         free(_msg->_call_type);
     }
-    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _type_field )
+    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _header_field )
 
     return SUCCESS;
 }
-int msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _type_field )
+int msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-    if ( !_msg || !_type_field  )
+    if ( !_msg || !_header_field  )
         return FAILURE;
 
     if ( _msg->_friend_id ){ /* already there */
         free(_msg->_call_type->_header_value);
         free(_msg->_call_type);
     }
-    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _type_field )
+    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _header_field )
 
     return SUCCESS;
 }
@@ -166,6 +169,31 @@ int msi_msg_set_info ( msi_msg_t* _msg, const uint8_t* _header_field )
 int msi_msg_set_reason ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
 
+}
+int msi_msg_set_call_id ( msi_msg_t* _msg, const uint32_t _value )
+{
+    if ( !_msg )
+        return FAILURE;
+
+    if ( _msg->_call_id ) { /* Already there */
+        free(_msg->_call_id->_header_value);
+        free(_msg->_call_id);
+    }
+
+    uint8_t _header_value [5];
+    snprintf(_header_value, 5, "%d", _value);
+
+    ALLOCATE_HEADER(msi_header_call_id_t, _msg->_call_id, _header_value)
+
+    return SUCCESS;
+}
+
+uint32_t msi_msg_get_call_id ( msi_msg_t* _msg )
+{
+    if ( !_msg )
+        return 0;
+
+    return atoi(_msg->_call_id->_header_value);
 }
 
 uint8_t* msi_msg_to_string ( msi_msg_t* _msg )
