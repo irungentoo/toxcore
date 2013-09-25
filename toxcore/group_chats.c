@@ -53,31 +53,6 @@ typedef struct {
 
 } sendnodes_data;
 
-/* Compares client_id1 and client_id2 with client_id
- * return 0 if both are same distance
- * return 1 if client_id1 is closer
- * return 2 if client_id2 is closer
- */
-static int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2)
-{
-    size_t   i;
-    uint8_t distance1, distance2;
-
-    for (i = 0; i < CLIENT_ID_SIZE; ++i) {
-
-        distance1 = abs(((int8_t *)id)[i] ^ ((int8_t *)id1)[i]);
-        distance2 = abs(((int8_t *)id)[i] ^ ((int8_t *)id2)[i]);
-
-        if (distance1 < distance2)
-            return 1;
-
-        if (distance1 > distance2)
-            return 2;
-    }
-
-    return 0;
-}
-
 
 /*
  * check if peer with client_id is in peer array.
