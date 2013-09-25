@@ -15,7 +15,7 @@
 #include "net_crypto.h"
 #include "DHT.h"
 
-#define PING_NUM_MAX 256
+#define PING_NUM_MAX 384
 #define PING_TIMEOUT 5 // 5s
 
 /* Ping newly announced nodes to ping per TIME_TOPING seconds*/
@@ -180,6 +180,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
         return 1;
 
     PING *ping = dht->ping;
+
     if (id_eq(packet + 1, ping->c->self_public_key))
         return 1;
 
@@ -211,6 +212,7 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
         return 1;
 
     PING *ping = dht->ping;
+
     if (id_eq(packet + 1, ping->c->self_public_key))
         return 1;
 
@@ -283,7 +285,7 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
 void do_toping(PING *ping)
 {
     uint64_t temp_time = unix_time();
- 
+
     if (!is_timeout(temp_time, ping->last_toping, TIME_TOPING))
         return;
 
@@ -303,6 +305,7 @@ void do_toping(PING *ping)
 PING *new_ping(DHT *dht, Net_Crypto *c)
 {
     PING *ping = calloc(1, sizeof(PING));
+
     if (ping == NULL)
         return NULL;
 

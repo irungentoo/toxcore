@@ -51,7 +51,7 @@
 /* Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 10
 
-#define MAX_PUNCHING_PORTS 32
+#define MAX_PUNCHING_PORTS 128
 
 /* Interval in seconds between punching attempts*/
 #define PUNCH_INTERVAL 10
@@ -137,11 +137,12 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
     uint64_t temp_time = unix_time();
 
     uint8_t candropipv4 = 1;
+
     if (ip_port.ip.family == AF_INET6) {
         uint8_t ipv6cnt = 0;
 
         /* ipv6: count how many spots are used */
-        for(i = 0; i < length; i++)
+        for (i = 0; i < length; i++)
             if (list[i].ip_port.ip.family == AF_INET6)
                 ipv6cnt++;
 
@@ -318,11 +319,12 @@ static int replace_bad(    Client_data    *list,
     uint64_t temp_time = unix_time();
 
     uint8_t candropipv4 = 1;
+
     if (ip_port.ip.family == AF_INET6) {
         uint32_t ipv6cnt = 0;
 
         /* ipv6: count how many spots are used */
-        for(i = 0; i < length; i++)
+        for (i = 0; i < length; i++)
             if (list[i].ip_port.ip.family == AF_INET6)
                 ipv6cnt++;
 
@@ -334,8 +336,9 @@ static int replace_bad(    Client_data    *list,
     for (i = 0; i < length; ++i) {
         /* If node is bad */
         Client_data *client = &list[i];
+
         if ((candropipv4 || (client->ip_port.ip.family == AF_INET6)) &&
-            is_timeout(temp_time, client->timestamp, BAD_NODE_TIMEOUT)) {
+                is_timeout(temp_time, client->timestamp, BAD_NODE_TIMEOUT)) {
             memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
             client->ip_port = ip_port;
             client->timestamp = temp_time;
@@ -381,11 +384,12 @@ static int replace_good(   Client_data    *list,
     sort_list(list, length, comp_client_id);
 
     uint8_t candropipv4 = 1;
+
     if (ip_port.ip.family == AF_INET6) {
         uint32_t i, ipv6cnt = 0;
 
         /* ipv6: count how many spots are used */
-        for(i = 0; i < length; i++)
+        for (i = 0; i < length; i++)
             if (list[i].ip_port.ip.family == AF_INET6)
                 ipv6cnt++;
 
@@ -419,6 +423,7 @@ static int replace_good(   Client_data    *list,
          */
         for (i = 0; i < length; i++) {
             Client_data *client = &list[i];
+
             if (client->ip_port.ip.family == AF_INET6) {
                 if (id_closest(comp_client_id, list[i].client_id, client_id) == 2)
                     replace = i;
@@ -1138,14 +1143,13 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
     Client_data *client;
 
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-        client = &friend->client_list[i];
+        client = &(friend->client_list[i]);
+
+        if (id_equal(client->client_id, friend->client_id) && !is_timeout(temp_time, client->timestamp, BAD_NODE_TIMEOUT))
+            return 0;
 
         /* If ip is not zero and node is good. */
         if (ip_isset(&client->ret_ip_port.ip) && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-
-            if (id_equal(client->client_id, friend->client_id))
-                return 0;
-
             ip_portlist[num_ips] = client->ret_ip_port;
             ++num_ips;
         }
