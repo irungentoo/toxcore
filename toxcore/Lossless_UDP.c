@@ -830,7 +830,7 @@ static void adjust_datasendspeed(Connection *connection, uint32_t req_packets)
     }
 
     if (req_packets <= (connection->data_rate / connection->SYNC_rate) / 20 || req_packets <= 1) {
-        connection->data_rate += connection->data_rate / 8;
+        connection->data_rate += (connection->data_rate / 8) + 1;
 
         if (connection->data_rate > connection->sendbuffer_length * connection->SYNC_rate)
             connection->data_rate = connection->sendbuffer_length * connection->SYNC_rate;
@@ -858,7 +858,7 @@ static int handle_SYNC3(Lossless_UDP *ludp, int connection_id, uint8_t counter, 
     /* Packet valid. */
     if (comp_1 <= connection->sendbuffer_length &&
             comp_2 <= MAX_QUEUE_NUM &&
-            comp_counter != 0 && comp_counter < 4) {
+            comp_counter != 0 && comp_counter < 8) {
         connection->orecv_packetnum = recv_packetnum;
         connection->osent_packetnum = sent_packetnum;
         connection->successful_sent = recv_packetnum;
