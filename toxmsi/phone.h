@@ -61,7 +61,6 @@ void* phone_handle_media_transport_poll ( void* _hmtc_args_p );
 
 /* msi callbacks */
 MCBTYPE phone_callback_recv_invite ( MCBARGS );
-MCBTYPE phone_callback_recv_trying ( MCBARGS );
 MCBTYPE phone_callback_recv_ringing ( MCBARGS );
 MCBTYPE phone_callback_recv_starting ( MCBARGS );
 MCBTYPE phone_callback_recv_ending ( MCBARGS );

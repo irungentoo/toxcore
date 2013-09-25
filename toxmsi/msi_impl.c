@@ -30,7 +30,6 @@ MCBTYPE ( *msi_reject_call_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_cancel_call_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_end_call_callback ) ( MCBARGS ) = NULL;
 
-MCBTYPE ( *msi_trying_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_ringing_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_starting_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_ending_callback ) ( MCBARGS ) = NULL;
@@ -105,10 +104,7 @@ void msi_register_callback_call_ended ( MCALLBACK )
 
 
 /* Functions to be called when gotten x response */
-void msi_register_callback_recv_trying ( MCALLBACK )
-{
-    msi_trying_callback = callback;
-}
+
 void msi_register_callback_recv_ringing ( MCALLBACK )
 {
     msi_ringing_callback = callback;
@@ -147,18 +143,41 @@ msi_msg_t* receive_message ( msi_session_t* _session )
 {
     msi_msg_t* _retu = _session->_oldest_msg;
 
+    pthread_mutex_lock(&_session->_mutex);
+
     if ( _retu )
         _session->_oldest_msg = _retu->_next;
 
     if ( !_session->_oldest_msg )
         _session->_last_msg = NULL;
 
+    pthread_mutex_unlock(&_session->_mutex);
+
     return _retu;
+}
+
+int msi_store_msg ( msi_session_t* _session, msi_msg_t* _msg )
+{
+    pthread_mutex_lock(&_session->_mutex);
+
+    if ( _session->_last_msg ) {
+        _session->_last_msg->_next = _msg;
+        _session->_last_msg = _msg;
+    } else {
+        _session->_last_msg = _session->_oldest_msg = _msg;
+    }
+
+    pthread_mutex_unlock(&_session->_mutex);
 }
 
 int msi_send_msg ( msi_session_t* _session, msi_msg_t* _msg )
 {
     int _status;
+
+    if ( !_session->_call ) /* Which should never happen */
+        return FAILURE;
+
+    msi_msg_set_call_id(_msg, _session->_call->_id);
 
     uint8_t _msg_string_final [MSI_MAXMSG_SIZE];
     t_memset(_msg_string_final, '\0', MSI_MAXMSG_SIZE);
@@ -221,18 +240,22 @@ msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agen
     _session->_key = 0;
     _session->_call = NULL;
 
+    pthread_mutex_init(&_session->_mutex, NULL);
+
     return _session;
 }
 
 int msi_terminate_session ( msi_session_t* _session )
 {
-    int _status = 0;
-
     if ( !_session )
-        return -1;
+        return FAILURE;
+
+    int _status = 0;
 
     free ( _session );
     /* TODO: terminate the rest of the session */
+
+    pthread_mutex_destroy(&_session->_mutex);
 
     return _status;
 }
@@ -250,6 +273,21 @@ msi_call_t* msi_init_call (msi_session_t* _session, int _peers)
     _call->_key = _session->_key;
 
     return _call;
+}
+
+int msi_terminate_call(msi_session_t* _session)
+{
+    if ( _session )
+        return FAILURE;
+
+    msi_call_t* _call = _session->_call;
+
+    free(_call->_type_peer);
+    free(_call);
+
+    _session->_call = NULL;
+
+    return SUCCESS;
 }
 /*------------------------*/
 /*------------------------*/
@@ -269,13 +307,17 @@ msi_call_t* msi_init_call (msi_session_t* _session, int _peers)
 /* REQUESTS */
 int msi_handle_recv_invite ( msi_session_t* _session, msi_msg_t* _msg )
 {
-    msi_msg_t* _msg_ringing = msi_msg_new ( TYPE_RESPONSE, stringify_response(_ringing) );
-    msi_send_msg ( _session, _msg_ringing );
-    msi_free_msg(_msg_ringing);
+    if ( !_session )
+        return 0;
 
     _session->_call = msi_init_call(_session, 1);
     _session->_call->_state = call_starting;
     flush_peer_type(_session, _msg, 0);
+
+    msi_msg_t* _msg_ringing = msi_msg_new ( TYPE_RESPONSE, stringify_response(_ringing) );
+    msi_send_msg ( _session, _msg_ringing );
+    msi_free_msg(_msg_ringing);
+
 
     if ( !msi_recv_invite_callback )
         return 0;
@@ -302,8 +344,6 @@ int msi_handle_recv_reject ( msi_session_t* _session, msi_msg_t* _msg )
     msi_send_msg ( _session, _msg_end );
     msi_free_msg ( _msg_end );
 
-    _session->_call->_state = call_inactive;
-
     return ( *msi_reject_call_callback ) (_session);
 }
 int msi_handle_recv_cancel ( msi_session_t* _session, msi_msg_t* _msg )
@@ -322,20 +362,13 @@ int msi_handle_recv_end ( msi_session_t* _session, msi_msg_t* _msg )
     msi_send_msg ( _session, _msg_ending );
     msi_free_msg ( _msg_ending );
 
-    _session->_call->_state = call_inactive;
+    msi_terminate_call(_session);
 
     return ( *msi_end_call_callback ) (_session);
 }
 /*--------*/
 
 /* RESPONSES */
-int msi_handle_recv_trying ( msi_session_t* _session )
-{
-    if ( !_session->_call || !msi_trying_callback )
-        return 0;
-
-    return ( *msi_trying_callback ) (_session);
-}
 int msi_handle_recv_ringing ( msi_session_t* _session )
 {
     if ( !_session->_call || !msi_ringing_callback )
@@ -345,10 +378,10 @@ int msi_handle_recv_ringing ( msi_session_t* _session )
 }
 int msi_handle_recv_starting ( msi_session_t* _session, msi_msg_t* _msg )
 {
-    _session->_call->_state = call_active;
-
     if ( !_session->_call || !msi_send_message_callback || !msi_starting_callback )
         return 0;
+
+    _session->_call->_state = call_active;
 
     msi_msg_t* _msg_start = msi_msg_new ( TYPE_REQUEST, stringify_request(_start) );
     msi_send_msg ( _session, _msg_start );
@@ -360,10 +393,13 @@ int msi_handle_recv_starting ( msi_session_t* _session, msi_msg_t* _msg )
 }
 int msi_handle_recv_ending ( msi_session_t* _session )
 {
-    if ( !_session->_call || !msi_ending_callback )
+    if ( !_session )
         return 0;
 
-    _session->_call->_state = call_inactive;
+    msi_terminate_call(_session);
+
+    if ( !msi_ending_callback )
+        return 0;
 
     return ( *msi_ending_callback ) (_session);
 }
@@ -420,8 +456,6 @@ int msi_hangup ( msi_session_t* _session )
 {
     if ( !_session->_call || ( !msi_send_message_callback && _session->_call->_state != call_active ) )
         return 0;
-
-    _session->_call->_state = call_inactive;
 
     msi_msg_t* _msg_ending = msi_msg_new ( TYPE_REQUEST, stringify_request(_end) );
     msi_send_msg ( _session, _msg_ending );
@@ -563,10 +597,7 @@ void* msi_poll_stack ( void* _session_p )
 
                 const uint8_t* _response_value = _msg->_response->_header_value;
 
-                if          ( same(_response_value, stringify_response(_trying)) ) {
-                    msi_handle_recv_trying ( _session );
-
-                } else if   ( same(_response_value, stringify_response(_ringing))) {
+                if          ( same(_response_value, stringify_response(_ringing))) {
                     msi_handle_recv_ringing ( _session );
 
                 } else if   ( same(_response_value, stringify_response(_starting))) {
