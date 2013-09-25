@@ -72,14 +72,10 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
         t_perror ( RTP_ERROR_PAYLOAD_NULL );
         return NULL;
     }
-
     const uint8_t* _it = _payload;
-
     ALLOCATOR_VAR ( _retu, rtp_header_t, 1 )
-
     _retu->_flags = *_it; ++_it;
-
-
+    
     /* This indicates if the first 2 bytes are valid.
      * Now it my happen that this is out of order but
      * it cuts down chances of parsing some invalid value

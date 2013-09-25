@@ -42,6 +42,7 @@
 #include "msi_message.h"
 #include "rtp_message.h"
 #include "toxrtp/tests/test_helper.h"
+#include "phone.h"
 #include "AV_codec.h"
 
 
@@ -463,7 +464,7 @@ void *encode_video_thread(void *arg)
 
     while(!cs->quit&&cs->send_video) {
 
-        rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
+        //rtp_add_resolution_marking(cs->_rtp_video, cs->video_encoder_ctx->width,cs->video_encoder_ctx->height);
 
 	if(av_read_frame(cs->video_format_ctx, packet) < 0) {
 	    printf("error reading frame\n");
@@ -501,12 +502,16 @@ void *encode_video_thread(void *arg)
 		    continue;
 		}
 		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
+		THREADLOCK()
+		printf("encoding and sending...\n");
 		if(!enc_video_packet.data) fprintf(stderr,"video packet data is NULL\n");
 		s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
+		printf("packet sent: %d\n",enc_video_packet.size);
 		if(!s_video_msg) {
 		    printf("invalid message\n");
 		}
 		rtp_send_msg ( cs->_rtp_video, s_video_msg, cs->_networking );
+		THREADUNLOCK()
 		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
 		av_free_packet(&enc_video_packet);
 	    }
@@ -546,10 +551,12 @@ void *encode_audio_thread(void *arg)
 		printf("Could not encode audio packet\n");
 	    } else {
 		pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
+		THREADLOCK()
 		rtp_set_payload_type(cs->_rtp_audio,96);
 		s_audio_msg = rtp_msg_new (cs->_rtp_audio, encoded_data, encoded_size) ;
 		rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->_networking ); 
 		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
+		THREADUNLOCK()
 	    }
 	}
     }
@@ -607,8 +614,11 @@ void *decode_video_thread(void *arg)
     int width=0;
     int height=0;
     while(!cs->quit&&cs->receive_video) {
+      THREADLOCK()
         r_msg = rtp_recv_msg ( cs->_rtp_video );
+	printf("almost got message\n");
 	if(r_msg) {
+	  printf("got message\n");
 	    memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
 	    dec_video_packet.size=r_msg->_length;
 	    avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
@@ -627,6 +637,7 @@ void *decode_video_thread(void *arg)
 	    }
 	    rtp_free_msg(cs->_rtp_video, r_msg);
         }
+        THREADUNLOCK()
         usleep(1000);
     }
     printf("vend\n");
@@ -687,7 +698,7 @@ void *decode_audio_thread(void *arg)
     opus_int16 PCM[frame_size];
          
     while(!cs->quit&&cs->receive_audio) {
-
+	THREADLOCK()
         r_msg = rtp_recv_msg ( cs->_rtp_audio );
         if(r_msg) {
 	    /* push the packet into the queue */
@@ -737,7 +748,7 @@ void *decode_audio_thread(void *arg)
 	      
 	  }
 	}
-
+	THREADUNLOCK()
         usleep(1000);
     }
     /* clean up codecs */

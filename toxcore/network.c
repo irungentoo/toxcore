@@ -28,6 +28,10 @@
 #include "network.h"
 #include "util.h"
 
+#ifndef IPV6_V6ONLY
+#define IPV6_V6ONLY 27
+#endif
+
 /*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void)
 {
@@ -142,10 +146,12 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
     return res;
 }
 
-/* Function to receive data, ip and port of sender is put into ip_port
-   the packet data into data
-   the packet length into length.
-   dump all empty packets. */
+/* Function to receive data
+ *  ip and port of sender is put into ip_port.
+ *  Packet data is put into data.
+ *  Packet length is put into length.
+ *  Dump all empty packets.
+ */
 int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     struct sockaddr_storage addr;
@@ -323,18 +329,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #endif
 
     /* Functions to increase the size of the send and receive UDP buffers.
-     * NOTE: Uncomment if necessary.
      */
-    /*
     int n = 1024 * 1024 * 2;
-    if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&n, sizeof(n)) == -1)
-    {
-        return -1;
-    }
-
-    if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&n, sizeof(n)) == -1)
-        return -1;
-    */
+    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (char *)&n, sizeof(n));
+    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (char *)&n, sizeof(n));
 
     /* Enable broadcast on socket */
     int broadcast = 1;
@@ -413,7 +411,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #ifdef LOGGING
         res =
 #endif
-            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
 #ifdef LOGGING
 
         if (res < 0) {

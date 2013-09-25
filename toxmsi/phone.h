@@ -36,7 +36,6 @@ typedef struct phone_s {
     codec_state *cs;
 
     Networking_Core* _networking;
-    
 } phone_t;
 
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port);

@@ -25,8 +25,8 @@
 #ifndef _TEST__HELPER_
 #define _TEST__HELPER_
 
-#include "toxrtp/rtp_helper.h"
-#include "toxrtp/rtp_allocator.h"
+#include "../rtp_helper.h"
+#include "../rtp_allocator.h"
 
 #define RTP_PORT 31003
 #define RTP_PORT_LISTEN 31001

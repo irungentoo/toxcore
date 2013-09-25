@@ -32,10 +32,11 @@
 #define MAX_DATA_SIZE 1024
 
 /* Maximum data packets in sent and receive queues. */
-#define MAX_QUEUE_NUM     16
+#define MAX_QUEUE_NUM     1024
+#define DEFAULT_QUEUE_NUM     4
 
 /* Maximum number of data packets in the buffer. */
-#define BUFFER_PACKET_NUM (16-1)
+#define MAX_REQUESTED_PACKETS 256
 
 /* Timeout per connection is randomly set between CONNEXION_TIMEOUT and 2*CONNEXION_TIMEOUT. */
 #define CONNEXION_TIMEOUT 5
@@ -71,7 +72,7 @@ typedef struct {
     uint8_t inbound;
 
     uint16_t  SYNC_rate;     /* Current SYNC packet send rate packets per second. */
-    uint16_t  data_rate;     /* Current data packet send rate packets per second. */
+    uint32_t  data_rate;     /* Current data packet send rate packets per second. */
 
     uint64_t  last_SYNC;     /* Time our last SYNC packet was sent. */
     uint64_t  last_sent;     /* Time our last data or handshake packet was sent. */
@@ -79,9 +80,10 @@ typedef struct {
     uint64_t  last_recvdata; /* Time we last received a DATA packet from the other. */
     uint64_t  killat;        /* Time to kill the connection. */
 
-    Data      sendbuffer[MAX_QUEUE_NUM]; /* packet send buffer. */
-    Data      recvbuffer[MAX_QUEUE_NUM]; /* packet receive buffer. */
-
+    Data      *sendbuffer; /* packet send buffer. */
+    uint32_t  sendbuffer_length;
+    Data      *recvbuffer; /* packet receive buffer. */
+    uint32_t  recvbuffer_length;
     uint32_t  handshake_id1;
     uint32_t  handshake_id2;
 
@@ -107,7 +109,7 @@ typedef struct {
     uint32_t  successful_read;
 
     /* List of currently requested packet numbers(by the other person). */
-    uint32_t  req_packets[BUFFER_PACKET_NUM];
+    uint32_t  req_packets[MAX_REQUESTED_PACKETS];
 
     /* Total number of currently requested packets(by the other person). */
     uint16_t  num_req_paquets;
@@ -115,6 +117,9 @@ typedef struct {
     uint8_t   recv_counter;
     uint8_t   send_counter;
     uint8_t   timeout; /* connection timeout in seconds. */
+
+    /* is the connection confirmed or not 1 if yes, 0 if no */
+    uint8_t   confirmed;
 } Connection;
 
 typedef struct {
@@ -168,6 +173,14 @@ int kill_connection(Lossless_UDP *ludp, int connection_id);
  */
 int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
 
+/* Confirm an incoming connection.
+ * Also disables the auto kill timeout on incomming connections.
+ *
+ *  return 0 on success
+ *  return -1 on failure.
+ */
+int confirm_connection(Lossless_UDP *ludp, int connection_id);
+
 /*  returns the ip_port of the corresponding connection.
  *  return 0 if there is no such connection.
  */
@@ -182,6 +195,18 @@ char id_packet(Lossless_UDP *ludp, int connection_id);
  *  return length of received packet if successful.
  */
 int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data);
+
+/* Like read_packet() but does leaves the queue as is.
+ *  return 0 if there is no received data in the buffer.
+ *  return length of received packet if successful.
+ */
+int read_packet_silent(Lossless_UDP *ludp, int connection_id, uint8_t *data);
+
+/* Discard the next packet to be read from the queue
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int discard_packet(Lossless_UDP *ludp, int connection_id);
 
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.

@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    uint8_t buffer[512];
+    uint8_t buffer[MAX_DATA_SIZE];
     int read;
 
     FILE *file = fopen(argv[argvoffset + 1], "wb");
@@ -204,26 +204,32 @@ int main(int argc, char *argv[])
     while (1) {
         //printconnection(0);
         networking_poll(ludp->net);
-        do_lossless_udp(ludp);
 
         if (is_connected(ludp, connection) >= 2) {
-            kill_connection_in(ludp, connection, 3000000);
-            read = read_packet(ludp, connection, buffer);
+            confirm_connection(ludp, connection);
 
-            if (read != 0) {
-                // printf("Received data.\n");
-                if (!fwrite(buffer, read, 1, file))
-                    printf("file write error\n");
+            while (1) {
+                read = read_packet(ludp, connection, buffer);
+
+                if (read != 0) {
+                    // printf("Received data.\n");
+                    if (!fwrite(buffer, read, 1, file))
+                        printf("file write error\n");
+                } else {
+                    break;
+                }
             }
         }
 
+        do_lossless_udp(ludp);
+
         if (is_connected(ludp, connection) == 4) {
-            printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
+            printf("Server Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
             fclose(file);
             return 1;
         }
 
-        c_sleep(1);
+        c_sleep(25);
     }
 
     return 0;

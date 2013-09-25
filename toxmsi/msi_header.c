@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "../toxcore/Lossless_UDP.h"
 
-#define ALLOC_AND_DATA(_tempval, _hdrlist, _fielddef, _msgvar, _alloctype)    \
+#define ALLOC_ADD_DATA(_tempval, _hdrlist, _fielddef, _msgvar, _alloctype)    \
 _tempval = msi_search_field(_hdrlist, (const uint8_t*)_fielddef);       \
 if ( _tempval ){         \
     _msgvar = malloc(sizeof(_alloctype));      \
@@ -38,18 +38,21 @@ int msi_parse_headers ( msi_msg_t* _msg )
     uint8_t* _field_current;
 
     /* Start by default order */
-    ALLOC_AND_DATA(_field_current, _list, _VERSION_FIELD, _msg->_version, msi_header_version_t)
-    ALLOC_AND_DATA(_field_current, _list, _REQUEST_FIELD, _msg->_request, msi_header_request_t)
-    ALLOC_AND_DATA(_field_current, _list, _RESPONSE_FIELD, _msg->_response, msi_header_response_t)
-    ALLOC_AND_DATA(_field_current, _list, _FRIENDID_FIELD, _msg->_friend_id, msi_header_friendid_t)
-    ALLOC_AND_DATA(_field_current, _list, _CALLTYPE_FIELD, _msg->_call_type, msi_header_call_type_t)
-    ALLOC_AND_DATA(_field_current, _list, _USERAGENT_FIELD, _msg->_user_agent, msi_header_user_agent_t)
-    ALLOC_AND_DATA(_field_current, _list, _INFO_FIELD, _msg->_info, msi_header_info_t)
+    ALLOC_ADD_DATA(_field_current, _list, _VERSION_FIELD, _msg->_version, msi_header_version_t)
+    ALLOC_ADD_DATA(_field_current, _list, _REQUEST_FIELD, _msg->_request, msi_header_request_t)
+    ALLOC_ADD_DATA(_field_current, _list, _RESPONSE_FIELD, _msg->_response, msi_header_response_t)
+    ALLOC_ADD_DATA(_field_current, _list, _FRIENDID_FIELD, _msg->_friend_id, msi_header_friendid_t)
+    ALLOC_ADD_DATA(_field_current, _list, _CALLTYPE_FIELD, _msg->_call_type, msi_header_call_type_t)
+    ALLOC_ADD_DATA(_field_current, _list, _USERAGENT_FIELD, _msg->_user_agent, msi_header_user_agent_t)
+    ALLOC_ADD_DATA(_field_current, _list, _INFO_FIELD, _msg->_info, msi_header_info_t)
+    ALLOC_ADD_DATA(_field_current, _list, _REASON_FIELD, _msg->_reason, msi_header_reason_t)
 
     /* Since we don't need the raw header anymore remove it */
     msi_header_t* _temp;
     while ( _list ){
         _temp = _list->next;
+        free(_list->_header_field);
+        free(_list->_header_value);
         free(_list);
         _list = _temp;
     }
@@ -103,8 +106,8 @@ msi_header_t* msi_add_new_header ( uint8_t* _value )
         _data[_num_it] = *_p_it;
         ++_p_it;
     }
-    _data[_num_it + 1] = '\r';
-    _data[_num_it + 2] = '\0';
+    _data[_num_it] = '\r';
+    _data[_num_it + 1] = '\0';
 
     msi_header_t* _retu = malloc(sizeof(msi_header_t));
 

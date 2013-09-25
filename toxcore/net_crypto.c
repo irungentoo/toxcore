@@ -516,7 +516,7 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
 
             if (id_packet(c->lossless_udp, c->incoming_connections[i]) == 2) {
                 uint8_t temp_data[MAX_DATA_SIZE];
-                uint16_t len = read_packet(c->lossless_udp, c->incoming_connections[i], temp_data);
+                uint16_t len = read_packet_silent(c->lossless_udp, c->incoming_connections[i], temp_data);
 
                 if (handle_cryptohandshake(c, public_key, secret_nonce, session_key, temp_data, len)) {
                     int connection_id = c->incoming_connections[i];
@@ -570,7 +570,7 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
 {
     uint32_t i;
 
-    if (connection_id == -1)
+    if (discard_packet(c->lossless_udp, connection_id) == -1)
         return -1;
 
     /*
@@ -749,8 +749,8 @@ static void receive_crypto(Net_Crypto *c)
                                        c->crypto_connections[i].shared_key);
                     c->crypto_connections[i].status = CONN_ESTABLISHED;
 
-                    /* Connection is accepted so we disable the auto kill by setting it to about 1 month from now. */
-                    kill_connection_in(c->lossless_udp, c->crypto_connections[i].number, 3000000);
+                    /* Connection is accepted. */
+                    confirm_connection(c->lossless_udp, c->crypto_connections[i].number);
                 } else {
                     /* This should not happen, kill the connection if it does. */
                     crypto_kill(c, i);

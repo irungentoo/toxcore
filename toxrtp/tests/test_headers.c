@@ -23,7 +23,7 @@
  */
 
 #include "test_helper.h"
-#include "toxrtp/rtp_impl.h"
+#include "../rtp_impl.h"
 #include "../rtp_message.h"
 
 #include <stdio.h>
@@ -31,7 +31,7 @@
 #include <string.h>
 #include <utime.h>
 #include <assert.h>
-#include "toxrtp/rtp_error_id.h"
+#include "../rtp_error_id.h"
 
 #define _CT_HEADERS_
 

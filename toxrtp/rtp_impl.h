@@ -30,8 +30,7 @@
 
 #define RTP_VERSION 2
 #include <inttypes.h>
-#include "tox.h"
-#include <assert.h>
+#include "../toxcore/tox.h"
 
 /* Extension header flags */
 #define RTP_EXT_TYPE_RESOLUTION 0x01
@@ -129,12 +128,24 @@ int                     rtp_release_session_recv ( rtp_session_t* _session );
 
 /* Functions handling receiving */
 struct rtp_msg_s*       rtp_recv_msg ( rtp_session_t* _session );
+
+/*
+ * rtp_msg_parse() stores headers separately from the payload data
+ * and so the _length variable is set accordingly
+ */
 struct rtp_msg_s*       rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+
 int                     rtp_check_late_message (rtp_session_t* _session, struct rtp_msg_s* _msg);
 void                    rtp_register_msg ( rtp_session_t* _session, struct rtp_msg_s* );
 
 /* Functions handling sending */
 int                     rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, void* _core_handler );
+
+/*
+ * rtp_msg_new() stores headers and payload data in one container ( _data )
+ * and the _length is set accordingly. Returned message is used for sending only
+ * so there is not much use of the headers there
+ */
 struct rtp_msg_s*       rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
 
 

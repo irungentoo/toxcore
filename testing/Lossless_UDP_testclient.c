@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    uint8_t buffer[512];
+    uint8_t buffer[MAX_DATA_SIZE];
     int read;
 
     FILE *file = fopen(argv[argvoffset + 3], "rb");
@@ -216,10 +216,10 @@ int main(int argc, char *argv[])
     }
 
     timer = current_time();
-
+    unsigned long long bytes_sent = 0;
 
     /*read first part of file */
-    read = fread(buffer, 1, 512, file);
+    read = fread(buffer, 1, MAX_DATA_SIZE, file);
 
     while (1) {
         /* printconnection(connection); */
@@ -228,26 +228,32 @@ int main(int argc, char *argv[])
 
         if (is_connected(ludp, connection) == 3) {
 
-            if (write_packet(ludp, connection, buffer, read)) {
+            while (write_packet(ludp, connection, buffer, read)) {
+                bytes_sent += read;
                 /* printf("Wrote data.\n"); */
-                read = fread(buffer, 1, 512, file);
+                read = fread(buffer, 1, MAX_DATA_SIZE, file);
 
             }
 
             /* printf("%u\n", sendqueue(connection)); */
             if (sendqueue(ludp, connection) == 0) {
                 if (read == 0) {
-                    printf("Sent file successfully in: %llu us\n", (unsigned long long)(current_time() - timer));
+                    unsigned long long us = (unsigned long long)(current_time() - timer);
+                    printf("Sent file successfully in: %llu us = %llu seconds. Average speed: %llu KB/s\n", us, us / 1000000UL,
+                           bytes_sent / (us / 1024UL));
+                    //printf("Total bytes sent: %llu B, Total data sent: %llu B, overhead: %llu B\n", total_bytes_sent, bytes_sent, total_bytes_sent-bytes_sent);
                     break;
                 }
             }
         } else {
-            printf("Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
+            printf("%u Client Connecting Lost after: %llu us\n", is_connected(ludp, connection),
+                   (unsigned long long)(current_time() - timer));
             return 0;
         }
 
-        /* c_sleep(1); */
     }
+
+    c_sleep(25);
 
     return 0;
 }

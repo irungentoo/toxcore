@@ -26,9 +26,9 @@
 #ifndef _RTP__MESSAGE_H_
 #define _RTP__MESSAGE_H_
 
-#include "network.h"
+#include "../toxcore/network.h"
 #include "rtp_helper.h"
-#include "tox.h"
+#include "../toxcore/tox.h"
 /* Defines */
 
 #define _MAX_SEQU_NUM 65535
