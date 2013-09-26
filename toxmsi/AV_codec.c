@@ -610,7 +610,6 @@ void *decode_video_thread(void *arg)
     int width=0;
     int height=0;
     while(!cs->quit&&cs->receive_video) {
-      THREADLOCK()
         r_msg = rtp_recv_msg ( cs->_rtp_video );
 	if(r_msg) {
 	    memcpy(dec_video_packet.data,r_msg->_data,r_msg->_length);
@@ -631,7 +630,6 @@ void *decode_video_thread(void *arg)
 	    }
 	    rtp_free_msg(cs->_rtp_video, r_msg);
         }
-        THREADUNLOCK()
         usleep(1000);
     }
     printf("vend\n");

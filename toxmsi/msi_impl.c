@@ -139,24 +139,29 @@ void msi_register_callback_recv_error ( MCALLBACK )
 /*------------------------*/
 
 /* Function for receiving and parsing a message that will be used internally */
+
 msi_msg_t* receive_message ( msi_session_t* _session )
 {
     msi_msg_t* _retu = _session->_oldest_msg;
-
-    pthread_mutex_lock(&_session->_mutex);
-
-    if ( _retu )
-        _session->_oldest_msg = _retu->_next;
-
+  
+  
+    if ( _retu ){
+	pthread_mutex_lock(&_session->_mutex);
+	_session->_oldest_msg = _retu->_next;
+    }
+    else
+	return _retu; /* NULL */
+  
+  
     if ( !_session->_oldest_msg )
-        _session->_last_msg = NULL;
-
+	_session->_last_msg = NULL;
+  
     pthread_mutex_unlock(&_session->_mutex);
-
+  
     return _retu;
 }
 
-int msi_store_msg ( msi_session_t* _session, msi_msg_t* _msg )
+void msi_store_msg ( msi_session_t* _session, msi_msg_t* _msg )
 {
     pthread_mutex_lock(&_session->_mutex);
 

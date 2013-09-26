@@ -131,6 +131,6 @@ int msi_cancel ( msi_session_t* _session );
 int msi_reject ( msi_session_t* _session );
 
 int msi_send_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
-int msi_store_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
+void msi_store_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
 
 #endif /* _MSI_IMPL_H_ */

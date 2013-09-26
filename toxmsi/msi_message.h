@@ -12,7 +12,7 @@
 
 #define VERSION_STRING "0.1.2"
 
-#define MSI_MAXMSG_SIZE 1024
+#define MSI_MAXMSG_SIZE 65000
 
 typedef enum {
     _invite,

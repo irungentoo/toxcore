@@ -256,14 +256,14 @@ pthread_t phone_startmedia_loop ( phone_t* _phone )
     cs->quit = 0;
     
     printf("support: %d %d\n",cs->support_send_audio,cs->support_send_video);
-    //if(cs->support_send_audio&&cs->support_send_video) /* quick fix */
-   //     pthread_create(&_phone->cs->encode_audio_thread, NULL, encode_audio_thread, _phone->cs);
-   // if(cs->support_receive_audio)
-//	pthread_create(&_phone->cs->decode_audio_thread, NULL, decode_audio_thread, _phone->cs);
+    if(cs->support_send_audio&&cs->support_send_video) /* quick fix */
+       pthread_create(&_phone->cs->encode_audio_thread, NULL, encode_audio_thread, _phone->cs);
+   if(cs->support_receive_audio)
+	pthread_create(&_phone->cs->decode_audio_thread, NULL, decode_audio_thread, _phone->cs);
     if(cs->support_send_video)
        pthread_create(&_phone->cs->encode_video_thread, NULL, encode_video_thread, _phone->cs);
-//     if(cs->support_receive_video)
-//     	pthread_create(&_phone->cs->decode_video_thread, NULL, decode_video_thread, _phone->cs); 
+    if(cs->support_receive_video)
+    	pthread_create(&_phone->cs->decode_video_thread, NULL, decode_video_thread, _phone->cs); 
 //     
     return 1;
 
