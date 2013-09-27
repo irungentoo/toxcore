@@ -56,6 +56,12 @@
 
 #endif
 
+void print_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+{
+    printf("Message with length %u received from %u: %s \n", length, friendnumber, string);
+    m_sendmessage(m, friendnumber, (uint8_t *)"Test1", 6);
+}
+
 /* FIXME needed as print_request has to match the interface expected by
  * networking_requesthandler and so cannot take a Messenger * */
 static Messenger *m;
@@ -85,12 +91,6 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *us
         printf("Friend request accepted.\n");
         m_addfriend_norequest(m, public_key);
     }
-}
-
-void print_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
-{
-    printf("Message with length %u received from %u: %s \n", length, friendnumber, string);
-    m_sendmessage(m, friendnumber, (uint8_t *)"Test1", 6);
 }
 
 int main(int argc, char *argv[])

@@ -613,11 +613,11 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
     if (status == NOFRIEND)
         return;
 
-    const uint8_t was_connected = m->friendlist[friendnumber].status == FRIEND_ONLINE;
-    const uint8_t is_connected = status == FRIEND_ONLINE;
+    const uint8_t was_online = m->friendlist[friendnumber].status == FRIEND_ONLINE;
+    const uint8_t is_online = status == FRIEND_ONLINE;
 
-    if (is_connected != was_connected)
-        m->friend_connectionstatuschange(m, friendnumber, is_connected, m->friend_connectionstatuschange_userdata);
+    if (is_online != was_online)
+        m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
 }
 
 void set_friend_status(Messenger *m, int friendnumber, uint8_t status)
