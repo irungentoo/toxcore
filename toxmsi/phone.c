@@ -348,6 +348,21 @@ MCBTYPE callback_call_rejected ( MCBARGS )
 }
 MCBTYPE callback_call_ended ( MCBARGS )
 {
+    
+    msi_session_t* _session = _arg;
+    phone_t * _phone = _session->_agent_handler;
+    _phone->cs->quit=1;
+    if(_phone->cs->encode_video_thread)
+	pthread_join(_phone->cs->encode_video_thread,NULL);
+    if(_phone->cs->encode_audio_thread)
+	pthread_join(_phone->cs->encode_audio_thread,NULL);
+    if(_phone->cs->decode_audio_thread)
+	pthread_join(_phone->cs->decode_audio_thread,NULL);
+    if(_phone->cs->decode_video_thread)
+	pthread_join(_phone->cs->decode_video_thread,NULL);    
+    SDL_Quit();
+    printf("all A/V threads successfully shut down\n");
+    
     INFO ( "Call ended!" );
     return SUCCESS;
 }
@@ -577,7 +592,7 @@ int quitPhone(phone_t* _phone)
     if ( _phone->_msi->_call ){
         msi_hangup(_phone->_msi); /* Hangup the phone first */
     }
-
+    
     msi_terminate_session(_phone->_msi);
     pthread_mutex_destroy ( &_mutex );
 
