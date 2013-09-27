@@ -32,6 +32,7 @@
 #include "ping.h"
 #include "misc_tools.h"
 #include "util.h"
+#include "LAN_discovery.h"
 
 /* The number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
@@ -124,6 +125,17 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
     return timestamp + timeout <= time_now;
 }
 
+static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id)
+{
+    uint32_t i;
+
+    for(i = 0; i < length; i++)
+        if (id_equal(list[i].client_id, client_id))
+            return 1;
+
+    return 0;
+}
+
 /* Check if client with client_id is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
  * If the id is already in the list with a different ip_port, update it.
@@ -166,9 +178,29 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             list[i].assoc.timestamp = temp_time;
 #else
             if (ip_port.ip.family == AF_INET) {
+#ifdef LOGGING
+                if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                    size_t x;
+                    x = sprintf(logbuffer, "coipil[%u]: switching ipv4 from %s:%u ", i,
+                                       ip_ntoa(&list[i].assoc4.ip_port.ip), ntohs(list[i].assoc4.ip_port.port));
+                    sprintf(logbuffer + x, "to %s:%u\n",
+                                       ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                    loglog(logbuffer);
+                }
+#endif
                 list[i].assoc4.ip_port = ip_port;
                 list[i].assoc4.timestamp = temp_time;
             } else if (ip_port.ip.family == AF_INET6) {
+#ifdef LOGGING
+                if (!ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
+                    size_t x;
+                    x = sprintf(logbuffer, "coipil[%u]: switching ipv6 from %s:%u ", i,
+                                       ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port));
+                    sprintf(logbuffer + x, "to %s:%u\n",
+                                       ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                    loglog(logbuffer);
+                }
+#endif
                 list[i].assoc6.ip_port = ip_port;
                 list[i].assoc6.timestamp = temp_time;
             }
@@ -186,6 +218,10 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             /* Initialize client timestamp. */
             list[i].assoc.timestamp = temp_time;
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+#ifdef LOGGING
+            sprintf(logbuffer, "coipil[%u]: switching client_id\n", i);
+            loglog(logbuffer);
+#endif
             return 1;
         }
 #else
@@ -194,7 +230,10 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             /* Initialize client timestamp. */
             list[i].assoc4.timestamp = temp_time;
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-
+#ifdef LOGGING
+            sprintf(logbuffer, "coipil[%u]: switching client_id (ipv4) \n", i);
+            loglog(logbuffer);
+#endif
             /* kill the other address, if it was set */
             memset(&list[i].assoc6, 0, sizeof(list[i].assoc6));
             return 1;
@@ -202,7 +241,10 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             /* Initialize client timestamp. */
             list[i].assoc6.timestamp = temp_time;
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-
+#ifdef LOGGING
+            sprintf(logbuffer, "coipil[%u]: switching client_id (ipv6) \n", i);
+            loglog(logbuffer);
+#endif
             /* kill the other address, if it was set */
             memset(&list[i].assoc4, 0, sizeof(list[i].assoc4));
             return 1;
@@ -256,14 +298,19 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         return;
 
     int num_nodes = *num_nodes_ptr;
-    int tout, inlist, ipv46x, j, closest;
+    int ipv46x, j, closest;
     uint32_t i;
 
     for (i = 0; i < client_list_length; i++) {
         Client_data *client = &client_list[i];
+
+        /* node already in list? */
+        if (client_in_nodelist(nodes_list, MAX_SENT_NODES, client->client_id))
+            continue;
+
         IPPTsPng *ipptp = NULL;
 #ifdef CLIENT_ONETOONE_IP
-            ipptp = &client->assoc;
+        ipptp = &client->assoc;
 #else
         if (sa_family == AF_INET)
             ipptp = &client->assoc4;
@@ -271,8 +318,9 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
             ipptp = &client->assoc6;
 #endif
 
-        tout = is_timeout(timestamp, ipptp->timestamp, BAD_NODE_TIMEOUT);
-        inlist = client_in_nodelist(nodes_list, MAX_SENT_NODES, client->client_id);
+        /* node not in a good condition? */
+        if (is_timeout(timestamp, ipptp->timestamp, BAD_NODE_TIMEOUT))
+            continue;
 
 #ifdef TOX_ENABLE_IPV6
         IP *client_ip = &ipptp->ip_port.ip;
@@ -298,8 +346,11 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         ipv46x = !(sa_family == AF_INET);
 #endif
 
-        /* If node isn't good or is already in list. */
-        if (tout || inlist || ipv46x)
+        /* node address of the wrong family? */
+        if (ipv46x)
+            continue;
+
+        if (!LAN_ip(ipptp->ip_port.ip))
             continue;
 
         if (num_nodes < MAX_SENT_NODES) {
@@ -547,6 +598,17 @@ void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
     if ((ip_port.ip.family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&ip_port.ip.ip6.in6_addr)) {
         ip_port.ip.family = AF_INET;
         ip_port.ip.ip4.uint32 = ip_port.ip.ip6.uint32[3];
+    }
+
+    int address_local = LAN_ip(ip_port.ip) == 0;
+    if (address_local) {
+#ifdef LOGGING
+        sprintf(logbuffer, "addto_lists: address is local! address %s:%u\n", ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+        loglog(logbuffer);
+#endif
+        /* if client is already in list, don't kill its potentially good address */
+        if (client_in_list(dht->close_clientlist, LCLIENT_LIST, client_id))
+            return;
     }
 
     /* NOTE: Current behavior if there are two clients with the same id is

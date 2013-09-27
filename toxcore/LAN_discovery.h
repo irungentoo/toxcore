@@ -41,10 +41,15 @@
 /* Send a LAN discovery pcaket to the broadcast address with port port. */
 int send_LANdiscovery(uint16_t port, Net_Crypto *c);
 
-
 /* Sets up packet handlers. */
 void LANdiscovery_init(DHT *dht);
 
+/* checks if a given IP isn't routable
+ *
+ *  return 0 if ip is a LAN ip.
+ *  return -1 if it is not.
+ */
+int LAN_ip(IP ip);
 
 
 #endif
