@@ -51,7 +51,7 @@
 #endif
 
 char lines[HISTORY][STRING_LENGTH];
-char line[STRING_LENGTH];
+char input_line[STRING_LENGTH];
 
 char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
              "(to send message)\n/s status (to change status)\n[i] /l list (l"
@@ -442,7 +442,7 @@ void do_refresh()
     move(y - 1, 0);
     clrtoeol();
     printw(">> ");
-    printw(line);
+    printw(input_line);
     clrtoeol();
     refresh();
 }
@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
     new_lines("/h for list of commands");
     get_id(m, idstring);
     new_lines(idstring);
-    strcpy(line, "");
+    strcpy(input_line, "");
 
     uint16_t port = htons(atoi(argv[argvoffset + 2]));
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
@@ -694,12 +694,12 @@ int main(int argc, char *argv[])
         getmaxyx(stdscr, y, x);
 
         if ((c == 0x0d) || (c == 0x0a)) {
-            line_eval(m, line);
-            strcpy(line, "");
+            line_eval(m, input_line);
+            strcpy(input_line, "");
         } else if (c == 8 || c == 127) {
-            line[strlen(line) - 1] = '\0';
+            input_line[strlen(input_line) - 1] = '\0';
         } else if (isalnum(c) || ispunct(c) || c == ' ') {
-            strcpy(line, appender(line, (char) c));
+            strcpy(input_line, appender(input_line, (char) c));
         }
     }
 
