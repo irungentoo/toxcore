@@ -1010,14 +1010,10 @@ static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_
         IPPTsPng *assoc;
 #ifdef CLIENT_ONETOONE_IP
         assoc = &list[i].assoc;
-        if (1) {
 #else
         uint32_t a;
-        for (a = 0; a < 2; a++) {
-            if (!a)
-                assoc = &list[i].assoc6;
-            else
-                assoc = &list[i].assoc4;
+
+        for (a = 0, assoc = &list[i].assoc6; a < 2; a++, assoc = &list[i].assoc4)
 #endif
             if (ipport_isset(&(assoc->ip_port)) &&
                 !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
@@ -1027,7 +1023,6 @@ static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_
                 if (num >= max_num)
                     return;
             }
-        }
     }
 }
 
@@ -1105,20 +1100,15 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port)
                     IPPTsPng *assoc = NULL;
 #ifdef CLIENT_ONETOONE_IP
                     assoc = &client->assoc;
-                    if (1) {
 #else
                     uint32_t a;
-                    for (a = 0; a < 2; a++) {
-                        if (!a)
-                            assoc = &client->assoc6;
-                        else
-                            assoc = &client->assoc4;
+
+                    for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
 #endif
                         if (!is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
                             *ip_port = assoc->ip_port;
                             return 1;
                         }
-                    }
                 }
             }
 
@@ -1145,14 +1135,10 @@ static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8
         IPPTsPng *assoc;
 #ifdef CLIENT_ONETOONE_IP
         assoc = &client->assoc;
-        if (1) {
 #else
         uint32_t a;
-        for (a = 0; a < 2; a++) {
-            if (!a)
-                assoc = &client->assoc6;
-            else
-                assoc = &client->assoc4;
+
+        for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
 #endif
 
             if (!is_timeout(temp_time, assoc->timestamp, KILL_NODE_TIMEOUT)) {
@@ -1168,7 +1154,6 @@ static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8
                     ++num_nodes;
                 }
             }
-        }
     }
 
     if ((num_nodes != 0) &&
