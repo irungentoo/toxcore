@@ -1300,7 +1300,9 @@ void doMessenger(Messenger *m)
 #ifdef CLIENT_ONETOONE_IP
             assoc = &cptr->assoc;
 #else
-            for (assoc = &cptr->assoc4; assoc != &cptr->assoc6; assoc = &cptr->assoc6)
+            uint32_t a;
+
+            for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6)
 #endif
                 if (ip_isset(&assoc->ip_port.ip)) {
                     last_pinged = lastdump - assoc->last_pinged;
@@ -1359,7 +1361,9 @@ void doMessenger(Messenger *m)
 #ifdef CLIENT_ONETOONE_IP
                 assoc = &cptr->assoc;
 #else
-                for (assoc = &cptr->assoc4; assoc != &cptr->assoc6; assoc = &cptr->assoc6)
+                uint32_t a;
+
+                for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6)
 #endif
                     if (ip_isset(&assoc->ip_port.ip)) {
                         last_pinged = lastdump - assoc->last_pinged;
