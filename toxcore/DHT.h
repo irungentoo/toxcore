@@ -44,7 +44,6 @@
 #define MAX_TOPING 16
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
@@ -52,19 +51,22 @@ typedef struct {
     /* Returned by this node. Either our friend or us. */
     IP_Port     ret_ip_port;
     uint64_t    ret_timestamp;
-} Client_data;
+} IPPTsPng;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IPPTsPng    assoc;
+} Client_data_old;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IPPTsPng    assoc4;
+    IPPTsPng    assoc6;
+} Client_data_new;
 
 /*----------------------------------------------------------------------------------*/
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    Client_data client_list[MAX_FRIEND_CLIENTS];
-
-    /* Time at which the last get_nodes request was sent. */
-    uint64_t    lastgetnode;
-
-    /* Symetric NAT hole punching stuff. */
-
     /* 1 if currently hole punching, otherwise 0 */
     uint8_t     hole_punching;
     uint32_t    punching_index;
@@ -72,7 +74,38 @@ typedef struct {
     uint64_t    recvNATping_timestamp;
     uint64_t    NATping_id;
     uint64_t    NATping_timestamp;
-} DHT_Friend;
+} NAT;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    Client_data_old client_list[MAX_FRIEND_CLIENTS];
+
+    /* Time at which the last get_nodes request was sent. */
+    uint64_t    lastgetnode;
+
+    /* Symetric NAT hole punching stuff. */
+    NAT         nat;
+} DHT_Friend_old;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    Client_data_new client_list[MAX_FRIEND_CLIENTS];
+
+    /* Time at which the last get_nodes request was sent. */
+    uint64_t    lastgetnode;
+
+    /* Symetric NAT hole punching stuff. */
+    NAT         nat;
+} DHT_Friend_new;
+
+/* #define CLIENT_ONETOONE_IP */
+#ifdef CLIENT_ONETOONE_IP
+typedef Client_data_old Client_data;
+typedef DHT_Friend_old DHT_Friend;
+#else
+typedef Client_data_new Client_data;
+typedef DHT_Friend_new DHT_Friend;
+#endif
 
 /* this must be kept even if IP_Port is expanded: wire compatibility */
 typedef struct {
