@@ -446,10 +446,10 @@ int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
 int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
 {
     uint32_t i;
-    int id = getcryptconnection_id(c, public_key);
+    int id_existing = getcryptconnection_id(c, public_key);
 
-    if (id != -1) {
-        IP_Port c_ip = connection_ip(c->lossless_udp, c->crypto_connections[id].number);
+    if (id_existing != -1) {
+        IP_Port c_ip = connection_ip(c->lossless_udp, c->crypto_connections[id_existing].number);
 
         if (ipport_equal(&c_ip, &ip_port))
             return -1;
@@ -464,12 +464,12 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
 
     for (i = 0; i <= c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status == CONN_NO_CONNECTION) {
-            int id = new_connection(c->lossless_udp, ip_port);
+            int id_new = new_connection(c->lossless_udp, ip_port);
 
-            if (id == -1)
+            if (id_new == -1)
                 return -1;
 
-            c->crypto_connections[i].number = id;
+            c->crypto_connections[i].number = id_new;
             c->crypto_connections[i].status = CONN_HANDSHAKE_SENT;
             random_nonce(c->crypto_connections[i].recv_nonce);
             memcpy(c->crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
@@ -478,7 +478,7 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
             if (c->crypto_connections_length == i)
                 ++c->crypto_connections_length;
 
-            if (send_cryptohandshake(c, id, public_key,  c->crypto_connections[i].recv_nonce,
+            if (send_cryptohandshake(c, id_new, public_key,  c->crypto_connections[i].recv_nonce,
                                      c->crypto_connections[i].sessionpublic_key) == 1) {
                 increment_nonce(c->crypto_connections[i].recv_nonce);
                 return i;
