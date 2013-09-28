@@ -128,10 +128,17 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
 static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id)
 {
     uint32_t i;
+    uint64_t temp_time = unix_time();
 
     for (i = 0; i < length; i++)
-        if (id_equal(list[i].client_id, client_id))
-            return 1;
+#ifdef CLIENT_ONETOONE_IP /* Dead nodes are considered dead (not in the list)*/
+        if (!is_timeout(temp_time, list[i].assoc.timestamp, KILL_NODE_TIMEOUT))
+#else
+        if (!is_timeout(temp_time, list[i].assoc4.timestamp, KILL_NODE_TIMEOUT) ||
+                !is_timeout(temp_time, list[i].assoc6.timestamp, KILL_NODE_TIMEOUT))
+#endif
+            if (id_equal(list[i].client_id, client_id))
+                return 1;
 
     return 0;
 }
