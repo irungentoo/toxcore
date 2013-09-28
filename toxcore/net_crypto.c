@@ -474,6 +474,7 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
             random_nonce(c->crypto_connections[i].recv_nonce);
             memcpy(c->crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
             crypto_box_keypair(c->crypto_connections[i].sessionpublic_key, c->crypto_connections[i].sessionsecret_key);
+            c->crypto_connections[i].timeout = unix_time() + CRYPTO_HANDSHAKE_TIMEOUT;
 
             if (c->crypto_connections_length == i)
                 ++c->crypto_connections_length;
@@ -593,6 +594,7 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
         if (c->crypto_connections[i].status == CONN_NO_CONNECTION) {
             c->crypto_connections[i].number = connection_id;
             c->crypto_connections[i].status = CONN_NOT_CONFIRMED;
+            c->crypto_connections[i].timeout = unix_time() + CRYPTO_HANDSHAKE_TIMEOUT;
             random_nonce(c->crypto_connections[i].recv_nonce);
             memcpy(c->crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
             memcpy(c->crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
@@ -666,6 +668,7 @@ void load_keys(Net_Crypto *c, uint8_t *keys)
 static void receive_crypto(Net_Crypto *c)
 {
     uint32_t i;
+    uint64_t temp_time = unix_time();
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status == CONN_HANDSHAKE_SENT) {
@@ -715,6 +718,7 @@ static void receive_crypto(Net_Crypto *c)
                                        c->crypto_connections[i].sessionsecret_key,
                                        c->crypto_connections[i].shared_key);
                     c->crypto_connections[i].status = CONN_ESTABLISHED;
+                    c->crypto_connections[i].timeout = ~0;
                 } else {
                     /* This should not happen, timeout the connection if it does. */
                     c->crypto_connections[i].status = CONN_TIMED_OUT;
@@ -723,6 +727,10 @@ static void receive_crypto(Net_Crypto *c)
                 /* This should not happen, timeout the connection if it does. */
                 c->crypto_connections[i].status = CONN_TIMED_OUT;
             }
+        }
+
+        if (temp_time > c->crypto_connections[i].timeout) {
+            c->crypto_connections[i].status = CONN_TIMED_OUT;
         }
     }
 }
