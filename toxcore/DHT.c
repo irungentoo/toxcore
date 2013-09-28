@@ -310,7 +310,7 @@ static int friend_number(DHT *dht, uint8_t *client_id)
  */
 static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nodes_list,
                                   sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
-                                  time_t timestamp, int *num_nodes_ptr)
+                                  time_t timestamp, int *num_nodes_ptr, uint8_t is_LAN)
 {
     if ((sa_family != AF_INET) && (sa_family != AF_INET6))
         return;
@@ -370,7 +370,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         if (ipv46x)
             continue;
 
-        if (!LAN_ip(ipptp->ip_port.ip))
+        if (!LAN_ip(ipptp->ip_port.ip) && !is_LAN)
             continue;
 
         if (num_nodes < MAX_SENT_NODES) {
@@ -412,17 +412,17 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
  * TODO: For the love of based <your favorite deity, in doubt use "love"> make
  * this function cleaner and much more efficient.
  */
-static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family)
+static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN)
 {
     time_t timestamp = unix_time();
     int num_nodes = 0, i;
     get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
-                          dht->close_clientlist, LCLIENT_LIST, timestamp, &num_nodes);
+                          dht->close_clientlist, LCLIENT_LIST, timestamp, &num_nodes, is_LAN);
 
     for (i = 0; i < dht->num_friends; ++i)
         get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                              timestamp, &num_nodes);
+                              timestamp, &num_nodes, is_LAN);
 
     return num_nodes;
 }
@@ -827,7 +827,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
                  + Node4_format_size * MAX_SENT_NODES + ENCRYPTION_PADDING];
 
     Node_format nodes_list[MAX_SENT_NODES];
-    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET);
+    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET, LAN_ip(ip_port.ip) == 0);
 
     if (num_nodes == 0)
         return 0;
@@ -902,7 +902,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
                  + Node_format_size * MAX_SENT_NODES + ENCRYPTION_PADDING];
 
     Node_format nodes_list[MAX_SENT_NODES];
-    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET6);
+    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET6, LAN_ip(ip_port.ip) == 0);
 
     if (num_nodes == 0)
         return 0;
