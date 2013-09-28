@@ -517,8 +517,10 @@ static int send_userstatus(Messenger *m, int friendnumber, USERSTATUS status)
 static int send_ping(Messenger *m, int friendnumber)
 {
     int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_PING, 0, 0);
+
     if (ret == 1)
-            m->friendlist[friendnumber].ping_lastsent = unix_time();
+        m->friendlist[friendnumber].ping_lastsent = unix_time();
+
     return ret;
 }
 
@@ -1187,7 +1189,7 @@ void doFriends(Messenger *m)
 
                         if (m->group_invite)
                             (*m->group_invite)(m, i, data, m->group_invite_userdata);
-                        
+
                         break;
                     }
 
@@ -1204,10 +1206,10 @@ void doFriends(Messenger *m)
                             break;
 
                         group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
-                        
+
                         break;
                     }
-                        
+
                     default: {
                         break;
                     }
@@ -1304,17 +1306,17 @@ void doMessenger(Messenger *m)
 
             for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6)
 #endif
-                if (ip_isset(&assoc->ip_port.ip)) {
-                    last_pinged = lastdump - assoc->last_pinged;
+            if (ip_isset(&assoc->ip_port.ip)) {
+                last_pinged = lastdump - assoc->last_pinged;
 
-                    if (last_pinged > 999)
-                        last_pinged = 999;
+                if (last_pinged > 999)
+                    last_pinged = 999;
 
-                    snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
-                             client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                             last_pinged, ID2String(cptr->client_id));
-                    loglog(logbuffer);
-                }
+                snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
+                         client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
+                         last_pinged, ID2String(cptr->client_id));
+                loglog(logbuffer);
+            }
         }
 
         loglog(" = = = = = = = = \n");
@@ -1365,18 +1367,18 @@ void doMessenger(Messenger *m)
 
                 for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6)
 #endif
-                    if (ip_isset(&assoc->ip_port.ip)) {
-                        last_pinged = lastdump - assoc->last_pinged;
+                if (ip_isset(&assoc->ip_port.ip)) {
+                    last_pinged = lastdump - assoc->last_pinged;
 
-                        if (last_pinged > 999)
-                            last_pinged = 999;
+                    if (last_pinged > 999)
+                        last_pinged = 999;
 
-                        snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
-                                 friend, client, ip_ntoa(&assoc->ip_port.ip),
-                                 ntohs(assoc->ip_port.port), last_pinged,
-                                 ID2String(cptr->client_id));
-                        loglog(logbuffer);
-                    }
+                    snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
+                             friend, client, ip_ntoa(&assoc->ip_port.ip),
+                             ntohs(assoc->ip_port.port), last_pinged,
+                             ID2String(cptr->client_id));
+                    loglog(logbuffer);
+                }
             }
         }
 
