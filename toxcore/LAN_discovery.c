@@ -130,7 +130,7 @@ static IP broadcast_ip(sa_family_t family_socket, sa_family_t family_broadcast)
 /*  return 0 if ip is a LAN ip.
  *  return -1 if it is not.
  */
-static int LAN_ip(IP ip)
+int LAN_ip(IP ip)
 {
 #ifdef TOX_ENABLE_IPV6
 
