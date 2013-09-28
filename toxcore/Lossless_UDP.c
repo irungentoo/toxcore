@@ -356,12 +356,12 @@ int kill_connection(Lossless_UDP *ludp, int connection_id)
 }
 
 /*
- * Kill connection in seconds.
+ * timeout connection in seconds.
  *
  *  return -1 if it can not kill the connection.
  *  return 0 if it will kill it.
  */
-int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds)
+int timeout_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds)
 {
     if ((unsigned int)connection_id < ludp->connections.len) {
         Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
@@ -1049,7 +1049,7 @@ static void do_new(Lossless_UDP *ludp)
         }
 
         if (tmp->status > 0 && tmp->killat < temp_time)
-            kill_connection(ludp, tmp_i);
+            tmp->status = 4;
     }
 }
 

@@ -167,12 +167,12 @@ int incoming_connection(Lossless_UDP *ludp, uint32_t numpackets);
 int kill_connection(Lossless_UDP *ludp, int connection_id);
 
 /*
- * Kill connection in seconds seconds.
+ * timeout connection in seconds seconds.
  *
  *  return -1 if it can not kill the connection.
  *  return 0 if it will kill it.
  */
-int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
+int timeout_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
 
 
 /* Check if connection is confirmed.
