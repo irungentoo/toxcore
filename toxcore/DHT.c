@@ -967,6 +967,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
                    ping_id); /* TODO: prevent possible amplification attacks */
 #endif
 
+    add_toping(dht->ping, packet + 1, source);
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
 
     return 0;
@@ -1284,7 +1285,6 @@ static void do_Close(DHT *dht)
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 {
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
-    send_ping_request(dht->ping, ip_port, public_key);
 }
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, uint8_t *public_key)
