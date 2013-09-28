@@ -182,6 +182,9 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             if (!candropipv4 && (list[i].assoc.ip_port.ip.family == AF_INET))
                 return 1;
 
+            if (LAN_ip(list[i].assoc.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
+                return 1;
+
             list[i].assoc.ip_port = ip_port;
             list[i].assoc.timestamp = temp_time;
 #else
@@ -199,6 +202,10 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
                 }
 
 #endif
+
+                if (LAN_ip(list[i].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
+                    return 1;
+
                 list[i].assoc4.ip_port = ip_port;
                 list[i].assoc4.timestamp = temp_time;
             } else if (ip_port.ip.family == AF_INET6) {
@@ -214,6 +221,10 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
                 }
 
 #endif
+
+                if (LAN_ip(list[i].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
+                    return 1;
+
                 list[i].assoc6.ip_port = ip_port;
                 list[i].assoc6.timestamp = temp_time;
             }
@@ -626,19 +637,6 @@ void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
     if ((ip_port.ip.family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&ip_port.ip.ip6.in6_addr)) {
         ip_port.ip.family = AF_INET;
         ip_port.ip.ip4.uint32 = ip_port.ip.ip6.uint32[3];
-    }
-
-    int address_local = LAN_ip(ip_port.ip) == 0;
-
-    if (address_local) {
-#ifdef LOGGING
-        sprintf(logbuffer, "addto_lists: address is local! address %s:%u\n", ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
-        loglog(logbuffer);
-#endif
-
-        /* if client is already in list, don't kill its potentially good address */
-        if (client_in_list(dht->close_clientlist, LCLIENT_LIST, client_id))
-            return;
     }
 
     /* NOTE: Current behavior if there are two clients with the same id is
@@ -1223,8 +1221,8 @@ static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8
     uint64_t temp_time = unix_time();
 
     uint32_t num_nodes = 0;
-    Client_data *client_list[list_count];
-    IPPTsPng    *assoc_list[list_count];
+    Client_data *client_list[list_count * 2];
+    IPPTsPng    *assoc_list[list_count * 2];
 
     for (i = 0; i < list_count; i++) {
         /* If node is not dead. */
