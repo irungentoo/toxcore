@@ -108,11 +108,14 @@ void loginit(uint16_t port)
         starttime = now();
 
     struct tm *tm = localtime(&starttime);
+
     if (strftime(logbuffer + 32, sizeof(logbuffer) - 32, "%F %T", tm))
         sprintf(logbuffer, "%u-%s.log", ntohs(port), logbuffer + 32);
     else
         sprintf(logbuffer, "%u-%lu.log", ntohs(port), starttime);
+
     logfile = fopen(logbuffer, "w");
+
     if (logbufferpredata) {
         if (logfile)
             fprintf(logfile, logbufferpredata);
@@ -135,6 +138,7 @@ void loglog(char *text)
     /* log messages before file was opened: store */
 
     size_t len = strlen(text);
+
     if (!starttime) {
         starttime = now();
         logbufferprelen = 1024 + len - (len % 1024);

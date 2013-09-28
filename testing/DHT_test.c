@@ -52,26 +52,40 @@
 
 #define PORT 33445
 
+void print_assoc(IPPTsPng *assoc, uint8_t ours)
+{
+    IP_Port *ipp = &assoc->ip_port;
+    printf("\nIP: %s Port: %u", ip_ntoa(&ipp->ip), ntohs(ipp->port));
+    printf("\nTimestamp: %llu", (long long unsigned int) assoc->timestamp);
+    printf("\nLast pinged: %llu\n", (long long unsigned int) assoc->last_pinged);
+
+    ipp = &assoc->ret_ip_port;
+    if (ours)
+        printf("OUR IP: %s Port: %u\n", ip_ntoa(&ipp->ip), ntohs(ipp->port));
+    else
+        printf("RET IP: %s Port: %u\n", ip_ntoa(&ipp->ip), ntohs(ipp->port));
+    printf("Timestamp: %llu\n", (long long unsigned int) assoc->ret_timestamp);
+}
+
 void print_clientlist(DHT *dht)
 {
     uint32_t i, j;
-    IP_Port p_ip;
     printf("___________________CLOSE________________________________\n");
 
     for (i = 0; i < LCLIENT_LIST; i++) {
+        Client_data *client = &dht->close_clientlist[i];
         printf("ClientID: ");
 
         for (j = 0; j < CLIENT_ID_SIZE; j++) {
-            printf("%02hhX", dht->close_clientlist[i].client_id[j]);
+            printf("%02hhX", client->client_id[j]);
         }
 
-        p_ip = dht->close_clientlist[i].ip_port;
-        printf("\nIP: %s Port: %u", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
-        printf("\nTimestamp: %llu", (long long unsigned int) dht->close_clientlist[i].timestamp);
-        printf("\nLast pinged: %llu\n", (long long unsigned int) dht->close_clientlist[i].last_pinged);
-        p_ip = dht->close_clientlist[i].ret_ip_port;
-        printf("OUR IP: %s Port: %u\n", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
-        printf("Timestamp: %llu\n", (long long unsigned int) dht->close_clientlist[i].ret_timestamp);
+#ifdef CLIENT_ONETOONE_IP
+        print_assoc(&client->assoc, 1);
+#else
+        print_assoc(&client->assoc4, 1);
+        print_assoc(&client->assoc6, 1);
+#endif
     }
 }
 
@@ -95,22 +109,22 @@ void print_friendlist(DHT *dht)
         printf("\nCLIENTS IN LIST:\n\n");
 
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
+            Client_data *client = &dht->friends_list[k].client_list[i];
             printf("ClientID: ");
 
             for (j = 0; j < CLIENT_ID_SIZE; j++) {
-                if (dht->friends_list[k].client_list[i].client_id[j] < 16)
+                if (client->client_id[j] < 16)
                     printf("0");
 
-                printf("%hhX", dht->friends_list[k].client_list[i].client_id[j]);
+                printf("%hhX", client->client_id[j]);
             }
 
-            p_ip = dht->friends_list[k].client_list[i].ip_port;
-            printf("\nIP: %s:%u", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
-            printf("\nTimestamp: %llu", (long long unsigned int) dht->friends_list[k].client_list[i].timestamp);
-            printf("\nLast pinged: %llu\n", (long long unsigned int) dht->friends_list[k].client_list[i].last_pinged);
-            p_ip = dht->friends_list[k].client_list[i].ret_ip_port;
-            printf("ret IP: %s:%u\n", ip_ntoa(&p_ip.ip), ntohs(p_ip.port));
-            printf("Timestamp: %llu\n", (long long unsigned int)dht->friends_list[k].client_list[i].ret_timestamp);
+#ifdef CLIENT_ONETOONE_IP
+            print_assoc(&client->assoc, 0);
+#else
+            print_assoc(&client->assoc4, 0);
+            print_assoc(&client->assoc6, 0);
+#endif
         }
     }
 }

@@ -32,6 +32,7 @@
 #include "ping.h"
 #include "misc_tools.h"
 #include "util.h"
+#include "LAN_discovery.h"
 
 /* The number of seconds for a non responsive node to become bad. */
 #define BAD_NODE_TIMEOUT 70
@@ -43,7 +44,7 @@
 #define PING_TIMEOUT 5
 
 /* The timeout after which a node is discarded completely. */
-#define Kill_NODE_TIMEOUT 300
+#define KILL_NODE_TIMEOUT 300
 
 /* Ping interval in seconds for each node in our lists. */
 #define PING_INTERVAL 60
@@ -124,6 +125,24 @@ static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
     return timestamp + timeout <= time_now;
 }
 
+static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id)
+{
+    uint32_t i;
+    uint64_t temp_time = unix_time();
+
+    for (i = 0; i < length; i++)
+#ifdef CLIENT_ONETOONE_IP /* Dead nodes are considered dead (not in the list)*/
+        if (!is_timeout(temp_time, list[i].assoc.timestamp, KILL_NODE_TIMEOUT))
+#else
+        if (!is_timeout(temp_time, list[i].assoc4.timestamp, KILL_NODE_TIMEOUT) ||
+                !is_timeout(temp_time, list[i].assoc6.timestamp, KILL_NODE_TIMEOUT))
+#endif
+            if (id_equal(list[i].client_id, client_id))
+                return 1;
+
+    return 0;
+}
+
 /* Check if client with client_id is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
  * If the id is already in the list with a different ip_port, update it.
@@ -136,6 +155,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
     uint32_t i;
     uint64_t temp_time = unix_time();
 
+#ifdef CLIENT_ONETOONE_IP
     uint8_t candropipv4 = 1;
 
     if (ip_port.ip.family == AF_INET6) {
@@ -143,7 +163,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
 
         /* ipv6: count how many spots are used */
         for (i = 0; i < length; i++)
-            if (list[i].ip_port.ip.family == AF_INET6)
+            if (list[i].assoc.ip_port.ip.family == AF_INET6)
                 ipv6cnt++;
 
         /* more than half the list filled with ipv6: block ipv4->ipv6 overwrite */
@@ -151,27 +171,115 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             candropipv4 = 0;
     }
 
+#endif
+
     /* if client_id is in list, find it and maybe overwrite ip_port */
     for (i = 0; i < length; ++i)
         if (id_equal(list[i].client_id, client_id)) {
+            /* Refresh the client timestamp. */
+#ifdef CLIENT_ONETOONE_IP
             /* if we got "too many" ipv6 addresses already, keep the ipv4 address */
-            if (!candropipv4 && (list[i].ip_port.ip.family == AF_INET))
+            if (!candropipv4 && (list[i].assoc.ip_port.ip.family == AF_INET))
                 return 1;
 
-            /* Refresh the client timestamp. */
-            list[i].timestamp = temp_time;
-            list[i].ip_port = ip_port;
+            if (LAN_ip(list[i].assoc.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
+                return 1;
+
+            list[i].assoc.ip_port = ip_port;
+            list[i].assoc.timestamp = temp_time;
+#else
+
+            if (ip_port.ip.family == AF_INET) {
+#ifdef LOGGING
+
+                if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                    size_t x;
+                    x = sprintf(logbuffer, "coipil[%u]: switching ipv4 from %s:%u ", i,
+                                ip_ntoa(&list[i].assoc4.ip_port.ip), ntohs(list[i].assoc4.ip_port.port));
+                    sprintf(logbuffer + x, "to %s:%u\n",
+                            ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                    loglog(logbuffer);
+                }
+
+#endif
+
+                if (LAN_ip(list[i].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
+                    return 1;
+
+                list[i].assoc4.ip_port = ip_port;
+                list[i].assoc4.timestamp = temp_time;
+            } else if (ip_port.ip.family == AF_INET6) {
+#ifdef LOGGING
+
+                if (!ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
+                    size_t x;
+                    x = sprintf(logbuffer, "coipil[%u]: switching ipv6 from %s:%u ", i,
+                                ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port));
+                    sprintf(logbuffer + x, "to %s:%u\n",
+                            ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                    loglog(logbuffer);
+                }
+
+#endif
+
+                if (LAN_ip(list[i].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
+                    return 1;
+
+                list[i].assoc6.ip_port = ip_port;
+                list[i].assoc6.timestamp = temp_time;
+            }
+
+#endif
             return 1;
         }
 
-    /* client_id not in list yet: find ip_port to overwrite */
-    for (i = 0; i < length; ++i)
-        if (ipport_equal(&list[i].ip_port, &ip_port)) {
-            /* Refresh the client timestamp. */
-            list[i].timestamp = temp_time;
+    /* client_id not in list yet: see if we can find an identical ip_port, in
+     * that case we kill the old client_id by overwriting it with the new one
+     * TODO: maybe we SHOULDN'T do that if that client_id is in a friend_list
+     * and the one who is the actual friend's client_id/address set? */
+    for (i = 0; i < length; ++i) {
+#ifdef CLIENT_ONETOONE_IP
+
+        if (ipport_equal(&list[i].assoc.ip_port, &ip_port)) {
+            /* Initialize client timestamp. */
+            list[i].assoc.timestamp = temp_time;
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+#ifdef LOGGING
+            sprintf(logbuffer, "coipil[%u]: switching client_id\n", i);
+            loglog(logbuffer);
+#endif
             return 1;
         }
+
+#else
+
+        /* MAYBE: check the other address, if valid, don't nuke? */
+        if ((ip_port.ip.family == AF_INET) && ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+            /* Initialize client timestamp. */
+            list[i].assoc4.timestamp = temp_time;
+            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+#ifdef LOGGING
+            sprintf(logbuffer, "coipil[%u]: switching client_id (ipv4) \n", i);
+            loglog(logbuffer);
+#endif
+            /* kill the other address, if it was set */
+            memset(&list[i].assoc6, 0, sizeof(list[i].assoc6));
+            return 1;
+        } else if ((ip_port.ip.family == AF_INET6) && ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
+            /* Initialize client timestamp. */
+            list[i].assoc6.timestamp = temp_time;
+            memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
+#ifdef LOGGING
+            sprintf(logbuffer, "coipil[%u]: switching client_id (ipv6) \n", i);
+            loglog(logbuffer);
+#endif
+            /* kill the other address, if it was set */
+            memset(&list[i].assoc4, 0, sizeof(list[i].assoc4));
+            return 1;
+        }
+
+#endif
+    }
 
     return 0;
 }
@@ -213,19 +321,40 @@ static int friend_number(DHT *dht, uint8_t *client_id)
  */
 static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nodes_list,
                                   sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
-                                  time_t timestamp, int *num_nodes_ptr)
+                                  time_t timestamp, int *num_nodes_ptr, uint8_t is_LAN)
 {
+    if ((sa_family != AF_INET) && (sa_family != AF_INET6))
+        return;
+
     int num_nodes = *num_nodes_ptr;
-    int tout, inlist, ipv46x, j, closest;
+    int ipv46x, j, closest;
     uint32_t i;
 
     for (i = 0; i < client_list_length; i++) {
         Client_data *client = &client_list[i];
-        tout = is_timeout(timestamp, client->timestamp, BAD_NODE_TIMEOUT);
-        inlist = client_in_nodelist(nodes_list, MAX_SENT_NODES, client->client_id);
+
+        /* node already in list? */
+        if (client_in_nodelist(nodes_list, MAX_SENT_NODES, client->client_id))
+            continue;
+
+        IPPTsPng *ipptp = NULL;
+#ifdef CLIENT_ONETOONE_IP
+        ipptp = &client->assoc;
+#else
+
+        if (sa_family == AF_INET)
+            ipptp = &client->assoc4;
+        else
+            ipptp = &client->assoc6;
+
+#endif
+
+        /* node not in a good condition? */
+        if (is_timeout(timestamp, ipptp->timestamp, BAD_NODE_TIMEOUT))
+            continue;
 
 #ifdef TOX_ENABLE_IPV6
-        IP *client_ip = &client->ip_port.ip;
+        IP *client_ip = &ipptp->ip_port.ip;
 
         /*
          * Careful: AF_INET isn't seen as AF_INET on dual-stack sockets for
@@ -237,7 +366,8 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         if ((dht->c->lossless_udp->net->family == AF_INET6) &&
                 (client_ip->family == AF_INET6)) {
             /* socket is AF_INET6, address claims AF_INET6:
-             * check for embedded IPv4-in-IPv6 */
+             * check for embedded IPv4-in-IPv6 (shouldn't happen anymore,
+             * all storing functions should already convert down to IPv4) */
             if (IN6_IS_ADDR_V4MAPPED(&client_ip->ip6.in6_addr))
                 ip_treat_as_family = AF_INET;
         }
@@ -247,8 +377,11 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         ipv46x = !(sa_family == AF_INET);
 #endif
 
-        /* If node isn't good or is already in list. */
-        if (tout || inlist || ipv46x)
+        /* node address of the wrong family? */
+        if (ipv46x)
+            continue;
+
+        if (!LAN_ip(ipptp->ip_port.ip) && !is_LAN)
             continue;
 
         if (num_nodes < MAX_SENT_NODES) {
@@ -256,7 +389,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
                    client->client_id,
                    CLIENT_ID_SIZE );
 
-            nodes_list[num_nodes].ip_port = client->ip_port;
+            nodes_list[num_nodes].ip_port = ipptp->ip_port;
             num_nodes++;
         } else {
             /* see if node_list contains a client_id that's "further away"
@@ -274,7 +407,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
                             client->client_id,
                             CLIENT_ID_SIZE);
 
-                    nodes_list[j].ip_port = client->ip_port;
+                    nodes_list[j].ip_port = ipptp->ip_port;
                     break;
                 }
             }
@@ -290,17 +423,17 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
  * TODO: For the love of based <your favorite deity, in doubt use "love"> make
  * this function cleaner and much more efficient.
  */
-static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family)
+static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN)
 {
     time_t timestamp = unix_time();
     int num_nodes = 0, i;
     get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
-                          dht->close_clientlist, LCLIENT_LIST, timestamp, &num_nodes);
+                          dht->close_clientlist, LCLIENT_LIST, timestamp, &num_nodes, is_LAN);
 
     for (i = 0; i < dht->num_friends; ++i)
         get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                              timestamp, &num_nodes);
+                              timestamp, &num_nodes, is_LAN);
 
     return num_nodes;
 }
@@ -315,9 +448,13 @@ static int replace_bad(    Client_data    *list,
                            uint8_t        *client_id,
                            IP_Port         ip_port )
 {
+    if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
+        return 1;
+
     uint32_t i;
     uint64_t temp_time = unix_time();
 
+#ifdef CLIENT_ONETOONE_IP
     uint8_t candropipv4 = 1;
 
     if (ip_port.ip.family == AF_INET6) {
@@ -325,7 +462,7 @@ static int replace_bad(    Client_data    *list,
 
         /* ipv6: count how many spots are used */
         for (i = 0; i < length; i++)
-            if (list[i].ip_port.ip.family == AF_INET6)
+            if (list[i].assoc.ip_port.ip.family == AF_INET6)
                 ipv6cnt++;
 
         /* more than half the list filled with ipv6: block ipv4->ipv6 overwrite */
@@ -333,18 +470,35 @@ static int replace_bad(    Client_data    *list,
             candropipv4 = 0;
     }
 
+#endif
+
     for (i = 0; i < length; ++i) {
         /* If node is bad */
         Client_data *client = &list[i];
+        IPPTsPng *ipptp = NULL;
 
-        if ((candropipv4 || (client->ip_port.ip.family == AF_INET6)) &&
-                is_timeout(temp_time, client->timestamp, BAD_NODE_TIMEOUT)) {
+#ifdef CLIENT_ONETOONE_IP
+        ipptp = &client->assoc;
+
+        if ((candropipv4 || (ipptp->ip_port.ip.family == AF_INET6)) &&
+                is_timeout(temp_time, ipptp->timestamp, BAD_NODE_TIMEOUT)) {
+#else
+
+        if (ip_port.ip.family == AF_INET)
+            ipptp = &client->assoc4;
+        else
+            ipptp = &client->assoc6;
+
+        if (is_timeout(temp_time, ipptp->timestamp, BAD_NODE_TIMEOUT)) {
+#endif
             memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
-            client->ip_port = ip_port;
-            client->timestamp = temp_time;
-            ip_reset(&client->ret_ip_port.ip);
-            client->ret_ip_port.port = 0;
-            client->ret_timestamp = 0;
+            ipptp->ip_port = ip_port;
+            ipptp->timestamp = temp_time;
+
+            ip_reset(&ipptp->ret_ip_port.ip);
+            ipptp->ret_ip_port.port = 0;
+            ipptp->ret_timestamp = 0;
+
             return 0;
         }
     }
@@ -381,8 +535,14 @@ static int replace_good(   Client_data    *list,
                            IP_Port         ip_port,
                            uint8_t        *comp_client_id )
 {
+    if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
+        return 1;
+
     sort_list(list, length, comp_client_id);
 
+    int8_t replace = -1;
+
+#ifdef CLIENT_ONETOONE_IP
     uint8_t candropipv4 = 1;
 
     if (ip_port.ip.family == AF_INET6) {
@@ -390,7 +550,7 @@ static int replace_good(   Client_data    *list,
 
         /* ipv6: count how many spots are used */
         for (i = 0; i < length; i++)
-            if (list[i].ip_port.ip.family == AF_INET6)
+            if (list[i].assoc.ip_port.ip.family == AF_INET6)
                 ipv6cnt++;
 
         /* more than half the list filled with ipv6: block ipv4->ipv6 overwrite */
@@ -398,7 +558,6 @@ static int replace_good(   Client_data    *list,
             candropipv4 = 0;
     }
 
-    int8_t replace = -1;
     uint32_t i;
 
     if (candropipv4) {
@@ -414,8 +573,11 @@ static int replace_good(   Client_data    *list,
          * so the furthest element is the first, NOT the last (at least that's
          * what the comment above sort_list() claims)
          */
+#endif
         if (id_closest(comp_client_id, list[0].client_id, client_id) == 2)
             replace = 0;
+
+#ifdef CLIENT_ONETOONE_IP
     } else {
         /* ipv6 case without a right to push out an ipv4: only look for ipv6
          * addresses, the first one we find is either closer (then we can skip
@@ -424,7 +586,7 @@ static int replace_good(   Client_data    *list,
         for (i = 0; i < length; i++) {
             Client_data *client = &list[i];
 
-            if (client->ip_port.ip.family == AF_INET6) {
+            if (client->assoc.ip_port.ip.family == AF_INET6) {
                 if (id_closest(comp_client_id, list[i].client_id, client_id) == 2)
                     replace = i;
 
@@ -433,17 +595,31 @@ static int replace_good(   Client_data    *list,
         }
     }
 
+#endif
+
     if (replace != -1) {
 #ifdef DEBUG
         assert(replace >= 0 && replace < length);
 #endif
         Client_data *client = &list[replace];
+        IPPTsPng *ipptp = NULL;
+#ifdef CLIENT_ONETOONE_IP
+        ipptp = &client->assoc;
+#else
+
+        if (ip_port.ip.family == AF_INET)
+            ipptp = &client->assoc4;
+        else
+            ipptp = &client->assoc6;
+
+#endif
         memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
-        client->ip_port = ip_port;
-        client->timestamp = unix_time();
-        ip_reset(&client->ret_ip_port.ip);
-        client->ret_ip_port.port = 0;
-        client->ret_timestamp = 0;
+        ipptp->ip_port = ip_port;
+        ipptp->timestamp = unix_time();
+
+        ip_reset(&ipptp->ret_ip_port.ip);
+        ipptp->ret_ip_port.port = 0;
+        ipptp->ret_timestamp = 0;
         return 0;
     }
 
@@ -496,25 +672,52 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint
     uint32_t i, j;
     uint64_t temp_time = unix_time();
 
-    if (id_equal(client_id, dht->c->self_public_key)) {
+    /* convert IPv4-in-IPv6 to IPv4 */
+    if ((ip_port.ip.family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&ip_port.ip.ip6.in6_addr)) {
+        ip_port.ip.family = AF_INET;
+        ip_port.ip.ip4.uint32 = ip_port.ip.ip6.uint32[3];
+    }
 
+    if (id_equal(client_id, dht->c->self_public_key)) {
         for (i = 0; i < LCLIENT_LIST; ++i) {
             if (id_equal(nodeclient_id, dht->close_clientlist[i].client_id)) {
-                dht->close_clientlist[i].ret_ip_port = ip_port;
-                dht->close_clientlist[i].ret_timestamp = temp_time;
+#ifdef CLIENT_ONETOONE_IP
+                dht->close_clientlist[i].assoc.ret_ip_port = ip_port;
+                dht->close_clientlist[i].assoc.ret_timestamp = temp_time;
+#else
+
+                if (ip_port.ip.family == AF_INET) {
+                    dht->close_clientlist[i].assoc4.ret_ip_port = ip_port;
+                    dht->close_clientlist[i].assoc4.ret_timestamp = temp_time;
+                } else if (ip_port.ip.family == AF_INET6) {
+                    dht->close_clientlist[i].assoc6.ret_ip_port = ip_port;
+                    dht->close_clientlist[i].assoc6.ret_timestamp = temp_time;
+                }
+
+#endif
                 return;
             }
         }
 
     } else {
-
         for (i = 0; i < dht->num_friends; ++i) {
             if (id_equal(client_id, dht->friends_list[i].client_id)) {
-
                 for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
                     if (id_equal(nodeclient_id, dht->friends_list[i].client_list[j].client_id)) {
-                        dht->friends_list[i].client_list[j].ret_ip_port = ip_port;
-                        dht->friends_list[i].client_list[j].ret_timestamp = temp_time;
+#ifdef CLIENT_ONETOONE_IP
+                        dht->friends_list[i].client_list[j].assoc.ret_ip_port = ip_port;
+                        dht->friends_list[i].client_list[j].assoc.ret_timestamp = temp_time;
+#else
+
+                        if (ip_port.ip.family == AF_INET) {
+                            dht->friends_list[i].client_list[j].assoc4.ret_ip_port = ip_port;
+                            dht->friends_list[i].client_list[j].assoc4.ret_timestamp = temp_time;
+                        } else if (ip_port.ip.family == AF_INET6) {
+                            dht->friends_list[i].client_list[j].assoc6.ret_ip_port = ip_port;
+                            dht->friends_list[i].client_list[j].assoc6.ret_timestamp = temp_time;
+                        }
+
+#endif
                         return;
                     }
                 }
@@ -622,7 +825,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
                  + Node4_format_size * MAX_SENT_NODES + ENCRYPTION_PADDING];
 
     Node_format nodes_list[MAX_SENT_NODES];
-    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET);
+    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET, LAN_ip(ip_port.ip) == 0);
 
     if (num_nodes == 0)
         return 0;
@@ -697,7 +900,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
                  + Node_format_size * MAX_SENT_NODES + ENCRYPTION_PADDING];
 
     Node_format nodes_list[MAX_SENT_NODES];
-    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET6);
+    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET6, LAN_ip(ip_port.ip) == 0);
 
     if (num_nodes == 0)
         return 0;
@@ -764,6 +967,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
                    ping_id); /* TODO: prevent possible amplification attacks */
 #endif
 
+    add_toping(dht->ping, packet + 1, source);
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
 
     return 0;
@@ -897,14 +1101,24 @@ static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_
     uint64_t temp_time = unix_time();
     uint32_t i, num = 0;
 
-    for (i = 0; i < length; ++i)
-        if (ipport_isset(&(list[i].ip_port)) && !is_timeout(temp_time, list[i].ret_timestamp, BAD_NODE_TIMEOUT)) {
-            getnodes(dht, list[i].ip_port, list[i].client_id, client_id);
+    for (i = 0; i < length; ++i) {
+        IPPTsPng *assoc;
+#ifdef CLIENT_ONETOONE_IP
+        assoc = &list[i].assoc;
+#else
+        uint32_t a;
+
+        for (a = 0, assoc = &list[i].assoc6; a < 2; a++, assoc = &list[i].assoc4)
+#endif
+        if (ipport_isset(&(assoc->ip_port)) &&
+                !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            getnodes(dht, assoc->ip_port, list[i].client_id, client_id);
             ++num;
 
             if (num >= max_num)
                 return;
         }
+    }
 }
 
 int DHT_addfriend(DHT *dht, uint8_t *client_id)
@@ -922,7 +1136,7 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
     memset(&dht->friends_list[dht->num_friends], 0, sizeof(DHT_Friend));
     memcpy(dht->friends_list[dht->num_friends].client_id, client_id, CLIENT_ID_SIZE);
 
-    dht->friends_list[dht->num_friends].NATping_id = ((uint64_t)random_int() << 32) + random_int();
+    dht->friends_list[dht->num_friends].nat.NATping_id = ((uint64_t)random_int() << 32) + random_int();
     ++dht->num_friends;
     get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);/*TODO: make this better?*/
     return 0;
@@ -976,10 +1190,21 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port)
         /* Equal */
         if (id_equal(dht->friends_list[i].client_id, client_id)) {
             for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-                if (id_equal(dht->friends_list[i].client_list[j].client_id, client_id)
-                        && !is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, BAD_NODE_TIMEOUT)) {
-                    *ip_port = dht->friends_list[i].client_list[j].ip_port;
-                    return 1;
+                Client_data *client = &dht->friends_list[i].client_list[j];
+
+                if (id_equal(client->client_id, client_id)) {
+                    IPPTsPng *assoc = NULL;
+#ifdef CLIENT_ONETOONE_IP
+                    assoc = &client->assoc;
+#else
+                    uint32_t a;
+
+                    for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
+#endif
+                    if (!is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
+                        *ip_port = assoc->ip_port;
+                        return 1;
+                    }
                 }
             }
 
@@ -990,44 +1215,62 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port)
     return -1;
 }
 
+static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8_t *client_id,
+        Client_data *list, uint32_t list_count)
+{
+    uint32_t i;
+    uint64_t temp_time = unix_time();
+
+    uint32_t num_nodes = 0;
+    Client_data *client_list[list_count * 2];
+    IPPTsPng    *assoc_list[list_count * 2];
+
+    for (i = 0; i < list_count; i++) {
+        /* If node is not dead. */
+        Client_data *client = &list[i];
+        IPPTsPng *assoc;
+#ifdef CLIENT_ONETOONE_IP
+        assoc = &client->assoc;
+#else
+        uint32_t a;
+
+        for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
+#endif
+
+        if (!is_timeout(temp_time, assoc->timestamp, KILL_NODE_TIMEOUT)) {
+            if (is_timeout(temp_time, assoc->last_pinged, PING_INTERVAL)) {
+                send_ping_request(dht->ping, assoc->ip_port, client->client_id );
+                assoc->last_pinged = temp_time;
+            }
+
+            /* If node is good. */
+            if (!is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
+                client_list[num_nodes] = client;
+                assoc_list[num_nodes] = assoc;
+                ++num_nodes;
+            }
+        }
+    }
+
+    if ((num_nodes != 0) &&
+            is_timeout(temp_time, *lastgetnode, GET_NODE_INTERVAL)) {
+        uint32_t rand_node = rand() % num_nodes;
+        getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->client_id,
+                 client_id);
+        *lastgetnode = temp_time;
+    }
+}
+
 /* Ping each client in the "friends" list every PING_INTERVAL seconds. Send a get nodes request
  * every GET_NODE_INTERVAL seconds to a random good node for each "friend" in our "friends" list.
  */
 static void do_DHT_friends(DHT *dht)
 {
-    uint32_t i, j;
-    uint64_t temp_time = unix_time();
-    uint32_t rand_node;
-    uint32_t index[MAX_FRIEND_CLIENTS];
+    uint32_t i;
 
-    for (i = 0; i < dht->num_friends; ++i) {
-        uint32_t num_nodes = 0;
-
-        for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-            /* If node is not dead. */
-            if (!is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, Kill_NODE_TIMEOUT)) {
-                if ((dht->friends_list[i].client_list[j].last_pinged + PING_INTERVAL) <= temp_time) {
-                    send_ping_request(dht->ping, dht->friends_list[i].client_list[j].ip_port,
-                                      dht->friends_list[i].client_list[j].client_id );
-                    dht->friends_list[i].client_list[j].last_pinged = temp_time;
-                }
-
-                /* If node is good. */
-                if (!is_timeout(temp_time, dht->friends_list[i].client_list[j].timestamp, BAD_NODE_TIMEOUT)) {
-                    index[num_nodes] = j;
-                    ++num_nodes;
-                }
-            }
-        }
-
-        if (dht->friends_list[i].lastgetnode + GET_NODE_INTERVAL <= temp_time && num_nodes != 0) {
-            rand_node = rand() % num_nodes;
-            getnodes(dht, dht->friends_list[i].client_list[index[rand_node]].ip_port,
-                     dht->friends_list[i].client_list[index[rand_node]].client_id,
-                     dht->friends_list[i].client_id );
-            dht->friends_list[i].lastgetnode = temp_time;
-        }
-    }
+    for (i = 0; i < dht->num_friends; ++i)
+        do_ping_and_sendnode_requests(dht, &dht->friends_list[i].lastgetnode, dht->friends_list[i].client_id,
+                                      dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS);
 }
 
 /* Ping each client in the close nodes list every PING_INTERVAL seconds.
@@ -1035,42 +1278,13 @@ static void do_DHT_friends(DHT *dht)
  */
 static void do_Close(DHT *dht)
 {
-    uint32_t i;
-    uint64_t temp_time = unix_time();
-    uint32_t num_nodes = 0;
-    uint32_t rand_node;
-    uint32_t index[LCLIENT_LIST];
-
-    for (i = 0; i < LCLIENT_LIST; ++i) {
-        /* If node is not dead. */
-        if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, Kill_NODE_TIMEOUT)) {
-            if ((dht->close_clientlist[i].last_pinged + PING_INTERVAL) <= temp_time) {
-                send_ping_request(dht->ping, dht->close_clientlist[i].ip_port,
-                                  dht->close_clientlist[i].client_id );
-                dht->close_clientlist[i].last_pinged = temp_time;
-            }
-
-            /* If node is good. */
-            if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, BAD_NODE_TIMEOUT)) {
-                index[num_nodes] = i;
-                ++num_nodes;
-            }
-        }
-    }
-
-    if (dht->close_lastgetnodes + GET_NODE_INTERVAL <= temp_time && num_nodes != 0) {
-        rand_node = rand() % num_nodes;
-        getnodes(dht, dht->close_clientlist[index[rand_node]].ip_port,
-                 dht->close_clientlist[index[rand_node]].client_id,
-                 dht->c->self_public_key );
-        dht->close_lastgetnodes = temp_time;
-    }
+    do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->c->self_public_key,
+                                  dht->close_clientlist, LCLIENT_LIST);
 }
 
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 {
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
-    send_ping_request(dht->ping, ip_port, public_key);
 }
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, uint8_t *public_key)
@@ -1116,8 +1330,24 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
     uint32_t i;
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
-        if (id_equal(client_id, dht->close_clientlist[i].client_id))
-            return sendpacket(dht->c->lossless_udp->net, dht->close_clientlist[i].ip_port, packet, length);
+        if (id_equal(client_id, dht->close_clientlist[i].client_id)) {
+            Client_data *client = &dht->close_clientlist[i];
+#ifdef CLIENT_ONETOONE_IP
+
+            if (ip_isset(&client->assoc.ip_port.ip))
+                return sendpacket(dht->c->lossless_udp->net, dht->close_clientlist[i].assoc.ip_port, packet, length);
+
+#else
+
+            if (ip_isset(&client->assoc6.ip_port.ip))
+                return sendpacket(dht->c->lossless_udp->net, client->assoc6.ip_port, packet, length);
+            else if (ip_isset(&client->assoc4.ip_port.ip))
+                return sendpacket(dht->c->lossless_udp->net, client->assoc4.ip_port, packet, length);
+            else
+                break;
+
+#endif
+        }
     }
 
     return -1;
@@ -1125,6 +1355,7 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 
 /* Puts all the different ips returned by the nodes for a friend_num into array ip_portlist.
  * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
+ * unless CLIENT_ONETOONE_IP is defined, returns an array with ips of the same family.
  *
  *  return the number of ips returned.
  *  return 0 if we are connected to friend or if no ips were found.
@@ -1132,8 +1363,7 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
  */
 static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 {
-    int num_ips = 0;
-    uint32_t i;
+    int i;
     uint64_t temp_time = unix_time();
 
     if (friend_num >= dht->num_friends)
@@ -1141,21 +1371,59 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 
     DHT_Friend *friend = &dht->friends_list[friend_num];
     Client_data *client;
+    IP_Port ipv4s[MAX_FRIEND_CLIENTS];
+    int num_ipv4s = 0;
+    IP_Port ipv6s[MAX_FRIEND_CLIENTS];
+    int num_ipv6s = 0;
 
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &(friend->client_list[i]);
 
-        if (id_equal(client->client_id, friend->client_id) && !is_timeout(temp_time, client->timestamp, BAD_NODE_TIMEOUT))
+        IPPTsPng *assoc = NULL;
+#ifdef CLIENT_ONETOONE_IP
+        assoc = &client->assoc;
+#else
+        assoc = &client->assoc4;
+#endif
+
+        if (id_equal(client->client_id, friend->client_id) &&
+                !is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT))
             return 0;
 
         /* If ip is not zero and node is good. */
-        if (ip_isset(&client->ret_ip_port.ip) && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-            ip_portlist[num_ips] = client->ret_ip_port;
-            ++num_ips;
+        if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            ipv4s[num_ipv4s] = assoc->ret_ip_port;
+            ++num_ipv4s;
         }
     }
 
-    return num_ips;
+#ifndef CLIENT_ONETOONE_IP
+
+    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        client = &(friend->client_list[i]);
+
+        IPPTsPng *assoc = NULL;
+        assoc = &client->assoc6;
+
+        if (id_equal(client->client_id, friend->client_id) &&
+                !is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT))
+            return 0;
+
+        /* If ip is not zero and node is good. */
+        if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            ipv6s[num_ipv6s] = assoc->ret_ip_port;
+            ++num_ipv6s;
+        }
+    }
+
+    if (num_ipv6s >= num_ipv4s) {
+        memcpy(ip_portlist, ipv6s, num_ipv6s * sizeof(IP_Port));
+        return num_ipv6s;
+    }
+
+#endif
+    memcpy(ip_portlist, ipv4s, num_ipv4s * sizeof(IP_Port));
+    return num_ipv4s;
 }
 
 
@@ -1172,28 +1440,53 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
         return 0;
 
     uint32_t i, sent = 0;
+    uint8_t friend_sent[MAX_FRIEND_CLIENTS] = {0};
 
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int ip_num = friend_iplist(dht, ip_list, num);
 
     if (ip_num < (MAX_FRIEND_CLIENTS / 2))
-        return 0;
+        return 0; /* Reason for that? */
 
     uint64_t temp_time = unix_time();
     DHT_Friend *friend = &dht->friends_list[num];
     Client_data *client;
 
-    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-        client = &friend->client_list[i];
+#ifndef CLIENT_ONETOONE_IP
+    /* extra legwork, because having the outside allocating the space for us
+     * is *usually* good(tm) (bites us in the behind in this case though) */
+    uint32_t a;
 
-        /* If ip is not zero and node is good. */
-        if (ip_isset(&client->ret_ip_port.ip) && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-            int retval = sendpacket(dht->c->lossless_udp->net, client->ip_port, packet, length);
+    for (a = 0; a < 2; a++)
+#endif
+        for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+            if (friend_sent[i])/* Send one packet per client.*/
+                continue;
 
-            if ((unsigned int)retval == length)
-                ++sent;
+            client = &friend->client_list[i];
+            IPPTsPng *assoc = NULL;
+#ifdef CLIENT_ONETOONE_IP
+            assoc = &client->assoc;
+#else
+
+            if (!a)
+                assoc = &client->assoc4;
+            else
+                assoc = &client->assoc6;
+
+#endif
+
+            /* If ip is not zero and node is good. */
+            if (ip_isset(&assoc->ret_ip_port.ip) &&
+                    !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+                int retval = sendpacket(dht->c->lossless_udp->net, assoc->ip_port, packet, length);
+
+                if ((unsigned int)retval == length) {
+                    ++sent;
+                    friend_sent[i] = 1;
+                }
+            }
         }
-    }
 
     return sent;
 }
@@ -1212,20 +1505,38 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
     DHT_Friend *friend = &dht->friends_list[num];
     Client_data *client;
 
-    IP_Port ip_list[MAX_FRIEND_CLIENTS];
+    IP_Port ip_list[MAX_FRIEND_CLIENTS * 2];
     int n = 0;
     uint32_t i;
     uint64_t temp_time = unix_time();
 
-    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-        client = &friend->client_list[i];
+#ifndef CLIENT_ONETOONE_IP
+    /* extra legwork, because having the outside allocating the space for us
+     * is *usually* good(tm) (bites us in the behind in this case though) */
+    uint32_t a;
 
-        /* If ip is not zero and node is good. */
-        if (ip_isset(&client->ret_ip_port.ip) && !is_timeout(temp_time, client->ret_timestamp, BAD_NODE_TIMEOUT)) {
-            ip_list[n] = client->ip_port;
-            ++n;
+    for (a = 0; a < 2; a++)
+#endif
+        for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+            client = &friend->client_list[i];
+            IPPTsPng *assoc = NULL;
+#ifdef CLIENT_ONETOONE_IP
+            assoc = &client->assoc;
+#else
+
+            if (!a)
+                assoc = &client->assoc4;
+            else
+                assoc = &client->assoc6;
+
+#endif
+
+            /* If ip is not zero and node is good. */
+            if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+                ip_list[n] = assoc->ip_port;
+                ++n;
+            }
         }
-    }
 
     if (n < 1)
         return 0;
@@ -1308,12 +1619,12 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
     if (packet[0] == NAT_PING_REQUEST) {
         /* 1 is reply */
         send_NATping(dht, source_pubkey, ping_id, NAT_PING_RESPONSE);
-        friend->recvNATping_timestamp = unix_time();
+        friend->nat.recvNATping_timestamp = unix_time();
         return 0;
     } else if (packet[0] == NAT_PING_RESPONSE) {
-        if (friend->NATping_id == ping_id) {
-            friend->NATping_id = ((uint64_t)random_int() << 32) + random_int();
-            friend->hole_punching = 1;
+        if (friend->nat.NATping_id == ping_id) {
+            friend->nat.NATping_id = ((uint64_t)random_int() << 32) + random_int();
+            friend->nat.hole_punching = 1;
             return 0;
         }
     }
@@ -1378,9 +1689,9 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         return;
 
     uint32_t i;
-    uint32_t top = dht->friends_list[friend_num].punching_index + MAX_PUNCHING_PORTS;
+    uint32_t top = dht->friends_list[friend_num].nat.punching_index + MAX_PUNCHING_PORTS;
 
-    for (i = dht->friends_list[friend_num].punching_index; i != top; i++) {
+    for (i = dht->friends_list[friend_num].nat.punching_index; i != top; i++) {
         /* TODO: Improve port guessing algorithm. */
         uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
         IP_Port pinging;
@@ -1389,7 +1700,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
     }
 
-    dht->friends_list[friend_num].punching_index = i;
+    dht->friends_list[friend_num].nat.punching_index = i;
 }
 
 static void do_NAT(DHT *dht)
@@ -1405,14 +1716,14 @@ static void do_NAT(DHT *dht)
         if (num < MAX_FRIEND_CLIENTS / 2)
             continue;
 
-        if (dht->friends_list[i].NATping_timestamp + PUNCH_INTERVAL < temp_time) {
-            send_NATping(dht, dht->friends_list[i].client_id, dht->friends_list[i].NATping_id, NAT_PING_REQUEST);
-            dht->friends_list[i].NATping_timestamp = temp_time;
+        if (dht->friends_list[i].nat.NATping_timestamp + PUNCH_INTERVAL < temp_time) {
+            send_NATping(dht, dht->friends_list[i].client_id, dht->friends_list[i].nat.NATping_id, NAT_PING_REQUEST);
+            dht->friends_list[i].nat.NATping_timestamp = temp_time;
         }
 
-        if (dht->friends_list[i].hole_punching == 1 &&
-                dht->friends_list[i].punching_timestamp + PUNCH_INTERVAL < temp_time &&
-                dht->friends_list[i].recvNATping_timestamp + PUNCH_INTERVAL * 2 >= temp_time) {
+        if (dht->friends_list[i].nat.hole_punching == 1 &&
+                dht->friends_list[i].nat.punching_timestamp + PUNCH_INTERVAL < temp_time &&
+                dht->friends_list[i].nat.recvNATping_timestamp + PUNCH_INTERVAL * 2 >= temp_time) {
 
             IP ip = NAT_commonip(ip_list, num, MAX_FRIEND_CLIENTS / 2);
 
@@ -1423,8 +1734,8 @@ static void do_NAT(DHT *dht)
             uint16_t numports = NAT_getports(port_list, ip_list, num, ip);
             punch_holes(dht, ip, port_list, numports, i);
 
-            dht->friends_list[i].punching_timestamp = temp_time;
-            dht->friends_list[i].hole_punching = 0;
+            dht->friends_list[i].nat.punching_timestamp = temp_time;
+            dht->friends_list[i].nat.hole_punching = 0;
         }
     }
 }
@@ -1496,16 +1807,18 @@ void DHT_save_old(DHT *dht, uint8_t *data)
  */
 int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
 {
-    if (size < sizeof(dht->close_clientlist)) {
+    size_t clientlist_oldsize = sizeof(Client_data_old) * LCLIENT_LIST;
+
+    if (size < clientlist_oldsize) {
 #ifdef DEBUG
         fprintf(stderr, "DHT_load: Expected at least %u bytes, got %u.\n", sizeof(dht->close_clientlist), size);
 #endif
         return -1;
     }
 
-    uint32_t friendlistsize = size - sizeof(dht->close_clientlist);
+    uint32_t friendlistsize = size - clientlist_oldsize;
 
-    if (friendlistsize % sizeof(DHT_Friend) != 0) {
+    if (friendlistsize % sizeof(DHT_Friend_old) != 0) {
 #ifdef DEBUG
         fprintf(stderr, "DHT_load: Expected a multiple of %u, got %u.\n", sizeof(DHT_Friend), friendlistsize);
 #endif
@@ -1513,11 +1826,11 @@ int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
     }
 
     uint32_t i, j;
-    Client_data *client;
-    uint16_t friends_num = friendlistsize / sizeof(DHT_Friend);
+    Client_data_old *client;
+    uint16_t friends_num = friendlistsize / sizeof(DHT_Friend_old);
 
     if (friends_num != 0) {
-        DHT_Friend *tempfriends_list = (DHT_Friend *)(data + sizeof(dht->close_clientlist));
+        DHT_Friend_old *tempfriends_list = (DHT_Friend_old *)(data + sizeof(dht->close_clientlist));
 
         for (i = 0; i < friends_num; ++i) {
             DHT_addfriend(dht, tempfriends_list[i].client_id);
@@ -1525,17 +1838,17 @@ int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
             for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
                 client = &tempfriends_list[i].client_list[j];
 
-                if (client->timestamp != 0)
-                    getnodes(dht, client->ip_port, client->client_id, tempfriends_list[i].client_id);
+                if (client->assoc.timestamp != 0)
+                    getnodes(dht, client->assoc.ip_port, client->client_id, tempfriends_list[i].client_id);
             }
         }
     }
 
-    Client_data *tempclose_clientlist = (Client_data *)data;
+    Client_data_old *tempclose_clientlist = (Client_data_old *)data;
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
-        if (tempclose_clientlist[i].timestamp != 0)
-            DHT_bootstrap(dht, tempclose_clientlist[i].ip_port,
+        if (tempclose_clientlist[i].assoc.timestamp != 0)
+            DHT_bootstrap(dht, tempclose_clientlist[i].assoc.ip_port,
                           tempclose_clientlist[i].client_id );
     }
 
@@ -1548,8 +1861,10 @@ int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size)
 #define DHT_STATE_COOKIE_GLOBAL 0x159000d
 
 #define DHT_STATE_COOKIE_TYPE      0x11ce
-#define DHT_STATE_TYPE_FRIENDS     1
-#define DHT_STATE_TYPE_CLIENTS     2
+#define DHT_STATE_TYPE_FRIENDS          1
+#define DHT_STATE_TYPE_CLIENTS          2
+#define DHT_STATE_TYPE_FRIENDS_ASSOC46  3
+#define DHT_STATE_TYPE_CLIENTS_ASSOC46  4
 
 /* Get the size of the DHT (for saving). */
 uint32_t DHT_size(DHT *dht)
@@ -1557,7 +1872,12 @@ uint32_t DHT_size(DHT *dht)
     uint32_t num = 0, i;
 
     for (i = 0; i < LCLIENT_LIST; ++i)
-        if (dht->close_clientlist[i].timestamp != 0)
+#ifdef CLIENT_ONETOONE_IP
+        if (dht->close_clientlist[i].assoc.timestamp != 0)
+#else
+        if ((dht->close_clientlist[i].assoc4.timestamp != 0) ||
+                (dht->close_clientlist[i].assoc6.timestamp != 0))
+#endif
             num++;
 
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
@@ -1584,7 +1904,11 @@ void DHT_save(DHT *dht, uint8_t *data)
     data += sizeof(uint32_t);
 
     len = sizeof(DHT_Friend) * dht->num_friends;
+#ifdef CLIENT_ONETOONE_IP
     type = DHT_STATE_TYPE_FRIENDS;
+#else
+    type = DHT_STATE_TYPE_FRIENDS_ASSOC46;
+#endif
     data = z_state_save_subheader(data, len, type);
     memcpy(data, dht->friends_list, len);
     data += len;
@@ -1592,18 +1916,32 @@ void DHT_save(DHT *dht, uint8_t *data)
     uint32_t num = 0, i;
 
     for (i = 0; i < LCLIENT_LIST; ++i)
-        if (dht->close_clientlist[i].timestamp != 0)
+#ifdef CLIENT_ONETOONE_IP
+        if (dht->close_clientlist[i].assoc.timestamp != 0)
+#else
+        if ((dht->close_clientlist[i].assoc4.timestamp != 0) ||
+                (dht->close_clientlist[i].assoc6.timestamp != 0))
+#endif
             num++;
 
     len = num * sizeof(Client_data);
+#ifdef CLIENT_ONETOONE_IP
     type = DHT_STATE_TYPE_CLIENTS;
+#else
+    type = DHT_STATE_TYPE_CLIENTS_ASSOC46;
+#endif
     data = z_state_save_subheader(data, len, type);
 
     if (num) {
         Client_data *clients = (Client_data *)data;
 
         for (num = 0, i = 0; i < LCLIENT_LIST; ++i)
-            if (dht->close_clientlist[i].timestamp != 0)
+#ifdef CLIENT_ONETOONE_IP
+            if (dht->close_clientlist[i].assoc.timestamp != 0)
+#else
+            if ((dht->close_clientlist[i].assoc4.timestamp != 0) ||
+                    (dht->close_clientlist[i].assoc6.timestamp != 0))
+#endif
                 memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
     }
 
@@ -1617,35 +1955,83 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
 
     switch (type) {
         case DHT_STATE_TYPE_FRIENDS:
-            if (length % sizeof(DHT_Friend) != 0)
+            if (length % sizeof(DHT_Friend_old) != 0)
                 break;
 
-            DHT_Friend *friend_list = (DHT_Friend *)data;
-            num = length / sizeof(DHT_Friend);
+            { /* localize declarations */
+                DHT_Friend_old *friend_list = (DHT_Friend_old *)data;
+                num = length / sizeof(DHT_Friend_old);
 
-            for (i = 0; i < num; ++i) {
-                DHT_addfriend(dht, friend_list[i].client_id);
+                for (i = 0; i < num; ++i) {
+                    DHT_addfriend(dht, friend_list[i].client_id);
 
-                for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-                    Client_data *client = &friend_list[i].client_list[j];
+                    for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+                        Client_data_old *client = &friend_list[i].client_list[j];
 
-                    if (client->timestamp != 0)
-                        getnodes(dht, client->ip_port, client->client_id, friend_list[i].client_id);
+                        if (client->assoc.timestamp != 0)
+                            getnodes(dht, client->assoc.ip_port, client->client_id, friend_list[i].client_id);
+                    }
                 }
-            }
+            } /* localize declarations */
 
             break;
 
         case DHT_STATE_TYPE_CLIENTS:
-            if ((length % sizeof(Client_data)) != 0)
+            if ((length % sizeof(Client_data_old)) != 0)
                 break;
 
-            num = length / sizeof(Client_data);
-            Client_data *client_list = (Client_data *)data;
+            { /* localize declarations */
+                num = length / sizeof(Client_data_old);
+                Client_data_old *client_list = (Client_data_old *)data;
 
-            for (i = 0; i < num; ++i)
-                if (client_list[i].timestamp != 0)
-                    DHT_bootstrap(dht, client_list[i].ip_port, client_list[i].client_id);
+                for (i = 0; i < num; ++i)
+                    if (client_list[i].assoc.timestamp != 0)
+                        DHT_bootstrap(dht, client_list[i].assoc.ip_port, client_list[i].client_id);
+            } /* localize declarations */
+
+            break;
+
+        case DHT_STATE_TYPE_FRIENDS_ASSOC46:
+            if (length % sizeof(DHT_Friend_new) != 0)
+                break;
+
+            { /* localize declarations */
+                DHT_Friend_new *friend_list = (DHT_Friend_new *)data;
+                num = length / sizeof(DHT_Friend_new);
+
+                for (i = 0; i < num; ++i) {
+                    DHT_addfriend(dht, friend_list[i].client_id);
+
+                    for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+                        Client_data_new *client = &friend_list[i].client_list[j];
+
+                        if (client->assoc4.timestamp != 0)
+                            getnodes(dht, client->assoc4.ip_port, client->client_id, friend_list[i].client_id);
+
+                        if (client->assoc6.timestamp != 0)
+                            getnodes(dht, client->assoc6.ip_port, client->client_id, friend_list[i].client_id);
+                    }
+                }
+            } /* localize declarations */
+
+            break;
+
+        case DHT_STATE_TYPE_CLIENTS_ASSOC46:
+            if ((length % sizeof(Client_data_new)) != 0)
+                break;
+
+            { /* localize declarations */
+                num = length / sizeof(Client_data_new);
+                Client_data_new *client_list = (Client_data_new *)data;
+
+                for (i = 0; i < num; ++i) {
+                    if (client_list[i].assoc4.timestamp != 0)
+                        DHT_bootstrap(dht, client_list[i].assoc4.ip_port, client_list[i].client_id);
+
+                    if (client_list[i].assoc6.timestamp != 0)
+                        DHT_bootstrap(dht, client_list[i].assoc6.ip_port, client_list[i].client_id);
+                }
+            } /* localize declarations */
 
             break;
 
@@ -1685,7 +2071,14 @@ int DHT_isconnected(DHT *dht)
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
-        if (!is_timeout(temp_time, dht->close_clientlist[i].timestamp, BAD_NODE_TIMEOUT))
+        Client_data *client = &dht->close_clientlist[i];
+#ifdef CLIENT_ONETOONE_IP
+
+        if (!is_timeout(temp_time, client->assoc.timestamp, BAD_NODE_TIMEOUT))
+#else
+        if (!is_timeout(temp_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
+                !is_timeout(temp_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT))
+#endif
             return 1;
     }
 
