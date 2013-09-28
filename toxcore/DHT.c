@@ -1357,6 +1357,7 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 
 /* Puts all the different ips returned by the nodes for a friend_num into array ip_portlist.
  * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
+ * unless CLIENT_ONETOONE_IP is defined, returns an array with ips of the same family.
  *
  *  return the number of ips returned.
  *  return 0 if we are connected to friend or if no ips were found.
@@ -1364,7 +1365,7 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
  */
 static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 {
-    int i, num_ips = 0;
+    int i;
     uint64_t temp_time = unix_time();
 
     if (friend_num >= dht->num_friends)
@@ -1372,97 +1373,59 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 
     DHT_Friend *friend = &dht->friends_list[friend_num];
     Client_data *client;
+    IP_Port ipv4s[MAX_FRIEND_CLIENTS];
+    int num_ipv4s = 0;
+    IP_Port ipv6s[MAX_FRIEND_CLIENTS];
+    int num_ipv6s = 0;
 
-#ifndef CLIENT_ONETOONE_IP
-    /* extra legwork, because having the outside allocating the space for us
-     * is *usually* good(tm) (bites us in the behind in this case though) */
-    int client_friend = -1;
-    uint8_t client_friend_flags = 0;
-    uint32_t a;
+    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        client = &(friend->client_list[i]);
 
-    for (a = 0; a < 2; a++)
-#endif
-        for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-            client = &(friend->client_list[i]);
-
-            IPPTsPng *assoc = NULL;
+        IPPTsPng *assoc = NULL;
 #ifdef CLIENT_ONETOONE_IP
-            assoc = &client->assoc;
+        assoc = &client->assoc;
 #else
-
-            /* this is the one place where ipv4 is favored over ipv6, because
-             * we can't be sure there's enough space to return both, and we do
-             * need to return IPv4 (because of the majority of the people still
-             * lacking IPv6 connectivity) */
-            if (!a)
-                assoc = &client->assoc4;
-            else
-                assoc = &client->assoc6;
-
+        assoc = &client->assoc4;
 #endif
 
-            if (id_equal(client->client_id, friend->client_id) &&
-                    !is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT))
-                return 0;
+        if (id_equal(client->client_id, friend->client_id) &&
+                !is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT))
+            return 0;
 
-            /* If ip is not zero and node is good. */
-            if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
-                ip_portlist[num_ips] = assoc->ret_ip_port;
-                ++num_ips;
+        /* If ip is not zero and node is good. */
+        if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            ipv4s[num_ipv4s] = assoc->ret_ip_port;
+            ++num_ipv4s;
+        }
+    }
 
 #ifndef CLIENT_ONETOONE_IP
 
-                if ((client_friend == -1) && id_equal(client->client_id, friend->client_id))
-                    client_friend = i;
+    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        client = &(friend->client_list[i]);
 
-                if (client_friend == i)
-                    client_friend_flags |= 1 << a;
+        IPPTsPng *assoc = NULL;
+        assoc = &client->assoc6;
 
-                if (num_ips == MAX_FRIEND_CLIENTS) {
-                    /* if we got "real" IP addresses for the friend and we added
-                     * the ipv4 one, but (maybe) couldn't add the ipv6 one
-                     * due to space constraints... */
-                    if ((client_friend != -1) && (client_friend_flags == 1)) {
-                        assoc = &friend->client_list[client_friend].assoc6;
+        if (id_equal(client->client_id, friend->client_id) &&
+                !is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT))
+            return 0;
 
-                        /* but the IPv6 address WOULD be valid... (which also
-                         * means there is DEFINITELY a functioning IPv6 stack
-                         * and connectivity!) */
-                        if (ip_isset(&assoc->ret_ip_port.ip) &&
-                                !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
-                            uint32_t r;
+        /* If ip is not zero and node is good. */
+        if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            ipv6s[num_ipv6s] = assoc->ret_ip_port;
+            ++num_ipv6s;
+        }
+    }
 
-                            /* then kick another entry out:
-                             * first, try to find an IPv6 entry to kick
-                             * (don't need to look for friend's, because he
-                             * definitely hasn't been added yet) */
-                            for (r = 0; r < MAX_FRIEND_CLIENTS; r++)
-                                if (ip_portlist[r].ip.family == AF_INET6) {
-                                    ip_portlist[r] = assoc->ip_port;
-                                    return num_ips;
-                                }
-
-                            /* no IPv6 found to kick:
-                             * kick the first IPv4 that is NOT the friend's one */
-                            for (r = 0; r < MAX_FRIEND_CLIENTS; r++)
-                                if ((ip_portlist[r].ip.family == AF_INET) &&
-                                        !ipport_equal(&ip_portlist[r], &assoc->ip_port)) {
-                                    ip_portlist[r] = assoc->ip_port;
-                                    return num_ips;
-                                }
-
-                            /* shouldn't be reached... */
-                        }
-                    }
-
-                    return num_ips;
-                }
+    if (num_ipv6s >= num_ipv4s) {
+        memcpy(ip_portlist, ipv6s, num_ipv6s * sizeof(IP_Port));
+        return num_ipv6s;
+    }
 
 #endif
-            }
-        }
-
-    return num_ips;
+    memcpy(ip_portlist, ipv4s, num_ipv4s * sizeof(IP_Port));
+    return num_ipv4s;
 }
 
 
@@ -1479,6 +1442,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
         return 0;
 
     uint32_t i, sent = 0;
+    uint8_t friend_sent[MAX_FRIEND_CLIENTS] = {0};
 
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int ip_num = friend_iplist(dht, ip_list, num);
@@ -1498,6 +1462,9 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     for (a = 0; a < 2; a++)
 #endif
         for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+            if (friend_sent[i])/* Send one packet per client.*/
+                continue;
+
             client = &friend->client_list[i];
             IPPTsPng *assoc = NULL;
 #ifdef CLIENT_ONETOONE_IP
@@ -1516,8 +1483,10 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
                     !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
                 int retval = sendpacket(dht->c->lossless_udp->net, assoc->ip_port, packet, length);
 
-                if ((unsigned int)retval == length)
+                if ((unsigned int)retval == length) {
                     ++sent;
+                    friend_sent[i] = 1;
+                }
             }
         }
 
