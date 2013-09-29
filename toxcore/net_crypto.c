@@ -508,8 +508,7 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
         int incoming_con = incoming_connection(c->lossless_udp, 1);
 
         if (incoming_con != -1) {
-            if (is_connected(c->lossless_udp, incoming_con) == 4
-                    || is_connected(c->lossless_udp, incoming_con) == 0) {
+            if (is_connected(c->lossless_udp, incoming_con) == 4) {
                 kill_connection(c->lossless_udp, incoming_con);
                 continue;
             }
@@ -671,6 +670,9 @@ static void receive_crypto(Net_Crypto *c)
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
+        if (c->crypto_connections[i].status == CONN_NO_CONNECTION)
+            continue;
+
         if (c->crypto_connections[i].status == CONN_HANDSHAKE_SENT) {
             uint8_t temp_data[MAX_DATA_SIZE];
             uint8_t secret_nonce[crypto_box_NONCEBYTES];
