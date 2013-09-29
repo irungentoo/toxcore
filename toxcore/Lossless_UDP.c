@@ -44,7 +44,7 @@
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
 {
     tox_array_for_each(&ludp->connections, Connection, tmp) {
-        if (tmp-> status > 0 && ipport_equal(&tmp->ip_port, &ip_port)) {
+        if (tmp->status > 0 && ipport_equal(&tmp->ip_port, &ip_port)) {
             return tmp_i;
         }
     }
@@ -322,7 +322,7 @@ static void free_connections(Lossless_UDP *ludp)
     uint32_t i;
 
     for (i = ludp->connections.len; i != 0; --i) {
-        Connection *connection = &tox_array_get(&ludp->connections, i, Connection);
+        Connection *connection = &tox_array_get(&ludp->connections, i - 1, Connection);
 
         if (connection->status != 0)
             break;
