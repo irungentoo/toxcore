@@ -50,7 +50,7 @@
 #define PING_INTERVAL 60
 
 /* Ping interval in seconds for each random sending of a get nodes request. */
-#define GET_NODE_INTERVAL 10
+#define GET_NODE_INTERVAL 5
 
 #define MAX_PUNCHING_PORTS 128
 
