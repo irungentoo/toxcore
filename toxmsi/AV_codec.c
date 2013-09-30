@@ -556,6 +556,8 @@ void *encode_audio_thread(void *arg)
 		pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
 		THREADUNLOCK()
 	    }
+	} else {
+	    usleep(1000); 
 	}
     }
     /* clean up codecs */
