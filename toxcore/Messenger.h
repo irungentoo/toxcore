@@ -44,6 +44,9 @@
 #define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 63
+#define PACKET_ID_FILE_SENDREQUEST 80
+#define PACKET_ID_FILE_CONTROL 81
+#define PACKET_ID_FILE_DATA 82
 #define PACKET_ID_INVITE_GROUPCHAT 144
 #define PACKET_ID_JOIN_GROUPCHAT 145
 #define PACKET_ID_ACCEPT_GROUPCHAT 146
@@ -157,10 +160,18 @@ typedef struct Messenger {
     void *friend_statuschange_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, int, uint8_t, void *);
     void *friend_connectionstatuschange_userdata;
+
     void (*group_invite)(struct Messenger *m, int, uint8_t *, void *);
     void *group_invite_userdata;
     void (*group_message)(struct Messenger *m, int, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+
+    void (*file_sendrequest)(struct Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t, void *);
+    void *file_sendrequest_userdata;
+    void (*file_filecontrol)(struct Messenger *m, int, uint8_t, uint8_t, uint8_t *, uint16_t, void *);
+    void *file_filecontrol_userdata;
+    void (*file_filedata)(struct Messenger *m, int, uint8_t, uint8_t *, uint16_t length, void *);
+    void *file_filedata_userdata;
 
 } Messenger;
 
@@ -438,6 +449,55 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
  */
 
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
+
+/****************FILE SENDING*****************/
+
+
+/* Set the callback for file send requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ */
+void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t,
+                               void *), void *userdata);
+
+/* Set the callback for file control requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t *, uint16_t,
+                           void *), void *userdata);
+
+/* Set the callback for file data.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void callback_file_data(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t *, uint16_t length, void *),
+                        void *userdata);
+
+/* Send a file send request.
+ * Maximum filename length is 256 bytes.
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+                     uint16_t filename_length);
+
+/* Send a file control request.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t message_id, uint8_t *data,
+                 uint16_t length);
+
+/* Send file data.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length);
 
 /*********************************/
 

@@ -928,7 +928,104 @@ static void do_allgroupchats(Messenger *m)
     }
 }
 
-/*********************************/
+/****************FILE SENDING*****************/
+
+
+/* Set the callback for file send requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ */
+void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t,
+                               void *), void *userdata)
+{
+
+    m->file_sendrequest = function;
+    m->file_sendrequest_userdata = userdata;
+}
+
+/* Set the callback for file control requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t *, uint16_t,
+                           void *), void *userdata)
+{
+    m->file_filecontrol = function;
+    m->file_filecontrol_userdata = userdata;
+}
+
+/* Set the callback for file data.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void callback_file_data(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t *, uint16_t length, void *),
+                        void *userdata)
+{
+    m->file_filedata = function;
+    m->file_filedata_userdata = userdata;
+}
+
+#define MAX_FILENAME_LENGTH 256
+
+/* Send a file send request.
+ * Maximum filename length is 256 bytes.
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+                     uint16_t filename_length)
+{
+    if (filename_length > MAX_FILENAME_LENGTH)
+        return 0;
+
+    uint8_t packet[MAX_FILENAME_LENGTH + 1 + sizeof(filesize)];
+    packet[0] = filenumber;
+    //TODO:
+    //filesize =  htonll(filesize);
+    memcpy(packet + 1, &filesize, sizeof(filesize));
+    memcpy(packet + 1 + sizeof(filesize), filename, filename_length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet,
+                                1 + sizeof(filesize) + filename_length);
+}
+
+/* Send a file control request.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t message_id, uint8_t *data, uint16_t length)
+{
+    if (length > MAX_DATA_SIZE - 2)
+        return 0;
+
+    uint8_t packet[MAX_DATA_SIZE];
+    packet[0] = filenumber;
+    packet[1] = message_id;
+    memcpy(packet + 2, data, length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 2);
+}
+
+
+/* Send file data.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length)
+{
+    if (length > MAX_DATA_SIZE - 1)
+        return 0;
+
+    uint8_t packet[MAX_DATA_SIZE];
+    packet[0] = filenumber;
+    memcpy(packet + 1, data, length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_DATA, packet, length + 1);
+}
+
+/**************************************/
+
 
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
 static void LANdiscovery(Messenger *m)
@@ -1206,6 +1303,48 @@ void doFriends(Messenger *m)
                             break;
 
                         group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
+
+                        break;
+                    }
+
+                    case PACKET_ID_FILE_SENDREQUEST: {
+                        if (data_length < 1 + sizeof(uint64_t) + 1)
+                            break;
+
+                        uint8_t filenumber = data[0];
+                        uint64_t filesize;
+                        memcpy(&filesize, data + 1, sizeof(filesize));
+
+                        //TODO:
+                        //filesize = ntohll(filesize);
+                        if (m->file_sendrequest)
+                            (*m->file_sendrequest)(m, i, filenumber, filesize, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t),
+                                                   m->file_sendrequest_userdata);
+
+                        break;
+                    }
+
+                    case PACKET_ID_FILE_CONTROL: {
+                        if (data_length < 2)
+                            break;
+
+                        uint8_t filenumber = data[0];
+                        uint8_t control_type = data[1];
+
+                        if (m->file_filecontrol)
+                            (*m->file_filecontrol)(m, i, filenumber, control_type, data + 2, data_length - 2, m->file_filecontrol_userdata);
+
+                        break;
+                    }
+
+                    case PACKET_ID_FILE_DATA: {
+                        if (data_length < 2)
+                            break;
+
+                        uint8_t filenumber = data[0];
+
+                        if (m->file_filedata)
+                            (*m->file_filedata)(m, i, filenumber, data + 1, data_length - 1, m->file_filedata_userdata);
 
                         break;
                     }
