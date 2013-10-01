@@ -606,7 +606,7 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, in
     m->friend_connectionstatuschange = function;
     m->friend_connectionstatuschange_userdata = userdata;
 }
-
+static void break_files(Messenger *m, int friendnumber);
 static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_t status)
 {
     if (!m->friend_connectionstatuschange)
@@ -618,8 +618,12 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
     const uint8_t was_online = m->friendlist[friendnumber].status == FRIEND_ONLINE;
     const uint8_t is_online = status == FRIEND_ONLINE;
 
-    if (is_online != was_online)
+    if (is_online != was_online) {
+        if (was_online)
+            break_files(m, friendnumber);
+
         m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
+    }
 }
 
 void set_friend_status(Messenger *m, int friendnumber, uint8_t status)
@@ -938,7 +942,6 @@ static void do_allgroupchats(Messenger *m)
 void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t,
                                void *), void *userdata)
 {
-
     m->file_sendrequest = function;
     m->file_sendrequest_userdata = userdata;
 }
@@ -977,6 +980,9 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, int, uint8_
 int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
                      uint16_t filename_length)
 {
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
     if (filename_length > MAX_FILENAME_LENGTH)
         return 0;
 
@@ -990,6 +996,35 @@ int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_
                                 1 + sizeof(filesize) + filename_length);
 }
 
+/* Send a file send request.
+ * Maximum filename length is 256 bytes.
+ *  return file number on success
+ *  return -1 on failure
+ */
+int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length)
+{
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    uint32_t i;
+
+    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+        if (m->friendlist[friendnumber].file_sending[i].status == 0)
+            break;
+    }
+
+    if (i == MAX_CONCURRENT_FILE_PIPES)
+        return -1;
+
+    if (file_sendrequest(m, friendnumber, i, filesize, filename, filename_length) == 0)
+        return -1;
+
+    m->friendlist[friendnumber].file_sending[i].status = 1;
+    m->friendlist[friendnumber].file_sending[i].size = filesize;
+    m->friendlist[friendnumber].file_sending[i].transferred = 0;
+    return i;
+}
+
 /* Send a file control request.
  *
  *  return 1 on success
@@ -1000,11 +1035,37 @@ int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t mes
     if (length > MAX_DATA_SIZE - 2)
         return 0;
 
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+        return 0;
+
     uint8_t packet[MAX_DATA_SIZE];
     packet[0] = filenumber;
     packet[1] = message_id;
     memcpy(packet + 2, data, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 2);
+
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 2)) {
+        switch (message_id) {
+            case FILECONTROL_ACCEPT:
+                m->friendlist[friendnumber].file_receiving[filenumber].status = 3;
+                break;
+
+            case FILECONTROL_PAUSE:
+                m->friendlist[friendnumber].file_receiving[filenumber].status = 2;
+                break;
+
+            case FILECONTROL_KILL:
+            case FILECONTROL_FINISHED:
+                m->friendlist[friendnumber].file_receiving[filenumber].status = 0;
+                break;
+        }
+
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 
@@ -1018,10 +1079,62 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
     if (length > MAX_DATA_SIZE - 1)
         return 0;
 
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    if (m->friendlist[friendnumber].file_sending[filenumber].status != 3)
+        return 0;
+
     uint8_t packet[MAX_DATA_SIZE];
     packet[0] = filenumber;
     memcpy(packet + 1, data, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_DATA, packet, length + 1);
+
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_DATA, packet, length + 1)) {
+        m->friendlist[friendnumber].file_sending[filenumber].transferred += length;
+        return 1;
+    }
+
+    return 0;
+
+}
+/* Run this when the friend disconnects.
+ *  Sets all current file transfers to broken.
+ */
+static void break_files(Messenger *m, int friendnumber)
+{
+    uint32_t i;
+
+    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+        if (m->friendlist[friendnumber].file_sending[i].status != 0)
+            m->friendlist[friendnumber].file_sending[i].status = 4;
+
+        if (m->friendlist[friendnumber].file_receiving[i].status != 0)
+            m->friendlist[friendnumber].file_receiving[i].status = 4;
+    }
+}
+
+static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t message_id, uint8_t *data,
+                              uint16_t length)
+{
+    if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+        return -1;
+
+    switch (message_id) {
+        case FILECONTROL_ACCEPT:
+            m->friendlist[friendnumber].file_sending[filenumber].status = 3;
+            return 0;
+
+        case FILECONTROL_PAUSE:
+            m->friendlist[friendnumber].file_sending[filenumber].status = 2;
+            return 0;
+
+        case FILECONTROL_KILL:
+        case FILECONTROL_FINISHED:
+            m->friendlist[friendnumber].file_sending[filenumber].status = 0;
+            return 0;
+    }
+
+    return -1;
 }
 
 /**************************************/
@@ -1331,6 +1444,9 @@ void doFriends(Messenger *m)
                         uint8_t filenumber = data[0];
                         uint8_t control_type = data[1];
 
+                        if (handle_filecontrol(m, i, filenumber, control_type, data + 2, data_length - 2) == -1)
+                            break;
+
                         if (m->file_filecontrol)
                             (*m->file_filecontrol)(m, i, filenumber, control_type, data + 2, data_length - 2, m->file_filecontrol_userdata);
 
@@ -1342,6 +1458,9 @@ void doFriends(Messenger *m)
                             break;
 
                         uint8_t filenumber = data[0];
+
+                        if (m->friendlist[i].file_receiving[filenumber].status == 0)
+                            break;
 
                         if (m->file_filedata)
                             (*m->file_filedata)(m, i, filenumber, data + 1, data_length - 1, m->file_filedata_userdata);

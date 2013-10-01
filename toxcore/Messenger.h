@@ -99,6 +99,22 @@ typedef enum {
 }
 USERSTATUS;
 
+struct File_Transfers {
+    uint64_t size;
+    uint64_t transferred;
+    uint8_t status; /* 0 == no transfer, 1 = not accepted, 2 = paused, 3 = transferring, 4 = broken*/
+};
+
+/* This cannot be bigger than 256 */
+#define MAX_CONCURRENT_FILE_PIPES 256
+
+enum {
+    FILECONTROL_ACCEPT,
+    FILECONTROL_PAUSE,
+    FILECONTROL_KILL,
+    FILECONTROL_FINISHED
+};
+
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
@@ -120,6 +136,8 @@ typedef struct {
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t ping_lastrecv;
     uint64_t ping_lastsent;
+    struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
+    struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
 } Friend;
 
 typedef struct Messenger {
