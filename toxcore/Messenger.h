@@ -502,6 +502,13 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, int, uint8_
 int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
                      uint16_t filename_length);
 
+/* Send a file send request.
+ * Maximum filename length is 256 bytes.
+ *  return file number on success
+ *  return -1 on failure
+ */
+int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length);
+
 /* Send a file control request.
  *
  *  return 1 on success
@@ -516,6 +523,15 @@ int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t mes
  *  return 0 on failure
  */
 int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length);
+
+/* Give the number of bytes left to be sent/received.
+ *
+ *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
+ *
+ *  return number of bytes remaining to be sent/received on success
+ *  return 0 on failure
+ */
+uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t send_receive);
 
 /*********************************/
 

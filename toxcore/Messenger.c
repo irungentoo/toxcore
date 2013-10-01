@@ -1038,7 +1038,7 @@ int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t mes
     if (friend_not_valid(m, friendnumber))
         return 0;
 
-    if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+    if (m->friendlist[friendnumber].file_receiving[filenumber].status == 0)
         return 0;
 
     uint8_t packet[MAX_DATA_SIZE];
@@ -1097,6 +1097,34 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
     return 0;
 
 }
+
+/* Give the number of bytes left to be sent/received.
+ *
+ *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
+ *
+ *  return number of bytes remaining to be sent/received on success
+ *  return 0 on failure
+ */
+uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t send_receive)
+{
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    if (send_receive == 0) {
+        if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+            return 0;
+
+        return m->friendlist[friendnumber].file_sending[filenumber].size -
+               m->friendlist[friendnumber].file_sending[filenumber].transferred;
+    } else {
+        if (m->friendlist[friendnumber].file_receiving[filenumber].status == 0)
+            return 0;
+
+        return m->friendlist[friendnumber].file_receiving[filenumber].size -
+               m->friendlist[friendnumber].file_receiving[filenumber].transferred;
+    }
+}
+
 /* Run this when the friend disconnects.
  *  Sets all current file transfers to broken.
  */
@@ -1427,9 +1455,11 @@ void doFriends(Messenger *m)
                         uint8_t filenumber = data[0];
                         uint64_t filesize;
                         memcpy(&filesize, data + 1, sizeof(filesize));
-
                         //TODO:
                         //filesize = ntohll(filesize);
+                        m->friendlist[i].file_receiving[filenumber].status = 1;
+                        m->friendlist[i].file_receiving[filenumber].size = filesize;
+
                         if (m->file_sendrequest)
                             (*m->file_sendrequest)(m, i, filenumber, filesize, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t),
                                                    m->file_sendrequest_userdata);
@@ -1461,6 +1491,8 @@ void doFriends(Messenger *m)
 
                         if (m->friendlist[i].file_receiving[filenumber].status == 0)
                             break;
+
+                        m->friendlist[i].file_receiving[filenumber].transferred += (data_length - 1);
 
                         if (m->file_filedata)
                             (*m->file_filedata)(m, i, filenumber, data + 1, data_length - 1, m->file_filedata_userdata);
