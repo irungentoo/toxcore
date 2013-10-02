@@ -1459,7 +1459,7 @@ void doFriends(Messenger *m)
                         //filesize = ntohll(filesize);
                         m->friendlist[i].file_receiving[filenumber].status = 1;
                         m->friendlist[i].file_receiving[filenumber].size = filesize;
-
+                        m->friendlist[i].file_receiving[filenumber].transferred = 0;
                         if (m->file_sendrequest)
                             (*m->file_sendrequest)(m, i, filenumber, filesize, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t),
                                                    m->file_sendrequest_userdata);
