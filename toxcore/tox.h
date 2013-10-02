@@ -140,7 +140,10 @@ typedef enum {
 }
 TOX_USERSTATUS;
 
-typedef void Tox;
+#ifndef __TOX_DEFINED__
+#define __TOX_DEFINED__
+typedef struct Tox Tox;
+#endif
 
 /*  return FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
@@ -229,7 +232,7 @@ int tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length)
  *  return 0 if success.
  *  return -1 if failure.
  */
-int tox_setfriendname(void *tox, int friendnumber, uint8_t *name, uint16_t length);
+int tox_setfriendname(Tox *tox, int friendnumber, uint8_t *name, uint16_t length);
 
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
@@ -300,14 +303,14 @@ void tox_set_sends_receipts(Tox *tox, int friendnumber, int yesno);
 /* Return the number of friends in the instance m.
  * You should use this to determine how much memory to allocate
  * for copy_friendlist. */
-uint32_t tox_count_friendlist(void *tox);
+uint32_t tox_count_friendlist(Tox *tox);
 
 /* Copy a list of valid friend IDs into the array out_list.
  * If out_list is NULL, returns 0.
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-uint32_t tox_copy_friendlist(void *tox, int *out_list, uint32_t list_size);
+uint32_t tox_copy_friendlist(Tox *tox, int *out_list, uint32_t list_size);
 
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
@@ -436,6 +439,7 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
  *   to setup connections
  */
 void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
+
 /* Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections
  *
@@ -477,6 +481,18 @@ void tox_kill(Tox *tox);
 /* The main loop that needs to be run at least 20 times per second. */
 void tox_do(Tox *tox);
 
+/*
+ * Waits for something to happen on the socket for up to milliseconds milliseconds.
+ * *** Function MUSTN'T poll. ***
+ * The function mustn't modify anything at all, so it can be called completely
+ * asynchronously without any worry.
+ *
+ *  returns 0 if the timeout was reached
+ *  returns 1 if there is socket activity (i.e. tox_do() should be called)
+ *
+ */
+int tox_wait(Tox *tox, uint16_t milliseconds);
+
 /* SAVING AND LOADING FUNCTIONS: */
 
 /*  return size of messenger data (for saving). */
@@ -494,3 +510,4 @@ int tox_load(Tox *tox, uint8_t *data, uint32_t length);
 #endif
 
 #endif
+

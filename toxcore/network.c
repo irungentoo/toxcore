@@ -299,6 +299,44 @@ void networking_poll(Networking_Core *net)
     }
 }
 
+/*
+ * Waits for something to happen on the socket for up to milliseconds milliseconds
+ * *** Function MUSTN'T poll. ***
+ * The function mustn't modify anything at all, so it can be called completely
+ * asynchronously without any worry.
+ *
+ *  returns 0 if the timeout was reached
+ *  returns 1 if there is socket activity (i.e. tox_do() should be called)
+ *
+ */
+int networking_wait(Networking_Core *net, uint16_t milliseconds)
+{
+    /* WIN32: supported since Win2K, but might need some adjustements */
+    /* UNIX: this should work for any remotely Unix'ish system */
+    int nfds = 1 + net->sock;
+
+    /* the FD_ZERO calls might be superfluous */
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(net->sock, &readfds);
+
+    fd_set writefds;
+    FD_ZERO(&writefds);
+    FD_SET(net->sock, &writefds);
+
+    fd_set exceptfds;
+    FD_ZERO(&exceptfds);
+    FD_SET(net->sock, &exceptfds);
+
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = milliseconds * 1000;
+
+    /* returns -1 on error, 0 on timeout, the socket on activity */
+    int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
+
+    return res > 0 ? 1 : 0;
+};
 
 uint8_t at_startup_ran = 0;
 static int at_startup(void)

@@ -455,6 +455,18 @@ void cleanupMessenger(Messenger *M);
 /* The main loop that needs to be run at least 20 times per second. */
 void doMessenger(Messenger *m);
 
+/*
+ * Waits for something to happen on the socket for up to milliseconds milliseconds
+ * *** Function MUSTN'T poll. ***
+ * The function mustn't modify anything at all, so it can be called completely
+ * asynchronously without any worry.
+ *
+ *  returns 0 if the timeout was reached
+ *  returns 1 if there is socket activity (i.e. tox_do() should be called)
+ *
+ */
+int waitMessenger(Messenger *m, uint16_t milliseconds);
+
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* return size of the messenger data (for saving). */
@@ -487,3 +499,4 @@ uint32_t copy_friendlist(Messenger *m, int *out_list, uint32_t list_size);
 int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length);
 
 #endif
+

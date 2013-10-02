@@ -26,6 +26,7 @@
 #endif
 
 #include "Messenger.h"
+#include "network.h"
 #include "util.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -1387,6 +1388,21 @@ void doMessenger(Messenger *m)
 
 #endif
 }
+
+/*
+ * Waits for something to happen on the socket for up to milliseconds milliseconds
+ * *** Function MUSTN'T poll. ***
+ * The function mustn't modify anything at all, so it can be called completely
+ * asynchronously without any worry.
+ *
+ *  returns 0 if the timeout was reached
+ *  returns 1 if there is socket activity (i.e. tox_do() should be called)
+ *
+ */
+int waitMessenger(Messenger *m, uint16_t milliseconds)
+{
+    return networking_wait(m->net, milliseconds);
+};
 
 /*  return size of the messenger data (for saving) */
 uint32_t Messenger_size_old(Messenger *m)
