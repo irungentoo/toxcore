@@ -275,13 +275,13 @@ msi_call_t* msi_init_call (msi_session_t* _session, int _peers)
 
 int msi_terminate_call(msi_session_t* _session)
 {
-    if ( _session )
+    if ( !_session )
         return FAILURE;
 
-    msi_call_t* _call = _session->_call;
+    if ( _session->_call->_type_peer )
+        free(_session->_call->_type_peer);
 
-    free(_call->_type_peer);
-    free(_call);
+    free(_session->_call);
 
     _session->_call = NULL;
 
