@@ -274,7 +274,7 @@ void networking_poll(Networking_Core *net);
  *  returns 1 if there is socket activity (i.e. tox_do() should be called)
  *
  */
-int networking_wait(Networking_Core *net, uint16_t milliseconds);
+int networking_wait(Networking_Core *net, uint32_t sendqueue_len, uint16_t milliseconds);
 
 /* Initialize networking.
  * bind to ip and port.

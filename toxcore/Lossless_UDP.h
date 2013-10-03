@@ -225,6 +225,9 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
 /*  return number of packets in the queue waiting to be successfully sent. */
 uint32_t sendqueue(Lossless_UDP *ludp, int connection_id);
 
+/*  return number of packets in all queues waiting to be successfully sent. */
+uint32_t sendqueue_total(Lossless_UDP *ludp);
+
 /*
  *  return number of packets in the queue waiting to be successfully
  *  read with read_packet(...).

@@ -461,6 +461,20 @@ uint32_t sendqueue(Lossless_UDP *ludp, int connection_id)
     return connection->sendbuff_packetnum - connection->successful_sent;
 }
 
+/*  return number of packets in all queues waiting to be successfully sent. */
+uint32_t sendqueue_total(Lossless_UDP *ludp)
+{
+    uint32_t total = 0;
+    int i;
+    for(i = 0; i < ludp->connections.len; i++) {
+        Connection *connection = &tox_array_get(&ludp->connections, i, Connection);
+        if (connection->status != 0)
+            total += connection->sendbuff_packetnum - connection->successful_sent;
+    }
+
+    return total;
+}
+
 /*  return the number of packets in the queue waiting to be successfully read with read_packet(...). */
 uint32_t recvqueue(Lossless_UDP *ludp, int connection_id)
 {

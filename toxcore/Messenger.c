@@ -1401,7 +1401,7 @@ void doMessenger(Messenger *m)
  */
 int waitMessenger(Messenger *m, uint16_t milliseconds)
 {
-    return networking_wait(m->net, milliseconds);
+    return networking_wait(m->net, sendqueue_total(m->net_crypto->lossless_udp), milliseconds);
 };
 
 /*  return size of the messenger data (for saving) */

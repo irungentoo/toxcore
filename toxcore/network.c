@@ -309,31 +309,43 @@ void networking_poll(Networking_Core *net)
  *  returns 1 if there is socket activity (i.e. tox_do() should be called)
  *
  */
-int networking_wait(Networking_Core *net, uint16_t milliseconds)
+int networking_wait(Networking_Core *net, uint32_t sendqueue_len, uint16_t milliseconds)
 {
+    sock_t sock = net->sock;
     /* WIN32: supported since Win2K, but might need some adjustements */
     /* UNIX: this should work for any remotely Unix'ish system */
-    int nfds = 1 + net->sock;
+    int nfds = 1 + sock;
 
     /* the FD_ZERO calls might be superfluous */
     fd_set readfds;
     FD_ZERO(&readfds);
-    FD_SET(net->sock, &readfds);
+    FD_SET(sock, &readfds);
 
     fd_set writefds;
     FD_ZERO(&writefds);
-    FD_SET(net->sock, &writefds);
+    /* add only if we have packets queued, signals that a write won't block */
+    if (sendqueue_len > 0)
+        FD_SET(sock, &writefds);
 
     fd_set exceptfds;
     FD_ZERO(&exceptfds);
-    FD_SET(net->sock, &exceptfds);
+    FD_SET(sock, &exceptfds);
 
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = milliseconds * 1000;
 
+#ifdef LOGGING
+    errno = 0;
+#endif
     /* returns -1 on error, 0 on timeout, the socket on activity */
     int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
+#ifdef LOGGING
+    sprintf(logbuffer, "select(%d): %d (%d, %s) - %d %d %d\n", milliseconds, res, errno,
+                       strerror(errno), FD_ISSET(sock, &readfds), FD_ISSET(sock, &writefds),
+                       FD_ISSET(sock, &exceptfds));
+    loglog(logbuffer);
+#endif
 
     return res > 0 ? 1 : 0;
 };
@@ -486,6 +498,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     {
         char ipv6only = 0;
 #ifdef LOGGING
+        errno = 0;
         int res =
 #endif
             setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
@@ -509,6 +522,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
 #ifdef LOGGING
+        errno = 0;
         res =
 #endif
             setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
@@ -961,23 +975,23 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
 {
     if (res < 0)
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%d: %s) | %04x%04x\n",
                  buffer[0], message, buflen < 999 ? buflen : 999, 'E',
                  ip_ntoa(&ip_port->ip), ntohs(ip_port->port), errno,
                  strerror(errno), buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+                 (buflen > 7) ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
     else if ((res > 0) && ((size_t)res <= buflen))
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%d: %s) | %04x%04x\n",
                  buffer[0], message, res < 999 ? res : 999, (size_t)res < buflen ? '<' : '=',
                  ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
                  "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+                 (buflen > 7) ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
     else /* empty or overwrite */
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x\n",
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %u%c%u %s:%u (%d: %s) | %04x%04x\n",
                  buffer[0], message, res, !res ? '!' : '>', buflen,
                  ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
                  "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+                 (buflen > 7) ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
 
     logbuffer[sizeof(logbuffer) - 1] = 0;
     loglog(logbuffer);
