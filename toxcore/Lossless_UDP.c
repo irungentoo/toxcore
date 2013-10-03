@@ -547,6 +547,8 @@ int discard_packet(Lossless_UDP *ludp, int connection_id)
     return 0;
 }
 
+#define MAX_SYNC_RATE 20
+
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
@@ -564,6 +566,8 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
         return 0;
 
     if (sendqueue(ludp, connection_id) >= connection->sendbuffer_length && connection->sendbuffer_length != 0) {
+        if (sendqueue(ludp, connection_id) > connection->data_rate/MAX_SYNC_RATE)
+            return 0;
         uint32_t newlen = connection->sendbuffer_length = resize_queue(&connection->sendbuffer, connection->sendbuffer_length,
                           connection->sendbuffer_length * 2, connection->successful_sent, connection->sendbuff_packetnum);
 
@@ -829,7 +833,7 @@ static void adjust_datasendspeed(Connection *connection, uint32_t req_packets)
         return;
     }
 
-    if (req_packets <= (connection->data_rate / connection->SYNC_rate) / 20 || req_packets <= 1) {
+    if (req_packets <= (connection->data_rate / connection->SYNC_rate) / 5 || req_packets <= 10) {
         connection->data_rate += (connection->data_rate / 8) + 1;
 
         if (connection->data_rate > connection->sendbuffer_length * connection->SYNC_rate)
@@ -1084,7 +1088,7 @@ static void do_data(Lossless_UDP *ludp)
     }
 }
 
-#define MAX_SYNC_RATE 20
+
 
 /*
  * Automatically adjusts send rates of packets for optimal transmission.

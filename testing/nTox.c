@@ -67,6 +67,68 @@ typedef struct {
 Friend_request pending_requests[256];
 uint8_t num_requests = 0;
 
+#define NUM_FILE_SENDERS 256
+typedef struct {
+    FILE *file;
+    uint16_t friendnum;
+    uint8_t filenumber;
+    uint8_t nextpiece[1024];
+    uint16_t piecelength;
+} File_Sender;
+File_Sender file_senders[NUM_FILE_SENDERS];
+uint8_t numfilesenders;
+
+void send_filesenders(Tox *m)
+{
+    uint32_t i;
+
+    for (i = 0; i < NUM_FILE_SENDERS; ++i) {
+        if (file_senders[i].file == 0)
+            continue;
+
+        while (1) {
+            if (!tox_file_senddata(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
+                                   file_senders[i].piecelength))
+                break;
+
+            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, 1000, file_senders[i].file);
+
+            if (file_senders[i].piecelength == 0) {
+                fclose(file_senders[i].file);
+                file_senders[i].file = 0;
+                tox_file_sendcontrol(m, file_senders[i].friendnum, 0, file_senders[i].filenumber, 3, 0, 0);
+                char msg[512];
+                sprintf(msg, "[t] %u file transfer: %u completed", file_senders[i].friendnum, file_senders[i].filenumber);
+                new_lines(msg);
+                break;
+            }
+        }
+    }
+}
+int add_filesender(Tox *m, uint16_t friendnum, char *filename)
+{
+    FILE *tempfile = fopen(filename, "r");
+
+    if (tempfile == 0)
+        return -1;
+
+    fseek(tempfile, 0, SEEK_END);
+    uint64_t filesize = ftell(tempfile);
+    fseek(tempfile, 0, SEEK_SET);
+    int filenum = tox_new_filesender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
+
+    if (filenum == -1)
+        return -1;
+
+    file_senders[numfilesenders].file = tempfile;
+    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, 1000,
+            file_senders[numfilesenders].file);
+    file_senders[numfilesenders].friendnum = friendnum;
+    file_senders[numfilesenders].filenumber = filenum;
+    ++numfilesenders;
+    return filenum;
+}
+
 /*
   resolve_addr():
     address should represent IPv4 or a hostname with A record
@@ -366,6 +428,16 @@ void line_eval(Tox *m, char *line)
                         tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1));
                 new_lines(msg);
             }
+        } else if (inpt_command == 't') {
+            char msg[512];
+            char *posi[1];
+            int friendnum = strtoul(line + prompt_offset, posi, 0);
+
+            if (**posi != 0) {
+                sprintf(msg, "[t] Sending file %s to friendnum %u filenumber is %i (-1 means failure)", *posi + 1, friendnum,
+                        add_filesender(m, friendnum, *posi + 1));
+                new_lines(msg);
+            }
         } else if (inpt_command == 'q') { //exit
             save_data(m);
             endwin();
@@ -586,6 +658,53 @@ void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *messag
     new_lines(msg);
 }
 
+void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+                         uint16_t filename_length, void *userdata)
+{
+    char msg[512];
+    sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, filesize);
+    new_lines(msg);
+
+    if (tox_file_sendcontrol(m, friendnumber, 1, filenumber, 0, 0, 0)) {
+        sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friendnumber, filenumber);
+        new_lines(msg);
+    } else
+        new_lines("Could not accept file transfer.");
+}
+
+void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
+                        uint8_t *data,
+                        uint16_t length, void *userdata)
+{
+    char msg[512] = {0};
+
+    if (control_type == 0)
+        sprintf(msg, "[t] %u accepted file transfer: %u", friendnumber, filenumber);
+    else if (control_type == 3)
+        sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
+    else
+        sprintf(msg, "[t] control %u received", control_type);
+
+    new_lines(msg);
+}
+
+void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+{
+    char filename[256];
+    sprintf(filename, "%u.%u.bin", friendnumber, filenumber);
+    FILE *pFile = fopen(filename, "a");
+
+    if (tox_file_dataremaining(m, friendnumber, filenumber, 1) == 0) {
+        //file_control(m, friendnumber, 1, filenumber, 3, 0, 0);
+        char msg[512];
+        sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
+        new_lines(msg);
+    }
+
+    fwrite(data, length, 1, pFile);
+    fclose(pFile);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -633,6 +752,9 @@ int main(int argc, char *argv[])
     tox_callback_statusmessage(m, print_statuschange, NULL);
     tox_callback_group_invite(m, print_invite, NULL);
     tox_callback_group_message(m, print_groupmessage, NULL);
+    tox_callback_file_data(m, write_file, NULL);
+    tox_callback_file_control(m, file_print_control, NULL);
+    tox_callback_file_sendrequest(m, file_request_accept, NULL);
 
     initscr();
     noecho();
@@ -668,6 +790,7 @@ int main(int argc, char *argv[])
     }
 
     time_t timestamp0 = time(NULL);
+
     while (1) {
         if (on == 0) {
             if (tox_isconnected(m)) {
@@ -675,6 +798,7 @@ int main(int argc, char *argv[])
                 on = 1;
             } else {
                 time_t timestamp1 = time(NULL);
+
                 if (timestamp0 + 10 < timestamp1) {
                     timestamp0 = timestamp1;
                     tox_bootstrap_from_address(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
@@ -682,6 +806,7 @@ int main(int argc, char *argv[])
             }
         }
 
+        send_filesenders(m);
         tox_do(m);
         c_sleep(1);
         do_refresh();
