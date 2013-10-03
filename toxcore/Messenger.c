@@ -1010,7 +1010,7 @@ int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *f
     uint32_t i;
 
     for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
-        if (m->friendlist[friendnumber].file_sending[i].status == 0)
+        if (m->friendlist[friendnumber].file_sending[i].status == FILESTATUS_NONE)
             break;
     }
 
@@ -1020,7 +1020,7 @@ int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *f
     if (file_sendrequest(m, friendnumber, i, filesize, filename, filename_length) == 0)
         return -1;
 
-    m->friendlist[friendnumber].file_sending[i].status = 1;
+    m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NOT_ACCEPTED;
     m->friendlist[friendnumber].file_sending[i].size = filesize;
     m->friendlist[friendnumber].file_sending[i].transferred = 0;
     return i;
@@ -1041,7 +1041,7 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
     if (friend_not_valid(m, friendnumber))
         return 0;
 
-    if (m->friendlist[friendnumber].file_receiving[filenumber].status == 0)
+    if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
         return 0;
 
     if (send_receive > 1)
@@ -1057,31 +1057,31 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
         if (send_receive == 1)
             switch (message_id) {
                 case FILECONTROL_ACCEPT:
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = 3;
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_TRANSFERRING;
                     break;
 
                 case FILECONTROL_PAUSE:
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = 5;
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_PAUSED_BY_US;
                     break;
 
                 case FILECONTROL_KILL:
                 case FILECONTROL_FINISHED:
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = 0;
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
                     break;
             }
         else
             switch (message_id) {
                 case FILECONTROL_ACCEPT:
-                    m->friendlist[friendnumber].file_sending[filenumber].status = 3;
+                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_TRANSFERRING;
                     break;
 
                 case FILECONTROL_PAUSE:
-                    m->friendlist[friendnumber].file_sending[filenumber].status = 5;
+                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_PAUSED_BY_US;
                     break;
 
                 case FILECONTROL_KILL:
                 case FILECONTROL_FINISHED:
-                    m->friendlist[friendnumber].file_sending[filenumber].status = 0;
+                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
                     break;
             }
 
@@ -1105,7 +1105,7 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
     if (friend_not_valid(m, friendnumber))
         return 0;
 
-    if (m->friendlist[friendnumber].file_sending[filenumber].status != 3)
+    if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_TRANSFERRING)
         return 0;
 
     uint8_t packet[MAX_DATA_SIZE];
@@ -1134,13 +1134,13 @@ uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, 
         return 0;
 
     if (send_receive == 0) {
-        if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE)
             return 0;
 
         return m->friendlist[friendnumber].file_sending[filenumber].size -
                m->friendlist[friendnumber].file_sending[filenumber].transferred;
     } else {
-        if (m->friendlist[friendnumber].file_receiving[filenumber].status == 0)
+        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
             return 0;
 
         return m->friendlist[friendnumber].file_receiving[filenumber].size -
@@ -1156,11 +1156,11 @@ static void break_files(Messenger *m, int friendnumber)
     uint32_t i;
 
     for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
-        if (m->friendlist[friendnumber].file_sending[i].status != 0)
-            m->friendlist[friendnumber].file_sending[i].status = 4;
+        if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE)
+            m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_BROKEN;
 
-        if (m->friendlist[friendnumber].file_receiving[i].status != 0)
-            m->friendlist[friendnumber].file_receiving[i].status = 4;
+        if (m->friendlist[friendnumber].file_receiving[i].status != FILESTATUS_NONE)
+            m->friendlist[friendnumber].file_receiving[i].status = FILESTATUS_BROKEN;
     }
 }
 
@@ -1172,21 +1172,21 @@ static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t send_recei
         return -1;
 
     if (send_receive == 0) {
-        if (m->friendlist[friendnumber].file_receiving[filenumber].status == 0)
+        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
             return -1;
 
         switch (message_id) {
             case FILECONTROL_ACCEPT:
-                if (m->friendlist[friendnumber].file_receiving[filenumber].status != 5) {
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = 3;
+                if (m->friendlist[friendnumber].file_receiving[filenumber].status != FILESTATUS_PAUSED_BY_US) {
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_TRANSFERRING;
                     return 0;
                 }
 
                 return -1;
 
             case FILECONTROL_PAUSE:
-                if (m->friendlist[friendnumber].file_receiving[filenumber].status != 5) {
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = 2;
+                if (m->friendlist[friendnumber].file_receiving[filenumber].status != FILESTATUS_PAUSED_BY_US) {
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
                     return 0;
                 }
 
@@ -1194,29 +1194,32 @@ static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t send_recei
 
             case FILECONTROL_KILL:
             case FILECONTROL_FINISHED:
-                m->friendlist[friendnumber].file_receiving[filenumber].status = 0;
+                m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
                 return 0;
         }
     } else {
-        if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE)
             return -1;
 
         switch (message_id) {
             case FILECONTROL_ACCEPT:
-                if (m->friendlist[friendnumber].file_sending[filenumber].status != 5) {
-                    m->friendlist[friendnumber].file_sending[filenumber].status = 3;
+                if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_PAUSED_BY_US) {
+                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_TRANSFERRING;
                     return 0;
                 }
 
                 return -1;
 
             case FILECONTROL_PAUSE:
-                m->friendlist[friendnumber].file_sending[filenumber].status = 2;
+                if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_PAUSED_BY_US) {
+                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
+                }
+
                 return 0;
 
             case FILECONTROL_KILL:
             case FILECONTROL_FINISHED:
-                m->friendlist[friendnumber].file_sending[filenumber].status = 0;
+                m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
                 return 0;
         }
     }
@@ -1516,9 +1519,10 @@ void doFriends(Messenger *m)
                         memcpy(&filesize, data + 1, sizeof(filesize));
                         //TODO:
                         //filesize = ntohll(filesize);
-                        m->friendlist[i].file_receiving[filenumber].status = 1;
+                        m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
                         m->friendlist[i].file_receiving[filenumber].size = filesize;
                         m->friendlist[i].file_receiving[filenumber].transferred = 0;
+
                         if (m->file_sendrequest)
                             (*m->file_sendrequest)(m, i, filenumber, filesize, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t),
                                                    m->file_sendrequest_userdata);
@@ -1550,7 +1554,7 @@ void doFriends(Messenger *m)
 
                         uint8_t filenumber = data[0];
 
-                        if (m->friendlist[i].file_receiving[filenumber].status == 0)
+                        if (m->friendlist[i].file_receiving[filenumber].status == FILESTATUS_NONE)
                             break;
 
                         m->friendlist[i].file_receiving[filenumber].transferred += (data_length - 1);

@@ -104,7 +104,14 @@ struct File_Transfers {
     uint64_t transferred;
     uint8_t status; /* 0 == no transfer, 1 = not accepted, 2 = paused by the other, 3 = transferring, 4 = broken, 5 = paused by us */
 };
-
+enum {
+    FILESTATUS_NONE,
+    FILESTATUS_NOT_ACCEPTED,
+    FILESTATUS_PAUSED_BY_OTHER,
+    FILESTATUS_TRANSFERRING,
+    FILESTATUS_BROKEN,
+    FILESTATUS_PAUSED_BY_US
+};
 /* This cannot be bigger than 256 */
 #define MAX_CONCURRENT_FILE_PIPES 256
 
