@@ -484,8 +484,7 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int,
  *
  */
 void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t, uint8_t *,
-                           uint16_t,
-                           void *), void *userdata);
+                           uint16_t, void *), void *userdata);
 
 /* Set the callback for file data.
  *
