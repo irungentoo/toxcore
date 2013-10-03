@@ -96,6 +96,10 @@ void send_filesenders(Tox *m)
             if (file_senders[i].piecelength == 0) {
                 fclose(file_senders[i].file);
                 file_senders[i].file = 0;
+                file_control(m, file_senders[i].friendnum, 0, file_senders[i].filenumber, 3, 0, 0);
+                char msg[512];
+                sprintf(msg, "[t] %u file transfer: %u completed", file_senders[i].friendnum, file_senders[i].filenumber);
+                new_lines(msg);
                 break;
             }
         }
@@ -661,14 +665,15 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
     sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, filesize);
     new_lines(msg);
 
-    if (file_control(m, friendnumber, filenumber, 0, 0, 0)) {
+    if (file_control(m, friendnumber, 1, filenumber, 0, 0, 0)) {
         sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friendnumber, filenumber);
         new_lines(msg);
     } else
         new_lines("Could not accept file transfer.");
 }
 
-void file_print_control(Tox *m, int friendnumber, uint8_t filenumber, uint8_t control_type, uint8_t *data,
+void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
+                        uint8_t *data,
                         uint16_t length, void *userdata)
 {
     char msg[512] = {0};
@@ -690,7 +695,7 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
     FILE *pFile = fopen(filename, "a");
 
     if (file_dataremaining(m, friendnumber, filenumber, 1) == 0) {
-        file_control(m, friendnumber, filenumber, 3, 0, 0);
+        //file_control(m, friendnumber, 1, filenumber, 3, 0, 0);
         char msg[512];
         sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
         new_lines(msg);

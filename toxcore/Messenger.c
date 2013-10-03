@@ -948,10 +948,11 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int,
 
 /* Set the callback for file control requests.
  *
- *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t *, uint16_t,
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t, uint8_t *,
+                           uint16_t,
                            void *), void *userdata)
 {
     m->file_filecontrol = function;
@@ -1026,13 +1027,15 @@ int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *f
 }
 
 /* Send a file control request.
+ * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
  *
  *  return 1 on success
  *  return 0 on failure
  */
-int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t message_id, uint8_t *data, uint16_t length)
+int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
+                 uint8_t *data, uint16_t length)
 {
-    if (length > MAX_DATA_SIZE - 2)
+    if (length > MAX_DATA_SIZE - 3)
         return 0;
 
     if (friend_not_valid(m, friendnumber))
@@ -1041,26 +1044,46 @@ int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t mes
     if (m->friendlist[friendnumber].file_receiving[filenumber].status == 0)
         return 0;
 
+    if (send_receive > 1)
+        return 0;
+
     uint8_t packet[MAX_DATA_SIZE];
-    packet[0] = filenumber;
-    packet[1] = message_id;
-    memcpy(packet + 2, data, length);
+    packet[0] = send_receive;
+    packet[1] = filenumber;
+    packet[2] = message_id;
+    memcpy(packet + 3, data, length);
 
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 2)) {
-        switch (message_id) {
-            case FILECONTROL_ACCEPT:
-                m->friendlist[friendnumber].file_receiving[filenumber].status = 3;
-                break;
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 3)) {
+        if (send_receive == 1)
+            switch (message_id) {
+                case FILECONTROL_ACCEPT:
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = 3;
+                    break;
 
-            case FILECONTROL_PAUSE:
-                m->friendlist[friendnumber].file_receiving[filenumber].status = 2;
-                break;
+                case FILECONTROL_PAUSE:
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = 5;
+                    break;
 
-            case FILECONTROL_KILL:
-            case FILECONTROL_FINISHED:
-                m->friendlist[friendnumber].file_receiving[filenumber].status = 0;
-                break;
-        }
+                case FILECONTROL_KILL:
+                case FILECONTROL_FINISHED:
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = 0;
+                    break;
+            }
+        else
+            switch (message_id) {
+                case FILECONTROL_ACCEPT:
+                    m->friendlist[friendnumber].file_sending[filenumber].status = 3;
+                    break;
+
+                case FILECONTROL_PAUSE:
+                    m->friendlist[friendnumber].file_sending[filenumber].status = 5;
+                    break;
+
+                case FILECONTROL_KILL:
+                case FILECONTROL_FINISHED:
+                    m->friendlist[friendnumber].file_sending[filenumber].status = 0;
+                    break;
+            }
 
         return 1;
     } else {
@@ -1141,25 +1164,61 @@ static void break_files(Messenger *m, int friendnumber)
     }
 }
 
-static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t message_id, uint8_t *data,
+static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t filenumber,
+                              uint8_t message_id, uint8_t *data,
                               uint16_t length)
 {
-    if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+    if (send_receive > 1)
         return -1;
 
-    switch (message_id) {
-        case FILECONTROL_ACCEPT:
-            m->friendlist[friendnumber].file_sending[filenumber].status = 3;
-            return 0;
+    if (send_receive == 0) {
+        if (m->friendlist[friendnumber].file_receiving[filenumber].status == 0)
+            return -1;
 
-        case FILECONTROL_PAUSE:
-            m->friendlist[friendnumber].file_sending[filenumber].status = 2;
-            return 0;
+        switch (message_id) {
+            case FILECONTROL_ACCEPT:
+                if (m->friendlist[friendnumber].file_receiving[filenumber].status != 5) {
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = 3;
+                    return 0;
+                }
 
-        case FILECONTROL_KILL:
-        case FILECONTROL_FINISHED:
-            m->friendlist[friendnumber].file_sending[filenumber].status = 0;
-            return 0;
+                return -1;
+
+            case FILECONTROL_PAUSE:
+                if (m->friendlist[friendnumber].file_receiving[filenumber].status != 5) {
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = 2;
+                    return 0;
+                }
+
+                return -1;
+
+            case FILECONTROL_KILL:
+            case FILECONTROL_FINISHED:
+                m->friendlist[friendnumber].file_receiving[filenumber].status = 0;
+                return 0;
+        }
+    } else {
+        if (m->friendlist[friendnumber].file_sending[filenumber].status == 0)
+            return -1;
+
+        switch (message_id) {
+            case FILECONTROL_ACCEPT:
+                if (m->friendlist[friendnumber].file_sending[filenumber].status != 5) {
+                    m->friendlist[friendnumber].file_sending[filenumber].status = 3;
+                    return 0;
+                }
+
+                return -1;
+
+            case FILECONTROL_PAUSE:
+                m->friendlist[friendnumber].file_sending[filenumber].status = 2;
+                return 0;
+
+            case FILECONTROL_KILL:
+            case FILECONTROL_FINISHED:
+                m->friendlist[friendnumber].file_sending[filenumber].status = 0;
+                return 0;
+        }
     }
 
     return -1;
@@ -1468,17 +1527,19 @@ void doFriends(Messenger *m)
                     }
 
                     case PACKET_ID_FILE_CONTROL: {
-                        if (data_length < 2)
+                        if (data_length < 3)
                             break;
 
-                        uint8_t filenumber = data[0];
-                        uint8_t control_type = data[1];
+                        uint8_t send_receive = data[0];
+                        uint8_t filenumber = data[1];
+                        uint8_t control_type = data[2];
 
-                        if (handle_filecontrol(m, i, filenumber, control_type, data + 2, data_length - 2) == -1)
+                        if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3) == -1)
                             break;
 
                         if (m->file_filecontrol)
-                            (*m->file_filecontrol)(m, i, filenumber, control_type, data + 2, data_length - 2, m->file_filecontrol_userdata);
+                            (*m->file_filecontrol)(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3,
+                                                   m->file_filecontrol_userdata);
 
                         break;
                     }

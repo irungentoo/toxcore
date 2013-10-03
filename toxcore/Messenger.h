@@ -102,7 +102,7 @@ USERSTATUS;
 struct File_Transfers {
     uint64_t size;
     uint64_t transferred;
-    uint8_t status; /* 0 == no transfer, 1 = not accepted, 2 = paused, 3 = transferring, 4 = broken*/
+    uint8_t status; /* 0 == no transfer, 1 = not accepted, 2 = paused by the other, 3 = transferring, 4 = broken, 5 = paused by us */
 };
 
 /* This cannot be bigger than 256 */
@@ -186,7 +186,7 @@ typedef struct Messenger {
 
     void (*file_sendrequest)(struct Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t, void *);
     void *file_sendrequest_userdata;
-    void (*file_filecontrol)(struct Messenger *m, int, uint8_t, uint8_t, uint8_t *, uint16_t, void *);
+    void (*file_filecontrol)(struct Messenger *m, int, uint8_t, uint8_t, uint8_t, uint8_t *, uint16_t, void *);
     void *file_filecontrol_userdata;
     void (*file_filedata)(struct Messenger *m, int, uint8_t, uint8_t *, uint16_t length, void *);
     void *file_filedata_userdata;
@@ -480,10 +480,11 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int,
 
 /* Set the callback for file control requests.
  *
- *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t *, uint16_t,
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t, uint8_t *,
+                           uint16_t,
                            void *), void *userdata);
 
 /* Set the callback for file data.
@@ -510,12 +511,13 @@ int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_
 int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length);
 
 /* Send a file control request.
+ * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
  *
  *  return 1 on success
  *  return 0 on failure
  */
-int file_control(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t message_id, uint8_t *data,
-                 uint16_t length);
+int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
+                 uint8_t *data, uint16_t length);
 
 /* Send file data.
  *
