@@ -10,7 +10,7 @@
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2
 
-#define VERSION_STRING "0.1.2"
+#define VERSION_STRING "0.2.2"
 
 #define MSI_MAXMSG_SIZE 1024
 

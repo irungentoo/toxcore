@@ -267,7 +267,6 @@ pthread_t phone_startmedia_loop ( phone_t* _phone )
 
 MCBTYPE callback_recv_invite ( MCBARGS )
 {
-    int _status = SUCCESS;
     const char* _call_type;
 
     msi_session_t* _msi = _arg;
@@ -286,17 +285,14 @@ MCBTYPE callback_recv_invite ( MCBARGS )
 
     INFO( "Incoming %s call!", _call_type );
 
-    return _status;
 }
 MCBTYPE callback_recv_trying ( MCBARGS )
 {
     INFO ( "Trying...");
-    return SUCCESS;
 }
 MCBTYPE callback_recv_ringing ( MCBARGS )
 {
     INFO ( "Ringing!" );
-    return SUCCESS;
 }
 MCBTYPE callback_recv_starting ( MCBARGS )
 {
@@ -306,12 +302,10 @@ MCBTYPE callback_recv_starting ( MCBARGS )
     } else {
         INFO ("Call started! ( press h to hangup )");
     }
-    return SUCCESS;
 }
 MCBTYPE callback_recv_ending ( MCBARGS )
 {
     INFO ( "Call ended!" );
-    return SUCCESS;
 }
 
 
@@ -324,22 +318,18 @@ MCBTYPE callback_call_started ( MCBARGS )
         INFO ("Call started! ( press h to hangup )");
     }
 
-    return SUCCESS;
 }
 MCBTYPE callback_call_canceled ( MCBARGS )
 {
     INFO ( "Call canceled!" );
-    return SUCCESS;
 }
 MCBTYPE callback_call_rejected ( MCBARGS )
 {
     INFO ( "Call rejected!\n" );
-    return SUCCESS;
 }
 MCBTYPE callback_call_ended ( MCBARGS )
 {
     INFO ( "Call ended!" );
-    return SUCCESS;
 }
 
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
@@ -394,8 +384,10 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
     msi_register_callback_recv_ending ( callback_recv_ending );
     /* ------------------ */
 
-    /* Now start msi main loop. It's a must! */
-    msi_start_main_loop ( _retu->_msi );
+    /* Now start msi main loop. It's a must!
+     * Define a frequency in ms; 10 ms is just fine
+     */
+    msi_start_main_loop ( _retu->_msi, 10 );
 
     return _retu;
 }
@@ -500,7 +492,8 @@ void* phone_poll ( void* _p_phone )
             if ( _status < 0 ){
                 INFO("Could not resolve address!");
             } else {
-                msi_invite ( _phone->_msi, _ctype );
+                /* Set timeout */
+                msi_invite ( _phone->_msi, _ctype, 30 * 1000 );
                 INFO("Calling!");
             }
 
