@@ -548,6 +548,30 @@ int discard_packet(Lossless_UDP *ludp, int connection_id)
 }
 
 #define MAX_SYNC_RATE 20
+#define MIN_SLOTS 16
+/* returns the number of packet slots left in the sendbuffer.
+ * return 0 if failure.
+ */
+uint32_t num_free_sendqueue_slots(Lossless_UDP *ludp, int connection_id)
+{
+    if ((unsigned int)connection_id >= ludp->connections.len)
+        return 0;
+
+    Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
+    uint32_t max_slots = (connection->data_rate / MAX_SYNC_RATE) * 1.5;
+
+    if (max_slots > MAX_QUEUE_NUM)
+        max_slots = MAX_QUEUE_NUM;
+
+    if (max_slots < MIN_SLOTS)
+        max_slots = MIN_SLOTS;
+
+    if (sendqueue(ludp, connection_id) > max_slots)
+        return 0;
+
+    return max_slots - sendqueue(ludp, connection_id);
+}
+
 
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
@@ -565,9 +589,10 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
     if (length > MAX_DATA_SIZE || length == 0 || sendqueue(ludp, connection_id) >= MAX_QUEUE_NUM)
         return 0;
 
+    if (num_free_sendqueue_slots(ludp, connection_id) == 0)
+        return 0;
+
     if (sendqueue(ludp, connection_id) >= connection->sendbuffer_length && connection->sendbuffer_length != 0) {
-        if (sendqueue(ludp, connection_id) > connection->data_rate/MAX_SYNC_RATE)
-            return 0;
         uint32_t newlen = connection->sendbuffer_length = resize_queue(&connection->sendbuffer, connection->sendbuffer_length,
                           connection->sendbuffer_length * 2, connection->successful_sent, connection->sendbuff_packetnum);
 
@@ -577,7 +602,6 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
         connection->sendbuffer_length = newlen;
         return write_packet(ludp, connection_id, data, length);
     }
-
 
     uint32_t index = connection->sendbuff_packetnum % connection->sendbuffer_length;
     memcpy(connection->sendbuffer[index].data, data, length);

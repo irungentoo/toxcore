@@ -198,6 +198,17 @@ int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
     return -1;
 }
 
+/* returns the number of packet slots left in the sendbuffer.
+ * return 0 if failure.
+ */
+uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
+{
+    if (crypt_connection_id_not_valid(c, crypt_connection_id))
+        return 0;
+
+    return num_free_sendqueue_slots(c->lossless_udp, c->crypto_connections[crypt_connection_id].number);
+}
+
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
@@ -579,9 +590,6 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
      * }
      */
 
-    /* Connection is accepted. */
-    confirm_connection(c->lossless_udp, connection_id);
-
     if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1
             || c->crypto_connections == NULL)
         return -1;
@@ -721,6 +729,8 @@ static void receive_crypto(Net_Crypto *c)
                                        c->crypto_connections[i].shared_key);
                     c->crypto_connections[i].status = CONN_ESTABLISHED;
                     c->crypto_connections[i].timeout = ~0;
+                    /* Connection is accepted. */
+                    confirm_connection(c->lossless_udp, c->crypto_connections[i].number);
                 } else {
                     /* This should not happen, timeout the connection if it does. */
                     c->crypto_connections[i].status = CONN_TIMED_OUT;

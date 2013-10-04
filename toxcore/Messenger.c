@@ -1091,7 +1091,7 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
     }
 }
 
-
+#define MIN_SLOTS_FREE 4
 /* Send file data.
  *
  *  return 1 on success
@@ -1106,6 +1106,10 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
         return 0;
 
     if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_TRANSFERRING)
+        return 0;
+
+    /* Prevent file sending from filling up the entire buffer preventing messages from being sent. */
+    if (crypto_num_free_sendqueue_slots(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id) < MIN_SLOTS_FREE)
         return 0;
 
     uint8_t packet[MAX_DATA_SIZE];

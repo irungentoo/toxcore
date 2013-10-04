@@ -121,6 +121,11 @@ void new_nonce(uint8_t *nonce);
  */
 int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data);
 
+/* returns the number of packet slots left in the sendbuffer.
+ * return 0 if failure.
+ */
+uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id);
+
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
