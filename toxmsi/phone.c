@@ -509,7 +509,7 @@ void* phone_poll ( void* _p_phone )
         case 'c':
         {
             if ( _phone->_msi->_call ){
-                INFO("Already in a call(%d)...", _phone->_msi->_call);
+                INFO("Already in a call");
                 break;
             }
 

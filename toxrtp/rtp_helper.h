@@ -29,7 +29,7 @@
 #include <inttypes.h>
 
 /* Current time, unix format */
-#define _time ((uint32_t)time(NULL))
+/*#define _time ((uint32_t)time(NULL))*/
 
 #define SUCCESS 0
 #define FAILURE -1
@@ -65,6 +65,13 @@ size_t t_strfind ( const uint8_t* _str, const uint8_t* _substr );
 
 /* string alloc and copy ( ! must be null terminated ) */
 uint8_t* t_strallcpy ( const uint8_t* _source );
-#define unused(x) (void)(x);
+
+/* Get current time in milliseconds */
+uint64_t t_time();
+
 
 #endif /* _RTP__HELPER_H_ */
+
+
+
+

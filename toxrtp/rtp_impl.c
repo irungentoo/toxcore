@@ -103,12 +103,7 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     _retu->_sequence_number = t_random ( _MAX_SEQU_NUM );
     _retu->_last_sequence_number = _retu->_sequence_number; /* Do not touch this variable */
 
-    _retu->_initial_time = _time; /* In seconds */
-    assert(_retu->_initial_time);
-    _retu->_time_elapsed = 0; /* In seconds */
-
-    _retu->_ext_header = NULL; /* When needed allocate */
-    _retu->_initial_time = _time;    /* In seconds */
+    _retu->_initial_time = t_time();    /* In seconds */
     assert(_retu->_initial_time);
     _retu->_time_elapsed = 0;        /* In seconds */
 
@@ -214,8 +209,8 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     rtp_header_add_setting_payload ( _retu, _session->_payload_type );
 
     _retu->_sequence_number = _session->_sequence_number;
-    _session->_time_elapsed = _time - _session->_initial_time;
-    _retu->_timestamp = _time;
+    _session->_time_elapsed = t_time() - _session->_initial_time;
+    _retu->_timestamp = t_time();
     _retu->_ssrc = _session->_ssrc;
 
     if ( _session->_cc > 0 ) {
