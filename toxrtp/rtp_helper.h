@@ -67,7 +67,7 @@ size_t t_strfind ( const uint8_t* _str, const uint8_t* _substr );
 uint8_t* t_strallcpy ( const uint8_t* _source );
 
 /* Get current time in milliseconds */
-uint32_t t_time();
+uint64_t t_time();
 
 
 #endif /* _RTP__HELPER_H_ */

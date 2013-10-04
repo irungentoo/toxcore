@@ -195,10 +195,11 @@ int gettimeofday(struct timeval *tv, struct timezone *tz)
 #endif /* WIN */
 
 
-uint32_t t_time()
+uint64_t t_time()
 {
     struct timeval _tv;
     gettimeofday(&_tv, NULL);
-    /* a lil hack for shitzels */
-    return - (0x7fffff - (_tv.tv_sec * 1000 + _tv.tv_usec / 1000));
+    uint64_t _retu_usec = _tv.tv_sec % 1000000; /* get them 6 digits an leave space for 3 more dammit */
+    _retu_usec = _retu_usec * 1000 + (_tv.tv_usec / 1000 );
+    return _retu_usec;
 }
