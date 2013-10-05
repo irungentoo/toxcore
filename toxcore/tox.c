@@ -537,19 +537,18 @@ void tox_do(Tox *tox)
 }
 
 /*
- * Waits for something to happen on the socket for up to milliseconds milliseconds
- * *** Function MUSTN'T poll. ***
- * The function mustn't modify anything at all, so it can be called completely
- * asynchronously without any worry.
- *
- *  returns 0 if the timeout was reached
- *  returns 1 if there is socket activity (i.e. tox_do() should be called)
- *
+ * functions to avoid excessive polling
  */
-int tox_wait(Tox *tox, uint16_t milliseconds)
+int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr)
 {
     Messenger *m = tox;
-    waitMessenger(m, milliseconds);
+    waitprepareMessenger(m, data, lenptr);
+}
+
+int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds)
+{
+    Messenger *m = tox;
+    waitexecuteMessenger(m, data, len, milliseconds);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */

@@ -25,6 +25,10 @@
 #include "config.h"
 #endif
 
+#ifndef WIN32
+#include <errno.h>
+#endif
+
 #include "network.h"
 #include "util.h"
 
@@ -300,36 +304,53 @@ void networking_poll(Networking_Core *net)
 }
 
 /*
- * Waits for something to happen on the socket for up to milliseconds milliseconds
- * *** Function MUSTN'T poll. ***
- * The function mustn't modify anything at all, so it can be called completely
- * asynchronously without any worry.
- *
- *  returns 0 if the timeout was reached
- *  returns 1 if there is socket activity (i.e. tox_do() should be called)
- *
+ * function to avoid excessive polling
  */
-int networking_wait(Networking_Core *net, uint32_t sendqueue_len, uint16_t milliseconds)
+typedef struct
 {
-    sock_t sock = net->sock;
+	sock_t   sock;
+	uint32_t sendqueue_length;
+} select_info;
+
+int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
+{
+	if ((data == NULL) || (*lenptr < sizeof(select_info)))
+	{
+		*lenptr = sizeof(select_info);
+		return 0;
+	}
+
+	*lenptr = sizeof(select_info);
+	select_info *s = (select_info *)data;
+	s->sock = net->sock;
+	s->sendqueue_length = sendqueue_length;
+
+	return 1;
+}
+
+int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
+{
     /* WIN32: supported since Win2K, but might need some adjustements */
     /* UNIX: this should work for any remotely Unix'ish system */
-    int nfds = 1 + sock;
+
+	select_info *s = (select_info *)data;
+
+	int nfds = 1 + s->sock;
 
     /* the FD_ZERO calls might be superfluous */
     fd_set readfds;
     FD_ZERO(&readfds);
-    FD_SET(sock, &readfds);
+    FD_SET(s->sock, &readfds);
 
     fd_set writefds;
     FD_ZERO(&writefds);
     /* add only if we have packets queued, signals that a write won't block */
-    if (sendqueue_len > 0)
-        FD_SET(sock, &writefds);
+    if (s->sendqueue_length > 0)
+        FD_SET(s->sock, &writefds);
 
     fd_set exceptfds;
     FD_ZERO(&exceptfds);
-    FD_SET(sock, &exceptfds);
+    FD_SET(s->sock, &exceptfds);
 
     struct timeval timeout;
     timeout.tv_sec = 0;
@@ -342,8 +363,8 @@ int networking_wait(Networking_Core *net, uint32_t sendqueue_len, uint16_t milli
     int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
 #ifdef LOGGING
     sprintf(logbuffer, "select(%d): %d (%d, %s) - %d %d %d\n", milliseconds, res, errno,
-                       strerror(errno), FD_ISSET(sock, &readfds), FD_ISSET(sock, &writefds),
-                       FD_ISSET(sock, &exceptfds));
+                       strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
+                       FD_ISSET(s->sock, &exceptfds));
     loglog(logbuffer);
 #endif
 
@@ -972,26 +993,27 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 };
 
 #ifdef LOGGING
+static char errmsg_ok[3] = "OK";
 static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
 {
+	uint16_t port = ntohs(ip_port->port);
+	uint32_t data[2];
+	data[0] = buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
+	data[1] = buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
     if (res < 0)
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%d: %s) | %04x%04x\n",
-                 buffer[0], message, buflen < 999 ? buflen : 999, 'E',
-                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), errno,
-                 strerror(errno), buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 (buflen > 7) ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+    {
+        int written = snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x\n",
+                 buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
+                 ip_ntoa(&ip_port->ip), port, errno, strerror(errno), data[0], data[1]);
+    }
     else if ((res > 0) && ((size_t)res <= buflen))
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%d: %s) | %04x%04x\n",
-                 buffer[0], message, res < 999 ? res : 999, (size_t)res < buflen ? '<' : '=',
-                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
-                 "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 (buflen > 7) ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x\n",
+                 buffer[0], message, (res < 999 ? (size_t)res : 999), ((size_t)res < buflen ? '<' : '='),
+                 ip_ntoa(&ip_port->ip), port, 0, errmsg_ok, data[0], data[1]);
     else /* empty or overwrite */
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %u%c%u %s:%u (%d: %s) | %04x%04x\n",
-                 buffer[0], message, res, !res ? '!' : '>', buflen,
-                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
-                 "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 (buflen > 7) ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x\n",
+                 buffer[0], message, (size_t)res, (!res ? '!' : '>'), buflen,
+                 ip_ntoa(&ip_port->ip), port, 0, errmsg_ok, data[0], data[1]);
 
     logbuffer[sizeof(logbuffer) - 1] = 0;
     loglog(logbuffer);

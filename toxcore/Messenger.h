@@ -456,16 +456,10 @@ void cleanupMessenger(Messenger *M);
 void doMessenger(Messenger *m);
 
 /*
- * Waits for something to happen on the socket for up to milliseconds milliseconds
- * *** Function MUSTN'T poll. ***
- * The function mustn't modify anything at all, so it can be called completely
- * asynchronously without any worry.
- *
- *  returns 0 if the timeout was reached
- *  returns 1 if there is socket activity (i.e. tox_do() should be called)
- *
+ * functions to avoid excessive polling
  */
-int waitMessenger(Messenger *m, uint16_t milliseconds);
+int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr);
+int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds);
 
 /* SAVING AND LOADING FUNCTIONS: */
 

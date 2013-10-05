@@ -265,16 +265,10 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 void networking_poll(Networking_Core *net);
 
 /*
- * Waits for something to happen on the socket for up to milliseconds milliseconds
- * *** Function MUSTN'T poll. ***
- * The function mustn't modify anything at all, so it can be called completely
- * asynchronously without any worry.
- *
- *  returns 0 if the timeout was reached
- *  returns 1 if there is socket activity (i.e. tox_do() should be called)
- *
+ * functions to avoid excessive polling
  */
-int networking_wait(Networking_Core *net, uint32_t sendqueue_len, uint16_t milliseconds);
+int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr);
+int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds);
 
 /* Initialize networking.
  * bind to ip and port.
