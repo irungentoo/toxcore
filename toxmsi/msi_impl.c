@@ -1,6 +1,7 @@
 #define _BSD_SOURCE
 
 #include "msi_impl.h"
+#include "msi_event.h"
 #include "msi_message.h"
 #include "../toxrtp/rtp_helper.h"
 #include "../toxcore/network.h" /* Dem random bytes */
@@ -17,6 +18,7 @@ typedef enum {
 } msi_error_t; /* Error codes */
 
 
+/* ******************* */
 /* --------- GLOBAL FUNCTIONS USED BY THIS FILE --------- */
 
 /* CALLBACKS */
@@ -245,6 +247,12 @@ msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agen
     _session->_key = 0;
     _session->_call = NULL;
 
+    _session->_frequ = 10000; /* default value? */
+    _session->_call_timeout = 30000; /* default value? */
+
+    /* Use the same frequency */
+    _session->_event_handler = init_event_poll(_session->_frequ);
+
     pthread_mutex_init(&_session->_mutex, NULL);
 
     return _session;
@@ -257,6 +265,7 @@ int msi_terminate_session ( msi_session_t* _session )
 
     int _status = 0;
 
+    terminate_event_poll(_session->_event_handler);
     free ( _session );
     /* TODO: terminate the rest of the session */
 
@@ -265,7 +274,7 @@ int msi_terminate_session ( msi_session_t* _session )
     return _status;
 }
 
-msi_call_t* msi_init_call (msi_session_t* _session, int _peers)
+msi_call_t* msi_init_call (msi_session_t* _session, int _peers, uint32_t _timeoutms)
 {
     if ( !_peers )
         return NULL;
@@ -276,6 +285,7 @@ msi_call_t* msi_init_call (msi_session_t* _session, int _peers)
 
     _call->_id = randombytes_random();
     _call->_key = _session->_key;
+    _call->_timeoutst = t_time() + _timeoutms;
 
     return _call;
 }
@@ -315,7 +325,7 @@ int msi_handle_recv_invite ( msi_session_t* _session, msi_msg_t* _msg )
     if ( !_session )
         return 0;
 
-    _session->_call = msi_init_call(_session, 1);
+    _session->_call = msi_init_call(_session, 1, _session->_call_timeout);
     _session->_call->_state = call_starting;
     flush_peer_type(_session, _msg, 0);
 
@@ -327,7 +337,9 @@ int msi_handle_recv_invite ( msi_session_t* _session, msi_msg_t* _msg )
     if ( !msi_recv_invite_callback )
         return 0;
 
-    return ( *msi_recv_invite_callback ) (_session);
+    throw_event(_session->_event_handler, msi_recv_invite_callback, _session);
+
+    return 1;
 }
 int msi_handle_recv_start ( msi_session_t* _session, msi_msg_t* _msg )
 {
@@ -338,7 +350,9 @@ int msi_handle_recv_start ( msi_session_t* _session, msi_msg_t* _msg )
 
     flush_peer_type(_session, _msg, 0);
 
-    return ( *msi_start_call_callback ) (_session);
+    throw_event(_session->_event_handler, msi_start_call_callback, _session);
+
+    return 1;
 }
 int msi_handle_recv_reject ( msi_session_t* _session, msi_msg_t* _msg )
 {
@@ -349,14 +363,18 @@ int msi_handle_recv_reject ( msi_session_t* _session, msi_msg_t* _msg )
     msi_send_msg ( _session, _msg_end );
     msi_free_msg ( _msg_end );
 
-    return ( *msi_reject_call_callback ) (_session);
+    throw_event(_session->_event_handler, msi_reject_call_callback, _session);
+
+    return 1;
 }
 int msi_handle_recv_cancel ( msi_session_t* _session, msi_msg_t* _msg )
 {
     if ( !_session->_call || !msi_cancel_call_callback )
         return 0;
 
-    return ( *msi_cancel_call_callback ) (_session);
+    throw_event(_session->_event_handler, msi_cancel_call_callback, _session);
+
+    return 1;
 }
 int msi_handle_recv_end ( msi_session_t* _session, msi_msg_t* _msg )
 {
@@ -369,7 +387,9 @@ int msi_handle_recv_end ( msi_session_t* _session, msi_msg_t* _msg )
 
     msi_terminate_call(_session);
 
-    return ( *msi_end_call_callback ) (_session);
+    throw_event(_session->_event_handler, msi_end_call_callback, _session);
+
+    return 1;
 }
 /*--------*/
 
@@ -379,7 +399,9 @@ int msi_handle_recv_ringing ( msi_session_t* _session )
     if ( !_session->_call || !msi_ringing_callback )
         return 0;
 
-    return ( *msi_ringing_callback ) (_session);
+    throw_event(_session->_event_handler, msi_ringing_callback, _session);
+
+    return 1;
 }
 int msi_handle_recv_starting ( msi_session_t* _session, msi_msg_t* _msg )
 {
@@ -394,7 +416,9 @@ int msi_handle_recv_starting ( msi_session_t* _session, msi_msg_t* _msg )
 
     flush_peer_type(_session, _msg, 0);
 
-    return ( *msi_starting_callback ) (_session);
+    throw_event(_session->_event_handler, msi_starting_callback, _session);
+
+    return 1;
 }
 int msi_handle_recv_ending ( msi_session_t* _session )
 {
@@ -406,7 +430,9 @@ int msi_handle_recv_ending ( msi_session_t* _session )
     if ( !msi_ending_callback )
         return 0;
 
-    return ( *msi_ending_callback ) (_session);
+    throw_event(_session->_event_handler, msi_ending_callback, _session);
+
+    return 1;
 }
 int msi_handle_recv_error ( msi_session_t* _session, msi_msg_t* _msg )
 {
@@ -416,7 +442,9 @@ int msi_handle_recv_error ( msi_session_t* _session, msi_msg_t* _msg )
     if ( !_session->_call || !msi_error_callback )
         return 0;
 
-    return (*msi_error_callback) (_session);
+    throw_event(_session->_event_handler, msi_error_callback, _session);
+
+    return 1;
 }
 /* ------------------ */
 
@@ -433,14 +461,14 @@ int msi_handle_recv_error ( msi_session_t* _session, msi_msg_t* _msg )
 /*------------------------*/
 /*------------------------*/
 
-int msi_invite ( msi_session_t* _session, call_type _call_type )
+int msi_invite ( msi_session_t* _session, call_type _call_type, uint32_t _timeoutms )
 {
     if ( !msi_send_message_callback )
         return 0;
 
     msi_msg_t* _msg_invite = msi_msg_new ( TYPE_REQUEST, stringify_request(_invite) );
 
-    _session->_call = msi_init_call(_session, 1); /* Just one for now */
+    _session->_call = msi_init_call(_session, 1, _timeoutms); /* Just one for now */
     _session->_call->_type_local = _call_type;
     /* Do whatever with message */
 
@@ -571,6 +599,7 @@ void* msi_poll_stack ( void* _session_p )
     msi_session_t* _session = ( msi_session_t* ) _session_p;
     msi_msg_t*     _msg = NULL;
 
+    uint32_t* _frequ =  &_session->_frequ;
     while ( _session ) { /* main loop */
 
         /* At this point it's already parsed */
@@ -620,7 +649,7 @@ void* msi_poll_stack ( void* _session_p )
             msi_free_msg(_msg);
 
         }
-        usleep ( 10000 ); /* 10 ms is pretty fine */
+        usleep ( *_frequ );
     }
 
     return NULL;
@@ -641,13 +670,15 @@ void* msi_poll_stack ( void* _session_p )
 
 /* Easy way to start the poll */
 
-pthread_t msi_start_main_loop ( msi_session_t* _session )
+pthread_t msi_start_main_loop ( msi_session_t* _session, uint32_t _frequms )
 {
     int _status;
     pthread_t _thread_id;
 
     if ( !_session )
         return 0;
+
+    _session->_frequ = _frequms * 1000;
 
     _status = pthread_create ( &_thread_id, NULL, msi_poll_stack, _session );
 

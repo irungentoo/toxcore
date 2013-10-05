@@ -13,6 +13,8 @@ libtoxmsi_la_SOURCES =  ../toxmsi/msi_impl.h \
                         ../toxmsi/msi_message.c \
                         ../toxmsi/msi_header.h \
                         ../toxmsi/msi_header.c \
+                        ../toxmsi/msi_event.h \
+                        ../toxmsi/msi_event.c \
                                           ../toxrtp/tests/test_helper.h \
                                           ../toxrtp/tests/test_helper.c
 

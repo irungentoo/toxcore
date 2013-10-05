@@ -32,9 +32,9 @@
 #include "../toxcore/tox.h"
 #include <pthread.h>
 
+#define MCBTYPE void
 #define MCBARGS void* _arg
-#define MCBTYPE int
-#define MCALLBACK MCBTYPE (*callback) (MCBARGS)
+#define MCALLBACK MCBTYPE(*callback)(void* _arg)
 
 #define MSI_PACKET 69
 
@@ -64,6 +64,7 @@ typedef struct msi_call_s {     /* Call info structure */
     uint32_t    _id;            /* Random value identifying the call */
     crypto_key  _key;           /* What is the type again? */
     uint16_t    _participants;  /* Number of participants */
+    uint32_t    _timeoutst;     /* Time of the timeout for some action to end; 0 if infinite */
 
 } msi_call_t;
 
@@ -86,11 +87,14 @@ typedef struct msi_session_s {
 
     const uint8_t* _user_agent;
 
-    void* _agent_handler; /* Pointer to an object that is handling msi */
-    void* _core_handler;  /* Pointer to networking core or to anything that
-                           * should handle interaction with core/networking
-                           */
+    void* _agent_handler;   /* Pointer to an object that is handling msi */
+    void* _core_handler;    /* Pointer to networking core or to anything that
+                             * should handle interaction with core/networking
+                             */
+    void* _event_handler;/* Pointer to an object which handles the events */
 
+    uint32_t _frequ;
+    uint32_t _call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
 } msi_session_t;
 
 
@@ -98,7 +102,7 @@ typedef struct msi_session_s {
 msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agent );
 int msi_terminate_session ( msi_session_t* _session );
 
-pthread_t msi_start_main_loop ( msi_session_t* _session );
+pthread_t msi_start_main_loop ( msi_session_t* _session, uint32_t _frequms );
 
 /* Registering callbacks */
 
@@ -123,14 +127,14 @@ void msi_register_callback_recv_error ( MCALLBACK );
 /*static int msi_handlepacket ( tox_IP_Port ip_port, uint8_t* _data, uint16_t _lenght ); */
 
 /* functions describing the usage of msi */
-int msi_invite ( msi_session_t* _session, call_type _call_type );
+int msi_invite ( msi_session_t* _session, call_type _call_type, uint32_t _timeoutms );
 int msi_hangup ( msi_session_t* _session );
 
 int msi_answer ( msi_session_t* _session, call_type _call_type );
 int msi_cancel ( msi_session_t* _session );
 int msi_reject ( msi_session_t* _session );
 
-int msi_send_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
+int  msi_send_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
 void msi_store_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
 
 #endif /* _MSI_IMPL_H_ */
