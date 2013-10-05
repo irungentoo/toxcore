@@ -220,6 +220,9 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
     if (realloc_friendlist(m, m->numfriends + 1) != 0)
         return FAERR_NOMEM;
 
+    if (memcmp(client_id, m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+        return FAERR_OWNKEY;
+
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
     uint32_t i;
