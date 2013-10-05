@@ -1044,8 +1044,13 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
     if (friend_not_valid(m, friendnumber))
         return 0;
 
-    if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
-        return 0;
+    if (send_receive == 1) {
+        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
+            return 0;
+    } else {
+        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE)
+            return 0;
+    }
 
     if (send_receive > 1)
         return 0;
