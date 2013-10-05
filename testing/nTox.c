@@ -662,7 +662,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
                          uint16_t filename_length, void *userdata)
 {
     char msg[512];
-    sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, filesize);
+    sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
     new_lines(msg);
 
     if (tox_file_sendcontrol(m, friendnumber, 1, filenumber, 0, 0, 0)) {
@@ -701,7 +701,9 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
         new_lines(msg);
     }
 
-    fwrite(data, length, 1, pFile);
+    if (fwrite(data, length, 1, pFile) != 1)
+        new_lines("Error writing to file");
+
     fclose(pFile);
 }
 

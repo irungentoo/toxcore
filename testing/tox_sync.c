@@ -184,7 +184,8 @@ void file_print_control(Tox *m, int friendnumber, uint8_t recieve_send, uint8_t 
 void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
 {
     if (file_recv[filenumber].file != 0)
-        fwrite(data, length, 1, file_recv[filenumber].file);
+        if (fwrite(data, length, 1, file_recv[filenumber].file) != 1)
+            printf("Error writing data\n");
 }
 
 void print_online(Tox *tox, int friendnumber, uint8_t status, void *userdata)
