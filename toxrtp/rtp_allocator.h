@@ -25,7 +25,7 @@
 #ifndef _RTP__ALLOCATOR_H_
 #define _RTP__ALLOCATOR_H_
 
-#include <malloc.h>
+#include <stdlib.h>
 
 #define ALLOCATOR_VAR(VAR, TYPE, NUM) TYPE* VAR = malloc(sizeof(TYPE) * NUM);
 #define ALLOCATOR(VAR, TYPE, NUM) VAR = malloc(sizeof(TYPE) * NUM);

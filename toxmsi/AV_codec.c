@@ -45,6 +45,10 @@
 #include "phone.h"
 #include "AV_codec.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 
 int display_received_frame(codec_state *cs, AVFrame *r_video_frame)
 {

@@ -28,6 +28,10 @@
 #include "rtp_impl.h"
 #include <stdio.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #ifdef _USE_ERRORS
 #include "rtp_error_id.h"
 #endif /* _USE_ERRORS */

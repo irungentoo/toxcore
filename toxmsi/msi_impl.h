@@ -91,7 +91,7 @@ typedef struct msi_session_s {
     void* _core_handler;    /* Pointer to networking core or to anything that
                              * should handle interaction with core/networking
                              */
-    void* _event_handler;/* Pointer to an object which handles the events */
+    void* _event_handler;   /* Pointer to an object which handles the events */
 
     uint32_t _frequ;
     uint32_t _call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
