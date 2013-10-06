@@ -32,6 +32,9 @@
 
 #include "Lossless_UDP.h"
 
+#define LUDP_CONNECTION_OUTBOUND 0
+#define LUDP_CONNECTION_INBOUND_HANDLED 1
+#define LUDP_CONNECTION_INBOUND 2
 
 /* Functions */
 
@@ -215,7 +218,7 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
     *connection = (Connection) {
         .ip_port            = ip_port,
          .status             = LUDP_HANDSHAKE_SENDING,
-          .inbound            = 0,
+          .inbound            = LUDP_CONNECTION_OUTBOUND,
            .handshake_id1      = handshake_id1,
             .sent_packetnum     = handshake_id1,
              .sendbuff_packetnum = handshake_id1,
@@ -276,7 +279,7 @@ static int new_inconnection(Lossless_UDP *ludp, IP_Port ip_port)
     *connection = (Connection) {
         .ip_port = ip_port,
          .status = LUDP_NOT_CONFIRMED,
-          .inbound = 2,
+          .inbound = LUDP_CONNECTION_INBOUND,
            .SYNC_rate = SYNC_RATE,
             .data_rate = DATA_SYNC_RATE,
              .last_recvSYNC = current_time(),
@@ -309,8 +312,8 @@ static int new_inconnection(Lossless_UDP *ludp, IP_Port ip_port)
 int incoming_connection(Lossless_UDP *ludp, uint32_t numpackets)
 {
     tox_array_for_each(&ludp->connections, Connection, tmp) {
-        if (tmp->inbound == 2 && tmp->recv_packetnum - tmp->successful_read >= numpackets) {
-            tmp->inbound = 1;
+        if (tmp->inbound == LUDP_CONNECTION_INBOUND && tmp->recv_packetnum - tmp->successful_read >= numpackets) {
+            tmp->inbound = LUDP_CONNECTION_INBOUND_HANDLED;
             return tmp_i;
         }
     }
@@ -431,7 +434,7 @@ int confirm_connection(Lossless_UDP *ludp, int connection_id)
 
     connection->killat = ~0;
     connection->confirmed = 1;
-    connection->inbound = 0;
+    connection->inbound = LUDP_CONNECTION_OUTBOUND;
     return 0;
 }
 
