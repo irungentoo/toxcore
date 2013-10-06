@@ -10,7 +10,11 @@ AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_MACRO_DIR([m4])
 
+EXTRA_LT_LDFLAGS=
+
 LIBTOXCORE_LT_VERSION=0:0:0
+LIBTOXMSI_LT_VERSION=0:0:0
+LIBTOXRTP_LT_VERSION=0:0:0
 dnl
 dnl            current:revision:age
 dnl
@@ -19,7 +23,13 @@ dnl revision: increment if source code has changed, set to zero if current is
 dnl           incremented
 dnl age:      increment if interfaces have been added, set to zero if
 dnl           interfaces have been removed or changed
-EXTRA_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
+TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
+TOXMSI_LT_LDFLAGS="-version-info $LIBTOXMSI_LT_VERSION"
+TOXRTP_LT_LDFLAGS="-version-info $LIBTOXMSI_LT_VERSION"
+
+AC_SUBST(TOXCORE_LT_LDFLAGS)
+AC_SUBST(TOXMSI_LT_LDFLAGS)
+AC_SUBST(TOXRTP_LT_LDFLAGS)
 
 if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
@@ -28,6 +38,7 @@ fi
 BUILD_DHT_BOOTSTRAP_DAEMON="yes"
 BUILD_NTOX="yes"
 BUILD_TESTS="yes"
+BUILD_AV="yes"
 
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
@@ -41,6 +52,17 @@ AC_ARG_ENABLE([nacl],
             WANT_NACL="no"
         elif test "x$enableval" = "xyes"; then
             WANT_NACL="yes"
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([av],
+    [AC_HELP_STRING([--disable-av], [build AV support libraries (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_AV="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_AV="yes"
         fi
     ]
 )
@@ -302,6 +324,15 @@ AC_TYPE_UINT8_T
 AC_FUNC_FORK
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
 
+if test "x$BUILD_AV" = "xyes"; then
+    AX_PTHREAD(
+        [],
+        [
+            AC_MSG_WARN([pthread library not found on your system, disabling AV support])
+        ]
+    )
+fi
+
 # pkg-config based tests
 PKG_PROG_PKG_CONFIG
 
@@ -463,6 +494,7 @@ AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" =
 
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_NTOX, test "x$BUILD_NTOX" = "xyes")
+AM_CONDITIONAL(BUILD_AV, test "x$BUILD_AV" = "xyes")
 
 AC_CONFIG_FILES([Makefile
                  build/Makefile

@@ -47,6 +47,12 @@ unsigned char *hex_string_to_bin(char hex_string[])
 }
 
 
+<<<<<<< HEAD
+
+
+
+
+=======
 int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)
 {
     int argvoffset = 0, argi;
@@ -79,3 +85,4 @@ int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)
 
     return argvoffset;
 };
+>>>>>>> upstream/master

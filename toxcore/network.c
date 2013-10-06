@@ -208,13 +208,11 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
     return res;
 }
 
-/* Function to receive data
- *  ip and port of sender is put into ip_port.
- *  Packet data is put into data.
- *  Packet length is put into length.
- *  Dump all empty packets.
- */
-static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+/* Function to receive data, ip and port of sender is put into ip_port
+   the packet data into data
+   the packet length into length.
+   dump all empty packets. */
+int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     struct sockaddr_storage addr;
 #ifdef WIN32
@@ -557,6 +555,7 @@ void kill_networking(Networking_Core *net)
     free(net);
     return;
 }
+
 
 /* ip_equal
  *  compares two IPAny structures
