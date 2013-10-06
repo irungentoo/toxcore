@@ -52,15 +52,21 @@ typedef struct {
     uint16_t size;
 } Data;
 
+#define LUDP_NO_CONNECTION 0
+#define LUDP_HANDSHAKE_SENDING 1
+#define LUDP_NOT_CONFIRMED 2
+#define LUDP_ESTABLISHED 3
+#define LUDP_TIMED_OUT 4
+
 typedef struct {
     IP_Port ip_port;
 
     /*
-     *  return 0 if connection is dead.
-     *  return 1 if attempting handshake.
-     *  return 2 if handshake is done (we start sending SYNC packets).
-     *  return 3 if we are sending SYNC packets and can send data.
-     *  return 4 if the connection has timed out.
+     *  return LUDP_NO_CONNECTION if connection is dead.
+     *  return LUDP_HANDSHAKE_SENDING if attempting handshake.
+     *  return LUDP_NOT_CONFIRMED if handshake is done (we start sending SYNC packets).
+     *  return LUDP_ESTABLISHED if we are sending SYNC packets and can send data.
+     *  return LUDP_TIMED_OUT if the connection has timed out.
      */
     uint8_t status;
 
@@ -238,11 +244,11 @@ uint32_t recvqueue(Lossless_UDP *ludp, int connection_id);
 
 /* Check if connection is connected:
  *
- *  return 0 not.
- *  return 1 if attempting handshake.
- *  return 2 if handshake is done.
- *  return 3 if fully connected.
- *  return 4 if timed out and wating to be killed.
+ *  return LUDP_NO_CONNECTION if not.
+ *  return LUDP_HANDSHAKE_SENDING if attempting handshake.
+ *  return LUDP_NOT_CONFIRMED if handshake is done.
+ *  return LUDP_ESTABLISHED if fully connected.
+ *  return LUDP_TIMED_OUT if timed out and wating to be killed.
  */
 int is_connected(Lossless_UDP *ludp, int connection_id);
 
