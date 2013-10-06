@@ -1,9 +1,14 @@
 #include "msi_message.h"
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../toxrtp/rtp_helper.h"
 #include <assert.h>
 #include <stdlib.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 
 #define ALLOCATE_HEADER(_header_type, _var, _m_header_value) \
 _var = malloc( sizeof(_header_type) ); \

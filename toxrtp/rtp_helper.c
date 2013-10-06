@@ -33,6 +33,11 @@
 #include <windows.h>
 #endif /* WIN */
 
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 static int _seed = -1; /* Not initiated */
 
 int t_setipport ( const char* _ip, unsigned short _port, void* _dest )

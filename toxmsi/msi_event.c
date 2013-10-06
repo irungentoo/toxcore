@@ -3,6 +3,10 @@
 #include "../toxrtp/rtp_helper.h"
 #include <assert.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 void* event_poll( void* _event_handler_p )
 {
     event_handler_t* _event_handler = _event_handler_p;

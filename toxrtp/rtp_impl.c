@@ -33,6 +33,10 @@
 
 /* Some defines */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #define PAYLOAD_ID_VALUE_OPUS 1
 #define PAYLOAD_ID_VALUE_VP8  2
 
