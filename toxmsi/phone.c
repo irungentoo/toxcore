@@ -317,6 +317,20 @@ MCBTYPE callback_recv_starting ( MCBARGS )
 }
 MCBTYPE callback_recv_ending ( MCBARGS )
 {
+    msi_session_t* _session = _arg;
+    phone_t * _phone = _session->_agent_handler;
+    _phone->cs->quit=1;
+    if(_phone->cs->encode_video_thread)
+	pthread_join(_phone->cs->encode_video_thread,NULL);
+    if(_phone->cs->encode_audio_thread)
+	pthread_join(_phone->cs->encode_audio_thread,NULL);
+    if(_phone->cs->decode_audio_thread)
+	pthread_join(_phone->cs->decode_audio_thread,NULL);
+    if(_phone->cs->decode_video_thread)
+	pthread_join(_phone->cs->decode_video_thread,NULL);    
+    SDL_Quit();
+    printf("all A/V threads successfully shut down\n");
+    
     INFO ( "Call ended!" );
 }
 
