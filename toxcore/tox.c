@@ -625,13 +625,13 @@ void tox_do(Tox *tox)
 int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr)
 {
     Messenger *m = tox;
-    waitprepareMessenger(m, data, lenptr);
+    return waitprepareMessenger(m, data, lenptr);
 }
 
 int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds)
 {
     Messenger *m = tox;
-    waitexecuteMessenger(m, data, len, milliseconds);
+    return waitexecuteMessenger(m, data, len, milliseconds);
 }
 
 void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len)
