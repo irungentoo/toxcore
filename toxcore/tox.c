@@ -481,7 +481,90 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
 
 
 
-/******************END OF GROUP CHAT FUNCTIONS************************/
+/****************FILE SENDING FUNCTIONS*****************/
+
+
+/* Set the callback for file send requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ */
+void tox_callback_file_sendrequest(Tox *tox, void (*function)(Messenger *tox, int, uint8_t, uint64_t, uint8_t *,
+                                   uint16_t,
+                                   void *), void *userdata)
+{
+    Messenger *m = tox;
+    callback_file_sendrequest(m, function, userdata);
+}
+/* Set the callback for file control requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void tox_callback_file_control(Tox *tox, void (*function)(Messenger *tox, int, uint8_t, uint8_t, uint8_t, uint8_t *,
+                               uint16_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    callback_file_control(m, function, userdata);
+}
+/* Set the callback for file data.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void tox_callback_file_data(Tox *tox, void (*function)(Messenger *tox, int, uint8_t, uint8_t *, uint16_t length,
+                            void *),
+                            void *userdata)
+
+{
+    Messenger *m = tox;
+    callback_file_data(m, function, userdata);
+}
+/* Send a file send request.
+ * Maximum filename length is 255 bytes.
+ *  return file number on success
+ *  return -1 on failure
+ */
+int tox_new_filesender(Tox *tox, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length)
+{
+    Messenger *m = tox;
+    return new_filesender(m, friendnumber, filesize, filename, filename_length);
+}
+/* Send a file control request.
+ * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int tox_file_sendcontrol(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
+                         uint8_t *data, uint16_t length)
+{
+    Messenger *m = tox;
+    return file_control(m, friendnumber, send_receive, filenumber, message_id, data, length);
+}
+/* Send file data.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length)
+{
+    Messenger *m = tox;
+    return file_data(m, friendnumber, filenumber, data, length);
+}
+/* Give the number of bytes left to be sent/received.
+ *
+ *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
+ *
+ *  return number of bytes remaining to be sent/received on success
+ *  return 0 on failure
+ */
+uint64_t tox_file_dataremaining(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t send_receive)
+{
+    Messenger *m = tox;
+    return file_dataremaining(m, friendnumber, filenumber, send_receive);
+}
+
+/***************END OF FILE SENDING FUNCTIONS******************/
 
 /* Use these functions to bootstrap the client.
  * Sends a get nodes request to the given node with ip port and public_key.

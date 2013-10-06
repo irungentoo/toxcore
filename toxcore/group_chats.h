@@ -27,10 +27,6 @@
 
 #include "net_crypto.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define MAX_NICK_BYTES 128
 
 typedef struct {
@@ -130,8 +126,6 @@ int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, ui
 
 void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id);
 void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id);
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

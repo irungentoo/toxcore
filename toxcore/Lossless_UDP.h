@@ -217,6 +217,11 @@ int read_packet_silent(Lossless_UDP *ludp, int connection_id, uint8_t *data);
  */
 int discard_packet(Lossless_UDP *ludp, int connection_id);
 
+/* returns the number of packet slots left in the sendbuffer.
+ * return 0 if failure.
+ */
+uint32_t num_free_sendqueue_slots(Lossless_UDP *ludp, int connection_id);
+
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */

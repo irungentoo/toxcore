@@ -429,8 +429,96 @@ int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_
 int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t length);
 
 
+/****************FILE SENDING FUNCTIONS*****************/
+/* NOTE: This how to will be updated.
+ *
+ * HOW TO SEND FILES CORRECTLY:
+ * 1. Use tox_new_filesender(...) to create a new file sender.
+ * 2. Wait for the callback set with tox_callback_file_control(...) to be called with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
+ * 3. Send the data with tox_file_senddata(...)
+ * 4. When sending is done, send a tox_file_sendcontrol(...) with send_receive = 0 and message_id = TOX_FILECONTROL_FINISHED
+ *
+ * HOW TO RECEIVE FILES CORRECTLY:
+ * 1. wait for the callback set with tox_callback_file_sendrequest(...)
+ * 2. accept or refuse the connection with tox_file_sendcontrol(...) with send_receive = 1 and message_id = TOX_FILECONTROL_ACCEPT or TOX_FILECONTROL_KILL
+ * 3. save all the data received with the callback set with tox_callback_file_data(...) to a file.
+ * 4. when the callback set with tox_callback_file_control(...) is called with receive_send == 0 and control_type == TOX_FILECONTROL_FINISHED
+ * the file is done transferring.
+ *
+ * tox_file_dataremaining(...) can be used to know how many bytes are left to send/receive.
+ *
+ * More to come...
+ */
 
-/******************END OF GROUP CHAT FUNCTIONS************************/
+enum {
+    TOX_FILECONTROL_ACCEPT,
+    TOX_FILECONTROL_PAUSE,
+    TOX_FILECONTROL_KILL,
+    TOX_FILECONTROL_FINISHED
+};
+/* Set the callback for file send requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ */
+void tox_callback_file_sendrequest(Tox *tox, void (*function)(Tox *m, int, uint8_t, uint64_t, uint8_t *, uint16_t,
+                                   void *), void *userdata);
+
+/* Set the callback for file control requests.
+ *
+ *  receive_send is 1 if the message is for a slot on which we are currently sending a file and 0 if the message
+ *  is for a slot on which we are receiving the file
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t receive_send, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void tox_callback_file_control(Tox *tox, void (*function)(Tox *m, int, uint8_t, uint8_t, uint8_t, uint8_t *,
+                               uint16_t, void *), void *userdata);
+
+/* Set the callback for file data.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void tox_callback_file_data(Tox *tox, void (*function)(Tox *m, int, uint8_t, uint8_t *, uint16_t length, void *),
+                            void *userdata);
+
+
+/* Send a file send request.
+ * Maximum filename length is 255 bytes.
+ *  return file number on success
+ *  return -1 on failure
+ */
+int tox_new_filesender(Tox *tox, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length);
+
+/* Send a file control request.
+ *
+ * send_receive is 0 if we want the control packet to target a file we are currently sending,
+ * 1 if it targets a file we are currently receiving.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int tox_file_sendcontrol(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
+                         uint8_t *data, uint16_t length);
+
+/* Send file data.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length);
+
+/* Give the number of bytes left to be sent/received.
+ *
+ *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
+ *
+ *  return number of bytes remaining to be sent/received on success
+ *  return 0 on failure
+ */
+uint64_t tox_file_dataremaining(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t send_receive);
+
+/***************END OF FILE SENDING FUNCTIONS******************/
+
 
 /*
  * Use these two functions to bootstrap the client.
