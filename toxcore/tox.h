@@ -491,6 +491,7 @@ void tox_do(Tox *tox);
  *  returns 1 on success
  *  returns 0 on failure (length is insufficient)
  *
+ *
  * tox_wait_execute(): function can be called asynchronously
  * Waits for something to happen on the socket for up to milliseconds milliseconds.
  * *** Function MUSTN'T poll. ***
@@ -501,9 +502,17 @@ void tox_do(Tox *tox);
  *  returns  0 if the timeout was reached
  *  returns -1 if data was NULL or len too short
  *
+ *
+ * tox_wait_cleanup(): function should be called under lock
+ * Stores results from tox_wait_execute().
+ *
+ * data[]/len shall be the exact same as given to tox_wait_execute()
+ *
  */
 int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr);
 int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds);
+void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len);
+
 
 /* SAVING AND LOADING FUNCTIONS: */
 

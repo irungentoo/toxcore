@@ -551,6 +551,12 @@ int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t millisecond
     waitexecuteMessenger(m, data, len, milliseconds);
 }
 
+void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len)
+{
+    Messenger *m = tox;
+    waitcleanupMessenger(m, data, len);
+}
+
 /* SAVING AND LOADING FUNCTIONS: */
 
 /*  return size of the messenger data (for saving). */

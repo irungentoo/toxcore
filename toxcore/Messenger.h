@@ -460,6 +460,7 @@ void doMessenger(Messenger *m);
  */
 int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr);
 int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds);
+void waitcleanupMessenger(Messenger *m, uint8_t *data, uint16_t len);
 
 /* SAVING AND LOADING FUNCTIONS: */
 

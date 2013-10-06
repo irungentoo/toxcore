@@ -209,6 +209,12 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
 #ifdef LOGGING
     loglogdata("O=>", data, length, &ip_port, res);
 #endif
+
+    if (res == length)
+        net->send_fail_eagain = 0;
+    else if ((res < 0) && (errno == EAGAIN))
+        net->send_fail_eagain = current_time();
+
     return res;
 }
 
@@ -308,24 +314,28 @@ void networking_poll(Networking_Core *net)
  */
 typedef struct
 {
-	sock_t   sock;
-	uint32_t sendqueue_length;
+    sock_t   sock;
+    uint32_t sendqueue_length;
+    uint16_t send_fail_reset;
+    uint64_t send_fail_eagain;
 } select_info;
 
 int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
 {
-	if ((data == NULL) || (*lenptr < sizeof(select_info)))
-	{
-		*lenptr = sizeof(select_info);
-		return 0;
-	}
+    if ((data == NULL) || (*lenptr < sizeof(select_info)))
+    {
+        *lenptr = sizeof(select_info);
+        return 0;
+    }
 
-	*lenptr = sizeof(select_info);
-	select_info *s = (select_info *)data;
-	s->sock = net->sock;
-	s->sendqueue_length = sendqueue_length;
+    *lenptr = sizeof(select_info);
+    select_info *s = (select_info *)data;
+    s->sock = net->sock;
+    s->sendqueue_length = sendqueue_length;
+    s->send_fail_reset = 0;
+    s->send_fail_eagain = net->send_fail_eagain;
 
-	return 1;
+    return 1;
 }
 
 int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
@@ -333,9 +343,23 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     /* WIN32: supported since Win2K, but might need some adjustements */
     /* UNIX: this should work for any remotely Unix'ish system */
 
-	select_info *s = (select_info *)data;
+    select_info *s = (select_info *)data;
 
-	int nfds = 1 + s->sock;
+    /* add only if we had a failed write */
+    int writefds_add = 0;
+    if (s->send_fail_eagain != 0)
+    {
+        // current_time(): microseconds
+        uint64_t now = current_time();
+
+        /* s->sendqueue_length: might be used to guess how long we keep checking */
+        /* for now, threshold is hardcoded to 500ms, too long for a really really
+         * fast link, but too short for a sloooooow link... */
+        if (now - s->send_fail_eagain < 500000)
+            writefds_add = 1;
+    }
+
+    int nfds = 1 + s->sock;
 
     /* the FD_ZERO calls might be superfluous */
     fd_set readfds;
@@ -344,8 +368,7 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
 
     fd_set writefds;
     FD_ZERO(&writefds);
-    /* add only if we have packets queued, signals that a write won't block */
-    if (s->sendqueue_length > 0)
+    if (writefds_add)
         FD_SET(s->sock, &writefds);
 
     fd_set exceptfds;
@@ -368,8 +391,18 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     loglog(logbuffer);
 #endif
 
+    if (FD_ISSET(s->sock, &writefds))
+        s->send_fail_reset = 1;
+
     return res > 0 ? 1 : 0;
 };
+
+void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len)
+{
+    select_info *s = (select_info *)data;
+    if (s->send_fail_reset)
+        net->send_fail_eagain = 0;
+}
 
 uint8_t at_startup_ran = 0;
 static int at_startup(void)
@@ -996,10 +1029,10 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 static char errmsg_ok[3] = "OK";
 static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
 {
-	uint16_t port = ntohs(ip_port->port);
-	uint32_t data[2];
-	data[0] = buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
-	data[1] = buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
+    uint16_t port = ntohs(ip_port->port);
+    uint32_t data[2];
+    data[0] = buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
+    data[1] = buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
     if (res < 0)
     {
         int written = snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x\n",
