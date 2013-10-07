@@ -118,7 +118,7 @@ void loginit(uint16_t port)
 
     if (logbufferpredata) {
         if (logfile)
-            fprintf(logfile, logbufferpredata);
+            fprintf(logfile, "%s", logbufferpredata);
 
         free(logbufferpredata);
         logbufferpredata = NULL;
@@ -128,8 +128,7 @@ void loginit(uint16_t port)
 void loglog(char *text)
 {
     if (logfile) {
-        fprintf(logfile, "%4u ", (uint32_t)(now() - starttime));
-        fprintf(logfile, text);
+        fprintf(logfile, "%4u %s", (uint32_t)(now() - starttime), text);
         fflush(logfile);
 
         return;
@@ -158,8 +157,7 @@ void loglog(char *text)
         logbufferprelen = lennew;
     }
 
-    size_t written;
-    sprintf(logbufferprehead, "%4u %s%n", (uint32_t)(now() - starttime), text, &written);
+    int written = sprintf(logbufferprehead, "%4u %s", (uint32_t)(now() - starttime), text);
     logbufferprehead += written;
 }
 
@@ -171,3 +169,4 @@ void logexit()
     }
 };
 #endif
+

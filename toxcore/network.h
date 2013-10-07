@@ -244,6 +244,7 @@ typedef struct {
     sa_family_t family;
     uint16_t port;
     sock_t sock;
+    uint64_t send_fail_eagain;
 } Networking_Core;
 
 /*  return current time in milleseconds since the epoch. */
@@ -263,6 +264,13 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 
 /* Call this several times a second. */
 void networking_poll(Networking_Core *net);
+
+/*
+ * functions to avoid excessive polling
+ */
+int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr);
+int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds);
+void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len);
 
 /* Initialize networking.
  * bind to ip and port.

@@ -253,7 +253,7 @@ START_TEST(test_dht_state_saveloadsave)
         char msg[128];
         size_t offset = res >> 4;
         uint8_t *ptr = buffer + extra + offset;
-        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
         ck_assert_msg(res == 0, msg);
     }
@@ -295,7 +295,7 @@ START_TEST(test_messenger_state_saveloadsave)
         char msg[128];
         size_t offset = res >> 4;
         uint8_t *ptr = buffer + extra + offset;
-        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
         ck_assert_msg(res == 0, msg);
     }

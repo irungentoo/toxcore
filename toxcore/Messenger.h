@@ -557,6 +557,13 @@ void cleanupMessenger(Messenger *M);
 /* The main loop that needs to be run at least 20 times per second. */
 void doMessenger(Messenger *m);
 
+/*
+ * functions to avoid excessive polling
+ */
+int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr);
+int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds);
+void waitcleanupMessenger(Messenger *m, uint8_t *data, uint16_t len);
+
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* return size of the messenger data (for saving). */
@@ -589,3 +596,4 @@ uint32_t copy_friendlist(Messenger *m, int *out_list, uint32_t list_size);
 int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length);
 
 #endif
+

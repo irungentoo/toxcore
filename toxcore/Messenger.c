@@ -26,6 +26,7 @@
 #endif
 
 #include "Messenger.h"
+#include "network.h"
 #include "util.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -1753,6 +1754,24 @@ void doMessenger(Messenger *m)
     }
 
 #endif
+}
+
+/*
+ * functions to avoid excessive polling
+ */
+int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr)
+{
+    return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data, lenptr);
+}
+
+int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds)
+{
+    return networking_wait_execute(data, len, milliseconds);
+};
+
+void waitcleanupMessenger(Messenger *m, uint8_t *data, uint16_t len)
+{
+    networking_wait_cleanup(m->net, data, len);
 }
 
 /*  return size of the messenger data (for saving) */
