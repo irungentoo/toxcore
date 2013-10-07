@@ -23,20 +23,20 @@
  *   along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "rtp_impl.h"
-#include "rtp_message.h"
-#include "rtp_helper.h"
-#include <assert.h>
-#include "rtp_allocator.h"
-#include "../toxcore/util.h"
-#include "../toxcore/network.h"
-
-/* Some defines */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "toxrtp.h"
+#include "toxrtp_message.h"
+#include "toxrtp_helper.h"
+#include <assert.h>
+#include "toxrtp_allocator.h"
+#include "../toxcore/util.h"
+#include "../toxcore/network.h"
+
+/* Some defines */
 #define PAYLOAD_ID_VALUE_OPUS 1
 #define PAYLOAD_ID_VALUE_VP8  2
 
@@ -44,7 +44,7 @@
 /* End of defines */
 
 #ifdef _USE_ERRORS
-#include "rtp_error_id.h"
+#include "toxrtp_error_id.h"
 #endif /* _USE_ERRORS */
 
 static const uint32_t _payload_table[] = /* PAYLOAD TABLE */

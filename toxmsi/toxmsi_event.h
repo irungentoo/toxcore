@@ -38,6 +38,7 @@ int                 terminate_event_poll    ( event_handler_t* _event_handler );
 
 void                throw_event             ( void* _event_handler, event_t _func, event_arg_t _arg );
 
+/* Not yet ready for use */
 int                 throw_timer_event       ( void* _event_handler, event_t _func, event_arg_t _arg, uint32_t _timeout);
 int                 cancel_timer_event      ( void* _event_handler, int _id );
 

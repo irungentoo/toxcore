@@ -1,4 +1,9 @@
-#define _BSD_SOURCE /* What? */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#define _BSD_SOURCE
 #define _GNU_SOURCE
 
 #define _CT_PHONE
@@ -15,9 +20,6 @@
 #include "AV_codec.h"
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
 
 void INFO (const char* _format, ...)
 {

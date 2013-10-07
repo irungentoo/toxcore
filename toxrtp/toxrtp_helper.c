@@ -23,8 +23,12 @@
 */
 
 
-#include "rtp_helper.h"
-#include "network.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#include "toxrtp_helper.h"
 #include "../toxcore/network.h"
 
 #include <arpa/inet.h> /* Fixes implicit function warning. */
@@ -34,10 +38,6 @@
 #include <windows.h>
 #endif /* WIN */
 
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
 
 static int _seed = -1; /* Not initiated */
 

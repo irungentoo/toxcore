@@ -23,6 +23,10 @@
 
 /*----------------------------------------------------------------------------------*/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <stdio.h>
 #include <math.h>
 #include <libavcodec/avcodec.h>
@@ -38,17 +42,12 @@
 #include <pthread.h>
 #include <opus/opus.h>
 
-#include "msi_impl.h"
-#include "msi_message.h"
-#include "rtp_message.h"
+#include "toxmsi.h"
+#include "toxmsi_message.h"
+#include "toxrtp_message.h"
 #include "toxrtp/tests/test_helper.h"
 #include "phone.h"
 #include "AV_codec.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
-
 
 int display_received_frame(codec_state *cs, AVFrame *r_video_frame)
 {

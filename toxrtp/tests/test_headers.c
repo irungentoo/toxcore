@@ -23,15 +23,15 @@
  */
 
 #include "test_helper.h"
-#include "../rtp_impl.h"
-#include "../rtp_message.h"
+#include "../toxrtp.h"
+#include "../toxrtp_message.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <utime.h>
 #include <assert.h>
-#include "../rtp_error_id.h"
+#include "../toxrtp_error_id.h"
 
 #define _CT_HEADERS_
 

@@ -1,7 +1,7 @@
 #define _BSD_SOURCE
 
-#include "../rtp_impl.h"
-#include "../rtp_message.h"
+#include "../toxrtp.h"
+#include "../toxrtp_message.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -5,7 +5,7 @@
 #include "../toxcore/network.h"
 #include "../toxcore/tox.h"
 
-#include "msi_header.h"
+#include "toxmsi_header.h"
 
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2

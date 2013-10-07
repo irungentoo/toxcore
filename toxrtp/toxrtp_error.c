@@ -1,14 +1,15 @@
-#include "rtp_error.h"
-#include "rtp_helper.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#include "toxrtp_error.h"
+#include "toxrtp_helper.h"
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
 
 typedef struct rtp_error_s {
     char* _message;

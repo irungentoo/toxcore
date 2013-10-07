@@ -1,9 +1,10 @@
 #ifndef _PHONE_H_
 #define _PHONE_H_
 
-#include "msi_impl.h"
-#include "msi_message.h"
-#include "../toxrtp/rtp_message.h"
+#include "toxmsi.h"
+#include "../toxrtp/toxrtp.h"
+#include "toxmsi_message.h"
+#include "../toxrtp/toxrtp_message.h"
 #include "../toxrtp/tests/test_helper.h"
 #include <assert.h>
 #include <pthread.h>

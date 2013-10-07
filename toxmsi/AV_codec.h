@@ -36,7 +36,7 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <AL/alut.h>
-#include "rtp_impl.h"
+#include "toxrtp.h"
 #include "tox.h"
 
 #include <SDL.h>
