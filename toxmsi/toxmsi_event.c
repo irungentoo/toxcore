@@ -3,6 +3,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include <stdlib.h>
+
 #include "toxmsi_event.h"
 
 #include "../toxrtp/toxrtp_helper.h"

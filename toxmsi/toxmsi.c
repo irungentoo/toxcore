@@ -284,7 +284,13 @@ msi_call_t* msi_init_call ( msi_session_t* _session, int _peers, uint32_t _timeo
     _call->_type_peer = malloc ( sizeof ( call_type ) * _peers );
     _call->_participants = _peers;
 
+#ifndef VANILLA_NACL
     _call->_id = randombytes_random();
+#else
+    uint32_t randnum;
+    randombytes((uint8_t *)&randnum , sizeof(randnum));
+    _call->_id = randnum;
+#endif
     _call->_key = _session->_key;
     _call->_timeoutst = t_time() + _timeoutms;
 

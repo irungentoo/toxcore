@@ -336,14 +336,9 @@ int init_send_audio(codec_state *cs)
 	}
     }
     printf("enter capture device number: \n");
-    
-    /* pig disgusting hack: */
-    uint8_t dev;
-    char c[10];
-    gets(c);
-    dev=c[0]-48;
-    
-    cs->audio_capture_device = alcCaptureOpenDevice(device_names[dev], AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
+    char dev[2];
+    fgets(dev, sizeof(dev), stdin);
+    cs->audio_capture_device = alcCaptureOpenDevice(device_names[dev[0]-48], AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE*4);
     if (alcGetError(cs->audio_capture_device) != AL_NO_ERROR) {
 	printf("could not start capture device! %d\n",alcGetError(cs->audio_capture_device));
         return 0;

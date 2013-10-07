@@ -1,4 +1,3 @@
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -485,7 +484,7 @@ void* phone_poll ( void* _p_phone )
 
     int _status = SUCCESS;
 
-    char* _line;
+    char _line[100];
     size_t _len;
 
 
@@ -504,8 +503,15 @@ void* phone_poll ( void* _p_phone )
 
     while ( 1 )
     {
-        getline(&_line, &_len, stdin);
-
+        fgets(_line, sizeof(_line), stdin);
+	int i;
+        for (i = 0; i < 100; i++) {
+            if (_line[i] == '\n') {
+                _line[i] = '\0';
+            }
+        }
+        _len = strlen(_line);
+	
         if ( !_len ){
             printf(" >> "); fflush(stdout);
             continue;
