@@ -3,20 +3,20 @@ if BUILD_AV
 lib_LTLIBRARIES += libtoxrtp.la
 
 libtoxrtp_la_include_HEADERS = \
-                        ../toxrtp/rtp_impl.h
+                        ../toxrtp/toxrtp.h
 
 libtoxrtp_la_includedir = $(includedir)/tox
 
-libtoxrtp_la_SOURCES = ../toxrtp/rtp_allocator.h \
-                                          ../toxrtp/rtp_error.h \
-                                          ../toxrtp/rtp_error.c \
-                                          ../toxrtp/rtp_error_id.h \
-                                          ../toxrtp/rtp_helper.h \
-                                          ../toxrtp/rtp_helper.c \
-                                          ../toxrtp/rtp_impl.h \
-                                          ../toxrtp/rtp_impl.c \
-                                          ../toxrtp/rtp_message.h \
-                                          ../toxrtp/rtp_message.c \
+libtoxrtp_la_SOURCES = ../toxrtp/toxrtp_allocator.h \
+                                          ../toxrtp/toxrtp_error.h \
+                                          ../toxrtp/toxrtp_error.c \
+                                          ../toxrtp/toxrtp_error_id.h \
+                                          ../toxrtp/toxrtp_helper.h \
+                                          ../toxrtp/toxrtp_helper.c \
+                                          ../toxrtp/toxrtp_impl.h \
+                                          ../toxrtp/toxrtp_impl.c \
+                                          ../toxrtp/toxrtp_message.h \
+                                          ../toxrtp/toxrtp_message.c \
                                           ../toxcore/network.h \
                                           ../toxcore/network.c \
                                           ../toxcore/util.h \

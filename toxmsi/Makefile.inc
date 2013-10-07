@@ -3,16 +3,16 @@ if BUILD_AV
 lib_LTLIBRARIES += libtoxmsi.la
 
 libtoxmsi_la_include_HEADERS = \
-                        ../toxmsi/msi_impl.h
+                        ../toxmsi/toxmsi.h
 
 libtoxmsi_la_includedir = $(includedir)/tox
 
-libtoxmsi_la_SOURCES =  ../toxmsi/msi_impl.h \
-                        ../toxmsi/msi_impl.c \
-                        ../toxmsi/msi_message.h \
-                        ../toxmsi/msi_message.c \
-                        ../toxmsi/msi_header.h \
-                        ../toxmsi/msi_header.c \
+libtoxmsi_la_SOURCES =  ../toxmsi/toxmsi.h \
+                        ../toxmsi/toxmsi_impl.c \
+                        ../toxmsi/toxmsi_message.h \
+                        ../toxmsi/toxmsi_message.c \
+                        ../toxmsi/toxmsi_header.h \
+                        ../toxmsi/toxmsi_header.c \
                                           ../toxrtp/tests/test_helper.h \
                                           ../toxrtp/tests/test_helper.c
 
