@@ -28,7 +28,6 @@
 #define _MSI_IMPL_H_
 
 #include <inttypes.h>
-#include "../toxrtp/rtp_impl.h"
 #include "../toxcore/tox.h"
 #include <pthread.h>
 

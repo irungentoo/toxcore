@@ -27,7 +27,7 @@
 #define _RTP__MESSAGE_H_
 
 #include "../toxcore/network.h"
-#include "rtp_helper.h"
+#include "toxrtp_helper.h"
 #include "../toxcore/tox.h"
 /* Defines */
 

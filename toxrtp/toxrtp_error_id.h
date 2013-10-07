@@ -1,7 +1,7 @@
 #ifndef _RTP_ERROR_ID_
 #define _RTP_ERROR_ID_
 
-#include "rtp_error.h"
+#include "toxrtp_error.h"
 
 typedef enum error_s {
     RTP_ERROR_PACKET_DROPED = 1,

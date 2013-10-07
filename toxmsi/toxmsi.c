@@ -1,18 +1,19 @@
-#define _BSD_SOURCE
-
-#include "msi_impl.h"
-#include "msi_event.h"
-#include "msi_message.h"
-#include "../toxrtp/rtp_helper.h"
-#include "../toxcore/network.h" /* Dem random bytes */
-
-#include <assert.h>
-#include <unistd.h>
-#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#define _BSD_SOURCE
+
+#include "toxmsi.h"
+#include "toxmsi_event.h"
+#include "toxmsi_message.h"
+#include "../toxrtp/toxrtp_helper.h"
+#include "../toxcore/network.h"
+
+#include <assert.h>
+#include <unistd.h>
+#include <string.h>
 
 #define same(x, y) strcmp((const char*) x, (const char*) y) == 0
 

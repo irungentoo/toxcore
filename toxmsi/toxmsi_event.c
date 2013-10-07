@@ -1,11 +1,12 @@
-#include "msi_event.h"
-
-#include "../toxrtp/rtp_helper.h"
-#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#include "toxmsi_event.h"
+
+#include "../toxrtp/toxrtp_helper.h"
+#include <assert.h>
 
 static int _unique_id = 1;
 

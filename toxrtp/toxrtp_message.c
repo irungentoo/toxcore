@@ -23,17 +23,17 @@
  *
  */
 
-#include "rtp_message.h"
-#include "rtp_allocator.h"
-#include "rtp_impl.h"
-#include <stdio.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "toxrtp_message.h"
+#include "toxrtp_allocator.h"
+#include "toxrtp.h"
+#include <stdio.h>
+
 #ifdef _USE_ERRORS
-#include "rtp_error_id.h"
+#include "toxrtp_error_id.h"
 #endif /* _USE_ERRORS */
 
 #include <assert.h>

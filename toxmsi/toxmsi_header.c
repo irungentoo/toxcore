@@ -1,13 +1,14 @@
-#include "msi_message.h"
-#include <string.h>
-#include "../toxrtp/rtp_helper.h"
-#include "../toxrtp/rtp_allocator.h"
-#include <assert.h>
-#include "../toxcore/Lossless_UDP.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#include "toxmsi_message.h"
+#include <string.h>
+#include "../toxrtp/toxrtp_helper.h"
+#include "../toxrtp/toxrtp_allocator.h"
+#include <assert.h>
+#include "../toxcore/Lossless_UDP.h"
 
 #define ALLOC_ADD_DATA(_tempval, _hdrlist, _fielddef, _msgvar, _alloctype)    \
 _tempval = msi_search_field(_hdrlist, (const uint8_t*)_fielddef);       \
