@@ -138,6 +138,7 @@ int terminate_event_poll(event_handler_t* _handler)
     _handler->_running = 0;
     while (_handler->_running != -1); /* Wait for execution */
 
+    //do this
     clear_events(_handler->_events, &_handler->_events_count);
     clear_events(_handler->_timed_events, &_handler->_timed_events_count);
     pthread_mutex_destroy( &_handler->_mutex );
