@@ -29,22 +29,36 @@ void INFO (const char* _format, ...)
     fflush(stdout);
 }
 
-int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
+int rtp_handlepacket ( void* _object, tox_IP_Port ip_port, uint8_t* data, uint32_t length )
 {
-    if ( !_msg )
-        return FAILURE;
+    phone_t* _phone = _object;
+    rtp_msg_t* _msg;
+    uint8_t _payload_id;
 
-    rtp_store_msg(_session, _msg);
+    if ( _phone->_msi->_call && _phone->_msi->_call->_state == call_active ){
+
+        _msg = rtp_msg_parse ( NULL, data + 1, length - 1 ); /* ignore marker byte */
+
+        if ( !_msg )
+            return 0;
+
+        _payload_id = rtp_header_get_setting_payload_type(_msg->_header);
+
+        if ( _payload_id == _PAYLOAD_OPUS && _phone->_rtp_audio )
+            rtp_store_msg(_phone->_rtp_audio, _msg);
+        else if ( _payload_id == _PAYLOAD_VP8 && _phone->_rtp_video )
+            rtp_store_msg(_phone->_rtp_video, _msg);
+        else rtp_free_msg( NULL, _msg);
+    }
 
     return SUCCESS;
 }
-int msi_handlepacket ( msi_session_t* _session, tox_IP_Port ip_port, uint8_t* data, uint32_t length )
+int msi_handlepacket ( void* _object, tox_IP_Port ip_port, uint8_t* data, uint32_t length )
 {
+    msi_session_t* _session = _object;
     msi_msg_t* _msg;
 
-    /*printf("Got: \n%s\n", data);*/
-
-    _msg = msi_parse_msg ( data );
+    _msg = msi_parse_msg ( data + 1 ); /* ignore marker byte */
 
     if ( _msg ) {
         /* my current solution for "hole punching" */
@@ -62,62 +76,17 @@ int msi_handlepacket ( msi_session_t* _session, tox_IP_Port ip_port, uint8_t* da
 void* phone_receivepacket ( void* _phone_p )
 {
     phone_t* _phone = _phone_p;
-    rtp_msg_t* _msg;
 
-    uint32_t  _bytes;
-    tox_IP_Port   _from;
-    uint8_t* _socket_data = malloc(sizeof (uint8_t) * MSI_MAXMSG_SIZE );
-    t_memset(_socket_data, '\0', MSI_MAXMSG_SIZE);
 
-    int _m_socket = _phone->_tox_sock;
+    networking_registerhandler(_phone->_networking, MSI_PACKET, msi_handlepacket, _phone->_msi);
+    networking_registerhandler(_phone->_networking, RTP_PACKET, rtp_handlepacket, _phone);
 
-    uint16_t _payload_id;
-
-    rtp_session_t** _rtp_audio = &_phone->_rtp_audio;
-    rtp_session_t** _rtp_video = &_phone->_rtp_video;
-
-    while ( _phone ) {
-
-        int _status = receivepacket ( _m_socket, &_from, _socket_data, &_bytes );
-
-        if ( _status == FAILURE ) { /* nothing recved */
-            usleep(10000);
-            continue;
-        }
-
-        switch ( _socket_data[0] ) {
-        case MSI_PACKET:
-            msi_handlepacket ( _phone->_msi, _from, _socket_data + 1, _bytes - 1 );
-            break;
-        case RTP_PACKET:
-            if ( _phone->_msi->_call && _phone->_msi->_call->_state == call_active ){
-                /* this will parse a data into rtp_message_t form but
-                 * it will not be registered into a session. For that
-                 * we need to call a rtp_register_msg ()
-                 */
-                _msg = rtp_msg_parse ( NULL, _socket_data + 1, _bytes - 1 );
-
-                if ( !_msg )
-                    break;
-
-                _payload_id = rtp_header_get_setting_payload_type(_msg->_header);
-
-                if ( _payload_id == _PAYLOAD_OPUS && *_rtp_audio )
-                    rtp_handlepacket ( *_rtp_audio, _msg );
-                else if ( _payload_id == _PAYLOAD_VP8 && *_rtp_video )
-                    rtp_handlepacket ( *_rtp_video, _msg );
-                else rtp_free_msg( NULL, _msg);
-            }
-            usleep(1000);
-
-            break;
-        default:
-            break;
-        };
-
-        t_memset(_socket_data, '\0', _bytes);
-
+    /* Now start main networking loop */
+    while ( _phone->_networking ) { /* so not thread safe */
+        networking_poll(_phone->_networking);
+        usleep(10000);
     }
+
     pthread_exit ( NULL );
 }
 
@@ -154,7 +123,7 @@ void* phone_handle_media_transport_poll ( void* _hmtc_args_p )
 
         if ( _audio_msg ) {
             /* Do whatever with msg
-            puts(_audio_msg->_data); */
+            puts(_audio_msg->_data);*/
             rtp_free_msg ( _rtp_audio, _audio_msg );
         }
 
