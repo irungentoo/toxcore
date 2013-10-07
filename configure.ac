@@ -28,6 +28,7 @@ fi
 BUILD_DHT_BOOTSTRAP_DAEMON="yes"
 BUILD_NTOX="yes"
 BUILD_TESTS="yes"
+BUILD_TESTING="yes"
 
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
@@ -35,7 +36,7 @@ LIBCHECK_FOUND="no"
 WANT_NACL="no"
 
 AC_ARG_ENABLE([nacl],
-    [AC_HELP_STRING([--enable-tests], [use nacl instead of libsodium (default: disabled)]) ],
+    [AC_HELP_STRING([--enable-nacl], [use nacl instead of libsodium (default: disabled)]) ],
     [
         if test "x$enableval" = "xno"; then
             WANT_NACL="no"
@@ -74,6 +75,17 @@ AC_ARG_ENABLE([dht-bootstrap-daemon],
             BUILD_DHT_BOOTSTRAP_DAEMON="no"
         elif test "x$enableval" = "xyes"; then
             BUILD_DHT_BOOTSTRAP_DAEMON="yes"
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([testing],
+    [AC_HELP_STRING([--disable-testing], [build various testing tools (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_TESTING="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_TESTING="yes"
         fi
     ]
 )
@@ -460,9 +472,9 @@ if test "x$WIN32" = "xyes"; then
 fi
 
 AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes")
-
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_NTOX, test "x$BUILD_NTOX" = "xyes")
+AM_CONDITIONAL(BUILD_TESTING, test "x$BUILD_TESTING" = "xyes")
 
 AC_CONFIG_FILES([Makefile
                  build/Makefile

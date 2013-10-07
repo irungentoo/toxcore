@@ -1,4 +1,6 @@
-noinst_PROGRAMS += DHT_bootstrap
+if BUILD_DHT_BOOTSTRAP_DAEMON
+
+bin_PROGRAMS += DHT_bootstrap
 
 DHT_bootstrap_SOURCES = ../other/DHT_bootstrap.c \
                         ../toxcore/DHT.h \
@@ -14,6 +16,8 @@ DHT_bootstrap_LDADD =   $(LIBSODIUM_LDFLAGS) \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
+
+endif
 
 EXTRA_DIST +=           $(top_srcdir)/other/DHTservers \
                         $(top_srcdir)/other/tox.png

@@ -19,6 +19,8 @@ nTox_LDADD =            $(LIBSODIUM_LDFLAGS) \
 endif
 
 
+if BUILD_TESTING
+
 noinst_PROGRAMS +=      DHT_test \
                         Lossless_UDP_testclient \
                         Lossless_UDP_testserver \
@@ -116,3 +118,5 @@ tox_sync_LDADD = \
                         $(WINSOCK2_LIBS)
 
 EXTRA_DIST += 			$(top_srcdir)/testing/misc_tools.c
+
+endif
