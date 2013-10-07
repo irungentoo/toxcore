@@ -34,10 +34,6 @@ int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg )
     if ( !_msg )
         return FAILURE;
 
-    if ( rtp_check_late_message(_session, _msg) < 0 ) {
-        rtp_register_msg(_session, _msg);
-    }
-
     rtp_store_msg(_session, _msg);
 
     return SUCCESS;
