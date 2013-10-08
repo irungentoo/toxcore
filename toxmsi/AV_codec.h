@@ -43,25 +43,25 @@
 #include <opus/opus.h>
 
 /* ffmpeg VP8 codec ID */
-#define VIDEO_CODEC 		AV_CODEC_ID_VP8
+#define VIDEO_CODEC         AV_CODEC_ID_VP8
 
 /* ffmpeg Opus codec ID */
-#define AUDIO_CODEC 		AV_CODEC_ID_OPUS
+#define AUDIO_CODEC         AV_CODEC_ID_OPUS
 
 /* default video bitrate in bytes/s */
-#define VIDEO_BITRATE 	10*1000
+#define VIDEO_BITRATE   10*1000
 
 /* default audio bitrate in bytes/s */
-#define AUDIO_BITRATE	64000
+#define AUDIO_BITRATE   64000
 
 /* audio frame duration in miliseconds */
-#define AUDIO_FRAME_DURATION	20
+#define AUDIO_FRAME_DURATION    20
 
 /* audio sample rate recommended to be 48kHz for Opus */
-#define AUDIO_SAMPLE_RATE	48000
+#define AUDIO_SAMPLE_RATE   48000
 
 /* the amount of samples in one audio frame */
-#define AUDIO_FRAME_SIZE	AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000
+#define AUDIO_FRAME_SIZE    AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000
 
 /* the quit event for SDL */
 #define FF_QUIT_EVENT (SDL_USEREVENT + 2)
@@ -78,17 +78,13 @@
 
 SDL_Surface     *screen;
 
-
-
-typedef struct
-{
+typedef struct {
     SDL_Overlay *bmp;
     int width, height;
 } VideoPicture;
 
 
-typedef struct
-{
+typedef struct {
     uint8_t send_audio;
     uint8_t receive_audio;
     uint8_t send_video;
@@ -100,60 +96,60 @@ typedef struct
     uint8_t support_receive_video;
 
     /* video encoding */
-    AVInputFormat   	*video_input_format;
-    AVFormatContext 	*video_format_ctx;
+    AVInputFormat       *video_input_format;
+    AVFormatContext     *video_format_ctx;
     uint8_t              video_stream;
-    AVCodecContext  	*webcam_decoder_ctx;
-    AVCodec         	*webcam_decoder;
-    AVCodecContext  	*video_encoder_ctx;
-    AVCodec         	*video_encoder;
-    
+    AVCodecContext      *webcam_decoder_ctx;
+    AVCodec             *webcam_decoder;
+    AVCodecContext      *video_encoder_ctx;
+    AVCodec             *video_encoder;
+
     /* video decoding */
-    AVCodecContext  	*video_decoder_ctx;
-    AVCodec         	*video_decoder;
-    
+    AVCodecContext      *video_decoder_ctx;
+    AVCodec             *video_decoder;
+
     /* audio encoding */
-    ALCdevice 		*audio_capture_device;
-    OpusEncoder 	*audio_encoder;
-    int 		audio_bitrate;
+    ALCdevice       *audio_capture_device;
+    OpusEncoder     *audio_encoder;
+    int         audio_bitrate;
 
     /* audio decoding */
-    OpusDecoder 	*audio_decoder;
-    
+    OpusDecoder     *audio_decoder;
+
     uint8_t req_video_refresh;
 
     /* context for converting image format to something SDL can use*/
-    struct SwsContext 	*sws_SDL_r_ctx;
+    struct SwsContext   *sws_SDL_r_ctx;
 
     /* context for converting webcam image format to something the video encoder can use */
-    struct SwsContext 	*sws_ctx;
+    struct SwsContext   *sws_ctx;
 
     /* rendered video picture, ready for display */
-    VideoPicture	video_picture;
+    VideoPicture    video_picture;
 
-    rtp_session_t* _rtp_video;
-    rtp_session_t* _rtp_audio;
+    rtp_session_t *_rtp_video;
+    rtp_session_t *_rtp_audio;
     int socket;
-    Networking_Core* _networking;
+    Networking_Core *_networking;
 
     pthread_t encode_audio_thread;
     pthread_t encode_video_thread;
-    
+
     pthread_t decode_audio_thread;
     pthread_t decode_video_thread;
-    
+
     pthread_mutex_t rtp_msg_mutex_lock;
     pthread_mutex_t avcodec_mutex_lock;
-    
+
     uint8_t             quit;
-    SDL_Event       	SDL_event;
-    
-    msi_session_t* _msi;
+    SDL_Event           SDL_event;
+
+    msi_session_t *_msi;
     uint32_t _frame_rate;
     uint16_t _send_port, _recv_port;
     int _tox_sock;
     //pthread_id _medialoop_id;
-    
+
 } codec_state;
 
 int display_received_frame(codec_state *cs, AVFrame *r_video_frame);
@@ -166,7 +162,7 @@ int video_encoder_refresh(codec_state *cs, int bps);
 void *encode_video_thread(void *arg);
 void *encode_audio_thread(void *arg);
 int video_decoder_refresh(codec_state *cs, int width, int height);
-int handle_rtp_video_packet(codec_state *cs,rtp_msg_t* r_msg);
+int handle_rtp_video_packet(codec_state *cs, rtp_msg_t *r_msg);
 void *decode_video_thread(void *arg);
 void *decode_audio_thread(void *arg);
 
