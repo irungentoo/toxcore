@@ -1,9 +1,8 @@
-#include "toxmsi_message.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "toxmsi_message.h"
 #include <stdlib.h>
 #include <string.h>
 #include "../toxrtp/toxrtp_helper.h"
