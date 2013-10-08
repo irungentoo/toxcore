@@ -359,7 +359,7 @@ void tox_callback_statusmessage(Tox *tox, void (*function)(Messenger *tox, int, 
 void tox_callback_userstatus(Tox *tox, void (*_function)(Tox *tox, int, TOX_USERSTATUS, void *), void *userdata)
 {
     Messenger *m = tox;
-    typedef void (*function_type)(Messenger *, int, USERSTATUS, void *); 
+    typedef void (*function_type)(Messenger *, int, USERSTATUS, void *);
     function_type function = (function_type)_function;
     m_callback_userstatus(m, function, userdata);
 }
@@ -551,6 +551,17 @@ int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *d
     Messenger *m = tox;
     return file_data(m, friendnumber, filenumber, data, length);
 }
+
+/* Returns the recommended/maximum size of the filedata you send with tox_file_senddata()
+ *
+ *  return size on success
+ *  return 0 on failure (currently will never return 0)
+ */
+int tox_filedata_size(Tox *tox, int friendnumber)
+{
+    return MAX_DATA_SIZE - crypto_box_MACBYTES - 3;
+}
+
 /* Give the number of bytes left to be sent/received.
  *
  *  send_receive is 0 if we want the sending files, 1 if we want the receiving.

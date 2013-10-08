@@ -91,7 +91,8 @@ void send_filesenders(Tox *m)
                                    file_senders[i].piecelength))
                 break;
 
-            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, 1000, file_senders[i].file);
+            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_filedata_size(m, file_senders[i].friendnum),
+                                                file_senders[i].file);
 
             if (file_senders[i].piecelength == 0) {
                 fclose(file_senders[i].file);
@@ -121,7 +122,8 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
         return -1;
 
     file_senders[numfilesenders].file = tempfile;
-    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, 1000,
+    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, tox_filedata_size(m,
+            file_senders[numfilesenders].friendnum),
             file_senders[numfilesenders].file);
     file_senders[numfilesenders].friendnum = friendnum;
     file_senders[numfilesenders].filenumber = filenum;
