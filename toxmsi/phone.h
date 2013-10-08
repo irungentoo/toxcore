@@ -43,8 +43,8 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port);
 int      quitPhone(phone_t* _phone);
 
 /* My recv functions */
-int rtp_handlepacket ( rtp_session_t* _session, rtp_msg_t* _msg );
-int msi_handlepacket ( msi_session_t* _session, tox_IP_Port ip_port, uint8_t* data, uint32_t length );
+int rtp_handlepacket ( void* _object, tox_IP_Port ip_port, uint8_t* data, uint32_t length );
+int msi_handlepacket ( void* _object, tox_IP_Port ip_port, uint8_t* data, uint32_t length );
 
 /* This is basically representation of networking_poll of toxcore */
 void* phone_receivepacket ( void* _phone );

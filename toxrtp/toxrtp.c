@@ -338,6 +338,10 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
 
 int rtp_store_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
 {
+    if ( rtp_check_late_message(_session, _msg) < 0 ) {
+        rtp_register_msg(_session, _msg);
+    }
+
     pthread_mutex_lock(&_session->_mutex);
 
     if ( _session->_last_msg ) {

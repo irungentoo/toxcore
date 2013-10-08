@@ -1,6 +1,10 @@
 #ifndef _MSI_MESSAGE_H_
 #define _MSI_MESSAGE_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <inttypes.h>
 #include "../toxcore/network.h"
 #include "../toxcore/tox.h"

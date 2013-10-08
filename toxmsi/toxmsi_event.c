@@ -9,6 +9,7 @@
 
 #include "../toxrtp/toxrtp_helper.h"
 #include <assert.h>
+#include <stdlib.h>
 
 static int _unique_id = 1;
 
@@ -23,18 +24,43 @@ void clear_events (event_container_t** _event_container, size_t* _counter)
     *_counter = 0;
 }
 
+int pop_id ( event_container_t** _event_container, size_t* _counter, int _id )
+{
+    if ( !*_event_container || !*_counter || !_id )
+        return;
+
+    event_container_t* _it = *_event_container;
+    int i;
+
+    for ( i = *_counter; i > 0 ; -- i ){
+        if ( _it->_id == _id ) { /* Hit! */
+            break;
+        }
+        ++_it;
+    }
+    if ( i ) {
+        for ( ; i > 0; -- i ){ *_it = *(_it + 1); ++_it; }
+        -- (*_counter);
+        *_event_container = realloc(*_event_container, sizeof(event_container_t) * (*_counter)); /* resize */
+        return SUCCESS;
+    }
+
+    return FAILURE;
+}
+
 /* main poll for event execution */
 void* event_poll( void* _event_handler_p )
 {
     event_handler_t* _event_handler = _event_handler_p;
     uint32_t* _frequms = &_event_handler->_frequms;
 
+
     while ( _event_handler->_running )
     {
+        pthread_mutex_lock(&_event_handler->_mutex);
+
         if ( _event_handler->_events ){
             assert(_event_handler->_events_count);
-
-            pthread_mutex_lock(&_event_handler->_mutex);
 
             int i;
             for ( i = 0; i < _event_handler->_events_count; i ++ ){
@@ -42,10 +68,25 @@ void* event_poll( void* _event_handler_p )
 
             }
             clear_events(&_event_handler->_events, &_event_handler->_events_count);
+        }
 
-            pthread_mutex_unlock(&_event_handler->_mutex);
+        if ( _event_handler->_timed_events ){
+            assert(_event_handler->_timed_events_count);
+
+            uint32_t _time = t_time();
+
+            if ( _event_handler->_timed_events[0]._timeout < _time ) {
+                _event_handler->_timed_events[0]._event(_event_handler->_timed_events[0]._event_args);
+            }
+
+            pop_id(&_event_handler->_timed_events,
+                   &_event_handler->_timed_events_count,
+                   _event_handler->_timed_events[0]._id);
 
         }
+
+        pthread_mutex_unlock(&_event_handler->_mutex);
+
         usleep(*_frequms);
     }
 
@@ -110,6 +151,11 @@ int throw_timer_event ( void* _event_handler_p, event_t _func, event_arg_t _arg,
 
     return _event_handler->_timed_events[_counter - 1]._id;
 }
+int cancel_timer_event ( void* _event_handler_p, int _id )
+{
+    event_handler_t* _event_handler = _event_handler_p;
+    return pop_id(&_event_handler->_timed_events, &_event_handler->_timed_events_count, _id);
+}
 
 event_handler_t* init_event_poll (uint32_t _frequms)
 {
@@ -141,9 +187,9 @@ int terminate_event_poll(event_handler_t* _handler)
     while (_handler->_running != -1); /* Wait for execution */
 
     if (_handler->_events)
-        clear_events(_handler->_events, &_handler->_events_count);
+        clear_events(&_handler->_events, &_handler->_events_count);
     if (_handler->_events)
-        clear_events(_handler->_timed_events, &_handler->_timed_events_count);
+        clear_events(&_handler->_timed_events, &_handler->_timed_events_count);
 
     pthread_mutex_destroy( &_handler->_mutex );
 
