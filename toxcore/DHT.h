@@ -26,7 +26,6 @@
 
 #include "net_crypto.h"
 
-
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
 
@@ -45,7 +44,6 @@
 #define MAX_TOPING 16
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
@@ -53,19 +51,22 @@ typedef struct {
     /* Returned by this node. Either our friend or us. */
     IP_Port     ret_ip_port;
     uint64_t    ret_timestamp;
-} Client_data;
+} IPPTsPng;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IPPTsPng    assoc;
+} Client_data_old;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IPPTsPng    assoc4;
+    IPPTsPng    assoc6;
+} Client_data_new;
 
 /*----------------------------------------------------------------------------------*/
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    Client_data client_list[MAX_FRIEND_CLIENTS];
-
-    /* Time at which the last get_nodes request was sent. */
-    uint64_t    lastgetnode;
-
-    /* Symetric NAT hole punching stuff. */
-
     /* 1 if currently hole punching, otherwise 0 */
     uint8_t     hole_punching;
     uint32_t    punching_index;
@@ -73,7 +74,38 @@ typedef struct {
     uint64_t    recvNATping_timestamp;
     uint64_t    NATping_id;
     uint64_t    NATping_timestamp;
-} DHT_Friend;
+} NAT;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    Client_data_old client_list[MAX_FRIEND_CLIENTS];
+
+    /* Time at which the last get_nodes request was sent. */
+    uint64_t    lastgetnode;
+
+    /* Symetric NAT hole punching stuff. */
+    NAT         nat;
+} DHT_Friend_old;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    Client_data_new client_list[MAX_FRIEND_CLIENTS];
+
+    /* Time at which the last get_nodes request was sent. */
+    uint64_t    lastgetnode;
+
+    /* Symetric NAT hole punching stuff. */
+    NAT         nat;
+} DHT_Friend_new;
+
+/* #define CLIENT_ONETOONE_IP */
+#ifdef CLIENT_ONETOONE_IP
+typedef Client_data_old Client_data;
+typedef DHT_Friend_old DHT_Friend;
+#else
+typedef Client_data_new Client_data;
+typedef DHT_Friend_new DHT_Friend;
+#endif
 
 /* this must be kept even if IP_Port is expanded: wire compatibility */
 typedef struct {
@@ -92,22 +124,23 @@ typedef Node46_format Node_format;
 typedef Node4_format Node_format;
 #endif
 
-typedef struct {
-    IP_Port     ip_port;
-    uint64_t    ping_id;
-    uint64_t    timestamp;
-} Pinged;
-
 /*----------------------------------------------------------------------------------*/
+
+typedef struct {
+    IP_Port  ip_port;
+    uint64_t id;
+    uint64_t timestamp;
+} pinged_t;
+
 typedef struct {
     Net_Crypto  *c;
+
     Client_data  close_clientlist[LCLIENT_LIST];
     DHT_Friend  *friends_list;
     uint16_t     num_friends;
-    Pinged       send_nodes[LSEND_NODES_ARRAY];
-    Node_format  toping[MAX_TOPING];
-    uint64_t     last_toping;
     uint64_t     close_lastgetnodes;
+
+    pinged_t     send_nodes[LSEND_NODES_ARRAY];
     void        *ping;
 } DHT;
 /*----------------------------------------------------------------------------------*/
@@ -152,6 +185,14 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id);
  */
 int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
 
+/* Compares client_id1 and client_id2 with client_id.
+ *
+ *  return 0 if both are same distance.
+ *  return 1 if client_id1 is closer.
+ *  return 2 if client_id2 is closer.
+ */
+int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2);
+
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);
 
@@ -176,17 +217,6 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, uint8_t *public_key);
 
-/* Add nodes to the toping list.
- * All nodes in this list are pinged every TIME_TOPING seconds
- * and are then removed from the list.
- * If the list is full the nodes farthest from our client_id are replaced.
- * The purpose of this list is to enable quick integration of new nodes into the
- * network while preventing amplification attacks.
- *
- *  return 0 if node was added.
- *  return -1 if node was not added.
- */
-int add_toping(DHT *dht, uint8_t *client_id, IP_Port ip_port);
 
 /* ROUTING FUNCTIONS */
 

@@ -108,14 +108,17 @@ void loginit(uint16_t port)
         starttime = now();
 
     struct tm *tm = localtime(&starttime);
+
     if (strftime(logbuffer + 32, sizeof(logbuffer) - 32, "%F %T", tm))
         sprintf(logbuffer, "%u-%s.log", ntohs(port), logbuffer + 32);
     else
         sprintf(logbuffer, "%u-%lu.log", ntohs(port), starttime);
+
     logfile = fopen(logbuffer, "w");
+
     if (logbufferpredata) {
         if (logfile)
-            fprintf(logfile, logbufferpredata);
+            fprintf(logfile, "%s", logbufferpredata);
 
         free(logbufferpredata);
         logbufferpredata = NULL;
@@ -125,8 +128,7 @@ void loginit(uint16_t port)
 void loglog(char *text)
 {
     if (logfile) {
-        fprintf(logfile, "%4u ", (uint32_t)(now() - starttime));
-        fprintf(logfile, text);
+        fprintf(logfile, "%4u %s", (uint32_t)(now() - starttime), text);
         fflush(logfile);
 
         return;
@@ -135,6 +137,7 @@ void loglog(char *text)
     /* log messages before file was opened: store */
 
     size_t len = strlen(text);
+
     if (!starttime) {
         starttime = now();
         logbufferprelen = 1024 + len - (len % 1024);
@@ -154,8 +157,7 @@ void loglog(char *text)
         logbufferprelen = lennew;
     }
 
-    size_t written;
-    sprintf(logbufferprehead, "%4u %s%n", (uint32_t)(now() - starttime), text, &written);
+    int written = sprintf(logbufferprehead, "%4u %s", (uint32_t)(now() - starttime), text);
     logbufferprehead += written;
 }
 
@@ -167,3 +169,4 @@ void logexit()
     }
 };
 #endif
+

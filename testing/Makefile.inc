@@ -19,11 +19,14 @@ nTox_LDADD =            $(LIBSODIUM_LDFLAGS) \
 endif
 
 
+if BUILD_TESTING
+
 noinst_PROGRAMS +=      DHT_test \
                         Lossless_UDP_testclient \
                         Lossless_UDP_testserver \
                         Messenger_test \
-                        crypto_speed_test
+                        crypto_speed_test \
+                        tox_sync
 
 DHT_test_SOURCES =      ../testing/DHT_test.c
 
@@ -99,4 +102,21 @@ crypto_speed_test_LDADD = \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
+tox_sync_SOURCES = \
+                        ../testing/tox_sync.c
+
+tox_sync_CFLAGS = \
+                        $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS)
+
+tox_sync_LDADD = \
+                        $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
+                        libtoxcore.la \
+                        $(LIBSODIUM_LIBS) \
+                        $(NACL_LIBS) \
+                        $(WINSOCK2_LIBS)
+
 EXTRA_DIST += 			$(top_srcdir)/testing/misc_tools.c
+
+endif

@@ -25,11 +25,77 @@
 #include "config.h"
 #endif
 
+#ifndef WIN32
+#include <errno.h>
+#endif
+
 #include "network.h"
 #include "util.h"
 
 #ifndef IPV6_V6ONLY
 #define IPV6_V6ONLY 27
+#endif
+
+#ifdef WIN32
+
+static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
+{
+    if (family == AF_INET) {
+        struct sockaddr_in saddr = { 0 };
+        saddr.sin_family = AF_INET;
+        saddr.sin_addr = *(struct in_addr *)addr;
+
+        DWORD len = bufsize;
+
+        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len))
+            return NULL;
+
+        return buf;
+    } else if (family == AF_INET6) {
+        struct sockaddr_in6 saddr = { 0 };
+        saddr.sin6_family = AF_INET6;
+        saddr.sin6_addr = *(struct in6_addr *)addr;
+
+        DWORD len = bufsize;
+
+        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len))
+            return NULL;
+
+        return buf;
+    }
+
+    return NULL;
+}
+
+static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
+{
+    if (family == AF_INET) {
+        struct sockaddr_in saddr = { 0 };
+
+        INT len = sizeof(saddr);
+
+        if (WSAStringToAddress((LPTSTR)addrString, AF_INET, NULL, (LPSOCKADDR)&saddr, &len))
+            return 0;
+
+        *(struct in_addr *)addrbuf = saddr.sin_addr;
+
+        return 1;
+    } else if (family == AF_INET6) {
+        struct sockaddr_in6 saddr = { 0 };
+
+        INT len = sizeof(saddr);
+
+        if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, NULL, (LPSOCKADDR)&saddr, &len))
+            return 0;
+
+        *(struct in6_addr *)addrbuf = saddr.sin6_addr;
+
+        return 1;
+    }
+
+    return 0;
+}
+
 #endif
 
 /*  return current UNIX time in microseconds (us). */
@@ -143,6 +209,12 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
 #ifdef LOGGING
     loglogdata("O=>", data, length, &ip_port, res);
 #endif
+
+    if (res == length)
+        net->send_fail_eagain = 0;
+    else if ((res < 0) && (errno == EAGAIN))
+        net->send_fail_eagain = current_time();
+
     return res;
 }
 
@@ -237,6 +309,100 @@ void networking_poll(Networking_Core *net)
     }
 }
 
+/*
+ * function to avoid excessive polling
+ */
+typedef struct
+{
+    sock_t   sock;
+    uint32_t sendqueue_length;
+    uint16_t send_fail_reset;
+    uint64_t send_fail_eagain;
+} select_info;
+
+int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
+{
+    if ((data == NULL) || (*lenptr < sizeof(select_info)))
+    {
+        *lenptr = sizeof(select_info);
+        return 0;
+    }
+
+    *lenptr = sizeof(select_info);
+    select_info *s = (select_info *)data;
+    s->sock = net->sock;
+    s->sendqueue_length = sendqueue_length;
+    s->send_fail_reset = 0;
+    s->send_fail_eagain = net->send_fail_eagain;
+
+    return 1;
+}
+
+int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
+{
+    /* WIN32: supported since Win2K, but might need some adjustements */
+    /* UNIX: this should work for any remotely Unix'ish system */
+
+    select_info *s = (select_info *)data;
+
+    /* add only if we had a failed write */
+    int writefds_add = 0;
+    if (s->send_fail_eagain != 0)
+    {
+        // current_time(): microseconds
+        uint64_t now = current_time();
+
+        /* s->sendqueue_length: might be used to guess how long we keep checking */
+        /* for now, threshold is hardcoded to 500ms, too long for a really really
+         * fast link, but too short for a sloooooow link... */
+        if (now - s->send_fail_eagain < 500000)
+            writefds_add = 1;
+    }
+
+    int nfds = 1 + s->sock;
+
+    /* the FD_ZERO calls might be superfluous */
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(s->sock, &readfds);
+
+    fd_set writefds;
+    FD_ZERO(&writefds);
+    if (writefds_add)
+        FD_SET(s->sock, &writefds);
+
+    fd_set exceptfds;
+    FD_ZERO(&exceptfds);
+    FD_SET(s->sock, &exceptfds);
+
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = milliseconds * 1000;
+
+#ifdef LOGGING
+    errno = 0;
+#endif
+    /* returns -1 on error, 0 on timeout, the socket on activity */
+    int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
+#ifdef LOGGING
+    sprintf(logbuffer, "select(%d): %d (%d, %s) - %d %d %d\n", milliseconds, res, errno,
+                       strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
+                       FD_ISSET(s->sock, &exceptfds));
+    loglog(logbuffer);
+#endif
+
+    if (FD_ISSET(s->sock, &writefds))
+        s->send_fail_reset = 1;
+
+    return res > 0 ? 1 : 0;
+};
+
+void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len)
+{
+    select_info *s = (select_info *)data;
+    if (s->send_fail_reset)
+        net->send_fail_eagain = 0;
+}
 
 uint8_t at_startup_ran = 0;
 static int at_startup(void)
@@ -386,6 +552,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     {
         char ipv6only = 0;
 #ifdef LOGGING
+        errno = 0;
         int res =
 #endif
             setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
@@ -409,9 +576,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
 #ifdef LOGGING
+        errno = 0;
         res =
 #endif
-            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
+            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
 #ifdef LOGGING
 
         if (res < 0) {
@@ -859,26 +1027,27 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 };
 
 #ifdef LOGGING
+static char errmsg_ok[3] = "OK";
 static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
 {
+    uint16_t port = ntohs(ip_port->port);
+    uint32_t data[2];
+    data[0] = buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
+    data[1] = buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
     if (res < 0)
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
-                 buffer[0], message, buflen < 999 ? buflen : 999, 'E',
-                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), errno,
-                 strerror(errno), buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+    {
+        int written = snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x\n",
+                 buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
+                 ip_ntoa(&ip_port->ip), port, errno, strerror(errno), data[0], data[1]);
+    }
     else if ((res > 0) && ((size_t)res <= buflen))
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x\n",
-                 buffer[0], message, res < 999 ? res : 999, (size_t)res < buflen ? '<' : '=',
-                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
-                 "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x\n",
+                 buffer[0], message, (res < 999 ? (size_t)res : 999), ((size_t)res < buflen ? '<' : '='),
+                 ip_ntoa(&ip_port->ip), port, 0, errmsg_ok, data[0], data[1]);
     else /* empty or overwrite */
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x\n",
-                 buffer[0], message, res, !res ? '!' : '>', buflen,
-                 ip_ntoa(&ip_port->ip), ntohs(ip_port->port), 0,
-                 "OK", buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0,
-                 buflen > 7 ? ntohl(*(uint32_t *)(&buffer[5])) : 0);
+        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x\n",
+                 buffer[0], message, (size_t)res, (!res ? '!' : '>'), buflen,
+                 ip_ntoa(&ip_port->ip), port, 0, errmsg_ok, data[0], data[1]);
 
     logbuffer[sizeof(logbuffer) - 1] = 0;
     loglog(logbuffer);

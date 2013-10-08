@@ -36,6 +36,13 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
+typedef INT sa_family_t;
+#ifndef true
+#define true 1
+#endif
+#ifndef false
+#define false 0
+#endif
 #else
 
 #include <netinet/ip.h>
@@ -133,7 +140,10 @@ typedef enum {
 }
 TOX_USERSTATUS;
 
-typedef void Tox;
+#ifndef __TOX_DEFINED__
+#define __TOX_DEFINED__
+typedef struct Tox Tox;
+#endif
 
 /*  return FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
@@ -214,6 +224,16 @@ uint32_t tox_sendmessage_withid(Tox *tox, int friendnumber, uint32_t theid, uint
  */
 int tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length);
 
+/* Set friendnumber's nickname.
+ * name must be a string of maximum MAX_NAME_LENGTH length.
+ * length must be at least 1 byte.
+ * length is the length of name with the NULL terminator.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int tox_setfriendname(Tox *tox, int friendnumber, uint8_t *name, uint16_t length);
+
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
  * length must be at least 1 byte.
@@ -280,13 +300,17 @@ TOX_USERSTATUS tox_get_selfuserstatus(Tox *tox);
  */
 void tox_set_sends_receipts(Tox *tox, int friendnumber, int yesno);
 
-/* Allocate and return a list of valid friend id's. List must be freed by the
- * caller.
- *
- * retun 0 if success.
- * return -1 if failure.
- */
-int tox_get_friendlist(void *tox, int **out_list, uint32_t *out_list_length);
+/* Return the number of friends in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_friendlist. */
+uint32_t tox_count_friendlist(Tox *tox);
+
+/* Copy a list of valid friend IDs into the array out_list.
+ * If out_list is NULL, returns 0.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+uint32_t tox_copy_friendlist(Tox *tox, int *out_list, uint32_t list_size);
 
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
@@ -405,8 +429,96 @@ int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_
 int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t length);
 
 
+/****************FILE SENDING FUNCTIONS*****************/
+/* NOTE: This how to will be updated.
+ *
+ * HOW TO SEND FILES CORRECTLY:
+ * 1. Use tox_new_filesender(...) to create a new file sender.
+ * 2. Wait for the callback set with tox_callback_file_control(...) to be called with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
+ * 3. Send the data with tox_file_senddata(...)
+ * 4. When sending is done, send a tox_file_sendcontrol(...) with send_receive = 0 and message_id = TOX_FILECONTROL_FINISHED
+ *
+ * HOW TO RECEIVE FILES CORRECTLY:
+ * 1. wait for the callback set with tox_callback_file_sendrequest(...)
+ * 2. accept or refuse the connection with tox_file_sendcontrol(...) with send_receive = 1 and message_id = TOX_FILECONTROL_ACCEPT or TOX_FILECONTROL_KILL
+ * 3. save all the data received with the callback set with tox_callback_file_data(...) to a file.
+ * 4. when the callback set with tox_callback_file_control(...) is called with receive_send == 0 and control_type == TOX_FILECONTROL_FINISHED
+ * the file is done transferring.
+ *
+ * tox_file_dataremaining(...) can be used to know how many bytes are left to send/receive.
+ *
+ * More to come...
+ */
 
-/******************END OF GROUP CHAT FUNCTIONS************************/
+enum {
+    TOX_FILECONTROL_ACCEPT,
+    TOX_FILECONTROL_PAUSE,
+    TOX_FILECONTROL_KILL,
+    TOX_FILECONTROL_FINISHED
+};
+/* Set the callback for file send requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ */
+void tox_callback_file_sendrequest(Tox *tox, void (*function)(Tox *m, int, uint8_t, uint64_t, uint8_t *, uint16_t,
+                                   void *), void *userdata);
+
+/* Set the callback for file control requests.
+ *
+ *  receive_send is 1 if the message is for a slot on which we are currently sending a file and 0 if the message
+ *  is for a slot on which we are receiving the file
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t receive_send, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void tox_callback_file_control(Tox *tox, void (*function)(Tox *m, int, uint8_t, uint8_t, uint8_t, uint8_t *,
+                               uint16_t, void *), void *userdata);
+
+/* Set the callback for file data.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void tox_callback_file_data(Tox *tox, void (*function)(Tox *m, int, uint8_t, uint8_t *, uint16_t length, void *),
+                            void *userdata);
+
+
+/* Send a file send request.
+ * Maximum filename length is 255 bytes.
+ *  return file number on success
+ *  return -1 on failure
+ */
+int tox_new_filesender(Tox *tox, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length);
+
+/* Send a file control request.
+ *
+ * send_receive is 0 if we want the control packet to target a file we are currently sending,
+ * 1 if it targets a file we are currently receiving.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int tox_file_sendcontrol(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
+                         uint8_t *data, uint16_t length);
+
+/* Send file data.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length);
+
+/* Give the number of bytes left to be sent/received.
+ *
+ *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
+ *
+ *  return number of bytes remaining to be sent/received on success
+ *  return 0 on failure
+ */
+uint64_t tox_file_dataremaining(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t send_receive);
+
+/***************END OF FILE SENDING FUNCTIONS******************/
+
 
 /*
  * Use these two functions to bootstrap the client.
@@ -415,6 +527,7 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
  *   to setup connections
  */
 void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
+
 /* Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections
  *
@@ -456,6 +569,39 @@ void tox_kill(Tox *tox);
 /* The main loop that needs to be run at least 20 times per second. */
 void tox_do(Tox *tox);
 
+/*
+ * tox_wait_prepare(): function should be called under lock
+ * Prepares the data required to call tox_wait_execute() asynchronously
+ *
+ * data[] is reserved and kept by the caller
+ * len is in/out: in = reserved data[], out = required data[]
+ *
+ *  returns 1 on success
+ *  returns 0 on failure (length is insufficient)
+ *
+ *
+ * tox_wait_execute(): function can be called asynchronously
+ * Waits for something to happen on the socket for up to milliseconds milliseconds.
+ * *** Function MUSTN'T poll. ***
+ * The function mustn't modify anything at all, so it can be called completely
+ * asynchronously without any worry.
+ *
+ *  returns  1 if there is socket activity (i.e. tox_do() should be called)
+ *  returns  0 if the timeout was reached
+ *  returns -1 if data was NULL or len too short
+ *
+ *
+ * tox_wait_cleanup(): function should be called under lock
+ * Stores results from tox_wait_execute().
+ *
+ * data[]/len shall be the exact same as given to tox_wait_execute()
+ *
+ */
+int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr);
+int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds);
+void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len);
+
+
 /* SAVING AND LOADING FUNCTIONS: */
 
 /*  return size of messenger data (for saving). */
@@ -473,3 +619,4 @@ int tox_load(Tox *tox, uint8_t *data, uint32_t length);
 #endif
 
 #endif
+

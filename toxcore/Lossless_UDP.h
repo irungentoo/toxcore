@@ -52,15 +52,21 @@ typedef struct {
     uint16_t size;
 } Data;
 
+#define LUDP_NO_CONNECTION 0
+#define LUDP_HANDSHAKE_SENDING 1
+#define LUDP_NOT_CONFIRMED 2
+#define LUDP_ESTABLISHED 3
+#define LUDP_TIMED_OUT 4
+
 typedef struct {
     IP_Port ip_port;
 
     /*
-     *  return 0 if connection is dead.
-     *  return 1 if attempting handshake.
-     *  return 2 if handshake is done (we start sending SYNC packets).
-     *  return 3 if we are sending SYNC packets and can send data.
-     *  return 4 if the connection has timed out.
+     *  return LUDP_NO_CONNECTION if connection is dead.
+     *  return LUDP_HANDSHAKE_SENDING if attempting handshake.
+     *  return LUDP_NOT_CONFIRMED if handshake is done (we start sending SYNC packets).
+     *  return LUDP_ESTABLISHED if we are sending SYNC packets and can send data.
+     *  return LUDP_TIMED_OUT if the connection has timed out.
      */
     uint8_t status;
 
@@ -155,10 +161,11 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port);
  */
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port);
 
-/*  return an integer corresponding to the next connection in our imcoming connection list.
+/*
+ *  return an integer corresponding to the next connection in our incoming connection list with at least numpackets in the recieve queue.
  *  return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection(Lossless_UDP *ludp);
+int incoming_connection(Lossless_UDP *ludp, uint32_t numpackets);
 
 /*  return -1 if it could not kill the connection.
  *  return 0 if killed successfully.
@@ -166,12 +173,20 @@ int incoming_connection(Lossless_UDP *ludp);
 int kill_connection(Lossless_UDP *ludp, int connection_id);
 
 /*
- * Kill connection in seconds seconds.
+ * timeout connection in seconds seconds.
  *
  *  return -1 if it can not kill the connection.
  *  return 0 if it will kill it.
  */
-int kill_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
+int timeout_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
+
+
+/* Check if connection is confirmed.
+ *
+ *  returns 1 if yes.
+ *  returns 0 if no.
+ */
+int connection_confirmed(Lossless_UDP *ludp, int connection_id);
 
 /* Confirm an incoming connection.
  * Also disables the auto kill timeout on incomming connections.
@@ -208,6 +223,11 @@ int read_packet_silent(Lossless_UDP *ludp, int connection_id, uint8_t *data);
  */
 int discard_packet(Lossless_UDP *ludp, int connection_id);
 
+/* returns the number of packet slots left in the sendbuffer.
+ * return 0 if failure.
+ */
+uint32_t num_free_sendqueue_slots(Lossless_UDP *ludp, int connection_id);
+
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
@@ -215,6 +235,9 @@ int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t 
 
 /*  return number of packets in the queue waiting to be successfully sent. */
 uint32_t sendqueue(Lossless_UDP *ludp, int connection_id);
+
+/*  return number of packets in all queues waiting to be successfully sent. */
+uint32_t sendqueue_total(Lossless_UDP *ludp);
 
 /*
  *  return number of packets in the queue waiting to be successfully
@@ -224,11 +247,11 @@ uint32_t recvqueue(Lossless_UDP *ludp, int connection_id);
 
 /* Check if connection is connected:
  *
- *  return 0 not.
- *  return 1 if attempting handshake.
- *  return 2 if handshake is done.
- *  return 3 if fully connected.
- *  return 4 if timed out and wating to be killed.
+ *  return LUDP_NO_CONNECTION if not.
+ *  return LUDP_HANDSHAKE_SENDING if attempting handshake.
+ *  return LUDP_NOT_CONFIRMED if handshake is done.
+ *  return LUDP_ESTABLISHED if fully connected.
+ *  return LUDP_TIMED_OUT if timed out and wating to be killed.
  */
 int is_connected(Lossless_UDP *ludp, int connection_id);
 

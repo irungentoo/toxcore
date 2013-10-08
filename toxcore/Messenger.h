@@ -44,6 +44,9 @@
 #define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 63
+#define PACKET_ID_FILE_SENDREQUEST 80
+#define PACKET_ID_FILE_CONTROL 81
+#define PACKET_ID_FILE_DATA 82
 #define PACKET_ID_INVITE_GROUPCHAT 144
 #define PACKET_ID_JOIN_GROUPCHAT 145
 #define PACKET_ID_ACCEPT_GROUPCHAT 146
@@ -96,6 +99,29 @@ typedef enum {
 }
 USERSTATUS;
 
+struct File_Transfers {
+    uint64_t size;
+    uint64_t transferred;
+    uint8_t status; /* 0 == no transfer, 1 = not accepted, 2 = paused by the other, 3 = transferring, 4 = broken, 5 = paused by us */
+};
+enum {
+    FILESTATUS_NONE,
+    FILESTATUS_NOT_ACCEPTED,
+    FILESTATUS_PAUSED_BY_OTHER,
+    FILESTATUS_TRANSFERRING,
+    FILESTATUS_BROKEN,
+    FILESTATUS_PAUSED_BY_US
+};
+/* This cannot be bigger than 256 */
+#define MAX_CONCURRENT_FILE_PIPES 256
+
+enum {
+    FILECONTROL_ACCEPT,
+    FILECONTROL_PAUSE,
+    FILECONTROL_KILL,
+    FILECONTROL_FINISHED
+};
+
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
     int crypt_connection_id;
@@ -117,6 +143,8 @@ typedef struct {
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t ping_lastrecv;
     uint64_t ping_lastsent;
+    struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
+    struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
 } Friend;
 
 typedef struct Messenger {
@@ -157,10 +185,18 @@ typedef struct Messenger {
     void *friend_statuschange_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, int, uint8_t, void *);
     void *friend_connectionstatuschange_userdata;
+
     void (*group_invite)(struct Messenger *m, int, uint8_t *, void *);
     void *group_invite_userdata;
     void (*group_message)(struct Messenger *m, int, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+
+    void (*file_sendrequest)(struct Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t, void *);
+    void *file_sendrequest_userdata;
+    void (*file_filecontrol)(struct Messenger *m, int, uint8_t, uint8_t, uint8_t, uint8_t *, uint16_t, void *);
+    void *file_filecontrol_userdata;
+    void (*file_filedata)(struct Messenger *m, int, uint8_t, uint8_t *, uint16_t length, void *);
+    void *file_filedata_userdata;
 
 } Messenger;
 
@@ -245,6 +281,16 @@ uint32_t m_sendmessage_withid(Messenger *m, int friendnumber, uint32_t theid, ui
  *  return 0 if it was not.
  */
 int m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t length);
+
+/* Set the name and name_length of a friend.
+ * name must be a string of maximum MAX_NAME_LENGTH length.
+ * length must be at least 1 byte.
+ * length is the length of name with the NULL terminator.
+ *
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int setfriendname(Messenger *m, int friendnumber, uint8_t *name, uint16_t length);
 
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
@@ -429,6 +475,72 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
 
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
 
+/****************FILE SENDING*****************/
+
+
+/* Set the callback for file send requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ */
+void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t,
+                               void *), void *userdata);
+
+/* Set the callback for file control requests.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t, uint8_t, uint8_t *,
+                           uint16_t, void *), void *userdata);
+
+/* Set the callback for file data.
+ *
+ *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ */
+void callback_file_data(Messenger *m, void (*function)(Messenger *m, int, uint8_t, uint8_t *, uint16_t length, void *),
+                        void *userdata);
+
+/* Send a file send request.
+ * Maximum filename length is 255 bytes.
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+                     uint16_t filename_length);
+
+/* Send a file send request.
+ * Maximum filename length is 255 bytes.
+ *  return file number on success
+ *  return -1 on failure
+ */
+int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length);
+
+/* Send a file control request.
+ * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
+                 uint8_t *data, uint16_t length);
+
+/* Send file data.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length);
+
+/* Give the number of bytes left to be sent/received.
+ *
+ *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
+ *
+ *  return number of bytes remaining to be sent/received on success
+ *  return 0 on failure
+ */
+uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t send_receive);
+
 /*********************************/
 
 /* Run this at startup.
@@ -445,6 +557,13 @@ void cleanupMessenger(Messenger *M);
 /* The main loop that needs to be run at least 20 times per second. */
 void doMessenger(Messenger *m);
 
+/*
+ * functions to avoid excessive polling
+ */
+int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr);
+int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds);
+void waitcleanupMessenger(Messenger *m, uint8_t *data, uint16_t len);
+
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* return size of the messenger data (for saving). */
@@ -456,6 +575,18 @@ void Messenger_save(Messenger *m, uint8_t *data);
 /* Load the messenger from data of size length. */
 int Messenger_load(Messenger *m, uint8_t *data, uint32_t length);
 
+/* Return the number of friends in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_friendlist. */
+uint32_t count_friendlist(Messenger *m);
+
+/* Copy a list of valid friend IDs into the array out_list.
+ * If out_list is NULL, returns 0.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+uint32_t copy_friendlist(Messenger *m, int *out_list, uint32_t list_size);
+
 /* Allocate and return a list of valid friend id's. List must be freed by the
  * caller.
  *
@@ -465,3 +596,4 @@ int Messenger_load(Messenger *m, uint8_t *data, uint32_t length);
 int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length);
 
 #endif
+

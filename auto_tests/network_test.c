@@ -123,9 +123,9 @@ START_TEST(test_ip_equal)
 END_TEST
 
 #define DEFTESTCASE(NAME) \
-    TCase *NAME = tcase_create(#NAME); \
-    tcase_add_test(NAME, test_##NAME); \
-    suite_add_tcase(s, NAME);
+    TCase *tc_##NAME = tcase_create(#NAME); \
+    tcase_add_test(tc_##NAME, test_##NAME); \
+    suite_add_tcase(s, tc_##NAME);
 
 Suite *network_suite(void)
 {

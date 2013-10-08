@@ -16,7 +16,7 @@
 Build dependencies:
 
 ```bash
-sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check
+sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check git
 ```
 
 On Fedora:

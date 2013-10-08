@@ -253,7 +253,7 @@ START_TEST(test_dht_state_saveloadsave)
         char msg[128];
         size_t offset = res >> 4;
         uint8_t *ptr = buffer + extra + offset;
-        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
         ck_assert_msg(res == 0, msg);
     }
@@ -295,7 +295,7 @@ START_TEST(test_messenger_state_saveloadsave)
         char msg[128];
         size_t offset = res >> 4;
         uint8_t *ptr = buffer + extra + offset;
-        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%u/%u, code %d",
+        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
         ck_assert_msg(res == 0, msg);
     }
@@ -310,48 +310,30 @@ START_TEST(test_messenger_state_saveloadsave)
 }
 END_TEST
 
+#define DEFTESTCASE(NAME) \
+    TCase *tc_##NAME = tcase_create(#NAME); \
+    tcase_add_test(tc_##NAME, test_##NAME); \
+    suite_add_tcase(s, tc_##NAME);
+
 Suite *messenger_suite(void)
 {
     Suite *s = suite_create("Messenger");
 
-    TCase *userstatus_size = tcase_create("userstatus_size");
-    TCase *set_userstatus = tcase_create("set_userstatus");
-    TCase *send_message = tcase_create("send_message");
-    TCase *friend_exists = tcase_create("friend_exists");
-    TCase *get_friend_connectionstatus = tcase_create("get_friend_connectionstatus");
-    TCase *getself_name = tcase_create("getself_name");
-    TCase *delfriend = tcase_create("delfriend");
-    //TCase *addfriend = tcase_create("addfriend");
-    TCase *setname = tcase_create("setname");
-    TCase *getname = tcase_create("getname");
-    TCase *dht_state_saveloadsave = tcase_create("dht_state_saveloadsave");
-    TCase *messenger_state_saveloadsave = tcase_create("messenger_state_saveloadsave");
+    DEFTESTCASE(dht_state_saveloadsave);
+    DEFTESTCASE(messenger_state_saveloadsave);
 
-    tcase_add_test(userstatus_size, test_m_get_userstatus_size);
-    tcase_add_test(set_userstatus, test_m_set_userstatus);
-    tcase_add_test(get_friend_connectionstatus, test_m_get_friend_connectionstatus);
-    tcase_add_test(friend_exists, test_m_friend_exists);
-    tcase_add_test(getself_name, test_getself_name);
-    tcase_add_test(send_message, test_m_sendmesage);
-    tcase_add_test(delfriend, test_m_delfriend);
-    //tcase_add_test(addfriend, test_m_addfriend);
-    tcase_add_test(setname, test_getname);
-    tcase_add_test(setname, test_setname);
-    tcase_add_test(dht_state_saveloadsave, test_dht_state_saveloadsave);
-    tcase_add_test(messenger_state_saveloadsave, test_messenger_state_saveloadsave);
+    DEFTESTCASE(getself_name);
+    DEFTESTCASE(m_get_userstatus_size);
+    DEFTESTCASE(m_set_userstatus);
 
-    suite_add_tcase(s, userstatus_size);
-    suite_add_tcase(s, set_userstatus);
-    suite_add_tcase(s, get_friend_connectionstatus);
-    suite_add_tcase(s, friend_exists);
-    suite_add_tcase(s, send_message);
-    suite_add_tcase(s, getself_name);
-    suite_add_tcase(s, delfriend);
-    //suite_add_tcase(s, addfriend);
-    suite_add_tcase(s, getname);
-    suite_add_tcase(s, setname);
-    suite_add_tcase(s, messenger_state_saveloadsave);
-    suite_add_tcase(s, dht_state_saveloadsave);
+    /* DEFTESTCASE(m_addfriend); */
+    DEFTESTCASE(m_friend_exists);
+    DEFTESTCASE(m_get_friend_connectionstatus);
+    DEFTESTCASE(m_delfriend);
+
+    DEFTESTCASE(setname);
+    DEFTESTCASE(getname);
+    DEFTESTCASE(m_sendmesage);
 
     return s;
 }

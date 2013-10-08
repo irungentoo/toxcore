@@ -4,14 +4,31 @@
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
  */
+#ifndef __PING_H__
+#define __PING_H__
 
 #include <stdbool.h>
 
-void *new_ping(void);
-void kill_ping(void *ping);
-uint64_t add_ping(void *ping, IP_Port ipp);
-bool is_pinging(void *ping, IP_Port ipp, uint64_t ping_id);
-int send_ping_request(void *ping, Net_Crypto *c, IP_Port ipp, uint8_t *client_id);
-int send_ping_response(Net_Crypto *c, IP_Port ipp, uint8_t *client_id, uint64_t ping_id);
-int handle_ping_request(void *object, IP_Port source, uint8_t *packet, uint32_t length);
-int handle_ping_response(void *object, IP_Port source, uint8_t *packet, uint32_t length);
+#ifndef __PING_C__
+typedef struct PING PING;
+#endif
+
+/* Add nodes to the toping list.
+ * All nodes in this list are pinged every TIME_TOPING seconds
+ * and are then removed from the list.
+ * If the list is full the nodes farthest from our client_id are replaced.
+ * The purpose of this list is to enable quick integration of new nodes into the
+ * network while preventing amplification attacks.
+ *
+ *  return 0 if node was added.
+ *  return -1 if node was not added.
+ */
+int add_toping(PING *ping, uint8_t *client_id, IP_Port ip_port);
+void do_toping(PING *ping);
+
+PING *new_ping(DHT *dht, Net_Crypto *c);
+void kill_ping(PING *ping);
+
+int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id);
+
+#endif /* __PING_H__ */

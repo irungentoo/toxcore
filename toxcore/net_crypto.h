@@ -26,10 +26,9 @@
 
 #include "Lossless_UDP.h"
 
-#define MAX_INCOMING 64
-
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
+#define CRYPTO_HANDSHAKE_TIMEOUT CONNEXION_TIMEOUT
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
@@ -44,6 +43,7 @@ typedef struct {
                      * 4 if the connection is timed out.
                      */
     uint16_t number; /* Lossless_UDP connection number corresponding to this connection. */
+    uint64_t timeout;
 
 } Crypto_Connection;
 
@@ -65,9 +65,6 @@ typedef struct {
     /* Our public and secret keys. */
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
-
-    /* keeps track of the connection numbers for friends request so we can check later if they were sent. */
-    int incoming_connections[MAX_INCOMING];
 
     Cryptopacket_Handles cryptopackethandlers[256];
 } Net_Crypto;
@@ -123,6 +120,11 @@ void new_nonce(uint8_t *nonce);
  *  return length of received data if successful.
  */
 int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data);
+
+/* returns the number of packet slots left in the sendbuffer.
+ * return 0 if failure.
+ */
+uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id);
 
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.

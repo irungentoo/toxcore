@@ -185,10 +185,10 @@ int main(int argc, char *argv[])
     while (1) {
         networking_poll(ludp->net);
         do_lossless_udp(ludp);
-        connection = incoming_connection(ludp);
+        connection = incoming_connection(ludp, 0);
 
         if (connection != -1) {
-            if (is_connected(ludp, connection) == 2) {
+            if (is_connected(ludp, connection) == LUDP_NOT_CONFIRMED) {
                 printf("Received the connection.\n");
 
             }
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
         //printconnection(0);
         networking_poll(ludp->net);
 
-        if (is_connected(ludp, connection) >= 2) {
+        if (is_connected(ludp, connection) >= LUDP_NOT_CONFIRMED) {
             confirm_connection(ludp, connection);
 
             while (1) {
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 
         do_lossless_udp(ludp);
 
-        if (is_connected(ludp, connection) == 4) {
+        if (is_connected(ludp, connection) == LUDP_TIMED_OUT) {
             printf("Server Connecting Lost after: %llu us\n", (unsigned long long)(current_time() - timer));
             fclose(file);
             return 1;

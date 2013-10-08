@@ -202,12 +202,12 @@ int main(int argc, char *argv[])
         networking_poll(ludp->net);
         do_lossless_udp(ludp);
 
-        if (is_connected(ludp, connection) == 3) {
+        if (is_connected(ludp, connection) == LUDP_ESTABLISHED) {
             printf("Connecting took: %llu us\n", (unsigned long long)(current_time() - timer));
             break;
         }
 
-        if (is_connected(ludp, connection) == 0) {
+        if (is_connected(ludp, connection) == LUDP_NO_CONNECTION) {
             printf("Connection timeout after: %llu us\n", (unsigned long long)(current_time() - timer));
             return 1;
         }
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
         networking_poll(ludp->net);
         do_lossless_udp(ludp);
 
-        if (is_connected(ludp, connection) == 3) {
+        if (is_connected(ludp, connection) == LUDP_ESTABLISHED) {
 
             while (write_packet(ludp, connection, buffer, read)) {
                 bytes_sent += read;
