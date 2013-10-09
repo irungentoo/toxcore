@@ -212,9 +212,12 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
 
     if (res == length)
         net->send_fail_eagain = 0;
+#ifdef WIN32
+    else if ((res < 0) && (errno == WSAEWOULDBLOCK))
+#else
     else if ((res < 0) && (errno == EAGAIN))
-        net->send_fail_eagain = current_time();
-
+#endif
+    	net->send_fail_eagain = current_time();
     return res;
 }
 
