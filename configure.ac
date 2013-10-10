@@ -418,6 +418,16 @@ if test "x$BUILD_AV" = "xyes"; then
     )
 fi
 
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([OPUS], [opus],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $OPUS_PKG_ERRORS])
+            BUILD_AV="no"
+        ]
+    )
+fi
+
 if test -n "$PKG_CONFIG"; then
     if test "x$BUILD_TESTS" = "xyes"; then
         PKG_CHECK_MODULES([CHECK], [check],

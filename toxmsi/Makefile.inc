@@ -48,7 +48,9 @@ phone_CFLAGS =  -I../toxcore \
                 $(SDL_CFLAGS) \
                 $(OPENAL_CFLAGS) \
                 $(NACL_CFLAGS) \
+                $(OPUS_CFLAGS) \
                 $(PTHREAD_CFLAGS)
+
 
 phone_LDADD =   $(PTHREAD_LIBS) \
                 libtoxrtp.la \
@@ -62,6 +64,6 @@ phone_LDADD =   $(PTHREAD_LIBS) \
                 $(SDL_LIBS) \
                 $(OPENAL_LIBS) \
                 $(NACL_LIBS) \
-                -lopus
+                $(OPUS_LIBS)
 
 endif
