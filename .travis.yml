@@ -19,8 +19,23 @@ before_script:
   - ./configure && make -j3
   - sudo make install
   - cd ..
-# installing libopus, libvpx, libopenal, libsdl and ffmpeg
-  - sudo apt-get install libopus-dev libvpx-dev libopenal-dev libsdl1.2-dev
+#installing libopus
+  - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz
+  - tar xzvf opus-1.0.3.tar.gz
+  - cd opus-1.0.3
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
+#installing libsdl1.2
+  - wget http://www.libsdl.org/release/SDL-1.2.15.tar.gz
+  - tar -xvzf SDL-1.2.15.tar.gz
+  - cd SDL-1.2.15
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
+# installing libopenal
+  - sudo apt-get install freealut
+# installing ffmpeg
   - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz
   - tar -xvzf ffmpeg-2.0.2.tar.gz
   - cd ffmpeg-2.0.2
