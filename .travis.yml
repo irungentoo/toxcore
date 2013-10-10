@@ -35,6 +35,8 @@ before_script:
   - cd ..
 # installing libopenal
   - sudo apt-get install libopenal-dev
+# installing yasm
+  - sudo apt-get install yasm
 # installing ffmpeg
   - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz
   - tar -xvzf ffmpeg-2.0.2.tar.gz
