@@ -352,6 +352,7 @@ int rtp_store_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
     }
 
     pthread_mutex_unlock(&_session->_mutex);
+    return 0;
 }
 
 int rtp_release_session_recv ( rtp_session_t* _session )

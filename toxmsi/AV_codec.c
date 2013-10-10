@@ -179,6 +179,7 @@ int empty_queue(struct jitter_buffer *q)
 
     q->id_set = 0;
     q->queue_ready = 0;
+    return 0;
 }
 
 int queue(struct jitter_buffer *q, rtp_msg_t *pk)
@@ -474,6 +475,7 @@ int video_encoder_refresh(codec_state *cs, int bps)
         printf("opening video encoder failed\n");
         return -1;
     }
+    return 0;
 }
 
 void *encode_video_thread(void *arg)

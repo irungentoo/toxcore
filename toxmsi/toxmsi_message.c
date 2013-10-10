@@ -168,11 +168,11 @@ int msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header_field )
 }
 int msi_msg_set_info ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-
+    return 0;
 }
 int msi_msg_set_reason ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-
+    return 0;
 }
 int msi_msg_set_call_id ( msi_msg_t* _msg, const uint32_t _value )
 {
