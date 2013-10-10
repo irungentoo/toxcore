@@ -19,6 +19,14 @@ before_script:
   - ./configure && make -j3
   - sudo make install
   - cd ..
+# installing libopus, libvpx, libopenal, libsdl and ffmpeg
+  - sudo apt-get install libopus-dev libvpx-dev libopenal-dev libsdl1.2-dev
+  - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz
+  - tar -xvzf ffmpeg-2.0.2.tar.gz
+  - cd ffmpeg-2.0.2
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
 # creating librarys' links and updating cache
   - sudo ldconfig
 # installing check, needed for unit tests
