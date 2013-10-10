@@ -36,7 +36,6 @@
 #include <libavutil/opt.h>
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <AL/alut.h>
 #include <SDL.h>
 #include <SDL_thread.h>
 #include <pthread.h>

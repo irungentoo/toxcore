@@ -35,7 +35,6 @@
 #include <pthread.h>
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <AL/alut.h>
 #include "toxrtp.h"
 #include "tox.h"
 
