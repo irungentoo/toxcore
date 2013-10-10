@@ -210,7 +210,7 @@ pthread_t phone_startmedia_loop ( phone_t* _phone )
     
     
 
-    hmtc_args_t* rtp_targs = malloc(sizeof(hmtc_args_t));
+    hmtc_args_t* rtp_targs = calloc(sizeof(hmtc_args_t),1);
 
 
     rtp_targs->_rtp_audio = &_phone->_rtp_audio;
@@ -348,8 +348,8 @@ MCBTYPE callback_call_ended ( MCBARGS )
 
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
 {
-    phone_t* _retu = malloc(sizeof(phone_t));
-    _retu->cs = av_calloc(sizeof(codec_state));
+    phone_t* _retu = calloc(sizeof(phone_t),1);
+    _retu->cs = av_calloc(sizeof(codec_state),1);
 
     /* Initialize our mutex */
     pthread_mutex_init ( &_mutex, NULL );

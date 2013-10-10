@@ -105,7 +105,7 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
     }
 
     if ( cc > 0 ) {
-        _retu->_csrc = malloc ( sizeof ( uint32_t ) * cc );
+        _retu->_csrc = calloc ( sizeof ( uint32_t ) * cc,1 );
     } else { /* But this should not happen ever */
         t_perror ( RTP_ERROR_HEADER_PARSING );
         return NULL;

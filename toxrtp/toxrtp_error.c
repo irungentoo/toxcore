@@ -25,7 +25,7 @@ void t_rtperr_register ( int _id, const char* _info )
     size_t _info_size = strlen ( _info );
 
     if ( !_register ) {
-        _register = malloc ( sizeof * _register );
+        _register = calloc ( sizeof * _register,1 );
     } else {
         _register = realloc ( _register, sizeof ( rtp_error_t ) * ( _it + 1 ) );
     }
@@ -33,7 +33,7 @@ void t_rtperr_register ( int _id, const char* _info )
     rtp_error_t* _current = & _register[_it];
 
     _current->_id = _id;
-    _current->_message = malloc ( _info_size );
+    _current->_message = calloc ( _info_size,1);
     t_memcpy ( (uint8_t*)_current->_message, (const uint8_t*)_info, _info_size );
     _it ++;
 }

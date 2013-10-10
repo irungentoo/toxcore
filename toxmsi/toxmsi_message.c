@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 #define ALLOCATE_HEADER(_header_type, _var, _m_header_value) \
-_var = malloc( sizeof(_header_type) ); \
+_var = calloc( sizeof(_header_type),1 ); \
 _var->_header_value = t_strallcpy((const uint8_t*)_m_header_value);
 
 #define DEALLOCATE_HEADER(_header) \
@@ -77,7 +77,7 @@ msi_msg_t* msi_parse_msg ( const uint8_t* _data )
         return NULL;
     }
 
-    msi_msg_t* _retu = malloc ( sizeof ( msi_msg_t ) );
+    msi_msg_t* _retu = calloc ( sizeof ( msi_msg_t ),1 );
     set_msg(_retu);
 
     _retu->_headers = msi_parse_raw_data ( (uint8_t*)_data );
@@ -97,7 +97,7 @@ msi_msg_t* msi_parse_msg ( const uint8_t* _data )
 
 msi_msg_t* msi_msg_new ( uint8_t _type, const uint8_t* _typeid )
 {
-    msi_msg_t* _retu = malloc ( sizeof ( msi_msg_t ) );
+    msi_msg_t* _retu = calloc ( sizeof ( msi_msg_t ),1 );
     set_msg(_retu);
 
     if ( _type == TYPE_REQUEST ){
@@ -209,7 +209,7 @@ uint8_t* msi_msg_to_string ( msi_msg_t* _msg )
     /* got tired of allocating everything dynamically dammit
      * this will do it
      */
-    uint8_t* _retu = malloc(sizeof(uint8_t) * MSI_MAXMSG_SIZE );
+    uint8_t* _retu = calloc(sizeof(uint8_t) * MSI_MAXMSG_SIZE,1 );
     t_memset(_retu, '\0', MSI_MAXMSG_SIZE);
     /* So bloody easy... */
 

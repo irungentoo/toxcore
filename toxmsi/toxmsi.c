@@ -237,7 +237,7 @@ void flush_peer_type ( msi_session_t* _session, msi_msg_t* _msg, int _peer_id )
 
 msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agent )
 {
-    msi_session_t* _session = malloc ( sizeof ( msi_session_t ) );
+    msi_session_t* _session = calloc ( sizeof ( msi_session_t ),1 );
 
     _session->_oldest_msg = _session->_last_msg = NULL;
     _session->_core_handler = _core_handler;
@@ -280,8 +280,8 @@ msi_call_t* msi_init_call ( msi_session_t* _session, int _peers, uint32_t _timeo
     if ( !_peers )
         return NULL;
 
-    msi_call_t* _call = malloc ( sizeof ( msi_call_t ) );
-    _call->_type_peer = malloc ( sizeof ( call_type ) * _peers );
+    msi_call_t* _call = calloc ( sizeof ( msi_call_t ),1 );
+    _call->_type_peer = calloc ( sizeof ( call_type ) * _peers,1 );
     _call->_participants = _peers;
 
 #ifndef VANILLA_NACL

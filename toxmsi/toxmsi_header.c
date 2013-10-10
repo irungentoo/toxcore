@@ -13,7 +13,7 @@
 #define ALLOC_ADD_DATA(_tempval, _hdrlist, _fielddef, _msgvar, _alloctype)    \
 _tempval = msi_search_field(_hdrlist, (const uint8_t*)_fielddef);       \
 if ( _tempval ){         \
-    _msgvar = malloc(sizeof(_alloctype));      \
+    _msgvar = calloc(sizeof(_alloctype),1);      \
     _msgvar->_header_value = _tempval;       \
 }
 
@@ -93,8 +93,8 @@ msi_header_t* msi_add_new_header ( uint8_t* _value )
     }
 
 
-    uint8_t* _identifier = malloc(sizeof (uint8_t) * (_first_len + 1) );
-    uint8_t* _data = malloc(sizeof (uint8_t) * (_second_len + 1) );
+    uint8_t* _identifier = calloc(sizeof (uint8_t) * (_first_len + 1),1 );
+    uint8_t* _data = calloc(sizeof (uint8_t) * (_second_len + 1),1 );
 
 
     uint8_t* _p_it = _value;
@@ -115,7 +115,7 @@ msi_header_t* msi_add_new_header ( uint8_t* _value )
     _data[_num_it] = '\r';
     _data[_num_it + 1] = '\0';
 
-    msi_header_t* _retu = malloc(sizeof(msi_header_t));
+    msi_header_t* _retu = calloc(sizeof(msi_header_t),1);
 
     _retu->_header_field = _identifier;
     _retu->_header_value = _data;

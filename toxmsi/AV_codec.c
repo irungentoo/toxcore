@@ -89,8 +89,8 @@ struct jitter_buffer {
 struct jitter_buffer *create_queue(int capacity)
 {
     struct jitter_buffer *q;
-    q = (struct jitter_buffer *)malloc(sizeof(struct jitter_buffer));
-    q->queue = (rtp_msg_t **)malloc(sizeof(rtp_msg_t) * capacity);
+    q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer),1);
+    q->queue = (rtp_msg_t **)calloc((sizeof(rtp_msg_t) * capacity),1);
     int i = 0;
 
     for (i = 0; i < capacity; ++i) {
@@ -497,7 +497,7 @@ void *encode_video_thread(void *arg)
     int numBytes;
     /* Determine required buffer size and allocate buffer */
     numBytes = avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
-    buffer = (uint8_t *)av_malloc(numBytes * sizeof(uint8_t));
+    buffer = (uint8_t *)av_calloc(numBytes * sizeof(uint8_t),1);
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,
                    cs->webcam_decoder_ctx->height);
     cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height,
@@ -706,7 +706,7 @@ void *decode_audio_thread(void *arg)
     alcMakeContextCurrent(ctx);
     int openal_buffers = 5;
 
-    buffers = malloc(sizeof(ALuint) * openal_buffers);
+    buffers = calloc(sizeof(ALuint) * openal_buffers,1);
     alGenBuffers(openal_buffers, buffers);
     alGenSources((ALuint)1, &source);
     alSourcei(source, AL_LOOPING, AL_FALSE);

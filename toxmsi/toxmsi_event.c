@@ -160,7 +160,7 @@ int cancel_timer_event ( void* _event_handler_p, int _id )
 
 event_handler_t* init_event_poll (uint32_t _frequms)
 {
-    event_handler_t* _retu = malloc(sizeof(event_handler_t));
+    event_handler_t* _retu = calloc(sizeof(event_handler_t),1);
 
     /* Initialize basic events */
     _retu->_events = NULL ;

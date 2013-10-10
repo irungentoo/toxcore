@@ -27,8 +27,8 @@
 
 #include <stdlib.h>
 
-#define ALLOCATOR_VAR(VAR, TYPE, NUM) TYPE* VAR = malloc(sizeof(TYPE) * NUM);
-#define ALLOCATOR(VAR, TYPE, NUM) VAR = malloc(sizeof(TYPE) * NUM);
+#define ALLOCATOR_VAR(VAR, TYPE, NUM) TYPE* VAR = calloc(sizeof(TYPE) * NUM,1);
+#define ALLOCATOR(VAR, TYPE, NUM) VAR = calloc(sizeof(TYPE) * NUM,1);
 
 #define ALLOCATOR_S(VAR, TYPE) ALLOCATOR(VAR,TYPE,1)
 #define ALLOCATOR_V(VAR, TYPE) ALLOCATOR_VAR(VAR, TYPE, 1)

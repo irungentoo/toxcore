@@ -204,7 +204,7 @@ void rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _message )
 rtp_header_t* rtp_build_header ( rtp_session_t* _session )
 {
     rtp_header_t* _retu;
-    _retu = malloc ( sizeof * _retu );
+    _retu = calloc ( sizeof * _retu,1 );
 
     rtp_header_add_flag_version ( _retu, _session->_version );
     rtp_header_add_flag_padding ( _retu, _session->_padding );
@@ -397,12 +397,12 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
 
         _total_lenght += ( _MIN_EXT_HEADER_LENGTH + _retu->_ext_header->_ext_len * size_32 );
         /* Allocate Memory for _retu->_data */
-        _retu->_data = malloc ( sizeof _retu->_data * _total_lenght );
+        _retu->_data = calloc ( sizeof _retu->_data * _total_lenght,1 );
         _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
         _from_pos = rtp_add_extention_header ( _retu->_ext_header, _from_pos + 1 );
     } else {
         /* Allocate Memory for _retu->_data */
-        _retu->_data = malloc ( sizeof _retu->_data * _total_lenght );
+        _retu->_data = calloc ( sizeof _retu->_data * _total_lenght,1 );
         _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
     }
 
@@ -453,7 +453,7 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
     }
 
     /* Get the payload */
-    _retu->_data = malloc ( sizeof ( uint8_t ) * _retu->_length );
+    _retu->_data = calloc ( sizeof ( uint8_t ) * _retu->_length,1 );
     t_memcpy ( _retu->_data, _data + _from_pos, _length - _from_pos );
 
     _retu->_next = NULL;
@@ -653,7 +653,7 @@ int rtp_set_prefix ( rtp_session_t* _session, uint8_t* _prefix, uint16_t _prefix
         free ( _session->_prefix );
     }
 
-    _session->_prefix = malloc ( ( sizeof * _session->_prefix ) * _prefix_length );
+    _session->_prefix = calloc ( ( sizeof * _session->_prefix ) * _prefix_length,1 );
     t_memcpy ( _session->_prefix, _prefix, _prefix_length );
     _session->_prefix_length = _prefix_length;
 
