@@ -349,7 +349,7 @@ MCBTYPE callback_call_ended ( MCBARGS )
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
 {
     phone_t* _retu = malloc(sizeof(phone_t));
-    _retu->cs = av_malloc(sizeof(codec_state));
+    _retu->cs = av_calloc(sizeof(codec_state));
 
     /* Initialize our mutex */
     pthread_mutex_init ( &_mutex, NULL );
