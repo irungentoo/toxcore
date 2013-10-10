@@ -27,7 +27,7 @@ void clear_events (event_container_t** _event_container, size_t* _counter)
 int pop_id ( event_container_t** _event_container, size_t* _counter, int _id )
 {
     if ( !*_event_container || !*_counter || !_id )
-        return;
+        return FAILURE;
 
     event_container_t* _it = *_event_container;
     int i;
