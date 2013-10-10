@@ -10,6 +10,7 @@
 #include "../toxrtp/toxrtp_helper.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static int _unique_id = 1;
 

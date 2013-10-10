@@ -32,6 +32,7 @@
 #include "toxrtp_message.h"
 #include "toxrtp_helper.h"
 #include <assert.h>
+#include <pthread.h>
 #include "toxrtp_allocator.h"
 #include "../toxcore/util.h"
 #include "../toxcore/network.h"
@@ -360,10 +361,10 @@ int rtp_release_session_recv ( rtp_session_t* _session )
     if ( !_session ){
         return FAILURE;
     }
-
+    
     rtp_msg_t* _tmp,* _it;
 
-    pthread_mutex_lock(_session->_mutex);
+    pthread_mutex_lock(&_session->_mutex);
 
     for ( _it = _session->_oldest_msg; _it; _it = _tmp ){
         _tmp = _it->_next;
@@ -372,7 +373,7 @@ int rtp_release_session_recv ( rtp_session_t* _session )
 
     _session->_last_msg = _session->_oldest_msg = NULL;
 
-    pthread_mutex_unlock(_session->_mutex);
+    pthread_mutex_unlock(&_session->_mutex);
 
     return SUCCESS;
 }
