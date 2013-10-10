@@ -34,7 +34,7 @@ before_script:
   - sudo make install
   - cd ..
 # installing libopenal
-  - sudo apt-get install freealut
+  - sudo apt-get install libopenal-dev
 # installing ffmpeg
   - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz
   - tar -xvzf ffmpeg-2.0.2.tar.gz
