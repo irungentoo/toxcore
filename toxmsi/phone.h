@@ -59,16 +59,4 @@ pthread_t phone_startmedia_loop ( phone_t* _phone );
 void* phone_handle_receive_callback ( void* _p );
 void* phone_handle_media_transport_poll ( void* _hmtc_args_p );
 
-
-/* msi callbacks */
-MCBTYPE phone_callback_recv_invite ( MCBARGS );
-MCBTYPE phone_callback_recv_ringing ( MCBARGS );
-MCBTYPE phone_callback_recv_starting ( MCBARGS );
-MCBTYPE phone_callback_recv_ending ( MCBARGS );
-
-MCBTYPE phone_callback_call_started ( MCBARGS );
-MCBTYPE phone_callback_call_canceled ( MCBARGS );
-MCBTYPE phone_callback_call_rejected ( MCBARGS );
-MCBTYPE phone_callback_call_ended ( MCBARGS );
-
 #endif /* _PHONE_H_ */

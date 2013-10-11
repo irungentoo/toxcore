@@ -10,13 +10,14 @@
 #include <stdlib.h>
 
 #define ALLOCATE_HEADER(_header_type, _var, _m_header_value) \
-_var = calloc( sizeof(_header_type),1 ); \
+_var = calloc( sizeof(_header_type), 1 );                    \
+assert(_var);                                                \
 _var->_header_value = t_strallcpy((const uint8_t*)_m_header_value);
 
-#define DEALLOCATE_HEADER(_header) \
-if ( _header && _header->_header_value ) {\
-free( _header->_header_value ); \
-free( _header ); \
+#define DEALLOCATE_HEADER(_header)          \
+if ( _header && _header->_header_value ) {  \
+free( _header->_header_value );             \
+free( _header );                            \
 }
 
 /* Sets empty message
@@ -77,7 +78,9 @@ msi_msg_t* msi_parse_msg ( const uint8_t* _data )
         return NULL;
     }
 
-    msi_msg_t* _retu = calloc ( sizeof ( msi_msg_t ),1 );
+    msi_msg_t* _retu = calloc ( sizeof ( msi_msg_t ), 1 );
+    assert(_retu);
+
     set_msg(_retu);
 
     _retu->_headers = msi_parse_raw_data ( (uint8_t*)_data );
@@ -87,7 +90,7 @@ msi_msg_t* msi_parse_msg ( const uint8_t* _data )
         return NULL;
     }
 
-    if ( !_retu->_version || strcmp(_retu->_version->_header_value, VERSION_STRING) != 0 ){
+    if ( !_retu->_version || strcmp((const char*)_retu->_version->_header_value, VERSION_STRING) != 0 ){
         msi_free_msg(_retu);
         return NULL;
     }
@@ -97,7 +100,9 @@ msi_msg_t* msi_parse_msg ( const uint8_t* _data )
 
 msi_msg_t* msi_msg_new ( uint8_t _type, const uint8_t* _typeid )
 {
-    msi_msg_t* _retu = calloc ( sizeof ( msi_msg_t ),1 );
+    msi_msg_t* _retu = calloc ( sizeof ( msi_msg_t ), 1 );
+    assert(_retu);
+
     set_msg(_retu);
 
     if ( _type == TYPE_REQUEST ){
@@ -185,7 +190,7 @@ int msi_msg_set_call_id ( msi_msg_t* _msg, const uint32_t _value )
     }
 
     uint8_t _header_value [5];
-    snprintf(_header_value, 5, "%d", _value);
+    snprintf((char*)_header_value, 5, "%d", _value);
 
     ALLOCATE_HEADER(msi_header_call_id_t, _msg->_call_id, _header_value)
 
@@ -197,7 +202,7 @@ uint32_t msi_msg_get_call_id ( msi_msg_t* _msg )
     if ( !_msg )
         return 0;
 
-    return atoi(_msg->_call_id->_header_value);
+    return atoi((const char*)_msg->_call_id->_header_value);
 }
 
 uint8_t* msi_msg_to_string ( msi_msg_t* _msg )
@@ -209,7 +214,9 @@ uint8_t* msi_msg_to_string ( msi_msg_t* _msg )
     /* got tired of allocating everything dynamically dammit
      * this will do it
      */
-    uint8_t* _retu = calloc(sizeof(uint8_t) * MSI_MAXMSG_SIZE,1 );
+    uint8_t* _retu = calloc(sizeof(uint8_t), MSI_MAXMSG_SIZE );
+    assert(_retu);
+
     t_memset(_retu, '\0', MSI_MAXMSG_SIZE);
     /* So bloody easy... */
 

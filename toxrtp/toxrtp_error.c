@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 typedef struct rtp_error_s {
     char* _message;
@@ -25,15 +26,19 @@ void t_rtperr_register ( int _id, const char* _info )
     size_t _info_size = strlen ( _info );
 
     if ( !_register ) {
-        _register = calloc ( sizeof * _register,1 );
+        _register = calloc ( sizeof ( rtp_error_t ), 1 );
     } else {
         _register = realloc ( _register, sizeof ( rtp_error_t ) * ( _it + 1 ) );
     }
+    assert(_register);
+
 
     rtp_error_t* _current = & _register[_it];
 
     _current->_id = _id;
-    _current->_message = calloc ( _info_size,1);
+    _current->_message = calloc ( sizeof(char), _info_size );
+    assert(_current->_message);
+
     t_memcpy ( (uint8_t*)_current->_message, (const uint8_t*)_info, _info_size );
     _it ++;
 }

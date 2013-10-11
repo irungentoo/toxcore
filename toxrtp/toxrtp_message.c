@@ -28,7 +28,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "toxrtp_message.h"
-#include "toxrtp_allocator.h"
 #include "toxrtp.h"
 #include <stdio.h>
 
@@ -77,7 +76,10 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
         return NULL;
     }
     const uint8_t* _it = _payload;
-    ALLOCATOR_VAR ( _retu, rtp_header_t, 1 )
+
+    rtp_header_t* _retu = calloc(sizeof(rtp_header_t), 1);
+    assert(_retu);
+
     _retu->_flags = *_it; ++_it;
     
     /* This indicates if the first 2 bytes are valid.
@@ -105,7 +107,9 @@ rtp_header_t* rtp_extract_header ( const uint8_t* _payload, size_t _bytes )
     }
 
     if ( cc > 0 ) {
-        _retu->_csrc = calloc ( sizeof ( uint32_t ) * cc,1 );
+        _retu->_csrc = calloc ( sizeof ( uint32_t ), cc );
+        assert(_retu->_csrc);
+
     } else { /* But this should not happen ever */
         t_perror ( RTP_ERROR_HEADER_PARSING );
         return NULL;
@@ -154,7 +158,8 @@ rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload, size_t _byte
 
     const uint8_t* _it = _payload;
 
-    ALLOCATOR_VAR ( _retu, rtp_ext_header_t, 1 )
+    rtp_ext_header_t* _retu = calloc(sizeof(rtp_ext_header_t), 1);
+    assert(_retu);
 
     uint16_t _ext_len = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
 
@@ -166,7 +171,8 @@ rtp_ext_header_t* rtp_extract_ext_header ( const uint8_t* _payload, size_t _byte
     _retu->_ext_len  = _ext_len;
     _retu->_ext_type = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it -= 2;
 
-    ALLOCATOR ( _retu->_hd_ext, uint32_t, _ext_len )
+    _retu->_hd_ext = calloc(sizeof(uint32_t), _ext_len);
+    assert(_retu->_hd_ext);
 
     uint32_t* _hd_ext = _retu->_hd_ext;
     size_t i;

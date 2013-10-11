@@ -130,7 +130,7 @@ int                     rtp_release_session_recv ( rtp_session_t* _session );
 
 /* Functions handling receiving */
 struct rtp_msg_s*       rtp_recv_msg ( rtp_session_t* _session );
-int                     rtp_store_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg );
+void                    rtp_store_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg );
 
 /*
  * rtp_msg_parse() stores headers separately from the payload data

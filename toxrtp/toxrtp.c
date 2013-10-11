@@ -33,7 +33,6 @@
 #include "toxrtp_helper.h"
 #include <assert.h>
 #include <pthread.h>
-#include "toxrtp_allocator.h"
 #include "../toxcore/util.h"
 #include "../toxcore/network.h"
 
@@ -77,8 +76,8 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     REGISTER_RTP_ERRORS
 #endif /* _USE_ERRORS */
 
-    rtp_session_t* _retu;
-    ALLOCATOR_S ( _retu, rtp_session_t )
+    rtp_session_t* _retu = calloc(sizeof(rtp_session_t), 1);
+    assert(_retu);
 
     _retu->_dest_list = _retu->_last_user = NULL;
 
@@ -116,7 +115,9 @@ rtp_session_t* rtp_init_session ( int max_users, int _multi_session )
     _retu->_exthdr_framerate = -1;
     _retu->_exthdr_resolution = -1;
 
-    ALLOCATOR_S ( _retu->_csrc, uint32_t )
+    _retu->_csrc = calloc(sizeof(uint32_t), 1);
+    assert(_retu->_csrc);
+
     _retu->_csrc[0] = _retu->_ssrc;  /* Set my ssrc to the list receive */
 
     _retu->_prefix_length = 0;
@@ -142,22 +143,30 @@ int rtp_terminate_session ( rtp_session_t* _session )
     if ( !_session )
         return FAILURE;
 
-    if ( _session->_dest_list )
-        DEALLOCATOR_LIST_S ( _session->_dest_list, rtp_dest_list_t );
+    if ( _session->_dest_list ){
+        rtp_dest_list_t* _fordel = NULL;
+        rtp_dest_list_t* _tmp = _session->_dest_list;
+
+        while( _tmp ){
+            _fordel = _tmp;
+            _tmp = _tmp->next;
+            free(_fordel);
+        }
+    }
 
     if ( _session->_ext_header )
-        DEALLOCATOR ( _session->_ext_header );
+        free ( _session->_ext_header );
 
     if ( _session->_csrc )
-        DEALLOCATOR ( _session->_csrc );
+        free ( _session->_csrc );
 
     if ( _session->_prefix )
-        DEALLOCATOR ( _session->_prefix );
+        free ( _session->_prefix );
 
     pthread_mutex_destroy(&_session->_mutex);
 
     /* And finally free session */
-    DEALLOCATOR ( _session );
+    free ( _session );
 
     return SUCCESS;
 }
@@ -204,7 +213,8 @@ void rtp_free_msg ( rtp_session_t* _session, rtp_msg_t* _message )
 rtp_header_t* rtp_build_header ( rtp_session_t* _session )
 {
     rtp_header_t* _retu;
-    _retu = calloc ( sizeof * _retu,1 );
+    _retu = calloc ( sizeof * _retu, 1 );
+    assert(_retu);
 
     rtp_header_add_flag_version ( _retu, _session->_version );
     rtp_header_add_flag_padding ( _retu, _session->_padding );
@@ -219,7 +229,8 @@ rtp_header_t* rtp_build_header ( rtp_session_t* _session )
     _retu->_ssrc = _session->_ssrc;
 
     if ( _session->_cc > 0 ) {
-        ALLOCATOR ( _retu->_csrc, uint32_t, _session->_cc )
+        _retu->_csrc = calloc(sizeof(uint32_t), _session->_cc);
+        assert(_retu->_csrc);
 
         int i;
 
@@ -249,9 +260,10 @@ int rtp_add_receiver ( rtp_session_t* _session, tox_IP_Port* _dest )
     if ( !_session )
         return FAILURE;
 
-    rtp_dest_list_t* _new_user;
-    ALLOCATOR_LIST_S ( _new_user, rtp_dest_list_t, NULL )
+    rtp_dest_list_t* _new_user = calloc(sizeof(rtp_dest_list_t), 1);
+    assert(_new_user);
 
+    _new_user->next = NULL;
     _new_user->_dest = *_dest;
 
     if ( _session->_last_user == NULL ) { /* New member */
@@ -337,7 +349,7 @@ rtp_msg_t* rtp_recv_msg ( rtp_session_t* _session )
     return _retu;
 }
 
-int rtp_store_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
+void rtp_store_msg ( rtp_session_t* _session, rtp_msg_t* _msg )
 {
     if ( rtp_check_late_message(_session, _msg) < 0 ) {
         rtp_register_msg(_session, _msg);
@@ -384,8 +396,8 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
         return NULL;
 
     uint8_t* _from_pos;
-    rtp_msg_t* _retu;
-    ALLOCATOR_S ( _retu, rtp_msg_t )
+    rtp_msg_t* _retu = calloc(sizeof(rtp_msg_t), 1);
+    assert(_retu);
 
     /* Sets header values and copies the extension header in _retu */
     _retu->_header = rtp_build_header ( _session ); /* It allocates memory and all */
@@ -397,12 +409,16 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
 
         _total_lenght += ( _MIN_EXT_HEADER_LENGTH + _retu->_ext_header->_ext_len * size_32 );
         /* Allocate Memory for _retu->_data */
-        _retu->_data = calloc ( sizeof _retu->_data * _total_lenght,1 );
+        _retu->_data = calloc ( sizeof _retu->_data, _total_lenght );
+        assert(_retu->_data);
+
         _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
         _from_pos = rtp_add_extention_header ( _retu->_ext_header, _from_pos + 1 );
     } else {
         /* Allocate Memory for _retu->_data */
-        _retu->_data = calloc ( sizeof _retu->_data * _total_lenght,1 );
+        _retu->_data = calloc ( sizeof _retu->_data, _total_lenght );
+        assert(_retu->_data);
+
         _from_pos = rtp_add_header ( _retu->_header, _retu->_data );
     }
 
@@ -423,12 +439,12 @@ rtp_msg_t* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t
 
 rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length )
 {
-    
-    rtp_msg_t* _retu;
-    ALLOCATOR_S ( _retu, rtp_msg_t )
+    rtp_msg_t* _retu = calloc(sizeof(rtp_msg_t), 1);
+    assert(_retu);
+
     _retu->_header = rtp_extract_header ( _data, _length ); /* It allocates memory and all */
     if ( !_retu->_header ){
-        DEALLOCATOR(_retu)
+        free(_retu);
         return NULL;
     }
 
@@ -443,9 +459,9 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
             _retu->_length -= ( _MIN_EXT_HEADER_LENGTH + _retu->_ext_header->_ext_len * size_32 );
             _from_pos += ( _MIN_EXT_HEADER_LENGTH + _retu->_ext_header->_ext_len * size_32 );
         } else {
-            DEALLOCATOR(_retu->_ext_header);
-            DEALLOCATOR(_retu->_header);
-            DEALLOCATOR(_retu);
+            free (_retu->_ext_header);
+            free (_retu->_header);
+            free (_retu);
             return NULL;
         }
     } else {
@@ -453,7 +469,9 @@ rtp_msg_t* rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32
     }
 
     /* Get the payload */
-    _retu->_data = calloc ( sizeof ( uint8_t ) * _retu->_length,1 );
+    _retu->_data = calloc ( sizeof ( uint8_t ), _retu->_length );
+    assert(_retu->_data);
+
     t_memcpy ( _retu->_data, _data + _from_pos, _length - _from_pos );
 
     _retu->_next = NULL;
@@ -496,22 +514,27 @@ int rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint1
     _session->_exthdr_resolution = 0;
 
     if ( ! ( _ext_header ) ) {
-        ALLOCATOR_S ( _session->_ext_header, rtp_ext_header_t )
+        _session->_ext_header = calloc (sizeof(rtp_ext_header_t), 1);
+        assert(_session->_ext_header);
+
         _session->_extension = 1;
         _session->_ext_header->_ext_len = 1;
         _ext_header = _session->_ext_header;
-        ALLOCATOR_S ( _session->_ext_header->_hd_ext, uint32_t )
+        _session->_ext_header->_hd_ext = calloc(sizeof(uint32_t), 1);
+        assert(_session->_ext_header->_hd_ext);
+
     } else { /* If there is need for more headers this will be needed to change */
         if ( !(_ext_header->_ext_type & RTP_EXT_TYPE_RESOLUTION) ){
             uint32_t _exthdr_framerate = _ext_header->_hd_ext[_session->_exthdr_framerate];
             /* it's position is at 2nd place by default */
             _session->_exthdr_framerate ++;
 
-            /* Allocate the value */
-            ADD_ALLOCATE ( _ext_header->_hd_ext, _ext_header->_ext_len )
-
             /* Update length */
             _ext_header->_ext_len++;
+
+            /* Allocate the value */
+            _ext_header->_hd_ext = realloc(_ext_header->_hd_ext, sizeof(rtp_ext_header_t) * _ext_header->_ext_len);
+            assert(_ext_header->_hd_ext);
 
             /* Reset other values */
             _ext_header->_hd_ext[_session->_exthdr_framerate] = _exthdr_framerate;
@@ -544,8 +567,8 @@ int rtp_remove_resolution_marking ( rtp_session_t* _session )
     /* Check if extension is empty */
     if ( _session->_ext_header->_ext_type == 0 ){
 
-        DEALLOCATOR ( _session->_ext_header->_hd_ext )
-        DEALLOCATOR ( _session->_ext_header )
+        free ( _session->_ext_header->_hd_ext );
+        free ( _session->_ext_header );
 
         _session->_ext_header = NULL; /* It's very important */
         _session->_extension = 0;
@@ -557,7 +580,8 @@ int rtp_remove_resolution_marking ( rtp_session_t* _session )
         if ( _session->_ext_header->_ext_type & RTP_EXT_TYPE_FRAMERATE ){
             memcpy(_session->_ext_header->_hd_ext + 1, _session->_ext_header->_hd_ext, _session->_ext_header->_ext_len);
             _session->_exthdr_framerate = 0;
-            SET_ALLOCATE(_session->_ext_header->_hd_ext, _session->_ext_header->_ext_len);
+            _session->_ext_header->_hd_ext = realloc( _session->_ext_header->_hd_ext, sizeof( rtp_ext_header_t ) * _session->_ext_header->_ext_len );
+            assert(_session->_ext_header->_hd_ext);
         }
     }
 
@@ -573,21 +597,26 @@ int rtp_add_framerate_marking ( rtp_session_t* _session, uint32_t _value )
     _session->_exthdr_framerate = 0;
 
     if ( ! ( _ext_header ) ) {
-        ALLOCATOR_S ( _session->_ext_header, rtp_ext_header_t )
+        _session->_ext_header = calloc (sizeof(rtp_ext_header_t), 1);
+        assert(_session->_ext_header);
+
         _session->_extension = 1;
         _session->_ext_header->_ext_len = 1;
         _ext_header = _session->_ext_header;
-        ALLOCATOR_S ( _session->_ext_header->_hd_ext, uint32_t )
+        _session->_ext_header->_hd_ext = calloc(sizeof(uint32_t), 1);
+        assert(_session->_ext_header->_hd_ext);
     } else { /* If there is need for more headers this will be needed to change */
         if ( !(_ext_header->_ext_type & RTP_EXT_TYPE_FRAMERATE) ){
             /* it's position is at 2nd place by default */
             _session->_exthdr_framerate ++;
 
-            /* Allocate the value */
-            ADD_ALLOCATE ( _ext_header->_hd_ext, _ext_header->_ext_len )
-
             /* Update length */
             _ext_header->_ext_len++;
+
+            /* Allocate the value */
+            _ext_header->_hd_ext = realloc(_ext_header->_hd_ext, sizeof(rtp_ext_header_t) * _ext_header->_ext_len);
+            assert(_ext_header->_hd_ext);
+
         }
     }
 
@@ -619,8 +648,8 @@ int rtp_remove_framerate_marking ( rtp_session_t* _session )
     /* Check if extension is empty */
     if ( _session->_ext_header->_ext_type == 0 ){
 
-        DEALLOCATOR ( _session->_ext_header->_hd_ext )
-        DEALLOCATOR ( _session->_ext_header )
+        free ( _session->_ext_header->_hd_ext );
+        free ( _session->_ext_header );
 
         _session->_ext_header = NULL; /* It's very important */
         _session->_extension = 0;
@@ -628,7 +657,8 @@ int rtp_remove_framerate_marking ( rtp_session_t* _session )
     } else if ( !_session->_ext_header->_ext_len ) {
 
         /* this will also be needed to change if there are more than 2 headers */
-        SET_ALLOCATE(_session->_ext_header->_hd_ext, _session->_ext_header->_ext_len);
+        _session->_ext_header->_hd_ext = realloc( _session->_ext_header->_hd_ext, sizeof( rtp_ext_header_t ) * _session->_ext_header->_ext_len );
+        assert(_session->_ext_header->_hd_ext);
 
     }
 
@@ -653,7 +683,9 @@ int rtp_set_prefix ( rtp_session_t* _session, uint8_t* _prefix, uint16_t _prefix
         free ( _session->_prefix );
     }
 
-    _session->_prefix = calloc ( ( sizeof * _session->_prefix ) * _prefix_length,1 );
+    _session->_prefix = calloc ( ( sizeof * _session->_prefix ), _prefix_length );
+    assert(_session->_prefix);
+
     t_memcpy ( _session->_prefix, _prefix, _prefix_length );
     _session->_prefix_length = _prefix_length;
 

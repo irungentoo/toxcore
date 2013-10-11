@@ -64,6 +64,7 @@ typedef struct msi_call_s {     /* Call info structure */
     crypto_key  _key;           /* What is the type again? */
     uint16_t    _participants;  /* Number of participants */
     uint32_t    _timeoutst;     /* Time of the timeout for some action to end; 0 if infinite */
+    int         _outgoing_timer_id;
 
 } msi_call_t;
 
@@ -119,6 +120,8 @@ void msi_register_callback_recv_ringing ( MCALLBACK );
 void msi_register_callback_recv_starting ( MCALLBACK );
 void msi_register_callback_recv_ending ( MCALLBACK );
 void msi_register_callback_recv_error ( MCALLBACK );
+
+void msi_register_callback_requ_timeout ( MCALLBACK );
 /* -------- */
 
 

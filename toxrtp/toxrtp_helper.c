@@ -121,7 +121,8 @@ uint8_t* t_strallcpy ( const uint8_t* _source ) /* string alloc and copy */
 
     size_t _length = t_memlen(_source) + 1; /* make space for null character */
 
-    uint8_t* _dest = calloc( sizeof ( uint8_t ) * _length,1 );
+    uint8_t* _dest = calloc( sizeof ( uint8_t ), _length );
+    assert(_dest);
 
     t_memcpy(_dest, _source, _length);
 

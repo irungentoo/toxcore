@@ -17,7 +17,7 @@ static int _unique_id = 1;
 /* clear events */
 void clear_events (event_container_t** _event_container, size_t* _counter)
 {
-    assert( *_event_container != NULL );
+    assert( *_event_container );
 
     free(*_event_container);
     *_event_container = NULL;
@@ -39,10 +39,20 @@ int pop_id ( event_container_t** _event_container, size_t* _counter, int _id )
         }
         ++_it;
     }
+
     if ( i ) {
         for ( ; i > 0; -- i ){ *_it = *(_it + 1); ++_it; }
         -- (*_counter);
         *_event_container = realloc(*_event_container, sizeof(event_container_t) * (*_counter)); /* resize */
+
+        if ( *_counter )
+            assert(*_event_container);
+
+        return SUCCESS;
+
+    } else if ( (*_event_container)->_id == _id ) {
+        free(*_event_container);
+        (*_event_container) = NULL;
         return SUCCESS;
     }
 
@@ -60,9 +70,7 @@ void* event_poll( void* _event_handler_p )
     {
         pthread_mutex_lock(&_event_handler->_mutex);
 
-        if ( _event_handler->_events ){
-            assert(_event_handler->_events_count);
-
+        if ( _event_handler->_events_count ){
             int i;
             for ( i = 0; i < _event_handler->_events_count; i ++ ){
                 _event_handler->_events[i]._event(_event_handler->_events[i]._event_args);
@@ -71,19 +79,17 @@ void* event_poll( void* _event_handler_p )
             clear_events(&_event_handler->_events, &_event_handler->_events_count);
         }
 
-        if ( _event_handler->_timed_events ){
-            assert(_event_handler->_timed_events_count);
+        if ( _event_handler->_timed_events_count ){
 
             uint32_t _time = t_time();
 
             if ( _event_handler->_timed_events[0]._timeout < _time ) {
                 _event_handler->_timed_events[0]._event(_event_handler->_timed_events[0]._event_args);
+
+                pop_id(&_event_handler->_timed_events,
+                       &_event_handler->_timed_events_count,
+                       _event_handler->_timed_events[0]._id);
             }
-
-            pop_id(&_event_handler->_timed_events,
-                   &_event_handler->_timed_events_count,
-                   _event_handler->_timed_events[0]._id);
-
         }
 
         pthread_mutex_unlock(&_event_handler->_mutex);
@@ -109,6 +115,9 @@ void push_event ( event_container_t** _container, size_t* _counter, event_t _fun
 
 void throw_event( void* _event_handler_p, event_t _func, event_arg_t _arg )
 {
+    if ( !_func )
+        return;
+
     event_handler_t* _event_handler = _event_handler_p;
 
     pthread_mutex_lock(&_event_handler->_mutex);
@@ -120,13 +129,16 @@ void throw_event( void* _event_handler_p, event_t _func, event_arg_t _arg )
 
 int throw_timer_event ( void* _event_handler_p, event_t _func, event_arg_t _arg, uint32_t _timeout)
 {
+    if ( !_func )
+        return FAILURE;
+
     event_handler_t* _event_handler = _event_handler_p;
 
     pthread_mutex_lock(&_event_handler->_mutex);
 
     push_event(&_event_handler->_timed_events, &_event_handler->_timed_events_count, _func, _arg);
     size_t _counter = _event_handler->_timed_events_count;
-    _event_handler->_timed_events[_counter - 1]._timeout = _timeout;
+    _event_handler->_timed_events[_counter - 1]._timeout = _timeout + t_time();
     _event_handler->_timed_events[_counter - 1]._id = _unique_id; ++_unique_id;
 
 
@@ -160,8 +172,8 @@ int cancel_timer_event ( void* _event_handler_p, int _id )
 
 event_handler_t* init_event_poll (uint32_t _frequms)
 {
-    event_handler_t* _retu = calloc(sizeof(event_handler_t),1);
-
+    event_handler_t* _retu = calloc(sizeof(event_handler_t), 1);
+    assert(_retu);
     /* Initialize basic events */
     _retu->_events = NULL ;
 
