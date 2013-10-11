@@ -7,8 +7,7 @@ libtoxrtp_la_include_HEADERS = \
 
 libtoxrtp_la_includedir = $(includedir)/tox
 
-libtoxrtp_la_SOURCES = ../toxrtp/toxrtp_allocator.h \
-                       ../toxrtp/toxrtp_error.h \
+libtoxrtp_la_SOURCES = ../toxrtp/toxrtp_error.h \
                        ../toxrtp/toxrtp_error.c \
                        ../toxrtp/toxrtp_error_id.h \
                        ../toxrtp/toxrtp_helper.h \
