@@ -209,7 +209,7 @@ int tox_friend_exists(Tox *tox, int friendnumber);
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  *
- * You will want to retain the return value, it will be passed to your read receipt callback
+ * You will want to retain the return value, it will be passed to your read_receipt callback
  * if one is received.
  * m_sendmessage_withid will send a message with the id of your choosing,
  * however we can generate an id for you by calling plain m_sendmessage.
@@ -219,10 +219,16 @@ uint32_t tox_sendmessage_withid(Tox *tox, int friendnumber, uint32_t theid, uint
 
 /* Send an action to an online friend.
  *
- *  return 1 if packet was successfully put into the send queue.
+ *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
+ *
+ *  You will want to retain the return value, it will be passed to your read_receipt callback
+ *  if one is received.
+ *  m_sendaction_withid will send an action message with the id of your choosing,
+ *  however we can generate an id for you by calling plain m_sendaction.
  */
-int tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length);
+uint32_t tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length);
+uint32_t tox_sendaction_withid(Tox *tox, int friendnumber, uint32_t theid, uint8_t *action, uint32_t length);
 
 /* Set friendnumber's nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
@@ -435,7 +441,7 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
  * HOW TO SEND FILES CORRECTLY:
  * 1. Use tox_new_filesender(...) to create a new file sender.
  * 2. Wait for the callback set with tox_callback_file_control(...) to be called with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
- * 3. Send the data with tox_file_senddata(...)
+ * 3. Send the data with tox_file_senddata(...) with chunk size tox_filedata_size(...)
  * 4. When sending is done, send a tox_file_sendcontrol(...) with send_receive = 0 and message_id = TOX_FILECONTROL_FINISHED
  *
  * HOW TO RECEIVE FILES CORRECTLY:
@@ -507,6 +513,13 @@ int tox_file_sendcontrol(Tox *tox, int friendnumber, uint8_t send_receive, uint8
  *  return 0 on failure
  */
 int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length);
+
+/* Returns the recommended/maximum size of the filedata you send with tox_file_senddata()
+ *
+ *  return size on success
+ *  return 0 on failure (currently will never return 0)
+ */
+int tox_filedata_size(Tox *tox, int friendnumber);
 
 /* Give the number of bytes left to be sent/received.
  *

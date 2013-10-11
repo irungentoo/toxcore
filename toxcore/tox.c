@@ -132,7 +132,7 @@ int tox_friend_exists(Tox *tox, int friendnumber)
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  *
- *  You will want to retain the return value, it will be passed to your read receipt callback
+ *  You will want to retain the return value, it will be passed to your read_receipt callback
  *  if one is received.
  *  m_sendmessage_withid will send a message with the id of your choosing,
  *  however we can generate an id for you by calling plain m_sendmessage.
@@ -150,13 +150,25 @@ uint32_t tox_sendmessage_withid(Tox *tox, int friendnumber, uint32_t theid, uint
 }
 
 /* Send an action to an online friend.
- *  return 1 if packet was successfully put into the send queue.
+ *
+ *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
+ *
+ *  You will want to retain the return value, it will be passed to your read_receipt callback
+ *  if one is received.
+ *  m_sendaction_withid will send an action message with the id of your choosing,
+ *  however we can generate an id for you by calling plain m_sendaction.
  */
-int tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length)
+uint32_t tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length)
 {
     Messenger *m = tox;
     return m_sendaction(m, friendnumber, action, length);
+}
+
+uint32_t tox_sendaction_withid(Tox *tox, int friendnumber, uint32_t theid, uint8_t *action, uint32_t length)
+{
+    Messenger *m = tox;
+    return m_sendaction_withid(m, friendnumber, theid, action, length);
 }
 
 /* Set friendnumber's nickname.
@@ -359,7 +371,7 @@ void tox_callback_statusmessage(Tox *tox, void (*function)(Messenger *tox, int, 
 void tox_callback_userstatus(Tox *tox, void (*_function)(Tox *tox, int, TOX_USERSTATUS, void *), void *userdata)
 {
     Messenger *m = tox;
-    typedef void (*function_type)(Messenger *, int, USERSTATUS, void *); 
+    typedef void (*function_type)(Messenger *, int, USERSTATUS, void *);
     function_type function = (function_type)_function;
     m_callback_userstatus(m, function, userdata);
 }
@@ -551,6 +563,17 @@ int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *d
     Messenger *m = tox;
     return file_data(m, friendnumber, filenumber, data, length);
 }
+
+/* Returns the recommended/maximum size of the filedata you send with tox_file_senddata()
+ *
+ *  return size on success
+ *  return 0 on failure (currently will never return 0)
+ */
+int tox_filedata_size(Tox *tox, int friendnumber)
+{
+    return MAX_DATA_SIZE - crypto_box_MACBYTES - 3;
+}
+
 /* Give the number of bytes left to be sent/received.
  *
  *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
