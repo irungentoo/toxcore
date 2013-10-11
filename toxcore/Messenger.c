@@ -332,12 +332,36 @@ uint32_t m_sendmessage_withid(Messenger *m, int friendnumber, uint32_t theid, ui
 
 /* Send an action to an online friend.
  *
- *  return 1 if packet was successfully put into the send queue.
+ *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  */
-int m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t length)
+uint32_t m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_ACTION, action, length);
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    uint32_t msgid = ++m->friendlist[friendnumber].message_id;
+
+    if (msgid == 0)
+        msgid = 1; // Otherwise, false error
+
+    if (m_sendaction_withid(m, friendnumber, msgid, action, length)) {
+        return msgid;
+    }
+
+    return 0;
+}
+
+uint32_t m_sendaction_withid(Messenger *m, int friendnumber, uint32_t theid, uint8_t *action, uint32_t length)
+{
+    if (length >= (MAX_DATA_SIZE - sizeof(theid)))
+        return 0;
+
+    uint8_t temp[MAX_DATA_SIZE];
+    theid = htonl(theid);
+    memcpy(temp, &theid, sizeof(theid));
+    memcpy(temp + sizeof(theid), action, length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_ACTION, temp, length + sizeof(theid));
 }
 
 /* Send a name packet to friendnumber.
@@ -1470,13 +1494,22 @@ void doFriends(Messenger *m)
                     }
 
                     case PACKET_ID_ACTION: {
-                        if (data_length == 0)
+                        uint8_t *message_id = data;
+                        uint8_t message_id_length = 4;
+
+                        if (data_length <= message_id_length)
                             break;
 
-                        data[data_length - 1] = 0;/* Make sure the NULL terminator is present. */
+                        uint8_t *action = data + message_id_length;
+                        uint16_t action_length = data_length - message_id_length;
 
+                        action[action_length - 1] = 0;/* Make sure the NULL terminator is present. */
+
+                        if (m->friendlist[i].receives_read_receipts) {
+                            write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
+                        }
                         if (m->friend_action)
-                            (*m->friend_action)(m, i, data, data_length, m->friend_action_userdata);
+                            (*m->friend_action)(m, i, action, action_length, m->friend_action_userdata);
 
                         break;
                     }

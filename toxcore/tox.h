@@ -209,7 +209,7 @@ int tox_friend_exists(Tox *tox, int friendnumber);
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  *
- * You will want to retain the return value, it will be passed to your read receipt callback
+ * You will want to retain the return value, it will be passed to your read_receipt callback
  * if one is received.
  * m_sendmessage_withid will send a message with the id of your choosing,
  * however we can generate an id for you by calling plain m_sendmessage.
@@ -219,10 +219,16 @@ uint32_t tox_sendmessage_withid(Tox *tox, int friendnumber, uint32_t theid, uint
 
 /* Send an action to an online friend.
  *
- *  return 1 if packet was successfully put into the send queue.
+ *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
+ *
+ *  You will want to retain the return value, it will be passed to your read_receipt callback
+ *  if one is received.
+ *  m_sendaction_withid will send an action message with the id of your choosing,
+ *  however we can generate an id for you by calling plain m_sendaction.
  */
-int tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length);
+uint32_t tox_sendaction(Tox *tox, int friendnumber, uint8_t *action, uint32_t length);
+uint32_t tox_sendaction_withid(Tox *tox, int friendnumber, uint32_t theid, uint8_t *action, uint32_t length);
 
 /* Set friendnumber's nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
