@@ -25,12 +25,13 @@
 #include "test_helper.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 arg_t* parse_args ( int argc, char* argv[] )
 {
-    arg_t* _list;
+    arg_t* _list = calloc(sizeof(arg_t), 1);
+    _list->next = _list->prev = NULL;
 
-    ALLOCATOR_LIST_D ( _list, arg_t, NULL )
     arg_t* it = _list;
 
     size_t val;
@@ -38,7 +39,10 @@ arg_t* parse_args ( int argc, char* argv[] )
         it->value = argv[val];
 
         if ( val < argc - 1 ) { /* just about to end */
-            ALLOCATOR_LIST_NEXT_D ( it, arg_t )
+            it->next = calloc(sizeof(arg_t), 1);
+            it->next->prev = it;
+            it = it->next;
+            it->next = NULL;
         }
     }
 

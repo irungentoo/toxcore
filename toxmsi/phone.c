@@ -303,6 +303,12 @@ MCBTYPE callback_call_ended ( MCBARGS )
     INFO ( "Call ended!" );
 }
 
+MCBTYPE callback_requ_timeout ( MCBARGS )
+{
+    INFO( "No answer! " );
+    msi_cancel(_arg);
+}
+
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
 {
     phone_t* _retu = malloc(sizeof(phone_t));
@@ -353,6 +359,8 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
     msi_register_callback_recv_ringing ( callback_recv_ringing );
     msi_register_callback_recv_starting ( callback_recv_starting );
     msi_register_callback_recv_ending ( callback_recv_ending );
+
+    msi_register_callback_requ_timeout ( callback_requ_timeout );
     /* ------------------ */
 
     /* Now start msi main loop. It's a must!
@@ -531,7 +539,7 @@ int quitPhone(phone_t* _phone)
     msi_terminate_session(_phone->_msi);
     pthread_mutex_destroy ( &_mutex );
 
-    printf("\rQuit!\n");
+    printf("\r[i] Quit!\n");
     return SUCCESS;
 }
 

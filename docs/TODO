@@ -8,9 +8,12 @@ DHT:
     [IN PROGRESS] Optimizing the code.
 
 Lossless UDP:
-    [TODO] Increase data send/receive rates.
+    [DONE] Increase data send/receive rates.
 
 [IN PROGRESS] Massive IRC like group chats (text only)
+    [DONE] networking base.
+    [TODO] Syncing chat state between clients (nicknames, list of who is in chat, etc...)
+    [TODO] Make clients sign their messages so that peers can't modify them.
 
 [IN PROGRESS] Audio/Video
     [DONE] Capture/encoding/streaming/decoding/displaying
@@ -19,6 +22,10 @@ Lossless UDP:
     [NOT STARTED] Small group chats
     [NOT STARTED] Push to talk for audio
 
+Friend_requests.c:
+    [TODO] What happens when a friend request is recieved needs to be changed.
+
+[IN PROGRESS] File transfers
 [NOT STARTED] Offline messaging
 [NOT STARTED] Friends list syncing
 [IN PROGRESS] IPV6 support

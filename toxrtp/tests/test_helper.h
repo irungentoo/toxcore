@@ -26,7 +26,6 @@
 #define _TEST__HELPER_
 
 #include "../toxrtp_helper.h"
-#include "../toxrtp_allocator.h"
 
 #define RTP_PORT 31003
 #define RTP_PORT_LISTEN 31001

@@ -40,6 +40,8 @@ MCBTYPE ( *msi_ringing_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_starting_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_ending_callback ) ( MCBARGS ) = NULL;
 MCBTYPE ( *msi_error_callback ) ( MCBARGS ) = NULL;
+
+MCBTYPE ( *msi_timeout_callback ) ( MCBARGS ) = NULL;
 /* End of CALLBACKS */
 
 /*------------------------*/
@@ -128,6 +130,11 @@ void msi_register_callback_recv_error ( MCALLBACK )
     msi_ending_callback = callback;
 }
 
+/* Timeout */
+void msi_register_callback_requ_timeout ( MCALLBACK )
+{
+    msi_timeout_callback = callback;
+}
 /* END REGISTERING */
 
 /*------------------------*/
@@ -234,7 +241,8 @@ void flush_peer_type ( msi_session_t* _session, msi_msg_t* _msg, int _peer_id )
 
 msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agent )
 {
-    msi_session_t* _session = malloc ( sizeof ( msi_session_t ) );
+    msi_session_t* _session = calloc ( sizeof ( msi_session_t ), 1 );
+    assert(_session);
 
     _session->_oldest_msg = _session->_last_msg = NULL;
     _session->_core_handler = _core_handler;
@@ -277,13 +285,18 @@ msi_call_t* msi_init_call ( msi_session_t* _session, int _peers, uint32_t _timeo
     if ( !_peers )
         return NULL;
 
-    msi_call_t* _call = malloc ( sizeof ( msi_call_t ) );
-    _call->_type_peer = malloc ( sizeof ( call_type ) * _peers );
+    msi_call_t* _call = calloc ( sizeof ( msi_call_t ), 1 );
+    _call->_type_peer = calloc ( sizeof ( call_type ), _peers );
+
+    assert(_call);
+    assert(_call->_type_peer);
+
     _call->_participants = _peers;
 
     _call->_id = randombytes_random();
     _call->_key = _session->_key;
-    _call->_timeoutst = t_time() + _timeoutms;
+    _call->_timeoutst = _timeoutms;
+    _call->_outgoing_timer_id = 0;
 
     return _call;
 }
@@ -331,30 +344,24 @@ int msi_handle_recv_invite ( msi_session_t* _session, msi_msg_t* _msg )
     msi_send_msg ( _session, _msg_ringing );
     msi_free_msg ( _msg_ringing );
 
-
-    if ( !msi_recv_invite_callback )
-        return 0;
-
     throw_event ( _session->_event_handler, msi_recv_invite_callback, _session );
-
     return 1;
 }
 int msi_handle_recv_start ( msi_session_t* _session, msi_msg_t* _msg )
 {
     _session->_call->_state = call_active;
 
-    if ( !_session->_call || !msi_start_call_callback )
+    if ( !_session->_call )
         return 0;
 
     flush_peer_type ( _session, _msg, 0 );
 
     throw_event ( _session->_event_handler, msi_start_call_callback, _session );
-
     return 1;
 }
 int msi_handle_recv_reject ( msi_session_t* _session, msi_msg_t* _msg )
 {
-    if ( !_session->_call || !msi_reject_call_callback )
+    if ( !_session->_call )
         return 0;
 
     msi_msg_t* _msg_end = msi_msg_new ( TYPE_REQUEST, stringify_request ( _end ) );
@@ -367,8 +374,14 @@ int msi_handle_recv_reject ( msi_session_t* _session, msi_msg_t* _msg )
 }
 int msi_handle_recv_cancel ( msi_session_t* _session, msi_msg_t* _msg )
 {
-    if ( !_session->_call || !msi_cancel_call_callback )
+    if ( !_session->_call )
         return 0;
+
+    msi_msg_t* _msg_ending = msi_msg_new ( TYPE_RESPONSE, stringify_response ( _ending ) );
+    msi_send_msg ( _session, _msg_ending );
+    msi_free_msg ( _msg_ending );
+
+    msi_terminate_call ( _session );
 
     throw_event ( _session->_event_handler, msi_cancel_call_callback, _session );
 
@@ -376,7 +389,7 @@ int msi_handle_recv_cancel ( msi_session_t* _session, msi_msg_t* _msg )
 }
 int msi_handle_recv_end ( msi_session_t* _session, msi_msg_t* _msg )
 {
-    if ( !_session->_call || !msi_end_call_callback )
+    if ( !_session->_call )
         return 0;
 
     msi_msg_t* _msg_ending = msi_msg_new ( TYPE_RESPONSE, stringify_response ( _ending ) );
@@ -394,7 +407,7 @@ int msi_handle_recv_end ( msi_session_t* _session, msi_msg_t* _msg )
 /* RESPONSES */
 int msi_handle_recv_ringing ( msi_session_t* _session )
 {
-    if ( !_session->_call || !msi_ringing_callback )
+    if ( !_session->_call )
         return 0;
 
     throw_event ( _session->_event_handler, msi_ringing_callback, _session );
@@ -403,7 +416,7 @@ int msi_handle_recv_ringing ( msi_session_t* _session )
 }
 int msi_handle_recv_starting ( msi_session_t* _session, msi_msg_t* _msg )
 {
-    if ( !_session->_call || !msi_send_message_callback || !msi_starting_callback )
+    if ( !_session->_call || !msi_send_message_callback )
         return 0;
 
     _session->_call->_state = call_active;
@@ -415,6 +428,8 @@ int msi_handle_recv_starting ( msi_session_t* _session, msi_msg_t* _msg )
     flush_peer_type ( _session, _msg, 0 );
 
     throw_event ( _session->_event_handler, msi_starting_callback, _session );
+    cancel_timer_event(_session->_event_handler, _session->_call->_outgoing_timer_id);
+    _session->_call->_outgoing_timer_id = 0;
 
     return 1;
 }
@@ -424,10 +439,6 @@ int msi_handle_recv_ending ( msi_session_t* _session )
         return 0;
 
     msi_terminate_call ( _session );
-
-    if ( !msi_ending_callback )
-        return 0;
-
     throw_event ( _session->_event_handler, msi_ending_callback, _session );
 
     return 1;
@@ -435,9 +446,9 @@ int msi_handle_recv_ending ( msi_session_t* _session )
 int msi_handle_recv_error ( msi_session_t* _session, msi_msg_t* _msg )
 {
     /* Handle error accordingly */
-    _session->_last_error = atoi ( _msg->_reason->_header_value );
+    _session->_last_error = atoi ( (const char*)_msg->_reason->_header_value );
 
-    if ( !_session->_call || !msi_error_callback )
+    if ( !_session->_call )
         return 0;
 
     throw_event ( _session->_event_handler, msi_error_callback, _session );
@@ -480,6 +491,8 @@ int msi_invite ( msi_session_t* _session, call_type _call_type, uint32_t _timeou
     msi_free_msg ( _msg_invite );
 
     _session->_call->_state = call_inviting;
+
+    _session->_call->_outgoing_timer_id = throw_timer_event(_session->_event_handler, msi_timeout_callback, _session, _timeoutms );
 
     return 1;
 }
@@ -525,6 +538,8 @@ int msi_cancel ( msi_session_t* _session )
     msi_msg_t* _msg_cancel = msi_msg_new ( TYPE_REQUEST, stringify_request ( _cancel ) );
     msi_send_msg ( _session, _msg_cancel );
     msi_free_msg ( _msg_cancel );
+
+
 
     return 1;
 }
