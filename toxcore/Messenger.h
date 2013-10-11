@@ -267,7 +267,7 @@ int m_friend_exists(Messenger *m, int friendnumber);
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  *
- *  You will want to retain the return value, it will be passed to your read receipt callback
+ *  You will want to retain the return value, it will be passed to your read_receipt callback
  *  if one is received.
  *  m_sendmessage_withid will send a message with the id of your choosing,
  *  however we can generate an id for you by calling plain m_sendmessage.
@@ -277,10 +277,16 @@ uint32_t m_sendmessage_withid(Messenger *m, int friendnumber, uint32_t theid, ui
 
 /* Send an action to an online friend.
  *
- *  return 1 if packet was successfully put into the send queue.
+ *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
+ *
+ *  You will want to retain the return value, it will be passed to your read_receipt callback
+ *  if one is received.
+ *  m_sendaction_withid will send an action message with the id of your choosing,
+ *  however we can generate an id for you by calling plain m_sendaction.
  */
-int m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t length);
+uint32_t m_sendaction(Messenger *m, int friendnumber, uint8_t *action, uint32_t length);
+uint32_t m_sendaction_withid(Messenger *m, int friendnumber, uint32_t theid, uint8_t *action, uint32_t length);
 
 /* Set the name and name_length of a friend.
  * name must be a string of maximum MAX_NAME_LENGTH length.
