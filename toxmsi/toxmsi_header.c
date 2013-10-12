@@ -19,9 +19,8 @@ if ( _tempval ){                             \
 
 uint8_t* msi_search_field ( msi_header_t* _list, const uint8_t* _field )
 {
-    if ( !_list || !_field ){
-        return NULL;
-    }
+    assert(_list);
+    assert(_field);
 
     msi_header_t* _iterator;
 
@@ -36,13 +35,15 @@ uint8_t* msi_search_field ( msi_header_t* _list, const uint8_t* _field )
 
 int msi_parse_headers ( msi_msg_t* _msg )
 {
-    if ( !_msg || !(_msg->_headers) )
+    assert(_msg);
+
+    if ( !_msg->_headers )
         return FAILURE;
 
     msi_header_t* _list = _msg->_headers;
     uint8_t* _field_current;
 
-    /* Start by default order */
+    ALLOC_ADD_DATA(_field_current, _list, _CALL_ID_FIELD, _msg->_call_id, msi_header_call_id_t)
     ALLOC_ADD_DATA(_field_current, _list, _VERSION_FIELD, _msg->_version, msi_header_version_t)
     ALLOC_ADD_DATA(_field_current, _list, _REQUEST_FIELD, _msg->_request, msi_header_request_t)
     ALLOC_ADD_DATA(_field_current, _list, _RESPONSE_FIELD, _msg->_response, msi_header_response_t)
@@ -51,7 +52,6 @@ int msi_parse_headers ( msi_msg_t* _msg )
     ALLOC_ADD_DATA(_field_current, _list, _USERAGENT_FIELD, _msg->_user_agent, msi_header_user_agent_t)
     ALLOC_ADD_DATA(_field_current, _list, _INFO_FIELD, _msg->_info, msi_header_info_t)
     ALLOC_ADD_DATA(_field_current, _list, _REASON_FIELD, _msg->_reason, msi_header_reason_t)
-    ALLOC_ADD_DATA(_field_current, _list, _CALL_ID, _msg->_call_id, msi_header_call_id_t)
 
     /* Since we don't need the raw header anymore remove it */
     msi_header_t* _temp;
@@ -123,20 +123,19 @@ msi_header_t* msi_add_new_header ( uint8_t* _value )
 
     _retu->_header_field = _identifier;
     _retu->_header_value = _data;
+
     _retu->next = NULL;
 
     return _retu;
 }
 
-msi_header_t* msi_parse_raw_data ( uint8_t* _data )
+msi_header_t* msi_parse_raw_data ( const uint8_t* _data )
 {
-    if ( !_data ){
-        return NULL;
-    }
+    assert(_data);
 
     uint8_t* _header_string;
 
-    _header_string = (uint8_t*) strtok ((char*)_data, _RAW_TERMINATOR);
+    _header_string = (uint8_t*) strtok ((const char*)_data, _RAW_TERMINATOR);
 
     msi_header_t* _head = msi_add_new_header(_header_string);
     msi_header_t* _it = _head;

@@ -50,13 +50,10 @@ int pop_id ( event_container_t** _event_container, size_t* _counter, int _id )
 
         return SUCCESS;
 
-    } else if ( (*_event_container)->_id == _id ) {
-        free(*_event_container);
-        (*_event_container) = NULL;
-        return SUCCESS;
+    } else {
+        assert(i);
+        return FAILURE;
     }
-
-    return FAILURE;
 }
 
 /* main poll for event execution */
@@ -68,18 +65,22 @@ void* event_poll( void* _event_handler_p )
 
     while ( _event_handler->_running )
     {
-        pthread_mutex_lock(&_event_handler->_mutex);
 
         if ( _event_handler->_events_count ){
+            pthread_mutex_lock(&_event_handler->_mutex);
+
             int i;
             for ( i = 0; i < _event_handler->_events_count; i ++ ){
                 _event_handler->_events[i]._event(_event_handler->_events[i]._event_args);
 
             }
             clear_events(&_event_handler->_events, &_event_handler->_events_count);
+
+            pthread_mutex_unlock(&_event_handler->_mutex);
         }
 
         if ( _event_handler->_timed_events_count ){
+            pthread_mutex_lock(&_event_handler->_mutex);
 
             uint32_t _time = t_time();
 
@@ -90,9 +91,9 @@ void* event_poll( void* _event_handler_p )
                        &_event_handler->_timed_events_count,
                        _event_handler->_timed_events[0]._id);
             }
+            pthread_mutex_unlock(&_event_handler->_mutex);
         }
 
-        pthread_mutex_unlock(&_event_handler->_mutex);
 
         usleep(*_frequms);
     }

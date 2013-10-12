@@ -24,7 +24,7 @@ static const char* _RAW_TERMINATOR = "\n\r";
 #define _USERAGENT_FIELD        "User-agent"
 #define _INFO_FIELD             "INFO"
 #define _REASON_FIELD           "Reason"
-#define _CALL_ID                "Call-id"
+#define _CALL_ID_FIELD          "Call-id"
 
 #define HEADER_VALUES   \
 /*uint8_t* _header_field */ \
@@ -94,6 +94,6 @@ struct msi_msg_s;
 int             msi_parse_headers ( struct msi_msg_s* _msg );
 
 /* Make sure it's null terminated */
-msi_header_t*   msi_parse_raw_data ( uint8_t* _data );
+msi_header_t*   msi_parse_raw_data ( const uint8_t* _data );
 
 #endif /* _MSI_HEADER_ */

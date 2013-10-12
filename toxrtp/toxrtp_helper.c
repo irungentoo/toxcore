@@ -39,13 +39,11 @@
 #endif /* WIN */
 
 
-static int _seed = -1; /* Not initiated */
+static int _seed = 0; /* Not initiated */
 
 int t_setipport ( const char* _ip, unsigned short _port, void* _dest )
 {
-    if ( !_dest ) {
-        return FAILURE;
-    }
+    assert(_dest);
 
     IP_Port* _dest_c = ( IP_Port* ) _dest;
     ip_init(&_dest_c->ip, 0);
@@ -62,7 +60,7 @@ int t_setipport ( const char* _ip, unsigned short _port, void* _dest )
 
 uint32_t t_random ( uint32_t _max )
 {
-    if ( _seed < 0 ) {
+    if ( !_seed ) {
         srand ( t_time() );
         _seed++;
     }
@@ -116,8 +114,7 @@ size_t t_memlen ( const uint8_t* _valu)
 
 uint8_t* t_strallcpy ( const uint8_t* _source ) /* string alloc and copy */
 {
-    if ( !_source )
-        return NULL;
+    assert(_source);
 
     size_t _length = t_memlen(_source) + 1; /* make space for null character */
 
@@ -206,7 +203,7 @@ uint64_t t_time()
 {
     struct timeval _tv;
     gettimeofday(&_tv, NULL);
-    uint64_t _retu_usec = _tv.tv_sec % 1000000; /* get them 6 digits an leave space for 3 more dammit */
+    uint64_t _retu_usec = _tv.tv_sec % 1000000; /* get 6 digits an leave space for 3 more */
     _retu_usec = _retu_usec * 1000 + (_tv.tv_usec / 1000 );
     return _retu_usec;
 }

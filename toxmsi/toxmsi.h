@@ -40,6 +40,8 @@
 #define CT_AUDIO_HEADER_VALUE "AUDIO"
 #define CT_VIDEO_HEADER_VALUE "VIDEO"
 
+/* define size for call_id */
+#define _CALL_ID_LEN 12
 
 typedef enum {
     type_audio = 1,
@@ -56,15 +58,15 @@ typedef enum {
 
 typedef int crypto_key;
 
-typedef struct msi_call_s {     /* Call info structure */
+typedef struct msi_call_s {         /* Call info structure */
     call_state  _state;
     call_type   _type_local;
-    call_type*  _type_peer;     /* Support for conference starts with this */
-    uint32_t    _id;            /* Random value identifying the call */
-    crypto_key  _key;           /* What is the type again? */
-    uint16_t    _participants;  /* Number of participants */
-    uint32_t    _timeoutst;     /* Time of the timeout for some action to end; 0 if infinite */
-    int         _outgoing_timer_id;
+    call_type*  _type_peer;         /* Support for conference starts with this */
+    uint8_t     _id[_CALL_ID_LEN];  /* Random value identifying the call */
+    crypto_key  _key;               /* What is the type again? */
+    uint16_t    _participants;      /* Number of participants */
+    uint32_t    _timeoutst;         /* Time of the timeout for some action to end; 0 if infinite */
+    int         _outgoing_timer_id; /* Timer id */
 
 } msi_call_t;
 
@@ -83,7 +85,8 @@ typedef struct msi_session_s {
     /*int _friend_id;*/
     tox_IP_Port _friend_id;
 
-    int _last_error; /* Determine the last error */
+    int             _last_error_id; /* Determine the last error */
+    const uint8_t*  _last_error_str;
 
     const uint8_t* _user_agent;
 

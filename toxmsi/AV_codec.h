@@ -67,7 +67,7 @@
 
 #ifdef __linux__
 #define VIDEO_DRIVER "video4linux2"
-#define DEFAULT_WEBCAM "/dev/video1"
+#define DEFAULT_WEBCAM "/dev/video0"
 #endif
 
 #ifdef WIN32
