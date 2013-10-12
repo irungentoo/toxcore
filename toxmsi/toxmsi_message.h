@@ -16,7 +16,7 @@
 
 #define VERSION_STRING "0.2.2"
 
-#define MSI_MAXMSG_SIZE 1024
+#define MSI_MAXMSG_SIZE 65535
 
 typedef enum {
     _invite,
@@ -89,32 +89,32 @@ typedef struct msi_msg_s {
 /*
  * Parse data received from socket
  */
-msi_msg_t*      msi_parse_msg          ( const uint8_t* _data );
+msi_msg_t*       msi_parse_msg          ( const uint8_t* _data );
 
 /*
  * Make new message. Arguments: _type: (request, response); _type_field ( value )
  */
-msi_msg_t*      msi_msg_new            ( uint8_t _type, const uint8_t* _type_field );
+msi_msg_t*       msi_msg_new            ( uint8_t _type, const uint8_t* _type_field );
 
 /* Header setting */
-int             msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _header_field );
-int             msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _header_field );
-int             msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header_field );
-int             msi_msg_set_info       ( msi_msg_t* _msg, const uint8_t* _header_field );
-int             msi_msg_set_reason     ( msi_msg_t* _msg, const uint8_t* _header_field );
+void             msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _header_field );
+void             msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _header_field );
+void             msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header_field );
+void             msi_msg_set_info       ( msi_msg_t* _msg, const uint8_t* _header_field );
+void             msi_msg_set_reason     ( msi_msg_t* _msg, const uint8_t* _header_field );
+void             msi_msg_set_call_id    ( msi_msg_t* _msg, const uint8_t* _header_field );
 
-/* This one is exception to the rule */
-int             msi_msg_set_call_id    ( msi_msg_t* _msg, const uint32_t _value );
-uint32_t        msi_msg_get_call_id    ( msi_msg_t* _msg );
+
+uint8_t*         msi_genterate_call_id  ( uint8_t* _storage, size_t _len );
 /*
  * Parses message struct to string.
  * Allocates memory so don't forget to free it
  */
-uint8_t*        msi_msg_to_string      ( msi_msg_t* _msg );
+uint8_t*         msi_msg_to_string      ( msi_msg_t* _msg );
 
 /*
  * msi_msg_s struct deallocator
  */
-void            msi_free_msg           ( msi_msg_t* _msg );
+void             msi_free_msg           ( msi_msg_t* _msg );
 
 #endif /* _MSI_MESSAGE_H_ */

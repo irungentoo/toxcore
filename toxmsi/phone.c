@@ -279,6 +279,12 @@ MCBTYPE callback_recv_ending ( MCBARGS )
     INFO ( "Call ended!" );
 }
 
+MCBTYPE callback_recv_error ( MCBARGS )
+{
+    msi_session_t* _session = _arg;
+
+    INFO( "Error: %s", _session->_last_error_str );
+}
 
 MCBTYPE callback_call_started ( MCBARGS )
 {
@@ -306,8 +312,8 @@ MCBTYPE callback_call_ended ( MCBARGS )
 MCBTYPE callback_requ_timeout ( MCBARGS )
 {
     INFO( "No answer! " );
-    msi_cancel(_arg);
 }
+
 
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
 {
@@ -359,6 +365,7 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port)
     msi_register_callback_recv_ringing ( callback_recv_ringing );
     msi_register_callback_recv_starting ( callback_recv_starting );
     msi_register_callback_recv_ending ( callback_recv_ending );
+    msi_register_callback_recv_error(callback_recv_error);
 
     msi_register_callback_requ_timeout ( callback_requ_timeout );
     /* ------------------ */

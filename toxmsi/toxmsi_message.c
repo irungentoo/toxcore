@@ -18,11 +18,16 @@ _var->_header_value = t_strallcpy((const uint8_t*)_m_header_value);
 #define DEALLOCATE_HEADER(_header)          \
 if ( _header && _header->_header_value ) {  \
 free( _header->_header_value );             \
-free( _header );                            \
-}
+free( _header ); }
+
+#define SET_HEADER(_header_type, _var, _m_header_value) \
+if ( _var ){                                \
+free(_var->_header_value);                  \
+free(_var);}                                \
+ALLOCATE_HEADER( _header_type, _var, _m_header_value )
+
 
 /* Sets empty message
- * ?or should i use memset?
  */
 void set_msg ( msi_msg_t* _msg )
 {
@@ -39,11 +44,29 @@ void set_msg ( msi_msg_t* _msg )
     _msg->_headers = NULL;
 }
 
+void msi_free_msg ( msi_msg_t* _msg )
+{
+    assert(_msg);
+
+    DEALLOCATE_HEADER(_msg->_call_type);
+    DEALLOCATE_HEADER(_msg->_friend_id);
+    DEALLOCATE_HEADER(_msg->_request);
+    DEALLOCATE_HEADER(_msg->_response);
+    DEALLOCATE_HEADER(_msg->_user_agent);
+    DEALLOCATE_HEADER(_msg->_version);
+    DEALLOCATE_HEADER(_msg->_info);
+    DEALLOCATE_HEADER(_msg->_reason);
+    DEALLOCATE_HEADER(_msg->_call_id);
+
+    free(_msg);
+}
+
 void append_header_to_string ( uint8_t* _dest, const uint8_t* _header_field, const uint8_t* _header_value )
 {
-    if ( !_header_value || !_header_field ){
-        return;
-    }
+    assert(_dest);
+    assert(_header_value);
+    assert(_header_field);
+
     size_t _dest_len = t_memlen(_dest);
 
     uint8_t* _storage_iterator = _dest + _dest_len;
@@ -75,16 +98,14 @@ void append_header_to_string ( uint8_t* _dest, const uint8_t* _header_field, con
 
 msi_msg_t* msi_parse_msg ( const uint8_t* _data )
 {
-    if ( !_data ){
-        return NULL;
-    }
+    assert(_data);
 
     msi_msg_t* _retu = calloc ( sizeof ( msi_msg_t ), 1 );
     assert(_retu);
 
     set_msg(_retu);
 
-    _retu->_headers = msi_parse_raw_data ( (uint8_t*)_data );
+    _retu->_headers = msi_parse_raw_data ( _data );
 
     if ( msi_parse_headers (_retu) == FAILURE ) {
         msi_free_msg(_retu);
@@ -94,6 +115,55 @@ msi_msg_t* msi_parse_msg ( const uint8_t* _data )
     if ( !_retu->_version || strcmp((const char*)_retu->_version->_header_value, VERSION_STRING) != 0 ){
         msi_free_msg(_retu);
         return NULL;
+    }
+
+    return _retu;
+}
+
+
+uint8_t* msi_msg_to_string ( msi_msg_t* _msg )
+{
+    assert(_msg);
+
+    uint8_t* _retu = calloc(sizeof(uint8_t), MSI_MAXMSG_SIZE );
+    assert(_retu);
+
+    t_memset(_retu, '\0', MSI_MAXMSG_SIZE);
+
+    if ( _msg->_version ){
+        append_header_to_string(_retu, (const uint8_t*)_VERSION_FIELD,      _msg->_version->_header_value);
+    }
+
+    if ( _msg->_request ){
+        append_header_to_string(_retu, (const uint8_t*)_REQUEST_FIELD,      _msg->_request->_header_value);
+    }
+
+    if ( _msg->_response ){
+        append_header_to_string(_retu, (const uint8_t*)_RESPONSE_FIELD,     _msg->_response->_header_value);
+    }
+
+    if ( _msg->_friend_id ){
+        append_header_to_string(_retu, (const uint8_t*)_FRIENDID_FIELD,     _msg->_friend_id->_header_value);
+    }
+
+    if ( _msg->_call_type ){
+        append_header_to_string(_retu, (const uint8_t*)_CALLTYPE_FIELD,     _msg->_call_type->_header_value);
+    }
+
+    if ( _msg->_user_agent ){
+        append_header_to_string(_retu, (const uint8_t*)_USERAGENT_FIELD,    _msg->_user_agent->_header_value);
+    }
+
+    if ( _msg->_info ){
+        append_header_to_string(_retu, (const uint8_t*)_INFO_FIELD,         _msg->_info->_header_value);
+    }
+
+    if ( _msg->_call_id ){
+        append_header_to_string(_retu, (const uint8_t*)_CALL_ID_FIELD,      _msg->_call_id->_header_value);
+    }
+
+     if ( _msg->_reason ){
+        append_header_to_string(_retu, (const uint8_t*)_REASON_FIELD,       _msg->_reason->_header_value);
     }
 
     return _retu;
@@ -132,150 +202,67 @@ msi_msg_t* msi_msg_new ( uint8_t _type, const uint8_t* _typeid )
     return _retu;
 }
 
-int msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _header_field )
+uint8_t* msi_genterate_call_id  ( uint8_t* _storage, size_t _len )
 {
-    if ( !_msg || !_header_field )
-        return FAILURE;
+    assert(_storage);
 
-    if ( _msg->_call_type ){ /* already there */
-        free(_msg->_call_type->_header_value);
-        free(_msg->_call_type);
-    }
-    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _header_field )
+    static const char _alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"; /* avoids warning */
 
+    uint8_t _val = 0;
+    size_t _it;
 
-    return SUCCESS;
-}
-int msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _header_field )
-{
-    if ( !_msg || !_header_field  )
-        return FAILURE;
+    /* Generate random values 1-255 */
+    for ( _it = 0; _it < _len; _it ++ ) {
+        while ( !_val ) _val = (uint8_t) _alphanum[ t_random(61) ];
 
-    if ( _msg->_user_agent ){ /* already there */
-        free(_msg->_call_type->_header_value);
-        free(_msg->_call_type);
-    }
-    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _header_field )
-
-    return SUCCESS;
-}
-int msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header_field )
-{
-    if ( !_msg || !_header_field  )
-        return FAILURE;
-
-    if ( _msg->_friend_id ){ /* already there */
-        free(_msg->_call_type->_header_value);
-        free(_msg->_call_type);
-    }
-    ALLOCATE_HEADER( msi_header_call_type_t, _msg->_call_type, _header_field )
-
-    return SUCCESS;
-}
-int msi_msg_set_info ( msi_msg_t* _msg, const uint8_t* _header_field )
-{
-    return 0;
-}
-int msi_msg_set_reason ( msi_msg_t* _msg, const uint8_t* _header_field )
-{
-    return 0;
-}
-int msi_msg_set_call_id ( msi_msg_t* _msg, const uint32_t _value )
-{
-    if ( !_msg )
-        return FAILURE;
-
-    if ( _msg->_call_id ) { /* Already there */
-        free(_msg->_call_id->_header_value);
-        free(_msg->_call_id);
+        _storage[_it] = _val;
+        _val = 0;
     }
 
-    uint8_t _header_value [5];
-    snprintf((char*)_header_value, 5, "%d", _value);
-
-    ALLOCATE_HEADER(msi_header_call_id_t, _msg->_call_id, _header_value)
-
-    return SUCCESS;
+    return _storage;
 }
 
-uint32_t msi_msg_get_call_id ( msi_msg_t* _msg )
+/* HEADER SETTING
+ */
+
+void msi_msg_set_call_type  ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-    if ( !_msg )
-        return 0;
+    assert(_msg);
+    assert(_header_field);
 
-    return atoi((const char*)_msg->_call_id->_header_value);
+    SET_HEADER(msi_header_call_type_t, _msg->_call_type, _header_field)
 }
-
-uint8_t* msi_msg_to_string ( msi_msg_t* _msg )
+void msi_msg_set_user_agent ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-    if ( !_msg ){
-        return NULL;
-    }
+    assert(_msg);
+    assert(_header_field);
 
-    /* got tired of allocating everything dynamically dammit
-     * this will do it
-     */
-    uint8_t* _retu = calloc(sizeof(uint8_t), MSI_MAXMSG_SIZE );
-    assert(_retu);
-
-    t_memset(_retu, '\0', MSI_MAXMSG_SIZE);
-    /* So bloody easy... */
-
-
-    if ( _msg->_version ){
-        append_header_to_string(_retu, (const uint8_t*)_VERSION_FIELD,      _msg->_version->_header_value);
-    }
-
-    if ( _msg->_request ){
-        append_header_to_string(_retu, (const uint8_t*)_REQUEST_FIELD,      _msg->_request->_header_value);
-    }
-
-    if ( _msg->_response ){
-        append_header_to_string(_retu, (const uint8_t*)_RESPONSE_FIELD,     _msg->_response->_header_value);
-    }
-
-    if ( _msg->_friend_id ){
-        append_header_to_string(_retu, (const uint8_t*)_FRIENDID_FIELD,     _msg->_friend_id->_header_value);
-    }
-
-    if ( _msg->_call_type ){
-        append_header_to_string(_retu, (const uint8_t*)_CALLTYPE_FIELD,     _msg->_call_type->_header_value);
-    }
-
-    if ( _msg->_user_agent ){
-        append_header_to_string(_retu, (const uint8_t*)_USERAGENT_FIELD,    _msg->_user_agent->_header_value);
-    }
-
-    if ( _msg->_info ){
-        append_header_to_string(_retu, (const uint8_t*)_INFO_FIELD,         _msg->_info->_header_value);
-    }
-
-    return _retu;
+    SET_HEADER(msi_header_user_agent_t, _msg->_user_agent, _header_field)
 }
-
-void msi_free_msg ( msi_msg_t* _msg )
+void msi_msg_set_friend_id  ( msi_msg_t* _msg, const uint8_t* _header_field )
 {
-    if ( _msg ){
-        DEALLOCATE_HEADER(_msg->_call_type);
-        DEALLOCATE_HEADER(_msg->_friend_id);
-        DEALLOCATE_HEADER(_msg->_request);
-        DEALLOCATE_HEADER(_msg->_response);
-        DEALLOCATE_HEADER(_msg->_user_agent);
-        DEALLOCATE_HEADER(_msg->_version);
-        DEALLOCATE_HEADER(_msg->_info);
-        free(_msg);
-    }
+    assert(_msg);
+    assert(_header_field);
+
+    SET_HEADER(msi_header_friendid_t, _msg->_friend_id, _header_field)
 }
+void msi_msg_set_info ( msi_msg_t* _msg, const uint8_t* _header_field )
+{
+}
+void msi_msg_set_reason ( msi_msg_t* _msg, const uint8_t* _header_field )
+{
+    assert(_msg);
+    assert(_header_field);
 
+    SET_HEADER(msi_header_reason_t, _msg->_reason, _header_field)
+}
+void msi_msg_set_call_id ( msi_msg_t* _msg, const uint8_t* _header_field )
+{
+    assert(_msg);
+    assert(_header_field);
 
-
-
-
-
-
-
-
-
-
-
-
+    SET_HEADER(msi_header_call_id_t, _msg->_call_id, _header_field)
+}
