@@ -135,7 +135,7 @@ msi_header_t* msi_parse_raw_data ( const uint8_t* _data )
 
     uint8_t* _header_string;
 
-    _header_string = (uint8_t*) strtok ((const char*)_data, _RAW_TERMINATOR);
+    _header_string = (uint8_t*) strtok ((char*)_data, _RAW_TERMINATOR);
 
     msi_header_t* _head = msi_add_new_header(_header_string);
     msi_header_t* _it = _head;
