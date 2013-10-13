@@ -1,11 +1,11 @@
 --style=kr
---pad-header
---max-code-length=120
---convert-tabs
---indent-switches
---pad-oper
---align-pointer=name
---align-reference=name
---preserve-date
---lineend=linux
---break-blocks
+        --pad-header
+        --max-code-length=120
+                          --convert-tabs
+                          --indent-switches
+                          --pad-oper
+                          --align-pointer=name
+                                  --align-reference=name
+                                          --preserve-date
+                                          --lineend=linux
+                                                  --break-blocks

@@ -227,7 +227,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
  *  Packet length is put into length.
  *  Dump all empty packets.
  */
-static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     struct sockaddr_storage addr;
 #ifdef WIN32
@@ -666,6 +666,7 @@ void kill_networking(Networking_Core *net)
     free(net);
     return;
 }
+
 
 /* ip_equal
  *  compares two IPAny structures

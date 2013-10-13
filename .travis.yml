@@ -19,6 +19,31 @@ before_script:
   - ./configure && make -j3
   - sudo make install
   - cd ..
+# installing libopus, needed for audio encoding/decoding
+  - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz
+  - tar xzvf opus-1.0.3.tar.gz
+  - cd opus-1.0.3
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
+# installing libsdl1.2, needed for displaying video frames
+  - wget http://www.libsdl.org/release/SDL-1.2.15.tar.gz
+  - tar -xvzf SDL-1.2.15.tar.gz
+  - cd SDL-1.2.15
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
+# installing libopenal, needed for audio capture/playback
+  - sudo apt-get install libopenal-dev
+# installing yasm, needed for compiling ffmpeg
+  - sudo apt-get install yasm
+# installing ffmpeg, needed for capturing and encoding/decoding video
+  - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz
+  - tar -xvzf ffmpeg-2.0.2.tar.gz
+  - cd ffmpeg-2.0.2
+  - ./configure && make -j3
+  - sudo make install
+  - cd ..
 # creating librarys' links and updating cache
   - sudo ldconfig
 # installing check, needed for unit tests
