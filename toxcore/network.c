@@ -212,12 +212,14 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
 
     if (res == length)
         net->send_fail_eagain = 0;
+
 #ifdef WIN32
     else if ((res < 0) && (errno == WSAEWOULDBLOCK))
 #else
     else if ((res < 0) && (errno == EAGAIN))
 #endif
-    	net->send_fail_eagain = current_time();
+        net->send_fail_eagain = current_time();
+
     return res;
 }
 
@@ -227,7 +229,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
  *  Packet length is put into length.
  *  Dump all empty packets.
  */
-int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     struct sockaddr_storage addr;
 #ifdef WIN32
@@ -315,8 +317,7 @@ void networking_poll(Networking_Core *net)
 /*
  * function to avoid excessive polling
  */
-typedef struct
-{
+typedef struct {
     sock_t   sock;
     uint32_t sendqueue_length;
     uint16_t send_fail_reset;
@@ -325,8 +326,7 @@ typedef struct
 
 int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
 {
-    if ((data == NULL) || (*lenptr < sizeof(select_info)))
-    {
+    if ((data == NULL) || (*lenptr < sizeof(select_info))) {
         *lenptr = sizeof(select_info);
         return 0;
     }
@@ -350,8 +350,8 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
 
     /* add only if we had a failed write */
     int writefds_add = 0;
-    if (s->send_fail_eagain != 0)
-    {
+
+    if (s->send_fail_eagain != 0) {
         // current_time(): microseconds
         uint64_t now = current_time();
 
@@ -371,6 +371,7 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
 
     fd_set writefds;
     FD_ZERO(&writefds);
+
     if (writefds_add)
         FD_SET(s->sock, &writefds);
 
@@ -389,8 +390,8 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
 #ifdef LOGGING
     sprintf(logbuffer, "select(%d): %d (%d, %s) - %d %d %d\n", milliseconds, res, errno,
-                       strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
-                       FD_ISSET(s->sock, &exceptfds));
+            strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
+            FD_ISSET(s->sock, &exceptfds));
     loglog(logbuffer);
 #endif
 
@@ -403,6 +404,7 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
 void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len)
 {
     select_info *s = (select_info *)data;
+
     if (s->send_fail_reset)
         net->send_fail_eagain = 0;
 }
@@ -1037,13 +1039,12 @@ static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *i
     uint32_t data[2];
     data[0] = buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
     data[1] = buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
-    if (res < 0)
-    {
+
+    if (res < 0) {
         int written = snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x\n",
-                 buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
-                 ip_ntoa(&ip_port->ip), port, errno, strerror(errno), data[0], data[1]);
-    }
-    else if ((res > 0) && ((size_t)res <= buflen))
+                               buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
+                               ip_ntoa(&ip_port->ip), port, errno, strerror(errno), data[0], data[1]);
+    } else if ((res > 0) && ((size_t)res <= buflen))
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x\n",
                  buffer[0], message, (res < 999 ? (size_t)res : 999), ((size_t)res < buflen ? '<' : '='),
                  ip_ntoa(&ip_port->ip), port, 0, errmsg_ok, data[0], data[1]);
