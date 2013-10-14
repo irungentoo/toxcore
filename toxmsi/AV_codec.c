@@ -43,8 +43,8 @@
 
 #include "toxmsi.h"
 #include "toxmsi_message.h"
-#include "toxrtp_message.h"
-#include "toxrtp/tests/test_helper.h"
+#include "../toxrtp/toxrtp_message.h"
+#include "../toxrtp/tests/test_helper.h"
 #include "phone.h"
 #include "AV_codec.h"
 
