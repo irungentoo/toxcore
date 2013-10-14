@@ -44,6 +44,7 @@
 #define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 63
+#define PACKET_ID_MSI 69
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
 #define PACKET_ID_FILE_DATA 82
@@ -198,6 +199,9 @@ typedef struct Messenger {
     void (*file_filedata)(struct Messenger *m, int, uint8_t, uint8_t *, uint16_t length, void *);
     void *file_filedata_userdata;
 
+    void (*msi_packet)(struct Messenger *m, int, uint8_t *, uint16_t, void *);
+    void *msi_packet_userdata;
+
 } Messenger;
 
 /* Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
@@ -326,6 +330,11 @@ uint16_t getself_name(Messenger *m, uint8_t *name, uint16_t nlen);
  *  return -1 if failure.
  */
 int getname(Messenger *m, int friendnumber, uint8_t *name);
+
+/* returns valid ip port of connected friend on success
+ * returns zeroed out IP_Port on failure
+ */
+IP_Port get_friend_ipport(Messenger *m, int friendnumber);
 
 /* Set our user status.
  * You are responsible for freeing status after.
@@ -547,7 +556,23 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
  */
 uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t send_receive);
 
-/*********************************/
+/*************** A/V related ******************/
+
+/* Set the callback for msi packets.
+ *
+ *  Function(Messenger *m, int friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ */
+void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void *),
+                           void *userdata);
+
+/* Send an msi packet.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int m_msi_packet(Messenger *m, int friendnumber, uint8_t *data, uint16_t length);
+
+/**********************************************/
 
 /* Run this at startup.
  *  return allocated instance of Messenger on success.

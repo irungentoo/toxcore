@@ -682,7 +682,7 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
 /* returns valid ip port of connected friend on success
  * returns zeroed out IP_Port on failure
  */
-static IP_Port get_friend_ipport(Messenger *m, int friendnumber)
+IP_Port get_friend_ipport(Messenger *m, int friendnumber)
 {
     IP_Port zero;
     memset(&zero, 0, sizeof(zero));
@@ -1266,6 +1266,26 @@ static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t send_recei
 
 /**************************************/
 
+/* Set the callback for msi packets.
+ *
+ *  Function(Messenger *m, int friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ */
+void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, int, uint8_t *, uint16_t, void *),
+                           void *userdata)
+{
+    m->msi_packet = function;
+    m->msi_packet_userdata = userdata;
+}
+
+/* Send an msi packet.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int m_msi_packet(Messenger *m, int friendnumber, uint8_t *data, uint16_t length)
+{
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length);
+}
 
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
 static void LANdiscovery(Messenger *m)
@@ -1419,11 +1439,12 @@ void doFriends(Messenger *m)
             }
 
             len = read_cryptpacket(m->net_crypto, m->friendlist[i].crypt_connection_id, temp);
-            uint8_t packet_id = temp[0];
-            uint8_t *data = temp + 1;
-            uint32_t data_length = len - 1;
 
             if (len > 0) {
+                uint8_t packet_id = temp[0];
+                uint8_t *data = temp + 1;
+                uint32_t data_length = len - 1;
+
                 switch (packet_id) {
                     case PACKET_ID_PING: {
                         m->friendlist[i].ping_lastrecv = temp_time;
@@ -1508,6 +1529,7 @@ void doFriends(Messenger *m)
                         if (m->friendlist[i].receives_read_receipts) {
                             write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
                         }
+
                         if (m->friend_action)
                             (*m->friend_action)(m, i, action, action_length, m->friend_action_userdata);
 
@@ -1609,6 +1631,14 @@ void doFriends(Messenger *m)
                             (*m->file_filedata)(m, i, filenumber, data + 1, data_length - 1, m->file_filedata_userdata);
 
                         break;
+                    }
+
+                    case PACKET_ID_MSI: {
+                        if (data_length == 0)
+                            break;
+
+                        if (m->msi_packet)
+                            (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata);
                     }
 
                     default: {
