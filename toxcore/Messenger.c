@@ -31,6 +31,28 @@
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
+
+void host_to_net(uint8_t *num, uint16_t numbytes)
+{
+    union {
+        uint32_t i;
+        uint8_t c[4];
+    } a;
+    a.i = 1;
+
+    if (a.c[0] == 1) {
+        uint32_t i;
+        uint8_t buff[numbytes];
+
+        for (i = 0; i < numbytes; ++i) {
+            buff[i] = num[numbytes - i - 1];
+        }
+
+        memcpy(num, buff, numbytes);
+    }
+}
+#define net_to_host(x, y) host_to_net(x, y)
+
 static void set_friend_status(Messenger *m, int friendnumber, uint8_t status);
 static int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length);
 
@@ -1017,8 +1039,7 @@ int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_
 
     uint8_t packet[MAX_FILENAME_LENGTH + 1 + sizeof(filesize)];
     packet[0] = filenumber;
-    //TODO:
-    //filesize =  htonll(filesize);
+    host_to_net((uint8_t *)&filesize, sizeof(filesize));
     memcpy(packet + 1, &filesize, sizeof(filesize));
     memcpy(packet + 1 + sizeof(filesize), filename, filename_length);
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet,
@@ -1084,7 +1105,20 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
     packet[0] = send_receive;
     packet[1] = filenumber;
     packet[2] = message_id;
-    memcpy(packet + 3, data, length);
+    uint64_t transferred = 0;
+
+    if (message_id ==  FILECONTROL_RESUME_BROKEN) {
+        if (length != sizeof(uint64_t))
+            return 0;
+
+        uint8_t remaining[sizeof(uint64_t)];
+        memcpy(remaining, data, sizeof(uint64_t));
+        host_to_net(remaining, sizeof(uint64_t));
+        memcpy(packet + 3, remaining, sizeof(uint64_t));
+        memcpy(&transferred, data, sizeof(uint64_t));
+    } else {
+        memcpy(packet + 3, data, length);
+    }
 
     if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 3)) {
         if (send_receive == 1)
@@ -1100,6 +1134,11 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
                 case FILECONTROL_KILL:
                 case FILECONTROL_FINISHED:
                     m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
+                    break;
+
+                case FILECONTROL_RESUME_BROKEN:
+                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
+                    m->friendlist[friendnumber].file_receiving[filenumber].transferred = transferred;
                     break;
             }
         else
@@ -1201,16 +1240,22 @@ static void break_files(Messenger *m, int friendnumber)
     }
 }
 
-static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t filenumber,
+static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t receive_send, uint8_t filenumber,
                               uint8_t message_id, uint8_t *data,
                               uint16_t length)
 {
-    if (send_receive > 1)
+    if (receive_send > 1)
         return -1;
 
-    if (send_receive == 0) {
-        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
+    if (receive_send == 0) {
+        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE) {
+            /* Tell the other to kill the file sending if we don't know this one. */
+            m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_TEMPORARY;
+            file_control(m, friendnumber, !receive_send, filenumber, FILECONTROL_KILL, NULL, 0);
+            m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
             return -1;
+
+        }
 
         switch (message_id) {
             case FILECONTROL_ACCEPT:
@@ -1235,8 +1280,13 @@ static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t send_recei
                 return 0;
         }
     } else {
-        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE)
+        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE) {
+            /* Tell the other to kill the file sending if we don't know this one. */
+            m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_TEMPORARY;
+            file_control(m, friendnumber, !receive_send, filenumber, FILECONTROL_KILL, NULL, 0);
+            m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
             return -1;
+        }
 
         switch (message_id) {
             case FILECONTROL_ACCEPT:
@@ -1258,6 +1308,16 @@ static int handle_filecontrol(Messenger *m, int friendnumber, uint8_t send_recei
             case FILECONTROL_FINISHED:
                 m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
                 return 0;
+
+            case FILECONTROL_RESUME_BROKEN: {
+                if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_BROKEN && length == sizeof(uint64_t)) {
+                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_PAUSED_BY_US;
+                    net_to_host(data, sizeof(uint64_t));
+                    return 0;
+                }
+
+                return -1;
+            }
         }
     }
 
@@ -1584,9 +1644,8 @@ void doFriends(Messenger *m)
 
                         uint8_t filenumber = data[0];
                         uint64_t filesize;
+                        net_to_host(data + 1, sizeof(filesize));
                         memcpy(&filesize, data + 1, sizeof(filesize));
-                        //TODO:
-                        //filesize = ntohll(filesize);
                         m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
                         m->friendlist[i].file_receiving[filenumber].size = filesize;
                         m->friendlist[i].file_receiving[filenumber].transferred = 0;
