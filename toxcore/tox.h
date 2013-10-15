@@ -453,6 +453,13 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
  *
  * tox_file_dataremaining(...) can be used to know how many bytes are left to send/receive.
  *
+ * If the connection breaks during file sending (The other person goes offline without pausing the sending and then comes back)
+ * the reciever must send a control packet with receive_send == 0 message_id = TOX_FILECONTROL_RESUME_BROKEN and the data being
+ * a uint64_t (in host byte order) containing the number of bytes recieved.
+ *
+ * If the sender recieves this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
+ * then he must start sending file data from the position (data , uint64_t in host byte order) recieved in the TOX_FILECONTROL_RESUME_BROKEN packet.
+ *
  * More to come...
  */
 
@@ -460,7 +467,8 @@ enum {
     TOX_FILECONTROL_ACCEPT,
     TOX_FILECONTROL_PAUSE,
     TOX_FILECONTROL_KILL,
-    TOX_FILECONTROL_FINISHED
+    TOX_FILECONTROL_FINISHED,
+    TOX_FILECONTROL_RESUME_BROKEN
 };
 /* Set the callback for file send requests.
  *
