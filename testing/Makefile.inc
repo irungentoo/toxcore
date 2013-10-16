@@ -25,8 +25,7 @@ noinst_PROGRAMS +=      DHT_test \
                         Lossless_UDP_testclient \
                         Lossless_UDP_testserver \
                         Messenger_test \
-                        crypto_speed_test \
-                        tox_sync
+                        crypto_speed_test
 
 DHT_test_SOURCES =      ../testing/DHT_test.c
 
@@ -102,20 +101,22 @@ crypto_speed_test_LDADD = \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
-tox_sync_SOURCES = \
-                        ../testing/tox_sync.c
+if !WIN32
 
-tox_sync_CFLAGS = \
-                        $(LIBSODIUM_CFLAGS) \
+noinst_PROGRAMS +=      tox_sync
+
+tox_sync_SOURCES =      ../testing/tox_sync.c
+
+tox_sync_CFLAGS =       $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS)
 
-tox_sync_LDADD = \
-                        $(LIBSODIUM_LDFLAGS) \
+tox_sync_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
+endif
 
 EXTRA_DIST += 			$(top_srcdir)/testing/misc_tools.c
 
