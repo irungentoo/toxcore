@@ -2,6 +2,10 @@ TODO list.
 
 [IN PROGRESS] Add what is left to do to the TODO list.
 
+Networking:
+    [NOT STARTED] UPnP port forwarding.
+    [NOT STARTED] NAT-PMP port forwarding.
+
 DHT:
     [IN PROGRESS] Metadata collection prevention.
     [IN PROGRESS] Hardening against attacks.
