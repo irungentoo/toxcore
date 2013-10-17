@@ -31,7 +31,6 @@
 #include "toxrtp_helper.h"
 #include "../toxcore/network.h"
 
-#include <arpa/inet.h> /* Fixes implicit function warning. */
 #include <assert.h>
 
 #ifdef WIN
@@ -41,11 +40,11 @@
 
 static int _seed = 0; /* Not initiated */
 
-int t_setipport ( const char* _ip, unsigned short _port, void* _dest )
+int t_setipport ( const char *_ip, unsigned short _port, void *_dest )
 {
     assert(_dest);
 
-    IP_Port* _dest_c = ( IP_Port* ) _dest;
+    IP_Port *_dest_c = ( IP_Port * ) _dest;
     ip_init(&_dest_c->ip, 0);
 
     IP_Port _ipv6_garbage;
@@ -72,7 +71,7 @@ uint32_t t_random ( uint32_t _max )
     }
 }
 
-void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
+void t_memcpy ( uint8_t *_dest, const uint8_t *_source, size_t _size )
 {
     /*
      * Using countdown to zero method
@@ -87,7 +86,7 @@ void t_memcpy ( uint8_t* _dest, const uint8_t* _source, size_t _size )
 
 }
 
-uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size )
+uint8_t *t_memset ( uint8_t *_dest, uint8_t _valu, size_t _size )
 {
     /*
      * Again using countdown to zero method
@@ -102,9 +101,9 @@ uint8_t* t_memset ( uint8_t* _dest, uint8_t _valu, size_t _size )
     return _dest;
 }
 
-size_t t_memlen ( const uint8_t* _valu)
+size_t t_memlen ( const uint8_t *_valu)
 {
-    const uint8_t* _it;
+    const uint8_t *_it;
     size_t _retu = 0;
 
     for ( _it = _valu; *_it; ++_it ) ++_retu;
@@ -112,13 +111,13 @@ size_t t_memlen ( const uint8_t* _valu)
     return _retu;
 }
 
-uint8_t* t_strallcpy ( const uint8_t* _source ) /* string alloc and copy */
+uint8_t *t_strallcpy ( const uint8_t *_source ) /* string alloc and copy */
 {
     assert(_source);
 
     size_t _length = t_memlen(_source) + 1; /* make space for null character */
 
-    uint8_t* _dest = calloc( sizeof ( uint8_t ), _length );
+    uint8_t *_dest = calloc( sizeof ( uint8_t ), _length );
     assert(_dest);
 
     t_memcpy(_dest, _source, _length);
@@ -126,75 +125,75 @@ uint8_t* t_strallcpy ( const uint8_t* _source ) /* string alloc and copy */
     return _dest;
 }
 
-size_t t_strfind ( const uint8_t* _str, const uint8_t* _substr )
+size_t t_strfind ( const uint8_t *_str, const uint8_t *_substr )
 {
     size_t _pos = 0;
     size_t _it, _delit = 0;
 
-    for ( _it = 0; _str[_it] != '\0'; _it++ ){
-        if ( _str[_it] == _substr[_delit] ){
+    for ( _it = 0; _str[_it] != '\0'; _it++ ) {
+        if ( _str[_it] == _substr[_delit] ) {
             _pos = _it;
-            while ( _str[_it] == _substr[_delit] && _str[_it] != '\0' ){
+
+            while ( _str[_it] == _substr[_delit] && _str[_it] != '\0' ) {
                 _it ++;
                 _delit++;
 
-                if ( _substr[_delit] == '\0' ){
+                if ( _substr[_delit] == '\0' ) {
                     return _pos;
                 }
             }
+
             _delit = 0;
             _pos = 0;
         }
     }
+
     return _pos;
 }
 
 #ifdef WIN
 #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
 #else
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
 #endif
 
-struct timezone
-{
-  int  tz_minuteswest; /* minutes W of Greenwich */
-  int  tz_dsttime;     /* type of dst correction */
+struct timezone {
+    int  tz_minuteswest; /* minutes W of Greenwich */
+    int  tz_dsttime;     /* type of dst correction */
 };
 
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
-  FILETIME ft;
-  unsigned __int64 tmpres = 0;
-  static int tzflag;
+    FILETIME ft;
+    unsigned __int64 tmpres = 0;
+    static int tzflag;
 
-  if (NULL != tv)
-  {
-    GetSystemTimeAsFileTime(&ft);
+    if (NULL != tv) {
+        GetSystemTimeAsFileTime(&ft);
 
-    tmpres |= ft.dwHighDateTime;
-    tmpres <<= 32;
-    tmpres |= ft.dwLowDateTime;
+        tmpres |= ft.dwHighDateTime;
+        tmpres <<= 32;
+        tmpres |= ft.dwLowDateTime;
 
-    /*converting file time to unix epoch*/
-    tmpres -= DELTA_EPOCH_IN_MICROSECS;
-    tmpres /= 10;  /*convert into microseconds*/
-    tv->tv_sec = (long)(tmpres / 1000000UL);
-    tv->tv_usec = (long)(tmpres % 1000000UL);
-  }
-
-  if (NULL != tz)
-  {
-    if (!tzflag)
-    {
-      _tzset();
-      tzflag++;
+        /*converting file time to unix epoch*/
+        tmpres -= DELTA_EPOCH_IN_MICROSECS;
+        tmpres /= 10;  /*convert into microseconds*/
+        tv->tv_sec = (long)(tmpres / 1000000UL);
+        tv->tv_usec = (long)(tmpres % 1000000UL);
     }
-    tz->tz_minuteswest = _timezone / 60;
-    tz->tz_dsttime = _daylight;
-  }
 
-  return 0;
+    if (NULL != tz) {
+        if (!tzflag) {
+            _tzset();
+            tzflag++;
+        }
+
+        tz->tz_minuteswest = _timezone / 60;
+        tz->tz_dsttime = _daylight;
+    }
+
+    return 0;
 }
 #endif /* WIN */
 

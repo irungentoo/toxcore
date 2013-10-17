@@ -31,7 +31,7 @@
 #define RTP_VERSION 2
 #include <inttypes.h>
 #include "../toxcore/tox.h"
-
+#include <pthread.h>
 /* Extension header flags */
 #define RTP_EXT_TYPE_RESOLUTION 0x01
 #define RTP_EXT_TYPE_FRAMERATE  0x02
@@ -72,7 +72,7 @@ typedef struct rtp_session_s {
     uint32_t                _time_elapsed;
     uint32_t                _current_timestamp;
     uint32_t                _ssrc;
-    uint32_t*               _csrc;
+    uint32_t               *_csrc;
 
 
     /* If some additional data must be sent via message
@@ -80,7 +80,7 @@ typedef struct rtp_session_s {
      * automatically placing it within a message.
      */
 
-    struct rtp_ext_header_s*    _ext_header;
+    struct rtp_ext_header_s    *_ext_header;
     /* External header identifiers */
     int                         _exthdr_resolution;
     int                         _exthdr_framerate;
@@ -95,16 +95,16 @@ typedef struct rtp_session_s {
 
     uint64_t                    _packet_loss;
 
-    const char*                 _last_error;
+    const char                 *_last_error;
 
-    struct rtp_dest_list_s*     _dest_list;
-    struct rtp_dest_list_s*     _last_user; /* a tail for faster appending */
+    struct rtp_dest_list_s     *_dest_list;
+    struct rtp_dest_list_s     *_last_user; /* a tail for faster appending */
 
-    struct rtp_msg_s*           _oldest_msg;
-    struct rtp_msg_s*           _last_msg; /* tail */
+    struct rtp_msg_s           *_oldest_msg;
+    struct rtp_msg_s           *_last_msg; /* tail */
 
     uint16_t                    _prefix_length;
-    uint8_t*                    _prefix;
+    uint8_t                    *_prefix;
 
     /* Specifies multiple session use.
      * When using one session it uses default value ( -1 )
@@ -125,35 +125,35 @@ typedef struct rtp_session_s {
  */
 
 
-void                    rtp_free_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg );
-int                     rtp_release_session_recv ( rtp_session_t* _session );
+void                    rtp_free_msg ( rtp_session_t *_session, struct rtp_msg_s *_msg );
+int                     rtp_release_session_recv ( rtp_session_t *_session );
 
 /* Functions handling receiving */
-struct rtp_msg_s*       rtp_recv_msg ( rtp_session_t* _session );
-void                    rtp_store_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg );
+struct rtp_msg_s       *rtp_recv_msg ( rtp_session_t *_session );
+void                    rtp_store_msg ( rtp_session_t *_session, struct rtp_msg_s *_msg );
 
 /*
  * rtp_msg_parse() stores headers separately from the payload data
  * and so the _length variable is set accordingly
  */
-struct rtp_msg_s*       rtp_msg_parse ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+struct rtp_msg_s       *rtp_msg_parse ( rtp_session_t *_session, const uint8_t *_data, uint32_t _length );
 
-int                     rtp_check_late_message (rtp_session_t* _session, struct rtp_msg_s* _msg);
-void                    rtp_register_msg ( rtp_session_t* _session, struct rtp_msg_s* );
+int                     rtp_check_late_message (rtp_session_t *_session, struct rtp_msg_s *_msg);
+void                    rtp_register_msg ( rtp_session_t *_session, struct rtp_msg_s * );
 
 /* Functions handling sending */
-int                     rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, void* _core_handler );
+int                     rtp_send_msg ( rtp_session_t *_session, struct rtp_msg_s *_msg, void *_core_handler );
 
 /*
  * rtp_msg_new() stores headers and payload data in one container ( _data )
  * and the _length is set accordingly. Returned message is used for sending only
  * so there is not much use of the headers there
  */
-struct rtp_msg_s*       rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+struct rtp_msg_s       *rtp_msg_new ( rtp_session_t *_session, const uint8_t *_data, uint32_t _length );
 
 
 /* Convenient functions for creating a header */
-struct rtp_header_s*    rtp_build_header ( rtp_session_t* _session );
+struct rtp_header_s    *rtp_build_header ( rtp_session_t *_session );
 
 /* Functions handling session control */
 
@@ -163,26 +163,26 @@ struct rtp_header_s*    rtp_build_header ( rtp_session_t* _session );
 /* Session initiation and termination.
  * Set _multi_session to -1 if not using multiple sessions
  */
-rtp_session_t*          rtp_init_session ( int _max_users, int _multi_session );
-int                     rtp_terminate_session ( rtp_session_t* _session );
+rtp_session_t          *rtp_init_session ( int _max_users, int _multi_session );
+int                     rtp_terminate_session ( rtp_session_t *_session );
 
 /* Adding receiver */
-int                     rtp_add_receiver ( rtp_session_t* _session, tox_IP_Port* _dest );
+int                     rtp_add_receiver ( rtp_session_t *_session, tox_IP_Port *_dest );
 
 /* Convenient functions for marking the resolution */
-int                     rtp_add_resolution_marking ( rtp_session_t* _session, uint16_t _width, uint16_t _height );
-int                     rtp_remove_resolution_marking ( rtp_session_t* _session );
-uint16_t                rtp_get_resolution_marking_height ( struct rtp_ext_header_s* _header, uint32_t _position );
-uint16_t                rtp_get_resolution_marking_width ( struct rtp_ext_header_s* _header, uint32_t _position );
+int                     rtp_add_resolution_marking ( rtp_session_t *_session, uint16_t _width, uint16_t _height );
+int                     rtp_remove_resolution_marking ( rtp_session_t *_session );
+uint16_t                rtp_get_resolution_marking_height ( struct rtp_ext_header_s *_header, uint32_t _position );
+uint16_t                rtp_get_resolution_marking_width ( struct rtp_ext_header_s *_header, uint32_t _position );
 
-int                     rtp_add_framerate_marking ( rtp_session_t* _session, uint32_t _value );
-int                     rtp_remove_framerate_marking ( rtp_session_t* _session );
-uint32_t                rtp_get_framerate_marking ( struct rtp_ext_header_s* _header );
+int                     rtp_add_framerate_marking ( rtp_session_t *_session, uint32_t _value );
+int                     rtp_remove_framerate_marking ( rtp_session_t *_session );
+uint32_t                rtp_get_framerate_marking ( struct rtp_ext_header_s *_header );
 /* Convenient functions for marking the payload */
-void                    rtp_set_payload_type ( rtp_session_t* _session, uint8_t _payload_value );
-uint32_t                rtp_get_payload_type ( rtp_session_t* _session );
+void                    rtp_set_payload_type ( rtp_session_t *_session, uint8_t _payload_value );
+uint32_t                rtp_get_payload_type ( rtp_session_t *_session );
 
 /* When using RTP in core be sure to set prefix when sending via rtp_send_msg */
-int                     rtp_set_prefix ( rtp_session_t* _session, uint8_t* _prefix, uint16_t _prefix_length );
+int                     rtp_set_prefix ( rtp_session_t *_session, uint8_t *_prefix, uint16_t _prefix_length );
 
 #endif /* _RTP__IMPL_H_ */
