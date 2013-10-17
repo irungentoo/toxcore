@@ -266,7 +266,7 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name)
         return -1;
 
     if (chat->group[peernum].nick_len == 0) {
-        memcpy(name, "NSA Agent", 10); /* Kindly remind the user that someone with no name might be a NSA agent.*/
+        memcpy(name, "NSA Agent", 10); /* Kindly remind the user that someone with no name might be an NSA agent.*/
         return 10;
     }
 
