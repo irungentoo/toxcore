@@ -1700,7 +1700,7 @@ static char *ID2String(uint8_t *client_id)
     uint32_t i;
 
     for (i = 0; i < CLIENT_ID_SIZE; i++)
-        sprintf(&IDString[i], "%02X", client_id[i]);
+        sprintf(&IDString[i * 2], "%02X", client_id[i]);
 
     IDString[CLIENT_ID_SIZE * 2] = 0;
     return IDString;
@@ -1984,17 +1984,24 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
 #define MESSENGER_STATE_TYPE_DHT         2
 #define MESSENGER_STATE_TYPE_FRIENDS     3
 #define MESSENGER_STATE_TYPE_NAME        4
+#define MESSENGER_STATE_TYPE_GROUPCHATS  5
 
 /*  return size of the messenger data (for saving) */
 uint32_t Messenger_size(Messenger *m)
 {
-    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
-    return   size32 * 2                                      // global cookie
-             + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
-             + sizesubhead + DHT_size(m->dht)                  // DHT
-             + sizesubhead + sizeof(Friend) * m->numfriends    // Friendlist itself.
-             + sizesubhead + m->name_length                    // Own nickname.
-             ;
+    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2, i;
+    uint32_t size = size32 * 2                                      // global cookie
+                  + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+                  + sizesubhead + DHT_size(m->dht)                  // DHT
+                  + sizesubhead + sizeof(Friend) * m->numfriends    // Friendlist itself.
+                  + sizesubhead + m->name_length                    // Own nickname.
+                  ;
+
+    /* chats (w/ peers) */
+    for(i = 0; i < m->numchats; i++)
+        size += sizesubhead + sizeof(Group_Chat) + m->chats[i]->numpeers * sizeof(Group_Peer);
+
+    return size;
 }
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
@@ -2009,7 +2016,7 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 /* Save the messenger in data of size Messenger_size(). */
 void Messenger_save(Messenger *m, uint8_t *data)
 {
-    uint32_t len;
+    uint32_t len, i, lensub;
     uint16_t type;
     uint32_t *data32, size32 = sizeof(uint32_t);
 
@@ -2045,6 +2052,19 @@ void Messenger_save(Messenger *m, uint8_t *data)
     data = z_state_save_subheader(data, len, type);
     memcpy(data, m->name, len);
     data += len;
+
+    for(i = 0; i < m->numchats; i++) {
+        lensub = m->chats[i]->numpeers * sizeof(Group_Peer);
+        len = sizeof(Group_Chat) + lensub;
+        type = MESSENGER_STATE_TYPE_GROUPCHATS;
+        data = z_state_save_subheader(data, len, type);
+
+        memcpy(data, m->chats[i], sizeof(Group_Chat));
+        data += sizeof(Group_Chat);
+
+        memcpy(data, m->chats[i]->group, lensub);
+        data += lensub;
+    }
 }
 
 static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
@@ -2097,8 +2117,25 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 
             break;
 
-#ifdef DEBUG
+        case MESSENGER_STATE_TYPE_GROUPCHATS:
+            { /* localize */
+                Group_Chat *chat = load_groupchat(m->net, data, length);
+                if (chat) {
+                    Group_Chat **chats = realloc(m->chats, sizeof(Group_Chat *) * (m->numchats + 1));
+                    if (!chats) {
+                        kill_groupchat(chat);
+                        break;
+                    }
 
+                    m->chats = chats;
+                    m->chats[m->numchats++] = chat;
+                    callback_groupmessage(chat, &group_message_function, m);
+                }
+            } /* localize */
+
+            break;
+
+#ifdef DEBUG
         default:
             fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
                     length, type);

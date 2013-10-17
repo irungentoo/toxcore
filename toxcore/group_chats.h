@@ -106,6 +106,13 @@ uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
  */
 Group_Chat *new_groupchat(Networking_Core *net);
 
+/* reinitialize a stored chat
+ *
+ * Returns a new group chat instance if success.
+ *
+ * Returns a NULL pointer if fail.
+ */
+Group_Chat *load_groupchat(Networking_Core *net, uint8_t *data, size_t length);
 
 /* Kill a group chat
  *
@@ -127,5 +134,4 @@ int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, ui
 void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id);
 void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id);
 
-
-#endif
+#endif /* !GROUP_CHATS_H */

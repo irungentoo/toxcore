@@ -429,6 +429,7 @@ void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, 
     Messenger *m = tox;
     m_callback_group_message(m, function, userdata);
 }
+
 /* Creates a new groupchat and puts it in the chats array.
  *
  * return group number on success.
@@ -439,6 +440,15 @@ int tox_add_groupchat(Tox *tox)
     Messenger *m = tox;
     return add_groupchat(m);
 }
+
+/* Returns current number of groupchats. Required after loading state from file.
+ */
+uint16_t tox_num_groupchats(Tox *tox)
+{
+    Messenger *m = tox;
+    return m->numchats;
+}
+
 /* Delete a groupchat from the chats array.
  *
  * return 0 on success.

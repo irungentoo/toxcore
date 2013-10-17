@@ -399,6 +399,10 @@ void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, u
  */
 int tox_add_groupchat(Tox *tox);
 
+/* Returns current number of groupchats. Required after loading state from file.
+ */
+uint16_t tox_num_groupchats(Tox *tox);
+
 /* Delete a groupchat from the chats array.
  *
  * return 0 on success.

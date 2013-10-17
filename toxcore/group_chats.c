@@ -422,6 +422,7 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
                 return 1;
 
             chat->group[peernum].last_recv_msgping = temp_time;
+            break;
 
         case 16: /* If message is new peer */
             if (contents_len != crypto_box_PUBLICKEYBYTES)
@@ -542,6 +543,46 @@ Group_Chat *new_groupchat(Networking_Core *net)
     crypto_box_keypair(chat->self_public_key, chat->self_secret_key);
     return chat;
 }
+
+Group_Chat *load_groupchat(Networking_Core *net, uint8_t *chat_old, size_t length)
+{
+    if (!net || !chat_old || (length < sizeof(Group_Chat)))
+        return NULL;
+
+    /* chat itself: allocate */
+    Group_Chat *chat_new = calloc(1, sizeof(Group_Chat));
+    if (!chat_new)
+        return NULL;
+
+    /* chat itself: load */
+    memcpy(chat_new, chat_old, sizeof(Group_Chat));
+    chat_old += sizeof(Group_Chat);
+    length -= sizeof(Group_Chat);
+
+    /* peers: check size */
+    if (length != chat_new->numpeers * sizeof(Group_Peer)) {
+        free(chat_new);
+        return NULL;
+    }
+
+    /* peers: allocate */
+    chat_new->group = calloc(chat_new->numpeers, sizeof(Group_Peer));
+    if (!chat_new->group) {
+        free(chat_new);
+        return NULL;
+    }
+
+    /* peers: load */
+    memcpy(chat_new->group, chat_old, chat_new->numpeers * sizeof(Group_Peer));
+
+    /* pointers */
+    chat_new->net = net;
+    chat_new->group_message = NULL;
+    chat_new->group_message_userdata = NULL;
+
+    return chat_new;
+}
+
 
 #define NODE_PING_INTERVAL 10
 

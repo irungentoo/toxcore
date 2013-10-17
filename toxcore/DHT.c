@@ -2048,9 +2048,12 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
 
             break;
 
+#ifdef DEBUG
         default:
             fprintf(stderr, "Load state (DHT): contains unrecognized part (len %u, type %u)\n",
                     length, type);
+            break;
+#endif
     }
 
     return 0;
