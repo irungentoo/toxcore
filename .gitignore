@@ -1,4 +1,11 @@
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ethumbs.db
+Thumbs.db
 
 //nacl build
 nacl/build/
