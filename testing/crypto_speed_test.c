@@ -8,9 +8,8 @@
 //Windows XP
 #define WINVER 0x0501
 #endif
-#if (_WIN32_WINNT >= _WIN32_WINNT_WINXP)
+
 #include <winsock2.h>
-#endif
 #include <windows.h>
 double get_time()
 {
