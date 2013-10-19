@@ -21,6 +21,10 @@
  *
  */
 
+#if (_WIN32_WINNT >= _WIN32_WINNT_WINXP)
+#define _WIN32_WINNT  0x501
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
