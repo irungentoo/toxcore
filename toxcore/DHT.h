@@ -56,13 +56,13 @@ typedef struct {
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IPPTsPng    assoc;
-} Client_data_old;
+} Client_data_old; /* required to load old state files */
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
-} Client_data_new;
+} Client_data;
 
 /*----------------------------------------------------------------------------------*/
 
@@ -85,27 +85,18 @@ typedef struct {
 
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
-} DHT_Friend_old;
+} DHT_Friend_old;  /* required to load old state files */
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
-    Client_data_new client_list[MAX_FRIEND_CLIENTS];
+    Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
     uint64_t    lastgetnode;
 
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
-} DHT_Friend_new;
-
-/* #define CLIENT_ONETOONE_IP */
-#ifdef CLIENT_ONETOONE_IP
-typedef Client_data_old Client_data;
-typedef DHT_Friend_old DHT_Friend;
-#else
-typedef Client_data_new Client_data;
-typedef DHT_Friend_new DHT_Friend;
-#endif
+} DHT_Friend;
 
 /* this must be kept even if IP_Port is expanded: wire compatibility */
 typedef struct {
@@ -116,13 +107,7 @@ typedef struct {
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
-} Node46_format;
-
-#ifdef TOX_ENABLE_IPV6
-typedef Node46_format Node_format;
-#else
-typedef Node4_format Node_format;
-#endif
+} Node_format;
 
 /*----------------------------------------------------------------------------------*/
 

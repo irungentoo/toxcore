@@ -109,6 +109,7 @@ void loginit(uint16_t port)
 
     struct tm *tm = localtime(&starttime);
 
+    /* "%F %T" might not be Windows compatible */
     if (strftime(logbuffer + 32, sizeof(logbuffer) - 32, "%F %T", tm))
         sprintf(logbuffer, "%u-%s.log", ntohs(port), logbuffer + 32);
     else
@@ -149,7 +150,7 @@ void loglog(char *text)
     if (!logbufferpredata)
         return;
 
-    if (len + logbufferprehead - logbufferpredata + 16U < logbufferprelen) {
+    if (len + (logbufferprehead - logbufferpredata) + 16U < logbufferprelen) {
         size_t logpos = logbufferprehead - logbufferpredata;
         size_t lennew = logbufferprelen * 1.4;
         logbufferpredata = realloc(logbufferpredata, lennew);
