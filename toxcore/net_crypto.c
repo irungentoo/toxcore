@@ -704,10 +704,17 @@ static void receive_crypto(Net_Crypto *c)
                             CONN_ESTABLISHED; /* Connection status needs to be 3 for write_cryptpacket() to work. */
                         write_cryptpacket(c, i, ((uint8_t *)&zero), sizeof(zero));
                         c->crypto_connections[i].status = CONN_NOT_CONFIRMED; /* Set it to its proper value right after. */
+                    } else {
+                        /* This should not happen, timeout the connection if it does. */
+                        c->crypto_connections[i].status = CONN_TIMED_OUT;
                     }
+                } else {
+                    /* This should not happen, timeout the connection if it does. */
+                    c->crypto_connections[i].status = CONN_TIMED_OUT;
                 }
             } else if (id_packet(c->lossless_udp,
-                                 c->crypto_connections[i].number) != -1) { // This should not happen, timeout the connection if it does.
+                                 c->crypto_connections[i].number) != -1) {
+                /* This should not happen, timeout the connection if it does. */
                 c->crypto_connections[i].status = CONN_TIMED_OUT;
             }
         }

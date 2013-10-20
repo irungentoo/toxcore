@@ -28,7 +28,7 @@
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
-#define CRYPTO_HANDSHAKE_TIMEOUT CONNEXION_TIMEOUT
+#define CRYPTO_HANDSHAKE_TIMEOUT (CONNEXION_TIMEOUT * 2)
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
