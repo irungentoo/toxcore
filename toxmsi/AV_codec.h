@@ -42,10 +42,10 @@
 #include <opus/opus.h>
 
 /* ffmpeg VP8 codec ID */
-#define VIDEO_CODEC         AV_CODEC_ID_VP8
+#define VIDEO_CODEC         CODEC_ID_VP8
 
 /* ffmpeg Opus codec ID */
-#define AUDIO_CODEC         AV_CODEC_ID_OPUS
+#define AUDIO_CODEC         CODEC_ID_OPUS
 
 /* default video bitrate in bytes/s */
 #define VIDEO_BITRATE   10*1000
