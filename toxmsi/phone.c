@@ -378,7 +378,7 @@ MCBTYPE callback_requ_timeout ( MCBARGS )
 phone_t *initPhone(uint16_t _listen_port, uint16_t _send_port)
 {
     phone_t *_retu = calloc(sizeof(phone_t), 1);
-    _retu->cs = av_calloc(sizeof(codec_state), 1);
+    _retu->cs = av_mallocz(sizeof(codec_state));
 
     /* Initialize our mutex */
     pthread_mutex_init ( &_mutex, NULL );

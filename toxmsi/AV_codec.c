@@ -497,7 +497,7 @@ void *encode_video_thread(void *arg)
     int numBytes;
     /* Determine required buffer size and allocate buffer */
     numBytes = avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
-    buffer = (uint8_t *)av_calloc(numBytes * sizeof(uint8_t),1);
+    buffer = (uint8_t *)av_mallocz(numBytes * sizeof(uint8_t));
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,
                    cs->webcam_decoder_ctx->height);
     cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height,
