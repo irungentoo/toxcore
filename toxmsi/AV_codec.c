@@ -484,7 +484,6 @@ void *encode_video_thread(void *arg)
     AVPacket pkt1, *packet = &pkt1;
     int p = 0;
     int err;
-    int got_packet;
     rtp_msg_t *s_video_msg;
     int video_frame_finished;
     AVFrame *s_video_frame;
@@ -538,14 +537,10 @@ void *encode_video_thread(void *arg)
             }
 
             if (video_frame_finished) {
-                err = avcodec_encode_video2(cs->video_encoder_ctx, &enc_video_packet, s_video_frame, &got_packet);
+                err = avcodec_encode_video(cs->video_encoder_ctx, enc_video_packet.data, enc_video_packet.size, s_video_frame);
 
                 if (err < 0) {
                     printf("could not encode video frame\n");
-                    continue;
-                }
-
-                if (!got_packet) {
                     continue;
                 }
 
