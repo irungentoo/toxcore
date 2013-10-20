@@ -42,6 +42,7 @@ static void fetch_broadcast_info(uint16_t port)
      */
     broadcast_count = 0;
     sock_t sock = 0;
+
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         return;
 
@@ -64,6 +65,7 @@ static void fetch_broadcast_info(uint16_t port)
      * enough, for everybody!)
      */
     int i, count = ifconf.ifc_len / sizeof(struct ifreq);
+
     for (i = 0; i < count; i++) {
         /* there are interfaces with are incapable of broadcast */
         if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0)
@@ -74,6 +76,10 @@ static void fetch_broadcast_info(uint16_t port)
             continue;
 
         struct sockaddr_in *sock4 = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
+
+        if (broadcast_count >= MAX_INTERFACES)
+            return;
+
         IP_Port *ip_port = &broadcast_ip_port[broadcast_count];
         ip_port->ip.family = AF_INET;
         ip_port->ip.ip4.in_addr = sock4->sin_addr;
@@ -101,7 +107,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t *da
 
     int i;
 
-    for(i = 0; i < broadcast_count; i++)
+    for (i = 0; i < broadcast_count; i++)
         sendpacket(net, broadcast_ip_port[i], data, 1 + crypto_box_PUBLICKEYBYTES);
 
     return 1;
