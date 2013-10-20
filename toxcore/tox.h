@@ -36,7 +36,9 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-typedef INT sa_family_t;
+/* sa_family_t is the sockaddr_in / sockaddr_in6 family field */
+typedef short sa_family_t;
+
 #ifndef true
 #define true 1
 #endif
@@ -69,7 +71,6 @@ typedef union {
     uint32_t i;
 } tox_IP4;
 
-
 typedef union {
     uint8_t uint8[16];
     uint16_t uint16[8];
@@ -83,36 +84,16 @@ typedef struct {
         tox_IP4 ip4;
         tox_IP6 ip6;
     };
-} tox_IPAny;
-
-typedef union {
-    struct {
-        tox_IP4  ip;
-        uint16_t port;
-        /* Not used for anything right now. */
-        uint16_t padding;
-    };
-    uint8_t uint8[8];
-} tox_IP4_Port;
+} tox_IP;
 
 /* will replace IP_Port as soon as the complete infrastructure is in place
  * removed the unused union and padding also */
 typedef struct {
-    tox_IPAny ip;
+    tox_IP    ip;
     uint16_t  port;
-} tox_IPAny_Port;
+} tox_IP_Port;
 
-/* #undef TOX_ENABLE_IPV6 */
-#define TOX_ENABLE_IPV6
-#ifdef TOX_ENABLE_IPV6
 #define TOX_ENABLE_IPV6_DEFAULT 1
-typedef tox_IPAny tox_IP;
-typedef tox_IPAny_Port tox_IP_Port;
-#else
-#define TOX_ENABLE_IPV6_DEFAULT 0
-typedef tox_IP4 tox_IP;
-typedef tox_IP4_Port tox_IP_Port;
-#endif
 
 
 /* Errors for m_addfriend
