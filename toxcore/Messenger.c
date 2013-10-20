@@ -1759,7 +1759,7 @@ static char *ID2String(uint8_t *client_id)
     uint32_t i;
 
     for (i = 0; i < CLIENT_ID_SIZE; i++)
-        sprintf(&IDString[i], "%02X", client_id[i]);
+        sprintf(&IDString[i * 2], "%02X", client_id[i]);
 
     IDString[CLIENT_ID_SIZE * 2] = 0;
     return IDString;
@@ -1789,24 +1789,20 @@ void doMessenger(Messenger *m)
         for (client = 0; client < LCLIENT_LIST; client++) {
             Client_data *cptr = &m->dht->close_clientlist[client];
             IPPTsPng *assoc = NULL;
-#ifdef CLIENT_ONETOONE_IP
-            assoc = &cptr->assoc;
-#else
             uint32_t a;
 
             for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6)
-#endif
-            if (ip_isset(&assoc->ip_port.ip)) {
-                last_pinged = lastdump - assoc->last_pinged;
+                if (ip_isset(&assoc->ip_port.ip)) {
+                    last_pinged = lastdump - assoc->last_pinged;
 
-                if (last_pinged > 999)
-                    last_pinged = 999;
+                    if (last_pinged > 999)
+                        last_pinged = 999;
 
-                snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
-                         client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                         last_pinged, ID2String(cptr->client_id));
-                loglog(logbuffer);
-            }
+                    snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
+                             client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
+                             last_pinged, ID2String(cptr->client_id));
+                    loglog(logbuffer);
+                }
         }
 
         loglog(" = = = = = = = = \n");
@@ -1850,25 +1846,21 @@ void doMessenger(Messenger *m)
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
                 Client_data *cptr = &dhtfptr->client_list[client];
                 IPPTsPng *assoc = NULL;
-#ifdef CLIENT_ONETOONE_IP
-                assoc = &cptr->assoc;
-#else
                 uint32_t a;
 
                 for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6)
-#endif
-                if (ip_isset(&assoc->ip_port.ip)) {
-                    last_pinged = lastdump - assoc->last_pinged;
+                    if (ip_isset(&assoc->ip_port.ip)) {
+                        last_pinged = lastdump - assoc->last_pinged;
 
-                    if (last_pinged > 999)
-                        last_pinged = 999;
+                        if (last_pinged > 999)
+                            last_pinged = 999;
 
-                    snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
-                             friend, client, ip_ntoa(&assoc->ip_port.ip),
-                             ntohs(assoc->ip_port.port), last_pinged,
-                             ID2String(cptr->client_id));
-                    loglog(logbuffer);
-                }
+                        snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
+                                 friend, client, ip_ntoa(&assoc->ip_port.ip),
+                                 ntohs(assoc->ip_port.port), last_pinged,
+                                 ID2String(cptr->client_id));
+                        loglog(logbuffer);
+                    }
             }
         }
 

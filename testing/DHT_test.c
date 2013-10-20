@@ -80,12 +80,8 @@ void print_clientlist(DHT *dht)
             printf("%02hhX", client->client_id[j]);
         }
 
-#ifdef CLIENT_ONETOONE_IP
-        print_assoc(&client->assoc, 1);
-#else
         print_assoc(&client->assoc4, 1);
         print_assoc(&client->assoc6, 1);
-#endif
     }
 }
 
@@ -119,12 +115,8 @@ void print_friendlist(DHT *dht)
                 printf("%hhX", client->client_id[j]);
             }
 
-#ifdef CLIENT_ONETOONE_IP
-            print_assoc(&client->assoc, 0);
-#else
             print_assoc(&client->assoc4, 0);
             print_assoc(&client->assoc6, 0);
-#endif
         }
     }
 }
