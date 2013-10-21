@@ -198,8 +198,8 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port)
     memset(connection, 0, sizeof(Connection));
 
     uint32_t handshake_id1 = handshake_id(ludp, ip_port);
-    /* add randomness to timeout to prevent connections getting stuck in a loop. */
-    uint8_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
+    /* Add randomness to timeout to prevent connections getting stuck in a loop. */
+    uint8_t timeout = CONNECTION_TIMEOUT + rand() % CONNECTION_TIMEOUT;
 
     *connection = (Connection) {
         .ip_port            = ip_port,
@@ -260,7 +260,7 @@ static int new_inconnection(Lossless_UDP *ludp, IP_Port ip_port)
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
     memset(connection, 0, sizeof(Connection));
     /* Add randomness to timeout to prevent connections getting stuck in a loop. */
-    uint8_t timeout = CONNEXION_TIMEOUT + rand() % CONNEXION_TIMEOUT;
+    uint8_t timeout = CONNECTION_TIMEOUT + rand() % CONNECTION_TIMEOUT;
 
     *connection = (Connection) {
         .ip_port = ip_port,
@@ -403,7 +403,7 @@ int connection_confirmed(Lossless_UDP *ludp, int connection_id)
 }
 
 /* Confirm an incoming connection.
- * Also disables the auto kill timeout on incomming connections.
+ * Also disable the auto kill timeout on incomming connections.
  *
  *  return 0 on success
  *  return -1 on failure.
@@ -777,7 +777,7 @@ static int handle_handshake(void *object, IP_Port source, uint8_t *packet, uint3
     /* if handshake_id2 is what we sent previously as handshake_id1 */
     if (handshake_id2 == connection->handshake_id1) {
         connection->status = LUDP_NOT_CONFIRMED;
-        /* NOTE: is this necessary?
+        /* NOTE: Is this necessary?
         connection->handshake_id2 = handshake_id1; */
         connection->orecv_packetnum = handshake_id2;
         connection->osent_packetnum = handshake_id1;
@@ -847,7 +847,7 @@ static int handle_SYNC2(Lossless_UDP *ludp, int connection_id, uint8_t counter, 
 /*
  * Automatically adjusts send rates of data packets for optimal transmission.
  *
- * TODO: Impove this.
+ * TODO: Improve this.
  */
 static void adjust_datasendspeed(Connection *connection, uint32_t req_packets)
 {
@@ -1144,7 +1144,7 @@ static void adjust_rates(Lossless_UDP *ludp)
     }
 }
 
-/* Call this function a couple times per second It's the main loop. */
+/* Call this function a couple times per second. It is the main loop. */
 void do_lossless_udp(Lossless_UDP *ludp)
 {
     do_new(ludp);

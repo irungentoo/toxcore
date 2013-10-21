@@ -38,10 +38,10 @@
 /* Maximum number of data packets in the buffer. */
 #define MAX_REQUESTED_PACKETS 256
 
-/* Timeout per connection is randomly set between CONNEXION_TIMEOUT and 2*CONNEXION_TIMEOUT. */
-#define CONNEXION_TIMEOUT 5
+/* Timeout per connection is randomly set between CONNECTION_TIMEOUT and 2*CONNECTION_TIMEOUT. */
+#define CONNECTION_TIMEOUT 5
 
-/* Initial amount of sync/hanshake packets to send per second. */
+/* Initial amount of sync/handshake packets to send per second. */
 #define SYNC_RATE         2
 
 /* Initial send rate of data. */
@@ -124,7 +124,7 @@ typedef struct {
     uint8_t   send_counter;
     uint8_t   timeout; /* connection timeout in seconds. */
 
-    /* is the connection confirmed or not 1 if yes, 0 if no */
+    /* Is the connection confirmed or not? 1 if yes, 0 if no */
     uint8_t   confirmed;
 } Connection;
 
@@ -249,7 +249,7 @@ uint32_t recvqueue(Lossless_UDP *ludp, int connection_id);
  */
 int is_connected(Lossless_UDP *ludp, int connection_id);
 
-/* Call this function a couple times per second It's the main loop. */
+/* Call this function a couple times per second. It is the main loop. */
 void do_lossless_udp(Lossless_UDP *ludp);
 
 /* This function sets up LosslessUDP packet handling. */
