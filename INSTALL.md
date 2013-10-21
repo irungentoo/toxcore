@@ -16,7 +16,7 @@
 Build dependencies:
 
 ```bash
-sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check git
+sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check git libswscale-dev libsdl-dev libopenal-dev libopus-dev libvpx-dev yasm
 ```
 
 On Fedora:
@@ -40,6 +40,7 @@ sudo ldconfig
 cd ..
 ```
 
+
 Or if checkinstall is not easily available for your distribution (e.g. Fedora), 
 this will install the libs to /usr/local/lib and the headers to /usr/local/include:
 
@@ -54,13 +55,22 @@ sudo make install
 cd ..
 ```
 
+You also need recent [FFmpeg](http://git.videolan.org/?p=ffmpeg.git) libraries:
+```bash
+git clone git://source.ffmpeg.org/ffmpeg.git
+cd ffmpeg
+git checkout n2.0.2
+./configure --prefix=`pwd`/install --disable-programs
+make && make install
+cd ..
+```
 
 Then clone this repo and generate makefile:
 ```bash
 git clone git://github.com/irungentoo/ProjectTox-Core.git
 cd ProjectTox-Core
 autoreconf -i
-./configure
+./configure --with-dependency-search=`pwd`/../ffmpeg/install
 make
 sudo make install
 ```
