@@ -152,7 +152,7 @@ void random_nonce(uint8_t *nonce)
 static uint8_t base_nonce[crypto_box_NONCEBYTES];
 static uint8_t nonce_set = 0;
 
-/*Gives a nonce guaranteed to be different from previous ones.*/
+/* Gives a nonce guaranteed to be different from previous ones.*/
 void new_nonce(uint8_t *nonce)
 {
     if (nonce_set == 0) {
@@ -240,7 +240,7 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
     return 1;
 }
 
-/* Ceate a request to peer.
+/* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.
  * recv_public_key is public key of reciever.
  * packet must be an array of MAX_DATA_SIZE big.
