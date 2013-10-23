@@ -1357,7 +1357,7 @@ static void LANdiscovery(Messenger *m)
 }
 
 /* Run this at startup. */
-Messenger *initMessenger(uint8_t ipv6enabled)
+Messenger *new_messenger(uint8_t ipv6enabled)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
@@ -1402,7 +1402,7 @@ Messenger *initMessenger(uint8_t ipv6enabled)
 }
 
 /* Run this before closing shop. */
-void cleanupMessenger(Messenger *m)
+void kill_messenger(Messenger *m)
 {
     /* FIXME TODO: ideally cleanupMessenger will mirror initMessenger.
      * This requires the other modules to expose cleanup functions.
@@ -1415,7 +1415,7 @@ void cleanupMessenger(Messenger *m)
 }
 
 /* TODO: Make this function not suck. */
-void doFriends(Messenger *m)
+void do_friends(Messenger *m)
 {
     /* TODO: Add incoming connections and some other stuff. */
     uint32_t i;
@@ -1725,7 +1725,7 @@ void doFriends(Messenger *m)
     }
 }
 
-void doInbound(Messenger *m)
+void do_inbound(Messenger *m)
 {
     uint8_t secret_nonce[crypto_box_NONCEBYTES];
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -1767,14 +1767,14 @@ static char *ID2String(uint8_t *client_id)
 #endif
 
 /* The main loop that needs to be run at least 20 times per second. */
-void doMessenger(Messenger *m)
+void do_messenger(Messenger *m)
 {
     networking_poll(m->net);
 
     do_DHT(m->dht);
     do_net_crypto(m->net_crypto);
-    doFriends(m);
-    doInbound(m);
+    do_friends(m);
+    do_inbound(m);
     do_allgroupchats(m);
     LANdiscovery(m);
 
@@ -1873,17 +1873,17 @@ void doMessenger(Messenger *m)
 /*
  * functions to avoid excessive polling
  */
-int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr)
+int wait_prepare_messenger(Messenger *m, uint8_t *data, uint16_t *lenptr)
 {
     return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data, lenptr);
 }
 
-int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds)
+int wait_execute_messenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds)
 {
     return networking_wait_execute(data, len, milliseconds);
 };
 
-void waitcleanupMessenger(Messenger *m, uint8_t *data, uint16_t len)
+void wait_cleanup_messenger(Messenger *m, uint8_t *data, uint16_t len)
 {
     networking_wait_cleanup(m->net, data, len);
 }
@@ -2037,7 +2037,7 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
 #define MESSENGER_STATE_TYPE_NAME        4
 
 /*  return size of the messenger data (for saving) */
-uint32_t Messenger_size(Messenger *m)
+uint32_t messenger_size(Messenger *m)
 {
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return   size32 * 2                                      // global cookie
@@ -2058,7 +2058,7 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 }
 
 /* Save the messenger in data of size Messenger_size(). */
-void Messenger_save(Messenger *m, uint8_t *data)
+void messenger_save(Messenger *m, uint8_t *data)
 {
     uint32_t len;
     uint16_t type;
@@ -2161,7 +2161,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 }
 
 /* Load the messenger from data of size length. */
-int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
+int messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 {
     uint32_t cookie_len = 2 * sizeof(uint32_t);
 
