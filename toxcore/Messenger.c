@@ -714,7 +714,7 @@ IP_Port get_friend_ipport(Messenger *m, int friendnumber)
 
     int crypt_id = m->friendlist[friendnumber].crypt_connection_id;
 
-    if (is_cryptoconnected(m->net_crypto, crypt_id) != 3)
+    if (is_cryptoconnected(m->net_crypto, crypt_id) != CRYPTO_CONN_ESTABLISHED)
         return zero;
 
     return connection_ip(m->net_crypto->lossless_udp, m->net_crypto->crypto_connections[crypt_id].number);
@@ -1454,13 +1454,13 @@ void doFriends(Messenger *m)
             int friendok = DHT_getfriendip(m->dht, m->friendlist[i].client_id, &friendip);
 
             switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
-                case 0:
+                case CRYPTO_CONN_NO_CONNECTION:
                     if (friendok == 1)
                         m->friendlist[i].crypt_connection_id = crypto_connect(m->net_crypto, m->friendlist[i].client_id, friendip);
 
                     break;
 
-                case 3: /* Connection is established. */
+                case CRYPTO_CONN_ESTABLISHED: /* Connection is established. */
                     set_friend_status(m, i, FRIEND_ONLINE);
                     m->friendlist[i].name_sent = 0;
                     m->friendlist[i].userstatus_sent = 0;
@@ -1468,7 +1468,7 @@ void doFriends(Messenger *m)
                     m->friendlist[i].ping_lastrecv = temp_time;
                     break;
 
-                case 4:
+                case CRYPTO_CONN_TIMED_OUT:
                     crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                     m->friendlist[i].crypt_connection_id = -1;
                     break;
@@ -1706,7 +1706,7 @@ void doFriends(Messenger *m)
                 }
             } else {
                 if (is_cryptoconnected(m->net_crypto,
-                                       m->friendlist[i].crypt_connection_id) == 4) { /* If the connection timed out, kill it. */
+                                       m->friendlist[i].crypt_connection_id) == CRYPTO_CONN_TIMED_OUT) { /* If the connection timed out, kill it. */
                     crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                     m->friendlist[i].crypt_connection_id = -1;
                     set_friend_status(m, i, FRIEND_CONFIRMED);

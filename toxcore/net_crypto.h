@@ -30,6 +30,12 @@
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
 #define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
 
+#define CRYPTO_CONN_NO_CONNECTION 0
+#define CRYPTO_CONN_HANDSHAKE_SENT 1
+#define CRYPTO_CONN_NOT_CONFIRMED 2
+#define CRYPTO_CONN_ESTABLISHED 3
+#define CRYPTO_CONN_TIMED_OUT 4
+
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
