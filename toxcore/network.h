@@ -68,6 +68,7 @@ typedef int sock_t;
 #include <sodium.h>
 #else
 #include <crypto_box.h>
+#include <crypto_secretbox.h>
 #include <randombytes.h>
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #define crypto_secretbox_MACBYTES (crypto_secretbox_ZEROBYTES - crypto_secretbox_BOXZEROBYTES)
