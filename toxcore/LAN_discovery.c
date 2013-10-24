@@ -26,6 +26,7 @@
 #endif
 
 #include "LAN_discovery.h"
+#include "util.h"
 
 #define MAX_INTERFACES 16
 
@@ -214,7 +215,7 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
 {
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
-    memcpy(data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
+    id_copy(data + 1, c->self_public_key);
 
 #ifdef __linux
     send_broadcasts(c->lossless_udp->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);

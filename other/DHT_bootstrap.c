@@ -1,3 +1,4 @@
+
 /* DHT boostrap
  *
  * A simple DHT boostrap server for tox.
@@ -20,6 +21,7 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -27,6 +29,8 @@
 #include "../toxcore/DHT.h"
 #include "../toxcore/LAN_discovery.h"
 #include "../toxcore/friend_requests.h"
+#include "../toxcore/util.h"
+
 #include "../testing/misc_tools.c"
 
 /* Sleep function (x = milliseconds) */
@@ -147,7 +151,7 @@ int main(int argc, char *argv[])
 
         do_DHT(dht);
 
-        if (last_LANdiscovery + (is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL) < unix_time()) {
+        if (is_timeout(last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
             send_LANdiscovery(htons(PORT), dht->c);
             last_LANdiscovery = unix_time();
         }
