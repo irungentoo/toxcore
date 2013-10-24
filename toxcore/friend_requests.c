@@ -26,6 +26,7 @@
 #endif
 
 #include "friend_requests.h"
+#include "util.h"
 
 /* Try to send a friend request to peer with public_key.
  * data is the data in the request and length is the length.
@@ -102,7 +103,7 @@ static void addto_receivedlist(Friend_Requests *fr, uint8_t *client_id)
     if (fr->received_requests_index >= MAX_RECEIVED_STORED)
         fr->received_requests_index = 0;
 
-    memcpy(fr->received_requests[fr->received_requests_index], client_id, crypto_box_PUBLICKEYBYTES);
+    id_copy(fr->received_requests[fr->received_requests_index], client_id);
     ++fr->received_requests_index;
 }
 
@@ -115,10 +116,9 @@ static int request_received(Friend_Requests *fr, uint8_t *client_id)
 {
     uint32_t i;
 
-    for (i = 0; i < MAX_RECEIVED_STORED; ++i) {
-        if (memcmp(fr->received_requests[i], client_id, crypto_box_PUBLICKEYBYTES) == 0)
+    for (i = 0; i < MAX_RECEIVED_STORED; ++i)
+        if (id_equal(fr->received_requests[i], client_id))
             return 1;
-    }
 
     return 0;
 }

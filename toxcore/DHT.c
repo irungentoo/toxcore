@@ -115,25 +115,14 @@ static int client_id_cmp(ClientPair p1, ClientPair p2)
     return c;
 }
 
-static int id_equal(uint8_t *a, uint8_t *b)
-{
-    return memcmp(a, b, CLIENT_ID_SIZE) == 0;
-}
-
-static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
-{
-    return timestamp + timeout <= time_now;
-}
-
 static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id)
 {
     uint32_t i;
-    uint64_t temp_time = unix_time();
 
     for (i = 0; i < length; i++)
         /* Dead nodes are considered dead (not in the list)*/
-        if (!is_timeout(temp_time, list[i].assoc4.timestamp, KILL_NODE_TIMEOUT) ||
-                !is_timeout(temp_time, list[i].assoc6.timestamp, KILL_NODE_TIMEOUT))
+        if (!is_timeout(list[i].assoc4.timestamp, KILL_NODE_TIMEOUT) ||
+                !is_timeout(list[i].assoc6.timestamp, KILL_NODE_TIMEOUT))
             if (id_equal(list[i].client_id, client_id))
                 return 1;
 
@@ -272,7 +261,7 @@ static int friend_number(DHT *dht, uint8_t *client_id)
  */
 static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nodes_list,
                                   sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
-                                  time_t timestamp, int *num_nodes_ptr, uint8_t is_LAN)
+                                  int *num_nodes_ptr, uint8_t is_LAN)
 {
     if ((sa_family != AF_INET) && (sa_family != AF_INET6))
         return;
@@ -295,7 +284,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
             ipptp = &client->assoc6;
 
         /* node not in a good condition? */
-        if (is_timeout(timestamp, ipptp->timestamp, BAD_NODE_TIMEOUT))
+        if (is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT))
             continue;
 
         IP *client_ip = &ipptp->ip_port.ip;
@@ -366,15 +355,14 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
  */
 static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN)
 {
-    time_t timestamp = unix_time();
     int num_nodes = 0, i;
     get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
-                          dht->close_clientlist, LCLIENT_LIST, timestamp, &num_nodes, is_LAN);
+                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN);
 
     for (i = 0; i < dht->num_friends; ++i)
         get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                              timestamp, &num_nodes, is_LAN);
+                              &num_nodes, is_LAN);
 
     return num_nodes;
 }
@@ -393,7 +381,6 @@ static int replace_bad(    Client_data    *list,
         return 1;
 
     uint32_t i;
-    uint64_t temp_time = unix_time();
 
     for (i = 0; i < length; ++i) {
         /* If node is bad */
@@ -405,10 +392,10 @@ static int replace_bad(    Client_data    *list,
         else
             ipptp = &client->assoc6;
 
-        if (is_timeout(temp_time, ipptp->timestamp, BAD_NODE_TIMEOUT)) {
+        if (is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT)) {
             memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
             ipptp->ip_port = ip_port;
-            ipptp->timestamp = temp_time;
+            ipptp->timestamp = unix_time();
 
             ip_reset(&ipptp->ret_ip_port.ip);
             ipptp->ret_ip_port.port = 0;
@@ -587,10 +574,9 @@ static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
 {
     uint32_t i;
     uint8_t pinging;
-    uint64_t temp_time = unix_time();
 
     for (i = 0; i < LSEND_NODES_ARRAY; ++i ) {
-        if (!is_timeout(temp_time, dht->send_nodes[i].timestamp, PING_TIMEOUT)) {
+        if (!is_timeout(dht->send_nodes[i].timestamp, PING_TIMEOUT)) {
             pinging = 0;
 
             if (ping_id != 0 && dht->send_nodes[i].id == ping_id)
@@ -612,12 +598,11 @@ static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
 {
     uint32_t i, j;
     uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
-    uint64_t temp_time = unix_time();
 
     for (i = 0; i < PING_TIMEOUT; ++i ) {
         for (j = 0; j < LSEND_NODES_ARRAY; ++j ) {
-            if (is_timeout(temp_time, dht->send_nodes[j].timestamp, PING_TIMEOUT - i)) {
-                dht->send_nodes[j].timestamp = temp_time;
+            if (is_timeout(dht->send_nodes[j].timestamp, PING_TIMEOUT - i)) {
+                dht->send_nodes[j].timestamp = unix_time();
                 dht->send_nodes[j].ip_port = ip_port;
                 dht->send_nodes[j].id = ping_id;
                 return ping_id;
@@ -937,7 +922,6 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
  */
 static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_t max_num, uint8_t *client_id)
 {
-    uint64_t temp_time = unix_time();
     uint32_t i, num = 0;
 
     for (i = 0; i < length; ++i) {
@@ -946,7 +930,7 @@ static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_
 
         for (a = 0, assoc = &list[i].assoc6; a < 2; a++, assoc = &list[i].assoc4)
             if (ipport_isset(&(assoc->ip_port)) &&
-                    !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+                    !is_timeout(assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
                 getnodes(dht, assoc->ip_port, list[i].client_id, client_id);
                 ++num;
 
@@ -1016,7 +1000,6 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id)
 int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port)
 {
     uint32_t i, j;
-    uint64_t temp_time = unix_time();
 
     ip_reset(&ip_port->ip);
     ip_port->port = 0;
@@ -1032,7 +1015,7 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port)
                     uint32_t a;
 
                     for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
-                        if (!is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
+                        if (!is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT)) {
                             *ip_port = assoc->ip_port;
                             return 1;
                         }
@@ -1063,14 +1046,14 @@ static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8
         uint32_t a;
 
         for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
-            if (!is_timeout(temp_time, assoc->timestamp, KILL_NODE_TIMEOUT)) {
-                if (is_timeout(temp_time, assoc->last_pinged, PING_INTERVAL)) {
+            if (!is_timeout(assoc->timestamp, KILL_NODE_TIMEOUT)) {
+                if (is_timeout(assoc->last_pinged, PING_INTERVAL)) {
                     send_ping_request(dht->ping, assoc->ip_port, client->client_id );
                     assoc->last_pinged = temp_time;
                 }
 
                 /* If node is good. */
-                if (!is_timeout(temp_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
+                if (!is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT)) {
                     client_list[num_nodes] = client;
                     assoc_list[num_nodes] = assoc;
                     ++num_nodes;
@@ -1078,8 +1061,7 @@ static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8
             }
     }
 
-    if ((num_nodes != 0) &&
-            is_timeout(temp_time, *lastgetnode, GET_NODE_INTERVAL)) {
+    if ((num_nodes != 0) && is_timeout(*lastgetnode, GET_NODE_INTERVAL)) {
         uint32_t rand_node = rand() % num_nodes;
         getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->client_id,
                  client_id);
@@ -1174,9 +1156,6 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
  */
 static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 {
-    int i;
-    uint64_t temp_time = unix_time();
-
     if (friend_num >= dht->num_friends)
         return -1;
 
@@ -1187,20 +1166,21 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
     IP_Port ipv6s[MAX_FRIEND_CLIENTS];
     int num_ipv6s = 0;
     uint8_t connected;
+    int i;
 
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &(friend->client_list[i]);
         connected = 0;
 
         /* If ip is not zero and node is good. */
-        if (ip_isset(&client->assoc4.ret_ip_port.ip) && !is_timeout(temp_time, client->assoc4.ret_timestamp, BAD_NODE_TIMEOUT)) {
+        if (ip_isset(&client->assoc4.ret_ip_port.ip) && !is_timeout(client->assoc4.ret_timestamp, BAD_NODE_TIMEOUT)) {
             ipv4s[num_ipv4s] = client->assoc4.ret_ip_port;
             ++num_ipv4s;
 
             connected = 1;
         }
 
-        if (ip_isset(&client->assoc6.ret_ip_port.ip) && !is_timeout(temp_time, client->assoc6.ret_timestamp, BAD_NODE_TIMEOUT)) {
+        if (ip_isset(&client->assoc6.ret_ip_port.ip) && !is_timeout(client->assoc6.ret_timestamp, BAD_NODE_TIMEOUT)) {
             ipv6s[num_ipv6s] = client->assoc6.ret_ip_port;
             ++num_ipv6s;
 
@@ -1260,7 +1240,6 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     if (ip_num < (MAX_FRIEND_CLIENTS / 2))
         return 0; /* Reason for that? */
 
-    uint64_t temp_time = unix_time();
     DHT_Friend *friend = &dht->friends_list[num];
     Client_data *client;
 
@@ -1283,7 +1262,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
 
             /* If ip is not zero and node is good. */
             if (ip_isset(&assoc->ret_ip_port.ip) &&
-                    !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+                    !is_timeout(assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
                 int retval = sendpacket(dht->c->lossless_udp->net, assoc->ip_port, packet, length);
 
                 if ((unsigned int)retval == length) {
@@ -1313,7 +1292,6 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
     IP_Port ip_list[MAX_FRIEND_CLIENTS * 2];
     int n = 0;
     uint32_t i;
-    uint64_t temp_time = unix_time();
 
     /* extra legwork, because having the outside allocating the space for us
      * is *usually* good(tm) (bites us in the behind in this case though) */
@@ -1330,7 +1308,7 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
                 assoc = &client->assoc6;
 
             /* If ip is not zero and node is good. */
-            if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(temp_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
                 ip_list[n] = assoc->ip_port;
                 ++n;
             }
@@ -1556,6 +1534,9 @@ static void do_NAT(DHT *dht)
 
 DHT *new_DHT(Net_Crypto *c)
 {
+    /* init time */
+    unix_time_update();
+
     if (c == NULL)
         return NULL;
 
@@ -1584,6 +1565,8 @@ DHT *new_DHT(Net_Crypto *c)
 
 void do_DHT(DHT *dht)
 {
+    unix_time_update();
+
     do_Close(dht);
     do_DHT_friends(dht);
     do_NAT(dht);
@@ -1860,13 +1843,13 @@ int DHT_load_new(DHT *dht, uint8_t *data, uint32_t length)
 int DHT_isconnected(DHT *dht)
 {
     uint32_t i;
-    uint64_t temp_time = unix_time();
+    unix_time_update();
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
         Client_data *client = &dht->close_clientlist[i];
 
-        if (!is_timeout(temp_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
-                !is_timeout(temp_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT))
+        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
+                !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
             return 1;
     }
 

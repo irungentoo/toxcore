@@ -16,11 +16,6 @@
 
 #include "util.h"
 
-uint64_t now()
-{
-    return time(NULL);
-}
-
 uint64_t random_64b()
 {
     uint64_t r;
@@ -33,16 +28,39 @@ uint64_t random_64b()
     return r;
 }
 
-bool id_eq(uint8_t *dest, uint8_t *src)
+/* don't call into system billions of times for no reason */
+static uint64_t unix_time_value;
+
+void unix_time_update()
+{
+    unix_time_value = (uint64_t)time(NULL);
+}
+
+uint64_t unix_time()
+{
+    return unix_time_value;
+}
+
+int is_timeout(uint64_t timestamp, uint64_t timeout)
+{
+    return timestamp + timeout <= unix_time_value;
+}
+
+
+/* id functions */
+bool id_equal(uint8_t *dest, uint8_t *src)
 {
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
-void id_cpy(uint8_t *dest, uint8_t *src)
+uint32_t id_copy(uint8_t *dest, uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
+    return CLIENT_ID_SIZE;
 }
 
+
+/* state load/save */
 int load_state(load_state_callback_func load_state_callback, void *outer,
                uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {

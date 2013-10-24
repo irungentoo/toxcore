@@ -40,7 +40,7 @@ typedef struct {
 
 static bool is_ping_timeout(uint64_t time)
 {
-    return (time + PING_TIMEOUT) < now();
+    return is_timeout(time, PING_TIMEOUT);
 }
 
 static void remove_timeouts(PING *ping)    // O(n)
@@ -83,7 +83,7 @@ static uint64_t add_ping(PING *ping, IP_Port ipp)  // O(n)
     p = (ping->pos_pings + ping->num_pings) % PING_NUM_MAX;
 
     ping->pings[p].ip_port   = ipp;
-    ping->pings[p].timestamp = now();
+    ping->pings[p].timestamp = unix_time();
     ping->pings[p].id        = random_64b();
 
     ping->num_pings++;
@@ -122,14 +122,14 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     int       rc;
     uint64_t  ping_id;
 
-    if (is_pinging(ping, ipp, 0) || id_eq(client_id, ping->c->self_public_key))
+    if (is_pinging(ping, ipp, 0) || id_equal(client_id, ping->c->self_public_key))
         return 1;
 
     // Generate random ping_id.
     ping_id = add_ping(ping, ipp);
 
     pk[0] = NET_PACKET_PING_REQUEST;
-    id_cpy(pk + 1, ping->c->self_public_key);     // Our pubkey
+    id_copy(pk + 1, ping->c->self_public_key);     // Our pubkey
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
@@ -150,11 +150,11 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
 
-    if (id_eq(client_id, ping->c->self_public_key))
+    if (id_equal(client_id, ping->c->self_public_key))
         return 1;
 
     pk[0] = NET_PACKET_PING_RESPONSE;
-    id_cpy(pk + 1, ping->c->self_public_key);     // Our pubkey
+    id_copy(pk + 1, ping->c->self_public_key);     // Our pubkey
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
@@ -181,7 +181,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
 
     PING *ping = dht->ping;
 
-    if (id_eq(packet + 1, ping->c->self_public_key))
+    if (id_equal(packet + 1, ping->c->self_public_key))
         return 1;
 
     // Decrypt ping_id
@@ -213,7 +213,7 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
 
     PING *ping = dht->ping;
 
-    if (id_eq(packet + 1, ping->c->self_public_key))
+    if (id_equal(packet + 1, ping->c->self_public_key))
         return 1;
 
     // Decrypt ping_id
@@ -277,19 +277,12 @@ int add_toping(PING *ping, uint8_t *client_id, IP_Port ip_port)
 /* Ping all the valid nodes in the toping list every TIME_TOPING seconds.
  * This function must be run at least once every TIME_TOPING seconds.
  */
-static int is_timeout(uint64_t time_now, uint64_t timestamp, uint64_t timeout)
-{
-    return timestamp + timeout <= time_now;
-}
-
 void do_toping(PING *ping)
 {
-    uint64_t temp_time = unix_time();
-
-    if (!is_timeout(temp_time, ping->last_toping, TIME_TOPING))
+    if (!is_timeout(ping->last_toping, TIME_TOPING))
         return;
 
-    ping->last_toping = temp_time;
+    ping->last_toping = unix_time();
     uint32_t i;
 
     for (i = 0; i < MAX_TOPING; ++i) {

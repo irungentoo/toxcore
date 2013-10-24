@@ -97,9 +97,6 @@ typedef int sock_t;
 #define TOX_PORTRANGE_TO   33455
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
-/* Current time, unix format */
-#define unix_time() ((uint64_t)time(NULL))
-
 typedef union {
     uint8_t uint8[4];
     uint16_t uint16[2];

@@ -11,11 +11,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-uint64_t now();
 uint64_t random_64b();
-bool id_eq(uint8_t *dest, uint8_t *src);
-void id_cpy(uint8_t *dest, uint8_t *src);
 
+void unix_time_update();
+uint64_t unix_time();
+int is_timeout(uint64_t timestamp, uint64_t timeout);
+
+
+/* id functions */
+bool id_equal(uint8_t *dest, uint8_t *src);
+uint32_t id_copy(uint8_t *dest, uint8_t *src); /* return value is CLIENT_ID_SIZE */
+
+
+/* state load/save */
 typedef int (*load_state_callback_func)(void *outer, uint8_t *data, uint32_t len, uint16_t type);
 int load_state(load_state_callback_func load_state_callback, void *outer,
                uint8_t *data, uint32_t length, uint16_t cookie_inner);
