@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    m = initMessenger(ipv6enabled);
+    m = new_messenger(ipv6enabled);
 
     if ( !m ) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
         int read;
         uint8_t buffer[128000];
         read = fread(buffer, 1, 128000, file);
-        printf("Messenger loaded: %i\n", Messenger_load(m, buffer, read));
+        printf("Messenger loaded: %i\n", messenger_load(m, buffer, read));
         fclose(file);
 
     }
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
 
         m_sendmessage(m, num, (uint8_t *)"Test", 5);
-        doMessenger(m);
+        do_messenger(m);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
 
@@ -186,11 +186,11 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        uint8_t *buffer = malloc(Messenger_size(m));
-        Messenger_save(m, buffer);
-        size_t write_result = fwrite(buffer, 1, Messenger_size(m), file);
+        uint8_t *buffer = malloc(messenger_size(m));
+        messenger_save(m, buffer);
+        size_t write_result = fwrite(buffer, 1, messenger_size(m), file);
 
-        if (write_result < Messenger_size(m)) {
+        if (write_result < messenger_size(m)) {
             return 1;
         }
 
@@ -198,5 +198,5 @@ int main(int argc, char *argv[])
         fclose(file);
     }
 
-    cleanupMessenger(m);
+    kill_messenger(m);
 }

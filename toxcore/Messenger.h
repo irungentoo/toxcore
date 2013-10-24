@@ -580,33 +580,33 @@ int m_msi_packet(Messenger *m, int friendnumber, uint8_t *data, uint16_t length)
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
  */
-Messenger *initMessenger(uint8_t ipv6enabled);
+Messenger *new_messenger(uint8_t ipv6enabled);
 
 /* Run this before closing shop
  * Free all datastructures.
  */
-void cleanupMessenger(Messenger *M);
+void kill_messenger(Messenger *M);
 
 /* The main loop that needs to be run at least 20 times per second. */
-void doMessenger(Messenger *m);
+void do_messenger(Messenger *m);
 
 /*
  * functions to avoid excessive polling
  */
-int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr);
-int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds);
-void waitcleanupMessenger(Messenger *m, uint8_t *data, uint16_t len);
+int wait_prepare_messenger(Messenger *m, uint8_t *data, uint16_t *lenptr);
+int wait_execute_messenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds);
+void wait_cleanup_messenger(Messenger *m, uint8_t *data, uint16_t len);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* return size of the messenger data (for saving). */
-uint32_t Messenger_size(Messenger *m);
+uint32_t messenger_size(Messenger *m);
 
 /* Save the messenger in data (must be allocated memory of size Messenger_size()) */
-void Messenger_save(Messenger *m, uint8_t *data);
+void messenger_save(Messenger *m, uint8_t *data);
 
 /* Load the messenger from data of size length. */
-int Messenger_load(Messenger *m, uint8_t *data, uint32_t length);
+int messenger_load(Messenger *m, uint8_t *data, uint32_t length);
 
 /* Return the number of friends in the instance m.
  * You should use this to determine how much memory to allocate

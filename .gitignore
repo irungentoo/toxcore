@@ -3,30 +3,27 @@
 .DS_Store?
 ._*
 .Spotlight-V100
-.Trashes
+.Trash*
+Icon?
 ethumbs.db
 Thumbs.db
+*.tmp
 
-//nacl build
-nacl/build/
-build/
-!build/Makefile.am
-sodium
-
+# Make
 CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
 install_manifest.txt
+tags
+Makefile.in
 
+# Testing
 testing/data
 *~
 
 # Vim
 *.swp
-
-# Ctags
-tags
 
 # Object files
 *.o
@@ -37,14 +34,13 @@ tags
 *.exe
 *.out
 *.app
-*.swp
 *.la
 
+# Misc (?)
 m4/*
-!m4/pkg.m4
 configure
 configure_aux
-Makefile.in
+!m4/pkg.m4
 aclocal.m4
 config.h*
 config.log
@@ -53,13 +49,12 @@ stamp-h1
 autom4te.cache
 libtoxcore.pc
 libtool
-
 .deps
 .libs
 .dirstamp
 
-#netbeans
+# Netbeans
 nbproject
 
-#astyle
+# astyle
 *.orig

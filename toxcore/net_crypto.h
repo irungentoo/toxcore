@@ -28,7 +28,13 @@
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
-#define CRYPTO_HANDSHAKE_TIMEOUT (CONNEXION_TIMEOUT * 2)
+#define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
+
+#define CRYPTO_CONN_NO_CONNECTION 0
+#define CRYPTO_CONN_HANDSHAKE_SENT 1
+#define CRYPTO_CONN_NOT_CONFIRMED 2
+#define CRYPTO_CONN_ESTABLISHED 3
+#define CRYPTO_CONN_TIMED_OUT 4
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
@@ -38,7 +44,7 @@ typedef struct {
     uint8_t sessionsecret_key[crypto_box_SECRETKEYBYTES]; /* Our private key for this session. */
     uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
     uint8_t shared_key[crypto_box_BEFORENMBYTES]; /* The precomputed shared key from encrypt_precompute. */
-    uint8_t status; /* 0 if no connection, 1 we have sent a handshake, 2 if connexion is not confirmed yet
+    uint8_t status; /* 0 if no connection, 1 we have sent a handshake, 2 if connection is not confirmed yet
                      * (we have received a handshake but no empty data packet), 3 if the connection is established.
                      * 4 if the connection is timed out.
                      */

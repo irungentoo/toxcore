@@ -714,7 +714,7 @@ IP_Port get_friend_ipport(Messenger *m, int friendnumber)
 
     int crypt_id = m->friendlist[friendnumber].crypt_connection_id;
 
-    if (is_cryptoconnected(m->net_crypto, crypt_id) != 3)
+    if (is_cryptoconnected(m->net_crypto, crypt_id) != CRYPTO_CONN_ESTABLISHED)
         return zero;
 
     return connection_ip(m->net_crypto->lossless_udp, m->net_crypto->crypto_connections[crypt_id].number);
@@ -1357,7 +1357,7 @@ static void LANdiscovery(Messenger *m)
 }
 
 /* Run this at startup. */
-Messenger *initMessenger(uint8_t ipv6enabled)
+Messenger *new_messenger(uint8_t ipv6enabled)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
@@ -1402,7 +1402,7 @@ Messenger *initMessenger(uint8_t ipv6enabled)
 }
 
 /* Run this before closing shop. */
-void cleanupMessenger(Messenger *m)
+void kill_messenger(Messenger *m)
 {
     /* FIXME TODO: ideally cleanupMessenger will mirror initMessenger.
      * This requires the other modules to expose cleanup functions.
@@ -1415,7 +1415,7 @@ void cleanupMessenger(Messenger *m)
 }
 
 /* TODO: Make this function not suck. */
-void doFriends(Messenger *m)
+void do_friends(Messenger *m)
 {
     /* TODO: Add incoming connections and some other stuff. */
     uint32_t i;
@@ -1454,13 +1454,13 @@ void doFriends(Messenger *m)
             int friendok = DHT_getfriendip(m->dht, m->friendlist[i].client_id, &friendip);
 
             switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
-                case 0:
+                case CRYPTO_CONN_NO_CONNECTION:
                     if (friendok == 1)
                         m->friendlist[i].crypt_connection_id = crypto_connect(m->net_crypto, m->friendlist[i].client_id, friendip);
 
                     break;
 
-                case 3: /* Connection is established. */
+                case CRYPTO_CONN_ESTABLISHED: /* Connection is established. */
                     set_friend_status(m, i, FRIEND_ONLINE);
                     m->friendlist[i].name_sent = 0;
                     m->friendlist[i].userstatus_sent = 0;
@@ -1468,7 +1468,7 @@ void doFriends(Messenger *m)
                     m->friendlist[i].ping_lastrecv = temp_time;
                     break;
 
-                case 4:
+                case CRYPTO_CONN_TIMED_OUT:
                     crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                     m->friendlist[i].crypt_connection_id = -1;
                     break;
@@ -1706,7 +1706,7 @@ void doFriends(Messenger *m)
                 }
             } else {
                 if (is_cryptoconnected(m->net_crypto,
-                                       m->friendlist[i].crypt_connection_id) == 4) { /* If the connection timed out, kill it. */
+                                       m->friendlist[i].crypt_connection_id) == CRYPTO_CONN_TIMED_OUT) { /* If the connection timed out, kill it. */
                     crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                     m->friendlist[i].crypt_connection_id = -1;
                     set_friend_status(m, i, FRIEND_CONFIRMED);
@@ -1725,7 +1725,7 @@ void doFriends(Messenger *m)
     }
 }
 
-void doInbound(Messenger *m)
+void do_inbound(Messenger *m)
 {
     uint8_t secret_nonce[crypto_box_NONCEBYTES];
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -1767,7 +1767,7 @@ static char *ID2String(uint8_t *client_id)
 #endif
 
 /* The main loop that needs to be run at least 20 times per second. */
-void doMessenger(Messenger *m)
+void do_messenger(Messenger *m)
 {
     unix_time_update();
 
@@ -1775,8 +1775,8 @@ void doMessenger(Messenger *m)
 
     do_DHT(m->dht);
     do_net_crypto(m->net_crypto);
-    doFriends(m);
-    doInbound(m);
+    do_friends(m);
+    do_inbound(m);
     do_allgroupchats(m);
     LANdiscovery(m);
 
@@ -1875,17 +1875,17 @@ void doMessenger(Messenger *m)
 /*
  * functions to avoid excessive polling
  */
-int waitprepareMessenger(Messenger *m, uint8_t *data, uint16_t *lenptr)
+int wait_prepare_messenger(Messenger *m, uint8_t *data, uint16_t *lenptr)
 {
     return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data, lenptr);
 }
 
-int waitexecuteMessenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds)
+int wait_execute_messenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds)
 {
     return networking_wait_execute(data, len, milliseconds);
 };
 
-void waitcleanupMessenger(Messenger *m, uint8_t *data, uint16_t len)
+void wait_cleanup_messenger(Messenger *m, uint8_t *data, uint16_t len)
 {
     networking_wait_cleanup(m->net, data, len);
 }
@@ -2039,7 +2039,7 @@ static int Messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
 #define MESSENGER_STATE_TYPE_NAME        4
 
 /*  return size of the messenger data (for saving) */
-uint32_t Messenger_size(Messenger *m)
+uint32_t messenger_size(Messenger *m)
 {
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return   size32 * 2                                      // global cookie
@@ -2060,7 +2060,7 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 }
 
 /* Save the messenger in data of size Messenger_size(). */
-void Messenger_save(Messenger *m, uint8_t *data)
+void messenger_save(Messenger *m, uint8_t *data)
 {
     uint32_t len;
     uint16_t type;
@@ -2163,7 +2163,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 }
 
 /* Load the messenger from data of size length. */
-int Messenger_load(Messenger *m, uint8_t *data, uint32_t length)
+int messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 {
     uint32_t cookie_len = 2 * sizeof(uint32_t);
 

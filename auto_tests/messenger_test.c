@@ -276,18 +276,18 @@ START_TEST(test_messenger_state_saveloadsave)
      * c) a second save() is of equal size
      * d) the second save() is of equal content */
     size_t i, extra = 64;
-    size_t size = Messenger_size(m);
+    size_t size = messenger_size(m);
     uint8_t buffer[size + 2 * extra];
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
-    Messenger_save(m, buffer + extra);
+    messenger_save(m, buffer + extra);
 
     for (i = 0; i < extra; i++) {
-        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from Messenger_save() @%u", i);
-        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from Messenger_save() @%u", i);
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from messenger_save() @%u", i);
     }
 
-    int res = Messenger_load(m, buffer + extra, size);
+    int res = messenger_load(m, buffer + extra, size);
 
     if (res == -1)
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
@@ -300,11 +300,11 @@ START_TEST(test_messenger_state_saveloadsave)
         ck_assert_msg(res == 0, msg);
     }
 
-    size_t size2 = Messenger_size(m);
+    size_t size2 = messenger_size(m);
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
 
     uint8_t buffer2[size2];
-    Messenger_save(m, buffer2);
+    messenger_save(m, buffer2);
 
     ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "Messenger state changed by store/load/store cycle");
 }
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
     bad_id    = hex_string_to_bin(bad_id_str);
 
     /* IPv6 status from global define */
-    m = initMessenger(TOX_ENABLE_IPV6_DEFAULT);
+    m = new_messenger(TOX_ENABLE_IPV6_DEFAULT);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)
@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
     free(good_id_b);
     free(bad_id);
 
-    cleanupMessenger(m);
+    kill_messenger(m);
 
     return number_failed;
 }

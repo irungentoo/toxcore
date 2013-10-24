@@ -609,7 +609,7 @@ int tox_isconnected(Tox *tox)
  */
 Tox *tox_new(uint8_t ipv6enabled)
 {
-    return initMessenger(ipv6enabled);
+    return new_messenger(ipv6enabled);
 }
 
 /* Run this before closing shop.
@@ -618,14 +618,14 @@ Tox *tox_new(uint8_t ipv6enabled)
 void tox_kill(Tox *tox)
 {
     Messenger *m = tox;
-    cleanupMessenger(m);
+    kill_messenger(m);
 }
 
 /* The main loop that needs to be run at least 20 times per second. */
 void tox_do(Tox *tox)
 {
     Messenger *m = tox;
-    doMessenger(m);
+    do_messenger(m);
 }
 
 /*
@@ -634,19 +634,19 @@ void tox_do(Tox *tox)
 int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr)
 {
     Messenger *m = tox;
-    return waitprepareMessenger(m, data, lenptr);
+    return wait_prepare_messenger(m, data, lenptr);
 }
 
 int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds)
 {
     Messenger *m = tox;
-    return waitexecuteMessenger(m, data, len, milliseconds);
+    return wait_execute_messenger(m, data, len, milliseconds);
 }
 
 void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len)
 {
     Messenger *m = tox;
-    waitcleanupMessenger(m, data, len);
+    wait_cleanup_messenger(m, data, len);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */
@@ -655,20 +655,20 @@ void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len)
 uint32_t tox_size(Tox *tox)
 {
     Messenger *m = tox;
-    return Messenger_size(m);
+    return messenger_size(m);
 }
 
 /* Save the messenger in data (must be allocated memory of size Messenger_size()). */
 void tox_save(Tox *tox, uint8_t *data)
 {
     Messenger *m = tox;
-    Messenger_save(m, data);
+    messenger_save(m, data);
 }
 
 /* Load the messenger from data of size length. */
 int tox_load(Tox *tox, uint8_t *data, uint32_t length)
 {
     Messenger *m = tox;
-    return Messenger_load(m, data, length);
+    return messenger_load(m, data, length);
 }
 
