@@ -111,11 +111,6 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 
-typedef struct {
-    IP_Port  ip_port;
-    uint64_t id;
-    uint64_t timestamp;
-} pinged_t;
 
 typedef struct {
     Net_Crypto  *c;
@@ -125,7 +120,6 @@ typedef struct {
     uint16_t     num_friends;
     uint64_t     close_lastgetnodes;
 
-    pinged_t     send_nodes[LSEND_NODES_ARRAY];
     void        *ping;
 
     /* Note: this key should not be/is not used to transmit any sensitive materials */

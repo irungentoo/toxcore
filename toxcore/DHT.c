@@ -324,7 +324,8 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         if (ipv46x)
             continue;
 
-        if (!LAN_ip(ipptp->ip_port.ip) && !is_LAN)
+        /* don't send LAN ips to non LAN peers */
+        if (LAN_ip(ipptp->ip_port.ip) == 0 && !is_LAN)
             continue;
 
         if (num_nodes < MAX_SENT_NODES) {
@@ -585,51 +586,6 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint
     }
 }
 
-static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
-{
-    uint32_t i;
-    uint8_t pinging;
-    uint64_t temp_time = unix_time();
-
-    for (i = 0; i < LSEND_NODES_ARRAY; ++i ) {
-        if (!is_timeout(temp_time, dht->send_nodes[i].timestamp, PING_TIMEOUT)) {
-            pinging = 0;
-
-            if (ping_id != 0 && dht->send_nodes[i].id == ping_id)
-                ++pinging;
-
-            if (ip_isset(&ip_port.ip) && ipport_equal(&dht->send_nodes[i].ip_port, &ip_port))
-                ++pinging;
-
-            if (pinging == (ping_id != 0) + ip_isset(&ip_port.ip))
-                return 1;
-        }
-    }
-
-    return 0;
-}
-
-/* Same but for get node requests. */
-static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
-{
-    uint32_t i, j;
-    uint64_t ping_id = ((uint64_t)random_int() << 32) + random_int();
-    uint64_t temp_time = unix_time();
-
-    for (i = 0; i < PING_TIMEOUT; ++i ) {
-        for (j = 0; j < LSEND_NODES_ARRAY; ++j ) {
-            if (is_timeout(temp_time, dht->send_nodes[j].timestamp, PING_TIMEOUT - i)) {
-                dht->send_nodes[j].timestamp = temp_time;
-                dht->send_nodes[j].ip_port = ip_port;
-                dht->send_nodes[j].id = ping_id;
-                return ping_id;
-            }
-        }
-    }
-
-    return 0;
-}
-
 #define NODES_ENCRYPTED_MESSAGE_LENGTH (crypto_secretbox_NONCEBYTES + sizeof(uint64_t) + sizeof(Node_format) + sizeof(Node_format) + crypto_secretbox_MACBYTES)
 
 /* Send a getnodes request.
@@ -637,14 +593,8 @@ static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
 static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node)
 {
     /* Check if packet is going to be sent to ourself. */
-    if (id_equal(public_key, dht->c->self_public_key) || is_gettingnodes(dht, ip_port, 0))
+    if (id_equal(public_key, dht->c->self_public_key))
         return -1;
-
-    uint64_t ping_id = add_gettingnodes(dht, ip_port);
-
-    if (ping_id == 0)
-        return -1;
-
 
     uint8_t plain_message[NODES_ENCRYPTED_MESSAGE_LENGTH] = {0};
     uint8_t encrypted_message[NODES_ENCRYPTED_MESSAGE_LENGTH];
@@ -672,23 +622,22 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     if (len_m != NODES_ENCRYPTED_MESSAGE_LENGTH - crypto_secretbox_NONCEBYTES)
         return -1;
 
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
-    uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
-    uint8_t encrypt[sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
+    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
+    uint8_t plain[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t encrypt[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
 
 
-    memcpy(plain, &ping_id, sizeof(ping_id));
-    memcpy(plain + sizeof(ping_id), client_id, CLIENT_ID_SIZE);
-    memcpy(plain + sizeof(ping_id) + CLIENT_ID_SIZE, encrypted_message, NODES_ENCRYPTED_MESSAGE_LENGTH);
+    memcpy(plain, client_id, CLIENT_ID_SIZE);
+    memcpy(plain + CLIENT_ID_SIZE, encrypted_message, NODES_ENCRYPTED_MESSAGE_LENGTH);
 
     int len = encrypt_data( public_key,
                             dht->c->self_secret_key,
                             nonce,
                             plain,
-                            sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                            CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
                             encrypt );
 
-    if (len != sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
+    if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
         return -1;
 
     data[0] = NET_PACKET_GET_NODES;
@@ -704,15 +653,14 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 /* because of BINARY compatibility, the Node_format MUST BE Node4_format,
  * IPv6 nodes are sent in a different message
  * encrypted_data must be of size NODES_ENCRYPTED_MESSAGE_LENGTH */
-static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id,
-                     uint8_t *encrypted_data)
+static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->c->self_public_key))
         return -1;
 
     size_t Node4_format_size = sizeof(Node4_format);
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
+    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES
                  + Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
 
     Node_format nodes_list[MAX_SENT_NODES];
@@ -721,14 +669,12 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     if (num_nodes == 0)
         return 0;
 
-    uint8_t plain[sizeof(ping_id) + Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
-    uint8_t encrypt[sizeof(ping_id) + Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
+    uint8_t plain[Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t encrypt[Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    memcpy(plain, &ping_id, sizeof(ping_id));
-
-    Node4_format *nodes4_list = (Node4_format *)(plain + sizeof(ping_id));
+    Node4_format *nodes4_list = (Node4_format *)(plain);
     int i, num_nodes_ok = 0;
 
     for (i = 0; i < num_nodes; i++) {
@@ -753,15 +699,15 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
         num_nodes = num_nodes_ok;
     }
 
-    memcpy(plain + sizeof(ping_id) + num_nodes * Node4_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
+    memcpy(plain + num_nodes * Node4_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
     int len = encrypt_data( public_key,
                             dht->c->self_secret_key,
                             nonce,
                             plain,
-                            sizeof(ping_id) + num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                            num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
                             encrypt );
 
-    if ((unsigned int)len != sizeof(ping_id) + num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH +
+    if ((unsigned int)len != num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH +
             crypto_box_MACBYTES)
         return -1;
 
@@ -774,15 +720,14 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 }
 
 /* Send a send nodes response: message for IPv6 nodes */
-static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id,
-                          uint8_t  *encrypted_data)
+static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->c->self_public_key))
         return -1;
 
     size_t Node_format_size = sizeof(Node_format);
-    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(ping_id)
+    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES
                  + Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
 
     Node_format nodes_list[MAX_SENT_NODES];
@@ -791,23 +736,21 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
     if (num_nodes == 0)
         return 0;
 
-    uint8_t plain[sizeof(ping_id) + Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
-    uint8_t encrypt[sizeof(ping_id) + Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
+    uint8_t plain[Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t encrypt[Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    memcpy(plain, &ping_id, sizeof(ping_id));
-    memcpy(plain + sizeof(ping_id), nodes_list, num_nodes * Node_format_size);
-    memcpy(plain + sizeof(ping_id) + num_nodes * Node_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
+    memcpy(plain, nodes_list, num_nodes * Node_format_size);
+    memcpy(plain + num_nodes * Node_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
     int len = encrypt_data( public_key,
                             dht->c->self_secret_key,
                             nonce,
                             plain,
-                            sizeof(ping_id) + num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                            num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
                             encrypt );
 
-    if ((unsigned int)len != sizeof(ping_id) + num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH +
-            crypto_box_MACBYTES)
+    if ((unsigned int)len != num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
         return -1;
 
     data[0] = NET_PACKET_SEND_NODES_IPV6;
@@ -821,32 +764,28 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
 static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
-    uint64_t ping_id;
 
-    if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES
-                    + sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES ))
+    if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES ))
         return 1;
 
     /* Check if packet is from ourself. */
     if (id_equal(packet + 1, dht->c->self_public_key))
         return 1;
 
-    uint8_t plain[sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t plain[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
 
     int len = decrypt_data( packet + 1,
                             dht->c->self_secret_key,
                             packet + 1 + CLIENT_ID_SIZE,
                             packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                            sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
+                            CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
                             plain );
 
-    if (len != sizeof(ping_id) + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH)
+    if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH)
         return 1;
 
-    memcpy(&ping_id, plain, sizeof(ping_id));
-    sendnodes(dht, source, packet + 1, plain + sizeof(ping_id), ping_id, plain + sizeof(ping_id) + CLIENT_ID_SIZE);
-    sendnodes_ipv6(dht, source, packet + 1, plain + sizeof(ping_id),
-                   ping_id, plain + sizeof(ping_id) + CLIENT_ID_SIZE); /* TODO: prevent possible amplification attacks */
+    sendnodes(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE);
+    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE); /* TODO: prevent possible amplification attacks */
 
     add_toping(dht->ping, packet + 1, source);
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
@@ -867,7 +806,8 @@ static uint8_t sent_getnode_to_node(DHT *dht, uint8_t *client_id, IP_Port node_i
         return 0;
     uint64_t comp_time;
     memcpy(&comp_time, plain_message, sizeof(uint64_t));
-    if (comp_time + PING_TIMEOUT > unix_time() || unix_time() < comp_time)
+    uint64_t temp_time = unix_time();
+    if (comp_time + PING_TIMEOUT < temp_time || temp_time < comp_time)
         return 0;
     Node_format test;
     memcpy(&test, plain_message + sizeof(uint64_t), sizeof(Node_format));
@@ -881,9 +821,8 @@ static uint8_t sent_getnode_to_node(DHT *dht, uint8_t *client_id, IP_Port node_i
 static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
-    uint64_t ping_id;
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
-    cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES;
+    cid_size += crypto_box_NONCEBYTES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES;
 
     size_t Node4_format_size = sizeof(Node4_format);
 
@@ -893,26 +832,23 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
         return 1;
 
     uint32_t num_nodes = (length - cid_size) / Node4_format_size;
-    uint8_t plain[sizeof(ping_id) + Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t plain[Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
 
     int len = decrypt_data(
                   packet + 1,
                   dht->c->self_secret_key,
                   packet + 1 + CLIENT_ID_SIZE,
                   packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                  sizeof(ping_id) + num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES, plain );
+                  num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES, plain );
 
-    if ((unsigned int)len != sizeof(ping_id) + num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH)
+    if ((unsigned int)len != num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH)
         return 1;
 
-    memcpy(&ping_id, plain, sizeof(ping_id));
-
-    //if (!is_gettingnodes(dht, source, ping_id))
     Node_format sendback_node;
-    if (!sent_getnode_to_node(dht, packet + 1, source, plain + sizeof(ping_id) + num_nodes * Node4_format_size, &sendback_node))
+    if (!sent_getnode_to_node(dht, packet + 1, source, plain + num_nodes * Node4_format_size, &sendback_node))
         return 1;
 
-    Node4_format *nodes4_list = (Node4_format *)(plain + sizeof(ping_id));
+    Node4_format *nodes4_list = (Node4_format *)(plain);
     Node_format nodes_list[MAX_SENT_NODES];
     uint32_t i, num_nodes_ok = 0;
 
@@ -945,9 +881,8 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
-    uint64_t ping_id;
     uint32_t cid_size = 1 + CLIENT_ID_SIZE;
-    cid_size += crypto_box_NONCEBYTES + sizeof(ping_id) + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES;
+    cid_size += crypto_box_NONCEBYTES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES;
 
     size_t Node_format_size = sizeof(Node_format);
 
@@ -957,28 +892,25 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
         return 1;
 
     uint32_t num_nodes = (length - cid_size) / Node_format_size;
-    uint8_t plain[sizeof(ping_id) + Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t plain[Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
 
     int len = decrypt_data(
                   packet + 1,
                   dht->c->self_secret_key,
                   packet + 1 + CLIENT_ID_SIZE,
                   packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                  sizeof(ping_id) + num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES, plain );
+                  num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES, plain );
 
-    if ((unsigned int)len != sizeof(ping_id) + num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH)
+    if ((unsigned int)len != num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH)
         return 1;
 
-    memcpy(&ping_id, plain, sizeof(ping_id));
-
-    //if (!is_gettingnodes(dht, source, ping_id))
     Node_format sendback_node;
-    if (!sent_getnode_to_node(dht, packet + 1, source, plain + sizeof(ping_id) + num_nodes * Node_format_size, &sendback_node))
+    if (!sent_getnode_to_node(dht, packet + 1, source, plain + num_nodes * Node_format_size, &sendback_node))
         return 1;
 
     uint32_t i;
     Node_format nodes_list[MAX_SENT_NODES];
-    memcpy(nodes_list, plain + sizeof(ping_id), num_nodes * sizeof(Node_format));
+    memcpy(nodes_list, plain, num_nodes * sizeof(Node_format));
 
     addto_lists(dht, source, packet + 1);
 

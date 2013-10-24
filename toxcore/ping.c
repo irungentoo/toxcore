@@ -40,6 +40,12 @@
 #define TIME_TOPING 5
 
 typedef struct {
+    IP_Port  ip_port;
+    uint64_t id;
+    uint64_t timestamp;
+} pinged_t;
+
+typedef struct {
     Net_Crypto *c;
 
     pinged_t    pings[PING_NUM_MAX];
