@@ -77,7 +77,7 @@ int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
 
     /* Unpad the encrypted message. */
     memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length + crypto_box_MACBYTES);
-    return length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES;
+    return length + crypto_box_MACBYTES;
 }
 
 /* Fast decrypt. Depends on enc_ley from encrypt_precompute. */
@@ -104,7 +104,7 @@ int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
 
     /* Unpad the plain message. */
     memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_MACBYTES);
-    return length - crypto_box_ZEROBYTES + crypto_box_BOXZEROBYTES;
+    return length - crypto_box_MACBYTES;
 }
 
 int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
@@ -123,6 +123,39 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
     return decrypt_data_fast(k, nonce, encrypted, length, plain);
 }
 
+int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, uint32_t length, uint8_t *encrypted)
+{
+    if (length + crypto_secretbox_MACBYTES > MAX_DATA_SIZE || length == 0)
+        return -1;
+
+    uint8_t temp_plain[MAX_DATA_SIZE + crypto_secretbox_ZEROBYTES] = {0};
+    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_secretbox_BOXZEROBYTES];
+
+    memcpy(temp_plain + crypto_secretbox_ZEROBYTES, plain, length); // Pad the message with 32 0 bytes.
+
+    crypto_secretbox(temp_encrypted, temp_plain, length + crypto_secretbox_ZEROBYTES, nonce, secret_key);
+    /* Unpad the encrypted message. */
+    memcpy(encrypted, temp_encrypted + crypto_secretbox_BOXZEROBYTES, length + crypto_secretbox_MACBYTES);
+    return length + crypto_secretbox_MACBYTES;
+}
+
+int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain)
+{
+    if (length > MAX_DATA_SIZE || length <= crypto_secretbox_BOXZEROBYTES)
+        return -1;
+
+    uint8_t temp_plain[MAX_DATA_SIZE + crypto_secretbox_ZEROBYTES];
+    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_secretbox_BOXZEROBYTES] = {0};
+
+    memcpy(temp_encrypted + crypto_secretbox_BOXZEROBYTES, encrypted, length); // Pad the message with 16 0 bytes.
+
+    if (crypto_secretbox_open(temp_plain, temp_encrypted, length + crypto_secretbox_BOXZEROBYTES, nonce, secret_key) == -1)
+        return -1;
+
+    memcpy(plain, temp_plain + crypto_secretbox_ZEROBYTES, length - crypto_secretbox_MACBYTES);
+    return length - crypto_secretbox_MACBYTES;
+}
+
 /* Increment the given nonce by 1. */
 static void increment_nonce(uint8_t *nonce)
 {
@@ -136,16 +169,29 @@ static void increment_nonce(uint8_t *nonce)
     }
 }
 
+#if crypto_box_NONCEBYTES != crypto_secretbox_NONCEBYTES
+/*if they no longer equal each other, this function must be slit into two.*/
+#error random_nonce(): crypto_box_NONCEBYTES must equal crypto_secretbox_NONCEBYTES.
+#endif
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce)
 {
     randombytes(nonce, crypto_box_NONCEBYTES);
 }
 
+/* Fill a key crypto_secretbox_KEYBYTES big with random bytes */
+void new_symmetric_key(uint8_t *key)
+{
+    randombytes(key, crypto_secretbox_KEYBYTES);
+}
 
 static uint8_t base_nonce[crypto_box_NONCEBYTES];
 static uint8_t nonce_set = 0;
 
+#if crypto_box_NONCEBYTES != crypto_secretbox_NONCEBYTES
+/*if they no longer equal each other, this function must be slit into two.*/
+#error new_nonce(): crypto_box_NONCEBYTES must equal crypto_secretbox_NONCEBYTES.
+#endif
 /* Gives a nonce guaranteed to be different from previous ones.*/
 void new_nonce(uint8_t *nonce)
 {

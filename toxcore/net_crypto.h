@@ -112,9 +112,27 @@ int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
 int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
                       uint8_t *encrypted, uint32_t length, uint8_t *plain);
 
+/* Encrypts plain of length length to encrypted of length + 16 using a
+ * secret key crypto_secretbox_KEYBYTES big and a 24 byte nonce.
+ *
+ *  return -1 if there was a problem.
+ *  return length of encrypted data if everything was fine.
+ */
+int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, uint32_t length, uint8_t *encrypted);
+
+/* Decrypts encrypted of length length to plain of length length - 16 using a
+ * secret key crypto_secretbox_KEYBYTES big and a 24 byte nonce.
+ *
+ *  return -1 if there was a problem (decryption failed).
+ *  return length of plain data if everything was fine.
+ */
+int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain);
 
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce);
+
+/* Fill a key crypto_secretbox_KEYBYTES big with random bytes */
+void new_symmetric_key(uint8_t *key);
 
 /*Gives a nonce guaranteed to be different from previous ones.*/
 void new_nonce(uint8_t *nonce);
