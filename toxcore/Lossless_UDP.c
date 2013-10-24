@@ -455,8 +455,9 @@ uint32_t sendqueue_total(Lossless_UDP *ludp)
 {
     uint32_t i, total = 0;
 
-    for(i = 0; i < ludp->connections.len; i++) {
+    for (i = 0; i < ludp->connections.len; i++) {
         Connection *connection = &tox_array_get(&ludp->connections, i, Connection);
+
         if (connection->status != 0)
             total += connection->sendbuff_packetnum - connection->successful_sent;
     }

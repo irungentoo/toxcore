@@ -89,7 +89,7 @@ int main()
 {
    tox_list_t head;
    tox_list_new(&head); //initialize head
-   
+
    //input a new character, until user enters q or e
    char c = '\0';
    while (c != 'q' && c != 'e') {
@@ -98,16 +98,16 @@ int main()
       tmp->c = c;
       tox_list_add(&head, &tmp->tox_lst); //add it to the list
    }
-   
+
 TOX_LIST_FOR_EACH() takes a struct tox_list and a name for a temporary pointer to use in the loop.
-   
+
 TOX_LIST_GET_VALUE() uses magic to return an instance of a structure that contains tox_list_t.
 You have to give it a temporary tox_string_t, name of tox_list_t member inside our structure (tox_lst),
 and the type of structure to return.
-   
+
    TOX_LIST_FOR_EACH(head, tmp)
       printf("%c", TOX_LIST_GET_VALUE(*tmp, tox_lst, tox_string_t).c);
-   
+
    TOX_LIST_FOR_EACH(head, tmp) {
       if (TOX_LIST_GET_VALUE(*tmp, tox_lst, tox_string_t).c == 'z') {
          //If you delete tmp, you have to quit the loop, or it will go on infinitly.
@@ -116,12 +116,12 @@ and the type of structure to return.
          break;
       }
    }
-   
+
    printf("\n");
    TOX_LIST_FOR_EACH(head, tmp)
       printf("%c", TOX_LIST_GET_VALUE(*tmp, tox_lst, tox_string_t).c);
-   
-   
+
+
    return 0;
 }
 */
