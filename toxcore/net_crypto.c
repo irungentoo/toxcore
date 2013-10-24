@@ -247,7 +247,7 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
 int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
                    uint8_t *data, uint32_t length, uint8_t request_id)
 {
-    if (MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING)
+    if (MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
         return -1;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
@@ -278,7 +278,7 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
 int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, uint8_t *packet, uint16_t length)
 {
-    if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING &&
+    if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES &&
             length <= MAX_DATA_SIZE) {
         if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
@@ -313,8 +313,8 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
     DHT *dht = object;
 
     if (packet[0] == NET_PACKET_CRYPTO) {
-        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + ENCRYPTION_PADDING ||
-                length > MAX_DATA_SIZE + ENCRYPTION_PADDING)
+        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES ||
+                length > MAX_DATA_SIZE + crypto_box_MACBYTES)
             return 1;
 
         if (memcmp(packet + 1, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) { // Check if request is for us.

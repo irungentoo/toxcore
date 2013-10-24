@@ -3,7 +3,7 @@
  *
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -20,7 +20,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -132,7 +132,7 @@ static bool is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TOD
     return false;
 }
 
-#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(uint64_t) + ENCRYPTION_PADDING)
+#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(uint64_t) + crypto_box_MACBYTES)
 
 int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
 {
@@ -157,7 +157,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
 
-    if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
+    if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
 
     return sendpacket(ping->c->lossless_udp->net, ipp, pk, sizeof(pk));
@@ -182,7 +182,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
 
-    if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
+    if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
 
     return sendpacket(ping->c->lossless_udp->net, ipp, pk, sizeof(pk));
@@ -207,7 +207,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
                       ping->c->self_secret_key,
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                      sizeof(ping_id) + ENCRYPTION_PADDING,
+                      sizeof(ping_id) + crypto_box_MACBYTES,
                       (uint8_t *) &ping_id);
 
     if (rc != sizeof(ping_id))
@@ -239,7 +239,7 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
                       ping->c->self_secret_key,
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                      sizeof(ping_id) + ENCRYPTION_PADDING,
+                      sizeof(ping_id) + crypto_box_MACBYTES,
                       (uint8_t *) &ping_id);
 
     if (rc != sizeof(ping_id))

@@ -77,8 +77,6 @@ typedef struct {
 
 #include "DHT.h"
 
-#define ENCRYPTION_PADDING (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-
 /* return zero if the buffer contains only zeros. */
 uint8_t crypto_iszero(uint8_t *buffer, uint32_t blen);
 

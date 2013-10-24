@@ -95,8 +95,8 @@ START_TEST(test_known)
     unsigned char m[131];
     int clen, mlen;
 
-    ck_assert_msg(sizeof(c) == sizeof(m) + ENCRYPTION_PADDING * sizeof(unsigned char),
-                  "cyphertext should be ENCRYPTION_PADDING bytes longer than plaintext");
+    ck_assert_msg(sizeof(c) == sizeof(m) + crypto_box_MACBYTES * sizeof(unsigned char),
+                  "cyphertext should be crypto_box_MACBYTES bytes longer than plaintext");
     ck_assert_msg(sizeof(test_c) == sizeof(c), "sanity check failed");
     ck_assert_msg(sizeof(test_m) == sizeof(m), "sanity check failed");
 
@@ -121,8 +121,8 @@ START_TEST(test_fast_known)
 
     encrypt_precompute(bobpk, alicesk, k);
 
-    ck_assert_msg(sizeof(c) == sizeof(m) + ENCRYPTION_PADDING * sizeof(unsigned char),
-                  "cyphertext should be ENCRYPTION_PADDING bytes longer than plaintext");
+    ck_assert_msg(sizeof(c) == sizeof(m) + crypto_box_MACBYTES * sizeof(unsigned char),
+                  "cyphertext should be crypto_box_MACBYTES bytes longer than plaintext");
     ck_assert_msg(sizeof(test_c) == sizeof(c), "sanity check failed");
     ck_assert_msg(sizeof(test_m) == sizeof(m), "sanity check failed");
 
@@ -151,10 +151,10 @@ START_TEST(test_endtoend)
     unsigned char n[crypto_box_NONCEBYTES];
 
     unsigned char m[500];
-    unsigned char c1[sizeof(m) + ENCRYPTION_PADDING];
-    unsigned char c2[sizeof(m) + ENCRYPTION_PADDING];
-    unsigned char c3[sizeof(m) + ENCRYPTION_PADDING];
-    unsigned char c4[sizeof(m) + ENCRYPTION_PADDING];
+    unsigned char c1[sizeof(m) + crypto_box_MACBYTES];
+    unsigned char c2[sizeof(m) + crypto_box_MACBYTES];
+    unsigned char c3[sizeof(m) + crypto_box_MACBYTES];
+    unsigned char c4[sizeof(m) + crypto_box_MACBYTES];
     unsigned char m1[sizeof(m)];
     unsigned char m2[sizeof(m)];
     unsigned char m3[sizeof(m)];
@@ -190,7 +190,7 @@ START_TEST(test_endtoend)
         c4len = encrypt_data_fast(k2, n, m, mlen, c4);
 
         ck_assert_msg(c1len == c2len && c1len == c3len && c1len == c4len, "cyphertext lengths differ");
-        ck_assert_msg(c1len == mlen + (int)ENCRYPTION_PADDING, "wrong cyphertext length");
+        ck_assert_msg(c1len == mlen + (int)crypto_box_MACBYTES, "wrong cyphertext length");
         ck_assert_msg(memcmp(c1, c2, c1len) == 0 && memcmp(c1, c3, c1len) == 0
                       && memcmp(c1, c4, c1len) == 0, "crypertexts differ");
 
@@ -215,12 +215,12 @@ START_TEST(test_large_data)
 
     unsigned char n[crypto_box_NONCEBYTES];
 
-    unsigned char m1[MAX_DATA_SIZE - ENCRYPTION_PADDING];
-    unsigned char c1[sizeof(m1) + ENCRYPTION_PADDING];
+    unsigned char m1[MAX_DATA_SIZE - crypto_box_MACBYTES];
+    unsigned char c1[sizeof(m1) + crypto_box_MACBYTES];
     unsigned char m1prime[sizeof(m1)];
 
     unsigned char m2[MAX_DATA_SIZE];
-    unsigned char c2[sizeof(m2) + ENCRYPTION_PADDING];
+    unsigned char c2[sizeof(m2) + crypto_box_MACBYTES];
 
     int c1len, c2len;
     int m1plen;
@@ -236,7 +236,7 @@ START_TEST(test_large_data)
     c1len = encrypt_data_fast(k, n, m1, sizeof(m1), c1);
     c2len = encrypt_data_fast(k, n, m2, sizeof(m2), c2);
 
-    ck_assert_msg(c1len == sizeof(m1) + ENCRYPTION_PADDING, "could not encrypt max size");
+    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt max size");
     ck_assert_msg(c2len == -1, "incorrectly succeeded encrypting massive size");
 
     m1plen = decrypt_data_fast(k, n, c1, c1len, m1prime);
