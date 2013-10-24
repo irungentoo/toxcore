@@ -127,6 +127,9 @@ typedef struct {
 
     pinged_t     send_nodes[LSEND_NODES_ARRAY];
     void        *ping;
+
+    /* Note: this key should not be/is not used to transmit any sensitive materials */
+    uint8_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
