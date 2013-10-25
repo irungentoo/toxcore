@@ -49,11 +49,21 @@ git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
 git checkout tags/0.4.2
 ./autogen.sh
-./configure
+./configure --with-dependency-search=/usr/local/lib/
 make check
 sudo make install
 cd ..
+export LD_LIBRARY_PATH=/usr/local/lib/
 ```
+If you use Bash, run
+
+```echo 'export LD_LIBRARY_PATH=/usr/local/lib'  >> ~/.bashrc```
+
+If you use Zsh, run
+
+```echo 'export LD_LIBRARY_PATH=/usr/local/lib/'  >> ~/.zshrc```
+
+
 
 You also need recent [FFmpeg](http://git.videolan.org/?p=ffmpeg.git) libraries:
 ```bash
