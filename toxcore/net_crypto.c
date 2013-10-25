@@ -753,6 +753,8 @@ static void receive_crypto(Net_Crypto *c)
  */
 Net_Crypto *new_net_crypto(Networking_Core *net)
 {
+    unix_time_update();
+    
     if (net == NULL)
         return NULL;
 
@@ -791,6 +793,7 @@ static void kill_timedout(Net_Crypto *c)
 /* Main loop. */
 void do_net_crypto(Net_Crypto *c)
 {
+    unix_time_update();
     do_lossless_udp(c->lossless_udp);
     kill_timedout(c);
     receive_crypto(c);

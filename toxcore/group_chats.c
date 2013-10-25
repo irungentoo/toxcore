@@ -530,6 +530,8 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
 
 Group_Chat *new_groupchat(Networking_Core *net)
 {
+    unix_time_update();
+    
     if (net == 0)
         return 0;
 
@@ -561,6 +563,7 @@ static void ping_close(Group_Chat *chat)
 
 void do_groupchat(Group_Chat *chat)
 {
+    unix_time_update();
     ping_close(chat);
 }
 
