@@ -27,6 +27,7 @@
 #include "Lossless_UDP.h"
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
+#define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
 #define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
 

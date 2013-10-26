@@ -35,11 +35,6 @@
 /* A list of the clients mathematically closest to ours. */
 #define LCLIENT_LIST 32
 
-/* The list of ip ports along with the ping_id of what we sent them and a timestamp. */
-#define LPING_ARRAY 256 // NOTE: Deprecated (doesn't do anything).
-
-#define LSEND_NODES_ARRAY LPING_ARRAY/2
-
 /* Maximum newly announced nodes to ping per TIME_TOPING seconds. */
 #define MAX_TOPING 16
 
@@ -77,12 +72,28 @@ typedef struct {
 } NAT;
 
 typedef struct {
+    /* Node routes request correctly (true (1) or false/didn't check (0)) */
+    uint8_t     routes_requests_ok;
+    /* Time which we last checked this.*/
+    uint64_t    routes_requests_timestamp;
+    /* Node sends correct send_node (true (1) or false/didn't check (0)) */
+    uint8_t     send_nodes_ok;
+    /* Time which we last checked this.*/
+    uint64_t    send_nodes_timestamp;
+    /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
+    uint8_t     testing_requests;
+    /* Time which we last checked this.*/
+    uint64_t    testing_timestamp;
+} Hardening;
+
+typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     Client_data_old client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
     uint64_t    lastgetnode;
 
+    Hardening hardening;
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
 } DHT_Friend_old;  /* required to load old state files */
@@ -94,6 +105,7 @@ typedef struct {
     /* Time at which the last get_nodes request was sent. */
     uint64_t    lastgetnode;
 
+    Hardening hardening;
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
 } DHT_Friend;

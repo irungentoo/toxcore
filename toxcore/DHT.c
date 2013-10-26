@@ -1552,6 +1552,16 @@ static void do_NAT(DHT *dht)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
+
+/* Handle a received ping request for. */
+static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
+{
+    DHT *dht = object;
+    return 0;/* success*/
+}
+
+/*----------------------------------------------------------------------------------*/
+
 DHT *new_DHT(Net_Crypto *c)
 {
     if (c == NULL)
@@ -1575,6 +1585,8 @@ DHT *new_DHT(Net_Crypto *c)
     networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
     init_cryptopackets(dht);
     cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
+    cryptopacket_registerhandler(c, CRYPTO_PACKET_HARDENING, &handle_hardening, dht);
+
     new_symmetric_key(dht->secret_symmetric_key);
     return dht;
 }
