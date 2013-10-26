@@ -521,7 +521,8 @@ uint64_t tox_file_dataremaining(Tox *tox, int friendnumber, uint8_t filenumber, 
 void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
 
 /* Resolves address into an IP address. If successful, sends a "get nodes"
- *   request to the given node with ip, port and public_key to setup connections
+ *   request to the given node with ip, port (in network byte order, HINT: use htons()) 
+ *   and public_key to setup connections
  *
  * address can be a hostname or an IP address (IPv4 or IPv6).
  * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
