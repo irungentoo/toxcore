@@ -486,7 +486,6 @@ void *encode_video_thread(void *arg)
     AVPacket pkt1, *packet = &pkt1;
     int p = 0;
     int err;
-    int got_packet;
     rtp_msg_t *s_video_msg;
     int video_frame_finished;
     AVFrame *s_video_frame;
@@ -499,7 +498,7 @@ void *encode_video_thread(void *arg)
     int numBytes;
     /* Determine required buffer size and allocate buffer */
     numBytes = avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
-    buffer = (uint8_t *)av_calloc(numBytes * sizeof(uint8_t),1);
+    buffer = (uint8_t *)av_mallocz(numBytes * sizeof(uint8_t));
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,
                    cs->webcam_decoder_ctx->height);
     cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height,
@@ -540,14 +539,10 @@ void *encode_video_thread(void *arg)
             }
 
             if (video_frame_finished) {
-                err = avcodec_encode_video2(cs->video_encoder_ctx, &enc_video_packet, s_video_frame, &got_packet);
+                err = avcodec_encode_video(cs->video_encoder_ctx, enc_video_packet.data, enc_video_packet.size, s_video_frame);
 
                 if (err < 0) {
                     printf("could not encode video frame\n");
-                    continue;
-                }
-
-                if (!got_packet) {
                     continue;
                 }
 
