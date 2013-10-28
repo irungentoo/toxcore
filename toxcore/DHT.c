@@ -765,7 +765,8 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
 {
     DHT *dht = object;
 
-    if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES ))
+    if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH +
+                    crypto_box_MACBYTES ))
         return 1;
 
     /* Check if packet is from ourself. */
@@ -785,7 +786,8 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
         return 1;
 
     sendnodes(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE);
-    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE); /* TODO: prevent possible amplification attacks */
+    sendnodes_ipv6(dht, source, packet + 1, plain,
+                   plain + CLIENT_ID_SIZE); /* TODO: prevent possible amplification attacks */
 
     add_toping(dht->ping, packet + 1, source);
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
@@ -804,19 +806,26 @@ static uint8_t sent_getnode_to_node(DHT *dht, uint8_t *client_id, IP_Port node_i
                                NODES_ENCRYPTED_MESSAGE_LENGTH - crypto_secretbox_NONCEBYTES,
                                plain_message) != sizeof(uint64_t) + sizeof(Node_format) * 2)
         return 0;
+
     uint64_t comp_time;
     memcpy(&comp_time, plain_message, sizeof(uint64_t));
     uint64_t temp_time = unix_time();
+
     if (comp_time + PING_TIMEOUT < temp_time || temp_time < comp_time)
         return 0;
+
     Node_format test;
     memcpy(&test, plain_message + sizeof(uint64_t), sizeof(Node_format));
+
     if (!ipport_equal(&test.ip_port, &node_ip_port) || memcmp(test.client_id, client_id, CLIENT_ID_SIZE) != 0)
         return 0;
 
     memcpy(sendback_node, plain_message + sizeof(uint64_t) + sizeof(Node_format), sizeof(Node_format));
     return 1;
 }
+
+/* Function is needed in following functions. */
+static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, Node_format *list, uint16_t num_nodes);
 
 static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
@@ -845,6 +854,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
         return 1;
 
     Node_format sendback_node;
+
     if (!sent_getnode_to_node(dht, packet + 1, source, plain + num_nodes * Node4_format_size, &sendback_node))
         return 1;
 
@@ -868,6 +878,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
         num_nodes = num_nodes_ok;
     }
 
+    send_hardening_getnode_res(dht, &sendback_node, nodes_list, num_nodes);
     addto_lists(dht, source, packet + 1);
 
     for (i = 0; i < num_nodes; ++i)  {
@@ -905,6 +916,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
         return 1;
 
     Node_format sendback_node;
+
     if (!sent_getnode_to_node(dht, packet + 1, source, plain + num_nodes * Node_format_size, &sendback_node))
         return 1;
 
@@ -912,6 +924,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
     Node_format nodes_list[MAX_SENT_NODES];
     memcpy(nodes_list, plain, num_nodes * sizeof(Node_format));
 
+    send_hardening_getnode_res(dht, &sendback_node, nodes_list, num_nodes);
     addto_lists(dht, source, packet + 1);
 
     for (i = 0; i < num_nodes; ++i)  {
@@ -1552,12 +1565,100 @@ static void do_NAT(DHT *dht)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
+#define HARDREQ_DATA_SIZE 768 /* Attempt to prevent amplification/other attacks*/
 
-/* Handle a received ping request for. */
+#define CHECK_TYPE_GETNODE_REQ 0
+#define CHECK_TYPE_GETNODE_RES 1
+
+static int send_hardening_req(DHT *dht, Node_format *sendto, uint8_t type, uint8_t *contents, uint16_t length)
+{
+    if (length > HARDREQ_DATA_SIZE - 1)
+        return -1;
+
+    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t data[HARDREQ_DATA_SIZE] = {0};
+    data[0] = type;
+    memcpy(data + 1, contents, length);
+    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, sendto->client_id, data,
+                             sizeof(data), CRYPTO_PACKET_HARDENING);
+
+    if (len == -1)
+        return -1;
+
+    return sendpacket(dht->c->lossless_udp->net, sendto->ip_port, packet, len);
+}
+
+/* Send a get node hardening request */
+static int send_hardening_getnode_req(DHT *dht, Node_format *dest, Node_format *node_totest, uint8_t *search_id)
+{
+    uint8_t data[sizeof(Node_format) + CLIENT_ID_SIZE];
+    memcpy(data, node_totest, sizeof(Node_format));
+    memcpy(data + sizeof(Node_format), search_id, CLIENT_ID_SIZE);
+    return send_hardening_req(dht, dest, CHECK_TYPE_GETNODE_REQ, data, sizeof(Node_format) + CLIENT_ID_SIZE);
+}
+
+/* Send a get node hardening response */
+static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, Node_format *list, uint16_t num_nodes)
+{
+    if (!ip_isset(&sendto->ip_port.ip))
+        return -1;
+
+    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t data[1 + num_nodes * sizeof(Node_format)];
+    data[0] = CHECK_TYPE_GETNODE_RES;
+    memcpy(data + 1, list, num_nodes * sizeof(Node_format));
+    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, sendto->client_id, data,
+                             sizeof(data), CRYPTO_PACKET_HARDENING);
+
+    if (len == -1)
+        return -1;
+
+    return sendpacket(dht->c->lossless_udp->net, sendto->ip_port, packet, len);
+}
+
+/* Handle a received hardening packet */
 static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
-    return 0;/* success*/
+
+    if (length < 2) {
+        return 1;
+    }
+
+    switch (packet[0]) {
+        case CHECK_TYPE_GETNODE_REQ: {
+            if (length != HARDREQ_DATA_SIZE)
+                return 1;
+
+            Node_format node, tocheck_node;
+            node.ip_port = source;
+            memcpy(node.client_id, source_pubkey, CLIENT_ID_SIZE);
+            memcpy(&tocheck_node, packet + 1, sizeof(Node_format));
+
+            if (getnodes(dht, tocheck_node.ip_port, tocheck_node.client_id, packet + 1 + sizeof(Node_format), &node) == -1)
+                return 1;
+
+            return 0;
+        }
+
+        case CHECK_TYPE_GETNODE_RES: {
+            if ((length - 1) % sizeof(Node_format) != 0)
+                return 1;
+
+            uint16_t num = (length - 1) / sizeof(Node_format);
+
+            if (num > MAX_SENT_NODES || num == 0)
+                return 1;
+
+            Node_format nodes[num];
+            memcpy(nodes, packet + 1, sizeof(Node_format)*num);
+            /* If Nodes look good and the request checks out */
+            //TODO
+            return 0;/* success*/
+        }
+    }
+
+    return 1;
 }
 
 /*----------------------------------------------------------------------------------*/
