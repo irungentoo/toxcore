@@ -50,11 +50,6 @@ typedef struct {
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
-    IPPTsPng    assoc;
-} Client_data_old; /* required to load old state files */
-
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
 } Client_data;
@@ -85,18 +80,6 @@ typedef struct {
     /* Time which we last checked this.*/
     uint64_t    testing_timestamp;
 } Hardening;
-
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    Client_data_old client_list[MAX_FRIEND_CLIENTS];
-
-    /* Time at which the last get_nodes request was sent. */
-    uint64_t    lastgetnode;
-
-    Hardening hardening;
-    /* Symetric NAT hole punching stuff. */
-    NAT         nat;
-} DHT_Friend_old;  /* required to load old state files */
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
@@ -248,15 +231,6 @@ void DHT_save(DHT *dht, uint8_t *data);
 DHT *new_DHT(Net_Crypto *c);
 
 void kill_DHT(DHT *dht);
-
-/* Load the DHT from data of size size.
- *  old/new: version of config file
- *
- *  return -1 if failure.
- *  return 0 if success.
- */
-int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size);
-int DHT_load_new(DHT *dht, uint8_t *data, uint32_t size);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
