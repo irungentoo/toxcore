@@ -3,7 +3,8 @@ if BUILD_AV
 lib_LTLIBRARIES += libtoxmsi.la
 
 libtoxmsi_la_include_HEADERS = \
-                        ../toxmsi/toxmsi.h
+                        ../toxmsi/toxmsi.h \
+                        ../toxmsi/AV_codec.h
 
 libtoxmsi_la_includedir = $(includedir)/tox
 

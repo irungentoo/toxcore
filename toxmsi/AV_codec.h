@@ -35,8 +35,8 @@
 #include <pthread.h>
 #include <AL/al.h>
 #include <AL/alc.h>
-#include "../toxrtp/toxrtp.h"
-#include "../toxcore/tox.h"
+#include "toxrtp.h"
+#include "tox.h"
 
 #include <SDL/SDL.h>
 #include <opus/opus.h>
