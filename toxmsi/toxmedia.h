@@ -35,10 +35,10 @@
 #include <pthread.h>
 #include <AL/al.h>
 #include <AL/alc.h>
-#include "../toxrtp/toxrtp.h"
-#include "../toxcore/tox.h"
+#include "toxrtp.h"
+#include "tox.h"
 
-#include <SDL.h>
+#include <SDL/SDL.h>
 #include <opus/opus.h>
 
 /* ffmpeg VP8 codec ID */
@@ -75,7 +75,7 @@
 #define DEFAULT_WEBCAM "0"
 #endif
 
-SDL_Surface     *screen;
+extern SDL_Surface *screen;
 
 typedef struct {
     SDL_Overlay *bmp;

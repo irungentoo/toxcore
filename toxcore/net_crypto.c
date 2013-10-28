@@ -29,7 +29,7 @@
 #endif
 
 #include "net_crypto.h"
-
+#include "util.h"
 static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection_id)
 {
     return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
@@ -799,6 +799,8 @@ static void receive_crypto(Net_Crypto *c)
  */
 Net_Crypto *new_net_crypto(Networking_Core *net)
 {
+    unix_time_update();
+    
     if (net == NULL)
         return NULL;
 
@@ -837,6 +839,7 @@ static void kill_timedout(Net_Crypto *c)
 /* Main loop. */
 void do_net_crypto(Net_Crypto *c)
 {
+    unix_time_update();
     do_lossless_udp(c->lossless_udp);
     kill_timedout(c);
     receive_crypto(c);
