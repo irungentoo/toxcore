@@ -28,7 +28,7 @@
 #define _MSI_IMPL_H_
 
 #include <inttypes.h>
-#include "../toxcore/tox.h"
+#include "tox.h"
 #include <pthread.h>
 
 #define MCBTYPE void
