@@ -8,7 +8,7 @@
 #include "../toxrtp/tests/test_helper.h"
 #include <assert.h>
 #include <pthread.h>
-#include "AV_codec.h"
+#include "toxmedia.h"
 
 /* Define client version */
 #define _USERAGENT "tox_phone-v.0.2.1"
