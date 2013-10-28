@@ -62,7 +62,7 @@ extern "C" {
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
 #define TOX_PORTRANGE_FROM 33445
-#define TOX_PORTRANGE_TO   33455
+#define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 typedef union {

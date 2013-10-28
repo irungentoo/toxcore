@@ -29,7 +29,7 @@
 #endif
 
 #include "net_crypto.h"
-
+#include "util.h"
 static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection_id)
 {
     return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
