@@ -39,10 +39,29 @@
 #define MAX_TOPING 16
 
 typedef struct {
+    /* Node routes request correctly (true (1) or false/didn't check (0)) */
+    uint8_t     routes_requests_ok;
+    /* Time which we last checked this.*/
+    uint64_t    routes_requests_timestamp;
+    uint8_t     routes_requests_pingedid[CLIENT_ID_SIZE];
+    /* Node sends correct send_node (true (1) or false/didn't check (0)) */
+    uint8_t     send_nodes_ok;
+    /* Time which we last checked this.*/
+    uint64_t    send_nodes_timestamp;
+    uint8_t     send_nodes_pingedid[CLIENT_ID_SIZE];
+    /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
+    uint8_t     testing_requests;
+    /* Time which we last checked this.*/
+    uint64_t    testing_timestamp;
+    uint8_t     testing_pingedid[CLIENT_ID_SIZE];
+} Hardening;
+
+typedef struct {
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
-
+    
+    Hardening hardening;
     /* Returned by this node. Either our friend or us. */
     IP_Port     ret_ip_port;
     uint64_t    ret_timestamp;
@@ -67,28 +86,12 @@ typedef struct {
 } NAT;
 
 typedef struct {
-    /* Node routes request correctly (true (1) or false/didn't check (0)) */
-    uint8_t     routes_requests_ok;
-    /* Time which we last checked this.*/
-    uint64_t    routes_requests_timestamp;
-    /* Node sends correct send_node (true (1) or false/didn't check (0)) */
-    uint8_t     send_nodes_ok;
-    /* Time which we last checked this.*/
-    uint64_t    send_nodes_timestamp;
-    /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
-    uint8_t     testing_requests;
-    /* Time which we last checked this.*/
-    uint64_t    testing_timestamp;
-} Hardening;
-
-typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
     uint64_t    lastgetnode;
 
-    Hardening hardening;
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
 } DHT_Friend;

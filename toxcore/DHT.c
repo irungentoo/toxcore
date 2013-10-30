@@ -1545,8 +1545,12 @@ static void do_NAT(DHT *dht)
 
 #define HARDREQ_DATA_SIZE 768 /* Attempt to prevent amplification/other attacks*/
 
-#define CHECK_TYPE_GETNODE_REQ 0
-#define CHECK_TYPE_GETNODE_RES 1
+#define CHECK_TYPE_ROUTE_REQ 0
+#define CHECK_TYPE_ROUTE_RES 1
+#define CHECK_TYPE_GETNODE_REQ 2
+#define CHECK_TYPE_GETNODE_RES 3
+#define CHECK_TYPE_TEST_REQ 4
+#define CHECK_TYPE_TEST_RES 5
 
 static int send_hardening_req(DHT *dht, Node_format *sendto, uint8_t type, uint8_t *contents, uint16_t length)
 {
@@ -1637,6 +1641,80 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
     }
 
     return 1;
+}
+
+/* Return a random node from all the nodes we are connected to.
+ * TODO: improve this function.
+ */
+Node_format random_node(DHT *dht, sa_family_t sa_family)
+{
+    uint8_t id[CLIENT_ID_SIZE];
+    uint32_t i;
+
+    for (i = 0; i < CLIENT_ID_SIZE / 4; ++i) { /* populate the id with pseudorandom bytes.*/
+        uint32_t t = rand();
+        memcpy(id + i * sizeof(t), &t, sizeof(t));
+    }
+
+    Node_format nodes_list[MAX_SENT_NODES];
+    memset(nodes_list, 0, sizeof(nodes_list));
+    int num_nodes = get_close_nodes(dht, id, nodes_list, sa_family, 1);
+
+    if (num_nodes < 1)
+        return nodes_list[0];
+    else
+        return nodes_list[rand() % num_nodes];
+}
+
+/* Interval in seconds between checks */
+#define HARDENING_INTERVAL 5
+#define HARDEN_TIMEOUT 500
+
+void do_hardening(DHT *dht)
+{
+    uint32_t i;
+
+    for (i = 0; i < LCLIENT_LIST * 2; ++i) {
+        IPPTsPng  *cur_iptspng;
+        sa_family_t sa_family;
+        uint8_t   *client_id = dht->close_clientlist[i / 2].client_id;
+
+        if (i % 2 == 0) {
+            cur_iptspng = &dht->close_clientlist[i / 2].assoc4;
+            sa_family = AF_INET;
+        } else {
+            cur_iptspng = &dht->close_clientlist[i / 2].assoc6;
+            sa_family = AF_INET6;
+        }
+
+        if (is_timeout(cur_iptspng->timestamp, BAD_NODE_TIMEOUT))
+            continue;
+
+        if (cur_iptspng->hardening.send_nodes_ok == 0) {
+            if (is_timeout(cur_iptspng->hardening.send_nodes_timestamp, HARDENING_INTERVAL)) {
+                Node_format rand_node = random_node(dht, sa_family);
+
+                if (!ipport_isset(&rand_node.ip_port))
+                    continue;
+
+                Node_format to_test;
+                to_test.ip_port = cur_iptspng->ip_port;
+                memcpy(to_test.client_id, client_id, CLIENT_ID_SIZE);
+
+                //TODO: The search id should maybe not be ours?
+                if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->c->self_public_key) != -1) {
+                    memcpy(cur_iptspng->hardening.send_nodes_pingedid, rand_node.client_id, CLIENT_ID_SIZE);
+                    cur_iptspng->hardening.send_nodes_timestamp = unix_time();
+                }
+            }
+        } else {
+            if (is_timeout(cur_iptspng->hardening.send_nodes_timestamp, HARDEN_TIMEOUT)) {
+                cur_iptspng->hardening.send_nodes_ok = 0;
+            }
+        }
+
+        //TODO: add the 2 other testers.
+    }
 }
 
 /*----------------------------------------------------------------------------------*/

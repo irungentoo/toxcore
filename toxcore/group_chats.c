@@ -531,7 +531,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
 Group_Chat *new_groupchat(Networking_Core *net)
 {
     unix_time_update();
-    
+
     if (net == 0)
         return 0;
 
