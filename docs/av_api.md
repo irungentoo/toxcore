@@ -56,7 +56,7 @@ void msi_register_callback_requ_timeout ( MCALLBACK );
 ```
 
 MCALLBACK is defined as: void (*callback) (void* _arg)
-msi_session_t* handler is being thrown as _arg so you can use that and _agent_handler to get to your own phone handler
+msi_session_t* handler is being thrown as \_arg so you can use that and \_agent_handler to get to your own phone handler
 directly from callback.
 
 
