@@ -27,6 +27,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/util.c \
                         ../toxcore/group_chats.h \
                         ../toxcore/group_chats.c \
+                        ../toxcore/rendezvous.h \
+                        ../toxcore/rendezvous.c \
                         ../toxcore/misc_tools.h
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
