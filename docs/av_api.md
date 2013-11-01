@@ -16,12 +16,17 @@ everything will be started within a mesenger.
 Phone requires one msi session and two rtp sessions ( one for audio and one for
 video ). 
 
+```
 msi_session_t* msi_init_session( void* _core_handler, const uint8_t* _user_agent );
+```
 
 initializes msi session.
 Params:
+
+```
 void* _core_handler - pointer to an object handling networking,
 const uint8_t* _user_agent - string describing phone client version.
+```
 
 Return value:
 msi_session_t* - pointer to a newly created msi session handler.
@@ -35,6 +40,7 @@ NOT TO PLACE SOMETHING LIKE LOOPS THAT TAKES A LOT OF TIME TO EXECUTE; every cal
 directly from event loop. You can find examples in phone.c.
 
 Register callbacks: 
+```
 void msi_register_callback_call_started ( MCALLBACK );
 void msi_register_callback_call_canceled ( MCALLBACK );
 void msi_register_callback_call_rejected ( MCALLBACK );
@@ -47,6 +53,7 @@ void msi_register_callback_recv_ending ( MCALLBACK );
 void msi_register_callback_recv_error ( MCALLBACK );
 
 void msi_register_callback_requ_timeout ( MCALLBACK );
+```
 
 MCALLBACK is defined as: void (*callback) (void* _arg)
 msi_session_t* handler is being thrown as _arg so you can use that and _agent_handler to get to your own phone handler
@@ -54,21 +61,33 @@ directly from callback.
 
 
 Actions:
+
+```
 int msi_invite ( msi_session_t* _session, call_type _call_type, uint32_t _timeoutms );
+```
+
 Sends call invite. Before calling/sending invite msi_session_t::_friend_id is needed to be set or else
 it will not work. _call_type is type of the call ( Audio/Video ) and _timeoutms is how long 
 will poll wait until request is terminated.
 
+```
 int msi_hangup ( msi_session_t* _session );
+```
 Hangs up active call
 
+```
 int msi_answer ( msi_session_t* _session, call_type _call_type );
+```
 Answer incomming call. _call_type set's callee call type.
 
+```
 int msi_cancel ( msi_session_t* _session );
+```
 Cancel current request.
 
+```
 int msi_reject ( msi_session_t* _session );
+```
 Reject incomming call.
 
 
