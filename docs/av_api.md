@@ -110,12 +110,15 @@ Return value:
 rtp_session_t* - pointer to a newly created rtp session handler.
 ```
 
-How to handle rtp session:
+###How to handle rtp session:
 Take a look at
+```
 void* phone_handle_media_transport_poll ( void* _hmtc_args_p ) in phone.c
+```
 on example. Basically what you do is just receive a message via:
-
+```
 struct rtp_msg_s* rtp_recv_msg ( rtp_session_t* _session );
+```
 
 and then you use payload within the rtp_msg_s struct. Don't forget to deallocate it with:
 void rtp_free_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg );
@@ -124,17 +127,20 @@ Receiving should be thread safe so don't worry about that.
 When you capture and encode a payload you want to send it ( obviously ).
 
 first create a new message with:
+```
 struct rtp_msg_s* rtp_msg_new ( rtp_session_t* _session, const uint8_t* _data, uint32_t _length );
+```
 
 and then send it with:
+```
 int rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, void* _core_handler );
+```
 
 _core_handler is the same network handler as in msi_session_s struct.
 
 
-
 ##A/V initialization:
-
+```
 int init_receive_audio(codec_state *cs);
 int init_receive_video(codec_state *cs);
 Initialises the A/V decoders. On failure it will print the reason and return 0. On success it will return 1.
@@ -148,30 +154,36 @@ int video_encoder_refresh(codec_state *cs, int bps);
 Reinitialises the video encoder with a new bitrate. ffmpeg does not expose the needed VP8 feature to change the bitrate on the fly, so this serves as a workaround.
 In the future, VP8 should be used directly and ffmpeg should be dropped from the dependencies.
 The variable bps is the required bitrate in bits per second.
-
+```
 
 
 ###A/V encoding/decoding:
-
+```
 void *encode_video_thread(void *arg);
+```
 Spawns the video encoding thread. The argument should hold a pointer to a codec_state.
 This function should only be called if video encoding is supported (when init_send_video returns 1).
 Each video frame gets encoded into a packet, which is sent via RTP. Every 60 frames a new bidirectional interframe is encoded.
-
+```
 void *encode_audio_thread(void *arg);
+```
 Spawns the audio encoding thread. The argument should hold a pointer to a codec_state.
 This function should only be called if audio encoding is supported (when init_send_audio returns 1).
 Audio frames are read from the selected audio capture device during intitialisation. This audio capturing can be rerouted to a different device on the fly.
 Each audio frame is encoded into a packet, and sent via RTP. All audio frames have the same amount of samples, which is defined in AV_codec.h.
-
+```
 int video_decoder_refresh(codec_state *cs, int width, int height);
+```
 Sets the SDL window dimensions and creates a pixel buffer with the requested size. It also creates a scaling context, which will be used to convert the input image format to YUV420P.
 
+```
 void *decode_video_thread(void *arg);
+```
 Spawns a video decoding thread. The argument should hold a pointer to a codec_state. The codec_state is assumed to contain a successfully initialised video decoder.
 This function reads video packets and feeds them to the video decoder. If the video frame's resolution has changed, video_decoder_refresh() is called. Afterwards, the frame is displayed on the SDL window.
-
+```
 void *decode_audio_thread(void *arg);
+```
 Spawns an audio decoding thread. The argument should hold a pointer to a codec_state. The codec_state is assumed to contain a successfully initialised audio decoder.
 All received audio packets are pushed into a jitter buffer and are reordered. If there is a missing packet, or a packet has arrived too late, it is treated as a lost packet and the audio decoder is informed of the packet loss. The audio decoder will then try to reconstruct the lost packet, based on information from previous packets.
 Audio is played on the default OpenAL output device.
