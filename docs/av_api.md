@@ -1,8 +1,8 @@
-A/V API reference
+#A/V API reference
 
-Take toxmsi/phone.c as a reference
+##Take toxmsi/phone.c as a reference
 
-Initialization:
+###Initialization:
 
 ```
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port);
