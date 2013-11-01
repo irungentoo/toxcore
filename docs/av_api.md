@@ -4,7 +4,10 @@ Take toxmsi/phone.c as a reference
 
 Initialization:
 
+'''
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port);
+'''
+
 function initializes sample phone. _listen_port and _send_port are variables only meant
 for local testing. You will not have to do anything regarding to that since
 everything will be started within a mesenger.
