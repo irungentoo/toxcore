@@ -91,20 +91,24 @@ int msi_reject ( msi_session_t* _session );
 Reject incomming call.
 
 
+###Now for rtp:
 
-
-Now for rtp:
 You will need 2 sessions; one for audio one for video.
 You start them with:
-
+```
 rtp_session_t* rtp_init_session ( int _max_users, int _multi_session );
+```
 
 Params:
+```
 int _max_users - max users. -1 if undefined
 int _multi_session - any positive number means uses multi session; -1 if not.
+```
 
 Return value:
+```
 rtp_session_t* - pointer to a newly created rtp session handler.
+```
 
 How to handle rtp session:
 Take a look at
@@ -129,7 +133,7 @@ _core_handler is the same network handler as in msi_session_s struct.
 
 
 
-A/V initialization:
+##A/V initialization:
 
 int init_receive_audio(codec_state *cs);
 int init_receive_video(codec_state *cs);
@@ -147,7 +151,7 @@ The variable bps is the required bitrate in bits per second.
 
 
 
-A/V encoding/decoding:
+###A/V encoding/decoding:
 
 void *encode_video_thread(void *arg);
 Spawns the video encoding thread. The argument should hold a pointer to a codec_state.
