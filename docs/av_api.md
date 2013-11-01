@@ -31,7 +31,7 @@ const uint8_t* _user_agent - string describing phone client version.
 Return value:
 msi_session_t* - pointer to a newly created msi session handler.
 
-msi_session_t reference:
+###msi_session_t reference:
 
 How to handle msi session:
 Controling is done via callbacks and action handlers.
