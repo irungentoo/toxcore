@@ -94,7 +94,7 @@ typedef int sock_t;
 #define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
 
 #define TOX_PORTRANGE_FROM 33445
-#define TOX_PORTRANGE_TO   33455
+#define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 typedef union {

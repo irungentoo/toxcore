@@ -3,7 +3,8 @@ if BUILD_AV
 lib_LTLIBRARIES += libtoxmsi.la
 
 libtoxmsi_la_include_HEADERS = \
-                        ../toxmsi/toxmsi.h
+                        ../toxmsi/toxmsi.h \
+                        ../toxmsi/toxmedia.h
 
 libtoxmsi_la_includedir = $(includedir)/tox
 
@@ -35,8 +36,7 @@ libtoxmsi_la_LIBS    = $(NACL_LIBS)
 noinst_PROGRAMS += phone
 
 phone_SOURCES = ../toxmsi/phone.c \
-                ../toxmsi/AV_codec.h \
-                ../toxmsi/AV_codec.c
+                ../toxmsi/toxmedia.c
 
 phone_CFLAGS =  -I../toxcore \
                 -I../toxrtp \

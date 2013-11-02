@@ -36,8 +36,8 @@
 #include <libavutil/opt.h>
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <SDL.h>
-#include <SDL_thread.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_thread.h>
 #include <pthread.h>
 #include <opus/opus.h>
 
@@ -46,7 +46,9 @@
 #include "../toxrtp/toxrtp_message.h"
 #include "../toxrtp/tests/test_helper.h"
 #include "phone.h"
-#include "AV_codec.h"
+#include "toxmedia.h"
+
+SDL_Surface *screen;
 
 int display_received_frame(codec_state *cs, AVFrame *r_video_frame)
 {

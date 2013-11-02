@@ -16,7 +16,7 @@
 #include <stdlib.h>
 /* #include <termios.h> Can this be removed? */
 #include <pthread.h>
-#include "AV_codec.h"
+#include "toxmedia.h"
 
 
 
