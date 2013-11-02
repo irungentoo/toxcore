@@ -3,7 +3,7 @@
  *
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -20,26 +20,31 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <stdbool.h>
 #include <stdint.h>
 
-#include "net_crypto.h"
 #include "DHT.h"
+#include "assoc.h"
+#include "ping.h"
+
+#include "network.h"
+#include "util.h"
 
 #define PING_NUM_MAX 384
-#define PING_TIMEOUT 5 // 5s
+
+/* 5 seconds */
+#define PING_TIMEOUT 5
 
 /* Ping newly announced nodes to ping per TIME_TOPING seconds*/
 #define TIME_TOPING 5
 
-typedef struct {
+typedef struct PING {
     Net_Crypto *c;
 
     pinged_t    pings[PING_NUM_MAX];
@@ -50,13 +55,7 @@ typedef struct {
     uint64_t    last_toping;
 } PING;
 
-#define __PING_C__
-
-#include "network.h"
-#include "util.h"
-#include "ping.h"
-
-static bool is_ping_timeout(uint64_t time)
+static int is_ping_timeout(uint64_t time)
 {
     return is_timeout(time, PING_TIMEOUT);
 }
@@ -108,7 +107,7 @@ static uint64_t add_ping(PING *ping, IP_Port ipp)  // O(n)
     return ping->pings[p].id;
 }
 
-static bool is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: Replace this with something else.
+static int is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: Replace this with something else.
 {
 
     /* shouldn't that be an OR ? */
@@ -249,8 +248,12 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
     if (!is_pinging(ping, source, ping_id))
         return 1;
 
-    // Associate source ip with client_id
+    /* Associate source ip with client_id */
     addto_lists(dht, source, packet + 1);
+
+    if (dht->dhtassoc)
+        DHT_assoc_candidate_new(dht->dhtassoc, packet + 1, &source, 1);
+
     return 0;
 }
 

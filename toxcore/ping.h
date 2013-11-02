@@ -3,7 +3,7 @@
  *
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -24,11 +24,7 @@
 #ifndef __PING_H__
 #define __PING_H__
 
-#include <stdbool.h>
-
-#ifndef __PING_C__
 typedef struct PING PING;
-#endif
 
 /* Add nodes to the toping list.
  * All nodes in this list are pinged every TIME_TOPING seconds

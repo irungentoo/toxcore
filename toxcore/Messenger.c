@@ -26,8 +26,10 @@
 #endif
 
 #include "Messenger.h"
+#include "assoc.h"
 #include "network.h"
 #include "util.h"
+
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -780,7 +782,7 @@ int add_groupchat(Messenger *m)
 
     for (i = 0; i < m->numchats; ++i) {
         if (m->chats[i] == NULL) {
-            Group_Chat *newchat = new_groupchat(m->net);
+            Group_Chat *newchat = new_groupchat(m->net, m->dht->dhtassoc);
 
             if (newchat == NULL)
                 return -1;
@@ -797,7 +799,7 @@ int add_groupchat(Messenger *m)
     if (temp == NULL)
         return -1;
 
-    temp[m->numchats] = new_groupchat(m->net);
+    temp[m->numchats] = new_groupchat(m->net, m->dht->dhtassoc);
 
     if (temp[m->numchats] == NULL)
         return -1;
@@ -1782,10 +1784,20 @@ void do_messenger(Messenger *m)
 
 #ifdef LOGGING
 
-    if (now() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
+    if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         loglog(" = = = = = = = = \n");
 
-        lastdump = now();
+        if (m->dht->dhtassoc) {
+            DHT_assoc_statistics stat;
+            DHT_assoc_calc_statistics(m->dht->dhtassoc, &stat);
+            sprintf(logbuffer, "assoc: %zu handlers, %zu clients, %zu candidates.\n",
+                    stat.handlers, stat.clients, stat.candidates);
+            loglog(logbuffer);
+
+            loglog(" = = = = = = = = \n");
+        }
+
+        lastdump = unix_time();
         uint32_t client, last_pinged;
 
         for (client = 0; client < LCLIENT_LIST; client++) {
@@ -2109,6 +2121,9 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
+
+                if (m->dht->dhtassoc)
+                    DHT_assoc_self(m->dht->dhtassoc, m->net_crypto->self_public_key);
             } else
                 return -1;    /* critical */
 

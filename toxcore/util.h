@@ -3,7 +3,7 @@
  *
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -34,6 +34,12 @@ void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
 
+/* for testing ONLY, to force timeouts */
+void unix_time_force(uint64_t artificial)
+#ifndef AUTO_TEST
+__attribute__((__deprecated__))
+#endif
+;
 
 /* id functions */
 bool id_equal(uint8_t *dest, uint8_t *src);

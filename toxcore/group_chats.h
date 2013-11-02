@@ -27,6 +27,8 @@
 
 #include "net_crypto.h"
 
+typedef struct DHT_assoc DHT_assoc;
+
 #define MAX_NICK_BYTES 128
 
 typedef struct {
@@ -64,6 +66,7 @@ typedef struct Group_Chat {
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
 
+    DHT_assoc *dhtassoc;
 } Group_Chat;
 
 /* Copy the name of peernum to name.
@@ -104,7 +107,7 @@ uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
  *
  * Returns a NULL pointer if fail.
  */
-Group_Chat *new_groupchat(Networking_Core *net);
+Group_Chat *new_groupchat(Networking_Core *net, DHT_assoc *dhtassoc);
 
 
 /* Kill a group chat

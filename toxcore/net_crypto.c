@@ -29,6 +29,7 @@
 #endif
 
 #include "net_crypto.h"
+#include "util.h"
 
 static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection_id)
 {
@@ -754,7 +755,7 @@ static void receive_crypto(Net_Crypto *c)
 Net_Crypto *new_net_crypto(Networking_Core *net)
 {
     unix_time_update();
-    
+
     if (net == NULL)
         return NULL;
 
