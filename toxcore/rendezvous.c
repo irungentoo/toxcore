@@ -1,12 +1,16 @@
 
 #include "rendezvous.h"
 #include "network.h"
+#include "net_crypto.h"
 
 /* network: packet id */
 #define NET_PACKET_RENDEZVOUS 8
 
 /* 5 minutes */
 #define RENDEZVOUS_INTERVAL 300U
+
+/* 30 seconds */
+#define RENDEZVOUS_SEND_AGAIN 30U
 
 /* stored entries */
 #define RENDEZVOUS_STORE_SIZE 8
@@ -22,21 +26,22 @@ typedef struct RendezVousPacket {
 } RendezVousPacket;
 
 typedef struct {
-    uint64_t           timestamp;
+    uint64_t           recv_at;
     IP_Port            ipp;
 
     RendezVousPacket   packet;
 
-    uint8_t            matched;
+    uint8_t            match;
+    uint64_t           sent_at;
 } RendezVous_Entry;
 
 typedef struct RendezVous {
     Networking_Core   *net;
     uint8_t           *self_public;
-    uint64_t           waituntil;
-    uint64_t           acceptstore;
+    uint64_t           publish_starttime;
+    uint64_t           block_store_until;
 
-    RendezVous_callback    function;
+    RendezVous_callbacks   functions;
     void                  *data;
     uint64_t           timestamp;
     uint8_t            hash_complete[HASHLEN];
@@ -65,8 +70,75 @@ static void publish(RendezVous *rendezvous)
     ipport.ip.ip4.uint32 = htonl((127 << 24) + 1);
     ipport.port = 33445;
 
-    /* NOT TO ALL */
+    /* TODO:
+     * send to the four best verified and four random of the best 16
+     * (requires some additions in assoc.*) */
     sendpacket(rendezvous->net, ipport, &packet.type, sizeof(packet));
+}
+
+static void send_replies(RendezVous *rendezvous, size_t i, size_t k)
+{
+    if (is_timeout(rendezvous->store[i].sent_at, RENDEZVOUS_SEND_AGAIN)) {
+        rendezvous->store[i].sent_at = unix_time();
+        sendpacket(rendezvous->net, rendezvous->store[i].ipp, &rendezvous->store[k].packet.type, sizeof(RendezVousPacket));
+    }
+
+    if (is_timeout(rendezvous->store[k].sent_at, RENDEZVOUS_SEND_AGAIN)) {
+        rendezvous->store[k].sent_at = unix_time();
+        sendpacket(rendezvous->net, rendezvous->store[k].ipp, &rendezvous->store[i].packet.type, sizeof(RendezVousPacket));
+    }
+}
+
+static int packet_is_wanted(RendezVous *rendezvous, RendezVousPacket *packet, uint64_t now_floored)
+{
+    if (rendezvous->timestamp == now_floored)
+        if (!memcmp(packet->hash_complete_half, rendezvous->hash_complete, HASHLEN / 2)) {
+            /* validate that encryption matches */
+            uint8_t validate[HASHLEN];
+            size_t enclen = encrypt(validate, rendezvous->hash_complete + HASHLEN / 2, HASHLEN / 2, packet->target_id);
+            if (!memcmp(packet->hash_encrypted, validate, enclen))
+                rendezvous->functions.found_function(rendezvous->data, packet->target_id);
+
+            return 1;
+        }
+
+    return 0;
+}
+
+static int packet_is_update(RendezVous *rendezvous, RendezVousPacket *packet, uint64_t now_floored, IP_Port *ipp)
+{
+    size_t i, k;
+
+    for(i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
+        if (rendezvous->store[i].match != 0) {
+            /* one slot per target_id to catch resends */
+            if (id_equal(rendezvous->store[i].packet.target_id, packet->target_id)) {
+                /* if the entry is timed out, and it changed, reset flag for match and store */
+                if (rendezvous->store[i].recv_at < now_floored) {
+                    if (memcmp(&rendezvous->store[i].packet, packet, sizeof(*packet)) != 0) {
+                        rendezvous->store[i].recv_at = now_floored;
+                        rendezvous->store[i].ipp = *ipp;
+                        rendezvous->store[i].packet = *packet;
+
+                        rendezvous->store[i].match = 1;
+                        rendezvous->store[i].sent_at = 0;
+                    }
+                } else if (rendezvous->store[i].match == 2) {
+                    /* there exists a match, send the pairing their data
+                     * (if RENDEZVOUS_SEND_AGAIN seconds have passed) */
+                    for(k = 0; k < RENDEZVOUS_STORE_SIZE; k++)
+                        if ((i != k) && (rendezvous->store[k].match == 2))
+                            if (rendezvous->store[k].recv_at == now_floored)
+                                if (!memcmp(rendezvous->store[i].packet.hash_complete_half,
+                                            rendezvous->store[k].packet.hash_complete_half, HASHLEN / 2))
+                                    send_replies(rendezvous, i, k);
+                }
+
+                return 1;
+            }
+        }
+
+    return 0;
 }
 
 static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *data, uint32_t len)
@@ -91,64 +163,83 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
 
     uint64_t now = unix_time();
     uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);
-    if (!memcmp(packet->hash_complete_half, rendezvous->hash_complete, HASHLEN / 2)) {
-        if (rendezvous->timestamp == now_floored) {
-            /* TODO:
-             * validate that encryption matches
-             */
-            rendezvous->function(rendezvous->data, packet->target_id);
-        }
-
+    if (packet_is_wanted(rendezvous, packet, now_floored))
         return 1;
-    }
 
-    size_t i, pos = RENDEZVOUS_STORE_SIZE;
-    if (!rendezvous->acceptstore) {
-        pos = 0;
-    } else if (rendezvous->acceptstore < now) {
-        /* duplicate? */
+    if (packet_is_update(rendezvous, packet, now_floored, &ip_port))
+        return 1;
+
+    size_t i, matching = RENDEZVOUS_STORE_SIZE;
+
+    /* if the data is a match to an existing, unmatched entry,
+     * skip blocking */
+    if (rendezvous->block_store_until >= now)
         for(i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
-            if (id_equal(rendezvous->store[i].packet.target_id, packet->target_id)) {
-                /* should we check if the rest of the packet matches? */
-                return 0;
-            }
+            if (rendezvous->store[i].match == 1)
+                if (rendezvous->store[i].recv_at == now_floored)
+                    if (!memcmp(rendezvous->store[i].packet.hash_complete_half,
+                            packet->hash_complete_half, HASHLEN / 2)) {
+                        /* "encourage" storing */
+                        rendezvous->block_store_until = now - 1;
+                        matching = i;
+                        break;
+                    }
 
+    size_t pos = RENDEZVOUS_STORE_SIZE;
+    if (!rendezvous->block_store_until) {
+        pos = 0;
+    } else if (rendezvous->block_store_until < now) {
         /* find free slot to store into */
         for(i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
-            if (is_timeout(rendezvous->store[i].timestamp, RENDEZVOUS_INTERVAL)) {
+            if ((rendezvous->store[i].match == 0) ||
+                    is_timeout(rendezvous->store[i].recv_at, RENDEZVOUS_INTERVAL)) {
                 pos = i;
                 break;
             }
 
-        /* if all full, randomize opening again */
         if (pos == RENDEZVOUS_STORE_SIZE) {
-            rendezvous->acceptstore = now + rand() % RENDEZVOUS_INTERVAL;
+            /* all full: randomize opening again */
+            rendezvous->block_store_until = now_floored + RENDEZVOUS_INTERVAL + rand() % 30;
+
+            if (matching < RENDEZVOUS_STORE_SIZE) {
+                /* we got a match but can't store due to space:
+                 * send replies, mark second slot */
+                sendpacket(rendezvous->net, ip_port, &rendezvous->store[i].packet.type, sizeof(RendezVousPacket));
+                sendpacket(rendezvous->net, rendezvous->store[i].ipp, data, sizeof(RendezVousPacket));
+
+                rendezvous->store[i].match = 2;
+                rendezvous->store[i].sent_at = now;
+            }
+
             return 0;
         }
     } else {
-        /* TODO: blacklist insistant publishers */
+        /* blocking */
+        /* TODO: blacklist insisting publishers */
         return 0;
     }
 
     /* store */
-    rendezvous->store[pos].packet = *packet;
-    rendezvous->store[pos].timestamp = now;
+    rendezvous->store[pos].recv_at = now_floored;
     rendezvous->store[pos].ipp = ip_port;
-    rendezvous->acceptstore = now + 60 + rand() % 1800;
+    rendezvous->store[pos].packet = *packet;
 
-    for(i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
-        if ((i != pos) && !is_timeout(rendezvous->store[i].timestamp, RENDEZVOUS_INTERVAL))
-            if (!rendezvous->store[i].matched) {
+    rendezvous->store[pos].match = 1;
+    rendezvous->store[pos].sent_at = 0;
+
+    rendezvous->block_store_until = now + 60 + rand() % 1800;
+
+    for(i = matching; i < RENDEZVOUS_STORE_SIZE; i++)
+        if ((i != pos) && (rendezvous->store[i].match == 1))
+            if (rendezvous->store[i].recv_at == now_floored)
                 if (!memcmp(rendezvous->store[i].packet.hash_complete_half,
                             rendezvous->store[pos].packet.hash_complete_half, HASHLEN / 2)) {
 
-                    sendpacket(rendezvous->net, rendezvous->store[i].ipp, &rendezvous->store[pos].packet.type, sizeof(RendezVousPacket));
-                    sendpacket(rendezvous->net, rendezvous->store[pos].ipp, &rendezvous->store[i].packet.type, sizeof(RendezVousPacket));
+                    send_replies(rendezvous, i, pos);
 
-                    rendezvous->store[i].matched = 1;
-                    rendezvous->store[pos].matched = 1;
+                    rendezvous->store[i].match = 2;
+                    rendezvous->store[pos].match = 2;
                 }
-            }
 
     return 0;
 }
@@ -169,12 +260,15 @@ RendezVous *rendezvous_new(DHT_assoc *dhtassoc, Networking_Core *net, uint8_t *s
     return rendezvous;
 }
 
-int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callback function, void *data)
+int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callbacks *functions, void *data)
 {
-    if (!rendezvous || !text || !function)
+    if (!rendezvous || !text || !functions)
         return 0;
 
     if ((timestamp % RENDEZVOUS_INTERVAL) != 0)
+        return 0;
+
+    if (!functions->found_function)
         return 0;
 
     /*
@@ -195,8 +289,9 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
     if (enclen < HASHLEN / 2)
         memset(&rendezvous->hash_encrypted[enclen], 0, HASHLEN / 2 - enclen);
 
-    rendezvous->waituntil = timestamp;
-    rendezvous->function = function;
+    /* +30s: allow *some* slack in keeping the system time up to date */
+    rendezvous->publish_starttime = timestamp + 30;
+    rendezvous->functions = *functions;
     rendezvous->data = data;
     rendezvous_do(rendezvous);
 
@@ -205,13 +300,32 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
 
 void rendezvous_do(RendezVous *rendezvous)
 {
+    /* nothing to publish */
+    if (!rendezvous->publish_starttime)
+        return;
+
     uint64_t now = unix_time();
-    if (now > rendezvous->waituntil) {
+    if (rendezvous->publish_starttime < now) {
+        rendezvous->publish_starttime = 0;
         uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);
-        if ((rendezvous->timestamp >= now_floored) && (rendezvous->timestamp < now_floored + RENDEZVOUS_INTERVAL))
+
+        /* timed out: stop publishing? */
+        if (rendezvous->timestamp < now_floored) {
+            if (!rendezvous->functions.timeout_function)
+                return;
+
+            if (!rendezvous->functions.timeout_function(rendezvous->data))
+                return;
+
+            rendezvous->timestamp = now_floored;
+        }
+
+        if ((rendezvous->timestamp >= now_floored) && (rendezvous->timestamp < now_floored + RENDEZVOUS_INTERVAL)) {
             publish(rendezvous);
 
-        rendezvous->waituntil = now + 60;
+            /* on average, publish once a minute */
+            rendezvous->publish_starttime = now + 45 + rand() % 30;
+        }
     }
 }
 
