@@ -39,12 +39,6 @@
 /* The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 8
 
-/* Ping timeout in seconds */
-#define PING_TIMEOUT 5
-
-/* Ping interval in seconds for each node in our lists. */
-#define PING_INTERVAL 60
-
 /* Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 5
 

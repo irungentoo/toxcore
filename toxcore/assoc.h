@@ -182,16 +182,17 @@ uint32_t DHT_assoc_handler_entry_add(DHT_assoc *dhtassoc, uint32_t cookie, uint8
 uint32_t DHT_assoc_handler_entry_delete(DHT_assoc *dhtassoc, uint32_t cookie, uint8_t *id);
 
 /* Access the used client_list of a handler's group element at index index
- * Index can be negative: TODO: add explicit flags instead
- * -1 => select a random index
- * -2 => select a random index, ignore timout
- * -10 ... => select index "- (index + 10)" (-10 => 0, -11 => 1, ...), ignore timeout
+ * index is greater zero for regular entries
+ * if index equals zero, a random valid node is picked
+ * flags can be a combination of:
+ *   1: ignore timeout
  *
- * returns the requested Client_data, if it is valid and, depending on index, not timed out
- * returns NULL if the index isn't occupied by a valid entry (i.e. there are simply not
- *         enough ID<=>IP associations known yet)
+ * returns
+ *     NULL if the index is invalid/timed-out / there are no valid/not timed-out entries
+ *     index >  0: the Client_data of that index, if it is valid and, depending on flags, not timed out
+ *     index == 0: the Client_data of a random valid and, depending on flags, not timed out index
  */
-Client_data *DHT_assoc_group_client(DHT_assoc *dhtassoc, uint32_t cookie, size_t group_index, ssize_t close_index);
+Client_data *DHT_assoc_group_client(DHT_assoc *dhtassoc, uint32_t cookie, size_t group_index, size_t close_index, uint8_t flags);
 #endif
 
 /*****************************************************************************/

@@ -43,8 +43,16 @@
 /* Maximum newly announced nodes to ping per TIME_TOPING seconds. */
 #define MAX_TOPING 16
 
+/* Ping timeout in seconds */
+#define PING_TIMEOUT 5
+
+/* Ping interval in seconds for each node in our lists. */
+#define PING_INTERVAL 60
+
 /* The number of seconds for a non responsive node to become bad. */
-#define BAD_NODE_TIMEOUT 70
+#define PINGS_MISSED_NODE_GOES_BAD 3
+#define PING_ROUNDTRIP 2
+#define BAD_NODE_TIMEOUT PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * (PING_INTERVAL + PING_ROUNDTRIP)
 
 /* The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT 300
