@@ -52,6 +52,9 @@
 #define PACKET_ID_JOIN_GROUPCHAT 145
 #define PACKET_ID_ACCEPT_GROUPCHAT 146
 
+/* Max number of groups we can invite someone at the same time to. */
+#define MAX_INVITED_GROUPS 64
+
 /* Status definitions. */
 enum {
     NOFRIEND,
@@ -148,6 +151,8 @@ typedef struct {
     uint64_t ping_lastsent;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
+    int invited_groups[MAX_INVITED_GROUPS];
+    uint16_t invited_groups_num;
 } Friend;
 
 typedef struct Messenger {
