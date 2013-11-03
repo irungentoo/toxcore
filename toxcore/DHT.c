@@ -1597,6 +1597,59 @@ static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, Node_format
 
     return sendpacket(dht->c->lossless_udp->net, sendto->ip_port, packet, len);
 }
+/*
+ * check how many nodes in nodes are also present in the closelist.
+ * TODO: make this function better.
+ */
+static int have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num, sa_family_t sa_family)
+{
+    Node_format nodes_list[MAX_SENT_NODES];
+    int num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1);
+
+    if (num_nodes < 1)
+        return -1;
+
+    int counter = 0;
+    uint32_t i, j;
+
+    for (i = 0; i < num; ++i) {
+        if (id_equal(nodes[i].client_id, dht->c->self_public_key)) {
+            ++counter;
+        }
+
+        for (j = 0; j < (uint32_t)num_nodes; ++j) {
+            if (id_equal(nodes[i].client_id, nodes_list[j].client_id)) {
+                if (ipport_equal(&nodes[i].ip_port, &nodes_list[j].ip_port)) {
+                    ++counter;
+                    break;
+                }
+            }
+        }
+    }
+
+    return counter;
+}
+/* TODO: improve */
+static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, uint8_t *client_id, sa_family_t sa_family)
+{
+    uint32_t i;
+
+    for (i = 0; i < LCLIENT_LIST; ++i) {
+        if (memcmp(dht->close_clientlist[i].client_id, client_id, CLIENT_ID_SIZE) != 0)
+            continue;
+
+        if (sa_family == AF_INET)
+            return &dht->close_clientlist[i].assoc4;
+        else if (sa_family == AF_INET6)
+            return &dht->close_clientlist[i].assoc6;
+    }
+
+    return NULL;
+}
+
+/* Interval in seconds between hardening checks */
+#define HARDENING_INTERVAL 5
+#define HARDEN_TIMEOUT 500
 
 /* Handle a received hardening packet */
 static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
@@ -1629,13 +1682,32 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
 
             uint16_t num = (length - 1) / sizeof(Node_format);
 
+            /* TODO: MAX_SENT_NODES nodes should be returned at all times
+             (right now we have a small network size so it could cause problems for testing and etc..) */
             if (num > MAX_SENT_NODES || num == 0)
                 return 1;
 
             Node_format nodes[num];
             memcpy(nodes, packet + 1, sizeof(Node_format)*num);
+
+            /* NOTE: This should work for now but should be changed to something better. */
+            if (have_nodes_closelist(dht, nodes, num, nodes[0].ip_port.ip.family) < (num + 1) / 2)
+                return 1;
+
+
+            IPPTsPng *temp = get_closelist_IPPTsPng(dht, source_pubkey, source.ip.family);
+
+            if (temp == NULL)
+                return 1;
+
+            if (is_timeout(temp->hardening.send_nodes_timestamp, HARDENING_INTERVAL))
+                return 1;
+
+            if (memcmp(temp->hardening.send_nodes_pingedid, source_pubkey, CLIENT_ID_SIZE) != 0)
+                return 1;
+
             /* If Nodes look good and the request checks out */
-            //TODO
+            temp->hardening.routes_requests_ok = 1;
             return 0;/* success*/
         }
     }
@@ -1666,9 +1738,6 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
         return nodes_list[rand() % num_nodes];
 }
 
-/* Interval in seconds between checks */
-#define HARDENING_INTERVAL 5
-#define HARDEN_TIMEOUT 500
 
 void do_hardening(DHT *dht)
 {
@@ -1759,6 +1828,7 @@ void do_DHT(DHT *dht)
     do_DHT_friends(dht);
     do_NAT(dht);
     do_toping(dht->ping);
+    do_hardening(dht);
 }
 void kill_DHT(DHT *dht)
 {

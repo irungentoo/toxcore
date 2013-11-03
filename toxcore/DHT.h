@@ -60,7 +60,7 @@ typedef struct {
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
-    
+
     Hardening hardening;
     /* Returned by this node. Either our friend or us. */
     IP_Port     ret_ip_port;
