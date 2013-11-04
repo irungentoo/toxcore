@@ -3,7 +3,7 @@
  *
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -46,11 +46,13 @@ uint64_t random_64b()
 }
 
 /* don't call into system billions of times for no reason */
+static uint8_t unix_time_blocked = 0; /* artificial time set, don't update to "real" time */
 static uint64_t unix_time_value;
 
 void unix_time_update()
 {
-    unix_time_value = (uint64_t)time(NULL);
+    if (!unix_time_blocked)
+        unix_time_value = (uint64_t)time(NULL);
 }
 
 uint64_t unix_time()
@@ -61,6 +63,12 @@ uint64_t unix_time()
 int is_timeout(uint64_t timestamp, uint64_t timeout)
 {
     return timestamp + timeout <= unix_time_value;
+}
+
+void unix_time_force(uint64_t artificial)
+{
+    unix_time_value = artificial;
+    unix_time_blocked = 1;
 }
 
 
@@ -139,8 +147,14 @@ void loginit(uint16_t port)
     if (logfile)
         fclose(logfile);
 
-    if (!starttime)
-        starttime = now();
+    if (!starttime) {
+        starttime = unix_time();
+
+        if (!starttime) {
+            unix_time_update();
+            starttime = unix_time();
+        }
+    }
 
     struct tm *tm = localtime(&starttime);
 
@@ -164,7 +178,7 @@ void loginit(uint16_t port)
 void loglog(char *text)
 {
     if (logfile) {
-        fprintf(logfile, "%4u %s", (uint32_t)(now() - starttime), text);
+        fprintf(logfile, "%4u %s", (uint32_t)(unix_time() - starttime), text);
         fflush(logfile);
 
         return;
@@ -175,7 +189,7 @@ void loglog(char *text)
     size_t len = strlen(text);
 
     if (!starttime) {
-        starttime = now();
+        starttime = unix_time();
         logbufferprelen = 1024 + len - (len % 1024);
         logbufferpredata = malloc(logbufferprelen);
         logbufferprehead = logbufferpredata;
@@ -193,7 +207,7 @@ void loglog(char *text)
         logbufferprelen = lennew;
     }
 
-    int written = sprintf(logbufferprehead, "%4u %s", (uint32_t)(now() - starttime), text);
+    int written = sprintf(logbufferprehead, "%4u %s", (uint32_t)(unix_time() - starttime), text);
     logbufferprehead += written;
 }
 

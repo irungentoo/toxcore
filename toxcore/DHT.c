@@ -28,26 +28,16 @@
 #endif
 
 #include "DHT.h"
-#include "network.h"
+#include "assoc.h"
 #include "ping.h"
+
+#include "network.h"
+#include "LAN_discovery.h"
 #include "misc_tools.h"
 #include "util.h"
-#include "LAN_discovery.h"
-
-/* The number of seconds for a non responsive node to become bad. */
-#define BAD_NODE_TIMEOUT 70
 
 /* The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 8
-
-/* Ping timeout in seconds */
-#define PING_TIMEOUT 5
-
-/* The timeout after which a node is discarded completely. */
-#define KILL_NODE_TIMEOUT 300
-
-/* Ping interval in seconds for each node in our lists. */
-#define PING_INTERVAL 60
 
 /* Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 5
@@ -120,6 +110,7 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
     uint32_t i;
 
     for (i = 0; i < length; i++)
+
         /* Dead nodes are considered dead (not in the list)*/
         if (!is_timeout(list[i].assoc4.timestamp, KILL_NODE_TIMEOUT) ||
                 !is_timeout(list[i].assoc6.timestamp, KILL_NODE_TIMEOUT))
@@ -278,6 +269,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
             continue;
 
         IPPTsPng *ipptp = NULL;
+
         if (sa_family == AF_INET)
             ipptp = &client->assoc4;
         else
@@ -613,7 +605,7 @@ static uint64_t add_gettingnodes(DHT *dht, IP_Port ip_port)
     return 0;
 }
 
-/* Send a getnodes request. */
+/* Send a getnodes request to public_key to get nodes "close to" client_id. */
 static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id)
 {
     /* Check if packet is going to be sent to ourself. */
@@ -652,8 +644,13 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     return sendpacket(dht->c->lossless_udp->net, ip_port, data, sizeof(data));
 }
 
-/* Send a send nodes response. */
-/* because of BINARY compatibility, the Node_format MUST BE Node4_format,
+int DHT_request_nodes(DHT *dht, uint8_t *known_id, IP_Port *ipp, uint8_t *wanted_id)
+{
+    return getnodes(dht, *ipp, known_id, wanted_id);
+}
+
+/* Send a sendnodes response to public_key with nodes "close to" client_id.
+ * Because of binary compatibility, the Node_format MUST BE Node4_format,
  * IPv6 nodes are sent in a different message */
 static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint64_t ping_id)
 {
@@ -860,7 +857,13 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 
     addto_lists(dht, source, packet + 1);
 
+    if (dht->dhtassoc)
+        DHT_assoc_candidate_new(dht->dhtassoc, packet + 1, &source, 1);
+
     for (i = 0; i < num_nodes; ++i)  {
+        if (dht->dhtassoc)
+            DHT_assoc_candidate_new(dht->dhtassoc, nodes_list[i].client_id, &nodes_list[i].ip_port, 0);
+
         send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
         returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
@@ -906,7 +909,13 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
 
     addto_lists(dht, source, packet + 1);
 
+    if (dht->dhtassoc)
+        DHT_assoc_candidate_new(dht->dhtassoc, packet + 1, &source, 1);
+
     for (i = 0; i < num_nodes; ++i)  {
+        if (dht->dhtassoc)
+            DHT_assoc_candidate_new(dht->dhtassoc, nodes_list[i].client_id, &nodes_list[i].ip_port, 0);
+
         send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
         returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
     }
@@ -957,7 +966,29 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
 
     dht->friends_list[dht->num_friends].nat.NATping_id = ((uint64_t)random_int() << 32) + random_int();
     ++dht->num_friends;
-    get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);/*TODO: make this better?*/
+
+    if (dht->dhtassoc) {
+        /* get up to MAX_FRIEND_CLIENTS connectable nodes */
+        DHT_Friend *friend = &dht->friends_list[dht->num_friends - 1];
+
+        DHT_assoc_close_nodes_simple state;
+        memset(&state, 0, sizeof(state));
+        state.close_count = MAX_FRIEND_CLIENTS;
+        state.close_indices = calloc(MAX_FRIEND_CLIENTS, sizeof(size_t));
+
+        uint8_t i, found = DHT_assoc_close_nodes_find(dht->dhtassoc, client_id, &state);
+
+        for (i = 0; i < found; i++) {
+            Client_data *data = DHT_assoc_client(dht->dhtassoc, state.close_indices[i]);
+
+            if (data)
+                memcpy(&friend->client_list[i], data, sizeof(*data));
+        }
+    }
+
+    /*TODO: make this better?*/
+    get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);
+
     return 0;
 }
 
@@ -1092,6 +1123,9 @@ static void do_Close(DHT *dht)
 
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 {
+    if (dht->dhtassoc)
+        DHT_assoc_candidate_new(dht->dhtassoc, public_key, &ip_port, 0);
+
     getnodes(dht, ip_port, public_key, dht->c->self_public_key);
 }
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
@@ -1193,12 +1227,15 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 
 #ifdef FRIEND_IPLIST_PAD
     memcpy(ip_portlist, ipv6s, num_ipv6s * sizeof(IP_Port));
+
     if (num_ipv6s == MAX_FRIEND_CLIENTS)
         return MAX_FRIEND_CLIENTS;
 
     int num_ipv4s_used = MAX_FRIEND_CLIENTS - num_ipv6s;
+
     if (num_ipv4s_used > num_ipv4s)
         num_ipv4s_used = num_ipv4s;
+
     memcpy(&ip_portlist[num_ipv6s], ipv4s, num_ipv4s_used * sizeof(IP_Port));
     return num_ipv6s + num_ipv4s_used;
 
@@ -1532,6 +1569,52 @@ static void do_NAT(DHT *dht)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
+PING *DHT_ping(DHT *dht)
+{
+    if (dht)
+        return dht->ping;
+
+    return NULL;
+}
+
+Networking_Core *DHT_net(DHT *dht)
+{
+    if (dht)
+        return dht->c->lossless_udp->net;
+
+    return NULL;
+}
+
+/* return 1 for "store in dhtassoc" (when the storing has moved there) */
+static uint8_t assoc_check_new_callback(DHT_assoc *dhtassoc, void *custom_data, uint32_t hash, uint8_t *client_id,
+                                        uint8_t seen, IP_Port *ipp)
+{
+    DHT *dht = custom_data;
+
+    if (!seen) {
+        /* not a valid address, but check if it is the id of a friend */
+        if (LAN_ip(ipp->ip) < 0) {
+            size_t i;
+
+            for (i = 0; i < dht->num_friends; i++)
+                if (id_equal(client_id, dht->friends_list[i].client_id))
+                    if (!dht->friends_list[i].lastgetnode)
+                        add_toping(dht->ping, client_id, *ipp);
+        }
+
+        return 0;
+    }
+
+    /* valid reachable address: copy sh*t
+     * if we made this address known, this function runs twice at the moment */
+    addto_lists(dht, *ipp, client_id);
+
+    return 0;
+}
+
+static uint8_t dhtassoc_callbacks_init = 0;
+static DHT_assoc_callbacks dhtassoc_callbacks;
+
 DHT *new_DHT(Net_Crypto *c)
 {
     /* init time */
@@ -1560,6 +1643,22 @@ DHT *new_DHT(Net_Crypto *c)
     init_cryptopackets(dht);
     cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
 
+    /* dhtassoc is not mandatory for now */
+    dht->dhtassoc = DHT_assoc_new(dht);
+
+    if (dht->dhtassoc) {
+        /* overwritten in messenger_load if a state can be loaded */
+        DHT_assoc_self(dht->dhtassoc, c->self_public_key);
+
+        if (!dhtassoc_callbacks_init) {
+            memset(&dhtassoc_callbacks, 0, sizeof(dhtassoc_callbacks));
+            dhtassoc_callbacks.check_funcs.check_new_func = assoc_check_new_callback;
+            dhtassoc_callbacks_init = 1;
+        }
+
+        DHT_assoc_register_callback(dht->dhtassoc, "DHT", dht, &dhtassoc_callbacks);
+    }
+
     return dht;
 }
 
@@ -1574,6 +1673,9 @@ void do_DHT(DHT *dht)
 }
 void kill_DHT(DHT *dht)
 {
+    if (dht->dhtassoc)
+        DHT_assoc_unregister_callback(dht->dhtassoc, dht, &dhtassoc_callbacks);
+
     kill_ping(dht->ping);
     free(dht->friends_list);
     free(dht);
@@ -1808,6 +1910,7 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
             break;
 
 #ifdef DEBUG
+
         default:
             fprintf(stderr, "Load state (DHT): contains unrecognized part (len %u, type %u)\n",
                     length, type);

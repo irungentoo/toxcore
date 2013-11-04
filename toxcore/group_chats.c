@@ -27,6 +27,8 @@
 #endif
 
 #include "group_chats.h"
+#include "assoc.h"
+#include "LAN_discovery.h"
 #include "util.h"
 
 #define GROUPCHAT_MAXDATA_LENGTH (MAX_DATA_SIZE - (1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES))
@@ -368,6 +370,10 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
     }
 
     add_closepeer(chat, chat->group[peernum].client_id, source);
+
+    if (chat->dhtassoc)
+        DHT_assoc_candidate_new(chat->dhtassoc, chat->group[peernum].client_id, &source, 1);
+
     return 0;
 }
 
@@ -528,16 +534,57 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
     chat->group_message_userdata = userdata;
 }
 
-Group_Chat *new_groupchat(Networking_Core *net)
+static uint8_t dhtassoc_callbacks_init = 0;
+static DHT_assoc_callbacks dhtassoc_callbacks;
+
+/* return 1 for "store in dhtassoc" (when the storing has moved there) */
+static uint8_t assoc_check_new_callback(DHT_assoc *dhtassoc, void *custom_data, uint32_t hash, uint8_t *client_id,
+                                        uint8_t seen, IP_Port *ipp)
+{
+    if (LAN_ip(ipp->ip) < 0)
+        return 0;
+
+    Group_Chat *chat = custom_data;
+
+    /* check if any close node is timed out and we're getting a different IP_Port for it */
+    size_t i;
+
+    for (i = 0; i < GROUP_CLOSE_CONNECTIONS; i++)
+        if (id_equal(chat->close[i].client_id, client_id))
+            if (is_timeout(chat->close[i].last_recv, BAD_GROUPNODE_TIMEOUT))
+                if (!ipport_equal(ipp, &chat->close[i].ip_port)) {
+                    chat->close[i].ip_port = *ipp;
+
+                    if (seen)
+                        chat->close[i].last_recv = unix_time();
+                }
+
+    return 0;
+}
+
+Group_Chat *new_groupchat(Networking_Core *net, DHT_assoc *dhtassoc)
 {
     unix_time_update();
-    
+
     if (net == 0)
         return 0;
 
     Group_Chat *chat = calloc(1, sizeof(Group_Chat));
     chat->net = net;
     crypto_box_keypair(chat->self_public_key, chat->self_secret_key);
+
+    if (dhtassoc) {
+        chat->dhtassoc = dhtassoc;
+
+        if (!dhtassoc_callbacks_init) {
+            memset(&dhtassoc_callbacks, 0, sizeof(dhtassoc_callbacks));
+            dhtassoc_callbacks.check_funcs.check_new_func = assoc_check_new_callback;
+            dhtassoc_callbacks_init = 1;
+        }
+
+        DHT_assoc_register_callback(dhtassoc, "group chat", chat, &dhtassoc_callbacks);
+    }
+
     return chat;
 }
 
@@ -569,6 +616,9 @@ void do_groupchat(Group_Chat *chat)
 
 void kill_groupchat(Group_Chat *chat)
 {
+    if (chat->dhtassoc)
+        DHT_assoc_unregister_callback(chat->dhtassoc, chat, &dhtassoc_callbacks);
+
     free(chat->group);
     free(chat);
 }
@@ -582,4 +632,7 @@ void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, uint8_t *client_i
 {
     send_getnodes(chat, ip_port, addpeer(chat, client_id));
     add_closepeer(chat, client_id, ip_port);
+
+    if (chat->dhtassoc)
+        DHT_assoc_candidate_new(chat->dhtassoc, client_id, &ip_port, 1);
 }

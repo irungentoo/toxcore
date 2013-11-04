@@ -43,6 +43,20 @@
 /* Maximum newly announced nodes to ping per TIME_TOPING seconds. */
 #define MAX_TOPING 16
 
+/* Ping timeout in seconds */
+#define PING_TIMEOUT 5
+
+/* Ping interval in seconds for each node in our lists. */
+#define PING_INTERVAL 60
+
+/* The number of seconds for a non responsive node to become bad. */
+#define PINGS_MISSED_NODE_GOES_BAD 3
+#define PING_ROUNDTRIP 2
+#define BAD_NODE_TIMEOUT PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * (PING_INTERVAL + PING_ROUNDTRIP)
+
+/* The timeout after which a node is discarded completely. */
+#define KILL_NODE_TIMEOUT 300
+
 typedef struct {
     IP_Port     ip_port;
     uint64_t    timestamp;
@@ -117,21 +131,30 @@ typedef struct {
     uint64_t timestamp;
 } pinged_t;
 
+typedef struct PING PING;
+typedef struct DHT_assoc DHT_assoc;
+
 typedef struct {
     Net_Crypto  *c;
 
     Client_data  close_clientlist[LCLIENT_LIST];
-    DHT_Friend  *friends_list;
-    uint16_t     num_friends;
     uint64_t     close_lastgetnodes;
 
+    DHT_Friend  *friends_list;
+    uint16_t     num_friends;
+
     pinged_t     send_nodes[LSEND_NODES_ARRAY];
-    void        *ping;
+    PING        *ping;
+
+    DHT_assoc   *dhtassoc;
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
 
+/* accessors */
 Client_data *DHT_get_close_list(DHT *dht);
+PING *DHT_ping(DHT *dht);
+Networking_Core *DHT_net(DHT *dht);
 
 /* Add a new friend to the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.
@@ -227,6 +250,14 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
  */
 int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id);
 
+
+/* send a getnodes request to known_id for nodes "close to" wanted_id
+ *
+ *  returns -1 on error,
+ *  returns number of bytes sent on success.  */
+int DHT_request_nodes(DHT *dht, uint8_t *known_id, IP_Port *ipp, uint8_t *wanted_id);
+
+
 /* SAVE/LOAD functions */
 
 /* Get the size of the DHT (for saving). */
@@ -256,5 +287,5 @@ int DHT_isconnected(DHT *dht);
 
 void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id);
 
-
 #endif
+
