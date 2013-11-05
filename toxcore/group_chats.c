@@ -205,13 +205,14 @@ static int addpeer(Group_Chat *chat, uint8_t *client_id)
 
     Group_Peer *temp;
     temp = realloc(chat->group, sizeof(Group_Peer) * (chat->numpeers + 1));
-    memset(&(temp[chat->numpeers]), 0, sizeof(Group_Peer));
 
     if (temp == NULL)
         return -1;
 
+    memset(&(temp[chat->numpeers]), 0, sizeof(Group_Peer));
     chat->group = temp;
     id_copy(chat->group[chat->numpeers].client_id, client_id);
+    chat->group[chat->numpeers].last_recv = unix_time();
     ++chat->numpeers;
     return (chat->numpeers - 1);
 }
@@ -392,9 +393,9 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
 
         if (chat->group[peernum].last_recv == temp_time)
             return 1;
-
-        chat->group[peernum].last_recv = temp_time;
     */
+    chat->group[peernum].last_recv = unix_time();
+
     uint32_t message_num;
     memcpy(&message_num, data + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
     message_num = ntohl(message_num);
@@ -461,7 +462,10 @@ static uint8_t send_data(Group_Chat *chat, uint8_t *data, uint32_t len, uint8_t 
 //TODO
     id_copy(packet, chat->self_public_key);
     memcpy(packet + crypto_box_PUBLICKEYBYTES, &message_num, sizeof(message_num));
-    memcpy(packet + GROUP_DATA_MIN_SIZE, data, len);
+
+    if (len != 0)
+        memcpy(packet + GROUP_DATA_MIN_SIZE, data, len);
+
     packet[crypto_box_PUBLICKEYBYTES + sizeof(message_num)] = message_id;
     return sendto_allpeers(chat, packet, len + GROUP_DATA_MIN_SIZE, 50);
 }
@@ -531,7 +535,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
 Group_Chat *new_groupchat(Networking_Core *net)
 {
     unix_time_update();
-    
+
     if (net == 0)
         return 0;
 
@@ -561,10 +565,22 @@ static void ping_close(Group_Chat *chat)
     }
 }
 
+/* Interval in seconds to send ping messages */
+#define GROUP_PING_INTERVAL 30
+
+static void ping_group(Group_Chat *chat)
+{
+    if (is_timeout(chat->last_sent_ping, GROUP_PING_INTERVAL)) {
+        if (send_data(chat, 0, 0, 0) != 0) /* Ping */
+            chat->last_sent_ping = unix_time();
+    }
+}
+
 void do_groupchat(Group_Chat *chat)
 {
     unix_time_update();
     ping_close(chat);
+    ping_group(chat);
 }
 
 void kill_groupchat(Group_Chat *chat)
