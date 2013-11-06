@@ -213,6 +213,7 @@ static int addpeer(Group_Chat *chat, uint8_t *client_id)
     chat->group = temp;
     id_copy(chat->group[chat->numpeers].client_id, client_id);
     chat->group[chat->numpeers].last_recv = unix_time();
+    chat->group[chat->numpeers].last_recv_msgping = unix_time();
     ++chat->numpeers;
     return (chat->numpeers - 1);
 }
@@ -576,11 +577,23 @@ static void ping_group(Group_Chat *chat)
     }
 }
 
+static void del_dead_peers(Group_Chat *chat)
+{
+    uint32_t i;
+    for (i = 0; i < chat->numpeers; ++i) {
+        if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL*2)) {
+            delpeer(chat, chat->group[i].client_id);
+        }
+    }
+}
+
 void do_groupchat(Group_Chat *chat)
 {
     unix_time_update();
     ping_close(chat);
     ping_group(chat);
+    /* TODO: Maybe run this less? */
+    del_dead_peers(chat);
 }
 
 void kill_groupchat(Group_Chat *chat)
