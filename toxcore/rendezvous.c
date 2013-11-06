@@ -17,8 +17,8 @@
 
 typedef struct RendezVousPacket {
     uint8_t  type;
-    uint8_t  hash_complete_half[HASHLEN / 2];
-    uint8_t  hash_encrypted[HASHLEN / 2];
+    uint8_t  hash_unspecific_half[HASHLEN / 2];
+    uint8_t  hash_specific_half[HASHLEN / 2];
     uint8_t  target_id[crypto_box_PUBLICKEYBYTES];
 } RendezVousPacket;
 
@@ -34,7 +34,6 @@ typedef struct {
 
 typedef struct RendezVous {
     Networking_Core   *net;
-    Rendezvous_sendpacket sendpacket;
 
     uint8_t           *self_public;
     uint8_t           *self_secret;
@@ -44,38 +43,22 @@ typedef struct RendezVous {
     RendezVous_callbacks   functions;
     void                  *data;
     uint64_t           timestamp;
-    uint8_t            hash_complete[HASHLEN];
-    uint8_t            hash_encrypted[HASHLEN / 2];
+    uint8_t            hash_unspecific_complete[HASHLEN];
+    uint8_t            hash_specific_half[HASHLEN / 2];
 
     RendezVous_Entry   store[RENDEZVOUS_STORE_SIZE];
 } RendezVous;
-
-static size_t encrypt(uint8_t *encrypted, const uint8_t *plaintext, size_t len, uint8_t *secret_key)
-{
-    uint8_t nonce[crypto_secretbox_NONCEBYTES];
-    memset(nonce, 0, sizeof(nonce));
-
-    return crypto_secretbox(encrypted, plaintext, len, nonce, secret_key);
-}
-
-static size_t decrypt(const uint8_t *encrypted, uint8_t *plaintext, size_t len, uint8_t *public_key)
-{
-    uint8_t nonce[crypto_secretbox_NONCEBYTES];
-    memset(nonce, 0, sizeof(nonce));
-
-    return crypto_secretbox_open(plaintext, encrypted, len, nonce, public_key);
-}
 
 static void publish(RendezVous *rendezvous)
 {
     RendezVousPacket packet;
     // uint8_t packet[1 + HASHLEN + crypto_box_PUBLICKEYBYTES];
     packet.type = NET_PACKET_RENDEZVOUS;
-    memcpy(packet.hash_complete_half, rendezvous->hash_complete, HASHLEN / 2);
-    memcpy(packet.hash_encrypted, rendezvous->hash_encrypted, HASHLEN / 2);
+    memcpy(packet.hash_unspecific_half, rendezvous->hash_unspecific_complete, HASHLEN / 2);
+    memcpy(packet.hash_specific_half, rendezvous->hash_specific_half, HASHLEN / 2);
     memcpy(packet.target_id, rendezvous->self_public, crypto_box_PUBLICKEYBYTES);
 
-    /* TODO: ask DHT_assoc for IP_Ports for client_ids "close" to hash_complete/2 */
+    /* TODO: ask DHT_assoc for IP_Ports for client_ids "close" to hash_unspecific_complete/2 */
     IP_Port ipport;
     ipport.ip.family = AF_INET;
     ipport.ip.ip4.uint32 = htonl((127 << 24) + 1);
@@ -84,30 +67,35 @@ static void publish(RendezVous *rendezvous)
     /* TODO:
      * send to the four best verified and four random of the best 16
      * (requires some additions in assoc.*) */
-    rendezvous->sendpacket(rendezvous->net, ipport, &packet.type, sizeof(packet));
+    sendpacket(rendezvous->net, ipport, &packet.type, sizeof(packet));
 }
 
 static void send_replies(RendezVous *rendezvous, size_t i, size_t k)
 {
     if (is_timeout(rendezvous->store[i].sent_at, RENDEZVOUS_SEND_AGAIN)) {
         rendezvous->store[i].sent_at = unix_time();
-        rendezvous->sendpacket(rendezvous->net, rendezvous->store[i].ipp, &rendezvous->store[k].packet.type, sizeof(RendezVousPacket));
+        sendpacket(rendezvous->net, rendezvous->store[i].ipp, &rendezvous->store[k].packet.type, sizeof(RendezVousPacket));
     }
 
     if (is_timeout(rendezvous->store[k].sent_at, RENDEZVOUS_SEND_AGAIN)) {
         rendezvous->store[k].sent_at = unix_time();
-        rendezvous->sendpacket(rendezvous->net, rendezvous->store[k].ipp, &rendezvous->store[i].packet.type, sizeof(RendezVousPacket));
+        sendpacket(rendezvous->net, rendezvous->store[k].ipp, &rendezvous->store[i].packet.type, sizeof(RendezVousPacket));
     }
 }
 
 static int packet_is_wanted(RendezVous *rendezvous, RendezVousPacket *packet, uint64_t now_floored)
 {
     if (rendezvous->timestamp == now_floored)
-        if (!memcmp(packet->hash_complete_half, rendezvous->hash_complete, HASHLEN / 2)) {
-            /* validate that encryption matches */
-            uint8_t validate[HASHLEN];
-            size_t declen = decrypt(packet->hash_encrypted, validate, HASHLEN / 2, packet->target_id);
-            if (!memcmp(rendezvous->hash_complete + HASHLEN / 2, validate, declen))
+        if (!memcmp(packet->hash_unspecific_half, rendezvous->hash_unspecific_complete, HASHLEN / 2)) {
+            /* validate that hash matches */
+            uint8_t validate_in[HASHLEN / 2 + crypto_box_PUBLICKEYBYTES];
+            memcpy(validate_in, rendezvous->hash_unspecific_complete + HASHLEN / 2, HASHLEN / 2);
+            id_copy(validate_in + HASHLEN / 2, packet->target_id);
+
+            uint8_t validate_out[HASHLEN];
+            crypto_hash_sha512(validate_out, validate_in, sizeof(validate_in));
+
+            if (!memcmp(packet->hash_specific_half, validate_out, HASHLEN / 2))
                 rendezvous->functions.found_function(rendezvous->data, packet->target_id);
 
             return 1;
@@ -120,7 +108,7 @@ static int packet_is_update(RendezVous *rendezvous, RendezVousPacket *packet, ui
 {
     size_t i, k;
 
-    for(i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
+    for (i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
         if (rendezvous->store[i].match != 0) {
             /* one slot per target_id to catch resends */
             if (id_equal(rendezvous->store[i].packet.target_id, packet->target_id)) {
@@ -137,11 +125,11 @@ static int packet_is_update(RendezVous *rendezvous, RendezVousPacket *packet, ui
                 } else if (rendezvous->store[i].match == 2) {
                     /* there exists a match, send the pairing their data
                      * (if RENDEZVOUS_SEND_AGAIN seconds have passed) */
-                    for(k = 0; k < RENDEZVOUS_STORE_SIZE; k++)
+                    for (k = 0; k < RENDEZVOUS_STORE_SIZE; k++)
                         if ((i != k) && (rendezvous->store[k].match == 2))
                             if (rendezvous->store[k].recv_at == now_floored)
-                                if (!memcmp(rendezvous->store[i].packet.hash_complete_half,
-                                            rendezvous->store[k].packet.hash_complete_half, HASHLEN / 2))
+                                if (!memcmp(rendezvous->store[i].packet.hash_unspecific_half,
+                                            rendezvous->store[k].packet.hash_unspecific_half, HASHLEN / 2))
                                     send_replies(rendezvous, i, k);
                 }
 
@@ -165,15 +153,18 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
      * c) look if we got a match and callback
      */
     RendezVous *rendezvous = object;
+
     if (len != sizeof(RendezVousPacket))
         return 0;
 
     RendezVousPacket *packet = (RendezVousPacket *)data;
+
     if (rendezvous->self_public && id_equal(packet->target_id, rendezvous->self_public))
         return 0;
 
     uint64_t now = unix_time();
     uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);
+
     if (packet_is_wanted(rendezvous, packet, now_floored))
         return 1;
 
@@ -185,11 +176,11 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
     /* if the data is a match to an existing, unmatched entry,
      * skip blocking */
     if (rendezvous->block_store_until >= now)
-        for(i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
+        for (i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
             if (rendezvous->store[i].match == 1)
                 if (rendezvous->store[i].recv_at == now_floored)
-                    if (!memcmp(rendezvous->store[i].packet.hash_complete_half,
-                            packet->hash_complete_half, HASHLEN / 2)) {
+                    if (!memcmp(rendezvous->store[i].packet.hash_unspecific_half,
+                                packet->hash_unspecific_half, HASHLEN / 2)) {
                         /* "encourage" storing */
                         rendezvous->block_store_until = now - 1;
                         matching = i;
@@ -197,11 +188,12 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
                     }
 
     size_t pos = RENDEZVOUS_STORE_SIZE;
+
     if (!rendezvous->block_store_until) {
         pos = 0;
     } else if (rendezvous->block_store_until < now) {
         /* find free slot to store into */
-        for(i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
+        for (i = 0; i < RENDEZVOUS_STORE_SIZE; i++)
             if ((rendezvous->store[i].match == 0) ||
                     is_timeout(rendezvous->store[i].recv_at, RENDEZVOUS_INTERVAL)) {
                 pos = i;
@@ -215,8 +207,8 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
             if (matching < RENDEZVOUS_STORE_SIZE) {
                 /* we got a match but can't store due to space:
                  * send replies, mark second slot */
-                rendezvous->sendpacket(rendezvous->net, ip_port, &rendezvous->store[i].packet.type, sizeof(RendezVousPacket));
-                rendezvous->sendpacket(rendezvous->net, rendezvous->store[i].ipp, data, sizeof(RendezVousPacket));
+                sendpacket(rendezvous->net, ip_port, &rendezvous->store[i].packet.type, sizeof(RendezVousPacket));
+                sendpacket(rendezvous->net, rendezvous->store[i].ipp, data, sizeof(RendezVousPacket));
 
                 rendezvous->store[i].match = 2;
                 rendezvous->store[i].sent_at = now;
@@ -240,11 +232,11 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
 
     rendezvous->block_store_until = now + 60 + rand() % 1800;
 
-    for(i = matching; i < RENDEZVOUS_STORE_SIZE; i++)
+    for (i = matching; i < RENDEZVOUS_STORE_SIZE; i++)
         if ((i != pos) && (rendezvous->store[i].match == 1))
             if (rendezvous->store[i].recv_at == now_floored)
-                if (!memcmp(rendezvous->store[i].packet.hash_complete_half,
-                            rendezvous->store[pos].packet.hash_complete_half, HASHLEN / 2)) {
+                if (!memcmp(rendezvous->store[i].packet.hash_unspecific_half,
+                            rendezvous->store[pos].packet.hash_unspecific_half, HASHLEN / 2)) {
 
                     send_replies(rendezvous, i, pos);
 
@@ -261,24 +253,23 @@ RendezVous *rendezvous_new(DHT_assoc *dhtassoc, Networking_Core *net)
         return NULL;
 
     RendezVous *rendezvous = calloc(1, sizeof(*rendezvous));
+
     if (!rendezvous)
         return NULL;
 
     rendezvous->net = net;
-    rendezvous->sendpacket = sendpacket;
     networking_registerhandler(net, NET_PACKET_RENDEZVOUS, rendezvous_network_handler, rendezvous);
     return rendezvous;
 }
 
-void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public, uint8_t *self_secret)
+void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public)
 {
-    if (rendezvous && self_public && self_secret) {
+    if (rendezvous && self_public)
         rendezvous->self_public = self_public;
-        rendezvous->self_secret = self_secret;
-    }
 }
 
-int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callbacks *functions, void *data)
+int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callbacks *functions,
+                       void *data)
 {
     if (!rendezvous || !text || !functions)
         return 0;
@@ -304,10 +295,15 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
 
     char texttime[32 + strlen(text)];
     size_t texttimelen = sprintf(texttime, "%s@%ld", text, timestamp);
-    crypto_hash_sha512(rendezvous->hash_complete, (const unsigned char *)texttime, texttimelen);
-    size_t enclen = encrypt(rendezvous->hash_encrypted, rendezvous->hash_complete + HASHLEN / 2, HASHLEN / 2, rendezvous->self_secret);
-    if (enclen < HASHLEN / 2)
-        memset(&rendezvous->hash_encrypted[enclen], 0, HASHLEN / 2 - enclen);
+    crypto_hash_sha512(rendezvous->hash_unspecific_complete, (const unsigned char *)texttime, texttimelen);
+
+    uint8_t validate_in[HASHLEN / 2 + crypto_box_PUBLICKEYBYTES];
+    memcpy(validate_in, rendezvous->hash_unspecific_complete, HASHLEN / 2);
+    id_copy(validate_in + HASHLEN / 2, rendezvous->self_public);
+
+    uint8_t validate_out[HASHLEN];
+    crypto_hash_sha512(validate_out, validate_in, sizeof(validate_in));
+    memcpy(rendezvous->hash_specific_half, validate_out, HASHLEN / 2);
 
     /* +30s: allow *some* slack in keeping the system time up to date */
     rendezvous->publish_starttime = timestamp + 30;
@@ -325,6 +321,7 @@ void rendezvous_do(RendezVous *rendezvous)
         return;
 
     uint64_t now = unix_time();
+
     if (rendezvous->publish_starttime < now) {
         rendezvous->publish_starttime = 0;
         uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);
@@ -353,12 +350,4 @@ void rendezvous_kill(RendezVous *rendezvous)
 {
     networking_registerhandler(rendezvous->net, NET_PACKET_RENDEZVOUS, NULL, NULL);
     free(rendezvous);
-}
-
-void rendezvous_testing(RendezVous *rendezvous, Networking_Core *net, Rendezvous_sendpacket sendpacket)
-{
-    if (rendezvous) {
-        rendezvous->net = net;
-        rendezvous->sendpacket = sendpacket;
-    }
 }

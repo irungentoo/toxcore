@@ -25,23 +25,16 @@ typedef struct {
 
 RendezVous *rendezvous_new(DHT_assoc *dhtassoc, Networking_Core *net);
 
-void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public, uint8_t *self_secret);
+void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public);
 
 /* timestamp must be cut to this accuracy (5 minutes) */
 #define RENDEZVOUS_INTERVAL 300U
 
-int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callbacks *functions, void *data);
+int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callbacks *functions,
+                       void *data);
 
 void rendezvous_do(RendezVous *rendezvous);
 
 void rendezvous_kill(RendezVous *rendezvous);
-
-/* for testing purposes ONLY */
-typedef int (*Rendezvous_sendpacket)(Networking_Core *net, IP_Port ipport, uint8_t *data, uint32_t len);
-void rendezvous_testing(RendezVous *rendezvous, Networking_Core *net, Rendezvous_sendpacket sendpacket)
-#ifndef AUTO_TESTS
-__attribute__((__deprecated__))
-#endif
-;
 
 #endif /* __RENDEZVOUS_H__ */
