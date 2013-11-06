@@ -3,7 +3,7 @@
  *
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -20,7 +20,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -108,28 +108,35 @@ static uint64_t add_ping(PING *ping, IP_Port ipp)  // O(n)
     return ping->pings[p].id;
 }
 
-static bool is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)    // O(n) TODO: Replace this with something else.
+/* checks if ip/port or ping_id are already in the list to ping
+ * if both are set, both must match, otherwise the set must match
+ *
+ *  returns 0 if neither is set or no match was found
+ *  returns the (index + 1) of the match if one was found
+ */
+static int is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)
 {
+    // O(n) TODO: Replace this with something else.
 
-    /* shouldn't that be an OR ? */
-    if (!ip_isset(&ipp.ip) && ping_id == 0)
-        return false;
+    /* at least one MUST be set */
+    uint8_t ip_valid = ip_isset(&ipp.ip);
 
-    size_t i, id;
+    if (!ip_valid && !ping_id)
+        return 0;
+
+    size_t i;
 
     remove_timeouts(ping);
 
     for (i = 0; i < ping->num_pings; i++) {
-        id = (ping->pos_pings + i) % PING_NUM_MAX;
+        size_t id = (ping->pos_pings + i) % PING_NUM_MAX;
 
-        /* ping_id = 0 means match any id. */
-        if ((!ip_isset(&ipp.ip) || ipport_equal(&ping->pings[id].ip_port, &ipp)) &&
-                (ping->pings[id].id == ping_id || ping_id == 0)) {
-            return true;
-        }
+        if (!ping_id || (ping->pings[id].id == ping_id))
+            if (!ip_valid || ipport_equal(&ping->pings[id].ip_port, &ipp))
+                return id + 1;
     }
 
-    return false;
+    return 0;
 }
 
 #define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(uint64_t) + ENCRYPTION_PADDING)
@@ -246,11 +253,13 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
         return 1;
 
     /* Make sure ping_id is correct. */
-    if (!is_pinging(ping, source, ping_id))
+    int ping_index = is_pinging(ping, source, ping_id);
+
+    if (!ping_index)
         return 1;
 
-    // Associate source ip with client_id
-    addto_lists(dht, source, packet + 1);
+    /* Associate client_id with the ip the request was sent to */
+    addto_lists(dht, ping->pings[ping_index - 1].ip_port, packet + 1);
     return 0;
 }
 

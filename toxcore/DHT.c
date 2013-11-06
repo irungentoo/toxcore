@@ -120,6 +120,7 @@ static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id
     uint32_t i;
 
     for (i = 0; i < length; i++)
+
         /* Dead nodes are considered dead (not in the list)*/
         if (!is_timeout(list[i].assoc4.timestamp, KILL_NODE_TIMEOUT) ||
                 !is_timeout(list[i].assoc6.timestamp, KILL_NODE_TIMEOUT))
@@ -278,6 +279,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
             continue;
 
         IPPTsPng *ipptp = NULL;
+
         if (sa_family == AF_INET)
             ipptp = &client->assoc4;
         else
@@ -570,25 +572,26 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint
     }
 }
 
+/* checks if ip/port or ping_id are already in the list to get nodes
+ * if both are set, both must match, otherwise the set must match
+ *
+ *  returns 0 if neither is set or no match was found
+ *  returns the (index + 1) of the match if one was found
+ */
 static int is_gettingnodes(DHT *dht, IP_Port ip_port, uint64_t ping_id)
 {
+    uint8_t ip_valid = ip_isset(&ip_port.ip);
+
+    if (!ip_valid && !ping_id)
+        return 0;
+
     uint32_t i;
-    uint8_t pinging;
 
-    for (i = 0; i < LSEND_NODES_ARRAY; ++i ) {
-        if (!is_timeout(dht->send_nodes[i].timestamp, PING_TIMEOUT)) {
-            pinging = 0;
-
-            if (ping_id != 0 && dht->send_nodes[i].id == ping_id)
-                ++pinging;
-
-            if (ip_isset(&ip_port.ip) && ipport_equal(&dht->send_nodes[i].ip_port, &ip_port))
-                ++pinging;
-
-            if (pinging == (ping_id != 0) + ip_isset(&ip_port.ip))
-                return 1;
-        }
-    }
+    for (i = 0; i < LSEND_NODES_ARRAY; i++)
+        if (!is_timeout(dht->send_nodes[i].timestamp, PING_TIMEOUT))
+            if (!ping_id || (dht->send_nodes[i].id == ping_id))
+                if (!ip_valid || ipport_equal(&dht->send_nodes[i].ip_port, &ip_port))
+                    return i + 1;
 
     return 0;
 }
@@ -835,7 +838,9 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 
     memcpy(&ping_id, plain, sizeof(ping_id));
 
-    if (!is_gettingnodes(dht, source, ping_id))
+    int send_nodes_index = is_gettingnodes(dht, source, ping_id);
+
+    if (!send_nodes_index)
         return 1;
 
     Node4_format *nodes4_list = (Node4_format *)(plain + sizeof(ping_id));
@@ -858,7 +863,8 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
         num_nodes = num_nodes_ok;
     }
 
-    addto_lists(dht, source, packet + 1);
+    /* store the address the *request* was sent to */
+    addto_lists(dht, dht->send_nodes[send_nodes_index - 1].ip_port, packet + 1);
 
     for (i = 0; i < num_nodes; ++i)  {
         send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
@@ -1193,12 +1199,15 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 
 #ifdef FRIEND_IPLIST_PAD
     memcpy(ip_portlist, ipv6s, num_ipv6s * sizeof(IP_Port));
+
     if (num_ipv6s == MAX_FRIEND_CLIENTS)
         return MAX_FRIEND_CLIENTS;
 
     int num_ipv4s_used = MAX_FRIEND_CLIENTS - num_ipv6s;
+
     if (num_ipv4s_used > num_ipv4s)
         num_ipv4s_used = num_ipv4s;
+
     memcpy(&ip_portlist[num_ipv6s], ipv4s, num_ipv4s_used * sizeof(IP_Port));
     return num_ipv6s + num_ipv4s_used;
 
@@ -1808,6 +1817,7 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
             break;
 
 #ifdef DEBUG
+
         default:
             fprintf(stderr, "Load state (DHT): contains unrecognized part (len %u, type %u)\n",
                     length, type);
