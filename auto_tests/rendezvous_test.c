@@ -26,11 +26,14 @@ static void callback_found(void *data, uint8_t *client_id)
     memcpy(found->client_id, client_id, crypto_box_PUBLICKEYBYTES);
 }
 
-typedef struct tox_data {
-} tox_data;
-
 START_TEST(test_meetup)
 {
+#ifdef LOGGING
+    loginit(33);
+    /* fprintf(stderr, "Logfile is %s.\n", logbuffer); */
+    loglog("== rendezvous test start ==\n");
+#endif
+
     /* create three toxes */
     /* tox A wants to find tox B */
     /* tox C is the intermediate */
@@ -38,12 +41,6 @@ START_TEST(test_meetup)
     Tox *toxA = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     Tox *toxB = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     ck_assert_msg(toxA && toxB, "Failed to setup tox structure(s).");
-
-    tox_data dataA;
-    memset(&dataA, 0, sizeof(dataA));
-
-    tox_data dataB;
-    memset(&dataB, 0, sizeof(dataB));
 
     Messenger *mA = (Messenger *)toxA;
     Messenger *mB = (Messenger *)toxB;
@@ -94,8 +91,13 @@ START_TEST(test_meetup)
     uint64_t now = unix_time();
     uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);
 
+#ifdef ASSOC_AVAILABLE
+    RendezVous *rdvA = rendezvous_new(mA->dht->assoc, mA->dht->c->lossless_udp->net);
+    RendezVous *rdvB = rendezvous_new(mA->dht->assoc, mB->dht->c->lossless_udp->net);
+#else
     RendezVous *rdvA = rendezvous_new(NULL, mA->dht->c->lossless_udp->net);
     RendezVous *rdvB = rendezvous_new(NULL, mB->dht->c->lossless_udp->net);
+#endif
 
     ck_assert_msg(rdvA && rdvB, "Failed to setup rendezvous structure.");
 
@@ -107,13 +109,15 @@ START_TEST(test_meetup)
 
     found foundA;
     memset(&foundA, 0, sizeof(foundA));
-    rendezvous_publish(rdvA, secret, now_floored, &callbacks, &foundA);
+    ck_assert_msg(rendezvous_publish(rdvA, secret, now_floored, &callbacks, &foundA), "A::publish() failed.");
 
     found foundB;
     memset(&foundB, 0, sizeof(foundB));
-    rendezvous_publish(rdvB, secret, now_floored, &callbacks, &foundB);
+    ck_assert_msg(rendezvous_publish(rdvB, secret, now_floored, &callbacks, &foundB), "B::publish() failed.");
 
     for (i = 0; i < 20; i++) {
+        rendezvous_do(rdvA);
+        rendezvous_do(rdvB);
         tox_do(toxA);
         tox_do(toxB);
         usleep(10000);
@@ -124,10 +128,9 @@ START_TEST(test_meetup)
     ck_assert_msg(id_equal(foundA.client_id, mB->dht->c->self_public_key), "Expected A to find B.");
     ck_assert_msg(id_equal(foundB.client_id, mA->dht->c->self_public_key), "Expected B to find A.");
 
-#if 0
-    /* example test */
-    uint8_t test = 0;
-    ck_assert_msg(test == 0, "test: expected result 0, got %u.", test);
+#ifdef LOGGING
+    loglog("== rendezvous test done ==\n");
+    logexit();
 #endif
 }
 END_TEST

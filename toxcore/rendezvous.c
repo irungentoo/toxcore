@@ -2,6 +2,10 @@
 #include "rendezvous.h"
 #include "network.h"
 #include "net_crypto.h"
+#ifdef ASSOC_AVAILABLE
+#include "assoc.h"
+#endif
+#include "util.h"
 
 /* network: packet id */
 #define NET_PACKET_RENDEZVOUS 8
@@ -33,16 +37,16 @@ typedef struct {
 } RendezVous_Entry;
 
 typedef struct RendezVous {
+    Assoc             *assoc;
     Networking_Core   *net;
 
     uint8_t           *self_public;
-    uint8_t           *self_secret;
-    uint64_t           publish_starttime;
     uint64_t           block_store_until;
 
+    uint64_t           timestamp;
+    uint64_t           publish_starttime;
     RendezVous_callbacks   functions;
     void                  *data;
-    uint64_t           timestamp;
     uint8_t            hash_unspecific_complete[HASHLEN];
     uint8_t            hash_specific_half[HASHLEN / 2];
 
@@ -58,16 +62,56 @@ static void publish(RendezVous *rendezvous)
     memcpy(packet.hash_specific_half, rendezvous->hash_specific_half, HASHLEN / 2);
     memcpy(packet.target_id, rendezvous->self_public, crypto_box_PUBLICKEYBYTES);
 
-    /* TODO: ask DHT_assoc for IP_Ports for client_ids "close" to hash_unspecific_complete/2 */
-    IP_Port ipport;
-    ipport.ip.family = AF_INET;
-    ipport.ip.ip4.uint32 = htonl((127 << 24) + 1);
-    ipport.port = 33445;
+#ifdef ASSOC_AVAILABLE
+    /* ask DHT_assoc for IP_Ports for client_ids "close" to hash_unspecific_complete/2 */
+    Assoc_close_nodes_simple state;
+    memset(&state, 0, sizeof(state));
+    state.close_count = 16;
+    state.close_indices = calloc(16, sizeof(*state.close_indices));
 
-    /* TODO:
-     * send to the four best verified and four random of the best 16
+    uint8_t found_cnt = Assoc_close_nodes_find(rendezvous->assoc, packet.hash_unspecific_half, &state);
+
+    if (!found_cnt) {
+#ifdef LOGGING
+        loglog("rendezvous::publish(): no nodes to send data to. :-(\n");
+#endif
+        return;
+    }
+
+    uint8_t i, sent = 0;
+
+    /* send to the four best verified and four random of the best 16
      * (requires some additions in assoc.*) */
-    sendpacket(rendezvous->net, ipport, &packet.type, sizeof(packet));
+    for (i = 0; i < found_cnt; i++)
+        if ((i < 4) || !(rand() % 4)) {
+            Client_data *entry = Assoc_client(rendezvous->assoc, state.close_indices[i]);
+
+            if (entry) {
+                IPPTsPng *assoc;
+
+                if (entry->assoc4.timestamp > entry->assoc6.timestamp)
+                    assoc = &entry->assoc4;
+                else
+                    assoc = &entry->assoc6;
+
+                sendpacket(rendezvous->net, assoc->ip_port, &packet.type, sizeof(packet));
+#ifdef LOGGING
+                sprintf(logbuffer, "rendezvous::publish(): [%u] => [%u]\n", htons(rendezvous->net->port), htons(assoc->ip_port.port));
+                loglog(logbuffer);
+#endif
+                sent++;
+            }
+        }
+
+#ifdef LOGGING
+    sprintf(logbuffer, "rendezvous::publish(): sent data to %u of %u clients.\n", sent, found_cnt);
+    loglog(logbuffer);
+#endif
+#else
+#ifdef LOGGING
+    loglog("rendezvous::publish(): No ASSOC_AVAILABLE.\n");
+#endif
+#endif
 }
 
 static void send_replies(RendezVous *rendezvous, size_t i, size_t k)
@@ -95,10 +139,10 @@ static int packet_is_wanted(RendezVous *rendezvous, RendezVousPacket *packet, ui
             uint8_t validate_out[HASHLEN];
             crypto_hash_sha512(validate_out, validate_in, sizeof(validate_in));
 
-            if (!memcmp(packet->hash_specific_half, validate_out, HASHLEN / 2))
+            if (!memcmp(packet->hash_specific_half, validate_out, HASHLEN / 2)) {
                 rendezvous->functions.found_function(rendezvous->data, packet->target_id);
-
-            return 1;
+                return 1;
+            }
         }
 
     return 0;
@@ -247,9 +291,9 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
     return 0;
 }
 
-RendezVous *rendezvous_new(DHT_assoc *dhtassoc, Networking_Core *net)
+RendezVous *rendezvous_new(Assoc *assoc, Networking_Core *net)
 {
-    if (!dhtassoc || !net)
+    if (!assoc || !net)
         return NULL;
 
     RendezVous *rendezvous = calloc(1, sizeof(*rendezvous));
@@ -257,7 +301,9 @@ RendezVous *rendezvous_new(DHT_assoc *dhtassoc, Networking_Core *net)
     if (!rendezvous)
         return NULL;
 
+    rendezvous->assoc = assoc;
     rendezvous->net = net;
+
     networking_registerhandler(net, NET_PACKET_RENDEZVOUS, rendezvous_network_handler, rendezvous);
     return rendezvous;
 }
@@ -274,13 +320,13 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
     if (!rendezvous || !text || !functions)
         return 0;
 
-    if (!rendezvous->self_public || !rendezvous->self_secret)
+    if (!rendezvous->self_public)
         return 0;
 
     if (!functions->found_function)
         return 0;
 
-    if (((timestamp % RENDEZVOUS_INTERVAL) != 0) || (timestamp < unix_time()))
+    if (((timestamp % RENDEZVOUS_INTERVAL) != 0) || (timestamp + RENDEZVOUS_INTERVAL < unix_time()))
         return 0;
 
     /*
@@ -298,7 +344,7 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
     crypto_hash_sha512(rendezvous->hash_unspecific_complete, (const unsigned char *)texttime, texttimelen);
 
     uint8_t validate_in[HASHLEN / 2 + crypto_box_PUBLICKEYBYTES];
-    memcpy(validate_in, rendezvous->hash_unspecific_complete, HASHLEN / 2);
+    memcpy(validate_in, rendezvous->hash_unspecific_complete + HASHLEN / 2, HASHLEN / 2);
     id_copy(validate_in + HASHLEN / 2, rendezvous->self_public);
 
     uint8_t validate_out[HASHLEN];
@@ -306,7 +352,12 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
     memcpy(rendezvous->hash_specific_half, validate_out, HASHLEN / 2);
 
     /* +30s: allow *some* slack in keeping the system time up to date */
-    rendezvous->publish_starttime = timestamp + 30;
+    if (timestamp < unix_time())
+        rendezvous->publish_starttime = timestamp;
+    else
+        rendezvous->publish_starttime = timestamp + 30;
+
+    rendezvous->timestamp = timestamp;
     rendezvous->functions = *functions;
     rendezvous->data = data;
     rendezvous_do(rendezvous);
@@ -328,13 +379,11 @@ void rendezvous_do(RendezVous *rendezvous)
 
         /* timed out: stop publishing? */
         if (rendezvous->timestamp < now_floored) {
-            if (!rendezvous->functions.timeout_function)
-                return;
+            rendezvous->timestamp = 0;
 
-            if (!rendezvous->functions.timeout_function(rendezvous->data))
-                return;
-
-            rendezvous->timestamp = now_floored;
+            if (rendezvous->functions.timeout_function)
+                if (rendezvous->functions.timeout_function(rendezvous->data))
+                    rendezvous->timestamp = now_floored;
         }
 
         if ((rendezvous->timestamp >= now_floored) && (rendezvous->timestamp < now_floored + RENDEZVOUS_INTERVAL)) {

@@ -11,7 +11,7 @@
  * module to facilitate ID exchange by using the network,
  * a common secret and a timestamp
  */
-typedef struct DHT_assoc DHT_assoc;
+typedef struct Assoc Assoc;
 typedef struct RendezVous RendezVous;
 
 typedef void (*RendezVous_callback_found)(void *data, uint8_t *client_id);
@@ -23,7 +23,7 @@ typedef struct {
     RendezVous_callback_timeout  timeout_function;
 } RendezVous_callbacks;
 
-RendezVous *rendezvous_new(DHT_assoc *dhtassoc, Networking_Core *net);
+RendezVous *rendezvous_new(Assoc *assoc, Networking_Core *net);
 
 void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public);
 
