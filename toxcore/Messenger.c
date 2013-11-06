@@ -1806,10 +1806,10 @@ void do_messenger(Messenger *m)
 
 #ifdef LOGGING
 
-    if (now() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
+    if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         loglog(" = = = = = = = = \n");
 
-        lastdump = now();
+        lastdump = unix_time();
         uint32_t client, last_pinged;
 
         for (client = 0; client < LCLIENT_LIST; client++) {
