@@ -36,8 +36,8 @@
 #include <libavutil/opt.h>
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <SDL.h>
-#include <SDL_thread.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_thread.h>
 #include <pthread.h>
 #include <opus/opus.h>
 
@@ -46,7 +46,9 @@
 #include "../toxrtp/toxrtp_message.h"
 #include "../toxrtp/tests/test_helper.h"
 #include "phone.h"
-#include "AV_codec.h"
+#include "toxmedia.h"
+
+SDL_Surface *screen;
 
 int display_received_frame(codec_state *cs, AVFrame *r_video_frame)
 {
@@ -89,8 +91,8 @@ struct jitter_buffer {
 struct jitter_buffer *create_queue(int capacity)
 {
     struct jitter_buffer *q;
-    q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer),1);
-    q->queue = (rtp_msg_t **)calloc((sizeof(rtp_msg_t) * capacity),1);
+    q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer), 1);
+    q->queue = (rtp_msg_t **)calloc((sizeof(rtp_msg_t) * capacity), 1);
     int i = 0;
 
     for (i = 0; i < capacity; ++i) {
@@ -475,6 +477,7 @@ int video_encoder_refresh(codec_state *cs, int bps)
         printf("opening video encoder failed\n");
         return -1;
     }
+
     return 0;
 }
 
@@ -497,7 +500,7 @@ void *encode_video_thread(void *arg)
     int numBytes;
     /* Determine required buffer size and allocate buffer */
     numBytes = avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
-    buffer = (uint8_t *)av_calloc(numBytes * sizeof(uint8_t),1);
+    buffer = (uint8_t *)av_calloc(numBytes * sizeof(uint8_t), 1);
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,
                    cs->webcam_decoder_ctx->height);
     cs->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height,
@@ -706,7 +709,7 @@ void *decode_audio_thread(void *arg)
     alcMakeContextCurrent(ctx);
     int openal_buffers = 5;
 
-    buffers = calloc(sizeof(ALuint) * openal_buffers,1);
+    buffers = calloc(sizeof(ALuint) * openal_buffers, 1);
     alGenBuffers(openal_buffers, buffers);
     alGenSources((ALuint)1, &source);
     alSourcei(source, AL_LOOPING, AL_FALSE);

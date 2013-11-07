@@ -28,7 +28,7 @@
 #define _MSI_IMPL_H_
 
 #include <inttypes.h>
-#include "../toxcore/tox.h"
+#include "tox.h"
 #include <pthread.h>
 
 #define MCBTYPE void
@@ -61,7 +61,7 @@ typedef int crypto_key;
 typedef struct msi_call_s {         /* Call info structure */
     call_state  _state;
     call_type   _type_local;
-    call_type*  _type_peer;         /* Support for conference starts with this */
+    call_type  *_type_peer;         /* Support for conference starts with this */
     uint8_t     _id[_CALL_ID_LEN];  /* Random value identifying the call */
     crypto_key  _key;               /* What is the type again? */
     uint16_t    _participants;      /* Number of participants */
@@ -76,25 +76,25 @@ typedef struct msi_session_s {
     crypto_key _key; /* The key */
 
     /* Call information/handler. ( Maybe only information? ) */
-    msi_call_t* _call;
+    msi_call_t *_call;
 
     /* Storage for message receiving */
-    struct msi_msg_s* _oldest_msg;
-    struct msi_msg_s* _last_msg; /* tail */
+    struct msi_msg_s *_oldest_msg;
+    struct msi_msg_s *_last_msg; /* tail */
 
     /*int _friend_id;*/
     tox_IP_Port _friend_id;
 
     int             _last_error_id; /* Determine the last error */
-    const uint8_t*  _last_error_str;
+    const uint8_t  *_last_error_str;
 
-    const uint8_t* _user_agent;
+    const uint8_t *_user_agent;
 
-    void* _agent_handler;   /* Pointer to an object that is handling msi */
-    void* _core_handler;    /* Pointer to networking core or to anything that
+    void *_agent_handler;   /* Pointer to an object that is handling msi */
+    void *_core_handler;    /* Pointer to networking core or to anything that
                              * should handle interaction with core/networking
                              */
-    void* _event_handler;   /* Pointer to an object which handles the events */
+    void *_event_handler;   /* Pointer to an object which handles the events */
 
     uint32_t _frequ;
     uint32_t _call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
@@ -102,15 +102,15 @@ typedef struct msi_session_s {
 
 
 
-msi_session_t* msi_init_session ( void* _core_handler, const uint8_t* _user_agent );
-int msi_terminate_session ( msi_session_t* _session );
+msi_session_t *msi_init_session ( void *_core_handler, const uint8_t *_user_agent );
+int msi_terminate_session ( msi_session_t *_session );
 
-pthread_t msi_start_main_loop ( msi_session_t* _session, uint32_t _frequms );
+pthread_t msi_start_main_loop ( msi_session_t *_session, uint32_t _frequms );
 
 /* Registering callbacks */
 
 /*void msi_register_callback_send(int (*callback) ( int, uint8_t*, uint32_t ) );*/
-void msi_register_callback_send ( int ( *callback ) ( void* _core_handler, tox_IP_Port,  uint8_t*, uint32_t ) );
+void msi_register_callback_send ( int ( *callback ) ( void *_core_handler, tox_IP_Port,  uint8_t *, uint32_t ) );
 
 /* Callbacks that handle the states */
 void msi_register_callback_call_started ( MCALLBACK );
@@ -132,14 +132,14 @@ void msi_register_callback_requ_timeout ( MCALLBACK );
 /*static int msi_handlepacket ( tox_IP_Port ip_port, uint8_t* _data, uint16_t _lenght ); */
 
 /* functions describing the usage of msi */
-int msi_invite ( msi_session_t* _session, call_type _call_type, uint32_t _timeoutms );
-int msi_hangup ( msi_session_t* _session );
+int msi_invite ( msi_session_t *_session, call_type _call_type, uint32_t _timeoutms );
+int msi_hangup ( msi_session_t *_session );
 
-int msi_answer ( msi_session_t* _session, call_type _call_type );
-int msi_cancel ( msi_session_t* _session );
-int msi_reject ( msi_session_t* _session );
+int msi_answer ( msi_session_t *_session, call_type _call_type );
+int msi_cancel ( msi_session_t *_session );
+int msi_reject ( msi_session_t *_session );
 
-int  msi_send_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
-void msi_store_msg ( msi_session_t* _session, struct msi_msg_s* _msg );
+int  msi_send_msg ( msi_session_t *_session, struct msi_msg_s *_msg );
+void msi_store_msg ( msi_session_t *_session, struct msi_msg_s *_msg );
 
 #endif /* _MSI_IMPL_H_ */

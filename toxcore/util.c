@@ -3,7 +3,7 @@
  *
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
- * 
+ *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -139,8 +139,10 @@ void loginit(uint16_t port)
     if (logfile)
         fclose(logfile);
 
-    if (!starttime)
-        starttime = now();
+    if (!starttime) {
+        unix_time_update();
+        starttime = unix_time();
+    }
 
     struct tm *tm = localtime(&starttime);
 
@@ -164,7 +166,7 @@ void loginit(uint16_t port)
 void loglog(char *text)
 {
     if (logfile) {
-        fprintf(logfile, "%4u %s", (uint32_t)(now() - starttime), text);
+        fprintf(logfile, "%4u %s", (uint32_t)(unix_time() - starttime), text);
         fflush(logfile);
 
         return;
@@ -175,7 +177,9 @@ void loglog(char *text)
     size_t len = strlen(text);
 
     if (!starttime) {
-        starttime = now();
+        unix_time_update();
+        starttime = unix_time();
+
         logbufferprelen = 1024 + len - (len % 1024);
         logbufferpredata = malloc(logbufferprelen);
         logbufferprehead = logbufferpredata;
@@ -193,7 +197,7 @@ void loglog(char *text)
         logbufferprelen = lennew;
     }
 
-    int written = sprintf(logbufferprehead, "%4u %s", (uint32_t)(now() - starttime), text);
+    int written = sprintf(logbufferprehead, "%4u %s", (uint32_t)(unix_time() - starttime), text);
     logbufferprehead += written;
 }
 

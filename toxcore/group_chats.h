@@ -63,6 +63,7 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    uint64_t last_sent_ping;
 
 } Group_Chat;
 
