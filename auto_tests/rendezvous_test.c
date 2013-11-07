@@ -13,6 +13,7 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/Messenger.h"
 #include "../toxcore/rendezvous.h"
+#include "../toxcore/assoc.h"
 
 typedef struct found {
     uint8_t found;

@@ -2,9 +2,7 @@
 #include "rendezvous.h"
 #include "network.h"
 #include "net_crypto.h"
-#ifdef ASSOC_AVAILABLE
 #include "assoc.h"
-#endif
 #include "util.h"
 
 /* network: packet id */
