@@ -70,24 +70,17 @@ START_TEST(test_meetup)
     ck_assert_msg(tox_isconnected(toxA) && tox_isconnected(toxB), "Failed to setup tox structure(s).");
 
     /* a random secret. maybe should check that the length is decent, at least 64 bytes */
-    char secret[] = "Our deepest fear is not that we are inadequate. "
-                    "Our deepest fear is that we are powerful beyond measure. "
-                    "It is our light, not our darkness that most frightens us. "
-                    "We ask ourselves, "
-                    "Who am I "
-                    "to be brilliant, gorgeous, talented, fabulous? "
-                    "Actually, who are you not to be? "
-                    "You are a child of God. "
-                    "Your playing small does not serve the world. "
-                    "There is nothing enlightened about shrinking "
-                    "so that other people won't feel insecure around you. "
-                    "We are all meant to shine, as children do. "
-                    "We were born to make manifest the glory of God that is within us. "
-                    "It's not just in some of us; it's in everyone. "
-                    "And as we let our own light shine, "
-                    "we unconsciously give other people permission to do the same. "
-                    "As we are liberated from our own fear, "
-                    "our presence automatically liberates others.";
+    char secret[] = "Twenty years from now you will be more disappointed by the things "
+                    "that you didn’t do than by the ones you did do, "
+                    "so throw off the bowlines, "
+                    "sail away from safe harbor, "
+                    "catch the trade winds in your sails. "
+                    " "
+                    "Explore, "
+                    "Dream, "
+                    "Discover. "
+                    " "
+                    "-- Mark Twain";
 
     uint64_t now = unix_time();
     uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);

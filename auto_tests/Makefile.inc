@@ -38,21 +38,12 @@ network_test_CFLAGS = $(AUTOTEST_CFLAGS)
 network_test_LDADD = $(AUTOTEST_LDADD)
 
 
-rendezvous_test_SOURCES = \
-                        ../auto_tests/rendezvous_test.c
+rendezvous_test_SOURCES = ../auto_tests/rendezvous_test.c
 
-rendezvous_test_CFLAGS = \
-                        $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS) \
-                        $(CHECK_CFLAGS)
+rendezvous_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
-rendezvous_test_LDADD = \
-                        $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
-                        libtoxcore.la \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_LIBS) \
-                        $(CHECK_LIBS)
+rendezvous_test_LDADD = $(AUTOTEST_LDADD)
+
 
 endif
 
