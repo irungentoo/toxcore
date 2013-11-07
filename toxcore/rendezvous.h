@@ -16,7 +16,7 @@ typedef struct RendezVous RendezVous;
 
 typedef void (*RendezVous_callback_found)(void *data, uint8_t *client_id);
 /* return 1 to keep publishing, 0 to stop */
-typedef int (*RendezVous_callback_timeout)(void *data);
+typedef uint8_t (*RendezVous_callback_timeout)(void *data);
 
 typedef struct {
     RendezVous_callback_found    found_function;
@@ -27,8 +27,8 @@ RendezVous *rendezvous_new(Assoc *assoc, Networking_Core *net);
 
 void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public);
 
-/* timestamp must be cut to this accuracy (5 minutes) */
-#define RENDEZVOUS_INTERVAL 300U
+/* timestamp must be cut to this accuracy (3 minutes) */
+#define RENDEZVOUS_INTERVAL 180U
 
 int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callbacks *functions,
                        void *data);

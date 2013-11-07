@@ -155,6 +155,8 @@ typedef struct {
     uint16_t invited_groups_num;
 } Friend;
 
+typedef struct RendezVous RendezVous;
+
 typedef struct Messenger {
 
     Networking_Core *net;
@@ -209,6 +211,7 @@ typedef struct Messenger {
     void (*msi_packet)(struct Messenger *m, int, uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
 
+    RendezVous *rendezvous;
 } Messenger;
 
 /* Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
@@ -496,6 +499,10 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
  */
 
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
+
+/* rendezvous */
+int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
+                 uint8_t (*timeout)(void *userdata), void *userdata);
 
 /****************FILE SENDING*****************/
 

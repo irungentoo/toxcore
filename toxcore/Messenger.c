@@ -26,6 +26,7 @@
 #endif
 
 #include "Messenger.h"
+#include "rendezvous.h"
 #include "network.h"
 #include "util.h"
 
@@ -1006,6 +1007,35 @@ static void do_allgroupchats(Messenger *m)
     }
 }
 
+/* rendezvous */
+int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
+                 uint8_t (*timeout)(void *userdata), void *userdata)
+{
+    if (!secret || !found)
+        return 0;
+
+    if (!m->rendezvous) {
+#ifdef ASSOC_AVAILABLE
+        m->rendezvous = rendezvous_new(m->dht->assoc, m->net);
+#else
+        m->rendezvous = rendezvous_new(NULL, m->net);
+#endif
+
+        if (!m->rendezvous)
+            return 0;
+
+        rendezvous_init(m->rendezvous, m->net_crypto->self_public_key);
+    }
+
+    at = at - (at % RENDEZVOUS_INTERVAL);
+
+    RendezVous_callbacks callbacks;
+    callbacks.found_function = found;
+    callbacks.timeout_function = timeout;
+
+    return rendezvous_publish(m->rendezvous, secret, at, &callbacks, userdata);
+}
+
 /****************FILE SENDING*****************/
 
 
@@ -1803,6 +1833,9 @@ void do_messenger(Messenger *m)
     do_inbound(m);
     do_allgroupchats(m);
     LANdiscovery(m);
+
+    if (m->rendezvous)
+        rendezvous_do(m->rendezvous);
 
 #ifdef LOGGING
 
