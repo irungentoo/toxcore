@@ -70,8 +70,9 @@ START_TEST(test_meetup)
     ck_assert_msg(tox_isconnected(toxA) && tox_isconnected(toxB), "Failed to setup tox structure(s).");
 
     /* a random secret. maybe should check that the length is decent, at least 64 bytes */
-    char secret[] = "Twenty years from now you will be more disappointed by the things "
-                    "that you didn’t do than by the ones you did do, "
+    char secret[] = "Twenty years from now "
+                    "you will be more disappointed by the things that you didn’t do "
+                    "than by the ones you did do, "
                     "so throw off the bowlines, "
                     "sail away from safe harbor, "
                     "catch the trade winds in your sails. "
@@ -87,7 +88,7 @@ START_TEST(test_meetup)
 
 #ifdef ASSOC_AVAILABLE
     RendezVous *rdvA = rendezvous_new(mA->dht->assoc, mA->dht->c->lossless_udp->net);
-    RendezVous *rdvB = rendezvous_new(mA->dht->assoc, mB->dht->c->lossless_udp->net);
+    RendezVous *rdvB = rendezvous_new(mB->dht->assoc, mB->dht->c->lossless_udp->net);
 #else
     RendezVous *rdvA = rendezvous_new(NULL, mA->dht->c->lossless_udp->net);
     RendezVous *rdvB = rendezvous_new(NULL, mB->dht->c->lossless_udp->net);
@@ -110,8 +111,6 @@ START_TEST(test_meetup)
     ck_assert_msg(rendezvous_publish(rdvB, secret, now_floored, &callbacks, &foundB), "B::publish() failed.");
 
     for (i = 0; i < 20; i++) {
-        rendezvous_do(rdvA);
-        rendezvous_do(rdvB);
         tox_do(toxA);
         tox_do(toxB);
         usleep(10000);
