@@ -243,6 +243,21 @@ void print_friendlist(Tox *m)
         new_lines("\tno friends! D:");
 }
 
+void print_friend_id(void *data, uint8_t *id)
+{
+    char id_str[PUB_KEY_BYTES * 2 + 1];
+    uint32_t i = 0;
+
+    for (i = 0; i < PUB_KEY_BYTES; i++)
+        sprintf(id_str + i * 2, "%02X ", id[i]);
+
+    id_str[PUB_KEY_BYTES * 2] = 0;
+
+    char msg[128];
+    sprintf(msg, "[r] Friend's id is said to be [%s].\n", id_str);
+    new_lines(msg);
+}
+
 char *format_message(Tox *m, char *message, int friendnum)
 {
     char name[TOX_MAX_NAME_LENGTH];
@@ -440,6 +455,42 @@ void line_eval(Tox *m, char *line)
                         add_filesender(m, friendnum, *posi + 1));
                 new_lines(msg);
             }
+        } else if (inpt_command == 'r') { // rendezvous: find someone by a point in time and common "secret"
+            uint64_t timestamp = time(NULL);
+            int offset = prompt_offset;
+
+            if (line[offset] == '@') {
+                /*
+                 * time: @HH:MM (hour:minute, hour > 24 = beyond midnight)
+                 * text: anything after time
+                 */
+                int hour = (line[offset + 1] - '0') * 10 + line[offset + 2] - '0';
+                int colon = line[offset + 3] == ':';
+                int minute = (line[offset + 4] - '0') * 10 + line[offset + 5] - '0';
+
+                if ((hour >= 0) && (hour <= 36) && (minute >= 0) && (minute <= 59) && colon) {
+                    /* need current hour:minute, then calc. diff and delta that on timestamp */
+                }
+
+                new_lines("[r] Date/time for rendezvous not yet supported: Using current time.");
+
+                while (line[offset] && (line[offset] != ' '))
+                    offset++;
+
+                if (line[offset] == ' ')
+                    offset++;
+
+                if (offset != prompt_offset + 7)
+                    line[offset] = 0;
+            }
+
+            if (!line[offset])
+                new_lines("[r] Input invalid: Want @time, need text.");
+            else if (tox_rendezvous(m, line + offset, timestamp, print_friend_id, NULL, NULL))
+                /* found: => print_friend_id */
+                new_lines("[r] Trying to find someone with the given secret and time.");
+            else
+                new_lines("[r] Failed to initialize rendezvous.");
         } else if (inpt_command == 'q') { //exit
             save_data(m);
             endwin();
