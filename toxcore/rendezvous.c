@@ -51,6 +51,47 @@ typedef struct RendezVous {
     RendezVous_Entry   store[RENDEZVOUS_STORE_SIZE];
 } RendezVous;
 
+/* Input:  unspecific of length HASHLEN
+ *         id of length crypto_box_PUBLICKEYBYTES
+ * Output: specific of length HASHLEN / 2
+ */
+static void hash_specific_half_calc(uint8_t *unspecific, uint8_t *id, uint8_t *specific)
+{
+    uint8_t validate_in[HASHLEN / 2 + crypto_box_PUBLICKEYBYTES];
+    memcpy(validate_in, unspecific + HASHLEN / 2, HASHLEN / 2);
+    id_copy(validate_in + HASHLEN / 2, id);
+
+    uint8_t validate_out[HASHLEN];
+    crypto_hash_sha512(validate_out, validate_in, sizeof(validate_in));
+    memcpy(specific, validate_out, HASHLEN / 2);
+}
+
+#define ADDRESS_EXTRA_BYTES (sizeof(uint32_t) + sizeof(uint16_t))
+
+/* Input:  specific of length HASHLEN / 2
+ *         extra of length ADDRESS_EXTRA_BYTES
+ * Output: modified specific
+ */
+static void hash_specific_extra_insert(uint8_t *specific, uint8_t *extra)
+{
+    size_t i;
+
+    for (i = 0; i < ADDRESS_EXTRA_BYTES; i++)
+        specific[i] ^= extra[i];
+}
+
+/* Input:  specific_calc of length HASHLEN / 2
+ *         specific_recv of length HASHLEN / 2
+ * Output: extra of length ADDRESS_EXTRA_BYTES
+ */
+static void hash_specific_extra_extract(uint8_t *specific_recv, uint8_t *specific_calc, uint8_t *extra)
+{
+    size_t i;
+
+    for (i = 0; i < ADDRESS_EXTRA_BYTES; i++)
+        extra[i] = specific_calc[i] ^ specific_recv[i];
+}
+
 static void publish(RendezVous *rendezvous)
 {
     RendezVousPacket packet;
@@ -129,16 +170,15 @@ static int packet_is_wanted(RendezVous *rendezvous, RendezVousPacket *packet, ui
 {
     if (rendezvous->timestamp == now_floored)
         if (!memcmp(packet->hash_unspecific_half, rendezvous->hash_unspecific_complete, HASHLEN / 2)) {
-            /* validate that hash matches */
-            uint8_t validate_in[HASHLEN / 2 + crypto_box_PUBLICKEYBYTES];
-            memcpy(validate_in, rendezvous->hash_unspecific_complete + HASHLEN / 2, HASHLEN / 2);
-            id_copy(validate_in + HASHLEN / 2, packet->target_id);
+            uint8_t hash_specific_half[HASHLEN / 2];
+            hash_specific_half_calc(rendezvous->hash_unspecific_complete, packet->target_id, hash_specific_half);
 
-            uint8_t validate_out[HASHLEN];
-            crypto_hash_sha512(validate_out, validate_in, sizeof(validate_in));
-
-            if (!memcmp(packet->hash_specific_half, validate_out, HASHLEN / 2)) {
-                rendezvous->functions.found_function(rendezvous->data, packet->target_id);
+            if (!memcmp(packet->hash_specific_half + ADDRESS_EXTRA_BYTES, hash_specific_half + ADDRESS_EXTRA_BYTES,
+                        HASHLEN / 2 - ADDRESS_EXTRA_BYTES)) {
+                uint8_t combined[crypto_box_PUBLICKEYBYTES + ADDRESS_EXTRA_BYTES];
+                id_copy(combined, packet->target_id);
+                hash_specific_extra_extract(packet->hash_specific_half, hash_specific_half, combined + crypto_box_PUBLICKEYBYTES);
+                rendezvous->functions.found_function(rendezvous->data, combined);
                 return 1;
             }
         }
@@ -312,8 +352,8 @@ void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public)
         rendezvous->self_public = self_public;
 }
 
-int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, RendezVous_callbacks *functions,
-                       void *data)
+int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksm, char *text, uint64_t timestamp,
+                       RendezVous_callbacks *functions, void *data)
 {
     if (!rendezvous || !text || !functions)
         return 0;
@@ -322,6 +362,9 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
         return 0;
 
     if (!functions->found_function)
+        return 0;
+
+    if (strlen(text) < 16)
         return 0;
 
     if (((timestamp % RENDEZVOUS_INTERVAL) != 0) || (timestamp + RENDEZVOUS_INTERVAL < unix_time()))
@@ -338,16 +381,11 @@ int rendezvous_publish(RendezVous *rendezvous, char *text, uint64_t timestamp, R
      */
 
     char texttime[32 + strlen(text)];
-    size_t texttimelen = sprintf(texttime, "%s@%ld", text, timestamp);
+    size_t texttimelen = sprintf(texttime, "%ld@%s", timestamp, text);
     crypto_hash_sha512(rendezvous->hash_unspecific_complete, (const unsigned char *)texttime, texttimelen);
 
-    uint8_t validate_in[HASHLEN / 2 + crypto_box_PUBLICKEYBYTES];
-    memcpy(validate_in, rendezvous->hash_unspecific_complete + HASHLEN / 2, HASHLEN / 2);
-    id_copy(validate_in + HASHLEN / 2, rendezvous->self_public);
-
-    uint8_t validate_out[HASHLEN];
-    crypto_hash_sha512(validate_out, validate_in, sizeof(validate_in));
-    memcpy(rendezvous->hash_specific_half, validate_out, HASHLEN / 2);
+    hash_specific_half_calc(rendezvous->hash_unspecific_complete, rendezvous->self_public, rendezvous->hash_specific_half);
+    hash_specific_extra_insert(rendezvous->hash_specific_half, nospam_chksm);
 
     /* +30s: allow *some* slack in keeping the system time up to date */
     if (timestamp < unix_time())

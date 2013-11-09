@@ -406,13 +406,14 @@ int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_
 int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t length);
 
 /* setup rendezvous at 'at' (internally rounded to RENDEZVOUS_INTERVAL seconds)
- * using the secret 'secret' and the given callback routine(s)
+ * using the secret 'secret' (min. length 16) and the given callback routine(s)
  *
  *  returns 1 if the setup succeeded, 0 if it failed
- *  found() will then be called when a rendezvous was successful
+ *  found() will then be called when a rendezvous was successful,
+ *     the returned friend_address is to be (TOX_)FRIEND_ADDRESS_SIZE long
  *  optionally, timeout() will be called when the timeframe of RENDEZVOUS_INTERVAL around 'at' has passed,
  *     if 1 is returned, the rendezvous is attempted anew for the next timeframe */
-int tox_rendezvous(Tox *tox, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
+int tox_rendezvous(Tox *tox, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *friend_address),
                    uint8_t (*timeout)(void *userdata), void *userdata);
 
 /****************FILE SENDING FUNCTIONS*****************/

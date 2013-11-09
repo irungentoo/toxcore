@@ -102,13 +102,21 @@ START_TEST(test_meetup)
     RendezVous_callbacks callbacks;
     callbacks.found_function = callback_found;
 
+    uint8_t idA[FRIEND_ADDRESS_SIZE];
+    getaddress(mA, idA);
+
     found foundA;
     memset(&foundA, 0, sizeof(foundA));
-    ck_assert_msg(rendezvous_publish(rdvA, secret, now_floored, &callbacks, &foundA), "A::publish() failed.");
+    ck_assert_msg(rendezvous_publish(rdvA, idA + CLIENT_ID_SIZE, secret, now_floored, &callbacks, &foundA),
+                  "A::publish() failed.");
+
+    uint8_t idB[FRIEND_ADDRESS_SIZE];
+    getaddress(mB, idB);
 
     found foundB;
     memset(&foundB, 0, sizeof(foundB));
-    ck_assert_msg(rendezvous_publish(rdvB, secret, now_floored, &callbacks, &foundB), "B::publish() failed.");
+    ck_assert_msg(rendezvous_publish(rdvB, idB + CLIENT_ID_SIZE, secret, now_floored, &callbacks, &foundB),
+                  "B::publish() failed.");
 
     for (i = 0; i < 20; i++) {
         tox_do(toxA);

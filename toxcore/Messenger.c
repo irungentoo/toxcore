@@ -1033,7 +1033,9 @@ int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *us
     callbacks.found_function = found;
     callbacks.timeout_function = timeout;
 
-    return rendezvous_publish(m->rendezvous, secret, at, &callbacks, userdata);
+    uint8_t id[FRIEND_ADDRESS_SIZE];
+    getaddress(m, id);
+    return rendezvous_publish(m->rendezvous, id + CLIENT_ID_SIZE, secret, at, &callbacks, userdata);
 }
 
 /****************FILE SENDING*****************/
