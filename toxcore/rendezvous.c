@@ -34,6 +34,9 @@ typedef struct {
     uint64_t           sent_at;
 } RendezVous_Entry;
 
+/* somewhat defined in messenger.c, but don't want to pull in all that sh*t */
+#define ADDRESS_EXTRA_BYTES (sizeof(uint32_t) + sizeof(uint16_t))
+
 typedef struct RendezVous {
     Assoc             *assoc;
     Networking_Core   *net;
@@ -47,6 +50,8 @@ typedef struct RendezVous {
     void                  *data;
     uint8_t            hash_unspecific_complete[HASHLEN];
     uint8_t            hash_specific_half[HASHLEN / 2];
+
+    uint8_t            found[crypto_box_PUBLICKEYBYTES + ADDRESS_EXTRA_BYTES];
 
     RendezVous_Entry   store[RENDEZVOUS_STORE_SIZE];
 } RendezVous;
@@ -65,8 +70,6 @@ static void hash_specific_half_calc(uint8_t *unspecific, uint8_t *id, uint8_t *s
     crypto_hash_sha512(validate_out, validate_in, sizeof(validate_in));
     memcpy(specific, validate_out, HASHLEN / 2);
 }
-
-#define ADDRESS_EXTRA_BYTES (sizeof(uint32_t) + sizeof(uint16_t))
 
 /* Input:  specific of length HASHLEN / 2
  *         extra of length ADDRESS_EXTRA_BYTES
@@ -168,17 +171,21 @@ static void send_replies(RendezVous *rendezvous, size_t i, size_t k)
 
 static int packet_is_wanted(RendezVous *rendezvous, RendezVousPacket *packet, uint64_t now_floored)
 {
+    /* only if we're currently searching */
     if (rendezvous->timestamp == now_floored)
         if (!memcmp(packet->hash_unspecific_half, rendezvous->hash_unspecific_complete, HASHLEN / 2)) {
+            if (id_equal(rendezvous->found, packet->target_id))
+                return 1;
+
             uint8_t hash_specific_half[HASHLEN / 2];
             hash_specific_half_calc(rendezvous->hash_unspecific_complete, packet->target_id, hash_specific_half);
 
             if (!memcmp(packet->hash_specific_half + ADDRESS_EXTRA_BYTES, hash_specific_half + ADDRESS_EXTRA_BYTES,
                         HASHLEN / 2 - ADDRESS_EXTRA_BYTES)) {
-                uint8_t combined[crypto_box_PUBLICKEYBYTES + ADDRESS_EXTRA_BYTES];
-                id_copy(combined, packet->target_id);
-                hash_specific_extra_extract(packet->hash_specific_half, hash_specific_half, combined + crypto_box_PUBLICKEYBYTES);
-                rendezvous->functions.found_function(rendezvous->data, combined);
+                id_copy(rendezvous->found, packet->target_id);
+                hash_specific_extra_extract(packet->hash_specific_half, hash_specific_half,
+                                            rendezvous->found + crypto_box_PUBLICKEYBYTES);
+                rendezvous->functions.found_function(rendezvous->data, rendezvous->found);
                 return 1;
             }
         }
@@ -420,13 +427,20 @@ void rendezvous_do(RendezVous *rendezvous)
             if (rendezvous->functions.timeout_function)
                 if (rendezvous->functions.timeout_function(rendezvous->data))
                     rendezvous->timestamp = now_floored;
+
+#ifdef LOGGING
+
+            if (!rendezvous->timestamp)
+                loglog("rendezvous: timed out.\n");
+
+#endif
         }
 
         if ((rendezvous->timestamp >= now_floored) && (rendezvous->timestamp < now_floored + RENDEZVOUS_INTERVAL)) {
             publish(rendezvous);
 
-            /* on average, publish once a minute */
-            rendezvous->publish_starttime = now + 45 + rand() % 30;
+            /* on average, publish about once per 45 seconds */
+            rendezvous->publish_starttime = now + 35 + rand() % 20;
         }
     }
 }

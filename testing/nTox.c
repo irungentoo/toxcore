@@ -54,9 +54,9 @@ char lines[HISTORY][STRING_LENGTH];
 char input_line[STRING_LENGTH];
 
 char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
-             "(to send message)\n/s status (to change status)\n[i] /l list (l"
+             "(to send message)\n/s status (to change status)\n/l list (l"
              "ist friends)\n/h for help\n/i for info\n/n nick (to change nick"
-             "name)\n/q (to quit)";
+             "name)\n/r (to set up a rendezvous)\n/q (to quit)";
 int x, y;
 
 typedef struct {
@@ -243,19 +243,25 @@ void print_friendlist(Tox *m)
         new_lines("\tno friends! D:");
 }
 
-void print_friend_id(void *data, uint8_t *id)
+void rendezvous_found(void *data, uint8_t *id)
 {
-    char id_str[PUB_KEY_BYTES * 2 + 1];
+    char id_str[TOX_FRIEND_ADDRESS_SIZE * 2 + 1];
     uint32_t i = 0;
 
-    for (i = 0; i < PUB_KEY_BYTES; i++)
+    for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; i++)
         sprintf(id_str + i * 2, "%02X ", id[i]);
 
-    id_str[PUB_KEY_BYTES * 2] = 0;
+    id_str[TOX_FRIEND_ADDRESS_SIZE * 2] = 0;
 
-    char msg[128];
-    sprintf(msg, "[r] Friend's id is said to be [%s].\n", id_str);
+    char msg[TOX_FRIEND_ADDRESS_SIZE * 2 + 64];
+    sprintf(msg, "[r] Friend's id is said to be [%s].", id_str);
     new_lines(msg);
+}
+
+uint8_t rendezvous_timeout(void *data)
+{
+    new_lines("[r] Rendezvous timeframe exceeded, not looking further.");
+    return 0;
 }
 
 char *format_message(Tox *m, char *message, int friendnum)
@@ -459,7 +465,16 @@ void line_eval(Tox *m, char *line)
             uint64_t timestamp = time(NULL);
             int offset = prompt_offset;
 
+            if (strlen(line) - offset < 16) {
+                new_lines("[r] To set up a rendezvous, use: /r @HH:MM The passphrase you agreed upon.\n"
+                          "    e.g.: /r @03:45 The quick brown fox jumps over the lazy dog.\n"
+                          "    Hours continue beyond midnight up to 35:59 (11:59am tomorrow).\n"
+                          "    Minutes are rounded down to three minutes of exactness.");
+                return;
+            }
+
             if (line[offset] == '@') {
+#ifndef WIN32
                 /*
                  * time: @HH:MM (hour:minute, hour > 24 = beyond midnight)
                  * text: anything after time
@@ -468,10 +483,29 @@ void line_eval(Tox *m, char *line)
                 int colon = line[offset + 3] == ':';
                 int minute = (line[offset + 4] - '0') * 10 + line[offset + 5] - '0';
 
-                if ((hour >= 0) && (hour <= 36) && (minute >= 0) && (minute <= 59) && colon) {
+                if ((hour >= 0) && (hour <= 35) && (minute >= 0) && (minute <= 59) && colon) {
                     /* need current hour:minute, then calc. diff and delta that on timestamp */
+                    time_t now1 = time(NULL);
+                    struct tm *now2 = localtime(&now1);
+                    int delta = hour * 60 + minute - (now2->tm_hour * 60 + now2->tm_min);
+
+                    if  (delta < 0) {
+                        new_lines("[r] Date/time for rendezvous lies in the past: Not doing anything.");
+                        return;
+                    }
+
+                    char msg[256];
+                    sprintf(msg, "[r] [DBG] Now: %02i:%02i, target: %02i:%02i, delta: %i.", now2->tm_hour, now2->tm_min, hour, minute,
+                            delta);
+                    new_lines(msg);
+
+                    timestamp += delta * 60;
+                } else {
+                    new_lines("[r] Date/time input wasn't in the expected format: Not doing anything.");
+                    return;
                 }
 
+#else
                 new_lines("[r] Date/time for rendezvous not yet supported: Using current time.");
 
                 while (line[offset] && (line[offset] != ' '))
@@ -482,11 +516,13 @@ void line_eval(Tox *m, char *line)
 
                 if (offset != prompt_offset + 7)
                     line[offset] = 0;
+
+#endif
             }
 
             if (!line[offset])
-                new_lines("[r] Input invalid: Want @time, need text.");
-            else if (tox_rendezvous(m, line + offset, timestamp, print_friend_id, NULL, NULL))
+                new_lines("[r] Input invalid: Want @time, need text (at least 16 characters).");
+            else if (tox_rendezvous(m, line + offset, timestamp, rendezvous_found, rendezvous_timeout, NULL))
                 /* found: => print_friend_id */
                 new_lines("[r] Trying to find someone with the given secret and time.");
             else
@@ -509,13 +545,37 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
     strcpy(output, input);
     size_t i, len = strlen(output);
 
-    for (i = line_width; i < len; i = i + line_width) {
-        while (output[i] != ' ' && i != 0) {
-            i--;
+    int len_cur = 0;
+    size_t start_cur = 0;
+    size_t space_last = 0;
+
+    for (i = 0; i < len; i++) {
+        if (output[i] == '\n') {
+            /* embedded newline: start new line */
+            start_cur = i;
+            len_cur = 0;
+            continue;
         }
 
-        if (i > 0) {
-            output[i] = '\n';
+        len_cur++;
+
+        if (len_cur < line_width) {
+            /* not at the limit yet: note down space pos */
+            if (output[i] == ' ')
+                space_last = i;
+        } else {
+            /* at the limit (or beyond) */
+            if (space_last > start_cur) {
+                /* got a space somewhere: use it */
+                output[space_last] = '\n';
+                len_cur = i - space_last;
+                start_cur = space_last + 1;
+            } else if (output[i] == ' ') {
+                /* break at the next space, whenever */
+                output[i] = '\n';
+                len_cur = 0;
+                start_cur = i;
+            }
         }
     }
 }
