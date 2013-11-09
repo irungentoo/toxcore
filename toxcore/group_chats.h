@@ -67,6 +67,10 @@ typedef struct Group_Chat {
 
 } Group_Chat;
 
+#define GROUP_CHAT_PING 0
+#define GROUP_CHAT_NEW_PEER 16
+#define GROUP_CHAT_CHAT_MESSAGE 64
+
 /* Copy the name of peernum to name.
  * name must be at least MAX_NICK_BYTES long.
  *
