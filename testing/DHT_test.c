@@ -52,6 +52,8 @@
 
 #define PORT 33445
 
+uint8_t zeroes_cid[CLIENT_ID_SIZE];
+
 void print_client_id(uint8_t * client_id)
 {
     uint32_t j;
@@ -96,9 +98,10 @@ void print_clientlist(DHT *dht)
 {
     uint32_t i;
     printf("___________________CLOSE________________________________\n");
-
     for (i = 0; i < LCLIENT_LIST; i++) {
         Client_data *client = &dht->close_clientlist[i];
+        if(memcmp(client->client_id, zeroes_cid, CLIENT_ID_SIZE) == 0)
+            continue;
         printf("ClientID: ");
         print_client_id(client->client_id);
 
@@ -126,6 +129,8 @@ void print_friendlist(DHT *dht)
 
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
             Client_data *client = &dht->friends_list[k].client_list[i];
+            if(memcmp(client->client_id, zeroes_cid, CLIENT_ID_SIZE) == 0)
+                continue;
             printf("ClientID: ");
             print_client_id(client->client_id);
 

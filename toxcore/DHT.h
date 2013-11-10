@@ -230,6 +230,13 @@ uint32_t DHT_size(DHT *dht);
 /* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data);
 
+/* Load the DHT from data of size size.
+ *
+ *  return -1 if failure.
+ *  return 0 if success.
+ */
+int DHT_load(DHT *dht, uint8_t *data, uint32_t length);
+
 /* Initialize DHT. */
 DHT *new_DHT(Net_Crypto *c);
 

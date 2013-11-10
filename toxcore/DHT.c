@@ -812,7 +812,8 @@ static uint8_t sent_getnode_to_node(DHT *dht, uint8_t *client_id, IP_Port node_i
 }
 
 /* Function is needed in following functions. */
-static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, Node_format *list, uint16_t num_nodes);
+static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, uint8_t *queried_client_id, Node_format *list,
+                                      uint16_t num_nodes);
 
 static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, uint32_t length,
                                  size_t node_format_size, uint8_t *plain, uint16_t plain_length, uint32_t *num_nodes_out, Node_format *sendback_node)
@@ -891,7 +892,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
             ipport_copy(&nodes_list[i].ip_port, &ipp);
         }
 
-    send_hardening_getnode_res(dht, &sendback_node, nodes_list, num_nodes);
+    send_hardening_getnode_res(dht, &sendback_node, packet + 1, nodes_list, num_nodes);
     return 0;
 }
 
@@ -910,7 +911,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
 
     Node_format *nodes_list = (Node_format *)(plain);
     uint32_t i;
-    send_hardening_getnode_res(dht, &sendback_node, nodes_list, num_nodes);
+    send_hardening_getnode_res(dht, &sendback_node, packet + 1, nodes_list, num_nodes);
 
     for (i = 0; i < num_nodes; i++)
         if (ipport_isset(&nodes_list[i].ip_port)) {
@@ -1579,15 +1580,17 @@ static int send_hardening_getnode_req(DHT *dht, Node_format *dest, Node_format *
 }
 
 /* Send a get node hardening response */
-static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, Node_format *list, uint16_t num_nodes)
+static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, uint8_t *queried_client_id, Node_format *list,
+                                      uint16_t num_nodes)
 {
     if (!ip_isset(&sendto->ip_port.ip))
         return -1;
 
     uint8_t packet[MAX_DATA_SIZE];
-    uint8_t data[1 + num_nodes * sizeof(Node_format)];
+    uint8_t data[1 + CLIENT_ID_SIZE + num_nodes * sizeof(Node_format)];
     data[0] = CHECK_TYPE_GETNODE_RES;
-    memcpy(data + 1, list, num_nodes * sizeof(Node_format));
+    memcpy(data + 1, queried_client_id, CLIENT_ID_SIZE);
+    memcpy(data + 1 + CLIENT_ID_SIZE, list, num_nodes * sizeof(Node_format));
     int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, sendto->client_id, data,
                              sizeof(data), CRYPTO_PACKET_HARDENING);
 
@@ -1676,10 +1679,13 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
         }
 
         case CHECK_TYPE_GETNODE_RES: {
-            if ((length - 1) % sizeof(Node_format) != 0)
+            if (length <= CLIENT_ID_SIZE + 1)
                 return 1;
 
-            uint16_t num = (length - 1) / sizeof(Node_format);
+            if ((length - 1 - CLIENT_ID_SIZE) % sizeof(Node_format) != 0)
+                return 1;
+
+            uint16_t num = (length - 1 - CLIENT_ID_SIZE) / sizeof(Node_format);
 
             /* TODO: MAX_SENT_NODES nodes should be returned at all times
              (right now we have a small network size so it could cause problems for testing and etc..) */
@@ -1687,14 +1693,14 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
                 return 1;
 
             Node_format nodes[num];
-            memcpy(nodes, packet + 1, sizeof(Node_format)*num);
+            memcpy(nodes, packet + 1 + CLIENT_ID_SIZE, sizeof(Node_format)*num);
 
             /* NOTE: This should work for now but should be changed to something better. */
             if (have_nodes_closelist(dht, nodes, num, nodes[0].ip_port.ip.family) < (num + 1) / 2)
                 return 1;
 
 
-            IPPTsPng *temp = get_closelist_IPPTsPng(dht, source_pubkey, source.ip.family);
+            IPPTsPng *temp = get_closelist_IPPTsPng(dht, packet + 1, nodes[0].ip_port.ip.family);
 
             if (temp == NULL)
                 return 1;
@@ -1765,12 +1771,15 @@ void do_hardening(DHT *dht)
                 if (!ipport_isset(&rand_node.ip_port))
                     continue;
 
+                if (id_equal(client_id, rand_node.client_id))
+                    continue;
+
                 Node_format to_test;
                 to_test.ip_port = cur_iptspng->ip_port;
                 memcpy(to_test.client_id, client_id, CLIENT_ID_SIZE);
 
                 //TODO: The search id should maybe not be ours?
-                if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->c->self_public_key) != -1) {
+                if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->c->self_public_key) > 0) {
                     memcpy(cur_iptspng->hardening.send_nodes_pingedid, rand_node.client_id, CLIENT_ID_SIZE);
                     cur_iptspng->hardening.send_nodes_timestamp = unix_time();
                 }
@@ -1973,7 +1982,7 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load_new(DHT *dht, uint8_t *data, uint32_t length)
+int DHT_load(DHT *dht, uint8_t *data, uint32_t length)
 {
     uint32_t cookie_len = sizeof(uint32_t);
 
