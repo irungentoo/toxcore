@@ -51,12 +51,42 @@
 #endif
 
 char lines[HISTORY][STRING_LENGTH];
+uint8_t flag[HISTORY];
 char input_line[STRING_LENGTH];
 
-char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
-             "(to send message)\n/s status (to change status)\n[i] /l list (l"
-             "ist friends)\n/h for help\n/i for info\n/n nick (to change nick"
-             "name)\n/q (to quit)";
+/* wrap: continuation mark */
+const size_t wrap_cont_len = 3;
+const char wrap_cont_str[] = "\n+ ";
+
+/* documented: fdmnlsahxgiztq */
+/* undocumented: d (tox_do()) */
+
+/* 221 characters */
+char *help_main =
+    "[i] Available main commands:\n+ "
+    "/x (to print one's own id)|"
+    "/s status (to change status, e.g. AFK)|"
+    "/n nick (to change your nickname)|"
+    "/q (to quit)|"
+    "/h friend (for friend related commands)|"
+    "/h group (for group related commands)";
+
+/* 229 characters */
+char *help_friend =
+    "[i] Available friend commands:\n+ "
+    "/l list (to list friends)|"
+    "/f ID (to send a friend request)|"
+    "/a request no. (to accept a friend request)|"
+    "/m friend no. message (to send a message)|"
+    "/t friend no. filename (to send a file to a friend)";
+
+/* 166 characters */
+char *help_group =
+    "[i] Available group commands:\n+ "
+    "/g (to create a new group)|"
+    "/i friend no. group no. (to invite a friend to a group)|"
+    "/z group no. message (to send a message to a group)";
+
 int x, y;
 
 typedef struct {
@@ -207,18 +237,28 @@ void get_id(Tox *m, char *data)
     }
 }
 
-void new_lines(char *line)
+void new_lines_mark(char *line, uint8_t special)
 {
     int i = 0;
 
-    for (i = HISTORY - 1; i > 0; i--)
+    for (i = HISTORY - 1; i > 0; i--) {
         strncpy(lines[i], lines[i - 1], STRING_LENGTH - 1);
+        flag[i] = flag[i - 1];
+    }
 
     strncpy(lines[0], line, STRING_LENGTH - 1);
+    flag[i] = special;
+
     do_refresh();
 }
 
+void new_lines(char *line)
+{
+    new_lines_mark(line, 0);
+}
 
+
+const char ptrn_friend[] = "[i] Friend: %s\n+ id: %i";
 void print_friendlist(Tox *m)
 {
     char name[TOX_MAX_NAME_LENGTH];
@@ -226,13 +266,13 @@ void print_friendlist(Tox *m)
     new_lines("[i] Friend List:");
 
     while (tox_getname(m, i, (uint8_t *)name) != -1) {
-        /* account for the longest name and the longest "base" string */
-        char fstring[TOX_MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
+        /* account for the longest name and the longest "base" string and number (int) */
+        char fstring[TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21];
 
         if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
+            sprintf(fstring, ptrn_friend, "No name?", i);
         } else {
-            sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t *)name, i);
+            sprintf(fstring, ptrn_friend, (uint8_t *)name, i);
         }
 
         i++;
@@ -240,7 +280,7 @@ void print_friendlist(Tox *m)
     }
 
     if (i == 0)
-        new_lines("\tno friends! D:");
+        new_lines("+ no friends! D:");
 }
 
 char *format_message(Tox *m, char *message, int friendnum)
@@ -329,7 +369,6 @@ void line_eval(Tox *m, char *line)
             }
 
             new_lines(numstring);
-            do_refresh();
         } else if (inpt_command == 'd') {
             tox_do(m);
         } else if (inpt_command == 'm') { //message command: /m friendnumber messsage
@@ -400,10 +439,18 @@ void line_eval(Tox *m, char *line)
                     new_lines(numchar);
                 }
             }
-
-            do_refresh();
         } else if (inpt_command == 'h') { //help
-            new_lines(help);
+            if (line[2] == ' ') {
+                if (line[3] == 'f') {
+                    new_lines_mark(help_friend, 1);
+                    return;
+                } else if (line[3] == 'g') {
+                    new_lines_mark(help_group, 1);
+                    return;
+                }
+            }
+
+            new_lines_mark(help_main, 1);
         } else if (inpt_command == 'x') { //info
             char idstring[200];
             get_id(m, idstring);
@@ -453,20 +500,132 @@ void line_eval(Tox *m, char *line)
     }
 }
 
+/* basic wrap, ignores embedded '\t', '\n' or '|' */
 void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
 {
     strcpy(output, input);
-    size_t i, len = strlen(output);
+    size_t i, k, m, len = strlen(output);
 
     for (i = line_width; i < len; i = i + line_width) {
-        while (output[i] != ' ' && i != 0) {
-            i--;
+        /* look backward for a space to turn into a new line */
+        k = i;
+        m = i - line_width;
+
+        while (output[k] != ' ' && k > m) {
+            k--;
         }
 
-        if (i > 0) {
-            output[i] = '\n';
+        if (k > 0) {
+            /* replace and set as new line start */
+            output[k] = '\n';
+            i = k + 1;
+        } else {
+            /* nothing found backwards: look forward */
+            while ((i < len) && (output[i] != ' '))
+                i++;
+
+            if (i < len)
+                output[i] = '\n';
         }
     }
+}
+
+/*
+ * extended wrap, honors '\n', accepts '|' as "break here when necessary"
+ * marks wrapped lines with "+ " in front, which does expand output
+ * does NOT honor '\t': would require a lot more work (and tab width isn't always 8)
+ */
+void wrap_bars(char output[STRING_LENGTH], char input[STRING_LENGTH], size_t line_width)
+{
+    size_t len = strlen(input);
+    size_t ipos, opos = 0;
+    size_t bar_avail = 0, space_avail = 0, nl_got = 0;   /* in opos */
+
+    for (ipos = 0; ipos < len; ipos++) {
+        if (opos - nl_got < line_width) {
+            /* not yet at the limit */
+            char c = input[ipos];
+
+            if (c == ' ')
+                space_avail = opos;
+
+            output[opos++] = input[ipos];
+
+            if (opos >= STRING_LENGTH) {
+                opos = STRING_LENGTH - 1;
+                break;
+            }
+
+            if (c == '|') {
+                output[opos - 1] = ' ';
+                bar_avail = opos;
+
+                if (opos + 2 >= STRING_LENGTH) {
+                    opos = STRING_LENGTH - 1;
+                    break;
+                }
+
+                output[opos++] = '|';
+                output[opos++] = ' ';
+            }
+
+            if (c == '\n')
+                nl_got = opos;
+
+            continue;
+        } else {
+            /* at the limit */
+            if (bar_avail > nl_got) {
+                /* overwrite */
+                memcpy(output + bar_avail - 1, wrap_cont_str, wrap_cont_len);
+                nl_got = bar_avail;
+
+                ipos--;
+                continue;
+            }
+
+            if (space_avail > nl_got) {
+                if (opos + wrap_cont_len - 1 >= STRING_LENGTH) {
+                    opos = STRING_LENGTH - 1;
+                    break;
+                }
+
+                /* move forward by 2 characters */
+                memmove(output + space_avail + 3, output + space_avail + 1, opos - (space_avail + 1));
+                memcpy(output + space_avail, wrap_cont_str, wrap_cont_len);
+                nl_got = space_avail + 1;
+
+                opos += 2;
+                ipos--;
+                continue;
+            }
+
+            char c = input[ipos];
+
+            if ((c == '|') || (c == ' ') || (c == '\n')) {
+                if (opos + wrap_cont_len >= STRING_LENGTH) {
+                    opos = STRING_LENGTH - 1;
+                    break;
+                }
+
+                memcpy(output + opos, wrap_cont_str, wrap_cont_len);
+
+                nl_got = opos;
+                opos += wrap_cont_len;
+            }
+
+            output[opos++] = input[ipos];
+
+            if (opos >= STRING_LENGTH) {
+                opos = STRING_LENGTH - 1;
+                break;
+            }
+
+            continue;
+        }
+    }
+
+    output[opos] = 0;
 }
 
 int count_lines(char *string)
@@ -502,7 +661,11 @@ void do_refresh()
     int i;
 
     for (i = 0; i < HISTORY; i++) {
-        wrap(wrap_output, lines[i], x);
+        if (flag[i])
+            wrap_bars(wrap_output, lines[i], x);
+        else
+            wrap(wrap_output, lines[i], x);
+
         L = count_lines(wrap_output);
         count = count + L;
 
@@ -635,18 +798,21 @@ static int load_data_or_init(Tox *m, char *path)
     return 0;
 }
 
-void print_help(void)
+void print_help(char *prog_name)
 {
     printf("nTox %.1f - Command-line tox-core client\n", 0.1);
-    puts("Options:");
-    puts("\t-h\t-\tPrint this help and exit.");
-    puts("\t-f\t-\tSpecify a keyfile to read (or write to) from.");
+    printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile]\n", prog_name);
+
+    puts("Options: (order IS relevant)");
+    puts("  --ipv4 / --ipv6 [Optional] Support IPv4 only or IPv4 & IPv6.");
+    puts("  IP PORT KEY     [REQUIRED] A server to connect to (IP/Port) and its key.");
+    puts("  -f keyfile      [Optional] Specify a keyfile to read from and write to.");
 }
 
 void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *userdata)
 {
     char msg[256];
-    sprintf(msg, "[i] recieved group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
+    sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
             tox_join_groupchat(m, friendnumber, group_public_key));
     new_lines(msg);
 }
@@ -713,7 +879,12 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
 int main(int argc, char *argv[])
 {
     if (argc < 4) {
-        printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile]\n", argv[0]);
+        if ((argc == 2) && !strcmp(argv[1], "-h")) {
+            print_help(argv[0]);
+            exit(0);
+        }
+
+        printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile] (or %s -h for help)\n", argv[0], argv[0]);
         exit(0);
     }
 
@@ -729,11 +900,6 @@ int main(int argc, char *argv[])
     char *filename = "data";
     char idstring[200] = {0};
     Tox *m;
-
-    if ((argc == 2) && !strcmp(argv[1], "-h")) {
-        print_help();
-        exit(0);
-    }
 
     /* [-f keyfile] MUST be last two arguments, no point in walking over the list
      * especially not a good idea to accept it anywhere in the middle */
