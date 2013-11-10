@@ -45,4 +45,16 @@ to us then it is good.
 
 Problems with this: People don't always have at least one online friend.
 
-2. ...
+2. Pick random nodes (add ourselves some random (fake) friends to increase the 
+pool of available nodes) and make then send requests to other nodes, the 
+response is then relayed back to us and compared to how the node should have 
+behaved. If the node is found to be behaving correctly, it is set as trusted. 
+Only trusted nodes are sent in send node packets, that is unless the exact node 
+being queried for in the getnode packet is present, it will be sent in the 
+sendnode packet even if it is not trusted.
+
+The hypothesis is that if to be part of the network nodes have to behave 
+correctly it should prevent disruption from nodes that behave incorrectly.
+
+(This idea is currently being implemented in the harden branch.)
+...

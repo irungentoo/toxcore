@@ -63,8 +63,13 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    uint64_t last_sent_ping;
 
 } Group_Chat;
+
+#define GROUP_CHAT_PING 0
+#define GROUP_CHAT_NEW_PEER 16
+#define GROUP_CHAT_CHAT_MESSAGE 64
 
 /* Copy the name of peernum to name.
  * name must be at least MAX_NICK_BYTES long.

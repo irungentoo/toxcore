@@ -868,13 +868,36 @@ int m_group_peername(Messenger *m, int groupnumber, int peernumber, uint8_t *nam
 
     return group_peername(m->chats[groupnumber], peernumber, name);
 }
+
+/* Store the fact that we invited a specific friend.
+ */
+static void group_store_friendinvite(Messenger *m, int friendnumber, int groupnumber)
+{
+    /* Add 1 to the groupchat number because 0 (default value in invited_groups) is a valid groupchat number */
+    m->friendlist[friendnumber].invited_groups[m->friendlist[friendnumber].invited_groups_num % MAX_INVITED_GROUPS] =
+        groupnumber + 1;
+    ++m->friendlist[friendnumber].invited_groups_num;
+}
+
 /* return 1 if that friend was invited to the group
  * return 0 if the friend was not or error.
  */
 static uint8_t group_invited(Messenger *m, int friendnumber, int groupnumber)
 {
-    //TODO: this function;
-    return 1;
+
+    uint32_t i;
+    uint16_t num = MAX_INVITED_GROUPS;
+
+    if (MAX_INVITED_GROUPS > m->friendlist[friendnumber].invited_groups_num)
+        num = m->friendlist[friendnumber].invited_groups_num;
+
+    for (i = 0; i < num; ++i) {
+        if (m->friendlist[friendnumber].invited_groups[i] == groupnumber + 1) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 /* invite friendnumber to groupnumber
@@ -892,7 +915,8 @@ int invite_friend(Messenger *m, int friendnumber, int groupnumber)
     if (m->friendlist[friendnumber].status == NOFRIEND || m->chats[groupnumber] == NULL)
         return -1;
 
-    //TODO: store invited friends.
+    group_store_friendinvite(m, friendnumber, groupnumber);
+
     if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, m->chats[groupnumber]->self_public_key,
                              crypto_box_PUBLICKEYBYTES) == 0)
         return -1;
@@ -1782,10 +1806,10 @@ void do_messenger(Messenger *m)
 
 #ifdef LOGGING
 
-    if (now() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
+    if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         loglog(" = = = = = = = = \n");
 
-        lastdump = now();
+        lastdump = unix_time();
         uint32_t client, last_pinged;
 
         for (client = 0; client < LCLIENT_LIST; client++) {
