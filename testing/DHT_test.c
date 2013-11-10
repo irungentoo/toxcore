@@ -52,6 +52,29 @@
 
 #define PORT 33445
 
+void print_client_id(uint8_t * client_id)
+{
+    uint32_t j;
+    for (j = 0; j < CLIENT_ID_SIZE; j++) {
+        printf("%02hhX", client_id[j]);
+    }
+}
+
+void print_hardening(Hardening *h)
+{
+    printf("Hardening:\n");
+    printf("routes_requests_ok: %hhu\n", h->routes_requests_ok);
+    printf("routes_requests_timestamp: %llu\n", (long long unsigned int)h->routes_requests_timestamp);
+    printf("routes_requests_pingedid: "); print_client_id(h->routes_requests_pingedid);
+    printf("\nsend_nodes_ok: %hhu\n", h->send_nodes_ok);
+    printf("send_nodes_timestamp: %llu\n", (long long unsigned int)h->send_nodes_timestamp);
+    printf("send_nodes_pingedid: "); print_client_id(h->send_nodes_pingedid);
+    printf("\ntesting_requests: %hhu\n", h->testing_requests);
+    printf("testing_timestamp: %llu\n", (long long unsigned int)h->testing_timestamp);
+    printf("testing_pingedid: "); print_client_id(h->testing_pingedid);
+    printf("\n\n");
+}
+
 void print_assoc(IPPTsPng *assoc, uint8_t ours)
 {
     IP_Port *ipp = &assoc->ip_port;
@@ -65,20 +88,19 @@ void print_assoc(IPPTsPng *assoc, uint8_t ours)
     else
         printf("RET IP: %s Port: %u\n", ip_ntoa(&ipp->ip), ntohs(ipp->port));
     printf("Timestamp: %llu\n", (long long unsigned int) assoc->ret_timestamp);
+    print_hardening(&assoc->hardening);
+    
 }
 
 void print_clientlist(DHT *dht)
 {
-    uint32_t i, j;
+    uint32_t i;
     printf("___________________CLOSE________________________________\n");
 
     for (i = 0; i < LCLIENT_LIST; i++) {
         Client_data *client = &dht->close_clientlist[i];
         printf("ClientID: ");
-
-        for (j = 0; j < CLIENT_ID_SIZE; j++) {
-            printf("%02hhX", client->client_id[j]);
-        }
+        print_client_id(client->client_id);
 
         print_assoc(&client->assoc4, 1);
         print_assoc(&client->assoc6, 1);
@@ -87,7 +109,7 @@ void print_clientlist(DHT *dht)
 
 void print_friendlist(DHT *dht)
 {
-    uint32_t i, j, k;
+    uint32_t i, k;
     IP_Port p_ip;
     printf("_________________FRIENDS__________________________________\n");
 
@@ -95,9 +117,7 @@ void print_friendlist(DHT *dht)
         printf("FRIEND %u\n", k);
         printf("ID: ");
 
-        for (j = 0; j < CLIENT_ID_SIZE; j++) {
-            printf("%c", dht->friends_list[k].client_id[j]);
-        }
+        print_client_id(dht->friends_list[k].client_id);
 
         int friendok = DHT_getfriendip(dht, dht->friends_list[k].client_id, &p_ip);
         printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip), ntohs(p_ip.port), friendok);
@@ -107,13 +127,7 @@ void print_friendlist(DHT *dht)
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
             Client_data *client = &dht->friends_list[k].client_list[i];
             printf("ClientID: ");
-
-            for (j = 0; j < CLIENT_ID_SIZE; j++) {
-                if (client->client_id[j] < 16)
-                    printf("0");
-
-                printf("%hhX", client->client_id[j]);
-            }
+            print_client_id(client->client_id);
 
             print_assoc(&client->assoc4, 0);
             print_assoc(&client->assoc6, 0);

@@ -1706,7 +1706,7 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
                 return 1;
 
             /* If Nodes look good and the request checks out */
-            temp->hardening.routes_requests_ok = 1;
+            temp->hardening.send_nodes_ok = 1;
             return 0;/* success*/
         }
     }
