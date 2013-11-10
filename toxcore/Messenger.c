@@ -1018,7 +1018,7 @@ int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *us
 #ifdef ASSOC_AVAILABLE
         m->rendezvous = rendezvous_new(m->dht->assoc, m->net);
 #else
-        m->rendezvous = rendezvous_new(NULL, m->net);
+        m->rendezvous = rendezvous_new(m->dht, m->net);
 #endif
 
         if (!m->rendezvous)

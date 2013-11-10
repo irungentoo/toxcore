@@ -5,6 +5,7 @@
 /* for the legalese, see tox.h */
 
 #include "network.h"
+#include "assoc.h"
 #include "util.h"
 
 /*
@@ -23,7 +24,13 @@ typedef struct {
     RendezVous_callback_timeout  timeout_function;
 } RendezVous_callbacks;
 
+#ifdef ASSOC_AVAILABLE
 RendezVous *rendezvous_new(Assoc *assoc, Networking_Core *net);
+#else
+typedef struct DHT DHT;
+
+RendezVous *rendezvous_new(DHT *dht, Networking_Core *net);
+#endif
 
 void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public);
 

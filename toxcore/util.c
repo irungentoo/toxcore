@@ -136,8 +136,11 @@ char logbuffer[512];
 static FILE *logfile = NULL;
 void loginit(uint16_t port)
 {
-    if (logfile)
-        fclose(logfile);
+    if (logfile) {
+        sprintf(logbuffer, "== tried to re-open logfile for port %u ==\n", htons(port));
+        loglog(logbuffer);
+        return;
+    }
 
     if (!starttime) {
         unix_time_update();

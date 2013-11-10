@@ -5,6 +5,13 @@
 #include "assoc.h"
 #include "util.h"
 
+#ifndef ASSOC_AVAILABLE
+
+/* The number of seconds for a non responsive node to become bad. */
+#define BAD_NODE_TIMEOUT 72
+
+#endif /* ! ASSOC_AVAILABLE */
+
 /* network: packet id */
 #define NET_PACKET_RENDEZVOUS 8
 
@@ -38,7 +45,11 @@ typedef struct {
 #define ADDRESS_EXTRA_BYTES (sizeof(uint32_t) + sizeof(uint16_t))
 
 typedef struct RendezVous {
+#ifdef ASSOC_AVAILABLE
     Assoc             *assoc;
+#else
+    DHT               *dht;
+#endif
     Networking_Core   *net;
 
     uint8_t           *self_public;
@@ -95,6 +106,18 @@ static void hash_specific_extra_extract(uint8_t *specific_recv, uint8_t *specifi
         extra[i] = specific_calc[i] ^ specific_recv[i];
 }
 
+static uint8_t *client_ptr_compare_ref_id;
+
+static int client_ptr_compare_func(const void *_A, const void *_B)
+{
+    Client_data **A = (Client_data **)_A;
+    Client_data **B = (Client_data **)_B;
+    int res = id_closest(client_ptr_compare_ref_id, (*A)->client_id, (*B)->client_id);
+    /* res: 0 => equal, 1: first id closer, 2: second id closer */
+    /*      => 0        => -1               => 1                */
+    return ((3 * res - 5) * res) >> 1;
+}
+
 static void publish(RendezVous *rendezvous)
 {
     RendezVousPacket packet;
@@ -149,11 +172,78 @@ static void publish(RendezVous *rendezvous)
     sprintf(logbuffer, "rendezvous::publish(): sent data to %u of %u clients.\n", sent, found_cnt);
     loglog(logbuffer);
 #endif
-#else
+
+#else /* ! ASSOC_AVAILABLE */
+
+    /* no assoc: collect all nodes stored somewhere */
+    DHT *dht = rendezvous->dht;
+    size_t i, k, cnt = 0;
+    Client_data *clients[256];
+
+    for (i = 0; i < LCLIENT_LIST; i++) {
+        Client_data *client = &dht->close_clientlist[i];
+
+        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
+                !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+            clients[cnt++] = client;
+        }
+    }
+
+    for (k = 0; k < dht->num_friends; k++)
+        for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
+            Client_data *client = &dht->friends_list[k].client_list[i];
+
+            if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
+                    !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+                clients[cnt++] = client;
+
+                if (cnt == 256)
+                    break;
+            }
+        }
+
+    client_ptr_compare_ref_id = packet.hash_unspecific_half;
+    qsort(clients, cnt, sizeof(clients[0]), client_ptr_compare_func);
+
+    size_t sent = 0;
+
+    for (i = 0; i < cnt; i++) {
+        /* skip duplicates */
+        if (i > 0)
+            if (id_equal(clients[i]->client_id, clients[i - 1]->client_id))
+                continue;
+
+        /* the first four are sent to unconditionally
+         * from there, they're sent to with 25% probability
+         */
+        if ((sent >= 4) && (rand() % 4))
+            continue;
+
+        Client_data *client = clients[i];
+
+        IPPTsPng *assoc;
+
+        if (client->assoc4.timestamp > client->assoc6.timestamp)
+            assoc = &client->assoc4;
+        else
+            assoc = &client->assoc6;
+
+        sendpacket(rendezvous->net, assoc->ip_port, &packet.type, sizeof(packet));
 #ifdef LOGGING
-    loglog("rendezvous::publish(): No ASSOC_AVAILABLE.\n");
+        sprintf(logbuffer, "rendezvous::publish(): [%u] => [%u]\n", htons(rendezvous->net->port), htons(assoc->ip_port.port));
+        loglog(logbuffer);
 #endif
+        sent++;
+
+        if (sent >= 8)
+            break;
+    }
+
+#ifdef LOGGING
+    sprintf(logbuffer, "rendezvous::publish(): sent data to %u clients.\n", sent);
 #endif
+
+#endif /* ! ASSOC_AVAILABLE */
 }
 
 static void send_replies(RendezVous *rendezvous, size_t i, size_t k)
@@ -336,17 +426,38 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
     return 0;
 }
 
+#ifdef ASSOC_AVAILABLE
 RendezVous *rendezvous_new(Assoc *assoc, Networking_Core *net)
+#else
+RendezVous *rendezvous_new(DHT *dht, Networking_Core *net)
+#endif
 {
-    if (!assoc || !net)
+    if (!net)
         return NULL;
+
+#ifdef ASSOC_AVAILABLE
+
+    /* if assoc IS available, it MUST be properly set */
+    if (!assoc)
+        return NULL;
+
+#else
+
+    if (!dht)
+        return NULL;
+
+#endif
 
     RendezVous *rendezvous = calloc(1, sizeof(*rendezvous));
 
     if (!rendezvous)
         return NULL;
 
+#ifdef ASSOC_AVAILABLE
     rendezvous->assoc = assoc;
+#else
+    rendezvous->dht = dht;
+#endif
     rendezvous->net = net;
 
     networking_registerhandler(net, NET_PACKET_RENDEZVOUS, rendezvous_network_handler, rendezvous);

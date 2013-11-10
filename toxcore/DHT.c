@@ -35,7 +35,7 @@
 #include "LAN_discovery.h"
 
 /* The number of seconds for a non responsive node to become bad. */
-#define BAD_NODE_TIMEOUT 70
+#define BAD_NODE_TIMEOUT 72
 
 /* The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 8

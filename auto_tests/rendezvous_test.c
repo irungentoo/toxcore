@@ -90,8 +90,8 @@ START_TEST(test_meetup)
     RendezVous *rdvA = rendezvous_new(mA->dht->assoc, mA->dht->c->lossless_udp->net);
     RendezVous *rdvB = rendezvous_new(mB->dht->assoc, mB->dht->c->lossless_udp->net);
 #else
-    RendezVous *rdvA = rendezvous_new(NULL, mA->dht->c->lossless_udp->net);
-    RendezVous *rdvB = rendezvous_new(NULL, mB->dht->c->lossless_udp->net);
+    RendezVous *rdvA = rendezvous_new(mA->dht, mA->dht->c->lossless_udp->net);
+    RendezVous *rdvB = rendezvous_new(mB->dht, mB->dht->c->lossless_udp->net);
 #endif
 
     ck_assert_msg(rdvA && rdvB, "Failed to setup rendezvous structure.");
