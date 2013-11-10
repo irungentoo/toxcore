@@ -580,9 +580,8 @@ static void ping_group(Group_Chat *chat)
 static void del_dead_peers(Group_Chat *chat)
 {
     uint32_t i;
-
     for (i = 0; i < chat->numpeers; ++i) {
-        if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL * 2)) {
+        if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL*2)) {
             delpeer(chat, chat->group[i].client_id);
         }
     }
