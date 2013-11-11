@@ -42,6 +42,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <locale.h>
 
 #ifdef __WIN32__
 #define c_sleep(x) Sleep(1*x)
@@ -237,6 +238,18 @@ void get_id(Tox *m, char *data)
     }
 }
 
+int getfriendname_terminated(Tox *m, int friendnum, char *namebuf)
+{
+    int res = tox_getname(m, friendnum, (uint8_t *)namebuf);
+
+    if (res >= 0)
+        namebuf[res] = 0;
+    else
+        namebuf[0] = 0;
+
+    return res;
+}
+
 void new_lines_mark(char *line, uint8_t special)
 {
     int i = 0;
@@ -261,11 +274,11 @@ void new_lines(char *line)
 const char ptrn_friend[] = "[i] Friend: %s\n+ id: %i";
 void print_friendlist(Tox *m)
 {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
     int i = 0;
     new_lines("[i] Friend List:");
 
-    while (tox_getname(m, i, (uint8_t *)name) != -1) {
+    while (getfriendname_terminated(m, i, name) != -1) {
         /* account for the longest name and the longest "base" string and number (int) */
         char fstring[TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21];
 
@@ -283,34 +296,43 @@ void print_friendlist(Tox *m)
         new_lines("+ no friends! D:");
 }
 
-char *format_message(Tox *m, char *message, int friendnum)
+static int fmtmsg_tm_mday = -1;
+
+static void print_formatted_message(Tox *m, char *message, int friendnum, uint8_t outgoing)
 {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
+    getfriendname_terminated(m, friendnum, name);
 
-    if (friendnum != -1) {
-        tox_getname(m, friendnum, (uint8_t *)name);
-    } else {
-        tox_getselfname(m, (uint8_t *)name, sizeof(name));
-    }
-
-    char *msg = malloc(100 + strlen(message) + strlen(name) + 1);
+    char msg[100 + strlen(message) + strlen(name) + 1];
 
     time_t rawtime;
     struct tm *timeinfo;
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
-    char *time = asctime(timeinfo);
-    size_t len = strlen(time);
-    time[len - 1] = '\0';
 
-    if (friendnum != -1) {
-        sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message);
-    } else {
-        // This message came from ourselves
-        sprintf(msg, "%s <%s> %s", time, name, message);
+    /* assume that printing the date once a day is enough */
+    if (fmtmsg_tm_mday != timeinfo->tm_mday) {
+        fmtmsg_tm_mday = timeinfo->tm_mday;
+        /* strftime(msg, 100, "Today is %a %b %d %Y.", timeinfo); */
+        /* %x is the locale's preferred date format */
+        strftime(msg, 100, "Today is %x.", timeinfo);
+        new_lines(msg);
     }
 
-    return msg;
+    char time[64];
+    /* strftime(time, 64, "%I:%M:%S %p", timeinfo); */
+    /* %X is the locale's preferred time format */
+    strftime(time, 64, "%X", timeinfo);
+
+    if (outgoing) {
+        /* tgt: friend */
+        sprintf(msg, "[%d] %s =>{%s} %s", friendnum, time, name, message);
+    } else {
+        /* src: friend */
+        sprintf(msg, "[%d] %s <%s>: %s", friendnum, time, name, message);
+    }
+
+    new_lines(msg);
 }
 
 /* forward declaration */
@@ -381,7 +403,7 @@ void line_eval(Tox *m, char *line)
                     sprintf(sss, "[i] could not send message to friend num %u", num);
                     new_lines(sss);
                 } else {
-                    new_lines(format_message(m, *posi + 1, -1));
+                    print_formatted_message(m, *posi + 1, num, 1);
                 }
             } else
                 new_lines("Error, bad input.");
@@ -429,9 +451,7 @@ void line_eval(Tox *m, char *line)
 
                 if (num != -1) {
                     pending_requests[numf].accepted = 1;
-                    sprintf(numchar, "[i] friend request %u accepted", numf);
-                    new_lines(numchar);
-                    sprintf(numchar, "[i] added friendnumber %d", num);
+                    sprintf(numchar, "[i] friend request %u accepted as friend no. %d", numf, num);
                     new_lines(numchar);
                     save_data(m);
                 } else {
@@ -699,14 +719,16 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *us
 
 void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    new_lines(format_message(m, (char *)string, friendnumber));
+    /* ensure null termination */
+    string[length - 1] = 0;
+    print_formatted_message(m, (char *)string, friendnumber, 0);
 }
 
 void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
 
-    if (tox_getname(m, friendnumber, (uint8_t *)name) != -1) {
+    if (getfriendname_terminated(m, friendnumber, name) != -1) {
         char msg[100 + length];
         sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
         new_lines(msg);
@@ -715,9 +737,9 @@ void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length
 
 void print_statuschange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
 
-    if (tox_getname(m, friendnumber, (uint8_t *)name) != -1) {
+    if (getfriendname_terminated(m, friendnumber, name) != -1) {
         char msg[100 + length + strlen(name) + 1];
         sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
         new_lines(msg);
@@ -878,6 +900,9 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
 
 int main(int argc, char *argv[])
 {
+    /* minimalistic locale support (i.e. when printing dates) */
+    setlocale(LC_ALL, "");
+
     if (argc < 4) {
         if ((argc == 2) && !strcmp(argv[1], "-h")) {
             print_help(argv[0]);
@@ -950,8 +975,9 @@ int main(int argc, char *argv[])
     nodelay(stdscr, TRUE);
 
     new_lines("[i] change username with /n");
-    uint8_t name[TOX_MAX_NAME_LENGTH];
+    uint8_t name[TOX_MAX_NAME_LENGTH + 1];
     uint16_t namelen = tox_getselfname(m, name, sizeof(name));
+    name[namelen] = 0;
 
     if (namelen > 0) {
         char whoami[128 + TOX_MAX_NAME_LENGTH];
