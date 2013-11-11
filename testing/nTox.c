@@ -296,7 +296,7 @@ void rendezvous_found(void *data, uint8_t *id)
     id_str[TOX_FRIEND_ADDRESS_SIZE * 2] = 0;
 
     char msg[TOX_FRIEND_ADDRESS_SIZE * 2 + 64];
-    sprintf(msg, "[r] Friend's id is said to be [%s].", id_str);
+    sprintf(msg, "[r] Friend's id is said to be: %s", id_str);
     new_lines(msg);
 }
 

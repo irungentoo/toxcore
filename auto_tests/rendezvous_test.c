@@ -15,16 +15,21 @@
 #include "../toxcore/rendezvous.h"
 #include "../toxcore/assoc.h"
 
-typedef struct found {
+typedef struct callback_data {
     uint8_t found;
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
-} found;
+} callback_data;
 
 static void callback_found(void *data, uint8_t *client_id)
 {
-    found *found = data;
-    found->found++;
-    memcpy(found->client_id, client_id, crypto_box_PUBLICKEYBYTES);
+    callback_data *cbdata = data;
+    cbdata->found++;
+    memcpy(cbdata->client_id, client_id, crypto_box_PUBLICKEYBYTES);
+}
+
+static uint8_t callback_timeout(void *data)
+{
+    return 1;
 }
 
 START_TEST(test_meetup)
@@ -101,11 +106,12 @@ START_TEST(test_meetup)
 
     RendezVous_callbacks callbacks;
     callbacks.found_function = callback_found;
+    callbacks.timeout_function = callback_timeout; /* we might happen to be just around a timeframe border */
 
     uint8_t idA[FRIEND_ADDRESS_SIZE];
     getaddress(mA, idA);
 
-    found foundA;
+    callback_data foundA;
     memset(&foundA, 0, sizeof(foundA));
     ck_assert_msg(rendezvous_publish(rdvA, idA + CLIENT_ID_SIZE, secret, now_floored, &callbacks, &foundA),
                   "A::publish() failed.");
@@ -113,7 +119,7 @@ START_TEST(test_meetup)
     uint8_t idB[FRIEND_ADDRESS_SIZE];
     getaddress(mB, idB);
 
-    found foundB;
+    callback_data foundB;
     memset(&foundB, 0, sizeof(foundB));
     ck_assert_msg(rendezvous_publish(rdvB, idB + CLIENT_ID_SIZE, secret, now_floored, &callbacks, &foundB),
                   "B::publish() failed.");
