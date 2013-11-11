@@ -24,24 +24,19 @@
 #ifndef NTOX_H
 #define NTOX_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <curses.h>
+/*
+ * module actually exports nothing for the outside
+ */
+
 #include <ctype.h>
+#include <curses.h>
 
 #include "../toxcore/tox.h"
 
 #define STRING_LENGTH 256
 #define HISTORY 50
-#define PUB_KEY_BYTES 32
 
-uint32_t resolve_addr(const char *address);
 void new_lines(char *line);
-void line_eval(Tox *m, char *line);
-void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width) ;
-int count_lines(char *string) ;
-char *appender(char *str, const char c);
 void do_refresh();
 
 #endif

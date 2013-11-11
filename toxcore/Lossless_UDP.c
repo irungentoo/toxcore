@@ -860,8 +860,8 @@ static void adjust_datasendspeed(Connection *connection, uint32_t req_packets)
         return;
     }
 
-    if (req_packets <= (connection->data_rate / connection->SYNC_rate) / 5 || req_packets <= 10) {
-        connection->data_rate += (connection->data_rate / 8) + 1;
+    if (req_packets <= (connection->data_rate / connection->SYNC_rate) / 4 || req_packets <= 10) {
+        connection->data_rate += (connection->data_rate / 4) + 1;
 
         if (connection->data_rate > connection->sendbuffer_length * connection->SYNC_rate)
             connection->data_rate = connection->sendbuffer_length * connection->SYNC_rate;
