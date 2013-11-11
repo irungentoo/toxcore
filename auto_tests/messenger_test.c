@@ -245,7 +245,7 @@ START_TEST(test_dht_state_saveloadsave)
         ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", i);
     }
 
-    int res = DHT_load_new(m->dht, buffer + extra, size);
+    int res = DHT_load(m->dht, buffer + extra, size);
 
     if (res == -1)
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
