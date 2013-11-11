@@ -234,8 +234,13 @@ static int delpeer(Group_Chat *chat, uint8_t *client_id)
         if (id_equal(chat->group[i].client_id, client_id)) {
             --chat->numpeers;
 
+            if (chat->numpeers == 0) {
+                free(chat->group);
+                chat->group = NULL;
+                return 0;
+            }
             if (chat->numpeers != i)
-                id_copy(chat->group[i].client_id, chat->group[chat->numpeers].client_id);
+                memcpy(&chat->group[i], &chat->group[chat->numpeers], sizeof(Group_Peer));
 
             temp = realloc(chat->group, sizeof(Group_Peer) * (chat->numpeers));
 
