@@ -535,18 +535,13 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
             k--;
         }
 
-        if (k > 0) {
+        if (k > m) {
             /* replace and set as new line start */
             output[k] = '\n';
             i = k + 1;
-        } else {
-            /* nothing found backwards: look forward */
-            while ((i < len) && (output[i] != ' '))
-                i++;
-
-            if (i < len)
-                output[i] = '\n';
         }
+
+        /* else: nothing to do now, TODO shift string */
     }
 }
 
