@@ -477,6 +477,13 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
     return group_message_send(m, groupnumber, message, length);
 }
 
+/* rendezvous */
+int tox_rendezvous(Tox *tox, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
+                   uint8_t (*timeout)(void *userdata), void *userdata)
+{
+    Messenger *m = tox;
+    return m_rendezvous(m, secret, at, found, timeout, userdata);
+}
 
 
 /****************FILE SENDING FUNCTIONS*****************/

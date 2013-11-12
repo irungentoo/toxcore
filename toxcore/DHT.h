@@ -117,7 +117,7 @@ typedef struct {
     uint64_t timestamp;
 } pinged_t;
 
-typedef struct {
+typedef struct DHT {
     Net_Crypto  *c;
 
     Client_data  close_clientlist[LCLIENT_LIST];

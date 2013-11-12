@@ -1,8 +1,8 @@
 if BUILD_TESTS
 
-TESTS = messenger_autotest crypto_test network_test
+TESTS = messenger_autotest crypto_test network_test rendezvous_test
 
-check_PROGRAMS = messenger_autotest crypto_test network_test
+check_PROGRAMS = messenger_autotest crypto_test network_test rendezvous_test
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
@@ -36,6 +36,13 @@ network_test_SOURCES = ../auto_tests/network_test.c
 network_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 network_test_LDADD = $(AUTOTEST_LDADD)
+
+
+rendezvous_test_SOURCES = ../auto_tests/rendezvous_test.c
+
+rendezvous_test_CFLAGS = $(AUTOTEST_CFLAGS)
+
+rendezvous_test_LDADD = $(AUTOTEST_LDADD)
 
 
 endif
