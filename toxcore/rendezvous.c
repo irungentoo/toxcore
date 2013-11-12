@@ -12,11 +12,8 @@
 
 #endif /* ! ASSOC_AVAILABLE */
 
-/* network: packet id */
-#define NET_PACKET_RENDEZVOUS 8
-
-/* 30 seconds */
-#define RENDEZVOUS_SEND_AGAIN 30U
+/* how often the same match may be re-announced */
+#define RENDEZVOUS_SEND_AGAIN 45U
 
 /* stored entries */
 #define RENDEZVOUS_STORE_SIZE 8
@@ -409,7 +406,7 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
     rendezvous->store[pos].match = 1;
     rendezvous->store[pos].sent_at = 0;
 
-    rendezvous->block_store_until = now + 60 + rand() % 1800;
+    rendezvous->block_store_until = now + RENDEZVOUS_STORE_BLOCK;
 
     for (i = matching; i < RENDEZVOUS_STORE_SIZE; i++)
         if ((i != pos) && (rendezvous->store[i].match == 1))
@@ -427,9 +424,9 @@ static int rendezvous_network_handler(void *object, IP_Port ip_port, uint8_t *da
 }
 
 #ifdef ASSOC_AVAILABLE
-RendezVous *rendezvous_new(Assoc *assoc, Networking_Core *net)
+RendezVous *new_rendezvous(Assoc *assoc, Networking_Core *net)
 #else
-RendezVous *rendezvous_new(DHT *dht, Networking_Core *net)
+RendezVous *new_rendezvous(DHT *dht, Networking_Core *net)
 #endif
 {
     if (!net)
@@ -437,7 +434,6 @@ RendezVous *rendezvous_new(DHT *dht, Networking_Core *net)
 
 #ifdef ASSOC_AVAILABLE
 
-    /* if assoc IS available, it MUST be properly set */
     if (!assoc)
         return NULL;
 
@@ -482,21 +478,11 @@ int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksm, char *text
     if (!functions->found_function)
         return 0;
 
-    if (strlen(text) < 16)
+    if (strlen(text) < RENDEZVOUS_PASSPHRASE_MINLEN)
         return 0;
 
     if (((timestamp % RENDEZVOUS_INTERVAL) != 0) || (timestamp + RENDEZVOUS_INTERVAL < unix_time()))
         return 0;
-
-    /*
-     * user has input a text and a timestamp
-     *
-     * from text and timestamp, generate a 512bit hash (64bytes)
-     * the first 32bytes are sent plain, the second 32bytes are
-     * encrypted with our own key
-     *
-     * the first 32 are used to define the distance function
-     */
 
     char texttime[32 + strlen(text)];
     size_t texttimelen = sprintf(texttime, "%ld@%s", timestamp, text);
@@ -509,17 +495,17 @@ int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksm, char *text
     if (timestamp < unix_time())
         rendezvous->publish_starttime = timestamp;
     else
-        rendezvous->publish_starttime = timestamp + 30;
+        rendezvous->publish_starttime = timestamp + RENDEZVOUS_PUBLISH_INITIALDELAY;
 
     rendezvous->timestamp = timestamp;
     rendezvous->functions = *functions;
     rendezvous->data = data;
-    rendezvous_do(rendezvous);
+    do_rendezvous(rendezvous);
 
     return 1;
 }
 
-void rendezvous_do(RendezVous *rendezvous)
+void do_rendezvous(RendezVous *rendezvous)
 {
     /* nothing to publish */
     if (!rendezvous->publish_starttime)
@@ -551,13 +537,15 @@ void rendezvous_do(RendezVous *rendezvous)
             publish(rendezvous);
 
             /* on average, publish about once per 45 seconds */
-            rendezvous->publish_starttime = now + 35 + rand() % 20;
+            rendezvous->publish_starttime = now + RENDEZVOUS_PUBLISH_SENDAGAIN;
         }
     }
 }
 
-void rendezvous_kill(RendezVous *rendezvous)
+void kill_rendezvous(RendezVous *rendezvous)
 {
-    networking_registerhandler(rendezvous->net, NET_PACKET_RENDEZVOUS, NULL, NULL);
-    free(rendezvous);
+    if (rendezvous) {
+        networking_registerhandler(rendezvous->net, NET_PACKET_RENDEZVOUS, NULL, NULL);
+        free(rendezvous);
+    }
 }

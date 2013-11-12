@@ -92,11 +92,11 @@ START_TEST(test_meetup)
     uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);
 
 #ifdef ASSOC_AVAILABLE
-    RendezVous *rdvA = rendezvous_new(mA->dht->assoc, mA->dht->c->lossless_udp->net);
-    RendezVous *rdvB = rendezvous_new(mB->dht->assoc, mB->dht->c->lossless_udp->net);
+    RendezVous *rdvA = new_rendezvous(mA->dht->assoc, mA->dht->c->lossless_udp->net);
+    RendezVous *rdvB = new_rendezvous(mB->dht->assoc, mB->dht->c->lossless_udp->net);
 #else
-    RendezVous *rdvA = rendezvous_new(mA->dht, mA->dht->c->lossless_udp->net);
-    RendezVous *rdvB = rendezvous_new(mB->dht, mB->dht->c->lossless_udp->net);
+    RendezVous *rdvA = new_rendezvous(mA->dht, mA->dht->c->lossless_udp->net);
+    RendezVous *rdvB = new_rendezvous(mB->dht, mB->dht->c->lossless_udp->net);
 #endif
 
     ck_assert_msg(rdvA && rdvB, "Failed to setup rendezvous structure.");
@@ -134,6 +134,9 @@ START_TEST(test_meetup)
 
     ck_assert_msg(id_equal(foundA.client_id, mB->dht->c->self_public_key), "Expected A to find B.");
     ck_assert_msg(id_equal(foundB.client_id, mA->dht->c->self_public_key), "Expected B to find A.");
+
+    kill_rendezvous(rdvA);
+    kill_rendezvous(rdvB);
 
 #ifdef LOGGING
     loglog("== rendezvous test done ==\n");
