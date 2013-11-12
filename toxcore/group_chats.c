@@ -53,6 +53,11 @@ typedef struct {
 
 } sendnodes_data;
 
+typedef struct {
+    uint8_t    client_id[crypto_box_PUBLICKEYBYTES];
+    uint8_t    nickname[MAX_NICK_BYTES];
+} peernick_data;
+
 
 /*
  * check if peer with client_id is in peer array.
@@ -211,10 +216,12 @@ static int addpeer(Group_Chat *chat, uint8_t *client_id)
 
     memset(&(temp[chat->numpeers]), 0, sizeof(Group_Peer));
     chat->group = temp;
+
     id_copy(chat->group[chat->numpeers].client_id, client_id);
     chat->group[chat->numpeers].last_recv = unix_time();
     chat->group[chat->numpeers].last_recv_msgping = unix_time();
     ++chat->numpeers;
+
     return (chat->numpeers - 1);
 }
 
@@ -262,14 +269,34 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name)
         return -1;
 
     if (chat->group[peernum].nick_len == 0) {
-        memcpy(name, "NSA Agent", 10); /* Kindly remind the user that someone with no name might be an NSA agent.*/
-        return 10;
+        /* memcpy(name, "NSA agent", 10); */ /* Srsly? */ /* Kindly remind the user that someone with no name might be a moronic NSA agent.*/
+        name[0] = 0;
+        return 0;
     }
 
     memcpy(name, chat->group[peernum].nick, chat->group[peernum].nick_len);
     return chat->group[peernum].nick_len;
 }
 
+static void setnick(Group_Chat *chat, uint8_t *contents, uint16_t contents_len)
+{
+    if (contents_len > CLIENT_ID_SIZE + MAX_NICK_BYTES)
+        return;
+
+    peernick_data *data = (peernick_data *)contents;
+
+    size_t i;
+
+    for (i = 0; i < chat->numpeers; i++)
+        if (id_equal(chat->group[i].client_id, data->client_id)) {
+            uint16_t nick_len = contents_len - CLIENT_ID_SIZE;
+
+            memcpy(chat->group[i].nick, data->nickname, nick_len);
+            chat->group[i].nick_len = nick_len;
+
+            return;
+        }
+}
 
 /* min time between pings sent to one peer in seconds */
 /* TODO: move this to global section */
@@ -289,7 +316,8 @@ static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
     chat->group[peernum].last_pinged = unix_time();
     chat->group[peernum].pingid = contents.pingid;
 
-    return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (uint8_t *)&contents, sizeof(contents), CRYPTO_PACKET_GROUP_CHAT_GET_NODES);
+    return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (uint8_t *)&contents, sizeof(contents),
+                                CRYPTO_PACKET_GROUP_CHAT_GET_NODES);
 }
 
 static int send_sendnodes(Group_Chat *chat, IP_Port ip_port, int peernum, uint64_t pingid)
@@ -428,6 +456,13 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
             addpeer(chat, contents);
             break;
 
+        case GROUP_CHAT_PEER_NICK:
+            if (contents_len < crypto_box_PUBLICKEYBYTES)
+                return 1;
+
+            setnick(chat, contents, contents_len);
+            break;
+
         case GROUP_CHAT_CHAT_MESSAGE: /* If message is chat message */
             if (chat->group_message != NULL)
                 (*chat->group_message)(chat, peernum, contents, contents_len, chat->group_message_userdata);
@@ -520,6 +555,18 @@ uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length)
     return send_data(chat, message, length, GROUP_CHAT_CHAT_MESSAGE); //TODO: better return values?
 }
 
+uint32_t group_send_nick(Group_Chat *chat, uint8_t *client_id, uint8_t *nick, uint16_t nick_len)
+{
+    peernick_data peernick;
+    id_copy(peernick.client_id, client_id);
+    memcpy(peernick.nickname, nick, nick_len);
+
+    /* also set for self */
+    setnick(chat, (uint8_t *)&peernick, sizeof(peernick.client_id) + nick_len);
+
+    return send_data(chat, (uint8_t *)&peernick, sizeof(peernick.client_id) + nick_len, GROUP_CHAT_PEER_NICK);
+}
+
 uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id)
 {
     addpeer(chat, client_id);
@@ -553,7 +600,6 @@ static void ping_close(Group_Chat *chat)
     uint32_t i;
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) {
-        /* previous condition was always true, assuming this is the wanted one: */
         if (!is_timeout(chat->close[i].last_recv, BAD_GROUPNODE_TIMEOUT)) {
             int peernum = peer_in_chat(chat, chat->close[i].client_id);
 
@@ -580,8 +626,9 @@ static void ping_group(Group_Chat *chat)
 static void del_dead_peers(Group_Chat *chat)
 {
     uint32_t i;
+
     for (i = 0; i < chat->numpeers; ++i) {
-        if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL*2)) {
+        if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL * 2)) {
             delpeer(chat, chat->group[i].client_id);
         }
     }

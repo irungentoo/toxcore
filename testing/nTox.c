@@ -821,8 +821,16 @@ void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *messag
 {
     char msg[256 + length];
     uint8_t name[TOX_MAX_NAME_LENGTH];
-    tox_group_peername(m, groupnumber, peernumber, name);
-    sprintf(msg, "[g] %u: <%s>: %s", groupnumber, name, message);
+    int len = tox_group_peername(m, groupnumber, peernumber, name);
+
+    if (len <= 0)
+        name[0] = 0;
+
+    if (name[0] != 0)
+        sprintf(msg, "[g] %u: %u <%s>: %s", groupnumber, peernumber, name, message);
+    else
+        sprintf(msg, "[g] %u: %u Unknown: %s", groupnumber, peernumber, message);
+
     new_lines(msg);
 }
 
