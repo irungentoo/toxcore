@@ -1539,12 +1539,15 @@ void do_friends(Messenger *m)
                         if (data_length >= MAX_NAME_LENGTH || data_length == 0)
                             break;
 
+                        /* Make sure the NULL terminator is present. */
+                        data[data_length - 1] = 0;
+
+                        /* inform of namechange before we overwrite the old name */
+                        if (m->friend_namechange)
+                            m->friend_namechange(m, i, data, data_length, m->friend_namechange_userdata);
+
                         memcpy(m->friendlist[i].name, data, data_length);
                         m->friendlist[i].name_length = data_length;
-                        m->friendlist[i].name[data_length - 1] = 0; /* Make sure the NULL terminator is present. */
-
-                        if (m->friend_namechange)
-                            m->friend_namechange(m, i, m->friendlist[i].name, data_length, m->friend_namechange_userdata);
 
                         break;
                     }
