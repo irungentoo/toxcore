@@ -63,12 +63,15 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+
     uint64_t last_sent_ping;
 
+    uint64_t last_sent_nick;
 } Group_Chat;
 
 #define GROUP_CHAT_PING 0
 #define GROUP_CHAT_NEW_PEER 16
+#define GROUP_CHAT_PEER_NICK 17
 #define GROUP_CHAT_CHAT_MESSAGE 64
 
 /* Copy the name of peernum to name.
@@ -95,6 +98,12 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  */
 uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
 
+/*
+ * Send id/nick combo to the group.
+ *
+ * returns the number of peers it has sent it to.
+ */
+uint32_t group_send_nick(Group_Chat *chat, uint8_t *client_id, uint8_t *nick, uint16_t nick_len);
 
 /*
  * Tell everyone about a new peer (a person we are inviting for example.)
