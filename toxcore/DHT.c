@@ -115,21 +115,6 @@ static int client_id_cmp(ClientPair p1, ClientPair p2)
     return c;
 }
 
-static int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id)
-{
-    uint32_t i;
-
-    for (i = 0; i < length; i++)
-
-        /* Dead nodes are considered dead (not in the list)*/
-        if (!is_timeout(list[i].assoc4.timestamp, KILL_NODE_TIMEOUT) ||
-                !is_timeout(list[i].assoc6.timestamp, KILL_NODE_TIMEOUT))
-            if (id_equal(list[i].client_id, client_id))
-                return 1;
-
-    return 0;
-}
-
 /* Check if client with client_id is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
  * If the id is already in the list with a different ip_port, update it.
@@ -387,21 +372,31 @@ static int replace_bad(    Client_data    *list,
     for (i = 0; i < length; ++i) {
         /* If node is bad */
         Client_data *client = &list[i];
-        IPPTsPng *ipptp = NULL;
 
-        if (ip_port.ip.family == AF_INET)
-            ipptp = &client->assoc4;
-        else
-            ipptp = &client->assoc6;
+        if (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) &&
+                is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
 
-        if (is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT)) {
+            IPPTsPng *ipptp_write = NULL;
+            IPPTsPng *ipptp_clear = NULL;
+
+            if (ip_port.ip.family == AF_INET) {
+                ipptp_write = &client->assoc4;
+                ipptp_clear = &client->assoc6;
+            } else {
+                ipptp_write = &client->assoc6;
+                ipptp_clear = &client->assoc4;
+            }
+
             memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
-            ipptp->ip_port = ip_port;
-            ipptp->timestamp = unix_time();
+            ipptp_write->ip_port = ip_port;
+            ipptp_write->timestamp = unix_time();
 
-            ip_reset(&ipptp->ret_ip_port.ip);
-            ipptp->ret_ip_port.port = 0;
-            ipptp->ret_timestamp = 0;
+            ip_reset(&ipptp_write->ret_ip_port.ip);
+            ipptp_write->ret_ip_port.port = 0;
+            ipptp_write->ret_timestamp = 0;
+
+            /* zero out other address */
+            memset(ipptp_clear, 0, sizeof(*ipptp_clear));
 
             return 0;
         }
@@ -463,20 +458,28 @@ static int replace_good(   Client_data    *list,
         assert(replace >= 0 && replace < length);
 #endif
         Client_data *client = &list[replace];
-        IPPTsPng *ipptp = NULL;
+        IPPTsPng *ipptp_write = NULL;
+        IPPTsPng *ipptp_clear = NULL;
 
-        if (ip_port.ip.family == AF_INET)
-            ipptp = &client->assoc4;
-        else
-            ipptp = &client->assoc6;
+        if (ip_port.ip.family == AF_INET) {
+            ipptp_write = &client->assoc4;
+            ipptp_clear = &client->assoc6;
+        } else {
+            ipptp_write = &client->assoc6;
+            ipptp_clear = &client->assoc4;
+        }
 
         memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
-        ipptp->ip_port = ip_port;
-        ipptp->timestamp = unix_time();
+        ipptp_write->ip_port = ip_port;
+        ipptp_write->timestamp = unix_time();
 
-        ip_reset(&ipptp->ret_ip_port.ip);
-        ipptp->ret_ip_port.port = 0;
-        ipptp->ret_timestamp = 0;
+        ip_reset(&ipptp_write->ret_ip_port.ip);
+        ipptp_write->ret_ip_port.port = 0;
+        ipptp_write->ret_timestamp = 0;
+
+        /* zero out other address */
+        memset(ipptp_clear, 0, sizeof(*ipptp_clear));
+
         return 0;
     }
 
