@@ -53,12 +53,6 @@ typedef struct {
 
 } sendnodes_data;
 
-typedef struct {
-    uint8_t    client_id[crypto_box_PUBLICKEYBYTES];
-    uint8_t    nickname[MAX_NICK_BYTES];
-} peernick_data;
-
-
 /*
  * check if peer with client_id is in peer array.
  *
@@ -246,6 +240,7 @@ static int delpeer(Group_Chat *chat, uint8_t *client_id)
                 chat->group = NULL;
                 return 0;
             }
+
             if (chat->numpeers != i)
                 memcpy(&chat->group[i], &chat->group[chat->numpeers], sizeof(Group_Peer));
 
@@ -283,24 +278,15 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name)
     return chat->group[peernum].nick_len;
 }
 
-static void setnick(Group_Chat *chat, uint8_t *contents, uint16_t contents_len)
+static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t contents_len)
 {
-    if (contents_len > CLIENT_ID_SIZE + MAX_NICK_BYTES)
+    if (contents_len > MAX_NICK_BYTES || contents_len == 0)
         return;
 
-    peernick_data *data = (peernick_data *)contents;
-
-    size_t i;
-
-    for (i = 0; i < chat->numpeers; i++)
-        if (id_equal(chat->group[i].client_id, data->client_id)) {
-            uint16_t nick_len = contents_len - CLIENT_ID_SIZE;
-
-            memcpy(chat->group[i].nick, data->nickname, nick_len);
-            chat->group[i].nick_len = nick_len;
-
-            return;
-        }
+    memcpy(chat->group[peernum].nick, contents, contents_len);
+    /* Force null termination */
+    chat->group[peernum].nick[contents_len - 1] = 0;
+    chat->group[peernum].nick_len = contents_len;
 }
 
 /* min time between pings sent to one peer in seconds */
@@ -462,10 +448,10 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
             break;
 
         case GROUP_CHAT_PEER_NICK:
-            if (contents_len < crypto_box_PUBLICKEYBYTES)
+            if (contents_len > MAX_NICK_BYTES || contents_len == 0)
                 return 1;
 
-            setnick(chat, contents, contents_len);
+            setnick(chat, peernum, contents, contents_len);
             break;
 
         case GROUP_CHAT_CHAT_MESSAGE: /* If message is chat message */
@@ -560,16 +546,28 @@ uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length)
     return send_data(chat, message, length, GROUP_CHAT_CHAT_MESSAGE); //TODO: better return values?
 }
 
-uint32_t group_send_nick(Group_Chat *chat, uint8_t *client_id, uint8_t *nick, uint16_t nick_len)
+/*
+ * Send id/nick combo to the group.
+ *
+ * returns the number of peers it has sent it to.
+ */
+static uint32_t group_send_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len)
 {
-    peernick_data peernick;
-    id_copy(peernick.client_id, client_id);
-    memcpy(peernick.nickname, nick, nick_len);
+    if (nick_len > MAX_NICK_BYTES)
+        return 0;
 
-    /* also set for self */
-    setnick(chat, (uint8_t *)&peernick, sizeof(peernick.client_id) + nick_len);
+    return send_data(chat, nick, nick_len, GROUP_CHAT_PEER_NICK);
+}
 
-    return send_data(chat, (uint8_t *)&peernick, sizeof(peernick.client_id) + nick_len, GROUP_CHAT_PEER_NICK);
+int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len)
+{
+    if (nick_len > MAX_NICK_BYTES || nick_len == 0)
+        return -1;
+
+    memcpy(chat->nick, nick, nick_len);
+    chat->nick_len = nick_len;
+    group_send_nick(chat, chat->nick, chat->nick_len);
+    return 0;
 }
 
 uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id)
@@ -639,6 +637,22 @@ static void del_dead_peers(Group_Chat *chat)
     }
 }
 
+#define NICK_SEND_INTERVAL 180
+
+static void send_names(Group_Chat *chat)
+{
+    /* send own nick from time to time, to let newly added peers be informed
+    * first time only: use a shorter timeframe, because we might not be in our own
+    * peer list yet */
+    if (is_timeout(chat->last_sent_nick, 180))
+        if (group_send_nick(chat, chat->nick, chat->nick_len) > 0) {
+            if (!chat->last_sent_nick)
+                chat->last_sent_nick = (unix_time() - NICK_SEND_INTERVAL) + 30;
+            else
+                chat->last_sent_nick = unix_time();
+        }
+}
+
 void do_groupchat(Group_Chat *chat)
 {
     unix_time_update();
@@ -646,6 +660,7 @@ void do_groupchat(Group_Chat *chat)
     ping_group(chat);
     /* TODO: Maybe run this less? */
     del_dead_peers(chat);
+    send_names(chat);
 }
 
 void kill_groupchat(Group_Chat *chat)

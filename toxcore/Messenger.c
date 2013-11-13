@@ -436,7 +436,8 @@ int setname(Messenger *m, uint8_t *name, uint16_t length)
         m->friendlist[i].name_sent = 0;
 
     for (i = 0; i < m->numchats; i++)
-        m->chats[i]->last_sent_nick = 0; /* or send the new name right away? */
+        if (m->chats[i] != NULL)
+            set_nick(m->chats[i], name, length); /* TODO: remove this (group nicks should not be tied to the global one) */
 
     return 0;
 }
@@ -789,6 +790,8 @@ int add_groupchat(Messenger *m)
                 return -1;
 
             callback_groupmessage(newchat, &group_message_function, m);
+            /* TODO: remove this (group nicks should not be tied to the global one) */
+            set_nick(newchat, m->name, m->name_length);
             m->chats[i] = newchat;
             return i;
         }
@@ -807,6 +810,8 @@ int add_groupchat(Messenger *m)
 
     m->chats = temp;
     callback_groupmessage(temp[m->numchats], &group_message_function, m);
+    /* TODO: remove this (group nicks should not be tied to the global one) */
+    set_nick(temp[m->numchats], m->name, m->name_length);
     ++m->numchats;
     return (m->numchats - 1);
 }
@@ -971,17 +976,6 @@ int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t
 
     if (m->chats[groupnumber] == NULL)
         return -1;
-
-    /* send own nick from time to time, to let newly added peers be informed
-     * first time only: use a shorter timeframe, because we might not be in our own
-     * peer list yet */
-    if (is_timeout(m->chats[groupnumber]->last_sent_nick, 180))
-        if (group_send_nick(m->chats[groupnumber], m->chats[groupnumber]->self_public_key, m->name, m->name_length) > 0) {
-            if (!m->chats[groupnumber]->last_sent_nick)
-                m->chats[groupnumber]->last_sent_nick = unix_time() - 150;
-            else
-                m->chats[groupnumber]->last_sent_nick = unix_time();
-        }
 
     if (group_sendmessage(m->chats[groupnumber], message, length) > 0)
         return 0;
