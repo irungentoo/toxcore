@@ -62,33 +62,42 @@ const char wrap_cont_str[] = "\n+ ";
 /* documented: fdmnlsahxgiztq */
 /* undocumented: d (tox_do()) */
 
-/* 221 characters */
+/* 249 characters */
 char *help_main =
     "[i] Available main commands:\n+ "
     "/x (to print one's own id)|"
     "/s status (to change status, e.g. AFK)|"
     "/n nick (to change your nickname)|"
     "/q (to quit)|"
+    "/cr (to reset conversation)|"
     "/h friend (for friend related commands)|"
     "/h group (for group related commands)";
 
-/* 229 characters */
-char *help_friend =
-    "[i] Available friend commands:\n+ "
+/* 141 characters */
+char *help_friend1 =
+    "[i] Available friend commands (1/2):\n+ "
     "/l list (to list friends)|"
     "/f ID (to send a friend request)|"
-    "/a request no. (to accept a friend request)|"
-    "/m friend no. message (to send a message)|"
-    "/t friend no. filename (to send a file to a friend)";
+    "/a request no. (to accept a friend request)";
 
-/* 166 characters */
+/* 184 characters */
+char *help_friend2 =
+    "[i] Available friend commands (2/2):\n+ "
+    "/m friend no. message (to send a message)|"
+    "/t friend no. filename (to send a file to a friend)|"
+    "/cf friend no. (to talk to that friend per default)";
+
+/* 216 characters */
 char *help_group =
     "[i] Available group commands:\n+ "
     "/g (to create a new group)|"
     "/i friend no. group no. (to invite a friend to a group)|"
-    "/z group no. message (to send a message to a group)";
+    "/z group no. message (to send a message to a group)|"
+    "/cg group no. (to talk to that group per default)";
 
 int x, y;
+
+int conversation_default = 0;
 
 typedef struct {
     uint8_t id[TOX_CLIENT_ID_SIZE];
@@ -462,7 +471,8 @@ void line_eval(Tox *m, char *line)
         } else if (inpt_command == 'h') { //help
             if (line[2] == ' ') {
                 if (line[3] == 'f') {
-                    new_lines_mark(help_friend, 1);
+                    new_lines_mark(help_friend1, 1);
+                    new_lines_mark(help_friend2, 1);
                     return;
                 } else if (line[3] == 'g') {
                     new_lines_mark(help_group, 1);
@@ -492,10 +502,17 @@ void line_eval(Tox *m, char *line)
             int groupnumber = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                char msg[256 + 1024];
-                sprintf(msg, "[g] sent message: %s to group num: %u returned: %u (0 means success)", *posi + 1, groupnumber,
-                        tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1));
-                new_lines(msg);
+                int res = tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1);
+
+                if (res == 0) {
+                    char msg[32 + STRING_LENGTH];
+                    sprintf(msg, "[g] #%u: YOU: %s", groupnumber, *posi + 1);
+                    new_lines(msg);
+                } else {
+                    char msg[128];
+                    sprintf(msg, "[i] could not send message to group no. %u: %i", groupnumber, res);
+                    new_lines(msg);
+                }
             }
         } else if (inpt_command == 't') {
             char msg[512];
@@ -511,12 +528,68 @@ void line_eval(Tox *m, char *line)
             save_data(m);
             endwin();
             exit(EXIT_SUCCESS);
+        } else if (inpt_command == 'c') { //set conversation partner
+            if (line[2] == 'r') {
+                if (conversation_default != 0) {
+                    conversation_default = 0;
+                    new_lines("[i] default conversation reset");
+                } else
+                    new_lines("[i] default conversation wasn't set, nothing to do");
+            } else if (line[3] != ' ') {
+                new_lines("[i] invalid command");
+            } else {
+                int num = atoi(line + 4);
+
+                /* zero is also returned for not-a-number */
+                if (!num && strcmp(line + 4, "0"))
+                    num = -1;
+
+                if (num < 0)
+                    new_lines("[i] invalid command parameter");
+                else if (line[2] == 'f') {
+                    conversation_default = num + 1;
+                    char buffer[128];
+                    sprintf(buffer, "[i] default conversation is now to friend %i", num);
+                    new_lines(buffer);
+                } else if (line[2] == 'g') {
+                    char buffer[128];
+                    conversation_default = - (num + 1);
+                    sprintf(buffer, "[i] default conversation is now to group %i", num);
+                    new_lines(buffer);
+                } else
+                    new_lines("[i] invalid command");
+            }
         } else {
             new_lines("[i] invalid command");
         }
     } else {
-        new_lines("[i] invalid command");
-        //new_lines(line);
+        if (conversation_default != 0) {
+            if (conversation_default > 0) {
+                int friendnumber = conversation_default - 1;
+                uint32_t res = tox_sendmessage(m, friendnumber, (uint8_t *)line, strlen(line) + 1);
+
+                if (res == 0) {
+                    char sss[128];
+                    sprintf(sss, "[i] could not send message to friend no. %u", friendnumber);
+                    new_lines(sss);
+                } else
+                    print_formatted_message(m, line, friendnumber, 1);
+            } else {
+                int groupnumber = - conversation_default - 1;
+                int res = tox_group_message_send(m, groupnumber, (uint8_t *)line, strlen(line) + 1);
+
+                if (res == 0) {
+                    char msg[32 + STRING_LENGTH];
+                    sprintf(msg, "[g] #%u: YOU: %s", groupnumber, line);
+                    new_lines(msg);
+                } else {
+                    char msg[128];
+                    sprintf(msg, "[i] could not send message to group no. %u: %i", groupnumber, res);
+                    new_lines(msg);
+                }
+            }
+        } else
+            new_lines("[i] invalid input: neither command nor in conversation");
     }
 }
 
@@ -725,7 +798,12 @@ void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length
 
     if (getfriendname_terminated(m, friendnumber, name) != -1) {
         char msg[100 + length];
-        sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
+
+        if (name[0] != 0)
+            sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
+        else
+            sprintf(msg, "[i] [%d] Friend's name is %s.", friendnumber, string);
+
         new_lines(msg);
     }
 }
@@ -736,7 +814,12 @@ void print_statuschange(Tox *m, int friendnumber, uint8_t *string, uint16_t leng
 
     if (getfriendname_terminated(m, friendnumber, name) != -1) {
         char msg[100 + length + strlen(name) + 1];
-        sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+
+        if (name[0] != 0)
+            sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+        else
+            sprintf(msg, "[i] [%d] Their status changed to %s.", friendnumber, string);
+
         new_lines(msg);
     }
 }
@@ -846,7 +929,7 @@ void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *messag
     if (name[0] != 0)
         sprintf(msg, "[g] %u: %u <%s>: %s", groupnumber, peernumber, name, message);
     else
-        sprintf(msg, "[g] %u: %u Unknown: %s", groupnumber, peernumber, message);
+        sprintf(msg, "[g] #%u: %u Unknown: %s", groupnumber, peernumber, message);
 
     new_lines(msg);
 }
