@@ -191,6 +191,10 @@ int LAN_ip(IP ip)
             ip4.ip4.uint32 = ip.ip6.uint32[3];
             return LAN_ip(ip4);
         }
+
+        /* localhost in IPv6 (::1) */
+        if (IN6_IS_ADDR_LOOPBACK(&ip.ip6.in6_addr))
+            return 0;
     }
 
     return -1;
