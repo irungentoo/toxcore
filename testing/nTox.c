@@ -59,7 +59,9 @@ char input_line[STRING_LENGTH];
 const size_t wrap_cont_len = 3;
 const char wrap_cont_str[] = "\n+ ";
 
-/* documented: fdmnlsahxgiztq */
+#define STRING_LENGTH_WRAPPED (STRING_LENGTH + 16 * (wrap_cont_len + 1))
+
+/* documented: fdmnlsahxgiztq(c[rfg]) */
 /* undocumented: d (tox_do()) */
 
 /* 249 characters */
@@ -593,29 +595,82 @@ void line_eval(Tox *m, char *line)
     }
 }
 
-/* basic wrap, ignores embedded '\t', '\n' or '|' */
-void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
+/* basic wrap, ignores embedded '\t', '\n' or '|'
+ * inserts continuation markers if there's enough space left,
+ * otherwise turns spaces into newlines if possible */
+void wrap(char output[STRING_LENGTH_WRAPPED], char input[STRING_LENGTH], int line_width)
 {
-    strcpy(output, input);
-    size_t i, k, m, len = strlen(output);
+    size_t i, k, m, len = strlen(input);
 
-    for (i = line_width; i < len; i = i + line_width) {
-        /* look backward for a space to turn into a new line */
+    if ((line_width < 4) || (len < (size_t)line_width)) {
+        /* if line_width ridiculously tiny, it's not worth the effort */
+        strcpy(output, input);
+        return;
+    }
+
+    /* how much can we shift? */
+    size_t delta_is = 0, delta_remain = STRING_LENGTH_WRAPPED - len - 1;
+
+    /* if the line is very very short, don't insert continuation markers,
+     * as they would use up too much of the line */
+    if ((size_t)line_width < 2 * wrap_cont_len)
+        delta_remain = 0;
+
+    for (i = line_width; i < len; i += line_width) {
+        /* look backward for a space to expand/turn into a new line */
         k = i;
         m = i - line_width;
 
-        while (output[k] != ' ' && k > m) {
+        while (input[k] != ' ' && k > m) {
             k--;
         }
 
         if (k > m) {
-            /* replace and set as new line start */
-            output[k] = '\n';
-            i = k + 1;
-        }
+            if (delta_remain > wrap_cont_len) {
+                /* replace space with continuation, then
+                 * set the pos. after the space as new line start
+                 * (i.e. space is being "eaten") */
+                memcpy(output + m + delta_is, input + m, k - m);
+                strcpy(output + k + delta_is, wrap_cont_str);
 
-        /* else: nothing to do now, TODO shift string */
+                delta_remain -= wrap_cont_len - 1;
+                delta_is += wrap_cont_len - 1;
+                i = k + 1;
+            } else {
+                /* no more space to push forward: replace the space,
+                 * use its pos. + 1 as starting point for the next line */
+                memcpy(output + m + delta_is, input + m, k - m);
+                output[k + delta_is] = '\n';
+                i = k + 1;
+            }
+        } else {
+            /* string ends right here:
+             * don't add a continuation marker with nothing following */
+            if (i == len - 1)
+                break;
+
+            /* nothing found backwards */
+            if (delta_remain > wrap_cont_len) {
+                /* break at the end of the line,
+                 * i.e. in the middle of the word at the border */
+                memcpy(output + m + delta_is, input + m, line_width);
+                strcpy(output + i + delta_is, wrap_cont_str);
+
+                delta_remain -= wrap_cont_len;
+                delta_is += wrap_cont_len;
+            } else {
+                /* no more space to push, no space to convert:
+                 * just copy the whole line and move on;
+                 * means the line count calc'ed will be off */
+                memcpy(output + m + delta_is, input + m, line_width);
+            }
+        }
     }
+
+    i -= line_width;
+    memcpy(output + i + delta_is, input + i, len - i);
+
+    output[len + delta_is] = 0;
 }
 
 /*
@@ -623,7 +678,7 @@ void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
  * marks wrapped lines with "+ " in front, which does expand output
  * does NOT honor '\t': would require a lot more work (and tab width isn't always 8)
  */
-void wrap_bars(char output[STRING_LENGTH], char input[STRING_LENGTH], size_t line_width)
+void wrap_bars(char output[STRING_LENGTH_WRAPPED], char input[STRING_LENGTH], size_t line_width)
 {
     size_t len = strlen(input);
     size_t ipos, opos = 0;
@@ -639,8 +694,8 @@ void wrap_bars(char output[STRING_LENGTH], char input[STRING_LENGTH], size_t lin
 
             output[opos++] = input[ipos];
 
-            if (opos >= STRING_LENGTH) {
-                opos = STRING_LENGTH - 1;
+            if (opos >= STRING_LENGTH_WRAPPED) {
+                opos = STRING_LENGTH_WRAPPED - 1;
                 break;
             }
 
@@ -648,8 +703,8 @@ void wrap_bars(char output[STRING_LENGTH], char input[STRING_LENGTH], size_t lin
                 output[opos - 1] = ' ';
                 bar_avail = opos;
 
-                if (opos + 2 >= STRING_LENGTH) {
-                    opos = STRING_LENGTH - 1;
+                if (opos + 2 >= STRING_LENGTH_WRAPPED) {
+                    opos = STRING_LENGTH_WRAPPED - 1;
                     break;
                 }
 
@@ -673,8 +728,8 @@ void wrap_bars(char output[STRING_LENGTH], char input[STRING_LENGTH], size_t lin
             }
 
             if (space_avail > nl_got) {
-                if (opos + wrap_cont_len - 1 >= STRING_LENGTH) {
-                    opos = STRING_LENGTH - 1;
+                if (opos + wrap_cont_len - 1 >= STRING_LENGTH_WRAPPED) {
+                    opos = STRING_LENGTH_WRAPPED - 1;
                     break;
                 }
 
@@ -691,8 +746,8 @@ void wrap_bars(char output[STRING_LENGTH], char input[STRING_LENGTH], size_t lin
             char c = input[ipos];
 
             if ((c == '|') || (c == ' ') || (c == '\n')) {
-                if (opos + wrap_cont_len >= STRING_LENGTH) {
-                    opos = STRING_LENGTH - 1;
+                if (opos + wrap_cont_len >= STRING_LENGTH_WRAPPED) {
+                    opos = STRING_LENGTH_WRAPPED - 1;
                     break;
                 }
 
@@ -704,14 +759,17 @@ void wrap_bars(char output[STRING_LENGTH], char input[STRING_LENGTH], size_t lin
 
             output[opos++] = input[ipos];
 
-            if (opos >= STRING_LENGTH) {
-                opos = STRING_LENGTH - 1;
+            if (opos >= STRING_LENGTH_WRAPPED) {
+                opos = STRING_LENGTH_WRAPPED - 1;
                 break;
             }
 
             continue;
         }
     }
+
+    if (opos >= STRING_LENGTH_WRAPPED)
+        opos = STRING_LENGTH_WRAPPED - 1;
 
     output[opos] = 0;
 }
@@ -744,7 +802,7 @@ char *appender(char *str, const char c)
 void do_refresh()
 {
     int count = 0;
-    char wrap_output[STRING_LENGTH];
+    char wrap_output[STRING_LENGTH_WRAPPED];
     int L;
     int i;
 
@@ -982,7 +1040,6 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
 
     fclose(pFile);
 }
-
 
 int main(int argc, char *argv[])
 {
