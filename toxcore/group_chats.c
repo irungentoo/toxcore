@@ -27,6 +27,8 @@
 #endif
 
 #include "group_chats.h"
+#include "assoc.h"
+#include "LAN_discovery.h"
 #include "util.h"
 
 #define GROUPCHAT_MAXDATA_LENGTH (MAX_DATA_SIZE - (1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES))
@@ -306,6 +308,16 @@ static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
 
     chat->group[peernum].last_pinged = unix_time();
     chat->group[peernum].pingid = contents.pingid;
+    chat->group[peernum].ping_via = ip_port;
+
+
+    if (chat->assoc) {
+        IPPTs ippts;
+        ippts.timestamp = unix_time();
+        ippts.ip_port = ip_port;
+
+        Assoc_add_entry(chat->assoc, chat->group[peernum].client_id, &ippts, NULL);
+    }
 
     return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (uint8_t *)&contents, sizeof(contents),
                                 CRYPTO_PACKET_GROUP_CHAT_GET_NODES);
@@ -373,6 +385,9 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
     uint16_t numnodes = (len - sizeof(contents.pingid)) / sizeof(groupchat_nodes);
     uint32_t i;
 
+    IPPTs ippts_send;
+    ippts_send.timestamp = unix_time();
+
     for (i = 0; i < numnodes; ++i) {
         if (peer_okping(chat, contents.nodes[i].client_id) > 0) {
             int peern = peer_in_chat(chat, contents.nodes[i].client_id);
@@ -385,10 +400,26 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
                 continue;
 
             send_getnodes(chat, contents.nodes[i].ip_port, peern);
+
+            if (chat->assoc) {
+                ippts_send.ip_port = contents.nodes[i].ip_port;
+                Assoc_add_entry(chat->assoc, contents.nodes[i].client_id, &ippts_send, NULL);
+            }
         }
     }
 
     add_closepeer(chat, chat->group[peernum].client_id, source);
+
+    if (chat->assoc) {
+        ippts_send.ip_port = chat->group[peernum].ping_via;
+        ippts_send.timestamp = chat->group[peernum].last_pinged;
+
+        IP_Port ipp_recv;
+        ipp_recv = source;
+
+        Assoc_add_entry(chat->assoc, contents.nodes[i].client_id, &ippts_send, &ipp_recv);
+    }
+
     return 0;
 }
 
@@ -583,7 +614,8 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
     chat->group_message_userdata = userdata;
 }
 
-Group_Chat *new_groupchat(Networking_Core *net)
+
+Group_Chat *new_groupchat(Networking_Core *net, Assoc *assoc)
 {
     unix_time_update();
 
@@ -593,6 +625,9 @@ Group_Chat *new_groupchat(Networking_Core *net)
     Group_Chat *chat = calloc(1, sizeof(Group_Chat));
     chat->net = net;
     crypto_box_keypair(chat->self_public_key, chat->self_secret_key);
+
+    chat->assoc = assoc;
+
     return chat;
 }
 

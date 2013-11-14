@@ -26,8 +26,10 @@
 #endif
 
 #include "Messenger.h"
+#include "assoc.h"
 #include "network.h"
 #include "util.h"
+
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -784,7 +786,7 @@ int add_groupchat(Messenger *m)
 
     for (i = 0; i < m->numchats; ++i) {
         if (m->chats[i] == NULL) {
-            Group_Chat *newchat = new_groupchat(m->net);
+            Group_Chat *newchat = new_groupchat(m->net, m->dht->assoc);
 
             if (newchat == NULL)
                 return -1;
@@ -803,7 +805,7 @@ int add_groupchat(Messenger *m)
     if (temp == NULL)
         return -1;
 
-    temp[m->numchats] = new_groupchat(m->net);
+    temp[m->numchats] = new_groupchat(m->net, m->dht->assoc);
 
     if (temp[m->numchats] == NULL)
         return -1;
@@ -2006,6 +2008,9 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
+
+                if (m->dht->assoc)
+                    Assoc_self_client_id_changed(m->dht->assoc);
             } else
                 return -1;    /* critical */
 

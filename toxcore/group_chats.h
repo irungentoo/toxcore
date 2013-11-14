@@ -27,12 +27,15 @@
 
 #include "net_crypto.h"
 
+typedef struct Assoc Assoc;
+
 #define MAX_NICK_BYTES 128
 
 typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     uint64_t    pingid;
     uint64_t    last_pinged;
+    IP_Port     ping_via;
 
     uint64_t    last_recv;
     uint64_t    last_recv_msgping;
@@ -46,7 +49,6 @@ typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     IP_Port     ip_port;
     uint64_t    last_recv;
-
 } Group_Close;
 
 #define GROUP_CLOSE_CONNECTIONS 6
@@ -69,6 +71,8 @@ typedef struct Group_Chat {
     uint8_t     nick[MAX_NICK_BYTES];
     uint16_t    nick_len;
     uint64_t last_sent_nick;
+
+    Assoc *assoc;
 } Group_Chat;
 
 #define GROUP_CHAT_PING 0
@@ -120,7 +124,7 @@ uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
  *
  * Returns a NULL pointer if fail.
  */
-Group_Chat *new_groupchat(Networking_Core *net);
+Group_Chat *new_groupchat(Networking_Core *net, Assoc *assoc);
 
 
 /* Kill a group chat
