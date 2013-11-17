@@ -31,8 +31,9 @@ typedef uint64_t (*Assoc_distance_absolute_callback)(Assoc *assoc, void *callbac
 
 /*****************************************************************************/
 
-/* Central entry point for new associations: add a new candidate to the cache */
-void Assoc_add_entry(Assoc *assoc, uint8_t *id, IPPTs *ippts_send, IP_Port *ipp_recv);
+/* Central entry point for new associations: add a new candidate to the cache
+ * returns 1 if entry is stored, 2 if existing entry was updated, 0 else */
+uint8_t Assoc_add_entry(Assoc *assoc, uint8_t *id, IPPTs *ippts_send, IP_Port *ipp_recv, uint8_t used);
 
 /*****************************************************************************/
 
@@ -61,13 +62,26 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *close_entries
 
 /*****************************************************************************/
 
-/* create */
-Assoc *new_Assoc(DHT *dht);
+/* create: default sizes (6, 5 => 320 entries) */
+Assoc *new_Assoc_default(uint8_t *public_id);
 
-/* avoid storing own ID/assoc */
-void Assoc_self_client_id_changed(Assoc *assoc);
+/* create: customized sizes
+ * total is (2^bits) * entries
+ * bits should be between 2 and 15 (else it's trimmed)
+ * entries will be reduced to the closest prime smaller or equal
+ *
+ * preferably bits should be large and entries small to ensure spread
+ * in the search space (e. g. 5, 5 is preferable to 2, 41) */
+Assoc *new_Assoc(size_t bits, size_t entries, uint8_t *public_id);
+
+/* public_id changed (loaded), update which entry isn't stored */
+void Assoc_self_client_id_changed(Assoc *assoc, uint8_t *public_id);
 
 /* destroy */
 void kill_Assoc(Assoc *assoc);
+
+#ifdef LOGGING
+void Assoc_status(Assoc *assoc);
+#endif
 
 #endif /* !__ASSOC_H__ */

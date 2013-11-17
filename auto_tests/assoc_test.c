@@ -14,21 +14,46 @@
 
 #include <check.h>
 
-START_TEST(test_X)
+START_TEST(test_basics)
 {
     /* TODO: real test */
-    Assoc *assoc = new_Assoc(NULL);
-
     uint8_t id[CLIENT_ID_SIZE];
-    IPPTs ippts_send;
-    IP_Port ipp_recv;
+    Assoc *assoc = new_Assoc_default(id);
+    ck_assert_msg(assoc != NULL, "failed to create default assoc");
 
-    Assoc_add_entry(assoc, id, &ippts_send, &ipp_recv);
+    kill_Assoc(assoc);
+    assoc = new_Assoc(17, 4, id); /* results in an assoc of 16/3 */
+    ck_assert_msg(assoc != NULL, "failed to create customized assoc");
+
+    IP_Port ipp;
+    ipp.ip.family = AF_INET;
+    ipp.ip.ip4.uint8[0] = 1;
+    ipp.port = htons(12345);
+
+    IPPTs ippts_send;
+    ippts_send.ip_port = ipp;
+    ippts_send.timestamp = unix_time();
+    IP_Port ipp_recv = ipp;
+
+    uint8_t res = Assoc_add_entry(assoc, id, &ippts_send, &ipp_recv, 0);
+    ck_assert_msg(res == 0, "stored self as entry: expected %u, got %u", 0, res);
+
+    id[0]++;
+
+    res = Assoc_add_entry(assoc, id, &ippts_send, &ipp_recv, 0);
+    ck_assert_msg(res == 1, "failed to store entry: expected %u, got %u", 1, res);
 
     Assoc_close_entries close_entries;
     memset(&close_entries, 0, sizeof(close_entries));
+    close_entries.count = 4;
+    close_entries.count_good = 2;
+    close_entries.wanted_id = id;
 
-    /* uint8_t found = */ Assoc_get_close_entries(assoc, &close_entries);
+    Client_data *entries[close_entries.count];
+    close_entries.result = entries;
+
+    uint8_t found = Assoc_get_close_entries(assoc, &close_entries);
+    ck_assert_msg(found == 1, "get_close_entries(): expected %u, got %u", 1, found);
 }
 END_TEST
 
@@ -46,7 +71,7 @@ Suite *Assoc_suite(void)
 {
     Suite *s = suite_create("Assoc");
 
-    DEFTESTCASE(X);
+    DEFTESTCASE(basics);
 
     return s;
 }

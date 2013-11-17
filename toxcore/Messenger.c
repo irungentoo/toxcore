@@ -786,7 +786,7 @@ int add_groupchat(Messenger *m)
 
     for (i = 0; i < m->numchats; ++i) {
         if (m->chats[i] == NULL) {
-            Group_Chat *newchat = new_groupchat(m->net, m->dht->assoc);
+            Group_Chat *newchat = new_groupchat(m->net);
 
             if (newchat == NULL)
                 return -1;
@@ -805,7 +805,7 @@ int add_groupchat(Messenger *m)
     if (temp == NULL)
         return -1;
 
-    temp[m->numchats] = new_groupchat(m->net, m->dht->assoc);
+    temp[m->numchats] = new_groupchat(m->net);
 
     if (temp[m->numchats] == NULL)
         return -1;
@@ -1821,6 +1821,18 @@ void do_messenger(Messenger *m)
 
     if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         loglog(" = = = = = = = = \n");
+        Assoc_status(m->dht->assoc);
+
+        if (m->numchats > 0) {
+            size_t c;
+
+            for (c = 0; c < m->numchats; c++) {
+                loglog("---------------- \n");
+                Assoc_status(m->chats[c]->assoc);
+            }
+        }
+
+        loglog(" = = = = = = = = \n");
 
         lastdump = unix_time();
         uint32_t client, last_pinged;
@@ -2010,7 +2022,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
 
                 if (m->dht->assoc)
-                    Assoc_self_client_id_changed(m->dht->assoc);
+                    Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
             } else
                 return -1;    /* critical */
 

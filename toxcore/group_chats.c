@@ -310,13 +310,12 @@ static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
     chat->group[peernum].pingid = contents.pingid;
     chat->group[peernum].ping_via = ip_port;
 
-
     if (chat->assoc) {
         IPPTs ippts;
         ippts.timestamp = unix_time();
         ippts.ip_port = ip_port;
 
-        Assoc_add_entry(chat->assoc, chat->group[peernum].client_id, &ippts, NULL);
+        Assoc_add_entry(chat->assoc, chat->group[peernum].client_id, &ippts, NULL, 1);
     }
 
     return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (uint8_t *)&contents, sizeof(contents),
@@ -403,12 +402,12 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
 
             if (chat->assoc) {
                 ippts_send.ip_port = contents.nodes[i].ip_port;
-                Assoc_add_entry(chat->assoc, contents.nodes[i].client_id, &ippts_send, NULL);
+                Assoc_add_entry(chat->assoc, contents.nodes[i].client_id, &ippts_send, NULL, 0);
             }
         }
     }
 
-    add_closepeer(chat, chat->group[peernum].client_id, source);
+    int ok = add_closepeer(chat, chat->group[peernum].client_id, source);
 
     if (chat->assoc) {
         ippts_send.ip_port = chat->group[peernum].ping_via;
@@ -417,7 +416,7 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
         IP_Port ipp_recv;
         ipp_recv = source;
 
-        Assoc_add_entry(chat->assoc, contents.nodes[i].client_id, &ippts_send, &ipp_recv);
+        Assoc_add_entry(chat->assoc, contents.nodes[i].client_id, &ippts_send, &ipp_recv, ok == 0 ? 1 : 0);
     }
 
     return 0;
@@ -615,7 +614,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
 }
 
 
-Group_Chat *new_groupchat(Networking_Core *net, Assoc *assoc)
+Group_Chat *new_groupchat(Networking_Core *net)
 {
     unix_time_update();
 
@@ -626,7 +625,8 @@ Group_Chat *new_groupchat(Networking_Core *net, Assoc *assoc)
     chat->net = net;
     crypto_box_keypair(chat->self_public_key, chat->self_secret_key);
 
-    chat->assoc = assoc;
+    /* (2^4) * 5 = 80 entries seems to be a moderate size */
+    chat->assoc = new_Assoc(4, 5, chat->self_public_key);
 
     return chat;
 }

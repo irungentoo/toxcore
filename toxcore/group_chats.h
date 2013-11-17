@@ -106,7 +106,7 @@ uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
 
 /*
  * Set our nick for this group.
- * 
+ *
  * returns -1 on failure, 0 on success.
  */
 int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len);
@@ -124,7 +124,7 @@ uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
  *
  * Returns a NULL pointer if fail.
  */
-Group_Chat *new_groupchat(Networking_Core *net, Assoc *assoc);
+Group_Chat *new_groupchat(Networking_Core *net);
 
 
 /* Kill a group chat

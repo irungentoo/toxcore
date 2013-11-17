@@ -273,7 +273,7 @@ int DHT_load_new(DHT *dht, uint8_t *data, uint32_t size);
  */
 int DHT_isconnected(DHT *dht);
 
-void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id);
+int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id);
 
 #endif
 

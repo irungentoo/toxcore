@@ -258,13 +258,14 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
         return 1;
 
     /* Associate client_id with the ip the request was sent to */
-    addto_lists(dht, ping->pings[ping_index - 1].ip_port, packet + 1);
+    int used = addto_lists(dht, ping->pings[ping_index - 1].ip_port, packet + 1);
 
     if (dht->assoc) {
         IPPTs ippts;
         ippts.ip_port = ping->pings[ping_index - 1].ip_port;
         ippts.timestamp = ping->pings[ping_index - 1].timestamp;
-        Assoc_add_entry(dht->assoc, packet + 1, &ippts, &source);
+
+        Assoc_add_entry(dht->assoc, packet + 1, &ippts, &source, used > 0 ? 1 : 0);
     }
 
     return 0;
