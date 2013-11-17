@@ -278,7 +278,7 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 void networking_poll(Networking_Core *net)
 {
     unix_time_update();
-    
+
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
@@ -373,13 +373,15 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     /* returns -1 on error, 0 on timeout, the socket on activity */
     int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
 #ifdef LOGGING
+
     /* only dump if not timeout */
     if (res) {
         sprintf(logbuffer, "select(%d): %d (%d, %s) - %d %d %d\n", milliseconds, res, errno,
-                           strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
-                           FD_ISSET(s->sock, &exceptfds));
+                strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
+                FD_ISSET(s->sock, &exceptfds));
         loglog(logbuffer);
     }
+
 #endif
 
     if (FD_ISSET(s->sock, &writefds))
@@ -527,14 +529,14 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     } else
         return NULL;
 
-    if (ip.family == AF_INET6)
-    {
+    if (ip.family == AF_INET6) {
         char ipv6only = 0;
         socklen_t optsize = sizeof(ipv6only);
 #ifdef LOGGING
         errno = 0;
 #endif
         int res = getsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
+
         if ((res == 0) && (ipv6only == 0)) {
 #ifdef LOGGING
             loglog("Dual-stack socket: enabled per default.\n");
@@ -542,6 +544,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         } else {
             ipv6only = 0;
 #ifdef LOGGING
+
             if (res < 0) {
                 sprintf(logbuffer, "Dual-stack socket: Failed to query default. (%d, %s)\n",
                         errno, strerror(errno));
@@ -551,8 +554,9 @@ Networking_Core *new_networking(IP ip, uint16_t port)
             errno = 0;
             res =
 #endif
-                  setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
+                setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
 #ifdef LOGGING
+
             if (res < 0) {
                 sprintf(logbuffer,
                         "Dual-stack socket: Failed to enable, won't be able to receive from/send to IPv4 addresses. (%u, %s)\n",
@@ -560,6 +564,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
                 loglog(logbuffer);
             } else
                 loglog("Dual-stack socket: Enabled successfully.\n");
+
 #endif
         }
 
@@ -607,8 +612,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     *portptr = htons(port_to_try);
     int tries, res;
 
-    for (tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++)
-    {
+    for (tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++) {
         res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
 
         if (!res) {
@@ -674,11 +678,7 @@ int ip_equal(IP *a, IP *b)
         if (a->family == AF_INET)
             return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
         else if (a->family == AF_INET6)
-#ifdef WIN32
-            return IN6_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
-#else
             return IN6_ARE_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
-#endif
         else
             return 0;
     }
