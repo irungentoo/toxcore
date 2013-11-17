@@ -1025,10 +1025,12 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port)
     return -1;
 }
 
-static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8_t *client_id,
+/* returns number of nodes not in kill-timeout */
+static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8_t *client_id,
         Client_data *list, uint32_t list_count)
 {
     uint32_t i;
+    uint8_t not_kill = 0;
     uint64_t temp_time = unix_time();
 
     uint32_t num_nodes = 0;
@@ -1043,6 +1045,8 @@ static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8
 
         for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
             if (!is_timeout(assoc->timestamp, KILL_NODE_TIMEOUT)) {
+                not_kill++;
+
                 if (is_timeout(assoc->last_pinged, PING_INTERVAL)) {
                     send_ping_request(dht->ping, assoc->ip_port, client->client_id );
                     assoc->last_pinged = temp_time;
@@ -1063,6 +1067,8 @@ static void do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8
                  client_id);
         *lastgetnode = temp_time;
     }
+
+    return not_kill;
 }
 
 /* Ping each client in the "friends" list every PING_INTERVAL seconds. Send a get nodes request
@@ -1082,8 +1088,28 @@ static void do_DHT_friends(DHT *dht)
  */
 static void do_Close(DHT *dht)
 {
-    do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->c->self_public_key,
-                                  dht->close_clientlist, LCLIENT_LIST);
+    uint8_t not_killed = do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->c->self_public_key,
+                                                       dht->close_clientlist, LCLIENT_LIST);
+
+    if (!not_killed) {
+        /* all existing nodes are at least KILL_NODE_TIMEOUT,
+         * which means we are mute, as we only send packets to
+         * nodes NOT in KILL_NODE_TIMEOUT
+         *
+         * so: reset all nodes to be BAD_NODE_TIMEOUT, but not
+         * KILL_NODE_TIMEOUT, so we at least keep trying pings */
+        uint64_t badonly = unix_time() - BAD_NODE_TIMEOUT;
+        size_t i, a;
+
+        for (i = 0; i < LCLIENT_LIST; i++) {
+            Client_data *client = &dht->close_clientlist[i];
+            IPPTsPng *assoc;
+
+            for (a = 0, assoc = &client->assoc4; a < 2; a++, assoc = &client->assoc6)
+                if (assoc->timestamp)
+                    assoc->timestamp = badonly;
+        }
+    }
 }
 
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
