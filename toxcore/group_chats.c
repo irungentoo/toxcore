@@ -393,6 +393,7 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
 }
 
 #define GROUP_DATA_MIN_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + 1)
+static void send_names_new_peer(Group_Chat *chat);
 
 static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
 {
@@ -445,6 +446,7 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
                 return 1;
 
             addpeer(chat, contents);
+            send_names_new_peer(chat);
             break;
 
         case GROUP_CHAT_PEER_NICK:
@@ -638,7 +640,11 @@ static void del_dead_peers(Group_Chat *chat)
 }
 
 #define NICK_SEND_INTERVAL 180
-
+static void send_names_new_peer(Group_Chat *chat)
+{
+    group_send_nick(chat, chat->nick, chat->nick_len);
+    chat->last_sent_nick = (unix_time() - NICK_SEND_INTERVAL) + 10;
+}
 static void send_names(Group_Chat *chat)
 {
     /* send own nick from time to time, to let newly added peers be informed
