@@ -732,7 +732,8 @@ static int group_num(Messenger *m, uint8_t *group_public_key)
     uint32_t i;
 
     for (i = 0; i < m->numchats; ++i) {
-        if (id_equal(m->chats[i]->self_public_key, group_public_key))
+        if (m->chats[i] != NULL)
+            if (id_equal(m->chats[i]->self_public_key, group_public_key))
             return i;
     }
 
