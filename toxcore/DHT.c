@@ -257,17 +257,29 @@ static int friend_number(DHT *dht, uint8_t *client_id)
     return -1;
 }
 
+/*TODO: change this to 7 when done*/
+#define HARDENING_ALL_OK 2
+/* return 0 if not.
+ * return 1 if route request are ok
+ * return 2 if it responds to send node packets correctly
+ * return 4 if it can test other nodes correctly
+ * return HARDENING_ALL_OK if all ok.
+ */
+static uint8_t hardening_correct(Hardening *h)
+{
+    return h->routes_requests_ok + (h->send_nodes_ok << 1) + (h->testing_requests << 2);
+}
 /*
  * helper for get_close_nodes(). argument list is a monster :D
  */
 static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nodes_list,
                                   sa_family_t sa_family, Client_data *client_list, uint32_t client_list_length,
-                                  int *num_nodes_ptr, uint8_t is_LAN)
+                                  uint32_t *num_nodes_ptr, uint8_t is_LAN, uint8_t want_good)
 {
     if ((sa_family != AF_INET) && (sa_family != AF_INET6))
         return;
 
-    int num_nodes = *num_nodes_ptr;
+    uint32_t num_nodes = *num_nodes_ptr;
     int ipv46x, j, closest;
     uint32_t i;
 
@@ -317,6 +329,9 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         if (LAN_ip(ipptp->ip_port.ip) == 0 && !is_LAN)
             continue;
 
+        if (want_good && hardening_correct(&ipptp->hardening) != HARDENING_ALL_OK && !id_equal(client_id, client->client_id))
+            continue;
+
         if (num_nodes < MAX_SENT_NODES) {
             memcpy(nodes_list[num_nodes].client_id,
                    client->client_id,
@@ -355,17 +370,20 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
  *
  * TODO: For the love of based <your favorite deity, in doubt use "love"> make
  * this function cleaner and much more efficient.
+ *
+ * want_good : do we want only good nodes as checked with the hardening returned or not?
  */
-static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN)
+static uint32_t get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
+                                uint8_t is_LAN, uint8_t want_good)
 {
-    int num_nodes = 0, i;
+    uint32_t num_nodes = 0, i;
     get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
-                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN);
+                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN, want_good);
 
     for (i = 0; i < dht->num_friends; ++i)
         get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                              &num_nodes, is_LAN);
+                              &num_nodes, is_LAN, want_good);
 
     return num_nodes;
 }
@@ -651,7 +669,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
                  + Node4_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
 
     Node_format nodes_list[MAX_SENT_NODES];
-    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET, LAN_ip(ip_port.ip) == 0);
+    uint32_t num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET, LAN_ip(ip_port.ip) == 0, 1);
 
     if (num_nodes == 0)
         return 0;
@@ -718,7 +736,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
                  + Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
 
     Node_format nodes_list[MAX_SENT_NODES];
-    int num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET6, LAN_ip(ip_port.ip) == 0);
+    uint32_t num_nodes = get_close_nodes(dht, client_id, nodes_list, AF_INET6, LAN_ip(ip_port.ip) == 0, 1);
 
     if (num_nodes == 0)
         return 0;
@@ -1606,10 +1624,11 @@ static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, uint8_t *qu
 static int have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num, sa_family_t sa_family)
 {
     Node_format nodes_list[MAX_SENT_NODES];
-    int num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1);
+    uint32_t num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1, 1);
 
-    if (num_nodes < 1)
-        return -1;
+    if (num_nodes < num) {
+        num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1, 0);
+    }
 
     int counter = 0;
     uint32_t i, j;
@@ -1735,9 +1754,9 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
 
     Node_format nodes_list[MAX_SENT_NODES];
     memset(nodes_list, 0, sizeof(nodes_list));
-    int num_nodes = get_close_nodes(dht, id, nodes_list, sa_family, 1);
+    uint32_t num_nodes = get_close_nodes(dht, id, nodes_list, sa_family, 1, 0);
 
-    if (num_nodes < 1)
+    if (num_nodes == 0)
         return nodes_list[0];
     else
         return nodes_list[rand() % num_nodes];
