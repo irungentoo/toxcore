@@ -607,9 +607,9 @@ int tox_isconnected(Tox *tox)
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
-Tox *tox_new(uint8_t ipv6enabled)
+Tox *tox_new(uint8_t ipv6enabled, char *pwd)
 {
-    return new_messenger(ipv6enabled);
+    return new_messenger(ipv6enabled, pwd);
 }
 
 /* Run this before closing shop.

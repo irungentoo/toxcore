@@ -734,7 +734,7 @@ static int group_num(Messenger *m, uint8_t *group_public_key)
     for (i = 0; i < m->numchats; ++i) {
         if (m->chats[i] != NULL)
             if (id_equal(m->chats[i]->self_public_key, group_public_key))
-            return i;
+                return i;
     }
 
     return -1;
@@ -1390,7 +1390,7 @@ static void LANdiscovery(Messenger *m)
 }
 
 /* Run this at startup. */
-Messenger *new_messenger(uint8_t ipv6enabled)
+Messenger *new_messenger(uint8_t ipv6enabled, char *pwd)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
@@ -1425,6 +1425,14 @@ Messenger *new_messenger(uint8_t ipv6enabled)
 
     new_keys(m->net_crypto);
     m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
+
+    if (pwd != NULL) {
+        m->pwdset = 1;
+#ifdef DEBUG
+        assert(crypto_box_SECRETKEYBYTES == crypto_hash_sha256_BYTES);
+#endif
+        crypto_hash_sha256(m->pwdhash, (unsigned char *)pwd, strlen(pwd));
+    }
 
     friendreq_init(&(m->fr), m->net_crypto);
     LANdiscovery_init(m->dht);
@@ -1931,17 +1939,24 @@ void wait_cleanup_messenger(Messenger *m, uint8_t *data, uint16_t len)
 #define MESSENGER_STATE_COOKIE_GLOBAL 0x15ed1b1e
 
 #define MESSENGER_STATE_COOKIE_TYPE      0x01ce
-#define MESSENGER_STATE_TYPE_NOSPAMKEYS  1
-#define MESSENGER_STATE_TYPE_DHT         2
-#define MESSENGER_STATE_TYPE_FRIENDS     3
-#define MESSENGER_STATE_TYPE_NAME        4
+#define MESSENGER_STATE_TYPE_NOSPAMKEYS       1
+#define MESSENGER_STATE_TYPE_DHT              2
+#define MESSENGER_STATE_TYPE_FRIENDS          3
+#define MESSENGER_STATE_TYPE_NAME             4
+#define MESSENGER_STATE_TYPE_NOSPAMKEYS_ENC   5
+
+#define MESSENGER_STATE_ENC_CHKBYTES          2
 
 /*  return size of the messenger data (for saving) */
 uint32_t messenger_size(Messenger *m)
 {
-    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
+    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2, enc_ex = 0;
+
+    if (m->pwdset)
+        enc_ex = MESSENGER_STATE_ENC_CHKBYTES;
+
     return   size32 * 2                                      // global cookie
-             + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+             + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + enc_ex
              + sizesubhead + DHT_size(m->dht)                  // DHT
              + sizesubhead + sizeof(Friend) * m->numfriends    // Friendlist itself.
              + sizesubhead + m->name_length                    // Own nickname.
@@ -1960,7 +1975,7 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 /* Save the messenger in data of size Messenger_size(). */
 void messenger_save(Messenger *m, uint8_t *data)
 {
-    uint32_t len;
+    uint32_t i, len;
     uint16_t type;
     uint32_t *data32, size32 = sizeof(uint32_t);
 
@@ -1973,10 +1988,24 @@ void messenger_save(Messenger *m, uint8_t *data)
     assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
 #endif
     len = size32 + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
-    type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
+
+    if (m->pwdset) {
+        len += MESSENGER_STATE_ENC_CHKBYTES;
+        type = MESSENGER_STATE_TYPE_NOSPAMKEYS_ENC;
+    } else
+        type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
+
     data = z_state_save_subheader(data, len, type);
     *(uint32_t *)data = get_nospam(&(m->fr));
     save_keys(m->net_crypto, data + size32);
+
+    if (m->pwdset) {
+        for (i = 0; i < crypto_box_SECRETKEYBYTES; i++)
+            data[size32 + crypto_box_PUBLICKEYBYTES + i] ^= m->pwdhash[i];
+
+        *(uint16_t *)(data + len - 2) = address_checksum(m->pwdhash, sizeof(m->pwdhash));
+    }
+
     data += len;
 
     len = DHT_size(m->dht);
@@ -2007,6 +2036,31 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
+            } else
+                return -1;    /* critical */
+
+            break;
+
+        case MESSENGER_STATE_TYPE_NOSPAMKEYS_ENC:
+            if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t) + MESSENGER_STATE_ENC_CHKBYTES) {
+                set_nospam(&(m->fr), *(uint32_t *)data);
+
+                if (!m->pwdset) {
+                    /* encrypted secret key but no password set: error out */
+                    return -1;
+                }
+
+                uint16_t i, chksum = address_checksum(m->pwdhash, sizeof(m->pwdhash));
+
+                if (chksum != *(uint16_t *)(data + length - 2)) {
+                    /* password checksum doesn't match: error out */
+                    return -1;
+                }
+
+                load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
+
+                for (i = 0; i < crypto_box_SECRETKEYBYTES; i++)
+                    m->net_crypto->self_secret_key[i] ^= m->pwdhash[i];
             } else
                 return -1;    /* critical */
 

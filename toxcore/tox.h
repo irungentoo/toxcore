@@ -549,11 +549,12 @@ int tox_isconnected(Tox *tox);
  *    IPv4 communication
  *  If set to anything else, creates an IPv6 socket which allows both IPv4 AND
  *    IPv6 communication
+ *  pwd is an optional password, the secret key is xor-hashed if set
  *
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
-Tox *tox_new(uint8_t ipv6enabled);
+Tox *tox_new(uint8_t ipv6enabled, char *pwd);
 
 /* Run this before closing shop.
  * Free all datastructures. */

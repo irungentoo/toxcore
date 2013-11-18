@@ -24,17 +24,23 @@
 #include "config.h"
 #endif
 
-#ifdef __WIN32__
+#ifdef WIN32
+
 #define _WIN32_WINNT 0x501
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#else
+
+#else /* !WIN32 */
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <netdb.h>
-#endif
+
+#include <termios.h>
+#include <unistd.h>
+#endif /* !WIN32 */
 
 
 #include "nTox.h"
@@ -902,7 +908,13 @@ static int load_data(Tox *m)
             return 0;
         }
 
-        tox_load(m, data, size);
+        if (size > 0) {
+            int res = tox_load(m, data, size);
+
+            if (res == -1) {
+                new_lines("[!] couldn't interpret input from data file: state reset.");
+            }
+        }
 
         if (fclose(data_file) < 0) {
             perror("[!] fclose failed");
@@ -1041,6 +1053,67 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
     fclose(pFile);
 }
 
+uint8_t pwdread(char *pwdptr, size_t pwdlen)
+{
+    uint8_t ok = 1, retval = 0;
+
+#ifdef WIN32
+    /* hopefully this is close to the right thing for windows... */
+    uint8_t ok = 1;
+    DWORD con_mode;
+    HANDLE stdin_handle = GetStdHandle(STD_INPUT_HANDLE);
+
+    if (!stdin_handle || (stdin_handle == INVALID_HANDLE_VALUE))
+        ok = 0;
+    else if (!GetConsoleMode(stdin_handle, &con_mode))
+        ok = 0;
+    else if (!SetConsoleMode(stdin_handle, con_mode & (~ENABLE_ECHO_INPUT)))
+        ok = 0;
+
+#else /* !WIN32 */
+    struct termios t;
+    int rc = tcgetattr(STDIN_FILENO, &t);
+
+    if (rc)
+        ok = 0;
+    else {
+        t.c_lflag &= ~ECHO;
+
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &t))
+            ok = 0;
+    }
+
+#endif /* !WIN32 */
+
+    if (!ok)
+        printf("WARNING: Failed to disable echoing!\nYOUR PASSWORD WILL BE VISIBLE.\n");
+
+    printf("Please enter password (max. 16 chars, no space): ");
+
+    if (!fgets(pwdptr, pwdlen, stdin))
+        printf("\nFailed to read password. Continuing without. Loading of your state file will probably fail.\n");
+    else
+        retval = 1;
+
+#ifdef WIN32
+    printf("\n");
+
+    if (ok)
+        SetConsoleMode(stdin_handle, con_mode);
+
+#else /* !WIN32 */
+    printf("\n");
+
+    if (ok) {
+        t.c_lflag |= ECHO;
+        tcsetattr(STDIN_FILENO, TCSANOW, &t);
+    }
+
+#endif /* WIN32 */
+
+    return retval;
+}
+
 int main(int argc, char *argv[])
 {
     /* minimalistic locale support (i.e. when printing dates) */
@@ -1063,6 +1136,14 @@ int main(int argc, char *argv[])
     if (argvoffset < 0)
         exit(1);
 
+    uint8_t pwdset = 0;
+    char pwd[17];
+
+    if ((argc > argvoffset + 1) && !strcmp(argv[argvoffset + 1], "-p")) {
+        argvoffset++;
+        pwdset = pwdread(pwd, sizeof(pwd));
+    }
+
     int on = 0;
     int c = 0;
     char *filename = "data";
@@ -1075,12 +1156,17 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[argc - 2], "-f"))
             filename = argv[argc - 1];
 
-    m = tox_new(ipv6enabled);
+    m = tox_new(ipv6enabled, pwdset ? pwd : NULL);
 
     if ( !m ) {
         fputs("Failed to allocate Messenger datastructure", stderr);
         exit(0);
     }
+
+    initscr();
+    noecho();
+    raw();
+    getmaxyx(stdscr, y, x);
 
     load_data_or_init(m, filename);
 
@@ -1093,11 +1179,6 @@ int main(int argc, char *argv[])
     tox_callback_file_data(m, write_file, NULL);
     tox_callback_file_control(m, file_print_control, NULL);
     tox_callback_file_sendrequest(m, file_request_accept, NULL);
-
-    initscr();
-    noecho();
-    raw();
-    getmaxyx(stdscr, y, x);
 
     new_lines("/h for list of commands");
     get_id(m, idstring);
