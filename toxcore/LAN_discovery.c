@@ -109,7 +109,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t *da
     int i;
 
     for (i = 0; i < broadcast_count; i++)
-        sendpacket(net, broadcast_ip_port[i], data, 1 + crypto_box_PUBLICKEYBYTES);
+        sendpacket(net, broadcast_ip_port[i], data, length);
 
     return 1;
 }
