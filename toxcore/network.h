@@ -141,7 +141,7 @@ typedef union {
     uint8_t uint8[8];
 } IP4_Port;
 
-typedef struct {
+typedef struct IP_Port {
     IP ip;
     uint16_t port;
 } IP_Port;
