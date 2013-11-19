@@ -2175,9 +2175,9 @@ int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length)
     return 0;
 }
 
-/* Return the number of chat in the instance m.
+/* Return the number of chats in the instance m.
  * You should use this to determine how much memory to allocate
- * for copy_grouplist. */
+ * for copy_chatlist. */
 uint32_t count_chatlist(Messenger *m)
 {
     uint32_t ret = 0;

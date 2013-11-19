@@ -407,7 +407,7 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
     
 /* Return the number of chats in the instance m.
  * You should use this to determine how much memory to allocate
- * for copy_friendlist. */
+ * for copy_chatlist. */
 uint32_t tox_count_chatlist(Tox *tox);
 
 /* Copy a list of valid chat IDs into the array out_list.
