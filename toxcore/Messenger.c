@@ -2184,7 +2184,9 @@ uint32_t count_chatlist(Messenger *m)
     uint32_t i;
     
     for (i = 0; i < m->numchats; i++) {
-        ret++;
+        if (m->chats[i]) {
+            ret++;
+        }
     }
     
     return ret;
@@ -2212,8 +2214,10 @@ uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size)
             break; /* Abandon ship */
         }
         
-        out_list[i] = i;
-        ret++;
+        if (m->chats[i]) {
+            out_list[i] = i;
+            ret++;
+        }
     }
     
     return ret;
