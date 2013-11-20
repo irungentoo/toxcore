@@ -49,7 +49,7 @@ before_script:
   - make -j3 >/dev/null
   - sudo make install > /dev/null
   - cd ..
-  - echo creating librarys' links and updating cache
+  - echo creating libraries links and updating cache
   - sudo ldconfig > /dev/null
   - echo installing check #needed for unit tests
   - sudo apt-get install check > /dev/null
