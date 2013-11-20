@@ -2129,12 +2129,12 @@ uint32_t copy_friendlist(Messenger *m, int *out_list, uint32_t list_size)
     uint32_t ret = 0;
 
     for (i = 0; i < m->numfriends; i++) {
-        if (i >= list_size) {
+        if (ret >= list_size) {
             break; /* Abandon ship */
         }
 
         if (m->friendlist[i].status > 0) {
-            out_list[i] = i;
+            out_list[ret] = i;
             ret++;
         }
     }
@@ -2210,12 +2210,12 @@ uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size)
     uint32_t ret = 0;
     
     for (i = 0; i < m->numchats; i++) {
-        if (i >= list_size) {
+        if (ret >= list_size) {
             break; /* Abandon ship */
         }
         
         if (m->chats[i]) {
-            out_list[i] = i;
+            out_list[ret] = i;
             ret++;
         }
     }
