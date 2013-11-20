@@ -4,50 +4,55 @@ compiler:
   - clang
 
 before_script:
-# installing libsodium, needed for Core
-  - git clone git://github.com/jedisct1/libsodium.git
+  - echo installing libsodium #needed for Core
+  - git clone git://github.com/jedisct1/libsodium.git > /dev/null
   - cd libsodium
-  - git checkout tags/0.4.2
-  - ./autogen.sh
-  - ./configure && make check -j3
-  - sudo make install
+  - git checkout tags/0.4.2 > /dev/null
+  - ./autogen.sh > /dev/null
+  - ./configure > /dev/null
+  - make check -j3 > /dev/null
+  - sudo make install >/dev/null
   - cd ..
-# installing libconfig, needed for DHT_bootstrap_daemon
-  - wget http://www.hyperrealm.com/libconfig/libconfig-1.4.9.tar.gz
-  - tar -xvzf libconfig-1.4.9.tar.gz
+  - echo installing libconfig #needed for DHT_bootstrap_daemon
+  - wget http://www.hyperrealm.com/libconfig/libconfig-1.4.9.tar.gz > /dev/null
+  - tar -xvzf libconfig-1.4.9.tar.gz > /dev/null
   - cd libconfig-1.4.9
-  - ./configure && make -j3
-  - sudo make install
+  - ./configure > /dev/null
+  - make -j3 > /dev/null
+  - sudo make install > /dev/null
   - cd ..
-# installing libopus, needed for audio encoding/decoding
-  - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz
-  - tar xzvf opus-1.0.3.tar.gz
+  - echo installing libopus #needed for audio encoding/decoding
+  - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz > /dev/null
+  - tar xzvf opus-1.0.3.tar.gz > /dev/null
   - cd opus-1.0.3
-  - ./configure && make -j3
-  - sudo make install
+  - ./configure > /dev/null
+  - make -j3 > /dev/null
+  - sudo make install > /dev/null
   - cd ..
-# installing libsdl1.2, needed for displaying video frames
-  - wget http://www.libsdl.org/release/SDL-1.2.15.tar.gz
-  - tar -xvzf SDL-1.2.15.tar.gz
+  - echo installing libsdl1.2 #needed for displaying video frames
+  - wget http://www.libsdl.org/release/SDL-1.2.15.tar.gz > /dev/null
+  - tar -xvzf SDL-1.2.15.tar.gz > /dev/null
   - cd SDL-1.2.15
-  - ./configure && make -j3
-  - sudo make install
+  - ./configure > /dev/null
+  - make -j3 /dev/null
+  - sudo make install > /dev/null
   - cd ..
-# installing libopenal, needed for audio capture/playback
-  - sudo apt-get install libopenal-dev
-# installing yasm, needed for compiling ffmpeg
-  - sudo apt-get install yasm
-# installing ffmpeg, needed for capturing and encoding/decoding video
-  - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz
-  - tar -xvzf ffmpeg-2.0.2.tar.gz
+  - echo installing libopenal #needed for audio capture/playback
+  - sudo apt-get install libopenal-dev > /dev/null
+  - echo installing yasm #needed for compiling ffmpeg
+  - sudo apt-get install yasm > /dev/null
+  - echo installing ffmpeg #needed for capturing and encoding/decoding video
+  - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz > /dev/null
+  - tar -xvzf ffmpeg-2.0.2.tar.gz > /dev/null
   - cd ffmpeg-2.0.2
-  - ./configure && make -j3
-  - sudo make install
+  - ./configure > /dev/null
+  - make -j3 >/dev/null
+  - sudo make install > /dev/null
   - cd ..
-# creating librarys' links and updating cache
-  - sudo ldconfig
-# installing check, needed for unit tests
-  - sudo apt-get install check
+  - echo creating librarys' links and updating cache
+  - sudo ldconfig > /dev/null
+ -  echo installing check #needed for unit tests
+  - sudo apt-get install check > /dev/null
 
 script:
   - autoreconf -i
