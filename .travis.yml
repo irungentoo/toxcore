@@ -51,7 +51,7 @@ before_script:
   - cd ..
   - echo creating librarys' links and updating cache
   - sudo ldconfig > /dev/null
- -  echo installing check #needed for unit tests
+  - echo installing check #needed for unit tests
   - sudo apt-get install check > /dev/null
 
 script:
