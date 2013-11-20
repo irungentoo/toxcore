@@ -2129,12 +2129,12 @@ uint32_t copy_friendlist(Messenger *m, int *out_list, uint32_t list_size)
     uint32_t ret = 0;
 
     for (i = 0; i < m->numfriends; i++) {
-        if (i >= list_size) {
+        if (ret >= list_size) {
             break; /* Abandon ship */
         }
 
         if (m->friendlist[i].status > 0) {
-            out_list[i] = i;
+            out_list[ret] = i;
             ret++;
         }
     }
@@ -2173,5 +2173,53 @@ int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length)
     }
 
     return 0;
+}
+
+/* Return the number of chats in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_chatlist. */
+uint32_t count_chatlist(Messenger *m)
+{
+    uint32_t ret = 0;
+    uint32_t i;
+    
+    for (i = 0; i < m->numchats; i++) {
+        if (m->chats[i]) {
+            ret++;
+        }
+    }
+    
+    return ret;
+}
+
+/* Copy a list of valid chat IDs into the array out_list.
+ * If out_list is NULL, returns 0.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size)
+{
+    if (!out_list)
+        return 0;
+    
+    if (m->numchats == 0) {
+        return 0;
+    }
+    
+    uint32_t i;
+    uint32_t ret = 0;
+    
+    for (i = 0; i < m->numchats; i++) {
+        if (ret >= list_size) {
+            break; /* Abandon ship */
+        }
+        
+        if (m->chats[i]) {
+            out_list[ret] = i;
+            ret++;
+        }
+    }
+    
+    return ret;
 }
 
