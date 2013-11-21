@@ -678,6 +678,13 @@ int ip_equal(IP *a, IP *b)
         if (a->family == AF_INET)
             return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
         else if (a->family == AF_INET6)
+<<<<<<< HEAD
+=======
+#ifdef WIN32
+            return IN6_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
+
+#else
+>>>>>>> 1473126f9a459f31f4c33262a21987a3bb7dde65
             return IN6_ARE_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
         else
             return 0;

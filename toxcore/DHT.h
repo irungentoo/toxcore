@@ -35,11 +35,6 @@
 /* A list of the clients mathematically closest to ours. */
 #define LCLIENT_LIST 32
 
-/* The list of ip ports along with the ping_id of what we sent them and a timestamp. */
-#define LPING_ARRAY 256 // NOTE: Deprecated (doesn't do anything).
-
-#define LSEND_NODES_ARRAY LPING_ARRAY/2
-
 /* Maximum newly announced nodes to ping per TIME_TOPING seconds. */
 #define MAX_TOPING 16
 
@@ -60,19 +55,33 @@ typedef struct {
 } IPPTs;
 
 typedef struct {
+    /* Node routes request correctly (true (1) or false/didn't check (0)) */
+    uint8_t     routes_requests_ok;
+    /* Time which we last checked this.*/
+    uint64_t    routes_requests_timestamp;
+    uint8_t     routes_requests_pingedid[CLIENT_ID_SIZE];
+    /* Node sends correct send_node (true (1) or false/didn't check (0)) */
+    uint8_t     send_nodes_ok;
+    /* Time which we last checked this.*/
+    uint64_t    send_nodes_timestamp;
+    uint8_t     send_nodes_pingedid[CLIENT_ID_SIZE];
+    /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
+    uint8_t     testing_requests;
+    /* Time which we last checked this.*/
+    uint64_t    testing_timestamp;
+    uint8_t     testing_pingedid[CLIENT_ID_SIZE];
+} Hardening;
+
+typedef struct {
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
 
+    Hardening hardening;
     /* Returned by this node. Either our friend or us. */
     IP_Port     ret_ip_port;
     uint64_t    ret_timestamp;
 } IPPTsPng;
-
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    IPPTsPng    assoc;
-} Client_data_old; /* required to load old state files */
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
@@ -91,17 +100,6 @@ typedef struct {
     uint64_t    NATping_id;
     uint64_t    NATping_timestamp;
 } NAT;
-
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    Client_data_old client_list[MAX_FRIEND_CLIENTS];
-
-    /* Time at which the last get_nodes request was sent. */
-    uint64_t    lastgetnode;
-
-    /* Symetric NAT hole punching stuff. */
-    NAT         nat;
-} DHT_Friend_old;  /* required to load old state files */
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
@@ -127,11 +125,6 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 
-typedef struct {
-    IP_Port  ip_port;
-    uint64_t id;
-    uint64_t timestamp;
-} pinged_t;
 
 typedef struct PING PING;
 typedef struct Assoc Assoc;
@@ -145,10 +138,17 @@ typedef struct {
     DHT_Friend  *friends_list;
     uint16_t     num_friends;
 
+<<<<<<< HEAD
     pinged_t     send_nodes[LSEND_NODES_ARRAY];
     PING        *ping;
 
     Assoc       *assoc;
+=======
+    void        *ping;
+
+    /* Note: this key should not be/is not used to transmit any sensitive materials */
+    uint8_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
+>>>>>>> 1473126f9a459f31f4c33262a21987a3bb7dde65
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
@@ -254,19 +254,17 @@ uint32_t DHT_size(DHT *dht);
 /* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data);
 
-/* Initialize DHT. */
-DHT *new_DHT(Net_Crypto *c);
-
-void kill_DHT(DHT *dht);
-
 /* Load the DHT from data of size size.
- *  old/new: version of config file
  *
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load_old(DHT *dht, uint8_t *data, uint32_t size);
-int DHT_load_new(DHT *dht, uint8_t *data, uint32_t size);
+int DHT_load(DHT *dht, uint8_t *data, uint32_t length);
+
+/* Initialize DHT. */
+DHT *new_DHT(Net_Crypto *c);
+
+void kill_DHT(DHT *dht);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.

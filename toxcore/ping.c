@@ -44,7 +44,17 @@
 /* Ping newly announced nodes to ping per TIME_TOPING seconds*/
 #define TIME_TOPING 5
 
+<<<<<<< HEAD
 typedef struct PING {
+=======
+typedef struct {
+    IP_Port  ip_port;
+    uint64_t id;
+    uint64_t timestamp;
+} pinged_t;
+
+typedef struct {
+>>>>>>> 1473126f9a459f31f4c33262a21987a3bb7dde65
     Net_Crypto *c;
 
     pinged_t    pings[PING_NUM_MAX];
@@ -138,7 +148,7 @@ static int is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)
     return 0;
 }
 
-#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(uint64_t) + ENCRYPTION_PADDING)
+#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(uint64_t) + crypto_box_MACBYTES)
 
 int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
 {
@@ -163,7 +173,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
 
-    if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
+    if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
 
     return sendpacket(ping->c->lossless_udp->net, ipp, pk, sizeof(pk));
@@ -188,7 +198,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
 
-    if (rc != sizeof(ping_id) + ENCRYPTION_PADDING)
+    if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
 
     return sendpacket(ping->c->lossless_udp->net, ipp, pk, sizeof(pk));
@@ -213,7 +223,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
                       ping->c->self_secret_key,
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                      sizeof(ping_id) + ENCRYPTION_PADDING,
+                      sizeof(ping_id) + crypto_box_MACBYTES,
                       (uint8_t *) &ping_id);
 
     if (rc != sizeof(ping_id))
@@ -245,7 +255,7 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
                       ping->c->self_secret_key,
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                      sizeof(ping_id) + ENCRYPTION_PADDING,
+                      sizeof(ping_id) + crypto_box_MACBYTES,
                       (uint8_t *) &ping_id);
 
     if (rc != sizeof(ping_id))

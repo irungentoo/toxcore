@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     unsigned char n[crypto_box_NONCEBYTES];
 
     unsigned char m[500];
-    unsigned char c[sizeof(m) + ENCRYPTION_PADDING];
+    unsigned char c[sizeof(m) + crypto_box_MACBYTES];
 
     unsigned char k[crypto_box_BEFORENMBYTES];
 

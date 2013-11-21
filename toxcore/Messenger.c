@@ -2030,7 +2030,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             break;
 
         case MESSENGER_STATE_TYPE_DHT:
-            DHT_load_new(m->dht, data, length);
+            DHT_load(m->dht, data, length);
             break;
 
         case MESSENGER_STATE_TYPE_FRIENDS:
