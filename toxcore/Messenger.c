@@ -26,10 +26,8 @@
 #endif
 
 #include "Messenger.h"
-#include "assoc.h"
 #include "network.h"
 #include "util.h"
-
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -437,10 +435,6 @@ int setname(Messenger *m, uint8_t *name, uint16_t length)
     for (i = 0; i < m->numfriends; ++i)
         m->friendlist[i].name_sent = 0;
 
-    for (i = 0; i < m->numchats; i++)
-        if (m->chats[i] != NULL)
-            set_nick(m->chats[i], name, length); /* TODO: remove this (group nicks should not be tied to the global one) */
-
     return 0;
 }
 
@@ -734,8 +728,7 @@ static int group_num(Messenger *m, uint8_t *group_public_key)
     uint32_t i;
 
     for (i = 0; i < m->numchats; ++i) {
-        if (m->chats[i] != NULL)
-            if (id_equal(m->chats[i]->self_public_key, group_public_key))
+        if (id_equal(m->chats[i]->self_public_key, group_public_key))
             return i;
     }
 
@@ -793,8 +786,6 @@ int add_groupchat(Messenger *m)
                 return -1;
 
             callback_groupmessage(newchat, &group_message_function, m);
-            /* TODO: remove this (group nicks should not be tied to the global one) */
-            set_nick(newchat, m->name, m->name_length);
             m->chats[i] = newchat;
             return i;
         }
@@ -813,8 +804,6 @@ int add_groupchat(Messenger *m)
 
     m->chats = temp;
     callback_groupmessage(temp[m->numchats], &group_message_function, m);
-    /* TODO: remove this (group nicks should not be tied to the global one) */
-    set_nick(temp[m->numchats], m->name, m->name_length);
     ++m->numchats;
     return (m->numchats - 1);
 }
@@ -1550,15 +1539,12 @@ void do_friends(Messenger *m)
                         if (data_length >= MAX_NAME_LENGTH || data_length == 0)
                             break;
 
-                        /* Make sure the NULL terminator is present. */
-                        data[data_length - 1] = 0;
-
-                        /* inform of namechange before we overwrite the old name */
-                        if (m->friend_namechange)
-                            m->friend_namechange(m, i, data, data_length, m->friend_namechange_userdata);
-
                         memcpy(m->friendlist[i].name, data, data_length);
                         m->friendlist[i].name_length = data_length;
+                        m->friendlist[i].name[data_length - 1] = 0; /* Make sure the NULL terminator is present. */
+
+                        if (m->friend_namechange)
+                            m->friend_namechange(m, i, m->friendlist[i].name, data_length, m->friend_namechange_userdata);
 
                         break;
                     }
@@ -1822,18 +1808,6 @@ void do_messenger(Messenger *m)
 
     if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         loglog(" = = = = = = = = \n");
-        Assoc_status(m->dht->assoc);
-
-        if (m->numchats > 0) {
-            size_t c;
-
-            for (c = 0; c < m->numchats; c++) {
-                loglog("---------------- \n");
-                Assoc_status(m->chats[c]->assoc);
-            }
-        }
-
-        loglog(" = = = = = = = = \n");
 
         lastdump = unix_time();
         uint32_t client, last_pinged;
@@ -2021,9 +1995,6 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
-
-                if (m->dht->assoc)
-                    Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
             } else
                 return -1;    /* critical */
 
@@ -2129,12 +2100,12 @@ uint32_t copy_friendlist(Messenger *m, int *out_list, uint32_t list_size)
     uint32_t ret = 0;
 
     for (i = 0; i < m->numfriends; i++) {
-        if (ret >= list_size) {
+        if (i >= list_size) {
             break; /* Abandon ship */
         }
 
         if (m->friendlist[i].status > 0) {
-            out_list[ret] = i;
+            out_list[i] = i;
             ret++;
         }
     }
@@ -2173,53 +2144,5 @@ int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length)
     }
 
     return 0;
-}
-
-/* Return the number of chats in the instance m.
- * You should use this to determine how much memory to allocate
- * for copy_chatlist. */
-uint32_t count_chatlist(Messenger *m)
-{
-    uint32_t ret = 0;
-    uint32_t i;
-    
-    for (i = 0; i < m->numchats; i++) {
-        if (m->chats[i]) {
-            ret++;
-        }
-    }
-    
-    return ret;
-}
-
-/* Copy a list of valid chat IDs into the array out_list.
- * If out_list is NULL, returns 0.
- * Otherwise, returns the number of elements copied.
- * If the array was too small, the contents
- * of out_list will be truncated to list_size. */
-uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size)
-{
-    if (!out_list)
-        return 0;
-    
-    if (m->numchats == 0) {
-        return 0;
-    }
-    
-    uint32_t i;
-    uint32_t ret = 0;
-    
-    for (i = 0; i < m->numchats; i++) {
-        if (ret >= list_size) {
-            break; /* Abandon ship */
-        }
-        
-        if (m->chats[i]) {
-            out_list[ret] = i;
-            ret++;
-        }
-    }
-    
-    return ret;
 }
 

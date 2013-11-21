@@ -109,7 +109,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t *da
     int i;
 
     for (i = 0; i < broadcast_count; i++)
-        sendpacket(net, broadcast_ip_port[i], data, length);
+        sendpacket(net, broadcast_ip_port[i], data, 1 + crypto_box_PUBLICKEYBYTES);
 
     return 1;
 }
@@ -191,10 +191,6 @@ int LAN_ip(IP ip)
             ip4.ip4.uint32 = ip.ip6.uint32[3];
             return LAN_ip(ip4);
         }
-
-        /* localhost in IPv6 (::1) */
-        if (IN6_IS_ADDR_LOOPBACK(&ip.ip6.in6_addr))
-            return 0;
     }
 
     return -1;

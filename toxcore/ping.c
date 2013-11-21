@@ -27,26 +27,18 @@
 #include "config.h"
 #endif
 
+#include <stdbool.h>
 #include <stdint.h>
 
+#include "net_crypto.h"
 #include "DHT.h"
-#include "assoc.h"
-#include "ping.h"
-
-#include "network.h"
-#include "util.h"
 
 #define PING_NUM_MAX 384
-
-/* 5 seconds */
-#define PING_TIMEOUT 5
+#define PING_TIMEOUT 5 // 5s
 
 /* Ping newly announced nodes to ping per TIME_TOPING seconds*/
 #define TIME_TOPING 5
 
-<<<<<<< HEAD
-typedef struct PING {
-=======
 typedef struct {
     IP_Port  ip_port;
     uint64_t id;
@@ -54,7 +46,6 @@ typedef struct {
 } pinged_t;
 
 typedef struct {
->>>>>>> 1473126f9a459f31f4c33262a21987a3bb7dde65
     Net_Crypto *c;
 
     pinged_t    pings[PING_NUM_MAX];
@@ -65,7 +56,13 @@ typedef struct {
     uint64_t    last_toping;
 } PING;
 
-static int is_ping_timeout(uint64_t time)
+#define __PING_C__
+
+#include "network.h"
+#include "util.h"
+#include "ping.h"
+
+static bool is_ping_timeout(uint64_t time)
 {
     return is_timeout(time, PING_TIMEOUT);
 }
@@ -268,16 +265,7 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
         return 1;
 
     /* Associate client_id with the ip the request was sent to */
-    int used = addto_lists(dht, ping->pings[ping_index - 1].ip_port, packet + 1);
-
-    if (dht->assoc) {
-        IPPTs ippts;
-        ippts.ip_port = ping->pings[ping_index - 1].ip_port;
-        ippts.timestamp = ping->pings[ping_index - 1].timestamp;
-
-        Assoc_add_entry(dht->assoc, packet + 1, &ippts, &source, used > 0 ? 1 : 0);
-    }
-
+    addto_lists(dht, ping->pings[ping_index - 1].ip_port, packet + 1);
     return 0;
 }
 

@@ -27,15 +27,12 @@
 
 #include "net_crypto.h"
 
-typedef struct Assoc Assoc;
-
 #define MAX_NICK_BYTES 128
 
 typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     uint64_t    pingid;
     uint64_t    last_pinged;
-    IP_Port     ping_via;
 
     uint64_t    last_recv;
     uint64_t    last_recv_msgping;
@@ -49,6 +46,7 @@ typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     IP_Port     ip_port;
     uint64_t    last_recv;
+
 } Group_Close;
 
 #define GROUP_CLOSE_CONNECTIONS 6
@@ -65,19 +63,12 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
-
     uint64_t last_sent_ping;
 
-    uint8_t     nick[MAX_NICK_BYTES];
-    uint16_t    nick_len;
-    uint64_t last_sent_nick;
-
-    Assoc *assoc;
 } Group_Chat;
 
 #define GROUP_CHAT_PING 0
 #define GROUP_CHAT_NEW_PEER 16
-#define GROUP_CHAT_PEER_NICK 48
 #define GROUP_CHAT_CHAT_MESSAGE 64
 
 /* Copy the name of peernum to name.
@@ -104,12 +95,6 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  */
 uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
 
-/*
- * Set our nick for this group.
- *
- * returns -1 on failure, 0 on success.
- */
-int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len);
 
 /*
  * Tell everyone about a new peer (a person we are inviting for example.)

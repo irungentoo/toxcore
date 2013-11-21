@@ -43,18 +43,6 @@ typedef unsigned int sock_t;
 /* sa_family_t is the sockaddr_in / sockaddr_in6 family field */
 typedef short sa_family_t;
 
-#ifndef IN6_ARE_ADDR_EQUAL
-#ifdef IN6_ADDR_EQUAL
-#define IN6_ARE_ADDR_EQUAL(a,b) IN6_ADDR_EQUAL(a,b)
-#else
-#define IN6_ARE_ADDR_EQUAL(a,b) \
-   ((((__const uint32_t *) (a))[0] == ((__const uint32_t *) (b))[0]) \
-   && (((__const uint32_t *) (a))[1] == ((__const uint32_t *) (b))[1]) \
-   && (((__const uint32_t *) (a))[2] == ((__const uint32_t *) (b))[2]) \
-   && (((__const uint32_t *) (a))[3] == ((__const uint32_t *) (b))[3]))
-#endif
-#endif
-
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #endif
@@ -146,7 +134,7 @@ typedef union {
     uint8_t uint8[8];
 } IP4_Port;
 
-typedef struct IP_Port {
+typedef struct {
     IP ip;
     uint16_t port;
 } IP_Port;

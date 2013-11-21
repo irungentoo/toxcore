@@ -404,18 +404,6 @@ int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_
  * return -1 on failure
  */
 int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t length);
-    
-/* Return the number of chats in the instance m.
- * You should use this to determine how much memory to allocate
- * for copy_chatlist. */
-uint32_t tox_count_chatlist(Tox *tox);
-
-/* Copy a list of valid chat IDs into the array out_list.
- * If out_list is NULL, returns 0.
- * Otherwise, returns the number of elements copied.
- * If the array was too small, the contents
- * of out_list will be truncated to list_size. */
-uint32_t tox_copy_chatlist(Tox *tox, int *out_list, uint32_t list_size);
 
 
 /****************FILE SENDING FUNCTIONS*****************/
