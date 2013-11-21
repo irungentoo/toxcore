@@ -38,22 +38,6 @@
 /* Maximum newly announced nodes to ping per TIME_TOPING seconds. */
 #define MAX_TOPING 16
 
-/* Ping timeout in seconds */
-#define PING_TIMEOUT 5
-
-/* Ping interval in seconds for each node in our lists. */
-#define PING_INTERVAL 60
-
-/* The number of seconds for a non responsive node to become bad. */
-#define PINGS_MISSED_NODE_GOES_BAD 3
-#define PING_ROUNDTRIP 2
-#define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * PING_INTERVAL + PING_ROUNDTRIP)
-
-typedef struct {
-    IP_Port     ip_port;
-    uint64_t    timestamp;
-} IPPTs;
-
 typedef struct {
     /* Node routes request correctly (true (1) or false/didn't check (0)) */
     uint8_t     routes_requests_ok;
@@ -126,31 +110,23 @@ typedef struct {
 /*----------------------------------------------------------------------------------*/
 
 
-typedef struct PING PING;
-typedef struct Assoc Assoc;
-
 typedef struct {
     Net_Crypto  *c;
 
     Client_data  close_clientlist[LCLIENT_LIST];
-    uint64_t     close_lastgetnodes;
-
     DHT_Friend  *friends_list;
     uint16_t     num_friends;
+    uint64_t     close_lastgetnodes;
 
-<<<<<<< HEAD
-    pinged_t     send_nodes[LSEND_NODES_ARRAY];
-    PING        *ping;
-
-    Assoc       *assoc;
-=======
     void        *ping;
 
     /* Note: this key should not be/is not used to transmit any sensitive materials */
     uint8_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
->>>>>>> 1473126f9a459f31f4c33262a21987a3bb7dde65
 } DHT;
 /*----------------------------------------------------------------------------------*/
+
+
+Client_data *DHT_get_close_list(DHT *dht);
 
 /* Add a new friend to the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.
@@ -271,7 +247,7 @@ void kill_DHT(DHT *dht);
  */
 int DHT_isconnected(DHT *dht);
 
-int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id);
+void addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id);
+
 
 #endif
-
