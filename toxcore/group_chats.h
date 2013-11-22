@@ -77,6 +77,7 @@ typedef struct Group_Chat {
 
 #define GROUP_CHAT_PING 0
 #define GROUP_CHAT_NEW_PEER 16
+#define GROUP_CHAT_QUIT 24
 #define GROUP_CHAT_PEER_NICK 48
 #define GROUP_CHAT_CHAT_MESSAGE 64
 

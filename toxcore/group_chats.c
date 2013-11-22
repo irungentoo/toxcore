@@ -222,41 +222,35 @@ static int addpeer(Group_Chat *chat, uint8_t *client_id)
 }
 
 /*
- * Delete a peer to the group chat.
+ * Delete a peer from the group chat.
  *
  * return 0 if success
  * return -1 if error.
  */
-static int delpeer(Group_Chat *chat, uint8_t *client_id)
+static int delpeer(Group_Chat *chat, int peernum)
 {
-    uint32_t i;
+    if ((uint32_t)peernum >= chat->numpeers)
+        return -1;
+
     Group_Peer *temp;
+    --chat->numpeers;
 
-    for (i = 0; i < chat->numpeers; ++i) {
-        /* Equal */
-        if (id_equal(chat->group[i].client_id, client_id)) {
-            --chat->numpeers;
-
-            if (chat->numpeers == 0) {
-                free(chat->group);
-                chat->group = NULL;
-                return 0;
-            }
-
-            if (chat->numpeers != i)
-                memcpy(&chat->group[i], &chat->group[chat->numpeers], sizeof(Group_Peer));
-
-            temp = realloc(chat->group, sizeof(Group_Peer) * (chat->numpeers));
-
-            if (temp == NULL)
-                return -1;
-
-            chat->group = temp;
-            return 0;
-        }
+    if (chat->numpeers == 0) {
+        free(chat->group);
+        chat->group = NULL;
+        return 0;
     }
 
-    return -1;
+    if (chat->numpeers != (uint32_t)peernum)
+        memcpy(&chat->group[peernum], &chat->group[chat->numpeers], sizeof(Group_Peer));
+
+    temp = realloc(chat->group, sizeof(Group_Peer) * (chat->numpeers));
+
+    if (temp == NULL)
+        return -1;
+
+    chat->group = temp;
+    return 0;
 }
 
 /* Copy the name of peernum to name.
@@ -479,6 +473,13 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
             send_names_new_peer(chat);
             break;
 
+        case GROUP_CHAT_QUIT: /* If peer tells us he is quitting */
+            if (contents_len != 0)
+                return 1;
+
+            delpeer(chat, peernum);
+            break;
+
         case GROUP_CHAT_PEER_NICK:
             if (contents_len > MAX_NICK_BYTES || contents_len == 0)
                 return 1;
@@ -668,8 +669,8 @@ static void del_dead_peers(Group_Chat *chat)
     uint32_t i;
 
     for (i = 0; i < chat->numpeers; ++i) {
-        if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL * 2)) {
-            delpeer(chat, chat->group[i].client_id);
+        if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL * 4)) {
+            delpeer(chat, i);
         }
     }
 }
@@ -706,6 +707,7 @@ void do_groupchat(Group_Chat *chat)
 
 void kill_groupchat(Group_Chat *chat)
 {
+    send_data(chat, 0, 0, GROUP_CHAT_QUIT);
     free(chat->group);
     free(chat);
 }
