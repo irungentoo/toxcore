@@ -736,7 +736,7 @@ static int group_num(Messenger *m, uint8_t *group_public_key)
     for (i = 0; i < m->numchats; ++i) {
         if (m->chats[i] != NULL)
             if (id_equal(m->chats[i]->self_public_key, group_public_key))
-            return i;
+                return i;
     }
 
     return -1;
@@ -1672,7 +1672,7 @@ void do_friends(Messenger *m)
                             break;
 
                         group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
-
+                        chat_bootstrap(m->chats[groupnum], get_friend_ipport(m, i), data + crypto_box_PUBLICKEYBYTES);
                         break;
                     }
 
@@ -2182,13 +2182,13 @@ uint32_t count_chatlist(Messenger *m)
 {
     uint32_t ret = 0;
     uint32_t i;
-    
+
     for (i = 0; i < m->numchats; i++) {
         if (m->chats[i]) {
             ret++;
         }
     }
-    
+
     return ret;
 }
 
@@ -2201,25 +2201,25 @@ uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size)
 {
     if (!out_list)
         return 0;
-    
+
     if (m->numchats == 0) {
         return 0;
     }
-    
+
     uint32_t i;
     uint32_t ret = 0;
-    
+
     for (i = 0; i < m->numchats; i++) {
         if (ret >= list_size) {
             break; /* Abandon ship */
         }
-        
+
         if (m->chats[i]) {
             out_list[ret] = i;
             ret++;
         }
     }
-    
+
     return ret;
 }
 
