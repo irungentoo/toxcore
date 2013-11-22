@@ -417,6 +417,16 @@ uint32_t tox_count_chatlist(Tox *tox);
  * of out_list will be truncated to list_size. */
 uint32_t tox_copy_chatlist(Tox *tox, int *out_list, uint32_t list_size);
 
+/* setup rendezvous at 'at' (internally rounded to RENDEZVOUS_INTERVAL seconds)
+ * using the secret 'secret' (min. length 16) and the given callback routine(s)
+ *
+ *  returns 1 if the setup succeeded, 0 if it failed
+ *  found() will then be called when a rendezvous was successful,
+ *     the returned friend_address is to be (TOX_)FRIEND_ADDRESS_SIZE long
+ *  optionally, timeout() will be called when the timeframe of RENDEZVOUS_INTERVAL around 'at' has passed,
+ *     if 1 is returned, the rendezvous is attempted anew for the next timeframe */
+int tox_rendezvous(Tox *tox, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *friend_address),
+                   uint8_t (*timeout)(void *userdata), void *userdata);
 
 /****************FILE SENDING FUNCTIONS*****************/
 /* NOTE: This how to will be updated.
@@ -533,7 +543,7 @@ uint64_t tox_file_dataremaining(Tox *tox, int friendnumber, uint8_t filenumber, 
 void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
 
 /* Resolves address into an IP address. If successful, sends a "get nodes"
- *   request to the given node with ip, port (in network byte order, HINT: use htons()) 
+ *   request to the given node with ip, port (in network byte order, HINT: use htons())
  *   and public_key to setup connections
  *
  * address can be a hostname or an IP address (IPv4 or IPv6).
@@ -624,4 +634,3 @@ int tox_load(Tox *tox, uint8_t *data, uint32_t length);
 #endif
 
 #endif
-

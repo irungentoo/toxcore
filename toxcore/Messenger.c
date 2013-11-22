@@ -27,6 +27,7 @@
 
 #include "Messenger.h"
 #include "assoc.h"
+#include "rendezvous.h"
 #include "network.h"
 #include "util.h"
 
@@ -1017,6 +1018,29 @@ static void do_allgroupchats(Messenger *m)
     }
 }
 
+/* rendezvous */
+int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
+                 uint8_t (*timeout)(void *userdata), void *userdata)
+{
+    if (!secret || !found)
+        return 0;
+
+    if (!m->rendezvous)
+        return 0;
+
+    rendezvous_init(m->rendezvous, m->net_crypto->self_public_key);
+
+    at = at - (at % RENDEZVOUS_INTERVAL);
+
+    RendezVous_callbacks callbacks;
+    callbacks.found_function = found;
+    callbacks.timeout_function = timeout;
+
+    uint8_t id[FRIEND_ADDRESS_SIZE];
+    getaddress(m, id);
+    return rendezvous_publish(m->rendezvous, id + CLIENT_ID_SIZE, secret, at, &callbacks, userdata);
+}
+
 /****************FILE SENDING*****************/
 
 
@@ -1426,6 +1450,16 @@ Messenger *new_messenger(uint8_t ipv6enabled)
     }
 
     new_keys(m->net_crypto);
+
+    if (m->dht->assoc)
+        Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
+
+#ifdef ASSOC_AVAILABLE
+    m->rendezvous = new_rendezvous(m->dht, m->dht->assoc, m->net);
+#else
+    m->rendezvous = new_rendezvous(m->dht, m->net);
+#endif
+
     m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
 
     friendreq_init(&(m->fr), m->net_crypto);
@@ -1442,6 +1476,7 @@ void kill_messenger(Messenger *m)
     /* FIXME TODO: ideally cleanupMessenger will mirror initMessenger.
      * This requires the other modules to expose cleanup functions.
      */
+    kill_rendezvous(m->rendezvous);
     kill_DHT(m->dht);
     kill_net_crypto(m->net_crypto);
     kill_networking(m->net);
@@ -1817,6 +1852,10 @@ void do_messenger(Messenger *m)
     do_inbound(m);
     do_allgroupchats(m);
     LANdiscovery(m);
+
+    /* non-critical component */
+    if (m->rendezvous)
+        do_rendezvous(m->rendezvous);
 
 #ifdef LOGGING
 

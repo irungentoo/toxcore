@@ -634,9 +634,12 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
     qsort(dist_list, dist_list_len, sizeof(dist_list[0]), dist_index_comp);
 
     /* ok, ok, it's not *perfectly* sorted, because we used an absolute distance
-     * go over the result and see if we need to "smoothen things out"
-     * because those should be only very few and short streaks, the worst regularly
-     * used sorting function aka bubble sort is used */
+     * go over the result and see if we need to "smoothen things out", as unlikely
+     * that might be (absolute distance is 44 bits!)
+     *
+     * because those should be only extremely rare and short streaks, the worst
+     * regularly used sorting function aka bubble sort is used (which is actually
+     * omega-better on very short streaks because of no initial setup cost) */
     uint64_t dist_prev = ~0;
     size_t ind_prev = ~0, ind_curr;
     size_t len = 1;
@@ -665,44 +668,53 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
         dist_index_bubble(assoc, dist_list, ind_prev, ind_curr - 1, state->wanted_id, state->custom_data,
                           state->distance_relative_func);
 
-    /* ok, now dist_list is a strictly ascending sorted list of nodes
-     * a) extract CLOSE_QUOTA_USED clients, not timed out
-     * b) extract (1 - QUOTA) (better!) clients & candidates, not timed out
-     * c) save candidates which would be better, if contact can be established */
-    size_t client_quota_good = 0, pos = 0;
-    size_t client_quota_max = state->count_good;
+    /* ok, now dist_list is a strictly ascending sorted list of nodes */
 
-    ssize_t taken_last = - 1;
+    /* first loop: collect state->count_good good nodes, save bad nodes in passing */
+    size_t pos_good = 0, pos_bad = 0;
+    size_t bad[state->count];
+    ssize_t stored_last = -1;
 
-    for (i = 0; (i < dist_list_len) && (pos < state->count); i++) {
+    for (i = 0; i < dist_list_len; i++) {
         Client_entry *entry = dist_index_entry(assoc, dist_list[i]);
 
         if (entry && entry->hash) {
-            if (client_quota_good >= client_quota_max) {
-                state->result[pos++] = &entry->client;
-                taken_last = i;
-            } else if (!is_timeout(entry->seen_at, BAD_NODE_TIMEOUT)) {
-                state->result[pos++] = &entry->client;
-                client_quota_good++;
-                taken_last = i;
+            if (!is_timeout(entry->seen_at, BAD_NODE_TIMEOUT)) {
+                state->result[pos_good++] = &entry->client;
+                stored_last = i;
+            } else if (pos_bad < state->count) {
+                bad[pos_bad++] = i;
+                stored_last = i;
             }
-        }
+
+            if (pos_good >= state->count_good)
+                break;
+        } else
+            break;
     }
 
-    /* if we had not enough valid entries the list might still not be filled.
-     *
-     * start again from last taken client, but leave out any requirement
-     */
-    if (pos < state->count) {
-        for (i = taken_last + 1; (i < dist_list_len) && (pos < state->count); i++) {
-            Client_entry *entry = dist_index_entry(assoc, dist_list[i]);
+    /* second loop: append the closer bad nodes after the good ones */
+    size_t pos = pos_good;
 
-            if (entry && entry->hash)
-                state->result[pos++] = &entry->client;
-        }
+    for (i = 0; (i < state->count - pos) && (i < pos_bad); i++) {
+        Client_entry *entry = dist_index_entry(assoc, dist_list[bad[i]]);
+
+        state->result[pos++] = &entry->client;
     }
 
-    return pos;
+    /* third loop: like first, but fill in as they come, no restrictions */
+    for (i = stored_last + 1; (i < dist_list_len) && (pos < state->count); i++) {
+        Client_entry *entry = dist_index_entry(assoc, dist_list[i]);
+
+        if (entry && entry->hash)
+            state->result[pos++] = &entry->client;
+        else
+            break;
+    }
+
+    state->count_good = pos_good;
+
+    return pos_good + pos_bad;
 }
 
 /*****************************************************************************/

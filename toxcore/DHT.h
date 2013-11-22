@@ -54,7 +54,7 @@
 #define PING_ROUNDTRIP 2
 #define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * PING_INTERVAL + PING_ROUNDTRIP)
 
-typedef struct {
+typedef struct IPPTs {
     IP_Port     ip_port;
     uint64_t    timestamp;
 } IPPTs;
@@ -74,7 +74,7 @@ typedef struct {
     IPPTsPng    assoc;
 } Client_data_old; /* required to load old state files */
 
-typedef struct {
+typedef struct Client_data {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
@@ -136,7 +136,7 @@ typedef struct {
 typedef struct PING PING;
 typedef struct Assoc Assoc;
 
-typedef struct {
+typedef struct DHT {
     Net_Crypto  *c;
 
     Client_data  close_clientlist[LCLIENT_LIST];
@@ -151,6 +151,8 @@ typedef struct {
     Assoc       *assoc;
 } DHT;
 /*----------------------------------------------------------------------------------*/
+
+void DHT_getnodes(DHT *dht, IP_Port *asknode_ipp, uint8_t *asknode_id, uint8_t *wantednode_id);
 
 /* Add a new friend to the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.

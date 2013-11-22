@@ -663,6 +663,12 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     return sendpacket(dht->c->lossless_udp->net, ip_port, data, sizeof(data));
 }
 
+void DHT_getnodes(DHT *dht, IP_Port *asknode_ipp, uint8_t *asknode_id, uint8_t *wantednode_id)
+{
+    if (dht && asknode_ipp && asknode_id && wantednode_id)
+        getnodes(dht, *asknode_ipp, asknode_id, wantednode_id);
+}
+
 /* Send a send nodes response. */
 /* because of BINARY compatibility, the Node_format MUST BE Node4_format,
  * IPv6 nodes are sent in a different message */

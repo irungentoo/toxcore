@@ -5,6 +5,10 @@
 /* used by rendezvous */
 #define ASSOC_AVAILABLE
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* For the legalese parts, see tox.h. */
 
 /*
@@ -12,8 +16,11 @@
  * for a potential future use
  */
 
-typedef struct IP_Port IP_Port;
 typedef struct Assoc Assoc;
+
+typedef struct Client_data Client_data;
+typedef struct IPPTs IPPTs;
+typedef struct IP_Port IP_Port;
 
 /*****************************************************************************/
 
@@ -44,7 +51,7 @@ typedef struct Assoc_close_entries {
     Assoc_distance_relative_callback   distance_relative_func;
     Assoc_distance_absolute_callback   distance_absolute_func;
 
-    uint8_t                            count_good;   /* that many should be "good" w.r.t. timeout */
+    uint8_t                            count_good;   /* that many should be "good" w.r.t. timeout, on return updated to actual number of good ones */
     uint8_t                            count;        /* allocated number of close_indices */
     Client_data                      **result;
 } Assoc_close_entries;
