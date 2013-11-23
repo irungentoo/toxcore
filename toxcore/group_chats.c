@@ -616,6 +616,19 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
     chat->group_message_userdata = userdata;
 }
 
+uint32_t group_numpeers(Group_Chat *chat)
+{
+    return chat->numpeers;
+}
+
+uint32_t group_client_names(Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t length)
+{
+    uint32_t i;
+    for (i = 0; i < chat->numpeers && i < length; ++i) {
+       group_peername(chat, i, names[i]);
+    }
+    return i;
+}
 
 Group_Chat *new_groupchat(Networking_Core *net)
 {

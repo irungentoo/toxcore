@@ -398,13 +398,27 @@ int tox_invite_friend(Tox *tox, int friendnumber, int groupnumber);
  */
 int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_key);
 
-
 /* send a group message
  * return 0 on success
  * return -1 on failure
  */
 int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t length);
-    
+
+/* Return the number of peers in the group chat on success.
+ * return -1 on failure
+ */
+int tox_group_number_peers(Tox *tox, int groupnumber);
+
+/* List all the peers in the group chat.
+ *
+ * Copies the names of the peers to the name[length][TOX_MAX_NAME_LENGTH] array.
+ *
+ * returns the number of peers on success.
+ *
+ * return -1 on failure.
+ */
+int tox_group_copy_names(Tox *tox, int groupnumber, uint8_t names[][TOX_MAX_NAME_LENGTH], uint16_t length);
+
 /* Return the number of chats in the instance m.
  * You should use this to determine how much memory to allocate
  * for copy_chatlist. */

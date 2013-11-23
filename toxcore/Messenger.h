@@ -497,6 +497,21 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
 
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
 
+/* Return the number of peers in the group chat on success.
+ * return -1 on failure
+ */
+int group_number_peers(Messenger *m, int groupnumber);
+
+/* List all the peers in the group chat.
+ * 
+ * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
+ *
+ * returns the number of peers on success.
+ *
+ * return -1 on failure.
+ */
+int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], uint16_t length);
+
 /****************FILE SENDING*****************/
 
 

@@ -128,6 +128,18 @@ uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
 Group_Chat *new_groupchat(Networking_Core *net);
 
 
+/* Return the number of peers in the group chat.
+ */
+uint32_t group_numpeers(Group_Chat *chat);
+
+/* List all the peers in the group chat.
+ *
+ * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
+ *
+ * returns the number of peers.
+ */
+uint32_t group_client_names(Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t length);
+
 /* Kill a group chat
  *
  * Frees the memory and everything.

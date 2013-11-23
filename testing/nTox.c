@@ -974,13 +974,25 @@ void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *use
             tox_join_groupchat(m, friendnumber, group_public_key));
     new_lines(msg);
 }
+void print_groupchatpeers(Tox *m, int groupnumber)
+{
+    char msg[256];
+    int num = tox_group_number_peers(m, groupnumber);
+    if (num == -1)
+        return;
 
+    uint8_t names[num][TOX_MAX_NAME_LENGTH];
+    tox_group_copy_names(m, groupnumber, names, num);
+    uint32_t i;
+    for (i = 0; i < num; ++i)
+        new_lines(names[i]);
+}
 void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *message, uint16_t length, void *userdata)
 {
     char msg[256 + length];
     uint8_t name[TOX_MAX_NAME_LENGTH];
     int len = tox_group_peername(m, groupnumber, peernumber, name);
-
+    //print_groupchatpeers(m, groupnumber);
     if (len <= 0)
         name[0] = 0;
 

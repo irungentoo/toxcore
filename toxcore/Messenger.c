@@ -707,6 +707,23 @@ int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint
 
 /**********GROUP CHATS************/
 
+/* return 1 if the groupnumber is not valid.
+ * return 0 if the groupnumber is valid.
+ */
+static uint8_t groupnumber_not_valid(Messenger *m, int groupnumber)
+{
+    if ((unsigned int)groupnumber >= m->numchats)
+        return 1;
+
+    if (m->chats == NULL)
+        return 1;
+
+    if (m->chats[groupnumber] == NULL)
+        return 1;
+    return 0;
+}
+
+
 /* returns valid ip port of connected friend on success
  * returns zeroed out IP_Port on failure
  */
@@ -964,6 +981,7 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
     return -1;
 }
 
+
 /* send a group message
  * return 0 on success
  * return -1 on failure
@@ -971,19 +989,40 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
 
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length)
 {
-    if ((unsigned int)groupnumber >= m->numchats)
-        return -1;
-
-    if (m->chats == NULL)
-        return -1;
-
-    if (m->chats[groupnumber] == NULL)
+    if (groupnumber_not_valid(m, groupnumber))
         return -1;
 
     if (group_sendmessage(m->chats[groupnumber], message, length) > 0)
         return 0;
 
     return -1;
+}
+
+/* Return the number of peers in the group chat on success.
+ * return -1 on failure
+ */
+int group_number_peers(Messenger *m, int groupnumber)
+{
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1;
+
+    return group_numpeers(m->chats[groupnumber]);
+}
+
+/* List all the peers in the group chat.
+ *
+ * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
+ *
+ * returns the number of peers on success.
+ *
+ * return -1 on failure.
+ */
+int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], uint16_t length)
+{
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1;
+
+    return group_client_names(m->chats[groupnumber], names, length);
 }
 
 static int handle_group(void *object, IP_Port source, uint8_t *packet, uint32_t length)
