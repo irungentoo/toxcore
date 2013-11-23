@@ -65,6 +65,8 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    void (*peer_namelistchange)(struct Group_Chat *m, void *);
+    void *group_namelistchange_userdata;
 
     uint64_t last_sent_ping;
 
@@ -94,9 +96,16 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name);
  *
  * format of function is: function(Group_Chat *chat, peer number, message, message length, userdata)
  */
-
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
                            void *userdata);
+/*
+ * Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *
+ * format of function is: function(Group_Chat *chat, userdata)
+ */
+void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, void *), void *userdata);
 
 /*
  * Send a message to the group.

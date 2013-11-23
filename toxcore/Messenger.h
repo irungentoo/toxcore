@@ -198,6 +198,8 @@ typedef struct Messenger {
     void *group_invite_userdata;
     void (*group_message)(struct Messenger *m, int, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    void (*group_namelistchange)(struct Messenger *m, int, void *);
+    void *group_namelistchange_userdata;
 
     void (*file_sendrequest)(struct Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t, void *);
     void *file_sendrequest_userdata;
@@ -454,6 +456,13 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int, u
  */
 void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
                               void *userdata);
+
+/* Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *  Function(Tox *tox, int groupnumber, void *userdata)
+ */
+void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata);
 
 /* Creates a new groupchat and puts it in the chats array.
  *

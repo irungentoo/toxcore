@@ -1003,7 +1003,13 @@ void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *messag
 
     new_lines(msg);
 }
-
+void print_groupnamelistchange(Tox *m, int groupnumber, void *userdata)
+{
+    char msg[256];
+    sprintf(msg, "[g] %u: Name list changed:", groupnumber);
+    new_lines(msg);
+    print_groupchatpeers(m, groupnumber);
+}
 void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
                          uint16_t filename_length, void *userdata)
 {
@@ -1105,6 +1111,7 @@ int main(int argc, char *argv[])
     tox_callback_file_data(m, write_file, NULL);
     tox_callback_file_control(m, file_print_control, NULL);
     tox_callback_file_sendrequest(m, file_request_accept, NULL);
+    tox_callback_group_namelistchange(m, print_groupnamelistchange, NULL);
 
     initscr();
     noecho();

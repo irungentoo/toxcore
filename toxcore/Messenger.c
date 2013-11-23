@@ -779,19 +779,50 @@ void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, 
     m->group_message = function;
     m->group_message_userdata = userdata;
 }
+
+/* Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *  Function(Tox *tox, int groupnumber, void *userdata)
+ */
+void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata)
+{
+    m->group_namelistchange = function;
+    m->group_namelistchange_userdata = userdata;
+}
+
+static int get_chat_num(Messenger *m, Group_Chat *chat)
+{
+    uint32_t i;
+    for (i = 0; i < m->numchats; ++i) { //TODO: remove this
+        if (m->chats[i] == chat)
+            return i;
+    }
+    return -1;
+}
+
 static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *message, uint16_t length, void *userdata)
 {
     Messenger *m = userdata;
-    uint32_t i;
-
-    for (i = 0; i < m->numchats; ++i) { //TODO: remove this
-        if (m->chats[i] == chat)
-            break;
-    }
+    int i = get_chat_num(m, chat);
+    if (i == -1)
+        return;
 
     if (m->group_message)
         (*m->group_message)(m, i, peer_number, message, length, m->group_message_userdata);
 }
+
+static void group_namelistchange_function(Group_Chat *chat, void *userdata)
+{
+    Messenger *m = userdata;
+    int i = get_chat_num(m, chat);
+    if (i == -1)
+        return;
+
+    if (m->group_namelistchange)
+        (*m->group_namelistchange)(m, i, m->group_namelistchange_userdata);
+}
+
 
 /* Creates a new groupchat and puts it in the chats array.
  *
@@ -810,6 +841,7 @@ int add_groupchat(Messenger *m)
                 return -1;
 
             callback_groupmessage(newchat, &group_message_function, m);
+            callback_namelistchange(newchat, &group_namelistchange_function, m);
             /* TODO: remove this (group nicks should not be tied to the global one) */
             set_nick(newchat, m->name, m->name_length);
             m->chats[i] = newchat;
@@ -830,6 +862,7 @@ int add_groupchat(Messenger *m)
 
     m->chats = temp;
     callback_groupmessage(temp[m->numchats], &group_message_function, m);
+    callback_namelistchange(temp[m->numchats], &group_namelistchange_function, m);
     /* TODO: remove this (group nicks should not be tied to the global one) */
     set_nick(temp[m->numchats], m->name, m->name_length);
     ++m->numchats;

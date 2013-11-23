@@ -363,6 +363,14 @@ void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int, uint8_t
 void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t *, uint16_t, void *),
                                 void *userdata);
 
+/* Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *  Function(Tox *tox, int groupnumber, void *userdata)
+ */
+
+void tox_callback_group_namelistchange(Tox *tox, void (*function)(Tox *tox, int, void *), void *userdata);
+
 /* Creates a new groupchat and puts it in the chats array.
  *
  * return group number on success.
