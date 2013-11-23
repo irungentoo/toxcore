@@ -47,7 +47,7 @@ START_TEST(test_basics)
     memset(&close_entries, 0, sizeof(close_entries));
     close_entries.count = 4;
     close_entries.count_good = 2;
-    close_entries.wanted_id = id;
+    id_copy(close_entries.wanted_id, id);
 
     Client_data *entries[close_entries.count];
     close_entries.result = entries;

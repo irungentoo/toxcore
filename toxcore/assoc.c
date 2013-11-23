@@ -633,7 +633,7 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
 
     qsort(dist_list, dist_list_len, sizeof(dist_list[0]), dist_index_comp);
 
-    /* ok, ok, it's not *perfectly* sorted, because we used an absolute distance
+    /* MAYBE it's not *perfectly* sorted, because we used an absolute distance
      * go over the result and see if we need to "smoothen things out", as unlikely
      * that might be (absolute distance is 44 bits!)
      *
@@ -715,6 +715,41 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
     state->count_good = pos_good;
 
     return pos_good + pos_bad;
+}
+
+uint8_t Assoc_get_two_closest_entries(Assoc *assoc, uint8_t *client_id, Client_data **good, Client_data **bad)
+{
+    if (!assoc || !client_id || !good || !bad)
+        return 0;
+
+    *good = NULL;
+    *bad = NULL;
+
+    size_t b, i;
+
+    for (b = 0; b < assoc->candidates_bucket_count; b++) {
+        candidates_bucket *cnd_bckt = &assoc->candidates[b];
+
+        for (i = 0; i < assoc->candidates_bucket_size; i++) {
+            Client_entry *entry = &cnd_bckt->list[i];
+
+            if (entry->hash) {
+                if (!is_timeout(entry->seen_at, BAD_NODE_TIMEOUT)) {
+                    if (!*good)
+                        *good = &entry->client;
+                    else if (2 == id_closest(client_id, (*good)->client_id, entry->client.client_id))
+                        *good = &entry->client;
+                } else {
+                    if (!*bad)
+                        *bad = &entry->client;
+                    else if (2 == id_closest(client_id, (*bad)->client_id, entry->client.client_id))
+                        *bad = &entry->client;
+                }
+            }
+        }
+    }
+
+    return 1;
 }
 
 /*****************************************************************************/

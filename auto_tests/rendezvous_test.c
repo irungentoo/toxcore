@@ -112,18 +112,13 @@ START_TEST(test_meetup)
         }
     }
 
-#ifdef ASSOC_AVAILABLE
-    RendezVous *rdvA = new_rendezvous(mA->dht, mA->dht->assoc, mA->dht->c->lossless_udp->net);
-    RendezVous *rdvB = new_rendezvous(mB->dht, mB->dht->assoc, mB->dht->c->lossless_udp->net);
-#else
-    RendezVous *rdvA = new_rendezvous(mA->dht, mA->dht->c->lossless_udp->net);
-    RendezVous *rdvB = new_rendezvous(mB->dht, mB->dht->c->lossless_udp->net);
-#endif
+    RendezVous *rdvA = new_rendezvous(mA->dht, mA->dht->assoc, mA->net);
+    RendezVous *rdvB = new_rendezvous(mB->dht, mB->dht->assoc, mB->net);
 
     ck_assert_msg(rdvA && rdvB, "Failed to setup rendezvous structure.");
 
-    rendezvous_init(rdvA, mA->dht->c->self_public_key);
-    rendezvous_init(rdvB, mB->dht->c->self_public_key);
+    rendezvous_init(rdvA, mA->net_crypto->self_public_key);
+    rendezvous_init(rdvB, mB->net_crypto->self_public_key);
 
     RendezVous_callbacks callbacks;
     callbacks.found_function = callback_found;
@@ -156,8 +151,8 @@ START_TEST(test_meetup)
 
     ck_assert_msg(foundA.found && foundB.found, "Expected A&B to find someone.");
 
-    ck_assert_msg(id_equal(foundA.client_id, mB->dht->c->self_public_key), "Expected A to find B.");
-    ck_assert_msg(id_equal(foundB.client_id, mA->dht->c->self_public_key), "Expected B to find A.");
+    ck_assert_msg(id_equal(foundA.client_id, mB->net_crypto->self_public_key), "Expected A to find B.");
+    ck_assert_msg(id_equal(foundB.client_id, mA->net_crypto->self_public_key), "Expected B to find A.");
 
     kill_rendezvous(rdvA);
     kill_rendezvous(rdvB);

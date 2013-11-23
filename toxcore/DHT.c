@@ -996,7 +996,7 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
 
         Assoc_close_entries close_entries;
         memset(&close_entries, 0, sizeof(close_entries));
-        close_entries.wanted_id = client_id;
+        id_copy(close_entries.wanted_id, client_id);
         close_entries.count_good = MAX_FRIEND_CLIENTS / 2;
         close_entries.count = MAX_FRIEND_CLIENTS;
         close_entries.result = calloc(MAX_FRIEND_CLIENTS, sizeof(*close_entries.result));

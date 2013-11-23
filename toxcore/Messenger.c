@@ -1454,11 +1454,7 @@ Messenger *new_messenger(uint8_t ipv6enabled)
     if (m->dht->assoc)
         Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
 
-#ifdef ASSOC_AVAILABLE
     m->rendezvous = new_rendezvous(m->dht, m->dht->assoc, m->net);
-#else
-    m->rendezvous = new_rendezvous(m->dht, m->net);
-#endif
 
     m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
 

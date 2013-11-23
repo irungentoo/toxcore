@@ -2,12 +2,11 @@
 #ifndef __ASSOC_H__
 #define __ASSOC_H__
 
-/* used by rendezvous */
-#define ASSOC_AVAILABLE
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "net_crypto.h"
 
 /* For the legalese parts, see tox.h. */
 
@@ -45,7 +44,7 @@ uint8_t Assoc_add_entry(Assoc *assoc, uint8_t *id, IPPTs *ippts_send, IP_Port *i
 /*****************************************************************************/
 
 typedef struct Assoc_close_entries {
-    uint8_t                           *wanted_id;          /* the target client_id */
+    uint8_t                            wanted_id[crypto_box_PUBLICKEYBYTES];  /* the target "client_id" */
     void                              *custom_data;        /* given to distance functions */
 
     Assoc_distance_relative_callback   distance_relative_func;
@@ -66,6 +65,10 @@ typedef struct Assoc_close_entries {
  *    if they aren't, they should copy the Client_data and call Assoc_client_drop()
  */
 uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *close_entries);
+
+/* find closest good/bad node to id
+ * returns 0 on error, 1 otherwise (does not mean something was found!) */
+uint8_t Assoc_get_two_closest_entries(Assoc *assoc, uint8_t *client_id, Client_data **good, Client_data **bad);
 
 /*****************************************************************************/
 
