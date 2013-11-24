@@ -288,17 +288,14 @@ START_TEST(test_messenger_state_saveloadsave)
     }
 
     int res = messenger_load(m, buffer + extra, size);
+    ck_assert_msg(res == 0, "Failed to load back stored buffer: res == %i", res);
 
-    if (res == -1)
-        ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
-    else {
-        char msg[128];
-        size_t offset = res >> 4;
-        uint8_t *ptr = buffer + extra + offset;
-        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
-                ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
-        ck_assert_msg(res == 0, msg);
-    }
+    char msg[128];
+    size_t offset = res >> 4;
+    uint8_t *ptr = buffer + extra + offset;
+    sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
+            ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
+    ck_assert_msg(res == 0, msg);
 
     size_t size2 = messenger_size(m);
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
@@ -350,7 +347,7 @@ int main(int argc, char *argv[])
     bad_id    = hex_string_to_bin(bad_id_str);
 
     /* IPv6 status from global define */
-    m = new_messenger(TOX_ENABLE_IPV6_DEFAULT);
+    m = new_messenger(TOX_ENABLE_IPV6_DEFAULT, NULL);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)

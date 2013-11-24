@@ -161,6 +161,10 @@ typedef struct Messenger {
     Net_Crypto *net_crypto;
     DHT *dht;
     Friend_Requests fr;
+
+    uint8_t pwdset;
+    uint8_t pwdhash[crypto_box_SECRETKEYBYTES];
+
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
 
@@ -609,7 +613,7 @@ int m_msi_packet(Messenger *m, int friendnumber, uint8_t *data, uint16_t length)
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
  */
-Messenger *new_messenger(uint8_t ipv6enabled);
+Messenger *new_messenger(uint8_t ipv6enabled, char *pwd);
 
 /* Run this before closing shop
  * Free all datastructures.
