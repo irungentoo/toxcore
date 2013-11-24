@@ -437,7 +437,8 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     int peernum = peer_in_chat(chat, data);
 
     if (peernum == -1) { /*NOTE: This is just for testing and will be removed later.*/
-        peernum = addpeer(chat, data);
+        if (data[crypto_box_PUBLICKEYBYTES + sizeof(uint32_t)] != GROUP_CHAT_QUIT)
+            peernum = addpeer(chat, data);
     }
 
     if (peernum == -1)
