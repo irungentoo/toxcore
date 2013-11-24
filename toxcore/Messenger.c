@@ -785,7 +785,7 @@ void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, 
  * It gets called every time the name list changes(new peer/name, deleted peer)
  *  Function(Tox *tox, int groupnumber, void *userdata)
  */
-void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata)
+void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *), void *userdata)
 {
     m->group_namelistchange = function;
     m->group_namelistchange_userdata = userdata;
@@ -812,7 +812,7 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
         (*m->group_message)(m, i, peer_number, message, length, m->group_message_userdata);
 }
 
-static void group_namelistchange_function(Group_Chat *chat, void *userdata)
+static void group_namelistchange_function(Group_Chat *chat, int peer, uint8_t change, void *userdata)
 {
     Messenger *m = userdata;
     int i = get_chat_num(m, chat);
@@ -820,7 +820,7 @@ static void group_namelistchange_function(Group_Chat *chat, void *userdata)
         return;
 
     if (m->group_namelistchange)
-        (*m->group_namelistchange)(m, i, m->group_namelistchange_userdata);
+        (*m->group_namelistchange)(m, i, peer, change, m->group_namelistchange_userdata);
 }
 
 

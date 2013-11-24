@@ -65,7 +65,7 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
-    void (*peer_namelistchange)(struct Group_Chat *m, void *);
+    void (*peer_namelistchange)(struct Group_Chat *m, int peer, uint8_t change, void *);
     void *group_namelistchange_userdata;
 
     uint64_t last_sent_ping;
@@ -105,7 +105,13 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  *
  * format of function is: function(Group_Chat *chat, userdata)
  */
-void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, void *), void *userdata);
+typedef enum {
+    CHAT_CHANGE_PEER_ADD,
+    CHAT_CHANGE_PEER_DEL,
+    CHAT_CHANGE_PEER_NAME,
+} CHAT_CHANGE;
+
+void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *), void *userdata);
 
 /*
  * Send a message to the group.
