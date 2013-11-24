@@ -1514,6 +1514,10 @@ void kill_messenger(Messenger *m)
     /* FIXME TODO: ideally cleanupMessenger will mirror initMessenger.
      * This requires the other modules to expose cleanup functions.
      */
+    uint32_t i, numchats = m->numchats;
+    for (i = 0; i < numchats; ++i)
+        del_groupchat(m, i);
+
     kill_DHT(m->dht);
     kill_net_crypto(m->net_crypto);
     kill_networking(m->net);
