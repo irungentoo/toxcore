@@ -422,7 +422,7 @@ void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, 
  *  Function(Tox *tox, int groupnumber, void *userdata)
  */
 
-void tox_callback_group_namelistchange(Tox *tox, void (*function)(Tox *tox, int, void *), void *userdata)
+void tox_callback_group_namelistchange(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *), void *userdata)
 {
     Messenger *m = tox;
     m_callback_group_namelistchange(m, function, userdata);

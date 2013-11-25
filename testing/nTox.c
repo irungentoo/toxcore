@@ -92,9 +92,10 @@ char *help_friend2 =
 /* 216 characters */
 char *help_group =
     "[i] Available group commands:\n+ "
-    "/g (to create a new group)|"
+    "/g (to create a group)|"
     "/i friend no. group no. (to invite a friend to a group)|"
     "/z group no. message (to send a message to a group)|"
+    "/p group no. (to list a group's peers)|"
     "/cg group no. (to talk to that group per default)";
 
 int x, y;
@@ -346,8 +347,9 @@ static void print_formatted_message(Tox *m, char *message, int friendnum, uint8_
     new_lines(msg);
 }
 
-/* forward declaration */
+/* forward declarations */
 static int save_data(Tox *m);
+void print_groupchatpeers(Tox *m, int groupnumber);
 
 void line_eval(Tox *m, char *line)
 {
@@ -560,6 +562,25 @@ void line_eval(Tox *m, char *line)
                     new_lines(buffer);
                 } else
                     new_lines("[i] invalid command");
+            }
+        } else if (inpt_command == 'p') { //list peers
+            char *posi = NULL;
+            int group_number = strtoul(line + prompt_offset, &posi, 0);
+
+            if (posi != NULL) {
+                char msg[64];
+                int peer_cnt = tox_group_number_peers(m, group_number);
+
+                if (peer_cnt < 0) {
+                    new_lines("[g] Invalid group number.");
+                } else if (peer_cnt == 0) {
+                    sprintf(msg, "[g] #%i: No peers in group.", group_number);
+                    new_lines(msg);
+                } else {
+                    sprintf(msg, "[g] #%i: Group has %i peers. Names:", group_number, peer_cnt);
+                    new_lines(msg);
+                    print_groupchatpeers(m, group_number);
+                }
             }
         } else {
             new_lines("[i] invalid command");
@@ -974,24 +995,60 @@ void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *use
             tox_join_groupchat(m, friendnumber, group_public_key));
     new_lines(msg);
 }
+
 void print_groupchatpeers(Tox *m, int groupnumber)
 {
-    char msg[256];
     int num = tox_group_number_peers(m, groupnumber);
-    if (num == -1)
+
+    if (num < 0)
         return;
+
+    if (!num) {
+        new_lines("[g]+ no peers left in group.");
+        return;
+    }
 
     uint8_t names[num][TOX_MAX_NAME_LENGTH];
     tox_group_copy_names(m, groupnumber, names, num);
-    uint32_t i;
-    for (i = 0; i < num; ++i)
-        new_lines(names[i]);
+    int i;
+    char numstr[16];
+    char header[] = "[g]+ ";
+    size_t header_len = strlen(header);
+    char msg[STRING_LENGTH];
+    strcpy(msg, header);
+    size_t len_total = header_len;
+
+    for (i = 0; i < num; ++i) {
+        size_t len_name = strlen((char *)names[i]);
+        size_t len_num = sprintf(numstr, "%i: ", i);
+
+        if (len_num + len_name + len_total + 3 >= STRING_LENGTH) {
+            new_lines_mark(msg, 1);
+
+            strcpy(msg, header);
+            len_total = header_len;
+        }
+
+        strcpy(msg + len_total, numstr);
+        len_total += len_num;
+        strcpy(msg + len_total, (char *)names[i]);
+        len_total += len_name;
+
+        if (i < num - 1) {
+            strcpy(msg + len_total, "|");
+            len_total++;
+        }
+    }
+
+    new_lines_mark(msg, 1);
 }
+
 void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *message, uint16_t length, void *userdata)
 {
     char msg[256 + length];
     uint8_t name[TOX_MAX_NAME_LENGTH];
     int len = tox_group_peername(m, groupnumber, peernumber, name);
+
     //print_groupchatpeers(m, groupnumber);
     if (len <= 0)
         name[0] = 0;
@@ -1003,12 +1060,31 @@ void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *messag
 
     new_lines(msg);
 }
-void print_groupnamelistchange(Tox *m, int groupnumber, void *userdata)
+void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t change, void *userdata)
 {
     char msg[256];
-    sprintf(msg, "[g] %u: Name list changed:", groupnumber);
-    new_lines(msg);
-    print_groupchatpeers(m, groupnumber);
+
+    if (change == TOX_CHAT_CHANGE_PEER_ADD) {
+        sprintf(msg, "[g] #%i: New peer %i.", groupnumber, peernumber);
+        new_lines(msg);
+    } else if (change == TOX_CHAT_CHANGE_PEER_DEL) {
+        sprintf(msg, "[g] #%i: Peer %i left. Name list is now:", groupnumber, peernumber);
+        new_lines(msg);
+        print_groupchatpeers(m, groupnumber);
+    } else if (change == TOX_CHAT_CHANGE_PEER_NAME) {
+        uint8_t peername[TOX_MAX_NAME_LENGTH];
+        int len = tox_group_peername(m, groupnumber, peernumber, peername);
+
+        if (len <= 0)
+            peername[0] = 0;
+
+        sprintf(msg, "[g] #%i: Peer %i's name changed: %s", groupnumber, peernumber, peername);
+        new_lines(msg);
+    } else {
+        sprintf(msg, "[g] #%i: Name list changed (peer %i, change %i?):", groupnumber, peernumber, change);
+        new_lines(msg);
+        print_groupchatpeers(m, groupnumber);
+    }
 }
 void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
                          uint16_t filename_length, void *userdata)

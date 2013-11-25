@@ -366,10 +366,15 @@ void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, u
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
- *  Function(Tox *tox, int groupnumber, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
  */
+typedef enum {
+    TOX_CHAT_CHANGE_PEER_ADD,
+    TOX_CHAT_CHANGE_PEER_DEL,
+    TOX_CHAT_CHANGE_PEER_NAME,
+} TOX_CHAT_CHANGE;
 
-void tox_callback_group_namelistchange(Tox *tox, void (*function)(Tox *tox, int, void *), void *userdata);
+void tox_callback_group_namelistchange(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *), void *userdata);
 
 /* Creates a new groupchat and puts it in the chats array.
  *

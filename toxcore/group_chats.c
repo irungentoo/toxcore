@@ -219,7 +219,7 @@ static int addpeer(Group_Chat *chat, uint8_t *client_id)
     ++chat->numpeers;
 
     if (chat->peer_namelistchange != NULL)
-        (*chat->peer_namelistchange)(chat, chat->group_namelistchange_userdata);
+        (*chat->peer_namelistchange)(chat, chat->numpeers - 1, CHAT_CHANGE_PEER_ADD, chat->group_namelistchange_userdata);
 
     return (chat->numpeers - 1);
 }
@@ -254,8 +254,12 @@ static int delpeer(Group_Chat *chat, int peernum)
 
     chat->group = temp;
 
-    if (chat->peer_namelistchange != NULL)
-        (*chat->peer_namelistchange)(chat, chat->group_namelistchange_userdata);
+    if (chat->peer_namelistchange != NULL) {
+        (*chat->peer_namelistchange)(chat, chat->numpeers, CHAT_CHANGE_PEER_DEL, chat->group_namelistchange_userdata);
+
+        if (chat->numpeers != (uint32_t)peernum)
+            (*chat->peer_namelistchange)(chat, peernum, CHAT_CHANGE_PEER_NAME, chat->group_namelistchange_userdata);
+    }
 
     return 0;
 }
@@ -286,12 +290,18 @@ static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t c
     if (contents_len > MAX_NICK_BYTES || contents_len == 0)
         return;
 
+    /* same name as already stored? */
+    if ((chat->group[peernum].nick_len == contents_len) &&
+            !memcmp(chat->group[peernum].nick, contents, contents_len))
+        return;
+
     memcpy(chat->group[peernum].nick, contents, contents_len);
     /* Force null termination */
     chat->group[peernum].nick[contents_len - 1] = 0;
     chat->group[peernum].nick_len = contents_len;
+
     if (chat->peer_namelistchange != NULL)
-        (*chat->peer_namelistchange)(chat, chat->group_namelistchange_userdata);
+        (*chat->peer_namelistchange)(chat, peernum, CHAT_CHANGE_PEER_NAME, chat->group_namelistchange_userdata);
 }
 
 /* min time between pings sent to one peer in seconds */
@@ -626,7 +636,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
     chat->group_message_userdata = userdata;
 }
 
-void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, void *), void *userdata)
+void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *), void *userdata)
 {
     chat->peer_namelistchange = function;
     chat->group_namelistchange_userdata = userdata;
