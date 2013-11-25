@@ -254,8 +254,12 @@ static int delpeer(Group_Chat *chat, int peernum)
 
     chat->group = temp;
 
-    if (chat->peer_namelistchange != NULL)
-        (*chat->peer_namelistchange)(chat, peernum, CHAT_CHANGE_PEER_DEL, chat->group_namelistchange_userdata);
+    if (chat->peer_namelistchange != NULL) {
+        (*chat->peer_namelistchange)(chat, chat->numpeers, CHAT_CHANGE_PEER_DEL, chat->group_namelistchange_userdata);
+
+        if (chat->numpeers != (uint32_t)peernum)
+            (*chat->peer_namelistchange)(chat, peernum, CHAT_CHANGE_PEER_NAME, chat->group_namelistchange_userdata);
+    }
 
     return 0;
 }
@@ -290,6 +294,7 @@ static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t c
     /* Force null termination */
     chat->group[peernum].nick[contents_len - 1] = 0;
     chat->group[peernum].nick_len = contents_len;
+
     if (chat->peer_namelistchange != NULL)
         (*chat->peer_namelistchange)(chat, peernum, CHAT_CHANGE_PEER_NAME, chat->group_namelistchange_userdata);
 }
