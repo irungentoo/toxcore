@@ -290,6 +290,11 @@ static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t c
     if (contents_len > MAX_NICK_BYTES || contents_len == 0)
         return;
 
+    /* same name as already stored? */
+    if ((chat->group[peernum].nick_len == contents_len) &&
+            !memcmp(chat->group[peernum].nick, contents, contents_len))
+        return;
+
     memcpy(chat->group[peernum].nick, contents, contents_len);
     /* Force null termination */
     chat->group[peernum].nick[contents_len - 1] = 0;
