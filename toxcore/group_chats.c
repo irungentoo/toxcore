@@ -255,10 +255,7 @@ static int delpeer(Group_Chat *chat, int peernum)
     chat->group = temp;
 
     if (chat->peer_namelistchange != NULL) {
-        (*chat->peer_namelistchange)(chat, chat->numpeers, CHAT_CHANGE_PEER_DEL, chat->group_namelistchange_userdata);
-
-        if (chat->numpeers != (uint32_t)peernum)
-            (*chat->peer_namelistchange)(chat, peernum, CHAT_CHANGE_PEER_NAME, chat->group_namelistchange_userdata);
+        (*chat->peer_namelistchange)(chat, peernum, CHAT_CHANGE_PEER_DEL, chat->group_namelistchange_userdata);
     }
 
     return 0;
@@ -291,9 +288,9 @@ static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t c
         return;
 
     /* same name as already stored? */
-    if ((chat->group[peernum].nick_len == contents_len) &&
-            !memcmp(chat->group[peernum].nick, contents, contents_len))
-        return;
+    if (chat->group[peernum].nick_len == contents_len)
+        if (!memcmp(chat->group[peernum].nick, contents, contents_len))
+            return;
 
     memcpy(chat->group[peernum].nick, contents, contents_len);
     /* Force null termination */
