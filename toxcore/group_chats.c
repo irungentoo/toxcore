@@ -733,7 +733,7 @@ static void send_names(Group_Chat *chat)
     if (is_timeout(chat->last_sent_nick, 180))
         if (group_send_nick(chat, chat->nick, chat->nick_len) > 0) {
             if (!chat->last_sent_nick)
-                chat->last_sent_nick = (unix_time() - NICK_SEND_INTERVAL) + 30;
+                chat->last_sent_nick = (unix_time() - NICK_SEND_INTERVAL) + 10;
             else
                 chat->last_sent_nick = unix_time();
         }
