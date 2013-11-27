@@ -235,6 +235,14 @@ static int delpeer(Group_Chat *chat, int peernum)
     if ((uint32_t)peernum >= chat->numpeers)
         return -1;
 
+    uint32_t i;
+    for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) { /* If peer is in close list, time it out forcefully. */
+        if (id_equal(chat->close[i].client_id, chat->group[peernum].client_id)) {
+            chat->close[i].last_recv = 0;
+            break;
+        }
+    }
+
     Group_Peer *temp;
     --chat->numpeers;
 
