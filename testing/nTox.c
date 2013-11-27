@@ -1068,9 +1068,27 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
         sprintf(msg, "[g] #%i: New peer %i.", groupnumber, peernumber);
         new_lines(msg);
     } else if (change == TOX_CHAT_CHANGE_PEER_DEL) {
-        sprintf(msg, "[g] #%i: Peer %i left. Name list is now:", groupnumber, peernumber);
-        new_lines(msg);
-        print_groupchatpeers(m, groupnumber);
+        /* if peer was the last in list, it simply dropped,
+         * otherwise it was overwritten by the last peer
+         *
+         * adjust output
+         */
+        int peers_total = tox_group_number_peers(m, groupnumber);
+
+        if (peers_total == peernumber) {
+            sprintf(msg, "[g] #%i: Peer %i left.", groupnumber, peernumber);
+            new_lines(msg);
+        } else {
+            uint8_t peername[TOX_MAX_NAME_LENGTH];
+            int len = tox_group_peername(m, groupnumber, peernumber, peername);
+
+            if (len <= 0)
+                peername[0] = 0;
+
+            sprintf(msg, "[g] #%i: Peer %i left. Former peer [%i: <%s>] is now peer %i.", groupnumber, peernumber,
+                    peers_total, peername, peernumber);
+            new_lines(msg);
+        }
     } else if (change == TOX_CHAT_CHANGE_PEER_NAME) {
         uint8_t peername[TOX_MAX_NAME_LENGTH];
         int len = tox_group_peername(m, groupnumber, peernumber, peername);
