@@ -64,7 +64,7 @@ const char wrap_cont_str[] = "\n+ ";
 /* documented: fdmnlsahxgiztq(c[rfg]) */
 /* undocumented: d (tox_do()) */
 
-/* 249 characters */
+/* 251+1 characters */
 char *help_main =
     "[i] Available main commands:\n+ "
     "/x (to print one's own id)|"
@@ -75,21 +75,22 @@ char *help_main =
     "/h friend (for friend related commands)|"
     "/h group (for group related commands)";
 
-/* 141 characters */
+/* 190+1 characters */
 char *help_friend1 =
     "[i] Available friend commands (1/2):\n+ "
     "/l list (to list friends)|"
+    "/r friend no. (to remove from the friend list)|"
     "/f ID (to send a friend request)|"
     "/a request no. (to accept a friend request)";
 
-/* 184 characters */
+/* 187+1 characters */
 char *help_friend2 =
     "[i] Available friend commands (2/2):\n+ "
     "/m friend no. message (to send a message)|"
     "/t friend no. filename (to send a file to a friend)|"
     "/cf friend no. (to talk to that friend per default)";
 
-/* 216 characters */
+/* 253+1 characters */
 char *help_group =
     "[i] Available group commands:\n+ "
     "/g (to create a group)|"
@@ -236,18 +237,41 @@ uint32_t resolve_addr(const char *address)
     return addr;
 }
 
+#define FRADDR_TOSTR_CHUNK_LEN 8
+#define FRADDR_TOSTR_BUFSIZE (TOX_FRIEND_ADDRESS_SIZE * 2 + TOX_FRIEND_ADDRESS_SIZE / FRADDR_TOSTR_CHUNK_LEN + 1)
+
+static void fraddr_to_str(uint8_t *id_bin, char *id_str)
+{
+    uint i, delta = 0, pos_extra, sum_extra = 0;
+
+    for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
+        sprintf(&id_str[2 * i + delta], "%02hhX", id_bin[i]);
+
+        if ((i + 1) == TOX_CLIENT_ID_SIZE)
+            pos_extra = 2 * (i + 1) + delta;
+
+        if (i >= TOX_CLIENT_ID_SIZE)
+            sum_extra |= id_bin[i];
+
+        if (!((i + 1) % FRADDR_TOSTR_CHUNK_LEN)) {
+            id_str[2 * (i + 1) + delta] = ' ';
+            delta++;
+        }
+    }
+
+    id_str[2 * i + delta] = 0;
+
+    if (!sum_extra)
+        id_str[pos_extra] = 0;
+}
+
 void get_id(Tox *m, char *data)
 {
     sprintf(data, "[i] ID: ");
     int offset = strlen(data);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
     tox_getaddress(m, address);
-
-    uint32_t i = 0;
-
-    for (; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
-        sprintf(data + 2 * i + offset, "%02X ", address[i]);
-    }
+    fraddr_to_str(address, data + offset);
 }
 
 int getfriendname_terminated(Tox *m, int friendnum, char *namebuf)
@@ -283,21 +307,31 @@ void new_lines(char *line)
 }
 
 
-const char ptrn_friend[] = "[i] Friend: %s\n+ id: %i";
+const char ptrn_friend[] = "[i] Friend %i: %s\n+ id: %s";
+const int id_str_len = TOX_FRIEND_ADDRESS_SIZE * 2 + 3;
 void print_friendlist(Tox *m)
 {
-    char name[TOX_MAX_NAME_LENGTH + 1];
-    int i = 0;
     new_lines("[i] Friend List:");
 
+    char name[TOX_MAX_NAME_LENGTH + 1];
+    uint8_t fraddr_bin[TOX_FRIEND_ADDRESS_SIZE];
+    char fraddr_str[FRADDR_TOSTR_BUFSIZE];
+
+    /* account for the longest name and the longest "base" string and number (int) and id_str */
+    char fstring[TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21 + id_str_len];
+
+    uint i = 0;
+
     while (getfriendname_terminated(m, i, name) != -1) {
-        /* account for the longest name and the longest "base" string and number (int) */
-        char fstring[TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21];
+        if (!tox_getclient_id(m, i, fraddr_bin))
+            fraddr_to_str(fraddr_bin, fraddr_str);
+        else
+            sprintf(fraddr_str, "???");
 
         if (strlen(name) <= 0) {
-            sprintf(fstring, ptrn_friend, "No name?", i);
+            sprintf(fstring, ptrn_friend, i, "No name?", fraddr_str);
         } else {
-            sprintf(fstring, ptrn_friend, (uint8_t *)name, i);
+            sprintf(fstring, ptrn_friend, i, (uint8_t *)name, fraddr_str);
         }
 
         i++;
@@ -361,11 +395,15 @@ void line_eval(Tox *m, char *line)
         new_lines(prompt);
 
         if (inpt_command == 'f') { // add friend command: /f ID
-            int i;
+            int i, delta = 0;
             char temp_id[128];
 
-            for (i = 0; i < 128; i++)
-                temp_id[i] = line[i + prompt_offset];
+            for (i = 0; i < 128; i++) {
+                temp_id[i - delta] = line[i + prompt_offset];
+
+                if ((temp_id[i - delta] == ' ') || (temp_id[i - delta] == '+'))
+                    delta++;
+            }
 
             unsigned char *bin_string = hex_string_to_bin(temp_id);
             int num = tox_addfriend(m, bin_string, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
@@ -452,7 +490,7 @@ void line_eval(Tox *m, char *line)
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char *)status);
             new_lines(numstring);
-        } else if (inpt_command == 'a') {
+        } else if (inpt_command == 'a') { // /a #: accept
             uint8_t numf = atoi(line + 3);
             char numchar[100];
 
@@ -471,6 +509,39 @@ void line_eval(Tox *m, char *line)
                     sprintf(numchar, "[i] failed to add friend");
                     new_lines(numchar);
                 }
+            }
+        } else if (inpt_command == 'r') { // /r #: remove friend
+            uint8_t numf = atoi(line + 3);
+
+            if (!tox_friend_exists(m, numf)) {
+                char err[64];
+                sprintf(err, "You don't have a friend %i.", numf);
+                new_lines(err);
+                return;
+            }
+
+            char msg[128 + TOX_MAX_NAME_LENGTH];
+            char fname[TOX_MAX_NAME_LENGTH ];
+            getfriendname_terminated(m, numf, fname);
+            sprintf(msg, "Are you sure you want to delete friend %i: %s? (y/n)", numf, fname);
+            input_line[0] = 0;
+            new_lines(msg);
+
+            int c;
+
+            do {
+                c = getchar();
+            } while ((c != 'y') && (c != 'n') && (c != EOF));
+
+            if (c == 'y') {
+                int res = tox_delfriend(m, numf);
+
+                if (res == 0)
+                    sprintf(msg, "[i] [%i: %s] is no longer your friend", numf, fname);
+                else
+                    sprintf(msg, "[i] failed to remove friend");
+
+                new_lines(msg);
             }
         } else if (inpt_command == 'h') { //help
             if (line[2] == ' ') {
@@ -838,7 +909,7 @@ void do_refresh()
 
         if (count < y) {
             move(y - 1 - count, 0);
-            printw(wrap_output);
+            printw("%s", wrap_output);
             clrtoeol();
         }
     }
@@ -846,7 +917,7 @@ void do_refresh()
     move(y - 1, 0);
     clrtoeol();
     printw(">> ");
-    printw(input_line);
+    printw("%s", input_line);
     clrtoeol();
     refresh();
 }
@@ -1243,6 +1314,16 @@ int main(int argc, char *argv[])
 
     time_t timestamp0 = time(NULL);
 
+    uint8_t pollok = 0;
+    uint16_t len = 0;
+
+    if (!tox_wait_prepare(m, NULL, &len))
+        pollok = 1;
+    else
+        new_lines("[i] failed to setup for low cpu consumption");
+
+    uint8_t data[len];
+
     while (1) {
         if (on == 0) {
             if (tox_isconnected(m)) {
@@ -1258,9 +1339,20 @@ int main(int argc, char *argv[])
             }
         }
 
+        if (numfilesenders > 0)
+            // during file transfer wasting cpu cycles is almost unavoidable
+            c_sleep(1);
+        else {
+            if (pollok && (tox_wait_prepare(m, data, &len) == 1)) {
+                /* 250ms is more than fast enough in "regular" mode */
+                tox_wait_execute(m, data, len, 100);
+                tox_wait_cleanup(m, data, len);
+            } else
+                c_sleep(25);
+        }
+
         send_filesenders(m);
         tox_do(m);
-        c_sleep(1);
         do_refresh();
 
         c = getch();
