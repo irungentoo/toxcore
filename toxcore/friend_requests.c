@@ -96,6 +96,12 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uin
     fr->handle_friendrequest_isset = 1;
     fr->handle_friendrequest_userdata = userdata;
 }
+/* Set the function used to check if a friend request should be displayed to the user or not. */
+void set_filter_function(Friend_Requests *fr, int (*function)(uint8_t *, void *), void *userdata)
+{
+    fr->filter_function = function;
+    fr->filter_function_userdata = userdata;
+}
 
 /* Add to list of received friend requests. */
 static void addto_receivedlist(Friend_Requests *fr, uint8_t *client_id)
@@ -140,6 +146,10 @@ static int friendreq_handlepacket(void *object, IP_Port source, uint8_t *source_
 
     if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0)
         return 1;
+
+    if (fr->filter_function)
+        if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0)
+            return 1;
 
     addto_receivedlist(fr, source_pubkey);
     (*fr->handle_friendrequest)(source_pubkey, packet + 4, length - 4, fr->handle_friendrequest_userdata);

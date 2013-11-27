@@ -1454,6 +1454,17 @@ int m_msi_packet(Messenger *m, int friendnumber, uint8_t *data, uint16_t length)
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length);
 }
 
+/* Function to filter out some friend requests*/
+static int friend_already_added(uint8_t * client_id, void * data)
+{
+    Messenger *m = data;
+
+    if (getfriend_id(m, client_id) == -1)
+        return 0;
+
+    return -1;
+}
+
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
 static void LANdiscovery(Messenger *m)
 {
@@ -1503,6 +1514,8 @@ Messenger *new_messenger(uint8_t ipv6enabled)
     friendreq_init(&(m->fr), m->net_crypto);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
+    set_filter_function(&(m->fr), &friend_already_added, m);
+
     networking_registerhandler(m->net, NET_PACKET_GROUP_CHATS, &handle_group, m);
 
     return m;
