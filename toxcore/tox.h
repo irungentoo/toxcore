@@ -606,10 +606,11 @@ void tox_do(Tox *tox);
  * Prepares the data required to call tox_wait_execute() asynchronously
  *
  * data[] is reserved and kept by the caller
- * len is in/out: in = reserved data[], out = required data[]
+ * *lenptr is in/out: in = reserved data[], out = required data[]
  *
- *  returns 1 on success
- *  returns 0 on failure (length is insufficient)
+ *  returns  1 on success
+ *  returns  0 if *lenptr is insufficient
+ *  returns -1 if lenptr is NULL
  *
  *
  * tox_wait_execute(): function can be called asynchronously

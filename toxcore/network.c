@@ -310,9 +310,12 @@ typedef struct {
 
 int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
 {
-    if ((data == NULL) || (*lenptr < sizeof(select_info))) {
-        *lenptr = sizeof(select_info);
-        return 0;
+    if ((data == NULL) || !lenptr || (*lenptr < sizeof(select_info))) {
+        if (lenptr) {
+            *lenptr = sizeof(select_info);
+            return 0;
+        } else
+            return -1;
     }
 
     *lenptr = sizeof(select_info);
