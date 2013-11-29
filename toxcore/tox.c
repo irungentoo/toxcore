@@ -620,7 +620,7 @@ int tox_filedata_size(Tox *tox, int friendnumber)
  *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
  *
  *  return number of bytes remaining to be sent/received on success
- *  return -1 on failure
+ *  return 0 on failure
  */
 uint64_t tox_file_dataremaining(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t send_receive)
 {

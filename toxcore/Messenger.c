@@ -1314,17 +1314,17 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
 uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t send_receive)
 {
     if (friend_not_valid(m, friendnumber))
-        return -1;
+        return 0;
 
     if (send_receive == 0) {
         if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE)
-            return -1;
+            return 0;
 
         return m->friendlist[friendnumber].file_sending[filenumber].size -
                m->friendlist[friendnumber].file_sending[filenumber].transferred;
     } else {
         if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
-            return -1;
+            return 0;
 
         return m->friendlist[friendnumber].file_receiving[filenumber].size -
                m->friendlist[friendnumber].file_receiving[filenumber].transferred;
