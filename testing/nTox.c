@@ -131,17 +131,17 @@ void send_filesenders(Tox *m)
             continue;
 
         while (1) {
-            if (tox_file_senddata(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
+            if (tox_file_send_data(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
                                    file_senders[i].piecelength) == -1)
                 break;
 
-            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_filedata_size(m, file_senders[i].friendnum),
+            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_file_data_size(m, file_senders[i].friendnum),
                                                 file_senders[i].file);
 
             if (file_senders[i].piecelength == 0) {
                 fclose(file_senders[i].file);
                 file_senders[i].file = 0;
-                tox_file_sendcontrol(m, file_senders[i].friendnum, 0, file_senders[i].filenumber, 3, 0, 0);
+                tox_file_send_control(m, file_senders[i].friendnum, 0, file_senders[i].filenumber, 3, 0, 0);
                 char msg[512];
                 sprintf(msg, "[t] %u file transfer: %u completed", file_senders[i].friendnum, file_senders[i].filenumber);
                 new_lines(msg);
@@ -160,13 +160,13 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    int filenum = tox_new_filesender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
+    int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
 
     if (filenum == -1)
         return -1;
 
     file_senders[numfilesenders].file = tempfile;
-    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, tox_filedata_size(m,
+    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, tox_file_data_size(m,
             file_senders[numfilesenders].friendnum),
             file_senders[numfilesenders].file);
     file_senders[numfilesenders].friendnum = friendnum;
@@ -270,13 +270,13 @@ void get_id(Tox *m, char *data)
     sprintf(data, "[i] ID: ");
     int offset = strlen(data);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_getaddress(m, address);
+    tox_get_address(m, address);
     fraddr_to_str(address, data + offset);
 }
 
 int getfriendname_terminated(Tox *m, int friendnum, char *namebuf)
 {
-    int res = tox_getname(m, friendnum, (uint8_t *)namebuf);
+    int res = tox_get_name(m, friendnum, (uint8_t *)namebuf);
 
     if (res >= 0)
         namebuf[res] = 0;
@@ -323,7 +323,7 @@ void print_friendlist(Tox *m)
     uint i = 0;
 
     while (getfriendname_terminated(m, i, name) != -1) {
-        if (!tox_getclient_id(m, i, fraddr_bin))
+        if (!tox_get_client_id(m, i, fraddr_bin))
             fraddr_to_str(fraddr_bin, fraddr_str);
         else
             sprintf(fraddr_str, "???");
@@ -406,7 +406,7 @@ void line_eval(Tox *m, char *line)
             }
 
             unsigned char *bin_string = hex_string_to_bin(temp_id);
-            int num = tox_addfriend(m, bin_string, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+            int num = tox_add_friend(m, bin_string, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
             free(bin_string);
             char numstring[100];
 
@@ -449,7 +449,7 @@ void line_eval(Tox *m, char *line)
             int num = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                if (tox_sendmessage(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1) + 1) < 1) {
+                if (tox_send_message(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1) + 1) < 1) {
                     char sss[256];
                     sprintf(sss, "[i] could not send message to friend num %u", num);
                     new_lines(sss);
@@ -469,7 +469,7 @@ void line_eval(Tox *m, char *line)
             }
 
             name[i - 3] = 0;
-            tox_setname(m, name, i - 2);
+            tox_set_name(m, name, i - 2);
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char *)name);
             new_lines(numstring);
@@ -486,7 +486,7 @@ void line_eval(Tox *m, char *line)
             }
 
             status[i - 3] = 0;
-            tox_set_statusmessage(m, status, strlen((char *)status) + 1);
+            tox_set_status_message(m, status, strlen((char *)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char *)status);
             new_lines(numstring);
@@ -498,7 +498,7 @@ void line_eval(Tox *m, char *line)
                 sprintf(numchar, "[i] you either didn't receive that request or you already accepted it");
                 new_lines(numchar);
             } else {
-                int num = tox_addfriend_norequest(m, pending_requests[numf].id);
+                int num = tox_add_friend_norequest(m, pending_requests[numf].id);
 
                 if (num != -1) {
                     pending_requests[numf].accepted = 1;
@@ -534,7 +534,7 @@ void line_eval(Tox *m, char *line)
             } while ((c != 'y') && (c != 'n') && (c != EOF));
 
             if (c == 'y') {
-                int res = tox_delfriend(m, numf);
+                int res = tox_del_friend(m, numf);
 
                 if (res == 0)
                     sprintf(msg, "[i] [%i: %s] is no longer your friend", numf, fname);
@@ -660,7 +660,7 @@ void line_eval(Tox *m, char *line)
         if (conversation_default != 0) {
             if (conversation_default > 0) {
                 int friendnumber = conversation_default - 1;
-                uint32_t res = tox_sendmessage(m, friendnumber, (uint8_t *)line, strlen(line) + 1);
+                uint32_t res = tox_send_message(m, friendnumber, (uint8_t *)line, strlen(line) + 1);
 
                 if (res == 0) {
                     char sss[128];
@@ -1080,7 +1080,7 @@ void print_groupchatpeers(Tox *m, int groupnumber)
     }
 
     uint8_t names[num][TOX_MAX_NAME_LENGTH];
-    tox_group_copy_names(m, groupnumber, names, num);
+    tox_group_get_names(m, groupnumber, names, num);
     int i;
     char numstr[16];
     char header[] = "[g]+ ";
@@ -1182,7 +1182,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
     sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
     new_lines(msg);
 
-    if (tox_file_sendcontrol(m, friendnumber, 1, filenumber, 0, 0, 0) == 0) {
+    if (tox_file_send_control(m, friendnumber, 1, filenumber, 0, 0, 0) == 0) {
         sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friendnumber, filenumber);
         new_lines(msg);
     } else
@@ -1211,7 +1211,7 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
     sprintf(filename, "%u.%u.bin", friendnumber, filenumber);
     FILE *pFile = fopen(filename, "a");
 
-    if (tox_file_dataremaining(m, friendnumber, filenumber, 1) == 0) {
+    if (tox_file_data_remaining(m, friendnumber, filenumber, 1) == 0) {
         //file_control(m, friendnumber, 1, filenumber, 3, 0, 0);
         char msg[512];
         sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
@@ -1267,16 +1267,16 @@ int main(int argc, char *argv[])
 
     load_data_or_init(m, filename);
 
-    tox_callback_friendrequest(m, print_request, NULL);
-    tox_callback_friendmessage(m, print_message, NULL);
-    tox_callback_namechange(m, print_nickchange, NULL);
-    tox_callback_statusmessage(m, print_statuschange, NULL);
+    tox_callback_friend_request(m, print_request, NULL);
+    tox_callback_friend_message(m, print_message, NULL);
+    tox_callback_name_change(m, print_nickchange, NULL);
+    tox_callback_status_message(m, print_statuschange, NULL);
     tox_callback_group_invite(m, print_invite, NULL);
     tox_callback_group_message(m, print_groupmessage, NULL);
     tox_callback_file_data(m, write_file, NULL);
     tox_callback_file_control(m, file_print_control, NULL);
-    tox_callback_file_sendrequest(m, file_request_accept, NULL);
-    tox_callback_group_namelistchange(m, print_groupnamelistchange, NULL);
+    tox_callback_file_send_request(m, file_request_accept, NULL);
+    tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
 
     initscr();
     noecho();
@@ -1303,7 +1303,7 @@ int main(int argc, char *argv[])
 
     new_lines("[i] change username with /n");
     uint8_t name[TOX_MAX_NAME_LENGTH + 1];
-    uint16_t namelen = tox_getselfname(m, name, sizeof(name));
+    uint16_t namelen = tox_get_self_name(m, name, sizeof(name));
     name[namelen] = 0;
 
     if (namelen > 0) {
