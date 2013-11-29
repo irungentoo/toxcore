@@ -1185,28 +1185,28 @@ int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *f
 /* Send a file control request.
  * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 on failure
  */
 int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
                  uint8_t *data, uint16_t length)
 {
     if (length > MAX_DATA_SIZE - 3)
-        return 0;
+        return -1;
 
     if (friend_not_valid(m, friendnumber))
-        return 0;
+        return -1;
 
     if (send_receive == 1) {
         if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
-            return 0;
+            return -1;
     } else {
         if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE)
-            return 0;
+            return -1;
     }
 
     if (send_receive > 1)
-        return 0;
+        return -1;
 
     uint8_t packet[MAX_DATA_SIZE];
     packet[0] = send_receive;
@@ -1216,7 +1216,7 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
 
     if (message_id ==  FILECONTROL_RESUME_BROKEN) {
         if (length != sizeof(uint64_t))
-            return 0;
+            return -1;
 
         uint8_t remaining[sizeof(uint64_t)];
         memcpy(remaining, data, sizeof(uint64_t));
@@ -1264,32 +1264,32 @@ int file_control(Messenger *m, int friendnumber, uint8_t send_receive, uint8_t f
                     break;
             }
 
-        return 1;
-    } else {
         return 0;
+    } else {
+        return -1;
     }
 }
 
 #define MIN_SLOTS_FREE 4
 /* Send file data.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 on failure
  */
 int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length)
 {
     if (length > MAX_DATA_SIZE - 1)
-        return 0;
+        return -1;
 
     if (friend_not_valid(m, friendnumber))
-        return 0;
+        return -1;
 
     if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_TRANSFERRING)
-        return 0;
+        return -1;
 
     /* Prevent file sending from filling up the entire buffer preventing messages from being sent. */
     if (crypto_num_free_sendqueue_slots(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id) < MIN_SLOTS_FREE)
-        return 0;
+        return -1;
 
     uint8_t packet[MAX_DATA_SIZE];
     packet[0] = filenumber;
@@ -1297,10 +1297,10 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
 
     if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_DATA, packet, length + 1)) {
         m->friendlist[friendnumber].file_sending[filenumber].transferred += length;
-        return 1;
+        return 0;
     }
 
-    return 0;
+    return -1;
 
 }
 
@@ -1309,7 +1309,7 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
  *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
  *
  *  return number of bytes remaining to be sent/received on success
- *  return 0 on failure
+ *  return -1 on failure
  */
 uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t send_receive)
 {

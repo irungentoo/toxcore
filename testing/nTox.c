@@ -131,8 +131,8 @@ void send_filesenders(Tox *m)
             continue;
 
         while (1) {
-            if (!tox_file_senddata(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
-                                   file_senders[i].piecelength))
+            if (tox_file_senddata(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
+                                   file_senders[i].piecelength) == -1)
                 break;
 
             file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_filedata_size(m, file_senders[i].friendnum),
@@ -1182,7 +1182,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
     sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
     new_lines(msg);
 
-    if (tox_file_sendcontrol(m, friendnumber, 1, filenumber, 0, 0, 0)) {
+    if (tox_file_sendcontrol(m, friendnumber, 1, filenumber, 0, 0, 0) == 0) {
         sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friendnumber, filenumber);
         new_lines(msg);
     } else

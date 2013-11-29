@@ -585,8 +585,8 @@ int tox_new_filesender(Tox *tox, int friendnumber, uint64_t filesize, uint8_t *f
 /* Send a file control request.
  * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 on failure
  */
 int tox_file_sendcontrol(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
                          uint8_t *data, uint16_t length)
@@ -596,8 +596,8 @@ int tox_file_sendcontrol(Tox *tox, int friendnumber, uint8_t send_receive, uint8
 }
 /* Send file data.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 on failure
  */
 int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length)
 {
@@ -608,7 +608,7 @@ int tox_file_senddata(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *d
 /* Returns the recommended/maximum size of the filedata you send with tox_file_senddata()
  *
  *  return size on success
- *  return 0 on failure (currently will never return 0)
+ *  return -1 on failure (currently will never return -1)
  */
 int tox_filedata_size(Tox *tox, int friendnumber)
 {
