@@ -1161,7 +1161,7 @@ int file_sendrequest(Messenger *m, int friendnumber, uint8_t filenumber, uint64_
 int new_filesender(Messenger *m, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length)
 {
     if (friend_not_valid(m, friendnumber))
-        return 0;
+        return -1;
 
     uint32_t i;
 
@@ -1309,7 +1309,7 @@ int file_data(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t *data,
  *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
  *
  *  return number of bytes remaining to be sent/received on success
- *  return -1 on failure
+ *  return 0 on failure
  */
 uint64_t file_dataremaining(Messenger *m, int friendnumber, uint8_t filenumber, uint8_t send_receive)
 {
