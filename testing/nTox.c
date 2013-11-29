@@ -270,7 +270,7 @@ void get_id(Tox *m, char *data)
     sprintf(data, "[i] ID: ");
     int offset = strlen(data);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_add_address(m, address);
+    tox_get_address(m, address);
     fraddr_to_str(address, data + offset);
 }
 

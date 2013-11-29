@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
     }
 
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_add_address(tox, address);
+    tox_get_address(tox, address);
     uint32_t i;
 
     for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; i++) {

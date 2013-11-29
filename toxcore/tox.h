@@ -129,7 +129,7 @@ typedef struct Tox Tox;
 /*  return FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  */
-void tox_add_address(Tox *tox, uint8_t *address);
+void tox_get_address(Tox *tox, uint8_t *address);
 
 /* Add a friend.
  * Set the data that will be sent along with friend request.
