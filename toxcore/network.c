@@ -407,6 +407,10 @@ static int at_startup(void)
     if (at_startup_ran != 0)
         return 0;
 
+#ifndef VANILLA_NACL
+    sodium_init();
+#endif
+
 #ifdef WIN32
     WSADATA wsaData;
 
