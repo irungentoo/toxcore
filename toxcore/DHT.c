@@ -45,10 +45,10 @@
 /* Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 5
 
-#define MAX_PUNCHING_PORTS 128
+#define MAX_PUNCHING_PORTS 32
 
 /* Interval in seconds between punching attempts*/
-#define PUNCH_INTERVAL 10
+#define PUNCH_INTERVAL 3
 
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
