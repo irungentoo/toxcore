@@ -27,8 +27,6 @@
 
 #include "net_crypto.h"
 
-typedef struct Assoc Assoc;
-
 #define MAX_NICK_BYTES 128
 
 typedef struct {
@@ -70,11 +68,11 @@ typedef struct Group_Chat {
 
     uint64_t last_sent_ping;
 
-    uint8_t     nick[MAX_NICK_BYTES];
-    uint16_t    nick_len;
-    uint64_t last_sent_nick;
+    uint8_t        nick[MAX_NICK_BYTES];
+    uint16_t       nick_len;
+    uint64_t       last_sent_nick;
 
-    Assoc *assoc;
+    struct Assoc  *assoc;
 } Group_Chat;
 
 #define GROUP_CHAT_PING 0

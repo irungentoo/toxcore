@@ -81,7 +81,8 @@ typedef struct Client_entry {
 typedef struct candidates_bucket {
     Client_entry          *list;                               /* hashed list */
 } candidates_bucket;
-typedef struct Assoc {
+
+struct Assoc {
     hash_t                 self_hash;                          /* hash of self_client_id */
     uint8_t                self_client_id[CLIENT_ID_SIZE];     /* don't store entries for this */
 
@@ -90,7 +91,7 @@ typedef struct Assoc {
     size_t                 candidates_bucket_count;
     size_t                 candidates_bucket_size;
     candidates_bucket     *candidates;
-} Assoc;
+};
 
 /*****************************************************************************/
 /*                             HELPER FUNCTIONS                              */
