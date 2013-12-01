@@ -1662,11 +1662,14 @@ DHT *new_DHT(Net_Crypto *c)
 void do_DHT(DHT *dht)
 {
     unix_time_update();
-
+    if (dht->last_run == unix_time()) {
+        return;
+    }
     do_Close(dht);
     do_DHT_friends(dht);
     do_NAT(dht);
     do_toping(dht->ping);
+    dht->last_run = unix_time();
 }
 void kill_DHT(DHT *dht)
 {
