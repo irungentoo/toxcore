@@ -197,6 +197,7 @@ static void publish(RendezVous *rendezvous)
 
 
     /* improve target vector if possible */
+    memcpy(state.wanted_id, rendezvous->hash_unspecific_complete + RNDVZ_PKT_UNSPCFC_LEN, RNDVZ_PKT_REFID_LEN);
     uint8_t *getnodes_ref_id;
 
     if (found_cnt > state.count_good) {
@@ -495,7 +496,7 @@ static void prepare_publish(RendezVous *rendezvous)
 
         /* umm... no other node available? fill most of it with random data,
          * leaving only the very first byte as initial correct search vector */
-        for (i = 1; i < sizeof(rendezvous->getnodes_ref_id); i++)
+        for (i = RNDVZ_PKT_REFID_LEN; i < sizeof(rendezvous->getnodes_ref_id); i++)
             rendezvous->getnodes_ref_id[i] = rand();
     }
 }
