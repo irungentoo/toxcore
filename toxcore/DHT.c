@@ -1150,7 +1150,7 @@ static void do_DHT_friends(DHT *dht)
 static void do_Close(DHT *dht)
 {
     uint8_t not_killed = do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->c->self_public_key,
-                                                       dht->close_clientlist, LCLIENT_LIST);
+                         dht->close_clientlist, LCLIENT_LIST);
 
     if (!not_killed) {
         /* all existing nodes are at least KILL_NODE_TIMEOUT,
@@ -1256,30 +1256,25 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
     int num_ipv4s = 0;
     IP_Port ipv6s[MAX_FRIEND_CLIENTS];
     int num_ipv6s = 0;
-    uint8_t connected;
     int i;
 
     for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
         client = &(friend->client_list[i]);
-        connected = 0;
 
         /* If ip is not zero and node is good. */
         if (ip_isset(&client->assoc4.ret_ip_port.ip) && !is_timeout(client->assoc4.ret_timestamp, BAD_NODE_TIMEOUT)) {
             ipv4s[num_ipv4s] = client->assoc4.ret_ip_port;
             ++num_ipv4s;
-
-            connected = 1;
         }
 
         if (ip_isset(&client->assoc6.ret_ip_port.ip) && !is_timeout(client->assoc6.ret_timestamp, BAD_NODE_TIMEOUT)) {
             ipv6s[num_ipv6s] = client->assoc6.ret_ip_port;
             ++num_ipv6s;
-
-            connected = 1;
         }
 
-        if (connected && id_equal(client->client_id, friend->client_id))
-            return 0; /* direct connectivity */
+        if (id_equal(client->client_id, friend->client_id))
+            if (!is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT) || !is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT))
+                return 0; /* direct connectivity */
     }
 
 #ifdef FRIEND_IPLIST_PAD
@@ -1662,9 +1657,11 @@ DHT *new_DHT(Net_Crypto *c)
 void do_DHT(DHT *dht)
 {
     unix_time_update();
+
     if (dht->last_run == unix_time()) {
         return;
     }
+
     do_Close(dht);
     do_DHT_friends(dht);
     do_NAT(dht);
