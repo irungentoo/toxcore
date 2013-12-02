@@ -1563,7 +1563,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     uint16_t firstport = port_list[0];
 
     for (i = 0; i < numports; ++i) {
-        if (firstport != port_list[0])
+        if (firstport != port_list[i])
             break;
     }
 
