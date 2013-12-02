@@ -12,7 +12,6 @@
  * for a potential future use
  */
 
-typedef struct IP_Port IP_Port;
 typedef struct Assoc Assoc;
 
 /*****************************************************************************/

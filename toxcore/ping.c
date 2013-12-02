@@ -44,7 +44,7 @@
 /* Ping newly announced nodes to ping per TIME_TOPING seconds*/
 #define TIME_TOPING 5
 
-typedef struct PING {
+struct PING {
     Net_Crypto *c;
 
     pinged_t    pings[PING_NUM_MAX];
@@ -53,7 +53,7 @@ typedef struct PING {
 
     Node_format toping[MAX_TOPING];
     uint64_t    last_toping;
-} PING;
+};
 
 static int is_ping_timeout(uint64_t time)
 {

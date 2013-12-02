@@ -133,24 +133,21 @@ typedef struct {
     uint64_t timestamp;
 } pinged_t;
 
-typedef struct PING PING;
-typedef struct Assoc Assoc;
-
 typedef struct {
     Net_Crypto  *c;
 
-    Client_data  close_clientlist[LCLIENT_LIST];
-    uint64_t     close_lastgetnodes;
+    Client_data    close_clientlist[LCLIENT_LIST];
+    uint64_t       close_lastgetnodes;
 
-    DHT_Friend  *friends_list;
-    uint16_t     num_friends;
+    DHT_Friend    *friends_list;
+    uint16_t       num_friends;
 
-    pinged_t     send_nodes[LSEND_NODES_ARRAY];
-    PING        *ping;
+    pinged_t       send_nodes[LSEND_NODES_ARRAY];
+    struct PING   *ping;
 
-    Assoc       *assoc;
+    struct Assoc  *assoc;
 
-    uint64_t    last_run;
+    uint64_t       last_run;
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
