@@ -65,7 +65,9 @@ typedef struct Client_entry {
     hash_t             hash;
 
     /* shortcuts & rumors: timers and data */
+    uint64_t           getnodes;
     uint64_t           used_at;
+
     uint64_t           seen_at;
     uint64_t           heard_at;
 
@@ -91,6 +93,7 @@ struct Assoc {
     size_t                 candidates_bucket_count;
     size_t                 candidates_bucket_size;
     candidates_bucket     *candidates;
+    uint64_t               getnodes;
 };
 
 /*****************************************************************************/
@@ -803,6 +806,7 @@ Assoc *new_Assoc(size_t bits, size_t entries, uint8_t *public_id)
     }
 
     assoc->candidates = lists;
+    assoc->getnodes = unix_time();
 
     id_copy(assoc->self_client_id, public_id);
     client_id_self_update(assoc);
@@ -824,6 +828,114 @@ void Assoc_self_client_id_changed(Assoc *assoc, uint8_t *id)
         assoc->self_hash = 0;
         id_copy(assoc->self_client_id, id);
         client_id_self_update(assoc);
+    }
+}
+
+#ifdef LOGGING
+static char *idpart2str(uint8_t *id, size_t len);
+#endif
+
+/* refresh buckets */
+void do_Assoc(Assoc *assoc, DHT *dht)
+{
+    if (is_timeout(assoc->getnodes, ASSOC_BUCKET_REFRESH)) {
+        assoc->getnodes = unix_time();
+
+        size_t candidate = (rand() % assoc->candidates_bucket_count) + assoc->candidates_bucket_count;
+
+        /* in that bucket or the buckets closest to it:
+         * find the best heard candidate
+         * find the best seen candidate
+         * send getnode() requests to both */
+        uint8_t *target_id = NULL;
+        Client_entry *heard = NULL, *seen = NULL;
+        size_t i, k, m, bckt;
+
+        for (i = 1; i < assoc->candidates_bucket_count; i++) {
+            if (i % 2)
+                k = - (i >> 1);
+            else
+                k = i >> 1;
+
+            bckt = (candidate + k) % assoc->candidates_bucket_count;
+
+            for (m = 0; m < assoc->candidates_bucket_size; m++)
+                if (assoc->candidates[bckt].list[m].hash) {
+                    Client_entry *entry = &assoc->candidates[bckt].list[m];
+
+                    if (!is_timeout(entry->getnodes, CANDIDATES_SEEN_TIMEOUT))
+                        continue;
+
+                    if (!target_id)
+                        target_id = entry->client.client_id;
+
+                    if (entry->seen_at) {
+                        if (!seen)
+                            if (!is_timeout(entry->seen_at, CANDIDATES_SEEN_TIMEOUT))
+                                seen = entry;
+                    }
+
+                    if (entry->heard_at) {
+                        if (!heard)
+                            if (!is_timeout(entry->heard_at, CANDIDATES_HEARD_TIMEOUT))
+                                heard = entry;
+                    }
+
+                    if (seen && heard)
+                        break;
+                }
+
+            if (seen && heard)
+                break;
+        }
+
+#ifdef LOGGING
+        size_t total = 0, written = sprintf(logbuffer, "assoc: [%u] => ",
+                                            (uint32_t)(candidate % assoc->candidates_bucket_count));
+
+        if (written > 0)
+            total += written;
+
+#endif
+
+        if (seen) {
+            IPPTsPng *ippts = seen->seen_family == AF_INET ? &seen->client.assoc4 : &seen->client.assoc6;
+#ifdef LOGGING
+            written = sprintf(logbuffer + total, " S[%s...] %s:%u", idpart2str(seen->client.client_id, 8),
+                              ip_ntoa(&ippts->ip_port.ip), htons(ippts->ip_port.port));
+
+            if (written > 0)
+                total += written;
+
+#endif
+            DHT_getnodes(dht, &ippts->ip_port, seen->client.client_id, target_id);
+            seen->getnodes = unix_time();
+        }
+
+        if (heard && (heard != seen)) {
+            IP_Port *ipp = heard->heard_family == AF_INET ? &heard->assoc_heard4 : &heard->assoc_heard6;
+#ifdef LOGGING
+            written = sprintf(logbuffer + total, " H[%s...] %s:%u", idpart2str(heard->client.client_id, 8), ip_ntoa(&ipp->ip),
+                              htons(ipp->port));
+
+            if (written > 0)
+                total += written;
+
+#endif
+            DHT_getnodes(dht, ipp, heard->client.client_id, target_id);
+            heard->getnodes = unix_time();
+        }
+
+#ifdef LOGGING
+
+        if (!heard && !seen)
+            sprintf(logbuffer + total, "no nodes to talk to??\n");
+        else
+            /* for arcane reasons, sprintf(str, "\n") doesn't function */
+            sprintf(logbuffer + total, "%s", "\n");
+
+        loglog(logbuffer);
+#endif
     }
 }
 

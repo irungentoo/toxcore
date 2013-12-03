@@ -76,6 +76,13 @@ Assoc *new_Assoc(size_t bits, size_t entries, uint8_t *public_id);
 /* public_id changed (loaded), update which entry isn't stored */
 void Assoc_self_client_id_changed(Assoc *assoc, uint8_t *public_id);
 
+/* every 45s send out a getnodes() for a "random" bucket */
+#define ASSOC_BUCKET_REFRESH 45
+
+/* refresh bucket's data from time to time
+ * this must be called only from DHT */
+void do_Assoc(Assoc *assoc, DHT *dht);
+
 /* destroy */
 void kill_Assoc(Assoc *assoc);
 
