@@ -222,7 +222,7 @@ int tox_set_status_message(Tox *tox, uint8_t *status, uint16_t length)
     return m_set_statusmessage(m, status, length);
 }
 
-int tox_set_userstatus(Tox *tox, TOX_USERSTATUS status)
+int tox_set_user_status(Tox *tox, TOX_USERSTATUS status)
 {
     Messenger *m = tox;
     return m_set_userstatus(m, (USERSTATUS)status);
