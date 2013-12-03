@@ -333,7 +333,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
  * TODO: For the love of based <your favorite deity, in doubt use "love"> make
  * this function cleaner and much more efficient.
  */
-static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN)
+static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN)
 {
     int num_nodes = 0, i;
     get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
@@ -345,6 +345,53 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
                               &num_nodes, is_LAN);
 
     return num_nodes;
+}
+
+static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN)
+{
+    if (!dht->assoc)
+        return get_somewhat_close_nodes(dht, client_id, nodes_list, sa_family, is_LAN);
+
+    Client_data *result[MAX_SENT_NODES];
+
+    Assoc_close_entries request;
+    memset(&request, 0, sizeof(request));
+    request.count = MAX_SENT_NODES;
+    request.count_good = MAX_SENT_NODES / 2;
+    request.result = result;
+    request.wanted_id = client_id;
+    request.flags = (is_LAN ? LANOk : 0) + (sa_family == AF_INET ? ProtoIPv4 : ProtoIPv6);
+
+    uint8_t num_found = Assoc_get_close_entries(dht->assoc, &request);
+
+    if (!num_found)
+        return get_somewhat_close_nodes(dht, client_id, nodes_list, sa_family, is_LAN);
+
+    uint8_t i, num_returned = 0;
+
+    for (i = 0; i < num_found; i++) {
+        Client_data *client = result[i];
+
+        if (client) {
+            id_copy(nodes_list[i].client_id, client->client_id);
+
+            if (sa_family == AF_INET)
+                if (ipport_isset(&client->assoc4.ip_port)) {
+                    nodes_list[i].ip_port = client->assoc4.ip_port;
+                    num_returned++;
+                    continue;
+                }
+
+            if (sa_family == AF_INET6)
+                if (ipport_isset(&client->assoc6.ip_port)) {
+                    nodes_list[i].ip_port = client->assoc6.ip_port;
+                    num_returned++;
+                    continue;
+                }
+        }
+    }
+
+    return num_returned;
 }
 
 /* Replace first bad (or empty) node with this one.
@@ -884,26 +931,24 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
         return 1;
 
     Node4_format *nodes4_list = (Node4_format *)(plain + sizeof(ping_id));
-    uint32_t i;
 
-    IP_Port ipp;
-    ipp.ip.family = AF_INET;
+    uint64_t time_now = unix_time();
+    IPPTs ippts;
+    ippts.ip_port.ip.family = AF_INET;
+    ippts.timestamp = time_now;
+
+    uint32_t i;
 
     for (i = 0; i < num_nodes; i++)
         if ((nodes4_list[i].ip_port.ip.uint32 != 0) && (nodes4_list[i].ip_port.ip.uint32 != (uint32_t)~0)) {
-            ipp.ip.ip4.uint32 = nodes4_list[i].ip_port.ip.uint32;
-            ipp.port = nodes4_list[i].ip_port.port;
+            ippts.ip_port.ip.ip4.uint32 = nodes4_list[i].ip_port.ip.uint32;
+            ippts.ip_port.port = nodes4_list[i].ip_port.port;
 
-            send_ping_request(dht->ping, ipp, nodes4_list[i].client_id);
-            int used = returnedip_ports(dht, ipp, nodes4_list[i].client_id, packet + 1);
+            send_ping_request(dht->ping, ippts.ip_port, nodes4_list[i].client_id);
+            int used = returnedip_ports(dht, ippts.ip_port, nodes4_list[i].client_id, packet + 1);
 
-            if (dht->assoc) {
-                IPPTs ippts;
-                ippts.ip_port = ipp;
-                ippts.timestamp = 0;
-
+            if (dht->assoc)
                 Assoc_add_entry(dht->assoc, nodes4_list[i].client_id, &ippts, NULL, used ? 1 : 0);
-            }
         }
 
     return 0;
@@ -921,6 +966,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
         return 1;
 
     Node_format *nodes_list = (Node_format *)(plain + sizeof(ping_id));
+    uint64_t time_now = unix_time();
     uint32_t i;
 
     for (i = 0; i < num_nodes; i++)
@@ -931,7 +977,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
             if (dht->assoc) {
                 IPPTs ippts;
                 ippts.ip_port = nodes_list[i].ip_port;
-                ippts.timestamp = 0;
+                ippts.timestamp = time_now;
 
                 Assoc_add_entry(dht->assoc, nodes_list[i].client_id, &ippts, NULL, used ? 1 : 0);
             }
