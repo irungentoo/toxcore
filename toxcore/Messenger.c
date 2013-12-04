@@ -1583,7 +1583,7 @@ void do_friends(Messenger *m)
                 /* If we didn't connect to friend after successfully sending him a friend request the request is deemed
                  * unsuccessful so we set the status back to FRIEND_ADDED and try again.
                  */
-                check_friend_request_timed_out(m, i);
+                check_friend_request_timed_out(m, i, temp_time);
             }
 
             IP_Port friendip;
