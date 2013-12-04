@@ -1538,6 +1538,24 @@ void kill_messenger(Messenger *m)
     free(m);
 }
 
+/* Check for and handle a timed-out friend request. If the request has
+ * timed-out then the friend status is set back to FRIEND_ADDED.
+ *   i: friendlist index of the timed-out friend
+ *   t: time
+ */
+static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t)
+{
+    Friend *f = &m->friendlist[i];
+
+    if (f->friendrequest_lastsent + f->friendrequest_timeout < t) {
+        set_friend_status(m, i, FRIEND_ADDED);
+        /* Double the default timeout everytime if friendrequest is assumed
+         * to have been sent unsuccessfully.
+         */
+        f->friendrequest_timeout *= 2;
+    }
+}
+
 /* TODO: Make this function not suck. */
 void do_friends(Messenger *m)
 {
@@ -1565,13 +1583,7 @@ void do_friends(Messenger *m)
                 /* If we didn't connect to friend after successfully sending him a friend request the request is deemed
                  * unsuccessful so we set the status back to FRIEND_ADDED and try again.
                  */
-                if (m->friendlist[i].friendrequest_lastsent + m->friendlist[i].friendrequest_timeout < temp_time) {
-                    set_friend_status(m, i, FRIEND_ADDED);
-                    /* Double the default timeout everytime if friendrequest is assumed to have been
-                     * sent unsuccessfully.
-                     */
-                    m->friendlist[i].friendrequest_timeout *= 2;
-                }
+                check_friend_request_timed_out(m, i, temp_time);
             }
 
             IP_Port friendip;
