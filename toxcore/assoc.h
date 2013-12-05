@@ -36,9 +36,16 @@ uint8_t Assoc_add_entry(Assoc *assoc, uint8_t *id, IPPTs *ippts_send, IP_Port *i
 
 /*****************************************************************************/
 
+typedef enum AssocCloseEntriesFlags {
+    ProtoIPv4 = 1,
+    ProtoIPv6 = 2,
+    LANOk     = 4,
+} AssocCloseEntriesFlags;
+
 typedef struct Assoc_close_entries {
-    uint8_t                           *wanted_id;          /* the target client_id */
     void                              *custom_data;        /* given to distance functions */
+    uint8_t                           *wanted_id;          /* the target client_id */
+    uint8_t                            flags;              /* additional flags */
 
     Assoc_distance_relative_callback   distance_relative_func;
     Assoc_distance_absolute_callback   distance_absolute_func;

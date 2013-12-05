@@ -480,7 +480,7 @@ static uint8_t candidates_create_new(Assoc *assoc, hash_t hash, uint8_t *id, uin
         ipp_recv = NULL;
 
     if (ipp_recv) {
-        entry->seen_at = unix_time();
+        entry->seen_at = ippts_send->timestamp;
         entry->seen_family = ippts_send->ip_port.ip.family;
 
         ipptsp->ip_port = ippts_send->ip_port;
@@ -629,6 +629,24 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
             Client_entry *entry = &cnd_bckt->list[i];
 
             if (entry->hash) {
+                if (state->flags & ProtoIPv4) {
+                    if (!ipport_isset(&entry->client.assoc4.ip_port))
+                        continue;
+
+                    if (!(state->flags & LANOk))
+                        if (!LAN_ip(entry->client.assoc4.ip_port.ip))
+                            continue;
+                }
+
+                if (state->flags & ProtoIPv6) {
+                    if (!ipport_isset(&entry->client.assoc6.ip_port))
+                        continue;
+
+                    if (!(state->flags & LANOk))
+                        if (!LAN_ip(entry->client.assoc6.ip_port.ip))
+                            continue;
+                }
+
                 uint64_t dist = state->distance_absolute_func(assoc, state->custom_data, state->wanted_id, entry->client.client_id);
                 uint32_t index = b * assoc->candidates_bucket_size + i;
                 dist_list[index] = (dist << DISTANCE_INDEX_INDEX_BITS) | index;
@@ -686,7 +704,16 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
             if (client_quota_good >= client_quota_max) {
                 state->result[pos++] = &entry->client;
                 taken_last = i;
-            } else if (!is_timeout(entry->seen_at, BAD_NODE_TIMEOUT)) {
+            } else {
+                if (state->flags & (ProtoIPv4 | ProtoIPv6)) {
+                    if ((state->flags & ProtoIPv4) && is_timeout(entry->client.assoc4.timestamp, BAD_NODE_TIMEOUT))
+                        continue;
+
+                    if ((state->flags & ProtoIPv6) && is_timeout(entry->client.assoc6.timestamp, BAD_NODE_TIMEOUT))
+                        continue;
+                } else if (is_timeout(entry->seen_at, BAD_NODE_TIMEOUT))
+                    continue;
+
                 state->result[pos++] = &entry->client;
                 client_quota_good++;
                 taken_last = i;
@@ -730,9 +757,8 @@ static uint8_t odd_min9_is_prime(size_t value)
 
 static size_t prime_upto_min9(size_t limit)
 {
-    /* primes besides 2 are odd */
-    if (!(limit % 2))
-        limit--;
+    /* even => odd */
+    limit = limit - (1 - (limit % 2));
 
     while (!odd_min9_is_prime(limit))
         limit -= 2;
@@ -763,11 +789,16 @@ Assoc *new_Assoc(size_t bits, size_t entries, uint8_t *public_id)
     assoc->candidates_bucket_bits = bits;
     assoc->candidates_bucket_count = 1U << bits;
 
-    if (entries <= 8) {
-        if (entries <= 4)
-            entries = 3;
-        else if (!(entries % 2)) /* 6, 8 => 5, 7 */
-            entries--;
+    if (entries < 25) {
+        if (entries <= 6)
+            entries = 5;
+        else {
+            entries = entries - (1 - (entries % 2)); /* even => odd */
+
+            /* 7..23: all odds but 9&15 are prime */
+            if (!(entries % 3)) /* 9, 15 */
+                entries -= 2;   /* 7, 13 */
+        }
     } else if (entries > ((1 << 17) - 1)) /* 130k+ */
         entries = (1 << 17) - 1;
     else {
@@ -861,6 +892,8 @@ void Assoc_status(Assoc *assoc)
         return;
     }
 
+    loglog("[b:p] hash => [id...] used, seen, heard\n");
+
     size_t bid, cid, total = 0;
 
     for (bid = 0; bid < assoc->candidates_bucket_count; bid++) {
@@ -870,11 +903,13 @@ void Assoc_status(Assoc *assoc)
             Client_entry *entry = &bucket->list[cid];
 
             if (entry->hash) {
-                sprintf(logbuffer, "[%3i:%3i] %x => [%s...] %i, %i, %i\n",
+                sprintf(logbuffer, "[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
                         (int)bid, (int)cid, entry->hash, idpart2str(entry->client.client_id, 8),
                         entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
                         entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
-                        entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0);
+                        entry->seen_at ? (entry->seen_family == AF_INET ? '4' : (entry->seen_family == AF_INET6 ? '6' : '?')) : '?',
+                        entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0,
+                        entry->heard_at ? (entry->heard_family == AF_INET ? '4' : (entry->heard_family == AF_INET6 ? '6' : '?')) : '?');
                 loglog(logbuffer);
                 total++;
             }
