@@ -357,7 +357,7 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
     Assoc_close_entries request;
     memset(&request, 0, sizeof(request));
     request.count = MAX_SENT_NODES;
-    request.count_good = MAX_SENT_NODES / 2;
+    request.count_good = MAX_SENT_NODES;
     request.result = result;
     request.wanted_id = client_id;
     request.flags = (is_LAN ? LANOk : 0) + (sa_family == AF_INET ? ProtoIPv4 : ProtoIPv6);
