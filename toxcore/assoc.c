@@ -845,7 +845,7 @@ Assoc *new_Assoc_default(uint8_t *public_id)
 {
     /* original 8, 251 averages to ~32k entries... probably the whole DHT :D
      * 320 entries is fine, hopefully */
-    return new_Assoc(6, 5, public_id);
+    return new_Assoc(6, 15, public_id);
 }
 
 /* own client_id, assocs for this have to be ignored */
