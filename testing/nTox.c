@@ -42,6 +42,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <locale.h>
 
 #ifdef __WIN32__
 #define c_sleep(x) Sleep(1*x)
@@ -51,13 +52,56 @@
 #endif
 
 char lines[HISTORY][STRING_LENGTH];
+uint8_t flag[HISTORY];
 char input_line[STRING_LENGTH];
 
-char *help = "[i] commands:\n/f ID (to add friend)\n/m friendnumber message  "
-             "(to send message)\n/s status (to change status)\n[i] /l list (l"
-             "ist friends)\n/h for help\n/i for info\n/n nick (to change nick"
-             "name)\n/q (to quit)";
+/* wrap: continuation mark */
+const size_t wrap_cont_len = 3;
+const char wrap_cont_str[] = "\n+ ";
+
+#define STRING_LENGTH_WRAPPED (STRING_LENGTH + 16 * (wrap_cont_len + 1))
+
+/* documented: fdmnlsahxgiztq(c[rfg]) */
+/* undocumented: d (tox_do()) */
+
+/* 251+1 characters */
+char *help_main =
+    "[i] Available main commands:\n+ "
+    "/x (to print one's own id)|"
+    "/s status (to change status, e.g. AFK)|"
+    "/n nick (to change your nickname)|"
+    "/q (to quit)|"
+    "/cr (to reset conversation)|"
+    "/h friend (for friend related commands)|"
+    "/h group (for group related commands)";
+
+/* 190+1 characters */
+char *help_friend1 =
+    "[i] Available friend commands (1/2):\n+ "
+    "/l list (to list friends)|"
+    "/r friend no. (to remove from the friend list)|"
+    "/f ID (to send a friend request)|"
+    "/a request no. (to accept a friend request)";
+
+/* 187+1 characters */
+char *help_friend2 =
+    "[i] Available friend commands (2/2):\n+ "
+    "/m friend no. message (to send a message)|"
+    "/t friend no. filename (to send a file to a friend)|"
+    "/cf friend no. (to talk to that friend per default)";
+
+/* 253+1 characters */
+char *help_group =
+    "[i] Available group commands:\n+ "
+    "/g (to create a group)|"
+    "/i friend no. group no. (to invite a friend to a group)|"
+    "/z group no. message (to send a message to a group)|"
+    "/p group no. (to list a group's peers)|"
+    "/cg group no. (to talk to that group per default)";
+
 int x, y;
+
+int conversation_default = 0;
 
 typedef struct {
     uint8_t id[TOX_CLIENT_ID_SIZE];
@@ -87,17 +131,17 @@ void send_filesenders(Tox *m)
             continue;
 
         while (1) {
-            if (!tox_file_senddata(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
-                                   file_senders[i].piecelength))
+            if (tox_file_send_data(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
+                                   file_senders[i].piecelength) == -1)
                 break;
 
-            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_filedata_size(m, file_senders[i].friendnum),
+            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_file_data_size(m, file_senders[i].friendnum),
                                                 file_senders[i].file);
 
             if (file_senders[i].piecelength == 0) {
                 fclose(file_senders[i].file);
                 file_senders[i].file = 0;
-                tox_file_sendcontrol(m, file_senders[i].friendnum, 0, file_senders[i].filenumber, 3, 0, 0);
+                tox_file_send_control(m, file_senders[i].friendnum, 0, file_senders[i].filenumber, 3, 0, 0);
                 char msg[512];
                 sprintf(msg, "[t] %u file transfer: %u completed", file_senders[i].friendnum, file_senders[i].filenumber);
                 new_lines(msg);
@@ -116,13 +160,13 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    int filenum = tox_new_filesender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
+    int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
 
     if (filenum == -1)
         return -1;
 
     file_senders[numfilesenders].file = tempfile;
-    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, tox_filedata_size(m,
+    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, tox_file_data_size(m,
             file_senders[numfilesenders].friendnum),
             file_senders[numfilesenders].file);
     file_senders[numfilesenders].friendnum = friendnum;
@@ -193,46 +237,101 @@ uint32_t resolve_addr(const char *address)
     return addr;
 }
 
+#define FRADDR_TOSTR_CHUNK_LEN 8
+#define FRADDR_TOSTR_BUFSIZE (TOX_FRIEND_ADDRESS_SIZE * 2 + TOX_FRIEND_ADDRESS_SIZE / FRADDR_TOSTR_CHUNK_LEN + 1)
+
+static void fraddr_to_str(uint8_t *id_bin, char *id_str)
+{
+    uint i, delta = 0, pos_extra, sum_extra = 0;
+
+    for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
+        sprintf(&id_str[2 * i + delta], "%02hhX", id_bin[i]);
+
+        if ((i + 1) == TOX_CLIENT_ID_SIZE)
+            pos_extra = 2 * (i + 1) + delta;
+
+        if (i >= TOX_CLIENT_ID_SIZE)
+            sum_extra |= id_bin[i];
+
+        if (!((i + 1) % FRADDR_TOSTR_CHUNK_LEN)) {
+            id_str[2 * (i + 1) + delta] = ' ';
+            delta++;
+        }
+    }
+
+    id_str[2 * i + delta] = 0;
+
+    if (!sum_extra)
+        id_str[pos_extra] = 0;
+}
+
 void get_id(Tox *m, char *data)
 {
     sprintf(data, "[i] ID: ");
     int offset = strlen(data);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_getaddress(m, address);
+    tox_get_address(m, address);
+    fraddr_to_str(address, data + offset);
+}
 
-    uint32_t i = 0;
+int getfriendname_terminated(Tox *m, int friendnum, char *namebuf)
+{
+    int res = tox_get_name(m, friendnum, (uint8_t *)namebuf);
 
-    for (; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
-        sprintf(data + 2 * i + offset, "%02X ", address[i]);
+    if (res >= 0)
+        namebuf[res] = 0;
+    else
+        namebuf[0] = 0;
+
+    return res;
+}
+
+void new_lines_mark(char *line, uint8_t special)
+{
+    int i = 0;
+
+    for (i = HISTORY - 1; i > 0; i--) {
+        strncpy(lines[i], lines[i - 1], STRING_LENGTH - 1);
+        flag[i] = flag[i - 1];
     }
+
+    strncpy(lines[0], line, STRING_LENGTH - 1);
+    flag[i] = special;
+
+    do_refresh();
 }
 
 void new_lines(char *line)
 {
-    int i = 0;
-
-    for (i = HISTORY - 1; i > 0; i--)
-        strncpy(lines[i], lines[i - 1], STRING_LENGTH - 1);
-
-    strncpy(lines[0], line, STRING_LENGTH - 1);
-    do_refresh();
+    new_lines_mark(line, 0);
 }
 
 
+const char ptrn_friend[] = "[i] Friend %i: %s\n+ id: %s";
+const int id_str_len = TOX_FRIEND_ADDRESS_SIZE * 2 + 3;
 void print_friendlist(Tox *m)
 {
-    char name[TOX_MAX_NAME_LENGTH];
-    int i = 0;
     new_lines("[i] Friend List:");
 
-    while (tox_getname(m, i, (uint8_t *)name) != -1) {
-        /* account for the longest name and the longest "base" string */
-        char fstring[TOX_MAX_NAME_LENGTH + strlen("[i] Friend: NULL\n\tid: ")];
+    char name[TOX_MAX_NAME_LENGTH + 1];
+    uint8_t fraddr_bin[TOX_FRIEND_ADDRESS_SIZE];
+    char fraddr_str[FRADDR_TOSTR_BUFSIZE];
+
+    /* account for the longest name and the longest "base" string and number (int) and id_str */
+    char fstring[TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21 + id_str_len];
+
+    uint i = 0;
+
+    while (getfriendname_terminated(m, i, name) != -1) {
+        if (!tox_get_client_id(m, i, fraddr_bin))
+            fraddr_to_str(fraddr_bin, fraddr_str);
+        else
+            sprintf(fraddr_str, "???");
 
         if (strlen(name) <= 0) {
-            sprintf(fstring, "[i] Friend: No Friend!\n\tid: %i", i);
+            sprintf(fstring, ptrn_friend, i, "No name?", fraddr_str);
         } else {
-            sprintf(fstring, "[i] Friend: %s\n\tid: %i", (uint8_t *)name, i);
+            sprintf(fstring, ptrn_friend, i, (uint8_t *)name, fraddr_str);
         }
 
         i++;
@@ -240,41 +339,51 @@ void print_friendlist(Tox *m)
     }
 
     if (i == 0)
-        new_lines("\tno friends! D:");
+        new_lines("+ no friends! D:");
 }
 
-char *format_message(Tox *m, char *message, int friendnum)
+static int fmtmsg_tm_mday = -1;
+
+static void print_formatted_message(Tox *m, char *message, int friendnum, uint8_t outgoing)
 {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
+    getfriendname_terminated(m, friendnum, name);
 
-    if (friendnum != -1) {
-        tox_getname(m, friendnum, (uint8_t *)name);
-    } else {
-        tox_getselfname(m, (uint8_t *)name, sizeof(name));
-    }
-
-    char *msg = malloc(100 + strlen(message) + strlen(name) + 1);
+    char msg[100 + strlen(message) + strlen(name) + 1];
 
     time_t rawtime;
     struct tm *timeinfo;
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
-    char *time = asctime(timeinfo);
-    size_t len = strlen(time);
-    time[len - 1] = '\0';
 
-    if (friendnum != -1) {
-        sprintf(msg, "[%d] %s <%s> %s", friendnum, time, name, message);
-    } else {
-        // This message came from ourselves
-        sprintf(msg, "%s <%s> %s", time, name, message);
+    /* assume that printing the date once a day is enough */
+    if (fmtmsg_tm_mday != timeinfo->tm_mday) {
+        fmtmsg_tm_mday = timeinfo->tm_mday;
+        /* strftime(msg, 100, "Today is %a %b %d %Y.", timeinfo); */
+        /* %x is the locale's preferred date format */
+        strftime(msg, 100, "Today is %x.", timeinfo);
+        new_lines(msg);
     }
 
-    return msg;
+    char time[64];
+    /* strftime(time, 64, "%I:%M:%S %p", timeinfo); */
+    /* %X is the locale's preferred time format */
+    strftime(time, 64, "%X", timeinfo);
+
+    if (outgoing) {
+        /* tgt: friend */
+        sprintf(msg, "[%d] %s =>{%s} %s", friendnum, time, name, message);
+    } else {
+        /* src: friend */
+        sprintf(msg, "[%d] %s <%s>: %s", friendnum, time, name, message);
+    }
+
+    new_lines(msg);
 }
 
-/* forward declaration */
+/* forward declarations */
 static int save_data(Tox *m);
+void print_groupchatpeers(Tox *m, int groupnumber);
 
 void line_eval(Tox *m, char *line)
 {
@@ -286,14 +395,18 @@ void line_eval(Tox *m, char *line)
         new_lines(prompt);
 
         if (inpt_command == 'f') { // add friend command: /f ID
-            int i;
+            int i, delta = 0;
             char temp_id[128];
 
-            for (i = 0; i < 128; i++)
-                temp_id[i] = line[i + prompt_offset];
+            for (i = 0; i < 128; i++) {
+                temp_id[i - delta] = line[i + prompt_offset];
+
+                if ((temp_id[i - delta] == ' ') || (temp_id[i - delta] == '+'))
+                    delta++;
+            }
 
             unsigned char *bin_string = hex_string_to_bin(temp_id);
-            int num = tox_addfriend(m, bin_string, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+            int num = tox_add_friend(m, bin_string, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
             free(bin_string);
             char numstring[100];
 
@@ -329,7 +442,6 @@ void line_eval(Tox *m, char *line)
             }
 
             new_lines(numstring);
-            do_refresh();
         } else if (inpt_command == 'd') {
             tox_do(m);
         } else if (inpt_command == 'm') { //message command: /m friendnumber messsage
@@ -337,12 +449,12 @@ void line_eval(Tox *m, char *line)
             int num = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                if (tox_sendmessage(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1) + 1) < 1) {
+                if (tox_send_message(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1) + 1) < 1) {
                     char sss[256];
                     sprintf(sss, "[i] could not send message to friend num %u", num);
                     new_lines(sss);
                 } else {
-                    new_lines(format_message(m, *posi + 1, -1));
+                    print_formatted_message(m, *posi + 1, num, 1);
                 }
             } else
                 new_lines("Error, bad input.");
@@ -357,7 +469,7 @@ void line_eval(Tox *m, char *line)
             }
 
             name[i - 3] = 0;
-            tox_setname(m, name, i - 2);
+            tox_set_name(m, name, i - 2);
             char numstring[100];
             sprintf(numstring, "[i] changed nick to %s", (char *)name);
             new_lines(numstring);
@@ -374,11 +486,11 @@ void line_eval(Tox *m, char *line)
             }
 
             status[i - 3] = 0;
-            tox_set_statusmessage(m, status, strlen((char *)status) + 1);
+            tox_set_status_message(m, status, strlen((char *)status) + 1);
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char *)status);
             new_lines(numstring);
-        } else if (inpt_command == 'a') {
+        } else if (inpt_command == 'a') { // /a #: accept
             uint8_t numf = atoi(line + 3);
             char numchar[100];
 
@@ -386,13 +498,11 @@ void line_eval(Tox *m, char *line)
                 sprintf(numchar, "[i] you either didn't receive that request or you already accepted it");
                 new_lines(numchar);
             } else {
-                int num = tox_addfriend_norequest(m, pending_requests[numf].id);
+                int num = tox_add_friend_norequest(m, pending_requests[numf].id);
 
                 if (num != -1) {
                     pending_requests[numf].accepted = 1;
-                    sprintf(numchar, "[i] friend request %u accepted", numf);
-                    new_lines(numchar);
-                    sprintf(numchar, "[i] added friendnumber %d", num);
+                    sprintf(numchar, "[i] friend request %u accepted as friend no. %d", numf, num);
                     new_lines(numchar);
                     save_data(m);
                 } else {
@@ -400,10 +510,52 @@ void line_eval(Tox *m, char *line)
                     new_lines(numchar);
                 }
             }
+        } else if (inpt_command == 'r') { // /r #: remove friend
+            uint8_t numf = atoi(line + 3);
 
-            do_refresh();
+            if (!tox_friend_exists(m, numf)) {
+                char err[64];
+                sprintf(err, "You don't have a friend %i.", numf);
+                new_lines(err);
+                return;
+            }
+
+            char msg[128 + TOX_MAX_NAME_LENGTH];
+            char fname[TOX_MAX_NAME_LENGTH ];
+            getfriendname_terminated(m, numf, fname);
+            sprintf(msg, "Are you sure you want to delete friend %i: %s? (y/n)", numf, fname);
+            input_line[0] = 0;
+            new_lines(msg);
+
+            int c;
+
+            do {
+                c = getchar();
+            } while ((c != 'y') && (c != 'n') && (c != EOF));
+
+            if (c == 'y') {
+                int res = tox_del_friend(m, numf);
+
+                if (res == 0)
+                    sprintf(msg, "[i] [%i: %s] is no longer your friend", numf, fname);
+                else
+                    sprintf(msg, "[i] failed to remove friend");
+
+                new_lines(msg);
+            }
         } else if (inpt_command == 'h') { //help
-            new_lines(help);
+            if (line[2] == ' ') {
+                if (line[3] == 'f') {
+                    new_lines_mark(help_friend1, 1);
+                    new_lines_mark(help_friend2, 1);
+                    return;
+                } else if (line[3] == 'g') {
+                    new_lines_mark(help_group, 1);
+                    return;
+                }
+            }
+
+            new_lines_mark(help_main, 1);
         } else if (inpt_command == 'x') { //info
             char idstring[200];
             get_id(m, idstring);
@@ -425,10 +577,17 @@ void line_eval(Tox *m, char *line)
             int groupnumber = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                char msg[256 + 1024];
-                sprintf(msg, "[g] sent message: %s to group num: %u returned: %u (0 means success)", *posi + 1, groupnumber,
-                        tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1));
-                new_lines(msg);
+                int res = tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1);
+
+                if (res == 0) {
+                    char msg[32 + STRING_LENGTH];
+                    sprintf(msg, "[g] #%u: YOU: %s", groupnumber, *posi + 1);
+                    new_lines(msg);
+                } else {
+                    char msg[128];
+                    sprintf(msg, "[i] could not send message to group no. %u: %i", groupnumber, res);
+                    new_lines(msg);
+                }
             }
         } else if (inpt_command == 't') {
             char msg[512];
@@ -444,29 +603,267 @@ void line_eval(Tox *m, char *line)
             save_data(m);
             endwin();
             exit(EXIT_SUCCESS);
+        } else if (inpt_command == 'c') { //set conversation partner
+            if (line[2] == 'r') {
+                if (conversation_default != 0) {
+                    conversation_default = 0;
+                    new_lines("[i] default conversation reset");
+                } else
+                    new_lines("[i] default conversation wasn't set, nothing to do");
+            } else if (line[3] != ' ') {
+                new_lines("[i] invalid command");
+            } else {
+                int num = atoi(line + 4);
+
+                /* zero is also returned for not-a-number */
+                if (!num && strcmp(line + 4, "0"))
+                    num = -1;
+
+                if (num < 0)
+                    new_lines("[i] invalid command parameter");
+                else if (line[2] == 'f') {
+                    conversation_default = num + 1;
+                    char buffer[128];
+                    sprintf(buffer, "[i] default conversation is now to friend %i", num);
+                    new_lines(buffer);
+                } else if (line[2] == 'g') {
+                    char buffer[128];
+                    conversation_default = - (num + 1);
+                    sprintf(buffer, "[i] default conversation is now to group %i", num);
+                    new_lines(buffer);
+                } else
+                    new_lines("[i] invalid command");
+            }
+        } else if (inpt_command == 'p') { //list peers
+            char *posi = NULL;
+            int group_number = strtoul(line + prompt_offset, &posi, 0);
+
+            if (posi != NULL) {
+                char msg[64];
+                int peer_cnt = tox_group_number_peers(m, group_number);
+
+                if (peer_cnt < 0) {
+                    new_lines("[g] Invalid group number.");
+                } else if (peer_cnt == 0) {
+                    sprintf(msg, "[g] #%i: No peers in group.", group_number);
+                    new_lines(msg);
+                } else {
+                    sprintf(msg, "[g] #%i: Group has %i peers. Names:", group_number, peer_cnt);
+                    new_lines(msg);
+                    print_groupchatpeers(m, group_number);
+                }
+            }
         } else {
             new_lines("[i] invalid command");
         }
     } else {
-        new_lines("[i] invalid command");
-        //new_lines(line);
+        if (conversation_default != 0) {
+            if (conversation_default > 0) {
+                int friendnumber = conversation_default - 1;
+                uint32_t res = tox_send_message(m, friendnumber, (uint8_t *)line, strlen(line) + 1);
+
+                if (res == 0) {
+                    char sss[128];
+                    sprintf(sss, "[i] could not send message to friend no. %u", friendnumber);
+                    new_lines(sss);
+                } else
+                    print_formatted_message(m, line, friendnumber, 1);
+            } else {
+                int groupnumber = - conversation_default - 1;
+                int res = tox_group_message_send(m, groupnumber, (uint8_t *)line, strlen(line) + 1);
+
+                if (res == 0) {
+                    char msg[32 + STRING_LENGTH];
+                    sprintf(msg, "[g] #%u: YOU: %s", groupnumber, line);
+                    new_lines(msg);
+                } else {
+                    char msg[128];
+                    sprintf(msg, "[i] could not send message to group no. %u: %i", groupnumber, res);
+                    new_lines(msg);
+                }
+            }
+        } else
+            new_lines("[i] invalid input: neither command nor in conversation");
     }
 }
 
-void wrap(char output[STRING_LENGTH], char input[STRING_LENGTH], int line_width)
+/* basic wrap, ignores embedded '\t', '\n' or '|'
+ * inserts continuation markers if there's enough space left,
+ * otherwise turns spaces into newlines if possible */
+void wrap(char output[STRING_LENGTH_WRAPPED], char input[STRING_LENGTH], int line_width)
 {
-    strcpy(output, input);
-    size_t i, len = strlen(output);
+    size_t i, k, m, len = strlen(input);
 
-    for (i = line_width; i < len; i = i + line_width) {
-        while (output[i] != ' ' && i != 0) {
-            i--;
+    if ((line_width < 4) || (len < (size_t)line_width)) {
+        /* if line_width ridiculously tiny, it's not worth the effort */
+        strcpy(output, input);
+        return;
+    }
+
+    /* how much can we shift? */
+    size_t delta_is = 0, delta_remain = STRING_LENGTH_WRAPPED - len - 1;
+
+    /* if the line is very very short, don't insert continuation markers,
+     * as they would use up too much of the line */
+    if ((size_t)line_width < 2 * wrap_cont_len)
+        delta_remain = 0;
+
+    for (i = line_width; i < len; i += line_width) {
+        /* look backward for a space to expand/turn into a new line */
+        k = i;
+        m = i - line_width;
+
+        while (input[k] != ' ' && k > m) {
+            k--;
         }
 
-        if (i > 0) {
-            output[i] = '\n';
+        if (k > m) {
+            if (delta_remain > wrap_cont_len) {
+                /* replace space with continuation, then
+                 * set the pos. after the space as new line start
+                 * (i.e. space is being "eaten") */
+                memcpy(output + m + delta_is, input + m, k - m);
+                strcpy(output + k + delta_is, wrap_cont_str);
+
+                delta_remain -= wrap_cont_len - 1;
+                delta_is += wrap_cont_len - 1;
+                i = k + 1;
+            } else {
+                /* no more space to push forward: replace the space,
+                 * use its pos. + 1 as starting point for the next line */
+                memcpy(output + m + delta_is, input + m, k - m);
+                output[k + delta_is] = '\n';
+                i = k + 1;
+            }
+        } else {
+            /* string ends right here:
+             * don't add a continuation marker with nothing following */
+            if (i == len - 1)
+                break;
+
+            /* nothing found backwards */
+            if (delta_remain > wrap_cont_len) {
+                /* break at the end of the line,
+                 * i.e. in the middle of the word at the border */
+                memcpy(output + m + delta_is, input + m, line_width);
+                strcpy(output + i + delta_is, wrap_cont_str);
+
+                delta_remain -= wrap_cont_len;
+                delta_is += wrap_cont_len;
+            } else {
+                /* no more space to push, no space to convert:
+                 * just copy the whole line and move on;
+                 * means the line count calc'ed will be off */
+                memcpy(output + m + delta_is, input + m, line_width);
+            }
         }
     }
+
+    i -= line_width;
+    memcpy(output + i + delta_is, input + i, len - i);
+
+    output[len + delta_is] = 0;
+}
+
+/*
+ * extended wrap, honors '\n', accepts '|' as "break here when necessary"
+ * marks wrapped lines with "+ " in front, which does expand output
+ * does NOT honor '\t': would require a lot more work (and tab width isn't always 8)
+ */
+void wrap_bars(char output[STRING_LENGTH_WRAPPED], char input[STRING_LENGTH], size_t line_width)
+{
+    size_t len = strlen(input);
+    size_t ipos, opos = 0;
+    size_t bar_avail = 0, space_avail = 0, nl_got = 0;   /* in opos */
+
+    for (ipos = 0; ipos < len; ipos++) {
+        if (opos - nl_got < line_width) {
+            /* not yet at the limit */
+            char c = input[ipos];
+
+            if (c == ' ')
+                space_avail = opos;
+
+            output[opos++] = input[ipos];
+
+            if (opos >= STRING_LENGTH_WRAPPED) {
+                opos = STRING_LENGTH_WRAPPED - 1;
+                break;
+            }
+
+            if (c == '|') {
+                output[opos - 1] = ' ';
+                bar_avail = opos;
+
+                if (opos + 2 >= STRING_LENGTH_WRAPPED) {
+                    opos = STRING_LENGTH_WRAPPED - 1;
+                    break;
+                }
+
+                output[opos++] = '|';
+                output[opos++] = ' ';
+            }
+
+            if (c == '\n')
+                nl_got = opos;
+
+            continue;
+        } else {
+            /* at the limit */
+            if (bar_avail > nl_got) {
+                /* overwrite */
+                memcpy(output + bar_avail - 1, wrap_cont_str, wrap_cont_len);
+                nl_got = bar_avail;
+
+                ipos--;
+                continue;
+            }
+
+            if (space_avail > nl_got) {
+                if (opos + wrap_cont_len - 1 >= STRING_LENGTH_WRAPPED) {
+                    opos = STRING_LENGTH_WRAPPED - 1;
+                    break;
+                }
+
+                /* move forward by 2 characters */
+                memmove(output + space_avail + 3, output + space_avail + 1, opos - (space_avail + 1));
+                memcpy(output + space_avail, wrap_cont_str, wrap_cont_len);
+                nl_got = space_avail + 1;
+
+                opos += 2;
+                ipos--;
+                continue;
+            }
+
+            char c = input[ipos];
+
+            if ((c == '|') || (c == ' ') || (c == '\n')) {
+                if (opos + wrap_cont_len >= STRING_LENGTH_WRAPPED) {
+                    opos = STRING_LENGTH_WRAPPED - 1;
+                    break;
+                }
+
+                memcpy(output + opos, wrap_cont_str, wrap_cont_len);
+
+                nl_got = opos;
+                opos += wrap_cont_len;
+            }
+
+            output[opos++] = input[ipos];
+
+            if (opos >= STRING_LENGTH_WRAPPED) {
+                opos = STRING_LENGTH_WRAPPED - 1;
+                break;
+            }
+
+            continue;
+        }
+    }
+
+    if (opos >= STRING_LENGTH_WRAPPED)
+        opos = STRING_LENGTH_WRAPPED - 1;
+
+    output[opos] = 0;
 }
 
 int count_lines(char *string)
@@ -497,18 +894,22 @@ char *appender(char *str, const char c)
 void do_refresh()
 {
     int count = 0;
-    char wrap_output[STRING_LENGTH];
+    char wrap_output[STRING_LENGTH_WRAPPED];
     int L;
     int i;
 
     for (i = 0; i < HISTORY; i++) {
-        wrap(wrap_output, lines[i], x);
+        if (flag[i])
+            wrap_bars(wrap_output, lines[i], x);
+        else
+            wrap(wrap_output, lines[i], x);
+
         L = count_lines(wrap_output);
         count = count + L;
 
         if (count < y) {
             move(y - 1 - count, 0);
-            printw(wrap_output);
+            printw("%s", wrap_output);
             clrtoeol();
         }
     }
@@ -516,7 +917,7 @@ void do_refresh()
     move(y - 1, 0);
     clrtoeol();
     printw(">> ");
-    printw(input_line);
+    printw("%s", input_line);
     clrtoeol();
     refresh();
 }
@@ -536,27 +937,39 @@ void print_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *us
 
 void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    new_lines(format_message(m, (char *)string, friendnumber));
+    /* ensure null termination */
+    string[length - 1] = 0;
+    print_formatted_message(m, (char *)string, friendnumber, 0);
 }
 
 void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
 
-    if (tox_getname(m, friendnumber, (uint8_t *)name) != -1) {
+    if (getfriendname_terminated(m, friendnumber, name) != -1) {
         char msg[100 + length];
-        sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
+
+        if (name[0] != 0)
+            sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
+        else
+            sprintf(msg, "[i] [%d] Friend's name is %s.", friendnumber, string);
+
         new_lines(msg);
     }
 }
 
 void print_statuschange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
 {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
 
-    if (tox_getname(m, friendnumber, (uint8_t *)name) != -1) {
+    if (getfriendname_terminated(m, friendnumber, name) != -1) {
         char msg[100 + length + strlen(name) + 1];
-        sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+
+        if (name[0] != 0)
+            sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
+        else
+            sprintf(msg, "[i] [%d] Their status changed to %s.", friendnumber, string);
+
         new_lines(msg);
     }
 }
@@ -635,31 +1048,133 @@ static int load_data_or_init(Tox *m, char *path)
     return 0;
 }
 
-void print_help(void)
+void print_help(char *prog_name)
 {
     printf("nTox %.1f - Command-line tox-core client\n", 0.1);
-    puts("Options:");
-    puts("\t-h\t-\tPrint this help and exit.");
-    puts("\t-f\t-\tSpecify a keyfile to read (or write to) from.");
+    printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile]\n", prog_name);
+
+    puts("Options: (order IS relevant)");
+    puts("  --ipv4 / --ipv6 [Optional] Support IPv4 only or IPv4 & IPv6.");
+    puts("  IP PORT KEY     [REQUIRED] A server to connect to (IP/Port) and its key.");
+    puts("  -f keyfile      [Optional] Specify a keyfile to read from and write to.");
 }
 
 void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *userdata)
 {
     char msg[256];
-    sprintf(msg, "[i] recieved group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
+    sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
             tox_join_groupchat(m, friendnumber, group_public_key));
     new_lines(msg);
+}
+
+void print_groupchatpeers(Tox *m, int groupnumber)
+{
+    int num = tox_group_number_peers(m, groupnumber);
+
+    if (num < 0)
+        return;
+
+    if (!num) {
+        new_lines("[g]+ no peers left in group.");
+        return;
+    }
+
+    uint8_t names[num][TOX_MAX_NAME_LENGTH];
+    tox_group_get_names(m, groupnumber, names, num);
+    int i;
+    char numstr[16];
+    char header[] = "[g]+ ";
+    size_t header_len = strlen(header);
+    char msg[STRING_LENGTH];
+    strcpy(msg, header);
+    size_t len_total = header_len;
+
+    for (i = 0; i < num; ++i) {
+        size_t len_name = strlen((char *)names[i]);
+        size_t len_num = sprintf(numstr, "%i: ", i);
+
+        if (len_num + len_name + len_total + 3 >= STRING_LENGTH) {
+            new_lines_mark(msg, 1);
+
+            strcpy(msg, header);
+            len_total = header_len;
+        }
+
+        strcpy(msg + len_total, numstr);
+        len_total += len_num;
+        strcpy(msg + len_total, (char *)names[i]);
+        len_total += len_name;
+
+        if (i < num - 1) {
+            strcpy(msg + len_total, "|");
+            len_total++;
+        }
+    }
+
+    new_lines_mark(msg, 1);
 }
 
 void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *message, uint16_t length, void *userdata)
 {
     char msg[256 + length];
     uint8_t name[TOX_MAX_NAME_LENGTH];
-    tox_group_peername(m, groupnumber, peernumber, name);
-    sprintf(msg, "[g] %u: <%s>: %s", groupnumber, name, message);
+    int len = tox_group_peername(m, groupnumber, peernumber, name);
+
+    //print_groupchatpeers(m, groupnumber);
+    if (len <= 0)
+        name[0] = 0;
+
+    if (name[0] != 0)
+        sprintf(msg, "[g] %u: %u <%s>: %s", groupnumber, peernumber, name, message);
+    else
+        sprintf(msg, "[g] #%u: %u Unknown: %s", groupnumber, peernumber, message);
+
     new_lines(msg);
 }
+void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t change, void *userdata)
+{
+    char msg[256];
 
+    if (change == TOX_CHAT_CHANGE_PEER_ADD) {
+        sprintf(msg, "[g] #%i: New peer %i.", groupnumber, peernumber);
+        new_lines(msg);
+    } else if (change == TOX_CHAT_CHANGE_PEER_DEL) {
+        /* if peer was the last in list, it simply dropped,
+         * otherwise it was overwritten by the last peer
+         *
+         * adjust output
+         */
+        int peers_total = tox_group_number_peers(m, groupnumber);
+
+        if (peers_total == peernumber) {
+            sprintf(msg, "[g] #%i: Peer %i left.", groupnumber, peernumber);
+            new_lines(msg);
+        } else {
+            uint8_t peername[TOX_MAX_NAME_LENGTH];
+            int len = tox_group_peername(m, groupnumber, peernumber, peername);
+
+            if (len <= 0)
+                peername[0] = 0;
+
+            sprintf(msg, "[g] #%i: Peer %i left. Former peer [%i: <%s>] is now peer %i.", groupnumber, peernumber,
+                    peers_total, peername, peernumber);
+            new_lines(msg);
+        }
+    } else if (change == TOX_CHAT_CHANGE_PEER_NAME) {
+        uint8_t peername[TOX_MAX_NAME_LENGTH];
+        int len = tox_group_peername(m, groupnumber, peernumber, peername);
+
+        if (len <= 0)
+            peername[0] = 0;
+
+        sprintf(msg, "[g] #%i: Peer %i's name changed: %s", groupnumber, peernumber, peername);
+        new_lines(msg);
+    } else {
+        sprintf(msg, "[g] #%i: Name list changed (peer %i, change %i?):", groupnumber, peernumber, change);
+        new_lines(msg);
+        print_groupchatpeers(m, groupnumber);
+    }
+}
 void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
                          uint16_t filename_length, void *userdata)
 {
@@ -667,7 +1182,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
     sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
     new_lines(msg);
 
-    if (tox_file_sendcontrol(m, friendnumber, 1, filenumber, 0, 0, 0)) {
+    if (tox_file_send_control(m, friendnumber, 1, filenumber, 0, 0, 0) == 0) {
         sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friendnumber, filenumber);
         new_lines(msg);
     } else
@@ -696,7 +1211,7 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
     sprintf(filename, "%u.%u.bin", friendnumber, filenumber);
     FILE *pFile = fopen(filename, "a");
 
-    if (tox_file_dataremaining(m, friendnumber, filenumber, 1) == 0) {
+    if (tox_file_data_remaining(m, friendnumber, filenumber, 1) == 0) {
         //file_control(m, friendnumber, 1, filenumber, 3, 0, 0);
         char msg[512];
         sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
@@ -709,11 +1224,18 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
     fclose(pFile);
 }
 
-
 int main(int argc, char *argv[])
 {
+    /* minimalistic locale support (i.e. when printing dates) */
+    setlocale(LC_ALL, "");
+
     if (argc < 4) {
-        printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile]\n", argv[0]);
+        if ((argc == 2) && !strcmp(argv[1], "-h")) {
+            print_help(argv[0]);
+            exit(0);
+        }
+
+        printf("Usage: %s [--ipv4|--ipv6] IP PORT KEY [-f keyfile] (or %s -h for help)\n", argv[0], argv[0]);
         exit(0);
     }
 
@@ -730,11 +1252,6 @@ int main(int argc, char *argv[])
     char idstring[200] = {0};
     Tox *m;
 
-    if ((argc == 2) && !strcmp(argv[1], "-h")) {
-        print_help();
-        exit(0);
-    }
-
     /* [-f keyfile] MUST be last two arguments, no point in walking over the list
      * especially not a good idea to accept it anywhere in the middle */
     if (argc > argvoffset + 3)
@@ -750,15 +1267,16 @@ int main(int argc, char *argv[])
 
     load_data_or_init(m, filename);
 
-    tox_callback_friendrequest(m, print_request, NULL);
-    tox_callback_friendmessage(m, print_message, NULL);
-    tox_callback_namechange(m, print_nickchange, NULL);
-    tox_callback_statusmessage(m, print_statuschange, NULL);
+    tox_callback_friend_request(m, print_request, NULL);
+    tox_callback_friend_message(m, print_message, NULL);
+    tox_callback_name_change(m, print_nickchange, NULL);
+    tox_callback_status_message(m, print_statuschange, NULL);
     tox_callback_group_invite(m, print_invite, NULL);
     tox_callback_group_message(m, print_groupmessage, NULL);
     tox_callback_file_data(m, write_file, NULL);
     tox_callback_file_control(m, file_print_control, NULL);
-    tox_callback_file_sendrequest(m, file_request_accept, NULL);
+    tox_callback_file_send_request(m, file_request_accept, NULL);
+    tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
 
     initscr();
     noecho();
@@ -784,8 +1302,9 @@ int main(int argc, char *argv[])
     nodelay(stdscr, TRUE);
 
     new_lines("[i] change username with /n");
-    uint8_t name[TOX_MAX_NAME_LENGTH];
-    uint16_t namelen = tox_getselfname(m, name, sizeof(name));
+    uint8_t name[TOX_MAX_NAME_LENGTH + 1];
+    uint16_t namelen = tox_get_self_name(m, name, sizeof(name));
+    name[namelen] = 0;
 
     if (namelen > 0) {
         char whoami[128 + TOX_MAX_NAME_LENGTH];
@@ -794,6 +1313,16 @@ int main(int argc, char *argv[])
     }
 
     time_t timestamp0 = time(NULL);
+
+    uint8_t pollok = 0;
+    uint16_t len = 0;
+
+    if (!tox_wait_prepare(m, NULL, &len))
+        pollok = 1;
+    else
+        new_lines("[i] failed to setup for low cpu consumption");
+
+    uint8_t data[len];
 
     while (1) {
         if (on == 0) {
@@ -810,9 +1339,20 @@ int main(int argc, char *argv[])
             }
         }
 
+        if (numfilesenders > 0)
+            // during file transfer wasting cpu cycles is almost unavoidable
+            c_sleep(1);
+        else {
+            if (pollok && (tox_wait_prepare(m, data, &len) == 1)) {
+                /* 250ms is more than fast enough in "regular" mode */
+                tox_wait_execute(m, data, len, 100);
+                tox_wait_cleanup(m, data, len);
+            } else
+                c_sleep(25);
+        }
+
         send_filesenders(m);
         tox_do(m);
-        c_sleep(1);
         do_refresh();
 
         c = getch();

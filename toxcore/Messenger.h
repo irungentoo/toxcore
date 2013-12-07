@@ -198,6 +198,8 @@ typedef struct Messenger {
     void *group_invite_userdata;
     void (*group_message)(struct Messenger *m, int, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    void (*group_namelistchange)(struct Messenger *m, int, int, uint8_t, void *);
+    void *group_namelistchange_userdata;
 
     void (*file_sendrequest)(struct Messenger *m, int, uint8_t, uint64_t, uint8_t *, uint16_t, void *);
     void *file_sendrequest_userdata;
@@ -455,6 +457,13 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int, u
 void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
                               void *userdata);
 
+/* Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *  Function(Tox *tox, int groupnumber, void *userdata)
+ */
+void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *), void *userdata);
+
 /* Creates a new groupchat and puts it in the chats array.
  *
  * return group number on success.
@@ -496,6 +505,21 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
  */
 
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
+
+/* Return the number of peers in the group chat on success.
+ * return -1 on failure
+ */
+int group_number_peers(Messenger *m, int groupnumber);
+
+/* List all the peers in the group chat.
+ * 
+ * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
+ *
+ * returns the number of peers on success.
+ *
+ * return -1 on failure.
+ */
+int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], uint16_t length);
 
 /****************FILE SENDING*****************/
 
@@ -632,6 +656,18 @@ uint32_t copy_friendlist(Messenger *m, int *out_list, uint32_t list_size);
  * return -1 if failure.
  */
 int get_friendlist(Messenger *m, int **out_list, uint32_t *out_list_length);
+
+/* Return the number of chats in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_chatlist. */
+uint32_t count_chatlist(Messenger *m);
+
+/* Copy a list of valid chat IDs into the array out_list.
+ * If out_list is NULL, returns 0.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size);
 
 #endif
 

@@ -33,6 +33,7 @@ typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     uint64_t    pingid;
     uint64_t    last_pinged;
+    IP_Port     ping_via;
 
     uint64_t    last_recv;
     uint64_t    last_recv_msgping;
@@ -46,7 +47,6 @@ typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     IP_Port     ip_port;
     uint64_t    last_recv;
-
 } Group_Close;
 
 #define GROUP_CLOSE_CONNECTIONS 6
@@ -63,12 +63,22 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    void (*peer_namelistchange)(struct Group_Chat *m, int peer, uint8_t change, void *);
+    void *group_namelistchange_userdata;
+
     uint64_t last_sent_ping;
 
+    uint8_t        nick[MAX_NICK_BYTES];
+    uint16_t       nick_len;
+    uint64_t       last_sent_nick;
+
+    struct Assoc  *assoc;
 } Group_Chat;
 
 #define GROUP_CHAT_PING 0
 #define GROUP_CHAT_NEW_PEER 16
+#define GROUP_CHAT_QUIT 24
+#define GROUP_CHAT_PEER_NICK 48
 #define GROUP_CHAT_CHAT_MESSAGE 64
 
 /* Copy the name of peernum to name.
@@ -84,9 +94,22 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name);
  *
  * format of function is: function(Group_Chat *chat, peer number, message, message length, userdata)
  */
-
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
                            void *userdata);
+/*
+ * Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *
+ * format of function is: function(Group_Chat *chat, userdata)
+ */
+typedef enum {
+    CHAT_CHANGE_PEER_ADD,
+    CHAT_CHANGE_PEER_DEL,
+    CHAT_CHANGE_PEER_NAME,
+} CHAT_CHANGE;
+
+void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *), void *userdata);
 
 /*
  * Send a message to the group.
@@ -95,6 +118,12 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  */
 uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
 
+/*
+ * Set our nick for this group.
+ *
+ * returns -1 on failure, 0 on success.
+ */
+int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len);
 
 /*
  * Tell everyone about a new peer (a person we are inviting for example.)
@@ -111,6 +140,18 @@ uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
  */
 Group_Chat *new_groupchat(Networking_Core *net);
 
+
+/* Return the number of peers in the group chat.
+ */
+uint32_t group_numpeers(Group_Chat *chat);
+
+/* List all the peers in the group chat.
+ *
+ * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
+ *
+ * returns the number of peers.
+ */
+uint32_t group_client_names(Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t length);
 
 /* Kill a group chat
  *

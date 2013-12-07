@@ -24,11 +24,7 @@
 #ifndef __PING_H__
 #define __PING_H__
 
-#include <stdbool.h>
-
-#ifndef __PING_C__
 typedef struct PING PING;
-#endif
 
 /* Add nodes to the toping list.
  * All nodes in this list are pinged every TIME_TOPING seconds

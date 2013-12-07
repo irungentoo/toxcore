@@ -310,9 +310,12 @@ typedef struct {
 
 int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
 {
-    if ((data == NULL) || (*lenptr < sizeof(select_info))) {
-        *lenptr = sizeof(select_info);
-        return 0;
+    if ((data == NULL) || !lenptr || (*lenptr < sizeof(select_info))) {
+        if (lenptr) {
+            *lenptr = sizeof(select_info);
+            return 0;
+        } else
+            return -1;
     }
 
     *lenptr = sizeof(select_info);
@@ -403,6 +406,10 @@ static int at_startup(void)
 {
     if (at_startup_ran != 0)
         return 0;
+
+#ifndef VANILLA_NACL
+    sodium_init();
+#endif
 
 #ifdef WIN32
     WSADATA wsaData;
@@ -678,12 +685,7 @@ int ip_equal(IP *a, IP *b)
         if (a->family == AF_INET)
             return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
         else if (a->family == AF_INET6)
-#ifdef WIN32
-            return IN6_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
-
-#else
             return IN6_ARE_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
-#endif
         else
             return 0;
     }
