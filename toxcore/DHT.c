@@ -463,6 +463,7 @@ static int replace_bad(    Client_data    *list,
     return 1;
 }
 
+
 /* Sort the list. It will be sorted from furthest to closest.
  *  Turns list into data that quick sort can use and reverts it back.
  */
@@ -483,6 +484,64 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
 
     for (i = 0; i < length; ++i)
         list[i] = pairs[i].c2;
+}
+
+/* Replace first node that is possibly bad (tests failed or not done yet.) with this one.
+ *
+ *  return 0 if successful.
+ *  return 1 if not (list contains no bad nodes).
+ */
+static int replace_possible_bad(    Client_data    *list,
+                           uint32_t        length,
+                           uint8_t        *client_id,
+                           IP_Port         ip_port,
+                           uint8_t        *comp_client_id )
+{
+    if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
+        return 1;
+
+    sort_list(list, length, comp_client_id);
+
+    /* TODO: decide if the folowing lines should stay commented or not.
+    if (id_closest(comp_client_id, list[0].client_id, client_id) == 1)
+        return 0;*/
+
+    uint32_t i;
+
+    for (i = 0; i < length; ++i) {
+        /* If node is bad */
+        Client_data *client = &list[i];
+
+        if (hardening_correct(&client->assoc4.hardening) != HARDENING_ALL_OK &&
+                hardening_correct(&client->assoc6.hardening) != HARDENING_ALL_OK) {
+
+            IPPTsPng *ipptp_write = NULL;
+            IPPTsPng *ipptp_clear = NULL;
+
+            if (ip_port.ip.family == AF_INET) {
+                ipptp_write = &client->assoc4;
+                ipptp_clear = &client->assoc6;
+            } else {
+                ipptp_write = &client->assoc6;
+                ipptp_clear = &client->assoc4;
+            }
+
+            memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
+            ipptp_write->ip_port = ip_port;
+            ipptp_write->timestamp = unix_time();
+
+            ip_reset(&ipptp_write->ret_ip_port.ip);
+            ipptp_write->ret_ip_port.port = 0;
+            ipptp_write->ret_timestamp = 0;
+
+            /* zero out other address */
+            memset(ipptp_clear, 0, sizeof(*ipptp_clear));
+
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 /* Replace the first good node that is further to the comp_client_id than that of the client_id in the list
@@ -566,9 +625,13 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
      */
     if (!client_or_ip_port_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
         if (replace_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
-            /* If we can't replace bad nodes we try replacing good ones. */
-            if (!replace_good(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
-                              dht->c->self_public_key))
+            if (replace_possible_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
+                              dht->c->self_public_key)) {
+                /* If we can't replace bad nodes we try replacing good ones. */
+                if (!replace_good(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
+                                dht->c->self_public_key))
+                    used++;
+            } else
                 used++;
         } else
             used++;
@@ -581,10 +644,14 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
 
             if (replace_bad(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
                             client_id, ip_port)) {
+                /*if (replace_possible_bad(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                                client_id, ip_port, dht->friends_list[i].client_id)) {*/
                 /* If we can't replace bad nodes we try replacing good ones. */
-                if (!replace_good(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                                  client_id, ip_port, dht->friends_list[i].client_id))
-                    used++;
+                    if (!replace_good(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                                    client_id, ip_port, dht->friends_list[i].client_id))
+                        used++;
+                /*} else
+                    used++;*/
             } else
                 used++;
         } else
