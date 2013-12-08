@@ -351,7 +351,8 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
  *
  * want_good : do we want only good nodes as checked with the hardening returned or not?
  */
-static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN, uint8_t want_good)
+static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
+                                    uint8_t is_LAN, uint8_t want_good)
 {
     uint32_t num_nodes = 0, i;
     get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
@@ -365,7 +366,8 @@ static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *n
     return num_nodes;
 }
 
-static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN, uint8_t want_good)
+static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
+                           uint8_t want_good)
 {
     if (!dht->assoc)
         return get_somewhat_close_nodes(dht, client_id, nodes_list, sa_family, is_LAN, want_good);
@@ -492,10 +494,10 @@ static void sort_list(Client_data *list, uint32_t length, uint8_t *comp_client_i
  *  return 1 if not (list contains no bad nodes).
  */
 static int replace_possible_bad(    Client_data    *list,
-                           uint32_t        length,
-                           uint8_t        *client_id,
-                           IP_Port         ip_port,
-                           uint8_t        *comp_client_id )
+                                    uint32_t        length,
+                                    uint8_t        *client_id,
+                                    IP_Port         ip_port,
+                                    uint8_t        *comp_client_id )
 {
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 1;
@@ -626,10 +628,10 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
     if (!client_or_ip_port_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
         if (replace_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
             if (replace_possible_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
-                              dht->c->self_public_key)) {
+                                     dht->c->self_public_key)) {
                 /* If we can't replace bad nodes we try replacing good ones. */
                 if (!replace_good(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
-                                dht->c->self_public_key))
+                                  dht->c->self_public_key))
                     used++;
             } else
                 used++;
@@ -647,9 +649,10 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
                 /*if (replace_possible_bad(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
                                 client_id, ip_port, dht->friends_list[i].client_id)) {*/
                 /* If we can't replace bad nodes we try replacing good ones. */
-                    if (!replace_good(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                                    client_id, ip_port, dht->friends_list[i].client_id))
-                        used++;
+                if (!replace_good(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                                  client_id, ip_port, dht->friends_list[i].client_id))
+                    used++;
+
                 /*} else
                     used++;*/
             } else
@@ -801,7 +804,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     new_nonce(nonce);
 
     Node4_format *nodes4_list = (Node4_format *)(plain);
-    int i, num_nodes_ok = 0;
+    uint32_t i, num_nodes_ok = 0;
 
     for (i = 0; i < num_nodes; i++) {
         memcpy(nodes4_list[num_nodes_ok].client_id, nodes_list[i].client_id, CLIENT_ID_SIZE);
@@ -1042,6 +1045,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
 
             memcpy(nodes_list[i].client_id, nodes4_list[i].client_id, CLIENT_ID_SIZE);
             ipport_copy(&nodes_list[i].ip_port, &ippts.ip_port);
+
             if (dht->assoc)
                 Assoc_add_entry(dht->assoc, nodes4_list[i].client_id, &ippts, NULL, used ? 1 : 0);
         }

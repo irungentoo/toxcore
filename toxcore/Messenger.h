@@ -462,7 +462,8 @@ void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, 
  * It gets called every time the name list changes(new peer/name, deleted peer)
  *  Function(Tox *tox, int groupnumber, void *userdata)
  */
-void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *), void *userdata);
+void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *),
+                                     void *userdata);
 
 /* Creates a new groupchat and puts it in the chats array.
  *
@@ -512,7 +513,7 @@ int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t
 int group_number_peers(Messenger *m, int groupnumber);
 
 /* List all the peers in the group chat.
- * 
+ *
  * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
  *
  * returns the number of peers on success.

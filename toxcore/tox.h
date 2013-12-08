@@ -298,7 +298,7 @@ void tox_callback_friend_request(Tox *tox, void (*function)(uint8_t *, uint8_t *
  *  Function format is: function(int friendnumber, uint8_t * message, uint32_t length)
  */
 void tox_callback_friend_message(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
-                                void *userdata);
+                                 void *userdata);
 
 /* Set the function that will be executed when an action from a friend is received.
  *  Function format is: function(int friendnumber, uint8_t * action, uint32_t length)
@@ -310,14 +310,14 @@ void tox_callback_action(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, ui
  *  You are not responsible for freeing newname
  */
 void tox_callback_name_change(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
-                             void *userdata);
+                              void *userdata);
 
 /* Set the callback for status message changes.
  *  function(int friendnumber, uint8_t *newstatus, uint16_t length)
  *  You are not responsible for freeing newstatus.
  */
 void tox_callback_status_message(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
-                                void *userdata);
+                                 void *userdata);
 
 /* Set the callback for status type changes.
  *  function(int friendnumber, USERSTATUS kind)
@@ -374,7 +374,8 @@ typedef enum {
     TOX_CHAT_CHANGE_PEER_NAME,
 } TOX_CHAT_CHANGE;
 
-void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *), void *userdata);
+void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *),
+                                        void *userdata);
 
 /* Creates a new groupchat and puts it in the chats array.
  *
@@ -485,7 +486,7 @@ enum {
  *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
 void tox_callback_file_send_request(Tox *tox, void (*function)(Tox *m, int, uint8_t, uint64_t, uint8_t *, uint16_t,
-                                   void *), void *userdata);
+                                    void *), void *userdata);
 
 /* Set the callback for file control requests.
  *
@@ -523,7 +524,7 @@ int tox_new_file_sender(Tox *tox, int friendnumber, uint64_t filesize, uint8_t *
  *  return -1 on failure
  */
 int tox_file_send_control(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
-                         uint8_t *data, uint16_t length);
+                          uint8_t *data, uint16_t length);
 
 /* Send file data.
  *

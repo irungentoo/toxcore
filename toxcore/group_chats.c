@@ -236,6 +236,7 @@ static int delpeer(Group_Chat *chat, int peernum)
         return -1;
 
     uint32_t i;
+
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) { /* If peer is in close list, time it out forcefully. */
         if (id_equal(chat->close[i].client_id, chat->group[peernum].client_id)) {
             chat->close[i].last_recv = 0;
@@ -641,7 +642,8 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
     chat->group_message_userdata = userdata;
 }
 
-void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *), void *userdata)
+void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *),
+                             void *userdata)
 {
     chat->peer_namelistchange = function;
     chat->group_namelistchange_userdata = userdata;
@@ -655,9 +657,11 @@ uint32_t group_numpeers(Group_Chat *chat)
 uint32_t group_client_names(Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t length)
 {
     uint32_t i;
+
     for (i = 0; i < chat->numpeers && i < length; ++i) {
-       group_peername(chat, i, names[i]);
+        group_peername(chat, i, names[i]);
     }
+
     return i;
 }
 

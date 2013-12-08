@@ -109,7 +109,8 @@ typedef enum {
     CHAT_CHANGE_PEER_NAME,
 } CHAT_CHANGE;
 
-void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *), void *userdata);
+void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *),
+                             void *userdata);
 
 /*
  * Send a message to the group.

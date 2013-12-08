@@ -129,7 +129,7 @@ typedef union {
 } IP6;
 
 typedef struct {
-    sa_family_t family;
+    uint16_t family;
     union {
         IP4 ip4;
         IP6 ip6;
@@ -238,9 +238,9 @@ typedef struct {
 typedef struct {
     Packet_Handles packethandlers[256];
 
-    /* Our UDP socket. */
     sa_family_t family;
     uint16_t port;
+    /* Our UDP socket. */
     sock_t sock;
     uint64_t send_fail_eagain;
 } Networking_Core;

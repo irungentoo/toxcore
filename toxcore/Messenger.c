@@ -720,6 +720,7 @@ static uint8_t groupnumber_not_valid(Messenger *m, int groupnumber)
 
     if (m->chats[groupnumber] == NULL)
         return 1;
+
     return 0;
 }
 
@@ -785,7 +786,8 @@ void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, 
  * It gets called every time the name list changes(new peer/name, deleted peer)
  *  Function(Tox *tox, int groupnumber, void *userdata)
  */
-void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *), void *userdata)
+void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *),
+                                     void *userdata)
 {
     m->group_namelistchange = function;
     m->group_namelistchange_userdata = userdata;
@@ -794,10 +796,12 @@ void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m
 static int get_chat_num(Messenger *m, Group_Chat *chat)
 {
     uint32_t i;
+
     for (i = 0; i < m->numchats; ++i) { //TODO: remove this
         if (m->chats[i] == chat)
             return i;
     }
+
     return -1;
 }
 
@@ -805,6 +809,7 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
 {
     Messenger *m = userdata;
     int i = get_chat_num(m, chat);
+
     if (i == -1)
         return;
 
@@ -816,6 +821,7 @@ static void group_namelistchange_function(Group_Chat *chat, int peer, uint8_t ch
 {
     Messenger *m = userdata;
     int i = get_chat_num(m, chat);
+
     if (i == -1)
         return;
 
@@ -1528,6 +1534,7 @@ void kill_messenger(Messenger *m)
      * This requires the other modules to expose cleanup functions.
      */
     uint32_t i, numchats = m->numchats;
+
     for (i = 0; i < numchats; ++i)
         del_groupchat(m, i);
 

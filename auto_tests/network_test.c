@@ -122,6 +122,16 @@ START_TEST(test_ip_equal)
 }
 END_TEST
 
+START_TEST(test_struct_sizes)
+{
+    ck_assert_msg(sizeof(IP4) == 4, "sizeof(IP4): expected result 4, got %u.", sizeof(IP4));
+    ck_assert_msg(sizeof(IP6) == 16, "sizeof(IP6): expected result 16, got %u.", sizeof(IP6));
+    ck_assert_msg(sizeof(IP) == 20, "sizeof(IP): expected result 20, got %u.", sizeof(IP));
+    ck_assert_msg(sizeof(IP_Port) == 24, "sizeof(IP_Port): expected result 24, got %u.", sizeof(IP_Port));
+    ck_assert_msg(sizeof(IP4_Port) == 8, "sizeof(IP4_Port): expected result 8, got %u.", sizeof(IP4_Port));
+}
+END_TEST
+
 #define DEFTESTCASE(NAME) \
     TCase *tc_##NAME = tcase_create(#NAME); \
     tcase_add_test(tc_##NAME, test_##NAME); \
@@ -133,6 +143,7 @@ Suite *network_suite(void)
 
     DEFTESTCASE(addr_resolv_localhost);
     DEFTESTCASE(ip_equal);
+    DEFTESTCASE(struct_sizes);
 
     return s;
 }
