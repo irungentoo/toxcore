@@ -53,6 +53,10 @@
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
 
+/* Functions to transfer ips safely across wire. */
+void to_net_family(IP *ip);
+void to_host_family(IP *ip);
+
 typedef struct {
     IP_Port     ip_port;
     uint64_t    timestamp;

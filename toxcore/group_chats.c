@@ -354,6 +354,7 @@ static int send_sendnodes(Group_Chat *chat, IP_Port ip_port, int peernum, uint64
         if (!is_timeout(chat->close[i].last_recv, BAD_GROUPNODE_TIMEOUT)) {
             id_copy(contents.nodes[j].client_id, chat->close[i].client_id);
             contents.nodes[j].ip_port = chat->close[i].ip_port;
+            to_net_family(&contents.nodes[j].ip_port.ip);
             ++j;
         }
     }
@@ -417,6 +418,7 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
             if (peern == -1)
                 continue;
 
+            to_host_family(&contents.nodes[i].ip_port.ip);
             send_getnodes(chat, contents.nodes[i].ip_port, peern);
 
             if (chat->assoc) {

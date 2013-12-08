@@ -848,15 +848,18 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
-static void to_net_family(IP *ip)
+void to_net_family(IP *ip)
 {
+    ip->padding[0] = 0;
+    ip->padding[1] = 0;
+    ip->padding[2] = 0;
     if (ip->family == AF_INET)
         ip->family = TOX_AF_INET;
     else if (ip->family == AF_INET6)
         ip->family = TOX_AF_INET6;
 }
 
-static void to_host_family(IP *ip)
+void to_host_family(IP *ip)
 {
     if (ip->family == TOX_AF_INET)
         ip->family = AF_INET;
