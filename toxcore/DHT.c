@@ -848,6 +848,21 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
+static void to_net_family(IP *ip)
+{
+    if (ip->family == AF_INET)
+        ip->family = TOX_AF_INET;
+    else if (ip->family == AF_INET6)
+        ip->family = TOX_AF_INET6;
+}
+
+static void to_host_family(IP *ip)
+{
+    if (ip->family == TOX_AF_INET)
+        ip->family = AF_INET;
+    else if (ip->family == TOX_AF_INET6)
+        ip->family = AF_INET6;
+}
 /* Send a send nodes response: message for IPv6 nodes */
 static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data)
 {
@@ -869,6 +884,10 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
     uint8_t encrypt[Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
+
+    uint32_t i;
+    for (i = 0; i < num_nodes; ++i)
+        to_net_family(&nodes_list[i].ip_port.ip);
 
     memcpy(plain, nodes_list, num_nodes * Node_format_size);
     memcpy(plain + num_nodes * Node_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
@@ -1076,12 +1095,11 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
     uint64_t time_now = unix_time();
     uint32_t i;
     send_hardening_getnode_res(dht, &sendback_node, packet + 1, nodes_list, num_nodes);
-
-    for (i = 0; i < num_nodes; i++)
+    for (i = 0; i < num_nodes; i++) {
+        to_host_family(&nodes_list[i].ip_port.ip);
         if (ipport_isset(&nodes_list[i].ip_port)) {
             send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
             int used = returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
-
             if (dht->assoc) {
                 IPPTs ippts;
                 ippts.ip_port = nodes_list[i].ip_port;
@@ -1090,7 +1108,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
                 Assoc_add_entry(dht->assoc, nodes_list[i].client_id, &ippts, NULL, used ? 1 : 0);
             }
         }
-
+    }
     return 0;
 }
 
@@ -1927,7 +1945,9 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
 
             Node_format nodes[num];
             memcpy(nodes, packet + 1 + CLIENT_ID_SIZE, sizeof(Node_format)*num);
-
+            uint32_t i;
+            for (i = 0; i < num; ++i)
+                to_host_family(&nodes[i].ip_port.ip);
             /* NOTE: This should work for now but should be changed to something better. */
             if (have_nodes_closelist(dht, nodes, num, nodes[0].ip_port.ip.family) < (uint32_t)((num + 1) / 2))
                 return 1;

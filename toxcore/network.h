@@ -129,7 +129,9 @@ typedef union {
 } IP6;
 
 typedef struct {
-    uint16_t family;
+    uint8_t family;
+    /* Not used for anything right now. */
+    uint8_t padding[3];
     union {
         IP4 ip4;
         IP6 ip6;

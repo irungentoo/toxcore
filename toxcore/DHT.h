@@ -49,6 +49,10 @@
 #define PING_ROUNDTRIP 2
 #define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * PING_INTERVAL + PING_ROUNDTRIP)
 
+/* Redefinitions of variables for safe transfer over wire. */
+#define TOX_AF_INET 2
+#define TOX_AF_INET6 10
+
 typedef struct {
     IP_Port     ip_port;
     uint64_t    timestamp;
