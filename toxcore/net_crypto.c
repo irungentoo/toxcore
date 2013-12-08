@@ -170,7 +170,7 @@ static void increment_nonce(uint8_t *nonce)
 }
 
 #if crypto_box_NONCEBYTES != crypto_secretbox_NONCEBYTES
-/*if they no longer equal each other, this function must be slit into two.*/
+/*if they no longer equal each other, this function must be split into two.*/
 #error random_nonce(): crypto_box_NONCEBYTES must equal crypto_secretbox_NONCEBYTES.
 #endif
 /* Fill the given nonce with random bytes. */
@@ -189,7 +189,7 @@ static uint8_t base_nonce[crypto_box_NONCEBYTES];
 static uint8_t nonce_set = 0;
 
 #if crypto_box_NONCEBYTES != crypto_secretbox_NONCEBYTES
-/*if they no longer equal each other, this function must be slit into two.*/
+/*if they no longer equal each other, this function must be split into two.*/
 #error new_nonce(): crypto_box_NONCEBYTES must equal crypto_secretbox_NONCEBYTES.
 #endif
 /* Gives a nonce guaranteed to be different from previous ones.*/

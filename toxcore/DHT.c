@@ -1023,6 +1023,8 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
                               &sendback_node))
         return 1;
 
+    if (num_nodes == 0)
+        return 0;
 
     Node4_format *nodes4_list = (Node4_format *)(plain);
 
@@ -1066,6 +1068,9 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
     if (handle_sendnodes_core(object, source, packet, length, node_format_size, plain, sizeof(plain), &num_nodes,
                               &sendback_node))
         return 1;
+
+    if (num_nodes == 0)
+        return 0;
 
     Node_format *nodes_list = (Node_format *)(plain);
     uint64_t time_now = unix_time();
@@ -1830,7 +1835,7 @@ static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, uint8_t *qu
  * check how many nodes in nodes are also present in the closelist.
  * TODO: make this function better.
  */
-static int have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num, sa_family_t sa_family)
+static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num, sa_family_t sa_family)
 {
     Node_format nodes_list[MAX_SENT_NODES];
     uint32_t num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1, 1);
@@ -1839,7 +1844,7 @@ static int have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num, sa_f
         num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1, 0);
     }
 
-    int counter = 0;
+    uint32_t counter = 0;
     uint32_t i, j;
 
     for (i = 0; i < num; ++i) {
@@ -1847,7 +1852,7 @@ static int have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num, sa_f
             ++counter;
         }
 
-        for (j = 0; j < (uint32_t)num_nodes; ++j) {
+        for (j = 0; j < num_nodes; ++j) {
             if (id_equal(nodes[i].client_id, nodes_list[j].client_id)) {
                 if (ipport_equal(&nodes[i].ip_port, &nodes_list[j].ip_port)) {
                     ++counter;
@@ -1924,7 +1929,7 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
             memcpy(nodes, packet + 1 + CLIENT_ID_SIZE, sizeof(Node_format)*num);
 
             /* NOTE: This should work for now but should be changed to something better. */
-            if (have_nodes_closelist(dht, nodes, num, nodes[0].ip_port.ip.family) < (num + 1) / 2)
+            if (have_nodes_closelist(dht, nodes, num, nodes[0].ip_port.ip.family) < (uint32_t)((num + 1) / 2))
                 return 1;
 
 
