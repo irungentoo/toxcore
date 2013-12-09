@@ -861,12 +861,12 @@ int add_groupchat(Messenger *m)
     if (temp == NULL)
         return -1;
 
+    m->chats = temp;
     temp[m->numchats] = new_groupchat(m->net);
 
     if (temp[m->numchats] == NULL)
         return -1;
 
-    m->chats = temp;
     callback_groupmessage(temp[m->numchats], &group_message_function, m);
     callback_namelistchange(temp[m->numchats], &group_namelistchange_function, m);
     /* TODO: remove this (group nicks should not be tied to the global one) */
