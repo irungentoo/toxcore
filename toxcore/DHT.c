@@ -661,16 +661,27 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
             used++;
     }
 
+    if (dht->assoc) {
+        IPPTs ippts;
+
+        ippts.ip_port = ip_port;
+        ippts.timestamp = unix_time();
+
+        Assoc_add_entry(dht->assoc, client_id, &ippts, NULL, used ? 1 : 0);
+    }
+
     return used;
 }
 
 /* If client_id is a friend or us, update ret_ip_port
  * nodeclient_id is the id of the node that sent us this info.
  */
-static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8_t *nodeclient_id)
+static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8_t *nodeclient_id, IP_Port source)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
+
+    uint32_t used = 0;
 
     /* convert IPv4-in-IPv6 to IPv4 */
     if ((ip_port.ip.family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&ip_port.ip.ip6.in6_addr)) {
@@ -689,7 +700,8 @@ static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8
                     dht->close_clientlist[i].assoc6.ret_timestamp = temp_time;
                 }
 
-                return 1;
+                ++used;
+                break;
             }
         }
     } else {
@@ -705,11 +717,21 @@ static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8
                             dht->friends_list[i].client_list[j].assoc6.ret_timestamp = temp_time;
                         }
 
-                        return 1;
+                        ++used;
+                        goto end;
                     }
                 }
             }
         }
+    }
+
+end:
+
+    if (dht->assoc) {
+        IPPTs ippts;
+        ippts.ip_port = source;
+        ippts.timestamp = temp_time;
+        Assoc_add_entry(dht->assoc, nodeclient_id, &ippts, &ip_port, used ? 1 : 0);
     }
 
     return 0;
@@ -853,6 +875,7 @@ void to_net_family(IP *ip)
     ip->padding[0] = 0;
     ip->padding[1] = 0;
     ip->padding[2] = 0;
+
     if (ip->family == AF_INET)
         ip->family = TOX_AF_INET;
     else if (ip->family == AF_INET6)
@@ -889,6 +912,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
     new_nonce(nonce);
 
     uint32_t i;
+
     for (i = 0; i < num_nodes; ++i)
         to_net_family(&nodes_list[i].ip_port.ip);
 
@@ -1016,16 +1040,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
         return 1;
 
     /* store the address the *request* was sent to */
-    int used = addto_lists(dht, source, packet + 1);
-
-    if (dht->assoc) {
-        IPPTs ippts;
-
-        ippts.ip_port = source;
-        ippts.timestamp = unix_time();
-
-        Assoc_add_entry(dht->assoc, packet + 1, &ippts, &source, used ? 1 : 0);
-    }
+    addto_lists(dht, source, packet + 1);
 
     *num_nodes_out = num_nodes;
 
@@ -1065,13 +1080,11 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
             ippts.ip_port.port = nodes4_list[i].ip_port.port;
 
             send_ping_request(dht->ping, ippts.ip_port, nodes4_list[i].client_id);
-            int used = returnedip_ports(dht, ippts.ip_port, nodes4_list[i].client_id, packet + 1);
+            returnedip_ports(dht, ippts.ip_port, nodes4_list[i].client_id, packet + 1, source);
 
             memcpy(nodes_list[i].client_id, nodes4_list[i].client_id, CLIENT_ID_SIZE);
             ipport_copy(&nodes_list[i].ip_port, &ippts.ip_port);
 
-            if (dht->assoc)
-                Assoc_add_entry(dht->assoc, nodes4_list[i].client_id, &ippts, NULL, used ? 1 : 0);
         }
 
     send_hardening_getnode_res(dht, &sendback_node, packet + 1, nodes_list, num_nodes);
@@ -1095,23 +1108,18 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
         return 0;
 
     Node_format *nodes_list = (Node_format *)(plain);
-    uint64_t time_now = unix_time();
     uint32_t i;
     send_hardening_getnode_res(dht, &sendback_node, packet + 1, nodes_list, num_nodes);
+
     for (i = 0; i < num_nodes; i++) {
         to_host_family(&nodes_list[i].ip_port.ip);
+
         if (ipport_isset(&nodes_list[i].ip_port)) {
             send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
-            int used = returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
-            if (dht->assoc) {
-                IPPTs ippts;
-                ippts.ip_port = nodes_list[i].ip_port;
-                ippts.timestamp = time_now;
-
-                Assoc_add_entry(dht->assoc, nodes_list[i].client_id, &ippts, NULL, used ? 1 : 0);
-            }
+            returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1, source);
         }
     }
+
     return 0;
 }
 
@@ -1852,39 +1860,7 @@ static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, uint8_t *qu
 
     return sendpacket(dht->c->lossless_udp->net, sendto->ip_port, packet, len);
 }
-/*
- * check how many nodes in nodes are also present in the closelist.
- * TODO: make this function better.
- */
-static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num, sa_family_t sa_family)
-{
-    Node_format nodes_list[MAX_SENT_NODES];
-    uint32_t num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1, 1);
 
-    if (num_nodes < num) {
-        num_nodes = get_close_nodes(dht, dht->c->self_public_key, nodes_list, sa_family, 1, 0);
-    }
-
-    uint32_t counter = 0;
-    uint32_t i, j;
-
-    for (i = 0; i < num; ++i) {
-        if (id_equal(nodes[i].client_id, dht->c->self_public_key)) {
-            ++counter;
-        }
-
-        for (j = 0; j < num_nodes; ++j) {
-            if (id_equal(nodes[i].client_id, nodes_list[j].client_id)) {
-                if (ipport_equal(&nodes[i].ip_port, &nodes_list[j].ip_port)) {
-                    ++counter;
-                    break;
-                }
-            }
-        }
-    }
-
-    return counter;
-}
 /* TODO: improve */
 static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, uint8_t *client_id, sa_family_t sa_family)
 {
@@ -1901,6 +1877,33 @@ static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, uint8_t *client_id, sa_family_
     }
 
     return NULL;
+}
+
+/*
+ * check how many nodes in nodes are also present in the closelist.
+ * TODO: make this function better.
+ */
+static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
+{
+    uint32_t counter = 0;
+    uint32_t i;
+
+    for (i = 0; i < num; ++i) {
+        if (id_equal(nodes[i].client_id, dht->c->self_public_key)) {
+            ++counter;
+            continue;
+        }
+
+        IPPTsPng *temp = get_closelist_IPPTsPng(dht, nodes[i].client_id, nodes[i].ip_port.ip.family);
+
+        if (temp) {
+            if (!is_timeout(temp->timestamp, BAD_NODE_TIMEOUT)) {
+                ++counter;
+            }
+        }
+    }
+
+    return counter;
 }
 
 /* Interval in seconds between hardening checks */
@@ -1949,10 +1952,12 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
             Node_format nodes[num];
             memcpy(nodes, packet + 1 + CLIENT_ID_SIZE, sizeof(Node_format)*num);
             uint32_t i;
+
             for (i = 0; i < num; ++i)
                 to_host_family(&nodes[i].ip_port.ip);
+
             /* NOTE: This should work for now but should be changed to something better. */
-            if (have_nodes_closelist(dht, nodes, num, nodes[0].ip_port.ip.family) < (uint32_t)((num + 1) / 2))
+            if (have_nodes_closelist(dht, nodes, num) < (uint32_t)((num + 2) / 2))
                 return 1;
 
 
