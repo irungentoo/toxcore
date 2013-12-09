@@ -864,7 +864,8 @@ int add_groupchat(Messenger *m)
     temp[m->numchats] = new_groupchat(m->net);
 
     if (temp[m->numchats] == NULL)
-        return -1;
+      free(temp);
+      return -1;
 
     m->chats = temp;
     callback_groupmessage(temp[m->numchats], &group_message_function, m);
@@ -872,6 +873,7 @@ int add_groupchat(Messenger *m)
     /* TODO: remove this (group nicks should not be tied to the global one) */
     set_nick(temp[m->numchats], m->name, m->name_length);
     ++m->numchats;
+    free(temp);
     return (m->numchats - 1);
 }
 
