@@ -303,7 +303,7 @@ void tox_callback_friend_message(Tox *tox, void (*function)(Tox *tox, int, uint8
 /* Set the function that will be executed when an action from a friend is received.
  *  Function format is: function(int friendnumber, uint8_t * action, uint32_t length)
  */
-void tox_callback_action(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *), void *userdata);
+void tox_callback_friend_action(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *), void *userdata);
 
 /* Set the callback for name changes.
  *  function(int friendnumber, uint8_t *newname, uint16_t length)
