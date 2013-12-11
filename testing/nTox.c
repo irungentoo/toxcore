@@ -607,9 +607,11 @@ void line_eval(Tox *m, char *line)
 #endif
             }
 
-            if (!line[offset])
+            uint16_t len = strlen(&line[offset]) + 1;
+
+            if (len < 16)
                 new_lines("[r] Input invalid: Want @time, need text (at least 16 characters).");
-            else if (tox_rendezvous(m, line + offset, timestamp, rendezvous_found, rendezvous_timeout, NULL))
+            else if (tox_rendezvous(m, (uint8_t *)(line + offset), len, timestamp, rendezvous_found, rendezvous_timeout, NULL))
                 /* found: => print_friend_id */
                 new_lines("[r] Trying to find someone with the given secret and time.");
             else

@@ -1019,10 +1019,10 @@ static void do_allgroupchats(Messenger *m)
 }
 
 /* rendezvous */
-int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
-                 uint8_t (*timeout)(void *userdata), void *userdata)
+int m_rendezvous(Messenger *m, uint8_t *bytes, uint16_t byteslen, uint64_t at, void (*found)(void *userdata,
+                 uint8_t *public_key), uint8_t (*timeout)(void *userdata), void *userdata)
 {
-    if (!secret || !found)
+    if (!bytes || !found)
         return 0;
 
     if (!m->rendezvous)
@@ -1038,7 +1038,7 @@ int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *us
 
     uint8_t id[FRIEND_ADDRESS_SIZE];
     getaddress(m, id);
-    return rendezvous_publish(m->rendezvous, id + CLIENT_ID_SIZE, secret, at, &callbacks, userdata);
+    return rendezvous_publish(m->rendezvous, id + CLIENT_ID_SIZE, bytes, byteslen, at, &callbacks, userdata);
 }
 
 /****************FILE SENDING*****************/

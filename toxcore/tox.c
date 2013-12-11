@@ -499,11 +499,11 @@ uint32_t tox_copy_chatlist(Tox *tox, int *out_list, uint32_t list_size)
 
 
 /* rendezvous */
-int tox_rendezvous(Tox *tox, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
-                   uint8_t (*timeout)(void *userdata), void *userdata)
+int tox_rendezvous(Tox *tox, uint8_t *bytes, uint16_t byteslen, uint64_t at, void (*found)(void *userdata,
+                   uint8_t *public_key), uint8_t (*timeout)(void *userdata), void *userdata)
 {
     Messenger *m = tox;
-    return m_rendezvous(m, secret, at, found, timeout, userdata);
+    return m_rendezvous(m, bytes, byteslen, at, found, timeout, userdata);
 }
 
 

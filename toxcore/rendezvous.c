@@ -49,7 +49,8 @@ typedef struct RendezVous {
     uint64_t           block_store_until;
 
     uint64_t           timestamp;
-    char              *text;
+    uint8_t           *bytes;
+    uint16_t           byteslen;
     uint8_t            nospam_chksum[ADDRESS_EXTRA_BYTES];
     uint64_t           publish_starttime;
     RendezVous_callbacks   functions;
@@ -463,12 +464,25 @@ void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public)
 
 static void prepare_publish(RendezVous *rendezvous)
 {
-    if (!rendezvous || !rendezvous->text)
+    if (!rendezvous || !rendezvous->bytes)
         return;
 
-    char texttime[32 + strlen(rendezvous->text)];
-    size_t texttimelen = sprintf(texttime, "%ld@%s", rendezvous->timestamp, rendezvous->text);
-    crypto_hash_sha512(rendezvous->hash_unspecific_complete, (const unsigned char *)texttime, texttimelen);
+    /* until 2038, uint32_t is good enough :) */
+    typedef uint32_t time_local_t;
+
+    size_t time_len = sizeof(time_local_t);
+    uint8_t time_and_bytes[time_len + 1 + rendezvous->byteslen];
+    time_local_t *time_ptr = (time_local_t *)time_and_bytes;
+    /* is there a way to assert() that htonl() can handle the input? */
+    *time_ptr = htonl((time_local_t)rendezvous->timestamp);
+    /* a separator, just for its precious beauty! */
+    time_and_bytes[time_len] = '@';
+    /* and the given secret, treated as naked byte array */
+    memcpy(&time_and_bytes[time_len + 1], rendezvous->bytes, rendezvous->byteslen);
+    /* MUST NOT use strlen() here: the timestamp in front can ALWAYS contain zeros */
+    size_t time_and_bytes_len = sizeof(time_and_bytes);
+
+    crypto_hash_sha512(rendezvous->hash_unspecific_complete, (const unsigned char *)time_and_bytes, time_and_bytes_len);
 
     hash_specific_half_calc(rendezvous->hash_unspecific_complete, rendezvous->self_public, rendezvous->hash_specific_half);
     hash_specific_extra_insert(rendezvous->hash_specific_half, rendezvous->nospam_chksum);
@@ -501,10 +515,10 @@ static void prepare_publish(RendezVous *rendezvous)
     }
 }
 
-int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksum, char *text, uint64_t timestamp,
-                       RendezVous_callbacks *functions, void *data)
+int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksum, uint8_t *bytes, uint16_t byteslen,
+                       uint64_t timestamp, RendezVous_callbacks *functions, void *data)
 {
-    if (!rendezvous || !text || !functions)
+    if (!rendezvous || !bytes || !functions)
         return 0;
 
     if (!rendezvous->self_public)
@@ -513,7 +527,7 @@ int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksum, char *tex
     if (!functions->found_function)
         return 0;
 
-    if (strlen(text) < RENDEZVOUS_PASSPHRASE_MINLEN)
+    if (byteslen < RENDEZVOUS_PASSPHRASE_MINLEN)
         return 0;
 
     if (((timestamp % RENDEZVOUS_INTERVAL) != 0) || (timestamp + RENDEZVOUS_INTERVAL < unix_time()))
@@ -525,13 +539,12 @@ int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksum, char *tex
     rendezvous->found_num = 0;
 
     memcpy(rendezvous->nospam_chksum, nospam_chksum, sizeof(rendezvous->nospam_chksum));
-    size_t textlen = strlen(text);
-    rendezvous->text = realloc(rendezvous->text, textlen + 1);
+    rendezvous->bytes = realloc(rendezvous->bytes, byteslen);
 
-    if (!rendezvous->text)
+    if (!rendezvous->bytes)
         return 0;
 
-    memcpy(rendezvous->text, text, textlen + 1);
+    memcpy(rendezvous->bytes, bytes, byteslen);
 
     prepare_publish(rendezvous);
 

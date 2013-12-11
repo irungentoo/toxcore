@@ -501,8 +501,8 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
 
 /* rendezvous */
-int m_rendezvous(Messenger *m, char *secret, uint64_t at, void (*found)(void *userdata, uint8_t *public_key),
-                 uint8_t (*timeout)(void *userdata), void *userdata);
+int m_rendezvous(Messenger *m, uint8_t *bytes, uint16_t byteslen, uint64_t at, void (*found)(void *userdata,
+                 uint8_t *public_key), uint8_t (*timeout)(void *userdata), void *userdata);
 
 /****************FILE SENDING*****************/
 

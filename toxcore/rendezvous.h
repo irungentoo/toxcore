@@ -93,8 +93,8 @@ void rendezvous_init(RendezVous *rendezvous, uint8_t *self_public);
 /* timestamp must be cut to this accuracy (3 minutes) */
 #define RENDEZVOUS_INTERVAL 180U
 
-int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksm, char *text, uint64_t timestamp,
-                       RendezVous_callbacks *functions, void *data);
+int rendezvous_publish(RendezVous *rendezvous, uint8_t *nospam_chksm, uint8_t *bytes, uint16_t byteslen,
+                       uint64_t timestamp, RendezVous_callbacks *functions, void *data);
 
 void do_rendezvous(RendezVous *rendezvous);
 

@@ -91,6 +91,9 @@ START_TEST(test_meetup)
                     " "
                     "-- Mark Twain";
 
+    uint8_t *bytes = (uint8_t *)secret;
+    uint16_t byteslen = strlen(secret) + 1;
+
     unix_time_update();
     uint64_t now = unix_time();
     uint64_t now_floored = now - (now % RENDEZVOUS_INTERVAL);
@@ -129,7 +132,7 @@ START_TEST(test_meetup)
 
     callback_data foundA;
     memset(&foundA, 0, sizeof(foundA));
-    ck_assert_msg(rendezvous_publish(rdvA, idA + CLIENT_ID_SIZE, secret, now_floored, &callbacks, &foundA),
+    ck_assert_msg(rendezvous_publish(rdvA, idA + CLIENT_ID_SIZE, bytes, byteslen, now_floored, &callbacks, &foundA),
                   "A::publish() failed.");
 
     uint8_t idB[FRIEND_ADDRESS_SIZE];
@@ -137,7 +140,7 @@ START_TEST(test_meetup)
 
     callback_data foundB;
     memset(&foundB, 0, sizeof(foundB));
-    ck_assert_msg(rendezvous_publish(rdvB, idB + CLIENT_ID_SIZE, secret, now_floored, &callbacks, &foundB),
+    ck_assert_msg(rendezvous_publish(rdvB, idB + CLIENT_ID_SIZE, bytes, byteslen, now_floored, &callbacks, &foundB),
                   "B::publish() failed.");
 
     for (i = 0; i < 500; i++) {
