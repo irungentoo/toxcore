@@ -377,15 +377,25 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
     Assoc_close_entries request;
     memset(&request, 0, sizeof(request));
     request.count = MAX_SENT_NODES;
-    request.count_good = MAX_SENT_NODES;
+    request.count_good = MAX_SENT_NODES - 2; /* allow 2 'indirect' nodes */
     request.result = result;
     request.wanted_id = client_id;
     request.flags = (is_LAN ? LANOk : 0) + (sa_family == AF_INET ? ProtoIPv4 : ProtoIPv6);
 
     uint8_t num_found = Assoc_get_close_entries(dht->assoc, &request);
 
-    if (!num_found)
+    if (!num_found) {
+#ifdef LOGGING
+        loglog("get_close_nodes(): Assoc_get_close_entries() returned zero nodes.\n");
+#endif
+
         return get_somewhat_close_nodes(dht, client_id, nodes_list, sa_family, is_LAN, want_good);
+    }
+
+#ifdef LOGGING
+    sprintf(logbuffer, "get_close_nodes(): Assoc_get_close_entries() returned %i 'direct' and %i 'indirect' nodes.\n", request.count_good, num_found - request.count_good);
+    loglog(logbuffer);
+#endif
 
     uint8_t i, num_returned = 0;
 
@@ -393,18 +403,18 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
         Client_data *client = result[i];
 
         if (client) {
-            id_copy(nodes_list[i].client_id, client->client_id);
+            id_copy(nodes_list[num_returned].client_id, client->client_id);
 
             if (sa_family == AF_INET)
                 if (ipport_isset(&client->assoc4.ip_port)) {
-                    nodes_list[i].ip_port = client->assoc4.ip_port;
+                    nodes_list[num_returned].ip_port = client->assoc4.ip_port;
                     num_returned++;
                     continue;
                 }
 
             if (sa_family == AF_INET6)
                 if (ipport_isset(&client->assoc6.ip_port)) {
-                    nodes_list[i].ip_port = client->assoc6.ip_port;
+                    nodes_list[num_returned].ip_port = client->assoc6.ip_port;
                     num_returned++;
                     continue;
                 }
@@ -676,7 +686,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
 /* If client_id is a friend or us, update ret_ip_port
  * nodeclient_id is the id of the node that sent us this info.
  */
-static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8_t *nodeclient_id, IP_Port source)
+static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8_t *nodeclient_id)
 {
     uint32_t i, j;
     uint64_t temp_time = unix_time();
@@ -729,9 +739,11 @@ end:
 
     if (dht->assoc) {
         IPPTs ippts;
-        ippts.ip_port = source;
+        ippts.ip_port = ip_port;
         ippts.timestamp = temp_time;
-        Assoc_add_entry(dht->assoc, nodeclient_id, &ippts, &ip_port, used ? 1 : 0);
+        /* this is only a hear-say entry, so ret-ipp is NULL, but used is required
+         * to decide how valuable it is ("used" may throw an "unused" entry out) */
+        Assoc_add_entry(dht->assoc, client_id, &ippts, NULL, used ? 1 : 0);
     }
 
     return 0;
@@ -763,6 +775,8 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 
     if (sendback_node != NULL)
         memcpy(plain_message + sizeof(temp_time) + sizeof(reciever), sendback_node, sizeof(Node_format));
+    else
+        memset(plain_message + sizeof(temp_time) + sizeof(reciever), 0, sizeof(Node_format));
 
     int len_m = encrypt_data_symmetric(dht->secret_symmetric_key,
                                        nonce,
@@ -1080,7 +1094,7 @@ static int handle_sendnodes(void *object, IP_Port source, uint8_t *packet, uint3
             ippts.ip_port.port = nodes4_list[i].ip_port.port;
 
             send_ping_request(dht->ping, ippts.ip_port, nodes4_list[i].client_id);
-            returnedip_ports(dht, ippts.ip_port, nodes4_list[i].client_id, packet + 1, source);
+            returnedip_ports(dht, ippts.ip_port, nodes4_list[i].client_id, packet + 1);
 
             memcpy(nodes_list[i].client_id, nodes4_list[i].client_id, CLIENT_ID_SIZE);
             ipport_copy(&nodes_list[i].ip_port, &ippts.ip_port);
@@ -1116,7 +1130,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
 
         if (ipport_isset(&nodes_list[i].ip_port)) {
             send_ping_request(dht->ping, nodes_list[i].ip_port, nodes_list[i].client_id);
-            returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1, source);
+            returnedip_ports(dht, nodes_list[i].ip_port, nodes_list[i].client_id, packet + 1);
         }
     }
 
