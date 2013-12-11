@@ -1907,8 +1907,8 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
 }
 
 /* Interval in seconds between hardening checks */
-#define HARDENING_INTERVAL 5
-#define HARDEN_TIMEOUT 500
+#define HARDENING_INTERVAL 20
+#define HARDEN_TIMEOUT 600
 
 /* Handle a received hardening packet */
 static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
