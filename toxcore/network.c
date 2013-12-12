@@ -119,12 +119,12 @@ uint64_t current_time(void)
     time = ft.dwHighDateTime;
     time <<= 32;
     time |= ft.dwLowDateTime;
-    time -= 116444736000000000UL;
+    time -= 116444736000000000ULL;
     return time / 10;
 #else
     struct timeval a;
     gettimeofday(&a, NULL);
-    time = 1000000UL * a.tv_sec + a.tv_usec;
+    time = 1000000ULL * a.tv_sec + a.tv_usec;
     return time;
 #endif
 }
