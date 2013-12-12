@@ -198,7 +198,7 @@ IP_Port connection_ip(Lossless_UDP *ludp, int connection_id);
 /*  returns the id of the next packet in the queue.
  *  return -1 if no packet in queue.
  */
-char id_packet(Lossless_UDP *ludp, int connection_id);
+uint8_t id_packet(Lossless_UDP *ludp, int connection_id);
 
 /*  return 0 if there is no received data in the buffer.
  *  return length of received packet if successful.

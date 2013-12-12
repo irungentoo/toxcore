@@ -753,7 +753,7 @@ static void receive_crypto(Net_Crypto *c)
                     c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
                 }
             } else if (id_packet(c->lossless_udp,
-                                 c->crypto_connections[i].number) != -1) {
+                                 c->crypto_connections[i].number) != (uint8_t)~0) {
                 /* This should not happen, timeout the connection if it does. */
                 c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
             }
@@ -782,7 +782,7 @@ static void receive_crypto(Net_Crypto *c)
                     /* This should not happen, timeout the connection if it does. */
                     c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
                 }
-            } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != -1) {
+            } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != (uint8_t)~0) {
                 /* This should not happen, timeout the connection if it does. */
                 c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
             }

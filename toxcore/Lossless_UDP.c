@@ -480,19 +480,19 @@ uint32_t recvqueue(Lossless_UDP *ludp, int connection_id)
 }
 
 /*  return the id of the next packet in the queue.
- *  return -1 if no packet in queue.
+ *  return ~0 if no packet in queue.
  */
-char id_packet(Lossless_UDP *ludp, int connection_id)
+uint8_t id_packet(Lossless_UDP *ludp, int connection_id)
 {
     if (recvqueue(ludp, connection_id) == 0)
-        return -1;
+        return ~0;
 
     Connection *connection = &tox_array_get(&ludp->connections, connection_id, Connection);
 
     if (connection->status != LUDP_NO_CONNECTION)
         return connection->recvbuffer[connection->successful_read % connection->recvbuffer_length].data[0];
 
-    return -1;
+    return ~0;
 }
 
 /*  return 0 if there is no received data in the buffer.
