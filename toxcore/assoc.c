@@ -701,6 +701,10 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
     ssize_t taken_last = - 1;
 
     for (i = 0; (i < dist_list_len) && (pos < state->count); i++) {
+        /* sorted increasingly, so an invalid entry marks the end */
+        if ((dist_list[i] & DISTANCE_INDEX_INDEX_MASK) == DISTANCE_INDEX_INDEX_MASK)
+            break;
+
         Client_entry *entry = dist_index_entry(assoc, dist_list[i]);
 
         if (entry && entry->hash) {
@@ -730,6 +734,10 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
      */
     if (pos < state->count) {
         for (i = taken_last + 1; (i < dist_list_len) && (pos < state->count); i++) {
+            /* sorted increasingly, so an invalid entry marks the end */
+            if ((dist_list[i] & DISTANCE_INDEX_INDEX_MASK) == DISTANCE_INDEX_INDEX_MASK)
+                break;
+
             Client_entry *entry = dist_index_entry(assoc, dist_list[i]);
 
             if (entry && entry->hash)
