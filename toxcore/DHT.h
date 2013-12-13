@@ -154,6 +154,8 @@ typedef struct {
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
+void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_id);
+
 /* Add a new friend to the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.
  *

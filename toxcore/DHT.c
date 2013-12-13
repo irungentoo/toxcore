@@ -799,7 +799,6 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     return sendpacket(dht->c->lossless_udp->net, ip_port, data, sizeof(data));
 }
 
-
 /* Send a send nodes response. */
 /* because of BINARY compatibility, the Node_format MUST BE Node4_format,
  * IPv6 nodes are sent in a different message
@@ -1354,6 +1353,11 @@ static void do_Close(DHT *dht)
                     assoc->timestamp = badonly;
         }
     }
+}
+
+void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_id)
+{
+    getnodes(dht, *from_ipp, from_id, which_id, NULL);
 }
 
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
@@ -2104,6 +2108,10 @@ void do_DHT(DHT *dht)
     do_NAT(dht);
     do_toping(dht->ping);
     do_hardening(dht);
+
+    if (dht->assoc)
+        do_Assoc(dht->assoc, dht);
+
     dht->last_run = unix_time();
 }
 void kill_DHT(DHT *dht)
