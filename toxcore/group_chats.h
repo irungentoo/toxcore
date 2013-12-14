@@ -105,7 +105,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  *
  * format of function is: function(Group_Chat *chat, peer number, action, action length, userdata)
  */
-void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
+void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
                            void *userdata);
 
 /*
