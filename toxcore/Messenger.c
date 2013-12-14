@@ -783,7 +783,7 @@ void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, 
 
 /* Set the callback for group actions.
  *
- *  Function(Messenger *m, int friendnumber, uint8_t *group_public_key, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void m_callback_group_action(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
                              void *userdata)
