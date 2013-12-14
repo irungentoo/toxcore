@@ -198,6 +198,8 @@ typedef struct Messenger {
     void *group_invite_userdata;
     void (*group_message)(struct Messenger *m, int, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    void (*group_action)(struct Messenger *m, int, int, uint8_t *, uint16_t, void *);
+    void *group_action_userdata;
     void (*group_namelistchange)(struct Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
 
@@ -457,6 +459,13 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int, u
 void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
                               void *userdata);
 
+/* Set the callback for group actions.
+ *
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ */
+void m_callback_group_action(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
+                             void *userdata);
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
@@ -504,8 +513,13 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
  * return 0 on success
  * return -1 on failure
  */
-
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length);
+
+/* send a group action
+ * return 0 on success
+ * return -1 on failure
+ */
+int group_action_send(Messenger *m, int groupnumber, uint8_t *action, uint32_t length);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure

@@ -63,6 +63,8 @@ typedef struct Group_Chat {
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
     void *group_message_userdata;
+    void (*group_action)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
+    void *group_action_userdata;
     void (*peer_namelistchange)(struct Group_Chat *m, int peer, uint8_t change, void *);
     void *group_namelistchange_userdata;
 
@@ -80,6 +82,7 @@ typedef struct Group_Chat {
 #define GROUP_CHAT_QUIT 24
 #define GROUP_CHAT_PEER_NICK 48
 #define GROUP_CHAT_CHAT_MESSAGE 64
+#define GROUP_CHAT_ACTION 63
 
 /* Copy the name of peernum to name.
  * name must be at least MAX_NICK_BYTES long.
@@ -96,6 +99,15 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name);
  */
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
                            void *userdata);
+
+/*
+ * Set callback function for actions.
+ *
+ * format of function is: function(Group_Chat *chat, peer number, action, action length, userdata)
+ */
+void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
+                           void *userdata);
+
 /*
  * Set callback function for peer name list changes.
  *
@@ -118,6 +130,13 @@ void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat
  * returns the number of peers it has sent it to.
  */
 uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
+
+/*
+ * Send an action to the group.
+ *
+ * returns the number of peers it has sent it to.
+ */
+uint32_t group_sendaction(Group_Chat *chat, uint8_t *action, uint32_t length);
 
 /*
  * Set our nick for this group.

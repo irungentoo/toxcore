@@ -781,6 +781,17 @@ void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, 
     m->group_message_userdata = userdata;
 }
 
+/* Set the callback for group actions.
+ *
+ *  Function(Messenger *m, int friendnumber, uint8_t *group_public_key, void *userdata)
+ */
+void m_callback_group_action(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t *, uint16_t, void *),
+                             void *userdata)
+{
+    m->group_action = function;
+    m->group_action_userdata = userdata;
+}
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
@@ -817,6 +828,18 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
         (*m->group_message)(m, i, peer_number, message, length, m->group_message_userdata);
 }
 
+static void group_action_function(Group_Chat *chat, int peer_number, uint8_t *action, uint16_t length, void *userdata)
+{
+    Messenger *m = userdata;
+    int i = get_chat_num(m, chat);
+
+    if (i == -1)
+        return;
+
+    if (m->group_action)
+        (*m->group_action)(m, i, peer_number, action, length, m->group_action_userdata);
+}
+
 static void group_namelistchange_function(Group_Chat *chat, int peer, uint8_t change, void *userdata)
 {
     Messenger *m = userdata;
@@ -847,6 +870,7 @@ int add_groupchat(Messenger *m)
                 return -1;
 
             callback_groupmessage(newchat, &group_message_function, m);
+            callback_groupaction(newchat, &group_action_function, m);
             callback_namelistchange(newchat, &group_namelistchange_function, m);
             /* TODO: remove this (group nicks should not be tied to the global one) */
             set_nick(newchat, m->name, m->name_length);
@@ -868,6 +892,7 @@ int add_groupchat(Messenger *m)
         return -1;
 
     callback_groupmessage(temp[m->numchats], &group_message_function, m);
+    callback_groupaction(temp[m->numchats], &group_action_function, m);
     callback_namelistchange(temp[m->numchats], &group_namelistchange_function, m);
     /* TODO: remove this (group nicks should not be tied to the global one) */
     set_nick(temp[m->numchats], m->name, m->name_length);
@@ -1025,13 +1050,27 @@ int join_groupchat(Messenger *m, int friendnumber, uint8_t *friend_group_public_
  * return 0 on success
  * return -1 on failure
  */
-
 int group_message_send(Messenger *m, int groupnumber, uint8_t *message, uint32_t length)
 {
     if (groupnumber_not_valid(m, groupnumber))
         return -1;
 
     if (group_sendmessage(m->chats[groupnumber], message, length) > 0)
+        return 0;
+
+    return -1;
+}
+
+/* send a group action
+ * return 0 on success
+ * return -1 on failure
+ */
+int group_action_send(Messenger *m, int groupnumber, uint8_t *action, uint32_t length)
+{
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1;
+
+    if (group_sendaction(m->chats[groupnumber], action, length) > 0)
         return 0;
 
     return -1;

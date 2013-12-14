@@ -405,6 +405,7 @@ void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int, u
     Messenger *m = tox;
     m_callback_group_invite(m, function, userdata);
 }
+
 /* Set the callback for group messages.
  *
  *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
@@ -416,12 +417,22 @@ void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, 
     m_callback_group_message(m, function, userdata);
 }
 
+/* Set the callback for group actions.
+ *
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
+ */
+void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, int, uint8_t *, uint16_t, void *),
+                                void *userdata)
+{
+    Messenger *m = tox;
+    m_callback_group_action(m, function, userdata);
+}
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
  *  Function(Tox *tox, int groupnumber, void *userdata)
  */
-
 void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *), void *userdata)
 {
     Messenger *m = tox;
@@ -488,6 +499,16 @@ int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t
 {
     Messenger *m = tox;
     return group_message_send(m, groupnumber, message, length);
+}
+
+/* send a group action
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_group_action_send(Tox *tox, int groupnumber, uint8_t *action, uint32_t length)
+{
+    Messenger *m = tox;
+    return group_action_send(m, groupnumber, action, length);
 }
 
 /* Return the number of peers in the group chat on success.

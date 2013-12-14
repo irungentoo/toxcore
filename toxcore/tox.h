@@ -363,6 +363,13 @@ void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int, uint8_t
 void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t *, uint16_t, void *),
                                 void *userdata);
 
+/* Set the callback for group actions.
+ *
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
+ */
+void tox_callback_group_action(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t *, uint16_t, void *),
+                               void *userdata);
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
@@ -417,6 +424,12 @@ int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_
  * return -1 on failure
  */
 int tox_group_message_send(Tox *tox, int groupnumber, uint8_t *message, uint32_t length);
+
+/* send a group action
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_group_action_send(Tox *tox, int groupnumber, uint8_t *action, uint32_t length);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
