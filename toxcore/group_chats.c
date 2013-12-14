@@ -521,6 +521,12 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
 
             break;
 
+        case GROUP_CHAT_ACTION: /* if message is a peer action */
+            if (chat->group_action != NULL)
+                (*chat->group_action)(chat, peernum, contents, contents_len, chat->group_action_userdata);
+
+            break;
+
         default:
             handled = 0;
             break;
@@ -607,6 +613,11 @@ uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length)
     return send_data(chat, message, length, GROUP_CHAT_CHAT_MESSAGE); //TODO: better return values?
 }
 
+uint32_t group_sendaction(Group_Chat *chat, uint8_t *action, uint32_t length)
+{
+    return send_data(chat, action, length, GROUP_CHAT_ACTION);
+}
+
 /*
  * Send id/nick combo to the group.
  *
@@ -642,6 +653,13 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
 {
     chat->group_message = function;
     chat->group_message_userdata = userdata;
+}
+
+void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
+                          void *userdata)
+{
+    chat->group_action = function;
+    chat->group_action_userdata = userdata;
 }
 
 void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *),
