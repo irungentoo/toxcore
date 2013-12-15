@@ -1177,7 +1177,7 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
     memset(&dht->friends_list[dht->num_friends], 0, sizeof(DHT_Friend));
     memcpy(dht->friends_list[dht->num_friends].client_id, client_id, CLIENT_ID_SIZE);
 
-    dht->friends_list[dht->num_friends].nat.NATping_id = ((uint64_t)random_int() << 32) + random_int();
+    dht->friends_list[dht->num_friends].nat.NATping_id = random_64b();
     ++dht->num_friends;
 
     if (dht->assoc) {
@@ -1689,7 +1689,7 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
         return 0;
     } else if (packet[0] == NAT_PING_RESPONSE) {
         if (friend->nat.NATping_id == ping_id) {
-            friend->nat.NATping_id = ((uint64_t)random_int() << 32) + random_int();
+            friend->nat.NATping_id = random_64b();
             friend->nat.hole_punching = 1;
             return 0;
         }

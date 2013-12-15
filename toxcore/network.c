@@ -133,14 +133,16 @@ uint64_t current_time(void)
  */
 uint32_t random_int(void)
 {
-#ifndef VANILLA_NACL
-    /* NOTE: this function comes from libsodium. */
-    return randombytes_random();
-#else
     uint32_t randnum;
     randombytes((uint8_t *)&randnum , sizeof(randnum));
     return randnum;
-#endif
+}
+
+uint64_t random_64b(void)
+{
+    uint64_t randnum;
+    randombytes((uint8_t *)&randnum, sizeof(randnum));
+    return randnum;
 }
 
 #ifdef LOGGING

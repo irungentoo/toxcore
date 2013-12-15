@@ -33,17 +33,6 @@
 
 #include "util.h"
 
-uint64_t random_64b()
-{
-    uint64_t r;
-
-    /* This is probably not random enough? */
-    r = random_int();
-    r <<= 32;
-    r |= random_int();
-
-    return r;
-}
 
 /* don't call into system billions of times for no reason */
 static uint64_t unix_time_value;

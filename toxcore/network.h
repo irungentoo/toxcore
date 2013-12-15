@@ -253,6 +253,7 @@ uint64_t current_time(void);
 /*  return a random number.
  */
 uint32_t random_int(void);
+uint64_t random_64b(void);
 
 /* Basic network functions: */
 

@@ -28,8 +28,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-uint64_t random_64b();
-
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);

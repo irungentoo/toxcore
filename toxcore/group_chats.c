@@ -323,7 +323,7 @@ static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
         return -1;
 
     getnodes_data contents;
-    contents.pingid = ((uint64_t)random_int() << 32) + random_int();
+    contents.pingid = random_64b();
 
     chat->group[peernum].last_pinged = unix_time();
     chat->group[peernum].pingid = contents.pingid;
