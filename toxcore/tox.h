@@ -126,14 +126,14 @@ TOX_USERSTATUS;
 typedef struct Tox Tox;
 #endif
 
-/*  return FRIEND_ADDRESS_SIZE byte address to give to others.
+/*  return TOX_FRIEND_ADDRESS_SIZE byte address to give to others.
  * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  */
 void tox_get_address(Tox *tox, uint8_t *address);
 
 /* Add a friend.
  * Set the data that will be sent along with friend request.
- * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
+ * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be TOX_FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
  * data is the data and length is the length.
  *
  *  return the friend number if success.
