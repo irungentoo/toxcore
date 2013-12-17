@@ -323,7 +323,8 @@ void tox_callback_friend_message(Tox *tox, void (*function)(Messenger *tox, int,
 /* Set the function that will be executed when an action from a friend is received.
  *  function format is: function(int friendnumber, uint8_t * action, uint32_t length)
  */
-void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int, uint8_t *, uint16_t, void *), void *userdata)
+void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int, uint8_t *, uint16_t, void *),
+                                void *userdata)
 {
     Messenger *m = tox;
     m_callback_action(m, function, userdata);
@@ -422,7 +423,7 @@ void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, 
  *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
  */
 void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, int, uint8_t *, uint16_t, void *),
-                                void *userdata)
+                               void *userdata)
 {
     Messenger *m = tox;
     m_callback_group_action(m, function, userdata);

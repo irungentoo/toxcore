@@ -63,7 +63,7 @@ void send_filesenders(Tox *m)
 
         while (1) {
             if (!tox_file_send_data(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
-                                   file_senders[i].piecelength))
+                                    file_senders[i].piecelength))
                 break;
 
             file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_file_data_size(m, file_senders[i].friendnum),

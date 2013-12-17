@@ -393,7 +393,8 @@ static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list
     }
 
 #ifdef LOGGING
-    sprintf(logbuffer, "get_close_nodes(): Assoc_get_close_entries() returned %i 'direct' and %i 'indirect' nodes.\n", request.count_good, num_found - request.count_good);
+    sprintf(logbuffer, "get_close_nodes(): Assoc_get_close_entries() returned %i 'direct' and %i 'indirect' nodes.\n",
+            request.count_good, num_found - request.count_good);
     loglog(logbuffer);
 #endif
 
