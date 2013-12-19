@@ -175,74 +175,14 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
     return filenum;
 }
 
-/*
-  resolve_addr():
-    address should represent IPv4 or a hostname with A record
 
-    returns a data in network byte order that can be used to set IP.i or IP_Port.ip.i
-    returns 0 on failure
-
-    TODO: Fix ipv6 support
-*/
-
-uint32_t resolve_addr(const char *address)
-{
-    struct addrinfo *server = NULL;
-    struct addrinfo  hints;
-    int              rc;
-    uint32_t         addr;
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_INET;    // IPv4 only right now.
-    hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
-
-#ifdef __WIN32__
-    int res;
-    WSADATA wsa_data;
-
-    res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-
-    if (res != 0) {
-        return 0;
-    }
-
-#endif
-
-    rc = getaddrinfo(address, "echo", &hints, &server);
-
-    // Lookup failed.
-    if (rc != 0) {
-#ifdef __WIN32__
-        WSACleanup();
-#endif
-        return 0;
-    }
-
-    // IPv4 records only..
-    if (server->ai_family != AF_INET) {
-        freeaddrinfo(server);
-#ifdef __WIN32__
-        WSACleanup();
-#endif
-        return 0;
-    }
-
-
-    addr = ((struct sockaddr_in *)server->ai_addr)->sin_addr.s_addr;
-
-    freeaddrinfo(server);
-#ifdef __WIN32__
-    WSACleanup();
-#endif
-    return addr;
-}
 
 #define FRADDR_TOSTR_CHUNK_LEN 8
 #define FRADDR_TOSTR_BUFSIZE (TOX_FRIEND_ADDRESS_SIZE * 2 + TOX_FRIEND_ADDRESS_SIZE / FRADDR_TOSTR_CHUNK_LEN + 1)
 
 static void fraddr_to_str(uint8_t *id_bin, char *id_str)
 {
-    uint i, delta = 0, pos_extra, sum_extra = 0;
+    uint32_t i, delta = 0, pos_extra, sum_extra = 0;
 
     for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
         sprintf(&id_str[2 * i + delta], "%02hhX", id_bin[i]);
@@ -320,7 +260,7 @@ void print_friendlist(Tox *m)
     /* account for the longest name and the longest "base" string and number (int) and id_str */
     char fstring[TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21 + id_str_len];
 
-    uint i = 0;
+    uint32_t i = 0;
 
     while (getfriendname_terminated(m, i, name) != -1) {
         if (!tox_get_client_id(m, i, fraddr_bin))
