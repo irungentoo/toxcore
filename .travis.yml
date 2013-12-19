@@ -56,7 +56,7 @@ before_script:
 
 script:
   - autoreconf -i
-  - ./configure
+  - CFLAGS=-Ofast ./configure
   - make -j3
   - make check
   - make dist
