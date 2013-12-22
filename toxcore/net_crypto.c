@@ -125,12 +125,13 @@ int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
 
 int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, uint32_t length, uint8_t *encrypted)
 {
-    if (length + crypto_secretbox_MACBYTES > MAX_DATA_SIZE || length == 0)
+    if (length == 0)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_secretbox_ZEROBYTES] = {0};
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_secretbox_BOXZEROBYTES];
+    uint8_t temp_plain[length + crypto_secretbox_ZEROBYTES];
+    uint8_t temp_encrypted[length + crypto_secretbox_MACBYTES + crypto_secretbox_BOXZEROBYTES];
 
+    memset(temp_plain, 0, crypto_secretbox_ZEROBYTES);
     memcpy(temp_plain + crypto_secretbox_ZEROBYTES, plain, length); // Pad the message with 32 0 bytes.
 
     crypto_secretbox(temp_encrypted, temp_plain, length + crypto_secretbox_ZEROBYTES, nonce, secret_key);
@@ -141,12 +142,13 @@ int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, 
 
 int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain)
 {
-    if (length > MAX_DATA_SIZE || length <= crypto_secretbox_BOXZEROBYTES)
+    if (length <= crypto_secretbox_BOXZEROBYTES)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_secretbox_ZEROBYTES];
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_secretbox_BOXZEROBYTES] = {0};
+    uint8_t temp_plain[length + crypto_secretbox_ZEROBYTES];
+    uint8_t temp_encrypted[length + crypto_secretbox_BOXZEROBYTES];
 
+    memset(temp_plain, 0, crypto_secretbox_BOXZEROBYTES);
     memcpy(temp_encrypted + crypto_secretbox_BOXZEROBYTES, encrypted, length); // Pad the message with 16 0 bytes.
 
     if (crypto_secretbox_open(temp_plain, temp_encrypted, length + crypto_secretbox_BOXZEROBYTES, nonce, secret_key) == -1)
