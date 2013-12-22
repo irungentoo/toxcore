@@ -246,6 +246,36 @@ START_TEST(test_large_data)
 }
 END_TEST
 
+START_TEST(test_large_data_symmetric)
+{
+    unsigned char k[crypto_secretbox_KEYBYTES];
+
+    unsigned char n[crypto_secretbox_NONCEBYTES];
+
+    unsigned char m1[16 * 16 * 16];
+    unsigned char c1[sizeof(m1) + crypto_box_MACBYTES];
+    unsigned char m1prime[sizeof(m1)];
+
+    int c1len;
+    int m1plen;
+
+    //Generate random messages
+    rand_bytes(m1, sizeof(m1));
+    rand_bytes(n, crypto_box_NONCEBYTES);
+
+    //Generate key
+    new_symmetric_key(k);
+
+    c1len = encrypt_data_symmetric(k, n, m1, sizeof(m1), c1);
+    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt data");
+
+    m1plen = decrypt_data_symmetric(k, n, c1, c1len, m1prime);
+
+    ck_assert_msg(m1plen == sizeof(m1), "decrypted text lengths differ");
+    ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
+}
+END_TEST
+
 #define DEFTESTCASE(NAME) \
     TCase *NAME = tcase_create(#NAME); \
     tcase_add_test(NAME, test_##NAME); \
@@ -263,6 +293,7 @@ Suite *crypto_suite(void)
     DEFTESTCASE(fast_known);
     DEFTESTCASE_SLOW(endtoend, 15); /* waiting up to 15 seconds */
     DEFTESTCASE(large_data);
+    DEFTESTCASE(large_data_symmetric);
 
     return s;
 }
