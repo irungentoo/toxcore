@@ -26,6 +26,27 @@ void accept_friend_request(uint8_t *public_key, uint8_t *data, uint16_t length, 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0)
         tox_add_friend_norequest(t, public_key);
 }
+uint32_t messages_received;
+
+void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 974536)
+        return;
+
+    if (length == sizeof("Install Gentoo") && memcmp(string, "Install Gentoo", sizeof("Install Gentoo")) == 0)
+        ++messages_received;
+}
+
+uint32_t name_changes;
+
+void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 974536)
+        return;
+
+    if (length == sizeof("Gentoo") && memcmp(string, "Gentoo", sizeof("Gentoo")) == 0)
+        ++name_changes;
+}
 
 START_TEST(test_few_clients)
 {
@@ -51,6 +72,43 @@ START_TEST(test_few_clients)
         c_sleep(50);
     }
 
+    printf("tox clients connected\n");
+    uint32_t to_compare = 974536;
+    tox_callback_friend_message(tox3, print_message, &to_compare);
+    tox_send_message(tox2, 0, "Install Gentoo", sizeof("Install Gentoo"));
+
+    while (1) {
+        messages_received = 0;
+        tox_do(tox1);
+        tox_do(tox2);
+        tox_do(tox3);
+
+        if (messages_received)
+            break;
+
+        c_sleep(50);
+    }
+
+    printf("tox clients messaging succeeded\n");
+
+    tox_callback_name_change(tox3, print_nickchange, &to_compare);
+    tox_set_name(tox2, "Gentoo", sizeof("Gentoo"));
+
+    while (1) {
+        name_changes = 0;
+        tox_do(tox1);
+        tox_do(tox2);
+        tox_do(tox3);
+
+        if (name_changes)
+            break;
+
+        c_sleep(50);
+    }
+
+    uint8_t temp_name[sizeof("Gentoo")];
+    tox_get_name(tox3, 0, temp_name);
+    ck_assert_msg(memcmp(temp_name, "Gentoo", sizeof("Gentoo")) == 0, "Name not correct");
     printf("test_few_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
 }
 END_TEST
