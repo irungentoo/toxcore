@@ -30,12 +30,12 @@ Friend_requests.c:
     [NOT STARTED] What happens when a friend request is recieved needs to be changed.
 
 [DONE] File transfers
-[NOT STARTED] Offline messaging
+[IN PROGRESS] Offline messaging
 [NOT STARTED] Friends list syncing
 [IN PROGRESS] IPV6 support
     [DONE] Networking
     [DONE] DHT + Messenger
-    [NOT STARTED] Group chats
+    [IN PROGRESS] Group chats
 
 [IN PROGRESS] GUI (no official GUI chosen yet)
 [NOT STARTED] Security audit from professionals
