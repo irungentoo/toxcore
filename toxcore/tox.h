@@ -672,11 +672,11 @@ uint32_t tox_size_encrypted(Tox *tox);
 
 /* Save the messenger, encrypting the data with key of length key_length
  *
- * This functions simply calls and then encrypt the output of tox_save(..) 
+ * This functions simply calls and then encrypt the output of tox_save(..)
  * with crypto_secretbox(...) from NaCl/libsodium with the key
- * given to crypto_secretbox(...) being the SHA256 sum of the key 
+ * given to crypto_secretbox(...) being the SHA256 sum of the key
  * passed to this function.
- * 
+ *
  * return 0 on success.
  * return -1 on failure.
  */

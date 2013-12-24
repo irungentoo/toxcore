@@ -138,4 +138,4 @@ encrypted with temp symmetric key of Node A: [IP_Port (of us)][data to send back
 
 (sent from node A to us):
 
-[uint8_t packet id (143)][data to send back]
+[data to send back]
