@@ -24,6 +24,7 @@
 
 typedef struct {
     DHT     *dht;
+    Networking_Core *net;
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
 } Onion;
 
