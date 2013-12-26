@@ -818,6 +818,7 @@ Net_Crypto *new_net_crypto(Networking_Core *net)
         return NULL;
     }
 
+    new_keys(temp);
     return temp;
 }
 

@@ -1553,7 +1553,6 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
-    new_keys(m->net_crypto);
     m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
 
     friendreq_init(&(m->fr), m->net_crypto);
