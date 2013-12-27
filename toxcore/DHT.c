@@ -2105,6 +2105,7 @@ DHT *new_DHT(Net_Crypto *c)
     cryptopacket_registerhandler(c, CRYPTO_PACKET_HARDENING, &handle_hardening, dht);
 
     new_symmetric_key(dht->secret_symmetric_key);
+    crypto_box_keypair(dht->self_public_key, dht->self_secret_key);
     dht->assoc = new_Assoc_default(dht->c->self_public_key);
 
     return dht;

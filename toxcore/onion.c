@@ -22,15 +22,54 @@
 
 #include "onion.h"
 
-#define MAX_ONION_SIZE 1400
+#define MAX_ONION_SIZE MAX_DATA_SIZE
 
 #define RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
 #define RETURN_2 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + RETURN_1)
 #define RETURN_3 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + RETURN_2)
 
+#define SEND_BASE (crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
+#define SEND_3 (crypto_box_NONCEBYTES + SEND_BASE + RETURN_2)
+#define SEND_2 (crypto_box_NONCEBYTES + SEND_BASE*2 + RETURN_1)
+#define SEND_1 (crypto_box_NONCEBYTES + SEND_BASE*3)
+
 static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
+
+    if (length > MAX_ONION_SIZE)
+        return 1;
+
+    if (length <= 1 + SEND_1)
+        return 1;
+
+    uint8_t plain[MAX_ONION_SIZE];
+
+    int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
+                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES), plain);
+
+    if ((uint32_t)len != length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES))
+        return 1;
+
+    IP_Port send_to;
+    memcpy(&send_to, plain, sizeof(IP_Port));
+    uint8_t data[MAX_ONION_SIZE];
+    data[0] = NET_PACKET_ONION_SEND_1;
+    memcpy(data + 1, packet + 1, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + crypto_box_NONCEBYTES, plain + sizeof(IP_Port), len - sizeof(IP_Port));
+    uint8_t *ret_part = data + 1 + crypto_box_NONCEBYTES + (len - sizeof(IP_Port));
+    new_nonce(ret_part);
+    len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, (uint8_t *)&source, sizeof(IP_Port),
+                                 ret_part + crypto_secretbox_NONCEBYTES);
+
+    if (len != sizeof(IP_Port) + crypto_secretbox_MACBYTES)
+        return 1;
+
+    uint32_t data_len = 1 + crypto_box_NONCEBYTES + (len - sizeof(IP_Port)) + len;
+
+    if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len)
+        return 1;
 
     return 0;
 }
@@ -157,7 +196,7 @@ Onion *new_onion(DHT *dht)
 
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, &handle_send_initial, onion);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, &handle_send_1, onion);
-    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, &handle_send_2, onion);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_2, &handle_send_2, onion);
 
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_3, &handle_recv_3, onion);
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_2, &handle_recv_2, onion);
@@ -170,7 +209,7 @@ void kill_onion(Onion *onion)
 {
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, NULL, NULL);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, NULL, NULL);
-    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, NULL, NULL);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_2, NULL, NULL);
 
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_3, NULL, NULL);
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_2, NULL, NULL);
