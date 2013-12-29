@@ -58,7 +58,8 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     data[0] = NET_PACKET_ONION_SEND_1;
     memcpy(data + 1, packet + 1, crypto_box_NONCEBYTES);
     memcpy(data + 1 + crypto_box_NONCEBYTES, plain + sizeof(IP_Port), len - sizeof(IP_Port));
-    uint8_t *ret_part = data + 1 + crypto_box_NONCEBYTES + (len - sizeof(IP_Port));
+    uint32_t data_len = 1 + crypto_box_NONCEBYTES + (len - sizeof(IP_Port));
+    uint8_t *ret_part = data + data_len;
     new_nonce(ret_part);
     len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, (uint8_t *)&source, sizeof(IP_Port),
                                  ret_part + crypto_secretbox_NONCEBYTES);
@@ -66,7 +67,7 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     if (len != sizeof(IP_Port) + crypto_secretbox_MACBYTES)
         return 1;
 
-    uint32_t data_len = 1 + crypto_box_NONCEBYTES + (len - sizeof(IP_Port)) + len;
+    data_len += len;
 
     if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len)
         return 1;
@@ -78,6 +79,43 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 {
     Onion *onion = object;
 
+    if (length > MAX_ONION_SIZE)
+        return 1;
+
+    if (length <= 1 + SEND_2)
+        return 1;
+    
+    uint8_t plain[MAX_ONION_SIZE];
+
+    int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
+                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_1), plain);
+    
+    if ((uint32_t)len != length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_1 + crypto_box_MACBYTES))
+        return 1;
+
+    IP_Port send_to;
+    memcpy(&send_to, plain, sizeof(IP_Port));
+    uint8_t data[MAX_ONION_SIZE];
+    data[0] = NET_PACKET_ONION_SEND_2;
+    memcpy(data + 1, packet + 1, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + crypto_box_NONCEBYTES, plain + sizeof(IP_Port), len - sizeof(IP_Port));
+    uint32_t data_len = 1 + crypto_box_NONCEBYTES + (len - sizeof(IP_Port));
+    uint8_t *ret_part = data + data_len;
+    new_nonce(ret_part);
+    uint8_t ret_data[RETURN_1 + sizeof(IP_Port)];
+    memcpy(ret_data, &source, sizeof(IP_Port));
+    memcpy(ret_data + sizeof(IP_Port), packet + (length - RETURN_1), RETURN_1);
+    len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, ret_data, sizeof(ret_data),
+                                 ret_part + crypto_secretbox_NONCEBYTES);
+    
+    if (len != RETURN_2 - crypto_secretbox_NONCEBYTES)
+        return 1;
+    
+    data_len += len;
+
+    if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len)
+        return 1;
     return 0;
 }
 
