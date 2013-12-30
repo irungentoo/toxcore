@@ -28,6 +28,15 @@ typedef struct {
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
 } Onion;
 
+/* Create and send a onion packet.
+ *
+ * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the data
+ * with length length will arrive at 3.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_packet(Onion *onion, Node_format *nodes, uint8_t *data, uint32_t length);
 
 Onion *new_onion(DHT *dht);
 

@@ -33,6 +33,66 @@
 #define SEND_2 (crypto_box_NONCEBYTES + SEND_BASE*2 + RETURN_1)
 #define SEND_1 (crypto_box_NONCEBYTES + SEND_BASE*3)
 
+/* Create and send a onion packet.
+ *
+ * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the data
+ * with length length will arrive at 3.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_packet(Onion *onion, Node_format *nodes, uint8_t *data, uint32_t length)
+{
+    if (1 + length + SEND_1 > MAX_ONION_SIZE || length == 0)
+        return -1;
+
+    uint8_t step1[sizeof(IP_Port) + length];
+    memcpy(step1, &nodes[3].ip_port, sizeof(IP_Port));
+    memcpy(step1 + sizeof(IP_Port), data, length);
+
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    new_nonce(nonce);
+    uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(random_public_key, random_secret_key);
+
+    uint8_t step2[sizeof(IP_Port) + SEND_BASE + length];
+    memcpy(step2, &nodes[2].ip_port, sizeof(IP_Port));
+    memcpy(step2 + sizeof(IP_Port), random_public_key, crypto_box_PUBLICKEYBYTES);
+
+    int len = encrypt_data(nodes[2].client_id, random_secret_key, nonce,
+                           step1, sizeof(step1), step2 + sizeof(IP_Port) + crypto_box_PUBLICKEYBYTES);
+
+    if ((uint32_t)len != sizeof(IP_Port) + length + crypto_box_MACBYTES)
+        return -1;
+
+    crypto_box_keypair(random_public_key, random_secret_key);
+    uint8_t step3[sizeof(IP_Port) + SEND_BASE * 2 + length];
+    memcpy(step3, &nodes[1].ip_port, sizeof(IP_Port));
+    memcpy(step3 + sizeof(IP_Port), random_public_key, crypto_box_PUBLICKEYBYTES);
+    len = encrypt_data(nodes[1].client_id, random_secret_key, nonce,
+                       step2, sizeof(step2), step3 + sizeof(IP_Port) + crypto_box_PUBLICKEYBYTES);
+
+    if ((uint32_t)len != sizeof(IP_Port) + SEND_BASE + length + crypto_box_MACBYTES)
+        return -1;
+
+    uint8_t packet[1 + length + SEND_1];
+    packet[0] = NET_PACKET_ONION_SEND_INITIAL;
+    memcpy(packet + 1, nonce, crypto_box_NONCEBYTES);
+    memcpy(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+
+    len = encrypt_data(nodes[0].client_id, onion->dht->self_secret_key, nonce,
+                       step3, sizeof(step3), packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
+
+    if ((uint32_t)len != sizeof(IP_Port) + SEND_BASE * 2 + length + crypto_box_MACBYTES)
+        return -1;
+
+    if ((uint32_t)sendpacket(onion->net, nodes[0].ip_port, packet, sizeof(packet)) != sizeof(packet))
+        return -1;
+
+    return 0;
+}
+
 static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
