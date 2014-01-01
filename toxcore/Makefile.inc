@@ -29,6 +29,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/group_chats.c \
                         ../toxcore/assoc.h \
                         ../toxcore/assoc.c \
+                        ../toxcore/onion.h \
+                        ../toxcore/onion.c \
                         ../toxcore/misc_tools.h
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
