@@ -127,7 +127,7 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     if (len != sizeof(IP_Port) + crypto_secretbox_MACBYTES)
         return 1;
 
-    data_len += len;
+    data_len += crypto_secretbox_NONCEBYTES + len;
 
     if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len)
         return 1;
@@ -172,7 +172,7 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (len != RETURN_2 - crypto_secretbox_NONCEBYTES)
         return 1;
 
-    data_len += len;
+    data_len += crypto_secretbox_NONCEBYTES + len;
 
     if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len)
         return 1;
