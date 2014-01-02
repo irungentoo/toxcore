@@ -153,7 +153,6 @@ void getaddress(Messenger *m, uint8_t *address)
  * Add a friend.
  * Set the data that will be sent along with friend request.
  * Address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes.
- * TODO: add checksum.
  * data is the data and length is the length.
  *
  *  return the friend number if success.
@@ -1604,7 +1603,6 @@ static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t)
 /* TODO: Make this function not suck. */
 void do_friends(Messenger *m)
 {
-    /* TODO: Add incoming connections and some other stuff. */
     uint32_t i;
     int len;
     uint8_t temp[MAX_DATA_SIZE];

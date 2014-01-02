@@ -28,6 +28,16 @@ typedef struct {
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
 } Onion;
 
+#define ONION_RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
+#define ONION_RETURN_2 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + ONION_RETURN_1)
+#define ONION_RETURN_3 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + ONION_RETURN_2)
+
+#define ONION_SEND_BASE (crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
+#define ONION_SEND_3 (crypto_box_NONCEBYTES + ONION_SEND_BASE + ONION_RETURN_2)
+#define ONION_SEND_2 (crypto_box_NONCEBYTES + ONION_SEND_BASE*2 + ONION_RETURN_1)
+#define ONION_SEND_1 (crypto_box_NONCEBYTES + ONION_SEND_BASE*3)
+
+
 /* Create and send a onion packet.
  *
  * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the data

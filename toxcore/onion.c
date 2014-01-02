@@ -27,14 +27,14 @@
 
 #define MAX_ONION_SIZE MAX_DATA_SIZE
 
-#define RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
-#define RETURN_2 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + RETURN_1)
-#define RETURN_3 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + RETURN_2)
+#define RETURN_1 ONION_RETURN_1
+#define RETURN_2 ONION_RETURN_2
+#define RETURN_3 ONION_RETURN_3
 
-#define SEND_BASE (crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
-#define SEND_3 (crypto_box_NONCEBYTES + SEND_BASE + RETURN_2)
-#define SEND_2 (crypto_box_NONCEBYTES + SEND_BASE*2 + RETURN_1)
-#define SEND_1 (crypto_box_NONCEBYTES + SEND_BASE*3)
+#define SEND_BASE ONION_SEND_BASE
+#define SEND_3 ONION_SEND_3
+#define SEND_2 ONION_SEND_2
+#define SEND_1 ONION_SEND_1
 
 /* Create and send a onion packet.
  *
@@ -316,6 +316,7 @@ static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     return 0;
 }
+
 
 
 Onion *new_onion(DHT *dht)
