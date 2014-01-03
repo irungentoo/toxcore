@@ -36,9 +36,6 @@
 #include "misc_tools.h"
 #include "util.h"
 
-/* The max number of nodes to send with send nodes. */
-#define MAX_SENT_NODES 8
-
 /* The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT 300
 
@@ -366,8 +363,8 @@ static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *n
     return num_nodes;
 }
 
-static int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
-                           uint8_t want_good)
+int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
+                    uint8_t want_good)
 {
     if (!dht->assoc)
         return get_somewhat_close_nodes(dht, client_id, nodes_list, sa_family, is_LAN, want_good);

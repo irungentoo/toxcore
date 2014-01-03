@@ -110,8 +110,8 @@ data to route request packet:
 Data sent to us:
 announce response packet:
 [uint8_t packet id (132)][nonce]
-encrypted with the DHT private key of Node D, our long term public key and the nonce:[[(32 bytes) ping_id][Node_Format * (maximum of 8)]]
-(if the ping id is zero, it means the client id we are searching for is stored on )
+encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[(32 bytes) ping_id][Node_Format * (maximum of 8)]]
+(if the ping id is zero, it means the information to reach the client id we are searching for is stored on this node)
 
 data to route response packet:
 [uint8_t packet id (134)][nonce]encrypted with that temporary private key and the nonce:[data]

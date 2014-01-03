@@ -35,6 +35,9 @@
 /* A list of the clients mathematically closest to ours. */
 #define LCLIENT_LIST 32
 
+/* The max number of nodes to send with send nodes. */
+#define MAX_SENT_NODES 8
+
 /* Maximum newly announced nodes to ping per TIME_TOPING seconds. */
 #define MAX_TOPING 16
 
@@ -203,6 +206,19 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
  *  return 2 if client_id2 is closer.
  */
 int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2);
+
+/* Get the (maximum MAX_SENT_NODES) closest nodes to client_id we know
+ * and put them in nodes_list (must be MAX_SENT_NODES big).
+ *
+ * sa_family = family (IPv4 or IPv6)?
+ * is_LAN = return some LAN ips (true or false)
+ * want_good = do we want tested nodes or not? (TODO)
+ *
+ * return the number of nodes returned.
+ *
+ */
+int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
+                    uint8_t want_good);
 
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);
