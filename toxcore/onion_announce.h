@@ -28,6 +28,7 @@ typedef struct {
     Networking_Core *net;
     struct {
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+        IP_Port first;
         uint8_t ret[ONION_RETURN_3];
     } entries[ONION_ANNOUNCE_MAX_ENTRIES];
     /* This is crypto_secretbox_KEYBYTES long just so we can use new_symmetric_key() to fill it */

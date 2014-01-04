@@ -48,6 +48,13 @@ typedef struct {
  */
 int send_onion_packet(Onion *onion, Node_format *nodes, uint8_t *data, uint32_t length);
 
+/* Create and send a onion response sent initially to dest with.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret);
+
 Onion *new_onion(DHT *dht);
 
 void kill_onion(Onion *onion);

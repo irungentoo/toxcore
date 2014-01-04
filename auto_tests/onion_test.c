@@ -26,13 +26,8 @@ static int handle_test_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (memcmp(packet, "Install Gentoo", sizeof("Install Gentoo")) != 0)
         return 1;
 
-    uint8_t data[1024];
-    data[0] = NET_PACKET_ONION_RECV_3;
-    memcpy(data + 1, packet + sizeof("Install Gentoo"), length - sizeof("Install Gentoo"));
-    memcpy(data + 1 + length - sizeof("Install Gentoo"), "install gentoo", sizeof("install gentoo"));
-    uint32_t data_len = 1 + length;
-
-    if ((uint32_t)sendpacket(onion->net, source, data, data_len) != data_len)
+    if (send_onion_response(onion->net, source, "install gentoo", sizeof("install gentoo"),
+                            packet + sizeof("Install Gentoo")) == -1)
         return 1;
 
     handled_test_1 = 1;

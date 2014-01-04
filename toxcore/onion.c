@@ -95,6 +95,23 @@ int send_onion_packet(Onion *onion, Node_format *nodes, uint8_t *data, uint32_t 
 
     return 0;
 }
+/* Create and send a onion response sent initially to dest with.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret)
+{
+    uint8_t packet[1 + RETURN_3 + length];
+    packet[0] = NET_PACKET_ONION_RECV_3;
+    memcpy(packet + 1, ret, RETURN_3);
+    memcpy(packet + 1 + RETURN_3, data, length);
+
+    if ((uint32_t)sendpacket(net, dest, packet, sizeof(packet)) != sizeof(packet))
+        return -1;
+
+    return 0;
+}
 
 static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
