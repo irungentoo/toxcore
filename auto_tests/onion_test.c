@@ -10,7 +10,7 @@
 #include <time.h>
 
 #include "../toxcore/onion.h"
-
+#include "../toxcore/onion_announce.h"
 
 void do_onion(Onion *onion)
 {
@@ -26,7 +26,7 @@ static int handle_test_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (memcmp(packet, "Install Gentoo", sizeof("Install Gentoo")) != 0)
         return 1;
 
-    if (send_onion_response(onion->net, source, "install gentoo", sizeof("install gentoo"),
+    if (send_onion_response(onion->net, source, (uint8_t *)"install gentoo", sizeof("install gentoo"),
                             packet + sizeof("Install Gentoo")) == -1)
         return 1;
 
@@ -40,12 +40,13 @@ static int handle_test_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (length != sizeof("install Gentoo"))
         return 1;
 
-    if (memcmp(packet, "install gentoo", sizeof("install gentoo")) != 0)
+    if (memcmp(packet, (uint8_t *)"install gentoo", sizeof("install gentoo")) != 0)
         return 1;
 
     handled_test_2 = 1;
     return 0;
 }
+
 START_TEST(test_basic)
 {
     IP ip;
@@ -71,7 +72,7 @@ START_TEST(test_basic)
     nodes[1] = n2;
     nodes[2] = n1;
     nodes[3] = n2;
-    int ret = send_onion_packet(onion1, nodes, "Install Gentoo", sizeof("Install Gentoo"));
+    int ret = send_onion_packet(onion1, nodes, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
     ck_assert_msg(ret == 0, "Failed to create/send onion packet.");
 
     handled_test_1 = 0;
@@ -91,6 +92,12 @@ START_TEST(test_basic)
 }
 END_TEST
 
+START_TEST(test_announce)
+{
+    
+    
+}
+END_TEST
 
 #define DEFTESTCASE(NAME) \
     TCase *tc_##NAME = tcase_create(#NAME); \
@@ -105,6 +112,7 @@ Suite *onion_suite(void)
     Suite *s = suite_create("Onion");
 
     DEFTESTCASE_SLOW(basic, 5);
+    DEFTESTCASE_SLOW(announce, 5);
     return s;
 }
 

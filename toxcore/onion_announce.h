@@ -20,17 +20,25 @@
 *
 */
 
+#ifndef ONION_ANNOUNCE_H
+#define ONION_ANNOUNCE_H
+
 #include "onion.h"
 
 #define ONION_ANNOUNCE_MAX_ENTRIES 32
+#define ONION_ANNOUNCE_TIMEOUT 300
+
+typedef struct {
+        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+        IP_Port ret_ip_port;
+        uint8_t ret[ONION_RETURN_3];
+        uint64_t time;
+} Onion_Announce_Entry;
+
 typedef struct {
     DHT     *dht;
     Networking_Core *net;
-    struct {
-        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-        IP_Port first;
-        uint8_t ret[ONION_RETURN_3];
-    } entries[ONION_ANNOUNCE_MAX_ENTRIES];
+    Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
     /* This is crypto_secretbox_KEYBYTES long just so we can use new_symmetric_key() to fill it */
     uint8_t secret_bytes[crypto_secretbox_KEYBYTES];
 } Onion_Announce;
@@ -40,3 +48,6 @@ typedef struct {
 Onion_Announce *new_onion_announce(DHT *dht);
 
 void kill_onion_announce(Onion_Announce *onion_a);
+
+
+#endif

@@ -31,6 +31,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/assoc.c \
                         ../toxcore/onion.h \
                         ../toxcore/onion.c \
+                        ../toxcore/onion_announce.h \
+                        ../toxcore/onion_announce.c \
                         ../toxcore/misc_tools.h
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \

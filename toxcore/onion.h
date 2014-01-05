@@ -20,6 +20,9 @@
 *
 */
 
+#ifndef ONION_H
+#define ONION_H
+
 #include "DHT.h"
 
 typedef struct {
@@ -58,3 +61,6 @@ int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint3
 Onion *new_onion(DHT *dht);
 
 void kill_onion(Onion *onion);
+
+
+#endif

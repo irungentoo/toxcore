@@ -104,8 +104,9 @@ encrypted (with our real long term private key if we want to announce ourselves,
 add the part used to send data to our list (if the list is full make it replace the furthest entry))
 
 data to route request packet:
-[uint8_t packet id (133)][public key of destination node][nonce][temporary just generated public key]encrypted with that temporary private key and the nonce:[data]
-(if Node D contains the used to send data for, it sends the stuff in this packet as a data to route response packet to the right node)
+[uint8_t packet id (133)][public key of destination node][nonce][temporary just generated public key]
+encrypted with that temporary private key and the nonce and the real public key of the destination node:[data]
+(if Node D contains the ret data for the node, it sends the stuff in this packet as a data to route response packet to the right node)
 
 Data sent to us:
 announce response packet:
@@ -114,8 +115,8 @@ encrypted with the DHT private key of Node D, the public key in the request and 
 (if the ping id is zero, it means the information to reach the client id we are searching for is stored on this node)
 
 data to route response packet:
-[uint8_t packet id (134)][nonce]encrypted with that temporary private key and the nonce:[data]
-
+[uint8_t packet id (134)][nonce][temporary just generated public key]
+encrypted with that temporary private key and the nonce and the real public key of the destination node:[data]
 Onion packet (response):
 
 initial (sent from node D to node C):

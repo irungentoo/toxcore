@@ -34,6 +34,8 @@
 #define ANNOUNCE_RESPONSE_MIN_SIZE (1 + crypto_box_NONCEBYTES + PING_ID_SIZE + crypto_box_MACBYTES)
 #define ANNOUNCE_RESPONSE_MAX_SIZE (ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
 
+#define DATA_REQUEST_MIN_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES + ONION_RETURN_3)
+
 /* Generate a ping_id and put it in ping_id */
 static void generate_ping_id(Onion_Announce *onion_a, uint64_t time, uint8_t *public_key, uint8_t *ret,
                              uint8_t *ping_id)
@@ -47,26 +49,89 @@ static void generate_ping_id(Onion_Announce *onion_a, uint64_t time, uint8_t *pu
     crypto_hash_sha256(ping_id, data, sizeof(data));
 }
 
+/* check if public key is in entries list
+ *
+ * return -1 if no
+ * return position in list if yes
+ */
+static int in_entries(Onion_Announce *onion_a, uint8_t *public_key)
+{
+    uint32_t i;
+
+    for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
+        if (!is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
+                && memcpy(onion_a->entries[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0)
+            return i;
+    }
+
+    return -1;
+}
+
+uint8_t cmp_public_key[crypto_box_PUBLICKEYBYTES];
+static int cmp_entry(const void *a, const void *b)
+{
+    Onion_Announce_Entry entry1, entry2;
+    memcpy(&entry1, a, sizeof(Onion_Announce_Entry));
+    memcpy(&entry2, b, sizeof(Onion_Announce_Entry));
+    int t1 = is_timeout(entry1.time, ONION_ANNOUNCE_TIMEOUT);
+    int t2 = is_timeout(entry2.time, ONION_ANNOUNCE_TIMEOUT);
+
+    if (t1 && t2)
+        return 0;
+
+    if (t1)
+        return -1;
+
+    if (t2)
+        return 1;
+
+    int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
+
+    if (close == 1)
+        return 1;
+
+    if (close == 2)
+        return -1;
+
+    return 0;
+}
+
 /* add entry to entries list
  *
  * return 0 if failure
  * return 1 if added
  */
-static int add_to_entries(Onion_Announce *onion_a, uint8_t *public_key, uint8_t *ret)
+static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, uint8_t *public_key, uint8_t *ret)
 {
 
-    return 0;
-}
+    int pos = in_entries(onion_a, public_key);
 
-/* check if public key is in entries list
- *
- * return 0 if no
- * return 1 if yes
- */
-static int in_entries(Onion_Announce *onion_a, uint8_t *public_key)
-{
+    uint32_t i;
 
-    return 0;
+    if (pos == -1) {
+        for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
+            if (is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT))
+                pos = i;
+        }
+    }
+
+    if (pos == -1) {
+        if (id_closest(onion_a->dht->self_public_key, public_key, onion_a->entries[0].public_key) == 1)
+            pos = 0;
+    }
+
+    if (pos == -1)
+        return 0;
+
+
+    memcpy(onion_a->entries[pos].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    onion_a->entries[pos].ret_ip_port = ret_ip_port;
+    memcpy(onion_a->entries[pos].ret, ret, ONION_RETURN_3);
+    onion_a->entries[pos].time = unix_time();
+
+    memcpy(cmp_public_key, onion_a->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    qsort(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, sizeof(Onion_Announce_Entry), cmp_entry);
+    return 1;
 }
 
 static int handle_announce_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
@@ -95,10 +160,10 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
     int stored = 0;
 
     if (memcmp(ping_id1, plain, PING_ID_SIZE) == 0 || memcmp(ping_id2, plain, PING_ID_SIZE) == 0) {
-        stored = add_to_entries(onion_a, packet + 1 + crypto_box_NONCEBYTES,
+        stored = add_to_entries(onion_a, source, packet + 1 + crypto_box_NONCEBYTES,
                                 packet + (ANNOUNCE_REQUEST_SIZE - ONION_RETURN_3));
     } else {
-        stored = in_entries(onion_a, plain + PING_ID_SIZE);
+        stored = (in_entries(onion_a, plain + PING_ID_SIZE) != -1);
     }
 
     /*Respond with a announce response packet*/
@@ -137,6 +202,25 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
 static int handle_data_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     Onion_Announce *onion_a = object;
+
+    if (length <= DATA_REQUEST_MIN_SIZE)
+        return 1;
+
+    if (length >= MAX_DATA_SIZE)
+        return 1;
+
+    int index = in_entries(onion_a, packet + 1);
+
+    if (index == -1)
+        return 1;
+
+    uint8_t data[length - (crypto_box_PUBLICKEYBYTES + ONION_RETURN_3)];
+    data[0] = NET_PACKET_ONION_DATA_RESPONSE;
+    memcpy(data + 1, packet + 1 + crypto_box_PUBLICKEYBYTES, length - (1 + crypto_box_PUBLICKEYBYTES + ONION_RETURN_3));
+
+    if (send_onion_response(onion_a->net, onion_a->entries[index].ret_ip_port, data, sizeof(data),
+                            onion_a->entries[index].ret) == -1)
+        return 1;
 
     return 0;
 }
