@@ -11,6 +11,7 @@
 
 #include "../toxcore/onion.h"
 #include "../toxcore/onion_announce.h"
+#include "../toxcore/util.h"
 
 #ifdef __WIN32__
 #define c_sleep(x) Sleep(1*x)
@@ -86,6 +87,28 @@ static int handle_test_3(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
+static int handled_test_4;
+static int handle_test_4(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+{
+    Onion *onion = object;
+
+    if (length != (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + sizeof("Install gentoo") + crypto_box_MACBYTES))
+        return 1;
+
+    uint8_t plain[sizeof("Install gentoo")] = {0};
+    int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->c->self_secret_key, packet + 1,
+                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, sizeof("Install gentoo") + crypto_box_MACBYTES, plain);
+
+    if (len == -1)
+        return 1;
+
+    if (memcmp(plain, "Install gentoo", sizeof("Install gentoo")) != 0)
+        return 1;
+
+    handled_test_4 = 1;
+    return 0;
+}
+
 START_TEST(test_basic)
 {
     IP ip;
@@ -145,11 +168,28 @@ START_TEST(test_basic)
         do_onion(onion2);
     }
 
+    memcpy(onion2_a->entries[1].public_key, onion2->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    onion2_a->entries[1].time = unix_time();
+    networking_registerhandler(onion1->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_test_4, onion1);
     send_announce_request(onion1->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
                           test_3_ping_id, onion1->dht->c->self_public_key);
 
-    while (memcmp(onion2_a->entries[ONION_ANNOUNCE_MAX_ENTRIES - 1].public_key, onion1->dht->c->self_public_key,
+    while (memcmp(onion2_a->entries[ONION_ANNOUNCE_MAX_ENTRIES - 2].public_key, onion1->dht->c->self_public_key,
                   crypto_box_PUBLICKEYBYTES) != 0) {
+        do_onion(onion1);
+        do_onion(onion2);
+        c_sleep(50);
+    }
+
+    c_sleep(1000);
+    Onion *onion3 = new_onion(new_DHT(new_net_crypto(new_networking(ip, 34569))));
+    ck_assert_msg((onion3 != NULL), "Onion failed initializing.");
+    ret = send_data_request(onion3->dht, nodes, onion1->dht->c->self_public_key, (uint8_t *)"Install gentoo",
+                            sizeof("Install gentoo"));
+    ck_assert_msg(ret == 0, "Failed to create/send onion data_request packet.");
+    handled_test_4 = 0;
+
+    while (handled_test_4 == 0) {
         do_onion(onion1);
         do_onion(onion2);
         c_sleep(50);
