@@ -44,7 +44,7 @@
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(Onion *onion, Node_format *nodes, uint8_t *data, uint32_t length)
+int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t length)
 {
     if (1 + length + SEND_1 > MAX_ONION_SIZE || length == 0)
         return -1;
@@ -82,15 +82,15 @@ int send_onion_packet(Onion *onion, Node_format *nodes, uint8_t *data, uint32_t 
     uint8_t packet[1 + length + SEND_1];
     packet[0] = NET_PACKET_ONION_SEND_INITIAL;
     memcpy(packet + 1, nonce, crypto_box_NONCEBYTES);
-    memcpy(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_NONCEBYTES, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
 
-    len = encrypt_data(nodes[0].client_id, onion->dht->self_secret_key, nonce,
+    len = encrypt_data(nodes[0].client_id, dht->self_secret_key, nonce,
                        step3, sizeof(step3), packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
 
     if ((uint32_t)len != sizeof(IP_Port) + SEND_BASE * 2 + length + crypto_box_MACBYTES)
         return -1;
 
-    if ((uint32_t)sendpacket(onion->net, nodes[0].ip_port, packet, sizeof(packet)) != sizeof(packet))
+    if ((uint32_t)sendpacket(dht->c->lossless_udp->net, nodes[0].ip_port, packet, sizeof(packet)) != sizeof(packet))
         return -1;
 
     return 0;

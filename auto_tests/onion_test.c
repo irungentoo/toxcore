@@ -12,6 +12,13 @@
 #include "../toxcore/onion.h"
 #include "../toxcore/onion_announce.h"
 
+#ifdef __WIN32__
+#define c_sleep(x) Sleep(1*x)
+#else
+#include <unistd.h>
+#define c_sleep(x) usleep(1000*x)
+#endif
+
 void do_onion(Onion *onion)
 {
     networking_poll(onion->net);
@@ -46,6 +53,38 @@ static int handle_test_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     handled_test_2 = 1;
     return 0;
 }
+/*
+void print_client_id(uint8_t *client_id, uint32_t length)
+{
+    uint32_t j;
+
+    for (j = 0; j < length; j++) {
+        printf("%02hhX", client_id[j]);
+    }
+    printf("\n");
+}
+*/
+static int handled_test_3;
+uint8_t test_3_pub_key[crypto_box_PUBLICKEYBYTES];
+uint8_t test_3_ping_id[crypto_hash_sha256_BYTES];
+static int handle_test_3(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+{
+    Onion *onion = object;
+
+    if (length != (1 + crypto_box_NONCEBYTES + crypto_hash_sha256_BYTES + crypto_box_MACBYTES))
+        return 1;
+
+    //print_client_id(packet, length);
+    int len = decrypt_data(test_3_pub_key, onion->dht->c->self_secret_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES,
+                           crypto_hash_sha256_BYTES + crypto_box_MACBYTES, test_3_ping_id);
+
+    if (len == -1)
+        return 1;
+
+    //print_client_id(test_3_ping_id, sizeof(test_3_ping_id));
+    handled_test_3 = 1;
+    return 0;
+}
 
 START_TEST(test_basic)
 {
@@ -72,7 +111,7 @@ START_TEST(test_basic)
     nodes[1] = n2;
     nodes[2] = n1;
     nodes[3] = n2;
-    int ret = send_onion_packet(onion1, nodes, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    int ret = send_onion_packet(onion1->dht, nodes, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
     ck_assert_msg(ret == 0, "Failed to create/send onion packet.");
 
     handled_test_1 = 0;
@@ -89,13 +128,69 @@ START_TEST(test_basic)
         do_onion(onion1);
         do_onion(onion2);
     }
+
+    Onion_Announce *onion1_a = new_onion_announce(onion1->dht);
+    Onion_Announce *onion2_a = new_onion_announce(onion2->dht);
+    networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_3, onion1);
+    ck_assert_msg((onion1_a != NULL) && (onion2_a != NULL), "Onion_Announce failed initializing.");
+    uint8_t zeroes[64] = {0};
+    memcpy(test_3_pub_key, nodes[3].client_id, crypto_box_PUBLICKEYBYTES);
+    ret = send_announce_request(onion1->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
+                                zeroes, onion1->dht->c->self_public_key);
+    ck_assert_msg(ret == 0, "Failed to create/send onion announce_request packet.");
+    handled_test_3 = 0;
+
+    while (handled_test_3 == 0) {
+        do_onion(onion1);
+        do_onion(onion2);
+    }
+
+    send_announce_request(onion1->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
+                          test_3_ping_id, onion1->dht->c->self_public_key);
+
+    while (memcmp(onion2_a->entries[ONION_ANNOUNCE_MAX_ENTRIES - 1].public_key, onion1->dht->c->self_public_key,
+                  crypto_box_PUBLICKEYBYTES) != 0) {
+        do_onion(onion1);
+        do_onion(onion2);
+        c_sleep(50);
+    }
 }
 END_TEST
 
+typedef struct {
+    Onion *onion;
+    Onion_Announce *onion_a;
+} Onions;
+
+Onions *new_onions(uint16_t port)
+{
+    IP ip;
+    ip_init(&ip, 1);
+    ip.ip6.uint8[15] = 1;
+    Onions *on = malloc(sizeof(Onions));
+    DHT *dht = new_DHT(new_net_crypto(new_networking(ip, port)));
+    on->onion = new_onion(dht);
+    on->onion_a = new_onion_announce(dht);
+
+    if (on->onion && on->onion_a)
+        return on;
+
+    return NULL;
+}
+
+#define NUM_ONIONS 64
+
 START_TEST(test_announce)
 {
-    
-    
+    uint32_t i;
+    Onions *onions[NUM_ONIONS];
+
+    for (i = 0; i < NUM_ONIONS; ++i) {
+        onions[i] = new_onions(i + 34655);
+        ck_assert_msg(onions[i] != 0, "Failed to create onions. %u");
+    }
+
+
 }
 END_TEST
 

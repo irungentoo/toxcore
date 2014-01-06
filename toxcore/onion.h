@@ -49,7 +49,7 @@ typedef struct {
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(Onion *onion, Node_format *nodes, uint8_t *data, uint32_t length);
+int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t length);
 
 /* Create and send a onion response sent initially to dest with.
  *

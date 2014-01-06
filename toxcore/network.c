@@ -226,6 +226,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
  */
 static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
+    memset(ip_port, 0, sizeof(IP_Port));
     struct sockaddr_storage addr;
 #ifdef WIN32
     int addrlen = sizeof(addr);
