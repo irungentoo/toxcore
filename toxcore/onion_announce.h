@@ -27,6 +27,9 @@
 
 #define ONION_ANNOUNCE_MAX_ENTRIES 32
 #define ONION_ANNOUNCE_TIMEOUT 300
+#define ONION_PING_ID_SIZE crypto_hash_sha256_BYTES
+
+#define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (crypto_secretbox_NONCEBYTES + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + crypto_secretbox_MACBYTES)
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -51,12 +54,14 @@ typedef struct {
  * public_key and secret_key is the kepair which will be used to encrypt the request.
  * ping_id is the ping id that will be sent in the request.
  * client_id is the client id of the node we are searching for.
+ * sendback_data is the data of ONION_ANNOUNCE_SENDBACK_DATA_LENGTH length that we expect to
+ * receive back in the response.
  *
  * return -1 on failure.
  * return 0 on success.
  */
 int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *secret_key, uint8_t *ping_id,
-                          uint8_t *client_id);
+                          uint8_t *client_id, uint8_t *sendback_data);
 
 /* Create and send an onion data request packet.
  *

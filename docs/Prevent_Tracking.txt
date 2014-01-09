@@ -97,7 +97,7 @@ Data sent to Node D:
 
 announce request packet:
 [uint8_t packet id (131)][nonce][our real long term public key or a temporary one (see next)]
-encrypted (with our real long term private key if we want to announce ourselves, a temporary one if we are searching for friends) and the pub key of Node D and the nonce:[[(32 bytes) ping_id][client id we are searching for]]
+encrypted (with our real long term private key if we want to announce ourselves, a temporary one if we are searching for friends) and the pub key of Node D and the nonce:[[(32 bytes) ping_id][client id we are searching for][data to send back in response(fixed size)]]
 
 (if the ping id is zero, respond with a announce response packet)
 (If the ping id matches the one the node sent in the announce response and the public key matches the one being searched for, 
@@ -111,7 +111,7 @@ encrypted with that temporary private key and the nonce and the real public key 
 Data sent to us:
 announce response packet:
 [uint8_t packet id (132)][nonce]
-encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[(32 bytes) ping_id][Node_Format * (maximum of 8)]]
+encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[data to send back in response(fixed size)][(32 bytes) ping_id][Node_Format * (maximum of 8)]]
 (if the ping id is zero, it means the information to reach the client id we are searching for is stored on this node)
 
 data to route response packet:
