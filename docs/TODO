@@ -37,7 +37,8 @@ Friend_requests.c:
     [DONE] DHT + Messenger
     [NOT STARTED] Group chats (They work with IPv6 but some things need to be tested.)
 
-[NOT STARTED] Make the save made with tox_save_encrypted(...) harder to brute force.
+[NEEDS TESTING] Make the save made with tox_save_encrypted(...) harder to brute force.
+See: (https://github.com/jencka/ProjectTox-libtoxdata)
 
 [IN PROGRESS] GUI (no official GUI chosen yet, will most likely be: 
 https://github.com/nurupo/ProjectTox-Qt-GUI or https://github.com/naxuroqa/Venom)
