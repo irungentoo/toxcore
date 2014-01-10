@@ -77,18 +77,20 @@ static int handle_test_3(void *object, IP_Port source, uint8_t *packet, uint32_t
                    crypto_box_MACBYTES))
         return 1;
 
-    uint8_t plain[ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_hash_sha256_BYTES];
+    uint8_t plain[crypto_hash_sha256_BYTES];
     //print_client_id(packet, length);
-    int len = decrypt_data(test_3_pub_key, onion->dht->c->self_secret_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES,
-                           ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_hash_sha256_BYTES + crypto_box_MACBYTES, plain);
+    int len = decrypt_data(test_3_pub_key, onion->dht->c->self_secret_key, packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH,
+                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES,
+                           crypto_hash_sha256_BYTES + crypto_box_MACBYTES, plain);
 
     if (len == -1)
         return 1;
 
-    if (memcmp(plain, sb_data, ONION_ANNOUNCE_SENDBACK_DATA_LENGTH) != 0)
+
+    if (memcmp(packet + 1, sb_data, ONION_ANNOUNCE_SENDBACK_DATA_LENGTH) != 0)
         return 1;
 
-    memcpy(test_3_ping_id, plain + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH, crypto_hash_sha256_BYTES);
+    memcpy(test_3_ping_id, plain, crypto_hash_sha256_BYTES);
     //print_client_id(test_3_ping_id, sizeof(test_3_ping_id));
     handled_test_3 = 1;
     return 0;

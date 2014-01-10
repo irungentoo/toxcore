@@ -110,8 +110,8 @@ encrypted with that temporary private key and the nonce and the real public key 
 
 Data sent to us:
 announce response packet:
-[uint8_t packet id (132)][nonce]
-encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[data to send back in response(fixed size)][(32 bytes) ping_id][Node_Format * (maximum of 8)]]
+[uint8_t packet id (132)][data to send back in response(fixed size)][nonce]
+encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[(32 bytes) ping_id][Node_Format * (maximum of 8)]]
 (if the ping id is zero, it means the information to reach the client id we are searching for is stored on this node)
 
 data to route response packet:
