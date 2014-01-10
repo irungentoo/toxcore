@@ -31,8 +31,6 @@
 
 #define ANNOUNCE_REQUEST_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_MACBYTES)
 #define ANNOUNCE_REQUEST_SIZE_RECV (ANNOUNCE_REQUEST_SIZE + ONION_RETURN_3)
-#define ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + ONION_PING_ID_SIZE + crypto_box_MACBYTES)
-#define ANNOUNCE_RESPONSE_MAX_SIZE (ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
 
 #define DATA_REQUEST_MIN_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
 #define DATA_REQUEST_MIN_SIZE_RECV (DATA_REQUEST_MIN_SIZE + ONION_RETURN_3)
@@ -252,8 +250,10 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
 
     memcpy(pl + ONION_PING_ID_SIZE, nodes_list, num_nodes * sizeof(Node_format));
 
-    uint8_t data[ANNOUNCE_RESPONSE_MAX_SIZE];
-    len = encrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion_a->dht->self_secret_key, nonce, pl, ONION_PING_ID_SIZE + num_nodes * sizeof(Node_format), data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES);
+    uint8_t data[ONION_ANNOUNCE_RESPONSE_MAX_SIZE];
+    len = encrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion_a->dht->self_secret_key, nonce, pl,
+                       ONION_PING_ID_SIZE + num_nodes * sizeof(Node_format),
+                       data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES);
 
     if ((uint32_t)len != ONION_PING_ID_SIZE + num_nodes * sizeof(Node_format) + crypto_box_MACBYTES)
         return 1;

@@ -29,9 +29,14 @@
 #define MAX_ONION_CLIENTS 8
 
 typedef struct {
-    Node_format clients_list[MAX_ONION_CLIENTS];
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    IP_Port     ip_port;
+    uint8_t     ping_id[ONION_PING_ID_SIZE];
+    uint64_t    timestamp;
+} Onion_Node;
 
-
+typedef struct {
+    Onion_Node clients_list[MAX_ONION_CLIENTS];
 } Onion_Friend;
 
 typedef struct {
@@ -40,7 +45,9 @@ typedef struct {
     Onion_Friend    *friends_list;
     uint16_t       num_friends;
 
-    Node_format clients_annouce_list[MAX_ONION_CLIENTS];
+    Onion_Node clients_announce_list[MAX_ONION_CLIENTS];
+
+    uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
 } Onion_Client;
 
 int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id);
