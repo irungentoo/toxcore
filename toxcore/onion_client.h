@@ -27,7 +27,7 @@
 #include "onion_announce.h"
 
 #define MAX_ONION_CLIENTS 8
-
+#define ONION_NODE_TIMEOUT 200
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -36,7 +36,14 @@ typedef struct {
 } Onion_Node;
 
 typedef struct {
+    uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
+
+    uint8_t fake_client_id[crypto_box_PUBLICKEYBYTES];
+    uint8_t real_client_id[crypto_box_PUBLICKEYBYTES];
+
     Onion_Node clients_list[MAX_ONION_CLIENTS];
+    uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
 } Onion_Friend;
 
 typedef struct {
@@ -56,6 +63,15 @@ int onion_delfriend(Onion_Client *onion_c, uint8_t *client_id);
 
 int onion_getfriendip(Onion_Client *onion_c, uint8_t *client_id, IP_Port *ip_port);
 
+/* Takes 3 random nodes that we know and puts them in nodes
+ *
+ * nodes must be longer than 3.
+ *
+ * return -1 on failure
+ * return 0 on success
+ *
+ */
+int random_path(Onion_Client *onion_c, Node_format *nodes);
 
 void do_onion_client(Onion_Client *onion_c);
 
