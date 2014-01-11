@@ -2201,8 +2201,6 @@ void DHT_save(DHT *dht, uint8_t *data)
                     (dht->close_clientlist[i].assoc6.timestamp != 0))
                 memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
     }
-
-    data += len;
 }
 
 static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
