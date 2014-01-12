@@ -27,7 +27,7 @@
 #include "LAN_discovery.h"
 #include "util.h"
 
-#define PING_ID_TIMEOUT 10
+#define PING_ID_TIMEOUT 20
 
 #define ANNOUNCE_REQUEST_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_MACBYTES)
 #define ANNOUNCE_REQUEST_SIZE_RECV (ANNOUNCE_REQUEST_SIZE + ONION_RETURN_3)
@@ -135,7 +135,7 @@ static int in_entries(Onion_Announce *onion_a, uint8_t *public_key)
     return -1;
 }
 
-uint8_t cmp_public_key[crypto_box_PUBLICKEYBYTES];
+static uint8_t cmp_public_key[crypto_box_PUBLICKEYBYTES];
 static int cmp_entry(const void *a, const void *b)
 {
     Onion_Announce_Entry entry1, entry2;
@@ -237,12 +237,15 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
     uint32_t num_nodes = get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, source.ip.family,
                                          LAN_ip(source.ip) == 0, 1);
 
+    uint32_t i;
+
+    for (i = 0; i < num_nodes; ++i)
+        to_net_family(&nodes_list[i].ip_port.ip);
+
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
     uint8_t pl[ONION_PING_ID_SIZE + sizeof(nodes_list)] = {0};
-
-
 
     if (!stored) {
         memcpy(pl, ping_id2, ONION_PING_ID_SIZE);

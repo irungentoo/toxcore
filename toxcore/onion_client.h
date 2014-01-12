@@ -33,6 +33,8 @@ typedef struct {
     IP_Port     ip_port;
     uint8_t     ping_id[ONION_PING_ID_SIZE];
     uint64_t    timestamp;
+    
+    uint64_t    last_pinged;
 } Onion_Node;
 
 typedef struct {
