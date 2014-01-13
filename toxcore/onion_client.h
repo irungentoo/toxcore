@@ -33,7 +33,7 @@ typedef struct {
     IP_Port     ip_port;
     uint8_t     ping_id[ONION_PING_ID_SIZE];
     uint64_t    timestamp;
-    
+
     uint64_t    last_pinged;
 } Onion_Node;
 
@@ -57,6 +57,7 @@ typedef struct {
     Onion_Node clients_announce_list[MAX_ONION_CLIENTS];
 
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    uint64_t last_run;
 } Onion_Client;
 
 int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id);

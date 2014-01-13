@@ -191,7 +191,6 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, uint8_t 
     if (pos == -1)
         return 0;
 
-
     memcpy(onion_a->entries[pos].public_key, public_key, crypto_box_PUBLICKEYBYTES);
     onion_a->entries[pos].ret_ip_port = ret_ip_port;
     memcpy(onion_a->entries[pos].ret, ret, ONION_RETURN_3);

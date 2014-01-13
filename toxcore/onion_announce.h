@@ -34,6 +34,8 @@
 #define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + ONION_PING_ID_SIZE + crypto_box_MACBYTES)
 #define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
 
+#define ONION_DATA_RESPONSE_MIN_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     IP_Port ret_ip_port;

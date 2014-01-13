@@ -129,7 +129,7 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     } else {
         return send_announce_request(onion_c->dht, nodes, onion_c->friends_list[num - 1].temp_public_key,
                                      onion_c->friends_list[num - 1].temp_secret_key, ping_id,
-                                     onion_c->friends_list[num - 1].fake_client_id, sendback);
+                                     onion_c->friends_list[num - 1].real_client_id, sendback);
     }
 }
 
@@ -301,6 +301,21 @@ static int handle_data_response(void *object, IP_Port source, uint8_t *packet, u
 {
     Onion_Client *onion_c = object;
 
+    if (length <= ONION_DATA_RESPONSE_MIN_SIZE)
+        return 1;
+
+    if (length > MAX_DATA_SIZE)
+        return 1;
+
+    uint8_t plain[length - ONION_DATA_RESPONSE_MIN_SIZE];
+    int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion_c->dht->c->self_secret_key, packet + 1,
+                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES), plain);
+
+    if ((uint32_t)len != sizeof(plain))
+        return 1;
+
+    //TODO do something with the plain
     return 0;
 }
 
@@ -318,11 +333,42 @@ int random_path(Onion_Client *onion_c, Node_format *nodes)
     return -1;
 }
 
+#define ANNOUNCE_FRIEND 30
 uint8_t zero_ping[ONION_PING_ID_SIZE];
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
+    if (friendnum >= onion_c->num_friends)
+        return;
 
+    if (onion_c->friends_list[friendnum].status == 0)
+        return;
 
+    uint32_t i, count = 0;
+    Onion_Node *list_nodes = onion_c->friends_list[friendnum].clients_list;
+
+    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+        if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT))
+            continue;
+
+        ++count;
+
+        if (is_timeout(list_nodes[i].last_pinged, ANNOUNCE_FRIEND)) {
+            if (client_send_announce_request(onion_c, friendnum + 1, list_nodes[i].ip_port, list_nodes[i].client_id, 0) == 0) {
+                list_nodes[i].last_pinged = unix_time();
+            }
+        }
+    }
+
+    if (count < MAX_ONION_CLIENTS / 2) {
+        Node_format nodes_list[MAX_SENT_NODES];
+        uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[i].real_client_id, nodes_list,
+                                             rand() % 2 ? AF_INET : AF_INET6, rand() % 2, 1);
+
+        for (i = 0; i < num_nodes; ++i)
+            client_send_announce_request(onion_c, friendnum + 1, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
+    }
+
+    //TODO send packets to friend telling them our fake DHT id.
 }
 
 #define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 10
@@ -330,13 +376,14 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 
 static void do_announce(Onion_Client *onion_c)
 {
-    uint32_t i;
+    uint32_t i, count = 0;
     Onion_Node *list_nodes = onion_c->clients_announce_list;
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
         if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT))
             continue;
 
+        ++count;
         uint32_t interval = ANNOUNCE_INTERVAL_NOT_ANNOUNCED;
 
         if (memcmp(list_nodes[i].ping_id, zero_ping, ONION_PING_ID_SIZE) == 0) {
@@ -350,16 +397,31 @@ static void do_announce(Onion_Client *onion_c)
             }
         }
     }
+
+    if (count < MAX_ONION_CLIENTS / 2) {
+        Node_format nodes_list[MAX_SENT_NODES];
+        uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->dht->c->self_public_key, nodes_list,
+                                             rand() % 2 ? AF_INET : AF_INET6, rand() % 2, 1);
+
+        for (i = 0; i < num_nodes; ++i)
+            client_send_announce_request(onion_c, 0, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
+    }
 }
 
 void do_onion_client(Onion_Client *onion_c)
 {
     uint32_t i;
+
+    if (onion_c->last_run == unix_time())
+        return;
+
     do_announce(onion_c);
 
     for (i = 0; i < onion_c->num_friends; ++i) {
         do_friend(onion_c, i);
     }
+
+    onion_c->last_run = unix_time();
 }
 
 Onion_Client *new_onion_client(DHT *dht)
