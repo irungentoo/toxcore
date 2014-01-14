@@ -473,8 +473,9 @@ static int getcryptconnection_id(Net_Crypto *c, uint8_t *public_key)
 /* Set the size of the friend list to numfriends.
  *
  *  return -1 if realloc fails.
+ *  return 0 if it succeeds.
  */
-int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
+static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
 {
     if (num == 0) {
         free(c->crypto_connections);
@@ -604,8 +605,11 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
                 break;
         }
 
-        c->crypto_connections_length = i;
-        realloc_cryptoconnection(c, c->crypto_connections_length);
+        if (c->crypto_connections_length != i) {
+            c->crypto_connections_length = i;
+            realloc_cryptoconnection(c, c->crypto_connections_length);
+        }
+
         return 0;
     }
 

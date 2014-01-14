@@ -319,6 +319,125 @@ static int handle_data_response(void *object, IP_Port source, uint8_t *packet, u
     return 0;
 }
 
+/* Get the friend_num of a friend.
+ *
+ * return -1 on failure.
+ * return friend number on success.
+ */
+int onion_friend_num(Onion_Client *onion_c, uint8_t *client_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < onion_c->num_friends; ++i) {
+        if (onion_c->friends_list[i].status == 0)
+            continue;
+
+        if (memcmp(client_id, onion_c->friends_list[i].real_client_id, crypto_box_PUBLICKEYBYTES) == 0)
+            return i;
+    }
+
+    return -1;
+}
+
+/* Set the size of the friend list to num.
+ *
+ *  return -1 if realloc fails.
+ *  return 0 if it succeeds.
+ */
+static int realloc_onion_friends(Onion_Client *onion_c, uint32_t num)
+{
+    if (num == 0) {
+        free(onion_c->friends_list);
+        onion_c->friends_list = NULL;
+        return 0;
+    }
+
+    Onion_Friend *newonion_friends = realloc(onion_c->friends_list, num * sizeof(Onion_Friend));
+
+    if (newonion_friends == NULL)
+        return -1;
+
+    onion_c->friends_list = newonion_friends;
+    return 0;
+}
+
+/* Add a friend who we want to connect to.
+ *
+ * return -1 on failure.
+ * return the friend number on success or if the friend was already added.
+ */
+int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id)
+{
+    int num = onion_friend_num(onion_c, client_id);
+
+    if (num != -1)
+        return num;
+
+    uint32_t i, index = ~0;
+
+    for (i = 0; i < onion_c->num_friends; ++i) {
+        if (onion_c->friends_list[i].status == 0) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == ~0) {
+        if (realloc_onion_friends(onion_c, onion_c->num_friends + 1) == -1)
+            return -1;
+
+        index = onion_c->num_friends;
+        memset(&(onion_c->friends_list[onion_c->num_friends]), 0, sizeof(Onion_Friend));
+        ++onion_c->num_friends;
+    }
+
+    onion_c->friends_list[index].status = 1;
+    memcpy(onion_c->friends_list[index].real_client_id, client_id, crypto_box_PUBLICKEYBYTES);
+    return index;
+}
+
+/* Delete a friend.
+ *
+ * return -1 on failure.
+ * return the deleted friend number on success.
+ */
+int onion_delfriend(Onion_Client *onion_c, int friend_num)
+{
+    if ((uint32_t)friend_num >= onion_c->num_friends)
+        return -1;
+
+    //TODO
+    memset(&(onion_c->friends_list[friend_num]), 0, sizeof(Onion_Friend));
+    uint32_t i;
+
+    for (i = onion_c->num_friends; i != 0; --i) {
+        if (onion_c->friends_list[i].status != 0)
+            break;
+    }
+
+    if (onion_c->num_friends != i) {
+        onion_c->num_friends = i;
+        realloc_onion_friends(onion_c, onion_c->num_friends);
+    }
+
+    return friend_num;
+}
+
+/* Get the ip of friend friendnum and put it in ip_port
+ *
+ * return -1 on failure
+ * return 0 on success
+ *
+ */
+int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
+{
+    if ((uint32_t)friend_num >= onion_c->num_friends)
+        return -1;
+
+    //TODO
+    return 0;
+}
+
 /* Takes 3 random nodes that we know and puts them in nodes
  *
  * nodes must be longer than 3.
@@ -329,7 +448,7 @@ static int handle_data_response(void *object, IP_Port source, uint8_t *packet, u
  */
 int random_path(Onion_Client *onion_c, Node_format *nodes)
 {
-
+//TODO
     return -1;
 }
 

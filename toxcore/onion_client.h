@@ -60,11 +60,34 @@ typedef struct {
     uint64_t last_run;
 } Onion_Client;
 
+/* Add a friend who we want to connect to.
+ *
+ * return -1 on failure.
+ * return the friend number on success or if the friend was already added.
+ */
+int onion_friend_num(Onion_Client *onion_c, uint8_t *client_id);
+
+/* Add a friend who we want to connect to.
+ *
+ * return -1 on failure.
+ * return the friend number on success.
+ */
 int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id);
 
-int onion_delfriend(Onion_Client *onion_c, uint8_t *client_id);
+/* Delete a friend.
+ *
+ * return -1 on failure.
+ * return the deleted friend number on success.
+ */
+int onion_delfriend(Onion_Client *onion_c, int friend_num);
 
-int onion_getfriendip(Onion_Client *onion_c, uint8_t *client_id, IP_Port *ip_port);
+/* Get the ip of friend friendnum and put it in ip_port
+ *
+ * return -1 on failure
+ * return 0 on success
+ *
+ */
+int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
 
 /* Takes 3 random nodes that we know and puts them in nodes
  *
