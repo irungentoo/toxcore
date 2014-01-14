@@ -75,11 +75,13 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
  * send the packet to that person in the form of a response)
  *
  * public_key is the real public key of the node which we want to send the data of length length to.
+ * nonce is the nonce to encrypt this packet with
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *data, uint16_t length);
+int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *nonce, uint8_t *data,
+                      uint16_t length);
 
 
 Onion_Announce *new_onion_announce(DHT *dht);

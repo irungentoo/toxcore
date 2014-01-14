@@ -78,16 +78,17 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
  * send the packet to that person in the form of a response)
  *
  * public_key is the real public key of the node which we want to send the data of length length to.
+ * nonce is the nonce to encrypt this packet with
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *data, uint16_t length)
+int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *nonce, uint8_t *data, uint16_t length)
 {
     uint8_t packet[DATA_REQUEST_MIN_SIZE + length];
     packet[0] = NET_PACKET_ONION_DATA_REQUEST;
     memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
-    new_nonce(packet + 1 + crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
 
     uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];

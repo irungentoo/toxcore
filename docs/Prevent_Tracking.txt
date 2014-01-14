@@ -108,6 +108,9 @@ data to route request packet:
 encrypted with that temporary private key and the nonce and the real public key of the destination node:[data]
 (if Node D contains the ret data for the node, it sends the stuff in this packet as a data to route response packet to the right node)
 
+The data in the previous packet is in format: [real public key of sender]
+encrypted with real private key of the sender, the nonce in the data packet and the real public key of the reciever:[[uint8_t id][data (optional)]]
+
 Data sent to us:
 announce response packet:
 [uint8_t packet id (132)][data to send back in response(fixed size)][nonce]
@@ -117,6 +120,8 @@ encrypted with the DHT private key of Node D, the public key in the request and 
 data to route response packet:
 [uint8_t packet id (134)][nonce][temporary just generated public key]
 encrypted with that temporary private key and the nonce and the real public key of the destination node:[data]
+
+
 Onion packet (response):
 
 initial (sent from node D to node C):

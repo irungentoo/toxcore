@@ -48,6 +48,8 @@ typedef struct {
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
 } Onion_Friend;
 
+typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
+
 typedef struct {
     DHT     *dht;
     Networking_Core *net;
@@ -58,6 +60,11 @@ typedef struct {
 
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
     uint64_t last_run;
+
+    struct {
+        oniondata_handler_callback function;
+        void *object;
+    } Onion_Data_Handlers[256];
 } Onion_Client;
 
 /* Add a friend who we want to connect to.
@@ -98,6 +105,19 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
  *
  */
 int random_path(Onion_Client *onion_c, Node_format *nodes);
+
+/* Send data of length length to friendnum.
+ * This data will be recieved by the friend using the Onion_Data_Handlers callbacks.
+ *
+ * Even if this function succeeds, the friend might not recieve any data.
+ *
+ * return the number of packets sent on success
+ * return -1 on failure.
+ */
+int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32_t length);
+
+/* Function to call when onion data packet with contents beginning with byte is received. */
+void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object);
 
 void do_onion_client(Onion_Client *onion_c);
 

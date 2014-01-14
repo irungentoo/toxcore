@@ -30,6 +30,7 @@
 
 #define ANNOUNCE_TIMEOUT 10
 
+uint8_t zero_ping[ONION_PING_ID_SIZE];
 
 /* Creates a sendback for use in an announce request.
  *
@@ -297,26 +298,93 @@ static int handle_announce_response(void *object, IP_Port source, uint8_t *packe
     return 0;
 }
 
+#define DATA_IN_RESPONSE_MIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+
 static int handle_data_response(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     Onion_Client *onion_c = object;
 
-    if (length <= ONION_DATA_RESPONSE_MIN_SIZE)
+    if (length <= (ONION_DATA_RESPONSE_MIN_SIZE + DATA_IN_RESPONSE_MIN_SIZE))
         return 1;
 
     if (length > MAX_DATA_SIZE)
         return 1;
 
-    uint8_t plain[length - ONION_DATA_RESPONSE_MIN_SIZE];
+    uint8_t temp_plain[length - ONION_DATA_RESPONSE_MIN_SIZE];
     int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion_c->dht->c->self_secret_key, packet + 1,
                            packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
-                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES), plain);
+                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES), temp_plain);
+
+    if ((uint32_t)len != sizeof(temp_plain))
+        return 1;
+
+    uint8_t plain[sizeof(temp_plain) - DATA_IN_RESPONSE_MIN_SIZE];
+    len = decrypt_data(temp_plain, onion_c->dht->c->self_secret_key, packet + 1, temp_plain + crypto_box_PUBLICKEYBYTES,
+                       sizeof(temp_plain) - crypto_box_PUBLICKEYBYTES, plain);
 
     if ((uint32_t)len != sizeof(plain))
         return 1;
 
-    //TODO do something with the plain
-    return 0;
+    if (!onion_c->Onion_Data_Handlers[plain[0]].function)
+        return 1;
+
+    return onion_c->Onion_Data_Handlers[plain[0]].function(onion_c->Onion_Data_Handlers[plain[0]].object, temp_plain, plain,
+            sizeof(plain));
+}
+
+/* Send data of length length to friendnum.
+ * This data will be recieved by the friend using the Onion_Data_Handlers callbacks.
+ *
+ * Even if this function succeeds, the friend might not recieve any data.
+ *
+ * return the number of packets sent on success
+ * return -1 on failure.
+ */
+int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32_t length)
+{
+    if ((uint32_t)friend_num >= onion_c->num_friends)
+        return -1;
+
+    if (length + DATA_IN_RESPONSE_MIN_SIZE + ONION_DATA_RESPONSE_MIN_SIZE + ONION_SEND_1 > MAX_DATA_SIZE)
+        return -1;
+
+    if (length == 0)
+        return -1;
+
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    new_nonce(nonce);
+
+    uint8_t packet[DATA_IN_RESPONSE_MIN_SIZE + length];
+    memcpy(packet, onion_c->dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
+    int len = encrypt_data(onion_c->friends_list[friend_num].real_client_id, onion_c->dht->c->self_secret_key, nonce, data,
+                           length, packet + crypto_box_PUBLICKEYBYTES);
+
+    if ((uint32_t)len + crypto_box_PUBLICKEYBYTES != sizeof(packet))
+        return -1;
+
+    uint32_t i, good = 0;
+    Onion_Node *list_nodes = onion_c->friends_list[friend_num].clients_list;
+
+    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+        if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT))
+            continue;
+
+        if (memcmp(list_nodes[i].ping_id, zero_ping, ONION_PING_ID_SIZE) == 0) {
+            Node_format nodes[4];
+
+            if (random_path(onion_c, nodes) == -1)
+                continue;
+
+            memcpy(nodes[3].client_id, list_nodes[i].client_id, crypto_box_PUBLICKEYBYTES);
+            nodes[3].ip_port = list_nodes[i].ip_port;
+
+            if (send_data_request(onion_c->dht, nodes, onion_c->friends_list[friend_num].real_client_id, nonce, packet,
+                                  sizeof(packet)) == 0)
+                ++good;
+        }
+    }
+
+    return good;
 }
 
 /* Get the friend_num of a friend.
@@ -382,7 +450,7 @@ int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id)
         }
     }
 
-    if (index == ~0) {
+    if (index == (uint32_t)~0) {
         if (realloc_onion_friends(onion_c, onion_c->num_friends + 1) == -1)
             return -1;
 
@@ -453,7 +521,7 @@ int random_path(Onion_Client *onion_c, Node_format *nodes)
 }
 
 #define ANNOUNCE_FRIEND 30
-uint8_t zero_ping[ONION_PING_ID_SIZE];
+
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
     if (friendnum >= onion_c->num_friends)
@@ -488,6 +556,12 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
     }
 
     //TODO send packets to friend telling them our fake DHT id.
+}
+/* Function to call when onion data packet with contents beginning with byte is received. */
+void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object)
+{
+    onion_c->Onion_Data_Handlers[byte].function = cb;
+    onion_c->Onion_Data_Handlers[byte].object = object;
 }
 
 #define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 10

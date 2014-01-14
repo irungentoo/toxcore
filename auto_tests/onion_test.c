@@ -96,6 +96,7 @@ static int handle_test_3(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
+uint8_t nonce[crypto_box_NONCEBYTES];
 static int handled_test_4;
 static int handle_test_4(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
@@ -105,6 +106,10 @@ static int handle_test_4(void *object, IP_Port source, uint8_t *packet, uint32_t
         return 1;
 
     uint8_t plain[sizeof("Install gentoo")] = {0};
+
+    if (memcmp(nonce, packet + 1, crypto_box_NONCEBYTES) != 0)
+        return 1;
+
     int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->c->self_secret_key, packet + 1,
                            packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, sizeof("Install gentoo") + crypto_box_MACBYTES, plain);
 
@@ -195,7 +200,9 @@ START_TEST(test_basic)
     c_sleep(1000);
     Onion *onion3 = new_onion(new_DHT(new_net_crypto(new_networking(ip, 34569))));
     ck_assert_msg((onion3 != NULL), "Onion failed initializing.");
-    ret = send_data_request(onion3->dht, nodes, onion1->dht->c->self_public_key, (uint8_t *)"Install gentoo",
+
+    new_nonce(nonce);
+    ret = send_data_request(onion3->dht, nodes, onion1->dht->c->self_public_key, nonce, (uint8_t *)"Install gentoo",
                             sizeof("Install gentoo"));
     ck_assert_msg(ret == 0, "Failed to create/send onion data_request packet.");
     handled_test_4 = 0;
