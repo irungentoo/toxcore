@@ -1374,13 +1374,14 @@ void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_
 
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 {
-    if (dht->assoc) {
-        IPPTs ippts;
-        ippts.ip_port = ip_port;
-        ippts.timestamp = 0;
+    /*
+       if (dht->assoc) {
+           IPPTs ippts;
+           ippts.ip_port = ip_port;
+           ippts.timestamp = 0;
 
-        Assoc_add_entry(dht->assoc, public_key, &ippts, NULL, 0);
-    }
+           Assoc_add_entry(dht->assoc, public_key, &ippts, NULL, 0);
+       }*/
 
     getnodes(dht, ip_port, public_key, dht->c->self_public_key, NULL);
 }

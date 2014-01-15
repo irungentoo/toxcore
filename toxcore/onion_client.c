@@ -30,7 +30,7 @@
 
 #define ANNOUNCE_TIMEOUT 10
 
-uint8_t zero_ping[ONION_PING_ID_SIZE];
+static uint8_t zero_ping[ONION_PING_ID_SIZE];
 
 /* Creates a sendback for use in an announce request.
  *
@@ -332,6 +332,48 @@ static int handle_data_response(void *object, IP_Port source, uint8_t *packet, u
             sizeof(plain));
 }
 
+#define FAKEID_DATA_ID 156
+#define FAKEID_DATA_MIN_LENGTH (1 + crypto_box_PUBLICKEYBYTES)
+#define FAKEID_DATA_MAX_LENGTH (FAKEID_DATA_MIN_LENGTH + sizeof(Node_format)*MAX_SENT_NODES)
+static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t length)
+{
+    Onion_Client *onion_c = object;
+
+    if (length < FAKEID_DATA_MIN_LENGTH)
+        return 1;
+
+    if (length > FAKEID_DATA_MAX_LENGTH)
+        return 1;
+
+    if ((length - FAKEID_DATA_MIN_LENGTH) % sizeof(Node_format) != 0)
+        return 1;
+
+    int friend_num = onion_friend_num(onion_c, source_pubkey);
+
+    if (friend_num == -1)
+        return 1;
+
+    if (memcmp(data + 1, onion_c->friends_list[friend_num].fake_client_id, crypto_box_PUBLICKEYBYTES) != 0) {
+        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
+
+        if (DHT_addfriend(onion_c->dht, data + 1) == 1) {
+            return 1;
+        }
+    }
+
+    uint16_t num_nodes = (length - FAKEID_DATA_MIN_LENGTH) / sizeof(Node_format);
+    Node_format nodes[num_nodes];
+    memcpy(nodes, data + 1 + crypto_box_PUBLICKEYBYTES, sizeof(nodes));
+    uint32_t i;
+
+    for (i = 0; i < num_nodes; ++i) {
+        to_host_family(&nodes[i].ip_port.ip);
+        DHT_bootstrap(onion_c->dht, nodes[i].ip_port, nodes[i].client_id);
+    }
+
+    //TODO replay protection
+    return 0;
+}
 /* Send data of length length to friendnum.
  * This data will be recieved by the friend using the Onion_Data_Handlers callbacks.
  *
@@ -633,6 +675,7 @@ Onion_Client *new_onion_client(DHT *dht)
 
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_announce_response, onion_c);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_data_response, onion_c);
+    oniondata_registerhandler(onion_c, FAKEID_DATA_ID, &handle_fakeid_announce, onion_c);
 
     return onion_c;
 }
