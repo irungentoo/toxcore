@@ -112,6 +112,21 @@ autoreconf -i
 make
 make install
 ```
+
+If execution fails with errors like "dyld: Library not loaded: /opt/tox-im/lib/libtoxcore.0.dylib", you may need to specify libsodium path:
+
+Determine pathes:
+```
+brew list libsodium
+```
+
+Configure include and lib folder and build again:
+```bash
+./configure--with-libsodium-headers=/usr/local/Cellar/libsodium/0.4.5/include/ --with-libsodium-libs=/usr/local/Cellar/libsodium/0.4.5/lib/
+make
+make install
+```
+
 Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
