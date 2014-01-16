@@ -48,9 +48,9 @@
 #define PING_INTERVAL 60
 
 /* The number of seconds for a non responsive node to become bad. */
-#define PINGS_MISSED_NODE_GOES_BAD 3
+#define PINGS_MISSED_NODE_GOES_BAD 1
 #define PING_ROUNDTRIP 2
-#define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * PING_INTERVAL + PING_ROUNDTRIP)
+#define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * (PING_INTERVAL + PING_ROUNDTRIP))
 
 /* Redefinitions of variables for safe transfer over wire. */
 #define TOX_AF_INET 2
@@ -219,6 +219,13 @@ int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2);
  */
 int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
                     uint8_t want_good);
+
+
+/* Put up to max_num nodes in nodes from the closelist.
+ *
+ * return the number of nodes.
+ */
+uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);

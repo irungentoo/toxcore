@@ -28,6 +28,10 @@
 
 #define MAX_ONION_CLIENTS 8
 #define ONION_NODE_TIMEOUT 200
+
+/* The interval in seconds at which to tell our friends where we are */
+#define ONION_FAKEID_INTERVAL 60
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -46,6 +50,8 @@ typedef struct {
     Onion_Node clients_list[MAX_ONION_CLIENTS];
     uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+
+    uint64_t last_fakeid_sent;
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);

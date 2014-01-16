@@ -359,6 +359,8 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
         if (DHT_addfriend(onion_c->dht, data + 1) == 1) {
             return 1;
         }
+
+        memcpy(onion_c->friends_list[friend_num].fake_client_id, data + 1, crypto_box_PUBLICKEYBYTES);
     }
 
     uint16_t num_nodes = (length - FAKEID_DATA_MIN_LENGTH) / sizeof(Node_format);
@@ -368,7 +370,7 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
 
     for (i = 0; i < num_nodes; ++i) {
         to_host_family(&nodes[i].ip_port.ip);
-        DHT_bootstrap(onion_c->dht, nodes[i].ip_port, nodes[i].client_id);
+        DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].client_id, onion_c->friends_list[friend_num].fake_client_id);
     }
 
     //TODO replay protection
@@ -427,6 +429,24 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
     }
 
     return good;
+}
+
+/* Send the packets to tell our friends
+ * return the number of packets sent on success
+ * return -1 on failure.
+ */
+static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num)
+{
+    if (friend_num >= onion_c->num_friends)
+        return -1;
+
+    uint8_t data[FAKEID_DATA_MAX_LENGTH];
+    data[0] = FAKEID_DATA_ID;
+    memcpy(data + 1, onion_c->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    Node_format nodes[MAX_SENT_NODES];
+    uint16_t num_nodes = closelist_nodes(onion_c->dht, nodes, MAX_SENT_NODES);
+    memcpy(data + FAKEID_DATA_MIN_LENGTH, nodes, sizeof(Node_format) * num_nodes);
+    return send_onion_data(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + sizeof(Node_format) * num_nodes);
 }
 
 /* Get the friend_num of a friend.
@@ -516,7 +536,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
 
-    //TODO
+    DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
     memset(&(onion_c->friends_list[friend_num]), 0, sizeof(Onion_Friend));
     uint32_t i;
 
@@ -544,8 +564,13 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
 
-    //TODO
-    return 0;
+    if (onion_c->friends_list[friend_num].status == 0)
+        return -1;
+
+    if (DHT_getfriendip(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, ip_port) == 1)
+        return 0;
+
+    return -1;
 }
 
 /* Takes 3 random nodes that we know and puts them in nodes
@@ -597,7 +622,10 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
             client_send_announce_request(onion_c, friendnum + 1, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
     }
 
-    //TODO send packets to friend telling them our fake DHT id.
+    /* send packets to friend telling them our fake DHT id. */
+    if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_sent, ONION_FAKEID_INTERVAL))
+        if (send_fakeid_announce(onion_c, friendnum) > 3)
+            onion_c->friends_list[friendnum].last_fakeid_sent = unix_time();
 }
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object)

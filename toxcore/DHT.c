@@ -2021,6 +2021,44 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
         return nodes_list[rand() % num_nodes];
 }
 
+/* Put up to max_num nodes in nodes from the closelist.
+ *
+ * return the number of nodes.
+ */
+uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
+{
+    if (max_num == 0)
+        return 0;
+
+    uint16_t count = 0;
+    Client_data *list = dht->close_clientlist;
+
+    uint32_t i;
+    for (i = LCLIENT_LIST; i != 0; --i) {
+        IPPTsPng *assoc = NULL;
+
+        if (!is_timeout(list[i - 1].assoc4.timestamp, BAD_NODE_TIMEOUT))
+            assoc = &list[i - 1].assoc4;
+
+        if (!is_timeout(list[i - 1].assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+            if (assoc == NULL)
+                assoc = &list[i - 1].assoc6;
+            else if (rand() % 2)
+                assoc = &list[i - 1].assoc6;
+        }
+
+        if (assoc != NULL) {
+            memcpy(nodes[count].client_id, list[i - 1].client_id, CLIENT_ID_SIZE);
+            nodes[count].ip_port = assoc->ip_port;
+            ++count;
+
+            if (count >= max_num)
+                return count;
+        }
+    }
+
+    return count;
+}
 
 void do_hardening(DHT *dht)
 {
