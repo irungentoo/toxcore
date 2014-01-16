@@ -447,6 +447,8 @@ static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num)
     uint16_t num_nodes = closelist_nodes(onion_c->dht, nodes, MAX_SENT_NODES);
     memcpy(data + FAKEID_DATA_MIN_LENGTH, nodes, sizeof(Node_format) * num_nodes);
     return send_onion_data(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + sizeof(Node_format) * num_nodes);
+    //TODO: somehow make this function send our DHT client id directly to the other if we know theirs but they don't
+    //seem to know ours.
 }
 
 /* Get the friend_num of a friend.
@@ -583,8 +585,10 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
  */
 int random_path(Onion_Client *onion_c, Node_format *nodes)
 {
-//TODO
-    return -1;
+    if (random_nodes_path(onion_c->dht, nodes, 3) != 3)
+        return -1;
+
+    return 0;
 }
 
 #define ANNOUNCE_FRIEND 30

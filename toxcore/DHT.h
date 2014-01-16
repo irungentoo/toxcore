@@ -227,6 +227,14 @@ int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_fa
  */
 uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 
+/* Put up to max_num random nodes in nodes.
+ *
+ * return the number of nodes.
+ *
+ * NOTE:this is used to pick nodes for paths.
+ */
+uint16_t random_nodes_path(DHT *dht, Node_format *nodes, uint16_t max_num);
+
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);
 
