@@ -154,9 +154,9 @@ typedef struct {
     uint16_t       num_friends;
 
     struct PING   *ping;
-
+#ifdef ENABLE_ASSOC_DHT
     struct Assoc  *assoc;
-
+#endif
     uint64_t       last_run;
 } DHT;
 /*----------------------------------------------------------------------------------*/

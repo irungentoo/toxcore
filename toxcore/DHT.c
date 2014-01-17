@@ -28,7 +28,11 @@
 #endif
 
 #include "DHT.h"
+
+#ifdef ENABLE_ASSOC_DHT
 #include "assoc.h"
+#endif
+
 #include "ping.h"
 
 #include "network.h"
@@ -304,7 +308,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         if (LAN_ip(ipptp->ip_port.ip) == 0 && !is_LAN)
             continue;
 
-        if (want_good && hardening_correct(&ipptp->hardening) != HARDENING_ALL_OK && !id_equal(client_id, client->client_id))
+        if (LAN_ip(ipptp->ip_port.ip) != 0 && want_good && hardening_correct(&ipptp->hardening) != HARDENING_ALL_OK && !id_equal(client_id, client->client_id))
             continue;
 
         if (num_nodes < MAX_SENT_NODES) {
@@ -366,9 +370,13 @@ static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *n
 int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
                     uint8_t want_good)
 {
+#ifdef ENABLE_ASSOC_DHT
+
     if (!dht->assoc)
+#endif
         return get_somewhat_close_nodes(dht, client_id, nodes_list, sa_family, is_LAN, want_good);
 
+#ifdef ENABLE_ASSOC_DHT
     Client_data *result[MAX_SENT_NODES];
 
     Assoc_close_entries request;
@@ -420,6 +428,7 @@ int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_fa
     }
 
     return num_returned;
+#endif
 }
 
 /* Replace first bad (or empty) node with this one.
@@ -566,7 +575,7 @@ static int replace_good(   Client_data    *list,
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 1;
 
-    sort_list(list, length, comp_client_id);
+    //sort_list(list, length, comp_client_id);
 
     int8_t replace = -1;
 
@@ -669,6 +678,8 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
             used++;
     }
 
+#ifdef ENABLE_ASSOC_DHT
+
     if (dht->assoc) {
         IPPTs ippts;
 
@@ -678,6 +689,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
         Assoc_add_entry(dht->assoc, client_id, &ippts, NULL, used ? 1 : 0);
     }
 
+#endif
     return used;
 }
 
@@ -734,6 +746,7 @@ static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8
     }
 
 end:
+#ifdef ENABLE_ASSOC_DHT
 
     if (dht->assoc) {
         IPPTs ippts;
@@ -744,6 +757,7 @@ end:
         Assoc_add_entry(dht->assoc, client_id, &ippts, NULL, used ? 1 : 0);
     }
 
+#endif
     return 0;
 }
 
@@ -1177,6 +1191,7 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
 
     dht->friends_list[dht->num_friends].nat.NATping_id = random_64b();
     ++dht->num_friends;
+#ifdef ENABLE_ASSOC_DHT
 
     if (dht->assoc) {
         /* get up to MAX_FRIEND_CLIENTS connectable nodes */
@@ -1206,6 +1221,7 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
         }
     }
 
+#endif
     /*TODO: make this better?*/
     get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);
 
@@ -1374,14 +1390,15 @@ void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_
 
 void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
 {
-    /*
+    /*#ifdef ENABLE_ASSOC_DHT
        if (dht->assoc) {
            IPPTs ippts;
            ippts.ip_port = ip_port;
            ippts.timestamp = 0;
 
            Assoc_add_entry(dht->assoc, public_key, &ippts, NULL, 0);
-       }*/
+       }
+       #endif*/
 
     getnodes(dht, ip_port, public_key, dht->self_public_key, NULL);
 }
@@ -2221,8 +2238,9 @@ DHT *new_DHT(Net_Crypto *c)
 
     new_symmetric_key(dht->secret_symmetric_key);
     crypto_box_keypair(dht->self_public_key, dht->self_secret_key);
+#ifdef ENABLE_ASSOC_DHT
     dht->assoc = new_Assoc_default(dht->self_public_key);
-
+#endif
     return dht;
 }
 
@@ -2239,15 +2257,19 @@ void do_DHT(DHT *dht)
     do_NAT(dht);
     do_toping(dht->ping);
     do_hardening(dht);
+#ifdef ENABLE_ASSOC_DHT
 
     if (dht->assoc)
         do_Assoc(dht->assoc, dht);
 
+#endif
     dht->last_run = unix_time();
 }
 void kill_DHT(DHT *dht)
 {
+#ifdef ENABLE_ASSOC_DHT
     kill_Assoc(dht->assoc);
+#endif
     kill_ping(dht->ping);
     free(dht->friends_list);
     free(dht);

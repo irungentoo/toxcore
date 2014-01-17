@@ -2214,9 +2214,12 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
+#ifdef ENABLE_ASSOC_DHT
 
                 if (m->dht->assoc)
                     Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
+
+#endif
             } else
                 return -1;    /* critical */
 
