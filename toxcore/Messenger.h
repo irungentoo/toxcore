@@ -31,6 +31,7 @@
 #include "friend_requests.h"
 #include "LAN_discovery.h"
 #include "group_chats.h"
+#include "onion_client.h"
 
 #define MAX_NAME_LENGTH 128
 #define MAX_STATUSMESSAGE_LENGTH 1007
@@ -130,6 +131,7 @@ enum {
 
 typedef struct {
     uint8_t client_id[CLIENT_ID_SIZE];
+    uint32_t onion_friendnum;
     int crypt_connection_id;
     uint64_t friendrequest_lastsent; // Time at which the last friend request was sent.
     uint32_t friendrequest_timeout; // The timeout between successful friendrequest sending attempts.
@@ -160,6 +162,11 @@ typedef struct Messenger {
     Networking_Core *net;
     Net_Crypto *net_crypto;
     DHT *dht;
+
+    Onion *onion;
+    Onion_Announce *onion_a;
+    Onion_Client *onion_c;
+
     Friend_Requests fr;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;

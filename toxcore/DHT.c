@@ -285,7 +285,7 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
          */
         sa_family_t ip_treat_as_family = client_ip->family;
 
-        if ((dht->c->lossless_udp->net->family == AF_INET6) &&
+        if ((dht->net->family == AF_INET6) &&
                 (client_ip->family == AF_INET6)) {
             /* socket is AF_INET6, address claims AF_INET6:
              * check for embedded IPv4-in-IPv6 (shouldn't happen anymore,
@@ -636,10 +636,10 @@ int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id)
     if (!client_or_ip_port_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
         if (replace_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
             if (replace_possible_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
-                                     dht->c->self_public_key)) {
+                                     dht->self_public_key)) {
                 /* If we can't replace bad nodes we try replacing good ones. */
                 if (!replace_good(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
-                                  dht->c->self_public_key))
+                                  dht->self_public_key))
                     used++;
             } else
                 used++;
@@ -697,7 +697,7 @@ static int returnedip_ports(DHT *dht, IP_Port ip_port, uint8_t *client_id, uint8
         ip_port.ip.ip4.uint32 = ip_port.ip.ip6.uint32[3];
     }
 
-    if (id_equal(client_id, dht->c->self_public_key)) {
+    if (id_equal(client_id, dht->self_public_key)) {
         for (i = 0; i < LCLIENT_LIST; ++i) {
             if (id_equal(nodeclient_id, dht->close_clientlist[i].client_id)) {
                 if (ip_port.ip.family == AF_INET) {
@@ -754,7 +754,7 @@ end:
 static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node)
 {
     /* Check if packet is going to be sent to ourself. */
-    if (id_equal(public_key, dht->c->self_public_key))
+    if (id_equal(public_key, dht->self_public_key))
         return -1;
 
     uint8_t plain_message[NODES_ENCRYPTED_MESSAGE_LENGTH] = {0};
@@ -794,7 +794,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     memcpy(plain + CLIENT_ID_SIZE, encrypted_message, NODES_ENCRYPTED_MESSAGE_LENGTH);
 
     int len = encrypt_data( public_key,
-                            dht->c->self_secret_key,
+                            dht->self_secret_key,
                             nonce,
                             plain,
                             CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
@@ -804,11 +804,11 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
         return -1;
 
     data[0] = NET_PACKET_GET_NODES;
-    memcpy(data + 1, dht->c->self_public_key, CLIENT_ID_SIZE);
+    memcpy(data + 1, dht->self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(dht->c->lossless_udp->net, ip_port, data, sizeof(data));
+    return sendpacket(dht->net, ip_port, data, sizeof(data));
 }
 
 /* Send a send nodes response. */
@@ -818,7 +818,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data)
 {
     /* Check if packet is going to be sent to ourself. */
-    if (id_equal(public_key, dht->c->self_public_key))
+    if (id_equal(public_key, dht->self_public_key))
         return -1;
 
     size_t Node4_format_size = sizeof(Node4_format);
@@ -863,7 +863,7 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
 
     memcpy(plain + num_nodes * Node4_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
     int len = encrypt_data( public_key,
-                            dht->c->self_secret_key,
+                            dht->self_secret_key,
                             nonce,
                             plain,
                             num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
@@ -874,11 +874,11 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
         return -1;
 
     data[0] = NET_PACKET_SEND_NODES;
-    memcpy(data + 1, dht->c->self_public_key, CLIENT_ID_SIZE);
+    memcpy(data + 1, dht->self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
+    return sendpacket(dht->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
 void to_net_family(IP *ip)
@@ -904,7 +904,7 @@ void to_host_family(IP *ip)
 static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data)
 {
     /* Check if packet is going to be sent to ourself. */
-    if (id_equal(public_key, dht->c->self_public_key))
+    if (id_equal(public_key, dht->self_public_key))
         return -1;
 
     size_t Node_format_size = sizeof(Node_format);
@@ -930,7 +930,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
     memcpy(plain, nodes_list, num_nodes * Node_format_size);
     memcpy(plain + num_nodes * Node_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
     int len = encrypt_data( public_key,
-                            dht->c->self_secret_key,
+                            dht->self_secret_key,
                             nonce,
                             plain,
                             num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
@@ -940,11 +940,11 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
         return -1;
 
     data[0] = NET_PACKET_SEND_NODES_IPV6;
-    memcpy(data + 1, dht->c->self_public_key, CLIENT_ID_SIZE);
+    memcpy(data + 1, dht->self_public_key, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
 
-    return sendpacket(dht->c->lossless_udp->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
+    return sendpacket(dht->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
 static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
@@ -956,13 +956,13 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
         return 1;
 
     /* Check if packet is from ourself. */
-    if (id_equal(packet + 1, dht->c->self_public_key))
+    if (id_equal(packet + 1, dht->self_public_key))
         return 1;
 
     uint8_t plain[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
 
     int len = decrypt_data( packet + 1,
-                            dht->c->self_secret_key,
+                            dht->self_secret_key,
                             packet + 1 + CLIENT_ID_SIZE,
                             packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                             CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
@@ -1038,7 +1038,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
 
     int len = decrypt_data(
                   packet + 1,
-                  dht->c->self_secret_key,
+                  dht->self_secret_key,
                   packet + 1 + CLIENT_ID_SIZE,
                   packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                   num_nodes * node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
@@ -1343,7 +1343,7 @@ static void do_DHT_friends(DHT *dht)
  */
 static void do_Close(DHT *dht)
 {
-    uint8_t not_killed = do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->c->self_public_key,
+    uint8_t not_killed = do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->self_public_key,
                          dht->close_clientlist, LCLIENT_LIST);
 
     if (!not_killed) {
@@ -1383,7 +1383,7 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key)
            Assoc_add_entry(dht->assoc, public_key, &ippts, NULL, 0);
        }*/
 
-    getnodes(dht, ip_port, public_key, dht->c->self_public_key, NULL);
+    getnodes(dht, ip_port, public_key, dht->self_public_key, NULL);
 }
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, uint8_t *public_key)
@@ -1427,9 +1427,9 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
             Client_data *client = &dht->close_clientlist[i];
 
             if (ip_isset(&client->assoc6.ip_port.ip))
-                return sendpacket(dht->c->lossless_udp->net, client->assoc6.ip_port, packet, length);
+                return sendpacket(dht->net, client->assoc6.ip_port, packet, length);
             else if (ip_isset(&client->assoc4.ip_port.ip))
-                return sendpacket(dht->c->lossless_udp->net, client->assoc4.ip_port, packet, length);
+                return sendpacket(dht->net, client->assoc4.ip_port, packet, length);
             else
                 break;
         }
@@ -1552,7 +1552,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
             /* If ip is not zero and node is good. */
             if (ip_isset(&assoc->ret_ip_port.ip) &&
                     !is_timeout(assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
-                int retval = sendpacket(dht->c->lossless_udp->net, assoc->ip_port, packet, length);
+                int retval = sendpacket(dht->net, assoc->ip_port, packet, length);
 
                 if ((unsigned int)retval == length) {
                     ++sent;
@@ -1606,7 +1606,7 @@ static int routeone_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint
     if (n < 1)
         return 0;
 
-    int retval = sendpacket(dht->c->lossless_udp->net, ip_list[rand() % n], packet, length);
+    int retval = sendpacket(dht->net, ip_list[rand() % n], packet, length);
 
     if ((unsigned int)retval == length)
         return 1;
@@ -1647,7 +1647,7 @@ static int send_NATping(DHT *dht, uint8_t *public_key, uint64_t ping_id, uint8_t
     data[0] = type;
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
     /* 254 is NAT ping request packet id */
-    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, data,
+    int len = create_request(dht->self_public_key, dht->self_secret_key, packet, public_key, data,
                              sizeof(uint64_t) + 1, CRYPTO_PACKET_NAT_PING);
 
     if (len == -1)
@@ -1839,13 +1839,13 @@ static int send_hardening_req(DHT *dht, Node_format *sendto, uint8_t type, uint8
     uint8_t data[HARDREQ_DATA_SIZE] = {0};
     data[0] = type;
     memcpy(data + 1, contents, length);
-    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, sendto->client_id, data,
+    int len = create_request(dht->self_public_key, dht->self_secret_key, packet, sendto->client_id, data,
                              sizeof(data), CRYPTO_PACKET_HARDENING);
 
     if (len == -1)
         return -1;
 
-    return sendpacket(dht->c->lossless_udp->net, sendto->ip_port, packet, len);
+    return sendpacket(dht->net, sendto->ip_port, packet, len);
 }
 
 /* Send a get node hardening request */
@@ -1869,13 +1869,13 @@ static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, uint8_t *qu
     data[0] = CHECK_TYPE_GETNODE_RES;
     memcpy(data + 1, queried_client_id, CLIENT_ID_SIZE);
     memcpy(data + 1 + CLIENT_ID_SIZE, list, num_nodes * sizeof(Node_format));
-    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, sendto->client_id, data,
+    int len = create_request(dht->self_public_key, dht->self_secret_key, packet, sendto->client_id, data,
                              sizeof(data), CRYPTO_PACKET_HARDENING);
 
     if (len == -1)
         return -1;
 
-    return sendpacket(dht->c->lossless_udp->net, sendto->ip_port, packet, len);
+    return sendpacket(dht->net, sendto->ip_port, packet, len);
 }
 
 /* TODO: improve */
@@ -1906,7 +1906,7 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
     uint32_t i;
 
     for (i = 0; i < num; ++i) {
-        if (id_equal(nodes[i].client_id, dht->c->self_public_key)) {
+        if (id_equal(nodes[i].client_id, dht->self_public_key)) {
             ++counter;
             continue;
         }
@@ -2116,7 +2116,7 @@ uint16_t random_nodes_path(DHT *dht, Node_format *nodes, uint16_t max_num)
     uint32_t i;
 
     for (i = 0; i < max_num; ++i) {
-        uint16_t rand_num = rand() % dht->num_friends + 1;
+        uint16_t rand_num = rand() % (dht->num_friends + 1);
 
         if (rand_num == dht->num_friends) {
             list = dht->close_clientlist;
@@ -2173,7 +2173,7 @@ void do_hardening(DHT *dht)
                 memcpy(to_test.client_id, client_id, CLIENT_ID_SIZE);
 
                 //TODO: The search id should maybe not be ours?
-                if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->c->self_public_key) > 0) {
+                if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->self_public_key) > 0) {
                     memcpy(cur_iptspng->hardening.send_nodes_pingedid, rand_node.client_id, CLIENT_ID_SIZE);
                     cur_iptspng->hardening.send_nodes_timestamp = unix_time();
                 }
@@ -2203,24 +2203,25 @@ DHT *new_DHT(Net_Crypto *c)
     if (dht == NULL)
         return NULL;
 
-    dht->ping = new_ping(dht, c);
+    dht->c = c;
+    dht->net = c->lossless_udp->net;
+    dht->ping = new_ping(dht);
 
     if (dht->ping == NULL) {
         kill_DHT(dht);
         return NULL;
     }
 
-    dht->c = c;
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_GET_NODES, &handle_getnodes, dht);
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES, &handle_sendnodes, dht);
-    networking_registerhandler(c->lossless_udp->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
+    networking_registerhandler(dht->net, NET_PACKET_GET_NODES, &handle_getnodes, dht);
+    networking_registerhandler(dht->net, NET_PACKET_SEND_NODES, &handle_sendnodes, dht);
+    networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
     init_cryptopackets(dht);
     cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
     cryptopacket_registerhandler(c, CRYPTO_PACKET_HARDENING, &handle_hardening, dht);
 
     new_symmetric_key(dht->secret_symmetric_key);
     crypto_box_keypair(dht->self_public_key, dht->self_secret_key);
-    dht->assoc = new_Assoc_default(dht->c->self_public_key);
+    dht->assoc = new_Assoc_default(dht->self_public_key);
 
     return dht;
 }

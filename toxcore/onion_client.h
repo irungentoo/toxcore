@@ -96,8 +96,9 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num);
 
 /* Get the ip of friend friendnum and put it in ip_port
  *
- * return -1 on failure
- * return 0 on success
+ *  return -1, -- if client_id does NOT refer to a friend
+ *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
+ *  return  1, ip if client_id refers to a friend and we found him
  *
  */
 int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);

@@ -23,8 +23,9 @@ void accept_friend_request(uint8_t *public_key, uint8_t *data, uint16_t length, 
 {
     Tox *t = userdata;
 
-    if (length == 7 && memcmp("Gentoo", data, 7) == 0)
+    if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
         tox_add_friend_norequest(t, public_key);
+    }
 }
 uint32_t messages_received;
 
@@ -61,10 +62,18 @@ START_TEST(test_few_clients)
     int test = tox_add_friend(tox3, address, "Gentoo", 7);
     ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
 
+    uint8_t off = 1;
+
     while (1) {
         tox_do(tox1);
         tox_do(tox2);
         tox_do(tox3);
+
+        if (tox_isconnected(tox1) && tox_isconnected(tox2) && tox_isconnected(tox3) && off) {
+            printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
+            off = 0;
+        }
+
 
         if (tox_get_friend_connection_status(tox2, 0) == 1 && tox_get_friend_connection_status(tox3, 0) == 1)
             break;

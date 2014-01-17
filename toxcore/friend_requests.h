@@ -24,7 +24,7 @@
 #ifndef FRIEND_REQUESTS_H
 #define FRIEND_REQUESTS_H
 
-#include "DHT.h"
+#include "onion_client.h"
 #include "net_crypto.h"
 
 
@@ -49,7 +49,7 @@ typedef struct {
 /* Try to send a friendrequest to peer with public_key.
  *  data is the data in the request and length is the length.
  */
-int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length);
+int send_friendrequest(Onion_Client *onion_c, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length);
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num);
 uint32_t get_nospam(Friend_Requests *fr);
@@ -67,7 +67,7 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uin
 void set_filter_function(Friend_Requests *fr, int (*function)(uint8_t *, void *), void *userdata);
 
 /* Sets up friendreq packet handlers. */
-void friendreq_init(Friend_Requests *fr, Net_Crypto *c);
+void friendreq_init(Friend_Requests *fr, Onion_Client *onion_c);
 
 
 #endif

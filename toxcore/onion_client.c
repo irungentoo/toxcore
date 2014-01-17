@@ -107,7 +107,7 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
 
     uint8_t sendback[ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
 
-    if (new_sendback(onion_c, 0, dest_pubkey, dest, sendback) == -1)
+    if (new_sendback(onion_c, num, dest_pubkey, dest, sendback) == -1)
         return -1;
 
     uint8_t zero_ping_id[ONION_PING_ID_SIZE] = {0};
@@ -230,7 +230,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
         reference_id = onion_c->friends_list[num - 1].real_client_id;
     }
 
-    uint32_t i;
+    uint32_t i, j;
     int lan_ips_accepted = (LAN_ip(source.ip) == 0);
 
     for (i = 0; i < num_nodes; ++i) {
@@ -242,7 +242,15 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
 
         if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
                 || id_closest(reference_id, list_nodes[0].client_id, nodes[i].client_id) == 2) {
-            client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].client_id, NULL);
+            /* check if node is already in list. */
+            for (j = 0; j < MAX_ONION_CLIENTS; ++j) {
+                if (memcmp(list_nodes[j].client_id, nodes[i].client_id, crypto_box_PUBLICKEYBYTES) == 0) {
+                    break;
+                }
+            }
+
+            if (j == MAX_ONION_CLIENTS)
+                client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].client_id, NULL);
         }
     }
 
@@ -525,6 +533,7 @@ int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id)
 
     onion_c->friends_list[index].status = 1;
     memcpy(onion_c->friends_list[index].real_client_id, client_id, crypto_box_PUBLICKEYBYTES);
+    crypto_box_keypair(onion_c->friends_list[index].temp_public_key, onion_c->friends_list[index].temp_secret_key);
     return index;
 }
 
@@ -557,8 +566,9 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
 
 /* Get the ip of friend friendnum and put it in ip_port
  *
- * return -1 on failure
- * return 0 on success
+ *  return -1, -- if client_id does NOT refer to a friend
+ *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
+ *  return  1, ip if client_id refers to a friend and we found him
  *
  */
 int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
@@ -569,10 +579,7 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
     if (onion_c->friends_list[friend_num].status == 0)
         return -1;
 
-    if (DHT_getfriendip(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, ip_port) == 1)
-        return 0;
-
-    return -1;
+    return DHT_getfriendip(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, ip_port);
 }
 
 /* Takes 3 random nodes that we know and puts them in nodes
@@ -620,7 +627,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
     if (count < MAX_ONION_CLIENTS / 2) {
         Node_format nodes_list[MAX_SENT_NODES];
         uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[i].real_client_id, nodes_list,
-                                             rand() % 2 ? AF_INET : AF_INET6, rand() % 2, 1);
+                                             rand() % 2 ? AF_INET : AF_INET6, 1, 0);
 
         for (i = 0; i < num_nodes; ++i)
             client_send_announce_request(onion_c, friendnum + 1, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
@@ -668,7 +675,7 @@ static void do_announce(Onion_Client *onion_c)
     if (count < MAX_ONION_CLIENTS / 2) {
         Node_format nodes_list[MAX_SENT_NODES];
         uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->dht->c->self_public_key, nodes_list,
-                                             rand() % 2 ? AF_INET : AF_INET6, rand() % 2, 1);
+                                             rand() % 2 ? AF_INET : AF_INET6, 1, 0);
 
         for (i = 0; i < num_nodes; ++i)
             client_send_announce_request(onion_c, 0, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
@@ -714,6 +721,9 @@ Onion_Client *new_onion_client(DHT *dht)
 
 void kill_onion_client(Onion_Client *onion_c)
 {
+    if (onion_c == NULL)
+        return;
+
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
     free(onion_c);

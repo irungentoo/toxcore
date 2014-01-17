@@ -365,11 +365,11 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
                 length > MAX_DATA_SIZE + crypto_box_MACBYTES)
             return 1;
 
-        if (memcmp(packet + 1, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) { // Check if request is for us.
+        if (memcmp(packet + 1, dht->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) { // Check if request is for us.
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t data[MAX_DATA_SIZE];
             uint8_t number;
-            int len = handle_request(dht->c->self_public_key, dht->c->self_secret_key, public_key, data, &number, packet, length);
+            int len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
 
             if (len == -1 || len == 0)
                 return 1;

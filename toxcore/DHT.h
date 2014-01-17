@@ -139,6 +139,7 @@ typedef struct {
 
 typedef struct {
     Net_Crypto  *c;
+    Networking_Core *net;
 
     Client_data    close_clientlist[LCLIENT_LIST];
     uint64_t       close_lastgetnodes;

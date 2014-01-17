@@ -321,6 +321,9 @@ Onion_Announce *new_onion_announce(DHT *dht)
 
 void kill_onion_announce(Onion_Announce *onion_a)
 {
+    if (onion_a == NULL)
+        return;
+
     networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, NULL, NULL);
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, NULL, NULL);
     free(onion_a);

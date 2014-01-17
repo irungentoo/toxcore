@@ -39,7 +39,7 @@
 #define LAN_DISCOVERY_INTERVAL 60
 
 /* Send a LAN discovery pcaket to the broadcast address with port port. */
-int send_LANdiscovery(uint16_t port, Net_Crypto *c);
+int send_LANdiscovery(uint16_t port, DHT *dht);
 
 /* Sets up packet handlers. */
 void LANdiscovery_init(DHT *dht);
