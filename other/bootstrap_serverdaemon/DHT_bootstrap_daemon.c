@@ -347,6 +347,13 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, 0);
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, server_conf.port)));
+    Onion *onion = new_onion(dht);
+    Onion_Announce *onion_a = new_onion_announce(dht);
+
+    if (!(onion && onion_a)) {
+        printf("Something failed to initialize.\n");
+        exit(1);
+    }
     /* Read the config file */
     printf("PID file: %s\n", server_conf.pid_file);
     printf("Key file: %s\n", server_conf.keys_file);
@@ -366,6 +373,10 @@ int main(int argc, char *argv[])
     int tmperr = errno;
     manage_keys(dht, server_conf.keys_file);
     errno = tmperr;
+
+    /* We want our DHT public key to be the same as our internal one since this is a bootstrap server */
+    memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
 
     /* Public key */
     int i;
