@@ -115,7 +115,7 @@ make install
 
 If execution fails with errors like "dyld: Library not loaded: /opt/tox-im/lib/libtoxcore.0.dylib", you may need to specify libsodium path:
 
-Determine pathes:
+Determine paths:
 ```
 brew list libsodium
 ```
@@ -194,7 +194,7 @@ You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)
 
 When installing MinGW, make sure to select the MSYS option in the installer.
-MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all opeartions (i.e. generating/running configure script, compiling, etc.) from the MinGW shell.
+MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all operations (i.e. generating/running configure script, compiling, etc.) from the MinGW shell.
 
 First download the source tarball from http://download.libsodium.org/libsodium/releases/ and build it.
 Assuming that you got the libsodium-0.4.2.tar.gz release:
