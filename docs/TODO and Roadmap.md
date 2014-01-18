@@ -1,6 +1,6 @@
 ALPHA:
 
-    DHT:
+    DHT
         [IN PROGRESS] Metadata collection prevention. (docs/Prevent_Tracking.txt)
         [IN PROGRESS] Hardening against attacks.
         [IN PROGRESS] Optimizing the code.
@@ -13,12 +13,12 @@ ALPHA:
 
 BETA:
 
-    [IN PROGRESS] Massive IRC like group chats (text only)
+    Massive IRC like group chats (text only)
         [DONE] Networking base.
         [NOT STARTED] Syncing chat state between clients (nicknames, list of who is in chat, etc...)
         [NOT STARTED] Make clients sign their messages so that peers can't modify them.
 
-    [IN PROGRESS] Audio/Video
+    Audio/Video
         [DONE] Capture/encoding/streaming/decoding/displaying
         [IN PROGRESS] Call initiation
         [NOT STARTED] Encryption
@@ -27,7 +27,7 @@ BETA:
 
     [NOT STARTED] Offline messaging
 
-    [IN PROGRESS] IPV6 support
+    IPV6 support:
         [DONE] Networking
         [DONE] DHT + Messenger
         [NOT STARTED] Group chats (They work with IPv6 but some things need to be tested.)
