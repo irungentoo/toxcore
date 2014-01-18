@@ -626,7 +626,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 
     if (count < MAX_ONION_CLIENTS / 2) {
         Node_format nodes_list[MAX_SENT_NODES];
-        uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[i].real_client_id, nodes_list,
+        uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[friendnum].real_client_id, nodes_list,
                                              rand() % 2 ? AF_INET : AF_INET6, 1, 0);
 
         for (i = 0; i < num_nodes; ++i)
