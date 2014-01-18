@@ -27,7 +27,7 @@
 #include "onion_announce.h"
 
 #define MAX_ONION_CLIENTS 8
-#define ONION_NODE_TIMEOUT 200
+#define ONION_NODE_TIMEOUT 240
 
 /* The interval in seconds at which to tell our friends where we are */
 #define ONION_FAKEID_INTERVAL 60
@@ -43,6 +43,7 @@ typedef struct {
 
 typedef struct {
     uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
+    uint8_t is_online; /* Set by the onion_set_friend_status function. */
 
     uint8_t fake_client_id[crypto_box_PUBLICKEYBYTES];
     uint8_t real_client_id[crypto_box_PUBLICKEYBYTES];
@@ -93,6 +94,17 @@ int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id);
  * return the deleted friend number on success.
  */
 int onion_delfriend(Onion_Client *onion_c, int friend_num);
+
+/* Set if friend is online or not.
+ * NOTE: This function is there and should be used so that we don't send useless packets to the friend if he is online.
+ *
+ * is_online 1 means friend is online.
+ * is_online 0 means friend is offline
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_online);
 
 /* Get the ip of friend friendnum and put it in ip_port
  *

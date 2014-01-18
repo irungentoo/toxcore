@@ -59,7 +59,7 @@ START_TEST(test_few_clients)
     tox_callback_friend_request(tox2, accept_friend_request, tox2);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(tox2, address);
-    int test = tox_add_friend(tox3, address, "Gentoo", 7);
+    int test = tox_add_friend(tox3, address, (uint8_t *)"Gentoo", 7);
     ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
 
     uint8_t off = 1;
@@ -84,7 +84,7 @@ START_TEST(test_few_clients)
     printf("tox clients connected\n");
     uint32_t to_compare = 974536;
     tox_callback_friend_message(tox3, print_message, &to_compare);
-    tox_send_message(tox2, 0, "Install Gentoo", sizeof("Install Gentoo"));
+    tox_send_message(tox2, 0, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
 
     while (1) {
         messages_received = 0;
@@ -101,7 +101,7 @@ START_TEST(test_few_clients)
     printf("tox clients messaging succeeded\n");
 
     tox_callback_name_change(tox3, print_nickchange, &to_compare);
-    tox_set_name(tox2, "Gentoo", sizeof("Gentoo"));
+    tox_set_name(tox2, (uint8_t *)"Gentoo", sizeof("Gentoo"));
 
     while (1) {
         name_changes = 0;
@@ -122,8 +122,8 @@ START_TEST(test_few_clients)
 }
 END_TEST
 
-#define NUM_TOXES 66
-#define NUM_FRIENDS 20
+#define NUM_TOXES 33
+#define NUM_FRIENDS 10
 
 START_TEST(test_many_clients)
 {
@@ -149,7 +149,7 @@ loop_top:
         pairs[i].tox1 = rand() % NUM_TOXES;
         pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
         tox_get_address(toxes[pairs[i].tox1], address);
-        int test = tox_add_friend(toxes[pairs[i].tox2], address, "Gentoo", 7);
+        int test = tox_add_friend(toxes[pairs[i].tox2], address, (uint8_t *)"Gentoo", 7);
 
         if (test == TOX_FAERR_ALREADYSENT) {
             goto loop_top;

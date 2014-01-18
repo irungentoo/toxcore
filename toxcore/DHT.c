@@ -308,7 +308,8 @@ static void get_close_nodes_inner(DHT *dht, uint8_t *client_id, Node_format *nod
         if (LAN_ip(ipptp->ip_port.ip) == 0 && !is_LAN)
             continue;
 
-        if (LAN_ip(ipptp->ip_port.ip) != 0 && want_good && hardening_correct(&ipptp->hardening) != HARDENING_ALL_OK && !id_equal(client_id, client->client_id))
+        if (LAN_ip(ipptp->ip_port.ip) != 0 && want_good && hardening_correct(&ipptp->hardening) != HARDENING_ALL_OK
+                && !id_equal(client_id, client->client_id))
             continue;
 
         if (num_nodes < MAX_SENT_NODES) {
@@ -1838,7 +1839,7 @@ static void do_NAT(DHT *dht)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
-#define HARDREQ_DATA_SIZE 768 /* Attempt to prevent amplification/other attacks*/
+#define HARDREQ_DATA_SIZE 384 /* Attempt to prevent amplification/other attacks*/
 
 #define CHECK_TYPE_ROUTE_REQ 0
 #define CHECK_TYPE_ROUTE_RES 1

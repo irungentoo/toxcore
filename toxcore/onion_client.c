@@ -582,6 +582,24 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
     return DHT_getfriendip(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, ip_port);
 }
 
+/* Set if friend is online or not.
+ * NOTE: This function is there and should be used so that we don't send useless packets to the friend if he is online.
+ *
+ * is_online 1 means friend is online.
+ * is_online 0 means friend is offline
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_online)
+{
+    if ((uint32_t)friend_num >= onion_c->num_friends)
+        return -1;
+
+    onion_c->friends_list[friend_num].is_online = is_online;
+    return 0;
+}
+
 /* Takes 3 random nodes that we know and puts them in nodes
  *
  * nodes must be longer than 3.
@@ -598,7 +616,7 @@ int random_path(Onion_Client *onion_c, Node_format *nodes)
     return 0;
 }
 
-#define ANNOUNCE_FRIEND 30
+#define ANNOUNCE_FRIEND 120
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
@@ -611,32 +629,35 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
     uint32_t i, count = 0;
     Onion_Node *list_nodes = onion_c->friends_list[friendnum].clients_list;
 
-    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
-        if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT))
-            continue;
+    if (!onion_c->friends_list[friendnum].is_online) {
+        for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+            if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT))
+                continue;
 
-        ++count;
+            ++count;
 
-        if (is_timeout(list_nodes[i].last_pinged, ANNOUNCE_FRIEND)) {
-            if (client_send_announce_request(onion_c, friendnum + 1, list_nodes[i].ip_port, list_nodes[i].client_id, 0) == 0) {
-                list_nodes[i].last_pinged = unix_time();
+            if (is_timeout(list_nodes[i].last_pinged, ANNOUNCE_FRIEND)) {
+                if (client_send_announce_request(onion_c, friendnum + 1, list_nodes[i].ip_port, list_nodes[i].client_id, 0) == 0) {
+                    list_nodes[i].last_pinged = unix_time();
+                }
             }
         }
+
+        if (count < MAX_ONION_CLIENTS / 2) {
+            Node_format nodes_list[MAX_SENT_NODES];
+            uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[friendnum].real_client_id, nodes_list,
+                                                 rand() % 2 ? AF_INET : AF_INET6, 1, 0);
+
+            for (i = 0; i < num_nodes; ++i)
+                client_send_announce_request(onion_c, friendnum + 1, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
+        }
+
+
+        /* send packets to friend telling them our fake DHT id. */
+        if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_sent, ONION_FAKEID_INTERVAL))
+            if (send_fakeid_announce(onion_c, friendnum) > 1)
+                onion_c->friends_list[friendnum].last_fakeid_sent = unix_time();
     }
-
-    if (count < MAX_ONION_CLIENTS / 2) {
-        Node_format nodes_list[MAX_SENT_NODES];
-        uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[friendnum].real_client_id, nodes_list,
-                                             rand() % 2 ? AF_INET : AF_INET6, 1, 0);
-
-        for (i = 0; i < num_nodes; ++i)
-            client_send_announce_request(onion_c, friendnum + 1, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
-    }
-
-    /* send packets to friend telling them our fake DHT id. */
-    if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_sent, ONION_FAKEID_INTERVAL))
-        if (send_fakeid_announce(onion_c, friendnum) > 1)
-            onion_c->friends_list[friendnum].last_fakeid_sent = unix_time();
 }
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object)
@@ -646,7 +667,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
 }
 
 #define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 10
-#define ANNOUNCE_INTERVAL_ANNOUNCED 60
+#define ANNOUNCE_INTERVAL_ANNOUNCED 120
 
 static void do_announce(Onion_Client *onion_c)
 {

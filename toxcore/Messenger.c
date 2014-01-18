@@ -683,6 +683,8 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
     const uint8_t was_online = m->friendlist[friendnumber].status == FRIEND_ONLINE;
     const uint8_t is_online = status == FRIEND_ONLINE;
 
+    onion_set_friend_online(m->onion_c, m->friendlist[friendnumber].onion_friendnum, is_online);
+
     if (is_online != was_online) {
         if (was_online)
             break_files(m, friendnumber);
