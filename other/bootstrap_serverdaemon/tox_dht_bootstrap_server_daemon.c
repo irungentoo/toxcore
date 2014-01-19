@@ -53,6 +53,7 @@
 #define DEFAULT_ENABLE_IPV6          0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false
 
+
 // Uses the already existing key or creates one if it didn't exist
 //
 // retirns 1 on success
@@ -66,6 +67,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
 
     // Check if file exits, proceed to open and load keys
     keys_file = fopen(keys_file_path, "r");
+
     if (keys_file != NULL) {
         size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
@@ -98,7 +100,8 @@ int manage_keys(DHT *dht, char *keys_file_path)
 // returns 1 on success
 //         0 on failure, doesn't modify any data pointed by arguments
 
-int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6, int *enable_lan_discovery)
+int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
+                       int *enable_lan_discovery)
 {
     config_t cfg;
 
@@ -132,6 +135,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
         syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_PID_FILE_PATH, DEFAULT_PID_FILE_PATH);
         tmp_pid_file = DEFAULT_PID_FILE_PATH;
     }
+
     *pid_file_path = malloc(strlen(tmp_pid_file) + 1);
     strcpy(*pid_file_path, tmp_pid_file);
 
@@ -143,6 +147,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
         syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_KEYS_FILE_PATH, DEFAULT_KEYS_FILE_PATH);
         tmp_keys_file = DEFAULT_KEYS_FILE_PATH;
     }
+
     *keys_file_path = malloc(strlen(tmp_keys_file) + 1);
     strcpy(*keys_file_path, tmp_keys_file);
 
@@ -156,15 +161,16 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     // Get LAN discovery option
     if (config_lookup_bool(&cfg, NAME_ENABLE_LAN_DISCOVERY, enable_lan_discovery) == CONFIG_FALSE) {
         syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_LAN_DISCOVERY);
-        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_ENABLE_LAN_DISCOVERY, DEFAULT_ENABLE_LAN_DISCOVERY ? "true" : "false");
+        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_ENABLE_LAN_DISCOVERY,
+               DEFAULT_ENABLE_LAN_DISCOVERY ? "true" : "false");
         *enable_lan_discovery = DEFAULT_ENABLE_LAN_DISCOVERY;
     }
 
     config_destroy(&cfg);
 
     syslog(LOG_DEBUG, "Successfully read:\n");
-    syslog(LOG_DEBUG, "'%s': %s\n", NAME_PID_FILE_PATH,             *pid_file_path);
-    syslog(LOG_DEBUG, "'%s': %s\n", NAME_KEYS_FILE_PATH,            *keys_file_path);
+    syslog(LOG_DEBUG, "'%s': %s\n", NAME_PID_FILE_PATH,        *pid_file_path);
+    syslog(LOG_DEBUG, "'%s': %s\n", NAME_KEYS_FILE_PATH,       *keys_file_path);
     syslog(LOG_DEBUG, "'%s': %d\n", NAME_PORT,                 *port);
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_IPV6,          *enable_ipv6          ? "true" : "false");
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_LAN_DISCOVERY, *enable_lan_discovery ? "true" : "false");
@@ -219,10 +225,10 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
             return 0;
         }
 
-        // Proceed only if all parts are present 
-        if (config_setting_lookup_string(server, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE ||
-            config_setting_lookup_int   (server, NAME_PORT,       &bs_port)       == CONFIG_FALSE ||
-            config_setting_lookup_string(server, NAME_ADDRESS,    &bs_address)    == CONFIG_FALSE   ) {
+        // Proceed only if all parts are present
+        if (config_setting_lookup_string(server, NAME_PUBLIC_KEY,  &bs_public_key) == CONFIG_FALSE ||
+                config_setting_lookup_int   (server, NAME_PORT,    &bs_port)       == CONFIG_FALSE ||
+                config_setting_lookup_string(server, NAME_ADDRESS, &bs_address)    == CONFIG_FALSE   ) {
             goto next;
         }
 
@@ -237,7 +243,8 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
             goto next;
         }
 
-        const int address_resolved = DHT_bootstrap_from_address(dht, bs_address, enable_ipv6, htons(bs_port), hex_string_to_bin((char*)bs_public_key));
+        const int address_resolved = DHT_bootstrap_from_address(dht, bs_address, enable_ipv6, htons(bs_port),
+                                     hex_string_to_bin((char *)bs_public_key));
 
         if (!address_resolved) {
             syslog(LOG_WARNING, "bootstrap_server #%d: Invalid '%s': %s.\n", i, NAME_ADDRESS, bs_address);
@@ -246,7 +253,7 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
 
         syslog(LOG_DEBUG, "Successfully connected to %s:%d %s\n", bs_address, bs_port, bs_public_key);
 
-        next:
+next:
         // config_setting_lookup_string() allocates string inside and doesn't allow us to free it
         // so in order to reuse `bs_public_key` and `bs_address` we have to remove the element
         // which will cause libconfig to free allocated strings
@@ -269,6 +276,7 @@ int is_conencted(DHT *dht, int port, int enable_lan_discovery)
     uint16_t htons_port = htons(port);
 
     int i;
+
     for (i = 0; i < 100; i ++) {
         do_DHT(dht);
 
@@ -296,10 +304,12 @@ void print_public_key(uint8_t *public_key)
     int index = 0;
 
     int i;
+
     for (i = 0; i < 32; i++) {
         if (public_key[i] < 16) {
             index += sprintf(buffer + index, "0");
         }
+
         index += sprintf(buffer + index, "%hhX", public_key[i]);
     }
 
@@ -346,6 +356,7 @@ int main(int argc, char *argv[])
     ip_init(&ip, enable_ipv6);
 
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, port)));
+
     if (dht == NULL) {
         syslog(LOG_ERR, "Couldn't initialize Tox DHT instance. Exiting.\n");
         return 1;
@@ -380,6 +391,7 @@ int main(int argc, char *argv[])
 
     // Write the PID file
     FILE *pidf = fopen(pid_file_path, "w");
+
     if (pidf == NULL) {
         syslog(LOG_ERR, "Can't open the PID file for writing: %s. Exiting.\n", pid_file_path);
         return 1;
@@ -408,19 +420,19 @@ int main(int argc, char *argv[])
     fprintf(pidf, "%d\n", pid);
     fclose(pidf);
 
-    // Create a new SID for the child process 
+    // Create a new SID for the child process
     if (setsid() < 0) {
         syslog(LOG_ERR, "SID creation failure. Exiting.\n");
         return 1;
     }
 
-    // Change the current working directory 
+    // Change the current working directory
     if ((chdir("/")) < 0) {
         syslog(LOG_ERR, "Couldn't change working directory to '/'. Exiting.\n");
         return 1;
     }
 
-    // Go quiet 
+    // Go quiet
     close(STDOUT_FILENO);
     close(STDIN_FILENO);
     close(STDERR_FILENO);
