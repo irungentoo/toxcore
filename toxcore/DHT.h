@@ -56,6 +56,9 @@
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
 
+/* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
+#define DHT_FAKE_FRIEND_NUMBER 4
+
 /* Functions to transfer ips safely across wire. */
 void to_net_family(IP *ip);
 void to_host_family(IP *ip);

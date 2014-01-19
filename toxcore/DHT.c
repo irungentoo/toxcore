@@ -360,10 +360,16 @@ static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *n
     get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
                           dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN, want_good);
 
+    /*TODO uncomment this when hardening is added to close friend clients
+        for (i = 0; i < dht->num_friends; ++i)
+            get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
+                                  dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                                  &num_nodes, is_LAN, want_good);
+    */
     for (i = 0; i < dht->num_friends; ++i)
         get_close_nodes_inner(dht, client_id, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                              &num_nodes, is_LAN, want_good);
+                              &num_nodes, is_LAN, 0);
 
     return num_nodes;
 }
@@ -2243,6 +2249,14 @@ DHT *new_DHT(Net_Crypto *c)
 #ifdef ENABLE_ASSOC_DHT
     dht->assoc = new_Assoc_default(dht->self_public_key);
 #endif
+    uint32_t i;
+
+    for (i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
+        uint8_t random_key_bytes[CLIENT_ID_SIZE];
+        randombytes(random_key_bytes, sizeof(random_key_bytes));
+        DHT_addfriend(dht, random_key_bytes);
+    }
+
     return dht;
 }
 
