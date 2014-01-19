@@ -1,7 +1,7 @@
 #include "../../toxcore/group_chats.h"
 #define NUM_CHATS 8
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
 #define c_sleep(x) usleep(1000*x)

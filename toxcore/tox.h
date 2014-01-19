@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #ifndef WINVER
 //Windows XP
 #define WINVER 0x0501

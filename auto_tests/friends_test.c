@@ -42,7 +42,7 @@
 #define SECOND_FLAG 0x2
 
 /* ensure that we sleep in milliseconds */
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(x)
 #else
 #define c_sleep(x) usleep(1000*x)
