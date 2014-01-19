@@ -56,6 +56,6 @@ grep "tox_dht_bootstrap_server_daemon" /var/log/syslog
 
 3. Make sure that `PIDFILE` from `/etc/init.d/tox_dht_bootstrap_server_daemon` matches with the `pid_file_path` from `conf`
 
-4. Make sure you have write premmision to keys and pid files
+4. Make sure you have write permission to keys and pid files
 
-5. Make sure you have read premission to config file
+5. Make sure you have read permission for config file

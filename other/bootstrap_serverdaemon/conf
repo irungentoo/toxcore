@@ -4,7 +4,7 @@
 port = 33445
 
 // The key file is like a password, so keep it where no one can read it
-// The daemon should have premission to read/write to it
+// The daemon should have permission to read/write to it
 // Remember to replace the provided example with
 // your own path
 keys_file_path = "/home/tom/.tox_dht_bootstrap_server_daemon/keys"

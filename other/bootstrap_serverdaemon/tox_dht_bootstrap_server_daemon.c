@@ -1,6 +1,6 @@
 /* tox_dht_bootstrap_server_daemon
  *
- * A simple DHT boostrap server for tox - daemon edition.
+ * A simple DHT bootstrap server for tox - daemon edition.
  *
  *  Copyright (C) 2014 Tox project All Rights Reserved.
  *
@@ -83,7 +83,9 @@ int manage_keys(DHT *dht, char *keys_file_path)
 
         keys_file = fopen(keys_file_path, "w");
 
-        if (fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file) != KEYS_SIZE) {
+        size_t write_size = fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
+
+        if (write_size != KEYS_SIZE) {
             return 0;
         }
     }
@@ -95,7 +97,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
 
 // Gets general config options
 //
-// Important: you are responsibl for freeing `pid_file_path` and `keys_file_path`
+// Important: you are responsible for freeing `pid_file_path` and `keys_file_path`
 //
 // returns 1 on success
 //         0 on failure, doesn't modify any data pointed by arguments
@@ -181,7 +183,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
 // Bootstraps servers listed in the config file
 //
 // returns 1 on success
-//         0 on failure, either no or only some servers were bootstraped
+//         0 on failure, either no or only some servers were bootstrapped
 
 int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
 {
