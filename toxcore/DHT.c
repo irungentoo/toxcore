@@ -1155,6 +1155,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, 
 /*
  * Send get nodes requests with client_id to max_num peers in list of length length
  */
+/*
 static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_t max_num, uint8_t *client_id)
 {
     uint32_t i, num = 0;
@@ -1174,7 +1175,7 @@ static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_
             }
     }
 }
-
+*/
 int DHT_addfriend(DHT *dht, uint8_t *client_id)
 {
     if (friend_number(dht, client_id) != -1) /* Is friend already in DHT? */
@@ -1223,8 +1224,8 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id)
     }
 
 #endif
-    /*TODO: make this better?*/
-    get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);
+    /*this isn't really useful anymore.
+    get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);*/
 
     return 0;
 }
