@@ -1,4 +1,4 @@
-/* tox-dht-bootstrap-server-daemon
+/* tox_dht_bootstrap_server_daemon
  *
  * A simple DHT boostrap server for tox - daemon edition.
  *
@@ -42,13 +42,13 @@
 
 #include "../../testing/misc_tools.c"
 
-#define DAEMON_NAME "tox-dht-bootstrap-server-daemon"
+#define DAEMON_NAME "tox_dht_bootstrap_server_daemon"
 
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
 
-#define DEFAULT_PID_FILE_PATH        ".tox-dht-bootstrap-server-daemon.pid"
-#define DEFAULT_KEYS_FILE_PATH       ".tox-dht-bootstrap-server-daemon.keys"
+#define DEFAULT_PID_FILE_PATH        ".tox_dht_bootstrap_server_daemon.pid"
+#define DEFAULT_KEYS_FILE_PATH       ".tox_dht_bootstrap_server_daemon.keys"
 #define DEFAULT_PORT                 33445
 #define DEFAULT_ENABLE_IPV6          0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false

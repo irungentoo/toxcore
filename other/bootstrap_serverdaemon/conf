@@ -7,14 +7,14 @@ port = 33445
 // The daemon should have premission to read/write to it
 // Remember to replace the provided example with
 // your own path
-keys_file_path = "/home/tom/.tox-dht-bootstrap-server-daemon/keys"
+keys_file_path = "/home/tom/.tox_dht_bootstrap_server_daemon/keys"
 
 // The PID file written to by daemon,
 // make sure that the user who runs the server
 // does have permissions to write to it
 // Remember to replace the provided example with
 // your own path
-pid_file_path = "/home/tom/.tox-dht-bootstrap-server-daemon/pid"
+pid_file_path = "/home/tom/.tox_dht_bootstrap_server_daemon/pid"
 
 enable_ipv6 = false
 
