@@ -1,17 +1,17 @@
 if BUILD_DHT_BOOTSTRAP_DAEMON
 
-noinst_PROGRAMS +=      DHT_bootstrap_daemon
+noinst_PROGRAMS += tox_dht_bootstrap_server_daemon
 
-DHT_bootstrap_daemon_SOURCES = \
-                        ../other/bootstrap_serverdaemon/DHT_bootstrap_daemon.c
+tox_dht_bootstrap_server_daemon_SOURCES = \
+                        ../other/bootstrap_serverdaemon/tox_dht_bootstrap_server_daemon.c
 
-DHT_bootstrap_daemon_CFLAGS = \
+tox_dht_bootstrap_server_daemon_CFLAGS = \
                         -I$(top_srcdir)/other/bootstrap_serverdaemon \
                         $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS) \
                         $(LIBCONFIG_CFLAGS)
 
-DHT_bootstrap_daemon_LDADD = \
+tox_dht_bootstrap_server_daemon_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
@@ -22,5 +22,6 @@ DHT_bootstrap_daemon_LDADD = \
 endif
 
 EXTRA_DIST += \
-    $(top_srcdir)/other/bootstrap_serverdaemon/server.cfg \
-    $(top_srcdir)/other/bootstrap_serverdaemon/DHT_bootstrap_daemon.sh
+    $(top_srcdir)/other/bootstrap_serverdaemon/conf \
+    $(top_srcdir)/other/bootstrap_serverdaemon/tox_dht_bootstrap_server_daemon
+    
