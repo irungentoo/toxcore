@@ -1,0 +1,40 @@
+// ProjectTox bootstrap server configuration file
+
+// listening port
+port = 33445
+
+// The key file is like a password, so keep it where no one can read it
+// The daemon should have premission to read/write to it
+// Remember to replace the provided example with
+// your own path
+keys_file_path = "/home/tom/.tox-dht-bootstrap-server-daemon/keys"
+
+// The PID file written to by daemon,
+// make sure that the user who runs the server
+// does have permissions to write to it
+// Remember to replace the provided example with
+// your own path
+pid_file_path = "/home/tom/.tox-dht-bootstrap-server-daemon/pid"
+
+enable_ipv6 = false
+
+// Automatically bootstrap with nodes on local network
+enable_lan_discovery = true
+
+// Any number of nodes the daemon will bootstrap itself from
+// Remember to replace the provided example with
+// your own server list
+bootstrap_servers = (
+  { // Server 1
+    // any ipv4 or ipv6, depending if `enable_ipv6` is set or not
+    // also any US-ASCII domain name
+    address = "198.46.136.167"
+    port = 33445
+    public_key = "728925473812C7AAC482BE7250BCCAD0B8CB9F737BF3D42ABD34459C1768F854"
+  },
+  { // Server 2
+    address = "example.org"
+    port = 33445
+    public_key = "8CD5A9BF0A6CE358BA36F7A653F99FA6B258FF756E490F52C1F98CC420F78858"
+  }
+)
