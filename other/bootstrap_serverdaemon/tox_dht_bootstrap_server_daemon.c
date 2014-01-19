@@ -21,16 +21,16 @@
  *
  */
 
-#include <sys/types.h> /* pid_t */
-#include <sys/stat.h> /* umask */
-#include <unistd.h> /* POSIX things */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <syslog.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <libconfig.h>
-#include <arpa/inet.h> /* htons() */
-#include <string.h> /* strcpy() */
+#include <arpa/inet.h>
+#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -103,8 +103,8 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     config_t cfg;
 
     const char *NAME_PORT                 = "port";
-    const char *NAME_PID_FILE             = "pid_file_path";
-    const char *NAME_KEYS_FILE            = "keys_file_path";
+    const char *NAME_PID_FILE_PATH        = "pid_file_path";
+    const char *NAME_KEYS_FILE_PATH       = "keys_file_path";
     const char *NAME_ENABLE_IPV6          = "enable_ipv6";
     const char *NAME_ENABLE_LAN_DISCOVERY = "enable_lan_discovery";
 
@@ -127,9 +127,9 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     // Get PID file location
     const char *tmp_pid_file;
 
-    if (config_lookup_string(&cfg, NAME_PID_FILE, &tmp_pid_file) == CONFIG_FALSE) {
-        syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_PID_FILE);
-        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_PID_FILE, DEFAULT_PID_FILE_PATH);
+    if (config_lookup_string(&cfg, NAME_PID_FILE_PATH, &tmp_pid_file) == CONFIG_FALSE) {
+        syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_PID_FILE_PATH);
+        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_PID_FILE_PATH, DEFAULT_PID_FILE_PATH);
         tmp_pid_file = DEFAULT_PID_FILE_PATH;
     }
     *pid_file_path = malloc(strlen(tmp_pid_file) + 1);
@@ -138,9 +138,9 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     // Get keys file location
     const char *tmp_keys_file;
 
-    if (config_lookup_string(&cfg, NAME_KEYS_FILE, &tmp_keys_file) == CONFIG_FALSE) {
-        syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_KEYS_FILE);
-        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_KEYS_FILE, DEFAULT_KEYS_FILE_PATH);
+    if (config_lookup_string(&cfg, NAME_KEYS_FILE_PATH, &tmp_keys_file) == CONFIG_FALSE) {
+        syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_KEYS_FILE_PATH);
+        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_KEYS_FILE_PATH, DEFAULT_KEYS_FILE_PATH);
         tmp_keys_file = DEFAULT_KEYS_FILE_PATH;
     }
     *keys_file_path = malloc(strlen(tmp_keys_file) + 1);
@@ -163,8 +163,8 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     config_destroy(&cfg);
 
     syslog(LOG_DEBUG, "Successfully read:\n");
-    syslog(LOG_DEBUG, "'%s': %s\n", NAME_PID_FILE,             *pid_file_path);
-    syslog(LOG_DEBUG, "'%s': %s\n", NAME_KEYS_FILE,            *keys_file_path);
+    syslog(LOG_DEBUG, "'%s': %s\n", NAME_PID_FILE_PATH,             *pid_file_path);
+    syslog(LOG_DEBUG, "'%s': %s\n", NAME_KEYS_FILE_PATH,            *keys_file_path);
     syslog(LOG_DEBUG, "'%s': %d\n", NAME_PORT,                 *port);
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_IPV6,          *enable_ipv6          ? "true" : "false");
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_LAN_DISCOVERY, *enable_lan_discovery ? "true" : "false");
@@ -219,7 +219,7 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
             return 0;
         }
 
-        /* Proceed only if all parts are present */
+        // Proceed only if all parts are present 
         if (config_setting_lookup_string(server, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE ||
             config_setting_lookup_int   (server, NAME_PORT,       &bs_port)       == CONFIG_FALSE ||
             config_setting_lookup_string(server, NAME_ADDRESS,    &bs_address)    == CONFIG_FALSE   ) {
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Check if the PId file exists
+    // Check if the PID file exists
     if (fopen(pid_file_path, "r")) {
         syslog(LOG_ERR, "Another instance of the daemon is already running, PID file %s exists. Exiting.\n", pid_file_path);
         return 1;
@@ -408,20 +408,19 @@ int main(int argc, char *argv[])
     fprintf(pidf, "%d\n", pid);
     fclose(pidf);
 
-    /* Create a new SID for the child process */
-
+    // Create a new SID for the child process 
     if (setsid() < 0) {
         syslog(LOG_ERR, "SID creation failure. Exiting.\n");
         return 1;
     }
 
-    /* Change the current working directory */
+    // Change the current working directory 
     if ((chdir("/")) < 0) {
         syslog(LOG_ERR, "Couldn't change working directory to '/'. Exiting.\n");
         return 1;
     }
 
-    /* Go quiet */
+    // Go quiet 
     close(STDOUT_FILENO);
     close(STDIN_FILENO);
     close(STDERR_FILENO);
