@@ -2,17 +2,18 @@
 
 The following commands are to be executed as root:
 
-1. In `tox_dht_bootstrap_server_daemon` file change:
+1. In `tox_dht_bootstrap_server_daemon.sh` file change:
   - `CFG` to where your config file (`conf`) will be; read rights required
   - `DAEMON` to point to the executable
   - `PIDFILE` to point to a pid file daemon would have rights to create
 
-2. Go over everything in `conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox_dht_bootstrap_server_daemon`
+2. Go over everything in `conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox_dht_bootstrap_server_daemon.sh`
 
 3. Execute: 
 ```
-mv tox_dht_bootstrap_server_daemon /etc/init.d/tox_dht_bootstrap_server_daemon
+mv tox_dht_bootstrap_server_daemon.sh /etc/init.d/tox_dht_bootstrap_server_daemon
 ```
+*(note that we removed `.sh` ending)*
 
 4. Give the right permissions to this file: 
 ```
