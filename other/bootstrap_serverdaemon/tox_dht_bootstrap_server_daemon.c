@@ -273,7 +273,7 @@ next:
 // returns 1 on success
 //         0 on failure
 
-int is_conencted(DHT *dht, int port, int enable_lan_discovery)
+int is_connected(DHT *dht, int port, int enable_lan_discovery)
 {
     uint16_t htons_port = htons(port);
 
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (is_conencted(dht, port, enable_lan_discovery)) {
+    if (is_connected(dht, port, enable_lan_discovery)) {
         syslog(LOG_INFO, "Successfully connected to DHT\n");
     } else {
         syslog(LOG_ERR, "Couldn't connect to the DHT. Check settings and network connections. Exiting.\n");
