@@ -145,3 +145,11 @@ encrypted with temp symmetric key of Node A: [IP_Port (of us)][data to send back
 (sent from node A to us):
 
 [data to send back]
+
+
+Data packets:
+
+To tell our friend what our DHT public key is so that he can connect to us we send a data packet with id 156 and 
+the data being:[uint64_t (in network byte order) no_replay, the packet will only be accepted if this number is bigger than the last one recieved]
+[our dht public key][Node_Format * (maximum of 8) nodes closest to us so that the friend can find us faster]
+

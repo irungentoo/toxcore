@@ -34,27 +34,6 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 
-void host_to_net(uint8_t *num, uint16_t numbytes)
-{
-    union {
-        uint32_t i;
-        uint8_t c[4];
-    } a;
-    a.i = 1;
-
-    if (a.c[0] == 1) {
-        uint32_t i;
-        uint8_t buff[numbytes];
-
-        for (i = 0; i < numbytes; ++i) {
-            buff[i] = num[numbytes - i - 1];
-        }
-
-        memcpy(num, buff, numbytes);
-    }
-}
-#define net_to_host(x, y) host_to_net(x, y)
-
 static void set_friend_status(Messenger *m, int friendnumber, uint8_t status);
 static int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length);
 

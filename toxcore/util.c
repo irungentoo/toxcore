@@ -65,6 +65,25 @@ uint32_t id_copy(uint8_t *dest, uint8_t *src)
     return CLIENT_ID_SIZE;
 }
 
+void host_to_net(uint8_t *num, uint16_t numbytes)
+{
+    union {
+        uint32_t i;
+        uint8_t c[4];
+    } a;
+    a.i = 1;
+
+    if (a.c[0] == 1) {
+        uint32_t i;
+        uint8_t buff[numbytes];
+
+        for (i = 0; i < numbytes; ++i) {
+            buff[i] = num[numbytes - i - 1];
+        }
+
+        memcpy(num, buff, numbytes);
+    }
+}
 
 /* state load/save */
 int load_state(load_state_callback_func load_state_callback, void *outer,

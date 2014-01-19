@@ -341,7 +341,7 @@ static int handle_data_response(void *object, IP_Port source, uint8_t *packet, u
 }
 
 #define FAKEID_DATA_ID 156
-#define FAKEID_DATA_MIN_LENGTH (1 + crypto_box_PUBLICKEYBYTES)
+#define FAKEID_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES)
 #define FAKEID_DATA_MAX_LENGTH (FAKEID_DATA_MIN_LENGTH + sizeof(Node_format)*MAX_SENT_NODES)
 static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t length)
 {
@@ -361,19 +361,29 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
     if (friend_num == -1)
         return 1;
 
-    if (memcmp(data + 1, onion_c->friends_list[friend_num].fake_client_id, crypto_box_PUBLICKEYBYTES) != 0) {
+    uint64_t no_replay;
+    net_to_host(data + 1, sizeof(no_replay));
+    memcpy(&no_replay, data + 1, sizeof(uint64_t));
+
+    if (no_replay <= onion_c->friends_list[friend_num].last_noreplay)
+        return 1;
+
+    onion_c->friends_list[friend_num].last_noreplay = no_replay;
+
+    if (memcmp(data + 1 + sizeof(uint64_t), onion_c->friends_list[friend_num].fake_client_id,
+               crypto_box_PUBLICKEYBYTES) != 0) {
         DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
 
-        if (DHT_addfriend(onion_c->dht, data + 1) == 1) {
+        if (DHT_addfriend(onion_c->dht, data + 1 + sizeof(uint64_t)) == 1) {
             return 1;
         }
 
-        memcpy(onion_c->friends_list[friend_num].fake_client_id, data + 1, crypto_box_PUBLICKEYBYTES);
+        memcpy(onion_c->friends_list[friend_num].fake_client_id, data + 1 + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES);
     }
 
     uint16_t num_nodes = (length - FAKEID_DATA_MIN_LENGTH) / sizeof(Node_format);
     Node_format nodes[num_nodes];
-    memcpy(nodes, data + 1 + crypto_box_PUBLICKEYBYTES, sizeof(nodes));
+    memcpy(nodes, data + 1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES, sizeof(nodes));
     uint32_t i;
 
     for (i = 0; i < num_nodes; ++i) {
@@ -439,7 +449,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
     return good;
 }
 
-/* Send the packets to tell our friends
+/* Send the packets to tell our friends what our DHT public key is.
  * return the number of packets sent on success
  * return -1 on failure.
  */
@@ -450,7 +460,10 @@ static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num)
 
     uint8_t data[FAKEID_DATA_MAX_LENGTH];
     data[0] = FAKEID_DATA_ID;
-    memcpy(data + 1, onion_c->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    uint64_t no_replay = unix_time();
+    host_to_net((uint8_t *)&no_replay, sizeof(no_replay));
+    memcpy(data + 1, &no_replay, sizeof(no_replay));
+    memcpy(data + 1 + sizeof(uint64_t), onion_c->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     Node_format nodes[MAX_SENT_NODES];
     uint16_t num_nodes = closelist_nodes(onion_c->dht, nodes, MAX_SENT_NODES);
     memcpy(data + FAKEID_DATA_MIN_LENGTH, nodes, sizeof(Node_format) * num_nodes);
@@ -597,6 +610,9 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
         return -1;
 
     onion_c->friends_list[friend_num].is_online = is_online;
+    /* Should we reset the no_replay when the other goes offline?
+    if (!is_online)
+        onion_c->friends_list[friend_num].last_noreplay = 0; */
     return 0;
 }
 

@@ -53,6 +53,8 @@ typedef struct {
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
 
     uint64_t last_fakeid_sent;
+
+    uint64_t last_noreplay;
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
