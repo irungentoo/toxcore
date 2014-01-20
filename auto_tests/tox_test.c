@@ -12,7 +12,7 @@
 
 #include "../toxcore/tox.h"
 
-#ifdef __WIN32__
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
 #include <unistd.h>

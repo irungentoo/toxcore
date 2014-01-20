@@ -30,7 +30,7 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef WIN32 /* Put win32 includes here */
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32) /* Put win32 includes here */
 #ifndef WINVER
 //Windows XP
 #define WINVER 0x0501

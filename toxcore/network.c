@@ -29,7 +29,7 @@
 #include "config.h"
 #endif
 
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <errno.h>
 #endif
 
@@ -40,7 +40,7 @@
 #define IPV6_V6ONLY 27
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
 static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
 {
@@ -112,7 +112,7 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
 uint64_t current_time(void)
 {
     uint64_t time;
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     /* This probably works fine */
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
@@ -228,7 +228,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 {
     memset(ip_port, 0, sizeof(IP_Port));
     struct sockaddr_storage addr;
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     int addrlen = sizeof(addr);
 #else
     socklen_t addrlen = sizeof(addr);
@@ -414,7 +414,7 @@ static int at_startup(void)
     sodium_init();
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     WSADATA wsaData;
 
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR)
@@ -431,7 +431,7 @@ static int at_startup(void)
 /* TODO: Put this somewhere
 static void at_shutdown(void)
 {
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     WSACleanup();
 #endif
 }
@@ -471,7 +471,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     temp->sock = socket(temp->family, SOCK_DGRAM, IPPROTO_UDP);
 
     /* Check for socket error. */
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
     if (temp->sock == INVALID_SOCKET) { /* MSDN recommends this. */
         free(temp);
@@ -501,7 +501,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
 
     /* Set socket nonblocking. */
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     /* I think this works for Windows. */
     u_long mode = 1;
     /* ioctl(sock, FIONBIO, &mode); */
@@ -662,7 +662,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 /* Function to cleanup networking stuff. */
 void kill_networking(Networking_Core *net)
 {
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     closesocket(net->sock);
 #else
     close(net->sock);

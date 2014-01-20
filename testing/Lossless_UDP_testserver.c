@@ -37,7 +37,7 @@
 #include "misc_tools.c"
 
 //Sleep function (x = milliseconds)
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
 #define c_sleep(x) Sleep(1*x)
 

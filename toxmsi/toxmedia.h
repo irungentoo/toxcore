@@ -70,7 +70,7 @@
 #define DEFAULT_WEBCAM "/dev/video0"
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define VIDEO_DRIVER "vfwcap"
 #define DEFAULT_WEBCAM "0"
 #endif

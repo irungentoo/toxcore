@@ -24,7 +24,7 @@
 #include "config.h"
 #endif
 
-#ifdef __WIN32__
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define _WIN32_WINNT 0x501
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -44,7 +44,7 @@
 #include <time.h>
 #include <locale.h>
 
-#ifdef __WIN32__
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
 #include <unistd.h>
