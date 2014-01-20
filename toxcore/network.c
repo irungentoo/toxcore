@@ -394,7 +394,7 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
         s->send_fail_reset = 1;
 
     return res > 0 ? 1 : 0;
-};
+}
 
 void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len)
 {
