@@ -194,10 +194,10 @@ int main(int argc, char *argv[])
     uint32_t i;
 
     for (i = 0; i < 32; i++) {
-        if (dht->c->self_public_key[i] < 16)
+        if (dht->self_public_key[i] < 16)
             printf("0");
 
-        printf("%hhX", dht->c->self_public_key[i]);
+        printf("%hhX", dht->self_public_key[i]);
     }
 
     char temp_id[128];
