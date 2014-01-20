@@ -92,6 +92,10 @@ int manage_keys(DHT *dht, char *keys_file_path)
 
     fclose(keys_file);
 
+    // We want our DHT public key to be the same as our internal one since this is a bootstrap server
+    memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
+
     return 1;
 }
 
@@ -359,16 +363,17 @@ int main(int argc, char *argv[])
     ip_init(&ip, enable_ipv6);
 
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, port)));
-    Onion *onion = new_onion(dht);
-    Onion_Announce *onion_a = new_onion_announce(dht);
 
     if (dht == NULL) {
         syslog(LOG_ERR, "Couldn't initialize Tox DHT instance. Exiting.\n");
         return 1;
     }
 
+    Onion *onion = new_onion(dht);
+    Onion_Announce *onion_a = new_onion_announce(dht);
+
     if (!(onion && onion_a)) {
-        syslog(LOG_ERR, "Couldn't initialize Tox onion stuff. Exiting.\n");
+        syslog(LOG_ERR, "Couldn't initialize Tox Onion. Exiting.\n");
         return 1;
     }
 
@@ -382,10 +387,6 @@ int main(int argc, char *argv[])
         syslog(LOG_ERR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
         return 1;
     }
-
-    /* We want our DHT public key to be the same as our internal one since this is a bootstrap server */
-    memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
 
     if (bootstrap_from_config(cfg_file_path, dht, enable_ipv6)) {
         syslog(LOG_DEBUG, "List of bootstrap servers read successfully\n");
@@ -424,7 +425,6 @@ int main(int argc, char *argv[])
 
     if (pid > 0) {
         syslog(LOG_DEBUG, "Forked successfully: PID: %d.\n", pid);
-
         return 0;
     }
 
