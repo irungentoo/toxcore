@@ -220,33 +220,33 @@ static int handle_LANdiscovery(void *object, IP_Port source, uint8_t *packet, ui
 }
 
 
-int send_LANdiscovery(uint16_t port, Net_Crypto *c)
+int send_LANdiscovery(uint16_t port, DHT *dht)
 {
     uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
-    id_copy(data + 1, c->self_public_key);
+    id_copy(data + 1, dht->self_public_key);
 
 #ifdef __linux
-    send_broadcasts(c->lossless_udp->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
+    send_broadcasts(dht->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
 #endif
     int res = -1;
     IP_Port ip_port;
     ip_port.port = port;
 
     /* IPv6 multicast */
-    if (c->lossless_udp->net->family == AF_INET6) {
+    if (dht->net->family == AF_INET6) {
         ip_port.ip = broadcast_ip(AF_INET6, AF_INET6);
 
         if (ip_isset(&ip_port.ip))
-            if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES) > 0)
+            if (sendpacket(dht->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES) > 0)
                 res = 1;
     }
 
     /* IPv4 broadcast (has to be IPv4-in-IPv6 mapping if socket is AF_INET6 */
-    ip_port.ip = broadcast_ip(c->lossless_udp->net->family, AF_INET);
+    ip_port.ip = broadcast_ip(dht->net->family, AF_INET);
 
     if (ip_isset(&ip_port.ip))
-        if (sendpacket(c->lossless_udp->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES))
+        if (sendpacket(dht->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES))
             res = 1;
 
     return res;
@@ -255,5 +255,5 @@ int send_LANdiscovery(uint16_t port, Net_Crypto *c)
 
 void LANdiscovery_init(DHT *dht)
 {
-    networking_registerhandler(dht->c->lossless_udp->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
+    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
 }

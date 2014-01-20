@@ -47,7 +47,7 @@ typedef struct {
 } pinged_t;
 
 struct PING {
-    Net_Crypto *c;
+    DHT *dht;
 
     pinged_t    pings[PING_NUM_MAX];
     size_t      num_pings;
@@ -148,19 +148,19 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     int       rc;
     uint64_t  ping_id;
 
-    if (is_pinging(ping, ipp, 0) || id_equal(client_id, ping->c->self_public_key))
+    if (is_pinging(ping, ipp, 0) || id_equal(client_id, ping->dht->self_public_key))
         return 1;
 
     // Generate random ping_id.
     ping_id = add_ping(ping, ipp);
 
     pk[0] = NET_PACKET_PING_REQUEST;
-    id_copy(pk + 1, ping->c->self_public_key);     // Our pubkey
+    id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data(client_id,
-                      ping->c->self_secret_key,
+                      ping->dht->self_secret_key,
                       pk + 1 + CLIENT_ID_SIZE,
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
@@ -168,7 +168,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
 
-    return sendpacket(ping->c->lossless_udp->net, ipp, pk, sizeof(pk));
+    return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
 static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint64_t ping_id)
@@ -176,16 +176,16 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
 
-    if (id_equal(client_id, ping->c->self_public_key))
+    if (id_equal(client_id, ping->dht->self_public_key))
         return 1;
 
     pk[0] = NET_PACKET_PING_RESPONSE;
-    id_copy(pk + 1, ping->c->self_public_key);     // Our pubkey
+    id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data(client_id,
-                      ping->c->self_secret_key,
+                      ping->dht->self_secret_key,
                       pk + 1 + CLIENT_ID_SIZE,
                       (uint8_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
@@ -193,7 +193,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
 
-    return sendpacket(ping->c->lossless_udp->net, ipp, pk, sizeof(pk));
+    return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
 static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint32_t length)
@@ -207,12 +207,12 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
 
     PING *ping = dht->ping;
 
-    if (id_equal(packet + 1, ping->c->self_public_key))
+    if (id_equal(packet + 1, ping->dht->self_public_key))
         return 1;
 
     // Decrypt ping_id
     rc = decrypt_data(packet + 1,
-                      ping->c->self_secret_key,
+                      ping->dht->self_secret_key,
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                       sizeof(ping_id) + crypto_box_MACBYTES,
@@ -239,12 +239,12 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
 
     PING *ping = dht->ping;
 
-    if (id_equal(packet + 1, ping->c->self_public_key))
+    if (id_equal(packet + 1, ping->dht->self_public_key))
         return 1;
 
     // Decrypt ping_id
     rc = decrypt_data(packet + 1,
-                      ping->c->self_secret_key,
+                      ping->dht->self_secret_key,
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                       sizeof(ping_id) + crypto_box_MACBYTES,
@@ -291,7 +291,7 @@ int add_toping(PING *ping, uint8_t *client_id, IP_Port ip_port)
     }
 
     for (i = 0; i < MAX_TOPING; ++i) {
-        if (id_closest(ping->c->self_public_key, ping->toping[i].client_id, client_id) == 2) {
+        if (id_closest(ping->dht->self_public_key, ping->toping[i].client_id, client_id) == 2) {
             memcpy(ping->toping[i].client_id, client_id, CLIENT_ID_SIZE);
             ipport_copy(&ping->toping[i].ip_port, &ip_port);
             return 0;
@@ -323,24 +323,24 @@ void do_toping(PING *ping)
 }
 
 
-PING *new_ping(DHT *dht, Net_Crypto *c)
+PING *new_ping(DHT *dht)
 {
     PING *ping = calloc(1, sizeof(PING));
 
     if (ping == NULL)
         return NULL;
 
-    ping->c = c;
-    networking_registerhandler(ping->c->lossless_udp->net, NET_PACKET_PING_REQUEST, &handle_ping_request, dht);
-    networking_registerhandler(ping->c->lossless_udp->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, dht);
+    ping->dht = dht;
+    networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, &handle_ping_request, dht);
+    networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, dht);
 
     return ping;
 }
 
 void kill_ping(PING *ping)
 {
-    networking_registerhandler(ping->c->lossless_udp->net, NET_PACKET_PING_REQUEST, NULL, NULL);
-    networking_registerhandler(ping->c->lossless_udp->net, NET_PACKET_PING_RESPONSE, NULL, NULL);
+    networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, NULL, NULL);
+    networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, NULL, NULL);
 
     free(ping);
 }

@@ -34,27 +34,6 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 
-void host_to_net(uint8_t *num, uint16_t numbytes)
-{
-    union {
-        uint32_t i;
-        uint8_t c[4];
-    } a;
-    a.i = 1;
-
-    if (a.c[0] == 1) {
-        uint32_t i;
-        uint8_t buff[numbytes];
-
-        for (i = 0; i < numbytes; ++i) {
-            buff[i] = num[numbytes - i - 1];
-        }
-
-        memcpy(num, buff, numbytes);
-    }
-}
-#define net_to_host(x, y) host_to_net(x, y)
-
 static void set_friend_status(Messenger *m, int friendnumber, uint8_t status);
 static int write_cryptpacket_id(Messenger *m, int friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length);
 
@@ -206,11 +185,16 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
 
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
+    int onion_friendnum = onion_addfriend(m->onion_c, client_id);
+
+    if (onion_friendnum == -1)
+        return FAERR_UNKNOWN;
+
     uint32_t i;
 
     for (i = 0; i <= m->numfriends; ++i)  {
         if (m->friendlist[i].status == NOFRIEND) {
-            DHT_addfriend(m->dht, client_id);
+            m->friendlist[i].onion_friendnum = onion_friendnum;
             m->friendlist[i].status = FRIEND_ADDED;
             m->friendlist[i].crypt_connection_id = -1;
             m->friendlist[i].friendrequest_lastsent = 0;
@@ -249,11 +233,16 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
 
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
+    int onion_friendnum = onion_addfriend(m->onion_c, client_id);
+
+    if (onion_friendnum == -1)
+        return FAERR_UNKNOWN;
+
     uint32_t i;
 
     for (i = 0; i <= m->numfriends; ++i) {
         if (m->friendlist[i].status == NOFRIEND) {
-            DHT_addfriend(m->dht, client_id);
+            m->friendlist[i].onion_friendnum = onion_friendnum;
             m->friendlist[i].status = FRIEND_CONFIRMED;
             m->friendlist[i].crypt_connection_id = -1;
             m->friendlist[i].friendrequest_lastsent = 0;
@@ -284,7 +273,7 @@ int m_delfriend(Messenger *m, int friendnumber)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    DHT_delfriend(m->dht, m->friendlist[friendnumber].client_id);
+    onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
     crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
     free(m->friendlist[friendnumber].statusmessage);
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
@@ -672,6 +661,8 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
 
     const uint8_t was_online = m->friendlist[friendnumber].status == FRIEND_ONLINE;
     const uint8_t is_online = status == FRIEND_ONLINE;
+
+    onion_set_friend_online(m->onion_c, m->friendlist[friendnumber].onion_friendnum, is_online);
 
     if (is_online != was_online) {
         if (was_online)
@@ -1513,7 +1504,7 @@ static int friend_already_added(uint8_t *client_id, void *data)
 static void LANdiscovery(Messenger *m)
 {
     if (m->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(htons(TOX_PORT_DEFAULT), m->net_crypto);
+        send_LANdiscovery(htons(TOX_PORT_DEFAULT), m->dht);
         m->last_LANdiscovery = unix_time();
     }
 }
@@ -1552,9 +1543,24 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
+    m->onion = new_onion(m->dht);
+    m->onion_a = new_onion_announce(m->dht);
+    m->onion_c =  new_onion_client(m->dht);
+
+    if (!(m->onion && m->onion_a && m->onion_c)) {
+        kill_onion(m->onion);
+        kill_onion_announce(m->onion_a);
+        kill_onion_client(m->onion_c);
+        kill_DHT(m->dht);
+        kill_net_crypto(m->net_crypto);
+        kill_networking(m->net);
+        free(m);
+        return NULL;
+    }
+
     m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
 
-    friendreq_init(&(m->fr), m->net_crypto);
+    friendreq_init(&(m->fr), m->onion_c);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
@@ -1610,7 +1616,7 @@ void do_friends(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr = send_friendrequest(m->dht, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam,
+            int fr = send_friendrequest(m->onion_c, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam,
                                         m->friendlist[i].info,
                                         m->friendlist[i].info_size);
 
@@ -1630,7 +1636,7 @@ void do_friends(Messenger *m)
             }
 
             IP_Port friendip;
-            int friendok = DHT_getfriendip(m->dht, m->friendlist[i].client_id, &friendip);
+            int friendok = onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip);
 
             switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
                 case CRYPTO_CONN_NO_CONNECTION:
@@ -1957,6 +1963,7 @@ void do_messenger(Messenger *m)
 
     do_DHT(m->dht);
     do_net_crypto(m->net_crypto);
+    do_onion_client(m->onion_c);
     do_friends(m);
     do_inbound(m);
     do_allgroupchats(m);
@@ -2188,9 +2195,12 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
+#ifdef ENABLE_ASSOC_DHT
 
                 if (m->dht->assoc)
                     Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
+
+#endif
             } else
                 return -1;    /* critical */
 

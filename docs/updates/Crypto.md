@@ -20,7 +20,7 @@ case 1: Alice adds Bobs public key and bob waits for Alice to attempt to connect
 case 2: Bob and Alice add their respective public keys to their friends list at the same time.  
     
 case 1:  
-Alice sends a crypto request packet to bob with the encrypted part containing the friends request like so:  
+Alice sends a onion data (see: Prevent_tracking.txt) packet to bob with the encrypted part containing the friends request like so:  
 ```
 [char with a value of 32][nospam number (4 bytes)][Message]
 ```

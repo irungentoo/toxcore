@@ -363,6 +363,9 @@ Onion *new_onion(DHT *dht)
 
 void kill_onion(Onion *onion)
 {
+    if (onion == NULL)
+        return;
+
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, NULL, NULL);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, NULL, NULL);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_2, NULL, NULL);

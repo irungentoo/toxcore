@@ -73,15 +73,15 @@ static int handle_test_3(void *object, IP_Port source, uint8_t *packet, uint32_t
 {
     Onion *onion = object;
 
-    if (length != (1 + crypto_box_NONCEBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_hash_sha256_BYTES +
+    if (length != (1 + crypto_box_NONCEBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + 1 + crypto_hash_sha256_BYTES +
                    crypto_box_MACBYTES))
         return 1;
 
-    uint8_t plain[crypto_hash_sha256_BYTES];
+    uint8_t plain[1 + crypto_hash_sha256_BYTES];
     //print_client_id(packet, length);
     int len = decrypt_data(test_3_pub_key, onion->dht->c->self_secret_key, packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH,
                            packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES,
-                           crypto_hash_sha256_BYTES + crypto_box_MACBYTES, plain);
+                           1 + crypto_hash_sha256_BYTES + crypto_box_MACBYTES, plain);
 
     if (len == -1)
         return 1;
@@ -90,7 +90,7 @@ static int handle_test_3(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (memcmp(packet + 1, sb_data, ONION_ANNOUNCE_SENDBACK_DATA_LENGTH) != 0)
         return 1;
 
-    memcpy(test_3_ping_id, plain, crypto_hash_sha256_BYTES);
+    memcpy(test_3_ping_id, plain + 1, crypto_hash_sha256_BYTES);
     //print_client_id(test_3_ping_id, sizeof(test_3_ping_id));
     handled_test_3 = 1;
     return 0;
@@ -174,7 +174,7 @@ START_TEST(test_basic)
     randombytes(sb_data, sizeof(sb_data));
     memcpy(test_3_pub_key, nodes[3].client_id, crypto_box_PUBLICKEYBYTES);
     ret = send_announce_request(onion1->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
-                                zeroes, onion1->dht->c->self_public_key, sb_data);
+                                zeroes, onion1->dht->c->self_public_key, onion1->dht->c->self_public_key, sb_data);
     ck_assert_msg(ret == 0, "Failed to create/send onion announce_request packet.");
     handled_test_3 = 0;
 
@@ -188,7 +188,7 @@ START_TEST(test_basic)
     onion2_a->entries[1].time = unix_time();
     networking_registerhandler(onion1->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_test_4, onion1);
     send_announce_request(onion1->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
-                          test_3_ping_id, onion1->dht->c->self_public_key, sb_data);
+                          test_3_ping_id, onion1->dht->c->self_public_key, onion1->dht->c->self_public_key, sb_data);
 
     while (memcmp(onion2_a->entries[ONION_ANNOUNCE_MAX_ENTRIES - 2].public_key, onion1->dht->c->self_public_key,
                   crypto_box_PUBLICKEYBYTES) != 0) {
@@ -202,8 +202,8 @@ START_TEST(test_basic)
     ck_assert_msg((onion3 != NULL), "Onion failed initializing.");
 
     new_nonce(nonce);
-    ret = send_data_request(onion3->dht, nodes, onion1->dht->c->self_public_key, nonce, (uint8_t *)"Install gentoo",
-                            sizeof("Install gentoo"));
+    ret = send_data_request(onion3->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_public_key,
+                            nonce, (uint8_t *)"Install gentoo", sizeof("Install gentoo"));
     ck_assert_msg(ret == 0, "Failed to create/send onion data_request packet.");
     handled_test_4 = 0;
 

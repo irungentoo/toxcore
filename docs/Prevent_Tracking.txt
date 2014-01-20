@@ -97,7 +97,8 @@ Data sent to Node D:
 
 announce request packet:
 [uint8_t packet id (131)][nonce][our real long term public key or a temporary one (see next)]
-encrypted (with our real long term private key if we want to announce ourselves, a temporary one if we are searching for friends) and the pub key of Node D and the nonce:[[(32 bytes) ping_id][client id we are searching for][data to send back in response(fixed size)]]
+encrypted (with our real long term private key if we want to announce ourselves, a temporary one if we are searching for friends) and the pub key of Node D and the nonce:
+[[(32 bytes) ping_id][client id we are searching for][public key that we want those sending back data packets to use.][data to send back in response(fixed size)]]
 
 (if the ping id is zero, respond with a announce response packet)
 (If the ping id matches the one the node sent in the announce response and the public key matches the one being searched for, 
@@ -105,7 +106,7 @@ add the part used to send data to our list (if the list is full make it replace 
 
 data to route request packet:
 [uint8_t packet id (133)][public key of destination node][nonce][temporary just generated public key]
-encrypted with that temporary private key and the nonce and the real public key of the destination node:[data]
+encrypted with that temporary private key and the nonce and the public key from the announce response packet of the destination node:[data]
 (if Node D contains the ret data for the node, it sends the stuff in this packet as a data to route response packet to the right node)
 
 The data in the previous packet is in format: [real public key of sender]
@@ -114,12 +115,13 @@ encrypted with real private key of the sender, the nonce in the data packet and 
 Data sent to us:
 announce response packet:
 [uint8_t packet id (132)][data to send back in response(fixed size)][nonce]
-encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[(32 bytes) ping_id][Node_Format * (maximum of 8)]]
-(if the ping id is zero, it means the information to reach the client id we are searching for is stored on this node)
+encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[uint8_t is_stored]
+[(32 bytes) ping_id if is_stored is 0, public key that must be used to send data packets if is_stored is not 0][Node_Format * (maximum of 8)]]
+(if the is_stored is not 0, it means the information to reach the client id we are searching for is stored on this node)
 
 data to route response packet:
 [uint8_t packet id (134)][nonce][temporary just generated public key]
-encrypted with that temporary private key and the nonce and the real public key of the destination node:[data]
+encrypted with that temporary private key, the nonce and the public key from the announce response packet of the destination node:[data]
 
 
 Onion packet (response):
@@ -145,3 +147,11 @@ encrypted with temp symmetric key of Node A: [IP_Port (of us)][data to send back
 (sent from node A to us):
 
 [data to send back]
+
+
+Data packets:
+
+To tell our friend what our DHT public key is so that he can connect to us we send a data packet with id 156 and 
+the data being:[uint64_t (in network byte order) no_replay, the packet will only be accepted if this number is bigger than the last one recieved]
+[our dht public key][Node_Format * (maximum of 8) nodes closest to us so that the friend can find us faster]
+

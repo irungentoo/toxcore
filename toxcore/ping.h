@@ -39,7 +39,7 @@ typedef struct PING PING;
 int add_toping(PING *ping, uint8_t *client_id, IP_Port ip_port);
 void do_toping(PING *ping);
 
-PING *new_ping(DHT *dht, Net_Crypto *c);
+PING *new_ping(DHT *dht);
 void kill_ping(PING *ping);
 
 int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id);

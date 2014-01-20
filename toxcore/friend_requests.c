@@ -35,41 +35,24 @@
  *  return  0 if it sent the friend request directly to the friend.
  *  return the number of peers it was routed through if it did not send it directly.
  */
-int send_friendrequest(DHT *dht, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
+int send_friendrequest(Onion_Client *onion_c, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
 {
     if (length + sizeof(nospam_num) > MAX_DATA_SIZE)
         return -1;
 
     uint8_t temp[MAX_DATA_SIZE];
-    memcpy(temp, &nospam_num, sizeof(nospam_num));
-    memcpy(temp + sizeof(nospam_num), data, length);
-    uint8_t packet[MAX_DATA_SIZE];
-    int len = create_request(dht->c->self_public_key, dht->c->self_secret_key, packet, public_key, temp,
-                             length + sizeof(nospam_num),
-                             CRYPTO_PACKET_FRIEND_REQ);
+    temp[0] = CRYPTO_PACKET_FRIEND_REQ;
+    memcpy(temp + 1, &nospam_num, sizeof(nospam_num));
+    memcpy(temp + 1 + sizeof(nospam_num), data, length);
 
-    if (len == -1)
+    int friend_num = onion_friend_num(onion_c, public_key);
+
+    if (friend_num == -1)
         return -1;
 
-    IP_Port ip_port;
-    int friendok = DHT_getfriendip(dht, public_key, &ip_port);
+    int num = send_onion_data(onion_c, friend_num, temp, 1 + sizeof(nospam_num) + length);
 
-    // not a friend
-    if (friendok == -1)
-        return -1;
-
-    // is a friend and we know how to reach him
-    if (friendok == 1) {
-        if (sendpacket(dht->c->lossless_udp->net, ip_port, packet, len) != -1)
-            return 0;
-
-        return -1;
-    }
-
-    // is a friend, we DON'T know how to reach him
-    int num = route_tofriend(dht, public_key, packet, len);
-
-    if (num == 0)
+    if (num <= 0)
         return -1;
 
     return num;
@@ -130,9 +113,14 @@ static int request_received(Friend_Requests *fr, uint8_t *client_id)
 }
 
 
-static int friendreq_handlepacket(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet,
-                                  uint32_t length)
+static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {
+    if (length == 0)
+        return 1;
+
+    ++packet;
+    --length;
+
     Friend_Requests *fr = object;
 
     if (fr->handle_friendrequest_isset == 0)
@@ -156,7 +144,7 @@ static int friendreq_handlepacket(void *object, IP_Port source, uint8_t *source_
     return 0;
 }
 
-void friendreq_init(Friend_Requests *fr, Net_Crypto *c)
+void friendreq_init(Friend_Requests *fr, Onion_Client *onion_c)
 {
-    cryptopacket_registerhandler(c, CRYPTO_PACKET_FRIEND_REQ, &friendreq_handlepacket, fr);
+    oniondata_registerhandler(onion_c, CRYPTO_PACKET_FRIEND_REQ, &friendreq_handlepacket, fr);
 }

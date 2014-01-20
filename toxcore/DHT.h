@@ -56,6 +56,9 @@
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
 
+/* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
+#define DHT_FAKE_FRIEND_NUMBER 4
+
 /* Functions to transfer ips safely across wire. */
 void to_net_family(IP *ip);
 void to_host_family(IP *ip);
@@ -139,6 +142,7 @@ typedef struct {
 
 typedef struct {
     Net_Crypto  *c;
+    Networking_Core *net;
 
     Client_data    close_clientlist[LCLIENT_LIST];
     uint64_t       close_lastgetnodes;
@@ -153,9 +157,9 @@ typedef struct {
     uint16_t       num_friends;
 
     struct PING   *ping;
-
+#ifdef ENABLE_ASSOC_DHT
     struct Assoc  *assoc;
-
+#endif
     uint64_t       last_run;
 } DHT;
 /*----------------------------------------------------------------------------------*/

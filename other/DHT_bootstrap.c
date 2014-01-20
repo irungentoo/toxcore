@@ -102,9 +102,19 @@ int main(int argc, char *argv[])
     ip_init(&ip, ipv6enabled);
 
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+    Onion *onion = new_onion(dht);
+    Onion_Announce *onion_a = new_onion_announce(dht);
+
+    if (!(onion && onion_a)) {
+        printf("Something failed to initialize.\n");
+        exit(1);
+    }
     perror("Initialization");
 
     manage_keys(dht);
+    /* We want our DHT public key to be the same as our internal one since this is a bootstrap server */
+    memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
     printf("Public key: ");
     uint32_t i;
 
@@ -152,7 +162,7 @@ int main(int argc, char *argv[])
         do_DHT(dht);
 
         if (is_timeout(last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
-            send_LANdiscovery(htons(PORT), dht->c);
+            send_LANdiscovery(htons(PORT), dht);
             last_LANdiscovery = unix_time();
         }
 
