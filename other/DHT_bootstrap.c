@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
         printf("Something failed to initialize.\n");
         exit(1);
     }
+
     perror("Initialization");
 
     manage_keys(dht);
