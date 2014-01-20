@@ -224,6 +224,7 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
         server = config_setting_get_elem(server_list, 0);
 
         if (server == NULL) {
+            config_destroy(&cfg);
             return 0;
         }
 
