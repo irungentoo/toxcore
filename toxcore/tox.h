@@ -47,6 +47,8 @@ typedef short sa_family_t;
 #endif
 #else
 
+#include <sys/types.h>
+#include <netinet/in.h>
 #include <netinet/ip.h>
 
 #endif
