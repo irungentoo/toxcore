@@ -2286,6 +2286,11 @@ void kill_DHT(DHT *dht)
 #ifdef ENABLE_ASSOC_DHT
     kill_Assoc(dht->assoc);
 #endif
+    networking_registerhandler(dht->net, NET_PACKET_GET_NODES, NULL, NULL);
+    networking_registerhandler(dht->net, NET_PACKET_SEND_NODES, NULL, NULL);
+    networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, NULL, NULL);
+    cryptopacket_registerhandler(dht->c, CRYPTO_PACKET_NAT_PING, NULL, NULL);
+    cryptopacket_registerhandler(dht->c, CRYPTO_PACKET_HARDENING, NULL, NULL);
     kill_ping(dht->ping);
     free(dht->friends_list);
     free(dht);

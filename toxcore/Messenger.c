@@ -1581,6 +1581,9 @@ void kill_messenger(Messenger *m)
     for (i = 0; i < numchats; ++i)
         del_groupchat(m, i);
 
+    kill_onion(m->onion);
+    kill_onion_announce(m->onion_a);
+    kill_onion_client(m->onion_c);
     kill_DHT(m->dht);
     kill_net_crypto(m->net_crypto);
     kill_networking(m->net);

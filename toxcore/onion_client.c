@@ -711,6 +711,8 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
  * return -1 on failure
  * return 0 on success
  *
+ * TODO: Make this function better, it currently might be vulnerable to some attacks that
+ * could de anonimize us.
  */
 int random_path(Onion_Client *onion_c, Node_format *nodes)
 {
@@ -720,7 +722,7 @@ int random_path(Onion_Client *onion_c, Node_format *nodes)
     return 0;
 }
 
-#define ANNOUNCE_FRIEND 120
+#define ANNOUNCE_FRIEND 90
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
@@ -775,7 +777,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
 }
 
 #define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 10
-#define ANNOUNCE_INTERVAL_ANNOUNCED 120
+#define ANNOUNCE_INTERVAL_ANNOUNCED 90
 
 static void do_announce(Onion_Client *onion_c)
 {
@@ -854,7 +856,11 @@ void kill_onion_client(Onion_Client *onion_c)
     if (onion_c == NULL)
         return;
 
+    realloc_onion_friends(onion_c, 0);
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
+    oniondata_registerhandler(onion_c, FAKEID_DATA_ID, NULL, NULL);
+    cryptopacket_registerhandler(onion_c->dht->c, FAKEID_DATA_ID, NULL, NULL);
+    memset(onion_c, 0, sizeof(Onion_Client));
     free(onion_c);
 }
