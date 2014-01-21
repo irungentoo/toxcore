@@ -50,6 +50,7 @@ int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t leng
         return -1;
 
     uint8_t step1[sizeof(IP_Port) + length];
+    to_net_family(&nodes[3].ip_port.ip);
     memcpy(step1, &nodes[3].ip_port, sizeof(IP_Port));
     memcpy(step1 + sizeof(IP_Port), data, length);
 
@@ -60,6 +61,7 @@ int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t leng
     crypto_box_keypair(random_public_key, random_secret_key);
 
     uint8_t step2[sizeof(IP_Port) + SEND_BASE + length];
+    to_net_family(&nodes[2].ip_port.ip);
     memcpy(step2, &nodes[2].ip_port, sizeof(IP_Port));
     memcpy(step2 + sizeof(IP_Port), random_public_key, crypto_box_PUBLICKEYBYTES);
 
@@ -71,6 +73,7 @@ int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t leng
 
     crypto_box_keypair(random_public_key, random_secret_key);
     uint8_t step3[sizeof(IP_Port) + SEND_BASE * 2 + length];
+    to_net_family(&nodes[1].ip_port.ip);
     memcpy(step3, &nodes[1].ip_port, sizeof(IP_Port));
     memcpy(step3 + sizeof(IP_Port), random_public_key, crypto_box_PUBLICKEYBYTES);
     len = encrypt_data(nodes[1].client_id, random_secret_key, nonce,
@@ -134,6 +137,8 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
 
     IP_Port send_to;
     memcpy(&send_to, plain, sizeof(IP_Port));
+    to_host_family(&send_to.ip);
+
     uint8_t data[MAX_ONION_SIZE];
     data[0] = NET_PACKET_ONION_SEND_1;
     memcpy(data + 1, packet + 1, crypto_box_NONCEBYTES);
@@ -176,6 +181,8 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     IP_Port send_to;
     memcpy(&send_to, plain, sizeof(IP_Port));
+    to_host_family(&send_to.ip);
+
     uint8_t data[MAX_ONION_SIZE];
     data[0] = NET_PACKET_ONION_SEND_2;
     memcpy(data + 1, packet + 1, crypto_box_NONCEBYTES);
@@ -221,6 +228,8 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     IP_Port send_to;
     memcpy(&send_to, plain, sizeof(IP_Port));
+    to_host_family(&send_to.ip);
+
     uint8_t data[MAX_ONION_SIZE];
     memcpy(data, plain + sizeof(IP_Port), len - sizeof(IP_Port));
     uint32_t data_len = (len - sizeof(IP_Port));

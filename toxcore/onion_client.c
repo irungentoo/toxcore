@@ -537,6 +537,11 @@ static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num, uint
     memcpy(data + 1 + sizeof(uint64_t), onion_c->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     Node_format nodes[MAX_SENT_NODES];
     uint16_t num_nodes = closelist_nodes(onion_c->dht, nodes, MAX_SENT_NODES);
+    uint32_t i;
+
+    for (i = 0; i < num_nodes; ++i)
+        to_net_family(&nodes[i].ip_port.ip);
+
     memcpy(data + FAKEID_DATA_MIN_LENGTH, nodes, sizeof(Node_format) * num_nodes);
     int num1 = -1, num2 = -1;
 
