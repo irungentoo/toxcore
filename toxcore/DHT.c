@@ -2135,21 +2135,18 @@ uint16_t random_nodes_path(DHT *dht, Node_format *nodes, uint16_t max_num)
     if (max_num == 0)
         return 0;
 
+    if (dht->num_friends == 0)
+        return 0;
+
     uint16_t count = 0;
     Client_data *list = NULL;
     uint16_t list_size = 0;
     uint32_t i;
 
     for (i = 0; i < max_num; ++i) {
-        uint16_t rand_num = rand() % (dht->num_friends + 1);
-
-        if (rand_num == dht->num_friends) {
-            list = dht->close_clientlist;
-            list_size = LCLIENT_LIST;
-        } else {
-            list = dht->friends_list[rand_num].client_list;
-            list_size = MAX_FRIEND_CLIENTS;
-        }
+        uint16_t rand_num = rand() % (dht->num_friends);
+        list = dht->friends_list[rand_num].client_list;
+        list_size = MAX_FRIEND_CLIENTS;
 
         uint8_t LAN_ok = 1;
 
