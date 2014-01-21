@@ -30,7 +30,7 @@
 #define ONION_NODE_TIMEOUT 240
 
 /* The interval in seconds at which to tell our friends where we are */
-#define ONION_FAKEID_INTERVAL 60
+#define ONION_FAKEID_INTERVAL 30
 #define DHT_FAKEID_INTERVAL 20
 
 typedef struct {

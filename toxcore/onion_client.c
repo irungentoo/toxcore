@@ -727,7 +727,7 @@ int random_path(Onion_Client *onion_c, Node_format *nodes)
     return 0;
 }
 
-#define ANNOUNCE_FRIEND 90
+#define ANNOUNCE_FRIEND 30
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
@@ -782,7 +782,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
 }
 
 #define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 10
-#define ANNOUNCE_INTERVAL_ANNOUNCED 90
+#define ANNOUNCE_INTERVAL_ANNOUNCED 30
 
 static void do_announce(Onion_Client *onion_c)
 {
