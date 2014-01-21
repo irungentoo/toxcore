@@ -766,11 +766,11 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 
         /* send packets to friend telling them our fake DHT id. */
         if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_onion_sent, ONION_FAKEID_INTERVAL))
-            if (send_fakeid_announce(onion_c, friendnum, 0) > 1)
+            if (send_fakeid_announce(onion_c, friendnum, 0) >= 1)
                 onion_c->friends_list[friendnum].last_fakeid_onion_sent = unix_time();
 
         if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_dht_sent, DHT_FAKEID_INTERVAL))
-            if (send_fakeid_announce(onion_c, friendnum, 1) > 1)
+            if (send_fakeid_announce(onion_c, friendnum, 1) >= 1)
                 onion_c->friends_list[friendnum].last_fakeid_dht_sent = unix_time();
     }
 }
