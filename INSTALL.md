@@ -100,6 +100,13 @@ The following libraries are required along with libsodium and cmake for Mountain
 There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch. See [Usage](#usage) below.
 <a name="homebrew" />
 ####Homebrew:
+To install from the formula:
+```bash
+brew tap Tox/tox
+brew install --HEAD libtoxcore
+```
+
+To do it manually:
 ```
 brew install libtool automake autoconf libconfig libsodium check
 ```
