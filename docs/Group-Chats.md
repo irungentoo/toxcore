@@ -1,5 +1,7 @@
 Massive public group chats.
 
+Note that not all this document has been implemented: only private (invite only) group chats are currently implemented.
+
 Everyone generates a short term public private key pair right before joining 
 the chat.
 
@@ -14,25 +16,23 @@ form of spam/access control.
 
 
 Node format: 
-```
-[char array (node_id), length=32 bytes][ip (in network byte order), length=4 bytes][port (in network byte order), length=2 bytes][Padding , length=2 bytes]
-```
+See DHT, currently uses the IPv6 Node_format.
 
 Get nodes (Request):
 Packet contents: 
 ```
-[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce and private key of the sender:[char with a value of 48][random 8 byte (ping_id)]
+[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the reciever:[char with a value of 48][random 8 byte (ping_id)]
 ```
 Valid replies: a send_nodes packet
 
 Send_nodes (response): 
 ```
-[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce and private key of the sender:[char with a value of 49][random 8 byte (ping_id)][Nodes in node format, length=40 * (number of nodes (maximum of 6 nodes)) bytes]]
+[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the reciever:[char with a value of 49][random 8 byte (ping_id)][Nodes in node format, length=40 * (number of nodes (maximum of 6 nodes)) bytes]]
 ```
 
 Broadcast packet:
 ```
-[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][nonce][Encrypted with the nonce and private key of the sender:[char with a value of 50][Data to send to everyone]]
+[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][nonce][Encrypted with the nonce, private key of the sender and public key of the reciever:[char with a value of 50][Data to send to everyone]]
 ```
 
 
