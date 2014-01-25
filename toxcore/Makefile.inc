@@ -29,6 +29,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/group_chats.c \
                         ../toxcore/assoc.h \
                         ../toxcore/assoc.c \
+						../toxcore/event.h \
+						../toxcore/event.c \
                         ../toxcore/onion.h \
                         ../toxcore/onion.c \
                         ../toxcore/onion_announce.h \
