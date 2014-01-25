@@ -50,7 +50,7 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key
 {
     uint8_t plain[sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port)];
     uint64_t time = unix_time();
-    new_nonce(sendback);
+    random_nonce(sendback);
     memcpy(plain, &num, sizeof(uint32_t));
     memcpy(plain + sizeof(uint32_t), &time, sizeof(uint64_t));
     memcpy(plain + sizeof(uint32_t) + sizeof(uint64_t), public_key, crypto_box_PUBLICKEYBYTES);
@@ -420,7 +420,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
         return -1;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
+    random_nonce(nonce);
 
     uint8_t packet[DATA_IN_RESPONSE_MIN_SIZE + length];
     memcpy(packet, onion_c->dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
