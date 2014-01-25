@@ -703,9 +703,11 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
         return -1;
 
     onion_c->friends_list[friend_num].is_online = is_online;
-    /* Should we reset the no_replay when the other goes offline?
+
+    /* This should prevent some clock related issues */
     if (!is_online)
-        onion_c->friends_list[friend_num].last_noreplay = 0; */
+        onion_c->friends_list[friend_num].last_noreplay = 0;
+
     return 0;
 }
 
