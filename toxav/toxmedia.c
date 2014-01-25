@@ -42,10 +42,7 @@
 #include <opus/opus.h>
 
 #include "toxmsi.h"
-#include "toxmsi_message.h"
-#include "../toxrtp/toxrtp_message.h"
-#include "../toxrtp/tests/test_helper.h"
-#include "phone.h"
+#include "toxrtp.h"
 #include "toxmedia.h"
 
 SDL_Surface *screen;
@@ -77,7 +74,7 @@ int display_received_frame(codec_state *cs, AVFrame *r_video_frame)
 }
 
 struct jitter_buffer {
-    rtp_msg_t **queue;
+    RTPMessage **queue;
     uint16_t capacity;
     uint16_t size;
     uint16_t front;
@@ -92,7 +89,7 @@ struct jitter_buffer *create_queue(int capacity)
 {
     struct jitter_buffer *q;
     q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer),1);
-    q->queue = (rtp_msg_t **)calloc((sizeof(rtp_msg_t) * capacity),1);
+    q->queue = (RTPMessage **)calloc((sizeof(RTPMessage) * capacity),1);
     int i = 0;
 
     for (i = 0; i < capacity; ++i) {
@@ -114,11 +111,15 @@ struct jitter_buffer *create_queue(int capacity)
 uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a, uint32_t ts_b)
 {
     /* should be stable enough */
+    
+    /* TODO: There is already this kind of function in toxrtp.c.
+     *       Maybe merge?
+     */
     return (sn_a > sn_b || ts_a > ts_b);
 }
 
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
-rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
+RTPMessage *dequeue(struct jitter_buffer *q, int *success)
 {
     if (q->size == 0 || q->queue_ready == 0) {
         q->queue_ready = 0;
@@ -129,21 +130,21 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
     int front = q->front;
 
     if (q->id_set == 0) {
-        q->current_id = q->queue[front]->_header->_sequence_number;
-        q->current_ts = q->queue[front]->_header->_timestamp;
+        q->current_id = q->queue[front]->header->sequnum;
+        q->current_ts = q->queue[front]->header->timestamp;
         q->id_set = 1;
     } else {
-        int next_id = q->queue[front]->_header->_sequence_number;
-        int next_ts = q->queue[front]->_header->_timestamp;
+        int next_id = q->queue[front]->header->sequnum;
+        int next_ts = q->queue[front]->header->timestamp;
 
         /* if this packet is indeed the expected packet */
-        if (next_id == (q->current_id + 1) % _MAX_SEQU_NUM) {
+        if (next_id == (q->current_id + 1) % MAX_SEQU_NUM) {
             q->current_id = next_id;
             q->current_ts = next_ts;
         } else {
             if (sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
                 printf("nextid: %d current: %d\n", next_id, q->current_id);
-                q->current_id = (q->current_id + 1) % _MAX_SEQU_NUM;
+                q->current_id = (q->current_id + 1) % MAX_SEQU_NUM;
                 *success = 2; /* tell the decoder the packet is lost */
                 return NULL;
             } else {
@@ -162,8 +163,8 @@ rtp_msg_t *dequeue(struct jitter_buffer *q, int *success)
         q->front = 0;
 
     *success = 1;
-    q->current_id = q->queue[front]->_header->_sequence_number;
-    q->current_ts = q->queue[front]->_header->_timestamp;
+    q->current_id = q->queue[front]->header->sequnum;
+    q->current_ts = q->queue[front]->header->timestamp;
     return q->queue[front];
 }
 
@@ -184,7 +185,7 @@ int empty_queue(struct jitter_buffer *q)
     return 0;
 }
 
-int queue(struct jitter_buffer *q, rtp_msg_t *pk)
+int queue(struct jitter_buffer *q, RTPMessage *pk)
 {
     if (q->size == q->capacity) {
         printf("buffer full, emptying buffer...\n");
@@ -214,9 +215,9 @@ int queue(struct jitter_buffer *q, rtp_msg_t *pk)
         if (b < 0)
             b += q->capacity;
 
-        if (sequence_number_older(q->queue[b]->_header->_sequence_number, q->queue[a]->_header->_sequence_number,
-                                  q->queue[b]->_header->_timestamp, q->queue[a]->_header->_timestamp)) {
-            rtp_msg_t *temp;
+        if (sequence_number_older(q->queue[b]->header->sequnum, q->queue[a]->header->sequnum,
+                                  q->queue[b]->header->timestamp, q->queue[a]->header->timestamp)) {
+            RTPMessage *temp;
             temp = q->queue[a];
             q->queue[a] = q->queue[b];
             q->queue[b] = temp;
@@ -487,7 +488,7 @@ void *encode_video_thread(void *arg)
     int p = 0;
     int err;
     int got_packet;
-    rtp_msg_t *s_video_msg;
+    RTPMessage *s_video_msg;
     int video_frame_finished;
     AVFrame *s_video_frame;
     AVFrame *webcam_frame;
@@ -552,18 +553,13 @@ void *encode_video_thread(void *arg)
                 }
 
                 pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                THREADLOCK()
 
                 if (!enc_video_packet.data) fprintf(stderr, "video packet data is NULL\n");
 
-                s_video_msg = rtp_msg_new ( cs->_rtp_video, enc_video_packet.data, enc_video_packet.size ) ;
-
-                if (!s_video_msg) {
+                if ( 0 > rtp_send_msg ( cs->_rtp_video, cs->_messenger, enc_video_packet.data, enc_video_packet.size) ) {
                     printf("invalid message\n");
                 }
-
-                rtp_send_msg ( cs->_rtp_video, s_video_msg, cs->_networking );
-                THREADUNLOCK()
+                
                 pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
                 av_free_packet(&enc_video_packet);
             }
@@ -587,7 +583,7 @@ void *encode_video_thread(void *arg)
 void *encode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
-    rtp_msg_t *s_audio_msg;
+    RTPMessage *s_audio_msg;
     unsigned char encoded_data[4096];
     int encoded_size = 0;
     int16_t frame[4096];
@@ -606,12 +602,11 @@ void *encode_audio_thread(void *arg)
                 printf("Could not encode audio packet\n");
             } else {
                 pthread_mutex_lock(&cs->rtp_msg_mutex_lock);
-                THREADLOCK()
-                rtp_set_payload_type(cs->_rtp_audio, 96);
-                s_audio_msg = rtp_msg_new (cs->_rtp_audio, encoded_data, encoded_size) ;
-                rtp_send_msg ( cs->_rtp_audio, s_audio_msg, cs->_networking );
+                
+                rtp_send_msg ( cs->_rtp_audio, cs->_messenger, encoded_data, encoded_size );
+                
                 pthread_mutex_unlock(&cs->rtp_msg_mutex_lock);
-                THREADUNLOCK()
+                
             }
         } else {
             usleep(1000);
@@ -646,7 +641,7 @@ void *decode_video_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
     cs->video_stream = 0;
-    rtp_msg_t *r_msg;
+    RTPMessage *r_msg;
     int dec_frame_finished;
     AVFrame *r_video_frame;
     r_video_frame = avcodec_alloc_frame();
@@ -659,8 +654,8 @@ void *decode_video_thread(void *arg)
         r_msg = rtp_recv_msg ( cs->_rtp_video );
 
         if (r_msg) {
-            memcpy(dec_video_packet.data, r_msg->_data, r_msg->_length);
-            dec_video_packet.size = r_msg->_length;
+            memcpy(dec_video_packet.data, r_msg->data, r_msg->length);
+            dec_video_packet.size = r_msg->length;
             avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
 
             if (dec_frame_finished) {
@@ -695,7 +690,7 @@ void *decode_video_thread(void *arg)
 void *decode_audio_thread(void *arg)
 {
     codec_state *cs = (codec_state *)arg;
-    rtp_msg_t *r_msg;
+    RTPMessage *r_msg;
 
     int frame_size = AUDIO_FRAME_SIZE;
     int data_size;
@@ -747,7 +742,7 @@ void *decode_audio_thread(void *arg)
     opus_int16 PCM[frame_size];
 
     while (!cs->quit && cs->receive_audio) {
-        THREADLOCK()
+      
         r_msg = rtp_recv_msg ( cs->_rtp_audio );
 
         if (r_msg) {
@@ -765,7 +760,7 @@ void *decode_audio_thread(void *arg)
         if (success > 0) {
             /* good packet */
             if (success == 1) {
-                dec_frame_len = opus_decode(cs->audio_decoder, r_msg->_data, r_msg->_length, PCM, frame_size, 0);
+                dec_frame_len = opus_decode(cs->audio_decoder, r_msg->data, r_msg->length, PCM, frame_size, 0);
                 rtp_free_msg(cs->_rtp_audio, r_msg);
             }
 
@@ -806,8 +801,7 @@ void *decode_audio_thread(void *arg)
 
             }
         }
-
-        THREADUNLOCK()
+        
         usleep(1000);
     }
 

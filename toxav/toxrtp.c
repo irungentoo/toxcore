@@ -39,8 +39,6 @@
 #define PAYLOAD_ID_VALUE_OPUS 1
 #define PAYLOAD_ID_VALUE_VP8  2
 
-#define MAX_SEQU_NUM 65535
-
 #define size_32 4
 
 #define inline__ inline __attribute__((always_inline))

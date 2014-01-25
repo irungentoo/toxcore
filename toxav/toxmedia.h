@@ -70,7 +70,7 @@
 #define DEFAULT_WEBCAM "/dev/video0"
 #endif
 
-#ifdef defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define VIDEO_DRIVER "vfwcap"
 #define DEFAULT_WEBCAM "0"
 #endif
@@ -126,11 +126,11 @@ typedef struct {
     /* rendered video picture, ready for display */
     VideoPicture    video_picture;
 
-    rtp_session_t *_rtp_video;
-    rtp_session_t *_rtp_audio;
-    int socket;
-    Networking_Core *_networking;
+    RTPSession *_rtp_video;
+    RTPSession *_rtp_audio;
 
+    Tox* _messenger;
+    
     pthread_t encode_audio_thread;
     pthread_t encode_video_thread;
 
@@ -143,11 +143,8 @@ typedef struct {
     uint8_t             quit;
     SDL_Event           SDL_event;
 
-    msi_session_t *_msi;
+    MSISession *_msi;
     uint32_t _frame_rate;
-    uint16_t _send_port, _recv_port;
-    int _tox_sock;
-    //pthread_id _medialoop_id;
 
 } codec_state;
 
@@ -161,7 +158,7 @@ int video_encoder_refresh(codec_state *cs, int bps);
 void *encode_video_thread(void *arg);
 void *encode_audio_thread(void *arg);
 int video_decoder_refresh(codec_state *cs, int width, int height);
-int handle_rtp_video_packet(codec_state *cs, rtp_msg_t *r_msg);
+int handle_rtp_video_packet(codec_state *cs, RTPMessage *r_msg);
 void *decode_video_thread(void *arg);
 void *decode_audio_thread(void *arg);
 

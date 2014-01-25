@@ -35,7 +35,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #define _BSD_SOURCE
-#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <string.h>
@@ -671,7 +670,6 @@ int print_help ( const char* _name )
 	     "\t[IP] (DHT ip)\n"
 	     "\t[PORT] (DHT port)\n"
 	     "\t[KEY] (DHT public key)\n"
-	     "P.S. Friends and key are stored in ./tox_phone.conf\n"
 	     ,_name );
     return 1;
 }

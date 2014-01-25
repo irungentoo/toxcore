@@ -29,6 +29,8 @@
 #include <inttypes.h>
 #include "../toxcore/tox.h"
 
+#define MAX_SEQU_NUM 65535
+
 /**
  * Standard rtp header
  */
