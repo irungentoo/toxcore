@@ -23,6 +23,7 @@
 
 #ifndef TOX_H
 #define TOX_H
+
 #include <stdint.h>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
