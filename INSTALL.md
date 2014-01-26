@@ -28,7 +28,7 @@ On Fedora:
 ```bash
 yum groupinstall "Development Tools"
 yum install libtool autoconf automake libconfig-devel ncurses-devel check check-devel
-``` 
+```
 
 Note that `libconfig-dev` should be >= 1.4.
 
@@ -58,7 +58,7 @@ make check
 sudo make install
 cd ..
 ```
-If your default prefix is /usr/local and you happen to get an error that says "error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory", then you can try running ```sudo ldconfig```, this is an issue common on Linux. If that doesn't fix it, run:
+If your default prefix is /usr/local and you happen to get an error that says "error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory", then you can try running ```sudo ldconfig```. If that doesn't fix it, run:
 ```
 echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf
 sudo ldconfig
@@ -104,6 +104,13 @@ The following libraries are required along with libsodium and cmake for Mountain
 There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch. See [Usage](#usage) below.
 <a name="homebrew" />
 ####Homebrew:
+To install from the formula:
+```bash
+brew tap Tox/tox
+brew install --HEAD libtoxcore
+```
+
+To do it manually:
 ```
 brew install libtool automake autoconf libconfig libsodium check
 ```
@@ -116,6 +123,21 @@ autoreconf -i
 make
 make install
 ```
+
+If execution fails with errors like "dyld: Library not loaded: /opt/tox-im/lib/libtoxcore.0.dylib", you may need to specify libsodium path:
+
+Determine paths:
+```
+brew list libsodium
+```
+
+Configure include and lib folder and build again:
+```bash
+./configure--with-libsodium-headers=/usr/local/Cellar/libsodium/0.4.5/include/ --with-libsodium-libs=/usr/local/Cellar/libsodium/0.4.5/lib/
+make
+make install
+```
+
 Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
@@ -183,7 +205,7 @@ You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)
 
 When installing MinGW, make sure to select the MSYS option in the installer.
-MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all opeartions (i.e. generating/running configure script, compiling, etc.) from the MinGW shell.
+MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all operations (i.e. generating/running configure script, compiling, etc.) from the MinGW shell.
 
 First download the source tarball from http://download.libsodium.org/libsodium/releases/ and build it.
 Assuming that you got the libsodium-0.4.2.tar.gz release:
