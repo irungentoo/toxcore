@@ -30,6 +30,17 @@ yum groupinstall "Development Tools"
 yum install libtool autoconf automake libconfig-devel ncurses-devel check check-devel
 ```
 
+On SunOS: 
+
+```pfexcec 
+pkg install autoconf automake gcc-47
+```
+On FreeBSD 10+:
+
+```tcsh
+pkg install automake autoconf
+```
+
 Note that `libconfig-dev` should be >= 1.4.
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
