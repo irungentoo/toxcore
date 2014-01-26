@@ -186,8 +186,8 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
 
 // Bootstraps servers listed in the config file
 //
-// returns 1 on success
-//         0 on failure, either no or only some servers were bootstrapped
+// returns 1 on success, some or no bootstrap servers were added
+//         0 on failure, a error accured while parsing config file
 
 int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
 {
@@ -210,9 +210,15 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
     config_setting_t *server_list = config_lookup(&cfg, NAME_BOOTSTRAP_SERVERS);
 
     if (server_list == NULL) {
-        syslog(LOG_ERR, "No '%s' setting in configuration file.\n", NAME_BOOTSTRAP_SERVERS);
+        syslog(LOG_WARNING, "No '%s' setting in the configuration file. Skipping bootstrapping.\n", NAME_BOOTSTRAP_SERVERS);
         config_destroy(&cfg);
-        return 0;
+        return 1;
+    }
+
+    if (config_setting_length(server_list) == 0) {
+        syslog(LOG_WARNING, "No bootstrap servers found. Skipping bootstrapping.\n");
+        config_destroy(&cfg);
+        return 1;
     }
 
     int bs_port;
@@ -232,7 +238,7 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
             return 0;
         }
 
-        // Proceed only if all parts are present
+        // Check that all settings are present
         if (config_setting_lookup_string(server, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE) {
             syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_PUBLIC_KEY);
             goto next;
@@ -248,6 +254,7 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
             goto next;
         }
 
+        // Process settings
         if (strlen(bs_public_key) != 64) {
             syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_PUBLIC_KEY, bs_public_key);
             goto next;
@@ -280,36 +287,6 @@ next:
     config_destroy(&cfg);
 
     return 1;
-}
-
-// Checks if we are connected to the DHT
-//
-// returns 1 on success
-//         0 on failure
-
-int try_connect(DHT *dht, int port, int enable_lan_discovery)
-{
-    uint16_t htons_port = htons(port);
-
-    int i;
-
-    for (i = 0; i < 100; i ++) {
-        do_DHT(dht);
-
-        if (enable_lan_discovery) {
-            send_LANdiscovery(htons_port, dht);
-        }
-
-        networking_poll(dht->c->lossless_udp->net);
-
-        if (DHT_isconnected(dht)) {
-            return 1;
-        }
-
-        sleep;
-    }
-
-    return 0;
 }
 
 // Prints public key
@@ -404,13 +381,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (try_connect(dht, port, enable_lan_discovery)) {
-        syslog(LOG_INFO, "Successfully connected to DHT\n");
-    } else {
-        syslog(LOG_ERR, "Couldn't connect to the DHT. Check settings and network connections. Exiting.\n");
-        return 1;
-    }
-
     print_public_key(dht->c->self_public_key);
 
     // Write the PID file
@@ -463,6 +433,8 @@ int main(int argc, char *argv[])
     uint64_t last_LANdiscovery = 0;
     uint16_t htons_port = htons(port);
 
+    int waiting_for_dht_connection = 1;
+
     while (1) {
         do_DHT(dht);
 
@@ -472,6 +444,11 @@ int main(int argc, char *argv[])
         }
 
         networking_poll(dht->net);
+
+        if (waiting_for_dht_connection && DHT_isconnected(dht)) {
+            syslog(LOG_DEBUG, "Connected to other bootstrap server successfully.\n");
+            waiting_for_dht_connection = 0;
+        }
 
         sleep;
     }
