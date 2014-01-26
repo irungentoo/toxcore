@@ -31,8 +31,10 @@
 
 #define MAX_SEQU_NUM 65535
 
+
 /**
- * Standard rtp header
+ * @brief Standard rtp header.
+ * 
  */
 
 typedef struct _RTPHeader {

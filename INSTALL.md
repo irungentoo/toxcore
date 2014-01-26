@@ -1,7 +1,7 @@
 #Install Instructions
 
 - [Installation](#installation)
-    - [GNU/Linux](#gnu/linux)
+    - [Unix like](#unix)
     - [OS X](#osx)
       - [Homebrew](#homebrew)
       - [Non-Homebrew](#non-homebrew)
@@ -10,10 +10,14 @@
 <a name="installation" />
 ##Installation
 
-<a name="gnu/linux" />
-###GNU/Linux:
+<a name="unix" />
+###Most Unix like OSes:
 
 Build dependencies:
+
+Note: package fetching commands may vary by OS.
+
+On Ubuntu: 
 
 ```bash
 sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check git libswscale-dev libsdl-dev libopenal-dev libopus-dev libvpx-dev yasm
@@ -24,6 +28,17 @@ On Fedora:
 ```bash
 yum groupinstall "Development Tools"
 yum install libtool autoconf automake libconfig-devel ncurses-devel check check-devel
+```
+
+On SunOS: 
+
+```pfexcec 
+pkg install autoconf automake gcc-47
+```
+On FreeBSD 10+:
+
+```tcsh
+pkg install automake autoconf
 ```
 
 Note that `libconfig-dev` should be >= 1.4.
