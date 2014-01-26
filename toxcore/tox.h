@@ -24,7 +24,7 @@
 #ifndef TOX_H
 #define TOX_H
 
-#ifndef PLAN9
+#ifdef PLAN9
 #include <u.h>
 #include <libc.h>
 #endif
