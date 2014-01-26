@@ -1794,21 +1794,6 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         ip_copy(&pinging.ip, &ip);
         pinging.port = htons(firstport);
         send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
-
-        if (dht->friends_list[friend_num].nat.tries > MAX_NORMAL_PUNCHING_TRIES) {
-            top = dht->friends_list[friend_num].nat.punching_index2 + MAX_PUNCHING_PORTS / 2;
-            uint16_t port1 = 1024;
-            uint16_t port2 = ~0;
-
-            for (i = dht->friends_list[friend_num].nat.punching_index2; i != top; ++i) {
-                pinging.port = htons(port1 + i);
-                send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
-                pinging.port = htons(port2 - i);
-                send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
-            }
-
-            dht->friends_list[friend_num].nat.punching_index2 = i;
-        }
     } else {
         for (i = dht->friends_list[friend_num].nat.punching_index; i != top; ++i) {
             /* TODO: Improve port guessing algorithm. */
@@ -1820,6 +1805,20 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         }
 
         dht->friends_list[friend_num].nat.punching_index = i;
+    }
+
+    if (dht->friends_list[friend_num].nat.tries > MAX_NORMAL_PUNCHING_TRIES) {
+        top = dht->friends_list[friend_num].nat.punching_index2 + MAX_PUNCHING_PORTS;
+        uint16_t port = 1024;
+        IP_Port pinging;
+        ip_copy(&pinging.ip, &ip);
+
+        for (i = dht->friends_list[friend_num].nat.punching_index2; i != top; ++i) {
+            pinging.port = htons(port + i);
+            send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
+        }
+
+        dht->friends_list[friend_num].nat.punching_index2 = i - (MAX_PUNCHING_PORTS / 2);
     }
 
     ++dht->friends_list[friend_num].nat.tries;
