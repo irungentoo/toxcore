@@ -91,6 +91,7 @@ typedef int sock_t;
 #else
 #define __MAKECONTEXT_V2_SOURCE 1
 #endif
+#endif
 
 #ifndef VANILLA_NACL
 /* We use libsodium by default. */
