@@ -6,13 +6,13 @@ port = 33445
 // The key file is like a password, so keep it where no one can read it.
 // The daemon should have permission to read/write to it.
 // Remember to replace the provided example with your own path.
-keys_file_path = "/home/tom/.tox_dht_bootstrap_server_daemon/keys"
+keys_file_path = "/home/tom/.tox_bootstrap_daemon/keys"
 
 // The PID file written to by daemon.
 // Make sure that the user who runs the daemon has permissions to write to the
 // PID file.
 // Remember to replace the provided example with your own path.
-pid_file_path = "/home/tom/.tox_dht_bootstrap_server_daemon/pid"
+pid_file_path = "/home/tom/.tox_bootstrap_daemon/pid"
 
 // Enable IPv6.
 enable_ipv6 = false
