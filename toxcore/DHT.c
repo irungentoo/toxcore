@@ -46,10 +46,12 @@
 /* Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 5
 
-#define MAX_PUNCHING_PORTS 32
+#define MAX_PUNCHING_PORTS 48
 
 /* Interval in seconds between punching attempts*/
 #define PUNCH_INTERVAL 3
+
+#define MAX_NORMAL_PUNCHING_TRIES 5
 
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
@@ -1792,8 +1794,23 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         ip_copy(&pinging.ip, &ip);
         pinging.port = htons(firstport);
         send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
+
+        if (dht->friends_list[friend_num].nat.tries > MAX_NORMAL_PUNCHING_TRIES) {
+            top = dht->friends_list[friend_num].nat.punching_index2 + MAX_PUNCHING_PORTS / 2;
+            uint16_t port1 = 1024;
+            uint16_t port2 = ~0;
+
+            for (i = dht->friends_list[friend_num].nat.punching_index2; i != top; ++i) {
+                pinging.port = htons(port1 + i);
+                send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
+                pinging.port = htons(port2 - i);
+                send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].client_id);
+            }
+
+            dht->friends_list[friend_num].nat.punching_index2 = i;
+        }
     } else {
-        for (i = dht->friends_list[friend_num].nat.punching_index; i != top; i++) {
+        for (i = dht->friends_list[friend_num].nat.punching_index; i != top; ++i) {
             /* TODO: Improve port guessing algorithm. */
             uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
             IP_Port pinging;
@@ -1804,6 +1821,8 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
 
         dht->friends_list[friend_num].nat.punching_index = i;
     }
+
+    ++dht->friends_list[friend_num].nat.tries;
 }
 
 static void do_NAT(DHT *dht)
