@@ -23,12 +23,6 @@
 
 #ifndef TOX_H
 #define TOX_H
-
-#ifdef PLAN9
-#include <u.h>
-#include <libc.h>
-#endif
-
 #include <stdint.h>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -60,18 +54,6 @@ typedef short sa_family_t;
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#if defined(__AIX__)
-#	define _XOPEN_SOURCE 1
-#endif
-
-#if defined(__sun__)
-#define __EXTENSIONS__ 1 /* SunOS */
-#if defined(__SunOS5_6__) || defined(__SunOS5_7__) || defined(__SunOS5_8__) || defined(__SunOS5_9__) || defined(__SunOS5_10__)
-//Nothing needed
-#else
-#define __MAKECONTEXT_V2_SOURCE 1
 #endif
 
 #define TOX_MAX_NAME_LENGTH 128
