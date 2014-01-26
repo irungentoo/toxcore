@@ -233,20 +233,29 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
         }
 
         // Proceed only if all parts are present
-        if (config_setting_lookup_string(server, NAME_PUBLIC_KEY,  &bs_public_key) == CONFIG_FALSE ||
-                config_setting_lookup_int   (server, NAME_PORT,    &bs_port)       == CONFIG_FALSE ||
-                config_setting_lookup_string(server, NAME_ADDRESS, &bs_address)    == CONFIG_FALSE   ) {
+        if (config_setting_lookup_string(server, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_PUBLIC_KEY);
+            goto next;
+        }
+
+        if (config_setting_lookup_int(server, NAME_PORT, &bs_port) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_PORT);
+            goto next;
+        }
+
+        if (config_setting_lookup_string(server, NAME_ADDRESS, &bs_address) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_ADDRESS);
             goto next;
         }
 
         if (strlen(bs_public_key) != 64) {
-            syslog(LOG_WARNING, "bootstrap_server #%d: Invalid '%s': %s.\n", i, NAME_PUBLIC_KEY, bs_public_key);
+            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_PUBLIC_KEY, bs_public_key);
             goto next;
         }
 
         // not (1 <= port <= 65535)
         if (bs_port < 1 || bs_port > 65535) {
-            syslog(LOG_WARNING, "bootstrap_server #%d: Invalid '%s': %d.\n", i, NAME_PORT, bs_port);
+            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %d. Skipping the server.\n", i, NAME_PORT, bs_port);
             goto next;
         }
 
@@ -254,11 +263,11 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
                                      hex_string_to_bin((char *)bs_public_key));
 
         if (!address_resolved) {
-            syslog(LOG_WARNING, "bootstrap_server #%d: Invalid '%s': %s.\n", i, NAME_ADDRESS, bs_address);
+            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_ADDRESS, bs_address);
             goto next;
         }
 
-        syslog(LOG_DEBUG, "Successfully connected to %s:%d %s\n", bs_address, bs_port, bs_public_key);
+        syslog(LOG_DEBUG, "Successfully added bootstrap server #%d: %s:%d %s\n", i, bs_address, bs_port, bs_public_key);
 
 next:
         // config_setting_lookup_string() allocates string inside and doesn't allow us to free it
@@ -330,7 +339,7 @@ int main(int argc, char *argv[])
     openlog(DAEMON_NAME, LOG_NOWAIT | LOG_PID, LOG_DAEMON);
 
     if (argc < 2) {
-        syslog(LOG_ERR, "Please specify a configuration file. Exiting.\n");
+        syslog(LOG_ERR, "Please specify a path to a configuration file as the first argument. Exiting.\n");
         return 1;
     }
 
