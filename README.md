@@ -5,9 +5,10 @@ With the rise of governmental monitoring programs, Tox aims to be an easy to use
 
 
 
-**IRC**: #tox on freenode, alternatively, you can use the [webchat](http://webchat.freenode.net/?channels=#tox).<br />
-**Website**: [http://tox.im](http://tox.im)
-**Developer Blog**: [http://dev.tox.im](http://dev.tox.im)
+**IRC**: #tox on freenode, alternatively, you can use the [webchat](https://webchat.freenode.net/?channels=#tox).<br />
+**Website**: [https://tox.im](https://tox.im)<br>
+**Developer Blog**: [http://dev.tox.im](http://dev.tox.im)<br>
+**Jenkins**: [http://jenkins.tox.im](http://jenkins.tox.im)
 
 **Website translations**: [here](https://github.com/Tox/tox.im)<br/>
 **Qt GUI**: [see nurupo's repository](https://github.com/nurupo/ProjectTox-Qt-GUI)
