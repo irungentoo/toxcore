@@ -11,6 +11,7 @@
 
 #include "../toxcore/onion.h"
 #include "../toxcore/onion_announce.h"
+#include "../toxcore/onion_client.h"
 #include "../toxcore/util.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -218,6 +219,7 @@ END_TEST
 typedef struct {
     Onion *onion;
     Onion_Announce *onion_a;
+    Onion_Client *onion_c;
 } Onions;
 
 Onions *new_onions(uint16_t port)
@@ -229,14 +231,22 @@ Onions *new_onions(uint16_t port)
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, port)));
     on->onion = new_onion(dht);
     on->onion_a = new_onion_announce(dht);
+    on->onion_c = new_onion_client(dht);
 
-    if (on->onion && on->onion_a)
+    if (on->onion && on->onion_a && on->onion_c)
         return on;
 
     return NULL;
 }
 
-#define NUM_ONIONS 64
+void do_onions(Onions *on)
+{
+    networking_poll(on->onion->net);
+    do_DHT(on->onion->dht);
+    do_onion_client(on->onion_c);
+}
+
+#define NUM_ONIONS 24
 
 START_TEST(test_announce)
 {
@@ -248,7 +258,42 @@ START_TEST(test_announce)
         ck_assert_msg(onions[i] != 0, "Failed to create onions. %u");
     }
 
+    IP ip;
+    ip_init(&ip, 1);
+    ip.ip6.uint8[15] = 1;
 
+    for (i = 1; i < NUM_ONIONS; ++i) {
+        IP_Port ip_port = {ip, onions[i - 1]->onion->net->port};
+        DHT_bootstrap(onions[i]->onion->dht, ip_port, onions[i - 1]->onion->dht->self_public_key);
+    }
+
+    uint32_t connected = 0;
+
+    while (connected != NUM_ONIONS) {
+        connected = 0;
+
+        for (i = 0; i < NUM_ONIONS; ++i) {
+            do_onions(onions[i]);
+            connected += DHT_isconnected(onions[i]->onion->dht);
+        }
+    }
+
+    /*
+        onion_addfriend(onions[7]->onion_c, onions[23]->onion->dht->c->self_public_key);
+        int frnum = onion_addfriend(onions[23]->onion_c, onions[7]->onion->dht->c->self_public_key);
+
+        uint32_t ok = 0;
+
+        while (ok != 1) {
+            for (i = 0; i < NUM_ONIONS; ++i) {
+                do_onions(onions[i]);
+            }
+
+            IP_Port ip_port;
+            ok = onion_getfriendip(onions[23]->onion_c, frnum, &ip_port);
+
+            c_sleep(50);
+        }*/
 }
 END_TEST
 
@@ -265,7 +310,7 @@ Suite *onion_suite(void)
     Suite *s = suite_create("Onion");
 
     DEFTESTCASE_SLOW(basic, 5);
-    DEFTESTCASE_SLOW(announce, 5);
+    DEFTESTCASE_SLOW(announce, 40);
     return s;
 }
 
