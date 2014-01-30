@@ -398,20 +398,20 @@ int main(int argc, char *argv[])
     pid_t pid = fork();
 
     if (pid < 0) {
+        fclose(pidf);
         syslog(LOG_ERR, "Forking failed. Exiting.\n");
         return 1;
     }
 
     if (pid > 0) {
+        fprintf(pidf, "%d\n", pid);
+        fclose(pidf);
         syslog(LOG_DEBUG, "Forked successfully: PID: %d.\n", pid);
         return 0;
     }
 
     // Change the file mode mask
     umask(0);
-
-    fprintf(pidf, "%d\n", pid);
-    fclose(pidf);
 
     // Create a new SID for the child process
     if (setsid() < 0) {
