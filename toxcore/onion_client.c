@@ -183,13 +183,19 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, uint8_t *publ
     qsort(list_nodes, MAX_ONION_CLIENTS, sizeof(Onion_Node), cmp_entry);
 
     int index = -1;
-
-    if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
-            || id_closest(reference_id, list_nodes[0].client_id, public_key) == 2) {
-        index = 0;
-    }
-
     uint32_t i;
+
+    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+        if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT)
+                || id_closest(reference_id, list_nodes[i].client_id, public_key) == 2) {
+            index = i;
+
+            if (i != 0)
+                break;
+        } else {
+            break;
+        }
+    }
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
         if (memcmp(list_nodes[i].client_id, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
@@ -255,8 +261,9 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
                 }
             }
 
-            if (j == MAX_ONION_CLIENTS)
+            if (j == MAX_ONION_CLIENTS) {
                 client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].client_id, NULL);
+            }
         }
     }
 
@@ -306,7 +313,10 @@ static int handle_announce_response(void *object, IP_Port source, uint8_t *packe
     if (client_add_to_list(onion_c, num, public_key, ip_port, plain[0], plain + 1) == -1)
         return 1;
 
-    if (client_ping_nodes(onion_c, num, (Node_format *)plain + 1 + ONION_PING_ID_SIZE, num_nodes, source) == -1)
+    Node_format nodes[MAX_SENT_NODES];
+    memcpy(nodes, plain + 1 + ONION_PING_ID_SIZE, num_nodes * sizeof(Node_format));
+
+    if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1)
         return 1;
 
     return 0;
