@@ -258,10 +258,14 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
         ip_port->port = addr_in->sin_port;
     } else if (addr.ss_family == AF_INET6) {
         struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
-
         ip_port->ip.family = addr_in6->sin6_family;
         ip_port->ip.ip6.in6_addr = addr_in6->sin6_addr;
         ip_port->port = addr_in6->sin6_port;
+
+        if (IN6_IS_ADDR_V4MAPPED(&ip_port->ip.ip6.in6_addr)) {
+            ip_port->ip.family = AF_INET;
+            ip_port->ip.ip4.uint32 = ip_port->ip.ip6.uint32[3];
+        }
     } else
         return -1;
 

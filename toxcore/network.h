@@ -81,7 +81,7 @@ typedef int sock_t;
 #endif
 
 #if defined(__AIX__)
-#	define _XOPEN_SOURCE 1
+#   define _XOPEN_SOURCE 1
 #endif
 
 #if defined(__sun__)
