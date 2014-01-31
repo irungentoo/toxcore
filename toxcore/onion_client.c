@@ -766,24 +766,26 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
             }
         }
 
-        if (count < MAX_ONION_CLIENTS / 2) {
-            Node_format nodes_list[MAX_SENT_NODES];
-            uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[friendnum].real_client_id, nodes_list,
-                                                 rand() % 2 ? AF_INET : AF_INET6, 1, 0);
+        if (count != MAX_ONION_CLIENTS) {
+            if (count < rand() % MAX_ONION_CLIENTS) {
+                Node_format nodes_list[MAX_SENT_NODES];
+                uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[friendnum].real_client_id, nodes_list,
+                                                     rand() % 2 ? AF_INET : AF_INET6, 1, 0);
 
-            for (i = 0; i < num_nodes; ++i)
-                client_send_announce_request(onion_c, friendnum + 1, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
+                for (i = 0; i < num_nodes; ++i)
+                    client_send_announce_request(onion_c, friendnum + 1, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
+            }
+
+
+            /* send packets to friend telling them our fake DHT id. */
+            if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_onion_sent, ONION_FAKEID_INTERVAL))
+                if (send_fakeid_announce(onion_c, friendnum, 0) >= 1)
+                    onion_c->friends_list[friendnum].last_fakeid_onion_sent = unix_time();
+
+            if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_dht_sent, DHT_FAKEID_INTERVAL))
+                if (send_fakeid_announce(onion_c, friendnum, 1) >= 1)
+                    onion_c->friends_list[friendnum].last_fakeid_dht_sent = unix_time();
         }
-
-
-        /* send packets to friend telling them our fake DHT id. */
-        if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_onion_sent, ONION_FAKEID_INTERVAL))
-            if (send_fakeid_announce(onion_c, friendnum, 0) >= 1)
-                onion_c->friends_list[friendnum].last_fakeid_onion_sent = unix_time();
-
-        if (is_timeout(onion_c->friends_list[friendnum].last_fakeid_dht_sent, DHT_FAKEID_INTERVAL))
-            if (send_fakeid_announce(onion_c, friendnum, 1) >= 1)
-                onion_c->friends_list[friendnum].last_fakeid_dht_sent = unix_time();
     }
 }
 /* Function to call when onion data packet with contents beginning with byte is received. */
@@ -820,13 +822,15 @@ static void do_announce(Onion_Client *onion_c)
         }
     }
 
-    if (count < MAX_ONION_CLIENTS / 2) {
-        Node_format nodes_list[MAX_SENT_NODES];
-        uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->dht->c->self_public_key, nodes_list,
-                                             rand() % 2 ? AF_INET : AF_INET6, 1, 0);
+    if (count != MAX_ONION_CLIENTS) {
+        if (count < rand() % MAX_ONION_CLIENTS) {
+            Node_format nodes_list[MAX_SENT_NODES];
+            uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->dht->c->self_public_key, nodes_list,
+                                                 rand() % 2 ? AF_INET : AF_INET6, 1, 0);
 
-        for (i = 0; i < num_nodes; ++i)
-            client_send_announce_request(onion_c, 0, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
+            for (i = 0; i < num_nodes; ++i)
+                client_send_announce_request(onion_c, 0, nodes_list[i].ip_port, nodes_list[i].client_id, 0);
+        }
     }
 }
 
