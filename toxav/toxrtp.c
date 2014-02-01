@@ -28,8 +28,7 @@
 
 #include "toxrtp.h"
 #include <assert.h>
-#include <limits.h>
-#include <pthread.h>
+#include <stdlib.h>
 
 #include "../toxcore/util.h"
 #include "../toxcore/network.h"
@@ -58,6 +57,88 @@
 #define GET_SETTING_MARKER(_h) (( _h->marker_payloadt ) >> 7)
 #define GET_SETTING_PAYLOAD(_h) ((_h->marker_payloadt) & 0x7f)
 
+
+/**
+ * @brief Converts 4 bytes to uint32_t
+ * 
+ * @param dest Where to convert
+ * @param bytes What bytes
+ * @return void
+ */
+inline__ void bytes_to_U32(uint32_t* dest, const uint8_t* bytes)
+{
+    *dest = 
+#ifdef WORDS_BIGENDIAN    
+    ( ( uint32_t ) *  bytes )              |
+    ( ( uint32_t ) * ( bytes + 1 ) << 8 )  |
+    ( ( uint32_t ) * ( bytes + 2 ) << 16 ) |
+    ( ( uint32_t ) * ( bytes + 3 ) << 24 ) ;
+#else
+    ( ( uint32_t ) *  bytes        << 24 ) |
+    ( ( uint32_t ) * ( bytes + 1 ) << 16 ) |
+    ( ( uint32_t ) * ( bytes + 2 ) << 8 )  |
+    ( ( uint32_t ) * ( bytes + 3 ) ) ;
+#endif    
+}
+
+/**
+ * @brief Converts 2 bytes to uint16_t
+ * 
+ * @param dest Where to convert
+ * @param bytes What bytes
+ * @return void
+ */
+inline__ void bytes_to_U16(uint16_t* dest, const uint8_t* bytes)
+{    
+    *dest = 
+#ifdef WORDS_BIGENDIAN    
+    ( ( uint16_t ) *   bytes ) |
+    ( ( uint16_t ) * ( bytes + 1 ) << 8 );
+#else
+    ( ( uint16_t ) *   bytes << 8 ) |
+    ( ( uint16_t ) * ( bytes + 1 ) );
+#endif   
+}
+
+/**
+ * @brief Convert uint32_t to byte string of size 4
+ * 
+ * @param dest Where to convert
+ * @param value The value
+ * @return void
+ */
+inline__ void U32_to_bytes(uint8_t* dest, uint32_t value)
+{    
+#ifdef WORDS_BIGENDIAN    
+    *(dest)     = ( value );
+    *(dest + 1) = ( value >> 8 );
+    *(dest + 2) = ( value >> 16 );
+    *(dest + 3) = ( value >> 24 );
+#else
+    *(dest)     = ( value >> 24 );
+    *(dest + 1) = ( value >> 16 );
+    *(dest + 2) = ( value >> 8 );
+    *(dest + 3) = ( value );
+#endif   
+}
+
+/**
+ * @brief Convert uint16_t to byte string of size 2
+ * 
+ * @param dest Where to convert
+ * @param value The value
+ * @return void
+ */
+inline__ void U16_to_bytes(uint8_t* dest, uint16_t value)
+{
+#ifdef WORDS_BIGENDIAN    
+    *(dest)     = ( value );
+    *(dest + 1) = ( value >> 8 );
+#else
+    *(dest)     = ( value >> 8 );
+    *(dest + 1) = ( value );
+#endif   
+}
 
 
 /**
@@ -89,25 +170,31 @@ inline__ int check_late_message (RTPSession* session, RTPMessage* msg)
  */
 inline__ void increase_nonce(uint8_t* nonce, uint16_t target)
 {
-    uint16_t _nonce_counter = ((uint16_t)(
-        (((uint16_t) nonce [crypto_box_NONCEBYTES - 1]) << 8 ) |
-        (((uint16_t) nonce [crypto_box_NONCEBYTES - 2])      )));
-    
+    uint16_t _nonce_counter;
+
+    uint8_t _reverse_bytes[2];
+    _reverse_bytes[0] = nonce[crypto_box_NONCEBYTES - 1];
+    _reverse_bytes[1] = nonce[crypto_box_NONCEBYTES - 2];
+
+    bytes_to_U16(&_nonce_counter, _reverse_bytes );
+
     /* Check overflow */
-    if (_nonce_counter > USHRT_MAX - target ) { /* 2 bytes are not long enough */
-        int _it = 3;
+    if (_nonce_counter > UINT16_MAX - target ) { /* 2 bytes are not long enough */
+        uint8_t _it = 3;
         while ( _it <= crypto_box_NONCEBYTES ) _it += ++nonce[crypto_box_NONCEBYTES - _it] ? crypto_box_NONCEBYTES : 1;
         
-        _nonce_counter = _nonce_counter - (USHRT_MAX - target ); /* Assign the rest of it */
+        _nonce_counter = _nonce_counter - (UINT16_MAX - target ); /* Assign the rest of it */
     } else { /* Increase nonce */
         
         _nonce_counter+= target;
     }
     
-    /* Assign the 8 last bytes */
+    /* Assign the last bytes */
     
-    nonce [crypto_box_NONCEBYTES - 1] = (uint8_t) (_nonce_counter >> 8);
-    nonce [crypto_box_NONCEBYTES - 2] = (uint8_t) (_nonce_counter);
+    U16_to_bytes( _reverse_bytes, _nonce_counter);
+    nonce [crypto_box_NONCEBYTES - 1] = _reverse_bytes[0];
+    nonce [crypto_box_NONCEBYTES - 2] = _reverse_bytes[1];
+    
 }
 
 
@@ -141,15 +228,15 @@ static const uint32_t payload_table[] =
  * @return RTPHeader* Extracted header.
  * @retval NULL Error occurred while extracting header.
  */
-RTPHeader* extract_header ( const uint8_t* payload, size_t length )
+RTPHeader* extract_header ( const uint8_t* payload, int length )
 {
-    if ( !payload ) {
+    if ( !payload || !length ) {
         return NULL;
     }
     
     const uint8_t* _it = payload;
     
-    RTPHeader* _retu = calloc(sizeof(RTPHeader), 1);
+    RTPHeader* _retu = calloc(1, sizeof (RTPHeader));
     assert(_retu);
     
     _retu->flags = *_it; ++_it;
@@ -168,7 +255,7 @@ RTPHeader* extract_header ( const uint8_t* payload, size_t length )
      * Added a check for the size of the header little sooner so
      * I don't need to parse the other stuff if it's bad
      */
-    uint8_t _cc = GET_FLAG_CSRCC ( _retu );
+    uint8_t _cc = GET_FLAG_CSRCC ( _retu );    
     uint32_t _length = 12 /* Minimum header len */ + ( _cc * 4 );
     
     if ( length < _length ) {
@@ -178,7 +265,7 @@ RTPHeader* extract_header ( const uint8_t* payload, size_t length )
     }
     
     if ( _cc > 0 ) {
-        _retu->csrc = calloc ( sizeof ( uint32_t ), _cc );
+        _retu->csrc = calloc (_cc, sizeof (uint32_t));
         assert(_retu->csrc);
         
     } else { /* But this should not happen ever */
@@ -191,26 +278,13 @@ RTPHeader* extract_header ( const uint8_t* payload, size_t length )
     _retu->marker_payloadt = *_it; ++_it;
     _retu->length = _length;
     
-    _retu->timestamp = ( ( uint32_t ) * _it         << 24 ) |
-    ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
-    ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
-    (              * ( _it + 3 ) ) ;
     
-    _it += 4;
+    bytes_to_U32(&_retu->timestamp, _it); _it += 4;    
+    bytes_to_U32(&_retu->ssrc, _it);
     
-    _retu->ssrc = ( ( uint32_t ) * _it         << 24 ) |
-    ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
-    ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
-    ( ( uint32_t ) * ( _it + 3 ) ) ;
-    
-    
-    size_t _x;
+    uint8_t _x;
     for ( _x = 0; _x < _cc; _x++ ) {
-        _it += 4;
-        _retu->csrc[_x] = ( ( uint32_t ) * _it          << 24 ) |
-        ( ( uint32_t ) * ( _it + 1 )  << 16 ) |
-        ( ( uint32_t ) * ( _it + 2 )  << 8 )  |
-        ( ( uint32_t ) * ( _it + 3 ) ) ;
+        _it += 4; bytes_to_U32(&(_retu->csrc[_x]), _it);
     }
     
     return _retu;
@@ -228,29 +302,26 @@ RTPExtHeader* extract_ext_header ( const uint8_t* payload, size_t length )
 {
     const uint8_t* _it = payload;
     
-    RTPExtHeader* _retu = calloc(sizeof(RTPExtHeader), 1);
+    RTPExtHeader* _retu = calloc(1, sizeof (RTPExtHeader));
     assert(_retu);
     
-    uint16_t _ext_length = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it += 2;
+    uint16_t _ext_length; 
+    bytes_to_U16(&_ext_length, _it); _it += 2;
+    
     
     if ( length < ( _ext_length * sizeof(uint32_t) ) ) {
         return NULL;
     }
     
     _retu->length  = _ext_length;
-    _retu->type = ( ( uint16_t ) * _it << 8 ) | * ( _it + 1 ); _it -= 2;
+    bytes_to_U16(&_retu->type, _it); _it += 2;
     
-    _retu->table = calloc(sizeof(uint32_t), _ext_length );
+    _retu->table = calloc(_ext_length, sizeof (uint32_t));
     assert(_retu->table);
     
-    uint32_t* _table = _retu->table;
-    size_t _i;
-    for ( _i = 0; _i < _ext_length; _i++ ) {
-        _it += 4;
-        _table[_i] = ( ( uint32_t ) * _it         << 24 ) |
-        ( ( uint32_t ) * ( _it + 1 ) << 16 ) |
-        ( ( uint32_t ) * ( _it + 2 ) << 8 )  |
-        ( ( uint32_t ) * ( _it + 3 ) ) ;
+    uint16_t _x;
+    for ( _x = 0; _x < _ext_length; _x++ ) {
+        _it += 4; bytes_to_U32(&(_retu->table[_x]), _it);
     }
     
     return _retu;
@@ -271,33 +342,18 @@ uint8_t* add_header ( RTPHeader* header, uint8_t* payload )
     
     
     /* Add sequence number first */
-    *_it = ( header->sequnum >> 8 ); ++_it;
-    *_it = ( header->sequnum ); ++_it;
+    U16_to_bytes(_it, header->sequnum); _it += 2;
      
     *_it = header->flags; ++_it;
     *_it = header->marker_payloadt; ++_it;
      
      
-    uint32_t _timestamp = header->timestamp;
-    *_it = ( _timestamp >> 24 ); ++_it;
-    *_it = ( _timestamp >> 16 ); ++_it;
-    *_it = ( _timestamp >> 8 ); ++_it;
-    *_it = ( _timestamp ); ++_it;
+    U32_to_bytes( _it, header->timestamp); _it+=4;
+    U32_to_bytes( _it, header->ssrc);
     
-    uint32_t _ssrc = header->ssrc;
-    *_it = ( _ssrc >> 24 ); ++_it;
-    *_it = ( _ssrc >> 16 ); ++_it;
-    *_it = ( _ssrc >> 8 ); ++_it;
-    *_it = ( _ssrc );
-    
-    uint32_t *_csrc = header->csrc;
-    size_t _x;
+    uint8_t _x;
     for ( _x = 0; _x < _cc; _x++ ) {
-        ++_it;
-        *_it = ( _csrc[_x] >> 24 );  ++_it;
-        *_it = ( _csrc[_x] >> 16 );  ++_it;
-        *_it = ( _csrc[_x] >> 8 );   ++_it;
-        *_it = ( _csrc[_x] );
+        _it+=4; U32_to_bytes( _it, header->csrc[_x]);
     }
     
     return _it;
@@ -314,21 +370,12 @@ uint8_t* add_ext_header ( RTPExtHeader* header, uint8_t* payload )
 {
     uint8_t* _it = payload;
     
-    *_it = ( header->length >> 8 ); _it++;
-    *_it = ( header->length ); _it++;
+    U16_to_bytes(_it, header->length); _it+=2;
+    U16_to_bytes(_it, header->type); _it-=2; /* Return to 0 position */
     
-    *_it = ( header->type >> 8 ); ++_it;
-    *_it = ( header->type );
-    
-    size_t x;
-    
-    uint32_t* _hd_ext = header->table;
-    for ( x = 0; x < header->length; x++ ) {
-        ++_it;
-        *_it = ( _hd_ext[x] >> 24 );  ++_it;
-        *_it = ( _hd_ext[x] >> 16 );  ++_it;
-        *_it = ( _hd_ext[x] >> 8 );  ++_it;
-        *_it = ( _hd_ext[x] );
+    uint16_t _x;
+    for ( _x = 0; _x < header->length; _x++ ) {
+        _it+=4; U32_to_bytes(_it, header->table[_x]);
     }
     
     return _it;
@@ -342,8 +389,7 @@ uint8_t* add_ext_header ( RTPExtHeader* header, uint8_t* payload )
  */
 RTPHeader* build_header ( RTPSession* session )
 {
-    RTPHeader* _retu;
-    _retu = calloc ( sizeof * _retu, 1 );
+    RTPHeader* _retu = calloc ( 1, sizeof (RTPHeader) );
     assert(_retu);
     
     ADD_FLAG_VERSION ( _retu, session->version );
@@ -358,7 +404,7 @@ RTPHeader* build_header ( RTPSession* session )
     _retu->ssrc = session->ssrc;
     
     if ( session->cc > 0 ) {
-        _retu->csrc = calloc(sizeof(uint32_t), session->cc);
+        _retu->csrc = calloc(session->cc, sizeof (uint32_t));
         assert(_retu->csrc);
         
         int i;
@@ -388,12 +434,9 @@ RTPHeader* build_header ( RTPSession* session )
  * @return RTPMessage*
  * @retval NULL Error occurred.
  */
-RTPMessage* msg_parse ( RTPSession* session, uint16_t sequnum, const uint8_t* data, uint32_t length )
-{
-    assert( length != -1);
-    
-    RTPMessage* _retu = calloc(sizeof(RTPMessage), 1);
-    assert(_retu);
+RTPMessage* msg_parse ( uint16_t sequnum, const uint8_t* data, int length )
+{    
+    RTPMessage* _retu = calloc(1, sizeof (RTPMessage));
     
     _retu->header = extract_header ( data, length ); /* It allocates memory and all */
     
@@ -413,7 +456,7 @@ RTPMessage* msg_parse ( RTPSession* session, uint16_t sequnum, const uint8_t* da
         if ( _retu->ext_header ){
             _retu->length -= ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
             _from_pos += ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
-        } else {
+        } else { /* Error */
             free (_retu->ext_header);
             free (_retu->header);
             free (_retu);
@@ -423,19 +466,8 @@ RTPMessage* msg_parse ( RTPSession* session, uint16_t sequnum, const uint8_t* da
         _retu->ext_header = NULL;
     }
     
-    /* Get the payload */
-    _retu->data = calloc ( sizeof ( uint8_t ), _retu->length );
-    assert(_retu->data);
-    
     memcpy ( _retu->data, data + _from_pos, length - _from_pos );
-    
     _retu->next = NULL;
-    
-    
-    if ( session && check_late_message ( session, _retu) < 0 ){
-        session->rsequnum = _retu->header->sequnum;
-        session->timestamp = _retu->header->timestamp;
-    }
     
     return _retu;
 }
@@ -460,8 +492,9 @@ int rtp_handle_packet ( void* object, IP_Port ip_port, uint8_t* data, uint32_t l
         return -1;
     
     uint8_t _plain[MAX_UDP_PACKET_SIZE];
-    
-    uint16_t _sequnum = ( ( uint16_t ) data[1] << 8 ) | data[2];
+            
+    uint16_t _sequnum;
+    bytes_to_U16(&_sequnum, data + 1);
         
     /* Clculate the right nonce */
     uint8_t _calculated[crypto_box_NONCEBYTES];
@@ -500,10 +533,9 @@ int rtp_handle_packet ( void* object, IP_Port ip_port, uint8_t* data, uint32_t l
         }
     }
     
-    _msg = msg_parse ( NULL, _sequnum, _plain, _decrypted_length );
+    _msg = msg_parse ( _sequnum, _plain, _decrypted_length );
     
-    if ( !_msg )
-        return -1;
+    if ( !_msg ) return -1;
     
     /* Hopefully this goes well 
      * NOTE: Is this even used?
@@ -548,7 +580,7 @@ RTPMessage* rtp_new_message ( RTPSession* session, const uint8_t* data, uint32_t
         return NULL;
     
     uint8_t* _from_pos;
-    RTPMessage* _retu = calloc(sizeof(RTPMessage), 1);
+    RTPMessage* _retu = calloc(1, sizeof (RTPMessage));
     assert(_retu);
     
     /* Sets header values and copies the extension header in _retu */
@@ -560,17 +592,10 @@ RTPMessage* rtp_new_message ( RTPSession* session, const uint8_t* data, uint32_t
     
     if ( _retu->ext_header ) {
         _total_length += ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
-        /* Allocate Memory for _retu->_data */
-        _retu->data = calloc ( sizeof _retu->data, _total_length );
-        assert(_retu->data);
         
         _from_pos = add_header ( _retu->header, _retu->data );
         _from_pos = add_ext_header ( _retu->ext_header, _from_pos + 1 );
     } else {
-        /* Allocate Memory for _retu->_data */
-        _retu->data = calloc ( sizeof _retu->data, _total_length );
-        assert(_retu->data);
-        
         _from_pos = add_header ( _retu->header, _retu->data );
     }
     
@@ -588,6 +613,11 @@ RTPMessage* rtp_new_message ( RTPSession* session, const uint8_t* data, uint32_t
     
     return _retu;
 }
+
+
+
+
+
 
 
 /********************************************************************************************************************  
@@ -733,14 +763,13 @@ int rtp_send_msg ( RTPSession* session, Tox* messenger, const uint8_t* data, uin
 /**
  * @brief Speaks for it self.
  * 
- * @param session The control session msg belongs to. It can be NULL.
+ * @param session The control session msg belongs to. You set it as NULL when freeing recved messages.
+ *                Otherwise set it to session the message was created from.
  * @param msg The message.
  * @return void
  */
 void rtp_free_msg ( RTPSession* session, RTPMessage* msg )
 {
-    free ( msg->data );
-    
     if ( !session ){
         free ( msg->header->csrc );
         if ( msg->ext_header ){
@@ -793,7 +822,7 @@ RTPSession* rtp_init_session ( int            payload_type,
         return NULL;
     }
     
-    RTPSession* _retu = calloc(sizeof(RTPSession), 1);
+    RTPSession* _retu = calloc(1, sizeof(RTPSession));
     assert(_retu);
     
     networking_registerhandler(_messenger_casted->net, payload_type, rtp_handle_packet, _retu);
@@ -819,15 +848,15 @@ RTPSession* rtp_init_session ( int            payload_type,
     _retu->decrypt_key = decrypt_key;
     
     /* Need to allocate new memory */
-    _retu->encrypt_nonce = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES ); assert(_retu->encrypt_nonce);
-    _retu->decrypt_nonce = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES ); assert(_retu->decrypt_nonce);
-    _retu->nonce_cycle   = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES ); assert(_retu->nonce_cycle);
+    _retu->encrypt_nonce = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) ); assert(_retu->encrypt_nonce);
+    _retu->decrypt_nonce = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) ); assert(_retu->decrypt_nonce);
+    _retu->nonce_cycle   = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) ); assert(_retu->nonce_cycle);
     
     memcpy(_retu->encrypt_nonce, encrypt_nonce, crypto_box_NONCEBYTES);    
     memcpy(_retu->decrypt_nonce, decrypt_nonce, crypto_box_NONCEBYTES);
     memcpy(_retu->nonce_cycle  , decrypt_nonce, crypto_box_NONCEBYTES);
     
-    _retu->csrc = calloc(sizeof(uint32_t), 1);
+    _retu->csrc = calloc(1, sizeof (uint32_t));
     assert(_retu->csrc);
     
     _retu->csrc[0] = _retu->ssrc; /* Set my ssrc to the list receive */

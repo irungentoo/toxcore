@@ -119,7 +119,7 @@ typedef struct _MSIMessage {
 
 
 
-static MSICallback callbacks[9] = {0};
+static MSICallback callbacks[10] = {0};
 
 
 /* define strings for the identifiers */
@@ -330,10 +330,10 @@ MSIMessage* msi_new_message ( uint8_t type, const uint8_t* type_id ) {
     memset ( _retu, 0, sizeof ( MSIMessage ) );
 
     if ( type == TYPE_REQUEST ) {
-        ALLOCATE_HEADER ( _retu->request, type_id, strlen ( type_id ) )
+        ALLOCATE_HEADER ( _retu->request, type_id, strlen ( (const char*)type_id ) )
 
     } else if ( type == TYPE_RESPONSE ) {
-        ALLOCATE_HEADER ( _retu->response, type_id, strlen ( type_id ) )
+        ALLOCATE_HEADER ( _retu->response, type_id, strlen ( (const char*)type_id ) )
 
     } else {
         free_message ( _retu );
@@ -507,7 +507,7 @@ void t_randomstr ( uint8_t* str, size_t size ) {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz";
 
-    int _it = 0;
+    size_t _it = 0;
 
     for ( ; _it < size; _it++ ) {
         str[_it] = _bytes[ randombytes_random() % 61 ];
@@ -523,7 +523,7 @@ typedef enum {
     error_no_call,       /* no call in session */
     error_no_crypto_key, /* no crypto key */
 
-    error_busy,
+    error_busy
 
 } MSICallError;          /* Error codes */
 
@@ -675,15 +675,18 @@ void* handle_timeout ( void* arg )
     /* Send hangup either way */
     MSISession* _session = arg;
     
-    uint32_t* _peers = _session->call->peers;
-    uint16_t  _peer_count = _session->call->peer_count;
-    
-    
-    /* Cancel all? */
-    uint16_t _it = 0;
-    for ( ; _it < _peer_count; _it++ )
-	msi_cancel ( arg, _peers[_it] );
-    
+    if ( _session && _session->call ) {
+        
+        uint32_t* _peers = _session->call->peers;
+        uint16_t  _peer_count = _session->call->peer_count;
+        
+        
+        /* Cancel all? */
+        uint16_t _it = 0;
+        for ( ; _it < _peer_count; _it++ )
+            msi_cancel ( arg, _peers[_it] );
+        
+    }
     
     ( *callbacks[cb_timeout] ) ( arg );
     ( *callbacks[cb_ending ] ) ( arg );
@@ -710,107 +713,6 @@ void add_peer( MSICall* call, int peer_id )
     }    
     
     call->peers[call->peer_count - 1] = peer_id;
-}
-
-
-/**
- * @brief BASIC call flow:
- *
- *    ALICE                    BOB
- *      | invite -->            |
- *      |                       |
- *      |           <-- ringing |
- *      |                       |
- *      |          <-- starting |
- *      |                       |
- *      | start -->             |
- *      |                       |
- *      |  <-- MEDIA TRANS -->  |
- *      |                       |
- *      | end -->               |
- *      |                       |
- *      |            <-- ending |
- *
- * Alice calls Bob by sending invite packet.
- * Bob recvs the packet and sends an ringing packet;
- * which notifies Alice that her invite is acknowledged.
- * Ringing screen shown on both sides.
- * Bob accepts the invite for a call by sending starting packet.
- * Alice recvs the starting packet and sends the started packet to
- * inform Bob that she recved the starting packet.
- * Now the media transmission is established ( i.e. RTP transmission ).
- * Alice hangs up and sends end packet.
- * Bob recves the end packet and sends ending packet
- * as the acknowledgement that the call is ending.
- *
- *
- */
-void msi_handle_packet ( Messenger* messenger, int source, uint8_t* data, uint16_t length, void* object ) 
-{
-    MSISession* _session = object;
-    MSIMessage* _msg;
-    
-    _msg = parse_message ( data );
-    
-    if ( !_msg ) return;
-    
-    _msg->friend_id = source;
-    
-    
-    /* Now handle message */
-    
-    if ( _msg->request.header_value ) { /* Handle request */
-        
-        const uint8_t* _request_value = _msg->request.header_value;
-        
-        if ( same ( _request_value, stringify_request ( invite ) ) ) {
-            handle_recv_invite ( _session, _msg );
-            
-        } else if ( same ( _request_value, stringify_request ( start ) ) ) {
-            handle_recv_start ( _session, _msg );
-            
-        } else if ( same ( _request_value, stringify_request ( cancel ) ) ) {
-            handle_recv_cancel ( _session, _msg );
-            
-        } else if ( same ( _request_value, stringify_request ( reject ) ) ) {
-            handle_recv_reject ( _session, _msg );
-            
-        } else if ( same ( _request_value, stringify_request ( end ) ) ) {
-            handle_recv_end ( _session, _msg );
-        }
-        
-        else {
-            free_message ( _msg );
-            return;
-        }
-        
-    } else if ( _msg->response.header_value ) { /* Handle response */
-        
-        const uint8_t* _response_value = _msg->response.header_value;
-        
-        if ( same ( _response_value, stringify_response ( ringing ) ) ) {
-            handle_recv_ringing ( _session, _msg );
-            
-        } else if ( same ( _response_value, stringify_response ( starting ) ) ) {
-            handle_recv_starting ( _session, _msg );
-            
-        } else if ( same ( _response_value, stringify_response ( ending ) ) ) {
-            handle_recv_ending ( _session, _msg );
-            
-        } else if ( same ( _response_value, stringify_response ( error ) ) ) {
-            handle_recv_error ( _session, _msg );
-        } else {
-            free_message ( _msg );
-            return;
-        }
-        
-        /* Got response so cancel timer */
-        if ( _session->call )
-            event.timer_release ( _session->call->request_timer_id );
-        
-    }
-    
-    free_message ( _msg );
 }
 
 
@@ -1073,6 +975,111 @@ int handle_recv_error ( MSISession* session, MSIMessage* msg ) {
     event.rise ( callbacks[cb_ending], session );
 
     return 1;
+}
+
+
+/**
+ * @brief BASIC call flow:
+ *
+ *    ALICE                    BOB
+ *      | invite -->            |
+ *      |                       |
+ *      |           <-- ringing |
+ *      |                       |
+ *      |          <-- starting |
+ *      |                       |
+ *      | start -->             |
+ *      |                       |
+ *      |  <-- MEDIA TRANS -->  |
+ *      |                       |
+ *      | end -->               |
+ *      |                       |
+ *      |            <-- ending |
+ *
+ * Alice calls Bob by sending invite packet.
+ * Bob recvs the packet and sends an ringing packet;
+ * which notifies Alice that her invite is acknowledged.
+ * Ringing screen shown on both sides.
+ * Bob accepts the invite for a call by sending starting packet.
+ * Alice recvs the starting packet and sends the started packet to
+ * inform Bob that she recved the starting packet.
+ * Now the media transmission is established ( i.e. RTP transmission ).
+ * Alice hangs up and sends end packet.
+ * Bob recves the end packet and sends ending packet
+ * as the acknowledgement that the call is ending.
+ *
+ *
+ */
+void msi_handle_packet ( Messenger* messenger, int source, uint8_t* data, uint16_t length, void* object ) 
+{
+    /* Unused */
+    (void)messenger;
+    (void)&length;
+    
+    MSISession* _session = object;
+    MSIMessage* _msg;
+    
+    _msg = parse_message ( data );
+    
+    if ( !_msg ) return;
+    
+    _msg->friend_id = source;
+    
+    
+    /* Now handle message */
+    
+    if ( _msg->request.header_value ) { /* Handle request */
+        
+        const uint8_t* _request_value = _msg->request.header_value;
+        
+        if ( same ( _request_value, stringify_request ( invite ) ) ) {
+            handle_recv_invite ( _session, _msg );
+            
+        } else if ( same ( _request_value, stringify_request ( start ) ) ) {
+            handle_recv_start ( _session, _msg );
+            
+        } else if ( same ( _request_value, stringify_request ( cancel ) ) ) {
+            handle_recv_cancel ( _session, _msg );
+            
+        } else if ( same ( _request_value, stringify_request ( reject ) ) ) {
+            handle_recv_reject ( _session, _msg );
+            
+        } else if ( same ( _request_value, stringify_request ( end ) ) ) {
+            handle_recv_end ( _session, _msg );
+        }
+        
+        else {
+            free_message ( _msg );
+            return;
+        }
+        
+    } else if ( _msg->response.header_value ) { /* Handle response */
+        
+        const uint8_t* _response_value = _msg->response.header_value;
+        
+        if ( same ( _response_value, stringify_response ( ringing ) ) ) {
+            handle_recv_ringing ( _session, _msg );
+            
+        } else if ( same ( _response_value, stringify_response ( starting ) ) ) {
+            handle_recv_starting ( _session, _msg );
+            
+        } else if ( same ( _response_value, stringify_response ( ending ) ) ) {
+            handle_recv_ending ( _session, _msg );
+            
+        } else if ( same ( _response_value, stringify_response ( error ) ) ) {
+            handle_recv_error ( _session, _msg );
+        } else {
+            free_message ( _msg );
+            return;
+        }
+        
+        /* Got response so cancel timer */
+        if ( _session->call )
+            event.timer_release ( _session->call->request_timer_id );
+        
+    }
+    
+    free_message ( _msg );
 }
 
 

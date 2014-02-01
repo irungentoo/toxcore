@@ -41,7 +41,7 @@ typedef void* ( *MSICallback ) ( void* arg );
  */
 typedef enum {
     type_audio = 70,
-    type_video,
+    type_video
 } MSICallType;
 
 
@@ -133,7 +133,7 @@ typedef enum {
 
     /* Protocol */
     cb_error,
-    cb_timeout,
+    cb_timeout
 
 } MSICallbackID;
 
