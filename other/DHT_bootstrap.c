@@ -33,6 +33,13 @@
 
 #include "../testing/misc_tools.c"
 
+#ifdef DHT_SERVER_EXTRA_PACKETS
+#include "./bootstrap_server_packets.c"
+
+#define DHT_VERSION_NUMBER 1
+#define DHT_MOTD "This is a test motd"
+#endif
+
 /* Sleep function (x = milliseconds) */
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
@@ -43,7 +50,6 @@
 #endif
 
 #define PORT 33445
-
 
 
 void manage_keys(DHT *dht)
@@ -104,6 +110,10 @@ int main(int argc, char *argv[])
     DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
     Onion *onion = new_onion(dht);
     Onion_Announce *onion_a = new_onion_announce(dht);
+
+#ifdef DHT_SERVER_EXTRA_PACKETS
+    bootstrap_set_callbacks(dht->net, DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
+#endif
 
     if (!(onion && onion_a)) {
         printf("Something failed to initialize.\n");

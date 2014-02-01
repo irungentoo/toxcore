@@ -143,6 +143,9 @@ typedef int sock_t;
 #define NET_PACKET_ONION_RECV_2 141
 #define NET_PACKET_ONION_RECV_1 142
 
+/* Only used for bootstrap servers */
+#define BOOTSTRAP_INFO_PACKET_ID 240
+
 
 #define TOX_PORTRANGE_FROM 33445
 #define TOX_PORTRANGE_TO   33545
