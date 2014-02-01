@@ -27,13 +27,14 @@
 
 #define RTP_VERSION 2
 #include <inttypes.h>
+#include <pthread.h>
 #include "../toxcore/tox.h"
 
 #define MAX_SEQU_NUM 65535
-
+#define MAX_RTP_SIZE 1400
 
 /**
- * @brief Standard rtp header.
+ * @brief Standard rtp header
  * 
  */
 
@@ -69,7 +70,7 @@ typedef struct _RTPMessage {
     RTPHeader*    header;
     RTPExtHeader* ext_header;
 
-    uint8_t*      data;
+    uint8_t       data[MAX_RTP_SIZE];
     uint32_t      length;
     tox_IP_Port   from;
 

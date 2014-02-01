@@ -27,25 +27,25 @@
 
 #include <stdio.h>
 #include <math.h>
+#include "toxrtp.h"
+#include "toxmsi.h"
+#include "../toxcore/tox.h"
+
+/* Video encoding/decoding */
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavdevice/avdevice.h>
 #include <libavutil/opt.h>
-#include <pthread.h>
-#include <AL/al.h>
-#include <AL/alc.h>
-#include "toxrtp.h"
-#include "tox.h"
 
-#include <SDL/SDL.h>
+/* Audio encoding/decoding */
 #include <opus/opus.h>
 
 /* ffmpeg VP8 codec ID */
-#define VIDEO_CODEC         AV_CODEC_ID_VP8
+#define VIDEO_CODEC AV_CODEC_ID_VP8
 
 /* ffmpeg Opus codec ID */
-#define AUDIO_CODEC         AV_CODEC_ID_OPUS
+#define AUDIO_CODEC AV_CODEC_ID_OPUS
 
 /* default video bitrate in bytes/s */
 #define VIDEO_BITRATE   10*1000
@@ -75,14 +75,6 @@
 #define DEFAULT_WEBCAM "0"
 #endif
 
-extern SDL_Surface *screen;
-
-typedef struct {
-    SDL_Overlay *bmp;
-    int width, height;
-} VideoPicture;
-
-
 typedef struct {
     uint8_t send_audio;
     uint8_t receive_audio;
@@ -95,71 +87,46 @@ typedef struct {
     uint8_t support_receive_video;
 
     /* video encoding */
-    AVInputFormat       *video_input_format;
-    AVFormatContext     *video_format_ctx;
-    uint8_t              video_stream;
-    AVCodecContext      *webcam_decoder_ctx;
-    AVCodec             *webcam_decoder;
-    AVCodecContext      *video_encoder_ctx;
-    AVCodec             *video_encoder;
+    AVInputFormat *video_input_format;
+    AVFormatContext *video_format_ctx;
+    uint8_t video_stream;
+    AVCodecContext *webcam_decoder_ctx;
+    AVCodec *webcam_decoder;
+    AVCodecContext *video_encoder_ctx;
+    AVCodec *video_encoder;
 
     /* video decoding */
-    AVCodecContext      *video_decoder_ctx;
-    AVCodec             *video_decoder;
+    AVCodecContext *video_decoder_ctx;
+    AVCodec *video_decoder;
 
     /* audio encoding */
-    ALCdevice       *audio_capture_device;
-    OpusEncoder     *audio_encoder;
-    int         audio_bitrate;
+    OpusEncoder *audio_encoder;
+    int audio_bitrate;
 
     /* audio decoding */
-    OpusDecoder     *audio_decoder;
+    OpusDecoder *audio_decoder;
 
     uint8_t req_video_refresh;
-
-    /* context for converting image format to something SDL can use*/
-    struct SwsContext   *sws_SDL_r_ctx;
-
-    /* context for converting webcam image format to something the video encoder can use */
-    struct SwsContext   *sws_ctx;
-
-    /* rendered video picture, ready for display */
-    VideoPicture    video_picture;
-
-    RTPSession *_rtp_video;
-    RTPSession *_rtp_audio;
-
-    Tox* _messenger;
     
-    pthread_t encode_audio_thread;
-    pthread_t encode_video_thread;
-
-    pthread_t decode_audio_thread;
-    pthread_t decode_video_thread;
-
     pthread_mutex_t rtp_msg_mutex_lock;
     pthread_mutex_t avcodec_mutex_lock;
-
-    uint8_t             quit;
-    SDL_Event           SDL_event;
-
-    MSISession *_msi;
-    uint32_t _frame_rate;
+    
+    uint8_t quit;
+    
+    uint32_t frame_rate;
 
 } codec_state;
 
-int display_received_frame(codec_state *cs, AVFrame *r_video_frame);
-int init_receive_audio(codec_state *cs);
-int init_decoder(codec_state *cs);
-int init_send_video(codec_state *cs);
-int init_send_audio(codec_state *cs);
+
+struct jitter_buffer *create_queue(int capacity);
+int empty_queue(struct jitter_buffer *q);
+
+int queue(struct jitter_buffer *q, RTPMessage *pk);
+RTPMessage *dequeue(struct jitter_buffer *q, int *success);
+
+
 int init_encoder(codec_state *cs);
-int video_encoder_refresh(codec_state *cs, int bps);
-void *encode_video_thread(void *arg);
-void *encode_audio_thread(void *arg);
-int video_decoder_refresh(codec_state *cs, int width, int height);
-int handle_rtp_video_packet(codec_state *cs, RTPMessage *r_msg);
-void *decode_video_thread(void *arg);
-void *decode_audio_thread(void *arg);
+int init_decoder(codec_state *cs);
+
 
 #endif
