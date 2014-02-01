@@ -22,6 +22,10 @@ On Ubuntu:
 ```bash
 sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check git libswscale-dev libsdl-dev libopenal-dev libopus-dev libvpx-dev yasm
 ```
+If you get the "Unable to locate package libopus-dev" message, add the following ppa
+```bash
+sudo add-apt-repository ppa:ubuntu-sdk-team/ppa && sudo apt-get update && sudo apt-get dist-upgrade
+```
 
 On Fedora:
 
@@ -75,7 +79,7 @@ echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf
 sudo ldconfig
 ```
 
-You also need recent [FFmpeg](http://git.videolan.org/?p=ffmpeg.git) libraries:
+You also need recent [FFmpeg](https://git.videolan.org/?p=ffmpeg.git) libraries:
 ```bash
 git clone git://source.ffmpeg.org/ffmpeg.git
 cd ffmpeg
@@ -165,9 +169,9 @@ Advance configure options:
 ####Non-homebrew:
 
 Grab the following packages:
-  * http://www.gnu.org/software/libtool/
-  * http://www.gnu.org/software/autoconf/ 
-  * http://www.gnu.org/software/automake/
+  * https://gnu.org/software/libtool/
+  * https://gnu.org/software/autoconf/ 
+  * https://gnu.org/software/automake/
   * https://github.com/jedisct1/libsodium
   * http://www.hyperrealm.com/libconfig/
   * http://check.sourceforge.net/
@@ -218,7 +222,7 @@ You should install:
 When installing MinGW, make sure to select the MSYS option in the installer.
 MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all operations (i.e. generating/running configure script, compiling, etc.) from the MinGW shell.
 
-First download the source tarball from http://download.libsodium.org/libsodium/releases/ and build it.
+First download the source tarball from https://download.libsodium.org/libsodium/releases/ and build it.
 Assuming that you got the libsodium-0.4.2.tar.gz release:
 ```cmd
 tar -zxvf libsodium-0.4.2.tar.gz

@@ -1,6 +1,6 @@
-/* tox_dht_bootstrap_server_daemon
+/* tox_bootstrap_daemon.c
  *
- * A simple DHT bootstrap server for tox - daemon edition.
+ * Tox DHT bootstrap server daemon.
  *
  *  Copyright (C) 2014 Tox project All Rights Reserved.
  *
@@ -42,13 +42,13 @@
 
 #include "../../testing/misc_tools.c"
 
-#define DAEMON_NAME "tox_dht_bootstrap_server_daemon"
+#define DAEMON_NAME "tox_bootstrap_daemon"
 
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
 
-#define DEFAULT_PID_FILE_PATH        ".tox_dht_bootstrap_server_daemon.pid"
-#define DEFAULT_KEYS_FILE_PATH       ".tox_dht_bootstrap_server_daemon.keys"
+#define DEFAULT_PID_FILE_PATH        ".tox_bootstrap_daemon.pid"
+#define DEFAULT_KEYS_FILE_PATH       ".tox_bootstrap_daemon.keys"
 #define DEFAULT_PORT                 33445
 #define DEFAULT_ENABLE_IPV6          0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false
@@ -186,8 +186,8 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
 
 // Bootstraps servers listed in the config file
 //
-// returns 1 on success
-//         0 on failure, either no or only some servers were bootstrapped
+// returns 1 on success, some or no bootstrap servers were added
+//         0 on failure, a error accured while parsing config file
 
 int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
 {
@@ -210,9 +210,15 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
     config_setting_t *server_list = config_lookup(&cfg, NAME_BOOTSTRAP_SERVERS);
 
     if (server_list == NULL) {
-        syslog(LOG_ERR, "No '%s' setting in configuration file.\n", NAME_BOOTSTRAP_SERVERS);
+        syslog(LOG_WARNING, "No '%s' setting in the configuration file. Skipping bootstrapping.\n", NAME_BOOTSTRAP_SERVERS);
         config_destroy(&cfg);
-        return 0;
+        return 1;
+    }
+
+    if (config_setting_length(server_list) == 0) {
+        syslog(LOG_WARNING, "No bootstrap servers found. Skipping bootstrapping.\n");
+        config_destroy(&cfg);
+        return 1;
     }
 
     int bs_port;
@@ -232,21 +238,31 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
             return 0;
         }
 
-        // Proceed only if all parts are present
-        if (config_setting_lookup_string(server, NAME_PUBLIC_KEY,  &bs_public_key) == CONFIG_FALSE ||
-                config_setting_lookup_int   (server, NAME_PORT,    &bs_port)       == CONFIG_FALSE ||
-                config_setting_lookup_string(server, NAME_ADDRESS, &bs_address)    == CONFIG_FALSE   ) {
+        // Check that all settings are present
+        if (config_setting_lookup_string(server, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_PUBLIC_KEY);
             goto next;
         }
 
+        if (config_setting_lookup_int(server, NAME_PORT, &bs_port) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_PORT);
+            goto next;
+        }
+
+        if (config_setting_lookup_string(server, NAME_ADDRESS, &bs_address) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_ADDRESS);
+            goto next;
+        }
+
+        // Process settings
         if (strlen(bs_public_key) != 64) {
-            syslog(LOG_WARNING, "bootstrap_server #%d: Invalid '%s': %s.\n", i, NAME_PUBLIC_KEY, bs_public_key);
+            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_PUBLIC_KEY, bs_public_key);
             goto next;
         }
 
         // not (1 <= port <= 65535)
         if (bs_port < 1 || bs_port > 65535) {
-            syslog(LOG_WARNING, "bootstrap_server #%d: Invalid '%s': %d.\n", i, NAME_PORT, bs_port);
+            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %d. Skipping the server.\n", i, NAME_PORT, bs_port);
             goto next;
         }
 
@@ -254,11 +270,11 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
                                      hex_string_to_bin((char *)bs_public_key));
 
         if (!address_resolved) {
-            syslog(LOG_WARNING, "bootstrap_server #%d: Invalid '%s': %s.\n", i, NAME_ADDRESS, bs_address);
+            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_ADDRESS, bs_address);
             goto next;
         }
 
-        syslog(LOG_DEBUG, "Successfully connected to %s:%d %s\n", bs_address, bs_port, bs_public_key);
+        syslog(LOG_DEBUG, "Successfully added bootstrap server #%d: %s:%d %s\n", i, bs_address, bs_port, bs_public_key);
 
 next:
         // config_setting_lookup_string() allocates string inside and doesn't allow us to free it
@@ -271,36 +287,6 @@ next:
     config_destroy(&cfg);
 
     return 1;
-}
-
-// Checks if we are connected to the DHT
-//
-// returns 1 on success
-//         0 on failure
-
-int try_connect(DHT *dht, int port, int enable_lan_discovery)
-{
-    uint16_t htons_port = htons(port);
-
-    int i;
-
-    for (i = 0; i < 100; i ++) {
-        do_DHT(dht);
-
-        if (enable_lan_discovery) {
-            send_LANdiscovery(htons_port, dht);
-        }
-
-        networking_poll(dht->c->lossless_udp->net);
-
-        if (DHT_isconnected(dht)) {
-            return 1;
-        }
-
-        sleep;
-    }
-
-    return 0;
 }
 
 // Prints public key
@@ -330,7 +316,7 @@ int main(int argc, char *argv[])
     openlog(DAEMON_NAME, LOG_NOWAIT | LOG_PID, LOG_DAEMON);
 
     if (argc < 2) {
-        syslog(LOG_ERR, "Please specify a configuration file. Exiting.\n");
+        syslog(LOG_ERR, "Please specify a path to a configuration file as the first argument. Exiting.\n");
         return 1;
     }
 
@@ -395,13 +381,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (try_connect(dht, port, enable_lan_discovery)) {
-        syslog(LOG_INFO, "Successfully connected to DHT\n");
-    } else {
-        syslog(LOG_ERR, "Couldn't connect to the DHT. Check settings and network connections. Exiting.\n");
-        return 1;
-    }
-
     print_public_key(dht->c->self_public_key);
 
     // Write the PID file
@@ -419,20 +398,20 @@ int main(int argc, char *argv[])
     pid_t pid = fork();
 
     if (pid < 0) {
+        fclose(pidf);
         syslog(LOG_ERR, "Forking failed. Exiting.\n");
         return 1;
     }
 
     if (pid > 0) {
+        fprintf(pidf, "%d\n", pid);
+        fclose(pidf);
         syslog(LOG_DEBUG, "Forked successfully: PID: %d.\n", pid);
         return 0;
     }
 
     // Change the file mode mask
     umask(0);
-
-    fprintf(pidf, "%d\n", pid);
-    fclose(pidf);
 
     // Create a new SID for the child process
     if (setsid() < 0) {
@@ -454,6 +433,8 @@ int main(int argc, char *argv[])
     uint64_t last_LANdiscovery = 0;
     uint16_t htons_port = htons(port);
 
+    int waiting_for_dht_connection = 1;
+
     while (1) {
         do_DHT(dht);
 
@@ -463,6 +444,11 @@ int main(int argc, char *argv[])
         }
 
         networking_poll(dht->net);
+
+        if (waiting_for_dht_connection && DHT_isconnected(dht)) {
+            syslog(LOG_DEBUG, "Connected to other bootstrap server successfully.\n");
+            waiting_for_dht_connection = 0;
+        }
 
         sleep;
     }

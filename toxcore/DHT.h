@@ -109,6 +109,9 @@ typedef struct {
     /* 1 if currently hole punching, otherwise 0 */
     uint8_t     hole_punching;
     uint32_t    punching_index;
+    uint32_t    tries;
+    uint32_t    punching_index2;
+
     uint64_t    punching_timestamp;
     uint64_t    recvNATping_timestamp;
     uint64_t    NATping_id;

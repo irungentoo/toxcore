@@ -55,7 +55,7 @@ int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t leng
     memcpy(step1 + sizeof(IP_Port), data, length);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
+    random_nonce(nonce);
     uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(random_public_key, random_secret_key);

@@ -35,7 +35,7 @@
 #include "network.h"
 #include "util.h"
 
-#define PING_NUM_MAX 384
+#define PING_NUM_MAX 512
 
 /* Ping newly announced nodes to ping per TIME_TOPING seconds*/
 #define TIME_TOPING 5

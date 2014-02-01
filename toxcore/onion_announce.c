@@ -61,7 +61,7 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
            ONION_ANNOUNCE_SENDBACK_DATA_LENGTH);
     uint8_t packet[ANNOUNCE_REQUEST_SIZE];
     packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
-    new_nonce(packet + 1);
+    random_nonce(packet + 1);
 
     int len = encrypt_data(nodes[3].client_id, secret_key, packet + 1, plain, sizeof(plain),
                            packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
@@ -253,7 +253,7 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
         to_net_family(&nodes_list[i].ip_port.ip);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
+    random_nonce(nonce);
 
     uint8_t pl[1 + ONION_PING_ID_SIZE + sizeof(nodes_list)];
 
