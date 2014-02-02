@@ -328,6 +328,8 @@ int video_decoder_refresh(av_session_t* _phone, int width, int height)
 
 void *encode_video_thread(void *arg)
 {
+    INFO("Started encode video thread!");
+    
     av_session_t* _phone = arg;
     
     codec_state *cs = _phone->cs;
@@ -423,6 +425,7 @@ void *encode_video_thread(void *arg)
 
 void *encode_audio_thread(void *arg)
 {
+    INFO("Started encode audio thread!");
     av_session_t* _phone = arg;
     
     codec_state *cs = _phone->cs;
@@ -438,7 +441,7 @@ void *encode_audio_thread(void *arg)
         
         if (sample >= frame_size) {
             alcCaptureSamples((ALCdevice*)_phone->audio_capture_device, frame, frame_size);
-            encoded_size = opus_encode(cs->audio_encoder, frame, frame_size, encoded_data, 480);
+            encoded_size = opus_encode(cs->audio_encoder, frame, frame_size, encoded_data, MAX_RTP_SIZE);
             
             if (encoded_size <= 0) {
                 printf("Could not encode audio packet\n");
@@ -461,6 +464,7 @@ void *encode_audio_thread(void *arg)
 
 void *decode_video_thread(void *arg)
 {
+    INFO("Started decode audio thread!");
     av_session_t* _phone = arg;
     
     codec_state *cs = _phone->cs;
@@ -513,6 +517,7 @@ void *decode_video_thread(void *arg)
 
 void *decode_audio_thread(void *arg)
 {
+    INFO("Started decode audio thread!");
     av_session_t* _phone = arg;
     
     codec_state *cs = _phone->cs;
@@ -572,27 +577,28 @@ void *decode_audio_thread(void *arg)
             queue(j_buf, r_msg);
         }
         
-        /* grab a packet from the queue */
         success = 0;
         alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
         
-        if (val > 0)
+        /* grab a packet from the queue */
+        if (val > 0) {
             r_msg = dequeue(j_buf, &success);
+        }
         
         if (success > 0) {
             /* good packet */
             if (success == 1) {
                 dec_frame_len = opus_decode(cs->audio_decoder, r_msg->data, r_msg->length, PCM, frame_size, 0);
-                //rtp_free_msg(NULL, r_msg);
+                rtp_free_msg(NULL, r_msg);
             }
             
             /* lost packet  */
-            if (success == 2) {
-                printf("lost packet\n");
+            else if (success == 2) {
+                printf("Lost packet\n");
                 dec_frame_len = opus_decode(cs->audio_decoder, NULL, 0, PCM, frame_size, 1);
             }
             
-            if (dec_frame_len > 0) {
+            if (dec_frame_len) {
                 alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
                 
                 if (val <= 0)
@@ -611,7 +617,7 @@ void *decode_audio_thread(void *arg)
                 alSourceQueueBuffers(source, 1, &buffer);
                 
                 if (alGetError() != AL_NO_ERROR) {
-                    fprintf(stderr, "error: could not buffer audio\n");
+                    fprintf(stderr, "Error: could not buffer audio\n");
                     break;
                 }
                 
