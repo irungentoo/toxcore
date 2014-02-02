@@ -356,7 +356,7 @@ uint8_t* add_header ( RTPHeader* header, uint8_t* payload )
         _it+=4; U32_to_bytes( _it, header->csrc[_x]);
     }
     
-    return _it;
+    return _it + 4;
 }
 
 /**
@@ -378,7 +378,7 @@ uint8_t* add_ext_header ( RTPExtHeader* header, uint8_t* payload )
         _it+=4; U32_to_bytes(_it, header->table[_x]);
     }
     
-    return _it;
+    return _it + 4;
 }
 
 /**
@@ -605,7 +605,7 @@ RTPMessage* rtp_new_message ( RTPSession* session, const uint8_t* data, uint32_t
      */
     
     /* Appends _data on to _retu->_data */
-    memcpy ( _from_pos + 1, data, length );
+    memcpy ( _from_pos, data, length );
     
     _retu->length = _total_length;
     
@@ -832,7 +832,7 @@ RTPSession* rtp_init_session ( int            payload_type,
     _retu->extension = 0;           /* If extension to header is needed */
     _retu->cc        = 1;           /* Amount of contributors */
     _retu->csrc      = NULL;        /* Container */
-    _retu->ssrc      = randombytes_random();
+    _retu->ssrc      = random_int();
     _retu->marker    = 0;
     _retu->payload_type = payload_table[payload_type];        
     

@@ -510,7 +510,7 @@ void t_randomstr ( uint8_t* str, size_t size ) {
     size_t _it = 0;
 
     for ( ; _it < size; _it++ ) {
-        str[_it] = _bytes[ randombytes_random() % 61 ];
+        str[_it] = _bytes[ random_int() % 61 ];
     }
 }
 
