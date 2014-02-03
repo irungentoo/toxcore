@@ -379,6 +379,7 @@ static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *n
 int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
                     uint8_t want_good)
 {
+    memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
 #ifdef ENABLE_ASSOC_DHT
 
     if (!dht->assoc)
