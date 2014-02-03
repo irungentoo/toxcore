@@ -767,7 +767,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
         }
 
         if (count != MAX_ONION_CLIENTS) {
-            if (count < rand() % MAX_ONION_CLIENTS) {
+            if (count < (uint32_t)rand() % MAX_ONION_CLIENTS) {
                 Node_format nodes_list[MAX_SENT_NODES];
                 uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->friends_list[friendnum].real_client_id, nodes_list,
                                                      rand() % 2 ? AF_INET : AF_INET6, 1, 0);
@@ -823,7 +823,7 @@ static void do_announce(Onion_Client *onion_c)
     }
 
     if (count != MAX_ONION_CLIENTS) {
-        if (count < rand() % MAX_ONION_CLIENTS) {
+        if (count < (uint32_t)rand() % MAX_ONION_CLIENTS) {
             Node_format nodes_list[MAX_SENT_NODES];
             uint32_t num_nodes = get_close_nodes(onion_c->dht, onion_c->dht->c->self_public_key, nodes_list,
                                                  rand() % 2 ? AF_INET : AF_INET6, 1, 0);
