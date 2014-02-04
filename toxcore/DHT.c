@@ -1554,7 +1554,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int ip_num = friend_iplist(dht, ip_list, num);
 
-    if (ip_num < (MAX_FRIEND_CLIENTS / 2))
+    if (ip_num < (MAX_FRIEND_CLIENTS / 4))
         return 0; /* Reason for that? */
 
     DHT_Friend *friend = &dht->friends_list[num];
