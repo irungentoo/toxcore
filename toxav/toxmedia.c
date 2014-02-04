@@ -345,8 +345,6 @@ int init_send_audio(codec_state *cs)
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
 
-    opus_encoder_init(cs->audio_encoder, AUDIO_SAMPLE_RATE, 1, OPUS_APPLICATION_VOIP);
-
     int nfo;
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_GET_LOOKAHEAD(&nfo));
     /* printf("Encoder lookahead delay : %d\n", nfo); */
@@ -362,8 +360,7 @@ int init_encoder(codec_state *cs)
     avdevice_register_all();
     av_register_all();
 
-    pthread_mutex_init(&cs->rtp_msg_mutex_lock, NULL);
-    pthread_mutex_init(&cs->avcodec_mutex_lock, NULL);
+    pthread_mutex_init(&cs->ctrl_mutex, NULL);
 
     cs->support_send_video = init_send_video(cs);
     cs->support_send_audio = init_send_audio(cs);

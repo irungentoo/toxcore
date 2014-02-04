@@ -120,20 +120,20 @@ typedef struct _MSISession {
  */
 typedef enum {
     /* Requests */
-    cb_oninvite,
-    cb_onstart,
-    cb_oncancel,
-    cb_onreject,
-    cb_onend,
+    MSI_OnInvite,
+    MSI_OnStart,
+    MSI_OnCancel,
+    MSI_OnReject,
+    MSI_OnEnd,
 
     /* Responses */
-    cb_ringing,
-    cb_starting,
-    cb_ending,
+    MSI_OnRinging,
+    MSI_OnStarting,
+    MSI_OnEnding,
 
     /* Protocol */
-    cb_error,
-    cb_timeout
+    MSI_OnError,
+    MSI_OnTimeout
 
 } MSICallbackID;
 
@@ -215,9 +215,10 @@ int msi_cancel ( MSISession* session, int friend_id );
  * @brief Reject request.
  * 
  * @param session Control session.
+ * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_reject ( MSISession* session );
+int msi_reject ( MSISession* session, const uint8_t* reason );
 
 
 /**

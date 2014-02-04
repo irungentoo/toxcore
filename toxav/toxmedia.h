@@ -108,10 +108,8 @@ typedef struct {
 
     uint8_t req_video_refresh;
     
-    pthread_mutex_t rtp_msg_mutex_lock;
-    pthread_mutex_t avcodec_mutex_lock;
+    pthread_mutex_t ctrl_mutex;
     
-    uint8_t quit;
     
     uint32_t frame_rate;
 
