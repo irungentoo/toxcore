@@ -354,7 +354,7 @@ void *encode_video_thread(void *arg)
                                  cs->webcam_decoder_ctx->pix_fmt, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height, PIX_FMT_YUV420P,
                                  SWS_BILINEAR, NULL, NULL, NULL);
     
-    while (!cs->quit && cs->send_video) {
+    while (cs->send_video) {
         
         if (av_read_frame(cs->video_format_ctx, packet) < 0) {
             printf("error reading frame\n");
@@ -412,14 +412,14 @@ void *encode_video_thread(void *arg)
     }
     
     /* clean up codecs */
-    pthread_mutex_lock(&cs->avcodec_mutex_lock);
+    pthread_mutex_lock(&cs->ctrl_mutex);
     av_free(buffer);
     av_free(webcam_frame);
     av_free(s_video_frame);
     sws_freeContext(_phone->sws_ctx);
     avcodec_close(cs->webcam_decoder_ctx);
     avcodec_close(cs->video_encoder_ctx);
-    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
+    pthread_mutex_unlock(&cs->ctrl_mutex);
     pthread_exit ( NULL );
 }
 
@@ -436,7 +436,7 @@ void *encode_audio_thread(void *arg)
     ALint sample = 0;
     alcCaptureStart((ALCdevice*)_phone->audio_capture_device);
     
-    while (!cs->quit && cs->send_audio) {
+    while (cs->send_audio) {
         alcGetIntegerv((ALCdevice*)_phone->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
         
         if (sample >= frame_size) {
@@ -454,11 +454,10 @@ void *encode_audio_thread(void *arg)
     }
     
     /* clean up codecs */
-    pthread_mutex_lock(&cs->avcodec_mutex_lock);
+    pthread_mutex_lock(&cs->ctrl_mutex);
     alcCaptureStop((ALCdevice*)_phone->audio_capture_device);
-    alcCaptureCloseDevice((ALCdevice*)_phone->audio_capture_device);
-    
-    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
+    alcCaptureCloseDevice((ALCdevice*)_phone->audio_capture_device);    
+    pthread_mutex_unlock(&cs->ctrl_mutex);
     pthread_exit ( NULL );
 }
 
@@ -478,7 +477,7 @@ void *decode_video_thread(void *arg)
     int width = 0;
     int height = 0;
     
-    while (!cs->quit && cs->receive_video) {
+    while (cs->receive_video) {
         r_msg = rtp_recv_msg ( _phone->_rtp_video );
         
         if (r_msg) {
@@ -508,10 +507,10 @@ void *decode_video_thread(void *arg)
     
     printf("vend\n");
     /* clean up codecs */
-    pthread_mutex_lock(&cs->avcodec_mutex_lock);
+    pthread_mutex_lock(&cs->ctrl_mutex);
     av_free(r_video_frame);
     avcodec_close(cs->video_decoder_ctx);
-    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
+    pthread_mutex_unlock(&cs->ctrl_mutex);
     pthread_exit ( NULL );
 }
 
@@ -544,6 +543,7 @@ void *decode_audio_thread(void *arg)
     
     uint16_t zeros[frame_size];
     memset(zeros, 0, frame_size);
+    opus_int16 PCM[frame_size];
     
     int i;
     for (i = 0; i < openal_buffers; ++i) {
@@ -555,7 +555,7 @@ void *decode_audio_thread(void *arg)
     
     if (alGetError() != AL_NO_ERROR) {
         fprintf(stderr, "Error starting audio\n");
-        cs->quit = 1;
+        goto ending;
     }
     
     struct jitter_buffer *j_buf = NULL;
@@ -566,9 +566,8 @@ void *decode_audio_thread(void *arg)
     
     int dec_frame_len = 0;
     
-    opus_int16 PCM[frame_size];
     
-    while (!cs->quit && cs->receive_audio) {
+    while (cs->receive_audio) {
         
         r_msg = rtp_recv_msg ( _phone->_rtp_audio );
         
@@ -633,16 +632,18 @@ void *decode_audio_thread(void *arg)
         usleep(1000);
     }
     
-    /* clean up codecs */
-    pthread_mutex_lock(&cs->avcodec_mutex_lock);
     
-    /* clean up openal */
+ending:
+    /* clean up codecs */
+    pthread_mutex_lock(&cs->ctrl_mutex);    
+    
     alDeleteSources(1, &source);
     alDeleteBuffers(openal_buffers, buffers);
     alcMakeContextCurrent(NULL);
     alcDestroyContext(ctx);
     alcCloseDevice(dev);
-    pthread_mutex_unlock(&cs->avcodec_mutex_lock);
+    
+    pthread_mutex_unlock(&cs->ctrl_mutex);
     pthread_exit ( NULL );
 }
 
@@ -675,9 +676,7 @@ int phone_startmedia_loop ( av_session_t* _phone )
     _phone->_msi->call->nonce_peer,
     _phone->_msi->call->nonce_local
     );
-    
-    _phone->cs->quit = 0;
-    
+        
     init_encoder(_phone->cs);
     init_decoder(_phone->cs);
     
@@ -699,6 +698,7 @@ int phone_startmedia_loop ( av_session_t* _phone )
         return -1;
     }
     
+    /* Only checks for last peer */
     if ( _phone->_msi->call->type_peer[0] == type_video && 0 > event.rise(decode_video_thread, _phone) )
     {
         INFO("Error while starting decode_video_thread()");
@@ -913,18 +913,18 @@ av_session_t* av_init_session()
     _retu->_msi->agent_handler = _retu;
 
     /* ------------------ */
-    msi_register_callback(callback_call_started, cb_onstart);
-    msi_register_callback(callback_call_canceled, cb_oncancel);
-    msi_register_callback(callback_call_rejected, cb_onreject);
-    msi_register_callback(callback_call_ended, cb_onend);
-    msi_register_callback(callback_recv_invite, cb_oninvite);
+    msi_register_callback(callback_call_started, MSI_OnStart);
+    msi_register_callback(callback_call_canceled, MSI_OnCancel);
+    msi_register_callback(callback_call_rejected, MSI_OnReject);
+    msi_register_callback(callback_call_ended, MSI_OnEnd);
+    msi_register_callback(callback_recv_invite, MSI_OnInvite);
 
-    msi_register_callback(callback_recv_ringing, cb_ringing);
-    msi_register_callback(callback_recv_starting, cb_starting);
-    msi_register_callback(callback_recv_ending, cb_ending);
+    msi_register_callback(callback_recv_ringing, MSI_OnRinging);
+    msi_register_callback(callback_recv_starting, MSI_OnStarting);
+    msi_register_callback(callback_recv_ending, MSI_OnEnding);
 
-    msi_register_callback(callback_recv_error, cb_error);
-    msi_register_callback(callback_requ_timeout, cb_timeout);
+    msi_register_callback(callback_recv_error, MSI_OnError);
+    msi_register_callback(callback_requ_timeout, MSI_OnTimeout);
     /* ------------------ */
 
     return _retu;
@@ -1114,7 +1114,7 @@ void do_phone ( av_session_t* _phone )
                 break;
             }
 
-            msi_reject(_phone->_msi);
+            msi_reject(_phone->_msi, NULL);
 
             INFO("Call Rejected...");
 
