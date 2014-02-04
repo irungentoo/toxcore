@@ -58,7 +58,7 @@ struct jitter_buffer *create_queue(int capacity)
 {
     struct jitter_buffer *q;
     q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer),1);
-    q->queue = (RTPMessage **)calloc((sizeof(RTPMessage) * capacity),1);
+    q->queue = (RTPMessage **)calloc(sizeof(RTPMessage), capacity);
     int i = 0;
 
     for (i = 0; i < capacity; ++i) {
