@@ -633,7 +633,7 @@ int handle_error ( MSISession* session, MSICallError errid, uint32_t to ) {
     session->last_error_id = errid;
     session->last_error_str = stringify_error ( errid );
 
-    event.rise ( callbacks[cb_error], session );
+    event.rise ( callbacks[MSI_OnError], session );
 
     return 0;
 }
@@ -688,8 +688,8 @@ void* handle_timeout ( void* arg )
         
     }
     
-    ( *callbacks[cb_timeout] ) ( arg );
-    ( *callbacks[cb_ending ] ) ( arg );
+    ( *callbacks[MSI_OnTimeout] ) ( arg );
+    ( *callbacks[MSI_OnEnding ] ) ( arg );
 
     return NULL;
 }
@@ -821,7 +821,7 @@ int handle_recv_invite ( MSISession* session, MSIMessage* msg ) {
     send_message ( session, _msg_ringing, msg->friend_id );
     free_message ( _msg_ringing );
 
-    event.rise ( callbacks[cb_oninvite], session );
+    event.rise ( callbacks[MSI_OnInvite], session );
 
     return 1;
 }
@@ -844,7 +844,7 @@ int handle_recv_start ( MSISession* session, MSIMessage* msg ) {
 
     flush_peer_type ( session, msg, 0 );
 
-    event.rise ( callbacks[cb_onstart], session );
+    event.rise ( callbacks[MSI_OnStart], session );
 
     return 1;
 }
@@ -860,7 +860,7 @@ int handle_recv_reject ( MSISession* session, MSIMessage* msg ) {
     free_message ( _msg_end );
 
     event.timer_release ( session->call->request_timer_id );
-    event.rise ( callbacks[cb_onreject], session );
+    event.rise ( callbacks[MSI_OnReject], session );
     session->call->request_timer_id = event.timer_alloc ( handle_timeout, session, m_deftout );
 
     return 1;
@@ -874,7 +874,7 @@ int handle_recv_cancel ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[cb_oncancel], session );
+    event.rise ( callbacks[MSI_OnCancel], session );
 
     return 1;
 }
@@ -891,7 +891,7 @@ int handle_recv_end ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[cb_onend], session );
+    event.rise ( callbacks[MSI_OnEnd], session );
 
     return 1;
 }
@@ -904,7 +904,7 @@ int handle_recv_ringing ( MSISession* session, MSIMessage* msg ) {
         return 0;
 
     session->call->ringing_timer_id = event.timer_alloc ( handle_timeout, session, session->call->ringing_tout_ms );
-    event.rise ( callbacks[cb_ringing], session );
+    event.rise ( callbacks[MSI_OnRinging], session );
 
     return 1;
 }
@@ -942,7 +942,7 @@ int handle_recv_starting ( MSISession* session, MSIMessage* msg ) {
 
     flush_peer_type ( session, msg, 0 );
 
-    event.rise ( callbacks[cb_starting], session );
+    event.rise ( callbacks[MSI_OnStarting], session );
     event.timer_release ( session->call->ringing_timer_id );
 
     return 1;
@@ -956,7 +956,7 @@ int handle_recv_ending ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[cb_ending], session );
+    event.rise ( callbacks[MSI_OnEnding], session );
 
     return 1;
 }
@@ -972,7 +972,7 @@ int handle_recv_error ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[cb_ending], session );
+    event.rise ( callbacks[MSI_OnEnding], session );
 
     return 1;
 }
@@ -1165,6 +1165,8 @@ int msi_terminate_session ( MSISession* session ) {
     int _status = 0;
     
     terminate_call ( session );
+    m_callback_msi_packet((struct Messenger*) session->messenger_handle, NULL, NULL);
+    
     
     /* TODO: Clean it up more? */
     
@@ -1311,10 +1313,13 @@ int msi_cancel ( MSISession* session, int friend_id ) {
  * @param session Control session.
  * @return int
  */
-int msi_reject ( MSISession* session ) {
+int msi_reject ( MSISession* session, const uint8_t* reason ) {
     assert ( session );
 
     MSIMessage* _msg_reject = msi_new_message ( TYPE_REQUEST, stringify_request ( reject ) );
+    
+    if ( reason ) msi_msg_set_reason(_msg_reject, reason, strlen((const char*)reason) + 1);
+    
     send_message ( session, _msg_reject, session->call->peers[session->call->peer_count - 1] );
     free_message ( _msg_reject );
 
