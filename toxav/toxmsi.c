@@ -47,7 +47,7 @@
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2
 
-#define VERSION_STRING "0.3.1"
+unsigned char* VERSION_STRING = (unsigned char*)"0.3.1";
 #define VERSION_STRLEN 5
 
 #define CT_AUDIO_HEADER_VALUE "AUDIO"
@@ -220,18 +220,26 @@ static inline const uint8_t *stringify_response ( MSIResponse response ) {
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int parse_raw_data ( MSIMessage* msg, const uint8_t* data ) {
+int parse_raw_data ( MSIMessage* msg, const uint8_t* data, uint16_t length ) {
     assert ( msg );
 
+    if ( data[length - 1] ) /* End byte must have value 0 */
+        return -1;
+    
     const uint8_t* _it = data;
 
     while ( *_it ) {/* until end_byte is hit */
-
-        if ( *_it == field_byte ) {
+        
+        uint16_t itedlen = (_it - data) + 2;
+        
+        if ( *_it == field_byte && itedlen < length ) {
+            
             uint16_t _size = ( uint16_t ) * ( _it + 1 ) << 8 |
                              ( uint16_t ) * ( _it + 2 );
 
-            _it += 3; /*place it at the field value beginning*/
+            if ( itedlen + _size > length ) return -1;
+            
+            _it += 3; /* place it at the field value beginning */
 
             switch ( _size ) { /* Compare the size of the hardcoded values ( vary fast and convenient ) */
 
@@ -340,7 +348,7 @@ MSIMessage* msi_new_message ( uint8_t type, const uint8_t* type_id ) {
         return NULL;
     }
 
-    ALLOCATE_HEADER ( _retu->version, VERSION_STRING, strlen ( VERSION_STRING ) )
+    ALLOCATE_HEADER ( _retu->version, VERSION_STRING, strlen ( (const char*)VERSION_STRING ) )
 
     return _retu;
 }
@@ -353,7 +361,7 @@ MSIMessage* msi_new_message ( uint8_t type, const uint8_t* type_id ) {
  * @return MSIMessage* Parsed message.
  * @retval NULL Error occured.
  */
-MSIMessage* parse_message ( const uint8_t* data ) {
+MSIMessage* parse_message ( const uint8_t* data, uint16_t length ) {
     assert ( data );
 
     MSIMessage* _retu = calloc ( sizeof ( MSIMessage ), 1 );
@@ -361,7 +369,7 @@ MSIMessage* parse_message ( const uint8_t* data ) {
 
     memset ( _retu, 0, sizeof ( MSIMessage ) );
 
-    if ( parse_raw_data ( _retu, data ) == -1 ) {
+    if ( parse_raw_data ( _retu, data, length ) == -1 ) {
 
         free_message ( _retu );
         return NULL;
@@ -1014,12 +1022,13 @@ void msi_handle_packet ( Messenger* messenger, int source, uint8_t* data, uint16
 {
     /* Unused */
     (void)messenger;
-    (void)&length;
     
     MSISession* _session = object;
     MSIMessage* _msg;
     
-    _msg = parse_message ( data );
+    if ( !length ) return;
+    
+    _msg = parse_message ( data, length );
     
     if ( !_msg ) return;
     
@@ -1227,7 +1236,7 @@ int msi_invite ( MSISession* session, MSICallType call_type, uint32_t rngsec, ui
 int msi_hangup ( MSISession* session ) {
     assert ( session );
 
-    if ( !session->call && session->call->state != call_active )
+    if ( !session->call || session->call->state != call_active )
         return -1;
 
     MSIMessage* _msg_ending = msi_new_message ( TYPE_REQUEST, stringify_request ( end ) );

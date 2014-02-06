@@ -142,7 +142,7 @@ int empty_queue(struct jitter_buffer *q)
     while (q->size > 0) {
         q->size--;
         /* FIXME: */
-        /* rtp_free_msg(cs->_rtp_video, q->queue[q->front]); */
+        rtp_free_msg(NULL, q->queue[q->front]);
         q->front++;
 
         if (q->front == q->capacity)
