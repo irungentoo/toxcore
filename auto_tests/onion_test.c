@@ -262,9 +262,13 @@ START_TEST(test_announce)
     ip_init(&ip, 1);
     ip.ip6.uint8[15] = 1;
 
-    for (i = 1; i < NUM_ONIONS; ++i) {
+    for (i = 3; i < NUM_ONIONS; ++i) {
         IP_Port ip_port = {ip, onions[i - 1]->onion->net->port};
         DHT_bootstrap(onions[i]->onion->dht, ip_port, onions[i - 1]->onion->dht->self_public_key);
+        IP_Port ip_port1 = {ip, onions[i - 2]->onion->net->port};
+        DHT_bootstrap(onions[i]->onion->dht, ip_port1, onions[i - 2]->onion->dht->self_public_key);
+        IP_Port ip_port2 = {ip, onions[i - 3]->onion->net->port};
+        DHT_bootstrap(onions[i]->onion->dht, ip_port2, onions[i - 3]->onion->dht->self_public_key);
     }
 
     uint32_t connected = 0;
@@ -276,23 +280,41 @@ START_TEST(test_announce)
             do_onions(onions[i]);
             connected += DHT_isconnected(onions[i]->onion->dht);
         }
+
+        c_sleep(50);
     }
 
-    onion_addfriend(onions[7]->onion_c, onions[23]->onion->dht->c->self_public_key);
-    int frnum = onion_addfriend(onions[23]->onion_c, onions[7]->onion->dht->c->self_public_key);
+    onion_addfriend(onions[7]->onion_c, onions[33]->onion->dht->c->self_public_key);
+    int frnum = onion_addfriend(onions[33]->onion_c, onions[7]->onion->dht->c->self_public_key);
 
-    uint32_t ok = 0;
+    int ok = -1;
+
+    IP_Port ip_port;
+
+    while (ok == -1) {
+        for (i = 0; i < NUM_ONIONS; ++i) {
+            networking_poll(onions[i]->onion->net);
+            do_onion_client(onions[i]->onion_c);
+        }
+
+        ok = onion_getfriendip(onions[33]->onion_c, frnum, &ip_port);
+
+        c_sleep(50);
+    }
+
+    printf("id discovered\n");
 
     while (ok != 1) {
         for (i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
         }
 
-        IP_Port ip_port;
-        ok = onion_getfriendip(onions[23]->onion_c, frnum, &ip_port);
+        ok = onion_getfriendip(onions[33]->onion_c, frnum, &ip_port);
 
         c_sleep(50);
     }
+
+    ck_assert_msg(ip_port.port == onions[7]->onion->net->port, "Port in returned ip not correct.");
 }
 END_TEST
 
@@ -309,7 +331,7 @@ Suite *onion_suite(void)
     Suite *s = suite_create("Onion");
 
     DEFTESTCASE_SLOW(basic, 5);
-    DEFTESTCASE_SLOW(announce, 80);
+    DEFTESTCASE_SLOW(announce, 100);
     return s;
 }
 
