@@ -153,7 +153,7 @@ void INFO (const char* _format, ...)
 unsigned char *hex_string_to_bin(char hex_string[])
 {
     size_t i, len = strlen(hex_string);
-    unsigned char *val = calloc(sizeof(char), len);
+    unsigned char *val = calloc(sizeof(unsigned char), len);
     char *pos = hex_string;
     
     for (i = 0; i < len; ++i, pos += 2)
@@ -463,7 +463,7 @@ void *encode_audio_thread(void *arg)
 
 void *decode_video_thread(void *arg)
 {
-    INFO("Started decode audio thread!");
+    INFO("Started decode video thread!");
     av_session_t* _phone = arg;
     
     codec_state *cs = _phone->cs;
@@ -489,7 +489,7 @@ void *decode_video_thread(void *arg)
                 if (cs->video_decoder_ctx->width != width || cs->video_decoder_ctx->height != height) {
                     width = cs->video_decoder_ctx->width;
                     height = cs->video_decoder_ctx->height;
-                    printf("w: %d h%d \n", width, height);
+                    printf("w: %d h: %d \n", width, height);
                     video_decoder_refresh(_phone, width, height);
                 }
                 
@@ -505,7 +505,6 @@ void *decode_video_thread(void *arg)
         usleep(1000);
     }
     
-    printf("vend\n");
     /* clean up codecs */
     pthread_mutex_lock(&cs->ctrl_mutex);
     av_free(r_video_frame);
@@ -667,7 +666,7 @@ int phone_startmedia_loop ( av_session_t* _phone )
     _phone->_msi->call->nonce_local
     );
     
-    _phone->_rtp_audio = rtp_init_session ( 
+    _phone->_rtp_video = rtp_init_session ( 
     type_video,
     _phone->_messenger, 
     _phone->_msi->call->peers[0],
@@ -891,11 +890,7 @@ av_session_t* av_init_session()
         printf("Could not start capture device! %d\n", alcGetError((ALCdevice*)_retu->audio_capture_device));
         return 0;
     }
-    
-    
-    init_encoder(_retu->cs);
-    init_decoder(_retu->cs);
-    
+        
     
     uint8_t _byte_address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(_retu->_messenger, _byte_address );

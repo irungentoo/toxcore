@@ -360,16 +360,14 @@ void __attribute__((constructor)) init_event_poll ()
     RUN_IN_THREAD(event_poll, &event_handler);
 }
 
+/* NOTE: Do we need this? */
 void __attribute__((destructor)) terminate_event_poll()
 {
     /* Exit thread */
     event_handler.running = 0;
     
-    /* Keep the global until thread exits */
-    while (event_handler.running > -1) {
-        (void)event_handler.running;
-        usleep(FREQUENCY*2);
-    }
+    /* Give it enought time to exit */
+    usleep(FREQUENCY*2);
     
     pthread_mutex_destroy( &event_handler.mutex );
 }
