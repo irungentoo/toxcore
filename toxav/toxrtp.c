@@ -310,6 +310,7 @@ RTPExtHeader* extract_ext_header ( const uint8_t* payload, size_t length )
     
     
     if ( length < ( _ext_length * sizeof(uint32_t) ) ) {
+        free(_retu);
         return NULL;
     }
     
@@ -351,9 +352,11 @@ uint8_t* add_header ( RTPHeader* header, uint8_t* payload )
     U32_to_bytes( _it, header->timestamp); _it+=4;
     U32_to_bytes( _it, header->ssrc);
     
-    uint8_t _x;
-    for ( _x = 0; _x < _cc; _x++ ) {
-        _it+=4; U32_to_bytes( _it, header->csrc[_x]);
+    if ( header->csrc ) {
+        uint8_t _x;
+        for ( _x = 0; _x < _cc; _x++ ) {
+            _it+=4; U32_to_bytes( _it, header->csrc[_x]);
+        }
     }
     
     return _it + 4;
@@ -373,9 +376,11 @@ uint8_t* add_ext_header ( RTPExtHeader* header, uint8_t* payload )
     U16_to_bytes(_it, header->length); _it+=2;
     U16_to_bytes(_it, header->type); _it-=2; /* Return to 0 position */
     
-    uint16_t _x;
-    for ( _x = 0; _x < header->length; _x++ ) {
-        _it+=4; U32_to_bytes(_it, header->table[_x]);
+    if ( header->table ) {
+        uint16_t _x;
+        for ( _x = 0; _x < header->length; _x++ ) {
+            _it+=4; U32_to_bytes(_it, header->table[_x]);
+        }
     }
     
     return _it + 4;
@@ -465,8 +470,13 @@ RTPMessage* msg_parse ( uint16_t sequnum, const uint8_t* data, int length )
     } else {
         _retu->ext_header = NULL;
     }
-    
-    memcpy ( _retu->data, data + _from_pos, length - _from_pos );
+
+    if ( length - _from_pos <= MAX_RTP_SIZE )
+        memcpy ( _retu->data, data + _from_pos, length - _from_pos );
+    else {
+        rtp_free_msg(NULL, _retu);
+        return NULL;
+    }
     _retu->next = NULL;
     
     return _retu;
@@ -488,7 +498,7 @@ int rtp_handle_packet ( void* object, IP_Port ip_port, uint8_t* data, uint32_t l
     RTPSession* _session = object;
     RTPMessage* _msg;
     
-    if ( !_session )
+    if ( !_session || length < 13 ) /* 12 is the minimum length for rtp + desc. byte */
         return -1;
     
     uint8_t _plain[MAX_UDP_PACKET_SIZE];

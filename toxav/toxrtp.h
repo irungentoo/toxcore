@@ -31,7 +31,7 @@
 #include "../toxcore/tox.h"
 
 #define MAX_SEQU_NUM 65535
-#define MAX_RTP_SIZE 1400
+#define MAX_RTP_SIZE 10400
 
 /**
  * @brief Standard rtp header
