@@ -2395,7 +2395,6 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
                 num = length / sizeof(DHT_Friend);
 
                 for (i = 0; i < num; ++i) {
-                    DHT_addfriend(dht, friend_list[i].client_id);
 
                     for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
                         Client_data *client = &friend_list[i].client_list[j];
