@@ -284,6 +284,9 @@ void tox_set_sends_receipts(Tox *tox, int friendnumber, int yesno);
  * for copy_friendlist. */
 uint32_t tox_count_friendlist(Tox *tox);
 
+/* Return the number of online friends in the instance m. */
+uint32_t tox_get_num_online_friends(Tox *tox);
+
 /* Copy a list of valid friend IDs into the array out_list.
  * If out_list is NULL, returns 0.
  * Otherwise, returns the number of elements copied.
