@@ -273,6 +273,9 @@ int m_delfriend(Messenger *m, int friendnumber)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
+    if (m->friendlist[friendnumber].status == FRIEND_ONLINE)
+        --m->numonline_friends;
+
     onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
     crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
     free(m->friendlist[friendnumber].statusmessage);
