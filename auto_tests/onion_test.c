@@ -284,8 +284,8 @@ START_TEST(test_announce)
         c_sleep(50);
     }
 
-    onion_addfriend(onions[7]->onion_c, onions[33]->onion->dht->c->self_public_key);
-    int frnum = onion_addfriend(onions[33]->onion_c, onions[7]->onion->dht->c->self_public_key);
+    onion_addfriend(onions[7]->onion_c, onions[27]->onion->dht->c->self_public_key);
+    int frnum = onion_addfriend(onions[27]->onion_c, onions[7]->onion->dht->c->self_public_key);
 
     int ok = -1;
 
@@ -297,7 +297,7 @@ START_TEST(test_announce)
             do_onion_client(onions[i]->onion_c);
         }
 
-        ok = onion_getfriendip(onions[33]->onion_c, frnum, &ip_port);
+        ok = onion_getfriendip(onions[27]->onion_c, frnum, &ip_port);
 
         c_sleep(50);
     }
@@ -309,7 +309,7 @@ START_TEST(test_announce)
             do_onions(onions[i]);
         }
 
-        ok = onion_getfriendip(onions[33]->onion_c, frnum, &ip_port);
+        ok = onion_getfriendip(onions[27]->onion_c, frnum, &ip_port);
 
         c_sleep(50);
     }
@@ -331,7 +331,7 @@ Suite *onion_suite(void)
     Suite *s = suite_create("Onion");
 
     DEFTESTCASE_SLOW(basic, 5);
-    DEFTESTCASE_SLOW(announce, 100);
+    DEFTESTCASE_SLOW(announce, 200);
     return s;
 }
 
