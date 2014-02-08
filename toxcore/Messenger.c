@@ -665,8 +665,12 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
     onion_set_friend_online(m->onion_c, m->friendlist[friendnumber].onion_friendnum, is_online);
 
     if (is_online != was_online) {
-        if (was_online)
+        if (was_online) {
             break_files(m, friendnumber);
+            --m->numonline_friends;
+        } else {
+            ++m->numonline_friends;
+        }
 
         m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
     }
@@ -2358,6 +2362,12 @@ uint32_t count_friendlist(Messenger *m)
     }
 
     return ret;
+}
+
+/* Return the number of online friends in the instance m. */
+uint32_t get_num_online_friends(Messenger *m)
+{
+    return m->numonline_friends;
 }
 
 /* Copy a list of valid friend IDs into the array out_list.

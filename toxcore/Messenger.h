@@ -178,6 +178,7 @@ typedef struct Messenger {
 
     Friend *friendlist;
     uint32_t numfriends;
+    uint32_t numonline_friends;
 
     Group_Chat **chats;
     uint32_t numchats;
@@ -681,6 +682,9 @@ int messenger_load_encrypted(Messenger *m, uint8_t *data, uint32_t length, uint8
  * You should use this to determine how much memory to allocate
  * for copy_friendlist. */
 uint32_t count_friendlist(Messenger *m);
+
+/* Return the number of online friends in the instance m. */
+uint32_t get_num_online_friends(Messenger *m);
 
 /* Copy a list of valid friend IDs into the array out_list.
  * If out_list is NULL, returns 0.
