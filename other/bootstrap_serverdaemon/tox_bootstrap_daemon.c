@@ -256,7 +256,8 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
 
         // Process settings
         if (strlen(bs_public_key) != 64) {
-            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_PUBLIC_KEY, bs_public_key);
+            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_PUBLIC_KEY,
+                   bs_public_key);
             goto next;
         }
 
@@ -267,7 +268,8 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
         }
 
         uint8_t *bs_public_key_bin = hex_string_to_bin((char *)bs_public_key);
-        const int address_resolved = DHT_bootstrap_from_address(dht, bs_address, enable_ipv6, htons(bs_port), bs_public_key_bin);
+        const int address_resolved = DHT_bootstrap_from_address(dht, bs_address, enable_ipv6, htons(bs_port),
+                                     bs_public_key_bin);
         free(bs_public_key_bin);
 
         if (!address_resolved) {
