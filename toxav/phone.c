@@ -51,9 +51,8 @@
 #include <pthread.h>
 #include <opus/opus.h>
 
-#include "toxmsi.h"
-#include "toxrtp.h"
-#include "toxmedia.h"
+#include "media.h"
+#include "toxav.h"
 #include "../toxcore/event.h"
 #include "../toxcore/tox.h"
 
@@ -75,13 +74,9 @@ typedef struct av_friend_s {
 } av_friend_t;
 
 typedef struct av_session_s {
-    MSISession* _msi;
-    RTPSession* _rtp_audio;
-    RTPSession* _rtp_video;
-
     /* Encoding/decoding/capturing/playing */
+    ToxAv* av;
     
-    codec_state* cs;
     VideoPicture    video_picture;    
     struct ALCdevice *audio_capture_device;
     
@@ -91,8 +86,9 @@ typedef struct av_session_s {
     /* context for converting webcam image format to something the video encoder can use */
     struct SwsContext   *sws_ctx;
     
-    /**/
-    
+    /* Thread running control */
+    int running_decaud, running_encaud, 
+        running_decvid, running_encvid;
     
     pthread_mutex_t _mutex;
     
@@ -243,7 +239,7 @@ static void fraddr_to_str(uint8_t *id_bin, char *id_str)
 
 int display_received_frame(av_session_t* _phone, AVFrame *r_video_frame)
 {
-    codec_state* cs = _phone->cs;
+    CodecState* cs = get_cs_temp(_phone->av);
     AVPicture pict;
     SDL_LockYUVOverlay(_phone->video_picture.bmp);
     
@@ -268,71 +264,15 @@ int display_received_frame(av_session_t* _phone, AVFrame *r_video_frame)
     return 1;
 }
 
-int video_encoder_refresh(codec_state *cs, int bps)
-{
-    if (cs->video_encoder_ctx)
-        avcodec_close(cs->video_encoder_ctx);
-    
-    cs->video_encoder = avcodec_find_encoder(VIDEO_CODEC);
-    
-    if (!cs->video_encoder) {
-        printf("init video_encoder failed\n");
-        return -1;
-    }
-    
-    cs->video_encoder_ctx = avcodec_alloc_context3(cs->video_encoder);
-    
-    if (!cs->video_encoder_ctx) {
-        printf("init video_encoder_ctx failed\n");
-        return -1;
-    }
-    
-    cs->video_encoder_ctx->bit_rate = bps;
-    cs->video_encoder_ctx->rc_min_rate = cs->video_encoder_ctx->rc_max_rate = cs->video_encoder_ctx->bit_rate;
-    av_opt_set_double(cs->video_encoder_ctx->priv_data, "max-intra-rate", 90, 0);
-    av_opt_set(cs->video_encoder_ctx->priv_data, "quality", "realtime", 0);
-    
-    cs->video_encoder_ctx->thread_count = 4;
-    cs->video_encoder_ctx->rc_buffer_aggressivity = 0.95;
-    cs->video_encoder_ctx->rc_buffer_size = bps * 6;
-    cs->video_encoder_ctx->profile = 0;
-    cs->video_encoder_ctx->qmax = 54;
-    cs->video_encoder_ctx->qmin = 4;
-    AVRational myrational = {1, 25};
-    cs->video_encoder_ctx->time_base = myrational;
-    cs->video_encoder_ctx->gop_size = 99999;
-    cs->video_encoder_ctx->pix_fmt = PIX_FMT_YUV420P;
-    cs->video_encoder_ctx->width = cs->webcam_decoder_ctx->width;
-    cs->video_encoder_ctx->height = cs->webcam_decoder_ctx->height;
-    
-    if (avcodec_open2(cs->video_encoder_ctx, cs->video_encoder, NULL) < 0) {
-        printf("opening video encoder failed\n");
-        return -1;
-    }
-    return 0;
-}
-
-int video_decoder_refresh(av_session_t* _phone, int width, int height)
-{
-    printf("need to refresh\n");
-    screen = SDL_SetVideoMode(width, height, 0, 0);
-    
-    if (_phone->video_picture.bmp)
-        SDL_FreeYUVOverlay(_phone->video_picture.bmp);
-    
-    _phone->video_picture.bmp = SDL_CreateYUVOverlay(width, height, SDL_YV12_OVERLAY, screen);
-    _phone->sws_SDL_r_ctx = sws_getContext(width, height, _phone->cs->video_decoder_ctx->pix_fmt, width, height, PIX_FMT_YUV420P,
-                                       SWS_BILINEAR, NULL, NULL, NULL);
-    return 1;
-}
-
 void *encode_video_thread(void *arg)
 {
     INFO("Started encode video thread!");
     
     av_session_t* _phone = arg;
     
-    codec_state *cs = _phone->cs;
+    _phone->running_encvid = 1;
+    
+    CodecState *cs = get_cs_temp(_phone->av);
     AVPacket pkt1, *packet = &pkt1;
     int p = 0;
     int got_packet;
@@ -354,7 +294,7 @@ void *encode_video_thread(void *arg)
                                  cs->webcam_decoder_ctx->pix_fmt, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height, PIX_FMT_YUV420P,
                                  SWS_BILINEAR, NULL, NULL, NULL);
     
-    while (cs->send_video) {
+    while (_phone->running_encvid) {
         
         if (av_read_frame(cs->video_format_ctx, packet) < 0) {
             printf("error reading frame\n");
@@ -400,9 +340,7 @@ void *encode_video_thread(void *arg)
                                 
                 if (!enc_video_packet.data) fprintf(stderr, "video packet data is NULL\n");
                 
-                if ( 0 > rtp_send_msg ( _phone->_rtp_video, _phone->_messenger, enc_video_packet.data, enc_video_packet.size) ) {
-                    printf("Failed sending message\n");
-                }
+                toxav_send_rtp_payload(_phone->av, TypeVideo, enc_video_packet.data, enc_video_packet.size);
                 
                 av_free_packet(&enc_video_packet);
             }
@@ -420,6 +358,9 @@ void *encode_video_thread(void *arg)
     avcodec_close(cs->webcam_decoder_ctx);
     avcodec_close(cs->video_encoder_ctx);
     pthread_mutex_unlock(&cs->ctrl_mutex);
+    
+    _phone->running_encvid = -1;
+    
     pthread_exit ( NULL );
 }
 
@@ -427,8 +368,8 @@ void *encode_audio_thread(void *arg)
 {
     INFO("Started encode audio thread!");
     av_session_t* _phone = arg;
+    _phone->running_encaud = 1;
     
-    codec_state *cs = _phone->cs;
     unsigned char encoded_data[4096];
     int encoded_size = 0;
     int16_t frame[4096];
@@ -436,39 +377,46 @@ void *encode_audio_thread(void *arg)
     ALint sample = 0;
     alcCaptureStart((ALCdevice*)_phone->audio_capture_device);
     
-    while (cs->send_audio) {
+    while (_phone->running_encaud) {
         alcGetIntegerv((ALCdevice*)_phone->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
         
         if (sample >= frame_size) {
             alcCaptureSamples((ALCdevice*)_phone->audio_capture_device, frame, frame_size);
-            encoded_size = opus_encode(cs->audio_encoder, frame, frame_size, encoded_data, MAX_RTP_SIZE);
+            
+            encoded_size = toxav_encode_audio(_phone->av, frame, frame_size, encoded_data);
             
             if (encoded_size <= 0) {
                 printf("Could not encode audio packet\n");
             } else {
-                rtp_send_msg ( _phone->_rtp_audio, _phone->_messenger, encoded_data, encoded_size );
+                if ( -1 == toxav_send_rtp_payload(_phone->av, TypeAudio, encoded_data, encoded_size) )
+                    assert(0);
             }
         } else {
             usleep(1000);
         }
     }
     
-    /* clean up codecs */
-    pthread_mutex_lock(&cs->ctrl_mutex);
+    /* clean up codecs *
+    pthread_mutex_lock(&cs->ctrl_mutex);*/
     alcCaptureStop((ALCdevice*)_phone->audio_capture_device);
     alcCaptureCloseDevice((ALCdevice*)_phone->audio_capture_device);    
-    pthread_mutex_unlock(&cs->ctrl_mutex);
-    pthread_exit ( NULL );
+    /*pthread_mutex_unlock(&cs->ctrl_mutex);*/
+    _phone->running_encaud = -1;
+    pthread_exit ( NULL ); 
 }
 
 void *decode_video_thread(void *arg)
 {
     INFO("Started decode video thread!");
     av_session_t* _phone = arg;
+    _phone->running_decvid = 1;
     
-    codec_state *cs = _phone->cs;
+    CodecState *cs = get_cs_temp(_phone->av);
     cs->video_stream = 0;
-    RTPMessage *r_msg;
+    
+    int recved_size;
+    uint8_t dest[RTP_PAYLOAD_SIZE];
+    
     int dec_frame_finished;
     AVFrame *r_video_frame;
     r_video_frame = avcodec_alloc_frame();
@@ -477,20 +425,34 @@ void *decode_video_thread(void *arg)
     int width = 0;
     int height = 0;
     
-    while (cs->receive_video) {
-        r_msg = rtp_recv_msg ( _phone->_rtp_video );
+    while (_phone->running_decvid) {
         
-        if (r_msg) {
-            memcpy(dec_video_packet.data, r_msg->data, r_msg->length);
-            dec_video_packet.size = r_msg->length;
+        recved_size = toxav_recv_rtp_payload(_phone->av, TypeVideo, 1, dest);
+        
+        if (recved_size) {
+            memcpy(dec_video_packet.data, dest, recved_size);
+            dec_video_packet.size = recved_size;
+            
             avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
             
             if (dec_frame_finished) {
+                
+                /* Check if size has changed */
                 if (cs->video_decoder_ctx->width != width || cs->video_decoder_ctx->height != height) {
+                    
                     width = cs->video_decoder_ctx->width;
                     height = cs->video_decoder_ctx->height;
+                    
                     printf("w: %d h: %d \n", width, height);
-                    video_decoder_refresh(_phone, width, height);
+                    
+                    screen = SDL_SetVideoMode(width, height, 0, 0);
+                    
+                    if (_phone->video_picture.bmp)
+                        SDL_FreeYUVOverlay(_phone->video_picture.bmp);
+                    
+                    _phone->video_picture.bmp = SDL_CreateYUVOverlay(width, height, SDL_YV12_OVERLAY, screen);
+                    _phone->sws_SDL_r_ctx = sws_getContext(width, height, cs->video_decoder_ctx->pix_fmt, width, height, PIX_FMT_YUV420P,
+                                                           SWS_BILINEAR, NULL, NULL, NULL);
                 }
                 
                 display_received_frame(_phone, r_video_frame);
@@ -498,18 +460,20 @@ void *decode_video_thread(void *arg)
                 /* TODO: request the sender to create a new i-frame immediatly */
                 printf("Bad video packet\n");
             }
-            
-            rtp_free_msg(NULL, r_msg);
         }
         
         usleep(1000);
     }
     
     /* clean up codecs */
-    pthread_mutex_lock(&cs->ctrl_mutex);
     av_free(r_video_frame);
+    
+    pthread_mutex_lock(&cs->ctrl_mutex);
     avcodec_close(cs->video_decoder_ctx);
     pthread_mutex_unlock(&cs->ctrl_mutex);
+    
+    _phone->running_decvid = -1;
+    
     pthread_exit ( NULL );
 }
 
@@ -517,9 +481,10 @@ void *decode_audio_thread(void *arg)
 {
     INFO("Started decode audio thread!");
     av_session_t* _phone = arg;
-    
-    codec_state *cs = _phone->cs;
-    RTPMessage *r_msg;
+    _phone->running_decaud = 1;
+        
+    int recved_size;
+    uint8_t dest [RTP_PAYLOAD_SIZE];
     
     int frame_size = AUDIO_FRAME_SIZE;
     int data_size;
@@ -538,7 +503,7 @@ void *decode_audio_thread(void *arg)
     alSourcei(source, AL_LOOPING, AL_FALSE);
     
     ALuint buffer;
-    ALint val;
+    ALint ready;
     
     uint16_t zeros[frame_size];
     memset(zeros, 0, frame_size);
@@ -557,83 +522,58 @@ void *decode_audio_thread(void *arg)
         goto ending;
     }
     
-    struct jitter_buffer *j_buf = NULL;
+    int dec_frame_len = 0;    
     
-    j_buf = create_queue(20);
-    
-    int success = 0;
-    
-    int dec_frame_len = 0;
-    
-    
-    while (cs->receive_audio) {
+    while (_phone->running_decaud) {
         
-        r_msg = rtp_recv_msg ( _phone->_rtp_audio );
+        alGetSourcei(source, AL_BUFFERS_PROCESSED, &ready);
         
-        if (r_msg) {
-            /* push the packet into the queue */
-            queue(j_buf, r_msg);
+        recved_size = toxav_recv_rtp_payload(_phone->av, TypeAudio, ready, dest);
+        
+        if ( recved_size == ErrorAudioPacketLost ) {
+            printf("Lost packet\n");
+            dec_frame_len = toxav_decode_audio(_phone->av, NULL, 0, frame_size, PCM);
+        
+        } else if ( recved_size ) {
+            dec_frame_len = toxav_decode_audio(_phone->av, dest, recved_size, frame_size, PCM);         
         }
         
-        success = 0;
-        alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
         
-        /* grab a packet from the queue */
-        if (val > 0) {
-            r_msg = dequeue(j_buf, &success);
-        }
-        
-        if (success > 0) {
-            /* good packet */
-            if (success == 1) {
-                dec_frame_len = opus_decode(cs->audio_decoder, r_msg->data, r_msg->length, PCM, frame_size, 0);
-                rtp_free_msg(NULL, r_msg);
+        /* Play the packet */
+        if (dec_frame_len) {
+            alGetSourcei(source, AL_BUFFERS_PROCESSED, &ready);
+            
+            if (ready <= 0)
+                continue;
+            
+            alSourceUnqueueBuffers(source, 1, &buffer);
+            data_size = av_samples_get_buffer_size(NULL, 1, dec_frame_len, AV_SAMPLE_FMT_S16, 1);
+            alBufferData(buffer, AL_FORMAT_MONO16, PCM, data_size, 48000);
+            int error = alGetError();
+            
+            if (error != AL_NO_ERROR) {
+                fprintf(stderr, "Error setting buffer %d\n", error);
+                break;
             }
             
-            /* lost packet  */
-            else if (success == 2) {
-                printf("Lost packet\n");
-                dec_frame_len = opus_decode(cs->audio_decoder, NULL, 0, PCM, frame_size, 1);
+            alSourceQueueBuffers(source, 1, &buffer);
+            
+            if (alGetError() != AL_NO_ERROR) {
+                fprintf(stderr, "Error: could not buffer audio\n");
+                break;
             }
             
-            if (dec_frame_len) {
-                alGetSourcei(source, AL_BUFFERS_PROCESSED, &val);
-                
-                if (val <= 0)
-                    continue;
-                
-                alSourceUnqueueBuffers(source, 1, &buffer);
-                data_size = av_samples_get_buffer_size(NULL, 1, dec_frame_len, AV_SAMPLE_FMT_S16, 1);
-                alBufferData(buffer, AL_FORMAT_MONO16, PCM, data_size, 48000);
-                int error = alGetError();
-                
-                if (error != AL_NO_ERROR) {
-                    fprintf(stderr, "Error setting buffer %d\n", error);
-                    break;
-                }
-                
-                alSourceQueueBuffers(source, 1, &buffer);
-                
-                if (alGetError() != AL_NO_ERROR) {
-                    fprintf(stderr, "Error: could not buffer audio\n");
-                    break;
-                }
-                
-                alGetSourcei(source, AL_SOURCE_STATE, &val);
-                
-                if (val != AL_PLAYING)
-                    alSourcePlay(source);
-                
-                
-            }
-        }
+            alGetSourcei(source, AL_SOURCE_STATE, &ready);
+            
+            if (ready != AL_PLAYING) alSourcePlay(source);
+        } 
         
         usleep(1000);
     }
     
     
 ending:
-    /* clean up codecs */
+    /* clean up codecs * /
     pthread_mutex_lock(&cs->ctrl_mutex);    
     
     alDeleteSources(1, &source);
@@ -642,7 +582,10 @@ ending:
     alcDestroyContext(ctx);
     alcCloseDevice(dev);
     
-    pthread_mutex_unlock(&cs->ctrl_mutex);
+    pthread_mutex_unlock(&cs->ctrl_mutex); */
+    
+    _phone->running_decaud = -1;
+    
     pthread_exit ( NULL );
 }
 
@@ -650,61 +593,42 @@ ending:
 
 
 
-int phone_startmedia_loop ( av_session_t* _phone )
+int phone_startmedia_loop ( ToxAv* arg )
 {
-    if ( !_phone ){
+    if ( !arg ){
         return -1;
     }
-    
-    _phone->_rtp_audio = rtp_init_session ( 
-    type_audio,
-    _phone->_messenger, 
-    _phone->_msi->call->peers[0],
-    _phone->_msi->call->key_peer,
-    _phone->_msi->call->key_local,
-    _phone->_msi->call->nonce_peer,
-    _phone->_msi->call->nonce_local
-    );
-    
-    _phone->_rtp_video = rtp_init_session ( 
-    type_video,
-    _phone->_messenger, 
-    _phone->_msi->call->peers[0],
-    _phone->_msi->call->key_peer,
-    _phone->_msi->call->key_local,
-    _phone->_msi->call->nonce_peer,
-    _phone->_msi->call->nonce_local
-    );
-        
-    init_encoder(_phone->cs);
-    init_decoder(_phone->cs);
-    
+       
+    toxav_prepare_transmission(arg);
+       
     /* 
      * Rise all threads
      */
     
     /* Only checks for last peer */
-    if ( _phone->_msi->call->type_peer[0] == type_video && 0 > event.rise(encode_video_thread, _phone) )
+    if ( toxav_get_peer_transmission_type(arg, 0) == TypeVideo && 
+         0 > event.rise(encode_video_thread, toxav_get_agent_handler(arg)) )
     {
         INFO("Error while starting encode_video_thread()");
         return -1;
     }
     
     /* Always send audio */
-    if ( 0 > event.rise(encode_audio_thread, _phone) )
+    if ( 0 > event.rise(encode_audio_thread, toxav_get_agent_handler(arg)) )
     {
         INFO("Error while starting encode_audio_thread()");
         return -1;
     }
     
     /* Only checks for last peer */
-    if ( _phone->_msi->call->type_peer[0] == type_video && 0 > event.rise(decode_video_thread, _phone) )
+    if ( toxav_get_peer_transmission_type(arg, 0) == TypeVideo && 
+         0 > event.rise(decode_video_thread, toxav_get_agent_handler(arg)) )
     {
         INFO("Error while starting decode_video_thread()");
         return -1;
     }
     
-    if ( 0 > event.rise(decode_audio_thread, _phone) )
+    if ( 0 > event.rise(decode_audio_thread, toxav_get_agent_handler(arg)) )
     {
         INFO("Error while starting decode_audio_thread()");
         return -1;
@@ -734,13 +658,13 @@ int phone_startmedia_loop ( av_session_t* _phone )
 
 void* callback_recv_invite ( void* _arg )
 {
-    MSISession* _msi = _arg;
-
-    switch ( _msi->call->type_peer[_msi->call->peer_count - 1] ){
-    case type_audio:
+    assert(_arg);
+    
+    switch ( toxav_get_peer_transmission_type(_arg, 0) ){
+    case TypeAudio:
         INFO( "Incoming audio call!");
         break;
-    case type_video:
+    case TypeVideo:
         INFO( "Incoming video call!");
         break;
     }
@@ -754,8 +678,7 @@ void* callback_recv_ringing ( void* _arg )
 }
 void* callback_recv_starting ( void* _arg )
 {
-    MSISession* _session = _arg;
-    if ( 0 != phone_startmedia_loop(_session->agent_handler) ){
+    if ( 0 != phone_startmedia_loop(_arg) ){
         INFO("Starting call failed!");
     } else {
         INFO ("Call started! ( press h to hangup )");
@@ -764,15 +687,21 @@ void* callback_recv_starting ( void* _arg )
 }
 void* callback_recv_ending ( void* _arg )
 {
-    av_session_t* _phone = ((MSISession*)_arg)->agent_handler;
+    av_session_t* _phone = toxav_get_agent_handler(_arg);
     
-    _phone->cs->send_audio = 0;
-    _phone->cs->send_video = 0;
-    _phone->cs->receive_audio = 0;
-    _phone->cs->receive_video = 0;
+    _phone->running_encaud = 0;
+    _phone->running_decaud = 0;
+    _phone->running_encvid = 0;
+    _phone->running_decvid = 0;
     
     /* Wait until all threads are done */
-    usleep(10000000);
+    
+    while ( _phone->running_encaud != -1 || 
+            _phone->running_decaud != -1 ||
+            _phone->running_encvid != -1 ||
+            _phone->running_decvid != -1 )
+        
+    usleep(10000000);    
     
     INFO ( "Call ended!" );
     pthread_exit(NULL);
@@ -780,16 +709,15 @@ void* callback_recv_ending ( void* _arg )
 
 void* callback_recv_error ( void* _arg )
 {
-    MSISession* _session = _arg;
+    /*MSISession* _session = _arg;
 
-    INFO( "Error: %s", _session->last_error_str );
+    INFO( "Error: %s", _session->last_error_str ); */
     pthread_exit(NULL);
 }
 
 void* callback_call_started ( void* _arg )
 {
-    MSISession* _session = _arg;
-    if ( 0 != phone_startmedia_loop(_session->agent_handler) ){
+    if ( 0 != phone_startmedia_loop(_arg) ){
         INFO("Starting call failed!");
     } else {
         INFO ("Call started! ( press h to hangup )");
@@ -809,16 +737,23 @@ void* callback_call_rejected ( void* _arg )
 }
 void* callback_call_ended ( void* _arg )
 {
-    av_session_t* _phone = ((MSISession*)_arg)->agent_handler;
+    av_session_t* _phone = toxav_get_agent_handler(_arg);
     
-    _phone->cs->send_audio = 0;
-    _phone->cs->send_video = 0;
-    _phone->cs->receive_audio = 0;
-    _phone->cs->receive_video = 0;
+    _phone->running_encaud = 0;
+    _phone->running_decaud = 0;
+    _phone->running_encvid = 0;
+    _phone->running_decvid = 0;
     
     /* Wait until all threads are done */
-    usleep(10000000);
+        
+    while ( _phone->running_encaud != -1 || 
+            _phone->running_decaud != -1 ||
+            _phone->running_encvid != -1 ||
+            _phone->running_decvid != -1 )
+        
+        usleep(10000000);
     
+    toxav_kill_transmission(_phone->av);
     INFO ( "Call ended!" );
     pthread_exit(NULL);
 }
@@ -844,9 +779,7 @@ av_session_t* av_init_session()
     }
 
     _retu->_friends = NULL;
-    
-    _retu->_rtp_audio = NULL;
-    _retu->_rtp_video = NULL;
+    _retu->av = toxav_new(_retu->_messenger, _retu, _USERAGENT);
     
     
     const ALchar *_device_list = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
@@ -878,9 +811,7 @@ av_session_t* av_init_session()
     else {
         INFO("Selected: %d ( %s )", selection, device_names[selection]);
     }
-    
-    _retu->cs = av_calloc(sizeof(codec_state), 1);
-    
+        
     _retu->audio_capture_device = 
         (struct ALCdevice*)alcCaptureOpenDevice(
             device_names[selection], AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE * 4);
@@ -890,36 +821,29 @@ av_session_t* av_init_session()
         printf("Could not start capture device! %d\n", alcGetError((ALCdevice*)_retu->audio_capture_device));
         return 0;
     }
-        
+    
     
     uint8_t _byte_address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(_retu->_messenger, _byte_address );
     fraddr_to_str( _byte_address, _retu->_my_public_id );
     
     
-    /* Initialize msi */
-    _retu->_msi = msi_init_session ( _retu->_messenger, (const uint8_t*)_USERAGENT );
-
-    if ( !_retu->_msi ) {
-        fprintf ( stderr, "msi_init_session() failed\n" );
-        return NULL;
-    }
-
-    _retu->_msi->agent_handler = _retu;
 
     /* ------------------ */
-    msi_register_callback(callback_call_started, MSI_OnStart);
-    msi_register_callback(callback_call_canceled, MSI_OnCancel);
-    msi_register_callback(callback_call_rejected, MSI_OnReject);
-    msi_register_callback(callback_call_ended, MSI_OnEnd);
-    msi_register_callback(callback_recv_invite, MSI_OnInvite);
-
-    msi_register_callback(callback_recv_ringing, MSI_OnRinging);
-    msi_register_callback(callback_recv_starting, MSI_OnStarting);
-    msi_register_callback(callback_recv_ending, MSI_OnEnding);
-
-    msi_register_callback(callback_recv_error, MSI_OnError);
-    msi_register_callback(callback_requ_timeout, MSI_OnTimeout);
+    
+    toxav_register_callstate_callback(callback_call_started, OnStart);
+    toxav_register_callstate_callback(callback_call_canceled, OnCancel);
+    toxav_register_callstate_callback(callback_call_rejected, OnReject);
+    toxav_register_callstate_callback(callback_call_ended, OnEnd);
+    toxav_register_callstate_callback(callback_recv_invite, OnInvite);
+    
+    toxav_register_callstate_callback(callback_recv_ringing, OnRinging);
+    toxav_register_callstate_callback(callback_recv_starting, OnStarting);
+    toxav_register_callstate_callback(callback_recv_ending, OnEnding);
+    
+    toxav_register_callstate_callback(callback_recv_error, OnError);
+    toxav_register_callstate_callback(callback_requ_timeout, OnTimeout);
+    
     /* ------------------ */
 
     return _retu;
@@ -927,17 +851,18 @@ av_session_t* av_init_session()
 
 int av_terminate_session(av_session_t* _phone)
 {
-    if ( _phone->_msi->call ){
-        msi_hangup(_phone->_msi); /* Hangup the phone first */
-    }
+    toxav_hangup(_phone->av);
     
     free(_phone->_friends);
-    msi_terminate_session(_phone->_msi);
     pthread_mutex_destroy ( &_phone->_mutex );
     
     Tox* _p = _phone->_messenger;
-    _phone->_messenger = NULL; usleep(100000); /* Wait for tox_pool to end */
+    _phone->_messenger = NULL; usleep(100000); /* Wait for tox_poll to end */
+    
     tox_kill(_p);
+    toxav_kill(_phone->av);
+    
+    free(_phone);
     
     printf("\r[i] Quit!\n");
     return 0;
@@ -1047,22 +972,17 @@ void do_phone ( av_session_t* _phone )
         } break;
         case 'c':
         {
-            if ( _phone->_msi->call ){
-                INFO("Already in a call");
-                break;
-            }
-            
-            MSICallType _ctype;
+            ToxAvCallType _ctype;
             
             if ( _len < 5 ){
                 INFO("Invalid input; usage: c a/v [friend]");
                 break;
             }
             else if ( _line[2] == 'a' || _line[2] != 'v' ){ /* default and audio */
-                _ctype = type_audio;
+                _ctype = TypeAudio;
             }
             else { /* video */
-                _ctype = type_video;
+                _ctype = TypeVideo;
             }
             
             char* _end;
@@ -1073,45 +993,41 @@ void do_phone ( av_session_t* _phone )
                 break;
             }
             
-            /* Set timeout */
-            msi_invite ( _phone->_msi, _ctype, 10 * 1000, _friend );
-            INFO("Calling friend: %d!", _friend);
+            if ( toxav_call(_phone->av, _friend, _ctype, 30) == ErrorAlreadyInCall ){
+                INFO("Already in a call");
+                break;
+            }
+            else INFO("Calling friend: %d!", _friend);
 
         } break;
         case 'h':
         {
-            if ( !_phone->_msi->call ){
+            if ( toxav_hangup(_phone->av) == ErrorNoCall ) {
                 INFO("No call!");
                 break;
             }
-
-            msi_hangup(_phone->_msi);
-
-            INFO("Hung up...");
+            else INFO("Hung up...");
 
         } break;
         case 'a':
         {
-
-            if ( _phone->_msi->call && _phone->_msi->call->state != call_starting ) {
-                break;
-            }
-
+            ToxAvError rc;
+            
             if ( _len > 1 && _line[2] == 'v' )
-                msi_answer(_phone->_msi, type_video);
+                rc = toxav_answer(_phone->av, TypeVideo);
             else
-                msi_answer(_phone->_msi, type_audio);
+                rc = toxav_answer(_phone->av, TypeAudio);
+            
+            if ( rc == ErrorInvalidState ) {
+                INFO("No call to answer!");
+            }
 
         } break;
         case 'r':
         {
-            if ( _phone->_msi->call && _phone->_msi->call->state != call_starting ){
-                break;
-            }
-
-            msi_reject(_phone->_msi, NULL);
-
-            INFO("Call Rejected...");
+            if ( toxav_reject(_phone->av, "User action") == ErrorInvalidState )
+                INFO("No state to cancel!");
+            else INFO("Call Rejected...");
 
         } break;
         case 'q':
@@ -1124,7 +1040,6 @@ void do_phone ( av_session_t* _phone )
         }
         default:
         {
-            INFO("Invalid command!");
         } break;
 
         }

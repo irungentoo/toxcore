@@ -103,7 +103,7 @@ typedef struct _MSISession {
     int            last_error_id; /* Determine the last error */
     const uint8_t* last_error_str;
 
-    const uint8_t* user_agent;
+    const uint8_t* ua_name;
 
     void* agent_handler; /* Pointer to an object that is handling msi */
     Tox*  messenger_handle;
@@ -156,7 +156,7 @@ void msi_register_callback(MSICallback callback, MSICallbackID id);
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession* msi_init_session ( Tox* messenger, const uint8_t* user_agent );
+MSISession* msi_init_session ( Tox* messenger, const uint8_t* ua_name );
 
 
 /**
@@ -205,10 +205,11 @@ int msi_answer ( MSISession* session, MSICallType call_type );
  * @brief Cancel request.
  * 
  * @param session Control session.
- * @param friend_id The friend.
+ * @param peer To which peer.
+ * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession* session, int friend_id );
+int msi_cancel ( MSISession* session, uint32_t peer, const uint8_t* reason );
 
 
 /**
