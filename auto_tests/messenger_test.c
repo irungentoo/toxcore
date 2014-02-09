@@ -14,6 +14,7 @@
 #include "config.h"
 #endif
 
+#include "../testing/misc_tools.c" // hex_string_to_bin
 #include "../toxcore/Messenger.h"
 #include "../toxcore/Lossless_UDP.h"
 #include <sys/types.h>
@@ -40,18 +41,6 @@ unsigned char *bad_id    = NULL;
 int friend_id_num = 0;
 
 Messenger *m;
-
-unsigned char *hex_string_to_bin(char hex_string[])
-{
-    size_t i, len = strlen(hex_string);
-    unsigned char *val = calloc(1, len);
-    char *pos = hex_string;
-
-    for (i = 0; i < len; ++i, pos += 2)
-        sscanf(pos, "%2hhx", &val[i]);
-
-    return val;
-}
 
 START_TEST(test_m_sendmesage)
 {

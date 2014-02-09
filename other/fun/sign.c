@@ -17,19 +17,7 @@
  */
 #include <sodium.h>
 #include <string.h>
-
-unsigned char *hex_string_to_bin(char hex_string[])
-{
-    size_t len = strlen(hex_string);
-    unsigned char *val = malloc(len);
-    char *pos = hex_string;
-    int i;
-
-    for (i = 0; i < len; ++i, pos += 2)
-        sscanf(pos, "%2hhx", &val[i]);
-
-    return val;
-}
+#include "../../testing/misc_tools.c" // hex_string_to_bin
 
 int load_file(char *filename, char **result)
 {
@@ -90,6 +78,7 @@ int main(int argc, char *argv[])
         unsigned long long smlen;
         char *sm = malloc(size + crypto_sign_ed25519_BYTES * 2);
         crypto_sign_ed25519(sm, &smlen, data, size, secret_key);
+        free(secret_key);
 
         if (smlen - size != crypto_sign_ed25519_BYTES)
             goto fail;

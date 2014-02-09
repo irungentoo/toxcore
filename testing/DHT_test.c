@@ -205,8 +205,10 @@ int main(int argc, char *argv[])
 
     if (scanf("%s", temp_id) != 1)
         exit(0);
-
-    DHT_addfriend(dht, hex_string_to_bin(temp_id));
+        
+    uint8_t *bin_id = hex_string_to_bin(temp_id);
+    DHT_addfriend(dht, bin_id);
+    free(bin_id);
 
     perror("Initialization");
 
