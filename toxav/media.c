@@ -37,9 +37,8 @@
 #include <opus/opus.h>
 #include <assert.h>
 
-#include "toxmsi.h"
-#include "toxrtp.h"
-#include "toxmedia.h"
+#include "rtp.h"
+#include "media.h"
 
 struct jitter_buffer {
     RTPMessage **queue;
@@ -79,8 +78,6 @@ struct jitter_buffer *create_queue(int capacity)
 /* returns 1 if 'a' has a higher sequence number than 'b' */
 uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a, uint32_t ts_b)
 {
-    /* should be stable enough */
-    
     /* TODO: There is already this kind of function in toxrtp.c.
      *       Maybe merge?
      */
@@ -141,7 +138,6 @@ int empty_queue(struct jitter_buffer *q)
 {
     while (q->size > 0) {
         q->size--;
-        /* FIXME: */
         rtp_free_msg(NULL, q->queue[q->front]);
         q->front++;
 
@@ -207,64 +203,56 @@ int queue(struct jitter_buffer *q, RTPMessage *pk)
     return 0;
 }
 
-int init_receive_audio(codec_state *cs)
-{
-    int rc;
-    cs->audio_decoder = opus_decoder_create(48000, 1, &rc );    
-    
-    if ( rc != OPUS_OK ){
-        printf("Error while starting audio decoder!\n");
-        return 0;
-    }
-    
-    rc = opus_decoder_init(cs->audio_decoder, 48000, 1);
-    
-    if ( rc != OPUS_OK ){
-        printf("Error while starting audio decoder!\n");
-        return 0;
-    }
-    
-    
-    printf("Init audio decoder successful\n");
-    return 1;
-}
 
-int init_receive_video(codec_state *cs)
+int init_video_decoder(CodecState *cs)
 {
     cs->video_decoder = avcodec_find_decoder(VIDEO_CODEC);
-
+    
     if (!cs->video_decoder) {
-        printf("Init video_decoder failed\n");
-        return 0;
+        fprintf(stderr, "Init video_decoder failed!\n");
+        return -1;
     }
-
+    
     cs->video_decoder_ctx = avcodec_alloc_context3(cs->video_decoder);
-
+    
     if (!cs->video_decoder_ctx) {
-        printf("Init video_decoder_ctx failed\n");
-        return 0;
+        fprintf(stderr, "Init video_decoder_ctx failed!\n");
+        return -1;
     }
-
+    
     if (avcodec_open2(cs->video_decoder_ctx, cs->video_decoder, NULL) < 0) {
-        printf("Opening video decoder failed\n");
-        return 0;
+        fprintf(stderr, "Opening video decoder failed!\n");
+        return -1;
     }
-
-    printf("Init video decoder successful\n");
-    return 1;
+    
+    return 0;
 }
 
-int init_send_video(codec_state *cs)
+int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
 {
-    cs->video_input_format = av_find_input_format(VIDEO_DRIVER);
+    int rc;
+    cs->audio_decoder = opus_decoder_create(cs->audio_sample_rate, audio_channels, &rc );    
+    
+    if ( rc != OPUS_OK ){
+        fprintf(stderr, "Error while starting audio decoder!\n");
+        return -1;
+    }    
+    
+    return 0;
+}
 
-    if (avformat_open_input(&cs->video_format_ctx, DEFAULT_WEBCAM, cs->video_input_format, NULL) != 0) {
-        printf("opening video_input_format failed\n");
-        return 0;
+
+int init_video_encoder(CodecState *cs, const char* webcam, const char* video_driver, uint32_t video_bitrate)
+{
+    cs->video_input_format = av_find_input_format(video_driver);
+
+    if (avformat_open_input(&cs->video_format_ctx, webcam, cs->video_input_format, NULL) != 0) {
+        fprintf(stderr, "Opening video_input_format failed!\n");
+        return -1;
     }
 
     avformat_find_stream_info(cs->video_format_ctx, NULL);
-    av_dump_format(cs->video_format_ctx, 0, DEFAULT_WEBCAM, 0);
+    av_dump_format(cs->video_format_ctx, 0, webcam, 0);
 
     int i;
 
@@ -279,42 +267,42 @@ int init_send_video(codec_state *cs)
     cs->webcam_decoder = avcodec_find_decoder(cs->webcam_decoder_ctx->codec_id);
 
     if (cs->webcam_decoder == NULL) {
-        printf("Unsupported codec\n");
-        return 0;
+        fprintf(stderr, "Unsupported codec!\n");
+        return -1;
     }
 
     if (cs->webcam_decoder_ctx == NULL) {
-        printf("init webcam_decoder_ctx failed\n");
-        return 0;
+        fprintf(stderr, "Init webcam_decoder_ctx failed!\n");
+        return -1;
     }
 
     if (avcodec_open2(cs->webcam_decoder_ctx, cs->webcam_decoder, NULL) < 0) {
-        printf("opening webcam decoder failed\n");
-        return 0;
+        fprintf(stderr, "Opening webcam decoder failed!\n");
+        return -1;
     }
 
     cs->video_encoder = avcodec_find_encoder(VIDEO_CODEC);
 
     if (!cs->video_encoder) {
-        printf("init video_encoder failed\n");
-        return 0;
+        fprintf(stderr, "Init video_encoder failed!\n");
+        return -1;
     }
 
     cs->video_encoder_ctx = avcodec_alloc_context3(cs->video_encoder);
 
     if (!cs->video_encoder_ctx) {
-        printf("init video_encoder_ctx failed\n");
-        return 0;
+        fprintf(stderr, "Init video_encoder_ctx failed!\n");
+        return -1;
     }
 
-    cs->video_encoder_ctx->bit_rate = VIDEO_BITRATE;
+    cs->video_encoder_ctx->bit_rate = video_bitrate;
     cs->video_encoder_ctx->rc_min_rate = cs->video_encoder_ctx->rc_max_rate = cs->video_encoder_ctx->bit_rate;
     av_opt_set_double(cs->video_encoder_ctx->priv_data, "max-intra-rate", 90, 0);
     av_opt_set(cs->video_encoder_ctx->priv_data, "quality", "realtime", 0);
 
     cs->video_encoder_ctx->thread_count = 4;
     cs->video_encoder_ctx->rc_buffer_aggressivity = 0.95;
-    cs->video_encoder_ctx->rc_buffer_size = VIDEO_BITRATE * 6;
+    cs->video_encoder_ctx->rc_buffer_size = video_bitrate * 6;
     cs->video_encoder_ctx->profile = 3;
     cs->video_encoder_ctx->qmax = 54;
     cs->video_encoder_ctx->qmin = 4;
@@ -326,66 +314,84 @@ int init_send_video(codec_state *cs)
     cs->video_encoder_ctx->height = cs->webcam_decoder_ctx->height;
 
     if (avcodec_open2(cs->video_encoder_ctx, cs->video_encoder, NULL) < 0) {
-        printf("opening video encoder failed\n");
-        return 0;
+        fprintf(stderr, "Opening video encoder failed!\n");
+        return -1;
     }
 
-    printf("init video encoder successful\n");
-    return 1;
+    return 0;
 }
 
-int init_send_audio(codec_state *cs)
+int init_audio_encoder(CodecState *cs)
 {
-    cs->support_send_audio = 0;
-
     int err = OPUS_OK;
-    cs->audio_bitrate = AUDIO_BITRATE;
-    cs->audio_encoder = opus_encoder_create(AUDIO_SAMPLE_RATE, 1, OPUS_APPLICATION_VOIP, &err);
+    cs->audio_encoder = opus_encoder_create(cs->audio_sample_rate, 1, OPUS_APPLICATION_VOIP, &err);
+        
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_bitrate));
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
 
+    /* NOTE: What do we do with this? */
     int nfo;
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_GET_LOOKAHEAD(&nfo));
-    /* printf("Encoder lookahead delay : %d\n", nfo); */
-    printf("init audio encoder successful\n");
-
-    return 1;
+    
+    return err == OPUS_OK ? 0 : -1;
 }
 
-int init_encoder(codec_state *cs)
+
+CodecState* codec_init_session ( uint32_t audio_bitrate, 
+                                 uint16_t audio_frame_duration, 
+                                 uint32_t audio_sample_rate, 
+                                 uint32_t audio_channels, 
+                                 uint32_t video_bitrate, 
+                                 const char* webcam, 
+                                 const char* webcam_driver ) 
 {
+    CodecState* _retu = av_calloc(sizeof(CodecState), 1);
+    assert(_retu);
+    
+    
     avdevice_register_all();
     avcodec_register_all();
-    avdevice_register_all();
     av_register_all();
-
-    pthread_mutex_init(&cs->ctrl_mutex, NULL);
-
-    cs->support_send_video = init_send_video(cs);
-    cs->support_send_audio = init_send_audio(cs);
-
-    cs->send_audio = 1;
-    cs->send_video = 1;
-
-    return 1;
+    
+    
+    _retu->audio_bitrate = audio_bitrate;
+    _retu->audio_sample_rate = audio_sample_rate;
+    
+    pthread_mutex_init(&_retu->ctrl_mutex, NULL);
+    
+    
+    /* Encoders */
+    if ( 0 == init_video_encoder(_retu, webcam, webcam_driver, video_bitrate) ) 
+        printf("Video encoder initialized!\n");
+    
+    if ( 0 == init_audio_encoder(_retu) ) 
+        printf("Audio encoder initialized!\n");
+    
+    
+    /* Decoders */
+    if ( 0 == init_video_decoder(_retu) )
+        printf("Video decoder initialized!\n");
+    
+    if ( 0 == init_audio_decoder(_retu, audio_channels) )
+        printf("Audio decoder initialized!\n");
+    
+        
+    return _retu;
 }
 
-int init_decoder(codec_state *cs)
+void codec_terminate_session ( CodecState* cs ) 
 {
-    avdevice_register_all();
-    avcodec_register_all();
-    avdevice_register_all();
-    av_register_all();
-
-    cs->receive_video = 0;
-    cs->receive_audio = 0;
-
-    cs->support_receive_video = init_receive_video(cs);
-    cs->support_receive_audio = init_receive_audio(cs);
-
-    cs->receive_audio = 1;
-    cs->receive_video = 1;
-
-    return 1;
+    if ( cs->audio_encoder ) {
+        opus_encoder_destroy(cs->audio_encoder);
+        printf("Terminated encoder!\n");
+    }
+    
+    if ( cs->audio_decoder ) {
+        opus_decoder_destroy(cs->audio_decoder);
+        printf("Terminated decoder!\n");
+    }
+    
+    /* TODO: Terminate video */
+    
 }

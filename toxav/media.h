@@ -27,8 +27,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "toxrtp.h"
-#include "toxmsi.h"
 #include "../toxcore/tox.h"
 
 /* Video encoding/decoding */
@@ -75,16 +73,7 @@
 #define DEFAULT_WEBCAM "0"
 #endif
 
-typedef struct {
-    uint8_t send_audio;
-    uint8_t receive_audio;
-    uint8_t send_video;
-    uint8_t receive_video;
-
-    uint8_t support_send_audio;
-    uint8_t support_send_video;
-    uint8_t support_receive_audio;
-    uint8_t support_receive_video;
+typedef struct _CodecState{
 
     /* video encoding */
     AVInputFormat *video_input_format;
@@ -102,19 +91,19 @@ typedef struct {
     /* audio encoding */
     OpusEncoder *audio_encoder;
     int audio_bitrate;
+    int audio_sample_rate;
 
     /* audio decoding */
     OpusDecoder *audio_decoder;
-
-    uint8_t req_video_refresh;
     
     pthread_mutex_t ctrl_mutex;
     
     
     uint32_t frame_rate;
 
-} codec_state;
+} CodecState;
 
+typedef struct _RTPMessage RTPMessage;
 
 struct jitter_buffer *create_queue(int capacity);
 int empty_queue(struct jitter_buffer *q);
@@ -123,8 +112,14 @@ int queue(struct jitter_buffer *q, RTPMessage *pk);
 RTPMessage *dequeue(struct jitter_buffer *q, int *success);
 
 
-int init_encoder(codec_state *cs);
-int init_decoder(codec_state *cs);
+CodecState* codec_init_session( uint32_t audio_bitrate, 
+                                uint16_t audio_frame_duration, 
+                                uint32_t audio_sample_rate,
+                                uint32_t audio_channels,
+                                uint32_t video_bitrate,
+                                const char* webcam, 
+                                const char* webcam_driver );
 
+void codec_terminate_session(CodecState* cs);
 
 #endif

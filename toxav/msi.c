@@ -29,7 +29,7 @@
 
 #define _BSD_SOURCE
 
-#include "toxmsi.h"
+#include "msi.h"
 #include "../toxcore/util.h"
 #include "../toxcore/network.h"
 #include "../toxcore/event.h"
@@ -335,8 +335,6 @@ MSIMessage* msi_new_message ( uint8_t type, const uint8_t* type_id ) {
     MSIMessage* _retu = calloc ( sizeof ( MSIMessage ), 1 );
     assert ( _retu );
 
-    memset ( _retu, 0, sizeof ( MSIMessage ) );
-
     if ( type == TYPE_REQUEST ) {
         ALLOCATE_HEADER ( _retu->request, type_id, strlen ( (const char*)type_id ) )
 
@@ -641,7 +639,7 @@ int handle_error ( MSISession* session, MSICallError errid, uint32_t to ) {
     session->last_error_id = errid;
     session->last_error_str = stringify_error ( errid );
 
-    event.rise ( callbacks[MSI_OnError], session );
+    event.rise ( callbacks[MSI_OnError], session->agent_handler );
 
     return 0;
 }
@@ -692,12 +690,12 @@ void* handle_timeout ( void* arg )
         /* Cancel all? */
         uint16_t _it = 0;
         for ( ; _it < _peer_count; _it++ )
-            msi_cancel ( arg, _peers[_it] );
+            msi_cancel ( arg, _peers[_it], (const uint8_t*)"Timeout" );
         
     }
     
-    ( *callbacks[MSI_OnTimeout] ) ( arg );
-    ( *callbacks[MSI_OnEnding ] ) ( arg );
+    ( *callbacks[MSI_OnTimeout] ) ( _session->agent_handler );
+    ( *callbacks[MSI_OnEnding ] ) ( _session->agent_handler );
 
     return NULL;
 }
@@ -829,7 +827,7 @@ int handle_recv_invite ( MSISession* session, MSIMessage* msg ) {
     send_message ( session, _msg_ringing, msg->friend_id );
     free_message ( _msg_ringing );
 
-    event.rise ( callbacks[MSI_OnInvite], session );
+    event.rise ( callbacks[MSI_OnInvite], session->agent_handler );
 
     return 1;
 }
@@ -852,7 +850,7 @@ int handle_recv_start ( MSISession* session, MSIMessage* msg ) {
 
     flush_peer_type ( session, msg, 0 );
 
-    event.rise ( callbacks[MSI_OnStart], session );
+    event.rise ( callbacks[MSI_OnStart], session->agent_handler );
 
     return 1;
 }
@@ -868,7 +866,7 @@ int handle_recv_reject ( MSISession* session, MSIMessage* msg ) {
     free_message ( _msg_end );
 
     event.timer_release ( session->call->request_timer_id );
-    event.rise ( callbacks[MSI_OnReject], session );
+    event.rise ( callbacks[MSI_OnReject], session->agent_handler );
     session->call->request_timer_id = event.timer_alloc ( handle_timeout, session, m_deftout );
 
     return 1;
@@ -882,7 +880,7 @@ int handle_recv_cancel ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[MSI_OnCancel], session );
+    event.rise ( callbacks[MSI_OnCancel], session->agent_handler );
 
     return 1;
 }
@@ -899,7 +897,7 @@ int handle_recv_end ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[MSI_OnEnd], session );
+    event.rise ( callbacks[MSI_OnEnd], session->agent_handler );
 
     return 1;
 }
@@ -912,7 +910,7 @@ int handle_recv_ringing ( MSISession* session, MSIMessage* msg ) {
         return 0;
 
     session->call->ringing_timer_id = event.timer_alloc ( handle_timeout, session, session->call->ringing_tout_ms );
-    event.rise ( callbacks[MSI_OnRinging], session );
+    event.rise ( callbacks[MSI_OnRinging], session->agent_handler );
 
     return 1;
 }
@@ -950,7 +948,7 @@ int handle_recv_starting ( MSISession* session, MSIMessage* msg ) {
 
     flush_peer_type ( session, msg, 0 );
 
-    event.rise ( callbacks[MSI_OnStarting], session );
+    event.rise ( callbacks[MSI_OnStarting], session->agent_handler );
     event.timer_release ( session->call->ringing_timer_id );
 
     return 1;
@@ -964,7 +962,7 @@ int handle_recv_ending ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[MSI_OnEnding], session );
+    event.rise ( callbacks[MSI_OnEnding], session->agent_handler );
 
     return 1;
 }
@@ -980,7 +978,7 @@ int handle_recv_error ( MSISession* session, MSIMessage* msg ) {
 
     terminate_call ( session );
 
-    event.rise ( callbacks[MSI_OnEnding], session );
+    event.rise ( callbacks[MSI_OnEnding], session->agent_handler );
 
     return 1;
 }
@@ -1138,14 +1136,13 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id )
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession* msi_init_session ( Tox* messenger, const uint8_t* user_agent ) {
+MSISession* msi_init_session ( Tox* messenger, const uint8_t* ua_name ) {
     assert ( messenger );
-    assert ( user_agent );
     
     MSISession* _retu = calloc ( sizeof ( MSISession ), 1 );
     assert ( _retu );
     
-    _retu->user_agent = user_agent;
+    _retu->ua_name = ua_name;
     _retu->messenger_handle = messenger;
     _retu->agent_handler = NULL;
     
@@ -1300,14 +1297,17 @@ int msi_answer ( MSISession* session, MSICallType call_type ) {
  * @brief Cancel request.
  * 
  * @param session Control session.
- * @param friend_id The friend.
+ * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession* session, int friend_id ) {
+int msi_cancel ( MSISession* session, uint32_t peer, const uint8_t* reason ) {
     assert ( session );
 
     MSIMessage* _msg_cancel = msi_new_message ( TYPE_REQUEST, stringify_request ( cancel ) );
-    send_message ( session, _msg_cancel, friend_id );
+    
+    if ( reason ) msi_msg_set_reason(_msg_cancel, reason, strlen((const char*)reason));
+    
+    send_message ( session, _msg_cancel, peer );
     free_message ( _msg_cancel );
 
     terminate_call ( session );
