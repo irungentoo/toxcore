@@ -37,12 +37,12 @@
 // You are responsible for freeing the return value!
 uint8_t *hex_string_to_bin(char *hex_string)
 {
-	// byte is represented by exactly 2 hex digits, so lenth of binary string
-	// is half of that of the hex one. only hex string with even length 
-	// valid. the more proper implementation would be to check if strlen(hex_string)
-	// is odd and return error code if it is. we assume strlen is even. if it's not
-	// then the last byte just won't be written in 'ret'.
-    size_t i, len = strlen(hex_string)/2;
+    // byte is represented by exactly 2 hex digits, so lenth of binary string
+    // is half of that of the hex one. only hex string with even length
+    // valid. the more proper implementation would be to check if strlen(hex_string)
+    // is odd and return error code if it is. we assume strlen is even. if it's not
+    // then the last byte just won't be written in 'ret'.
+    size_t i, len = strlen(hex_string) / 2;
     uint8_t *ret = malloc(len);
     char *pos = hex_string;
 

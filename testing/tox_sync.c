@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-	uint8_t *bin_id = hex_string_to_bin(temp_id);
+    uint8_t *bin_id = hex_string_to_bin(temp_id);
     int num = tox_add_friend(tox, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
     free(bin_id);
 

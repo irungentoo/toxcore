@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     if (scanf("%s", temp_hex_id) != 1) {
         return 1;
     }
-    
+
     uint8_t *bin_id = hex_string_to_bin(temp_hex_id);
     int num = m_addfriend(m, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
     free(bin_id);
