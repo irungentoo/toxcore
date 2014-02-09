@@ -161,14 +161,16 @@ int main(int argc, char *argv[])
 
     setname(m, (uint8_t *)"Anon", 5);
 
-    char temp_id[128];
+    char temp_hex_id[128];
     printf("\nEnter the address of the friend you wish to add (38 bytes HEX format):\n");
 
-    if (scanf("%s", temp_id) != 1) {
+    if (scanf("%s", temp_hex_id) != 1) {
         return 1;
     }
-
-    int num = m_addfriend(m, hex_string_to_bin(temp_id), (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    
+    uint8_t *bin_id = hex_string_to_bin(temp_hex_id);
+    int num = m_addfriend(m, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    free(bin_id);
 
     perror("Initialization");
 

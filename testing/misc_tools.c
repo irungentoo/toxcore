@@ -28,22 +28,28 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #ifdef DEBUG
 #include <assert.h>
 #endif // DEBUG
 
-/* TODO: rewrite */
-unsigned char *hex_string_to_bin(char hex_string[])
+// You are responsible for freeing the return value!
+uint8_t *hex_string_to_bin(char *hex_string)
 {
-    size_t i, len = strlen(hex_string);
-    unsigned char *val = malloc(len);
+	// byte is represented by exactly 2 hex digits, so lenth of binary string
+	// is half of that of the hex one. only hex string with even length 
+	// valid. the more proper implementation would be to check if strlen(hex_string)
+	// is odd and return error code if it is. we assume strlen is even. if it's not
+	// then the last byte just won't be written in 'ret'.
+    size_t i, len = strlen(hex_string)/2;
+    uint8_t *ret = malloc(len);
     char *pos = hex_string;
 
     for (i = 0; i < len; ++i, pos += 2)
-        sscanf(pos, "%2hhx", &val[i]);
+        sscanf(pos, "%2hhx", &ret[i]);
 
-    return val;
+    return ret;
 }
 
 int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)

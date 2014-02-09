@@ -1,4 +1,6 @@
 #include "../../toxcore/group_chats.h"
+#include "../misc_tools.c" // hex_string_to_bin
+
 #define NUM_CHATS 8
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -54,19 +56,6 @@ void print_group(Group_Chat *chat)
     }
 }
 
-unsigned char *hex_string_to_bin(char hex_string[])
-{
-    size_t len = strlen(hex_string);
-    unsigned char *val = malloc(len);
-    char *pos = hex_string;
-    int i;
-
-    for (i = 0; i < len; ++i, pos += 2)
-        sscanf(pos, "%2hhx", &val[i]);
-
-    return val;
-}
-
 void print_message(Group_Chat *chat, int peer_number, uint8_t *message, uint16_t length, void *userdata)
 {
     printf("%u: %s | %u\n", peer_number, message, length);
@@ -95,8 +84,12 @@ int main(int argc, char *argv[])
      * bootstrap_ip_port.ip.c[2] = 0;
      * bootstrap_ip_port.ip.c[3] = 1; */
     bootstrap_ip_port.ip.uint32 = inet_addr(argv[1]);
+    
+    uint8_t *bootstrap_id = hex_string_to_bin(argv[3]);
 
-    chat_bootstrap(chat, bootstrap_ip_port, hex_string_to_bin(argv[3]));
+    chat_bootstrap(chat, bootstrap_ip_port, bootstrap_id);
+    
+    free(bootstrap_id);
 
     while (1) {
 
