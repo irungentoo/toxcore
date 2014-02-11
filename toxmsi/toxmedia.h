@@ -75,6 +75,11 @@
 #define DEFAULT_WEBCAM "0"
 #endif
 
+/* Fix for the earlier libavutil libs */
+#ifndef HAVE_AV_CALLOC
+void *av_calloc(size_t nmemb, size_t size) av_malloc_attrib;
+#endif
+
 extern SDL_Surface *screen;
 
 typedef struct {
