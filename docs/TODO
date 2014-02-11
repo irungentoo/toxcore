@@ -28,6 +28,7 @@ Lossless UDP:
 
 Friend_requests.c:
     [NOT STARTED] What happens when a friend request is recieved needs to be changed.
+    [NOT STARTED] Add multiple nospam functionality.
 
 [DONE] File transfers
 [NOT STARTED] Offline messaging
