@@ -821,6 +821,8 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
     if (i == -1)
         return;
 
+    message[length - 1] = 0; /* Force NULL terminator */
+
     if (m->group_message)
         (*m->group_message)(m, i, peer_number, message, length, m->group_message_userdata);
 }
@@ -832,6 +834,8 @@ static void group_action_function(Group_Chat *chat, int peer_number, uint8_t *ac
 
     if (i == -1)
         return;
+
+    action[length - 1] = 0; /* Force NULL terminator */
 
     if (m->group_action)
         (*m->group_action)(m, i, peer_number, action, length, m->group_action_userdata);
@@ -1847,6 +1851,8 @@ void do_friends(Messenger *m)
                         m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
                         m->friendlist[i].file_receiving[filenumber].size = filesize;
                         m->friendlist[i].file_receiving[filenumber].transferred = 0;
+
+                        data[data_length - 1] = 0; /* Force NULL terminate file name. */
 
                         if (m->file_sendrequest)
                             (*m->file_sendrequest)(m, i, filenumber, filesize, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t),

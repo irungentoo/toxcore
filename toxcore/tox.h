@@ -132,8 +132,7 @@ typedef struct Tox Tox;
  *
  * The length when passing those strings to the core includes that NULL character.
  *
- * It wont do anything if you send you send non NULL terminated strings because Tox force NULL terminates them anyways
- * when it receives them.
+ * If you send non NULL terminated strings Tox will force NULL terminates them when it receives them.
  */
 
 /*  return TOX_FRIEND_ADDRESS_SIZE byte address to give to others.
