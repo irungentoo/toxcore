@@ -390,6 +390,8 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
                crypto_box_PUBLICKEYBYTES) != 0) {
         DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
 
+        onion_c->friends_list[friend_num].last_seen = unix_time();
+
         if (DHT_addfriend(onion_c->dht, data + 1 + sizeof(uint64_t)) == 1) {
             return 1;
         }
@@ -712,6 +714,9 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
 
+    if (is_online == 0 && onion_c->friends_list[friend_num].is_online == 1)
+        onion_c->friends_list[friend_num].last_seen = unix_time();
+
     onion_c->friends_list[friend_num].is_online = is_online;
 
     /* This should prevent some clock related issues */
@@ -788,6 +793,25 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 
     }
 }
+
+/* Timeout before which a peer is considered dead and removed from the DHT search. */
+#define DEAD_ONION_TIMEOUT (10 * 60)
+
+static void cleanup_friend(Onion_Client *onion_c, uint16_t friendnum)
+{
+    if (friendnum >= onion_c->num_friends)
+        return;
+
+    if (onion_c->friends_list[friendnum].status == 0)
+        return;
+
+    if (onion_c->friends_list[friendnum].is_fake_clientid && !onion_c->friends_list[friendnum].is_online
+            && is_timeout(onion_c->friends_list[friendnum].last_seen, DEAD_ONION_TIMEOUT)) {
+        onion_c->friends_list[friendnum].is_fake_clientid = 0;
+        DHT_delfriend(onion_c->dht, onion_c->friends_list[friendnum].fake_client_id);
+    }
+}
+
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object)
 {
@@ -845,6 +869,7 @@ void do_onion_client(Onion_Client *onion_c)
 
     for (i = 0; i < onion_c->num_friends; ++i) {
         do_friend(onion_c, i);
+        cleanup_friend(onion_c, i);
     }
 
     onion_c->last_run = unix_time();
