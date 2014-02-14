@@ -7,7 +7,7 @@ Networking:
     [NOT STARTED] NAT-PMP port forwarding.
 
 DHT:
-    [IN PROGRESS] Metadata collection prevention. (docs/Prevent_Tracking.txt)
+    [ALMOST DONE] Metadata collection prevention. (docs/Prevent_Tracking.txt)
     [IN PROGRESS] Hardening against attacks.
     [IN PROGRESS] Optimizing the code.
 
@@ -20,14 +20,14 @@ Lossless UDP:
     [NOT STARTED] Make clients sign their messages so that peers can't modify them.
 
 [IN PROGRESS] Audio/Video
-    [DONE] Capture/encoding/streaming/decoding/displaying
+    [DONE] encoding/streaming/decoding
     [IN PROGRESS] Call initiation
-    [NOT STARTED] Encryption
+    [IN PROGRESS] Encryption
+    [IN PROGRESS] Auditing.
     [NOT STARTED] Small group chats
-    [NOT STARTED] Push to talk for audio
 
 Friend_requests.c:
-    [NOT STARTED] What happens when a friend request is recieved needs to be changed.
+    [NOT STARTED] What happens when a friend request is received needs to be changed.
     [NOT STARTED] Add multiple nospam functionality.
 
 [DONE] File transfers
@@ -37,6 +37,10 @@ Friend_requests.c:
     [DONE] Networking
     [DONE] DHT + Messenger
     [NOT STARTED] Group chats (They work with IPv6 but some things need to be tested.)
+
+
+[NOT STARTED] A way for people to connect to people on Tox if they are behind a bad NAT that 
+blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 
 [NEEDS TESTING] Make the save made with tox_save_encrypted(...) harder to brute force.
 See: (https://github.com/jencka/ProjectTox-libtoxdata)
