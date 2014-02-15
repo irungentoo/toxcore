@@ -18,8 +18,7 @@
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
  * 
- *   Report bugs/suggestions to me ( mannol ) at either #tox-dev @ freenode.net:6667 or
- *   my email: eniz_vukovic@hotmail.com
+ *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 
@@ -30,9 +29,9 @@
 #define _BSD_SOURCE
 
 #include "msi.h"
+#include "event.h"
 #include "../toxcore/util.h"
 #include "../toxcore/network.h"
-#include "../toxcore/event.h"
 #include "../toxcore/Messenger.h"
 
 #include <assert.h>

@@ -29,8 +29,6 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/group_chats.c \
                         ../toxcore/assoc.h \
                         ../toxcore/assoc.c \
-                        ../toxcore/event.h \
-                        ../toxcore/event.c \
                         ../toxcore/onion.h \
                         ../toxcore/onion.c \
                         ../toxcore/onion_announce.h \
@@ -42,8 +40,7 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
                         $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS) \
-                        $(PTHREAD_CFLAGS)
+                        $(NACL_CFLAGS)
 
 libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
@@ -52,5 +49,4 @@ libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
                         $(WINSOCK2_LIBS)
 
 libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS) \
-                        $(NAC_LIBS) \
-                        $(PTHREAD_LIBS)
+                        $(NAC_LIBS)
