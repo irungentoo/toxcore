@@ -56,39 +56,24 @@ typedef struct _ToxAv
     
     RTPSession* rtp_sessions[2]; /* Audio is first and video is second */
     
-    /* TODO: Add media session */
     struct jitter_buffer* j_buf;
-    CodecState* cs;
-    /* TODO: Add media session threads */
-    
+    CodecState* cs;    
     
     void* agent_handler;    
 } ToxAv;
 
-
-
-
-
-/********************************************************************************************************************  
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
+/**
+ * @brief Start new A/V session. There can only be one session at the time. If you register more
+ *        it will result in undefined behaviour.
  * 
- * 
- * 
- * PUBLIC API FUNCTIONS IMPLEMENTATIONS
- * 
- * 
- * 
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************/
-
-
-
+ * @param messenger The messenger handle.
+ * @param useragent The agent handling A/V session (i.e. phone).
+ * @param ua_name Useragent name.
+ * @param video_width Width of video frame.
+ * @param video_height Height of video frame.
+ * @return ToxAv*
+ * @retval NULL On error.
+ */
 ToxAv* toxav_new( Tox* messenger, void* useragent, const char* ua_name , uint16_t video_width, uint16_t video_height) 
 {
     ToxAv* av = calloc ( sizeof(ToxAv), 1);
@@ -112,6 +97,12 @@ ToxAv* toxav_new( Tox* messenger, void* useragent, const char* ua_name , uint16_
     return av;
 }
 
+/**
+ * @brief Remove A/V session.
+ * 
+ * @param av Handler.
+ * @return void
+ */
 void toxav_kill ( ToxAv* av ) 
 {    
     msi_terminate_session(av->msi_session);
@@ -129,13 +120,29 @@ void toxav_kill ( ToxAv* av )
     free(av);
 }
 
+/**
+ * @brief Register callback for call state.
+ * 
+ * @param callback The callback
+ * @param id One of the ToxAvCallbackID values
+ * @return void
+ */
 void toxav_register_callstate_callback ( ToxAVCallback callback, ToxAvCallbackID id ) 
 {
     msi_register_callback((MSICallback)callback, (MSICallbackID) id);
 }
 
-
-
+/**
+ * @brief Call user. Use its friend_id.
+ * 
+ * @param av Handler.
+ * @param user The user.
+ * @param call_type Call type.
+ * @param ringing_seconds Ringing timeout.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_call (ToxAv* av, int user, ToxAvCallType call_type, int ringing_seconds ) 
 {
     if ( av->msi_session->call ) {
@@ -145,6 +152,14 @@ int toxav_call (ToxAv* av, int user, ToxAvCallType call_type, int ringing_second
     return msi_invite(av->msi_session, call_type, ringing_seconds * 1000, user);
 }
 
+/**
+ * @brief Hangup active call.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_hangup ( ToxAv* av ) 
 {
     if ( !av->msi_session->call ) {
@@ -158,6 +173,15 @@ int toxav_hangup ( ToxAv* av )
     return msi_hangup(av->msi_session);
 }
 
+/**
+ * @brief Answer incomming call.
+ * 
+ * @param av Handler.
+ * @param call_type Answer with...
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_answer ( ToxAv* av, ToxAvCallType call_type ) 
 {
     if ( !av->msi_session->call ) {
@@ -171,6 +195,15 @@ int toxav_answer ( ToxAv* av, ToxAvCallType call_type )
     return msi_answer(av->msi_session, call_type);
 }
 
+/**
+ * @brief Reject incomming call.
+ * 
+ * @param av Handler.
+ * @param reason Optional reason. Set NULL if none.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_reject ( ToxAv* av, const char* reason ) 
 {
     if ( !av->msi_session->call ) {
@@ -184,6 +217,15 @@ int toxav_reject ( ToxAv* av, const char* reason )
     return msi_reject(av->msi_session, (const uint8_t*) reason);
 }
 
+/**
+ * @brief Cancel outgoing request.
+ * 
+ * @param av Handler.
+ * @param reason Optional reason.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_cancel ( ToxAv* av, const char* reason )
 {
     if ( !av->msi_session->call ) {
@@ -193,7 +235,14 @@ int toxav_cancel ( ToxAv* av, const char* reason )
     return msi_cancel(av->msi_session, 0, (const uint8_t*)reason);
 }
 
-/* You can stop the call at any state */
+/**
+ * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_stop_call ( ToxAv* av ) 
 {
     if ( !av->msi_session->call ) {
@@ -203,7 +252,14 @@ int toxav_stop_call ( ToxAv* av )
     return msi_stopcall(av->msi_session);
 }
 
-
+/**
+ * @brief Must be call before any RTP transmission occurs.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_prepare_transmission ( ToxAv* av ) 
 {
     assert(av->msi_session);
@@ -246,7 +302,14 @@ int toxav_prepare_transmission ( ToxAv* av )
     return ErrorNone;
 }
 
-
+/**
+ * @brief Call this at the end of the transmission.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_kill_transmission ( ToxAv* av ) 
 {
     /* Both sessions should be active at any time */
@@ -268,6 +331,17 @@ int toxav_kill_transmission ( ToxAv* av )
 }
 
 
+/**
+ * @brief Send RTP payload.
+ * 
+ * @param av Handler.
+ * @param type Type of payload.
+ * @param payload The payload.
+ * @param length Size of it.
+ * @return int
+ * @retval 0 Success.
+ * @retval -1 Failure.
+ */
 inline__ int toxav_send_rtp_payload ( ToxAv* av, ToxAvCallType type, const uint8_t* payload, uint16_t length ) 
 {
     if ( av->rtp_sessions[type - TypeAudio] )
@@ -275,6 +349,16 @@ inline__ int toxav_send_rtp_payload ( ToxAv* av, ToxAvCallType type, const uint8
     else return -1;
 }
 
+/**
+ * @brief Receive RTP payload.
+ * 
+ * @param av Handler.
+ * @param type Type of the payload.
+ * @param dest Storage.
+ * @return int
+ * @retval ToxAvError On Error.
+ * @retval >=0 Size of received payload.
+ */
 inline__ int toxav_recv_rtp_payload ( ToxAv* av, ToxAvCallType type, uint8_t* dest ) 
 {
     if ( !dest ) return ErrorInternal;
@@ -316,6 +400,15 @@ inline__ int toxav_recv_rtp_payload ( ToxAv* av, ToxAvCallType type, uint8_t* de
     return 0;
 }
 
+/**
+ * @brief Receive decoded video packet.
+ * 
+ * @param av Handler.
+ * @param output Storage.
+ * @return int 
+ * @retval 0 Success.
+ * @retval ToxAvError On Error.
+ */
 inline__ int toxav_recv_video ( ToxAv* av, vpx_image_t **output) 
 {
     if ( !output ) return ErrorInternal;
@@ -337,6 +430,15 @@ inline__ int toxav_recv_video ( ToxAv* av, vpx_image_t **output)
     return 0;
 }
 
+/**
+ * @brief Encode and send video packet.
+ * 
+ * @param av Handler.
+ * @param input The packet.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 inline__ int toxav_send_video ( ToxAv* av, vpx_image_t *input)
 {
     if (vpx_codec_encode(&av->cs->v_encoder, input, av->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US) != VPX_CODEC_OK) {
@@ -360,6 +462,17 @@ inline__ int toxav_send_video ( ToxAv* av, vpx_image_t *input)
     return ErrorInternal;
 }
 
+/**
+ * @brief Receive decoded audio frame.
+ * 
+ * @param av Handler.
+ * @param frame_size ...
+ * @param dest Destination of the packet. Make sure it has enough space for 
+ *             RTP_PAYLOAD_SIZE bytes.
+ * @return int
+ * @retval >=0 Size of received packet.
+ * @retval ToxAvError On error.
+ */
 inline__ int toxav_recv_audio ( ToxAv* av, int frame_size, int16_t* dest ) 
 {
     if ( !dest ) return ErrorInternal;
@@ -373,10 +486,20 @@ inline__ int toxav_recv_audio ( ToxAv* av, int frame_size, int16_t* dest )
     } else if ( recved_size ){
         return opus_decode(av->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
     } else {
-        return ErrorInternal;
+        return 0; /* Nothing received */
     }
 }
 
+/**
+ * @brief Encode and send audio frame.
+ * 
+ * @param av Handler.
+ * @param frame The frame.
+ * @param frame_size It's size.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 inline__ int toxav_send_audio ( ToxAv* av, const int16_t* frame, int frame_size)
 {
     uint8_t temp_data[RTP_PAYLOAD_SIZE];
@@ -387,6 +510,15 @@ inline__ int toxav_send_audio ( ToxAv* av, const int16_t* frame, int frame_size)
     return toxav_send_rtp_payload(av, TypeAudio, temp_data, ret);
 }
 
+/**
+ * @brief Get peer transmission type. It can either be audio or video.
+ * 
+ * @param av Handler.
+ * @param peer The peer
+ * @return int
+ * @retval ToxAvCallType On success.
+ * @retval ToxAvError On error.
+ */
 int toxav_get_peer_transmission_type ( ToxAv* av, int peer ) 
 {
     assert(av->msi_session);
@@ -396,6 +528,12 @@ int toxav_get_peer_transmission_type ( ToxAv* av, int peer )
     return av->msi_session->call->type_peer[peer];
 }
 
+/**
+ * @brief Get reference to an object that is handling av session.
+ * 
+ * @param av Handler.
+ * @return void*
+ */
 void* toxav_get_agent_handler ( ToxAv* av ) 
 {
     return av->agent_handler;

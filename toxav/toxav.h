@@ -63,7 +63,7 @@ typedef struct Tox Tox;
 
 
 /** 
- * @brief Callbacks ids that handle the call states 
+ * @brief Callbacks ids that handle the call states.
  */
 typedef enum {
     /* Requests */
@@ -94,6 +94,10 @@ typedef enum {
 } ToxAvCallType;
 
 
+/**
+ * @brief Error indicators.
+ * 
+ */
 typedef enum {
     ErrorNone = 0,
     ErrorInternal = -1, /* Internal error */
@@ -111,42 +115,187 @@ typedef enum {
 } ToxAvError;
 
 
-ToxAv* toxav_new(Tox* messenger, void* useragent, const char* ua_name, uint16_t video_width, uint16_t video_height) ;
+/**
+ * @brief Start new A/V session. There can only be one session at the time. If you register more
+ *        it will result in undefined behaviour.
+ * 
+ * @param messenger The messenger handle.
+ * @param useragent The agent handling A/V session (i.e. phone).
+ * @param ua_name Useragent name.
+ * @param video_width Width of video frame.
+ * @param video_height Height of video frame.
+ * @return ToxAv*
+ * @retval NULL On error.
+ */
+ToxAv* toxav_new(Tox* messenger, void* useragent, const char* ua_name, uint16_t video_width, uint16_t video_height);
+
+/**
+ * @brief Remove A/V session.
+ * 
+ * @param av Handler.
+ * @return void
+ */
 void toxav_kill(ToxAv* av);
 
+/**
+ * @brief Register callback for call state.
+ * 
+ * @param callback The callback
+ * @param id One of the ToxAvCallbackID values
+ * @return void
+ */
 void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID id);
 
-
+/**
+ * @brief Call user. Use its friend_id.
+ * 
+ * @param av Handler.
+ * @param user The user.
+ * @param call_type Call type.
+ * @param ringing_seconds Ringing timeout.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_call(ToxAv* av, int user, ToxAvCallType call_type, int ringing_seconds);
+
+/**
+ * @brief Hangup active call.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_hangup(ToxAv* av);
+
+/**
+ * @brief Answer incomming call.
+ * 
+ * @param av Handler.
+ * @param call_type Answer with...
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_answer(ToxAv* av, ToxAvCallType call_type );
+
+/**
+ * @brief Reject incomming call.
+ * 
+ * @param av Handler.
+ * @param reason Optional reason. Set NULL if none.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_reject(ToxAv* av, const char* reason);
+
+/**
+ * @brief Cancel outgoing request.
+ * 
+ * @param av Handler.
+ * @param reason Optional reason.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_cancel(ToxAv* av, const char* reason);
+
+/**
+ * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_stop_call(ToxAv* av);
 
+/**
+ * @brief Must be call before any RTP transmission occurs.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_prepare_transmission(ToxAv* av);
+
+/**
+ * @brief Call this at the end of the transmission.
+ * 
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_kill_transmission(ToxAv* av);
 
-
-
-
-/* Return length of received packet. Returns 0 if nothing recved. Dest has to have 
- * MAX_RTP_PAYLOAD_SIZE space available. Returns -1 if packet is not ready (ready < 1) for deque.
- * For video packets set 'ready' at _any_ value.
+/**
+ * @brief Receive decoded video packet.
+ * 
+ * @param av Handler.
+ * @param output Storage.
+ * @return int 
+ * @retval 0 Success.
+ * @retval ToxAvError On Error.
  */
-
-/* returns 0 on success */
 int toxav_recv_video ( ToxAv* av, vpx_image_t **output);
 
+/**
+ * @brief Receive decoded audio frame.
+ * 
+ * @param av Handler.
+ * @param frame_size ...
+ * @param dest Destination of the packet. Make sure it has enough space for 
+ *             RTP_PAYLOAD_SIZE bytes.
+ * @return int
+ * @retval >=0 Size of received packet.
+ * @retval ToxAvError On error.
+ */
 int toxav_recv_audio( ToxAv* av, int frame_size, int16_t* dest );
 
+/**
+ * @brief Encode and send video packet.
+ * 
+ * @param av Handler.
+ * @param input The packet.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_send_video ( ToxAv* av, vpx_image_t *input);
-/* Encode and send audio frame. */
+
+/**
+ * @brief Encode and send audio frame.
+ * 
+ * @param av Handler.
+ * @param frame The frame.
+ * @param frame_size It's size.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
 int toxav_send_audio ( ToxAv* av, const int16_t* frame, int frame_size);
 
-
-
+/**
+ * @brief Get peer transmission type. It can either be audio or video.
+ * 
+ * @param av Handler.
+ * @param peer The peer
+ * @return int
+ * @retval ToxAvCallType On success.
+ * @retval ToxAvError On error.
+ */
 int toxav_get_peer_transmission_type ( ToxAv* av, int peer );
+
+/**
+ * @brief Get reference to an object that is handling av session.
+ * 
+ * @param av Handler.
+ * @return void*
+ */
 void* toxav_get_agent_handler ( ToxAv* av );
 
 #endif /* __TOXAV */
