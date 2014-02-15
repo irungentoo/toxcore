@@ -129,6 +129,12 @@ typedef int sock_t;
 #define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
 #define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
 
+/* Range of ids that custom user packets can use. */
+#define NET_PACKET_CUSTOM_RANGE_START 64
+#define NET_PACKET_CUSTOM_RANGE_END 96
+
+#define TOTAL_USERPACKETS (NET_PACKET_CUSTOM_RANGE_END - NET_PACKET_CUSTOM_RANGE_START)
+
 /* See:  docs/Prevent_Tracking.txt and onion.{c, h} */
 #define NET_PACKET_ONION_SEND_INITIAL 128
 #define NET_PACKET_ONION_SEND_1 129
