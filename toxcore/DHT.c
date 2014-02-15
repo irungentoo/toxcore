@@ -1250,9 +1250,9 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id)
             --dht->num_friends;
 
             if (dht->num_friends != i) {
-                memcpy( dht->friends_list[i].client_id,
-                        dht->friends_list[dht->num_friends].client_id,
-                        CLIENT_ID_SIZE );
+                memcpy( &dht->friends_list[i],
+                        &dht->friends_list[dht->num_friends],
+                        sizeof(DHT_Friend) );
             }
 
             if (dht->num_friends == 0) {
