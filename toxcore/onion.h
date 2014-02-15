@@ -29,6 +29,7 @@ typedef struct {
     DHT     *dht;
     Networking_Core *net;
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    uint64_t timestamp;
 } Onion;
 
 #define ONION_RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)

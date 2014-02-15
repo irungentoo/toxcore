@@ -28,10 +28,14 @@
 #define RTP_VERSION 2
 #include <inttypes.h>
 #include <pthread.h>
-#include "../toxcore/tox.h"
+
+#include "../toxcore/util.h"
+#include "../toxcore/network.h"
+#include "../toxcore/net_crypto.h"
+#include "../toxcore/Messenger.h"
 
 #define MAX_SEQU_NUM 65535
-#define MAX_RTP_SIZE 10400
+#define MAX_RTP_SIZE 65535
 
 /**
  * @brief Standard rtp header
@@ -72,7 +76,7 @@ typedef struct _RTPMessage {
 
     uint8_t       data[MAX_RTP_SIZE];
     uint32_t      length;
-    tox_IP_Port   from;
+    IP_Port   from;
 
     struct _RTPMessage*   next;
 } RTPMessage;
@@ -128,7 +132,7 @@ typedef struct _RTPSession {
     uint8_t         prefix;
 
     pthread_mutex_t mutex;
-    tox_IP_Port     dest;
+    int             dest;
 
 } RTPSession;
 
@@ -164,7 +168,7 @@ RTPMessage* rtp_recv_msg ( RTPSession* session );
  * @retval -1 On error.
  * @retval 0 On success.
  */
-int rtp_send_msg ( RTPSession* session, Tox* messenger, const uint8_t* data, uint16_t length );
+int rtp_send_msg ( RTPSession* session, Messenger* messenger, const uint8_t* data, uint16_t length );
 
 
 /**
@@ -192,7 +196,7 @@ void rtp_free_msg ( RTPSession* session, RTPMessage* msg );
  * @retval NULL Error occurred.
  */
 RTPSession* rtp_init_session ( int            payload_type, 
-                               Tox*           messenger, 
+                               Messenger*           messenger, 
                                int            friend_num, 
                                const uint8_t* encrypt_key, 
                                const uint8_t* decrypt_key, 
@@ -209,7 +213,7 @@ RTPSession* rtp_init_session ( int            payload_type,
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_terminate_session ( RTPSession* session, Tox* messenger );
+int rtp_terminate_session ( RTPSession* session, Messenger* messenger );
 
 
 

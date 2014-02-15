@@ -43,6 +43,71 @@ static uint8_t friend_not_valid(Messenger *m, int friendnumber)
     return (unsigned int)friendnumber >= m->numfriends;
 }
 
+static int add_online_friend(Messenger *m, int friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    IP_Port temp_ip_port = get_friend_ipport(m, friendnumber);
+
+    if (temp_ip_port.port == 0)
+        return -1;
+
+    uint32_t i;
+
+    for (i = 0; i < m->numonline_friends; ++i) {
+        if (m->online_friendlist[i].friend_num == (uint32_t)friendnumber)
+            return 0;
+    }
+
+    Online_Friend *temp;
+    temp = realloc(m->online_friendlist, sizeof(Online_Friend) * (m->numonline_friends + 1));
+
+    if (temp == NULL)
+        return -1;
+
+    m->online_friendlist = temp;
+    m->online_friendlist[m->numonline_friends].friend_num = friendnumber;
+    m->online_friendlist[m->numonline_friends].ip_port = temp_ip_port;
+    ++m->numonline_friends;
+    return 0;
+}
+
+
+static int remove_online_friend(Messenger *m, int friendnumber)
+{
+    uint32_t i;
+    Online_Friend *temp;
+
+    for (i = 0; i < m->numonline_friends; ++i) {
+        /* Equal */
+        if (m->online_friendlist[i].friend_num == (uint32_t)friendnumber) {
+            --m->numonline_friends;
+
+            if (m->numonline_friends != i) {
+                memcpy( &m->online_friendlist[i],
+                        &m->online_friendlist[m->numonline_friends],
+                        sizeof(Online_Friend) );
+            }
+
+            if (m->numonline_friends == 0) {
+                free(m->online_friendlist);
+                m->online_friendlist = NULL;
+                return 0;
+            }
+
+            temp = realloc(m->online_friendlist, sizeof(Online_Friend) * (m->numonline_friends));
+
+            if (temp == NULL)
+                return -1;
+
+            m->online_friendlist = temp;
+            return 0;
+        }
+    }
+
+    return -1;
+}
 /* Set the size of the friend list to numfriends.
  *
  *  return -1 if realloc fails.
@@ -272,6 +337,9 @@ int m_delfriend(Messenger *m, int friendnumber)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
+
+    if (m->friendlist[friendnumber].status == FRIEND_ONLINE)
+        remove_online_friend(m, friendnumber);
 
     onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
     crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
@@ -650,12 +718,17 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, in
     m->friend_connectionstatuschange = function;
     m->friend_connectionstatuschange_userdata = userdata;
 }
+
+void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void *),
+        void *userdata)
+{
+    m->friend_connectionstatuschange_internal = function;
+    m->friend_connectionstatuschange_internal_userdata = userdata;
+}
+
 static void break_files(Messenger *m, int friendnumber);
 static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_t status)
 {
-    if (!m->friend_connectionstatuschange)
-        return;
-
     if (status == NOFRIEND)
         return;
 
@@ -665,10 +738,19 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
     onion_set_friend_online(m->onion_c, m->friendlist[friendnumber].onion_friendnum, is_online);
 
     if (is_online != was_online) {
-        if (was_online)
+        if (was_online) {
             break_files(m, friendnumber);
+            remove_online_friend(m, friendnumber);
+        } else {
+            add_online_friend(m, friendnumber);
+        }
 
-        m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
+        if (m->friend_connectionstatuschange)
+            m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
+
+        if (m->friend_connectionstatuschange_internal)
+            m->friend_connectionstatuschange_internal(m, friendnumber, is_online,
+                    m->friend_connectionstatuschange_internal_userdata);
     }
 }
 
@@ -814,6 +896,8 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
     if (i == -1)
         return;
 
+    message[length - 1] = 0; /* Force NULL terminator */
+
     if (m->group_message)
         (*m->group_message)(m, i, peer_number, message, length, m->group_message_userdata);
 }
@@ -825,6 +909,8 @@ static void group_action_function(Group_Chat *chat, int peer_number, uint8_t *ac
 
     if (i == -1)
         return;
+
+    action[length - 1] = 0; /* Force NULL terminator */
 
     if (m->group_action)
         (*m->group_action)(m, i, peer_number, action, length, m->group_action_userdata);
@@ -1489,6 +1575,60 @@ int m_msi_packet(Messenger *m, int friendnumber, uint8_t *data, uint16_t length)
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length);
 }
 
+static int friendnum_from_ip_port(Messenger *m, IP_Port ip_port)
+{
+    uint32_t i;
+
+    for (i = 0; i < m->numonline_friends; ++i) {
+        if (ipport_equal(&m->online_friendlist[i].ip_port, &ip_port))
+            return m->online_friendlist[i].friend_num;
+    }
+
+    return -1;
+}
+
+static int handle_custom_user_packet(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+{
+    Messenger *m = object;
+    int friend_num = friendnum_from_ip_port(m, source);
+
+    if (friend_num == -1)
+        return 1;
+
+    if (m->friendlist[friend_num].packethandlers[packet[0] % TOTAL_USERPACKETS].function)
+        return m->friendlist[friend_num].packethandlers[packet[0] % TOTAL_USERPACKETS].function(
+                   m->friendlist[friend_num].packethandlers[packet[0] % TOTAL_USERPACKETS].object, source, packet, length);
+
+    return 1;
+}
+
+
+int custom_user_packet_registerhandler(Messenger *m, int friendnumber, uint8_t byte, packet_handler_callback cb,
+                                       void *object)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    if (byte < NET_PACKET_CUSTOM_RANGE_START || byte >= NET_PACKET_CUSTOM_RANGE_END)
+        return -1;
+
+    m->friendlist[friendnumber].packethandlers[byte % TOTAL_USERPACKETS].function = cb;
+    m->friendlist[friendnumber].packethandlers[byte % TOTAL_USERPACKETS].object = object;
+    networking_registerhandler(m->net, byte, handle_custom_user_packet, m);
+    return 0;
+}
+
+int send_custom_user_packet(Messenger *m, int friendnumber, uint8_t *data, uint32_t length)
+{
+    IP_Port ip_port = get_friend_ipport(m, friendnumber);
+
+    if (ip_port.port == 0)
+        return -1;
+
+    return sendpacket(m->net, ip_port, data, length);
+}
+
+
 /* Function to filter out some friend requests*/
 static int friend_already_added(uint8_t *client_id, void *data)
 {
@@ -1840,6 +1980,8 @@ void do_friends(Messenger *m)
                         m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
                         m->friendlist[i].file_receiving[filenumber].size = filesize;
                         m->friendlist[i].file_receiving[filenumber].transferred = 0;
+
+                        data[data_length - 1] = 0; /* Force NULL terminate file name. */
 
                         if (m->file_sendrequest)
                             (*m->file_sendrequest)(m, i, filenumber, filesize, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t),
@@ -2358,6 +2500,12 @@ uint32_t count_friendlist(Messenger *m)
     }
 
     return ret;
+}
+
+/* Return the number of online friends in the instance m. */
+uint32_t get_num_online_friends(Messenger *m)
+{
+    return m->numonline_friends;
 }
 
 /* Copy a list of valid friend IDs into the array out_list.

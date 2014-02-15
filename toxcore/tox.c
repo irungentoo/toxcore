@@ -289,6 +289,13 @@ uint32_t tox_count_friendlist(Tox *tox)
     return count_friendlist(m);
 }
 
+/* Return the number of online friends in the instance m. */
+uint32_t tox_get_num_online_friends(Tox *tox)
+{
+    Messenger *m = tox;
+    return get_num_online_friends(m);
+}
+
 /* Copy a list of valid friend IDs into the array out_list.
  * If out_list is NULL, returns 0.
  * Otherwise, returns the number of elements copied.

@@ -140,6 +140,9 @@ static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t 
             return 1;
 
     addto_receivedlist(fr, source_pubkey);
+
+    packet[length - 1] = 0; /* Force NULL terminator. */
+
     (*fr->handle_friendrequest)(source_pubkey, packet + 4, length - 4, fr->handle_friendrequest_userdata);
     return 0;
 }

@@ -26,8 +26,9 @@
 #define __TOXMSI
 
 #include <inttypes.h>
-#include "../toxcore/tox.h"
 #include <pthread.h>
+
+#include "../toxcore/Messenger.h"
 
 /* define size for call_id */
 #define CALL_ID_LEN 12
@@ -106,7 +107,7 @@ typedef struct _MSISession {
     const uint8_t* ua_name;
 
     void* agent_handler; /* Pointer to an object that is handling msi */
-    Tox*  messenger_handle;
+    Messenger*  messenger_handle;
     
     uint32_t frequ;
     uint32_t call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
@@ -133,7 +134,7 @@ typedef enum {
 
     /* Protocol */
     MSI_OnError,
-    MSI_OnTimeout
+    MSI_OnRequestTimeout
 
 } MSICallbackID;
 
@@ -156,7 +157,7 @@ void msi_register_callback(MSICallback callback, MSICallbackID id);
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession* msi_init_session ( Tox* messenger, const uint8_t* ua_name );
+MSISession* msi_init_session ( Messenger* messenger, const uint8_t* ua_name );
 
 
 /**

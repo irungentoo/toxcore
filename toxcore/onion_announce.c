@@ -325,7 +325,7 @@ Onion_Announce *new_onion_announce(DHT *dht)
         return NULL;
 
     onion_a->dht = dht;
-    onion_a->net = dht->c->lossless_udp->net;
+    onion_a->net = dht->net;
     new_symmetric_key(onion_a->secret_bytes);
 
     networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_announce_request, onion_a);
