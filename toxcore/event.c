@@ -31,6 +31,7 @@
 #include "event.h"
 
 #include "util.h"
+#include "network.h"
 
 #define _GNU_SOURCE
 

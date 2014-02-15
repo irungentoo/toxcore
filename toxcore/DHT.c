@@ -379,6 +379,7 @@ static int get_somewhat_close_nodes(DHT *dht, uint8_t *client_id, Node_format *n
 int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
                     uint8_t want_good)
 {
+    memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
 #ifdef ENABLE_ASSOC_DHT
 
     if (!dht->assoc)
@@ -1249,9 +1250,9 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id)
             --dht->num_friends;
 
             if (dht->num_friends != i) {
-                memcpy( dht->friends_list[i].client_id,
-                        dht->friends_list[dht->num_friends].client_id,
-                        CLIENT_ID_SIZE );
+                memcpy( &dht->friends_list[i],
+                        &dht->friends_list[dht->num_friends],
+                        sizeof(DHT_Friend) );
             }
 
             if (dht->num_friends == 0) {
@@ -1553,7 +1554,7 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     int ip_num = friend_iplist(dht, ip_list, num);
 
-    if (ip_num < (MAX_FRIEND_CLIENTS / 2))
+    if (ip_num < (MAX_FRIEND_CLIENTS / 4))
         return 0; /* Reason for that? */
 
     DHT_Friend *friend = &dht->friends_list[num];
@@ -2394,7 +2395,6 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
                 num = length / sizeof(DHT_Friend);
 
                 for (i = 0; i < num; ++i) {
-                    DHT_addfriend(dht, friend_list[i].client_id);
 
                     for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
                         Client_data *client = &friend_list[i].client_list[j];

@@ -27,66 +27,27 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "../toxcore/tox.h"
+#include <pthread.h>
 
-/* Video encoding/decoding */
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
-#include <libavdevice/avdevice.h>
-#include <libavutil/opt.h>
+#include <vpx/vpx_decoder.h>
+#include <vpx/vpx_encoder.h>
+#include <vpx/vp8dx.h>
+#include <vpx/vp8cx.h>
+#define VIDEO_CODEC_DECODER_INTERFACE (vpx_codec_vp8_dx())
+#define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
 
 /* Audio encoding/decoding */
 #include <opus/opus.h>
 
-/* ffmpeg VP8 codec ID */
-#define VIDEO_CODEC AV_CODEC_ID_VP8
-
-/* ffmpeg Opus codec ID */
-#define AUDIO_CODEC AV_CODEC_ID_OPUS
-
-/* default video bitrate in bytes/s */
-#define VIDEO_BITRATE   10*1000
-
-/* default audio bitrate in bytes/s */
-#define AUDIO_BITRATE   64000
-
-/* audio frame duration in miliseconds */
-#define AUDIO_FRAME_DURATION    20
-
-/* audio sample rate recommended to be 48kHz for Opus */
-#define AUDIO_SAMPLE_RATE   48000
-
-/* the amount of samples in one audio frame */
-#define AUDIO_FRAME_SIZE    AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000
-
-/* the quit event for SDL */
-#define FF_QUIT_EVENT (SDL_USEREVENT + 2)
-
-#ifdef __linux__
-#define VIDEO_DRIVER "video4linux2"
-#define DEFAULT_WEBCAM "/dev/video0"
-#endif
-
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-#define VIDEO_DRIVER "vfwcap"
-#define DEFAULT_WEBCAM "0"
-#endif
 
 typedef struct _CodecState{
 
     /* video encoding */
-    AVInputFormat *video_input_format;
-    AVFormatContext *video_format_ctx;
-    uint8_t video_stream;
-    AVCodecContext *webcam_decoder_ctx;
-    AVCodec *webcam_decoder;
-    AVCodecContext *video_encoder_ctx;
-    AVCodec *video_encoder;
+    vpx_codec_ctx_t  v_encoder;
+    uint32_t frame_counter;
 
     /* video decoding */
-    AVCodecContext *video_decoder_ctx;
-    AVCodec *video_decoder;
+    vpx_codec_ctx_t  v_decoder;
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
@@ -95,11 +56,6 @@ typedef struct _CodecState{
 
     /* audio decoding */
     OpusDecoder *audio_decoder;
-    
-    pthread_mutex_t ctrl_mutex;
-    
-    
-    uint32_t frame_rate;
 
 } CodecState;
 
@@ -112,13 +68,13 @@ int queue(struct jitter_buffer *q, RTPMessage *pk);
 RTPMessage *dequeue(struct jitter_buffer *q, int *success);
 
 
-CodecState* codec_init_session( uint32_t audio_bitrate, 
-                                uint16_t audio_frame_duration, 
-                                uint32_t audio_sample_rate,
-                                uint32_t audio_channels,
-                                uint32_t video_bitrate,
-                                const char* webcam, 
-                                const char* webcam_driver );
+CodecState* codec_init_session ( uint32_t audio_bitrate, 
+                                 uint16_t audio_frame_duration, 
+                                 uint32_t audio_sample_rate, 
+                                 uint32_t audio_channels, 
+                                 uint16_t video_width,
+                                 uint16_t video_height,
+                                 uint32_t video_bitrate );
 
 void codec_terminate_session(CodecState* cs);
 

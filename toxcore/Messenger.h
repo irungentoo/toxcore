@@ -155,7 +155,14 @@ typedef struct {
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
     int invited_groups[MAX_INVITED_GROUPS];
     uint16_t invited_groups_num;
+
+    Packet_Handles packethandlers[TOTAL_USERPACKETS];
 } Friend;
+
+typedef struct {
+    uint32_t friend_num;
+    IP_Port ip_port;
+} Online_Friend;
 
 typedef struct Messenger {
 
@@ -179,6 +186,9 @@ typedef struct Messenger {
     Friend *friendlist;
     uint32_t numfriends;
 
+    Online_Friend *online_friendlist;
+    uint32_t numonline_friends;
+
     Group_Chat **chats;
     uint32_t numchats;
 
@@ -200,6 +210,8 @@ typedef struct Messenger {
     void *friend_statuschange_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, int, uint8_t, void *);
     void *friend_connectionstatuschange_userdata;
+    void (*friend_connectionstatuschange_internal)(struct Messenger *m, int, uint8_t, void *);
+    void *friend_connectionstatuschange_internal_userdata;
 
     void (*group_invite)(struct Messenger *m, int, uint8_t *, void *);
     void *group_invite_userdata;
@@ -450,6 +462,9 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, u
  *  It's assumed that when adding friends, their connection status is offline.
  */
 void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void *), void *userdata);
+/* Same as previous but for internal A/V core usage only */
+void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void *),
+        void *userdata);
 
 /**********GROUP CHATS************/
 
@@ -627,6 +642,22 @@ int m_msi_packet(Messenger *m, int friendnumber, uint8_t *data, uint16_t length)
 
 /**********************************************/
 
+/* Set handlers for custom user packets (RTP packets for example.)
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int custom_user_packet_registerhandler(Messenger *m, int friendnumber, uint8_t byte, packet_handler_callback cb,
+                                       void *object);
+
+/* High level function to send custom user packets.
+ *
+ * return -1 on failure.
+ * return number of bytes sent on success.
+ */
+int send_custom_user_packet(Messenger *m, int friendnumber, uint8_t *data, uint32_t length);
+
+/**********************************************/
 /* Run this at startup.
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
@@ -681,6 +712,9 @@ int messenger_load_encrypted(Messenger *m, uint8_t *data, uint32_t length, uint8
  * You should use this to determine how much memory to allocate
  * for copy_friendlist. */
 uint32_t count_friendlist(Messenger *m);
+
+/* Return the number of online friends in the instance m. */
+uint32_t get_num_online_friends(Messenger *m);
 
 /* Copy a list of valid friend IDs into the array out_list.
  * If out_list is NULL, returns 0.
