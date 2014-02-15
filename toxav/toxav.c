@@ -18,8 +18,7 @@
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
  * 
- *   Report bugs/suggestions at either #tox-dev @ freenode.net:6667 or
- *   my email: eniz_vukovic@hotmail.com
+ *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 #ifdef HAVE_CONFIG_H

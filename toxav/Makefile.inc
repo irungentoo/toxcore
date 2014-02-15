@@ -4,7 +4,9 @@ lib_LTLIBRARIES += libtoxav.la
 libtoxav_la_include_HEADERS = ../toxav/toxav.h
 libtoxav_la_includedir = $(includedir)/tox
 
-libtoxav_la_SOURCES = ../toxav/rtp.h \
+libtoxav_la_SOURCES = ../toxav/event.h \
+                      ../toxav/event.c \
+                      ../toxav/rtp.h \
                       ../toxav/rtp.c \
                       ../toxav/msi.h \
                       ../toxav/msi.c \
@@ -18,7 +20,8 @@ libtoxav_la_CFLAGS = -I../toxcore \
                      -I../toxav \
                      $(NACL_CFLAGS) \
                      $(OPUS_CFLAGS) \
-                     $(VPX_CFLAGS)
+                     $(VPX_CFLAGS) \
+                     $(PTHREAD_CFLAGS)
 
 libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
                       $(NACL_LDFLAGS) \
@@ -26,7 +29,8 @@ libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
                       
 libtoxav_la_LIBS =    $(NACL_LIBS) \
                       $(OPUS_LIBS) \
-                      $(VPX_LIBS)
+                      $(VPX_LIBS) \
+                      $(PTHREAD_LIBS)
 
                         
 endif
@@ -63,7 +67,8 @@ phone_LDADD =   libtoxav.la \
                 $(SDL_LIBS) \
                 $(OPENAL_LIBS) \
                 $(OPUS_LIBS) \
-                $(VPX_LIBS)
+                $(VPX_LIBS)\
+                $(PTHREAD_LIBS)
                 
                 
 endif

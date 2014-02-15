@@ -349,12 +349,16 @@ AC_C_BIGENDIAN
 AC_FUNC_FORK
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
 
-AX_PTHREAD(
-    [],
-    [
-        AC_MSG_ERROR([Error: required pthread library not found])
-    ]
-)
+if test "x$BUILD_AV" = "xyes"; then
+    AX_PTHREAD(
+        [],
+        [
+            AC_MSG_WARN([disabling AV support: required pthread library not found])
+            BUILD_AV="no"
+            BUILD_PHONE="no"
+        ]
+    )
+fi
 
 if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([AVFORMAT], [libavformat],

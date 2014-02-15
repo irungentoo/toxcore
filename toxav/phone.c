@@ -47,7 +47,7 @@
 
 //#include "media.h"
 #include "toxav.h"
-#include "../toxcore/event.h"
+#include "event.h"
 #include "../toxcore/tox.h"
 
 #ifdef TOX_FFMPEG
@@ -904,6 +904,7 @@ av_session_t* av_init_session()
     
     char dev[2]; char* left;
     char* warned_ = fgets(dev, 2, stdin);
+    (void)warned_;
     long selection = strtol(dev, &left, 10);
     
     if ( *left ) {
