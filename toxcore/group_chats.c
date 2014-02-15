@@ -75,6 +75,32 @@ static int peer_in_chat(Group_Chat *chat, uint8_t *client_id)
     return -1;
 }
 
+/* Compares client_id1 and client_id2 with client_id.
+ *
+ *  return 0 if both are same distance.
+ *  return 1 if client_id1 is closer.
+ *  return 2 if client_id2 is closer.
+ */
+static int id_closest_groupchats(uint8_t *id, uint8_t *id1, uint8_t *id2)
+{
+    size_t   i;
+    uint8_t distance1, distance2;
+
+    for (i = 0; i < CLIENT_ID_SIZE; ++i) {
+
+        distance1 = abs(((int8_t *)id)[i] - ((int8_t *)id1)[i]);
+        distance2 = abs(((int8_t *)id)[i] - ((int8_t *)id2)[i]);
+
+        if (distance1 < distance2)
+            return 1;
+
+        if (distance1 > distance2)
+            return 2;
+    }
+
+    return 0;
+}
+
 #define BAD_GROUPNODE_TIMEOUT 30
 
 /*
@@ -100,7 +126,7 @@ static int peer_okping(Group_Chat *chat, uint8_t *client_id)
         if (id_equal(chat->close[i].client_id, client_id))
             return -1;
 
-        if (id_closest(chat->self_public_key, chat->close[i].client_id, client_id) == 2)
+        if (id_closest_groupchats(chat->self_public_key, chat->close[i].client_id, client_id) == 2)
             ++j;
     }
 
@@ -137,7 +163,7 @@ static int add_closepeer(Group_Chat *chat, uint8_t *client_id, IP_Port ip_port)
     }
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) { /* Replace nodes if given one is closer. */
-        if (id_closest(chat->self_public_key, chat->close[i].client_id, client_id) == 2) {
+        if (id_closest_groupchats(chat->self_public_key, chat->close[i].client_id, client_id) == 2) {
             id_copy(chat->close[i].client_id, client_id);
             chat->close[i].ip_port = ip_port;
             chat->close[i].last_recv = unix_time();

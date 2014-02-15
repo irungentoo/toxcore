@@ -593,7 +593,7 @@ int send_message ( MSISession* session, MSIMessage* msg, uint32_t to )
     uint8_t _msg_string_final [MSI_MAXMSG_SIZE];
     uint16_t _length = message_to_string ( msg, _msg_string_final );
     
-    return m_msi_packet((struct Messenger*) session->messenger_handle, to, _msg_string_final, _length) ? 0 : -1;
+    return m_msi_packet(session->messenger_handle, to, _msg_string_final, _length) ? 0 : -1;
 }
 
 
@@ -616,7 +616,27 @@ void flush_peer_type ( MSISession* session, MSIMessage* msg, int peer_id ) {
     } else {} /* Error */
 }
 
-
+void handle_remote_connection_change(Messenger* messenger, int friend_num, uint8_t status, void* session_p)
+{
+    MSISession* session = session_p;
+    
+    switch ( status )
+    {
+        case 0: /* Went offline */
+        {
+            if ( session->call ) {
+                int i = 0;
+                for ( ; i < session->call->peer_count; i ++ ) 
+                    if ( session->call->peers[i] == friend_num ) {
+                        msi_stopcall(session); /* Stop the call for now */ 
+                        return;
+                    }
+            }
+        } break;
+        
+        default: break;
+    }
+}
 
 /**
  * @brief Sends error response to peer.
@@ -694,8 +714,8 @@ void* handle_timeout ( void* arg )
         
     }
     
-    ( *callbacks[MSI_OnTimeout] ) ( _session->agent_handler );
-    ( *callbacks[MSI_OnEnding ] ) ( _session->agent_handler );
+    ( *callbacks[MSI_OnRequestTimeout] ) ( _session->agent_handler );
+    ( *callbacks[MSI_OnEnding ] )        ( _session->agent_handler );
 
     return NULL;
 }
@@ -774,7 +794,7 @@ int terminate_call ( MSISession* session ) {
 
 
     /* Check event loop and cancel timed events if there are any
-     * Notice: This has to be done before possibly
+     * NOTE: This has to be done before possibly
      * locking the mutex the second time
      */
     event.timer_release ( session->call->request_timer_id );
@@ -797,7 +817,7 @@ int terminate_call ( MSISession* session ) {
     pthread_mutex_destroy ( &_call->mutex );
 
     free ( _call );
-
+    
     return 0;
 }
 
@@ -1136,7 +1156,7 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id )
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession* msi_init_session ( Tox* messenger, const uint8_t* ua_name ) {
+MSISession* msi_init_session ( Messenger* messenger, const uint8_t* ua_name ) {
     assert ( messenger );
     
     MSISession* _retu = calloc ( sizeof ( MSISession ), 1 );
@@ -1152,8 +1172,10 @@ MSISession* msi_init_session ( Tox* messenger, const uint8_t* ua_name ) {
     _retu->call_timeout = 30000; /* default value? */
     
     
-    m_callback_msi_packet((struct Messenger*) messenger, msi_handle_packet, _retu );
+    m_callback_msi_packet(messenger, msi_handle_packet, _retu );
     
+    /* This is called when remote terminates session */
+    m_callback_connectionstatus_internal_av(messenger, handle_remote_connection_change, _retu);
     
     return _retu;
 }
@@ -1351,7 +1373,7 @@ int msi_stopcall ( MSISession* session ) {
         return -1;
 
     /* just terminate it */
-
+    
     terminate_call ( session );
 
     return 0;

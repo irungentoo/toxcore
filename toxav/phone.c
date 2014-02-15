@@ -44,17 +44,40 @@
 #include <unistd.h>
 #include <assert.h>
 #include <math.h>
+#include <pthread.h>
+
+//#include "media.h"
+#include "toxav.h"
+#include "../toxcore/event.h"
+#include "../toxcore/tox.h"
+
+#ifdef TOX_FFMPEG
+/* Video encoding/decoding */
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+#include <libavdevice/avdevice.h>
+#include <libavutil/opt.h>
+#endif
+
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_thread.h>
-#include <pthread.h>
-#include <opus/opus.h>
 
-#include "media.h"
-#include "toxav.h"
-#include "../toxcore/event.h"
-#include "../toxcore/tox.h"
+/* the quit event for SDL */
+#define FF_QUIT_EVENT (SDL_USEREVENT + 2)
+
+#ifdef __linux__
+#define VIDEO_DRIVER "video4linux2"
+#define DEFAULT_WEBCAM "/dev/video0"
+#endif
+
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#define VIDEO_DRIVER "vfwcap"
+#define DEFAULT_WEBCAM "0"
+#endif
+
 
 /* Define client version */
 #define _USERAGENT "v.0.3.0"
@@ -96,6 +119,13 @@ typedef struct av_session_s {
     av_friend_t*  _friends;
     int _friend_cout;
     char _my_public_id[200];
+#ifdef TOX_FFMPEG
+    AVInputFormat *video_input_format;
+    AVFormatContext *video_format_ctx;
+    uint8_t video_stream;
+    AVCodecContext *webcam_decoder_ctx;
+    AVCodec *webcam_decoder;
+#endif
 } av_session_t;
 
 
@@ -236,8 +266,8 @@ static void fraddr_to_str(uint8_t *id_bin, char *id_str)
 /* 
  * How av stuff _should_ look like 
  */
-
-int display_received_frame(av_session_t* _phone, AVFrame *r_video_frame)
+/*
+int display_received_frame(av_session_t* _phone, vpx_image_t *image)
 {
     CodecState* cs = get_cs_temp(_phone->av);
     AVPicture pict;
@@ -249,8 +279,8 @@ int display_received_frame(av_session_t* _phone, AVFrame *r_video_frame)
     pict.linesize[0] = _phone->video_picture.bmp->pitches[0];
     pict.linesize[1] = _phone->video_picture.bmp->pitches[2];
     pict.linesize[2] = _phone->video_picture.bmp->pitches[1];
-    
-    /* Convert the image into YUV format that SDL uses */
+    */
+    /* Convert the image into YUV format that SDL uses *//*
     sws_scale(_phone->sws_SDL_r_ctx, (uint8_t const * const *)r_video_frame->data, r_video_frame->linesize, 0,
               cs->video_decoder_ctx->height, pict.data, pict.linesize );
     
@@ -263,60 +293,65 @@ int display_received_frame(av_session_t* _phone, AVFrame *r_video_frame)
     SDL_DisplayYUVOverlay(_phone->video_picture.bmp, &rect);
     return 1;
 }
-
+*/
+#ifdef TOX_FFMPEG
 void *encode_video_thread(void *arg)
 {
     INFO("Started encode video thread!");
-    
+
     av_session_t* _phone = arg;
     
     _phone->running_encvid = 1;
-    
-    CodecState *cs = get_cs_temp(_phone->av);
+    //CodecState *cs = get_cs_temp(_phone->av);
     AVPacket pkt1, *packet = &pkt1;
-    int p = 0;
-    int got_packet;
+    //int p = 0;
+    //int got_packet;
     int video_frame_finished;
     AVFrame *s_video_frame;
     AVFrame *webcam_frame;
     s_video_frame = avcodec_alloc_frame();
     webcam_frame = avcodec_alloc_frame();
-    AVPacket enc_video_packet;
+    //AVPacket enc_video_packet;
     
     uint8_t *buffer;
     int numBytes;
     /* Determine required buffer size and allocate buffer */
-    numBytes = avpicture_get_size(PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height);
+    numBytes = avpicture_get_size(PIX_FMT_YUV420P, _phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height);
     buffer = (uint8_t *)av_calloc(numBytes * sizeof(uint8_t),1);
-    avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, cs->webcam_decoder_ctx->width,
-                   cs->webcam_decoder_ctx->height);
-    _phone->sws_ctx = sws_getContext(cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height,
-                                 cs->webcam_decoder_ctx->pix_fmt, cs->webcam_decoder_ctx->width, cs->webcam_decoder_ctx->height, PIX_FMT_YUV420P,
+    avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, _phone->webcam_decoder_ctx->width,
+                   _phone->webcam_decoder_ctx->height);
+    _phone->sws_ctx = sws_getContext(_phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height,
+                                 _phone->webcam_decoder_ctx->pix_fmt, _phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height, PIX_FMT_YUV420P,
                                  SWS_BILINEAR, NULL, NULL, NULL);
     
+    
+    vpx_image_t *image = 
+    vpx_img_alloc(NULL, VPX_IMG_FMT_I420, _phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height, 1);
+    
+    //uint32_t frame_counter = 0;
     while (_phone->running_encvid) {
         
-        if (av_read_frame(cs->video_format_ctx, packet) < 0) {
+        if (av_read_frame(_phone->video_format_ctx, packet) < 0) {
             printf("error reading frame\n");
             
-            if (cs->video_format_ctx->pb->error != 0)
+            if (_phone->video_format_ctx->pb->error != 0)
                 break;
             
             continue;
         }
         
-        if (packet->stream_index == cs->video_stream) {
-            if (avcodec_decode_video2(cs->webcam_decoder_ctx, webcam_frame, &video_frame_finished, packet) < 0) {
+        if (packet->stream_index == _phone->video_stream) {
+            if (avcodec_decode_video2(_phone->webcam_decoder_ctx, webcam_frame, &video_frame_finished, packet) < 0) {
                 printf("couldn't decode\n");
                 continue;
             }
             
             av_free_packet(packet);
             sws_scale(_phone->sws_ctx, (uint8_t const * const *)webcam_frame->data, webcam_frame->linesize, 0,
-                      cs->webcam_decoder_ctx->height, s_video_frame->data, s_video_frame->linesize);
+                      _phone->webcam_decoder_ctx->height, s_video_frame->data, s_video_frame->linesize);
             /* create a new I-frame every 60 frames */
-            ++p;
-            
+            //++p;
+            /*
             if (p == 60) {
                 
                 s_video_frame->pict_type = AV_PICTURE_TYPE_BI ;
@@ -325,53 +360,66 @@ void *encode_video_thread(void *arg)
                 p = 0;
             } else {
                 s_video_frame->pict_type = AV_PICTURE_TYPE_P ;
-            }
+            }*/
             
             if (video_frame_finished) {
-                
-                if (avcodec_encode_video2(cs->video_encoder_ctx, &enc_video_packet, s_video_frame, &got_packet) < 0) {
+                memcpy(image->planes[VPX_PLANE_Y], s_video_frame->data[0], s_video_frame->linesize[0] * _phone->webcam_decoder_ctx->height);
+                memcpy(image->planes[VPX_PLANE_U], s_video_frame->data[1], s_video_frame->linesize[1] * _phone->webcam_decoder_ctx->height / 2);
+                memcpy(image->planes[VPX_PLANE_V], s_video_frame->data[2], s_video_frame->linesize[2] * _phone->webcam_decoder_ctx->height / 2);
+                toxav_send_video (_phone->av, image);
+                //if (avcodec_encode_video2(cs->video_encoder_ctx, &enc_video_packet, s_video_frame, &got_packet) < 0) {
+                /*if (vpx_codec_encode(&cs->v_encoder, image, frame_counter, 1, 0, 0) != VPX_CODEC_OK) {
                     printf("could not encode video frame\n");
                     continue;
                 }
+                ++frame_counter;
                 
-                if (!got_packet) {
-                    continue;
-                }
+                vpx_codec_iter_t iter = NULL;
+                vpx_codec_cx_pkt_t *pkt;
+                while( (pkt = vpx_codec_get_cx_data(&cs->v_encoder, &iter)) ) {
+                    if (pkt->kind == VPX_CODEC_CX_FRAME_PKT)
+                        toxav_send_rtp_payload(_phone->av, TypeVideo, pkt->data.frame.buf, pkt->data.frame.sz);
+                }*/
+                //if (!got_packet) {
+                //    continue;
+                //}
                                 
-                if (!enc_video_packet.data) fprintf(stderr, "video packet data is NULL\n");
+                //if (!enc_video_packet.data) fprintf(stderr, "video packet data is NULL\n");
                 
-                toxav_send_rtp_payload(_phone->av, TypeVideo, enc_video_packet.data, enc_video_packet.size);
+                //toxav_send_rtp_payload(_phone->av, TypeVideo, enc_video_packet.data, enc_video_packet.size);
                 
-                av_free_packet(&enc_video_packet);
+                //av_free_packet(&enc_video_packet);
             }
         } else {
             av_free_packet(packet);
         }
     }
     
+    vpx_img_free(image);
+    
     /* clean up codecs */
-    pthread_mutex_lock(&cs->ctrl_mutex);
+    //pthread_mutex_lock(&cs->ctrl_mutex);
     av_free(buffer);
     av_free(webcam_frame);
     av_free(s_video_frame);
     sws_freeContext(_phone->sws_ctx);
-    avcodec_close(cs->webcam_decoder_ctx);
-    avcodec_close(cs->video_encoder_ctx);
-    pthread_mutex_unlock(&cs->ctrl_mutex);
+    //avcodec_close(webcam_decoder_ctx);
+    //avcodec_close(cs->video_encoder_ctx);
+    //pthread_mutex_unlock(&cs->ctrl_mutex);
     
     _phone->running_encvid = -1;
     
     pthread_exit ( NULL );
 }
+#endif
 
 void *encode_audio_thread(void *arg)
 {
     INFO("Started encode audio thread!");
     av_session_t* _phone = arg;
     _phone->running_encaud = 1;
-    
-    unsigned char encoded_data[4096];
-    int encoded_size = 0;
+
+    int ret = 0;
     int16_t frame[4096];
     int frame_size = AUDIO_FRAME_SIZE;
     ALint sample = 0;
@@ -383,27 +431,79 @@ void *encode_audio_thread(void *arg)
         if (sample >= frame_size) {
             alcCaptureSamples((ALCdevice*)_phone->audio_capture_device, frame, frame_size);
             
-            encoded_size = toxav_encode_audio(_phone->av, frame, frame_size, encoded_data);
+            ret = toxav_send_audio(_phone->av, frame, frame_size);
             
-            if (encoded_size <= 0) {
-                printf("Could not encode audio packet\n");
-            } else {
-                if ( -1 == toxav_send_rtp_payload(_phone->av, TypeAudio, encoded_data, encoded_size) )
-                    assert(0);
-            }
+            if (ret < 0)
+                printf("Could not encode or send audio packet\n");
+
         } else {
             usleep(1000);
         }
     }
     
     /* clean up codecs *
-    pthread_mutex_lock(&cs->ctrl_mutex);*/
+    pthread_mutex_lock(&cs->ctrl_mutex);* /
     alcCaptureStop((ALCdevice*)_phone->audio_capture_device);
     alcCaptureCloseDevice((ALCdevice*)_phone->audio_capture_device);    
-    /*pthread_mutex_unlock(&cs->ctrl_mutex);*/
+    / *pthread_mutex_unlock(&cs->ctrl_mutex);*/
     _phone->running_encaud = -1;
     pthread_exit ( NULL ); 
 }
+
+void convert_to_rgb(vpx_image_t *img, unsigned char *out)
+{
+    const int w = img->d_w;
+    const int w2 = w/2;
+    const int pstride = w*3;
+    const int h = img->d_h;
+    const int h2 = h/2;
+    
+    const int strideY = img->stride[0];
+    const int strideU = img->stride[1];
+    const int strideV = img->stride[2];
+    int posy, posx;
+    for (posy = 0; posy < h2; posy++) {
+        unsigned char *dst = out + pstride * (posy * 2);
+        unsigned char *dst2 = out + pstride * (posy * 2 + 1);
+        const unsigned char *srcY = img->planes[0] + strideY * posy * 2;
+        const unsigned char *srcY2 = img->planes[0] + strideY * (posy * 2 + 1);
+        const unsigned char *srcU = img->planes[1] + strideU * posy;
+        const unsigned char *srcV = img->planes[2] + strideV * posy;
+            
+        for (posx = 0; posx < w2; posx++) {
+            unsigned char Y,U,V;
+            short R,G,B;
+            short iR,iG,iB;
+            
+            U = *(srcU++); V = *(srcV++);
+            iR = (351 * (V-128)) / 256;
+            iG = - (179 * (V-128)) / 256 - (86 * (U-128)) / 256;
+            iB = (444 * (U-128)) / 256;
+            
+            Y = *(srcY++); 
+            R = Y + iR ; G = Y + iG ; B = Y + iB ;
+            R = (R<0?0:(R>255?255:R)); G = (G<0?0:(G>255?255:G)); B = (B<0?0:(B>255?255:B));
+            *(dst++) = R; *(dst++) = G; *(dst++) = B;
+            
+            Y = *(srcY2++);
+            R = Y + iR ; G = Y + iG ; B = Y + iB ;
+            R = (R<0?0:(R>255?255:R)); G = (G<0?0:(G>255?255:G)); B = (B<0?0:(B>255?255:B));
+            *(dst2++) = R; *(dst2++) = G; *(dst2++) = B;
+            
+            Y = *(srcY++) ;
+            R = Y + iR ; G = Y + iG ; B = Y + iB ;
+            R = (R<0?0:(R>255?255:R)); G = (G<0?0:(G>255?255:G)); B = (B<0?0:(B>255?255:B));
+            *(dst++) = R; *(dst++) = G; *(dst++) = B;
+            
+            Y = *(srcY2++);
+            R = Y + iR ; G = Y + iG ; B = Y + iB ;
+            R = (R<0?0:(R>255?255:R)); G = (G<0?0:(G>255?255:G)); B = (B<0?0:(B>255?255:B));
+            *(dst2++) = R; *(dst2++) = G; *(dst2++) = B;
+        }
+    }
+}
+
+#define mask32(BYTE) (*(uint32_t *)(uint8_t [4]){ [BYTE] = 0xff })
 
 void *decode_video_thread(void *arg)
 {
@@ -411,66 +511,84 @@ void *decode_video_thread(void *arg)
     av_session_t* _phone = arg;
     _phone->running_decvid = 1;
     
-    CodecState *cs = get_cs_temp(_phone->av);
-    cs->video_stream = 0;
+    //CodecState *cs = get_cs_temp(_phone->av);
+    //cs->video_stream = 0;
     
-    int recved_size;
-    uint8_t dest[RTP_PAYLOAD_SIZE];
+    //int recved_size;
+    //uint8_t dest[RTP_PAYLOAD_SIZE];
     
-    int dec_frame_finished;
-    AVFrame *r_video_frame;
-    r_video_frame = avcodec_alloc_frame();
-    AVPacket dec_video_packet;
-    av_new_packet (&dec_video_packet, 65536);
+    //int dec_frame_finished;
+    //AVFrame *r_video_frame;
+    //r_video_frame = avcodec_alloc_frame();
+    //AVPacket dec_video_packet;
+    //av_new_packet (&dec_video_packet, 65536);
     int width = 0;
     int height = 0;
     
     while (_phone->running_decvid) {
-        
-        recved_size = toxav_recv_rtp_payload(_phone->av, TypeVideo, 1, dest);
-        
-        if (recved_size) {
-            memcpy(dec_video_packet.data, dest, recved_size);
-            dec_video_packet.size = recved_size;
+        //recved_size = toxav_recv_rtp_payload(_phone->av, TypeVideo, dest);
+        //if (recved_size) {
+        vpx_image_t *image;
+        if (toxav_recv_video(_phone->av, &image) == 0) {
+            //memcpy(dec_video_packet.data, dest, recved_size);
+            //dec_video_packet.size = recved_size;
             
-            avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
+            //avcodec_decode_video2(cs->video_decoder_ctx, r_video_frame, &dec_frame_finished, &dec_video_packet);
             
-            if (dec_frame_finished) {
+            //if (dec_frame_finished) {
                 
                 /* Check if size has changed */
-                if (cs->video_decoder_ctx->width != width || cs->video_decoder_ctx->height != height) {
+                if (image->d_w != width || image->d_h != height) {
                     
-                    width = cs->video_decoder_ctx->width;
-                    height = cs->video_decoder_ctx->height;
+                    width = image->d_w;
+                    height = image->d_h;
                     
                     printf("w: %d h: %d \n", width, height);
                     
                     screen = SDL_SetVideoMode(width, height, 0, 0);
                     
-                    if (_phone->video_picture.bmp)
-                        SDL_FreeYUVOverlay(_phone->video_picture.bmp);
+                    //if (_phone->video_picture.bmp)
+                     //   SDL_FreeYUVOverlay(_phone->video_picture.bmp);
                     
-                    _phone->video_picture.bmp = SDL_CreateYUVOverlay(width, height, SDL_YV12_OVERLAY, screen);
-                    _phone->sws_SDL_r_ctx = sws_getContext(width, height, cs->video_decoder_ctx->pix_fmt, width, height, PIX_FMT_YUV420P,
-                                                           SWS_BILINEAR, NULL, NULL, NULL);
+                    //_phone->video_picture.bmp = SDL_CreateYUVOverlay(width, height, SDL_YV12_OVERLAY, screen);
+                   // _phone->sws_SDL_r_ctx = sws_getContext(width, height, cs->video_decoder_ctx->pix_fmt, width, height, PIX_FMT_YUV420P,
+                     //                                      SWS_BILINEAR, NULL, NULL, NULL);
                 }
+                uint8_t *rgb_image = malloc(width*height*3);
+                convert_to_rgb(image, rgb_image);
+                SDL_Surface* img_surface = SDL_CreateRGBSurfaceFrom(rgb_image, width, height, 24, width * 3, mask32(0), mask32(1), mask32(2), 0);
+                if(SDL_BlitSurface(img_surface, NULL, screen, NULL) == 0)
+                        SDL_UpdateRect(screen, 0, 0, 0, 0);
+                /*
+                SDL_LockYUVOverlay(_phone->video_picture.bmp);
+                memcpy(_phone->video_picture.bmp->pixels[0], image->planes[VPX_PLANE_Y], _phone->video_picture.bmp->pitches[0] * height);
+                memcpy(_phone->video_picture.bmp->pixels[1], image->planes[VPX_PLANE_V], _phone->video_picture.bmp->pitches[1] * height / 2);
+                memcpy(_phone->video_picture.bmp->pixels[2], image->planes[VPX_PLANE_U], _phone->video_picture.bmp->pitches[2] * height / 2);
                 
-                display_received_frame(_phone, r_video_frame);
-            } else {
+                SDL_Rect rect;
+                rect.x = 0;
+                rect.y = 0;
+                rect.w = width;
+                rect.h = height;
+                SDL_DisplayYUVOverlay(_phone->video_picture.bmp, &rect);*/
+                free(rgb_image);
+                //display_received_frame(_phone, image);
+                
+            } //else {
                 /* TODO: request the sender to create a new i-frame immediatly */
-                printf("Bad video packet\n");
-            }
-        }
+                //printf("Bad video packet\n");
+            //}
+        //}
         
         usleep(1000);
     }
     
     /* clean up codecs */
-    av_free(r_video_frame);
+    //av_free(r_video_frame);
     
-    pthread_mutex_lock(&cs->ctrl_mutex);
-    avcodec_close(cs->video_decoder_ctx);
-    pthread_mutex_unlock(&cs->ctrl_mutex);
+    //pthread_mutex_lock(&cs->ctrl_mutex);
+    //avcodec_close(cs->video_decoder_ctx);
+    //pthread_mutex_unlock(&cs->ctrl_mutex);
     
     _phone->running_decvid = -1;
     
@@ -483,11 +601,11 @@ void *decode_audio_thread(void *arg)
     av_session_t* _phone = arg;
     _phone->running_decaud = 1;
         
-    int recved_size;
-    uint8_t dest [RTP_PAYLOAD_SIZE];
+    //int recved_size;
+    //uint8_t dest [RTP_PAYLOAD_SIZE];
     
     int frame_size = AUDIO_FRAME_SIZE;
-    int data_size;
+    //int data_size;
     
     ALCdevice *dev;
     ALCcontext *ctx;
@@ -507,7 +625,7 @@ void *decode_audio_thread(void *arg)
     
     uint16_t zeros[frame_size];
     memset(zeros, 0, frame_size);
-    opus_int16 PCM[frame_size];
+    int16_t PCM[frame_size];
     
     int i;
     for (i = 0; i < openal_buffers; ++i) {
@@ -527,28 +645,15 @@ void *decode_audio_thread(void *arg)
     while (_phone->running_decaud) {
         
         alGetSourcei(source, AL_BUFFERS_PROCESSED, &ready);
-        
-        recved_size = toxav_recv_rtp_payload(_phone->av, TypeAudio, ready, dest);
-        
-        if ( recved_size == ErrorAudioPacketLost ) {
-            printf("Lost packet\n");
-            dec_frame_len = toxav_decode_audio(_phone->av, NULL, 0, frame_size, PCM);
-        
-        } else if ( recved_size ) {
-            dec_frame_len = toxav_decode_audio(_phone->av, dest, recved_size, frame_size, PCM);         
-        }
-        
-        
+        if (ready <= 0)
+            continue;
+
+        dec_frame_len = toxav_recv_audio(_phone->av, frame_size, PCM);         
+
         /* Play the packet */
-        if (dec_frame_len) {
-            alGetSourcei(source, AL_BUFFERS_PROCESSED, &ready);
-            
-            if (ready <= 0)
-                continue;
-            
+        if (dec_frame_len > 0) {
             alSourceUnqueueBuffers(source, 1, &buffer);
-            data_size = av_samples_get_buffer_size(NULL, 1, dec_frame_len, AV_SAMPLE_FMT_S16, 1);
-            alBufferData(buffer, AL_FORMAT_MONO16, PCM, data_size, 48000);
+            alBufferData(buffer, AL_FORMAT_MONO16, PCM, dec_frame_len * 2 * 1, 48000);
             int error = alGetError();
             
             if (error != AL_NO_ERROR) {
@@ -573,16 +678,16 @@ void *decode_audio_thread(void *arg)
     
     
 ending:
-    /* clean up codecs * /
-    pthread_mutex_lock(&cs->ctrl_mutex);    
-    
+    /* clean up codecs */
+    //pthread_mutex_lock(&cs->ctrl_mutex);    
+    /*
     alDeleteSources(1, &source);
     alDeleteBuffers(openal_buffers, buffers);
     alcMakeContextCurrent(NULL);
     alcDestroyContext(ctx);
     alcCloseDevice(dev);
-    
-    pthread_mutex_unlock(&cs->ctrl_mutex); */
+    */
+    //pthread_mutex_unlock(&cs->ctrl_mutex);
     
     _phone->running_decaud = -1;
     
@@ -604,7 +709,7 @@ int phone_startmedia_loop ( ToxAv* arg )
     /* 
      * Rise all threads
      */
-    
+#ifdef TOX_FFMPEG
     /* Only checks for last peer */
     if ( toxav_get_peer_transmission_type(arg, 0) == TypeVideo && 
          0 > event.rise(encode_video_thread, toxav_get_agent_handler(arg)) )
@@ -612,7 +717,7 @@ int phone_startmedia_loop ( ToxAv* arg )
         INFO("Error while starting encode_video_thread()");
         return -1;
     }
-    
+#endif
     /* Always send audio */
     if ( 0 > event.rise(encode_audio_thread, toxav_get_agent_handler(arg)) )
     {
@@ -779,7 +884,6 @@ av_session_t* av_init_session()
     }
 
     _retu->_friends = NULL;
-    _retu->av = toxav_new(_retu->_messenger, _retu, _USERAGENT);
     
     
     const ALchar *_device_list = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
@@ -821,13 +925,58 @@ av_session_t* av_init_session()
         printf("Could not start capture device! %d\n", alcGetError((ALCdevice*)_retu->audio_capture_device));
         return 0;
     }
-    
-    
+    uint16_t height = 0, width = 0;
+#ifdef TOX_FFMPEG
+    avdevice_register_all();
+    avcodec_register_all();
+    av_register_all();
+
+    _retu->video_input_format = av_find_input_format(VIDEO_DRIVER);
+    if (avformat_open_input(&_retu->video_format_ctx, DEFAULT_WEBCAM, _retu->video_input_format, NULL) != 0) {
+        fprintf(stderr, "Opening video_input_format failed!\n");
+        //return -1;
+        return NULL;
+    }
+
+    avformat_find_stream_info(_retu->video_format_ctx, NULL);
+    av_dump_format(_retu->video_format_ctx, 0, DEFAULT_WEBCAM, 0);
+
+    for (i = 0; i < _retu->video_format_ctx->nb_streams; ++i) {
+        if (_retu->video_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            _retu->video_stream = i;
+            break;
+        }
+    }
+
+    _retu->webcam_decoder_ctx = _retu->video_format_ctx->streams[_retu->video_stream]->codec;
+    _retu->webcam_decoder = avcodec_find_decoder(_retu->webcam_decoder_ctx->codec_id);
+
+    if (_retu->webcam_decoder == NULL) {
+        fprintf(stderr, "Unsupported codec!\n");
+        //return -1;
+        return NULL;
+    }
+
+    if (_retu->webcam_decoder_ctx == NULL) {
+        fprintf(stderr, "Init webcam_decoder_ctx failed!\n");
+        //return -1;
+        return NULL;
+    }
+
+    if (avcodec_open2(_retu->webcam_decoder_ctx, _retu->webcam_decoder, NULL) < 0) {
+        fprintf(stderr, "Opening webcam decoder failed!\n");
+        //return -1;
+        return NULL;
+    }
+    width = _retu->webcam_decoder_ctx->width;
+    height = _retu->webcam_decoder_ctx->height;
+#endif
     uint8_t _byte_address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(_retu->_messenger, _byte_address );
     fraddr_to_str( _byte_address, _retu->_my_public_id );
     
-    
+
+    _retu->av = toxav_new(_retu->_messenger, _retu, _USERAGENT, width, height);
 
     /* ------------------ */
     
@@ -842,7 +991,7 @@ av_session_t* av_init_session()
     toxav_register_callstate_callback(callback_recv_ending, OnEnding);
     
     toxav_register_callstate_callback(callback_recv_error, OnError);
-    toxav_register_callstate_callback(callback_requ_timeout, OnTimeout);
+    toxav_register_callstate_callback(callback_requ_timeout, OnRequestTimeout);
     
     /* ------------------ */
 
@@ -1013,9 +1162,9 @@ void do_phone ( av_session_t* _phone )
         {
             ToxAvError rc;
             
-            if ( _len > 1 && _line[2] == 'v' )
+            if ( _len > 1 && _line[2] == 'v' ) {
                 rc = toxav_answer(_phone->av, TypeVideo);
-            else
+            } else
                 rc = toxav_answer(_phone->av, TypeAudio);
             
             if ( rc == ErrorInvalidState ) {

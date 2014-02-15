@@ -26,15 +26,15 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "toxav.h"
-#include "../toxcore/tox.h"
+#include "media.h"
 #include "rtp.h"
 #include "msi.h"
-#include "media.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+#include "toxav.h"
 
 #define inline__ inline __attribute__((always_inline))
 
@@ -50,7 +50,7 @@ typedef enum {
 
 typedef struct _ToxAv
 {
-    Tox* messenger;
+    Messenger* messenger;
     
     MSISession* msi_session; /** Main msi session */
     
@@ -89,21 +89,23 @@ typedef struct _ToxAv
 
 
 
-ToxAv* toxav_new( Tox* messenger, void* useragent, const char* ua_name ) 
-{    
+ToxAv* toxav_new( Tox* messenger, void* useragent, const char* ua_name , uint16_t video_width, uint16_t video_height) 
+{
     ToxAv* av = calloc ( sizeof(ToxAv), 1);
-        
-    av->msi_session = msi_init_session(messenger, (const unsigned char*) ua_name );
+    if (av == NULL)
+        return NULL;
+
+    av->messenger = (Messenger *)messenger;
+
+    av->msi_session = msi_init_session(av->messenger, (const unsigned char*) ua_name );
     av->msi_session->agent_handler = av;
     
     av->rtp_sessions[0] = av->rtp_sessions [1] = NULL;
- 
-    av->messenger = messenger;
-    
+
     /* NOTE: This should be user defined or? */
     av->j_buf = create_queue(20);
     
-    av->cs = codec_init_session(AUDIO_BITRATE, AUDIO_FRAME_DURATION, AUDIO_SAMPLE_RATE, 1, VIDEO_BITRATE, DEFAULT_WEBCAM, VIDEO_DRIVER);
+    av->cs = codec_init_session(AUDIO_BITRATE, AUDIO_FRAME_DURATION, AUDIO_SAMPLE_RATE, AUDIO_CHANNELS, video_width, video_height, VIDEO_BITRATE);
     
     av->agent_handler = useragent;
     
@@ -273,7 +275,7 @@ inline__ int toxav_send_rtp_payload ( ToxAv* av, ToxAvCallType type, const uint8
     else return -1;
 }
 
-inline__ int toxav_recv_rtp_payload ( ToxAv* av, ToxAvCallType type, int ready, uint8_t* dest ) 
+inline__ int toxav_recv_rtp_payload ( ToxAv* av, ToxAvCallType type, uint8_t* dest ) 
 {
     if ( !dest ) return ErrorInternal;
     
@@ -283,20 +285,19 @@ inline__ int toxav_recv_rtp_payload ( ToxAv* av, ToxAvCallType type, int ready, 
     
     if ( type == TypeAudio ) {
         
-        message = rtp_recv_msg(av->rtp_sessions[audio_index]);
+        do {
+            message = rtp_recv_msg(av->rtp_sessions[audio_index]);
+            
+            if (message) {
+                /* push the packet into the queue */
+                queue(av->j_buf, message);
+            }
+        } while(message);
         
-        if (message) {
-            /* push the packet into the queue */
-            queue(av->j_buf, message);
-        }
-        
-        if (ready) {
-            int success = 0;
-            message = dequeue(av->j_buf, &success);
-                        
-            if ( success == 2) return ErrorAudioPacketLost;
-        } 
-        else return 0;
+        int success = 0;
+        message = dequeue(av->j_buf, &success);
+
+        if ( success == 2) return ErrorAudioPacketLost;
     }
     else {
         message = rtp_recv_msg(av->rtp_sessions[video_index]);
@@ -315,19 +316,75 @@ inline__ int toxav_recv_rtp_payload ( ToxAv* av, ToxAvCallType type, int ready, 
     return 0;
 }
 
-inline__ int toxav_decode_audio ( ToxAv* av, const uint8_t* payload, uint16_t length, int frame_size, short int* dest ) 
+inline__ int toxav_recv_video ( ToxAv* av, vpx_image_t **output) 
 {
-    if ( !dest ) return ErrorInternal;
-    
-    return opus_decode(av->cs->audio_decoder, payload, length, dest, frame_size, payload ? 0 : 1);
-}
-
-inline__ int toxav_encode_audio ( ToxAv* av, const short int* frame, int frame_size, uint8_t* dest ) 
-{
-    if ( !dest )
+    if ( !output ) return ErrorInternal;
+    uint8_t packet [RTP_PAYLOAD_SIZE];
+    int recved_size = 0;
+    do {
+        recved_size = toxav_recv_rtp_payload(av, TypeVideo, packet);
+        if (recved_size > 0) {
+            printf("decode: %s\n", vpx_codec_err_to_string(vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0)));
+        }
+    }while (recved_size > 0);
+    vpx_codec_iter_t iter = NULL;
+    vpx_image_t *img;
+    img = vpx_codec_get_frame(&av->cs->v_decoder, &iter);
+    if (img == NULL)
         return ErrorInternal;
     
-    return opus_encode(av->cs->audio_encoder, frame, frame_size, dest, RTP_PAYLOAD_SIZE);
+    *output = img;
+    return 0;
+}
+
+inline__ int toxav_send_video ( ToxAv* av, vpx_image_t *input)
+{
+    if (vpx_codec_encode(&av->cs->v_encoder, input, av->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US) != VPX_CODEC_OK) {
+        printf("could not encode video frame\n");
+        return ErrorInternal;
+    }
+    ++av->cs->frame_counter;
+    
+    vpx_codec_iter_t iter = NULL;
+    const vpx_codec_cx_pkt_t *pkt;
+    int sent = 0;
+    while( (pkt = vpx_codec_get_cx_data(&av->cs->v_encoder, &iter)) ) {
+        if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
+            if (toxav_send_rtp_payload(av, TypeVideo, pkt->data.frame.buf, pkt->data.frame.sz) != -1)
+                ++sent;
+        }
+    }
+    if (sent > 0)
+        return 0;
+    
+    return ErrorInternal;
+}
+
+inline__ int toxav_recv_audio ( ToxAv* av, int frame_size, int16_t* dest ) 
+{
+    if ( !dest ) return ErrorInternal;
+    uint8_t packet [RTP_PAYLOAD_SIZE];
+
+    int recved_size = toxav_recv_rtp_payload(av, TypeAudio, packet);
+
+    if ( recved_size == ErrorAudioPacketLost ) {
+        printf("Lost packet\n");
+        return opus_decode(av->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
+    } else if ( recved_size ){
+        return opus_decode(av->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
+    } else {
+        return ErrorInternal;
+    }
+}
+
+inline__ int toxav_send_audio ( ToxAv* av, const int16_t* frame, int frame_size)
+{
+    uint8_t temp_data[RTP_PAYLOAD_SIZE];
+    int32_t ret = opus_encode(av->cs->audio_encoder, frame, frame_size, temp_data, sizeof(temp_data));
+    if (ret <= 0)
+        return ErrorInternal;
+
+    return toxav_send_rtp_payload(av, TypeAudio, temp_data, ret);
 }
 
 int toxav_get_peer_transmission_type ( ToxAv* av, int peer ) 
@@ -342,11 +399,4 @@ int toxav_get_peer_transmission_type ( ToxAv* av, int peer )
 void* toxav_get_agent_handler ( ToxAv* av ) 
 {
     return av->agent_handler;
-}
-
-
-/* Only temporary */
-void* get_cs_temp(ToxAv* av) 
-{
-    return av->cs;
 }

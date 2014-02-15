@@ -24,6 +24,7 @@
 #endif
 
 #include "onion.h"
+#include "util.h"
 
 #define MAX_ONION_SIZE MAX_DATA_SIZE
 
@@ -35,6 +36,16 @@
 #define SEND_3 ONION_SEND_3
 #define SEND_2 ONION_SEND_2
 #define SEND_1 ONION_SEND_1
+
+/* Change symmetric keys every hour to make paths expire eventually. */
+#define KEY_REFRESH_INTERVAL (60 * 60)
+static void change_symmetric_key(Onion *onion)
+{
+    if (is_timeout(onion->timestamp, KEY_REFRESH_INTERVAL)) {
+        new_symmetric_key(onion->secret_symmetric_key);
+        onion->timestamp = unix_time();
+    }
+}
 
 /* Create and send a onion packet.
  *
@@ -126,6 +137,8 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     if (length <= 1 + SEND_1)
         return 1;
 
+    change_symmetric_key(onion);
+
     uint8_t plain[MAX_ONION_SIZE];
 
     int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
@@ -169,6 +182,8 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     if (length <= 1 + SEND_2)
         return 1;
+
+    change_symmetric_key(onion);
 
     uint8_t plain[MAX_ONION_SIZE];
 
@@ -217,6 +232,8 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (length <= 1 + SEND_3)
         return 1;
 
+    change_symmetric_key(onion);
+
     uint8_t plain[MAX_ONION_SIZE];
 
     int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
@@ -263,6 +280,8 @@ static int handle_recv_3(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (length <= 1 + RETURN_3)
         return 1;
 
+    change_symmetric_key(onion);
+
     uint8_t plain[sizeof(IP_Port) + RETURN_2];
     int len = decrypt_data_symmetric(onion->secret_symmetric_key, packet + 1, packet + 1 + crypto_secretbox_NONCEBYTES,
                                      sizeof(IP_Port) + RETURN_2 + crypto_secretbox_MACBYTES, plain);
@@ -294,6 +313,8 @@ static int handle_recv_2(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     if (length <= 1 + RETURN_2)
         return 1;
+
+    change_symmetric_key(onion);
 
     uint8_t plain[sizeof(IP_Port) + RETURN_1];
     int len = decrypt_data_symmetric(onion->secret_symmetric_key, packet + 1, packet + 1 + crypto_secretbox_NONCEBYTES,
@@ -327,6 +348,8 @@ static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     if (length <= 1 + RETURN_1)
         return 1;
 
+    change_symmetric_key(onion);
+
     IP_Port send_to;
 
     int len = decrypt_data_symmetric(onion->secret_symmetric_key, packet + 1, packet + 1 + crypto_secretbox_NONCEBYTES,
@@ -358,6 +381,7 @@ Onion *new_onion(DHT *dht)
     onion->dht = dht;
     onion->net = dht->c->lossless_udp->net;
     new_symmetric_key(onion->secret_symmetric_key);
+    onion->timestamp = unix_time();
 
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, &handle_send_initial, onion);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, &handle_send_1, onion);

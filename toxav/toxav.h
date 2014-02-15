@@ -27,6 +27,9 @@
 #define __TOXAV
 #include <inttypes.h>
 
+/* vpx_image_t */
+#include <vpx/vpx_image.h>
+
 typedef void* ( *ToxAVCallback ) ( void* arg );
 typedef struct _ToxAv ToxAv;
 
@@ -35,7 +38,29 @@ typedef struct _ToxAv ToxAv;
 typedef struct Tox Tox;
 #endif
 
-#define RTP_PAYLOAD_SIZE 10400
+#define RTP_PAYLOAD_SIZE 65535
+
+/* Default video bitrate in bytes/s */
+#define VIDEO_BITRATE   10*1000*100
+
+/* Default audio bitrate in bits/s */
+#define AUDIO_BITRATE   64000
+
+/* Number of audio channels. */
+#define AUDIO_CHANNELS 1
+
+/* Audio frame duration in miliseconds */
+#define AUDIO_FRAME_DURATION    20
+
+/* Audio sample rate recommended to be 48kHz for Opus */
+#define AUDIO_SAMPLE_RATE   48000
+
+/* The amount of samples in one audio frame */
+#define AUDIO_FRAME_SIZE    AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000
+
+/* Assume 60 fps*/
+#define MAX_ENCODE_TIME_US ((1000 / 60) * 1000)
+
 
 /** 
  * @brief Callbacks ids that handle the call states 
@@ -55,7 +80,7 @@ typedef enum {
     
     /* Protocol */
     OnError,
-    OnTimeout
+    OnRequestTimeout
     
 } ToxAvCallbackID;
 
@@ -86,7 +111,7 @@ typedef enum {
 } ToxAvError;
 
 
-ToxAv* toxav_new(Tox* messenger, void* useragent, const char* ua_name);
+ToxAv* toxav_new(Tox* messenger, void* useragent, const char* ua_name, uint16_t video_width, uint16_t video_height) ;
 void toxav_kill(ToxAv* av);
 
 void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID id);
@@ -103,27 +128,25 @@ int toxav_prepare_transmission(ToxAv* av);
 int toxav_kill_transmission(ToxAv* av);
 
 
-int toxav_send_rtp_payload(ToxAv* av, ToxAvCallType type, const uint8_t* payload, uint16_t length);
+
 
 /* Return length of received packet. Returns 0 if nothing recved. Dest has to have 
  * MAX_RTP_PAYLOAD_SIZE space available. Returns -1 if packet is not ready (ready < 1) for deque.
  * For video packets set 'ready' at _any_ value.
  */
-int toxav_recv_rtp_payload(ToxAv* av, ToxAvCallType type, int ready, uint8_t* dest);
 
+/* returns 0 on success */
+int toxav_recv_video ( ToxAv* av, vpx_image_t **output);
 
+int toxav_recv_audio( ToxAv* av, int frame_size, int16_t* dest );
 
-
-int toxav_decode_audio( ToxAv* av, const uint8_t* payload, uint16_t length, int frame_size, short int* dest );
-
-/* Please make sure 'dest' has enough storage for RTP_PAYLOAD_SIZE length of data */
-int toxav_encode_audio( ToxAv* av, const short int* frame, int frame_size, uint8_t* dest );
+int toxav_send_video ( ToxAv* av, vpx_image_t *input);
+/* Encode and send audio frame. */
+int toxav_send_audio ( ToxAv* av, const int16_t* frame, int frame_size);
 
 
 
 int toxav_get_peer_transmission_type ( ToxAv* av, int peer );
 void* toxav_get_agent_handler ( ToxAv* av );
 
-/* Use this to get handle of CodecState from ToxAv struct */
-void* get_cs_temp( ToxAv* av );
 #endif /* __TOXAV */

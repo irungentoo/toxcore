@@ -13,8 +13,7 @@ AC_CONFIG_MACRO_DIR([m4])
 EXTRA_LT_LDFLAGS=
 
 LIBTOXCORE_LT_VERSION=0:0:0
-LIBTOXMSI_LT_VERSION=0:0:0
-LIBTOXRTP_LT_VERSION=0:0:0
+LIBTOXAV_LT_VERSION=0:0:0
 dnl
 dnl            current:revision:age
 dnl
@@ -24,12 +23,10 @@ dnl           incremented
 dnl age:      increment if interfaces have been added, set to zero if
 dnl           interfaces have been removed or changed
 TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
-TOXMSI_LT_LDFLAGS="-version-info $LIBTOXMSI_LT_VERSION"
-TOXRTP_LT_LDFLAGS="-version-info $LIBTOXMSI_LT_VERSION"
+TOXAV_LT_LDFLAGS="-version-info $LIBTOXAV_LT_VERSION"
 
 AC_SUBST(TOXCORE_LT_LDFLAGS)
-AC_SUBST(TOXMSI_LT_LDFLAGS)
-AC_SUBST(TOXRTP_LT_LDFLAGS)
+AC_SUBST(TOXAV_LT_LDFLAGS)
 
 if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
@@ -39,6 +36,7 @@ BUILD_DHT_BOOTSTRAP_DAEMON="yes"
 BUILD_NTOX="yes"
 BUILD_TESTS="yes"
 BUILD_AV="yes"
+BUILD_PHONE="yes"
 BUILD_TESTING="yes"
 
 NCURSES_FOUND="no"
@@ -64,8 +62,20 @@ AC_ARG_ENABLE([av],
     [
         if test "x$enableval" = "xno"; then
             BUILD_AV="no"
+            BUILD_PHONE="no"
         elif test "x$enableval" = "xyes"; then
             BUILD_AV="yes"
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([phone],
+    [AC_HELP_STRING([--disable-phone], [build test phone (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_PHONE="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_PHONE="yes"
         fi
     ]
 )
@@ -339,82 +349,79 @@ AC_C_BIGENDIAN
 AC_FUNC_FORK
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
 
-if test "x$BUILD_AV" = "xyes"; then
-    AX_PTHREAD(
-        [],
-        [
-            AC_MSG_WARN([disabling AV support: required pthread library not found])
-            BUILD_AV="no"
-        ]
-    )
-fi
+AX_PTHREAD(
+    [],
+    [
+        AC_MSG_ERROR([Error: required pthread library not found])
+    ]
+)
 
-if test "x$BUILD_AV" = "xyes"; then
+if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([AVFORMAT], [libavformat],
         [],
         [
-            AC_MSG_WARN([disabling AV support $AVFORMAT_PKG_ERRORS])
-            BUILD_AV="no"
+            AC_MSG_WARN([disabling phone $AVFORMAT_PKG_ERRORS])
+            BUILD_PHONE="no"
         ]
     )
 fi
 
-if test "x$BUILD_AV" = "xyes"; then
+if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([AVCODEC], [libavcodec],
         [],
         [
-            AC_MSG_WARN([disabling AV support $AVCODEC_PKG_ERRORS])
-            BUILD_AV="no"
+            AC_MSG_WARN([disabling phone $AVCODEC_PKG_ERRORS])
+            BUILD_PHONE="no"
         ]
     )
 fi
 
-if test "x$BUILD_AV" = "xyes"; then
+if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([AVUTIL], [libavutil],
         [],
         [
-            AC_MSG_WARN([disabling AV support $AVUTIL_PKG_ERRORS])
-            BUILD_AV="no"
+            AC_MSG_WARN([disabling phone $AVUTIL_PKG_ERRORS])
+            BUILD_PHONE="no"
         ]
     )
 fi
 
-if test "x$BUILD_AV" = "xyes"; then
+if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([AVDEVICE], [libavdevice],
         [],
         [
-            AC_MSG_WARN([disabling AV support $AVDEVICE_PKG_ERRORS])
-            BUILD_AV="no"
+            AC_MSG_WARN([disabling phone $AVDEVICE_PKG_ERRORS])
+            BUILD_PHONE="no"
         ]
     )
 fi
 
-if test "x$BUILD_AV" = "xyes"; then
+if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([SWSCALE], [libswscale],
         [],
         [
-            AC_MSG_WARN([disabling AV support $SWSCALE_PKG_ERRORS])
-            BUILD_AV="no"
+            AC_MSG_WARN([disabling phone $SWSCALE_PKG_ERRORS])
+            BUILD_PHONE="no"
         ]
     )
 fi
 
-if test "x$BUILD_AV" = "xyes"; then
+if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([SDL], [sdl],
         [],
         [
-            AC_MSG_WARN([disabling AV support $SDL_PKG_ERRORS])
-            BUILD_AV="no"
+            AC_MSG_WARN([disabling phone $SDL_PKG_ERRORS])
+            BUILD_PHONE="no"
         ]
     )
 fi
 
-if test "x$BUILD_AV" = "xyes"; then
+if test "x$BUILD_PHONE" = "xyes"; then
     PKG_CHECK_MODULES([OPENAL], [openal],
         [],
         [
-            AC_MSG_WARN([disabling AV support $OPENAL_PKG_ERRORS])
-            BUILD_AV="no"
+            AC_MSG_WARN([disabling phone $OPENAL_PKG_ERRORS])
+            BUILD_PHONE="no"
         ]
     )
 fi
@@ -425,6 +432,18 @@ if test "x$BUILD_AV" = "xyes"; then
         [
             AC_MSG_WARN([disabling AV support $OPUS_PKG_ERRORS])
             BUILD_AV="no"
+            BUILD_PHONE="no"
+        ]
+    )
+fi
+
+if test "x$BUILD_AV" = "xyes"; then
+    PKG_CHECK_MODULES([VPX], [vpx],
+        [],
+        [
+            AC_MSG_WARN([disabling AV support $VPX_PKG_ERRORS])
+            BUILD_AV="no"
+            BUILD_PHONE="no"
         ]
     )
 fi
@@ -587,6 +606,7 @@ AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" =
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_NTOX, test "x$BUILD_NTOX" = "xyes")
 AM_CONDITIONAL(BUILD_AV, test "x$BUILD_AV" = "xyes")
+AM_CONDITIONAL(BUILD_PHONE, test "x$BUILD_PHONE" = "xyes")
 AM_CONDITIONAL(BUILD_TESTING, test "x$BUILD_TESTING" = "xyes")
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 

@@ -540,8 +540,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         addr6->sin6_scope_id = 0;
 
         portptr = &addr6->sin6_port;
-    } else
+    } else {
+        free(temp);
         return NULL;
+    }
 
     if (ip.family == AF_INET6) {
         char ipv6only = 0;

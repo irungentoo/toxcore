@@ -61,6 +61,8 @@ typedef struct {
     uint64_t last_fakeid_dht_sent;
 
     uint64_t last_noreplay;
+
+    uint64_t last_seen;
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
