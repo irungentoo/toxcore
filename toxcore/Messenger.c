@@ -721,9 +721,6 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, in
 static void break_files(Messenger *m, int friendnumber);
 static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_t status)
 {
-    if (!m->friend_connectionstatuschange)
-        return;
-
     if (status == NOFRIEND)
         return;
 
@@ -740,7 +737,8 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
             add_online_friend(m, friendnumber);
         }
 
-        m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
+        if (m->friend_connectionstatuschange)
+            m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
     }
 }
 
