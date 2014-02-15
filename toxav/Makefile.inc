@@ -61,7 +61,9 @@ phone_LDADD =   libtoxav.la \
                 $(AVDEVICE_LIBS) \
                 $(SWSCALE_LIBS) \
                 $(SDL_LIBS) \
-                $(OPENAL_LIBS)
+                $(OPENAL_LIBS) \
+                $(OPUS_LIBS) \
+                $(VPX_LIBS)
                 
                 
 endif

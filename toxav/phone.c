@@ -35,7 +35,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #define _BSD_SOURCE
-#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <string.h>
@@ -904,7 +903,7 @@ av_session_t* av_init_session()
     INFO("Enter capture device number");
     
     char dev[2]; char* left;
-    fgets(dev, 2, stdin);
+    char* warned_ = fgets(dev, 2, stdin);
     long selection = strtol(dev, &left, 10);
     
     if ( *left ) {
