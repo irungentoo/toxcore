@@ -210,6 +210,8 @@ typedef struct Messenger {
     void *friend_statuschange_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, int, uint8_t, void *);
     void *friend_connectionstatuschange_userdata;
+    void (*friend_connectionstatuschange_internal)(struct Messenger *m, int, uint8_t, void *);
+    void *friend_connectionstatuschange_internal_userdata;
 
     void (*group_invite)(struct Messenger *m, int, uint8_t *, void *);
     void *group_invite_userdata;
@@ -460,6 +462,9 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, u
  *  It's assumed that when adding friends, their connection status is offline.
  */
 void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void *), void *userdata);
+/* Same as previous but for internal A/V core usage only */
+void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void *),
+        void *userdata);
 
 /**********GROUP CHATS************/
 

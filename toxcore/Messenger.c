@@ -718,6 +718,14 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, in
     m->friend_connectionstatuschange = function;
     m->friend_connectionstatuschange_userdata = userdata;
 }
+
+void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, int, uint8_t, void *),
+        void *userdata)
+{
+    m->friend_connectionstatuschange_internal = function;
+    m->friend_connectionstatuschange_internal_userdata = userdata;
+}
+
 static void break_files(Messenger *m, int friendnumber);
 static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_t status)
 {
@@ -739,6 +747,10 @@ static void check_friend_connectionstatus(Messenger *m, int friendnumber, uint8_
 
         if (m->friend_connectionstatuschange)
             m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
+
+        if (m->friend_connectionstatuschange_internal)
+            m->friend_connectionstatuschange_internal(m, friendnumber, is_online,
+                    m->friend_connectionstatuschange_internal_userdata);
     }
 }
 
