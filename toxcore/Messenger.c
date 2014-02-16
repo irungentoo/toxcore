@@ -268,6 +268,7 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
             m->friendlist[i].statusmessage = calloc(1, 1);
             m->friendlist[i].statusmessage_length = 1;
             m->friendlist[i].userstatus = USERSTATUS_NONE;
+            m->friendlist[i].is_typing = 0;
             memcpy(m->friendlist[i].info, data, length);
             m->friendlist[i].info_size = length;
             m->friendlist[i].message_id = 0;
@@ -315,6 +316,7 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
             m->friendlist[i].statusmessage = calloc(1, 1);
             m->friendlist[i].statusmessage_length = 1;
             m->friendlist[i].userstatus = USERSTATUS_NONE;
+            m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
 
@@ -615,6 +617,29 @@ USERSTATUS m_get_self_userstatus(Messenger *m)
     return m->userstatus;
 }
 
+int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing)
+{
+    if (is_typing != 0 || is_typing != 1) {
+        return -1;
+    }
+    
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+    
+    m->friendlist[friendnumber].user_istyping = is_typing;
+    m->friendlist[friendnumber].user_istyping_sent = 0;
+    
+    return 0;
+}
+
+uint8_t m_get_istyping(Messenger *m, int friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+    
+    return m->friendlist[friendnumber].is_typing;
+}
+
 static int send_statusmessage(Messenger *m, int friendnumber, uint8_t *status, uint16_t length)
 {
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_STATUSMESSAGE, status, length);
@@ -624,6 +649,12 @@ static int send_userstatus(Messenger *m, int friendnumber, USERSTATUS status)
 {
     uint8_t stat = status;
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &stat, sizeof(stat));
+}
+
+static int send_user_istyping(Messenger *m, int friendnumber, uint8_t is_typing)
+{
+    uint8_t typing = is_typing;
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing));
 }
 
 static int send_ping(Messenger *m, int friendnumber)
@@ -652,6 +683,11 @@ static int set_friend_statusmessage(Messenger *m, int friendnumber, uint8_t *sta
 static void set_friend_userstatus(Messenger *m, int friendnumber, USERSTATUS status)
 {
     m->friendlist[friendnumber].userstatus = status;
+}
+
+static void set_friend_typing(Messenger *m, int friendnumber, uint8_t is_typing)
+{
+    m->friendlist[friendnumber].is_typing = is_typing;
 }
 
 /* Sets whether we send read receipts for friendnumber. */
@@ -705,6 +741,12 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USE
 {
     m->friend_userstatuschange = function;
     m->friend_userstatuschange_userdata = userdata;
+}
+
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, int, uint8_t, void *), void *userdata)
+{
+    m->friend_typingchange = function;
+    m->friend_typingchange_userdata = userdata;
 }
 
 void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void *), void *userdata)
@@ -1821,6 +1863,11 @@ void do_friends(Messenger *m)
                 if (send_userstatus(m, i, m->userstatus))
                     m->friendlist[i].userstatus_sent = 1;
             }
+            
+            if (m->friendlist[i].user_istyping_sent == 0) {
+                if (send_user_istyping(m, i, m->friendlist[i].user_istyping))
+                    m->friendlist[i].user_istyping_sent = 1;
+            }
 
             if (m->friendlist[i].ping_lastsent + FRIEND_PING_INTERVAL < temp_time) {
                 send_ping(m, i);
@@ -1881,6 +1928,19 @@ void do_friends(Messenger *m)
 
                         set_friend_userstatus(m, i, status);
                         break;
+                    }
+                        
+                    case PACKET_ID_TYPING: {
+                        if (data_length != 1)
+                            break;
+                        
+                        uint8_t typing = data[0];
+                        
+                        if (m->friend_typingchange)
+                            m->friend_typingchange(m, i, typing, m->friend_typingchange_userdata);
+                        
+                            set_friend_typing(m, i, typing);
+                            break;
                     }
 
                     case PACKET_ID_MESSAGE: {

@@ -42,6 +42,7 @@
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
+#define PACKET_ID_TYPING 51
 #define PACKET_ID_RECEIPT 65
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 63
@@ -145,6 +146,9 @@ typedef struct {
     uint8_t statusmessage_sent;
     USERSTATUS userstatus;
     uint8_t userstatus_sent;
+    uint8_t user_istyping;
+    uint8_t user_istyping_sent;
+    uint8_t is_typing;
     uint16_t info_size; // Length of the info.
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint8_t receives_read_receipts; // shall we send read receipts to this person?
@@ -204,6 +208,8 @@ typedef struct Messenger {
     void *friend_statusmessagechange_userdata;
     void (*friend_userstatuschange)(struct Messenger *m, int, USERSTATUS, void *);
     void *friend_userstatuschange_userdata;
+    void (*friend_typingchange)(struct Messenger *m, int, uint8_t, void *);
+    void *friend_typingchange_userdata;
     void (*read_receipt)(struct Messenger *m, int, uint32_t, void *);
     void *read_receipt_userdata;
     void (*friend_statuschange)(struct Messenger *m, int, uint8_t, void *);
@@ -398,6 +404,21 @@ int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen);
 USERSTATUS m_get_userstatus(Messenger *m, int friendnumber);
 USERSTATUS m_get_self_userstatus(Messenger *m);
 
+/* Set our typing status for a friend.
+ * You are responsible for turning it on or off.
+ *
+ * returns 0 on success.
+ * returns -1 on failure.
+ */
+int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing);
+
+/* Get the typing status of a friend.
+ *
+ * returns 0 if friend is not typing.
+ * returns -1 if friend is typing.
+ */
+uint8_t m_get_istyping(Messenger *m, int friendnumber);
+
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).
  */
@@ -438,6 +459,11 @@ void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int, 
  *  Function(int friendnumber, USERSTATUS kind)
  */
 void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int, USERSTATUS, void *), void *userdata);
+
+/* Set the callback for typing changes.
+ *  Function(int friendnumber, uint8_t is_typing)
+ */
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, int, uint8_t, void *), void *userdata);
 
 /* Set the callback for read receipts.
  *  Function(int friendnumber, uint32_t receipt)

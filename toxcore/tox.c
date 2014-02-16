@@ -270,6 +270,29 @@ TOX_USERSTATUS tox_get_self_user_status(Tox *tox)
     return (TOX_USERSTATUS)m_get_self_userstatus(m);
 }
 
+/* Set our typing status for a friend.
+ * You are responsible for turning it on or off.
+ *
+ * returns 0 on success.
+ * returns -1 on failure.
+ */
+int tox_set_user_is_typing(Tox *tox, int friendnumber, uint8_t is_typing)
+{
+    Messenger *m = tox;
+    return (int)m_set_usertyping(m, friendnumber, is_typing);
+}
+
+/* Get the typing status of a friend.
+ *
+ * returns 0 if friend is not typing.
+ * returns -1 if friend is typing.
+ */
+int tox_get_is_typing(Tox *tox, int friendnumber)
+{
+    Messenger *m = tox;
+    return (int)m_get_istyping(m, friendnumber);
+}
+
 
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).
@@ -368,6 +391,17 @@ void tox_callback_user_status(Tox *tox, void (*_function)(Tox *tox, int, TOX_USE
     typedef void (*function_type)(Messenger *, int, USERSTATUS, void *);
     function_type function = (function_type)_function;
     m_callback_userstatus(m, function, userdata);
+}
+
+/* Set the callback for typing changes.
+ *  function (int friendnumber, uint8_t is_typing)
+ */
+void tox_callback_typing_change(Tox *tox, void (*function)(Tox *tox, int, uint8_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    typedef void (*function_type)(Messenger *, int, uint8_t, void *);
+    function_type function_new = (function_type)function;
+    m_callback_typingchange(m, function_new, userdata);
 }
 
 /* Set the callback for read receipts.
