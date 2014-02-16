@@ -425,22 +425,23 @@ static uint8_t candidates_create_internal(Assoc *assoc, hash_t hash, uint8_t *id
          * 1. seen bad, heard good
          * 2. seen good
          * 3. used */
+	// enumerated lists are superior to magic numbers
         if (!is_timeout(entry->used_at, BAD_NODE_TIMEOUT))
-            check = 3;
+            check = USED;
 
         if (!is_timeout(entry->seen_at, CANDIDATES_SEEN_TIMEOUT))
-            check = 2;
+            check = SEENG;
         else if (!is_timeout(entry->heard_at, CANDIDATES_HEARD_TIMEOUT))
-            check = 1;
+            check = SEENB_HEARDG;
         else
-            check = 0;
+            check = BAD;
 
         if (!pos_check[check])
             pos_check[check] = pos + 1;
     }
 
     /* used > seen > heard > bad */
-    size_t i, pos_max = used ? 3 : (seen ? 2 : 1);
+    size_t i, pos_max = used ? USED : (seen ? SEENG : SEENB_HEARDG);
 
     for (i = 0; i < pos_max; i++)
         if (pos_check[i]) {
