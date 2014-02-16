@@ -174,6 +174,11 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, uint8_t *publ
     if (num == 0) {
         list_nodes = onion_c->clients_announce_list;
         reference_id = onion_c->dht->c->self_public_key;
+
+        if (is_stored && memcmp(pingid_or_key, onion_c->temp_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+            is_stored = 0;
+        }
+
     } else {
         list_nodes = onion_c->friends_list[num - 1].clients_list;
         reference_id = onion_c->friends_list[num - 1].real_client_id;
