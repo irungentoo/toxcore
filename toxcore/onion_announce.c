@@ -207,7 +207,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, uint8_t 
 
     memcpy(cmp_public_key, onion_a->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     qsort(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, sizeof(Onion_Announce_Entry), cmp_entry);
-    return pos;
+    return in_entries(onion_a, public_key);
 }
 
 static int handle_announce_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
