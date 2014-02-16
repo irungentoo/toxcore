@@ -251,6 +251,22 @@ static int addpeer(Group_Chat *chat, uint8_t *client_id)
 }
 
 /*
+ * Set a peer from the group chat to deleted.
+ *
+ * return 0 if success
+ * return -1 if error.
+ */
+static int del_peer_set(Group_Chat *chat, int peernum)
+{
+    if ((uint32_t)peernum >= chat->numpeers)
+        return -1;
+
+    chat->group[peernum].deleted = 1;
+    chat->group[peernum].deleted_time = unix_time();
+    return 0;
+}
+
+/*
  * Delete a peer from the group chat.
  *
  * return 0 if success
@@ -488,6 +504,9 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     if (peernum == -1)
         return 1;
 
+    if (chat->group[peernum].deleted)
+        return 1;
+
     /* Spam prevention (1 message per peer per second limit.)
 
         if (chat->group[peernum].last_recv == temp_time)
@@ -531,7 +550,7 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
             if (contents_len != 0)
                 return 1;
 
-            delpeer(chat, peernum);
+            del_peer_set(chat, peernum);
             break;
 
         case GROUP_CHAT_PEER_NICK:
@@ -758,6 +777,7 @@ static void ping_group(Group_Chat *chat)
     }
 }
 
+#define DEL_PEER_DELAY 3
 static void del_dead_peers(Group_Chat *chat)
 {
     uint32_t i;
@@ -765,6 +785,11 @@ static void del_dead_peers(Group_Chat *chat)
     for (i = 0; i < chat->numpeers; ++i) {
         if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL * 4)) {
             delpeer(chat, i);
+        }
+
+        if (chat->group[i].deleted) {
+            if (is_timeout(chat->group[i].deleted_time, DEL_PEER_DELAY))
+                delpeer(chat, i);
         }
     }
 }
