@@ -798,7 +798,7 @@ static void del_dead_peers(Group_Chat *chat)
 static void send_names_new_peer(Group_Chat *chat)
 {
     group_send_nick(chat, chat->nick, chat->nick_len);
-    chat->last_sent_nick = (unix_time() - NICK_SEND_INTERVAL) + 10;
+    chat->last_sent_nick = (unix_time() - NICK_SEND_INTERVAL) + 15;
 }
 static void send_names(Group_Chat *chat)
 {
