@@ -1,7 +1,7 @@
 #Install Instructions
 
 - [Installation](#installation)
-    - [Unix like (Linux)](#unix)
+    - [Unix like](#unix)
     - [OS X](#osx)
       - [Homebrew](#homebrew)
       - [Non-Homebrew](#non-homebrew)
@@ -11,7 +11,7 @@
 ##Installation
 
 <a name="unix" />
-###Most Unix like OSes (Linux):
+###Most Unix like OSes:
 
 Build dependencies:
 
