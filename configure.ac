@@ -370,7 +370,16 @@ fi
 
 if test "x$BUILD_AV" = "xyes"; then
     PKG_CHECK_MODULES([AVUTIL], [libavutil],
-        [],
+        [
+            # Debian Wheezy only has an early libavutil which doesn't have av_calloc
+            CFLAGS_SAVE="$CFLAGS"
+            LDLAGS_SAVE="$LDLAGS"
+            CFLAGS="$AVUTIL_CFLAGS"
+            LDFLAGS="$AVUTIL_LIBS"
+            AC_CHECK_FUNCS(av_calloc, AC_DEFINE([HAVE_AV_CALLOC],[],[av_calloc is present in -lavutil]))
+            CFLAGS="$CFLAGS_SAVE"
+            LDLAGS="$LDLAGS_SAVE"
+        ],
         [
             AC_MSG_WARN([disabling AV support $AVUTIL_PKG_ERRORS])
             BUILD_AV="no"
