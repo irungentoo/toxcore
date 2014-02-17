@@ -21,10 +21,10 @@ Lossless UDP:
 
 [IN PROGRESS] Audio/Video
     [DONE] encoding/streaming/decoding
-    [IN PROGRESS] Call initiation
-    [IN PROGRESS] Encryption
+    [DONE] Call initiation
+    [DONE] Encryption
     [IN PROGRESS] Auditing.
-    [NOT STARTED] Small group chats
+    [NOT STARTED] Group chats
 
 Friend_requests.c:
     [NOT STARTED] What happens when a friend request is received needs to be changed.
