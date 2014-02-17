@@ -619,7 +619,7 @@ USERSTATUS m_get_self_userstatus(Messenger *m)
 
 int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing)
 {
-    if (is_typing != 0 || is_typing != 1) {
+    if (is_typing != 0 && is_typing != 1) {
         return -1;
     }
     
