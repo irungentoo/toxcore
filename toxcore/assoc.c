@@ -425,7 +425,7 @@ static uint8_t candidates_create_internal(Assoc *assoc, hash_t hash, uint8_t *id
          * 1. seen bad, heard good
          * 2. seen good
          * 3. used */
-	// enumerated lists are superior to magic numbers
+        // enumerated lists are superior to magic numbers
         if (!is_timeout(entry->used_at, BAD_NODE_TIMEOUT))
             check = USED;
 
