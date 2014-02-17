@@ -415,7 +415,7 @@ int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing);
 /* Get the typing status of a friend.
  *
  * returns 0 if friend is not typing.
- * returns -1 if friend is typing.
+ * returns 1 if friend is typing.
  */
 uint8_t m_get_istyping(Messenger *m, int friendnumber);
 

@@ -285,7 +285,7 @@ int tox_set_user_is_typing(Tox *tox, int friendnumber, uint8_t is_typing)
 /* Get the typing status of a friend.
  *
  * returns 0 if friend is not typing.
- * returns -1 if friend is typing.
+ * returns 1 if friend is typing.
  */
 int tox_get_is_typing(Tox *tox, int friendnumber)
 {
