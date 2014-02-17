@@ -1,5 +1,5 @@
 /**  event.h
- * 
+ *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
@@ -17,7 +17,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- * 
+ *
  *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
@@ -36,13 +36,12 @@
  * - Timeout is measured in milliseconds.
  *
  * NOTE: timer_reset () and timer_now() are not tested nor usable atm
- * 
+ *
  */
-extern struct _Event
-{
-    int (*rise) (void* ( func ) ( void* ), void* arg);
+extern struct _Event {
+    int (*rise) (void * ( func ) ( void * ), void *arg);
     int (*timer_reset ) ( int id, unsigned timeout );
-    int (*timer_alloc) (void* ( func ) ( void* ), void* arg, unsigned timeout);
+    int (*timer_alloc) (void * ( func ) ( void * ), void *arg, unsigned timeout);
     int (*timer_release) (int id);
     int (*timer_now) ( int id );
 } event;

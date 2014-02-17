@@ -1,5 +1,5 @@
 /**  media.c
- * 
+ *
  *   Audio and video codec intitialization, encoding/decoding and playback
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
@@ -50,8 +50,8 @@ struct jitter_buffer {
 struct jitter_buffer *create_queue(int capacity)
 {
     struct jitter_buffer *q;
-    q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer),1);
-    q->queue = (RTPMessage **)calloc(sizeof(RTPMessage*), capacity);
+    q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer), 1);
+    q->queue = (RTPMessage **)calloc(sizeof(RTPMessage *), capacity);
     int i = 0;
 
     for (i = 0; i < capacity; ++i) {
@@ -200,7 +200,8 @@ int queue(struct jitter_buffer *q, RTPMessage *pk)
 
 int init_video_decoder(CodecState *cs)
 {
-    if (vpx_codec_dec_init_ver(&cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0, VPX_DECODER_ABI_VERSION) != VPX_CODEC_OK) {
+    if (vpx_codec_dec_init_ver(&cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0,
+                               VPX_DECODER_ABI_VERSION) != VPX_CODEC_OK) {
         fprintf(stderr, "Init video_decoder failed!\n");
         return -1;
     }
@@ -211,13 +212,13 @@ int init_video_decoder(CodecState *cs)
 int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
 {
     int rc;
-    cs->audio_decoder = opus_decoder_create(cs->audio_sample_rate, audio_channels, &rc );    
-    
-    if ( rc != OPUS_OK ){
+    cs->audio_decoder = opus_decoder_create(cs->audio_sample_rate, audio_channels, &rc );
+
+    if ( rc != OPUS_OK ) {
         fprintf(stderr, "Error while starting audio decoder!\n");
         return -1;
-    }    
-    
+    }
+
     return 0;
 }
 
@@ -226,18 +227,22 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
 {
     vpx_codec_enc_cfg_t  cfg;
     int res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
-    if(res) {
+
+    if (res) {
         printf("Failed to get config: %s\n", vpx_codec_err_to_string(res));
         return -1;
     }
-    
+
     cfg.rc_target_bitrate = video_bitrate;
     cfg.g_w = width;
     cfg.g_h = height;
-    if(vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, VPX_ENCODER_ABI_VERSION) != VPX_CODEC_OK) {
+
+    if (vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0,
+                               VPX_ENCODER_ABI_VERSION) != VPX_CODEC_OK) {
         fprintf(stderr, "Failed to initialize encoder\n");
         return -1;
     }
+
     return 0;
 }
 
@@ -247,57 +252,57 @@ int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
     cs->audio_encoder = opus_encoder_create(cs->audio_sample_rate, audio_channels, OPUS_APPLICATION_AUDIO, &err);
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_bitrate));
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
-    
-    
+
+
     return err == OPUS_OK ? 0 : -1;
 }
 
 
-CodecState* codec_init_session ( uint32_t audio_bitrate, 
-                                 uint16_t audio_frame_duration, 
-                                 uint32_t audio_sample_rate, 
-                                 uint32_t audio_channels, 
+CodecState *codec_init_session ( uint32_t audio_bitrate,
+                                 uint16_t audio_frame_duration,
+                                 uint32_t audio_sample_rate,
+                                 uint32_t audio_channels,
                                  uint16_t video_width,
                                  uint16_t video_height,
                                  uint32_t video_bitrate )
 {
-    CodecState* _retu = calloc(sizeof(CodecState), 1);
+    CodecState *_retu = calloc(sizeof(CodecState), 1);
     assert(_retu);
 
     _retu->audio_bitrate = audio_bitrate;
     _retu->audio_sample_rate = audio_sample_rate;
-    
+
     /* Encoders */
     if (!video_width || !video_height) {
         video_width = 320;
         video_height = 240;
     }
-        
-    if ( 0 == init_video_encoder(_retu, video_width, video_height, video_bitrate) ) 
+
+    if ( 0 == init_video_encoder(_retu, video_width, video_height, video_bitrate) )
         printf("Video encoder initialized!\n");
-    
-    if ( 0 == init_audio_encoder(_retu, audio_channels) ) 
+
+    if ( 0 == init_audio_encoder(_retu, audio_channels) )
         printf("Audio encoder initialized!\n");
-    
-    
+
+
     /* Decoders */
     if ( 0 == init_video_decoder(_retu) )
         printf("Video decoder initialized!\n");
-    
+
     if ( 0 == init_audio_decoder(_retu, audio_channels) )
         printf("Audio decoder initialized!\n");
-    
-        
+
+
     return _retu;
 }
 
-void codec_terminate_session ( CodecState* cs ) 
+void codec_terminate_session ( CodecState *cs )
 {
     if ( cs->audio_encoder ) {
         opus_encoder_destroy(cs->audio_encoder);
         printf("Terminated encoder!\n");
     }
-    
+
     if ( cs->audio_decoder ) {
         opus_decoder_destroy(cs->audio_decoder);
         printf("Terminated decoder!\n");

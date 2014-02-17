@@ -1,5 +1,5 @@
 /**  media.h
- * 
+ *
  *   Audio and video codec intitialization, encoding/decoding and playback
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
@@ -39,7 +39,7 @@
 #include <opus/opus.h>
 
 
-typedef struct _CodecState{
+typedef struct _CodecState {
 
     /* video encoding */
     vpx_codec_ctx_t  v_encoder;
@@ -67,14 +67,14 @@ int queue(struct jitter_buffer *q, RTPMessage *pk);
 RTPMessage *dequeue(struct jitter_buffer *q, int *success);
 
 
-CodecState* codec_init_session ( uint32_t audio_bitrate, 
-                                 uint16_t audio_frame_duration, 
-                                 uint32_t audio_sample_rate, 
-                                 uint32_t audio_channels, 
+CodecState *codec_init_session ( uint32_t audio_bitrate,
+                                 uint16_t audio_frame_duration,
+                                 uint32_t audio_sample_rate,
+                                 uint32_t audio_channels,
                                  uint16_t video_width,
                                  uint16_t video_height,
                                  uint32_t video_bitrate );
 
-void codec_terminate_session(CodecState* cs);
+void codec_terminate_session(CodecState *cs);
 
 #endif

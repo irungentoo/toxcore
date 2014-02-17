@@ -1,5 +1,5 @@
 /**  toxmsi.c
- * 
+ *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
@@ -17,7 +17,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- * 
+ *
  *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
@@ -46,7 +46,7 @@
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2
 
-unsigned char* VERSION_STRING = (unsigned char*)"0.3.1";
+unsigned char *VERSION_STRING = (unsigned char *)"0.3.1";
 #define VERSION_STRLEN 5
 
 #define CT_AUDIO_HEADER_VALUE "AUDIO"
@@ -95,10 +95,10 @@ GENERIC_HEADER ( Nonce )
 /**
  * @brief This is the message structure. It contains all of the headers and
  *        destination/source of the message stored in friend_id.
- * 
+ *
  */
 typedef struct _MSIMessage {
-    
+
     MSIHeaderVersion   version;
     MSIHeaderRequest   request;
     MSIHeaderResponse  response;
@@ -109,11 +109,11 @@ typedef struct _MSIMessage {
     MSIHeaderCallId    callid;
     MSIHeaderCryptoKey cryptokey;
     MSIHeaderNonce     nonce;
-    
-    struct _MSIMessage* next;
-    
-    int friend_id; 
-    
+
+    struct _MSIMessage *next;
+
+    int friend_id;
+
 } MSIMessage;
 
 
@@ -145,23 +145,24 @@ typedef enum {
     cancel,
     reject,
     end,
-    
+
 } MSIRequest;
 
 
 /**
  * @brief Get string value for request.
- * 
+ *
  * @param request The request.
  * @return const uint8_t* The string
  */
-static inline const uint8_t *stringify_request ( MSIRequest request ) {
-    static const uint8_t* strings[] = {
-        ( uint8_t* ) "INVITE",
-        ( uint8_t* ) "START",
-        ( uint8_t* ) "CANCEL",
-        ( uint8_t* ) "REJECT",
-        ( uint8_t* ) "END"
+static inline const uint8_t *stringify_request ( MSIRequest request )
+{
+    static const uint8_t *strings[] = {
+        ( uint8_t * ) "INVITE",
+        ( uint8_t * ) "START",
+        ( uint8_t * ) "CANCEL",
+        ( uint8_t * ) "REJECT",
+        ( uint8_t * ) "END"
     };
 
     return strings[request];
@@ -179,16 +180,17 @@ typedef enum {
 
 /**
  * @brief Get string value for response.
- * 
+ *
  * @param response The response.
  * @return const uint8_t* The string
  */
-static inline const uint8_t *stringify_response ( MSIResponse response ) {
-    static const uint8_t* strings[] = {
-        ( uint8_t* ) "ringing",
-        ( uint8_t* ) "starting",
-        ( uint8_t* ) "ending",
-        ( uint8_t* ) "error"
+static inline const uint8_t *stringify_response ( MSIResponse response )
+{
+    static const uint8_t *strings[] = {
+        ( uint8_t * ) "ringing",
+        ( uint8_t * ) "starting",
+        ( uint8_t * ) "ending",
+        ( uint8_t * ) "error"
     };
 
     return strings[response];
@@ -212,78 +214,80 @@ static inline const uint8_t *stringify_response ( MSIResponse response ) {
  * @brief Parse raw 'data' received from socket into MSIMessage struct.
  *        Every message has to have end value of 'end_byte' or _undefined_ behavior
  *        occures. The best practice is to check the end of the message at the handle_packet.
- * 
+ *
  * @param msg Container.
  * @param data The data.
  * @return int
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int parse_raw_data ( MSIMessage* msg, const uint8_t* data, uint16_t length ) {
+int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
+{
     assert ( msg );
 
     if ( data[length - 1] ) /* End byte must have value 0 */
         return -1;
-    
-    const uint8_t* _it = data;
+
+    const uint8_t *_it = data;
 
     while ( *_it ) {/* until end_byte is hit */
-        
+
         uint16_t itedlen = (_it - data) + 2;
-        
+
         if ( *_it == field_byte && itedlen < length ) {
-            
+
             uint16_t _size = ( uint16_t ) * ( _it + 1 ) << 8 |
                              ( uint16_t ) * ( _it + 2 );
 
             if ( itedlen + _size > length ) return -1;
-            
+
             _it += 3; /* place it at the field value beginning */
 
             switch ( _size ) { /* Compare the size of the hardcoded values ( vary fast and convenient ) */
 
-            case 4: { /* INFO header */
-                if ON_HEADER ( _it, msg->info, INFO_FIELD, 4 )
-                }
-            break;
-
-            case 5: { /* NONCE header */
-                if ON_HEADER ( _it, msg->nonce, NONCE_FIELD, 5 )
-                }
-            break;
-
-            case 6: { /* Reason header */
-                if ON_HEADER ( _it, msg->reason, REASON_FIELD, 6 )
-                }
-            break;
-
-            case 7: { /* Version, Request, Call-id headers */
-                if ON_HEADER ( _it, msg->version, VERSION_FIELD, 7 )
-                    else if ON_HEADER ( _it, msg->request, REQUEST_FIELD, 7 )
-                        else if ON_HEADER ( _it, msg->callid, CALLID_FIELD, 7 )
-                        }
-            break;
-
-            case 8: { /* Response header */
-                if ON_HEADER ( _it, msg->response, RESPONSE_FIELD, 8 )
-                }
-            break;
-
-            case 9: { /* Call-type header */
-                if ON_HEADER ( _it, msg->calltype, CALLTYPE_FIELD, 9 )
-                }
-            break;
-
-            case 10: { /* User-agent, Crypto-key headers */
-                if ON_HEADER ( _it, msg->useragent, USERAGENT_FIELD, 10 )
-                    else if ON_HEADER ( _it, msg->cryptokey, CRYPTOKEY_FIELD, 10 )
+                case 4: { /* INFO header */
+                    if ON_HEADER ( _it, msg->info, INFO_FIELD, 4 )
                     }
-            break;
+                break;
 
-            default:
-                return -1;
+                case 5: { /* NONCE header */
+                    if ON_HEADER ( _it, msg->nonce, NONCE_FIELD, 5 )
+                    }
+                break;
+
+                case 6: { /* Reason header */
+                    if ON_HEADER ( _it, msg->reason, REASON_FIELD, 6 )
+                    }
+                break;
+
+                case 7: { /* Version, Request, Call-id headers */
+                    if ON_HEADER ( _it, msg->version, VERSION_FIELD, 7 )
+                        else if ON_HEADER ( _it, msg->request, REQUEST_FIELD, 7 )
+                            else if ON_HEADER ( _it, msg->callid, CALLID_FIELD, 7 )
+                            }
+                break;
+
+                case 8: { /* Response header */
+                    if ON_HEADER ( _it, msg->response, RESPONSE_FIELD, 8 )
+                    }
+                break;
+
+                case 9: { /* Call-type header */
+                    if ON_HEADER ( _it, msg->calltype, CALLTYPE_FIELD, 9 )
+                    }
+                break;
+
+                case 10: { /* User-agent, Crypto-key headers */
+                    if ON_HEADER ( _it, msg->useragent, USERAGENT_FIELD, 10 )
+                        else if ON_HEADER ( _it, msg->cryptokey, CRYPTOKEY_FIELD, 10 )
+                        }
+                break;
+
+                default:
+                    return -1;
             }
         } else return -1;
+
         /* If it's anything else return failure as the message is invalid */
 
     }
@@ -300,11 +304,12 @@ var.size = t_size;
 
 /**
  * @brief Speaks for it self.
- * 
+ *
  * @param msg The message.
  * @return void
  */
-void free_message ( MSIMessage* msg ) {
+void free_message ( MSIMessage *msg )
+{
     assert ( msg );
 
     free ( msg->calltype.header_value );
@@ -323,29 +328,30 @@ void free_message ( MSIMessage* msg ) {
 
 
 /**
- * @brief Create the message. 
- * 
+ * @brief Create the message.
+ *
  * @param type Request or response.
  * @param type_id Type of request/response.
  * @return MSIMessage* Created message.
  * @retval NULL Error occured.
  */
-MSIMessage* msi_new_message ( uint8_t type, const uint8_t* type_id ) {
-    MSIMessage* _retu = calloc ( sizeof ( MSIMessage ), 1 );
+MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
+{
+    MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
     assert ( _retu );
 
     if ( type == TYPE_REQUEST ) {
-        ALLOCATE_HEADER ( _retu->request, type_id, strlen ( (const char*)type_id ) )
+        ALLOCATE_HEADER ( _retu->request, type_id, strlen ( (const char *)type_id ) )
 
     } else if ( type == TYPE_RESPONSE ) {
-        ALLOCATE_HEADER ( _retu->response, type_id, strlen ( (const char*)type_id ) )
+        ALLOCATE_HEADER ( _retu->response, type_id, strlen ( (const char *)type_id ) )
 
     } else {
         free_message ( _retu );
         return NULL;
     }
 
-    ALLOCATE_HEADER ( _retu->version, VERSION_STRING, strlen ( (const char*)VERSION_STRING ) )
+    ALLOCATE_HEADER ( _retu->version, VERSION_STRING, strlen ( (const char *)VERSION_STRING ) )
 
     return _retu;
 }
@@ -353,15 +359,16 @@ MSIMessage* msi_new_message ( uint8_t type, const uint8_t* type_id ) {
 
 /**
  * @brief Parse data from handle_packet.
- * 
+ *
  * @param data The data.
  * @return MSIMessage* Parsed message.
  * @retval NULL Error occured.
  */
-MSIMessage* parse_message ( const uint8_t* data, uint16_t length ) {
+MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
+{
     assert ( data );
 
-    MSIMessage* _retu = calloc ( sizeof ( MSIMessage ), 1 );
+    MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
     assert ( _retu );
 
     memset ( _retu, 0, sizeof ( MSIMessage ) );
@@ -386,7 +393,7 @@ MSIMessage* parse_message ( const uint8_t* data, uint16_t length ) {
 
 /**
  * @brief Speaks for it self.
- * 
+ *
  * @param dest Container.
  * @param header_field Field.
  * @param header_value Field value.
@@ -394,45 +401,53 @@ MSIMessage* parse_message ( const uint8_t* data, uint16_t length ) {
  * @param length Pointer to container length.
  * @return uint8_t* Iterated container.
  */
-uint8_t* append_header_to_string (
-    uint8_t* dest,
-    const uint8_t* header_field,
-    const uint8_t* header_value,
+uint8_t *append_header_to_string (
+    uint8_t *dest,
+    const uint8_t *header_field,
+    const uint8_t *header_value,
     uint16_t value_len,
-    uint16_t* length ) 
+    uint16_t *length )
 {
     assert ( dest );
     assert ( header_value );
     assert ( header_field );
 
-    const uint8_t* _hvit = header_value;
+    const uint8_t *_hvit = header_value;
     uint16_t _total = 6 + value_len; /* 6 is known plus header value len + field len*/
 
     *dest = field_byte; /* Set the first byte */
 
-    uint8_t* _getback_byte = dest + 1; /* remeber the byte we were on */
+    uint8_t *_getback_byte = dest + 1; /* remeber the byte we were on */
     dest += 3; /* swith to 4th byte where field value starts */
 
     /* Now set the field value and calculate it's length */
     uint16_t _i = 0;
+
     for ( ; header_field[_i]; ++_i ) {
         *dest = header_field[_i];
         ++dest;
     };
+
     _total += _i;
 
     /* Now set the length of the field byte */
     *_getback_byte = ( uint8_t ) _i >> 8;
+
     _getback_byte++;
+
     *_getback_byte = ( uint8_t ) _i;
 
     /* for value part do it regulary */
     *dest = value_byte;
+
     dest++;
 
     *dest = ( uint8_t ) value_len >> 8;
+
     dest++;
+
     *dest = ( uint8_t ) value_len;
+
     dest++;
 
     for ( _i = value_len; _i; --_i ) {
@@ -452,16 +467,17 @@ if ( header.header_value ) { var = append_header_to_string(var, (const uint8_t*)
 
 /**
  * @brief Convert MSIMessage struct to _sendable_ string.
- * 
+ *
  * @param msg The message.
  * @param dest Destination.
  * @return uint16_t It's final size.
  */
-uint16_t message_to_string ( MSIMessage* msg, uint8_t* dest ) {
+uint16_t message_to_string ( MSIMessage *msg, uint8_t *dest )
+{
     assert ( msg );
     assert ( dest );
 
-    uint8_t* _iterated = dest;
+    uint8_t *_iterated = dest;
     uint16_t _size = 0;
 
     CLEAN_ASSIGN ( _size, _iterated, VERSION_FIELD, msg->version );
@@ -499,12 +515,13 @@ GENERIC_SETTER_DEFINITION ( nonce )
 
 /**
  * @brief Generate _random_ alphanumerical string.
- * 
+ *
  * @param str Destination.
  * @param size Size of string.
  * @return void
  */
-void t_randomstr ( uint8_t* str, size_t size ) {
+void t_randomstr ( uint8_t *str, size_t size )
+{
     assert ( str );
 
     static const uint8_t _bytes[] =
@@ -535,19 +552,20 @@ typedef enum {
 
 /**
  * @brief Stringify error code.
- * 
+ *
  * @param error_code The code.
  * @return const uint8_t* The string.
  */
-static inline const uint8_t *stringify_error ( MSICallError error_code ) {
-    static const uint8_t* strings[] = {
-        ( uint8_t* ) "",
-        ( uint8_t* ) "Using dead call",
-        ( uint8_t* ) "Call id not set to any call",
-        ( uint8_t* ) "Call id not available",
-        ( uint8_t* ) "No active call in session",
-        ( uint8_t* ) "No Crypto-key set",
-        ( uint8_t* ) "Callee busy"
+static inline const uint8_t *stringify_error ( MSICallError error_code )
+{
+    static const uint8_t *strings[] = {
+        ( uint8_t * ) "",
+        ( uint8_t * ) "Using dead call",
+        ( uint8_t * ) "Call id not set to any call",
+        ( uint8_t * ) "Call id not available",
+        ( uint8_t * ) "No active call in session",
+        ( uint8_t * ) "No Crypto-key set",
+        ( uint8_t * ) "Callee busy"
     };
 
     return strings[error_code];
@@ -556,19 +574,20 @@ static inline const uint8_t *stringify_error ( MSICallError error_code ) {
 
 /**
  * @brief Convert error_code into string.
- * 
+ *
  * @param error_code The code.
  * @return const uint8_t* The string.
  */
-static inline const uint8_t *stringify_error_code ( MSICallError error_code ) {
-    static const uint8_t* strings[] = {
-        ( uint8_t* ) "",
-        ( uint8_t* ) "1",
-        ( uint8_t* ) "2",
-        ( uint8_t* ) "3",
-        ( uint8_t* ) "4",
-        ( uint8_t* ) "5",
-        ( uint8_t* ) "6"
+static inline const uint8_t *stringify_error_code ( MSICallError error_code )
+{
+    static const uint8_t *strings[] = {
+        ( uint8_t * ) "",
+        ( uint8_t * ) "1",
+        ( uint8_t * ) "2",
+        ( uint8_t * ) "3",
+        ( uint8_t * ) "4",
+        ( uint8_t * ) "5",
+        ( uint8_t * ) "6"
     };
 
     return strings[error_code];
@@ -577,7 +596,7 @@ static inline const uint8_t *stringify_error_code ( MSICallError error_code ) {
 
 /**
  * @brief Speaks for it self.
- * 
+ *
  * @param session Control session.
  * @param msg The message.
  * @param to Where to.
@@ -585,73 +604,76 @@ static inline const uint8_t *stringify_error_code ( MSICallError error_code ) {
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int send_message ( MSISession* session, MSIMessage* msg, uint32_t to ) 
+int send_message ( MSISession *session, MSIMessage *msg, uint32_t to )
 {
     msi_msg_set_callid ( msg, session->call->id, CALL_ID_LEN );
-    
+
     uint8_t _msg_string_final [MSI_MAXMSG_SIZE];
     uint16_t _length = message_to_string ( msg, _msg_string_final );
-    
+
     return m_msi_packet(session->messenger_handle, to, _msg_string_final, _length) ? 0 : -1;
 }
 
 
 /**
  * @brief Speaks for it self.
- * 
+ *
  * @param session Control session.
  * @param msg The message.
  * @param peer_id The peer.
  * @return void
  */
-void flush_peer_type ( MSISession* session, MSIMessage* msg, int peer_id ) {
+void flush_peer_type ( MSISession *session, MSIMessage *msg, int peer_id )
+{
     if ( msg->calltype.header_value ) {
-        if ( strcmp ( ( const char* ) msg->calltype.header_value, CT_AUDIO_HEADER_VALUE ) == 0 ) {
+        if ( strcmp ( ( const char * ) msg->calltype.header_value, CT_AUDIO_HEADER_VALUE ) == 0 ) {
             session->call->type_peer[peer_id] = type_audio;
 
-        } else if ( strcmp ( ( const char* ) msg->calltype.header_value, CT_VIDEO_HEADER_VALUE ) == 0 ) {
+        } else if ( strcmp ( ( const char * ) msg->calltype.header_value, CT_VIDEO_HEADER_VALUE ) == 0 ) {
             session->call->type_peer[peer_id] = type_video;
         } else {} /* Error */
     } else {} /* Error */
 }
 
-void handle_remote_connection_change(Messenger* messenger, int friend_num, uint8_t status, void* session_p)
+void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8_t status, void *session_p)
 {
-    MSISession* session = session_p;
-    
-    switch ( status )
-    {
-        case 0: /* Went offline */
-        {
+    MSISession *session = session_p;
+
+    switch ( status ) {
+        case 0: { /* Went offline */
             if ( session->call ) {
                 int i = 0;
-                for ( ; i < session->call->peer_count; i ++ ) 
+
+                for ( ; i < session->call->peer_count; i ++ )
                     if ( session->call->peers[i] == friend_num ) {
-                        msi_stopcall(session); /* Stop the call for now */ 
+                        msi_stopcall(session); /* Stop the call for now */
                         return;
                     }
             }
-        } break;
-        
-        default: break;
+        }
+        break;
+
+        default:
+            break;
     }
 }
 
 /**
  * @brief Sends error response to peer.
- * 
+ *
  * @param session The session.
  * @param errid The id.
  * @param to Where to?
  * @return int
  * @retval 0 It's always success.
  */
-int handle_error ( MSISession* session, MSICallError errid, uint32_t to ) {
-    MSIMessage* _msg_error = msi_new_message ( TYPE_RESPONSE, stringify_response ( error ) );
+int handle_error ( MSISession *session, MSICallError errid, uint32_t to )
+{
+    MSIMessage *_msg_error = msi_new_message ( TYPE_RESPONSE, stringify_response ( error ) );
 
-    const uint8_t* _error_code_str = stringify_error_code ( errid );
+    const uint8_t *_error_code_str = stringify_error_code ( errid );
 
-    msi_msg_set_reason ( _msg_error, _error_code_str, strlen ( ( const char* ) _error_code_str ) );
+    msi_msg_set_reason ( _msg_error, _error_code_str, strlen ( ( const char * ) _error_code_str ) );
     send_message ( session, _msg_error, to );
     free_message ( _msg_error );
 
@@ -666,14 +688,15 @@ int handle_error ( MSISession* session, MSICallError errid, uint32_t to ) {
 
 /**
  * @brief Determine the error if any.
- * 
+ *
  * @param session Control session.
  * @param msg The message.
  * @return int
  * @retval -1 No error.
  * @retval 0 Error occured and response sent.
  */
-int has_call_error ( MSISession* session, MSIMessage* msg ) {
+int has_call_error ( MSISession *session, MSIMessage *msg )
+{
     if ( !msg->callid.header_value ) {
         return handle_error ( session, error_no_callid, msg->friend_id );
 
@@ -691,28 +714,29 @@ int has_call_error ( MSISession* session, MSIMessage* msg ) {
 
 /**
  * @brief Function called at request timeout.
- * 
+ *
  * @param arg Control session
  * @return void*
  */
-void* handle_timeout ( void* arg ) 
+void *handle_timeout ( void *arg )
 {
     /* Send hangup either way */
-    MSISession* _session = arg;
-    
+    MSISession *_session = arg;
+
     if ( _session && _session->call ) {
-        
-        uint32_t* _peers = _session->call->peers;
+
+        uint32_t *_peers = _session->call->peers;
         uint16_t  _peer_count = _session->call->peer_count;
-        
-        
+
+
         /* Cancel all? */
         uint16_t _it = 0;
+
         for ( ; _it < _peer_count; _it++ )
-            msi_cancel ( arg, _peers[_it], (const uint8_t*)"Timeout" );
-        
+            msi_cancel ( arg, _peers[_it], (const uint8_t *)"Timeout" );
+
     }
-    
+
     ( *callbacks[MSI_OnRequestTimeout] ) ( _session->agent_handler );
     ( *callbacks[MSI_OnEnding ] )        ( _session->agent_handler );
 
@@ -722,38 +746,39 @@ void* handle_timeout ( void* arg )
 
 /**
  * @brief Add peer to peer list.
- * 
+ *
  * @param call What call.
  * @param peer_id Its id.
  * @return void
  */
-void add_peer( MSICall* call, int peer_id )
+void add_peer( MSICall *call, int peer_id )
 {
     if ( !call->peers ) {
         call->peers = calloc(sizeof(int), 1);
         call->peer_count = 1;
-    } else{
+    } else {
         call->peer_count ++;
         call->peers = realloc( call->peers, sizeof(int) * call->peer_count);
-    }    
-    
+    }
+
     call->peers[call->peer_count - 1] = peer_id;
 }
 
 
 /**
  * @brief Speaks for it self.
- * 
+ *
  * @param session Control session.
  * @param peers Amount of peers. (Currently it only supports 1)
  * @param ringing_timeout Ringing timeout.
  * @return MSICall* The created call.
  */
-MSICall* init_call ( MSISession* session, int peers, int ringing_timeout ) {
+MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
+{
     assert ( session );
     assert ( peers );
 
-    MSICall* _call = calloc ( sizeof ( MSICall ), 1 );
+    MSICall *_call = calloc ( sizeof ( MSICall ), 1 );
     _call->type_peer = calloc ( sizeof ( MSICallType ), peers );
 
     assert ( _call );
@@ -779,13 +804,14 @@ MSICall* init_call ( MSISession* session, int peers, int ringing_timeout ) {
 
 /**
  * @brief Terminate the call.
- * 
+ *
  * @param session Control session.
  * @return int
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int terminate_call ( MSISession* session ) {
+int terminate_call ( MSISession *session )
+{
     assert ( session );
 
     if ( !session->call )
@@ -802,7 +828,7 @@ int terminate_call ( MSISession* session ) {
     /* Get a handle */
     pthread_mutex_lock ( &session->call->mutex );
 
-    MSICall* _call = session->call;
+    MSICall *_call = session->call;
     session->call = NULL;
 
     free ( _call->type_peer );
@@ -816,19 +842,21 @@ int terminate_call ( MSISession* session ) {
     pthread_mutex_destroy ( &_call->mutex );
 
     free ( _call );
-    
+
     return 0;
 }
 
 
 /********** Request handlers **********/
-int handle_recv_invite ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_invite ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( session->call ) {
         handle_error ( session, error_busy, msg->friend_id );
         return 0;
     }
+
     if ( !msg->callid.header_value ) {
         handle_error ( session, error_no_callid, msg->friend_id );
         return 0;
@@ -837,12 +865,12 @@ int handle_recv_invite ( MSISession* session, MSIMessage* msg ) {
     session->call = init_call ( session, 1, 0 );
     memcpy ( session->call->id, msg->callid.header_value, CALL_ID_LEN );
     session->call->state = call_starting;
-    
+
     add_peer( session->call, msg->friend_id);
-    
+
     flush_peer_type ( session, msg, 0 );
 
-    MSIMessage* _msg_ringing = msi_new_message ( TYPE_RESPONSE, stringify_response ( ringing ) );
+    MSIMessage *_msg_ringing = msi_new_message ( TYPE_RESPONSE, stringify_response ( ringing ) );
     send_message ( session, _msg_ringing, msg->friend_id );
     free_message ( _msg_ringing );
 
@@ -850,7 +878,8 @@ int handle_recv_invite ( MSISession* session, MSIMessage* msg ) {
 
     return 1;
 }
-int handle_recv_start ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_start ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( has_call_error ( session, msg ) == 0 )
@@ -873,14 +902,15 @@ int handle_recv_start ( MSISession* session, MSIMessage* msg ) {
 
     return 1;
 }
-int handle_recv_reject ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_reject ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( has_call_error ( session, msg ) == 0 )
         return 0;
 
 
-    MSIMessage* _msg_end = msi_new_message ( TYPE_REQUEST, stringify_request ( end ) );
+    MSIMessage *_msg_end = msi_new_message ( TYPE_REQUEST, stringify_request ( end ) );
     send_message ( session, _msg_end, msg->friend_id );
     free_message ( _msg_end );
 
@@ -890,7 +920,8 @@ int handle_recv_reject ( MSISession* session, MSIMessage* msg ) {
 
     return 1;
 }
-int handle_recv_cancel ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_cancel ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( has_call_error ( session, msg ) == 0 )
@@ -903,14 +934,15 @@ int handle_recv_cancel ( MSISession* session, MSIMessage* msg ) {
 
     return 1;
 }
-int handle_recv_end ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_end ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( has_call_error ( session, msg ) == 0 )
         return 0;
 
 
-    MSIMessage* _msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
+    MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
     send_message ( session, _msg_ending, msg->friend_id );
     free_message ( _msg_ending );
 
@@ -922,7 +954,8 @@ int handle_recv_end ( MSISession* session, MSIMessage* msg ) {
 }
 
 /********** Response handlers **********/
-int handle_recv_ringing ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_ringing ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( has_call_error ( session, msg ) == 0 )
@@ -933,7 +966,8 @@ int handle_recv_ringing ( MSISession* session, MSIMessage* msg ) {
 
     return 1;
 }
-int handle_recv_starting ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_starting ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( has_call_error ( session, msg ) == 0 )
@@ -959,7 +993,7 @@ int handle_recv_starting ( MSISession* session, MSIMessage* msg ) {
 
     session->call->state = call_active;
 
-    MSIMessage* _msg_start = msi_new_message ( TYPE_REQUEST, stringify_request ( start ) );
+    MSIMessage *_msg_start = msi_new_message ( TYPE_REQUEST, stringify_request ( start ) );
     msi_msg_set_cryptokey ( _msg_start, session->call->key_local, crypto_secretbox_KEYBYTES );
     msi_msg_set_nonce ( _msg_start, session->call->nonce_local, crypto_box_NONCEBYTES );
     send_message ( session, _msg_start, msg->friend_id );
@@ -972,7 +1006,8 @@ int handle_recv_starting ( MSISession* session, MSIMessage* msg ) {
 
     return 1;
 }
-int handle_recv_ending ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_ending ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
 
     if ( has_call_error ( session, msg ) == 0 )
@@ -985,13 +1020,14 @@ int handle_recv_ending ( MSISession* session, MSIMessage* msg ) {
 
     return 1;
 }
-int handle_recv_error ( MSISession* session, MSIMessage* msg ) {
+int handle_recv_error ( MSISession *session, MSIMessage *msg )
+{
     assert ( session );
     assert ( session->call );
 
     /* Handle error accordingly */
     if ( msg->reason.header_value ) {
-        session->last_error_id = atoi ( ( const char* ) msg->reason.header_value );
+        session->last_error_id = atoi ( ( const char * ) msg->reason.header_value );
         session->last_error_str = stringify_error ( session->last_error_id );
     }
 
@@ -1035,92 +1071,92 @@ int handle_recv_error ( MSISession* session, MSIMessage* msg ) {
  *
  *
  */
-void msi_handle_packet ( Messenger* messenger, int source, uint8_t* data, uint16_t length, void* object ) 
+void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16_t length, void *object )
 {
     /* Unused */
     (void)messenger;
-    
-    MSISession* _session = object;
-    MSIMessage* _msg;
-    
+
+    MSISession *_session = object;
+    MSIMessage *_msg;
+
     if ( !length ) return;
-    
+
     _msg = parse_message ( data, length );
-    
+
     if ( !_msg ) return;
-    
+
     _msg->friend_id = source;
-    
-    
+
+
     /* Now handle message */
-    
+
     if ( _msg->request.header_value ) { /* Handle request */
-        
-        const uint8_t* _request_value = _msg->request.header_value;
-        
+
+        const uint8_t *_request_value = _msg->request.header_value;
+
         if ( same ( _request_value, stringify_request ( invite ) ) ) {
             handle_recv_invite ( _session, _msg );
-            
+
         } else if ( same ( _request_value, stringify_request ( start ) ) ) {
             handle_recv_start ( _session, _msg );
-            
+
         } else if ( same ( _request_value, stringify_request ( cancel ) ) ) {
             handle_recv_cancel ( _session, _msg );
-            
+
         } else if ( same ( _request_value, stringify_request ( reject ) ) ) {
             handle_recv_reject ( _session, _msg );
-            
+
         } else if ( same ( _request_value, stringify_request ( end ) ) ) {
             handle_recv_end ( _session, _msg );
         }
-        
+
         else {
             free_message ( _msg );
             return;
         }
-        
+
     } else if ( _msg->response.header_value ) { /* Handle response */
-        
-        const uint8_t* _response_value = _msg->response.header_value;
-        
+
+        const uint8_t *_response_value = _msg->response.header_value;
+
         if ( same ( _response_value, stringify_response ( ringing ) ) ) {
             handle_recv_ringing ( _session, _msg );
-            
+
         } else if ( same ( _response_value, stringify_response ( starting ) ) ) {
             handle_recv_starting ( _session, _msg );
-            
+
         } else if ( same ( _response_value, stringify_response ( ending ) ) ) {
             handle_recv_ending ( _session, _msg );
-            
+
         } else if ( same ( _response_value, stringify_response ( error ) ) ) {
             handle_recv_error ( _session, _msg );
         } else {
             free_message ( _msg );
             return;
         }
-        
+
         /* Got response so cancel timer */
         if ( _session->call )
             event.timer_release ( _session->call->request_timer_id );
-        
+
     }
-    
+
     free_message ( _msg );
 }
 
 
-/********************************************************************************************************************  
+/********************************************************************************************************************
  * *******************************************************************************************************************
  ********************************************************************************************************************
  ********************************************************************************************************************
  ********************************************************************************************************************
- * 
- * 
- * 
+ *
+ *
+ *
  * PUBLIC API FUNCTIONS IMPLEMENTATIONS
- * 
- * 
- * 
+ *
+ *
+ *
  ********************************************************************************************************************
  ********************************************************************************************************************
  ********************************************************************************************************************
@@ -1136,12 +1172,12 @@ void msi_handle_packet ( Messenger* messenger, int source, uint8_t* data, uint16
 
 /**
  * @brief Callback setter.
- * 
+ *
  * @param callback The callback.
  * @param id The id.
  * @return void
  */
-void msi_register_callback ( MSICallback callback, MSICallbackID id ) 
+void msi_register_callback ( MSICallback callback, MSICallbackID id )
 {
     callbacks[id] = callback;
 }
@@ -1149,54 +1185,56 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id )
 
 /**
  * @brief Start the control session.
- * 
+ *
  * @param messenger Tox* object.
  * @param user_agent User agent, i.e. 'Venom'; 'QT-gui'
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession* msi_init_session ( Messenger* messenger, const uint8_t* ua_name ) {
+MSISession *msi_init_session ( Messenger *messenger, const uint8_t *ua_name )
+{
     assert ( messenger );
-    
-    MSISession* _retu = calloc ( sizeof ( MSISession ), 1 );
+
+    MSISession *_retu = calloc ( sizeof ( MSISession ), 1 );
     assert ( _retu );
-    
+
     _retu->ua_name = ua_name;
     _retu->messenger_handle = messenger;
     _retu->agent_handler = NULL;
-    
+
     _retu->call = NULL;
-    
+
     _retu->frequ = 10000; /* default value? */
     _retu->call_timeout = 30000; /* default value? */
-    
-    
+
+
     m_callback_msi_packet(messenger, msi_handle_packet, _retu );
-    
+
     /* This is called when remote terminates session */
     m_callback_connectionstatus_internal_av(messenger, handle_remote_connection_change, _retu);
-    
+
     return _retu;
 }
 
 
 /**
  * @brief Terminate control session.
- * 
+ *
  * @param session The session
  * @return int
  */
-int msi_terminate_session ( MSISession* session ) {
+int msi_terminate_session ( MSISession *session )
+{
     assert ( session );
-    
+
     int _status = 0;
-    
+
     terminate_call ( session );
-    m_callback_msi_packet((struct Messenger*) session->messenger_handle, NULL, NULL);
-    
-    
+    m_callback_msi_packet((struct Messenger *) session->messenger_handle, NULL, NULL);
+
+
     /* TODO: Clean it up more? */
-    
+
     free ( session );
     return _status;
 }
@@ -1204,32 +1242,33 @@ int msi_terminate_session ( MSISession* session ) {
 
 /**
  * @brief Send invite request to friend_id.
- * 
+ *
  * @param session Control session.
  * @param call_type Type of the call. Audio or Video(both audio and video)
  * @param rngsec Ringing timeout.
  * @param friend_id The friend.
  * @return int
  */
-int msi_invite ( MSISession* session, MSICallType call_type, uint32_t rngsec, uint32_t friend_id ) {
+int msi_invite ( MSISession *session, MSICallType call_type, uint32_t rngsec, uint32_t friend_id )
+{
     assert ( session );
 
-    MSIMessage* _msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
+    MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
 
     session->call = init_call ( session, 1, rngsec ); /* Just one for now */
     t_randomstr ( session->call->id, CALL_ID_LEN );
-    
+
     add_peer(session->call, friend_id );
-    
+
     session->call->type_local = call_type;
     /* Do whatever with message */
 
     if ( call_type == type_audio ) {
         msi_msg_set_calltype
-        ( _msg_invite, ( const uint8_t* ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
+        ( _msg_invite, ( const uint8_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
     } else {
         msi_msg_set_calltype
-        ( _msg_invite, ( const uint8_t* ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
+        ( _msg_invite, ( const uint8_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
     }
 
     send_message ( session, _msg_invite, friend_id );
@@ -1245,26 +1284,28 @@ int msi_invite ( MSISession* session, MSICallType call_type, uint32_t rngsec, ui
 
 /**
  * @brief Hangup active call.
- * 
+ *
  * @param session Control session.
- * @return int 
+ * @return int
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int msi_hangup ( MSISession* session ) {
+int msi_hangup ( MSISession *session )
+{
     assert ( session );
 
     if ( !session->call || session->call->state != call_active )
         return -1;
 
-    MSIMessage* _msg_ending = msi_new_message ( TYPE_REQUEST, stringify_request ( end ) );
-    
+    MSIMessage *_msg_ending = msi_new_message ( TYPE_REQUEST, stringify_request ( end ) );
+
     /* hangup for each peer */
     int _it = 0;
+
     for ( ; _it < session->call->peer_count; _it ++ )
         send_message ( session, _msg_ending, session->call->peers[_it] );
-    
-    
+
+
     free_message ( _msg_ending );
 
     session->call->request_timer_id = event.timer_alloc ( handle_timeout, session, m_deftout );
@@ -1275,23 +1316,24 @@ int msi_hangup ( MSISession* session ) {
 
 /**
  * @brief Answer active call request.
- * 
+ *
  * @param session Control session.
  * @param call_type Answer with Audio or Video(both).
  * @return int
  */
-int msi_answer ( MSISession* session, MSICallType call_type ) {
+int msi_answer ( MSISession *session, MSICallType call_type )
+{
     assert ( session );
 
-    MSIMessage* _msg_starting = msi_new_message ( TYPE_RESPONSE, stringify_response ( starting ) );
+    MSIMessage *_msg_starting = msi_new_message ( TYPE_RESPONSE, stringify_response ( starting ) );
     session->call->type_local = call_type;
 
     if ( call_type == type_audio ) {
         msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t* ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
+        ( _msg_starting, ( const uint8_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
     } else {
         msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t* ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
+        ( _msg_starting, ( const uint8_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
     }
 
     /* Now set the local encryption key and pass it with STARTING message */
@@ -1316,18 +1358,19 @@ int msi_answer ( MSISession* session, MSICallType call_type ) {
 
 /**
  * @brief Cancel request.
- * 
+ *
  * @param session Control session.
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession* session, uint32_t peer, const uint8_t* reason ) {
+int msi_cancel ( MSISession *session, uint32_t peer, const uint8_t *reason )
+{
     assert ( session );
 
-    MSIMessage* _msg_cancel = msi_new_message ( TYPE_REQUEST, stringify_request ( cancel ) );
-    
-    if ( reason ) msi_msg_set_reason(_msg_cancel, reason, strlen((const char*)reason));
-    
+    MSIMessage *_msg_cancel = msi_new_message ( TYPE_REQUEST, stringify_request ( cancel ) );
+
+    if ( reason ) msi_msg_set_reason(_msg_cancel, reason, strlen((const char *)reason));
+
     send_message ( session, _msg_cancel, peer );
     free_message ( _msg_cancel );
 
@@ -1339,17 +1382,18 @@ int msi_cancel ( MSISession* session, uint32_t peer, const uint8_t* reason ) {
 
 /**
  * @brief Reject request.
- * 
+ *
  * @param session Control session.
  * @return int
  */
-int msi_reject ( MSISession* session, const uint8_t* reason ) {
+int msi_reject ( MSISession *session, const uint8_t *reason )
+{
     assert ( session );
 
-    MSIMessage* _msg_reject = msi_new_message ( TYPE_REQUEST, stringify_request ( reject ) );
-    
-    if ( reason ) msi_msg_set_reason(_msg_reject, reason, strlen((const char*)reason) + 1);
-    
+    MSIMessage *_msg_reject = msi_new_message ( TYPE_REQUEST, stringify_request ( reject ) );
+
+    if ( reason ) msi_msg_set_reason(_msg_reject, reason, strlen((const char *)reason) + 1);
+
     send_message ( session, _msg_reject, session->call->peers[session->call->peer_count - 1] );
     free_message ( _msg_reject );
 
@@ -1361,18 +1405,19 @@ int msi_reject ( MSISession* session, const uint8_t* reason ) {
 
 /**
  * @brief Terminate the current call.
- * 
+ *
  * @param session Control session.
  * @return int
  */
-int msi_stopcall ( MSISession* session ) {
+int msi_stopcall ( MSISession *session )
+{
     assert ( session );
 
     if ( !session->call )
         return -1;
 
     /* just terminate it */
-    
+
     terminate_call ( session );
 
     return 0;
