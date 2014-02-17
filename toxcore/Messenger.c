@@ -632,7 +632,7 @@ int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing)
     return 0;
 }
 
-uint8_t m_get_istyping(Messenger *m, int friendnumber)
+int m_get_istyping(Messenger *m, int friendnumber)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;

@@ -417,7 +417,7 @@ int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing);
  * returns 0 if friend is not typing.
  * returns 1 if friend is typing.
  */
-uint8_t m_get_istyping(Messenger *m, int friendnumber);
+int m_get_istyping(Messenger *m, int friendnumber);
 
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).

@@ -279,7 +279,7 @@ TOX_USERSTATUS tox_get_self_user_status(Tox *tox)
 int tox_set_user_is_typing(Tox *tox, int friendnumber, uint8_t is_typing)
 {
     Messenger *m = tox;
-    return (int)m_set_usertyping(m, friendnumber, is_typing);
+    return m_set_usertyping(m, friendnumber, is_typing);
 }
 
 /* Get the typing status of a friend.
@@ -290,7 +290,7 @@ int tox_set_user_is_typing(Tox *tox, int friendnumber, uint8_t is_typing)
 int tox_get_is_typing(Tox *tox, int friendnumber)
 {
     Messenger *m = tox;
-    return (int)m_get_istyping(m, friendnumber);
+    return m_get_istyping(m, friendnumber);
 }
 
 
