@@ -7,6 +7,14 @@
       - [Non-Homebrew](#non-homebrew)
     - [Windows](#windows)
 
+- [Additional](#additional)
+    - [Advance configure] (#aconf)
+    - [A/V support](#av)
+      - [libtoxav] (#libtoxav)
+      - [Test phone] (#phone)
+    - [Bootstrap daemon] (#bootstrapd)
+    - [nTox] (#ntox)
+
 <a name="installation" />
 ##Installation
 
@@ -20,18 +28,14 @@ Note: package fetching commands may vary by OS.
 On Ubuntu: 
 
 ```bash
-sudo apt-get install build-essential libtool autotools-dev automake libconfig-dev ncurses-dev checkinstall check git libswscale-dev libsdl-dev libopenal-dev libopus-dev libvpx-dev yasm
-```
-If you get the "Unable to locate package libopus-dev" message, add the following ppa
-```bash
-sudo add-apt-repository ppa:ubuntu-sdk-team/ppa && sudo apt-get update && sudo apt-get dist-upgrade
+sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
 ```
 
 On Fedora:
 
 ```bash
 yum groupinstall "Development Tools"
-yum install libtool autoconf automake libconfig-devel ncurses-devel check check-devel
+yum install libtool autoconf automake check check-devel
 ```
 
 On SunOS: 
@@ -73,20 +77,11 @@ make check
 sudo make install
 cd ..
 ```
+
 If your default prefix is /usr/local and you happen to get an error that says "error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory", then you can try running ```sudo ldconfig```. If that doesn't fix it, run:
 ```
 echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf
 sudo ldconfig
-```
-
-You also need recent [FFmpeg](https://git.videolan.org/?p=ffmpeg.git) libraries:
-```bash
-git clone git://source.ffmpeg.org/ffmpeg.git
-cd ffmpeg
-git checkout n2.0.2
-./configure --prefix=`pwd`/install --disable-programs
-make && make install
-cd ..
 ```
 
 Then clone this repo and generate makefile:
@@ -98,17 +93,7 @@ autoreconf -i
 make
 sudo make install
 ```
-Advance configure options:
-  - --prefix=/where/to/install
-  - --with-libsodium-headers=/path/to/libsodium/include/
-  - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --enable-silent-rules less verbose build output (undo: "make V=1")
-  - --disable-silent-rules verbose build output (undo: "make V=0")
-  - --disable-tests build unit tests (default: auto)
-  - --disable-ntox build nTox client (default: auto)
-  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
-  - --enable-shared[=PKGS]  build shared libraries [default=yes]
-  - --enable-static[=PKGS]  build static libraries [default=yes]
+
 
 <a name="osx" />
 ###OS X:
@@ -153,17 +138,6 @@ make
 make install
 ```
 
-Advance configure options:
-  - --prefix=/where/to/install
-  - --with-libsodium-headers=/path/to/libsodium/include/
-  - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --enable-silent-rules less verbose build output (undo: "make V=1")
-  - --disable-silent-rules verbose build output (undo: "make V=0")
-  - --disable-tests build unit tests (default: auto)
-  - --disable-ntox build nTox client (default: auto)
-  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
-  - --enable-shared[=PKGS]  build shared libraries [default=yes]
-  - --enable-static[=PKGS]  build static libraries [default=yes]
 
 <a name="non-homebrew" />
 ####Non-homebrew:
@@ -194,17 +168,6 @@ autoreconf -i
 make
 make install
 ```
-Advance configure options:
-  - --prefix=/where/to/install
-  - --with-libsodium-headers=/path/to/libsodium/include/
-  - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --enable-silent-rules less verbose build output (undo: "make V=1")
-  - --disable-silent-rules verbose build output (undo: "make V=0")
-  - --disable-tests build unit tests (default: auto)
-  - --disable-ntox build nTox client (default: auto)
-  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
-  - --enable-shared[=PKGS]  build shared libraries [default=yes]
-  - --enable-static[=PKGS]  build static libraries [default=yes]
 
 Do not install them from macports (or any dependencies for that matter) as they get shoved in the wrong directory
 (or the wrong version gets installed) and make your life more annoying.
@@ -246,6 +209,23 @@ autoreconf -i
 make
 make install
 ```
+
+<a name="Clients" />
+####Clients:
+While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](http://wiki.tox.im/client)
+
+
+
+
+
+<a name="additional" />
+##Additional
+
+
+
+<a name="aconf" />
+###Advance configure:
+
 Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
@@ -253,11 +233,141 @@ Advance configure options:
   - --enable-silent-rules less verbose build output (undo: "make V=1")
   - --disable-silent-rules verbose build output (undo: "make V=0")
   - --disable-tests build unit tests (default: auto)
-  - --disable-ntox build nTox client (default: auto)
-  - --disable-dht-bootstrap-daemon build DHT bootstrap daemon (default: auto)
+  - --disable-av disable A/V support (default: auto) see: [libtoxav](#libtoxav)
+  - --enable-phone build phone (default: no) see: [Test phone](#phone)
+  - --enable-ntox build nTox client (default: no) see: [nTox](#ntox)
+  - --enable-daemon build DHT bootstrap daemon (default: no) see: [Bootstrap daemon](#bootstrapd)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
   - --enable-static[=PKGS]  build static libraries [default=yes]
 
-<a name="Clients" />
-####Clients:
-While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](http://wiki.tox.im/client)
+
+<a name="av" />
+###A/V support:
+
+<a name="libtoxav" />
+####libtoxav:
+
+'libtoxav' is needed for A/V support and it's enabled by default. You can disable it by adding --disable-av argument to ./configure script like so: 
+```bash
+./configure --disable-av
+```
+There are 2 dependencies required for libtoxav: libopus and libvpx. If they are not installed A/V support is dropped.
+
+Install on fedora:
+```bash
+yum install libopus-devel libvpx-devel
+```
+
+Install on ubuntu:
+```bash
+sudo apt-get install libopus-dev libvpx-dev
+```
+If you get the "Unable to locate package libopus-dev" message, add the following ppa and try again:
+```bash
+sudo add-apt-repository ppa:ubuntu-sdk-team/ppa && sudo apt-get update && sudo apt-get dist-upgrade
+```
+
+Install from source (example for most unix-like OS's):
+
+libvpx:
+```bash
+git clone http://git.chromium.org/webm/libvpx.git
+cd libvpx
+./configure
+make -j3
+sudo make install
+cd ..
+```
+libopus:
+```bash
+wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz
+tar xvzf opus-1.0.3.tar.gz
+cd opus-1.0.3
+./configure
+make -j3
+sudo make install
+cd ..
+```
+
+
+<a name="phone" />
+####Test phone:
+
+Test phone is disabled by default. You can enable it by adding --enable-phone argument to ./configure script like so:
+```bash
+./configure --enable-phone
+```
+It can be compiled with or without video capturing enabled. There are 4 dependencies for phone: openal, ffmpeg, sdl and swscale. If any of the later 3 are not installed video support is dropped.
+
+Install on fedora:
+```bash
+yum install libopenal-devel libswscale-devel SDL*
+```
+
+Install on ubuntu:
+```bash
+sudo apt-get install libopenal-dev libswscale-dev libsdl-dev
+```
+
+Now grap recent [FFmpeg](https://git.videolan.org/?p=ffmpeg.git) libraries and install them:
+```bash
+git clone git://source.ffmpeg.org/ffmpeg.git
+cd ffmpeg
+git checkout n2.0.2
+./configure --prefix=`pwd`/install --disable-programs
+make && make install
+cd ..
+```
+
+You are ready to compile phone!
+
+
+
+
+<a name="bootstrapd" />
+###Bootstrap daemon:
+
+Daemon is disabled by default. You can enable it by adding --enable-daemon argument to ./configure script like so:
+```bash
+./configure --enable-daemon
+```
+There dependency required for bootstrap daemon: libconfig.
+
+Install on fedora:
+```bash
+yum install libconfig-devel
+```
+
+Install on ubuntu:
+```bash
+sudo apt-get install libconfig-dev
+```
+
+OS X homebrew:
+```
+brew install libconfig
+```
+OS X non-homebrew:
+Grab the following [package] (http://www.hyperrealm.com/libconfig/), uncompress and install
+
+
+
+<a name="ntox" />
+###nTox test cli:
+
+nTox is disabled by default. You can enable it by adding --enable-ntox argument to ./configure script like so:
+```bash
+./configure --enable-ntox
+```
+There dependency required for nTox: libncurses.
+
+Install on fedora:
+```bash
+yum install ncurses-devel
+```
+
+Install on ubuntu:
+```bash
+sudo apt-get install ncurses-dev
+```
+

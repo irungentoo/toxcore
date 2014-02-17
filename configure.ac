@@ -32,11 +32,11 @@ if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
 fi
 
-BUILD_DHT_BOOTSTRAP_DAEMON="yes"
-BUILD_NTOX="yes"
+BUILD_DHT_BOOTSTRAP_DAEMON="no"
+BUILD_NTOX="no"
 BUILD_TESTS="yes"
 BUILD_AV="yes"
-BUILD_PHONE="yes"
+BUILD_PHONE="no"
 BUILD_TESTING="yes"
 
 NCURSES_FOUND="no"
@@ -57,6 +57,17 @@ AC_ARG_ENABLE([nacl],
 
 PKG_PROG_PKG_CONFIG
 
+AC_ARG_ENABLE([phone],
+    [AC_HELP_STRING([--enable-phone], [build test phone (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_PHONE="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_PHONE="yes"
+        fi
+    ]
+)
+
 AC_ARG_ENABLE([av],
     [AC_HELP_STRING([--disable-av], [build AV support libraries (default: auto)]) ],
     [
@@ -65,17 +76,6 @@ AC_ARG_ENABLE([av],
             BUILD_PHONE="no"
         elif test "x$enableval" = "xyes"; then
             BUILD_AV="yes"
-        fi
-    ]
-)
-
-AC_ARG_ENABLE([phone],
-    [AC_HELP_STRING([--disable-phone], [build test phone (default: auto)]) ],
-    [
-        if test "x$enableval" = "xno"; then
-            BUILD_PHONE="no"
-        elif test "x$enableval" = "xyes"; then
-            BUILD_PHONE="yes"
         fi
     ]
 )
@@ -92,7 +92,7 @@ AC_ARG_ENABLE([tests],
 )
 
 AC_ARG_ENABLE([ntox],
-    [AC_HELP_STRING([--disable-ntox], [build nTox client (default: auto)]) ],
+    [AC_HELP_STRING([--enable-ntox], [build nTox client (default: auto)]) ],
     [
         if test "x$enableval" = "xno"; then
             BUILD_NTOX="no"
@@ -102,8 +102,8 @@ AC_ARG_ENABLE([ntox],
     ]
 )
 
-AC_ARG_ENABLE([dht-bootstrap-daemon],
-    [AC_HELP_STRING([--disable-dht-bootstrap-daemon], [build DHT bootstrap daemon (default: auto)]) ],
+AC_ARG_ENABLE([daemon],
+    [AC_HELP_STRING([--enable-daemon], [build DHT bootstrap daemon (default: auto)]) ],
     [
         if test "x$enableval" = "xno"; then
             BUILD_DHT_BOOTSTRAP_DAEMON="no"
@@ -345,6 +345,7 @@ AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
 AC_C_BIGENDIAN
 
+
 # Checks for library functions.
 AC_FUNC_FORK
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
@@ -428,6 +429,12 @@ if test "x$BUILD_PHONE" = "xyes"; then
             BUILD_PHONE="no"
         ]
     )
+fi
+
+#If all dependencies are here add support video define for phone.c
+if test "x$BUILD_PHONE" == "xyes"; then
+    #Set FFMpeg define
+    AC_DEFINE([TOX_FFMPEG], [1], [Support video])
 fi
 
 if test "x$BUILD_AV" = "xyes"; then

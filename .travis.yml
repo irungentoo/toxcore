@@ -30,21 +30,28 @@ before_script:
   - sudo make install > /dev/null
   - cd ..
   #installing libsdl1.2, needed for displaying video frames
-  - wget http://www.libsdl.org/release/SDL-1.2.15.tar.gz > /dev/null
-  - tar -xvzf SDL-1.2.15.tar.gz > /dev/null
-  - cd SDL-1.2.15
-  - ./configure > /dev/null
-  - make -j3 /dev/null
-  - sudo make install > /dev/null
-  - cd ..
+  #- wget http://www.libsdl.org/release/SDL-1.2.15.tar.gz > /dev/null
+  #- tar -xvzf SDL-1.2.15.tar.gz > /dev/null
+  #- cd SDL-1.2.15
+  #- ./configure > /dev/null
+  #- make -j3 /dev/null
+  #- sudo make install > /dev/null
+  #- cd ..
   #installing libopenal, needed for audio capture/playback
   - sudo apt-get install libopenal-dev > /dev/null
   #installing yasm, needed for compiling ffmpeg
   - sudo apt-get install yasm > /dev/null
   #installing ffmpeg, needed for capturing and encoding/decoding video
-  - wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz > /dev/null
-  - tar -xvzf ffmpeg-2.0.2.tar.gz > /dev/null
-  - cd ffmpeg-2.0.2
+  #- wget https://www.ffmpeg.org/releases/ffmpeg-2.0.2.tar.gz > /dev/null
+  #- tar -xvzf ffmpeg-2.0.2.tar.gz > /dev/null
+  #- cd ffmpeg-2.0.2
+  #- ./configure > /dev/null
+  #- make -j3 >/dev/null
+  #- sudo make install > /dev/null
+  #- cd ..
+  #installing vpx
+  - git clone http://git.chromium.org/webm/libvpx.git > /dev/null
+  - cd libvpx
   - ./configure > /dev/null
   - make -j3 >/dev/null
   - sudo make install > /dev/null
