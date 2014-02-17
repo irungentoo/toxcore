@@ -7,6 +7,9 @@
 
 /* For the legalese parts, see tox.h. */
 
+/* enumerated lists are superior to magic numbers */
+enum NODE_STATUS { BAD, SEENB_HEARDG, SEENG, USED };
+
 /*
  * Module to store currently unused ID <=> IP associations
  * for a potential future use
