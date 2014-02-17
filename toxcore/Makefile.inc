@@ -42,11 +42,10 @@ libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS)
 
-libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
+libtoxcore_la_LIBADD =  $(TOXCORE_LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
-                        $(WINSOCK2_LIBS)
-
-libtoxcore_la_LIBS =    $(LIBSODIUM_LIBS) \
+                        $(WINSOCK2_LIBS) \
+                        $(LIBSODIUM_LIBS) \
                         $(NAC_LIBS)
