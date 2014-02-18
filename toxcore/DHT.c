@@ -215,10 +215,9 @@ static int client_in_nodelist(Node_format *list, uint32_t length, uint8_t *clien
 {
     uint32_t i;
 
-    for (i = 0; i < length; ++i) {
+    for (i = 0; i < length; ++i)
         if (id_equal(list[i].client_id, client_id))
             return 1;
-    }
 
     return 0;
 }
@@ -230,10 +229,9 @@ static int friend_number(DHT *dht, uint8_t *client_id)
 {
     uint32_t i;
 
-    for (i = 0; i < dht->num_friends; ++i) {
+    for (i = 0; i < dht->num_friends; ++i)
         if (id_equal(dht->friends_list[i].client_id, client_id))
             return i;
-    }
 
     return -1;
 }
@@ -880,10 +878,9 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
         num_nodes_ok++;
     }
 
-    if (num_nodes_ok < num_nodes) {
+    if (num_nodes_ok < num_nodes)
         /* shouldn't happen */
         num_nodes = num_nodes_ok;
-    }
 
     memcpy(plain + num_nodes * Node4_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
     int len = encrypt_data( public_key,
@@ -1450,7 +1447,7 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
 {
     uint32_t i;
 
-    for (i = 0; i < LCLIENT_LIST; ++i) {
+    for (i = 0; i < LCLIENT_LIST; ++i)
         if (id_equal(client_id, dht->close_clientlist[i].client_id)) {
             Client_data *client = &dht->close_clientlist[i];
 
@@ -1461,7 +1458,6 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
             else
                 break;
         }
-    }
 
     return -1;
 }
@@ -1653,11 +1649,10 @@ int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id)
 {
     uint32_t i;
 
-    for (i = 0; i < dht->num_friends; ++i) {
+    for (i = 0; i < dht->num_friends; ++i)
         /* Equal */
         if (id_equal(dht->friends_list[i].client_id, friend_id))
             return friend_iplist(dht, ip_portlist, i);
-    }
 
     return -1;
 }
@@ -1714,13 +1709,12 @@ static int handle_NATping(void *object, IP_Port source, uint8_t *source_pubkey, 
         send_NATping(dht, source_pubkey, ping_id, NAT_PING_RESPONSE);
         friend->nat.recvNATping_timestamp = unix_time();
         return 0;
-    } else if (packet[0] == NAT_PING_RESPONSE) {
+    } else if (packet[0] == NAT_PING_RESPONSE)
         if (friend->nat.NATping_id == ping_id) {
             friend->nat.NATping_id = random_64b();
             friend->nat.hole_punching = 1;
             return 0;
         }
-    }
 
     return 1;
 }
@@ -1785,10 +1779,9 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     uint32_t top = dht->friends_list[friend_num].nat.punching_index + MAX_PUNCHING_PORTS;
     uint16_t firstport = port_list[0];
 
-    for (i = 0; i < numports; ++i) {
+    for (i = 0; i < numports; ++i)
         if (firstport != port_list[i])
             break;
-    }
 
     if (i == numports) { /* If all ports are the same, only try that one port. */
         IP_Port pinging;
@@ -1957,11 +1950,9 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
 
         IPPTsPng *temp = get_closelist_IPPTsPng(dht, nodes[i].client_id, nodes[i].ip_port.ip.family);
 
-        if (temp) {
-            if (!is_timeout(temp->timestamp, BAD_NODE_TIMEOUT)) {
+        if (temp)
+            if (!is_timeout(temp->timestamp, BAD_NODE_TIMEOUT))
                 ++counter;
-            }
-        }
     }
 
     return counter;
@@ -1976,9 +1967,8 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
 {
     DHT *dht = object;
 
-    if (length < 2) {
+    if (length < 2)
         return 1;
-    }
 
     switch (packet[0]) {
         case CHECK_TYPE_GETNODE_REQ: {
@@ -2119,19 +2109,17 @@ static int random_node_fromlist(Client_data *list, uint16_t list_size, Node_form
         IPPTsPng *assoc;
         uint32_t a;
 
-        for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4) {
+        for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
             /* If node is good. */
             if (!is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT)) {
-                if (!LAN_ok) {
+                if (!LAN_ok)
                     if (LAN_ip(assoc->ip_port.ip) == 0)
                         continue;
-                }
 
                 client_list[num_nodes] = client;
                 assoc_list[num_nodes] = assoc;
                 ++num_nodes;
             }
-        }
     }
 
     if (num_nodes == 0)
@@ -2219,11 +2207,9 @@ void do_hardening(DHT *dht)
                     cur_iptspng->hardening.send_nodes_timestamp = unix_time();
                 }
             }
-        } else {
-            if (is_timeout(cur_iptspng->hardening.send_nodes_timestamp, HARDEN_TIMEOUT)) {
+        } else
+            if (is_timeout(cur_iptspng->hardening.send_nodes_timestamp, HARDEN_TIMEOUT))
                 cur_iptspng->hardening.send_nodes_ok = 0;
-            }
-        }
 
         //TODO: add the 2 other testers.
     }
@@ -2280,9 +2266,8 @@ void do_DHT(DHT *dht)
 {
     unix_time_update();
 
-    if (dht->last_run == unix_time()) {
+    if (dht->last_run == unix_time())
         return;
-    }
 
     do_Close(dht);
     do_DHT_friends(dht);
@@ -2394,7 +2379,7 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
                 DHT_Friend *friend_list = (DHT_Friend *)data;
                 num = length / sizeof(DHT_Friend);
 
-                for (i = 0; i < num; ++i) {
+                for (i = 0; i < num; ++i)
 
                     for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
                         Client_data *client = &friend_list[i].client_list[j];
@@ -2405,7 +2390,6 @@ static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, 
                         if (client->assoc6.timestamp != 0)
                             getnodes(dht, client->assoc6.ip_port, client->client_id, friend_list[i].client_id, NULL);
                     }
-                }
             } /* localize declarations */
 
             break;
