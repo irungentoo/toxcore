@@ -622,13 +622,13 @@ int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing)
     if (is_typing != 0 && is_typing != 1) {
         return -1;
     }
-    
+
     if (friend_not_valid(m, friendnumber))
         return -1;
-    
+
     m->friendlist[friendnumber].user_istyping = is_typing;
     m->friendlist[friendnumber].user_istyping_sent = 0;
-    
+
     return 0;
 }
 
@@ -636,7 +636,7 @@ int m_get_istyping(Messenger *m, int friendnumber)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
-    
+
     return m->friendlist[friendnumber].is_typing;
 }
 
@@ -1863,7 +1863,7 @@ void do_friends(Messenger *m)
                 if (send_userstatus(m, i, m->userstatus))
                     m->friendlist[i].userstatus_sent = 1;
             }
-            
+
             if (m->friendlist[i].user_istyping_sent == 0) {
                 if (send_user_istyping(m, i, m->friendlist[i].user_istyping))
                     m->friendlist[i].user_istyping_sent = 1;
@@ -1929,18 +1929,18 @@ void do_friends(Messenger *m)
                         set_friend_userstatus(m, i, status);
                         break;
                     }
-                        
+
                     case PACKET_ID_TYPING: {
                         if (data_length != 1)
                             break;
-                        
+
                         uint8_t typing = data[0];
-                        
+
                         if (m->friend_typingchange)
                             m->friend_typingchange(m, i, typing, m->friend_typingchange_userdata);
-                        
-                            set_friend_typing(m, i, typing);
-                            break;
+
+                        set_friend_typing(m, i, typing);
+                        break;
                     }
 
                     case PACKET_ID_MESSAGE: {

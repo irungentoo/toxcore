@@ -49,6 +49,19 @@ void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length
         ++name_changes;
 }
 
+uint32_t typing_changes;
+
+void print_typingchange(Tox *m, int friendnumber, int typing, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 974536)
+        return;
+
+    if (!typing)
+        typing_changes = 1;
+    else
+        typing_changes = 2;
+}
+
 START_TEST(test_few_clients)
 {
     long long unsigned int cur_time = time(NULL);
@@ -118,6 +131,43 @@ START_TEST(test_few_clients)
     uint8_t temp_name[sizeof("Gentoo")];
     tox_get_name(tox3, 0, temp_name);
     ck_assert_msg(memcmp(temp_name, "Gentoo", sizeof("Gentoo")) == 0, "Name not correct");
+
+    tox_callback_typing_change(tox2, &print_typingchange, &to_compare);
+    tox_set_user_is_typing(tox3, 0, 1);
+
+    while (1) {
+        typing_changes = 0;
+        tox_do(tox1);
+        tox_do(tox2);
+        tox_do(tox3);
+
+
+        if (typing_changes == 2)
+            break;
+        else
+            ck_assert_msg(typing_changes == 0, "Typing fail");
+
+        c_sleep(50);
+    }
+
+    ck_assert_msg(tox_get_is_typing(tox2, 0) == 1, "Typing fail");
+    tox_set_user_is_typing(tox3, 0, 0);
+
+    while (1) {
+        typing_changes = 0;
+        tox_do(tox1);
+        tox_do(tox2);
+        tox_do(tox3);
+
+        if (typing_changes == 1)
+            break;
+        else
+            ck_assert_msg(typing_changes == 0, "Typing fail");
+
+        c_sleep(50);
+    }
+
+    ck_assert_msg(tox_get_is_typing(tox2, 0) == 0, "Typing fail");
     printf("test_few_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
 }
 END_TEST

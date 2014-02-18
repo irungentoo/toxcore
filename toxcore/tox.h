@@ -280,7 +280,7 @@ int tox_get_self_status_message(Tox *tox, uint8_t *buf, uint32_t maxlen);
  */
 TOX_USERSTATUS tox_get_user_status(Tox *tox, int friendnumber);
 TOX_USERSTATUS tox_get_self_user_status(Tox *tox);
-    
+
 /* Set our typing status for a friend.
  * You are responsible for turning it on or off.
  *
@@ -288,7 +288,7 @@ TOX_USERSTATUS tox_get_self_user_status(Tox *tox);
  * returns -1 on failure.
  */
 int tox_set_user_is_typing(Tox *tox, int friendnumber, uint8_t is_typing);
-    
+
 /* Get the typing status of a friend.
  *
  * returns 0 if friend is not typing.
@@ -350,7 +350,7 @@ void tox_callback_status_message(Tox *tox, void (*function)(Tox *tox, int, uint8
  *  function(int friendnumber, USERSTATUS kind)
  */
 void tox_callback_user_status(Tox *tox, void (*function)(Tox *tox, int, TOX_USERSTATUS, void *), void *userdata);
-    
+
 /* Set the callback for typing changes.
  *  function (int friendnumber, int is_typing)
  */
