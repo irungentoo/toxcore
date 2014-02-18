@@ -41,6 +41,9 @@ typedef struct {
 
     uint8_t     nick[MAX_NICK_BYTES];
     uint16_t    nick_len;
+
+    uint8_t     deleted;
+    uint64_t    deleted_time;
 } Group_Peer;
 
 typedef struct {

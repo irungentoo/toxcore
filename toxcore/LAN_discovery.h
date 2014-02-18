@@ -36,7 +36,7 @@
 #endif
 
 /* Interval in seconds between LAN discovery packet sending. */
-#define LAN_DISCOVERY_INTERVAL 60
+#define LAN_DISCOVERY_INTERVAL 10
 
 /* Send a LAN discovery pcaket to the broadcast address with port port. */
 int send_LANdiscovery(uint16_t port, DHT *dht);

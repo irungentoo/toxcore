@@ -49,6 +49,13 @@ before_script:
   - make -j3 >/dev/null
   - sudo make install > /dev/null
   - cd ..
+  #installing vpx
+  - git clone http://git.chromium.org/webm/libvpx.git > /dev/null
+  - cd libvpx
+  - ./configure > /dev/null
+  - make -j3 >/dev/null
+  - sudo make install > /dev/null
+  - cd ..
   #creating libraries links and updating cache
   - sudo ldconfig > /dev/null
   #installing check, needed for unit tests
