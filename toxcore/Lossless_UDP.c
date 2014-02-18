@@ -47,9 +47,8 @@
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port)
 {
     tox_array_for_each(&ludp->connections, Connection, tmp) {
-        if (tmp->status != LUDP_NO_CONNECTION && ipport_equal(&tmp->ip_port, &ip_port)) {
+        if (tmp->status != LUDP_NO_CONNECTION && ipport_equal(&tmp->ip_port, &ip_port))
             return tmp_i;
-        }
     }
 
     return -1;
@@ -122,17 +121,15 @@ static uint32_t handshake_id(Lossless_UDP *ludp, IP_Port source)
     if (source.ip.family == AF_INET) {
         int k;
 
-        for (k = 0; k < 4; k++) {
+        for (k = 0; k < 4; k++)
             id ^= randtable_initget(ludp, i++, source.ip.ip4.uint8[k]);
-        }
     }
 
     if (source.ip.family == AF_INET6) {
         int k;
 
-        for (k = 0; k < 16; k++) {
+        for (k = 0; k < 16; k++)
             id ^= randtable_initget(ludp, i++, source.ip.ip6.uint8[k]);
-        }
     }
 
     /* id can't be zero. */
@@ -151,13 +148,12 @@ static void change_handshake(Lossless_UDP *ludp, IP_Port source)
 {
     uint8_t rand;
 
-    if (source.ip.family == AF_INET) {
+    if (source.ip.family == AF_INET)
         rand = random_int() % 4;
-    } else if (source.ip.family == AF_INET6) {
+    else if (source.ip.family == AF_INET6)
         rand = random_int() % 16;
-    } else {
+    else
         return;
-    }
 
     /* Forced to be more robust against strange definitions of sa_family_t */
     ludp->randtable[2 + rand][((uint8_t *)&source.ip.ip6)[rand]] = random_int();
@@ -866,9 +862,8 @@ static void adjust_datasendspeed(Connection *connection, uint32_t req_packets)
 
         if (connection->data_rate > connection->sendbuffer_length * connection->SYNC_rate)
             connection->data_rate = connection->sendbuffer_length * connection->SYNC_rate;
-    } else {
+    } else
         connection->data_rate -= connection->data_rate / 8;
-    }
 }
 
 
@@ -1133,13 +1128,12 @@ static void adjust_rates(Lossless_UDP *ludp)
             tmp->SYNC_rate = MAX_SYNC_RATE;
 
         if (tmp->status == LUDP_ESTABLISHED) {
-            if (sendqueue(ludp, tmp_i) != 0) {
+            if (sendqueue(ludp, tmp_i) != 0)
                 tmp->SYNC_rate = MAX_SYNC_RATE;
-            } else if (tmp->last_recvdata + 200000ULL > temp_time) { /* 200 ms */
+            else if (tmp->last_recvdata + 200000ULL > temp_time) /* 200 ms */
                 tmp->SYNC_rate = MAX_SYNC_RATE;
-            } else {
+            else
                 tmp->SYNC_rate = SYNC_RATE;
-            }
         }
     }
 }
