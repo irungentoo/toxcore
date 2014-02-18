@@ -8,7 +8,7 @@
     - [Windows](#windows)
 
 - [Additional](#additional)
-    - [Advance configure] (#aconf)
+    - [Advanced configure options] (#aconf)
     - [A/V support](#av)
       - [libtoxav] (#libtoxav)
       - [Test phone] (#phone)
@@ -147,7 +147,6 @@ Grab the following packages:
   * https://gnu.org/software/autoconf/ 
   * https://gnu.org/software/automake/
   * https://github.com/jedisct1/libsodium
-  * http://www.hyperrealm.com/libconfig/
   * http://check.sourceforge.net/
 
 Uncompress and install them all. Make sure to follow the README as the instructions change, but they all follow the same pattern below:
@@ -160,7 +159,7 @@ sudo make install
 
 In your local TOX repository:
 
-Then generate the makefile:
+Then generate makefile, build and install tox:
 ```bash
 cd ProjectTox-Core
 autoreconf -i
@@ -172,7 +171,7 @@ make install
 Do not install them from macports (or any dependencies for that matter) as they get shoved in the wrong directory
 (or the wrong version gets installed) and make your life more annoying.
 
-Another thing you may want to install is the latest gcc, this caused me a few problems as XCode from 4.3
+Another thing: you may want to install is the latest gcc. This caused me a few problems as XCode from 4.3
 no longer includes gcc and instead uses LLVM-GCC, a nice install guide can be found at
 http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
 
@@ -224,9 +223,8 @@ While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox 
 
 
 <a name="aconf" />
-###Advance configure:
+###Advanced configure options:
 
-Advance configure options:
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
   - --with-libsodium-libs=/path/to/sodiumtest/lib/
@@ -251,6 +249,7 @@ Advance configure options:
 ```bash
 ./configure --disable-av
 ```
+
 There are 2 dependencies required for libtoxav: libopus and libvpx. If they are not installed A/V support is dropped.
 
 Install on fedora:
@@ -278,6 +277,7 @@ make -j3
 sudo make install
 cd ..
 ```
+
 libopus:
 ```bash
 wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz
@@ -319,7 +319,7 @@ make && make install
 cd ..
 ```
 
-You are ready to compile phone!
+You are now ready to compile with phone!
 
 
 
@@ -331,7 +331,7 @@ Daemon is disabled by default. You can enable it by adding --enable-daemon argum
 ```bash
 ./configure --enable-daemon
 ```
-There dependency required for bootstrap daemon: libconfig.
+There is one dependency required for bootstrap daemon: libconfig.
 
 Install on fedora:
 ```bash
@@ -359,7 +359,7 @@ nTox is disabled by default. You can enable it by adding --enable-ntox argument 
 ```bash
 ./configure --enable-ntox
 ```
-There dependency required for nTox: libncurses.
+There is one dependency required for nTox: libncurses.
 
 Install on fedora:
 ```bash
