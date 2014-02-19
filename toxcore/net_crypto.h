@@ -41,24 +41,24 @@
 #define CRYPTO_CONN_TIMED_OUT 4
 
 typedef struct {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
-    uint8_t sessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* Our public key for this session. */
-    uint8_t sessionsecret_key[crypto_box_SECRETKEYBYTES]; /* Our private key for this session. */
-    uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
-    uint8_t shared_key[crypto_box_BEFORENMBYTES]; /* The precomputed shared key from encrypt_precompute. */
-    uint8_t status; /* 0 if no connection, 1 we have sent a handshake, 2 if connection is not confirmed yet
+    size_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
+    size_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
+    size_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
+    size_t sessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* Our public key for this session. */
+    size_t sessionsecret_key[crypto_box_SECRETKEYBYTES]; /* Our private key for this session. */
+    size_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
+    size_t shared_key[crypto_box_BEFORENMBYTES]; /* The precomputed shared key from encrypt_precompute. */
+    size_t status; /* 0 if no connection, 1 we have sent a handshake, 2 if connection is not confirmed yet
                      * (we have received a handshake but no empty data packet), 3 if the connection is established.
                      * 4 if the connection is timed out.
                      */
-    uint16_t number; /* Lossless_UDP connection number corresponding to this connection. */
-    uint64_t timeout;
+    size_t number; /* Lossless_UDP connection number corresponding to this connection. */
+    size_t timeout;
 
 } Crypto_Connection;
 
-typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data,
-        uint32_t len);
+typedef ptrdiff_t (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, size_t *data,
+        size_t len);
 
 typedef struct {
     cryptopacket_handler_callback function;
@@ -70,11 +70,11 @@ typedef struct {
 
     Crypto_Connection *crypto_connections;
 
-    uint32_t crypto_connections_length; /* Length of connections array. */
+    size_t crypto_connections_length; /* Length of connections array. */
 
     /* Our public and secret keys. */
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    size_t self_public_key[crypto_box_PUBLICKEYBYTES];
+    size_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
     Cryptopacket_Handles cryptopackethandlers[256];
 } Net_Crypto;
@@ -82,7 +82,7 @@ typedef struct {
 #include "DHT.h"
 
 /* return zero if the buffer contains only zeros. */
-uint8_t crypto_iszero(uint8_t *buffer, uint32_t blen);
+size_t blen);
 
 /* Encrypts plain of length length to encrypted of length + 16 using the
  * public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
@@ -90,8 +90,8 @@ uint8_t crypto_iszero(uint8_t *buffer, uint32_t blen);
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
-int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *plain, uint32_t length, uint8_t *encrypted);
+ptrdiff_t encrypt_data(size_t *nonce,
+                 size_t *encrypted);
 
 
 /* Decrypts encrypted of length length to plain of length length - 16 using the
@@ -100,21 +100,21 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
-int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *encrypted, uint32_t length, uint8_t *plain);
+ptrdiff_t decrypt_data(size_t *nonce,
+                 size_t *plain);
 
 /* Fast encrypt/decrypt operations. Use if this is not a one-time communication.
    encrypt_precompute does the shared-key generation once so it does not have
    to be preformed on every encrypt/decrypt. */
-void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key);
+void encrypt_precompute(size_t *enc_key);
 
 /* Fast encrypt. Depends on enc_key from encrypt_precompute. */
-int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
-                      uint8_t *plain, uint32_t length, uint8_t *encrypted);
+ptrdiff_t encrypt_data_fast(size_t *nonce,
+                      size_t *encrypted);
 
 /* Fast decrypt. Depends on enc_ley from encrypt_precompute. */
-int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
-                      uint8_t *encrypted, uint32_t length, uint8_t *plain);
+ptrdiff_t decrypt_data_fast(size_t *nonce,
+                      size_t *plain);
 
 /* Encrypts plain of length length to encrypted of length + 16 using a
  * secret key crypto_secretbox_KEYBYTES big and a 24 byte nonce.
@@ -122,7 +122,7 @@ int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
-int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, uint32_t length, uint8_t *encrypted);
+ptrdiff_t encrypt_data_symmetric(size_t *encrypted);
 
 /* Decrypts encrypted of length length to plain of length length - 16 using a
  * secret key crypto_secretbox_KEYBYTES big and a 24 byte nonce.
@@ -130,32 +130,32 @@ int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, 
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
-int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain);
+ptrdiff_t decrypt_data_symmetric(size_t *plain);
 
 /* Fill the given nonce with random bytes. */
-void random_nonce(uint8_t *nonce);
+void random_nonce(size_t *nonce);
 
 /* Fill a key crypto_secretbox_KEYBYTES big with random bytes */
-void new_symmetric_key(uint8_t *key);
+void new_symmetric_key(size_t *key);
 
 /*Gives a nonce guaranteed to be different from previous ones.*/
-void new_nonce(uint8_t *nonce);
+void new_nonce(size_t *nonce);
 
 /*  return 0 if there is no received data in the buffer.
  *  return -1  if the packet was discarded.
  *  return length of received data if successful.
  */
-int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data);
+ptrdiff_t read_cryptpacket(Net_Crypto *c, ptrdiff_t crypt_connection_id, size_t *data);
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
  */
-uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id);
+size_t crypto_num_free_sendqueue_slots(Net_Crypto *c, ptrdiff_t crypt_connection_id);
 
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
-int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
+ptrdiff_t write_cryptpacket(Net_Crypto *c, ptrdiff_t crypt_connection_id, size_t length);
 
 /* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.
@@ -167,32 +167,32 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
  * return -1 on failure.
  * return the length of the created packet on success.
  */
-int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
-                   uint8_t *data, uint32_t length, uint8_t request_id);
+ptrdiff_t create_request(size_t *recv_public_key,
+                   size_t request_id);
 
 /* puts the senders public key in the request in public_key, the data from the request
    in data if a friend or ping request was sent to us and returns the length of the data.
    packet is the request packet and length is its length
    return -1 if not valid request. */
-int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, uint8_t *packet, uint16_t length);
+ptrdiff_t handle_request(size_t *data,
+                   size_t length);
 
 /* Function to call when request beginning with byte is received. */
-void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object);
+void cryptopacket_registerhandler(Net_Crypto *c, size_t byte, cryptopacket_handler_callback cb, void *object);
 
 /* Start a secure connection with other peer who has public_key and ip_port.
  *
  *  return -1 if failure.
  *  return crypt_connection_id of the initialized connection if everything went well.
  */
-int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port);
+ptrdiff_t crypto_connect(Net_Crypto *c, size_t *public_key, IP_Port ip_port);
 
 /* Kill a crypto connection.
  *
  *  return 0 if killed successfully.
  *  return 1 if there was a problem.
  */
-int crypto_kill(Net_Crypto *c, int crypt_connection_id);
+ptrdiff_t crypto_kill(Net_Crypto *c, ptrdiff_t crypt_connection_id);
 
 /* Handle an incoming connection.
  *
@@ -204,15 +204,15 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id);
  *  to accept it see: accept_crypto_inbound(...).
  *  to refuse it just call kill_connection(...) on the connection id.
  */
-int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key);
+ptrdiff_t crypto_inbound(Net_Crypto *c, size_t *session_key);
 
 /* Accept an incoming connection using the parameters provided by crypto_inbound.
  *
  *  return -1 if not successful.
  *  return crypt_connection_id if successful.
  */
-int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
-                          uint8_t *session_key);
+ptrdiff_t accept_crypto_inbound(Net_Crypto *c, ptrdiff_t connection_id, size_t *secret_nonce,
+                          size_t *session_key);
 
 /*  return 0 if no connection.
  *  return 1 we have sent a handshake
@@ -220,7 +220,7 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
  *  return 3 if the connection is established.
  *  return 4 if the connection is timed out and waiting to be killed.
  */
-int is_cryptoconnected(Net_Crypto *c, int crypt_connection_id);
+ptrdiff_t is_cryptoconnected(Net_Crypto *c, ptrdiff_t crypt_connection_id);
 
 
 /* Generate our public and private keys.
@@ -231,12 +231,12 @@ void new_keys(Net_Crypto *c);
 /* Save the public and private keys to the keys array.
  *  Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
  */
-void save_keys(Net_Crypto *c, uint8_t *keys);
+void save_keys(Net_Crypto *c, size_t *keys);
 
 /* Load the public and private keys from the keys array.
  *  Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
  */
-void load_keys(Net_Crypto *c, uint8_t *keys);
+void load_keys(Net_Crypto *c, size_t *keys);
 
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.

@@ -36,23 +36,23 @@
 
 struct jitter_buffer {
     RTPMessage **queue;
-    uint16_t capacity;
-    uint16_t size;
-    uint16_t front;
-    uint16_t rear;
-    uint8_t queue_ready;
-    uint16_t current_id;
-    uint32_t current_ts;
-    uint8_t id_set;
+    size_t capacity;
+    size_t size;
+    size_t front;
+    size_t rear;
+    size_t queue_ready;
+    size_t current_id;
+    size_t current_ts;
+    size_t id_set;
 };
 
 
-struct jitter_buffer *create_queue(int capacity)
+struct jitter_buffer *create_queue(ptrdiff_t capacity)
 {
     struct jitter_buffer *q;
     q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer), 1);
     q->queue = (RTPMessage **)calloc(sizeof(RTPMessage *), capacity);
-    int i = 0;
+    ptrdiff_t i = 0;
 
     for (i = 0; i < capacity; ++i) {
         q->queue[i] = NULL;
@@ -70,7 +70,7 @@ struct jitter_buffer *create_queue(int capacity)
 }
 
 /* returns 1 if 'a' has a higher sequence number than 'b' */
-uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a, uint32_t ts_b)
+size_t ts_b)
 {
     /* TODO: There is already this kind of function in toxrtp.c.
      *       Maybe merge?
@@ -79,7 +79,7 @@ uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a, uint3
 }
 
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
-RTPMessage *dequeue(struct jitter_buffer *q, int *success)
+RTPMessage *dequeue(struct jitter_buffer *q, ptrdiff_t *success)
 {
     if (q->size == 0 || q->queue_ready == 0) {
         q->queue_ready = 0;
@@ -87,15 +87,15 @@ RTPMessage *dequeue(struct jitter_buffer *q, int *success)
         return NULL;
     }
 
-    int front = q->front;
+    ptrdiff_t front = q->front;
 
     if (q->id_set == 0) {
         q->current_id = q->queue[front]->header->sequnum;
         q->current_ts = q->queue[front]->header->timestamp;
         q->id_set = 1;
     } else {
-        int next_id = q->queue[front]->header->sequnum;
-        int next_ts = q->queue[front]->header->timestamp;
+        ptrdiff_t next_id = q->queue[front]->header->sequnum;
+        ptrdiff_t next_ts = q->queue[front]->header->timestamp;
 
         /* if this packet is indeed the expected packet */
         if (next_id == (q->current_id + 1) % MAX_SEQU_NUM) {
@@ -128,7 +128,7 @@ RTPMessage *dequeue(struct jitter_buffer *q, int *success)
     return q->queue[front];
 }
 
-int empty_queue(struct jitter_buffer *q)
+ptrdiff_t empty_queue(struct jitter_buffer *q)
 {
     while (q->size > 0) {
         q->size--;
@@ -144,7 +144,7 @@ int empty_queue(struct jitter_buffer *q)
     return 0;
 }
 
-int queue(struct jitter_buffer *q, RTPMessage *pk)
+ptrdiff_t queue(struct jitter_buffer *q, RTPMessage *pk)
 {
     if (q->size == q->capacity) {
         printf("buffer full, emptying buffer...\n");
@@ -163,9 +163,9 @@ int queue(struct jitter_buffer *q, RTPMessage *pk)
 
     q->queue[q->rear] = pk;
 
-    int a;
-    int b;
-    int j;
+    ptrdiff_t a;
+    ptrdiff_t b;
+    ptrdiff_t j;
     a = q->rear;
 
     for (j = 0; j < q->size - 1; ++j) {
@@ -198,7 +198,7 @@ int queue(struct jitter_buffer *q, RTPMessage *pk)
 }
 
 
-int init_video_decoder(CodecState *cs)
+ptrdiff_t init_video_decoder(CodecState *cs)
 {
     if (vpx_codec_dec_init_ver(&cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0,
                                VPX_DECODER_ABI_VERSION) != VPX_CODEC_OK) {
@@ -209,9 +209,9 @@ int init_video_decoder(CodecState *cs)
     return 0;
 }
 
-int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
+ptrdiff_t init_audio_decoder(CodecState *cs, size_t audio_channels)
 {
-    int rc;
+    ptrdiff_t rc;
     cs->audio_decoder = opus_decoder_create(cs->audio_sample_rate, audio_channels, &rc );
 
     if ( rc != OPUS_OK ) {
@@ -223,10 +223,10 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
 }
 
 
-int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t video_bitrate)
+ptrdiff_t init_video_encoder(CodecState *cs, size_t video_bitrate)
 {
     vpx_codec_enc_cfg_t  cfg;
-    int res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
+    ptrdiff_t res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
     if (res) {
         printf("Failed to get config: %s\n", vpx_codec_err_to_string(res));
@@ -246,9 +246,9 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     return 0;
 }
 
-int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
+ptrdiff_t init_audio_encoder(CodecState *cs, size_t audio_channels)
 {
-    int err = OPUS_OK;
+    ptrdiff_t err = OPUS_OK;
     cs->audio_encoder = opus_encoder_create(cs->audio_sample_rate, audio_channels, OPUS_APPLICATION_AUDIO, &err);
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_bitrate));
     err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
@@ -258,13 +258,13 @@ int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
 }
 
 
-CodecState *codec_init_session ( uint32_t audio_bitrate,
-                                 uint16_t audio_frame_duration,
-                                 uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
-                                 uint16_t video_width,
-                                 uint16_t video_height,
-                                 uint32_t video_bitrate )
+CodecState *codec_init_session ( size_t audio_bitrate,
+                                 size_t audio_frame_duration,
+                                 size_t audio_sample_rate,
+                                 size_t audio_channels,
+                                 size_t video_width,
+                                 size_t video_height,
+                                 size_t video_bitrate )
 {
     CodecState *_retu = calloc(sizeof(CodecState), 1);
     assert(_retu);

@@ -29,7 +29,7 @@
 #define ONION_ANNOUNCE_TIMEOUT 300
 #define ONION_PING_ID_SIZE crypto_hash_sha256_BYTES
 
-#define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (crypto_secretbox_NONCEBYTES + sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
+#define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (crypto_secretbox_NONCEBYTES + sizeof(size_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
 
 #define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + 1 + ONION_PING_ID_SIZE + crypto_box_MACBYTES)
 #define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
@@ -41,11 +41,11 @@
 #endif
 
 typedef struct {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+    size_t public_key[crypto_box_PUBLICKEYBYTES];
     IP_Port ret_ip_port;
-    uint8_t ret[ONION_RETURN_3];
-    uint8_t data_public_key[crypto_box_PUBLICKEYBYTES];
-    uint64_t time;
+    size_t ret[ONION_RETURN_3];
+    size_t data_public_key[crypto_box_PUBLICKEYBYTES];
+    size_t time;
 } Onion_Announce_Entry;
 
 typedef struct {
@@ -53,7 +53,7 @@ typedef struct {
     Networking_Core *net;
     Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
     /* This is crypto_secretbox_KEYBYTES long just so we can use new_symmetric_key() to fill it */
-    uint8_t secret_bytes[crypto_secretbox_KEYBYTES];
+    size_t secret_bytes[crypto_secretbox_KEYBYTES];
 } Onion_Announce;
 
 /* Create and send an onion announce request packet.
@@ -71,8 +71,8 @@ typedef struct {
  * return -1 on failure.
  * return 0 on success.
  */
-int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *secret_key, uint8_t *ping_id,
-                          uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data);
+ptrdiff_t send_announce_request(DHT *dht, Node_format *nodes, size_t *ping_id,
+                          size_t *sendback_data);
 
 /* Create and send an onion data request packet.
  *
@@ -88,8 +88,8 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *encrypt_public_key, uint8_t *nonce,
-                      uint8_t *data, uint16_t length);
+ptrdiff_t send_data_request(DHT *dht, Node_format *nodes, size_t *nonce,
+                      size_t length);
 
 
 Onion_Announce *new_onion_announce(DHT *dht);

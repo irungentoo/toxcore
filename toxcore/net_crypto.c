@@ -30,16 +30,16 @@
 
 #include "net_crypto.h"
 #include "util.h"
-static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection_id)
+static size_t crypt_connection_id_not_valid(Net_Crypto *c, ptrdiff_t crypt_connection_id)
 {
-    return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
+    return (size_t)crypt_connection_id >= c->crypto_connections_length;
 }
 
 /* Use this instead of memcmp; not vulnerable to timing attacks. */
-uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
+size_t length)
 {
-    uint8_t check = 0;
-    uint32_t i;
+    size_t check = 0;
+    size_t i;
 
     for (i = 0; i < length; ++i) {
         check |= mem[i];
@@ -53,20 +53,20 @@ uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
  * encrypt/decrypt operation.
  * enc_key has to be crypto_box_BEFORENMBYTES bytes long.
  */
-void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key)
+void encrypt_precompute(size_t *enc_key)
 {
     crypto_box_beforenm(enc_key, public_key, secret_key);
 }
 
 /* Fast encrypt. Depends on enc_key from encrypt_precompute. */
-int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
-                      uint8_t *plain, uint32_t length, uint8_t *encrypted)
+ptrdiff_t encrypt_data_fast(size_t *nonce,
+                      size_t *encrypted)
 {
     if (length + crypto_box_MACBYTES > MAX_DATA_SIZE || length == 0)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
+    size_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES] = {0};
+    size_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES];
 
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length); // Pad the message with 32 0 bytes.
 
@@ -81,14 +81,14 @@ int encrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
 }
 
 /* Fast decrypt. Depends on enc_ley from encrypt_precompute. */
-int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
-                      uint8_t *encrypted, uint32_t length, uint8_t *plain)
+ptrdiff_t decrypt_data_fast(size_t *nonce,
+                      size_t *plain)
 {
     if (length > MAX_DATA_SIZE || length <= crypto_box_BOXZEROBYTES)
         return -1;
 
-    uint8_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES];
-    uint8_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
+    size_t temp_plain[MAX_DATA_SIZE + crypto_box_ZEROBYTES];
+    size_t temp_encrypted[MAX_DATA_SIZE + crypto_box_BOXZEROBYTES] = {0};
 
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); // Pad the message with 16 0 bytes.
 
@@ -107,29 +107,29 @@ int decrypt_data_fast(uint8_t *enc_key, uint8_t *nonce,
     return length - crypto_box_MACBYTES;
 }
 
-int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *plain, uint32_t length, uint8_t *encrypted)
+ptrdiff_t encrypt_data(size_t *nonce,
+                 size_t *encrypted)
 {
-    uint8_t k[crypto_box_BEFORENMBYTES];
+    size_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
     return encrypt_data_fast(k, nonce, plain, length, encrypted);
 }
 
-int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *encrypted, uint32_t length, uint8_t *plain)
+ptrdiff_t decrypt_data(size_t *nonce,
+                 size_t *plain)
 {
-    uint8_t k[crypto_box_BEFORENMBYTES];
+    size_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
     return decrypt_data_fast(k, nonce, encrypted, length, plain);
 }
 
-int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, uint32_t length, uint8_t *encrypted)
+ptrdiff_t encrypt_data_symmetric(size_t *encrypted)
 {
     if (length == 0)
         return -1;
 
-    uint8_t temp_plain[length + crypto_secretbox_ZEROBYTES];
-    uint8_t temp_encrypted[length + crypto_secretbox_MACBYTES + crypto_secretbox_BOXZEROBYTES];
+    size_t temp_plain[length + crypto_secretbox_ZEROBYTES];
+    size_t temp_encrypted[length + crypto_secretbox_MACBYTES + crypto_secretbox_BOXZEROBYTES];
 
     memset(temp_plain, 0, crypto_secretbox_ZEROBYTES);
     memcpy(temp_plain + crypto_secretbox_ZEROBYTES, plain, length); // Pad the message with 32 0 bytes.
@@ -140,13 +140,13 @@ int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, 
     return length + crypto_secretbox_MACBYTES;
 }
 
-int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain)
+ptrdiff_t decrypt_data_symmetric(size_t *plain)
 {
     if (length <= crypto_secretbox_BOXZEROBYTES)
         return -1;
 
-    uint8_t temp_plain[length + crypto_secretbox_ZEROBYTES];
-    uint8_t temp_encrypted[length + crypto_secretbox_BOXZEROBYTES];
+    size_t temp_plain[length + crypto_secretbox_ZEROBYTES];
+    size_t temp_encrypted[length + crypto_secretbox_BOXZEROBYTES];
 
     memset(temp_plain, 0, crypto_secretbox_BOXZEROBYTES);
     memcpy(temp_encrypted + crypto_secretbox_BOXZEROBYTES, encrypted, length); // Pad the message with 16 0 bytes.
@@ -159,9 +159,9 @@ int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypt
 }
 
 /* Increment the given nonce by 1. */
-static void increment_nonce(uint8_t *nonce)
+static void increment_nonce(size_t *nonce)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < crypto_box_NONCEBYTES; ++i) {
         ++nonce[i];
@@ -176,26 +176,26 @@ static void increment_nonce(uint8_t *nonce)
 #error random_nonce(): crypto_box_NONCEBYTES must equal crypto_secretbox_NONCEBYTES.
 #endif
 /* Fill the given nonce with random bytes. */
-void random_nonce(uint8_t *nonce)
+void random_nonce(size_t *nonce)
 {
     randombytes(nonce, crypto_box_NONCEBYTES);
 }
 
 /* Fill a key crypto_secretbox_KEYBYTES big with random bytes */
-void new_symmetric_key(uint8_t *key)
+void new_symmetric_key(size_t *key)
 {
     randombytes(key, crypto_secretbox_KEYBYTES);
 }
 
-static uint8_t base_nonce[crypto_box_NONCEBYTES];
-static uint8_t nonce_set = 0;
+static size_t base_nonce[crypto_box_NONCEBYTES];
+static size_t nonce_set = 0;
 
 #if crypto_box_NONCEBYTES != crypto_secretbox_NONCEBYTES
 /*if they no longer equal each other, this function must be split into two.*/
 #error new_nonce(): crypto_box_NONCEBYTES must equal crypto_secretbox_NONCEBYTES.
 #endif
 /* Gives a nonce guaranteed to be different from previous ones.*/
-void new_nonce(uint8_t *nonce)
+void new_nonce(size_t *nonce)
 {
     if (nonce_set == 0) {
         random_nonce(base_nonce);
@@ -211,7 +211,7 @@ void new_nonce(uint8_t *nonce)
  *  return -1  if the packet was discarded.
  *  return length of received data if successful.
  */
-int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
+ptrdiff_t read_cryptpacket(Net_Crypto *c, ptrdiff_t crypt_connection_id, size_t *data)
 {
     if (crypt_connection_id_not_valid(c, crypt_connection_id))
         return 0;
@@ -219,8 +219,8 @@ int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
     if (c->crypto_connections[crypt_connection_id].status != CRYPTO_CONN_ESTABLISHED)
         return 0;
 
-    uint8_t temp_data[MAX_DATA_SIZE];
-    int length = read_packet(c->lossless_udp, c->crypto_connections[crypt_connection_id].number, temp_data);
+    size_t temp_data[MAX_DATA_SIZE];
+    ptrdiff_t length = read_packet(c->lossless_udp, c->crypto_connections[crypt_connection_id].number, temp_data);
 
     if (length == 0)
         return 0;
@@ -228,7 +228,7 @@ int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
     if (temp_data[0] != 3)
         return -1;
 
-    int len = decrypt_data_fast(c->crypto_connections[crypt_connection_id].shared_key,
+    ptrdiff_t len = decrypt_data_fast(c->crypto_connections[crypt_connection_id].shared_key,
                                 c->crypto_connections[crypt_connection_id].recv_nonce,
                                 temp_data + 1, length - 1, data);
 
@@ -243,7 +243,7 @@ int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
  */
-uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
+size_t crypto_num_free_sendqueue_slots(Net_Crypto *c, ptrdiff_t crypt_connection_id)
 {
     if (crypt_connection_id_not_valid(c, crypt_connection_id))
         return 0;
@@ -254,7 +254,7 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
-int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
+ptrdiff_t write_cryptpacket(Net_Crypto *c, ptrdiff_t crypt_connection_id, size_t length)
 {
     if (crypt_connection_id_not_valid(c, crypt_connection_id))
         return 0;
@@ -265,8 +265,8 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
     if (c->crypto_connections[crypt_connection_id].status != CRYPTO_CONN_ESTABLISHED)
         return 0;
 
-    uint8_t temp_data[MAX_DATA_SIZE];
-    int len = encrypt_data_fast(c->crypto_connections[crypt_connection_id].shared_key,
+    size_t temp_data[MAX_DATA_SIZE];
+    ptrdiff_t len = encrypt_data_fast(c->crypto_connections[crypt_connection_id].shared_key,
                                 c->crypto_connections[crypt_connection_id].sent_nonce,
                                 data, length, temp_data + 1);
 
@@ -292,18 +292,18 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
  *  return -1 on failure.
  *  return the length of the created packet on success.
  */
-int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
-                   uint8_t *data, uint32_t length, uint8_t request_id)
+ptrdiff_t create_request(size_t *recv_public_key,
+                   size_t request_id)
 {
     if (MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
         return -1;
 
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    uint8_t temp[MAX_DATA_SIZE];
+    size_t nonce[crypto_box_NONCEBYTES];
+    size_t temp[MAX_DATA_SIZE];
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     new_nonce(nonce);
-    int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
+    ptrdiff_t len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
                            1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
 
     if (len == -1)
@@ -323,17 +323,17 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
  *
  *  return -1 if not valid request.
  */
-int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, uint8_t *packet, uint16_t length)
+ptrdiff_t handle_request(size_t *data,
+                   size_t length)
 {
     if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES &&
             length <= MAX_DATA_SIZE) {
         if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
-            uint8_t nonce[crypto_box_NONCEBYTES];
-            uint8_t temp[MAX_DATA_SIZE];
+            size_t nonce[crypto_box_NONCEBYTES];
+            size_t temp[MAX_DATA_SIZE];
             memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
-            int len1 = decrypt_data(public_key, self_secret_key, nonce,
+            ptrdiff_t len1 = decrypt_data(public_key, self_secret_key, nonce,
                                     packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
                                     length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
 
@@ -350,13 +350,13 @@ int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *
     return -1;
 }
 
-void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object)
+void cryptopacket_registerhandler(Net_Crypto *c, size_t byte, cryptopacket_handler_callback cb, void *object)
 {
     c->cryptopackethandlers[byte].function = cb;
     c->cryptopackethandlers[byte].object = object;
 }
 
-static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static ptrdiff_t cryptopacket_handle(void *object, IP_Port source, size_t length)
 {
     DHT *dht = object;
 
@@ -366,10 +366,10 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
             return 1;
 
         if (memcmp(packet + 1, dht->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) { // Check if request is for us.
-            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-            uint8_t data[MAX_DATA_SIZE];
-            uint8_t number;
-            int len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
+            size_t public_key[crypto_box_PUBLICKEYBYTES];
+            size_t data[MAX_DATA_SIZE];
+            size_t number;
+            ptrdiff_t len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
 
             if (len == -1 || len == 0)
                 return 1;
@@ -380,9 +380,9 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
                     len);
 
         } else { /* If request is not for us, try routing it. */
-            int retval = route_packet(dht, packet + 1, packet, length);
+            ptrdiff_t retval = route_packet(dht, packet + 1, packet, length);
 
-            if ((unsigned int)retval == length)
+            if ((size_t)retval == length)
                 return 0;
         }
     }
@@ -394,18 +394,18 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
  * to peer with connection_id and public_key.
  * The packet is encrypted with a random nonce which is sent in plain text with the packet.
  */
-static int send_cryptohandshake(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
-                                uint8_t *session_key)
+static ptrdiff_t send_cryptohandshake(Net_Crypto *c, ptrdiff_t connection_id, size_t *secret_nonce,
+                                size_t *session_key)
 {
-    uint8_t temp_data[MAX_DATA_SIZE];
-    uint8_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
-    uint8_t nonce[crypto_box_NONCEBYTES];
+    size_t temp_data[MAX_DATA_SIZE];
+    size_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
+    size_t nonce[crypto_box_NONCEBYTES];
 
     new_nonce(nonce);
     memcpy(temp, secret_nonce, crypto_box_NONCEBYTES);
     memcpy(temp + crypto_box_NONCEBYTES, session_key, crypto_box_PUBLICKEYBYTES);
 
-    int len = encrypt_data(public_key, c->self_secret_key, nonce, temp, crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+    ptrdiff_t len = encrypt_data(public_key, c->self_secret_key, nonce, temp, crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
                            1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + temp_data);
 
     if (len == -1)
@@ -423,10 +423,10 @@ static int send_cryptohandshake(Net_Crypto *c, int connection_id, uint8_t *publi
  *  return 1 if successful.
  *  return 0 if failure.
  */
-static int handle_cryptohandshake(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce,
-                                  uint8_t *session_key, uint8_t *data, uint16_t length)
+static ptrdiff_t handle_cryptohandshake(Net_Crypto *c, size_t *secret_nonce,
+                                  size_t length)
 {
-    int pad = (- crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
+    ptrdiff_t pad = (- crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
 
     if (length != 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES
             + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + pad) {
@@ -436,11 +436,11 @@ static int handle_cryptohandshake(Net_Crypto *c, uint8_t *public_key, uint8_t *s
     if (data[0] != 2)
         return 0;
 
-    uint8_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
+    size_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
 
     memcpy(public_key, data + 1, crypto_box_PUBLICKEYBYTES);
 
-    int len = decrypt_data(public_key, c->self_secret_key, data + 1 + crypto_box_PUBLICKEYBYTES,
+    ptrdiff_t len = decrypt_data(public_key, c->self_secret_key, data + 1 + crypto_box_PUBLICKEYBYTES,
                            data + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
                            crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + pad, temp);
 
@@ -457,9 +457,9 @@ static int handle_cryptohandshake(Net_Crypto *c, uint8_t *public_key, uint8_t *s
  *  return -1 if there are no connections like we are looking for.
  *  return id if it found it.
  */
-static int getcryptconnection_id(Net_Crypto *c, uint8_t *public_key)
+static ptrdiff_t getcryptconnection_id(Net_Crypto *c, size_t *public_key)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION)
@@ -475,7 +475,7 @@ static int getcryptconnection_id(Net_Crypto *c, uint8_t *public_key)
  *  return -1 if realloc fails.
  *  return 0 if it succeeds.
  */
-static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
+static ptrdiff_t realloc_cryptoconnection(Net_Crypto *c, size_t num)
 {
     if (num == 0) {
         free(c->crypto_connections);
@@ -497,10 +497,10 @@ static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
  *  return -1 if failure.
  *  return crypt_connection_id of the initialized connection if everything went well.
  */
-int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
+ptrdiff_t crypto_connect(Net_Crypto *c, size_t *public_key, IP_Port ip_port)
 {
-    uint32_t i;
-    int id_existing = getcryptconnection_id(c, public_key);
+    size_t i;
+    ptrdiff_t id_existing = getcryptconnection_id(c, public_key);
 
     if (id_existing != -1) {
         IP_Port c_ip = connection_ip(c->lossless_udp, c->crypto_connections[id_existing].number);
@@ -518,7 +518,7 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
 
     for (i = 0; i <= c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION) {
-            int id_new = new_connection(c->lossless_udp, ip_port);
+            ptrdiff_t id_new = new_connection(c->lossless_udp, ip_port);
 
             if (id_new == -1)
                 return -1;
@@ -556,10 +556,10 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
  * to accept it see: accept_crypto_inbound(...).
  * to refuse it just call kill_connection(...) on the connection id.
  */
-int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
+ptrdiff_t crypto_inbound(Net_Crypto *c, size_t *session_key)
 {
     while (1) {
-        int incoming_con = incoming_connection(c->lossless_udp, 1);
+        ptrdiff_t incoming_con = incoming_connection(c->lossless_udp, 1);
 
         if (incoming_con != -1) {
             if (is_connected(c->lossless_udp, incoming_con) == LUDP_TIMED_OUT) {
@@ -568,8 +568,8 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
             }
 
             if (id_packet(c->lossless_udp, incoming_con) == 2) {
-                uint8_t temp_data[MAX_DATA_SIZE];
-                uint16_t len = read_packet_silent(c->lossless_udp, incoming_con, temp_data);
+                size_t temp_data[MAX_DATA_SIZE];
+                size_t len = read_packet_silent(c->lossless_udp, incoming_con, temp_data);
 
                 if (handle_cryptohandshake(c, public_key, secret_nonce, session_key, temp_data, len)) {
                     return incoming_con;
@@ -588,7 +588,7 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
  *  return 0 if killed successfully.
  *  return 1 if there was a problem.
  */
-int crypto_kill(Net_Crypto *c, int crypt_connection_id)
+ptrdiff_t crypto_kill(Net_Crypto *c, ptrdiff_t crypt_connection_id)
 {
     if (crypt_connection_id_not_valid(c, crypt_connection_id))
         return 1;
@@ -598,7 +598,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
         kill_connection(c->lossless_udp, c->crypto_connections[crypt_connection_id].number);
         memset(&(c->crypto_connections[crypt_connection_id]), 0 , sizeof(Crypto_Connection));
         c->crypto_connections[crypt_connection_id].number = ~0;
-        uint32_t i;
+        size_t i;
 
         for (i = c->crypto_connections_length; i != 0; --i) {
             if (c->crypto_connections[i - 1].status != CRYPTO_CONN_NO_CONNECTION)
@@ -621,10 +621,10 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
  *  return -1 if not successful.
  *  return the crypt_connection_id if successful.
  */
-int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
-                          uint8_t *session_key)
+ptrdiff_t accept_crypto_inbound(Net_Crypto *c, ptrdiff_t connection_id, size_t *secret_nonce,
+                          size_t *session_key)
 {
-    uint32_t i;
+    size_t i;
 
     if (discard_packet(c->lossless_udp, connection_id) == -1)
         return -1;
@@ -662,13 +662,13 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
             if (send_cryptohandshake(c, connection_id, public_key, c->crypto_connections[i].recv_nonce,
                                      c->crypto_connections[i].sessionpublic_key) == 1) {
                 increment_nonce(c->crypto_connections[i].recv_nonce);
-                uint32_t zero = 0;
+                size_t zero = 0;
                 encrypt_precompute(c->crypto_connections[i].peersessionpublic_key,
                                    c->crypto_connections[i].sessionsecret_key,
                                    c->crypto_connections[i].shared_key);
                 c->crypto_connections[i].status =
                     CRYPTO_CONN_ESTABLISHED; /* Connection status needs to be 3 for write_cryptpacket() to work. */
-                write_cryptpacket(c, i, ((uint8_t *)&zero), sizeof(zero));
+                write_cryptpacket(c, i, ((size_t *)&zero), sizeof(zero));
                 c->crypto_connections[i].status = CRYPTO_CONN_NOT_CONFIRMED; /* Set it to its proper value right after. */
                 return i;
             }
@@ -686,9 +686,9 @@ int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key,
  *  return 3 if the connection is established.
  *  return 4 if the connection is timed out and waiting to be killed.
  */
-int is_cryptoconnected(Net_Crypto *c, int crypt_connection_id)
+ptrdiff_t is_cryptoconnected(Net_Crypto *c, ptrdiff_t crypt_connection_id)
 {
-    if ((unsigned int)crypt_connection_id < c->crypto_connections_length)
+    if ((size_t)crypt_connection_id < c->crypto_connections_length)
         return c->crypto_connections[crypt_connection_id].status;
 
     return CRYPTO_CONN_NO_CONNECTION;
@@ -702,7 +702,7 @@ void new_keys(Net_Crypto *c)
 /* Save the public and private keys to the keys array.
  * Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
  */
-void save_keys(Net_Crypto *c, uint8_t *keys)
+void save_keys(Net_Crypto *c, size_t *keys)
 {
     memcpy(keys, c->self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(keys + crypto_box_PUBLICKEYBYTES, c->self_secret_key, crypto_box_SECRETKEYBYTES);
@@ -711,7 +711,7 @@ void save_keys(Net_Crypto *c, uint8_t *keys)
 /* Load the public and private keys from the keys array.
  * Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
  */
-void load_keys(Net_Crypto *c, uint8_t *keys)
+void load_keys(Net_Crypto *c, size_t *keys)
 {
     memcpy(c->self_public_key, keys, crypto_box_PUBLICKEYBYTES);
     memcpy(c->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
@@ -720,19 +720,19 @@ void load_keys(Net_Crypto *c, uint8_t *keys)
 /* Handle received packets for not yet established crypto connections. */
 static void receive_crypto(Net_Crypto *c)
 {
-    uint32_t i;
-    uint64_t temp_time = unix_time();
+    size_t i;
+    size_t temp_time = unix_time();
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION)
             continue;
 
         if (c->crypto_connections[i].status == CRYPTO_CONN_HANDSHAKE_SENT) {
-            uint8_t temp_data[MAX_DATA_SIZE];
-            uint8_t secret_nonce[crypto_box_NONCEBYTES];
-            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-            uint8_t session_key[crypto_box_PUBLICKEYBYTES];
-            uint16_t len;
+            size_t temp_data[MAX_DATA_SIZE];
+            size_t secret_nonce[crypto_box_NONCEBYTES];
+            size_t public_key[crypto_box_PUBLICKEYBYTES];
+            size_t session_key[crypto_box_PUBLICKEYBYTES];
+            size_t len;
 
             if (id_packet(c->lossless_udp, c->crypto_connections[i].number) == 2) { /* Handle handshake packet. */
                 len = read_packet(c->lossless_udp, c->crypto_connections[i].number, temp_data);
@@ -742,13 +742,13 @@ static void receive_crypto(Net_Crypto *c)
                         memcpy(c->crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
                         memcpy(c->crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
                         increment_nonce(c->crypto_connections[i].sent_nonce);
-                        uint32_t zero = 0;
+                        size_t zero = 0;
                         encrypt_precompute(c->crypto_connections[i].peersessionpublic_key,
                                            c->crypto_connections[i].sessionsecret_key,
                                            c->crypto_connections[i].shared_key);
                         c->crypto_connections[i].status =
                             CRYPTO_CONN_ESTABLISHED; /* Connection status needs to be 3 for write_cryptpacket() to work. */
-                        write_cryptpacket(c, i, ((uint8_t *)&zero), sizeof(zero));
+                        write_cryptpacket(c, i, ((size_t *)&zero), sizeof(zero));
                         c->crypto_connections[i].status = CRYPTO_CONN_NOT_CONFIRMED; /* Set it to its proper value right after. */
                     } else {
                         /* This should not happen, timeout the connection if it does. */
@@ -759,7 +759,7 @@ static void receive_crypto(Net_Crypto *c)
                     c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
                 }
             } else if (id_packet(c->lossless_udp,
-                                 c->crypto_connections[i].number) != (uint8_t)~0) {
+                                 c->crypto_connections[i].number) != (size_t)~0) {
                 /* This should not happen, timeout the connection if it does. */
                 c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
             }
@@ -767,15 +767,15 @@ static void receive_crypto(Net_Crypto *c)
 
         if (c->crypto_connections[i].status == CRYPTO_CONN_NOT_CONFIRMED) {
             if (id_packet(c->lossless_udp, c->crypto_connections[i].number) == 3) {
-                uint8_t temp_data[MAX_DATA_SIZE];
-                uint8_t data[MAX_DATA_SIZE];
-                int length = read_packet(c->lossless_udp, c->crypto_connections[i].number, temp_data);
-                int len = decrypt_data(c->crypto_connections[i].peersessionpublic_key,
+                size_t temp_data[MAX_DATA_SIZE];
+                size_t data[MAX_DATA_SIZE];
+                ptrdiff_t length = read_packet(c->lossless_udp, c->crypto_connections[i].number, temp_data);
+                ptrdiff_t len = decrypt_data(c->crypto_connections[i].peersessionpublic_key,
                                        c->crypto_connections[i].sessionsecret_key,
                                        c->crypto_connections[i].recv_nonce, temp_data + 1, length - 1, data);
-                uint32_t zero = 0;
+                size_t zero = 0;
 
-                if (len == sizeof(uint32_t) && memcmp(((uint8_t *)&zero), data, sizeof(uint32_t)) == 0) {
+                if (len == sizeof(size_t)) == 0) {
                     increment_nonce(c->crypto_connections[i].recv_nonce);
                     encrypt_precompute(c->crypto_connections[i].peersessionpublic_key,
                                        c->crypto_connections[i].sessionsecret_key,
@@ -788,7 +788,7 @@ static void receive_crypto(Net_Crypto *c)
                     /* This should not happen, timeout the connection if it does. */
                     c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
                 }
-            } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != (uint8_t)~0) {
+            } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != (size_t)~0) {
                 /* This should not happen, timeout the connection if it does. */
                 c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
             }
@@ -834,7 +834,7 @@ void init_cryptopackets(void *dht)
 
 static void kill_timedout(Net_Crypto *c)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION
@@ -854,7 +854,7 @@ void do_net_crypto(Net_Crypto *c)
 
 void kill_net_crypto(Net_Crypto *c)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         crypto_kill(c, i);

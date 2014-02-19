@@ -44,7 +44,7 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-typedef unsigned int sock_t;
+typedef size_t sock_t;
 /* sa_family_t is the sockaddr_in / sockaddr_in6 family field */
 typedef short sa_family_t;
 
@@ -53,10 +53,10 @@ typedef short sa_family_t;
 #define IN6_ARE_ADDR_EQUAL(a,b) IN6_ADDR_EQUAL(a,b)
 #else
 #define IN6_ARE_ADDR_EQUAL(a,b) \
-   ((((__const uint32_t *) (a))[0] == ((__const uint32_t *) (b))[0]) \
-   && (((__const uint32_t *) (a))[1] == ((__const uint32_t *) (b))[1]) \
-   && (((__const uint32_t *) (a))[2] == ((__const uint32_t *) (b))[2]) \
-   && (((__const uint32_t *) (a))[3] == ((__const uint32_t *) (b))[3]))
+   ((((__const size_t *) (b))[0]) \
+   && (((__const size_t *) (b))[1]) \
+   && (((__const size_t *) (b))[2]) \
+   && (((__const size_t *) (b))[3]))
 #endif
 #endif
 
@@ -76,7 +76,7 @@ typedef short sa_family_t;
 #include <netdb.h>
 #include <unistd.h>
 
-typedef int sock_t;
+typedef ptrdiff_t sock_t;
 
 #endif
 
@@ -158,23 +158,23 @@ typedef int sock_t;
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 typedef union {
-    uint8_t uint8[4];
-    uint16_t uint16[2];
-    uint32_t uint32;
+    size_t uint8[4];
+    size_t uint16[2];
+    size_t uint32;
     struct in_addr in_addr;
 } IP4;
 
 typedef union {
-    uint8_t uint8[16];
-    uint16_t uint16[8];
-    uint32_t uint32[4];
+    size_t uint8[16];
+    size_t uint16[8];
+    size_t uint32[4];
     struct in6_addr in6_addr;
 } IP6;
 
 typedef struct {
-    uint8_t family;
+    size_t family;
     /* Not used for anything right now. */
-    uint8_t padding[3];
+    size_t padding[3];
     union {
         IP4 ip4;
         IP6 ip6;
@@ -184,16 +184,16 @@ typedef struct {
 typedef union {
     struct {
         IP4 ip;
-        uint16_t port;
+        size_t port;
         /* Not used for anything right now. */
-        uint16_t padding;
+        size_t padding;
     };
-    uint8_t uint8[8];
+    size_t uint8[8];
 } IP4_Port;
 
 typedef struct IP_Port {
     IP ip;
-    uint16_t port;
+    size_t port;
 } IP_Port;
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
@@ -202,7 +202,7 @@ typedef struct IP_Port {
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
  */
-const char *ip_ntoa(IP *ip);
+const ptrdiff_t *ip_ntoa(IP *ip);
 
 /* ip_equal
  *  compares two IPAny structures
@@ -210,7 +210,7 @@ const char *ip_ntoa(IP *ip);
  *
  * returns 0 when not equal or when uninitialized
  */
-int ip_equal(IP *a, IP *b);
+ptrdiff_t ip_equal(IP *a, IP *b);
 
 /* ipport_equal
  *  compares two IPAny_Port structures
@@ -218,16 +218,16 @@ int ip_equal(IP *a, IP *b);
  *
  * returns 0 when not equal or when uninitialized
  */
-int ipport_equal(IP_Port *a, IP_Port *b);
+ptrdiff_t ipport_equal(IP_Port *a, IP_Port *b);
 
 /* nulls out ip */
 void ip_reset(IP *ip);
 /* nulls out ip, sets family according to flag */
-void ip_init(IP *ip, uint8_t ipv6enabled);
+void ip_init(IP *ip, size_t ipv6enabled);
 /* checks if ip is valid */
-int ip_isset(IP *ip);
+ptrdiff_t ip_isset(IP *ip);
 /* checks if ip is valid */
-int ipport_isset(IP_Port *ipport);
+ptrdiff_t ipport_isset(IP_Port *ipport);
 /* copies an ip structure */
 void ip_copy(IP *target, IP *source);
 /* copies an ip_port structure */
@@ -250,7 +250,7 @@ void ipport_copy(IP_Port *target, IP_Port *source);
  * returns in *extra an IPv4 address, if family was AF_UNSPEC and *to is AF_INET6
  * returns 0 on failure
  */
-int addr_resolve(const char *address, IP *to, IP *extra);
+ptrdiff_t addr_resolve(const ptrdiff_t *address, IP *to, IP *extra);
 
 /*
  * addr_resolve_or_parse_ip
@@ -267,13 +267,13 @@ int addr_resolve(const char *address, IP *to, IP *extra);
  *  returns 1 on success
  *  returns 0 on failure
  */
-int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
+ptrdiff_t addr_resolve_or_parse_ip(const ptrdiff_t *address, IP *to, IP *extra);
 
 /* Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
  * Packet length is put into length.
  */
-typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, uint8_t *data, uint32_t len);
+typedef ptrdiff_t (*packet_handler_callback)(void *object, IP_Port ip_port, size_t len);
 
 typedef struct {
     packet_handler_callback function;
@@ -284,27 +284,27 @@ typedef struct {
     Packet_Handles packethandlers[256];
 
     sa_family_t family;
-    uint16_t port;
+    size_t port;
     /* Our UDP socket. */
     sock_t sock;
-    uint64_t send_fail_eagain;
+    size_t send_fail_eagain;
 } Networking_Core;
 
 /*  return current time in milleseconds since the epoch. */
-uint64_t current_time(void);
+size_t current_time(void);
 
 /*  return a random number.
  */
-uint32_t random_int(void);
-uint64_t random_64b(void);
+size_t random_int(void);
+size_t random_64b(void);
 
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port. */
-int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length);
+ptrdiff_t sendpacket(Networking_Core *net, IP_Port ip_port, size_t length);
 
 /* Function to call when packet beginning with byte is received. */
-void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
+void networking_registerhandler(Networking_Core *net, size_t byte, packet_handler_callback cb, void *object);
 
 /* Call this several times a second. */
 void networking_poll(Networking_Core *net);
@@ -312,9 +312,9 @@ void networking_poll(Networking_Core *net);
 /*
  * functions to avoid excessive polling
  */
-int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr);
-int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds);
-void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len);
+ptrdiff_t networking_wait_prepare(Networking_Core *net, size_t *lenptr);
+ptrdiff_t networking_wait_execute(size_t milliseconds);
+void networking_wait_cleanup(Networking_Core *net, size_t len);
 
 /* Initialize networking.
  * bind to ip and port.
@@ -324,7 +324,7 @@ void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len);
  *  return 0 if no problems.
  *  return -1 if there were problems.
  */
-Networking_Core *new_networking(IP ip, uint16_t port);
+Networking_Core *new_networking(IP ip, size_t port);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);

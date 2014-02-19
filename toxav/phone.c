@@ -86,13 +86,13 @@ struct SDL_Surface *screen;
 
 typedef struct {
     struct SDL_Overlay *bmp;
-    int width, height;
+    ptrdiff_t width, height;
 } VideoPicture;
 
 
 typedef struct av_friend_s {
-    int _id;
-    int _active; /* 0=false; 1=true; */
+    ptrdiff_t _id;
+    ptrdiff_t _active; /* 0=false; 1=true; */
 } av_friend_t;
 
 typedef struct av_session_s {
@@ -109,28 +109,28 @@ typedef struct av_session_s {
     struct SwsContext   *sws_ctx;
 
     /* Thread running control */
-    int running_decaud, running_encaud,
+    ptrdiff_t running_decaud, running_encaud,
         running_decvid, running_encvid;
 
     pthread_mutex_t _mutex;
 
     Tox *_messenger;
     av_friend_t  *_friends;
-    int _friend_cout;
-    char _my_public_id[200];
+    ptrdiff_t _friend_cout;
+    ptrdiff_t _my_public_id[200];
 #ifdef TOX_FFMPEG
     AVInputFormat *video_input_format;
     AVFormatContext *video_format_ctx;
-    uint8_t video_stream;
+    size_t video_stream;
     AVCodecContext *webcam_decoder_ctx;
     AVCodec *webcam_decoder;
 #endif
 } av_session_t;
 
 
-void av_allocate_friend(av_session_t *_phone, int _id, int _active)
+void av_allocate_friend(av_session_t *_phone, ptrdiff_t _id, ptrdiff_t _active)
 {
-    static int _new_id = 0;
+    static ptrdiff_t _new_id = 0;
 
     if ( !_phone->_friends ) {
         _phone->_friends = calloc(sizeof(av_friend_t), 1);
@@ -147,13 +147,13 @@ void av_allocate_friend(av_session_t *_phone, int _id, int _active)
 
     _phone->_friends->_active = _active;
 }
-av_friend_t *av_get_friend(av_session_t *_phone, int _id)
+av_friend_t *av_get_friend(av_session_t *_phone, ptrdiff_t _id)
 {
     av_friend_t *_friends = _phone->_friends;
 
     if ( !_friends ) return NULL;
 
-    int _it = 0;
+    ptrdiff_t _it = 0;
 
     for (; _it < _phone->_friend_cout; _it ++)
         if ( _friends[_it]._id == _id )
@@ -165,7 +165,7 @@ av_friend_t *av_get_friend(av_session_t *_phone, int _id)
 
 /***************** MISC *****************/
 
-void INFO (const char *_format, ...)
+void INFO (const ptrdiff_t *_format, ...)
 {
     printf("\r[!] ");
     va_list _arg;
@@ -176,11 +176,11 @@ void INFO (const char *_format, ...)
     fflush(stdout);
 }
 
-unsigned char *hex_string_to_bin(char hex_string[])
+size_t *hex_string_to_bin(ptrdiff_t hex_string[])
 {
     size_t i, len = strlen(hex_string);
-    unsigned char *val = calloc(sizeof(unsigned char), len);
-    char *pos = hex_string;
+    size_t *val = calloc(sizeof(size_t), len);
+    ptrdiff_t *pos = hex_string;
 
     for (i = 0; i < len; ++i, pos += 2)
         sscanf(pos, "%2hhx", &val[i]);
@@ -188,7 +188,7 @@ unsigned char *hex_string_to_bin(char hex_string[])
     return val;
 }
 
-int getinput( char *_buff, size_t _limit, int *_len )
+ptrdiff_t getinput( ptrdiff_t *_buff, size_t _limit, ptrdiff_t *_len )
 {
     if ( fgets(_buff, _limit, stdin) == NULL )
         return -1;
@@ -201,13 +201,13 @@ int getinput( char *_buff, size_t _limit, int *_len )
     return 0;
 }
 
-char *trim_spaces ( char *buff )
+ptrdiff_t *trim_spaces ( ptrdiff_t *buff )
 {
 
-    int _i = 0, _len = strlen(buff);
+    ptrdiff_t _i = 0, _len = strlen(buff);
 
-    char *container = calloc(sizeof(char), _len);
-    int _ci = 0;
+    ptrdiff_t *container = calloc(sizeof(ptrdiff_t), _len);
+    ptrdiff_t _ci = 0;
 
     for ( ; _i < _len; _i++ ) {
         while ( _i < _len && buff[_i] == ' ' )
@@ -227,9 +227,9 @@ char *trim_spaces ( char *buff )
 
 #define FRADDR_TOSTR_CHUNK_LEN 8
 
-static void fraddr_to_str(uint8_t *id_bin, char *id_str)
+static void fraddr_to_str(size_t *id_bin, ptrdiff_t *id_str)
 {
-    uint i, delta = 0, pos_extra = 0, sum_extra = 0;
+    size_t i, delta = 0, pos_extra = 0, sum_extra = 0;
 
     for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
         sprintf(&id_str[2 * i + delta], "%02hhX", id_bin[i]);
@@ -267,7 +267,7 @@ static void fraddr_to_str(uint8_t *id_bin, char *id_str)
  * How av stuff _should_ look like
  */
 /*
-int display_received_frame(av_session_t* _phone, vpx_image_t *image)
+ptrdiff_t display_received_frame(av_session_t* _phone, vpx_image_t *image)
 {
     CodecState* cs = get_cs_temp(_phone->av);
     AVPicture pict;
@@ -281,7 +281,7 @@ int display_received_frame(av_session_t* _phone, vpx_image_t *image)
     pict.linesize[2] = _phone->video_picture.bmp->pitches[1];
     */
 /* Convert the image into YUV format that SDL uses *//*
-sws_scale(_phone->sws_SDL_r_ctx, (uint8_t const * const *)r_video_frame->data, r_video_frame->linesize, 0,
+sws_scale(_phone->sws_SDL_r_ctx, (size_t const * const *)r_video_frame->data, r_video_frame->linesize, 0,
           cs->video_decoder_ctx->height, pict.data, pict.linesize );
 
 SDL_UnlockYUVOverlay(_phone->video_picture.bmp);
@@ -304,20 +304,20 @@ void *encode_video_thread(void *arg)
     _phone->running_encvid = 1;
     //CodecState *cs = get_cs_temp(_phone->av);
     AVPacket pkt1, *packet = &pkt1;
-    //int p = 0;
-    //int got_packet;
-    int video_frame_finished;
+    //ptrdiff_t p = 0;
+    //ptrdiff_t got_packet;
+    ptrdiff_t video_frame_finished;
     AVFrame *s_video_frame;
     AVFrame *webcam_frame;
     s_video_frame = avcodec_alloc_frame();
     webcam_frame = avcodec_alloc_frame();
     //AVPacket enc_video_packet;
 
-    uint8_t *buffer;
-    int numBytes;
+    size_t *buffer;
+    ptrdiff_t numBytes;
     /* Determine required buffer size and allocate buffer */
     numBytes = avpicture_get_size(PIX_FMT_YUV420P, _phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height);
-    buffer = (uint8_t *)av_calloc(numBytes * sizeof(uint8_t), 1);
+    buffer = (size_t), 1);
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, _phone->webcam_decoder_ctx->width,
                    _phone->webcam_decoder_ctx->height);
     _phone->sws_ctx = sws_getContext(_phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height,
@@ -329,7 +329,7 @@ void *encode_video_thread(void *arg)
     vpx_image_t *image =
         vpx_img_alloc(NULL, VPX_IMG_FMT_I420, _phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height, 1);
 
-    //uint32_t frame_counter = 0;
+    //size_t frame_counter = 0;
     while (_phone->running_encvid) {
 
         if (av_read_frame(_phone->video_format_ctx, packet) < 0) {
@@ -348,7 +348,7 @@ void *encode_video_thread(void *arg)
             }
 
             av_free_packet(packet);
-            sws_scale(_phone->sws_ctx, (uint8_t const * const *)webcam_frame->data, webcam_frame->linesize, 0,
+            sws_scale(_phone->sws_ctx, (size_t const * const *)webcam_frame->data, webcam_frame->linesize, 0,
                       _phone->webcam_decoder_ctx->height, s_video_frame->data, s_video_frame->linesize);
             /* create a new I-frame every 60 frames */
             //++p;
@@ -423,10 +423,10 @@ void *encode_audio_thread(void *arg)
     av_session_t *_phone = arg;
     _phone->running_encaud = 1;
 
-    int ret = 0;
-    int16_t frame[4096];
-    int frame_size = AUDIO_FRAME_SIZE;
-    ALint sample = 0;
+    ptrdiff_t ret = 0;
+    ptrdiff_t frame[4096];
+    ptrdiff_t frame_size = AUDIO_FRAME_SIZE;
+    ALptrdiff_t sample = 0;
     alcCaptureStart((ALCdevice *)_phone->audio_capture_device);
 
     while (_phone->running_encaud) {
@@ -454,29 +454,29 @@ void *encode_audio_thread(void *arg)
     pthread_exit ( NULL );
 }
 
-void convert_to_rgb(vpx_image_t *img, unsigned char *out)
+void convert_to_rgb(vpx_image_t *img, size_t *out)
 {
-    const int w = img->d_w;
-    const int w2 = w / 2;
-    const int pstride = w * 3;
-    const int h = img->d_h;
-    const int h2 = h / 2;
+    const ptrdiff_t w = img->d_w;
+    const ptrdiff_t w2 = w / 2;
+    const ptrdiff_t pstride = w * 3;
+    const ptrdiff_t h = img->d_h;
+    const ptrdiff_t h2 = h / 2;
 
-    const int strideY = img->stride[0];
-    const int strideU = img->stride[1];
-    const int strideV = img->stride[2];
-    int posy, posx;
+    const ptrdiff_t strideY = img->stride[0];
+    const ptrdiff_t strideU = img->stride[1];
+    const ptrdiff_t strideV = img->stride[2];
+    ptrdiff_t posy, posx;
 
     for (posy = 0; posy < h2; posy++) {
-        unsigned char *dst = out + pstride * (posy * 2);
-        unsigned char *dst2 = out + pstride * (posy * 2 + 1);
-        const unsigned char *srcY = img->planes[0] + strideY * posy * 2;
-        const unsigned char *srcY2 = img->planes[0] + strideY * (posy * 2 + 1);
-        const unsigned char *srcU = img->planes[1] + strideU * posy;
-        const unsigned char *srcV = img->planes[2] + strideV * posy;
+        size_t *dst = out + pstride * (posy * 2);
+        size_t *dst2 = out + pstride * (posy * 2 + 1);
+        const size_t *srcY = img->planes[0] + strideY * posy * 2;
+        const size_t *srcY2 = img->planes[0] + strideY * (posy * 2 + 1);
+        const size_t *srcU = img->planes[1] + strideU * posy;
+        const size_t *srcV = img->planes[2] + strideV * posy;
 
         for (posx = 0; posx < w2; posx++) {
-            unsigned char Y, U, V;
+            size_t Y, U, V;
             short R, G, B;
             short iR, iG, iB;
 
@@ -533,7 +533,7 @@ void convert_to_rgb(vpx_image_t *img, unsigned char *out)
     }
 }
 
-#define mask32(BYTE) (*(uint32_t *)(uint8_t [4]){ [BYTE] = 0xff })
+#define mask32(BYTE) (*(size_t [4]){ [BYTE] = 0xff })
 
 void *decode_video_thread(void *arg)
 {
@@ -544,16 +544,16 @@ void *decode_video_thread(void *arg)
     //CodecState *cs = get_cs_temp(_phone->av);
     //cs->video_stream = 0;
 
-    //int recved_size;
-    //uint8_t dest[RTP_PAYLOAD_SIZE];
+    //ptrdiff_t recved_size;
+    //size_t dest[RTP_PAYLOAD_SIZE];
 
-    //int dec_frame_finished;
+    //ptrdiff_t dec_frame_finished;
     //AVFrame *r_video_frame;
     //r_video_frame = avcodec_alloc_frame();
     //AVPacket dec_video_packet;
     //av_new_packet (&dec_video_packet, 65536);
-    int width = 0;
-    int height = 0;
+    ptrdiff_t width = 0;
+    ptrdiff_t height = 0;
 
     while (_phone->running_decvid) {
         //recved_size = toxav_recv_rtp_payload(_phone->av, TypeVideo, dest);
@@ -586,7 +586,7 @@ void *decode_video_thread(void *arg)
                 //                                      SWS_BILINEAR, NULL, NULL, NULL);
             }
 
-            uint8_t *rgb_image = malloc(width * height * 3);
+            size_t *rgb_image = malloc(width * height * 3);
             convert_to_rgb(image, rgb_image);
             SDL_Surface *img_surface = SDL_CreateRGBSurfaceFrom(rgb_image, width, height, 24, width * 3, mask32(0), mask32(1),
                                        mask32(2), 0);
@@ -637,33 +637,33 @@ void *decode_audio_thread(void *arg)
     av_session_t *_phone = arg;
     _phone->running_decaud = 1;
 
-    //int recved_size;
-    //uint8_t dest [RTP_PAYLOAD_SIZE];
+    //ptrdiff_t recved_size;
+    //size_t dest [RTP_PAYLOAD_SIZE];
 
-    int frame_size = AUDIO_FRAME_SIZE;
-    //int data_size;
+    ptrdiff_t frame_size = AUDIO_FRAME_SIZE;
+    //ptrdiff_t data_size;
 
     ALCdevice *dev;
     ALCcontext *ctx;
-    ALuint source, *buffers;
+    ALuptrdiff_t source, *buffers;
     dev = alcOpenDevice(NULL);
     ctx = alcCreateContext(dev, NULL);
     alcMakeContextCurrent(ctx);
-    int openal_buffers = 5;
+    ptrdiff_t openal_buffers = 5;
 
     buffers = calloc(sizeof(ALuint) * openal_buffers, 1);
     alGenBuffers(openal_buffers, buffers);
     alGenSources((ALuint)1, &source);
     alSourcei(source, AL_LOOPING, AL_FALSE);
 
-    ALuint buffer;
-    ALint ready;
+    ALuptrdiff_t buffer;
+    ALptrdiff_t ready;
 
-    uint16_t zeros[frame_size];
+    size_t zeros[frame_size];
     memset(zeros, 0, frame_size);
-    int16_t PCM[frame_size];
+    ptrdiff_t PCM[frame_size];
 
-    int i;
+    ptrdiff_t i;
 
     for (i = 0; i < openal_buffers; ++i) {
         alBufferData(buffers[i], AL_FORMAT_MONO16, zeros, frame_size, 48000);
@@ -677,7 +677,7 @@ void *decode_audio_thread(void *arg)
         goto ending;
     }
 
-    int dec_frame_len = 0;
+    ptrdiff_t dec_frame_len = 0;
 
     while (_phone->running_decaud) {
 
@@ -692,7 +692,7 @@ void *decode_audio_thread(void *arg)
         if (dec_frame_len > 0) {
             alSourceUnqueueBuffers(source, 1, &buffer);
             alBufferData(buffer, AL_FORMAT_MONO16, PCM, dec_frame_len * 2 * 1, 48000);
-            int error = alGetError();
+            ptrdiff_t error = alGetError();
 
             if (error != AL_NO_ERROR) {
                 fprintf(stderr, "Error setting buffer %d\n", error);
@@ -736,7 +736,7 @@ ending:
 
 
 
-int phone_startmedia_loop ( ToxAv *arg )
+ptrdiff_t phone_startmedia_loop ( ToxAv *arg )
 {
     if ( !arg ) {
         return -1;
@@ -925,9 +925,9 @@ av_session_t *av_init_session()
     _retu->_friends = NULL;
 
 
-    const ALchar *_device_list = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
-    int i = 0;
-    const ALchar *device_names[20];
+    const ALptrdiff_t *_device_list = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
+    ptrdiff_t i = 0;
+    const ALptrdiff_t *device_names[20];
 
     if ( _device_list ) {
         INFO("\nAvailable Capture Devices are:");
@@ -942,9 +942,9 @@ av_session_t *av_init_session()
 
     INFO("Enter capture device number");
 
-    char dev[2];
-    char *left;
-    char *warned_ = fgets(dev, 2, stdin);
+    ptrdiff_t dev[2];
+    ptrdiff_t *left;
+    ptrdiff_t *warned_ = fgets(dev, 2, stdin);
     (void)warned_;
     long selection = strtol(dev, &left, 10);
 
@@ -966,7 +966,7 @@ av_session_t *av_init_session()
         return 0;
     }
 
-    uint16_t height = 0, width = 0;
+    size_t height = 0, width = 0;
 #ifdef TOX_FFMPEG
     avdevice_register_all();
     avcodec_register_all();
@@ -1014,7 +1014,7 @@ av_session_t *av_init_session()
     width = _retu->webcam_decoder_ctx->width;
     height = _retu->webcam_decoder_ctx->height;
 #endif
-    uint8_t _byte_address[TOX_FRIEND_ADDRESS_SIZE];
+    size_t _byte_address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(_retu->_messenger, _byte_address );
     fraddr_to_str( _byte_address, _retu->_my_public_id );
 
@@ -1041,7 +1041,7 @@ av_session_t *av_init_session()
     return _retu;
 }
 
-int av_terminate_session(av_session_t *_phone)
+ptrdiff_t av_terminate_session(av_session_t *_phone)
 {
     toxav_hangup(_phone->av);
 
@@ -1064,7 +1064,7 @@ int av_terminate_session(av_session_t *_phone)
 /****** AV HELPER FUNCTIONS ******/
 
 /* Auto accept friend request */
-void av_friend_requ(uint8_t *_public_key, uint8_t *_data, uint16_t _length, void *_userdata)
+void av_friend_requ(size_t _length, void *_userdata)
 {
     av_session_t *_phone = _userdata;
     av_allocate_friend (_phone, -1, 0);
@@ -1076,7 +1076,7 @@ void av_friend_requ(uint8_t *_public_key, uint8_t *_data, uint16_t _length, void
     INFO("Auto-accepted! Friend id: %d",  _phone->_friends->_id );
 }
 
-void av_friend_active(Tox *_messenger, int _friendnumber, uint8_t *_string, uint16_t _length, void *_userdata)
+void av_friend_active(Tox *_messenger, ptrdiff_t _friendnumber, size_t _length, void *_userdata)
 {
     av_session_t *_phone = _userdata;
     INFO("Friend no. %d is online", _friendnumber);
@@ -1091,12 +1091,12 @@ void av_friend_active(Tox *_messenger, int _friendnumber, uint8_t *_string, uint
     (*_this_friend)._active = 1;
 }
 
-int av_add_friend(av_session_t *_phone, char *_friend_hash)
+ptrdiff_t av_add_friend(av_session_t *_phone, ptrdiff_t *_friend_hash)
 {
     trim_spaces(_friend_hash);
 
-    unsigned char *_bin_string = hex_string_to_bin(_friend_hash);
-    int _number = tox_add_friend(_phone->_messenger, _bin_string, (uint8_t *)"Tox phone "_USERAGENT,
+    size_t *_bin_string = hex_string_to_bin(_friend_hash);
+    ptrdiff_t _number = tox_add_friend(_phone->_messenger, _bin_string, (size_t *)"Tox phone "_USERAGENT,
                                  sizeof("Tox phone "_USERAGENT));
     free(_bin_string);
 
@@ -1109,13 +1109,13 @@ int av_add_friend(av_session_t *_phone, char *_friend_hash)
     return _number;
 }
 
-int av_connect_to_dht(av_session_t *_phone, char *_dht_key, const char *_dht_addr, unsigned short _dht_port)
+ptrdiff_t av_connect_to_dht(av_session_t *_phone, ptrdiff_t *_dht_key, const ptrdiff_t *_dht_addr, size_t _dht_port)
 {
-    unsigned char *_binary_string = hex_string_to_bin(_dht_key);
+    size_t *_binary_string = hex_string_to_bin(_dht_key);
 
-    uint16_t _port = htons(_dht_port);
+    size_t _port = htons(_dht_port);
 
-    int _if = tox_bootstrap_from_address(_phone->_messenger, _dht_addr, 1, _port, _binary_string );
+    ptrdiff_t _if = tox_bootstrap_from_address(_phone->_messenger, _dht_addr, 1, _port, _binary_string );
 
     free(_binary_string);
 
@@ -1138,8 +1138,8 @@ void do_phone ( av_session_t *_phone )
         );
 
     while ( 1 ) {
-        char _line [ 1500 ];
-        int _len;
+        ptrdiff_t _line [ 1500 ];
+        ptrdiff_t _len;
 
         if ( -1 == getinput(_line, 1500, &_len) ) {
             printf(" >> ");
@@ -1155,7 +1155,7 @@ void do_phone ( av_session_t *_phone )
         switch (_line[0]) {
 
             case 'f': {
-                char _id [128];
+                ptrdiff_t _id [128];
                 strncpy(_id, _line + 2, 128);
 
                 av_add_friend(_phone, _id);
@@ -1175,8 +1175,8 @@ void do_phone ( av_session_t *_phone )
                     _ctype = TypeVideo;
                 }
 
-                char *_end;
-                int _friend = strtol(_line + 4, &_end, 10);
+                ptrdiff_t *_end;
+                ptrdiff_t _friend = strtol(_line + 4, &_end, 10);
 
                 if ( *_end ) {
                     INFO("Friend num has to be numerical value");
@@ -1251,12 +1251,12 @@ void *tox_poll (void *_messenger_p)
     pthread_exit(NULL);
 }
 
-int av_wait_dht(av_session_t *_phone, int _wait_seconds, const char *_ip, char *_key, unsigned short _port)
+ptrdiff_t av_wait_dht(av_session_t *_phone, ptrdiff_t _wait_seconds, const ptrdiff_t *_ip, ptrdiff_t *_key, size_t _port)
 {
     if ( !_wait_seconds )
         return -1;
 
-    int _waited = 0;
+    ptrdiff_t _waited = 0;
 
     while ( !tox_isconnected(_phone->_messenger) ) {
 
@@ -1275,12 +1275,12 @@ int av_wait_dht(av_session_t *_phone, int _wait_seconds, const char *_ip, char *
         usleep(1000000);
     }
 
-    int _r = _wait_seconds - _waited;
+    ptrdiff_t _r = _wait_seconds - _waited;
     return _r ? _r : 1;
 }
 /* ---------------------- */
 
-int print_help ( const char *_name )
+ptrdiff_t print_help ( const ptrdiff_t *_name )
 {
     printf ( "Usage: %s [IP] [PORT] [KEY]\n"
              "\t[IP] (DHT ip)\n"
@@ -1291,17 +1291,17 @@ int print_help ( const char *_name )
     return 1;
 }
 
-int main ( int argc, char *argv [] )
+ptrdiff_t main ( ptrdiff_t argc, ptrdiff_t *argv [] )
 {
     if ( argc < 1 || argc < 4 )
         return print_help(argv[0]);
 
-    char *_convertable;
+    ptrdiff_t *_convertable;
 
 
-    const char *_ip = argv[1];
-    char *_key = argv[3];
-    unsigned short _port = strtol(argv[2], &_convertable, 10);
+    const ptrdiff_t *_ip = argv[1];
+    ptrdiff_t *_key = argv[3];
+    size_t _port = strtol(argv[2], &_convertable, 10);
 
     if ( *_convertable ) {
         printf("Invalid port: cannot convert string to long: %s", _convertable);
@@ -1325,8 +1325,8 @@ int main ( int argc, char *argv [] )
     printf("\r       \r");
     fflush(stdout);
 
-    int _r;
-    int _wait_seconds = 5;
+    ptrdiff_t _r;
+    ptrdiff_t _wait_seconds = 5;
 
     for ( _r = 0; _r == 0; _r = av_wait_dht(_phone, _wait_seconds, _ip, _key, _port) ) _wait_seconds --;
 

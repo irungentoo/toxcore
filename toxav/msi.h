@@ -68,24 +68,24 @@ typedef struct _MSICall {             /* Call info structure */
     MSICallType     type_local;        /* Type of payload user is ending */
     MSICallType    *type_peer;         /* Type of payload others are sending */
 
-    uint8_t         id[CALL_ID_LEN];  /* Random value identifying the call */
+    size_t         id[CALL_ID_LEN];  /* Random value identifying the call */
 
-    uint8_t        *key_local;         /* The key for encryption */
-    uint8_t        *key_peer;          /* The key for decryption */
+    size_t        *key_local;         /* The key for encryption */
+    size_t        *key_peer;          /* The key for decryption */
 
-    uint8_t        *nonce_local;       /* Local nonce */
-    uint8_t        *nonce_peer;        /* Peer nonce  */
+    size_t        *nonce_local;       /* Local nonce */
+    size_t        *nonce_peer;        /* Peer nonce  */
 
-    int             ringing_tout_ms;   /* Ringing timeout in ms */
+    ptrdiff_t             ringing_tout_ms;   /* Ringing timeout in ms */
 
-    int             request_timer_id;  /* Timer id for outgoing request/action */
-    int             ringing_timer_id;  /* Timer id for ringing timeout */
+    ptrdiff_t             request_timer_id;  /* Timer id for outgoing request/action */
+    ptrdiff_t             ringing_timer_id;  /* Timer id for ringing timeout */
 
     pthread_mutex_t mutex;             /* It's to be assumed that call will have
                                          * seperate thread so add mutex
                                          */
-    uint32_t       *peers;
-    uint16_t        peer_count;
+    size_t       *peers;
+    size_t        peer_count;
 
 
 } MSICall;
@@ -100,16 +100,16 @@ typedef struct _MSISession {
     /* Call handler */
     struct _MSICall *call;
 
-    int            last_error_id; /* Determine the last error */
-    const uint8_t *last_error_str;
+    ptrdiff_t            last_error_id; /* Determine the last error */
+    const size_t *last_error_str;
 
-    const uint8_t *ua_name;
+    const size_t *ua_name;
 
     void *agent_handler; /* Pointer to an object that is handling msi */
     Messenger  *messenger_handle;
 
-    uint32_t frequ;
-    uint32_t call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
+    size_t frequ;
+    size_t call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
 
 
 } MSISession;
@@ -156,7 +156,7 @@ void msi_register_callback(MSICallback callback, MSICallbackID id);
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession *msi_init_session ( Messenger *messenger, const uint8_t *ua_name );
+MSISession *msi_init_session ( Messenger *messenger, const size_t *ua_name );
 
 
 /**
@@ -165,7 +165,7 @@ MSISession *msi_init_session ( Messenger *messenger, const uint8_t *ua_name );
  * @param session The session
  * @return int
  */
-int msi_terminate_session ( MSISession *session );
+ptrdiff_t msi_terminate_session ( MSISession *session );
 
 
 /**
@@ -177,7 +177,7 @@ int msi_terminate_session ( MSISession *session );
  * @param friend_id The friend.
  * @return int
  */
-int msi_invite ( MSISession *session, MSICallType call_type, uint32_t rngsec, uint32_t friend_id );
+ptrdiff_t msi_invite ( MSISession *session, MSICallType call_type, size_t friend_id );
 
 
 /**
@@ -188,7 +188,7 @@ int msi_invite ( MSISession *session, MSICallType call_type, uint32_t rngsec, ui
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int msi_hangup ( MSISession *session );
+ptrdiff_t msi_hangup ( MSISession *session );
 
 
 /**
@@ -198,7 +198,7 @@ int msi_hangup ( MSISession *session );
  * @param call_type Answer with Audio or Video(both).
  * @return int
  */
-int msi_answer ( MSISession *session, MSICallType call_type );
+ptrdiff_t msi_answer ( MSISession *session, MSICallType call_type );
 
 
 /**
@@ -209,7 +209,7 @@ int msi_answer ( MSISession *session, MSICallType call_type );
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession *session, uint32_t peer, const uint8_t *reason );
+ptrdiff_t msi_cancel ( MSISession *session, size_t *reason );
 
 
 /**
@@ -219,7 +219,7 @@ int msi_cancel ( MSISession *session, uint32_t peer, const uint8_t *reason );
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_reject ( MSISession *session, const uint8_t *reason );
+ptrdiff_t msi_reject ( MSISession *session, const size_t *reason );
 
 
 /**
@@ -228,6 +228,6 @@ int msi_reject ( MSISession *session, const uint8_t *reason );
  * @param session Control session.
  * @return int
  */
-int msi_stopcall ( MSISession *session );
+ptrdiff_t msi_stopcall ( MSISession *session );
 
 #endif /* __TOXMSI */

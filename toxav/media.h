@@ -43,15 +43,15 @@ typedef struct _CodecState {
 
     /* video encoding */
     vpx_codec_ctx_t  v_encoder;
-    uint32_t frame_counter;
+    size_t frame_counter;
 
     /* video decoding */
     vpx_codec_ctx_t  v_decoder;
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
-    int audio_bitrate;
-    int audio_sample_rate;
+    ptrdiff_t audio_bitrate;
+    ptrdiff_t audio_sample_rate;
 
     /* audio decoding */
     OpusDecoder *audio_decoder;
@@ -60,20 +60,20 @@ typedef struct _CodecState {
 
 typedef struct _RTPMessage RTPMessage;
 
-struct jitter_buffer *create_queue(int capacity);
-int empty_queue(struct jitter_buffer *q);
+struct jitter_buffer *create_queue(ptrdiff_t capacity);
+ptrdiff_t empty_queue(struct jitter_buffer *q);
 
-int queue(struct jitter_buffer *q, RTPMessage *pk);
-RTPMessage *dequeue(struct jitter_buffer *q, int *success);
+ptrdiff_t queue(struct jitter_buffer *q, RTPMessage *pk);
+RTPMessage *dequeue(struct jitter_buffer *q, ptrdiff_t *success);
 
 
-CodecState *codec_init_session ( uint32_t audio_bitrate,
-                                 uint16_t audio_frame_duration,
-                                 uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
-                                 uint16_t video_width,
-                                 uint16_t video_height,
-                                 uint32_t video_bitrate );
+CodecState *codec_init_session ( size_t audio_bitrate,
+                                 size_t audio_frame_duration,
+                                 size_t audio_sample_rate,
+                                 size_t audio_channels,
+                                 size_t video_width,
+                                 size_t video_height,
+                                 size_t video_bitrate );
 
 void codec_terminate_session(CodecState *cs);
 
