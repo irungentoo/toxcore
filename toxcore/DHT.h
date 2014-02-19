@@ -65,40 +65,40 @@ void to_host_family(IP *ip);
 
 typedef struct {
     IP_Port     ip_port;
-    uint64_t    timestamp;
+    size_t    timestamp;
 } IPPTs;
 
 typedef struct {
     /* Node routes request correctly (true (1) or false/didn't check (0)) */
-    uint8_t     routes_requests_ok;
+    size_t     routes_requests_ok;
     /* Time which we last checked this.*/
-    uint64_t    routes_requests_timestamp;
-    uint8_t     routes_requests_pingedid[CLIENT_ID_SIZE];
+    size_t    routes_requests_timestamp;
+    size_t     routes_requests_pingedid[CLIENT_ID_SIZE];
     /* Node sends correct send_node (true (1) or false/didn't check (0)) */
-    uint8_t     send_nodes_ok;
+    size_t     send_nodes_ok;
     /* Time which we last checked this.*/
-    uint64_t    send_nodes_timestamp;
-    uint8_t     send_nodes_pingedid[CLIENT_ID_SIZE];
+    size_t    send_nodes_timestamp;
+    size_t     send_nodes_pingedid[CLIENT_ID_SIZE];
     /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
-    uint8_t     testing_requests;
+    size_t     testing_requests;
     /* Time which we last checked this.*/
-    uint64_t    testing_timestamp;
-    uint8_t     testing_pingedid[CLIENT_ID_SIZE];
+    size_t    testing_timestamp;
+    size_t     testing_pingedid[CLIENT_ID_SIZE];
 } Hardening;
 
 typedef struct {
     IP_Port     ip_port;
-    uint64_t    timestamp;
-    uint64_t    last_pinged;
+    size_t    timestamp;
+    size_t    last_pinged;
 
     Hardening hardening;
     /* Returned by this node. Either our friend or us. */
     IP_Port     ret_ip_port;
-    uint64_t    ret_timestamp;
+    size_t    ret_timestamp;
 } IPPTsPng;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    size_t     client_id[CLIENT_ID_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
 } Client_data;
@@ -107,23 +107,23 @@ typedef struct {
 
 typedef struct {
     /* 1 if currently hole punching, otherwise 0 */
-    uint8_t     hole_punching;
-    uint32_t    punching_index;
-    uint32_t    tries;
-    uint32_t    punching_index2;
+    size_t     hole_punching;
+    size_t    punching_index;
+    size_t    tries;
+    size_t    punching_index2;
 
-    uint64_t    punching_timestamp;
-    uint64_t    recvNATping_timestamp;
-    uint64_t    NATping_id;
-    uint64_t    NATping_timestamp;
+    size_t    punching_timestamp;
+    size_t    recvNATping_timestamp;
+    size_t    NATping_id;
+    size_t    NATping_timestamp;
 } NAT;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    size_t     client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
-    uint64_t    lastgetnode;
+    size_t    lastgetnode;
 
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
@@ -131,12 +131,12 @@ typedef struct {
 
 /* this must be kept even if IP_Port is expanded: wire compatibility */
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    size_t     client_id[CLIENT_ID_SIZE];
     IP4_Port    ip_port;
 } Node4_format;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    size_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
 } Node_format;
 
@@ -148,26 +148,26 @@ typedef struct {
     Networking_Core *net;
 
     Client_data    close_clientlist[LCLIENT_LIST];
-    uint64_t       close_lastgetnodes;
+    size_t       close_lastgetnodes;
 
     /* Note: this key should not be/is not used to transmit any sensitive materials */
-    uint8_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    size_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
     /* DHT keypair */
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    size_t self_public_key[crypto_box_PUBLICKEYBYTES];
+    size_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
     DHT_Friend    *friends_list;
-    uint16_t       num_friends;
+    size_t       num_friends;
 
     struct PING   *ping;
 #ifdef ENABLE_ASSOC_DHT
     struct Assoc  *assoc;
 #endif
-    uint64_t       last_run;
+    size_t       last_run;
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
-void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_id);
+void DHT_getnodes(DHT *dht, IP_Port *from_ipp, size_t *which_id);
 
 /* Add a new friend to the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.
@@ -175,7 +175,7 @@ void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_
  *  return 0 if success.
  *  return 1 if failure (friends list is full).
  */
-int DHT_addfriend(DHT *dht, uint8_t *client_id);
+ptrdiff_t DHT_addfriend(DHT *dht, size_t *client_id);
 
 /* Delete a friend from the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.
@@ -183,7 +183,7 @@ int DHT_addfriend(DHT *dht, uint8_t *client_id);
  *  return 0 if success.
  *  return 1 if failure (client_id not in friends list).
  */
-int DHT_delfriend(DHT *dht, uint8_t *client_id);
+ptrdiff_t DHT_delfriend(DHT *dht, size_t *client_id);
 
 /* Get ip of friend.
  *  client_id must be CLIENT_ID_SIZE bytes long.
@@ -192,19 +192,19 @@ int DHT_delfriend(DHT *dht, uint8_t *client_id);
  *
  * !!! Signature changed !!!
  *
- * OLD: IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id);
+ * OLD: IP_Port DHT_getfriendip(DHT *dht, size_t *client_id);
  *
  *  return ip if success.
  *  return ip of 0 if failure (This means the friend is either offline or we have not found him yet).
  *  return ip of 1 if friend is not in list.
  *
- * NEW: int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
+ * NEW: ptrdiff_t DHT_getfriendip(DHT *dht, size_t *client_id, IP_Port *ip_port);
  *
  *  return -1, -- if client_id does NOT refer to a friend
  *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
  *  return  1, ip if client_id refers to a friend and we found him
  */
-int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
+ptrdiff_t DHT_getfriendip(DHT *dht, size_t *client_id, IP_Port *ip_port);
 
 /* Compares client_id1 and client_id2 with client_id.
  *
@@ -212,7 +212,7 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
  *  return 1 if client_id1 is closer.
  *  return 2 if client_id2 is closer.
  */
-int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2);
+ptrdiff_t id_closest(size_t *id2);
 
 /* Get the (maximum MAX_SENT_NODES) closest nodes to client_id we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
@@ -224,15 +224,15 @@ int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2);
  * return the number of nodes returned.
  *
  */
-int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
-                    uint8_t want_good);
+ptrdiff_t get_close_nodes(DHT *dht, size_t is_LAN,
+                    size_t want_good);
 
 
 /* Put up to max_num nodes in nodes from the closelist.
  *
  * return the number of nodes.
  */
-uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
+size_t max_num);
 
 /* Put up to max_num random nodes in nodes.
  *
@@ -240,7 +240,7 @@ uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
  *
  * NOTE:this is used to pick nodes for paths.
  */
-uint16_t random_nodes_path(DHT *dht, Node_format *nodes, uint16_t max_num);
+size_t max_num);
 
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);
@@ -251,7 +251,7 @@ void do_DHT(DHT *dht);
 /* Sends a "get nodes" request to the given node with ip, port and public_key
  *   to setup connections
  */
-void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
+void DHT_bootstrap(DHT *dht, IP_Port ip_port, size_t *public_key);
 /* Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections
  *
@@ -263,8 +263,8 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, uint8_t *public_key);
  *  returns 1 if the address could be converted into an IP address
  *  returns 0 otherwise
  */
-int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
-                               uint16_t port, uint8_t *public_key);
+ptrdiff_t DHT_bootstrap_from_address(DHT *dht, const ptrdiff_t *address, size_t ipv6enabled,
+                               size_t *public_key);
 
 
 /* ROUTING FUNCTIONS */
@@ -273,13 +273,13 @@ int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
  *
  *  return -1 if failure.
  */
-int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length);
+ptrdiff_t route_packet(DHT *dht, size_t length);
 
 /* Send the following packet to everyone who tells us they are connected to friend_id.
  *
  *  return number of nodes it sent the packet to.
  */
-int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length);
+ptrdiff_t route_tofriend(DHT *dht, size_t length);
 
 /* NAT PUNCHING FUNCTIONS */
 
@@ -289,22 +289,22 @@ int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t lengt
  *  returns number of ips returned.
  *  returns -1 if no such friend.
  */
-int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id);
+ptrdiff_t friend_ips(DHT *dht, IP_Port *ip_portlist, size_t *friend_id);
 
 /* SAVE/LOAD functions */
 
 /* Get the size of the DHT (for saving). */
-uint32_t DHT_size(DHT *dht);
+size_t DHT_size(DHT *dht);
 
 /* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(DHT *dht, uint8_t *data);
+void DHT_save(DHT *dht, size_t *data);
 
 /* Load the DHT from data of size size.
  *
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load(DHT *dht, uint8_t *data, uint32_t length);
+ptrdiff_t DHT_load(DHT *dht, size_t length);
 
 /* Initialize DHT. */
 DHT *new_DHT(Net_Crypto *c);
@@ -314,9 +314,9 @@ void kill_DHT(DHT *dht);
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
  */
-int DHT_isconnected(DHT *dht);
+ptrdiff_t DHT_isconnected(DHT *dht);
 
-int addto_lists(DHT *dht, IP_Port ip_port, uint8_t *client_id);
+ptrdiff_t addto_lists(DHT *dht, IP_Port ip_port, size_t *client_id);
 
 #endif
 
