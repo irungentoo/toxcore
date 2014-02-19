@@ -42,7 +42,7 @@
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
-static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
+static const ptrdiff_t *inet_ntop(sa_family_t family, void *addr, ptrdiff_t *buf, size_t bufsize)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
@@ -75,13 +75,13 @@ static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t b
     return NULL;
 }
 
-static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
+static ptrdiff_t inet_pton(sa_family_t family, const ptrdiff_t *addrString, void *addrbuf)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
         memset(&saddr, 0, sizeof(saddr));
 
-        INT len = sizeof(saddr);
+        ptrdiff_t len = sizeof(saddr);
 
         if (WSAStringToAddress((LPTSTR)addrString, AF_INET, NULL, (LPSOCKADDR)&saddr, &len))
             return 0;
@@ -93,7 +93,7 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
         struct sockaddr_in6 saddr;
         memset(&saddr, 0, sizeof(saddr));
 
-        INT len = sizeof(saddr);
+        ptrdiff_t len = sizeof(saddr);
 
         if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, NULL, (LPSOCKADDR)&saddr, &len))
             return 0;
@@ -109,9 +109,9 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
 #endif
 
 /*  return current UNIX time in microseconds (us). */
-uint64_t current_time(void)
+size_t current_time(void)
 {
-    uint64_t time;
+    size_t time;
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     /* This probably works fine */
     FILETIME ft;
@@ -131,28 +131,28 @@ uint64_t current_time(void)
 
 /*  return a random number.
  */
-uint32_t random_int(void)
+size_t random_int(void)
 {
-    uint32_t randnum;
-    randombytes((uint8_t *)&randnum , sizeof(randnum));
+    size_t randnum;
+    randombytes((size_t *)&randnum , sizeof(randnum));
     return randnum;
 }
 
-uint64_t random_64b(void)
+size_t random_64b(void)
 {
-    uint64_t randnum;
-    randombytes((uint8_t *)&randnum, sizeof(randnum));
+    size_t randnum;
+    randombytes((size_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 
 #ifdef LOGGING
-static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res);
+static void loglogdata(ptrdiff_t *message, size_t res);
 #endif
 
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
  */
-int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length)
+ptrdiff_t sendpacket(Networking_Core *net, IP_Port ip_port, size_t length)
 {
     /* socket AF_INET, but target IP NOT: can't send */
     if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
@@ -205,12 +205,12 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
         return -1;
     }
 
-    int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
+    ptrdiff_t res = sendto(net->sock, (ptrdiff_t *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 #ifdef LOGGING
     loglogdata("O=>", data, length, &ip_port, res);
 #endif
 
-    if ((res >= 0) && ((uint32_t)res == length))
+    if ((res >= 0) && ((size_t)res == length))
         net->send_fail_eagain = 0;
     else if ((res < 0) && (errno == EWOULDBLOCK))
         net->send_fail_eagain = current_time();
@@ -224,17 +224,17 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
  *  Packet length is put into length.
  *  Dump all empty packets.
  */
-static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+static ptrdiff_t receivepacket(sock_t sock, IP_Port *ip_port, size_t *length)
 {
     memset(ip_port, 0, sizeof(IP_Port));
     struct sockaddr_storage addr;
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    int addrlen = sizeof(addr);
+    ptrdiff_t addrlen = sizeof(addr);
 #else
     socklen_t addrlen = sizeof(addr);
 #endif
     *length = 0;
-    int fail_or_len = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    ptrdiff_t fail_or_len = recvfrom(sock, (ptrdiff_t *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
     if (fail_or_len <= 0) {
 #ifdef LOGGING
@@ -248,7 +248,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
         return -1; /* Nothing received or empty packet. */
     }
 
-    *length = (uint32_t)fail_or_len;
+    *length = (size_t)fail_or_len;
 
     if (addr.ss_family == AF_INET) {
         struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
@@ -276,7 +276,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     return 0;
 }
 
-void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object)
+void networking_registerhandler(Networking_Core *net, size_t byte, packet_handler_callback cb, void *object)
 {
     net->packethandlers[byte].function = cb;
     net->packethandlers[byte].object = object;
@@ -287,8 +287,8 @@ void networking_poll(Networking_Core *net)
     unix_time_update();
 
     IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
-    uint32_t length;
+    size_t data[MAX_UDP_PACKET_SIZE];
+    size_t length;
 
     while (receivepacket(net->sock, &ip_port, data, &length) != -1) {
         if (length < 1) continue;
@@ -310,12 +310,12 @@ void networking_poll(Networking_Core *net)
  */
 typedef struct {
     sock_t   sock;
-    uint32_t sendqueue_length;
-    uint16_t send_fail_reset;
-    uint64_t send_fail_eagain;
+    size_t sendqueue_length;
+    size_t send_fail_reset;
+    size_t send_fail_eagain;
 } select_info;
 
-int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
+ptrdiff_t networking_wait_prepare(Networking_Core *net, size_t *lenptr)
 {
     if ((data == NULL) || !lenptr || (*lenptr < sizeof(select_info))) {
         if (lenptr) {
@@ -335,7 +335,7 @@ int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uin
     return 1;
 }
 
-int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
+ptrdiff_t networking_wait_execute(size_t milliseconds)
 {
     /* WIN32: supported since Win2K, but might need some adjustements */
     /* UNIX: this should work for any remotely Unix'ish system */
@@ -343,11 +343,11 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     select_info *s = (select_info *)data;
 
     /* add only if we had a failed write */
-    int writefds_add = 0;
+    ptrdiff_t writefds_add = 0;
 
     if (s->send_fail_eagain != 0) {
         // current_time(): microseconds
-        uint64_t now = current_time();
+        size_t now = current_time();
 
         /* s->sendqueue_length: might be used to guess how long we keep checking */
         /* for now, threshold is hardcoded to 500ms, too long for a really really
@@ -356,7 +356,7 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
             writefds_add = 1;
     }
 
-    int nfds = 1 + s->sock;
+    ptrdiff_t nfds = 1 + s->sock;
 
     /* the FD_ZERO calls might be superfluous */
     fd_set readfds;
@@ -381,7 +381,7 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     errno = 0;
 #endif
     /* returns -1 on error, 0 on timeout, the socket on activity */
-    int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
+    ptrdiff_t res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
 #ifdef LOGGING
 
     /* only dump if not timeout */
@@ -400,7 +400,7 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     return res > 0 ? 1 : 0;
 }
 
-void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len)
+void networking_wait_cleanup(Networking_Core *net, size_t len)
 {
     select_info *s = (select_info *)data;
 
@@ -408,8 +408,8 @@ void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len)
         net->send_fail_eagain = 0;
 }
 
-uint8_t at_startup_ran = 0;
-static int at_startup(void)
+size_t at_startup_ran = 0;
+static ptrdiff_t at_startup(void)
 {
     if (at_startup_ran != 0)
         return 0;
@@ -425,9 +425,9 @@ static int at_startup(void)
         return -1;
 
 #else
-    srandom((uint32_t)current_time());
+    srandom((size_t)current_time());
 #endif
-    srand((uint32_t)current_time());
+    srand((size_t)current_time());
     at_startup_ran = 1;
     return 0;
 }
@@ -449,7 +449,7 @@ static void at_shutdown(void)
  *  return Networking_Core object if no problems
  *  return NULL if there are problems.
  */
-Networking_Core *new_networking(IP ip, uint16_t port)
+Networking_Core *new_networking(IP ip, size_t port)
 {
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != AF_INET && ip.family != AF_INET6) {
@@ -496,13 +496,13 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
     /* Functions to increase the size of the send and receive UDP buffers.
      */
-    int n = 1024 * 1024 * 2;
-    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (char *)&n, sizeof(n));
-    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (char *)&n, sizeof(n));
+    ptrdiff_t n = 1024 * 1024 * 2;
+    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (ptrdiff_t *)&n, sizeof(n));
+    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (ptrdiff_t *)&n, sizeof(n));
 
     /* Enable broadcast on socket */
-    int broadcast = 1;
-    setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
+    ptrdiff_t broadcast = 1;
+    setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (ptrdiff_t *)&broadcast, sizeof(broadcast));
 
     /* Set socket nonblocking. */
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -515,7 +515,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 #endif /* !WIN32 */
 
     /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
-    uint16_t *portptr = NULL;
+    size_t *portptr = NULL;
     struct sockaddr_storage addr;
     size_t addrsize;
 
@@ -546,12 +546,12 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     }
 
     if (ip.family == AF_INET6) {
-        char ipv6only = 0;
+        ptrdiff_t ipv6only = 0;
         socklen_t optsize = sizeof(ipv6only);
 #ifdef LOGGING
         errno = 0;
 #endif
-        int res = getsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
+        ptrdiff_t res = getsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
 
         if ((res == 0) && (ipv6only == 0)) {
 #ifdef LOGGING
@@ -570,7 +570,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
             errno = 0;
             res =
 #endif
-                setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
+                setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (ptrdiff_t *)&ipv6only, sizeof(ipv6only));
 #ifdef LOGGING
 
             if (res < 0) {
@@ -595,7 +595,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         errno = 0;
         res =
 #endif
-            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
+            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (ptrdiff_t *)&mreq, sizeof(mreq));
 #ifdef LOGGING
 
         if (res < 0) {
@@ -624,9 +624,9 @@ Networking_Core *new_networking(IP ip, uint16_t port)
      *   some clients might not test return of tox_new(), blindly assuming that
      *   it worked ok (which it did previously without a successful bind)
      */
-    uint16_t port_to_try = port;
+    size_t port_to_try = port;
     *portptr = htons(port_to_try);
-    int tries, res;
+    ptrdiff_t tries, res;
 
     for (tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++) {
         res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
@@ -684,7 +684,7 @@ void kill_networking(Networking_Core *net)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ip_equal(IP *a, IP *b)
+ptrdiff_t ip_equal(IP *a, IP *b)
 {
     if (!a || !b)
         return 0;
@@ -717,7 +717,7 @@ int ip_equal(IP *a, IP *b)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ipport_equal(IP_Port *a, IP_Port *b)
+ptrdiff_t ipport_equal(IP_Port *a, IP_Port *b)
 {
     if (!a || !b)
         return 0;
@@ -738,7 +738,7 @@ void ip_reset(IP *ip)
 };
 
 /* nulls out ip, sets family according to flag */
-void ip_init(IP *ip, uint8_t ipv6enabled)
+void ip_init(IP *ip, size_t ipv6enabled)
 {
     if (!ip)
         return;
@@ -748,7 +748,7 @@ void ip_init(IP *ip, uint8_t ipv6enabled)
 };
 
 /* checks if ip is valid */
-int ip_isset(IP *ip)
+ptrdiff_t ip_isset(IP *ip)
 {
     if (!ip)
         return 0;
@@ -757,7 +757,7 @@ int ip_isset(IP *ip)
 };
 
 /* checks if ip is valid */
-int ipport_isset(IP_Port *ipport)
+ptrdiff_t ipport_isset(IP_Port *ipport)
 {
     if (!ipport)
         return 0;
@@ -791,8 +791,8 @@ void ipport_copy(IP_Port *target, IP_Port *source)
  *   uses a static buffer, so mustn't used multiple times in the same output
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
-static char addresstext[96];
-const char *ip_ntoa(IP *ip)
+static ptrdiff_t addresstext[96];
+const ptrdiff_t *ip_ntoa(IP *ip)
 {
     if (ip) {
         if (ip->family == AF_INET) {
@@ -834,7 +834,7 @@ const char *ip_ntoa(IP *ip)
  * returns 1 on success, 0 on failure
  */
 
-int addr_parse_ip(const char *address, IP *to)
+ptrdiff_t addr_parse_ip(const ptrdiff_t *address, IP *to)
 {
     if (!address || !to)
         return 0;
@@ -876,7 +876,7 @@ int addr_parse_ip(const char *address, IP *to)
  * returns 0 on failure
  */
 
-int addr_resolve(const char *address, IP *to, IP *extra)
+ptrdiff_t addr_resolve(const ptrdiff_t *address, IP *to, IP *extra)
 {
     if (!address || !to)
         return 0;
@@ -886,7 +886,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     struct addrinfo *server = NULL;
     struct addrinfo *walker = NULL;
     struct addrinfo  hints;
-    int              rc;
+    ptrdiff_t              rc;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = family;
@@ -976,7 +976,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
  *  returns 1 on success
  *  returns 0 on failure
  */
-int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
+ptrdiff_t addr_resolve_or_parse_ip(const ptrdiff_t *address, IP *to, IP *extra)
 {
     if (!addr_resolve(address, to, extra))
         if (!addr_parse_ip(address, to))
@@ -986,18 +986,18 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 };
 
 #ifdef LOGGING
-static char errmsg_ok[3] = "OK";
-static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
+static ptrdiff_t errmsg_ok[3] = "OK";
+static void loglogdata(ptrdiff_t *message, size_t res)
 {
-    uint16_t port = ntohs(ip_port->port);
-    uint32_t data[2];
-    data[0] = buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
-    data[1] = buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
+    size_t port = ntohs(ip_port->port);
+    size_t data[2];
+    data[0] = buflen > 4 ? ntohl(*(size_t *)&buffer[1]) : 0;
+    data[1] = buflen > 7 ? ntohl(*(size_t *)&buffer[5]) : 0;
 
     /* Windows doesn't necessarily know %zu */
     if (res < 0) {
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x\n",
-                 buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
+                 buffer[0], message, (buflen < 999 ? (size_t)buflen : 999), 'E',
                  ip_ntoa(&ip_port->ip), port, errno, strerror(errno), data[0], data[1]);
     } else if ((res > 0) && ((size_t)res <= buflen))
         snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x\n",
