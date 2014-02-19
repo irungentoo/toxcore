@@ -29,26 +29,26 @@
 #include <stdint.h>
 
 void unix_time_update();
-size_t unix_time();
-ptrdiff_t is_timeout(size_t timeout);
+uint64_t unix_time();
+int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 
 /* id functions */
-bool id_equal(size_t *src);
-size_t *src); /* return value is CLIENT_ID_SIZE */
+bool id_equal(uint8_t *dest, uint8_t *src);
+uint32_t id_copy(uint8_t *dest, uint8_t *src); /* return value is CLIENT_ID_SIZE */
 
-void host_to_net(size_t numbytes);
+void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
 
 /* state load/save */
-typedef ptrdiff_t (*load_state_callback_func)(void *outer, size_t type);
-ptrdiff_t load_state(load_state_callback_func load_state_callback, void *outer,
-               size_t cookie_inner);
+typedef int (*load_state_callback_func)(void *outer, uint8_t *data, uint32_t len, uint16_t type);
+int load_state(load_state_callback_func load_state_callback, void *outer,
+               uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
 #ifdef LOGGING
-extern ptrdiff_t logbuffer[512];
-void loginit(size_t port);
-void loglog(ptrdiff_t *text);
+extern char logbuffer[512];
+void loginit(uint16_t port);
+void loglog(char *text);
 void logexit();
 #endif
 

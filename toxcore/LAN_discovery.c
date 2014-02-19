@@ -32,10 +32,10 @@
 
 #ifdef __linux
 
-static ptrdiff_t     broadcast_count = -1;
+static int     broadcast_count = -1;
 static IP_Port broadcast_ip_port[MAX_INTERFACES];
 
-static void fetch_broadcast_info(size_t port)
+static void fetch_broadcast_info(uint16_t port)
 {
     /* Not sure how many platforms this will run on,
      * so it's wrapped in __linux for now.
@@ -52,7 +52,7 @@ static void fetch_broadcast_info(size_t port)
     memset(i_faces, 0, sizeof(struct ifreq) * MAX_INTERFACES);
 
     struct ifconf ifconf;
-    ifconf.ifc_buf = (ptrdiff_t *)i_faces;
+    ifconf.ifc_buf = (char *)i_faces;
     ifconf.ifc_len = sizeof(i_faces);
 
     if (ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
@@ -65,7 +65,7 @@ static void fetch_broadcast_info(size_t port)
      * a larger array, not done (640kB and 16 interfaces shall be
      * enough, for everybody!)
      */
-    ptrdiff_t i, count = ifconf.ifc_len / sizeof(struct ifreq);
+    int i, count = ifconf.ifc_len / sizeof(struct ifreq);
 
     for (i = 0; i < count; i++) {
         /* there are interfaces with are incapable of broadcast */
@@ -96,7 +96,7 @@ static void fetch_broadcast_info(size_t port)
  *  return 1 if sent to at least one broadcast target.
  *  return 0 on failure to find any valid broadcast target.
  */
-static size_t length)
+static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t *data, uint16_t length)
 {
     /* fetch only once? on every packet? every X seconds?
      * old: every packet, new: once */
@@ -106,7 +106,7 @@ static size_t length)
     if (!broadcast_count)
         return 0;
 
-    ptrdiff_t i;
+    int i;
 
     for (i = 0; i < broadcast_count; i++)
         sendpacket(net, broadcast_ip_port[i], data, length);
@@ -150,7 +150,7 @@ static IP broadcast_ip(sa_family_t family_socket, sa_family_t family_broadcast)
 /*  return 0 if ip is a LAN ip.
  *  return -1 if it is not.
  */
-ptrdiff_t LAN_ip(IP ip)
+int LAN_ip(IP ip)
 {
     if (ip.family == AF_INET) {
         IP4 ip4 = ip.ip4;
@@ -205,7 +205,7 @@ ptrdiff_t LAN_ip(IP ip)
     return -1;
 }
 
-static ptrdiff_t handle_LANdiscovery(void *object, IP_Port source, size_t length)
+static int handle_LANdiscovery(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
 
@@ -220,16 +220,16 @@ static ptrdiff_t handle_LANdiscovery(void *object, IP_Port source, size_t length
 }
 
 
-ptrdiff_t send_LANdiscovery(size_t port, DHT *dht)
+int send_LANdiscovery(uint16_t port, DHT *dht)
 {
-    size_t data[crypto_box_PUBLICKEYBYTES + 1];
+    uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
     id_copy(data + 1, dht->self_public_key);
 
 #ifdef __linux
     send_broadcasts(dht->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
 #endif
-    ptrdiff_t res = -1;
+    int res = -1;
     IP_Port ip_port;
     ip_port.port = port;
 

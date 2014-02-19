@@ -39,7 +39,7 @@
 #define LAN_DISCOVERY_INTERVAL 10
 
 /* Send a LAN discovery pcaket to the broadcast address with port port. */
-ptrdiff_t send_LANdiscovery(size_t port, DHT *dht);
+int send_LANdiscovery(uint16_t port, DHT *dht);
 
 /* Sets up packet handlers. */
 void LANdiscovery_init(DHT *dht);
@@ -49,7 +49,7 @@ void LANdiscovery_init(DHT *dht);
  *  return 0 if ip is a LAN ip.
  *  return -1 if it is not.
  */
-ptrdiff_t LAN_ip(IP ip);
+int LAN_ip(IP ip);
 
 
 #endif
