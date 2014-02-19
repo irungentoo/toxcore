@@ -116,7 +116,7 @@ typedef enum {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox* messenger, void* userdata, uint16_t video_width, uint16_t video_height);
+ToxAv *toxav_new(Tox *messenger, void *userdata, uint16_t video_width, uint16_t video_height);
 
 /**
  * @brief Remove A/V session.
