@@ -43,7 +43,7 @@ typedef struct _CodecState {
 
     /* video encoding */
     vpx_codec_ctx_t  v_encoder;
-    uint32_t frame_counter;
+    size_t frame_counter;
 
     /* video decoding */
     vpx_codec_ctx_t  v_decoder;
@@ -67,13 +67,13 @@ int queue(struct jitter_buffer *q, RTPMessage *pk);
 RTPMessage *dequeue(struct jitter_buffer *q, int *success);
 
 
-CodecState *codec_init_session ( uint32_t audio_bitrate,
-                                 uint16_t audio_frame_duration,
-                                 uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
-                                 uint16_t video_width,
-                                 uint16_t video_height,
-                                 uint32_t video_bitrate );
+CodecState *codec_init_session ( size_t audio_bitrate,
+                                 size_t audio_frame_duration,
+                                 size_t audio_sample_rate,
+                                 size_t audio_channels,
+                                 size_t video_width,
+                                 size_t video_height,
+                                 size_t video_bitrate );
 
 void codec_terminate_session(CodecState *cs);
 

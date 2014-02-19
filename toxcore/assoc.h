@@ -21,21 +21,21 @@ typedef struct Assoc Assoc;
 
 /* custom distance handler, if it's not ID-distance based
  * return values exactly like id_closest() */
-typedef int (*Assoc_distance_relative_callback)(Assoc *assoc, void *callback_data, uint8_t *client_id,
-        uint8_t *client_id1, uint8_t *client_id2);
+typedef int (*Assoc_distance_relative_callback)(Assoc *assoc, void *callback_data, size_t *client_id,
+        size_t *client_id1, size_t *client_id2);
 
 #define DISTANCE_INDEX_DISTANCE_BITS 44
 
 /* absolute distance: can be same for different client_id_check values
  * return value should have DISTANCE_INDEX_DISTANCE_BITS valid bits */
-typedef uint64_t (*Assoc_distance_absolute_callback)(Assoc *assoc, void *callback_data,
-        uint8_t *client_id_ref, uint8_t *client_id_check);
+typedef size_t (*Assoc_distance_absolute_callback)(Assoc *assoc, void *callback_data,
+        size_t *client_id_ref, size_t *client_id_check);
 
 /*****************************************************************************/
 
 /* Central entry point for new associations: add a new candidate to the cache
  * returns 1 if entry is stored, 2 if existing entry was updated, 0 else */
-uint8_t Assoc_add_entry(Assoc *assoc, uint8_t *id, IPPTs *ippts_send, IP_Port *ipp_recv, uint8_t used);
+size_t Assoc_add_entry(Assoc *assoc, size_t *id, IPPTs *ippts_send, IP_Port *ipp_recv, size_t used);
 
 /*****************************************************************************/
 
@@ -47,14 +47,14 @@ typedef enum AssocCloseEntriesFlags {
 
 typedef struct Assoc_close_entries {
     void                              *custom_data;        /* given to distance functions */
-    uint8_t                           *wanted_id;          /* the target client_id */
-    uint8_t                            flags;              /* additional flags */
+    size_t                           *wanted_id;          /* the target client_id */
+    size_t                            flags;              /* additional flags */
 
     Assoc_distance_relative_callback   distance_relative_func;
     Assoc_distance_absolute_callback   distance_absolute_func;
 
-    uint8_t                            count_good;   /* that many should be "good" w.r.t. timeout */
-    uint8_t                            count;        /* allocated number of close_indices */
+    size_t                            count_good;   /* that many should be "good" w.r.t. timeout */
+    size_t                            count;        /* allocated number of close_indices */
     Client_data                      **result;
 } Assoc_close_entries;
 
@@ -67,12 +67,12 @@ typedef struct Assoc_close_entries {
  *    the caller is assumed to be registered from Assoc_register_callback()
  *    if they aren't, they should copy the Client_data and call Assoc_client_drop()
  */
-uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *close_entries);
+size_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *close_entries);
 
 /*****************************************************************************/
 
 /* create: default sizes (6, 5 => 320 entries) */
-Assoc *new_Assoc_default(uint8_t *public_id);
+Assoc *new_Assoc_default(size_t *public_id);
 
 /* create: customized sizes
  * total is (2^bits) * entries
@@ -81,10 +81,10 @@ Assoc *new_Assoc_default(uint8_t *public_id);
  *
  * preferably bits should be large and entries small to ensure spread
  * in the search space (e. g. 5, 5 is preferable to 2, 41) */
-Assoc *new_Assoc(size_t bits, size_t entries, uint8_t *public_id);
+Assoc *new_Assoc(size_t bits, size_t entries, size_t *public_id);
 
 /* public_id changed (loaded), update which entry isn't stored */
-void Assoc_self_client_id_changed(Assoc *assoc, uint8_t *public_id);
+void Assoc_self_client_id_changed(Assoc *assoc, size_t *public_id);
 
 /* every 45s send out a getnodes() for a "random" bucket */
 #define ASSOC_BUCKET_REFRESH 45

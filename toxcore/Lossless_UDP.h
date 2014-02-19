@@ -48,8 +48,8 @@
 #define DATA_SYNC_RATE    30
 
 typedef struct {
-    uint8_t  data[MAX_DATA_SIZE];
-    uint16_t size;
+    size_t  data[MAX_DATA_SIZE];
+    size_t size;
 } Data;
 
 #define LUDP_NO_CONNECTION 0
@@ -68,64 +68,64 @@ typedef struct {
      *  return LUDP_ESTABLISHED if we are sending SYNC packets and can send data.
      *  return LUDP_TIMED_OUT if the connection has timed out.
      */
-    uint8_t status;
+    size_t status;
 
     /*
      *  return 0 if connection was not initiated by someone else.
      *  return 1 if incoming_connection() has returned.
      *  return 2 if it has not.
      */
-    uint8_t inbound;
+    size_t inbound;
 
-    uint16_t  SYNC_rate;     /* Current SYNC packet send rate packets per second. */
-    uint32_t  data_rate;     /* Current data packet send rate packets per second. */
+    size_t  SYNC_rate;     /* Current SYNC packet send rate packets per second. */
+    size_t  data_rate;     /* Current data packet send rate packets per second. */
 
-    uint64_t  last_SYNC;     /* Time our last SYNC packet was sent. */
-    uint64_t  last_sent;     /* Time our last data or handshake packet was sent. */
-    uint64_t  last_recvSYNC; /* Time we last received a SYNC packet from the other. */
-    uint64_t  last_recvdata; /* Time we last received a DATA packet from the other. */
-    uint64_t  killat;        /* Time to kill the connection. */
+    size_t  last_SYNC;     /* Time our last SYNC packet was sent. */
+    size_t  last_sent;     /* Time our last data or handshake packet was sent. */
+    size_t  last_recvSYNC; /* Time we last received a SYNC packet from the other. */
+    size_t  last_recvdata; /* Time we last received a DATA packet from the other. */
+    size_t  killat;        /* Time to kill the connection. */
 
     Data      *sendbuffer; /* packet send buffer. */
-    uint32_t  sendbuffer_length;
+    size_t  sendbuffer_length;
     Data      *recvbuffer; /* packet receive buffer. */
-    uint32_t  recvbuffer_length;
-    uint32_t  handshake_id1;
-    uint32_t  handshake_id2;
+    size_t  recvbuffer_length;
+    size_t  handshake_id1;
+    size_t  handshake_id2;
 
     /* Number of data packets received (also used as handshake_id1). */
-    uint32_t  recv_packetnum;
+    size_t  recv_packetnum;
 
     /* Number of packets received by the other peer. */
-    uint32_t  orecv_packetnum;
+    size_t  orecv_packetnum;
 
     /* Number of data packets sent. */
-    uint32_t  sent_packetnum;
+    size_t  sent_packetnum;
 
     /* Number of packets sent by the other peer. */
-    uint32_t  osent_packetnum;
+    size_t  osent_packetnum;
 
     /* Number of latest packet written onto the sendbuffer. */
-    uint32_t  sendbuff_packetnum;
+    size_t  sendbuff_packetnum;
 
     /* We know all packets before that number were successfully sent. */
-    uint32_t  successful_sent;
+    size_t  successful_sent;
 
     /* Packet number of last packet read with the read_packet function. */
-    uint32_t  successful_read;
+    size_t  successful_read;
 
     /* List of currently requested packet numbers(by the other person). */
-    uint32_t  req_packets[MAX_REQUESTED_PACKETS];
+    size_t  req_packets[MAX_REQUESTED_PACKETS];
 
     /* Total number of currently requested packets(by the other person). */
-    uint16_t  num_req_paquets;
+    size_t  num_req_paquets;
 
-    uint8_t   recv_counter;
-    uint8_t   send_counter;
-    uint8_t   timeout; /* connection timeout in seconds. */
+    size_t   recv_counter;
+    size_t   send_counter;
+    size_t   timeout; /* connection timeout in seconds. */
 
     /* Is the connection confirmed or not? 1 if yes, 0 if no */
-    uint8_t   confirmed;
+    size_t   confirmed;
 } Connection;
 
 typedef struct {
@@ -135,7 +135,7 @@ typedef struct {
 
     /* Table of random numbers used in handshake_id. */
     /* IPv6 (16) + port (2)*/
-    uint32_t randtable[18][256];
+    size_t randtable[18][256];
 } Lossless_UDP;
 
 /*
@@ -159,7 +159,7 @@ int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port);
  *  return an integer corresponding to the next connection in our incoming connection list with at least numpackets in the recieve queue.
  *  return -1 if there are no new incoming connections in the list.
  */
-int incoming_connection(Lossless_UDP *ludp, uint32_t numpackets);
+int incoming_connection(Lossless_UDP *ludp, size_t numpackets);
 
 /*  return -1 if it could not kill the connection.
  *  return 0 if killed successfully.
@@ -172,7 +172,7 @@ int kill_connection(Lossless_UDP *ludp, int connection_id);
  *  return -1 if it can not kill the connection.
  *  return 0 if it will kill it.
  */
-int timeout_connection_in(Lossless_UDP *ludp, int connection_id, uint32_t seconds);
+int timeout_connection_in(Lossless_UDP *ludp, int connection_id, size_t seconds);
 
 
 /* Check if connection is confirmed.
@@ -198,18 +198,18 @@ IP_Port connection_ip(Lossless_UDP *ludp, int connection_id);
 /*  returns the id of the next packet in the queue.
  *  return -1 if no packet in queue.
  */
-uint8_t id_packet(Lossless_UDP *ludp, int connection_id);
+size_t id_packet(Lossless_UDP *ludp, int connection_id);
 
 /*  return 0 if there is no received data in the buffer.
  *  return length of received packet if successful.
  */
-int read_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data);
+int read_packet(Lossless_UDP *ludp, int connection_id, size_t *data);
 
 /* Like read_packet() but does leaves the queue as is.
  *  return 0 if there is no received data in the buffer.
  *  return length of received packet if successful.
  */
-int read_packet_silent(Lossless_UDP *ludp, int connection_id, uint8_t *data);
+int read_packet_silent(Lossless_UDP *ludp, int connection_id, size_t *data);
 
 /* Discard the next packet to be read from the queue
  *  return 0 if success.
@@ -220,24 +220,24 @@ int discard_packet(Lossless_UDP *ludp, int connection_id);
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
  */
-uint32_t num_free_sendqueue_slots(Lossless_UDP *ludp, int connection_id);
+size_t num_free_sendqueue_slots(Lossless_UDP *ludp, int connection_id);
 
 /*  return 0 if data could not be put in packet queue.
  *  return 1 if data was put into the queue.
  */
-int write_packet(Lossless_UDP *ludp, int connection_id, uint8_t *data, uint32_t length);
+int write_packet(Lossless_UDP *ludp, int connection_id, size_t *data, size_t length);
 
 /*  return number of packets in the queue waiting to be successfully sent. */
-uint32_t sendqueue(Lossless_UDP *ludp, int connection_id);
+size_t sendqueue(Lossless_UDP *ludp, int connection_id);
 
 /*  return number of packets in all queues waiting to be successfully sent. */
-uint32_t sendqueue_total(Lossless_UDP *ludp);
+size_t sendqueue_total(Lossless_UDP *ludp);
 
 /*
  *  return number of packets in the queue waiting to be successfully
  *  read with read_packet(...).
  */
-uint32_t recvqueue(Lossless_UDP *ludp, int connection_id);
+size_t recvqueue(Lossless_UDP *ludp, int connection_id);
 
 /* Check if connection is connected:
  *

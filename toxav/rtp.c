@@ -54,55 +54,55 @@
 
 
 /**
- * @brief Converts 4 bytes to uint32_t
+ * @brief Converts 4 bytes to size_t
  *
  * @param dest Where to convert
  * @param bytes What bytes
  * @return void
  */
-inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
+inline__ void bytes_to_U32(size_t *dest, const size_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
-        ( ( uint32_t ) *  bytes )              |
-        ( ( uint32_t ) * ( bytes + 1 ) << 8 )  |
-        ( ( uint32_t ) * ( bytes + 2 ) << 16 ) |
-        ( ( uint32_t ) * ( bytes + 3 ) << 24 ) ;
+        ( ( size_t ) *  bytes )              |
+        ( ( size_t ) * ( bytes + 1 ) << 8 )  |
+        ( ( size_t ) * ( bytes + 2 ) << 16 ) |
+        ( ( size_t ) * ( bytes + 3 ) << 24 ) ;
 #else
-        ( ( uint32_t ) *  bytes        << 24 ) |
-        ( ( uint32_t ) * ( bytes + 1 ) << 16 ) |
-        ( ( uint32_t ) * ( bytes + 2 ) << 8 )  |
-        ( ( uint32_t ) * ( bytes + 3 ) ) ;
+        ( ( size_t ) *  bytes        << 24 ) |
+        ( ( size_t ) * ( bytes + 1 ) << 16 ) |
+        ( ( size_t ) * ( bytes + 2 ) << 8 )  |
+        ( ( size_t ) * ( bytes + 3 ) ) ;
 #endif
 }
 
 /**
- * @brief Converts 2 bytes to uint16_t
+ * @brief Converts 2 bytes to size_t
  *
  * @param dest Where to convert
  * @param bytes What bytes
  * @return void
  */
-inline__ void bytes_to_U16(uint16_t *dest, const uint8_t *bytes)
+inline__ void bytes_to_U16(size_t *dest, const size_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
-        ( ( uint16_t ) *   bytes ) |
-        ( ( uint16_t ) * ( bytes + 1 ) << 8 );
+        ( ( size_t ) *   bytes ) |
+        ( ( size_t ) * ( bytes + 1 ) << 8 );
 #else
-        ( ( uint16_t ) *   bytes << 8 ) |
-        ( ( uint16_t ) * ( bytes + 1 ) );
+        ( ( size_t ) *   bytes << 8 ) |
+        ( ( size_t ) * ( bytes + 1 ) );
 #endif
 }
 
 /**
- * @brief Convert uint32_t to byte string of size 4
+ * @brief Convert size_t to byte string of size 4
  *
  * @param dest Where to convert
  * @param value The value
  * @return void
  */
-inline__ void U32_to_bytes(uint8_t *dest, uint32_t value)
+inline__ void U32_to_bytes(size_t *dest, size_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
@@ -118,13 +118,13 @@ inline__ void U32_to_bytes(uint8_t *dest, uint32_t value)
 }
 
 /**
- * @brief Convert uint16_t to byte string of size 2
+ * @brief Convert size_t to byte string of size 2
  *
  * @param dest Where to convert
  * @param value The value
  * @return void
  */
-inline__ void U16_to_bytes(uint8_t *dest, uint16_t value)
+inline__ void U16_to_bytes(size_t *dest, size_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
@@ -163,11 +163,11 @@ inline__ int check_late_message (RTPSession *session, RTPMessage *msg)
  * @param target The target
  * @return void
  */
-inline__ void increase_nonce(uint8_t *nonce, uint16_t target)
+inline__ void increase_nonce(size_t *nonce, size_t target)
 {
-    uint16_t _nonce_counter;
+    size_t _nonce_counter;
 
-    uint8_t _reverse_bytes[2];
+    size_t _reverse_bytes[2];
     _reverse_bytes[0] = nonce[crypto_secretbox_NONCEBYTES - 1];
     _reverse_bytes[1] = nonce[crypto_secretbox_NONCEBYTES - 2];
 
@@ -175,7 +175,7 @@ inline__ void increase_nonce(uint8_t *nonce, uint16_t target)
 
     /* Check overflow */
     if (_nonce_counter > UINT16_MAX - target ) { /* 2 bytes are not long enough */
-        uint8_t _it = 3;
+        size_t _it = 3;
 
         while ( _it <= crypto_secretbox_NONCEBYTES ) _it += ++nonce[crypto_secretbox_NONCEBYTES - _it] ?
                     crypto_secretbox_NONCEBYTES : 1;
@@ -199,7 +199,7 @@ inline__ void increase_nonce(uint8_t *nonce, uint16_t target)
  * @brief Speaks for it self.
  *
  */
-static const uint32_t payload_table[] = {
+static const size_t payload_table[] = {
     8000, 8000, 8000, 8000, 8000, 8000, 16000, 8000, 8000, 8000,        /*    0-9    */
     44100, 44100, 0, 0, 90000, 8000, 11025, 22050, 0, 0,                /*   10-19   */
     0, 0, 0, 0, 0, 90000, 90000, 0, 90000, 0,                           /*   20-29   */
@@ -224,13 +224,13 @@ static const uint32_t payload_table[] = {
  * @return RTPHeader* Extracted header.
  * @retval NULL Error occurred while extracting header.
  */
-RTPHeader *extract_header ( const uint8_t *payload, int length )
+RTPHeader *extract_header ( const size_t *payload, int length )
 {
     if ( !payload || !length ) {
         return NULL;
     }
 
-    const uint8_t *_it = payload;
+    const size_t *_it = payload;
 
     RTPHeader *_retu = calloc(1, sizeof (RTPHeader));
     assert(_retu);
@@ -253,8 +253,8 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
      * Added a check for the size of the header little sooner so
      * I don't need to parse the other stuff if it's bad
      */
-    uint8_t _cc = GET_FLAG_CSRCC ( _retu );
-    uint32_t _length = 12 /* Minimum header len */ + ( _cc * 4 );
+    size_t _cc = GET_FLAG_CSRCC ( _retu );
+    size_t _length = 12 /* Minimum header len */ + ( _cc * 4 );
 
     if ( length < _length ) {
         /* Deallocate */
@@ -263,7 +263,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
     }
 
     if ( _cc > 0 ) {
-        _retu->csrc = calloc (_cc, sizeof (uint32_t));
+        _retu->csrc = calloc (_cc, sizeof (size_t));
         assert(_retu->csrc);
 
     } else { /* But this should not happen ever */
@@ -282,7 +282,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
     _it += 4;
     bytes_to_U32(&_retu->ssrc, _it);
 
-    uint8_t _x;
+    size_t _x;
 
     for ( _x = 0; _x < _cc; _x++ ) {
         _it += 4;
@@ -300,19 +300,19 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
  * @return RTPExtHeader* Extracted extension header.
  * @retval NULL Error occurred while extracting extension header.
  */
-RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
+RTPExtHeader *extract_ext_header ( const size_t *payload, size_t length )
 {
-    const uint8_t *_it = payload;
+    const size_t *_it = payload;
 
     RTPExtHeader *_retu = calloc(1, sizeof (RTPExtHeader));
     assert(_retu);
 
-    uint16_t _ext_length;
+    size_t _ext_length;
     bytes_to_U16(&_ext_length, _it);
     _it += 2;
 
 
-    if ( length < ( _ext_length * sizeof(uint32_t) ) ) {
+    if ( length < ( _ext_length * sizeof(size_t) ) ) {
         free(_retu);
         return NULL;
     }
@@ -321,10 +321,10 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
     bytes_to_U16(&_retu->type, _it);
     _it += 2;
 
-    _retu->table = calloc(_ext_length, sizeof (uint32_t));
+    _retu->table = calloc(_ext_length, sizeof (size_t));
     assert(_retu->table);
 
-    uint16_t _x;
+    size_t _x;
 
     for ( _x = 0; _x < _ext_length; _x++ ) {
         _it += 4;
@@ -339,13 +339,13 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
  *
  * @param header The header.
  * @param payload The payload.
- * @return uint8_t* Iterated position.
+ * @return size_t* Iterated position.
  */
-uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
+size_t *add_header ( RTPHeader *header, size_t *payload )
 {
-    uint8_t _cc = GET_FLAG_CSRCC ( header );
+    size_t _cc = GET_FLAG_CSRCC ( header );
 
-    uint8_t *_it = payload;
+    size_t *_it = payload;
 
 
     /* Add sequence number first */
@@ -363,7 +363,7 @@ uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
     U32_to_bytes( _it, header->ssrc);
 
     if ( header->csrc ) {
-        uint8_t _x;
+        size_t _x;
 
         for ( _x = 0; _x < _cc; _x++ ) {
             _it += 4;
@@ -379,11 +379,11 @@ uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
  *
  * @param header The header.
  * @param payload The payload.
- * @return uint8_t* Iterated position.
+ * @return size_t* Iterated position.
  */
-uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
+size_t *add_ext_header ( RTPExtHeader *header, size_t *payload )
 {
-    uint8_t *_it = payload;
+    size_t *_it = payload;
 
     U16_to_bytes(_it, header->length);
     _it += 2;
@@ -391,7 +391,7 @@ uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
     _it -= 2; /* Return to 0 position */
 
     if ( header->table ) {
-        uint16_t _x;
+        size_t _x;
 
         for ( _x = 0; _x < header->length; _x++ ) {
             _it += 4;
@@ -421,11 +421,11 @@ RTPHeader *build_header ( RTPSession *session )
     ADD_SETTING_PAYLOAD ( _retu, session->payload_type );
 
     _retu->sequnum = session->sequnum;
-    _retu->timestamp = ((uint32_t)(current_time() / 1000)); /* micro to milli */
+    _retu->timestamp = ((size_t)(current_time() / 1000)); /* micro to milli */
     _retu->ssrc = session->ssrc;
 
     if ( session->cc > 0 ) {
-        _retu->csrc = calloc(session->cc, sizeof (uint32_t));
+        _retu->csrc = calloc(session->cc, sizeof (size_t));
         assert(_retu->csrc);
 
         int i;
@@ -455,7 +455,7 @@ RTPHeader *build_header ( RTPSession *session )
  * @return RTPMessage*
  * @retval NULL Error occurred.
  */
-RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
+RTPMessage *msg_parse ( size_t sequnum, const size_t *data, int length )
 {
     RTPMessage *_retu = calloc(1, sizeof (RTPMessage));
 
@@ -470,7 +470,7 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
 
     _retu->length = length - _retu->header->length;
 
-    uint16_t _from_pos = _retu->header->length - 2 /* Since sequ num is excluded */ ;
+    size_t _from_pos = _retu->header->length - 2 /* Since sequ num is excluded */ ;
 
 
     if ( GET_FLAG_EXTENSION ( _retu->header ) ) {
@@ -512,7 +512,7 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t length )
+int rtp_handle_packet ( void *object, IP_Port ip_port, size_t *data, size_t length )
 {
     RTPSession *_session = object;
     RTPMessage *_msg;
@@ -520,19 +520,19 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
     if ( !_session || length < 13 + crypto_secretbox_MACBYTES) /* 12 is the minimum length for rtp + desc. byte */
         return -1;
 
-    uint8_t _plain[MAX_UDP_PACKET_SIZE];
+    size_t _plain[MAX_UDP_PACKET_SIZE];
 
-    uint16_t _sequnum;
+    size_t _sequnum;
     bytes_to_U16(&_sequnum, data + 1);
 
     /* Clculate the right nonce */
-    uint8_t _calculated[crypto_secretbox_NONCEBYTES];
+    size_t _calculated[crypto_secretbox_NONCEBYTES];
     memcpy(_calculated, _session->decrypt_nonce, crypto_secretbox_NONCEBYTES);
     increase_nonce ( _calculated, _sequnum );
 
     /* Decrypt message */
     int _decrypted_length = decrypt_data_symmetric(
-                                (uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
+                                (size_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
 
     /* This packet is either not encrypted properly or late
      */
@@ -543,7 +543,7 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
          */
         if ( _session->rsequnum < _sequnum ) {
             _decrypted_length = decrypt_data_symmetric(
-                                    (uint8_t *)_session->decrypt_key, _session->nonce_cycle, data + 3, length - 3, _plain );
+                                    (size_t *)_session->decrypt_key, _session->nonce_cycle, data + 3, length - 3, _plain );
 
             if ( !_decrypted_length ) return -1; /* This packet is not encrypted properly */
 
@@ -552,7 +552,7 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
         } else {
             increase_nonce ( _calculated, MAX_SEQU_NUM );
             _decrypted_length = decrypt_data_symmetric(
-                                    (uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
+                                    (size_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
 
             if ( !_decrypted_length ) return -1; /* This is just an error */
 
@@ -603,12 +603,12 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
  * @return RTPMessage* Created message.
  * @retval NULL Error occurred.
  */
-RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t length )
+RTPMessage *rtp_new_message ( RTPSession *session, const size_t *data, size_t length )
 {
     if ( !session )
         return NULL;
 
-    uint8_t *_from_pos;
+    size_t *_from_pos;
     RTPMessage *_retu = calloc(1, sizeof (RTPMessage));
     assert(_retu);
 
@@ -617,7 +617,7 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
     _retu->ext_header = session->ext_header;
 
 
-    uint32_t _total_length = length + _retu->header->length;
+    size_t _total_length = length + _retu->header->length;
 
     if ( _retu->ext_header ) {
         _total_length += ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
@@ -745,24 +745,24 @@ RTPMessage *rtp_recv_msg ( RTPSession *session )
  * @retval -1 On error.
  * @retval 0 On success.
  */
-int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length )
+int rtp_send_msg ( RTPSession *session, Messenger *messenger, const size_t *data, size_t length )
 {
     RTPMessage *msg = rtp_new_message (session, data, length);
 
     if ( !msg ) return -1;
 
-    uint8_t _send_data [ MAX_UDP_PACKET_SIZE ];
+    size_t _send_data [ MAX_UDP_PACKET_SIZE ];
 
     _send_data[0] = session->prefix;
 
     /* Generate the right nonce */
-    uint8_t _calculated[crypto_secretbox_NONCEBYTES];
+    size_t _calculated[crypto_secretbox_NONCEBYTES];
     memcpy(_calculated, session->encrypt_nonce, crypto_secretbox_NONCEBYTES);
     increase_nonce ( _calculated, msg->header->sequnum );
 
     /* Need to skip 2 bytes that are for sequnum */
     int encrypted_length = encrypt_data_symmetric( /* TODO: msg->length - 2 (fix this properly)*/
-                               (uint8_t *) session->encrypt_key, _calculated, msg->data + 2, msg->length, _send_data + 3 );
+                               (size_t *) session->encrypt_key, _calculated, msg->data + 2, msg->length, _send_data + 3 );
 
     int full_length = encrypted_length + 3;
 
@@ -839,10 +839,10 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
 RTPSession *rtp_init_session ( int            payload_type,
                                Messenger     *messenger,
                                int            friend_num,
-                               const uint8_t *encrypt_key,
-                               const uint8_t *decrypt_key,
-                               const uint8_t *encrypt_nonce,
-                               const uint8_t *decrypt_nonce )
+                               const size_t *encrypt_key,
+                               const size_t *decrypt_key,
+                               const size_t *encrypt_nonce,
+                               const size_t *decrypt_nonce )
 {
     RTPSession *_retu = calloc(1, sizeof(RTPSession));
     assert(_retu);
@@ -875,18 +875,18 @@ RTPSession *rtp_init_session ( int            payload_type,
     _retu->decrypt_key = decrypt_key;
 
     /* Need to allocate new memory */
-    _retu->encrypt_nonce = calloc ( crypto_secretbox_NONCEBYTES, sizeof (uint8_t) );
+    _retu->encrypt_nonce = calloc ( crypto_secretbox_NONCEBYTES, sizeof (size_t) );
     assert(_retu->encrypt_nonce);
-    _retu->decrypt_nonce = calloc ( crypto_secretbox_NONCEBYTES, sizeof (uint8_t) );
+    _retu->decrypt_nonce = calloc ( crypto_secretbox_NONCEBYTES, sizeof (size_t) );
     assert(_retu->decrypt_nonce);
-    _retu->nonce_cycle   = calloc ( crypto_secretbox_NONCEBYTES, sizeof (uint8_t) );
+    _retu->nonce_cycle   = calloc ( crypto_secretbox_NONCEBYTES, sizeof (size_t) );
     assert(_retu->nonce_cycle);
 
     memcpy(_retu->encrypt_nonce, encrypt_nonce, crypto_secretbox_NONCEBYTES);
     memcpy(_retu->decrypt_nonce, decrypt_nonce, crypto_secretbox_NONCEBYTES);
     memcpy(_retu->nonce_cycle  , decrypt_nonce, crypto_secretbox_NONCEBYTES);
 
-    _retu->csrc = calloc(1, sizeof (uint32_t));
+    _retu->csrc = calloc(1, sizeof (size_t));
     assert(_retu->csrc);
 
     _retu->csrc[0] = _retu->ssrc; /* Set my ssrc to the list receive */

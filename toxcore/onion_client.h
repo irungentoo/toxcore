@@ -34,52 +34,52 @@
 #define DHT_FAKEID_INTERVAL 20
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    size_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
-    uint8_t     ping_id[ONION_PING_ID_SIZE];
-    uint8_t     data_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t     is_stored;
+    size_t     ping_id[ONION_PING_ID_SIZE];
+    size_t     data_public_key[crypto_box_PUBLICKEYBYTES];
+    size_t     is_stored;
 
-    uint64_t    timestamp;
+    size_t    timestamp;
 
-    uint64_t    last_pinged;
+    size_t    last_pinged;
 } Onion_Node;
 
 typedef struct {
-    uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
-    uint8_t is_online; /* Set by the onion_set_friend_status function. */
+    size_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
+    size_t is_online; /* Set by the onion_set_friend_status function. */
 
-    uint8_t is_fake_clientid; /* 0 if we don't know the fake client id of the other 1 if we do. */
-    uint8_t fake_client_id[crypto_box_PUBLICKEYBYTES];
-    uint8_t real_client_id[crypto_box_PUBLICKEYBYTES];
+    size_t is_fake_clientid; /* 0 if we don't know the fake client id of the other 1 if we do. */
+    size_t fake_client_id[crypto_box_PUBLICKEYBYTES];
+    size_t real_client_id[crypto_box_PUBLICKEYBYTES];
 
     Onion_Node clients_list[MAX_ONION_CLIENTS];
-    uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+    size_t temp_public_key[crypto_box_PUBLICKEYBYTES];
+    size_t temp_secret_key[crypto_box_SECRETKEYBYTES];
 
-    uint64_t last_fakeid_onion_sent;
-    uint64_t last_fakeid_dht_sent;
+    size_t last_fakeid_onion_sent;
+    size_t last_fakeid_dht_sent;
 
-    uint64_t last_noreplay;
+    size_t last_noreplay;
 
-    uint64_t last_seen;
+    size_t last_seen;
 } Onion_Friend;
 
-typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
+typedef int (*oniondata_handler_callback)(void *object, size_t *source_pubkey, size_t *data, size_t len);
 
 typedef struct {
     DHT     *dht;
     Networking_Core *net;
     Onion_Friend    *friends_list;
-    uint16_t       num_friends;
+    size_t       num_friends;
 
     Onion_Node clients_announce_list[MAX_ONION_CLIENTS];
 
-    uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
-    uint64_t last_run;
+    size_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    size_t last_run;
 
-    uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+    size_t temp_public_key[crypto_box_PUBLICKEYBYTES];
+    size_t temp_secret_key[crypto_box_SECRETKEYBYTES];
     struct {
         oniondata_handler_callback function;
         void *object;
@@ -91,14 +91,14 @@ typedef struct {
  * return -1 on failure.
  * return the friend number on success or if the friend was already added.
  */
-int onion_friend_num(Onion_Client *onion_c, uint8_t *client_id);
+int onion_friend_num(Onion_Client *onion_c, size_t *client_id);
 
 /* Add a friend who we want to connect to.
  *
  * return -1 on failure.
  * return the friend number on success.
  */
-int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id);
+int onion_addfriend(Onion_Client *onion_c, size_t *client_id);
 
 /* Delete a friend.
  *
@@ -116,7 +116,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num);
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_online);
+int onion_set_friend_online(Onion_Client *onion_c, int friend_num, size_t is_online);
 
 /* Get the ip of friend friendnum and put it in ip_port
  *
@@ -145,10 +145,10 @@ int random_path(Onion_Client *onion_c, Node_format *nodes);
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32_t length);
+int send_onion_data(Onion_Client *onion_c, int friend_num, size_t *data, size_t length);
 
 /* Function to call when onion data packet with contents beginning with byte is received. */
-void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object);
+void oniondata_registerhandler(Onion_Client *onion_c, size_t byte, oniondata_handler_callback cb, void *object);
 
 void do_onion_client(Onion_Client *onion_c);
 

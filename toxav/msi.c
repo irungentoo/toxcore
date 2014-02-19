@@ -46,7 +46,7 @@
 #define TYPE_REQUEST 1
 #define TYPE_RESPONSE 2
 
-unsigned char *VERSION_STRING = (unsigned char *)"0.3.1";
+size_t *VERSION_STRING = (size_t *)"0.3.1";
 #define VERSION_STRLEN 5
 
 #define CT_AUDIO_HEADER_VALUE "AUDIO"
@@ -75,8 +75,8 @@ unsigned char *VERSION_STRING = (unsigned char *)"0.3.1";
 
 #define GENERIC_HEADER(header) \
 typedef struct _MSIHeader##header { \
-uint8_t* header_value; \
-uint16_t size; \
+size_t* header_value; \
+size_t size; \
 } MSIHeader##header;
 
 
@@ -153,16 +153,16 @@ typedef enum {
  * @brief Get string value for request.
  *
  * @param request The request.
- * @return const uint8_t* The string
+ * @return const size_t* The string
  */
-static inline const uint8_t *stringify_request ( MSIRequest request )
+static inline const size_t *stringify_request ( MSIRequest request )
 {
-    static const uint8_t *strings[] = {
-        ( uint8_t * ) "INVITE",
-        ( uint8_t * ) "START",
-        ( uint8_t * ) "CANCEL",
-        ( uint8_t * ) "REJECT",
-        ( uint8_t * ) "END"
+    static const size_t *strings[] = {
+        ( size_t * ) "INVITE",
+        ( size_t * ) "START",
+        ( size_t * ) "CANCEL",
+        ( size_t * ) "REJECT",
+        ( size_t * ) "END"
     };
 
     return strings[request];
@@ -182,15 +182,15 @@ typedef enum {
  * @brief Get string value for response.
  *
  * @param response The response.
- * @return const uint8_t* The string
+ * @return const size_t* The string
  */
-static inline const uint8_t *stringify_response ( MSIResponse response )
+static inline const size_t *stringify_response ( MSIResponse response )
 {
-    static const uint8_t *strings[] = {
-        ( uint8_t * ) "ringing",
-        ( uint8_t * ) "starting",
-        ( uint8_t * ) "ending",
-        ( uint8_t * ) "error"
+    static const size_t *strings[] = {
+        ( size_t * ) "ringing",
+        ( size_t * ) "starting",
+        ( size_t * ) "ending",
+        ( size_t * ) "error"
     };
 
     return strings[response];
@@ -202,9 +202,9 @@ static inline const uint8_t *stringify_response ( MSIResponse response )
     iterator += size_const; /* Set iterator at begining of value part */ \
     if ( *iterator != value_byte ) { assert(0); return -1; }\
     iterator ++;\
-    uint16_t _value_size = (uint16_t) *(iterator ) << 8 | \
-    (uint16_t) *(iterator + 1); \
-    header.header_value = calloc(sizeof(uint8_t), _value_size); \
+    size_t _value_size = (size_t) *(iterator ) << 8 | \
+    (size_t) *(iterator + 1); \
+    header.header_value = calloc(sizeof(size_t), _value_size); \
     header.size = _value_size; \
     memcpy(header.header_value, iterator + 2, _value_size);\
     iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ \
@@ -221,23 +221,23 @@ static inline const uint8_t *stringify_response ( MSIResponse response )
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
+int parse_raw_data ( MSIMessage *msg, const size_t *data, size_t length )
 {
     assert ( msg );
 
     if ( data[length - 1] ) /* End byte must have value 0 */
         return -1;
 
-    const uint8_t *_it = data;
+    const size_t *_it = data;
 
     while ( *_it ) {/* until end_byte is hit */
 
-        uint16_t itedlen = (_it - data) + 2;
+        size_t itedlen = (_it - data) + 2;
 
         if ( *_it == field_byte && itedlen < length ) {
 
-            uint16_t _size = ( uint16_t ) * ( _it + 1 ) << 8 |
-                             ( uint16_t ) * ( _it + 2 );
+            size_t _size = ( size_t ) * ( _it + 1 ) << 8 |
+                             ( size_t ) * ( _it + 2 );
 
             if ( itedlen + _size > length ) return -1;
 
@@ -335,7 +335,7 @@ void free_message ( MSIMessage *msg )
  * @return MSIMessage* Created message.
  * @retval NULL Error occured.
  */
-MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
+MSIMessage *msi_new_message ( size_t type, const size_t *type_id )
 {
     MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
     assert ( _retu );
@@ -364,7 +364,7 @@ MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
  * @return MSIMessage* Parsed message.
  * @retval NULL Error occured.
  */
-MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
+MSIMessage *parse_message ( const size_t *data, size_t length )
 {
     assert ( data );
 
@@ -399,29 +399,29 @@ MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
  * @param header_value Field value.
  * @param value_len Length of field value.
  * @param length Pointer to container length.
- * @return uint8_t* Iterated container.
+ * @return size_t* Iterated container.
  */
-uint8_t *append_header_to_string (
-    uint8_t *dest,
-    const uint8_t *header_field,
-    const uint8_t *header_value,
-    uint16_t value_len,
-    uint16_t *length )
+size_t *append_header_to_string (
+    size_t *dest,
+    const size_t *header_field,
+    const size_t *header_value,
+    size_t value_len,
+    size_t *length )
 {
     assert ( dest );
     assert ( header_value );
     assert ( header_field );
 
-    const uint8_t *_hvit = header_value;
-    uint16_t _total = 6 + value_len; /* 6 is known plus header value len + field len*/
+    const size_t *_hvit = header_value;
+    size_t _total = 6 + value_len; /* 6 is known plus header value len + field len*/
 
     *dest = field_byte; /* Set the first byte */
 
-    uint8_t *_getback_byte = dest + 1; /* remeber the byte we were on */
+    size_t *_getback_byte = dest + 1; /* remeber the byte we were on */
     dest += 3; /* swith to 4th byte where field value starts */
 
     /* Now set the field value and calculate it's length */
-    uint16_t _i = 0;
+    size_t _i = 0;
 
     for ( ; header_field[_i]; ++_i ) {
         *dest = header_field[_i];
@@ -431,22 +431,22 @@ uint8_t *append_header_to_string (
     _total += _i;
 
     /* Now set the length of the field byte */
-    *_getback_byte = ( uint8_t ) _i >> 8;
+    *_getback_byte = ( size_t ) _i >> 8;
 
     _getback_byte++;
 
-    *_getback_byte = ( uint8_t ) _i;
+    *_getback_byte = ( size_t ) _i;
 
     /* for value part do it regulary */
     *dest = value_byte;
 
     dest++;
 
-    *dest = ( uint8_t ) value_len >> 8;
+    *dest = ( size_t ) value_len >> 8;
 
     dest++;
 
-    *dest = ( uint8_t ) value_len;
+    *dest = ( size_t ) value_len;
 
     dest++;
 
@@ -462,7 +462,7 @@ uint8_t *append_header_to_string (
 
 
 #define CLEAN_ASSIGN(added, var, field, header)\
-if ( header.header_value ) { var = append_header_to_string(var, (const uint8_t*)field, header.header_value, header.size, &added); }
+if ( header.header_value ) { var = append_header_to_string(var, (const size_t*)field, header.header_value, header.size, &added); }
 
 
 /**
@@ -470,15 +470,15 @@ if ( header.header_value ) { var = append_header_to_string(var, (const uint8_t*)
  *
  * @param msg The message.
  * @param dest Destination.
- * @return uint16_t It's final size.
+ * @return size_t It's final size.
  */
-uint16_t message_to_string ( MSIMessage *msg, uint8_t *dest )
+size_t message_to_string ( MSIMessage *msg, size_t *dest )
 {
     assert ( msg );
     assert ( dest );
 
-    uint8_t *_iterated = dest;
-    uint16_t _size = 0;
+    size_t *_iterated = dest;
+    size_t _size = 0;
 
     CLEAN_ASSIGN ( _size, _iterated, VERSION_FIELD, msg->version );
     CLEAN_ASSIGN ( _size, _iterated, REQUEST_FIELD, msg->request );
@@ -499,7 +499,7 @@ uint16_t message_to_string ( MSIMessage *msg, uint8_t *dest )
 
 
 #define GENERIC_SETTER_DEFINITION(header) \
-void msi_msg_set_##header ( MSIMessage* _msg, const uint8_t* header_value, uint16_t _size ) \
+void msi_msg_set_##header ( MSIMessage* _msg, const size_t* header_value, size_t _size ) \
 { assert(_msg); assert(header_value); \
   free(_msg->header.header_value); \
   ALLOCATE_HEADER( _msg->header, header_value, _size )}
@@ -520,11 +520,11 @@ GENERIC_SETTER_DEFINITION ( nonce )
  * @param size Size of string.
  * @return void
  */
-void t_randomstr ( uint8_t *str, size_t size )
+void t_randomstr ( size_t *str, size_t size )
 {
     assert ( str );
 
-    static const uint8_t _bytes[] =
+    static const size_t _bytes[] =
         "0123456789"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz";
@@ -554,18 +554,18 @@ typedef enum {
  * @brief Stringify error code.
  *
  * @param error_code The code.
- * @return const uint8_t* The string.
+ * @return const size_t* The string.
  */
-static inline const uint8_t *stringify_error ( MSICallError error_code )
+static inline const size_t *stringify_error ( MSICallError error_code )
 {
-    static const uint8_t *strings[] = {
-        ( uint8_t * ) "",
-        ( uint8_t * ) "Using dead call",
-        ( uint8_t * ) "Call id not set to any call",
-        ( uint8_t * ) "Call id not available",
-        ( uint8_t * ) "No active call in session",
-        ( uint8_t * ) "No Crypto-key set",
-        ( uint8_t * ) "Callee busy"
+    static const size_t *strings[] = {
+        ( size_t * ) "",
+        ( size_t * ) "Using dead call",
+        ( size_t * ) "Call id not set to any call",
+        ( size_t * ) "Call id not available",
+        ( size_t * ) "No active call in session",
+        ( size_t * ) "No Crypto-key set",
+        ( size_t * ) "Callee busy"
     };
 
     return strings[error_code];
@@ -576,18 +576,18 @@ static inline const uint8_t *stringify_error ( MSICallError error_code )
  * @brief Convert error_code into string.
  *
  * @param error_code The code.
- * @return const uint8_t* The string.
+ * @return const size_t* The string.
  */
-static inline const uint8_t *stringify_error_code ( MSICallError error_code )
+static inline const size_t *stringify_error_code ( MSICallError error_code )
 {
-    static const uint8_t *strings[] = {
-        ( uint8_t * ) "",
-        ( uint8_t * ) "1",
-        ( uint8_t * ) "2",
-        ( uint8_t * ) "3",
-        ( uint8_t * ) "4",
-        ( uint8_t * ) "5",
-        ( uint8_t * ) "6"
+    static const size_t *strings[] = {
+        ( size_t * ) "",
+        ( size_t * ) "1",
+        ( size_t * ) "2",
+        ( size_t * ) "3",
+        ( size_t * ) "4",
+        ( size_t * ) "5",
+        ( size_t * ) "6"
     };
 
     return strings[error_code];
@@ -604,12 +604,12 @@ static inline const uint8_t *stringify_error_code ( MSICallError error_code )
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int send_message ( MSISession *session, MSIMessage *msg, uint32_t to )
+int send_message ( MSISession *session, MSIMessage *msg, size_t to )
 {
     msi_msg_set_callid ( msg, session->call->id, CALL_ID_LEN );
 
-    uint8_t _msg_string_final [MSI_MAXMSG_SIZE];
-    uint16_t _length = message_to_string ( msg, _msg_string_final );
+    size_t _msg_string_final [MSI_MAXMSG_SIZE];
+    size_t _length = message_to_string ( msg, _msg_string_final );
 
     return m_msi_packet(session->messenger_handle, to, _msg_string_final, _length) ? 0 : -1;
 }
@@ -635,7 +635,7 @@ void flush_peer_type ( MSISession *session, MSIMessage *msg, int peer_id )
     } else {} /* Error */
 }
 
-void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8_t status, void *session_p)
+void handle_remote_connection_change(Messenger *messenger, int friend_num, size_t status, void *session_p)
 {
     MSISession *session = session_p;
 
@@ -667,11 +667,11 @@ void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8
  * @return int
  * @retval 0 It's always success.
  */
-int handle_error ( MSISession *session, MSICallError errid, uint32_t to )
+int handle_error ( MSISession *session, MSICallError errid, size_t to )
 {
     MSIMessage *_msg_error = msi_new_message ( TYPE_RESPONSE, stringify_response ( error ) );
 
-    const uint8_t *_error_code_str = stringify_error_code ( errid );
+    const size_t *_error_code_str = stringify_error_code ( errid );
 
     msi_msg_set_reason ( _msg_error, _error_code_str, strlen ( ( const char * ) _error_code_str ) );
     send_message ( session, _msg_error, to );
@@ -725,15 +725,15 @@ void *handle_timeout ( void *arg )
 
     if ( _session && _session->call ) {
 
-        uint32_t *_peers = _session->call->peers;
-        uint16_t  _peer_count = _session->call->peer_count;
+        size_t *_peers = _session->call->peers;
+        size_t  _peer_count = _session->call->peer_count;
 
 
         /* Cancel all? */
-        uint16_t _it = 0;
+        size_t _it = 0;
 
         for ( ; _it < _peer_count; _it++ )
-            msi_cancel ( arg, _peers[_it], (const uint8_t *)"Timeout" );
+            msi_cancel ( arg, _peers[_it], (const size_t *)"Timeout" );
 
     }
 
@@ -890,10 +890,10 @@ int handle_recv_start ( MSISession *session, MSIMessage *msg )
 
     session->call->state = call_active;
 
-    session->call->key_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
+    session->call->key_peer = calloc ( sizeof ( size_t ), crypto_secretbox_KEYBYTES );
     memcpy ( session->call->key_peer, msg->cryptokey.header_value, crypto_secretbox_KEYBYTES );
 
-    session->call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
+    session->call->nonce_peer = calloc ( sizeof ( size_t ), crypto_secretbox_NONCEBYTES );
     memcpy ( session->call->nonce_peer, msg->nonce.header_value,  crypto_secretbox_NONCEBYTES );
 
     flush_peer_type ( session, msg, 0 );
@@ -978,17 +978,17 @@ int handle_recv_starting ( MSISession *session, MSIMessage *msg )
     }
 
     /* Generate local key/nonce to send */
-    session->call->key_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
+    session->call->key_local = calloc ( sizeof ( size_t ), crypto_secretbox_KEYBYTES );
     new_symmetric_key ( session->call->key_local );
 
-    session->call->nonce_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
+    session->call->nonce_local = calloc ( sizeof ( size_t ), crypto_secretbox_NONCEBYTES );
     new_nonce ( session->call->nonce_local );
 
     /* Save peer key/nonce */
-    session->call->key_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
+    session->call->key_peer = calloc ( sizeof ( size_t ), crypto_secretbox_KEYBYTES );
     memcpy ( session->call->key_peer, msg->cryptokey.header_value, crypto_secretbox_KEYBYTES );
 
-    session->call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
+    session->call->nonce_peer = calloc ( sizeof ( size_t ), crypto_secretbox_NONCEBYTES );
     memcpy ( session->call->nonce_peer, msg->nonce.header_value,  crypto_secretbox_NONCEBYTES );
 
     session->call->state = call_active;
@@ -1071,7 +1071,7 @@ int handle_recv_error ( MSISession *session, MSIMessage *msg )
  *
  *
  */
-void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16_t length, void *object )
+void msi_handle_packet ( Messenger *messenger, int source, size_t *data, size_t length, void *object )
 {
     /* Unused */
     (void)messenger;
@@ -1092,7 +1092,7 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
 
     if ( _msg->request.header_value ) { /* Handle request */
 
-        const uint8_t *_request_value = _msg->request.header_value;
+        const size_t *_request_value = _msg->request.header_value;
 
         if ( same ( _request_value, stringify_request ( invite ) ) ) {
             handle_recv_invite ( _session, _msg );
@@ -1117,7 +1117,7 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
 
     } else if ( _msg->response.header_value ) { /* Handle response */
 
-        const uint8_t *_response_value = _msg->response.header_value;
+        const size_t *_response_value = _msg->response.header_value;
 
         if ( same ( _response_value, stringify_response ( ringing ) ) ) {
             handle_recv_ringing ( _session, _msg );
@@ -1191,7 +1191,7 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id )
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession *msi_init_session ( Messenger *messenger, const uint8_t *ua_name )
+MSISession *msi_init_session ( Messenger *messenger, const size_t *ua_name )
 {
     assert ( messenger );
 
@@ -1249,7 +1249,7 @@ int msi_terminate_session ( MSISession *session )
  * @param friend_id The friend.
  * @return int
  */
-int msi_invite ( MSISession *session, MSICallType call_type, uint32_t rngsec, uint32_t friend_id )
+int msi_invite ( MSISession *session, MSICallType call_type, size_t rngsec, size_t friend_id )
 {
     assert ( session );
 
@@ -1265,10 +1265,10 @@ int msi_invite ( MSISession *session, MSICallType call_type, uint32_t rngsec, ui
 
     if ( call_type == type_audio ) {
         msi_msg_set_calltype
-        ( _msg_invite, ( const uint8_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
+        ( _msg_invite, ( const size_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
     } else {
         msi_msg_set_calltype
-        ( _msg_invite, ( const uint8_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
+        ( _msg_invite, ( const size_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
     }
 
     send_message ( session, _msg_invite, friend_id );
@@ -1330,18 +1330,18 @@ int msi_answer ( MSISession *session, MSICallType call_type )
 
     if ( call_type == type_audio ) {
         msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
+        ( _msg_starting, ( const size_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
     } else {
         msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
+        ( _msg_starting, ( const size_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
     }
 
     /* Now set the local encryption key and pass it with STARTING message */
 
-    session->call->key_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
+    session->call->key_local = calloc ( sizeof ( size_t ), crypto_secretbox_KEYBYTES );
     new_symmetric_key ( session->call->key_local );
 
-    session->call->nonce_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
+    session->call->nonce_local = calloc ( sizeof ( size_t ), crypto_secretbox_NONCEBYTES );
     new_nonce ( session->call->nonce_local );
 
     msi_msg_set_cryptokey ( _msg_starting, session->call->key_local, crypto_secretbox_KEYBYTES );
@@ -1363,7 +1363,7 @@ int msi_answer ( MSISession *session, MSICallType call_type )
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession *session, uint32_t peer, const uint8_t *reason )
+int msi_cancel ( MSISession *session, size_t peer, const size_t *reason )
 {
     assert ( session );
 
@@ -1386,7 +1386,7 @@ int msi_cancel ( MSISession *session, uint32_t peer, const uint8_t *reason )
  * @param session Control session.
  * @return int
  */
-int msi_reject ( MSISession *session, const uint8_t *reason )
+int msi_reject ( MSISession *session, const size_t *reason )
 {
     assert ( session );
 

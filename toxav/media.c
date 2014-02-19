@@ -36,14 +36,14 @@
 
 struct jitter_buffer {
     RTPMessage **queue;
-    uint16_t capacity;
-    uint16_t size;
-    uint16_t front;
-    uint16_t rear;
-    uint8_t queue_ready;
-    uint16_t current_id;
-    uint32_t current_ts;
-    uint8_t id_set;
+    size_t capacity;
+    size_t size;
+    size_t front;
+    size_t rear;
+    size_t queue_ready;
+    size_t current_id;
+    size_t current_ts;
+    size_t id_set;
 };
 
 
@@ -70,7 +70,7 @@ struct jitter_buffer *create_queue(int capacity)
 }
 
 /* returns 1 if 'a' has a higher sequence number than 'b' */
-uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a, uint32_t ts_b)
+size_t sequence_number_older(size_t sn_a, size_t sn_b, size_t ts_a, size_t ts_b)
 {
     /* TODO: There is already this kind of function in toxrtp.c.
      *       Maybe merge?
@@ -209,7 +209,7 @@ int init_video_decoder(CodecState *cs)
     return 0;
 }
 
-int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
+int init_audio_decoder(CodecState *cs, size_t audio_channels)
 {
     int rc;
     cs->audio_decoder = opus_decoder_create(cs->audio_sample_rate, audio_channels, &rc );
@@ -223,7 +223,7 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
 }
 
 
-int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t video_bitrate)
+int init_video_encoder(CodecState *cs, size_t width, size_t height, size_t video_bitrate)
 {
     vpx_codec_enc_cfg_t  cfg;
     int res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
@@ -246,7 +246,7 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     return 0;
 }
 
-int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
+int init_audio_encoder(CodecState *cs, size_t audio_channels)
 {
     int err = OPUS_OK;
     cs->audio_encoder = opus_encoder_create(cs->audio_sample_rate, audio_channels, OPUS_APPLICATION_AUDIO, &err);
@@ -258,13 +258,13 @@ int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
 }
 
 
-CodecState *codec_init_session ( uint32_t audio_bitrate,
-                                 uint16_t audio_frame_duration,
-                                 uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
-                                 uint16_t video_width,
-                                 uint16_t video_height,
-                                 uint32_t video_bitrate )
+CodecState *codec_init_session ( size_t audio_bitrate,
+                                 size_t audio_frame_duration,
+                                 size_t audio_sample_rate,
+                                 size_t audio_channels,
+                                 size_t video_width,
+                                 size_t video_height,
+                                 size_t video_bitrate )
 {
     CodecState *_retu = calloc(sizeof(CodecState), 1);
     assert(_retu);

@@ -42,8 +42,8 @@
 
 typedef struct {
     IP_Port  ip_port;
-    uint64_t id;
-    uint64_t timestamp;
+    size_t id;
+    size_t timestamp;
 } pinged_t;
 
 struct PING {
@@ -54,10 +54,10 @@ struct PING {
     size_t      pos_pings;
 
     Node_format toping[MAX_TOPING];
-    uint64_t    last_toping;
+    size_t    last_toping;
 };
 
-static int is_ping_timeout(uint64_t time)
+static int is_ping_timeout(size_t time)
 {
     return is_timeout(time, PING_TIMEOUT);
 }
@@ -86,7 +86,7 @@ static void remove_timeouts(PING *ping)    // O(n)
     ping->pos_pings = new_pos % PING_NUM_MAX;
 }
 
-static uint64_t add_ping(PING *ping, IP_Port ipp)  // O(n)
+static size_t add_ping(PING *ping, IP_Port ipp)  // O(n)
 {
     size_t p;
 
@@ -115,12 +115,12 @@ static uint64_t add_ping(PING *ping, IP_Port ipp)  // O(n)
  *  returns 0 if neither is set or no match was found
  *  returns the (index + 1) of the match if one was found
  */
-static int is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)
+static int is_pinging(PING *ping, IP_Port ipp, size_t ping_id)
 {
     // O(n) TODO: Replace this with something else.
 
     /* at least one MUST be set */
-    uint8_t ip_valid = ip_isset(&ipp.ip);
+    size_t ip_valid = ip_isset(&ipp.ip);
 
     if (!ip_valid && !ping_id)
         return 0;
@@ -140,13 +140,13 @@ static int is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)
     return 0;
 }
 
-#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(uint64_t) + crypto_box_MACBYTES)
+#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(size_t) + crypto_box_MACBYTES)
 
-int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
+int send_ping_request(PING *ping, IP_Port ipp, size_t *client_id)
 {
-    uint8_t   pk[DHT_PING_SIZE];
+    size_t   pk[DHT_PING_SIZE];
     int       rc;
-    uint64_t  ping_id;
+    size_t  ping_id;
 
     if (is_pinging(ping, ipp, 0) || id_equal(client_id, ping->dht->self_public_key))
         return 1;
@@ -162,7 +162,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     rc = encrypt_data(client_id,
                       ping->dht->self_secret_key,
                       pk + 1 + CLIENT_ID_SIZE,
-                      (uint8_t *) &ping_id, sizeof(ping_id),
+                      (size_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
 
     if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
@@ -171,9 +171,9 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint64_t ping_id)
+static int send_ping_response(PING *ping, IP_Port ipp, size_t *client_id, size_t ping_id)
 {
-    uint8_t   pk[DHT_PING_SIZE];
+    size_t   pk[DHT_PING_SIZE];
     int       rc;
 
     if (id_equal(client_id, ping->dht->self_public_key))
@@ -187,7 +187,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     rc = encrypt_data(client_id,
                       ping->dht->self_secret_key,
                       pk + 1 + CLIENT_ID_SIZE,
-                      (uint8_t *) &ping_id, sizeof(ping_id),
+                      (size_t *) &ping_id, sizeof(ping_id),
                       pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
 
     if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
@@ -196,11 +196,11 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_ping_request(void *_dht, IP_Port source, size_t *packet, size_t length)
 {
     DHT       *dht = _dht;
     int        rc;
-    uint64_t   ping_id;
+    size_t   ping_id;
 
     if (length != DHT_PING_SIZE)
         return 1;
@@ -216,7 +216,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                       sizeof(ping_id) + crypto_box_MACBYTES,
-                      (uint8_t *) &ping_id);
+                      (size_t *) &ping_id);
 
     if (rc != sizeof(ping_id))
         return 1;
@@ -228,11 +228,11 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
     return 0;
 }
 
-static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_ping_response(void *_dht, IP_Port source, size_t *packet, size_t length)
 {
     DHT      *dht = _dht;
     int       rc;
-    uint64_t  ping_id;
+    size_t  ping_id;
 
     if (length != DHT_PING_SIZE)
         return 1;
@@ -248,7 +248,7 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
                       packet + 1 + CLIENT_ID_SIZE,
                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                       sizeof(ping_id) + crypto_box_MACBYTES,
-                      (uint8_t *) &ping_id);
+                      (size_t *) &ping_id);
 
     if (rc != sizeof(ping_id))
         return 1;
@@ -275,12 +275,12 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_toping(PING *ping, uint8_t *client_id, IP_Port ip_port)
+int add_toping(PING *ping, size_t *client_id, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip))
         return -1;
 
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < MAX_TOPING; ++i) {
         if (!ip_isset(&ping->toping[i].ip_port.ip)) {
@@ -311,7 +311,7 @@ void do_toping(PING *ping)
         return;
 
     ping->last_toping = unix_time();
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < MAX_TOPING; ++i) {
         if (!ip_isset(&ping->toping[i].ip_port.ip))

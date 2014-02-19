@@ -42,13 +42,13 @@
  */
 
 typedef struct _RTPHeader {
-    uint8_t   flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
-    uint8_t   marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
-    uint16_t  sequnum;           /* Sequence Number */
-    uint32_t  timestamp;         /* Timestamp */
-    uint32_t  ssrc;              /* SSRC */
-    uint32_t *csrc;              /* CSRC's table */
-    uint32_t  length;            /* Length of the header in payload string. */
+    size_t   flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
+    size_t   marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
+    size_t  sequnum;           /* Sequence Number */
+    size_t  timestamp;         /* Timestamp */
+    size_t  ssrc;              /* SSRC */
+    size_t *csrc;              /* CSRC's table */
+    size_t  length;            /* Length of the header in payload string. */
 
 } RTPHeader;
 
@@ -58,9 +58,9 @@ typedef struct _RTPHeader {
  *
  */
 typedef struct _RTPExtHeader {
-    uint16_t  type;          /* Extension profile */
-    uint16_t  length;        /* Number of extensions */
-    uint32_t *table;         /* Extension's table */
+    size_t  type;          /* Extension profile */
+    size_t  length;        /* Number of extensions */
+    size_t *table;         /* Extension's table */
 
 } RTPExtHeader;
 
@@ -73,8 +73,8 @@ typedef struct _RTPMessage {
     RTPHeader    *header;
     RTPExtHeader *ext_header;
 
-    uint8_t       data[MAX_RTP_SIZE];
-    uint32_t      length;
+    size_t       data[MAX_RTP_SIZE];
+    size_t      length;
     IP_Port   from;
 
     struct _RTPMessage   *next;
@@ -90,17 +90,17 @@ typedef struct _RTPMessage {
  *
  */
 typedef struct _RTPSession {
-    uint8_t         version;
-    uint8_t         padding;
-    uint8_t         extension;
-    uint8_t         cc;
-    uint8_t         marker;
-    uint8_t         payload_type;
-    uint16_t        sequnum;   /* Set when sending */
-    uint16_t        rsequnum;  /* Check when recving msg */
-    uint32_t        timestamp;
-    uint32_t        ssrc;
-    uint32_t       *csrc;
+    size_t         version;
+    size_t         padding;
+    size_t         extension;
+    size_t         cc;
+    size_t         marker;
+    size_t         payload_type;
+    size_t        sequnum;   /* Set when sending */
+    size_t        rsequnum;  /* Check when recving msg */
+    size_t        timestamp;
+    size_t        ssrc;
+    size_t       *csrc;
 
     /* If some additional data must be sent via message
      * apply it here. Only by allocating this member you will be
@@ -117,18 +117,18 @@ typedef struct _RTPSession {
      * call structure don't allocate or free
      */
 
-    const uint8_t  *encrypt_key;
-    const uint8_t  *decrypt_key;
-    uint8_t        *encrypt_nonce;
-    uint8_t        *decrypt_nonce;
+    const size_t  *encrypt_key;
+    const size_t  *decrypt_key;
+    size_t        *encrypt_nonce;
+    size_t        *decrypt_nonce;
 
-    uint8_t        *nonce_cycle;
+    size_t        *nonce_cycle;
 
     RTPMessage     *oldest_msg;
     RTPMessage     *last_msg; /* tail */
 
     /* Msg prefix for core to know when recving */
-    uint8_t         prefix;
+    size_t         prefix;
 
     pthread_mutex_t mutex;
     int             dest;
@@ -167,7 +167,7 @@ RTPMessage *rtp_recv_msg ( RTPSession *session );
  * @retval -1 On error.
  * @retval 0 On success.
  */
-int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length );
+int rtp_send_msg ( RTPSession *session, Messenger *messenger, const size_t *data, size_t length );
 
 
 /**
@@ -197,10 +197,10 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
 RTPSession *rtp_init_session ( int            payload_type,
                                Messenger           *messenger,
                                int            friend_num,
-                               const uint8_t *encrypt_key,
-                               const uint8_t *decrypt_key,
-                               const uint8_t *encrypt_nonce,
-                               const uint8_t *decrypt_nonce );
+                               const size_t *encrypt_key,
+                               const size_t *decrypt_key,
+                               const size_t *encrypt_nonce,
+                               const size_t *decrypt_nonce );
 
 
 /**

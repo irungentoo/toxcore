@@ -35,12 +35,12 @@
  *  return  0 if it sent the friend request directly to the friend.
  *  return the number of peers it was routed through if it did not send it directly.
  */
-int send_friendrequest(Onion_Client *onion_c, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
+int send_friendrequest(Onion_Client *onion_c, size_t *public_key, size_t nospam_num, size_t *data, size_t length)
 {
     if (length + sizeof(nospam_num) > MAX_DATA_SIZE)
         return -1;
 
-    uint8_t temp[MAX_DATA_SIZE];
+    size_t temp[MAX_DATA_SIZE];
     temp[0] = CRYPTO_PACKET_FRIEND_REQ;
     memcpy(temp + 1, &nospam_num, sizeof(nospam_num));
     memcpy(temp + 1 + sizeof(nospam_num), data, length);
@@ -60,19 +60,19 @@ int send_friendrequest(Onion_Client *onion_c, uint8_t *public_key, uint32_t nosp
 
 
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
-void set_nospam(Friend_Requests *fr, uint32_t num)
+void set_nospam(Friend_Requests *fr, size_t num)
 {
     fr->nospam = num;
 }
 
-uint32_t get_nospam(Friend_Requests *fr)
+size_t get_nospam(Friend_Requests *fr)
 {
     return fr->nospam;
 }
 
 
 /* Set the function that will be executed when a friend request is received. */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *),
+void callback_friendrequest(Friend_Requests *fr, void (*function)(size_t *, size_t *, size_t, void *),
                             void *userdata)
 {
     fr->handle_friendrequest = function;
@@ -80,14 +80,14 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uin
     fr->handle_friendrequest_userdata = userdata;
 }
 /* Set the function used to check if a friend request should be displayed to the user or not. */
-void set_filter_function(Friend_Requests *fr, int (*function)(uint8_t *, void *), void *userdata)
+void set_filter_function(Friend_Requests *fr, int (*function)(size_t *, void *), void *userdata)
 {
     fr->filter_function = function;
     fr->filter_function_userdata = userdata;
 }
 
 /* Add to list of received friend requests. */
-static void addto_receivedlist(Friend_Requests *fr, uint8_t *client_id)
+static void addto_receivedlist(Friend_Requests *fr, size_t *client_id)
 {
     if (fr->received_requests_index >= MAX_RECEIVED_STORED)
         fr->received_requests_index = 0;
@@ -101,9 +101,9 @@ static void addto_receivedlist(Friend_Requests *fr, uint8_t *client_id)
  *  return 0 if it did not.
  *  return 1 if it did.
  */
-static int request_received(Friend_Requests *fr, uint8_t *client_id)
+static int request_received(Friend_Requests *fr, size_t *client_id)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < MAX_RECEIVED_STORED; ++i)
         if (id_equal(fr->received_requests[i], client_id))
@@ -113,7 +113,7 @@ static int request_received(Friend_Requests *fr, uint8_t *client_id)
 }
 
 
-static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
+static int friendreq_handlepacket(void *object, size_t *source_pubkey, size_t *packet, size_t length)
 {
     if (length == 0)
         return 1;
