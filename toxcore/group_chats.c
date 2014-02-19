@@ -787,6 +787,9 @@ static void del_dead_peers(Group_Chat *chat)
             delpeer(chat, i);
         }
 
+        if (chat->group == NULL || i >= chat->numpeers)
+            break;
+
         if (chat->group[i].deleted) {
             if (is_timeout(chat->group[i].deleted_time, DEL_PEER_DELAY))
                 delpeer(chat, i);
