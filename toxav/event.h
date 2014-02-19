@@ -39,11 +39,11 @@
  *
  */
 extern struct _Event {
-    int (*rise) (void * ( func ) ( void * ), void *arg);
-    int (*timer_reset ) ( int id, unsigned timeout );
-    int (*timer_alloc) (void * ( func ) ( void * ), void *arg, unsigned timeout);
-    int (*timer_release) (int id);
-    int (*timer_now) ( int id );
+    ptrdiff_t (*rise) (void * ( func ) ( void * ), void *arg);
+    ptrdiff_t (*timer_reset ) ( ptrdiff_t id, size_t timeout );
+    ptrdiff_t (*timer_alloc) (void * ( func ) ( void * ), void *arg, size_t timeout);
+    ptrdiff_t (*timer_release) (ptrdiff_t id);
+    ptrdiff_t (*timer_now) ( ptrdiff_t id );
 } event;
 
 #endif /* _MSI__EVENT_H_ */
