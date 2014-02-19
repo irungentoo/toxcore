@@ -75,14 +75,13 @@ typedef struct _ToxAv {
  *        it will result in undefined behaviour.
  *
  * @param messenger The messenger handle.
- * @param useragent The agent handling A/V session (i.e. phone).
- * @param ua_name Useragent name.
+ * @param userdata The agent handling A/V session (i.e. phone).
  * @param video_width Width of video frame.
  * @param video_height Height of video frame.
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new( Tox *messenger, void *useragent, const char *ua_name , uint16_t video_width, uint16_t video_height)
+ToxAv *toxav_new( Tox *messenger, void *userdata, uint16_t video_width, uint16_t video_height)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
 
@@ -91,7 +90,7 @@ ToxAv *toxav_new( Tox *messenger, void *useragent, const char *ua_name , uint16_
 
     av->messenger = (Messenger *)messenger;
 
-    av->msi_session = msi_init_session(av->messenger, (const unsigned char *) ua_name );
+    av->msi_session = msi_init_session(av->messenger);
     av->msi_session->agent_handler = av;
 
     av->rtp_sessions[0] = av->rtp_sessions [1] = NULL;
@@ -102,7 +101,7 @@ ToxAv *toxav_new( Tox *messenger, void *useragent, const char *ua_name , uint16_
     av->cs = codec_init_session(AUDIO_BITRATE, AUDIO_FRAME_DURATION, AUDIO_SAMPLE_RATE, AUDIO_CHANNELS, video_width,
                                 video_height, VIDEO_BITRATE);
 
-    av->agent_handler = useragent;
+    av->agent_handler = userdata;
 
     return av;
 }

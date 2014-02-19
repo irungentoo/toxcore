@@ -103,8 +103,6 @@ typedef struct _MSISession {
     int            last_error_id; /* Determine the last error */
     const uint8_t *last_error_str;
 
-    const uint8_t *ua_name;
-
     void *agent_handler; /* Pointer to an object that is handling msi */
     Messenger  *messenger_handle;
 
@@ -152,11 +150,10 @@ void msi_register_callback(MSICallback callback, MSICallbackID id);
  * @brief Start the control session.
  *
  * @param messenger Tox* object.
- * @param user_agent User agent, i.e. 'Venom'; 'QT-gui'
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession *msi_init_session ( Messenger *messenger, const uint8_t *ua_name );
+MSISession *msi_init_session ( Messenger *messenger );
 
 
 /**

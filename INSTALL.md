@@ -89,7 +89,7 @@ Then clone this repo and generate makefile:
 git clone git://github.com/irungentoo/ProjectTox-Core.git
 cd ProjectTox-Core
 autoreconf -i
-./configure --with-dependency-search=`pwd`/../ffmpeg/install
+./configure
 make
 sudo make install
 ```
@@ -321,7 +321,11 @@ cd ..
 
 You are now ready to compile with phone!
 
-
+Note: Don't forget to run core configure like so:
+```bash
+./configure --with-dependency-search=`pwd`/../ffmpeg/install
+```
+before compiling the phone.
 
 
 <a name="bootstrapd" />

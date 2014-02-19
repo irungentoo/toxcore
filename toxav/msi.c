@@ -84,7 +84,6 @@ GENERIC_HEADER ( Version )
 GENERIC_HEADER ( Request )
 GENERIC_HEADER ( Response )
 GENERIC_HEADER ( CallType )
-GENERIC_HEADER ( UserAgent )
 GENERIC_HEADER ( CallId )
 GENERIC_HEADER ( Info )
 GENERIC_HEADER ( Reason )
@@ -103,7 +102,6 @@ typedef struct _MSIMessage {
     MSIHeaderRequest   request;
     MSIHeaderResponse  response;
     MSIHeaderCallType  calltype;
-    MSIHeaderUserAgent useragent;
     MSIHeaderInfo      info;
     MSIHeaderReason    reason;
     MSIHeaderCallId    callid;
@@ -128,7 +126,6 @@ static MSICallback callbacks[10] = {0};
 #define INFO_FIELD         "INFO"
 #define REASON_FIELD       "Reason"
 #define CALLTYPE_FIELD     "Call-type"
-#define USERAGENT_FIELD    "User-agent"
 #define CALLID_FIELD       "Call-id"
 #define CRYPTOKEY_FIELD    "Crypto-key"
 #define NONCE_FIELD        "Nonce"
@@ -277,10 +274,9 @@ int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
                     }
                 break;
 
-                case 10: { /* User-agent, Crypto-key headers */
-                    if ON_HEADER ( _it, msg->useragent, USERAGENT_FIELD, 10 )
-                        else if ON_HEADER ( _it, msg->cryptokey, CRYPTOKEY_FIELD, 10 )
-                        }
+                case 10: { /* Crypto-key headers */
+                    if ON_HEADER ( _it, msg->cryptokey, CRYPTOKEY_FIELD, 10 )
+                    }
                 break;
 
                 default:
@@ -315,7 +311,6 @@ void free_message ( MSIMessage *msg )
     free ( msg->calltype.header_value );
     free ( msg->request.header_value );
     free ( msg->response.header_value );
-    free ( msg->useragent.header_value );
     free ( msg->version.header_value );
     free ( msg->info.header_value );
     free ( msg->cryptokey.header_value );
@@ -484,7 +479,6 @@ uint16_t message_to_string ( MSIMessage *msg, uint8_t *dest )
     CLEAN_ASSIGN ( _size, _iterated, REQUEST_FIELD, msg->request );
     CLEAN_ASSIGN ( _size, _iterated, RESPONSE_FIELD, msg->response );
     CLEAN_ASSIGN ( _size, _iterated, CALLTYPE_FIELD, msg->calltype );
-    CLEAN_ASSIGN ( _size, _iterated, USERAGENT_FIELD, msg->useragent );
     CLEAN_ASSIGN ( _size, _iterated, INFO_FIELD, msg->info );
     CLEAN_ASSIGN ( _size, _iterated, CALLID_FIELD, msg->callid );
     CLEAN_ASSIGN ( _size, _iterated, REASON_FIELD, msg->reason );
@@ -505,7 +499,6 @@ void msi_msg_set_##header ( MSIMessage* _msg, const uint8_t* header_value, uint1
   ALLOCATE_HEADER( _msg->header, header_value, _size )}
 
 GENERIC_SETTER_DEFINITION ( calltype )
-GENERIC_SETTER_DEFINITION ( useragent )
 GENERIC_SETTER_DEFINITION ( reason )
 GENERIC_SETTER_DEFINITION ( info )
 GENERIC_SETTER_DEFINITION ( callid )
@@ -1191,14 +1184,13 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id )
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession *msi_init_session ( Messenger *messenger, const uint8_t *ua_name )
+MSISession *msi_init_session ( Messenger* messenger )
 {
     assert ( messenger );
 
     MSISession *_retu = calloc ( sizeof ( MSISession ), 1 );
     assert ( _retu );
 
-    _retu->ua_name = ua_name;
     _retu->messenger_handle = messenger;
     _retu->agent_handler = NULL;
 
