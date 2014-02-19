@@ -585,7 +585,9 @@ static int replace_good(   Client_data    *list,
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 1;
 
-    //sort_list(list, length, comp_client_id);
+    /* TODO: eventually remove this.*/
+    if (length != LCLIENT_LIST)
+        sort_list(list, length, comp_client_id);
 
     int8_t replace = -1;
 
