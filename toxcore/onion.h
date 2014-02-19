@@ -28,8 +28,8 @@
 typedef struct {
     DHT     *dht;
     Networking_Core *net;
-    uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
-    uint64_t timestamp;
+    size_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    size_t timestamp;
 } Onion;
 
 #define ONION_RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
@@ -50,14 +50,14 @@ typedef struct {
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t length);
+int send_onion_packet(DHT *dht, Node_format *nodes, size_t *data, size_t length);
 
 /* Create and send a onion response sent initially to dest with.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret);
+int send_onion_response(Networking_Core *net, IP_Port dest, size_t *data, size_t length, size_t *ret);
 
 Onion *new_onion(DHT *dht);
 

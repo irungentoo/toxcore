@@ -37,21 +37,21 @@
 #define GROUP_MAX_SENDNODES (GROUP_CLOSE_CONNECTIONS * 2)
 
 typedef struct {
-    uint64_t   pingid;
-    //uint8_t    client_id[crypto_box_PUBLICKEYBYTES];
+    size_t   pingid;
+    //size_t    client_id[crypto_box_PUBLICKEYBYTES];
 
 } getnodes_data;
 
 typedef struct {
-    uint8_t    client_id[crypto_box_PUBLICKEYBYTES];
+    size_t    client_id[crypto_box_PUBLICKEYBYTES];
     IP_Port    ip_port;
 
 } groupchat_nodes;
 
 typedef struct {
-    uint64_t   pingid;
+    size_t   pingid;
     groupchat_nodes nodes[GROUP_CLOSE_CONNECTIONS];
-    //uint8_t    client_id[crypto_box_PUBLICKEYBYTES];
+    //size_t    client_id[crypto_box_PUBLICKEYBYTES];
 
 } sendnodes_data;
 
@@ -64,9 +64,9 @@ typedef struct {
  * TODO: make this more efficient.
  */
 
-static int peer_in_chat(Group_Chat *chat, uint8_t *client_id)
+static int peer_in_chat(Group_Chat *chat, size_t *client_id)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < chat->numpeers; ++i)
         if (id_equal(chat->group[i].client_id, client_id))
@@ -81,10 +81,10 @@ static int peer_in_chat(Group_Chat *chat, uint8_t *client_id)
  *  return 1 if client_id1 is closer.
  *  return 2 if client_id2 is closer.
  */
-static int id_closest_groupchats(uint8_t *id, uint8_t *id1, uint8_t *id2)
+static int id_closest_groupchats(size_t *id, size_t *id1, size_t *id2)
 {
     size_t   i;
-    uint8_t distance1, distance2;
+    size_t distance1, distance2;
 
     for (i = 0; i < CLIENT_ID_SIZE; ++i) {
 
@@ -109,9 +109,9 @@ static int id_closest_groupchats(uint8_t *id, uint8_t *id1, uint8_t *id2)
  * Return -1 if the peer is in the closelist.
  */
 
-static int peer_okping(Group_Chat *chat, uint8_t *client_id)
+static int peer_okping(Group_Chat *chat, size_t *client_id)
 {
-    uint32_t i, j = 0;
+    size_t i, j = 0;
 
     if (id_equal(chat->self_public_key, client_id))
         return -1;
@@ -142,9 +142,9 @@ static int peer_okping(Group_Chat *chat, uint8_t *client_id)
  * Return 0 if success.
  * Return -1 if peer was not put in list/updated.
  */
-static int add_closepeer(Group_Chat *chat, uint8_t *client_id, IP_Port ip_port)
+static int add_closepeer(Group_Chat *chat, size_t *client_id, IP_Port ip_port)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) { /* Check if node is already in list, if it is update its last_recv */
         if (id_equal(chat->close[i].client_id, client_id)) {
@@ -174,13 +174,13 @@ static int add_closepeer(Group_Chat *chat, uint8_t *client_id, IP_Port ip_port)
     return -1;
 }
 
-static int send_groupchatpacket(Group_Chat *chat, IP_Port ip_port, uint8_t *public_key, uint8_t *data, uint32_t length,
-                                uint8_t request_id)
+static int send_groupchatpacket(Group_Chat *chat, IP_Port ip_port, size_t *public_key, size_t *data, size_t length,
+                                size_t request_id)
 {
     if (id_equal(chat->self_public_key, public_key))
         return -1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    size_t packet[MAX_DATA_SIZE];
     int len = create_request(chat->self_public_key, chat->self_secret_key, packet, public_key, data, length, request_id);
     packet[0] = NET_PACKET_GROUP_CHATS;
 
@@ -199,10 +199,10 @@ static int send_groupchatpacket(Group_Chat *chat, IP_Port ip_port, uint8_t *publ
  *
  * return the number of peers the packet was sent to.
  */
-static uint8_t sendto_allpeers(Group_Chat *chat, uint8_t *data, uint16_t length, uint8_t request_id)
+static size_t sendto_allpeers(Group_Chat *chat, size_t *data, size_t length, size_t request_id)
 {
-    uint16_t sent = 0;
-    uint32_t i;
+    size_t sent = 0;
+    size_t i;
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) {
         if (ip_isset(&chat->close[i].ip_port.ip) &&
@@ -223,7 +223,7 @@ static uint8_t sendto_allpeers(Group_Chat *chat, uint8_t *data, uint16_t length,
  * return peernum if success or peer already in chat.
  * return -1 if error.
  */
-static int addpeer(Group_Chat *chat, uint8_t *client_id)
+static int addpeer(Group_Chat *chat, size_t *client_id)
 {
     int peernum = peer_in_chat(chat, client_id);
 
@@ -258,7 +258,7 @@ static int addpeer(Group_Chat *chat, uint8_t *client_id)
  */
 static int del_peer_set(Group_Chat *chat, int peernum)
 {
-    if ((uint32_t)peernum >= chat->numpeers)
+    if ((size_t)peernum >= chat->numpeers)
         return -1;
 
     chat->group[peernum].deleted = 1;
@@ -274,10 +274,10 @@ static int del_peer_set(Group_Chat *chat, int peernum)
  */
 static int delpeer(Group_Chat *chat, int peernum)
 {
-    if ((uint32_t)peernum >= chat->numpeers)
+    if ((size_t)peernum >= chat->numpeers)
         return -1;
 
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) { /* If peer is in close list, time it out forcefully. */
         if (id_equal(chat->close[i].client_id, chat->group[peernum].client_id)) {
@@ -295,7 +295,7 @@ static int delpeer(Group_Chat *chat, int peernum)
         return 0;
     }
 
-    if (chat->numpeers != (uint32_t)peernum)
+    if (chat->numpeers != (size_t)peernum)
         memcpy(&chat->group[peernum], &chat->group[chat->numpeers], sizeof(Group_Peer));
 
     temp = realloc(chat->group, sizeof(Group_Peer) * (chat->numpeers));
@@ -318,9 +318,9 @@ static int delpeer(Group_Chat *chat, int peernum)
  * return length of name if success
  * return -1 if failure
  */
-int group_peername(Group_Chat *chat, int peernum, uint8_t *name)
+int group_peername(Group_Chat *chat, int peernum, size_t *name)
 {
-    if ((uint32_t)peernum >= chat->numpeers)
+    if ((size_t)peernum >= chat->numpeers)
         return -1;
 
     if (chat->group[peernum].nick_len == 0) {
@@ -333,7 +333,7 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name)
     return chat->group[peernum].nick_len;
 }
 
-static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t contents_len)
+static void setnick(Group_Chat *chat, int peernum, size_t *contents, size_t contents_len)
 {
     if (contents_len > MAX_NICK_BYTES || contents_len == 0)
         return;
@@ -358,7 +358,7 @@ static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t c
 
 static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
 {
-    if ((uint32_t)peernum >= chat->numpeers)
+    if ((size_t)peernum >= chat->numpeers)
         return -1;
 
     if (!is_timeout(chat->group[peernum].last_pinged, GROUP_PING_TIMEOUT))
@@ -379,18 +379,18 @@ static int send_getnodes(Group_Chat *chat, IP_Port ip_port, int peernum)
         Assoc_add_entry(chat->assoc, chat->group[peernum].client_id, &ippts, NULL, 1);
     }
 
-    return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (uint8_t *)&contents, sizeof(contents),
+    return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (size_t *)&contents, sizeof(contents),
                                 CRYPTO_PACKET_GROUP_CHAT_GET_NODES);
 }
 
-static int send_sendnodes(Group_Chat *chat, IP_Port ip_port, int peernum, uint64_t pingid)
+static int send_sendnodes(Group_Chat *chat, IP_Port ip_port, int peernum, size_t pingid)
 {
-    if ((uint32_t)peernum >= chat->numpeers)
+    if ((size_t)peernum >= chat->numpeers)
         return -1;
 
     sendnodes_data contents;
     contents.pingid = pingid;
-    uint32_t i, j = 0;
+    size_t i, j = 0;
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) {
         if (!is_timeout(chat->close[i].last_recv, BAD_GROUPNODE_TIMEOUT)) {
@@ -401,16 +401,16 @@ static int send_sendnodes(Group_Chat *chat, IP_Port ip_port, int peernum, uint64
         }
     }
 
-    return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (uint8_t *)&contents,
+    return send_groupchatpacket(chat, ip_port, chat->group[peernum].client_id, (size_t *)&contents,
                                 sizeof(contents.pingid) + sizeof(groupchat_nodes) * j, CRYPTO_PACKET_GROUP_CHAT_SEND_NODES);
 }
 
-static int handle_getnodes(Group_Chat *chat, IP_Port source, int peernum, uint8_t *data, uint32_t len)
+static int handle_getnodes(Group_Chat *chat, IP_Port source, int peernum, size_t *data, size_t len)
 {
     if (len != sizeof(getnodes_data))
         return 1;
 
-    if ((uint32_t)peernum >= chat->numpeers)
+    if ((size_t)peernum >= chat->numpeers)
         return 1;
 
     getnodes_data contents;
@@ -423,15 +423,15 @@ static int handle_getnodes(Group_Chat *chat, IP_Port source, int peernum, uint8_
     return 0;
 }
 
-static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8_t *data, uint32_t len)
+static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, size_t *data, size_t len)
 {
-    if ((uint32_t)peernum >= chat->numpeers)
+    if ((size_t)peernum >= chat->numpeers)
         return 1;
 
-    if (len > sizeof(sendnodes_data) || len < sizeof(uint64_t))
+    if (len > sizeof(sendnodes_data) || len < sizeof(size_t))
         return 1;
 
-    if ((len - sizeof(uint64_t)) % sizeof(groupchat_nodes) != 0)
+    if ((len - sizeof(size_t)) % sizeof(groupchat_nodes) != 0)
         return 1;
 
     if (is_timeout(chat->group[peernum].last_pinged, GROUP_PING_TIMEOUT))
@@ -443,8 +443,8 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
     if (contents.pingid != chat->group[peernum].pingid)
         return 1;
 
-    uint16_t numnodes = (len - sizeof(contents.pingid)) / sizeof(groupchat_nodes);
-    uint32_t i;
+    size_t numnodes = (len - sizeof(contents.pingid)) / sizeof(groupchat_nodes);
+    size_t i;
 
     IPPTs ippts_send;
     ippts_send.timestamp = unix_time();
@@ -485,10 +485,10 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, uint8
     return 0;
 }
 
-#define GROUP_DATA_MIN_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + 1)
+#define GROUP_DATA_MIN_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(size_t) + 1)
 static void send_names_new_peer(Group_Chat *chat);
 
-static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
+static int handle_data(Group_Chat *chat, size_t *data, size_t len)
 {
     if (len < GROUP_DATA_MIN_SIZE)
         return 1;
@@ -497,7 +497,7 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     int peernum = peer_in_chat(chat, data);
 
     if (peernum == -1) { /*NOTE: This is just for testing and will be removed later.*/
-        if (data[crypto_box_PUBLICKEYBYTES + sizeof(uint32_t)] != GROUP_CHAT_QUIT)
+        if (data[crypto_box_PUBLICKEYBYTES + sizeof(size_t)] != GROUP_CHAT_QUIT)
             peernum = addpeer(chat, data);
     }
 
@@ -514,8 +514,8 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     */
     chat->group[peernum].last_recv = unix_time();
 
-    uint32_t message_num;
-    memcpy(&message_num, data + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
+    size_t message_num;
+    memcpy(&message_num, data + crypto_box_PUBLICKEYBYTES, sizeof(size_t));
     message_num = ntohl(message_num);
 
     if (chat->group[peernum].last_message_number == 0) {
@@ -527,8 +527,8 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     chat->group[peernum].last_message_number = message_num;
 
     int handled = 1;
-    uint8_t *contents = data + GROUP_DATA_MIN_SIZE;
-    uint16_t contents_len = len - GROUP_DATA_MIN_SIZE;
+    size_t *contents = data + GROUP_DATA_MIN_SIZE;
+    size_t contents_len = len - GROUP_DATA_MIN_SIZE;
 
     switch (data[crypto_box_PUBLICKEYBYTES + sizeof(message_num)]) {
         case GROUP_CHAT_PING: /* If message is ping */
@@ -586,18 +586,18 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     return 1;
 }
 
-static uint8_t send_data(Group_Chat *chat, uint8_t *data, uint32_t len, uint8_t message_id)
+static size_t send_data(Group_Chat *chat, size_t *data, size_t len, size_t message_id)
 {
     if (len + GROUP_DATA_MIN_SIZE > MAX_DATA_SIZE) /*NOTE: not the real maximum len.*/
         return 1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    size_t packet[MAX_DATA_SIZE];
     ++chat->message_number;
 
     if (chat->message_number == 0)
         chat->message_number = 1;
 
-    uint32_t message_num = htonl(chat->message_number);
+    size_t message_num = htonl(chat->message_number);
 //TODO
     id_copy(packet, chat->self_public_key);
     memcpy(packet + crypto_box_PUBLICKEYBYTES, &message_num, sizeof(message_num));
@@ -615,14 +615,14 @@ static uint8_t send_data(Group_Chat *chat, uint8_t *data, uint32_t len, uint8_t 
  * return 1 if error.
  */
 
-int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, uint32_t length)
+int handle_groupchatpacket(Group_Chat *chat, IP_Port source, size_t *packet, size_t length)
 {
     if (length > MAX_DATA_SIZE)
         return 1;
 
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t data[MAX_DATA_SIZE];
-    uint8_t number;
+    size_t public_key[crypto_box_PUBLICKEYBYTES];
+    size_t data[MAX_DATA_SIZE];
+    size_t number;
     int len = handle_request(chat->self_public_key, chat->self_secret_key, public_key, data, &number, packet, length);
 
     if (len <= 0)
@@ -653,12 +653,12 @@ int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, ui
     return 1;
 }
 
-uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length)
+size_t group_sendmessage(Group_Chat *chat, size_t *message, size_t length)
 {
     return send_data(chat, message, length, GROUP_CHAT_CHAT_MESSAGE); //TODO: better return values?
 }
 
-uint32_t group_sendaction(Group_Chat *chat, uint8_t *action, uint32_t length)
+size_t group_sendaction(Group_Chat *chat, size_t *action, size_t length)
 {
     return send_data(chat, action, length, GROUP_CHAT_ACTION);
 }
@@ -668,7 +668,7 @@ uint32_t group_sendaction(Group_Chat *chat, uint8_t *action, uint32_t length)
  *
  * returns the number of peers it has sent it to.
  */
-static uint32_t group_send_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len)
+static size_t group_send_nick(Group_Chat *chat, size_t *nick, size_t nick_len)
 {
     if (nick_len > MAX_NICK_BYTES)
         return 0;
@@ -676,7 +676,7 @@ static uint32_t group_send_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_l
     return send_data(chat, nick, nick_len, GROUP_CHAT_PEER_NICK);
 }
 
-int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len)
+int set_nick(Group_Chat *chat, size_t *nick, size_t nick_len)
 {
     if (nick_len > MAX_NICK_BYTES || nick_len == 0)
         return -1;
@@ -687,41 +687,41 @@ int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len)
     return 0;
 }
 
-uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id)
+size_t group_newpeer(Group_Chat *chat, size_t *client_id)
 {
     addpeer(chat, client_id);
     return send_data(chat, client_id, crypto_box_PUBLICKEYBYTES, GROUP_CHAT_NEW_PEER); //TODO: better return values?
 }
 
-void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
+void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, size_t *, size_t, void *),
                            void *userdata)
 {
     chat->group_message = function;
     chat->group_message_userdata = userdata;
 }
 
-void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
+void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int, size_t *, size_t, void *),
                           void *userdata)
 {
     chat->group_action = function;
     chat->group_action_userdata = userdata;
 }
 
-void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, uint8_t change, void *),
+void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat, int peer, size_t change, void *),
                              void *userdata)
 {
     chat->peer_namelistchange = function;
     chat->group_namelistchange_userdata = userdata;
 }
 
-uint32_t group_numpeers(Group_Chat *chat)
+size_t group_numpeers(Group_Chat *chat)
 {
     return chat->numpeers;
 }
 
-uint32_t group_client_names(Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t length)
+size_t group_client_names(Group_Chat *chat, size_t names[][MAX_NICK_BYTES], size_t length)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < chat->numpeers && i < length; ++i) {
         group_peername(chat, i, names[i]);
@@ -751,7 +751,7 @@ Group_Chat *new_groupchat(Networking_Core *net)
 
 static void ping_close(Group_Chat *chat)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < GROUP_CLOSE_CONNECTIONS; ++i) {
         if (!is_timeout(chat->close[i].last_recv, BAD_GROUPNODE_TIMEOUT)) {
@@ -780,7 +780,7 @@ static void ping_group(Group_Chat *chat)
 #define DEL_PEER_DELAY 3
 static void del_dead_peers(Group_Chat *chat)
 {
-    uint32_t i;
+    size_t i;
 
     for (i = 0; i < chat->numpeers; ++i) {
         if (is_timeout(chat->group[i].last_recv_msgping, GROUP_PING_INTERVAL * 4)) {
@@ -831,12 +831,12 @@ void kill_groupchat(Group_Chat *chat)
     free(chat);
 }
 
-void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id)
+void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, size_t *client_id)
 {
     send_getnodes(chat, ip_port, addpeer(chat, client_id));
 }
 
-void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id)
+void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, size_t *client_id)
 {
     send_getnodes(chat, ip_port, addpeer(chat, client_id));
     add_closepeer(chat, client_id, ip_port);

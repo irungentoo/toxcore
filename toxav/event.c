@@ -55,7 +55,7 @@ pthread_create(&_tid, NULL, func, args); assert( pthread_detach(_tid) == 0 ); }
 typedef struct _EventContainer {
     void *(*func)(void *);
     void *func_args;
-    unsigned timeout;
+    size_t timeout;
     long long id;
 
 } EventContainer;
@@ -71,8 +71,8 @@ typedef struct _EventHandler {
 } EventHandler;
 
 int throw_event( void * (func)(void *), void *arg );
-int reset_timer_event ( int id, uint32_t timeout );
-int throw_timer_event ( void * (func)(void *), void *arg, unsigned timeout);
+int reset_timer_event ( int id, size_t timeout );
+int throw_timer_event ( void * (func)(void *), void *arg, size_t timeout);
 int cancel_timer_event ( int id );
 int execute_timer_event ( int id );
 
@@ -167,7 +167,7 @@ void push_event ( EventContainer **container, size_t *counter, void * (func)(voi
     (*counter )++;
 }
 
-void reorder_events ( size_t counter, EventContainer *container, unsigned timeout )
+void reorder_events ( size_t counter, EventContainer *container, size_t timeout )
 {
     if ( counter > 1 ) {
 
@@ -202,7 +202,7 @@ void *event_poll( void *arg )
 
         if ( _event_handler->timed_events ) {
 
-            uint32_t _time = ((uint32_t)(current_time() / 1000));
+            size_t _time = ((size_t)(current_time() / 1000));
 
             if ( _event_handler->timed_events[0].timeout < _time ) {
 
@@ -244,7 +244,7 @@ int throw_event( void * (func)(void *), void *arg )
 EventHandler event_handler;
 
 /* Place and order array of timers */
-int throw_timer_event ( void * (func)(void *), void *arg, unsigned timeout)
+int throw_timer_event ( void * (func)(void *), void *arg, size_t timeout)
 {
     static int _unique_id = 1;
 
@@ -252,7 +252,7 @@ int throw_timer_event ( void * (func)(void *), void *arg, unsigned timeout)
 
     size_t _counter = event_handler.timed_events_count;
 
-    event_handler.timed_events[_counter - 1].timeout = timeout + ((uint32_t)(current_time() / 1000));
+    event_handler.timed_events[_counter - 1].timeout = timeout + ((size_t)(current_time() / 1000));
     event_handler.timed_events[_counter - 1].id = _unique_id;
     ++_unique_id;
 
@@ -320,7 +320,7 @@ int execute_timer_event ( int id )
     return _status;
 }
 
-int reset_timer_event ( int id, uint32_t timeout )
+int reset_timer_event ( int id, size_t timeout )
 {
     int _status;
 
@@ -333,7 +333,7 @@ int reset_timer_event ( int id, uint32_t timeout )
     /* Find it and change */
     for ( ; _i; _i-- ) {
         if ( _it->id == id ) {
-            _it->timeout = timeout + ((uint32_t)(current_time() / 1000));
+            _it->timeout = timeout + ((size_t)(current_time() / 1000));
             break;
         }
 

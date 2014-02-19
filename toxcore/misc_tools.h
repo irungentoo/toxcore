@@ -130,7 +130,7 @@ and the type of structure to return.
    (&(((parent_type*)0)->var_name_in_parent))
 
 #define GET_PARENT(var, var_name_in_parent, parent_type) \
-   ((parent_type*)((uint64_t)(&(var)) - (uint64_t)(MEMBER_OFFSET(var_name_in_parent, parent_type))))
+   ((parent_type*)((size_t)(&(var)) - (size_t)(MEMBER_OFFSET(var_name_in_parent, parent_type))))
 
 #define TOX_LIST_FOR_EACH(lst, tmp_name) \
    for (tox_list* tmp_name = lst.next; tmp_name != &lst; tmp_name = tmp_name->next)
@@ -172,8 +172,8 @@ static inline void tox_list_remove(tox_list *lst)
  ************************************************************/
 
 typedef struct tox_array {
-    uint8_t *data; /* last elem is data[len-1] */
-    uint32_t len;
+    size_t *data; /* last elem is data[len-1] */
+    size_t len;
     size_t elem_size; /* in bytes */
 } tox_array;
 
@@ -190,9 +190,9 @@ static inline void tox_array_delete(tox_array *arr)
     arr->len = arr->elem_size = 0;
 }
 
-static inline uint8_t tox_array_push_ptr(tox_array *arr, uint8_t *item)
+static inline size_t tox_array_push_ptr(tox_array *arr, size_t *item)
 {
-    uint8_t *temp = realloc(arr->data, arr->elem_size * (arr->len + 1));
+    size_t *temp = realloc(arr->data, arr->elem_size * (arr->len + 1));
 
     if (temp == NULL)
         return 0;
@@ -206,12 +206,12 @@ static inline uint8_t tox_array_push_ptr(tox_array *arr, uint8_t *item)
 
     return 1;
 }
-#define tox_array_push(arr, item) tox_array_push_ptr(arr, (uint8_t*)(&(item)))
+#define tox_array_push(arr, item) tox_array_push_ptr(arr, (size_t*)(&(item)))
 
 /* Deletes num items from array.
  * Not same as pop in stacks, because to access elements you use data.
  */
-static inline void tox_array_pop(tox_array *arr, uint32_t num)
+static inline void tox_array_pop(tox_array *arr, size_t num)
 {
     if (num == 0)
         return;
@@ -226,7 +226,7 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
         return;
     }
 
-    uint8_t *temp = realloc(arr->data, arr->elem_size * (arr->len - num));
+    size_t *temp = realloc(arr->data, arr->elem_size * (arr->len - num));
 
     if (temp == NULL)
         return;
@@ -240,7 +240,7 @@ static inline void tox_array_pop(tox_array *arr, uint32_t num)
 
 
 #define tox_array_for_each(arr, type, tmp_name) \
-    type *tmp_name = &tox_array_get(arr, 0, type); uint32_t tmp_name ## _i = 0; \
+    type *tmp_name = &tox_array_get(arr, 0, type); size_t tmp_name ## _i = 0; \
     for (; tmp_name ## _i < (arr)->len; tmp_name = &tox_array_get(arr, ++ tmp_name ## _i, type))
 
 /****************************Algorithms***************************

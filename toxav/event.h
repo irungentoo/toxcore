@@ -40,8 +40,8 @@
  */
 extern struct _Event {
     int (*rise) (void * ( func ) ( void * ), void *arg);
-    int (*timer_reset ) ( int id, unsigned timeout );
-    int (*timer_alloc) (void * ( func ) ( void * ), void *arg, unsigned timeout);
+    int (*timer_reset ) ( int id, size_t timeout );
+    int (*timer_alloc) (void * ( func ) ( void * ), void *arg, size_t timeout);
     int (*timer_release) (int id);
     int (*timer_now) ( int id );
 } event;

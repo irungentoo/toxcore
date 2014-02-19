@@ -68,13 +68,13 @@ typedef struct _MSICall {             /* Call info structure */
     MSICallType     type_local;        /* Type of payload user is ending */
     MSICallType    *type_peer;         /* Type of payload others are sending */
 
-    uint8_t         id[CALL_ID_LEN];  /* Random value identifying the call */
+    size_t         id[CALL_ID_LEN];  /* Random value identifying the call */
 
-    uint8_t        *key_local;         /* The key for encryption */
-    uint8_t        *key_peer;          /* The key for decryption */
+    size_t        *key_local;         /* The key for encryption */
+    size_t        *key_peer;          /* The key for decryption */
 
-    uint8_t        *nonce_local;       /* Local nonce */
-    uint8_t        *nonce_peer;        /* Peer nonce  */
+    size_t        *nonce_local;       /* Local nonce */
+    size_t        *nonce_peer;        /* Peer nonce  */
 
     int             ringing_tout_ms;   /* Ringing timeout in ms */
 
@@ -84,8 +84,8 @@ typedef struct _MSICall {             /* Call info structure */
     pthread_mutex_t mutex;             /* It's to be assumed that call will have
                                          * seperate thread so add mutex
                                          */
-    uint32_t       *peers;
-    uint16_t        peer_count;
+    size_t       *peers;
+    size_t        peer_count;
 
 
 } MSICall;
@@ -101,15 +101,15 @@ typedef struct _MSISession {
     struct _MSICall *call;
 
     int            last_error_id; /* Determine the last error */
-    const uint8_t *last_error_str;
+    const size_t *last_error_str;
 
-    const uint8_t *ua_name;
+    const size_t *ua_name;
 
     void *agent_handler; /* Pointer to an object that is handling msi */
     Messenger  *messenger_handle;
 
-    uint32_t frequ;
-    uint32_t call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
+    size_t frequ;
+    size_t call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
 
 
 } MSISession;
@@ -156,7 +156,7 @@ void msi_register_callback(MSICallback callback, MSICallbackID id);
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession *msi_init_session ( Messenger *messenger, const uint8_t *ua_name );
+MSISession *msi_init_session ( Messenger *messenger, const size_t *ua_name );
 
 
 /**
@@ -177,7 +177,7 @@ int msi_terminate_session ( MSISession *session );
  * @param friend_id The friend.
  * @return int
  */
-int msi_invite ( MSISession *session, MSICallType call_type, uint32_t rngsec, uint32_t friend_id );
+int msi_invite ( MSISession *session, MSICallType call_type, size_t rngsec, size_t friend_id );
 
 
 /**
@@ -209,7 +209,7 @@ int msi_answer ( MSISession *session, MSICallType call_type );
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession *session, uint32_t peer, const uint8_t *reason );
+int msi_cancel ( MSISession *session, size_t peer, const size_t *reason );
 
 
 /**
@@ -219,7 +219,7 @@ int msi_cancel ( MSISession *session, uint32_t peer, const uint8_t *reason );
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_reject ( MSISession *session, const uint8_t *reason );
+int msi_reject ( MSISession *session, const size_t *reason );
 
 
 /**

@@ -47,7 +47,7 @@
 
 #define inline__ inline __attribute__((always_inline))
 
-static const uint8_t audio_index = 0, video_index = 1;
+static const size_t audio_index = 0, video_index = 1;
 
 
 typedef enum {
@@ -82,7 +82,7 @@ typedef struct _ToxAv {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new( Tox *messenger, void *useragent, const char *ua_name , uint16_t video_width, uint16_t video_height)
+ToxAv *toxav_new( Tox *messenger, void *useragent, const char *ua_name , size_t video_width, size_t video_height)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
 
@@ -91,7 +91,7 @@ ToxAv *toxav_new( Tox *messenger, void *useragent, const char *ua_name , uint16_
 
     av->messenger = (Messenger *)messenger;
 
-    av->msi_session = msi_init_session(av->messenger, (const unsigned char *) ua_name );
+    av->msi_session = msi_init_session(av->messenger, (const size_t *) ua_name );
     av->msi_session->agent_handler = av;
 
     av->rtp_sessions[0] = av->rtp_sessions [1] = NULL;
@@ -224,7 +224,7 @@ int toxav_reject ( ToxAv *av, const char *reason )
         return ErrorInvalidState;
     }
 
-    return msi_reject(av->msi_session, (const uint8_t *) reason);
+    return msi_reject(av->msi_session, (const size_t *) reason);
 }
 
 /**
@@ -242,7 +242,7 @@ int toxav_cancel ( ToxAv *av, const char *reason )
         return ErrorNoCall;
     }
 
-    return msi_cancel(av->msi_session, 0, (const uint8_t *)reason);
+    return msi_cancel(av->msi_session, 0, (const size_t *)reason);
 }
 
 /**
@@ -353,7 +353,7 @@ int toxav_kill_transmission ( ToxAv *av )
  * @retval 0 Success.
  * @retval -1 Failure.
  */
-inline__ int toxav_send_rtp_payload ( ToxAv *av, ToxAvCallType type, const uint8_t *payload, uint16_t length )
+inline__ int toxav_send_rtp_payload ( ToxAv *av, ToxAvCallType type, const size_t *payload, size_t length )
 {
     if ( av->rtp_sessions[type - TypeAudio] )
         return rtp_send_msg ( av->rtp_sessions[type - TypeAudio], av->msi_session->messenger_handle, payload, length );
@@ -370,7 +370,7 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, ToxAvCallType type, const uint8
  * @retval ToxAvError On Error.
  * @retval >=0 Size of received payload.
  */
-inline__ int toxav_recv_rtp_payload ( ToxAv *av, ToxAvCallType type, uint8_t *dest )
+inline__ int toxav_recv_rtp_payload ( ToxAv *av, ToxAvCallType type, size_t *dest )
 {
     if ( !dest ) return ErrorInternal;
 
@@ -423,7 +423,7 @@ inline__ int toxav_recv_video ( ToxAv *av, vpx_image_t **output)
 {
     if ( !output ) return ErrorInternal;
 
-    uint8_t packet [RTP_PAYLOAD_SIZE];
+    size_t packet [RTP_PAYLOAD_SIZE];
     int recved_size = 0;
 
     do {
@@ -496,7 +496,7 @@ inline__ int toxav_recv_audio ( ToxAv *av, int frame_size, int16_t *dest )
 {
     if ( !dest ) return ErrorInternal;
 
-    uint8_t packet [RTP_PAYLOAD_SIZE];
+    size_t packet [RTP_PAYLOAD_SIZE];
 
     int recved_size = toxav_recv_rtp_payload(av, TypeAudio, packet);
 
@@ -523,7 +523,7 @@ inline__ int toxav_recv_audio ( ToxAv *av, int frame_size, int16_t *dest )
  */
 inline__ int toxav_send_audio ( ToxAv *av, const int16_t *frame, int frame_size)
 {
-    uint8_t temp_data[RTP_PAYLOAD_SIZE];
+    size_t temp_data[RTP_PAYLOAD_SIZE];
     int32_t ret = opus_encode(av->cs->audio_encoder, frame, frame_size, temp_data, sizeof(temp_data));
 
     if (ret <= 0)

@@ -35,47 +35,47 @@
 
 
 /* don't call into system billions of times for no reason */
-static uint64_t unix_time_value;
+static size_t unix_time_value;
 
 void unix_time_update()
 {
-    unix_time_value = (uint64_t)time(NULL);
+    unix_time_value = (size_t)time(NULL);
 }
 
-uint64_t unix_time()
+size_t unix_time()
 {
     return unix_time_value;
 }
 
-int is_timeout(uint64_t timestamp, uint64_t timeout)
+int is_timeout(size_t timestamp, size_t timeout)
 {
     return timestamp + timeout <= unix_time_value;
 }
 
 
 /* id functions */
-bool id_equal(uint8_t *dest, uint8_t *src)
+bool id_equal(size_t *dest, size_t *src)
 {
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
-uint32_t id_copy(uint8_t *dest, uint8_t *src)
+size_t id_copy(size_t *dest, size_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
     return CLIENT_ID_SIZE;
 }
 
-void host_to_net(uint8_t *num, uint16_t numbytes)
+void host_to_net(size_t *num, size_t numbytes)
 {
     union {
-        uint32_t i;
-        uint8_t c[4];
+        size_t i;
+        size_t c[4];
     } a;
     a.i = 1;
 
     if (a.c[0] == 1) {
-        uint32_t i;
-        uint8_t buff[numbytes];
+        size_t i;
+        size_t buff[numbytes];
 
         for (i = 0; i < numbytes; ++i) {
             buff[i] = num[numbytes - i - 1];
@@ -87,7 +87,7 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
 
 /* state load/save */
 int load_state(load_state_callback_func load_state_callback, void *outer,
-               uint8_t *data, uint32_t length, uint16_t cookie_inner)
+               size_t *data, size_t length, size_t cookie_inner)
 {
     if (!load_state_callback || !data) {
 #ifdef DEBUG
@@ -97,13 +97,13 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     }
 
 
-    uint16_t type;
-    uint32_t length_sub, cookie_type;
-    uint32_t size32 = sizeof(uint32_t), size_head = size32 * 2;
+    size_t type;
+    size_t length_sub, cookie_type;
+    size_t size32 = sizeof(size_t), size_head = size32 * 2;
 
     while (length >= size_head) {
-        length_sub = *(uint32_t *)data;
-        cookie_type = *(uint32_t *)(data + size32);
+        length_sub = *(size_t *)data;
+        cookie_type = *(size_t *)(data + size32);
         data += size_head;
         length -= size_head;
 
@@ -142,7 +142,7 @@ char *logbufferpredata = NULL;
 char *logbufferprehead = NULL;
 char logbuffer[512];
 static FILE *logfile = NULL;
-void loginit(uint16_t port)
+void loginit(size_t port)
 {
     if (logfile)
         fclose(logfile);
@@ -174,7 +174,7 @@ void loginit(uint16_t port)
 void loglog(char *text)
 {
     if (logfile) {
-        fprintf(logfile, "%4u %s", (uint32_t)(unix_time() - starttime), text);
+        fprintf(logfile, "%4u %s", (size_t)(unix_time() - starttime), text);
         fflush(logfile);
 
         return;
@@ -205,7 +205,7 @@ void loglog(char *text)
         logbufferprelen = lennew;
     }
 
-    int written = sprintf(logbufferprehead, "%4u %s", (uint32_t)(unix_time() - starttime), text);
+    int written = sprintf(logbufferprehead, "%4u %s", (size_t)(unix_time() - starttime), text);
     logbufferprehead += written;
 }
 
