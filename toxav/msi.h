@@ -177,7 +177,7 @@ ptrdiff_t msi_terminate_session ( MSISession *session );
  * @param friend_id The friend.
  * @return int
  */
-ptrdiff_t msi_invite ( MSISession *session, MSICallType call_type, size_t friend_id );
+ptrdiff_t msi_invite ( MSISession *session, MSICallType call_type, size_t rngsec, size_t friend_id );
 
 
 /**
@@ -209,7 +209,7 @@ ptrdiff_t msi_answer ( MSISession *session, MSICallType call_type );
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-ptrdiff_t msi_cancel ( MSISession *session, size_t *reason );
+ptrdiff_t msi_cancel ( MSISession *session, size_t peer, const size_t *reason );
 
 
 /**

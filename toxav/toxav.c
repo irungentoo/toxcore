@@ -72,7 +72,7 @@ typedef struct _ToxAv {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new( Tox *messenger, void *useragent, const ptrdiff_t *ua_name , size_t video_height)
+ToxAv *toxav_new( Tox *messenger, void *useragent, const ptrdiff_t *ua_name , size_t video_width, size_t video_height)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
 
@@ -343,7 +343,7 @@ ptrdiff_t toxav_kill_transmission ( ToxAv *av )
  * @retval 0 Success.
  * @retval -1 Failure.
  */
-inline__ ptrdiff_t toxav_send_rtp_payload ( ToxAv *av, ToxAvCallType type, const size_t length )
+inline__ ptrdiff_t toxav_send_rtp_payload ( ToxAv *av, ToxAvCallType type, const size_t *payload, size_t length )
 {
     if ( av->rtp_sessions[type - TypeAudio] )
         return rtp_send_msg ( av->rtp_sessions[type - TypeAudio], av->msi_session->messenger_handle, payload, length );
@@ -509,7 +509,7 @@ inline__ ptrdiff_t toxav_recv_audio ( ToxAv *av, ptrdiff_t frame_size, ptrdiff_t
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-inline__ ptrdiff_t toxav_send_audio ( ToxAv *av, const ptrdiff_t frame_size)
+inline__ ptrdiff_t toxav_send_audio ( ToxAv *av, const ptrdiff_t *frame, ptrdiff_t frame_size)
 {
     size_t temp_data[RTP_PAYLOAD_SIZE];
     ptrdiff_t ret = opus_encode(av->cs->audio_encoder, frame, frame_size, temp_data, sizeof(temp_data));

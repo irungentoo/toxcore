@@ -202,7 +202,7 @@ static inline const size_t *stringify_response ( MSIResponse response )
     iterator += size_const; /* Set iterator at begining of value part */ \
     if ( *iterator != value_byte ) { assert(0); return -1; }\
     iterator ++;\
-    size_t) *(iterator ) << 8 | \
+    size_t _value_size = (size_t) *(iterator ) << 8 | \
     (size_t) *(iterator + 1); \
     header.header_value = calloc(sizeof(size_t), _value_size); \
     header.size = _value_size; \
@@ -221,7 +221,7 @@ static inline const size_t *stringify_response ( MSIResponse response )
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-ptrdiff_t parse_raw_data ( MSIMessage *msg, const size_t length )
+ptrdiff_t parse_raw_data ( MSIMessage *msg, const size_t *data, size_t length )
 {
     assert ( msg );
 
@@ -236,7 +236,7 @@ ptrdiff_t parse_raw_data ( MSIMessage *msg, const size_t length )
 
         if ( *_it == field_byte && itedlen < length ) {
 
-            size_t ) * ( _it + 1 ) << 8 |
+            size_t _size = ( size_t ) * ( _it + 1 ) << 8 |
                              ( size_t ) * ( _it + 2 );
 
             if ( itedlen + _size > length ) return -1;
@@ -335,7 +335,7 @@ void free_message ( MSIMessage *msg )
  * @return MSIMessage* Created message.
  * @retval NULL Error occured.
  */
-MSIMessage *msi_new_message ( size_t *type_id )
+MSIMessage *msi_new_message ( size_t type, const size_t *type_id )
 {
     MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
     assert ( _retu );
@@ -364,7 +364,7 @@ MSIMessage *msi_new_message ( size_t *type_id )
  * @return MSIMessage* Parsed message.
  * @retval NULL Error occured.
  */
-MSIMessage *parse_message ( const size_t length )
+MSIMessage *parse_message ( const size_t *data, size_t length )
 {
     assert ( data );
 
@@ -472,7 +472,7 @@ if ( header.header_value ) { var = append_header_to_string(var, (const size_t*)f
  * @param dest Destination.
  * @return size_t It's final size.
  */
-size_t *dest )
+size_t message_to_string ( MSIMessage *msg, size_t *dest )
 {
     assert ( msg );
     assert ( dest );
@@ -499,7 +499,7 @@ size_t *dest )
 
 
 #define GENERIC_SETTER_DEFINITION(header) \
-void msi_msg_set_##header ( MSIMessage* _msg, const size_t _size ) \
+void msi_msg_set_##header ( MSIMessage* _msg, const size_t* header_value, size_t _size ) \
 { assert(_msg); assert(header_value); \
   free(_msg->header.header_value); \
   ALLOCATE_HEADER( _msg->header, header_value, _size )}
@@ -520,7 +520,7 @@ GENERIC_SETTER_DEFINITION ( nonce )
  * @param size Size of string.
  * @return void
  */
-void t_randomstr ( size_t size )
+void t_randomstr ( size_t *str, size_t size )
 {
     assert ( str );
 
@@ -1071,7 +1071,7 @@ ptrdiff_t handle_recv_error ( MSISession *session, MSIMessage *msg )
  *
  *
  */
-void msi_handle_packet ( Messenger *messenger, ptrdiff_t source, size_t length, void *object )
+void msi_handle_packet ( Messenger *messenger, ptrdiff_t source, size_t *data, size_t length, void *object )
 {
     /* Unused */
     (void)messenger;
@@ -1249,7 +1249,7 @@ ptrdiff_t msi_terminate_session ( MSISession *session )
  * @param friend_id The friend.
  * @return int
  */
-ptrdiff_t msi_invite ( MSISession *session, MSICallType call_type, size_t friend_id )
+ptrdiff_t msi_invite ( MSISession *session, MSICallType call_type, size_t rngsec, size_t friend_id )
 {
     assert ( session );
 
@@ -1363,7 +1363,7 @@ ptrdiff_t msi_answer ( MSISession *session, MSICallType call_type )
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-ptrdiff_t msi_cancel ( MSISession *session, size_t *reason )
+ptrdiff_t msi_cancel ( MSISession *session, size_t peer, const size_t *reason )
 {
     assert ( session );
 

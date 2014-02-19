@@ -202,7 +202,7 @@ void *event_poll( void *arg )
 
         if ( _event_handler->timed_events ) {
 
-            size_t)(current_time() / 1000));
+            size_t _time = ((size_t)(current_time() / 1000));
 
             if ( _event_handler->timed_events[0].timeout < _time ) {
 

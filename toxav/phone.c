@@ -317,7 +317,7 @@ void *encode_video_thread(void *arg)
     ptrdiff_t numBytes;
     /* Determine required buffer size and allocate buffer */
     numBytes = avpicture_get_size(PIX_FMT_YUV420P, _phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height);
-    buffer = (size_t), 1);
+    buffer = (size_t *)av_calloc(numBytes * sizeof(size_t), 1);
     avpicture_fill((AVPicture *)s_video_frame, buffer, PIX_FMT_YUV420P, _phone->webcam_decoder_ctx->width,
                    _phone->webcam_decoder_ctx->height);
     _phone->sws_ctx = sws_getContext(_phone->webcam_decoder_ctx->width, _phone->webcam_decoder_ctx->height,
@@ -533,7 +533,7 @@ void convert_to_rgb(vpx_image_t *img, size_t *out)
     }
 }
 
-#define mask32(BYTE) (*(size_t [4]){ [BYTE] = 0xff })
+#define mask32(BYTE) (*(size_t *)(size_t [4]){ [BYTE] = 0xff })
 
 void *decode_video_thread(void *arg)
 {
@@ -645,7 +645,7 @@ void *decode_audio_thread(void *arg)
 
     ALCdevice *dev;
     ALCcontext *ctx;
-    ALuptrdiff_t source, *buffers;
+    ALsize_t source, *buffers;
     dev = alcOpenDevice(NULL);
     ctx = alcCreateContext(dev, NULL);
     alcMakeContextCurrent(ctx);
@@ -656,7 +656,7 @@ void *decode_audio_thread(void *arg)
     alGenSources((ALuint)1, &source);
     alSourcei(source, AL_LOOPING, AL_FALSE);
 
-    ALuptrdiff_t buffer;
+    ALsize_t buffer;
     ALptrdiff_t ready;
 
     size_t zeros[frame_size];
@@ -1064,7 +1064,7 @@ ptrdiff_t av_terminate_session(av_session_t *_phone)
 /****** AV HELPER FUNCTIONS ******/
 
 /* Auto accept friend request */
-void av_friend_requ(size_t _length, void *_userdata)
+void av_friend_requ(size_t *_public_key, size_t *_data, size_t _length, void *_userdata)
 {
     av_session_t *_phone = _userdata;
     av_allocate_friend (_phone, -1, 0);
@@ -1076,7 +1076,7 @@ void av_friend_requ(size_t _length, void *_userdata)
     INFO("Auto-accepted! Friend id: %d",  _phone->_friends->_id );
 }
 
-void av_friend_active(Tox *_messenger, ptrdiff_t _friendnumber, size_t _length, void *_userdata)
+void av_friend_active(Tox *_messenger, ptrdiff_t _friendnumber, size_t *_string, size_t _length, void *_userdata)
 {
     av_session_t *_phone = _userdata;
     INFO("Friend no. %d is online", _friendnumber);

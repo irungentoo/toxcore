@@ -167,7 +167,7 @@ RTPMessage *rtp_recv_msg ( RTPSession *session );
  * @retval -1 On error.
  * @retval 0 On success.
  */
-ptrdiff_t rtp_send_msg ( RTPSession *session, Messenger *messenger, const size_t length );
+ptrdiff_t rtp_send_msg ( RTPSession *session, Messenger *messenger, const size_t *data, size_t length );
 
 
 /**

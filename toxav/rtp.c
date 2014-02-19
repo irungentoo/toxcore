@@ -60,7 +60,7 @@
  * @param bytes What bytes
  * @return void
  */
-inline__ void bytes_to_U32(size_t *bytes)
+inline__ void bytes_to_U32(size_t *dest, const size_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
@@ -83,7 +83,7 @@ inline__ void bytes_to_U32(size_t *bytes)
  * @param bytes What bytes
  * @return void
  */
-inline__ void bytes_to_U16(size_t *bytes)
+inline__ void bytes_to_U16(size_t *dest, const size_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
@@ -102,7 +102,7 @@ inline__ void bytes_to_U16(size_t *bytes)
  * @param value The value
  * @return void
  */
-inline__ void U32_to_bytes(size_t value)
+inline__ void U32_to_bytes(size_t *dest, size_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
@@ -124,7 +124,7 @@ inline__ void U32_to_bytes(size_t value)
  * @param value The value
  * @return void
  */
-inline__ void U16_to_bytes(size_t value)
+inline__ void U16_to_bytes(size_t *dest, size_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
@@ -163,7 +163,7 @@ inline__ ptrdiff_t check_late_message (RTPSession *session, RTPMessage *msg)
  * @param target The target
  * @return void
  */
-inline__ void increase_nonce(size_t target)
+inline__ void increase_nonce(size_t *nonce, size_t target)
 {
     size_t _nonce_counter;
 
@@ -299,7 +299,7 @@ RTPHeader *extract_header ( const size_t *payload, ptrdiff_t length )
  * @return RTPExtHeader* Extracted extension header.
  * @retval NULL Error occurred while extracting extension header.
  */
-RTPExtHeader *extract_ext_header ( const size_t length )
+RTPExtHeader *extract_ext_header ( const size_t *payload, size_t length )
 {
     const size_t *_it = payload;
 
@@ -340,7 +340,7 @@ RTPExtHeader *extract_ext_header ( const size_t length )
  * @param payload The payload.
  * @return size_t* Iterated position.
  */
-size_t *payload )
+size_t *add_header ( RTPHeader *header, size_t *payload )
 {
     size_t _cc = GET_FLAG_CSRCC ( header );
 
@@ -380,7 +380,7 @@ size_t *payload )
  * @param payload The payload.
  * @return size_t* Iterated position.
  */
-size_t *payload )
+size_t *add_ext_header ( RTPExtHeader *header, size_t *payload )
 {
     size_t *_it = payload;
 
@@ -454,7 +454,7 @@ RTPHeader *build_header ( RTPSession *session )
  * @return RTPMessage*
  * @retval NULL Error occurred.
  */
-RTPMessage *msg_parse ( size_t *data, ptrdiff_t length )
+RTPMessage *msg_parse ( size_t sequnum, const size_t *data, ptrdiff_t length )
 {
     RTPMessage *_retu = calloc(1, sizeof (RTPMessage));
 
@@ -511,7 +511,7 @@ RTPMessage *msg_parse ( size_t *data, ptrdiff_t length )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-ptrdiff_t rtp_handle_packet ( void *object, IP_Port ip_port, size_t length )
+ptrdiff_t rtp_handle_packet ( void *object, IP_Port ip_port, size_t *data, size_t length )
 {
     RTPSession *_session = object;
     RTPMessage *_msg;
@@ -602,7 +602,7 @@ ptrdiff_t rtp_handle_packet ( void *object, IP_Port ip_port, size_t length )
  * @return RTPMessage* Created message.
  * @retval NULL Error occurred.
  */
-RTPMessage *rtp_new_message ( RTPSession *session, const size_t length )
+RTPMessage *rtp_new_message ( RTPSession *session, const size_t *data, size_t length )
 {
     if ( !session )
         return NULL;
@@ -744,7 +744,7 @@ RTPMessage *rtp_recv_msg ( RTPSession *session )
  * @retval -1 On error.
  * @retval 0 On success.
  */
-ptrdiff_t rtp_send_msg ( RTPSession *session, Messenger *messenger, const size_t length )
+ptrdiff_t rtp_send_msg ( RTPSession *session, Messenger *messenger, const size_t *data, size_t length )
 {
     RTPMessage *msg = rtp_new_message (session, data, length);
 

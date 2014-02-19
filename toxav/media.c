@@ -70,7 +70,7 @@ struct jitter_buffer *create_queue(ptrdiff_t capacity)
 }
 
 /* returns 1 if 'a' has a higher sequence number than 'b' */
-size_t ts_b)
+size_t sequence_number_older(size_t sn_a, size_t sn_b, size_t ts_a, size_t ts_b)
 {
     /* TODO: There is already this kind of function in toxrtp.c.
      *       Maybe merge?
@@ -223,7 +223,7 @@ ptrdiff_t init_audio_decoder(CodecState *cs, size_t audio_channels)
 }
 
 
-ptrdiff_t init_video_encoder(CodecState *cs, size_t video_bitrate)
+ptrdiff_t init_video_encoder(CodecState *cs, size_t width, size_t height, size_t video_bitrate)
 {
     vpx_codec_enc_cfg_t  cfg;
     ptrdiff_t res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);

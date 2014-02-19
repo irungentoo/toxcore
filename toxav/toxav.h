@@ -126,7 +126,7 @@ typedef enum {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox *messenger, void *useragent, const ptrdiff_t *ua_name, size_t video_height);
+ToxAv *toxav_new(Tox *messenger, void *useragent, const ptrdiff_t *ua_name, size_t video_width, size_t video_height);
 
 /**
  * @brief Remove A/V session.
@@ -276,7 +276,7 @@ ptrdiff_t toxav_send_video ( ToxAv *av, vpx_image_t *input);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-ptrdiff_t toxav_send_audio ( ToxAv *av, const ptrdiff_t frame_size);
+ptrdiff_t toxav_send_audio ( ToxAv *av, const ptrdiff_t *frame, ptrdiff_t frame_size);
 
 /**
  * @brief Get peer transmission type. It can either be audio or video.
