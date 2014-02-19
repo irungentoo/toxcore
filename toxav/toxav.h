@@ -110,14 +110,13 @@ typedef enum {
  *        it will result in undefined behaviour.
  *
  * @param messenger The messenger handle.
- * @param useragent The agent handling A/V session (i.e. phone).
- * @param ua_name Useragent name.
+ * @param userdata The agent handling A/V session (i.e. phone).
  * @param video_width Width of video frame.
  * @param video_height Height of video frame.
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox *messenger, void *useragent, const char *ua_name, uint16_t video_width, uint16_t video_height);
+ToxAv *toxav_new(Tox* messenger, void* userdata, uint16_t video_width, uint16_t video_height);
 
 /**
  * @brief Remove A/V session.

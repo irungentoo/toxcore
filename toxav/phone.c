@@ -1019,7 +1019,7 @@ av_session_t *av_init_session()
     fraddr_to_str( _byte_address, _retu->_my_public_id );
 
 
-    _retu->av = toxav_new(_retu->_messenger, _retu, _USERAGENT, width, height);
+    _retu->av = toxav_new(_retu->_messenger, _retu, width, height);
 
     /* ------------------ */
 
