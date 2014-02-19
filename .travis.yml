@@ -13,6 +13,8 @@ before_script:
   - make check -j3 > /dev/null
   - sudo make install >/dev/null
   - cd ..
+  #installing yasm, needed for compiling vpx
+  - sudo apt-get install yasm > /dev/null
   #installing libopus, needed for audio encoding/decoding
   - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz > /dev/null
   - tar xzf opus-1.0.3.tar.gz > /dev/null
