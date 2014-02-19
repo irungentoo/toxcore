@@ -39,12 +39,6 @@ typedef struct Tox Tox;
 
 #define RTP_PAYLOAD_SIZE 65535
 
-/* Default video bitrate in bytes/s */
-#define VIDEO_BITRATE   10*1000*100
-
-/* Default audio bitrate in bits/s */
-#define AUDIO_BITRATE   64000
-
 /* Number of audio channels. */
 #define AUDIO_CHANNELS 1
 
@@ -55,10 +49,7 @@ typedef struct Tox Tox;
 #define AUDIO_SAMPLE_RATE   48000
 
 /* The amount of samples in one audio frame */
-#define AUDIO_FRAME_SIZE    AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000
-
-/* Assume 60 fps*/
-#define MAX_ENCODE_TIME_US ((1000 / 60) * 1000)
+#define AUDIO_FRAME_SIZE    (AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000)
 
 
 /**
@@ -246,11 +237,12 @@ int toxav_recv_video ( ToxAv *av, vpx_image_t **output);
  * @brief Receive decoded audio frame.
  *
  * @param av Handler.
- * @param frame_size ...
- * @param dest Destination of the packet. Make sure it has enough space for
- *             RTP_PAYLOAD_SIZE bytes.
+ * @param frame_size The size of dest in frames/samples (one frame/sample is 16 bits or 2 bytes
+ *                   and corresponds to one sample of audio.)
+ * @param dest Destination of the raw audio (16 bit signed pcm with AUDIO_CHANNELS channels).
+ *             Make sure it has enough space for frame_size frames/samples.
  * @return int
- * @retval >=0 Size of received packet.
+ * @retval >=0 Size of received data in frames/samples.
  * @retval ToxAvError On error.
  */
 int toxav_recv_audio( ToxAv *av, int frame_size, int16_t *dest );
@@ -270,8 +262,9 @@ int toxav_send_video ( ToxAv *av, vpx_image_t *input);
  * @brief Encode and send audio frame.
  *
  * @param av Handler.
- * @param frame The frame.
- * @param frame_size It's size.
+ * @param frame The frame (raw 16 bit signed pcm with AUDIO_CHANNELS channels audio.)
+ * @param frame_size Its size in number of frames/samples (one frame/sample is 16 bits or 2 bytes)
+ *                   frame size should be AUDIO_FRAME_SIZE.
  * @return int
  * @retval 0 Success.
  * @retval ToxAvError On error.

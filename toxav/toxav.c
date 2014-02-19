@@ -35,6 +35,16 @@
 
 #include "toxav.h"
 
+/* Default video bitrate in bytes/s */
+#define VIDEO_BITRATE   (10*1000*100)
+
+/* Default audio bitrate in bits/s */
+#define AUDIO_BITRATE   64000
+
+/* Assume 60 fps*/
+#define MAX_ENCODE_TIME_US ((1000 / 60) * 1000)
+
+
 #define inline__ inline __attribute__((always_inline))
 
 static const uint8_t audio_index = 0, video_index = 1;
@@ -474,11 +484,12 @@ inline__ int toxav_send_video ( ToxAv *av, vpx_image_t *input)
  * @brief Receive decoded audio frame.
  *
  * @param av Handler.
- * @param frame_size ...
- * @param dest Destination of the packet. Make sure it has enough space for
- *             RTP_PAYLOAD_SIZE bytes.
+ * @param frame_size The size of dest in frames/samples (one frame/sample is 16 bits or 2 bytes
+ *                   and corresponds to one sample of audio.)
+ * @param dest Destination of the raw audio (16 bit signed pcm with AUDIO_CHANNELS channels).
+ *             Make sure it has enough space for frame_size frames/samples.
  * @return int
- * @retval >=0 Size of received packet.
+ * @retval >=0 Size of received data in frames/samples.
  * @retval ToxAvError On error.
  */
 inline__ int toxav_recv_audio ( ToxAv *av, int frame_size, int16_t *dest )
@@ -503,8 +514,9 @@ inline__ int toxav_recv_audio ( ToxAv *av, int frame_size, int16_t *dest )
  * @brief Encode and send audio frame.
  *
  * @param av Handler.
- * @param frame The frame.
- * @param frame_size It's size.
+ * @param frame The frame (raw 16 bit signed pcm with AUDIO_CHANNELS channels audio.)
+ * @param frame_size Its size in number of frames/samples (one frame/sample is 16 bits or 2 bytes)
+ *                   frame size should be AUDIO_FRAME_SIZE.
  * @return int
  * @retval 0 Success.
  * @retval ToxAvError On error.

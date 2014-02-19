@@ -517,7 +517,7 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
     RTPSession *_session = object;
     RTPMessage *_msg;
 
-    if ( !_session || length < 13 ) /* 12 is the minimum length for rtp + desc. byte */
+    if ( !_session || length < 13 + crypto_secretbox_MACBYTES) /* 12 is the minimum length for rtp + desc. byte */
         return -1;
 
     uint8_t _plain[MAX_UDP_PACKET_SIZE];
