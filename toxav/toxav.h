@@ -126,7 +126,7 @@ typedef enum {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox *messenger, void *useragent, const char *ua_name, uint16_t video_width, uint16_t video_height);
+ToxAv *toxav_new(Tox *messenger, void *useragent, const ptrdiff_t *ua_name, size_t video_height);
 
 /**
  * @brief Remove A/V session.
@@ -156,7 +156,7 @@ void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID 
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_call(ToxAv *av, int user, ToxAvCallType call_type, int ringing_seconds);
+ptrdiff_t toxav_call(ToxAv *av, ptrdiff_t user, ToxAvCallType call_type, ptrdiff_t ringing_seconds);
 
 /**
  * @brief Hangup active call.
@@ -166,7 +166,7 @@ int toxav_call(ToxAv *av, int user, ToxAvCallType call_type, int ringing_seconds
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_hangup(ToxAv *av);
+ptrdiff_t toxav_hangup(ToxAv *av);
 
 /**
  * @brief Answer incomming call.
@@ -177,7 +177,7 @@ int toxav_hangup(ToxAv *av);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_answer(ToxAv *av, ToxAvCallType call_type );
+ptrdiff_t toxav_answer(ToxAv *av, ToxAvCallType call_type );
 
 /**
  * @brief Reject incomming call.
@@ -188,7 +188,7 @@ int toxav_answer(ToxAv *av, ToxAvCallType call_type );
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_reject(ToxAv *av, const char *reason);
+ptrdiff_t toxav_reject(ToxAv *av, const ptrdiff_t *reason);
 
 /**
  * @brief Cancel outgoing request.
@@ -199,7 +199,7 @@ int toxav_reject(ToxAv *av, const char *reason);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_cancel(ToxAv *av, const char *reason);
+ptrdiff_t toxav_cancel(ToxAv *av, const ptrdiff_t *reason);
 
 /**
  * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
@@ -209,7 +209,7 @@ int toxav_cancel(ToxAv *av, const char *reason);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_stop_call(ToxAv *av);
+ptrdiff_t toxav_stop_call(ToxAv *av);
 
 /**
  * @brief Must be call before any RTP transmission occurs.
@@ -219,7 +219,7 @@ int toxav_stop_call(ToxAv *av);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_prepare_transmission(ToxAv *av);
+ptrdiff_t toxav_prepare_transmission(ToxAv *av);
 
 /**
  * @brief Call this at the end of the transmission.
@@ -229,7 +229,7 @@ int toxav_prepare_transmission(ToxAv *av);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_kill_transmission(ToxAv *av);
+ptrdiff_t toxav_kill_transmission(ToxAv *av);
 
 /**
  * @brief Receive decoded video packet.
@@ -240,7 +240,7 @@ int toxav_kill_transmission(ToxAv *av);
  * @retval 0 Success.
  * @retval ToxAvError On Error.
  */
-int toxav_recv_video ( ToxAv *av, vpx_image_t **output);
+ptrdiff_t toxav_recv_video ( ToxAv *av, vpx_image_t **output);
 
 /**
  * @brief Receive decoded audio frame.
@@ -253,7 +253,7 @@ int toxav_recv_video ( ToxAv *av, vpx_image_t **output);
  * @retval >=0 Size of received packet.
  * @retval ToxAvError On error.
  */
-int toxav_recv_audio( ToxAv *av, int frame_size, int16_t *dest );
+ptrdiff_t toxav_recv_audio( ToxAv *av, ptrdiff_t frame_size, ptrdiff_t *dest );
 
 /**
  * @brief Encode and send video packet.
@@ -264,7 +264,7 @@ int toxav_recv_audio( ToxAv *av, int frame_size, int16_t *dest );
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_send_video ( ToxAv *av, vpx_image_t *input);
+ptrdiff_t toxav_send_video ( ToxAv *av, vpx_image_t *input);
 
 /**
  * @brief Encode and send audio frame.
@@ -276,7 +276,7 @@ int toxav_send_video ( ToxAv *av, vpx_image_t *input);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_send_audio ( ToxAv *av, const int16_t *frame, int frame_size);
+ptrdiff_t toxav_send_audio ( ToxAv *av, const ptrdiff_t frame_size);
 
 /**
  * @brief Get peer transmission type. It can either be audio or video.
@@ -287,7 +287,7 @@ int toxav_send_audio ( ToxAv *av, const int16_t *frame, int frame_size);
  * @retval ToxAvCallType On success.
  * @retval ToxAvError On error.
  */
-int toxav_get_peer_transmission_type ( ToxAv *av, int peer );
+ptrdiff_t toxav_get_peer_transmission_type ( ToxAv *av, ptrdiff_t peer );
 
 /**
  * @brief Get reference to an object that is handling av session.
