@@ -22,11 +22,6 @@ dnl revision: increment if source code has changed, set to zero if current is
 dnl           incremented
 dnl age:      increment if interfaces have been added, set to zero if
 dnl           interfaces have been removed or changed
-TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
-TOXAV_LT_LDFLAGS="-version-info $LIBTOXAV_LT_VERSION"
-
-AC_SUBST(TOXCORE_LT_LDFLAGS)
-AC_SUBST(TOXAV_LT_LDFLAGS)
 
 if test "x${prefix}" = "xNONE"; then
     prefix="${ac_default_prefix}"
@@ -43,6 +38,22 @@ NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
 LIBCHECK_FOUND="no"
 WANT_NACL="no"
+
+TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
+TOXAV_LT_LDFLAGS="-version-info $LIBTOXAV_LT_VERSION"
+
+AC_ARG_ENABLE([soname-versions],
+    [AC_HELP_STRING([--enable-soname-versions], [enable soname versions (must be disabled for android) (default: enabled)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            TOXCORE_LT_LDFLAGS="-avoid-version"
+            TOXAV_LT_LDFLAGS="-avoid-version"
+        fi
+    ]
+)
+
+AC_SUBST(TOXCORE_LT_LDFLAGS)
+AC_SUBST(TOXAV_LT_LDFLAGS)
 
 AC_ARG_ENABLE([nacl],
     [AC_HELP_STRING([--enable-nacl], [use nacl instead of libsodium (default: disabled)]) ],
