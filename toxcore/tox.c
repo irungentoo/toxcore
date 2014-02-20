@@ -385,23 +385,19 @@ void tox_callback_status_message(Tox *tox, void (*function)(Messenger *tox, int,
 /* Set the callback for status type changes.
  *  function(int friendnumber, USERSTATUS kind)
  */
-void tox_callback_user_status(Tox *tox, void (*_function)(Tox *tox, int, TOX_USERSTATUS, void *), void *userdata)
+void tox_callback_user_status(Tox *tox, void (*function)(Messenger *tox, int, TOX_USERSTATUS, void *), void *userdata)
 {
     Messenger *m = tox;
-    typedef void (*function_type)(Messenger *, int, USERSTATUS, void *);
-    function_type function = (function_type)_function;
     m_callback_userstatus(m, function, userdata);
 }
 
 /* Set the callback for typing changes.
  *  function (int friendnumber, int is_typing)
  */
-void tox_callback_typing_change(Tox *tox, void (*function)(Tox *tox, int, int, void *), void *userdata)
+void tox_callback_typing_change(Tox *tox, void (*function)(Messenger *tox, int, int, void *), void *userdata)
 {
     Messenger *m = tox;
-    typedef void (*function_type)(Messenger *, int, int, void *);
-    function_type function_new = (function_type)function;
-    m_callback_typingchange(m, function_new, userdata);
+    m_callback_typingchange(m, function, userdata);
 }
 
 /* Set the callback for read receipts.
