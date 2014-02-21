@@ -45,4 +45,9 @@ configure for the normal user or suffer from being way too centralized.
 - [Crypto](http://wiki.tox.im/index.php/Crypto)<br />
 - [Ideas](http://wiki.tox.im/index.php/Ideas)
 
+### TIP4COMMIT
+
+Next accepted commit will receive a Bitcoin donation of:
+[![tip for next commit](http://tip4commit.com/projects/599.svg)](http://tip4commit.com/projects/599)
+
 [String]: https://en.wikipedia.org/wiki/String_(computer_science)
