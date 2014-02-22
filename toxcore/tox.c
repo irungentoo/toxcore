@@ -254,7 +254,7 @@ int tox_get_status_message_size(Tox *tox, int32_t friendnumber)
 int tox_get_self_status_message_size(Tox *tox)
 {
     Messenger *m = tox;
-    return m_get_self_statusmessage_size(m, friendnumber);
+    return m_get_self_statusmessage_size(m);
 }
 
 /* Copy friendnumber's status message into buf, truncating if size is over maxlen.
