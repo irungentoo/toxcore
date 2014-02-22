@@ -49,8 +49,6 @@ On FreeBSD 10+:
 pkg install automake autoconf
 ```
 
-Note that `libconfig-dev` should be >= 1.4.
-
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
@@ -112,7 +110,7 @@ brew install --HEAD libtoxcore
 
 To do it manually:
 ```
-brew install libtool automake autoconf libconfig libsodium check
+brew install libtool automake autoconf libsodium check
 ```
 Then clone this repo and generate makefile:
 ```bash
@@ -234,7 +232,7 @@ While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox 
   - --disable-av disable A/V support (default: auto) see: [libtoxav](#libtoxav)
   - --enable-phone build phone (default: no) see: [Test phone](#phone)
   - --enable-ntox build nTox client (default: no) see: [nTox](#ntox)
-  - --enable-daemon build DHT bootstrap daemon (default: no) see: [Bootstrap daemon](#bootstrapd)
+  - --enable-daemon build DHT bootstrap daemon (default=no) see: [Bootstrap daemon](#bootstrapd)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
   - --enable-static[=PKGS]  build static libraries [default=yes]
 
@@ -335,7 +333,7 @@ Daemon is disabled by default. You can enable it by adding --enable-daemon argum
 ```bash
 ./configure --enable-daemon
 ```
-There is one dependency required for bootstrap daemon: libconfig.
+There is one dependency required for bootstrap daemon: `libconfig-dev` >= 1.4.
 
 Install on fedora:
 ```bash
@@ -354,6 +352,7 @@ brew install libconfig
 OS X non-homebrew:
 Grab the following [package] (http://www.hyperrealm.com/libconfig/), uncompress and install
 
+See this [readme](other\bootstrap_daemon\README.md) on how to set up the bootstrap daemon.
 
 
 <a name="ntox" />
