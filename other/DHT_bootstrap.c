@@ -1,7 +1,7 @@
 
 /* DHT boostrap
  *
- * A simple DHT boostrap server for tox.
+ * A simple DHT boostrap node for tox.
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -33,8 +33,8 @@
 
 #include "../testing/misc_tools.c"
 
-#ifdef DHT_SERVER_EXTRA_PACKETS
-#include "./bootstrap_server_packets.c"
+#ifdef DHT_NODE_EXTRA_PACKETS
+#include "./bootstrap_node_packets.c"
 
 #define DHT_VERSION_NUMBER 1
 #define DHT_MOTD "This is a test motd"
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     Onion *onion = new_onion(dht);
     Onion_Announce *onion_a = new_onion_announce(dht);
 
-#ifdef DHT_SERVER_EXTRA_PACKETS
+#ifdef DHT_NODE_EXTRA_PACKETS
     bootstrap_set_callbacks(dht->net, DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
 #endif
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     perror("Initialization");
 
     manage_keys(dht);
-    /* We want our DHT public key to be the same as our internal one since this is a bootstrap server */
+    /* We want our DHT public key to be the same as our internal one since this is a bootstrap node */
     memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
     printf("Public key: ");
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 
     while (1) {
         if (is_waiting_for_dht_connection && DHT_isconnected(dht)) {
-            printf("Connected to other bootstrap server successfully.\n");
+            printf("Connected to other bootstrap node successfully.\n");
             is_waiting_for_dht_connection = 0;
         }
 

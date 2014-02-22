@@ -149,7 +149,7 @@ typedef int sock_t;
 #define NET_PACKET_ONION_RECV_2 141
 #define NET_PACKET_ONION_RECV_1 142
 
-/* Only used for bootstrap servers */
+/* Only used for bootstrap nodes */
 #define BOOTSTRAP_INFO_PACKET_ID 240
 
 

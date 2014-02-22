@@ -1,6 +1,6 @@
 /* tox_bootstrap_daemon.c
  *
- * Tox DHT bootstrap server daemon.
+ * Tox DHT bootstrap node daemon.
  *
  *  Copyright (C) 2014 Tox project All Rights Reserved.
  *
@@ -92,7 +92,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
 
     fclose(keys_file);
 
-    // We want our DHT public key to be the same as our internal one since this is a bootstrap server
+    // We want our DHT public key to be the same as our internal one since this is a bootstrap node
     memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
 
@@ -184,14 +184,14 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     return 1;
 }
 
-// Bootstraps servers listed in the config file
+// Bootstraps nodes listed in the config file
 //
-// returns 1 on success, some or no bootstrap servers were added
+// returns 1 on success, some or no bootstrap nodes were added
 //         0 on failure, a error accured while parsing config file
 
 int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
 {
-    const char *NAME_BOOTSTRAP_SERVERS = "bootstrap_servers";
+    const char *NAME_BOOTSTRAP_NODES = "bootstrap_nodes";
 
     const char *NAME_PUBLIC_KEY = "public_key";
     const char *NAME_PORT       = "port";
@@ -207,16 +207,16 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
         return 0;
     }
 
-    config_setting_t *server_list = config_lookup(&cfg, NAME_BOOTSTRAP_SERVERS);
+    config_setting_t *node_list = config_lookup(&cfg, NAME_BOOTSTRAP_NODES);
 
-    if (server_list == NULL) {
-        syslog(LOG_WARNING, "No '%s' setting in the configuration file. Skipping bootstrapping.\n", NAME_BOOTSTRAP_SERVERS);
+    if (node_list == NULL) {
+        syslog(LOG_WARNING, "No '%s' setting in the configuration file. Skipping bootstrapping.\n", NAME_BOOTSTRAP_NODES);
         config_destroy(&cfg);
         return 1;
     }
 
-    if (config_setting_length(server_list) == 0) {
-        syslog(LOG_WARNING, "No bootstrap servers found. Skipping bootstrapping.\n");
+    if (config_setting_length(node_list) == 0) {
+        syslog(LOG_WARNING, "No bootstrap nodes found. Skipping bootstrapping.\n");
         config_destroy(&cfg);
         return 1;
     }
@@ -225,45 +225,45 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
     const char *bs_address;
     const char *bs_public_key;
 
-    config_setting_t *server;
+    config_setting_t *node;
 
     int i = 0;
 
-    while (config_setting_length(server_list)) {
+    while (config_setting_length(node_list)) {
 
-        server = config_setting_get_elem(server_list, 0);
+        node = config_setting_get_elem(node_list, 0);
 
-        if (server == NULL) {
+        if (node == NULL) {
             config_destroy(&cfg);
             return 0;
         }
 
         // Check that all settings are present
-        if (config_setting_lookup_string(server, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE) {
-            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_PUBLIC_KEY);
+        if (config_setting_lookup_string(node, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap node #%d: Couldn't find '%s' setting. Skipping the node.\n", i, NAME_PUBLIC_KEY);
             goto next;
         }
 
-        if (config_setting_lookup_int(server, NAME_PORT, &bs_port) == CONFIG_FALSE) {
-            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_PORT);
+        if (config_setting_lookup_int(node, NAME_PORT, &bs_port) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap node #%d: Couldn't find '%s' setting. Skipping the node.\n", i, NAME_PORT);
             goto next;
         }
 
-        if (config_setting_lookup_string(server, NAME_ADDRESS, &bs_address) == CONFIG_FALSE) {
-            syslog(LOG_WARNING, "Bootstrap server #%d: Couldn't find '%s' setting. Skipping the server.\n", i, NAME_ADDRESS);
+        if (config_setting_lookup_string(node, NAME_ADDRESS, &bs_address) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Bootstrap node #%d: Couldn't find '%s' setting. Skipping the node.\n", i, NAME_ADDRESS);
             goto next;
         }
 
         // Process settings
         if (strlen(bs_public_key) != 64) {
-            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_PUBLIC_KEY,
+            syslog(LOG_WARNING, "Bootstrap node #%d: Invalid '%s': %s. Skipping the node.\n", i, NAME_PUBLIC_KEY,
                    bs_public_key);
             goto next;
         }
 
         // not (1 <= port <= 65535)
         if (bs_port < 1 || bs_port > 65535) {
-            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %d. Skipping the server.\n", i, NAME_PORT, bs_port);
+            syslog(LOG_WARNING, "Bootstrap node #%d: Invalid '%s': %d. Skipping the node.\n", i, NAME_PORT, bs_port);
             goto next;
         }
 
@@ -273,17 +273,17 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
         free(bs_public_key_bin);
 
         if (!address_resolved) {
-            syslog(LOG_WARNING, "Bootstrap server #%d: Invalid '%s': %s. Skipping the server.\n", i, NAME_ADDRESS, bs_address);
+            syslog(LOG_WARNING, "Bootstrap node #%d: Invalid '%s': %s. Skipping the node.\n", i, NAME_ADDRESS, bs_address);
             goto next;
         }
 
-        syslog(LOG_DEBUG, "Successfully added bootstrap server #%d: %s:%d %s\n", i, bs_address, bs_port, bs_public_key);
+        syslog(LOG_DEBUG, "Successfully added bootstrap node #%d: %s:%d %s\n", i, bs_address, bs_port, bs_public_key);
 
 next:
         // config_setting_lookup_string() allocates string inside and doesn't allow us to free it
         // so in order to reuse `bs_public_key` and `bs_address` we have to remove the element
         // which will cause libconfig to free allocated strings
-        config_setting_remove_elem(server_list, 0);
+        config_setting_remove_elem(node_list, 0);
         i++;
     }
 
@@ -378,9 +378,9 @@ int main(int argc, char *argv[])
     }
 
     if (bootstrap_from_config(cfg_file_path, dht, enable_ipv6)) {
-        syslog(LOG_DEBUG, "List of bootstrap servers read successfully\n");
+        syslog(LOG_DEBUG, "List of bootstrap nodes read successfully\n");
     } else {
-        syslog(LOG_ERR, "Couldn't read list of bootstrap servers in %s. Exiting.\n", cfg_file_path);
+        syslog(LOG_ERR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
         return 1;
     }
 
@@ -449,7 +449,7 @@ int main(int argc, char *argv[])
         networking_poll(dht->net);
 
         if (waiting_for_dht_connection && DHT_isconnected(dht)) {
-            syslog(LOG_DEBUG, "Connected to other bootstrap server successfully.\n");
+            syslog(LOG_DEBUG, "Connected to other bootstrap node successfully.\n");
             waiting_for_dht_connection = 0;
         }
 

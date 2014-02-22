@@ -8,5 +8,5 @@ include ../toxcore/Makefile.inc
 include ../toxav/Makefile.inc
 include ../other/Makefile.inc
 include ../testing/Makefile.inc
-include ../other/bootstrap_serverdaemon/Makefile.inc
+include ../other/bootstrap_daemon/Makefile.inc
 include ../auto_tests/Makefile.inc

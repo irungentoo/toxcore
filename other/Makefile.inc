@@ -15,5 +15,5 @@ DHT_bootstrap_LDADD =   $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
-EXTRA_DIST +=           $(top_srcdir)/other/DHTservers \
+EXTRA_DIST +=           $(top_srcdir)/other/DHTnodes \
                         $(top_srcdir)/other/tox.png

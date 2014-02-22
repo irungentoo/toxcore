@@ -7,7 +7,7 @@ But:
 Vastly simplified packet format and encryption.
 
 Boostrapping:
-The first time you install the client we bootstrap it with a node on our servers.(bandwidth should not be a problem as the client only needs to be sent one reply.)
+The first time you install the client we bootstrap it with a node. (bandwidth should not be a problem as the client only needs to be sent one reply.)
 
 
 Basics
