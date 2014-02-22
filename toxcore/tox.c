@@ -210,6 +210,21 @@ int tox_get_name(Tox *tox, int32_t friendnumber, uint8_t *name)
     return getname(m, friendnumber, name);
 }
 
+/*  returns the length of name on success.
+ *  returns -1 on failure.
+ */
+int tox_get_name_size(Tox *tox, int32_t friendnumber)
+{
+    Messenger *m = tox;
+    return m_get_name_size(m, friendnumber);
+}
+
+int tox_get_self_name_size(Tox *tox)
+{
+    Messenger *m = tox;
+    return m_get_self_name_size(m);
+}
+
 /* Set our user status;
  * you are responsible for freeing status after.
  *
@@ -227,13 +242,19 @@ int tox_set_user_status(Tox *tox, TOX_USERSTATUS status)
     return m_set_userstatus(m, status);
 }
 
-/*  return the length of friendnumber's status message, including null.
- *  Pass it into malloc.
+/*  returns the length of status message on success.
+ *  returns -1 on failure.
  */
 int tox_get_status_message_size(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
     return m_get_statusmessage_size(m, friendnumber);
+}
+
+int tox_get_self_status_message_size(Tox *tox)
+{
+    Messenger *m = tox;
+    return m_get_self_statusmessage_size(m, friendnumber);
 }
 
 /* Copy friendnumber's status message into buf, truncating if size is over maxlen.

@@ -370,6 +370,12 @@ uint16_t getself_name(Messenger *m, uint8_t *name);
  */
 int getname(Messenger *m, int32_t friendnumber, uint8_t *name);
 
+/*  return the length of name, including null on success.
+ *  return -1 on failure.
+ */
+int m_get_name_size(Messenger *m, int32_t friendnumber);
+int m_get_self_name_size(Messenger *m);
+
 /* returns valid ip port of connected friend on success
  * returns zeroed out IP_Port on failure
  */
@@ -384,10 +390,11 @@ IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber);
 int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length);
 int m_set_userstatus(Messenger *m, USERSTATUS status);
 
-/*  return the length of friendnumber's status message, including null.
- *  Pass it into malloc.
+/*  return the length of friendnumber's status message, including null on success.
+ *  return -1 on failure.
  */
 int m_get_statusmessage_size(Messenger *m, int32_t friendnumber);
+int m_get_self_statusmessage_size(Messenger *m);
 
 /* Copy friendnumber's status message into buf, truncating if size is over maxlen.
  * Get the size you need to allocate from m_get_statusmessage_size.

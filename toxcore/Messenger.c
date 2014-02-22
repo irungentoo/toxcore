@@ -533,6 +533,19 @@ int getname(Messenger *m, int32_t friendnumber, uint8_t *name)
     return m->friendlist[friendnumber].name_length;
 }
 
+int m_get_name_size(Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    return m->friendlist[friendnumber].name_length;
+}
+
+int m_get_self_name_size(Messenger *m)
+{
+    return m->name_length;
+}
+
 int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length)
 {
     if (length > MAX_STATUSMESSAGE_LENGTH)
@@ -586,6 +599,14 @@ int m_copy_statusmessage(Messenger *m, int32_t friendnumber, uint8_t *buf, uint3
     memset(buf, 0, maxlen);
     memcpy(buf, m->friendlist[friendnumber].statusmessage, MIN(maxlen, m->friendlist[friendnumber].statusmessage_length));
     return MIN(maxlen, m->friendlist[friendnumber].statusmessage_length);
+}
+
+/* return the size of friendnumber's user status.
+ * Guaranteed to be at most MAX_STATUSMESSAGE_LENGTH.
+ */
+int m_get_self_statusmessage_size(Messenger *m)
+{
+    return m->statusmessage_length;
 }
 
 int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen)
