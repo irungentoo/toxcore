@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libtoxcore
-Description: Tox protocol library
+Name: libtoxav
+Description: Tox A/V library
 Requires:
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ltoxcore @LIBS@
+Libs: -L${libdir} -ltoxav @AV_LIBS@
 Cflags: -I${includedir}

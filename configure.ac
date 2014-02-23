@@ -470,6 +470,16 @@ if test "x$BUILD_AV" = "xyes"; then
     )
 fi
 
+if test "x$BUILD_AV" = "xyes"; then
+    # toxcore lib needs an global?
+    # So far this works okay
+    AV_LIBS="$OPUS_LIBS $VPX_LIBS -ltoxcore"
+    AC_SUBST(AV_LIBS)
+    
+    AV_CFLAGS="$OPUS_CFLAGS $VPX_CFLAGS"
+    AC_SUBST(AV_CFLAGS)
+fi
+
 if test -n "$PKG_CONFIG"; then
     if test "x$BUILD_TESTS" = "xyes"; then
         PKG_CHECK_MODULES([CHECK], [check],
@@ -636,4 +646,10 @@ AC_CONFIG_FILES([Makefile
                  build/Makefile
                  libtoxcore.pc
                 ])
+                    
+AM_COND_IF(BUILD_AV,
+  [
+    AC_CONFIG_FILES([libtoxav.pc])
+  ],)
+
 AC_OUTPUT

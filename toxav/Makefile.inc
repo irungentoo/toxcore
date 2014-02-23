@@ -19,8 +19,7 @@ libtoxav_la_SOURCES = ../toxav/event.h \
 libtoxav_la_CFLAGS = -I../toxcore \
                      -I../toxav \
                      $(NACL_CFLAGS) \
-                     $(OPUS_CFLAGS) \
-                     $(VPX_CFLAGS) \
+                     $(AV_CFLAGS) \
                      $(PTHREAD_CFLAGS)
 
 libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
@@ -28,9 +27,8 @@ libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
                       $(EXTRA_LT_LDFLAGS)
                       
 libtoxav_la_LIBS =    $(NACL_LIBS) \
-                      $(OPUS_LIBS) \
-                      $(VPX_LIBS) \
-                      $(PTHREAD_LIBS)
+                      $(PTHREAD_LIBS) \
+                      $(AV_LIBS)
 
                         
 endif

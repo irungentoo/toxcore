@@ -29,9 +29,6 @@
 #include <stdlib.h>
 #include "event.h"
 
-#include "../toxcore/util.h"
-#include "../toxcore/network.h"
-
 #define _GNU_SOURCE
 
 #include <assert.h>
