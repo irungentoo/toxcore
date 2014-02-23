@@ -30,9 +30,6 @@
 
 #include "msi.h"
 #include "event.h"
-#include "../toxcore/util.h"
-#include "../toxcore/network.h"
-#include "../toxcore/Messenger.h"
 
 #include <assert.h>
 #include <unistd.h>
