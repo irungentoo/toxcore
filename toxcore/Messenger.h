@@ -206,7 +206,7 @@ typedef struct Messenger {
     void *friend_namechange_userdata;
     void (*friend_statusmessagechange)(struct Messenger *m, int32_t, uint8_t *, uint16_t, void *);
     void *friend_statusmessagechange_userdata;
-    void (*friend_userstatuschange)(struct Messenger *m, int32_t, USERSTATUS, void *);
+    void (*friend_userstatuschange)(struct Messenger *m, int32_t, uint8_t, void *);
     void *friend_userstatuschange_userdata;
     void (*friend_typingchange)(struct Messenger *m, int32_t, int, void *);
     void *friend_typingchange_userdata;
@@ -388,7 +388,7 @@ IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber);
  *  returns -1 on failure.
  */
 int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length);
-int m_set_userstatus(Messenger *m, USERSTATUS status);
+int m_set_userstatus(Messenger *m, uint8_t status);
 
 /*  return the length of friendnumber's status message, including null on success.
  *  return -1 on failure.
@@ -411,8 +411,8 @@ int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen);
  *  As above, the self variant will return our own USERSTATUS.
  *  If friendnumber is invalid, this shall return USERSTATUS_INVALID.
  */
-USERSTATUS m_get_userstatus(Messenger *m, int32_t friendnumber);
-USERSTATUS m_get_self_userstatus(Messenger *m);
+uint8_t m_get_userstatus(Messenger *m, int32_t friendnumber);
+uint8_t m_get_self_userstatus(Messenger *m);
 
 /* Set our typing status for a friend.
  * You are responsible for turning it on or off.
@@ -469,7 +469,7 @@ void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int32
 /* Set the callback for status type changes.
  *  Function(int32_t friendnumber, USERSTATUS kind)
  */
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int32_t, USERSTATUS, void *), void *userdata);
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, void *), void *userdata);
 
 /* Set the callback for typing changes.
  *  Function(int32_t friendnumber, int is_typing)

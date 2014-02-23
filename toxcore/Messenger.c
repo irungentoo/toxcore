@@ -562,7 +562,7 @@ int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length)
     return 0;
 }
 
-int m_set_userstatus(Messenger *m, USERSTATUS status)
+int m_set_userstatus(Messenger *m, uint8_t status)
 {
     if (status >= USERSTATUS_INVALID) {
         return -1;
@@ -616,12 +616,12 @@ int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen)
     return MIN(maxlen, m->statusmessage_length);
 }
 
-USERSTATUS m_get_userstatus(Messenger *m, int32_t friendnumber)
+uint8_t m_get_userstatus(Messenger *m, int32_t friendnumber)
 {
     if (friend_not_valid(m, friendnumber))
         return USERSTATUS_INVALID;
 
-    USERSTATUS status = m->friendlist[friendnumber].userstatus;
+    uint8_t status = m->friendlist[friendnumber].userstatus;
 
     if (status >= USERSTATUS_INVALID) {
         status = USERSTATUS_NONE;
@@ -630,7 +630,7 @@ USERSTATUS m_get_userstatus(Messenger *m, int32_t friendnumber)
     return status;
 }
 
-USERSTATUS m_get_self_userstatus(Messenger *m)
+uint8_t m_get_self_userstatus(Messenger *m)
 {
     return m->userstatus;
 }
@@ -663,10 +663,9 @@ static int send_statusmessage(Messenger *m, int32_t friendnumber, uint8_t *statu
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_STATUSMESSAGE, status, length);
 }
 
-static int send_userstatus(Messenger *m, int32_t friendnumber, USERSTATUS status)
+static int send_userstatus(Messenger *m, int32_t friendnumber, uint8_t status)
 {
-    uint8_t stat = status;
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &stat, sizeof(stat));
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &status, sizeof(status));
 }
 
 static int send_user_istyping(Messenger *m, int32_t friendnumber, uint8_t is_typing)
@@ -698,7 +697,7 @@ static int set_friend_statusmessage(Messenger *m, int32_t friendnumber, uint8_t 
     return 0;
 }
 
-static void set_friend_userstatus(Messenger *m, int32_t friendnumber, USERSTATUS status)
+static void set_friend_userstatus(Messenger *m, int32_t friendnumber, uint8_t status)
 {
     m->friendlist[friendnumber].userstatus = status;
 }
@@ -756,7 +755,7 @@ void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int32
     m->friend_statuschange_userdata = userdata;
 }
 
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int32_t, USERSTATUS, void *), void *userdata)
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, void *), void *userdata)
 {
     m->friend_userstatuschange = function;
     m->friend_userstatuschange_userdata = userdata;

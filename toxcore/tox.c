@@ -236,7 +236,7 @@ int tox_set_status_message(Tox *tox, uint8_t *status, uint16_t length)
     return m_set_statusmessage(m, status, length);
 }
 
-int tox_set_user_status(Tox *tox, TOX_USERSTATUS status)
+int tox_set_user_status(Tox *tox, uint8_t status)
 {
     Messenger *m = tox;
     return m_set_userstatus(m, status);
@@ -278,16 +278,16 @@ int tox_get_self_status_message(Tox *tox, uint8_t *buf, uint32_t maxlen)
  * As above, the self variant will return our own USERSTATUS.
  * If friendnumber is invalid, this shall return USERSTATUS_INVALID.
  */
-TOX_USERSTATUS tox_get_user_status(Tox *tox, int32_t friendnumber)
+uint8_t tox_get_user_status(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
-    return (TOX_USERSTATUS)m_get_userstatus(m, friendnumber);
+    return m_get_userstatus(m, friendnumber);
 }
 
-TOX_USERSTATUS tox_get_self_user_status(Tox *tox)
+uint8_t tox_get_self_user_status(Tox *tox)
 {
     Messenger *m = tox;
-    return (TOX_USERSTATUS)m_get_self_userstatus(m);
+    return m_get_self_userstatus(m);
 }
 
 /* Set our typing status for a friend.
@@ -405,7 +405,7 @@ void tox_callback_status_message(Tox *tox, void (*function)(Messenger *tox, int3
 /* Set the callback for status type changes.
  *  function(int32_t friendnumber, USERSTATUS kind)
  */
-void tox_callback_user_status(Tox *tox, void (*function)(Messenger *tox, int32_t, TOX_USERSTATUS, void *),
+void tox_callback_user_status(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, void *),
                               void *userdata)
 {
     Messenger *m = tox;

@@ -236,7 +236,7 @@ int tox_get_self_name_size(Tox *tox);
  *  returns -1 on failure.
  */
 int tox_set_status_message(Tox *tox, uint8_t *status, uint16_t length);
-int tox_set_user_status(Tox *tox, TOX_USERSTATUS userstatus);
+int tox_set_user_status(Tox *tox, uint8_t userstatus);
 
 /*  returns the length of status message on success.
  *  returns -1 on failure.
@@ -259,8 +259,8 @@ int tox_get_self_status_message(Tox *tox, uint8_t *buf, uint32_t maxlen);
  *  As above, the self variant will return our own TOX_USERSTATUS.
  *  If friendnumber is invalid, this shall return TOX_USERSTATUS_INVALID.
  */
-TOX_USERSTATUS tox_get_user_status(Tox *tox, int32_t friendnumber);
-TOX_USERSTATUS tox_get_self_user_status(Tox *tox);
+uint8_t tox_get_user_status(Tox *tox, int32_t friendnumber);
+uint8_t tox_get_self_user_status(Tox *tox);
 
 /* Set our typing status for a friend.
  * You are responsible for turning it on or off.
@@ -298,48 +298,48 @@ uint32_t tox_get_num_online_friends(Tox *tox);
 uint32_t tox_get_friendlist(Tox *tox, int32_t *out_list, uint32_t list_size);
 
 /* Set the function that will be executed when a friend request is received.
- *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
+ *  Function format is function(Tox *tox, uint8_t * public_key, uint8_t * data, uint16_t length, void *userdata)
  */
 void tox_callback_friend_request(Tox *tox, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
- *  Function format is: function(int friendnumber, uint8_t * message, uint32_t length)
+ *  Function format is: function(Tox *tox, int friendnumber, uint8_t * message, uint32_t length, void *userdata)
  */
 void tox_callback_friend_message(Tox *tox, void (*function)(Tox *tox, int, uint8_t *, uint16_t, void *),
                                  void *userdata);
 
 /* Set the function that will be executed when an action from a friend is received.
- *  Function format is: function(int32_t friendnumber, uint8_t * action, uint32_t length)
+ *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * action, uint32_t length, void *userdata)
  */
 void tox_callback_friend_action(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, uint16_t, void *),
                                 void *userdata);
 
 /* Set the callback for name changes.
- *  function(int32_t friendnumber, uint8_t *newname, uint16_t length)
+ *  function(Tox *tox, int32_t friendnumber, uint8_t *newname, uint16_t length, void *userdata)
  *  You are not responsible for freeing newname
  */
 void tox_callback_name_change(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, uint16_t, void *),
                               void *userdata);
 
 /* Set the callback for status message changes.
- *  function(int32_t friendnumber, uint8_t *newstatus, uint16_t length)
+ *  function(Tox *tox, int32_t friendnumber, uint8_t *newstatus, uint16_t length, void *userdata)
  *  You are not responsible for freeing newstatus.
  */
 void tox_callback_status_message(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, uint16_t, void *),
                                  void *userdata);
 
 /* Set the callback for status type changes.
- *  function(int32_t friendnumber, USERSTATUS kind)
+ *  function(Tox *tox, int32_t friendnumber, uint8_t TOX_USERSTATUS, void *userdata)
  */
-void tox_callback_user_status(Tox *tox, void (*function)(Tox *tox, int32_t, TOX_USERSTATUS, void *), void *userdata);
+void tox_callback_user_status(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, void *), void *userdata);
 
 /* Set the callback for typing changes.
- *  function (int32_t friendnumber, int is_typing)
+ *  function (Tox *tox, int32_t friendnumber, int is_typing, void *userdata)
  */
 void tox_callback_typing_change(Tox *tox, void (*function)(Tox *tox, int32_t, int, void *), void *userdata);
 
 /* Set the callback for read receipts.
- *  function(int32_t friendnumber, uint32_t receipt)
+ *  function(Tox *tox, int32_t friendnumber, uint32_t receipt, void *userdata)
  *
  *  If you are keeping a record of returns from m_sendmessage;
  *  receipt might be one of those values, meaning the message
@@ -350,7 +350,7 @@ void tox_callback_typing_change(Tox *tox, void (*function)(Tox *tox, int32_t, in
 void tox_callback_read_receipt(Tox *tox, void (*function)(Tox *tox, int32_t, uint32_t, void *), void *userdata);
 
 /* Set the callback for connection status changes.
- *  function(int32_t friendnumber, uint8_t status)
+ *  function(Tox *tox, int32_t friendnumber, uint8_t status, void *userdata)
  *
  *  Status:
  *    0 -- friend went offline after being previously online
