@@ -1,8 +1,8 @@
-/* bootstrap_server_packets.c
+/* bootstrap_node_packets.c
  *
- * Special bootstrap server only packets.
+ * Special bootstrap node only packets.
  *
- * Include it in your bootstrap server and use: bootstrap_set_callbacks() to enable.
+ * Include it in your bootstrap node and use: bootstrap_set_callbacks() to enable.
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *

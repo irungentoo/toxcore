@@ -62,6 +62,51 @@ void print_typingchange(Tox *m, int friendnumber, int typing, void *userdata)
         typing_changes = 2;
 }
 
+uint8_t filenum;
+uint32_t file_accepted;
+uint64_t file_size;
+void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+                         uint16_t filename_length, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 974536)
+        return;
+
+    if (filename_length == sizeof("Gentoo.exe") && memcmp(filename, "Gentoo.exe", sizeof("Gentoo.exe")) == 0)
+        ++file_accepted;
+
+    file_size = filesize;
+    tox_file_send_control(m, friendnumber, 1, filenumber, TOX_FILECONTROL_ACCEPT, NULL, 0);
+}
+
+uint32_t file_sent;
+uint32_t sendf_ok;
+void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
+                        uint8_t *data, uint16_t length, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 974536)
+        return;
+
+    if (send_recieve == 0 && control_type == TOX_FILECONTROL_FINISHED)
+        file_sent = 1;
+
+    if (send_recieve == 1 && control_type == TOX_FILECONTROL_ACCEPT)
+        sendf_ok = 1;
+
+}
+
+uint64_t size_recv;
+void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 974536)
+        return;
+
+    uint8_t *f_data = malloc(length);
+    memset(f_data, 6, length);
+
+    if (memcmp(f_data, data, length) == 0)
+        size_recv += length;
+}
+
 START_TEST(test_few_clients)
 {
     long long unsigned int cur_time = time(NULL);
@@ -168,6 +213,44 @@ START_TEST(test_few_clients)
     }
 
     ck_assert_msg(tox_get_is_typing(tox2, 0) == 0, "Typing fail");
+
+    filenum = file_accepted = file_size = file_sent = sendf_ok = size_recv = 0;
+    long long unsigned int f_time = time(NULL);
+    tox_callback_file_data(tox3, write_file, &to_compare);
+    tox_callback_file_control(tox2, file_print_control, &to_compare);
+    tox_callback_file_control(tox3, file_print_control, &to_compare);
+    tox_callback_file_send_request(tox3, file_request_accept, &to_compare);
+    uint64_t totalf_size = 100 * 1024 * 1024;
+    int fnum = tox_new_file_sender(tox2, 0, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"));
+    ck_assert_msg(fnum != -1, "tox_new_file_sender fail");
+    int fpiece_size = tox_file_data_size(tox2, 0);
+    uint8_t *f_data = malloc(fpiece_size);
+    memset(f_data, 6, fpiece_size);
+
+    while (1) {
+        file_sent = 0;
+        tox_do(tox1);
+        tox_do(tox2);
+        tox_do(tox3);
+
+        if (sendf_ok)
+            while (tox_file_send_data(tox2, 0, fnum, f_data, fpiece_size < totalf_size ? fpiece_size : totalf_size) == 0) {
+                if (totalf_size <= fpiece_size) {
+                    sendf_ok = 0;
+                    tox_file_send_control(tox2, 0, 0, fnum, TOX_FILECONTROL_FINISHED, NULL, 0);
+                }
+
+                totalf_size -= fpiece_size;
+            }
+
+        if (file_sent && size_recv == file_size)
+            break;
+
+        c_sleep(10);
+    }
+
+    printf("100MB file sent in %llu seconds\n", time(NULL) - f_time);
+
     printf("test_few_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
 }
 END_TEST
@@ -244,7 +327,7 @@ Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox");
 
-    DEFTESTCASE_SLOW(few_clients, 30);
+    DEFTESTCASE_SLOW(few_clients, 50);
     DEFTESTCASE_SLOW(many_clients, 240);
     return s;
 }

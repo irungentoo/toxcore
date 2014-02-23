@@ -3,10 +3,10 @@ if BUILD_DHT_BOOTSTRAP_DAEMON
 noinst_PROGRAMS += tox_bootstrap_daemon
 
 tox_bootstrap_daemon_SOURCES = \
-                        ../other/bootstrap_serverdaemon/tox_bootstrap_daemon.c
+                        ../other/bootstrap_daemon/tox_bootstrap_daemon.c
 
 tox_bootstrap_daemon_CFLAGS = \
-                        -I$(top_srcdir)/other/bootstrap_serverdaemon \
+                        -I$(top_srcdir)/other/bootstrap_daemon \
                         $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS) \
                         $(LIBCONFIG_CFLAGS)
@@ -22,6 +22,6 @@ tox_bootstrap_daemon_LDADD = \
 endif
 
 EXTRA_DIST += \
-    $(top_srcdir)/other/bootstrap_serverdaemon/conf \
-    $(top_srcdir)/other/bootstrap_serverdaemon/tox_bootstrap_daemon.sh
+    $(top_srcdir)/other/bootstrap_daemon/conf \
+    $(top_srcdir)/other/bootstrap_daemon/tox_bootstrap_daemon.sh
     
