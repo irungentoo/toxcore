@@ -97,13 +97,11 @@ TOX_USERSTATUS;
 typedef struct Tox Tox;
 #endif
 
-/* NOTE: Strings in Tox are all UTF-8, also the last byte in all strings must be NULL (0).
- *
- * The length when passing those strings to the core includes that NULL character.
- *
- * The length of all strings returned by the core include the NULL character.
- *
- * If you send non NULL terminated strings Tox will force NULL terminates them when it receives them.
+/* NOTE: Strings in Tox are all UTF-8, (This means that there is no terminating NULL character.)
+ * 
+ * The exact buffer you send will be received at the other end without modification.
+ * 
+ * Do not treat Tox strings as C strings.
  */
 
 /*  return TOX_FRIEND_ADDRESS_SIZE byte address to give to others.

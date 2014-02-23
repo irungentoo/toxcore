@@ -690,7 +690,7 @@ static int set_friend_statusmessage(Messenger *m, int32_t friendnumber, uint8_t 
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    uint8_t *newstatus = calloc(length, 1);
+    uint8_t *newstatus = calloc(length + 1, 1);
     memcpy(newstatus, status, length);
     free(m->friendlist[friendnumber].statusmessage);
     m->friendlist[friendnumber].statusmessage = newstatus;
@@ -957,10 +957,12 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
     if (i == -1)
         return;
 
-    message[length - 1] = 0; /* Force NULL terminator */
+    uint8_t message_terminated[length + 1];
+    memcpy(message_terminated, message, length);
+    message_terminated[length] = 0; /* Force NULL terminator */
 
     if (m->group_message)
-        (*m->group_message)(m, i, peer_number, message, length, m->group_message_userdata);
+        (*m->group_message)(m, i, peer_number, message_terminated, length, m->group_message_userdata);
 }
 
 static void group_action_function(Group_Chat *chat, int peer_number, uint8_t *action, uint16_t length, void *userdata)
@@ -971,10 +973,12 @@ static void group_action_function(Group_Chat *chat, int peer_number, uint8_t *ac
     if (i == -1)
         return;
 
-    action[length - 1] = 0; /* Force NULL terminator */
+    uint8_t action_terminated[length + 1];
+    memcpy(action_terminated, action, length);
+    action_terminated[length] = 0; /* Force NULL terminator */
 
     if (m->group_action)
-        (*m->group_action)(m, i, peer_number, action, length, m->group_action_userdata);
+        (*m->group_action)(m, i, peer_number, action_terminated, length, m->group_action_userdata);
 }
 
 static void group_namelistchange_function(Group_Chat *chat, int peer, uint8_t change, void *userdata)
@@ -1912,13 +1916,15 @@ void do_friends(Messenger *m)
                             break;
 
                         /* Make sure the NULL terminator is present. */
-                        data[data_length - 1] = 0;
+                        uint8_t data_terminated[data_length + 1];
+                        memcpy(data_terminated, data, data_length);
+                        data_terminated[data_length] = 0;
 
                         /* inform of namechange before we overwrite the old name */
                         if (m->friend_namechange)
-                            m->friend_namechange(m, i, data, data_length, m->friend_namechange_userdata);
+                            m->friend_namechange(m, i, data_terminated, data_length, m->friend_namechange_userdata);
 
-                        memcpy(m->friendlist[i].name, data, data_length);
+                        memcpy(m->friendlist[i].name, data_terminated, data_length + 1);
                         m->friendlist[i].name_length = data_length;
 
                         break;
@@ -1928,13 +1934,16 @@ void do_friends(Messenger *m)
                         if (data_length == 0 || data_length > MAX_STATUSMESSAGE_LENGTH)
                             break;
 
-                        data[data_length - 1] = 0; /* Make sure the NULL terminator is present. */
+                        /* Make sure the NULL terminator is present. */
+                        uint8_t data_terminated[data_length + 1];
+                        memcpy(data_terminated, data, data_length);
+                        data_terminated[data_length] = 0;
 
                         if (m->friend_statusmessagechange)
-                            m->friend_statusmessagechange(m, i, data, data_length,
+                            m->friend_statusmessagechange(m, i, data_terminated, data_length,
                                                           m->friend_statuschange_userdata);
 
-                        set_friend_statusmessage(m, i, data, data_length);
+                        set_friend_statusmessage(m, i, data_terminated, data_length);
                         break;
                     }
 
@@ -1974,14 +1983,17 @@ void do_friends(Messenger *m)
                         uint8_t *message = data + message_id_length;
                         uint16_t message_length = data_length - message_id_length;
 
-                        message[message_length - 1] = 0;/* Make sure the NULL terminator is present. */
+                        /* Make sure the NULL terminator is present. */
+                        uint8_t message_terminated[message_length + 1];
+                        memcpy(message_terminated, message, message_length);
+                        message_terminated[message_length] = 0;
 
                         if (m->friendlist[i].receives_read_receipts) {
                             write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
                         }
 
                         if (m->friend_message)
-                            (*m->friend_message)(m, i, message, message_length, m->friend_message_userdata);
+                            (*m->friend_message)(m, i, message_terminated, message_length, m->friend_message_userdata);
 
                         break;
                     }
@@ -1996,14 +2008,17 @@ void do_friends(Messenger *m)
                         uint8_t *action = data + message_id_length;
                         uint16_t action_length = data_length - message_id_length;
 
-                        action[action_length - 1] = 0;/* Make sure the NULL terminator is present. */
+                        /* Make sure the NULL terminator is present. */
+                        uint8_t action_terminated[action_length + 1];
+                        memcpy(action_terminated, action, action_length);
+                        action_terminated[action_length] = 0;
 
                         if (m->friendlist[i].receives_read_receipts) {
                             write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
                         }
 
                         if (m->friend_action)
-                            (*m->friend_action)(m, i, action, action_length, m->friend_action_userdata);
+                            (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
 
                         break;
                     }
@@ -2062,10 +2077,13 @@ void do_friends(Messenger *m)
                         m->friendlist[i].file_receiving[filenumber].size = filesize;
                         m->friendlist[i].file_receiving[filenumber].transferred = 0;
 
-                        data[data_length - 1] = 0; /* Force NULL terminate file name. */
+                        /* Force NULL terminate file name. */
+                        uint8_t filename_terminated[data_length - 1 - sizeof(uint64_t) + 1];
+                        memcpy(filename_terminated, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t));
+                        filename_terminated[data_length - 1 - sizeof(uint64_t)] = 0;
 
                         if (m->file_sendrequest)
-                            (*m->file_sendrequest)(m, i, filenumber, filesize, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t),
+                            (*m->file_sendrequest)(m, i, filenumber, filesize, filename_terminated, data_length - 1 - sizeof(uint64_t),
                                                    m->file_sendrequest_userdata);
 
                         break;
