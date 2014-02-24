@@ -44,7 +44,7 @@
 #define KILL_NODE_TIMEOUT 300
 
 /* Ping interval in seconds for each random sending of a get nodes request. */
-#define GET_NODE_INTERVAL 5
+#define GET_NODE_INTERVAL 20
 
 #define MAX_PUNCHING_PORTS 48
 
@@ -55,6 +55,9 @@
 
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
+
+/* Number of get node requests to send to quickly find close nodes. */
+#define MAX_BOOTSTRAP_TIMES 10
 
 /* Used in the comparison function for sorting lists of Client_data. */
 typedef struct {
@@ -1311,7 +1314,7 @@ int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port)
 
 /* returns number of nodes not in kill-timeout */
 static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, uint8_t *client_id,
-        Client_data *list, uint32_t list_count)
+        Client_data *list, uint32_t list_count, uint32_t *bootstrap_times)
 {
     uint32_t i;
     uint8_t not_kill = 0;
@@ -1345,11 +1348,12 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, ui
             }
     }
 
-    if ((num_nodes != 0) && is_timeout(*lastgetnode, GET_NODE_INTERVAL)) {
+    if ((num_nodes != 0) && (is_timeout(*lastgetnode, GET_NODE_INTERVAL) || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
         uint32_t rand_node = rand() % num_nodes;
         getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->client_id,
                  client_id, NULL);
         *lastgetnode = temp_time;
+        ++*bootstrap_times;
     }
 
     return not_kill;
@@ -1364,7 +1368,7 @@ static void do_DHT_friends(DHT *dht)
 
     for (i = 0; i < dht->num_friends; ++i)
         do_ping_and_sendnode_requests(dht, &dht->friends_list[i].lastgetnode, dht->friends_list[i].client_id,
-                                      dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS);
+                                      dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &dht->friends_list[i].bootstrap_times);
 }
 
 /* Ping each client in the close nodes list every PING_INTERVAL seconds.
@@ -1373,7 +1377,7 @@ static void do_DHT_friends(DHT *dht)
 static void do_Close(DHT *dht)
 {
     uint8_t not_killed = do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->self_public_key,
-                         dht->close_clientlist, LCLIENT_LIST);
+                         dht->close_clientlist, LCLIENT_LIST, &dht->close_bootstrap_times);
 
     if (!not_killed) {
         /* all existing nodes are at least KILL_NODE_TIMEOUT,
@@ -1970,8 +1974,8 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
 }
 
 /* Interval in seconds between hardening checks */
-#define HARDENING_INTERVAL 20
-#define HARDEN_TIMEOUT 600
+#define HARDENING_INTERVAL 120
+#define HARDEN_TIMEOUT 1200
 
 /* Handle a received hardening packet */
 static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)

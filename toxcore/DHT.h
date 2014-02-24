@@ -124,6 +124,8 @@ typedef struct {
 
     /* Time at which the last get_nodes request was sent. */
     uint64_t    lastgetnode;
+    /* number of times get_node packets were sent. */
+    uint32_t    bootstrap_times;
 
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
@@ -149,6 +151,7 @@ typedef struct {
 
     Client_data    close_clientlist[LCLIENT_LIST];
     uint64_t       close_lastgetnodes;
+    uint32_t       close_bootstrap_times;
 
     /* Note: this key should not be/is not used to transmit any sensitive materials */
     uint8_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
