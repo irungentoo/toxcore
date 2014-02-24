@@ -352,7 +352,7 @@ brew install libconfig
 OS X non-homebrew:
 Grab the following [package] (http://www.hyperrealm.com/libconfig/), uncompress and install
 
-See this [readme](other\bootstrap_daemon\README.md) on how to set up the bootstrap daemon.
+See this [readme](other/bootstrap_daemon/README.md) on how to set up the bootstrap daemon.
 
 
 <a name="ntox" />
