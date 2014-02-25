@@ -66,6 +66,20 @@ AC_ARG_ENABLE([nacl],
     ]
 )
 
+AC_ARG_ENABLE([randombytes-stir],
+    [AC_HELP_STRING([--enable-randombytes-stir], [use randombytes_stir() instead of sodium_init() for faster startup on android (default: disabled)]) ],
+    [
+        if test "x$enableval" = "xyes"; then
+            if test "x$WANT_NACL" = "xyes"; then
+                AC_MSG_WARN([randombytes_stir() is not available with NaCl library])
+            else
+                AC_DEFINE([USE_RANDOMBYTES_STIR], [1], [randombytes_stir() instead of sodium_init()])
+            fi
+        fi
+    ]
+)
+
+
 PKG_PROG_PKG_CONFIG
 
 AC_ARG_ENABLE([phone],
