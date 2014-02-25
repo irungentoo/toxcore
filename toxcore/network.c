@@ -415,8 +415,14 @@ static int at_startup(void)
         return 0;
 
 #ifndef VANILLA_NACL
+
+#ifdef USE_RANDOMBYTES_STIR
+    randombytes_stir();
+#else
     sodium_init();
-#endif
+#endif /*USE_RANDOMBYTES_STIR*/
+
+#endif/*VANILLA_NACL*/
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     WSADATA wsaData;
