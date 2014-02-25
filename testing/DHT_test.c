@@ -203,8 +203,11 @@ int main(int argc, char *argv[])
     char temp_id[128];
     printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
 
-    if (scanf("%s", temp_id) != 1)
+    if (!fgets(temp_id, sizeof(temp_id), stdin))
         exit(0);
+
+    if ((strlen(temp_id) > 0) && (temp_id[strlen(temp_id) - 1] == '\n'))
+        temp_id[strlen(temp_id) - 1] = '\0';
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
     DHT_addfriend(dht, bin_id);
