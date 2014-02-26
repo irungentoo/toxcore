@@ -47,48 +47,81 @@ static void change_symmetric_key(Onion *onion)
     }
 }
 
-/* Create and send a onion packet.
+/* Create a new onion path.
  *
- * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the data
- * with length length will arrive at 3.
+ * Create a new onion path out of nodes (nodes is a list of 3 nodes)
+ *
+ * new_path must be an empty memory location of atleast Onion_Path size.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t length)
+int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
+{
+    if (!new_path || !nodes)
+        return -1;
+
+    encrypt_precompute(nodes[0].client_id, dht->self_secret_key, new_path->shared_key1);
+    memcpy(new_path->public_key1, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+
+    uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];
+
+    crypto_box_keypair(random_public_key, random_secret_key);
+    encrypt_precompute(nodes[1].client_id, random_secret_key, new_path->shared_key2);
+    memcpy(new_path->public_key2, random_public_key, crypto_box_PUBLICKEYBYTES);
+
+    crypto_box_keypair(random_public_key, random_secret_key);
+    encrypt_precompute(nodes[2].client_id, random_secret_key, new_path->shared_key3);
+    memcpy(new_path->public_key3, random_public_key, crypto_box_PUBLICKEYBYTES);
+
+    new_path->ip_port1 = nodes[0].ip_port;
+    new_path->ip_port2 = nodes[1].ip_port;
+    new_path->ip_port3 = nodes[2].ip_port;
+
+    /* to_net_family(&new_path->ip_port1.ip); */
+    to_net_family(&new_path->ip_port2.ip);
+    to_net_family(&new_path->ip_port3.ip);
+
+    return 0;
+}
+
+/* Create and send a onion packet.
+ *
+ * Use Onion_Path path to send data of length to dest.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
 {
     if (1 + length + SEND_1 > MAX_ONION_SIZE || length == 0)
         return -1;
 
+    to_net_family(&dest.ip);
     uint8_t step1[sizeof(IP_Port) + length];
-    to_net_family(&nodes[3].ip_port.ip);
-    memcpy(step1, &nodes[3].ip_port, sizeof(IP_Port));
+
+    memcpy(step1, &dest, sizeof(IP_Port));
     memcpy(step1 + sizeof(IP_Port), data, length);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
-    uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];
-    crypto_box_keypair(random_public_key, random_secret_key);
 
     uint8_t step2[sizeof(IP_Port) + SEND_BASE + length];
-    to_net_family(&nodes[2].ip_port.ip);
-    memcpy(step2, &nodes[2].ip_port, sizeof(IP_Port));
-    memcpy(step2 + sizeof(IP_Port), random_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(step2, &path->ip_port3, sizeof(IP_Port));
+    memcpy(step2 + sizeof(IP_Port), path->public_key3, crypto_box_PUBLICKEYBYTES);
 
-    int len = encrypt_data(nodes[2].client_id, random_secret_key, nonce,
-                           step1, sizeof(step1), step2 + sizeof(IP_Port) + crypto_box_PUBLICKEYBYTES);
+    int len = encrypt_data_fast(path->shared_key3, nonce, step1, sizeof(step1),
+                                step2 + sizeof(IP_Port) + crypto_box_PUBLICKEYBYTES);
 
     if ((uint32_t)len != sizeof(IP_Port) + length + crypto_box_MACBYTES)
         return -1;
 
-    crypto_box_keypair(random_public_key, random_secret_key);
     uint8_t step3[sizeof(IP_Port) + SEND_BASE * 2 + length];
-    to_net_family(&nodes[1].ip_port.ip);
-    memcpy(step3, &nodes[1].ip_port, sizeof(IP_Port));
-    memcpy(step3 + sizeof(IP_Port), random_public_key, crypto_box_PUBLICKEYBYTES);
-    len = encrypt_data(nodes[1].client_id, random_secret_key, nonce,
-                       step2, sizeof(step2), step3 + sizeof(IP_Port) + crypto_box_PUBLICKEYBYTES);
+    memcpy(step3, &path->ip_port2, sizeof(IP_Port));
+    memcpy(step3 + sizeof(IP_Port), path->public_key2, crypto_box_PUBLICKEYBYTES);
+    len = encrypt_data_fast(path->shared_key2, nonce, step2, sizeof(step2),
+                            step3 + sizeof(IP_Port) + crypto_box_PUBLICKEYBYTES);
 
     if ((uint32_t)len != sizeof(IP_Port) + SEND_BASE + length + crypto_box_MACBYTES)
         return -1;
@@ -96,15 +129,15 @@ int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t leng
     uint8_t packet[1 + length + SEND_1];
     packet[0] = NET_PACKET_ONION_SEND_INITIAL;
     memcpy(packet + 1, nonce, crypto_box_NONCEBYTES);
-    memcpy(packet + 1 + crypto_box_NONCEBYTES, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_NONCEBYTES, path->public_key1, crypto_box_PUBLICKEYBYTES);
 
-    len = encrypt_data(nodes[0].client_id, dht->self_secret_key, nonce,
-                       step3, sizeof(step3), packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
+    len = encrypt_data_fast(path->shared_key1, nonce, step3, sizeof(step3),
+                            packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
 
     if ((uint32_t)len != sizeof(IP_Port) + SEND_BASE * 2 + length + crypto_box_MACBYTES)
         return -1;
 
-    if ((uint32_t)sendpacket(dht->c->lossless_udp->net, nodes[0].ip_port, packet, sizeof(packet)) != sizeof(packet))
+    if ((uint32_t)sendpacket(net, path->ip_port1, packet, sizeof(packet)) != sizeof(packet))
         return -1;
 
     return 0;

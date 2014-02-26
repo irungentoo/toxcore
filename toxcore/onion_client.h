@@ -33,6 +33,13 @@
 #define ONION_FAKEID_INTERVAL 30
 #define DHT_FAKEID_INTERVAL 20
 
+#define NUMBER_ONION_PATHS 3
+
+/* The timeout the first time the path is added and
+   then for all the next consecutive times */
+#define ONION_PATH_FIRST_TIMEOUT 5
+#define ONION_PATH_TIMEOUT 30
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -43,7 +50,14 @@ typedef struct {
     uint64_t    timestamp;
 
     uint64_t    last_pinged;
+
+    uint32_t    path_used;
 } Onion_Node;
+
+typedef struct {
+    Onion_Path paths[NUMBER_ONION_PATHS];
+    uint64_t last_path_success[NUMBER_ONION_PATHS];
+} Onion_Client_Paths;
 
 typedef struct {
     uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
@@ -63,6 +77,8 @@ typedef struct {
     uint64_t last_noreplay;
 
     uint64_t last_seen;
+
+    Onion_Client_Paths onion_paths;
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
@@ -74,6 +90,8 @@ typedef struct {
     uint16_t       num_friends;
 
     Onion_Node clients_announce_list[MAX_ONION_CLIENTS];
+
+    Onion_Client_Paths onion_paths;
 
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
     uint64_t last_run;
@@ -127,15 +145,6 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
  */
 int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
 
-/* Takes 3 random nodes that we know and puts them in nodes
- *
- * nodes must be longer than 3.
- *
- * return -1 on failure
- * return 0 on success
- *
- */
-int random_path(Onion_Client *onion_c, Node_format *nodes);
 
 /* Send data of length length to friendnum.
  * This data will be recieved by the friend using the Onion_Data_Handlers callbacks.

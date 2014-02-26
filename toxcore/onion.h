@@ -41,16 +41,39 @@ typedef struct {
 #define ONION_SEND_2 (crypto_box_NONCEBYTES + ONION_SEND_BASE*2 + ONION_RETURN_1)
 #define ONION_SEND_1 (crypto_box_NONCEBYTES + ONION_SEND_BASE*3)
 
+typedef struct {
+    uint8_t shared_key1[crypto_box_BEFORENMBYTES];
+    uint8_t shared_key2[crypto_box_BEFORENMBYTES];
+    uint8_t shared_key3[crypto_box_BEFORENMBYTES];
 
-/* Create and send a onion packet.
+    uint8_t public_key1[crypto_box_PUBLICKEYBYTES];
+    uint8_t public_key2[crypto_box_PUBLICKEYBYTES];
+    uint8_t public_key3[crypto_box_PUBLICKEYBYTES];
+
+    IP_Port     ip_port1;
+    IP_Port     ip_port2;
+    IP_Port     ip_port3;
+} Onion_Path;
+
+/* Create a new onion path.
  *
- * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the data
- * with length length will arrive at 3.
+ * Create a new onion path out of nodes (nodes is a list of 3 nodes)
+ *
+ * new_path must be an empty memory location of atleast Onion_Path size.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(DHT *dht, Node_format *nodes, uint8_t *data, uint32_t length);
+int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes);
+
+/* Create and send a onion packet.
+ *
+ * Use Onion_Path path to send data of length to dest.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length);
 
 /* Create and send a onion response sent initially to dest with.
  *

@@ -37,8 +37,7 @@
 
 /* Create and send an onion announce request packet.
  *
- * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the announe
- * request will be sent to 3.
+ * path is the path the request will take before it is sent to dest.
  *
  * public_key and secret_key is the kepair which will be used to encrypt the request.
  * ping_id is the ping id that will be sent in the request.
@@ -50,8 +49,8 @@
  * return -1 on failure.
  * return 0 on success.
  */
-int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *secret_key, uint8_t *ping_id,
-                          uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data)
+int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format dest, uint8_t *public_key,
+                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data)
 {
     uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
     memcpy(plain, ping_id, ONION_PING_ID_SIZE);
@@ -63,7 +62,7 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
     packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
     random_nonce(packet + 1);
 
-    int len = encrypt_data(nodes[3].client_id, secret_key, packet + 1, plain, sizeof(plain),
+    int len = encrypt_data(dest.client_id, secret_key, packet + 1, plain, sizeof(plain),
                            packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
 
     if ((uint32_t)len + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES != ANNOUNCE_REQUEST_SIZE)
@@ -71,13 +70,13 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
 
     memcpy(packet + 1 + crypto_box_NONCEBYTES, public_key, crypto_box_PUBLICKEYBYTES);
 
-    return send_onion_packet(dht, nodes, packet, sizeof(packet));
+    return send_onion_packet(net, path, dest.ip_port, packet, sizeof(packet));
 }
 
 /* Create and send an onion data request packet.
  *
- * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the data
- * request packet will arrive at 3. (if 3 knows the person with the public_key they should
+ * path is the path the request will take before it is sent to dest.
+ * (if dest knows the person with the public_key they should
  * send the packet to that person in the form of a response)
  *
  * public_key is the real public key of the node which we want to send the data of length length to.
@@ -88,8 +87,8 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *encrypt_public_key, uint8_t *nonce,
-                      uint8_t *data, uint16_t length)
+int send_data_request(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *public_key,
+                      uint8_t *encrypt_public_key, uint8_t *nonce, uint8_t *data, uint16_t length)
 {
     uint8_t packet[DATA_REQUEST_MIN_SIZE + length];
     packet[0] = NET_PACKET_ONION_DATA_REQUEST;
@@ -108,7 +107,7 @@ int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t
     if (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + (uint32_t)len != sizeof(packet))
         return -1;
 
-    return send_onion_packet(dht, nodes, packet, sizeof(packet));
+    return send_onion_packet(net, path, dest, packet, sizeof(packet));
 }
 
 /* Generate a ping_id and put it in ping_id */

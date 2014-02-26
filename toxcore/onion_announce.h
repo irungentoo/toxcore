@@ -58,8 +58,7 @@ typedef struct {
 
 /* Create and send an onion announce request packet.
  *
- * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the announe
- * request will be sent to 3.
+ * path is the path the request will take before it is sent to dest.
  *
  * public_key and secret_key is the kepair which will be used to encrypt the request.
  * ping_id is the ping id that will be sent in the request.
@@ -71,13 +70,13 @@ typedef struct {
  * return -1 on failure.
  * return 0 on success.
  */
-int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *secret_key, uint8_t *ping_id,
-                          uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data);
+int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format dest, uint8_t *public_key,
+                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data);
 
 /* Create and send an onion data request packet.
  *
- * nodes is a list of 4 nodes, the packet will route through nodes 0, 1, 2 and the data
- * request packet will arrive at 3. (if 3 knows the person with the public_key they should
+ * path is the path the request will take before it is sent to dest.
+ * (if dest knows the person with the public_key they should
  * send the packet to that person in the form of a response)
  *
  * public_key is the real public key of the node which we want to send the data of length length to.
@@ -88,8 +87,8 @@ int send_announce_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uin
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(DHT *dht, Node_format *nodes, uint8_t *public_key, uint8_t *encrypt_public_key, uint8_t *nonce,
-                      uint8_t *data, uint16_t length);
+int send_data_request(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *public_key,
+                      uint8_t *encrypt_public_key, uint8_t *nonce, uint8_t *data, uint16_t length);
 
 
 Onion_Announce *new_onion_announce(DHT *dht);
