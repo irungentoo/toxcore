@@ -149,7 +149,10 @@ START_TEST(test_basic)
     nodes[1] = n2;
     nodes[2] = n1;
     nodes[3] = n2;
-    int ret = send_onion_packet(onion1->dht, nodes, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    Onion_Path path;
+    create_onion_path(onion1->dht, &path, nodes);
+    int ret = send_onion_packet(onion1->net, &path, nodes[3].ip_port, (uint8_t *)"Install Gentoo",
+                                sizeof("Install Gentoo"));
     ck_assert_msg(ret == 0, "Failed to create/send onion packet.");
 
     handled_test_1 = 0;
@@ -174,7 +177,8 @@ START_TEST(test_basic)
     uint8_t zeroes[64] = {0};
     randombytes(sb_data, sizeof(sb_data));
     memcpy(test_3_pub_key, nodes[3].client_id, crypto_box_PUBLICKEYBYTES);
-    ret = send_announce_request(onion1->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
+    ret = send_announce_request(onion1->net, &path, nodes[3], onion1->dht->c->self_public_key,
+                                onion1->dht->c->self_secret_key,
                                 zeroes, onion1->dht->c->self_public_key, onion1->dht->c->self_public_key, sb_data);
     ck_assert_msg(ret == 0, "Failed to create/send onion announce_request packet.");
     handled_test_3 = 0;
@@ -188,7 +192,7 @@ START_TEST(test_basic)
     memcpy(onion2_a->entries[1].public_key, onion2->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     onion2_a->entries[1].time = unix_time();
     networking_registerhandler(onion1->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_test_4, onion1);
-    send_announce_request(onion1->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
+    send_announce_request(onion1->net, &path, nodes[3], onion1->dht->c->self_public_key, onion1->dht->c->self_secret_key,
                           test_3_ping_id, onion1->dht->c->self_public_key, onion1->dht->c->self_public_key, sb_data);
 
     while (memcmp(onion2_a->entries[ONION_ANNOUNCE_MAX_ENTRIES - 2].public_key, onion1->dht->c->self_public_key,
@@ -203,7 +207,8 @@ START_TEST(test_basic)
     ck_assert_msg((onion3 != NULL), "Onion failed initializing.");
 
     new_nonce(nonce);
-    ret = send_data_request(onion3->dht, nodes, onion1->dht->c->self_public_key, onion1->dht->c->self_public_key,
+    ret = send_data_request(onion3->net, &path, nodes[3].ip_port, onion1->dht->c->self_public_key,
+                            onion1->dht->c->self_public_key,
                             nonce, (uint8_t *)"Install gentoo", sizeof("Install gentoo"));
     ck_assert_msg(ret == 0, "Failed to create/send onion data_request packet.");
     handled_test_4 = 0;
@@ -284,8 +289,8 @@ START_TEST(test_announce)
         c_sleep(50);
     }
 
-    onion_addfriend(onions[7]->onion_c, onions[27]->onion->dht->c->self_public_key);
-    int frnum = onion_addfriend(onions[27]->onion_c, onions[7]->onion->dht->c->self_public_key);
+    onion_addfriend(onions[7]->onion_c, onions[37]->onion->dht->c->self_public_key);
+    int frnum = onion_addfriend(onions[37]->onion_c, onions[7]->onion->dht->c->self_public_key);
 
     int ok = -1;
 
@@ -297,7 +302,7 @@ START_TEST(test_announce)
             do_onion_client(onions[i]->onion_c);
         }
 
-        ok = onion_getfriendip(onions[27]->onion_c, frnum, &ip_port);
+        ok = onion_getfriendip(onions[37]->onion_c, frnum, &ip_port);
 
         c_sleep(50);
     }
@@ -309,7 +314,7 @@ START_TEST(test_announce)
             do_onions(onions[i]);
         }
 
-        ok = onion_getfriendip(onions[27]->onion_c, frnum, &ip_port);
+        ok = onion_getfriendip(onions[37]->onion_c, frnum, &ip_port);
 
         c_sleep(50);
     }

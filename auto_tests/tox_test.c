@@ -255,8 +255,8 @@ START_TEST(test_few_clients)
 }
 END_TEST
 
-#define NUM_TOXES 33
-#define NUM_FRIENDS 10
+#define NUM_TOXES 66
+#define NUM_FRIENDS 20
 
 START_TEST(test_many_clients)
 {
@@ -328,7 +328,7 @@ Suite *tox_suite(void)
     Suite *s = suite_create("Tox");
 
     DEFTESTCASE_SLOW(few_clients, 50);
-    DEFTESTCASE_SLOW(many_clients, 240);
+    DEFTESTCASE_SLOW(many_clients, 300);
     return s;
 }
 
