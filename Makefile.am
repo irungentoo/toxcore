@@ -12,6 +12,11 @@ CLEANFILES = $(top_builddir)/libtoxcore.pc
 
 EXTRA_DIST = \
 	libtoxcore.pc.in \
+	dist-build/android-arm.sh \
+	dist-build/android-armv7.sh \
+	dist-build/android-x86.sh \
+	dist-build/android-mips.sh \
+	dist-build/android-build.sh \
 	$(top_srcdir)/docs/updates/Crypto.md \
 	$(top_srcdir)/docs/updates/Spam-Prevention.md \
 	$(top_srcdir)/docs/updates/Symmetric-NAT-Transversal.md \

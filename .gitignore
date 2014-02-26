@@ -58,3 +58,7 @@ nbproject
 
 # astyle
 *.orig
+
+# Android buildscript
+android-toolchain-*
+toxcore-android-*
