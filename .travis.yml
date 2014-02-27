@@ -46,7 +46,6 @@ before_script:
 script:
   - libtoolize --force
   - aclocal
-  - autoconf
   - autoheader
   - automake --add-missing
   - autoreconf -i
