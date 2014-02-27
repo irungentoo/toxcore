@@ -255,7 +255,7 @@ void do_onions(Onions *on)
 
 START_TEST(test_announce)
 {
-    uint32_t i;
+    uint32_t i, j;
     Onions *onions[NUM_ONIONS];
 
     for (i = 0; i < NUM_ONIONS; ++i) {
@@ -284,6 +284,14 @@ START_TEST(test_announce)
         for (i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
             connected += DHT_isconnected(onions[i]->onion->dht);
+        }
+
+        c_sleep(50);
+    }
+
+    for (i = 0; i < 25 * 2; ++i) {
+        for (j = 0; j < NUM_ONIONS; ++j) {
+            do_onions(onions[j]);
         }
 
         c_sleep(50);
