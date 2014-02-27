@@ -44,6 +44,10 @@ before_script:
   - sudo apt-get install check > /dev/null
 
 script:
+  - libtoolize --force
+  - aclocal
+  - autoheader
+  - automake --add-missing
   - autoreconf -i
   - CFLAGS=-Ofast ./configure --enable-daemon --enable-ntox
   - make -j3
