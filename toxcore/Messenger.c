@@ -180,6 +180,21 @@ static uint16_t address_checksum(uint8_t *address, uint32_t len)
     return check;
 }
 
+int get_address_of_friend(Messenger *m, int32_t friendnumber, uint8_t *friend_address)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+    
+    if (m->friendlist[friendnumber].status > 0) {
+        memcpy(friend_address, m->friendlist[friendnumber].client_id, CLIENT_ID_SIZE);
+        memcpy(friend_address + CLIENT_ID_SIZE, &(m->friendlist[friendnumber].friendrequest_nospam), sizeof(uint32_t));
+        uint16_t checksum = address_checksum(friend_address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+        memcpy(friend_address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
+        return 0;
+    }
+    
+    return -1;
+}
 /* Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  *
  *  return FRIEND_ADDRESS_SIZE byte address to give to others.
@@ -376,6 +391,13 @@ int m_friend_exists(Messenger *m, int32_t friendnumber)
         return 0;
 
     return m->friendlist[friendnumber].status > NOFRIEND;
+}
+
+int m_friend_was_seen(Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+    return m->friendlist[friendnumber].status > FRIEND_REQUESTED;
 }
 
 /* Send a text chat message to an online friend.
