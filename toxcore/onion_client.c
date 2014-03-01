@@ -300,19 +300,26 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
 
     Onion_Node *list_nodes = NULL;
     uint8_t *reference_id = NULL;
+    uint32_t *ping_nodes_sent_second = NULL;
 
     if (num == 0) {
         list_nodes = onion_c->clients_announce_list;
         reference_id = onion_c->dht->c->self_public_key;
+        ping_nodes_sent_second = &onion_c->ping_nodes_sent_second;
     } else {
         list_nodes = onion_c->friends_list[num - 1].clients_list;
         reference_id = onion_c->friends_list[num - 1].real_client_id;
+        ping_nodes_sent_second = &onion_c->friends_list[num - 1].ping_nodes_sent_second;
     }
 
     uint32_t i, j;
     int lan_ips_accepted = (LAN_ip(source.ip) == 0);
 
     for (i = 0; i < num_nodes; ++i) {
+
+        if (*ping_nodes_sent_second > MAX_PING_NODES_SECOND_PEER)
+            return 0;
+
         to_host_family(&nodes[i].ip_port.ip);
 
         if (!lan_ips_accepted)
@@ -329,7 +336,8 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
             }
 
             if (j == MAX_ONION_CLIENTS) {
-                client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].client_id, NULL, ~0);
+                if (client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].client_id, NULL, ~0) == 0)
+                    ++*ping_nodes_sent_second;
             }
         }
     }
@@ -923,8 +931,10 @@ void do_onion_client(Onion_Client *onion_c)
     for (i = 0; i < onion_c->num_friends; ++i) {
         do_friend(onion_c, i);
         cleanup_friend(onion_c, i);
+        onion_c->friends_list[i].ping_nodes_sent_second = 0;
     }
 
+    onion_c->ping_nodes_sent_second = 0;
     onion_c->last_run = unix_time();
 }
 
