@@ -171,7 +171,8 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint64_t ping_id)
+static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint64_t ping_id,
+                              uint8_t *shared_encryption_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
@@ -184,11 +185,10 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
-    rc = encrypt_data(client_id,
-                      ping->dht->self_secret_key,
-                      pk + 1 + CLIENT_ID_SIZE,
-                      (uint8_t *) &ping_id, sizeof(ping_id),
-                      pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
+    rc = encrypt_data_fast(shared_encryption_key,
+                           pk + 1 + CLIENT_ID_SIZE,
+                           (uint8_t *) &ping_id, sizeof(ping_id),
+                           pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES );
 
     if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
@@ -210,19 +210,21 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
     if (id_equal(packet + 1, ping->dht->self_public_key))
         return 1;
 
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+
     // Decrypt ping_id
-    rc = decrypt_data(packet + 1,
-                      ping->dht->self_secret_key,
-                      packet + 1 + CLIENT_ID_SIZE,
-                      packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                      sizeof(ping_id) + crypto_box_MACBYTES,
-                      (uint8_t *) &ping_id);
+    encrypt_precompute(packet + 1, ping->dht->self_secret_key, shared_key);
+    rc = decrypt_data_fast(shared_key,
+                           packet + 1 + CLIENT_ID_SIZE,
+                           packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                           sizeof(ping_id) + crypto_box_MACBYTES,
+                           (uint8_t *) &ping_id );
 
     if (rc != sizeof(ping_id))
         return 1;
 
     // Send response
-    send_ping_response(ping, source, packet + 1, ping_id);
+    send_ping_response(ping, source, packet + 1, ping_id, shared_key);
     add_toping(ping, packet + 1, source);
 
     return 0;

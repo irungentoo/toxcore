@@ -844,7 +844,8 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 /* because of BINARY compatibility, the Node_format MUST BE Node4_format,
  * IPv6 nodes are sent in a different message
  * encrypted_data must be of size NODES_ENCRYPTED_MESSAGE_LENGTH */
-static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data)
+static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data,
+                     uint8_t *shared_encryption_key)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->self_public_key))
@@ -891,12 +892,11 @@ static int sendnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cl
     }
 
     memcpy(plain + num_nodes * Node4_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
-    int len = encrypt_data( public_key,
-                            dht->self_secret_key,
-                            nonce,
-                            plain,
-                            num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
-                            encrypt );
+    int len = encrypt_data_fast( shared_encryption_key,
+                                 nonce,
+                                 plain,
+                                 num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                                 encrypt );
 
     if ((unsigned int)len != num_nodes * Node4_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH +
             crypto_box_MACBYTES)
@@ -930,7 +930,8 @@ void to_host_family(IP *ip)
         ip->family = AF_INET6;
 }
 /* Send a send nodes response: message for IPv6 nodes */
-static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data)
+static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data,
+                          uint8_t *shared_encryption_key)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->self_public_key))
@@ -958,12 +959,11 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
 
     memcpy(plain, nodes_list, num_nodes * Node_format_size);
     memcpy(plain + num_nodes * Node_format_size, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
-    int len = encrypt_data( public_key,
-                            dht->self_secret_key,
-                            nonce,
-                            plain,
-                            num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
-                            encrypt );
+    int len = encrypt_data_fast( shared_encryption_key,
+                                 nonce,
+                                 plain,
+                                 num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                                 encrypt );
 
     if ((unsigned int)len != num_nodes * Node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
         return -1;
@@ -989,20 +989,21 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
         return 1;
 
     uint8_t plain[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
-    int len = decrypt_data( packet + 1,
-                            dht->self_secret_key,
-                            packet + 1 + CLIENT_ID_SIZE,
-                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                            CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
-                            plain );
+    encrypt_precompute(packet + 1, dht->self_secret_key, shared_key);
+    int len = decrypt_data_fast( shared_key,
+                                 packet + 1 + CLIENT_ID_SIZE,
+                                 packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                                 CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
+                                 plain );
 
     if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH)
         return 1;
 
-    sendnodes(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE);
+    sendnodes(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE, shared_key);
     sendnodes_ipv6(dht, source, packet + 1, plain,
-                   plain + CLIENT_ID_SIZE); /* TODO: prevent possible amplification attacks */
+                   plain + CLIENT_ID_SIZE, shared_key); /* TODO: prevent possible amplification attacks */
 
     add_toping(dht->ping, packet + 1, source);
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
