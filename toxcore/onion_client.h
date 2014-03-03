@@ -39,6 +39,7 @@
    then for all the next consecutive times */
 #define ONION_PATH_FIRST_TIMEOUT 5
 #define ONION_PATH_TIMEOUT 30
+#define ONION_PATH_MAX_LIFETIME 600
 
 /* A cheap way of making it take less bandwidth at startup:
    by limiting the number of ping packets we can send per
@@ -62,6 +63,7 @@ typedef struct {
 typedef struct {
     Onion_Path paths[NUMBER_ONION_PATHS];
     uint64_t last_path_success[NUMBER_ONION_PATHS];
+    uint64_t path_creation_time[NUMBER_ONION_PATHS];
 } Onion_Client_Paths;
 
 typedef struct {

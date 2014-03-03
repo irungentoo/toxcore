@@ -44,7 +44,8 @@ static int random_path(DHT *dht, Onion_Client_Paths *onion_paths, uint32_t pathn
     if (pathnum >= NUMBER_ONION_PATHS)
         pathnum = rand() % NUMBER_ONION_PATHS;
 
-    if (is_timeout(onion_paths->last_path_success[pathnum], ONION_PATH_TIMEOUT)) {
+    if (is_timeout(onion_paths->last_path_success[pathnum], ONION_PATH_TIMEOUT)
+            || is_timeout(onion_paths->path_creation_time[pathnum], ONION_PATH_MAX_LIFETIME)) {
         Node_format nodes[3];
 
         if (random_nodes_path(dht, nodes, 3) != 3)
@@ -54,6 +55,7 @@ static int random_path(DHT *dht, Onion_Client_Paths *onion_paths, uint32_t pathn
             return -1;
 
         onion_paths->last_path_success[pathnum] = unix_time() + ONION_PATH_FIRST_TIMEOUT - ONION_PATH_TIMEOUT;
+        onion_paths->path_creation_time[pathnum] = unix_time();
     }
 
     memcpy(path, &onion_paths->paths[pathnum], sizeof(Onion_Path));
