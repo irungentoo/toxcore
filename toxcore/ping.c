@@ -44,6 +44,7 @@ typedef struct {
     IP_Port  ip_port;
     uint64_t id;
     uint64_t timestamp;
+    uint8_t  shared_key[crypto_box_BEFORENMBYTES];
 } pinged_t;
 
 struct PING {
@@ -86,7 +87,7 @@ static void remove_timeouts(PING *ping)    // O(n)
     ping->pos_pings = new_pos % PING_NUM_MAX;
 }
 
-static uint64_t add_ping(PING *ping, IP_Port ipp)  // O(n)
+static uint64_t add_ping(PING *ping, IP_Port ipp, uint8_t *shared_encryption_key)  // O(n)
 {
     size_t p;
 
@@ -104,6 +105,7 @@ static uint64_t add_ping(PING *ping, IP_Port ipp)  // O(n)
     ping->pings[p].ip_port   = ipp;
     ping->pings[p].timestamp = unix_time();
     ping->pings[p].id        = random_64b();
+    memcpy(ping->pings[p].shared_key, shared_encryption_key, crypto_box_BEFORENMBYTES);
 
     ping->num_pings++;
     return ping->pings[p].id;
@@ -151,19 +153,22 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     if (is_pinging(ping, ipp, 0) || id_equal(client_id, ping->dht->self_public_key))
         return 1;
 
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+
+    // generate key to encrypt ping_id with recipient privkey
+    encrypt_precompute(client_id, ping->dht->self_secret_key, shared_key);
     // Generate random ping_id.
-    ping_id = add_ping(ping, ipp);
+    ping_id = add_ping(ping, ipp, shared_key);
 
     pk[0] = NET_PACKET_PING_REQUEST;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
-    // Encrypt ping_id using recipient privkey
-    rc = encrypt_data(client_id,
-                      ping->dht->self_secret_key,
-                      pk + 1 + CLIENT_ID_SIZE,
-                      (uint8_t *) &ping_id, sizeof(ping_id),
-                      pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
+
+    rc = encrypt_data_fast(shared_key,
+                           pk + 1 + CLIENT_ID_SIZE,
+                           (uint8_t *) &ping_id, sizeof(ping_id),
+                           pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
 
     if (rc != sizeof(ping_id) + crypto_box_MACBYTES)
         return 1;
@@ -244,21 +249,23 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
     if (id_equal(packet + 1, ping->dht->self_public_key))
         return 1;
 
+    int ping_index = is_pinging(ping, source, 0);
+
+    if (!ping_index)
+        return 1;
+
+    --ping_index;
     // Decrypt ping_id
-    rc = decrypt_data(packet + 1,
-                      ping->dht->self_secret_key,
-                      packet + 1 + CLIENT_ID_SIZE,
-                      packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                      sizeof(ping_id) + crypto_box_MACBYTES,
-                      (uint8_t *) &ping_id);
+    rc = decrypt_data_fast(ping->pings[ping_index].shared_key,
+                           packet + 1 + CLIENT_ID_SIZE,
+                           packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                           sizeof(ping_id) + crypto_box_MACBYTES,
+                           (uint8_t *) &ping_id);
 
     if (rc != sizeof(ping_id))
         return 1;
 
-    /* Make sure ping_id is correct. */
-    int ping_index = is_pinging(ping, source, ping_id);
-
-    if (!ping_index)
+    if (ping->pings[ping_index].id != ping_id)
         return 1;
 
     addto_lists(dht, source, packet + 1);
