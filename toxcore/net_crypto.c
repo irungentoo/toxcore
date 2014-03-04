@@ -376,8 +376,8 @@ static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, ui
 
             if (!dht->c->cryptopackethandlers[number].function) return 1;
 
-            dht->c->cryptopackethandlers[number].function(dht->c->cryptopackethandlers[number].object, source, public_key, data,
-                    len);
+            return dht->c->cryptopackethandlers[number].function(dht->c->cryptopackethandlers[number].object, source, public_key,
+                    data, len);
 
         } else { /* If request is not for us, try routing it. */
             int retval = route_packet(dht, packet + 1, packet, length);

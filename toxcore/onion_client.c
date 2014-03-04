@@ -806,7 +806,7 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
 }
 
 
-#define ANNOUNCE_FRIEND 30
+#define ANNOUNCE_FRIEND ONION_NODE_PING_INTERVAL
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
@@ -882,7 +882,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
 }
 
 #define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 7
-#define ANNOUNCE_INTERVAL_ANNOUNCED 30
+#define ANNOUNCE_INTERVAL_ANNOUNCED ONION_NODE_PING_INTERVAL
 
 static void do_announce(Onion_Client *onion_c)
 {
