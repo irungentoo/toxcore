@@ -21,7 +21,7 @@ The only people we really trust on the network are the nodes in our friends
 list.
 
 
-The behavior of each Tox node is easily predictable this means that it possible 
+The behavior of each Tox node is easily predictable. This means that it possible 
 for Tox nodes to test the nodes that they are connected to to see if they 
 behave like normal Tox nodes and only send nodes that are confirmed to behave 
 like real Tox nodes as part of send node replies when other nodes query them.

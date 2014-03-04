@@ -14,8 +14,8 @@ How it's probably going to work:
 1. Alice, a Tox client on a TCP only network generates a temporary public key 
 and connects to a bootstrap node.
 
-2. Using the bootstrap node she find and connects to a couple (exact number 
-to be determined later) number of random nodes that have TCP relay support.
+2. Using the bootstrap node she finds and connects to a (exact number to be 
+determined later) number of random nodes that have TCP relay support.
 
 3. She uses the onion through the TCP relay connections to send friend requests 
 or tell online friends which TCP nodes she is connected to and her temporary 
@@ -28,8 +28,8 @@ with alice using that temporary public key.
 5. That connection is used by both to transmit encrypted Messenger and A/V 
 packets.
 
-6. If one of the nodes shuts down while it is currently routing traffic, Alice 
-and bob just switch to one of the other nodes they are both connected to.
+6. If one of the nodes shuts down while it is routing traffic, Alice and Bob 
+just switch to one of the other nodes to which they are both connected.
 
 
-Actual detailed implementation details coming soon.
+Actual implementation details coming soon.
