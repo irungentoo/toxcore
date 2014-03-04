@@ -114,6 +114,51 @@ static int client_id_cmp(ClientPair p1, ClientPair p2)
     return c;
 }
 
+/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+ */
+void DHT_get_shared_key(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
+{
+    uint32_t i, num = ~0, curr = 0;
+
+    for (i = 0; i < MAX_KEYS_PER_SLOT; ++i) {
+        int index = client_id[30] * MAX_KEYS_PER_SLOT + i;
+
+        if (dht->shared_keys.keys[index].stored) {
+            if (memcmp(client_id, dht->shared_keys.keys[index].client_id, CLIENT_ID_SIZE) == 0) {
+                memcpy(shared_key, dht->shared_keys.keys[index].shared_key, crypto_box_BEFORENMBYTES);
+                ++dht->shared_keys.keys[index].times_requested;
+                dht->shared_keys.keys[index].time_last_requested = unix_time();
+                return;
+            }
+
+            if (num != 0) {
+                if (is_timeout(dht->shared_keys.keys[index].time_last_requested, KEYS_TIMEOUT)) {
+                    num = 0;
+                    curr = index;
+                } else if (num > dht->shared_keys.keys[index].times_requested) {
+                    num = dht->shared_keys.keys[index].times_requested;
+                    curr = index;
+                }
+            }
+        } else {
+            if (num != 0) {
+                num = 0;
+                curr = index;
+            }
+        }
+    }
+
+    encrypt_precompute(client_id, dht->self_secret_key, shared_key);
+
+    if (num != (uint32_t)~0) {
+        dht->shared_keys.keys[curr].stored = 1;
+        dht->shared_keys.keys[curr].times_requested = 1;
+        memcpy(dht->shared_keys.keys[curr].client_id, client_id, CLIENT_ID_SIZE);
+        memcpy(dht->shared_keys.keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
+        dht->shared_keys.keys[curr].time_last_requested = unix_time();
+    }
+}
+
 /* Check if client with client_id is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
  * If the id is already in the list with a different ip_port, update it.
@@ -991,7 +1036,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     uint8_t plain[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
-    encrypt_precompute(packet + 1, dht->self_secret_key, shared_key);
+    DHT_get_shared_key(dht, shared_key, packet + 1);
     int len = decrypt_data_fast( shared_key,
                                  packet + 1 + CLIENT_ID_SIZE,
                                  packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,

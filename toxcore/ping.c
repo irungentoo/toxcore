@@ -218,7 +218,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     // Decrypt ping_id
-    encrypt_precompute(packet + 1, ping->dht->self_secret_key, shared_key);
+    DHT_get_shared_key(dht, shared_key, packet + 1);
     rc = decrypt_data_fast(shared_key,
                            packet + 1 + CLIENT_ID_SIZE,
                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,

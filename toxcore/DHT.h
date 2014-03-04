@@ -143,7 +143,20 @@ typedef struct {
 } Node_format;
 
 /*----------------------------------------------------------------------------------*/
+/* struct to store some shared keys so we don't have to regenerate them for each request. */
+#define MAX_KEYS_PER_SLOT 4
+#define KEYS_TIMEOUT 600
+struct SHARED_KEYS {
+    struct {
+        uint8_t client_id[CLIENT_ID_SIZE];
+        uint8_t shared_key[crypto_box_BEFORENMBYTES];
+        uint32_t times_requested;
+        uint8_t  stored; /* 0 if not, 1 if is */
+        uint64_t time_last_requested;
+    } keys[256 * MAX_KEYS_PER_SLOT];
+};
 
+/*----------------------------------------------------------------------------------*/
 
 typedef struct {
     Net_Crypto  *c;
@@ -162,6 +175,8 @@ typedef struct {
     DHT_Friend    *friends_list;
     uint16_t       num_friends;
 
+    struct SHARED_KEYS shared_keys;
+
     struct PING   *ping;
 #ifdef ENABLE_ASSOC_DHT
     struct Assoc  *assoc;
@@ -169,6 +184,11 @@ typedef struct {
     uint64_t       last_run;
 } DHT;
 /*----------------------------------------------------------------------------------*/
+
+/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+ */
+void DHT_get_shared_key(DHT *dht, uint8_t *shared_key, uint8_t *client_id);
+
 
 void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_id);
 
