@@ -1703,7 +1703,7 @@ Messenger *new_messenger(uint8_t ipv6enabled)
 
     /* Issue #771 - https://github.com/irungentoo/ProjectTox-Core/issues/771 */
     int tries = 0;
-    while( ip == NULL )
+    while( m->net == NULL )
     {
         ip_init(&ip, ipv6enabled);
         m->net = new_networking(ip, TOX_PORT_DEFAULT);
