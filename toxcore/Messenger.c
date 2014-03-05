@@ -1936,10 +1936,10 @@ void do_friends(Messenger *m)
 
                         uint8_t typing = data[0];
 
+                        set_friend_typing(m, i, typing);
+
                         if (m->friend_typingchange)
                             m->friend_typingchange(m, i, typing, m->friend_typingchange_userdata);
-
-                        set_friend_typing(m, i, typing);
                         break;
                     }
 
