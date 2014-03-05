@@ -25,25 +25,26 @@ libtoxav_la_CFLAGS = -I../toxcore \
 libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
                       $(NACL_LDFLAGS) \
                       $(EXTRA_LT_LDFLAGS)
-                      
-libtoxav_la_LIBS =    $(NACL_LIBS) \
+
+libtoxav_la_LIBADD =  libtoxcore.la \
+                      $(NACL_LIBS) \
                       $(PTHREAD_LIBS) \
                       $(AV_LIBS)
 
-                        
+
 endif
-                        
-                        
-                        
-                        
-                        
-                        
+
+
+
+
+
+
 if BUILD_PHONE
 
-                          
+
 noinst_PROGRAMS += phone
 
-phone_SOURCES = ../toxav/phone.c 
+phone_SOURCES = ../toxav/phone.c
 
 phone_CFLAGS = -I../toxcore \
                -I../toxav \
@@ -68,6 +69,6 @@ phone_LDADD =   libtoxav.la \
                 $(VPX_LIBS)\
                 $(PTHREAD_LIBS)\
                 $(NACL_LIBS)
-                
-                
+
+
 endif
