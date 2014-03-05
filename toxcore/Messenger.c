@@ -1700,12 +1700,30 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
 
     IP ip;
-    ip_init(&ip, ipv6enabled);
-    m->net = new_networking(ip, TOX_PORT_DEFAULT);
 
-    if (m->net == NULL) {
-        free(m);
-        return NULL;
+    /* Issue #771 - https://github.com/irungentoo/ProjectTox-Core/issues/771 */
+    int tries = 0;
+    while( ip == NULL )
+    {
+        ip_init(&ip, ipv6enabled);
+        m->net = new_networking(ip, TOX_PORT_DEFAULT);
+
+        if( m != NULL )
+            break;
+
+        tries++;
+
+        if (tries > 3) { // A minute and a half is enough wait time.
+            free(m);
+            return NULL;
+        }
+
+// Why the fuck isn't sleep in the C standard.
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+        Sleep(30000);
+#else // !WIN32
+        sleep(30);
+#endif
     }
 
     m->net_crypto = new_net_crypto(m->net);
