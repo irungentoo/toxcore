@@ -54,6 +54,8 @@ typedef struct {
     Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
     /* This is crypto_secretbox_KEYBYTES long just so we can use new_symmetric_key() to fill it */
     uint8_t secret_bytes[crypto_secretbox_KEYBYTES];
+
+    Shared_Keys shared_keys_recv;
 } Onion_Announce;
 
 /* Create and send an onion announce request packet.

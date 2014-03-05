@@ -146,7 +146,7 @@ typedef struct {
 /* struct to store some shared keys so we don't have to regenerate them for each request. */
 #define MAX_KEYS_PER_SLOT 4
 #define KEYS_TIMEOUT 600
-struct SHARED_KEYS {
+typedef struct {
     struct {
         uint8_t client_id[CLIENT_ID_SIZE];
         uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -154,7 +154,7 @@ struct SHARED_KEYS {
         uint8_t  stored; /* 0 if not, 1 if is */
         uint64_t time_last_requested;
     } keys[256 * MAX_KEYS_PER_SLOT];
-};
+} Shared_Keys;
 
 /*----------------------------------------------------------------------------------*/
 
@@ -175,7 +175,8 @@ typedef struct {
     DHT_Friend    *friends_list;
     uint16_t       num_friends;
 
-    struct SHARED_KEYS shared_keys;
+    Shared_Keys shared_keys_recv;
+    Shared_Keys shared_keys_sent;
 
     struct PING   *ping;
 #ifdef ENABLE_ASSOC_DHT
@@ -185,10 +186,23 @@ typedef struct {
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
-/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+/* Shared key generations are costly, it is therefor smart to store commonly used
+ * ones so that they can re used later without being computed again.
+ *
+ * If shared key is already in shared_keys, copy it to shared_key.
+ * else generate it into shared_key and copy it to shared_keys
  */
-void DHT_get_shared_key(DHT *dht, uint8_t *shared_key, uint8_t *client_id);
+void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, uint8_t *secret_key, uint8_t *client_id);
 
+/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+ * for packets that we recieve.
+ */
+void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, uint8_t *client_id);
+
+/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+ * for packets that we send.
+ */
+void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, uint8_t *client_id);
 
 void DHT_getnodes(DHT *dht, IP_Port *from_ipp, uint8_t *from_id, uint8_t *which_id);
 

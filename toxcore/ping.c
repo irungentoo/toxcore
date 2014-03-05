@@ -156,7 +156,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     // generate key to encrypt ping_id with recipient privkey
-    encrypt_precompute(client_id, ping->dht->self_secret_key, shared_key);
+    DHT_get_shared_key_sent(ping->dht, shared_key, client_id);
     // Generate random ping_id.
     ping_id = add_ping(ping, ipp, shared_key);
 
@@ -218,7 +218,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     // Decrypt ping_id
-    DHT_get_shared_key(dht, shared_key, packet + 1);
+    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     rc = decrypt_data_fast(shared_key,
                            packet + 1 + CLIENT_ID_SIZE,
                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,

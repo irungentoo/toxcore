@@ -114,29 +114,33 @@ static int client_id_cmp(ClientPair p1, ClientPair p2)
     return c;
 }
 
-/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+/* Shared key generations are costly, it is therefor smart to store commonly used
+ * ones so that they can re used later without being computed again.
+ *
+ * If shared key is already in shared_keys, copy it to shared_key.
+ * else generate it into shared_key and copy it to shared_keys
  */
-void DHT_get_shared_key(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
+void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, uint8_t *secret_key, uint8_t *client_id)
 {
     uint32_t i, num = ~0, curr = 0;
 
     for (i = 0; i < MAX_KEYS_PER_SLOT; ++i) {
         int index = client_id[30] * MAX_KEYS_PER_SLOT + i;
 
-        if (dht->shared_keys.keys[index].stored) {
-            if (memcmp(client_id, dht->shared_keys.keys[index].client_id, CLIENT_ID_SIZE) == 0) {
-                memcpy(shared_key, dht->shared_keys.keys[index].shared_key, crypto_box_BEFORENMBYTES);
-                ++dht->shared_keys.keys[index].times_requested;
-                dht->shared_keys.keys[index].time_last_requested = unix_time();
+        if (shared_keys->keys[index].stored) {
+            if (memcmp(client_id, shared_keys->keys[index].client_id, CLIENT_ID_SIZE) == 0) {
+                memcpy(shared_key, shared_keys->keys[index].shared_key, crypto_box_BEFORENMBYTES);
+                ++shared_keys->keys[index].times_requested;
+                shared_keys->keys[index].time_last_requested = unix_time();
                 return;
             }
 
             if (num != 0) {
-                if (is_timeout(dht->shared_keys.keys[index].time_last_requested, KEYS_TIMEOUT)) {
+                if (is_timeout(shared_keys->keys[index].time_last_requested, KEYS_TIMEOUT)) {
                     num = 0;
                     curr = index;
-                } else if (num > dht->shared_keys.keys[index].times_requested) {
-                    num = dht->shared_keys.keys[index].times_requested;
+                } else if (num > shared_keys->keys[index].times_requested) {
+                    num = shared_keys->keys[index].times_requested;
                     curr = index;
                 }
             }
@@ -148,16 +152,33 @@ void DHT_get_shared_key(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
         }
     }
 
-    encrypt_precompute(client_id, dht->self_secret_key, shared_key);
+    encrypt_precompute(client_id, secret_key, shared_key);
 
     if (num != (uint32_t)~0) {
-        dht->shared_keys.keys[curr].stored = 1;
-        dht->shared_keys.keys[curr].times_requested = 1;
-        memcpy(dht->shared_keys.keys[curr].client_id, client_id, CLIENT_ID_SIZE);
-        memcpy(dht->shared_keys.keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
-        dht->shared_keys.keys[curr].time_last_requested = unix_time();
+        shared_keys->keys[curr].stored = 1;
+        shared_keys->keys[curr].times_requested = 1;
+        memcpy(shared_keys->keys[curr].client_id, client_id, CLIENT_ID_SIZE);
+        memcpy(shared_keys->keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
+        shared_keys->keys[curr].time_last_requested = unix_time();
     }
 }
+
+/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+ * for packets that we recieve.
+ */
+void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
+{
+    return get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
+}
+
+/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+ * for packets that we send.
+ */
+void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
+{
+    return get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, client_id);
+}
+
 
 /* Check if client with client_id is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
@@ -867,12 +888,13 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     memcpy(plain, client_id, CLIENT_ID_SIZE);
     memcpy(plain + CLIENT_ID_SIZE, encrypted_message, NODES_ENCRYPTED_MESSAGE_LENGTH);
 
-    int len = encrypt_data( public_key,
-                            dht->self_secret_key,
-                            nonce,
-                            plain,
-                            CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
-                            encrypt );
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    DHT_get_shared_key_sent(dht, shared_key, public_key);
+    int len = encrypt_data_fast( shared_key,
+                                 nonce,
+                                 plain,
+                                 CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                                 encrypt );
 
     if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
         return -1;
@@ -1036,7 +1058,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     uint8_t plain[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
-    DHT_get_shared_key(dht, shared_key, packet + 1);
+    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     int len = decrypt_data_fast( shared_key,
                                  packet + 1 + CLIENT_ID_SIZE,
                                  packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
@@ -1111,9 +1133,10 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
     if (num_nodes > MAX_SENT_NODES) /* too long */
         return 1;
 
-    int len = decrypt_data(
-                  packet + 1,
-                  dht->self_secret_key,
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    DHT_get_shared_key_sent(dht, shared_key, packet + 1);
+    int len = decrypt_data_fast(
+                  shared_key,
                   packet + 1 + CLIENT_ID_SIZE,
                   packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                   num_nodes * node_format_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,

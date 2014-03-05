@@ -30,6 +30,10 @@ typedef struct {
     Networking_Core *net;
     uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
     uint64_t timestamp;
+
+    Shared_Keys shared_keys_1;
+    Shared_Keys shared_keys_2;
+    Shared_Keys shared_keys_3;
 } Onion;
 
 #define ONION_RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)

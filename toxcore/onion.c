@@ -173,10 +173,10 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     change_symmetric_key(onion);
 
     uint8_t plain[MAX_ONION_SIZE];
-
-    int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
-                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
-                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES), plain);
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    get_shared_key(&onion->shared_keys_1, shared_key, onion->dht->self_secret_key, packet + 1 + crypto_box_NONCEBYTES);
+    int len = decrypt_data_fast(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+                                length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES), plain);
 
     if ((uint32_t)len != length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES))
         return 1;
@@ -219,10 +219,10 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     change_symmetric_key(onion);
 
     uint8_t plain[MAX_ONION_SIZE];
-
-    int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
-                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
-                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_1), plain);
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    get_shared_key(&onion->shared_keys_2, shared_key, onion->dht->self_secret_key, packet + 1 + crypto_box_NONCEBYTES);
+    int len = decrypt_data_fast(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+                                length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_1), plain);
 
     if ((uint32_t)len != length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_1 + crypto_box_MACBYTES))
         return 1;
@@ -268,10 +268,10 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     change_symmetric_key(onion);
 
     uint8_t plain[MAX_ONION_SIZE];
-
-    int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
-                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
-                           length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_2), plain);
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    get_shared_key(&onion->shared_keys_3, shared_key, onion->dht->self_secret_key, packet + 1 + crypto_box_NONCEBYTES);
+    int len = decrypt_data_fast(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+                                length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_2), plain);
 
     if ((uint32_t)len != length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + RETURN_2 + crypto_box_MACBYTES))
         return 1;
