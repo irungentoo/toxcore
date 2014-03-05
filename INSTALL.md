@@ -131,7 +131,7 @@ brew list libsodium
 
 Configure include and lib folder and build again:
 ```bash
-./configure--with-libsodium-headers=/usr/local/Cellar/libsodium/0.4.5/include/ --with-libsodium-libs=/usr/local/Cellar/libsodium/0.4.5/lib/
+./configure --with-libsodium-headers=/usr/local/Cellar/libsodium/0.4.5/include/ --with-libsodium-libs=/usr/local/Cellar/libsodium/0.4.5/lib/
 make
 make install
 ```
