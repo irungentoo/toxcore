@@ -487,9 +487,9 @@ fi
 if test "x$BUILD_AV" = "xyes"; then
     # toxcore lib needs an global?
     # So far this works okay
-    AV_LIBS="$OPUS_LIBS $VPX_LIBS -ltoxcore"
+    AV_LIBS="$OPUS_LIBS $VPX_LIBS"
     AC_SUBST(AV_LIBS)
-    
+
     AV_CFLAGS="$OPUS_CFLAGS $VPX_CFLAGS"
     AC_SUBST(AV_CFLAGS)
 fi
