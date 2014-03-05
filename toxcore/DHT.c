@@ -187,7 +187,7 @@ void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
  *
  *  return True(1) or False(0)
  */
-static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Port ip_port)
+static bool client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Port ip_port)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -212,7 +212,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
 #endif
 
                 if (LAN_ip(list[i].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
-                    return 1;
+                    return true;
 
                 list[i].assoc4.ip_port = ip_port;
                 list[i].assoc4.timestamp = temp_time;
@@ -232,13 +232,13 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
 #endif
 
                 if (LAN_ip(list[i].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
-                    return 1;
+                    return true;
 
                 list[i].assoc6.ip_port = ip_port;
                 list[i].assoc6.timestamp = temp_time;
             }
 
-            return 1;
+            return true;
         }
 
     /* client_id not in list yet: see if we can find an identical ip_port, in
@@ -257,7 +257,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
 #endif
             /* kill the other address, if it was set */
             memset(&list[i].assoc6, 0, sizeof(list[i].assoc6));
-            return 1;
+            return true;
         } else if ((ip_port.ip.family == AF_INET6) && ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
             /* Initialize client timestamp. */
             list[i].assoc6.timestamp = temp_time;
@@ -268,11 +268,11 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
 #endif
             /* kill the other address, if it was set */
             memset(&list[i].assoc4, 0, sizeof(list[i].assoc4));
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 /* Check if client with client_id is already in node format list of length length.
