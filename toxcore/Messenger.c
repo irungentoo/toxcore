@@ -1818,6 +1818,13 @@ void do_friends(Messenger *m)
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < m->numfriends; ++i) {
+        if (m->friendlist[i].status == FRIEND_IGNORE) {
+            if(m->friendlist[i].crypt_connection_id != -1) {
+                crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
+                m->friendlist[i].crypt_connection_id = -1;
+            }
+            break;
+        }
         if (m->friendlist[i].status == FRIEND_ADDED) {
             int fr = send_friendrequest(m->onion_c, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam,
                                         m->friendlist[i].info,
