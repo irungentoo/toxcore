@@ -2326,10 +2326,12 @@ void wait_cleanup_messenger(Messenger *m, uint8_t *data, uint16_t len)
 #define MESSENGER_STATE_COOKIE_GLOBAL 0x15ed1b1f
 
 #define MESSENGER_STATE_COOKIE_TYPE      0x01ce
-#define MESSENGER_STATE_TYPE_NOSPAMKEYS  1
-#define MESSENGER_STATE_TYPE_DHT         2
-#define MESSENGER_STATE_TYPE_FRIENDS     3
-#define MESSENGER_STATE_TYPE_NAME        4
+#define MESSENGER_STATE_TYPE_NOSPAMKEYS    1
+#define MESSENGER_STATE_TYPE_DHT           2
+#define MESSENGER_STATE_TYPE_FRIENDS       3
+#define MESSENGER_STATE_TYPE_NAME          4
+#define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
+#define MESSENGER_STATE_TYPE_STATUS        6
 
 struct SAVED_FRIEND {
     uint8_t status;
@@ -2421,6 +2423,8 @@ uint32_t messenger_size(Messenger *m)
              + sizesubhead + DHT_size(m->dht)                  // DHT
              + sizesubhead + saved_friendslist_size(m)         // Friendlist itself.
              + sizesubhead + m->name_length                    // Own nickname.
+             + sizesubhead + m->statusmessage_length           // status message
+             + sizesubhead + 1                                 // status
              ;
 }
 
@@ -2472,6 +2476,18 @@ void messenger_save(Messenger *m, uint8_t *data)
     type = MESSENGER_STATE_TYPE_NAME;
     data = z_state_save_subheader(data, len, type);
     memcpy(data, m->name, len);
+    data += len;
+
+    len = m->statusmessage_length;
+    type = MESSENGER_STATE_TYPE_STATUSMESSAGE;
+    data = z_state_save_subheader(data, len, type);
+    memcpy(data, m->statusmessage, len);
+    data += len;
+
+    len = 1;
+    type = MESSENGER_STATE_TYPE_STATUS;
+    data = z_state_save_subheader(data, len, type);
+    *data = m->userstatus;
     data += len;
 }
 
@@ -2578,6 +2594,19 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 
             break;
 
+        case MESSENGER_STATE_TYPE_STATUSMESSAGE:
+            if ((length > 0) && (length < MAX_STATUSMESSAGE_LENGTH)) {
+                m_set_statusmessage(m, data, length);
+            }
+
+            break;
+
+        case MESSENGER_STATE_TYPE_STATUS:
+            if (length == 1) {
+                m_set_userstatus(m, *data);
+            }
+
+            break;
 #ifdef DEBUG
 
         default:
