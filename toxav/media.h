@@ -38,6 +38,14 @@
 /* Audio encoding/decoding */
 #include <opus/opus.h>
 
+enum _actions
+{
+    no_actions,
+    a_encoding = 1 << 0,
+    a_decoding = 1 << 1,
+    v_encoding = 1 << 2,
+    v_decoding = 1 << 3
+};
 
 typedef struct _CodecState {
 
@@ -56,12 +64,13 @@ typedef struct _CodecState {
     /* audio decoding */
     OpusDecoder *audio_decoder;
 
+    uint64_t supported_actions; /* Encoding decoding etc */
+    
 } CodecState;
 
 typedef struct _RTPMessage RTPMessage;
 
 struct jitter_buffer *create_queue(int capacity);
-int empty_queue(struct jitter_buffer *q);
 
 int queue(struct jitter_buffer *q, RTPMessage *pk);
 RTPMessage *dequeue(struct jitter_buffer *q, int *success);

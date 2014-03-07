@@ -42,13 +42,13 @@
  */
 
 typedef struct _RTPHeader {
-    uint8_t   flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
-    uint8_t   marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
-    uint16_t  sequnum;           /* Sequence Number */
-    uint32_t  timestamp;         /* Timestamp */
-    uint32_t  ssrc;              /* SSRC */
-    uint32_t *csrc;              /* CSRC's table */
-    uint32_t  length;            /* Length of the header in payload string. */
+    uint8_t  flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
+    uint8_t  marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
+    uint16_t sequnum;           /* Sequence Number */
+    uint32_t timestamp;         /* Timestamp */
+    uint32_t ssrc;              /* SSRC */
+    uint32_t csrc[16];          /* CSRC's table */
+    uint32_t length;            /* Length of the header in payload string. */
 
 } RTPHeader;
 

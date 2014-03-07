@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libtoxav
+Description: Tox A/V library
+Requires:
+Version: 0.0.0
+Libs: -L${libdir} -ltoxav -lopus  -lvpx -lm  -pthread
+Cflags: -I${includedir}
