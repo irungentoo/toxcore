@@ -573,7 +573,11 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
 
                 if (handle_cryptohandshake(c, public_key, secret_nonce, session_key, temp_data, len)) {
                     return incoming_con;
+                } else {
+                    kill_connection(c->lossless_udp, incoming_con);
                 }
+            } else {
+                kill_connection(c->lossless_udp, incoming_con);
             }
         } else {
             break;

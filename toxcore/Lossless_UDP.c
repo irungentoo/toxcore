@@ -1083,6 +1083,9 @@ static void do_new(Lossless_UDP *ludp)
 
         if (tmp->status != LUDP_NO_CONNECTION && tmp->killat < temp_time)
             tmp->status = LUDP_TIMED_OUT;
+
+        if (tmp->inbound == LUDP_CONNECTION_INBOUND && tmp->status == LUDP_TIMED_OUT)
+            kill_connection(ludp, tmp_i);
     }
 }
 

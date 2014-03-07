@@ -2140,6 +2140,8 @@ void do_inbound(Messenger *m)
                 accept_crypto_inbound(m->net_crypto, inconnection, public_key, secret_nonce, session_key);
 
             set_friend_status(m, friend_id, FRIEND_CONFIRMED);
+        } else {
+            kill_connection(m->net_crypto->lossless_udp, inconnection);
         }
     }
 }
