@@ -519,7 +519,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
     if ((uint32_t)len + crypto_box_PUBLICKEYBYTES != sizeof(packet))
         return -1;
 
-    uint32_t i, good_nodes[MAX_ONION_CLIENTS], num_good = 0;
+    uint32_t i, good_nodes[MAX_ONION_CLIENTS], num_good = 0, num_nodes = 0;
     Onion_Path path[MAX_ONION_CLIENTS];
     Onion_Node *list_nodes = onion_c->friends_list[friend_num].clients_list;
 
@@ -527,6 +527,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
         if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT))
             continue;
 
+        ++num_nodes;
         if (list_nodes[i].is_stored) {
             if (random_path(onion_c->dht, &onion_c->friends_list[friend_num].onion_paths, ~0, &path[num_good]) == -1)
                 continue;
@@ -536,7 +537,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
         }
     }
 
-    if (num_good < (MAX_ONION_CLIENTS / 4) + 1)
+    if (num_good < (num_nodes / 4) + 1)
         return -1;
 
     uint32_t good = 0;
