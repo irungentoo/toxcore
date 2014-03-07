@@ -519,7 +519,8 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
     if ((uint32_t)len + crypto_box_PUBLICKEYBYTES != sizeof(packet))
         return -1;
 
-    uint32_t i, good = 0;
+    uint32_t i, good_nodes[MAX_ONION_CLIENTS], num_good = 0;
+    Onion_Path path[MAX_ONION_CLIENTS];
     Onion_Node *list_nodes = onion_c->friends_list[friend_num].clients_list;
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
@@ -527,20 +528,24 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
             continue;
 
         if (list_nodes[i].is_stored) {
-            Node_format nodes[4];
-
-            Onion_Path path;
-
-            if (random_path(onion_c->dht, &onion_c->friends_list[friend_num].onion_paths, ~0, &path) == -1)
+            if (random_path(onion_c->dht, &onion_c->friends_list[friend_num].onion_paths, ~0, &path[num_good]) == -1)
                 continue;
 
-            memcpy(nodes[3].client_id, list_nodes[i].client_id, crypto_box_PUBLICKEYBYTES);
-            nodes[3].ip_port = list_nodes[i].ip_port;
-
-            if (send_data_request(onion_c->net, &path, list_nodes[i].ip_port, onion_c->friends_list[friend_num].real_client_id,
-                                  list_nodes[i].data_public_key, nonce, packet, sizeof(packet)) == 0)
-                ++good;
+            good_nodes[num_good] = i;
+            ++num_good;
         }
+    }
+
+    if (num_good < (MAX_ONION_CLIENTS / 4) + 1)
+        return -1;
+
+    uint32_t good = 0;
+
+    for (i = 0; i < num_good; ++i) {
+        if (send_data_request(onion_c->net, &path[i], list_nodes[good_nodes[i]].ip_port,
+                              onion_c->friends_list[friend_num].real_client_id, list_nodes[good_nodes[i]].data_public_key, nonce, packet,
+                              sizeof(packet)) == 0)
+            ++good;
     }
 
     return good;
