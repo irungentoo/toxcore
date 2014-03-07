@@ -241,7 +241,7 @@ int toxav_cancel ( ToxAv *av, const char *reason )
         return ErrorNoCall;
     }
 
-    return msi_cancel(av->msi_session, 0, (const uint8_t *)reason);
+    return msi_cancel(av->msi_session, 0, reason);
 }
 
 /**
@@ -269,7 +269,7 @@ int toxav_stop_call ( ToxAv *av )
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_prepare_transmission ( ToxAv *av )
+int toxav_prepare_transmission ( ToxAv* av, int support_video )
 {
     assert(av->msi_session);
 
@@ -293,22 +293,23 @@ int toxav_prepare_transmission ( ToxAv *av )
         return ErrorStartingAudioRtp;
     }
 
-    av->rtp_sessions[video_index] = rtp_init_session (
-                                        type_video,
-                                        av->messenger,
-                                        av->msi_session->call->peers[0],
-                                        av->msi_session->call->key_peer,
-                                        av->msi_session->call->key_local,
-                                        av->msi_session->call->nonce_peer,
-                                        av->msi_session->call->nonce_local
-                                    );
+    if ( support_video ) {
+        av->rtp_sessions[video_index] = rtp_init_session (
+                                            type_video,
+                                            av->messenger,
+                                            av->msi_session->call->peers[0],
+                                            av->msi_session->call->key_peer,
+                                            av->msi_session->call->key_local,
+                                            av->msi_session->call->nonce_peer,
+                                            av->msi_session->call->nonce_local
+                                        );
 
 
-    if ( !av->rtp_sessions[video_index] ) {
-        fprintf(stderr, "Error while starting video RTP session!\n");
-        return ErrorStartingVideoRtp;
+        if ( !av->rtp_sessions[video_index] ) {
+            fprintf(stderr, "Error while starting video RTP session!\n");
+            return ErrorStartingVideoRtp;
+        }
     }
-
     return ErrorNone;
 }
 
@@ -322,21 +323,20 @@ int toxav_prepare_transmission ( ToxAv *av )
  */
 int toxav_kill_transmission ( ToxAv *av )
 {
-    /* Both sessions should be active at any time */
-    if ( !av->rtp_sessions[0] || !av->rtp_sessions[0] )
-        return ErrorNoTransmission;
-
-
-    if ( -1 == rtp_terminate_session(av->rtp_sessions[audio_index], av->messenger) ) {
+    if ( av->rtp_sessions[audio_index] && -1 == rtp_terminate_session(av->rtp_sessions[audio_index], av->messenger) ) {
         fprintf(stderr, "Error while terminating audio RTP session!\n");
         return ErrorTerminatingAudioRtp;
     }
 
-    if ( -1 == rtp_terminate_session(av->rtp_sessions[video_index], av->messenger) ) {
+    if ( av->rtp_sessions[video_index] && -1 == rtp_terminate_session(av->rtp_sessions[video_index], av->messenger) ) {
         fprintf(stderr, "Error while terminating video RTP session!\n");
         return ErrorTerminatingVideoRtp;
     }
 
+    av->rtp_sessions[audio_index] = NULL;
+    av->rtp_sessions[video_index] = NULL;
+    
+    
     return ErrorNone;
 }
 
@@ -424,13 +424,14 @@ inline__ int toxav_recv_video ( ToxAv *av, vpx_image_t **output)
 
     uint8_t packet [RTP_PAYLOAD_SIZE];
     int recved_size = 0;
-
+    int error;
+    
     do {
         recved_size = toxav_recv_rtp_payload(av, TypeVideo, packet);
 
-        if (recved_size > 0) {
-            printf("decode: %s\n", vpx_codec_err_to_string(vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0)));
-        }
+        if (recved_size > 0) 
+            fprintf(stderr, "Error decoding: %s\n", vpx_codec_err_to_string(vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0)));
+        
     } while (recved_size > 0);
 
     vpx_codec_iter_t iter = NULL;
@@ -456,7 +457,7 @@ inline__ int toxav_recv_video ( ToxAv *av, vpx_image_t **output)
 inline__ int toxav_send_video ( ToxAv *av, vpx_image_t *input)
 {
     if (vpx_codec_encode(&av->cs->v_encoder, input, av->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US) != VPX_CODEC_OK) {
-        printf("could not encode video frame\n");
+        fprintf(stderr, "Could not encode video frame\n");
         return ErrorInternal;
     }
 
@@ -500,7 +501,6 @@ inline__ int toxav_recv_audio ( ToxAv *av, int frame_size, int16_t *dest )
     int recved_size = toxav_recv_rtp_payload(av, TypeAudio, packet);
 
     if ( recved_size == ErrorAudioPacketLost ) {
-        printf("Lost packet\n");
         return opus_decode(av->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
     } else if ( recved_size ) {
         return opus_decode(av->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
@@ -551,6 +551,24 @@ int toxav_get_peer_transmission_type ( ToxAv *av, int peer )
 }
 
 /**
+ * @brief Get id of peer participating in conversation
+ * 
+ * @param av Handler
+ * @param peer peer index
+ * @return int
+ * @retval ToxAvError No peer id
+ */
+int toxav_get_peer_id ( ToxAv* av, int peer )
+{
+    assert(av->msi_session);
+    
+    if ( peer < 0 || !av->msi_session->call || av->msi_session->call->peer_count <= peer )
+        return ErrorInternal;
+    
+    return av->msi_session->call->peers[peer];
+}
+
+/**
  * @brief Get reference to an object that is handling av session.
  *
  * @param av Handler.
@@ -559,4 +577,69 @@ int toxav_get_peer_transmission_type ( ToxAv *av, int peer )
 void *toxav_get_agent_handler ( ToxAv *av )
 {
     return av->agent_handler;
+}
+
+/**
+ * @brief Is video encoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+inline__ int toxav_video_encoding ( ToxAv* av )
+{
+    return av->cs->supported_actions & v_encoding;
+}
+
+
+/**
+ * @brief Is video decoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+inline__ int toxav_video_decoding ( ToxAv* av )
+{
+    return av->cs->supported_actions & v_decoding;
+}
+
+/**
+ * @brief Is audio encoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+inline__ int toxav_audio_encoding ( ToxAv* av )
+{
+    return av->cs->supported_actions & a_encoding;
+}
+
+
+/**
+ * @brief Is audio decoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+inline__ int toxav_audio_decoding ( ToxAv* av )
+{
+    return av->cs->supported_actions & a_decoding;
+}
+
+/**
+ * @brief Get messenger handle
+ * 
+ * @param av Handler.
+ * @return Tox*
+ */
+inline__ Tox* toxav_get_tox ( ToxAv* av )
+{
+    return (Tox*)av->messenger;
 }

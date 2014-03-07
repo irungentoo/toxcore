@@ -57,20 +57,20 @@ typedef struct Tox Tox;
  */
 typedef enum {
     /* Requests */
-    OnInvite,
-    OnStart,
-    OnCancel,
-    OnReject,
-    OnEnd,
+    av_OnInvite,
+    av_OnStart,
+    av_OnCancel,
+    av_OnReject,
+    av_OnEnd,
 
     /* Responses */
-    OnRinging,
-    OnStarting,
-    OnEnding,
+    av_OnRinging,
+    av_OnStarting,
+    av_OnEnding,
 
     /* Protocol */
-    OnError,
-    OnRequestTimeout
+    av_OnError,
+    av_OnRequestTimeout
 
 } ToxAvCallbackID;
 
@@ -98,9 +98,8 @@ typedef enum {
     ErrorAudioPacketLost = -6, /* Indicating packet loss */
     ErrorStartingAudioRtp = -7, /* Error in toxav_prepare_transmission() */
     ErrorStartingVideoRtp = -8 , /* Error in toxav_prepare_transmission() */
-    ErrorNoTransmission = -9, /* Returned in toxav_kill_transmission() */
-    ErrorTerminatingAudioRtp = -10, /* Returned in toxav_kill_transmission() */
-    ErrorTerminatingVideoRtp = -11, /* Returned in toxav_kill_transmission() */
+    ErrorTerminatingAudioRtp = -9, /* Returned in toxav_kill_transmission() */
+    ErrorTerminatingVideoRtp = -10, /* Returned in toxav_kill_transmission() */
 
 } ToxAvError;
 
@@ -205,11 +204,12 @@ int toxav_stop_call(ToxAv *av);
  * @brief Must be call before any RTP transmission occurs.
  *
  * @param av Handler.
+ * @param support_video Is video supported ? 1 : 0
  * @return int
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_prepare_transmission(ToxAv *av);
+int toxav_prepare_transmission(ToxAv *av, int support_video);
 
 /**
  * @brief Call this at the end of the transmission.
@@ -282,11 +282,69 @@ int toxav_send_audio ( ToxAv *av, const int16_t *frame, int frame_size);
 int toxav_get_peer_transmission_type ( ToxAv *av, int peer );
 
 /**
+ * @brief Get id of peer participating in conversation
+ * 
+ * @param av Handler
+ * @param peer peer index
+ * @return int
+ * @retval ToxAvError No peer id
+ */
+int toxav_get_peer_id ( ToxAv* av, int peer );
+
+/**
  * @brief Get reference to an object that is handling av session.
  *
  * @param av Handler.
  * @return void*
  */
 void *toxav_get_agent_handler ( ToxAv *av );
+
+/**
+ * @brief Is video encoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+int toxav_video_encoding ( ToxAv* av );
+
+/**
+ * @brief Is video decoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+int toxav_video_decoding ( ToxAv* av );
+
+/**
+ * @brief Is audio encoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+int toxav_audio_encoding ( ToxAv* av );
+
+/**
+ * @brief Is audio decoding supported
+ * 
+ * @param av Handler
+ * @return int
+ * @retval 1 Yes.
+ * @retval 0 No.
+ */
+int toxav_audio_decoding ( ToxAv* av );
+
+/**
+ * @brief Get messenger handle
+ * 
+ * @param av Handler.
+ * @return Tox*
+ */
+Tox* toxav_get_tox ( ToxAv* av );
 
 #endif /* __TOXAV */

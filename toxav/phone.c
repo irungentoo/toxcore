@@ -428,17 +428,16 @@ void *encode_audio_thread(void *arg)
     int frame_size = AUDIO_FRAME_SIZE;
     ALint sample = 0;
     alcCaptureStart((ALCdevice *)_phone->audio_capture_device);
-
     while (_phone->running_encaud) {
+        
         alcGetIntegerv((ALCdevice *)_phone->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
-
+        
         if (sample >= frame_size) {
             alcCaptureSamples((ALCdevice *)_phone->audio_capture_device, frame, frame_size);
 
             ret = toxav_send_audio(_phone->av, frame, frame_size);
 
-            if (ret < 0)
-                printf("Could not encode or send audio packet\n");
+            if (ret < 0) printf("Could not encode or send audio packet\n");
 
         } else {
             usleep(1000);
@@ -734,6 +733,114 @@ ending:
 
 
 
+void *one_threaded_audio(void *arg)
+{
+    INFO("Started audio thread!");
+    av_session_t *_phone = arg;
+    _phone->running_decaud = 1;
+    
+    //int recved_size;
+    //uint8_t dest [RTP_PAYLOAD_SIZE];
+    
+    int frame_size = AUDIO_FRAME_SIZE;
+    
+    int16_t frame[4096];
+    ALint sample = 0;
+    alcCaptureStart((ALCdevice *)_phone->audio_capture_device);
+    
+    ALCdevice *dev;
+    ALCcontext *ctx;
+    ALuint source, *buffers;
+    dev = alcOpenDevice(NULL);
+    ctx = alcCreateContext(dev, NULL);
+    alcMakeContextCurrent(ctx);
+    int openal_buffers = 5;
+    
+    buffers = calloc(sizeof(ALuint) * openal_buffers, 1);
+    alGenBuffers(openal_buffers, buffers);
+    alGenSources((ALuint)1, &source);
+    alSourcei(source, AL_LOOPING, AL_FALSE);
+    
+    ALuint buffer;
+    ALint ready;
+    
+    uint16_t zeros[frame_size];
+    memset(zeros, 0, frame_size);
+    int16_t PCM[frame_size];
+    
+    int i;
+    
+    for (i = 0; i < openal_buffers; ++i) {
+        alBufferData(buffers[i], AL_FORMAT_MONO16, zeros, frame_size, 48000);
+    }
+    
+    alSourceQueueBuffers(source, openal_buffers, buffers);
+    alSourcePlay(source);
+    
+    if (alGetError() != AL_NO_ERROR) {
+        fprintf(stderr, "Error starting audio\n");
+        goto ending;
+    }
+    
+    int dec_frame_len;
+    
+    while (_phone->running_decaud) {
+        
+        // combo
+        alcGetIntegerv((ALCdevice *)_phone->audio_capture_device, ALC_CAPTURE_SAMPLES, (ALCsizei)sizeof(ALint), &sample);
+        
+        // record and send        
+        if (sample >= frame_size) {
+            alcCaptureSamples((ALCdevice *)_phone->audio_capture_device, frame, frame_size);
+            
+            if (toxav_send_audio(_phone->av, frame, frame_size) < 0) 
+                printf("Could not encode or send audio packet\n");
+            
+        } else  {
+            usleep(5000);
+        }
+        
+        // play received
+        
+        alGetSourcei(source, AL_BUFFERS_PROCESSED, &ready);
+        
+        if (ready <= 0)
+            continue;
+        
+        dec_frame_len = toxav_recv_audio(_phone->av, frame_size, PCM);
+        
+        /* Play the packet */
+        if (dec_frame_len > 0) {
+            alSourceUnqueueBuffers(source, 1, &buffer);
+            alBufferData(buffer, AL_FORMAT_MONO16, PCM, dec_frame_len * 2 * 1, 48000);
+            int error = alGetError();
+            
+            if (error != AL_NO_ERROR) {
+                fprintf(stderr, "Error setting buffer %d\n", error);
+                break;
+            }
+            
+            alSourceQueueBuffers(source, 1, &buffer);
+            
+            if (alGetError() != AL_NO_ERROR) {
+                fprintf(stderr, "Error: could not buffer audio\n");
+                break;
+            }
+            
+            alGetSourcei(source, AL_SOURCE_STATE, &ready);
+            
+            if (ready != AL_PLAYING) alSourcePlay(source);
+        }
+        
+        usleep(1000);
+    }
+    
+    
+    ending:
+    _phone->running_decaud = -1;
+    
+    pthread_exit ( NULL );
+}
 
 
 int phone_startmedia_loop ( ToxAv *arg )
@@ -742,7 +849,7 @@ int phone_startmedia_loop ( ToxAv *arg )
         return -1;
     }
 
-    toxav_prepare_transmission(arg);
+    toxav_prepare_transmission(arg, 1);
 
     /*
      * Rise all threads
@@ -759,10 +866,10 @@ int phone_startmedia_loop ( ToxAv *arg )
 #endif
 
     /* Always send audio */
-    if ( 0 > event.rise(encode_audio_thread, toxav_get_agent_handler(arg)) ) {
+    /*if ( 0 > event.rise(encode_audio_thread, toxav_get_agent_handler(arg)) ) {
         INFO("Error while starting encode_audio_thread()");
         return -1;
-    }
+    } */
 
     /* Only checks for last peer */
     if ( toxav_get_peer_transmission_type(arg, 0) == TypeVideo &&
@@ -771,12 +878,19 @@ int phone_startmedia_loop ( ToxAv *arg )
         return -1;
     }
 
-    if ( 0 > event.rise(decode_audio_thread, toxav_get_agent_handler(arg)) ) {
+    /*if ( 0 > event.rise(decode_audio_thread, toxav_get_agent_handler(arg)) ) {
         INFO("Error while starting decode_audio_thread()");
         return -1;
+    } */
+
+
+    /* One threaded audio */
+    
+    if ( 0 > event.rise(one_threaded_audio, toxav_get_agent_handler(arg)) ) {
+        INFO ("Shit-head");
+        return -1;
     }
-
-
+    
     return 0;
 }
 
@@ -888,15 +1002,17 @@ void *callback_call_ended ( void *_arg )
     _phone->running_encvid = 0;
     _phone->running_decvid = 0;
 
-    /* Wait until all threads are done */
+    /* Wait until all threads are done 
 
     while ( _phone->running_encaud != -1 ||
             _phone->running_decaud != -1 ||
             _phone->running_encvid != -1 ||
             _phone->running_decvid != -1 )
 
-        usleep(10000000);
+            usleep(1000000);*/
 
+    while (_phone->running_decaud != -1) usleep(1000000);
+    
     toxav_kill_transmission(_phone->av);
     INFO ( "Call ended!" );
     pthread_exit(NULL);
@@ -977,7 +1093,7 @@ av_session_t *av_init_session()
     if (avformat_open_input(&_retu->video_format_ctx, DEFAULT_WEBCAM, _retu->video_input_format, NULL) != 0) {
         fprintf(stderr, "Opening video_input_format failed!\n");
         //return -1;
-        return NULL;
+        goto failed_init_ffmpeg;
     }
 
     avformat_find_stream_info(_retu->video_format_ctx, NULL);
@@ -996,23 +1112,25 @@ av_session_t *av_init_session()
     if (_retu->webcam_decoder == NULL) {
         fprintf(stderr, "Unsupported codec!\n");
         //return -1;
-        return NULL;
+        goto failed_init_ffmpeg;
     }
 
     if (_retu->webcam_decoder_ctx == NULL) {
         fprintf(stderr, "Init webcam_decoder_ctx failed!\n");
         //return -1;
-        return NULL;
+        goto failed_init_ffmpeg;
     }
 
     if (avcodec_open2(_retu->webcam_decoder_ctx, _retu->webcam_decoder, NULL) < 0) {
         fprintf(stderr, "Opening webcam decoder failed!\n");
         //return -1;
-        return NULL;
+        goto failed_init_ffmpeg;
     }
 
     width = _retu->webcam_decoder_ctx->width;
     height = _retu->webcam_decoder_ctx->height;
+
+failed_init_ffmpeg: ;
 #endif
     uint8_t _byte_address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(_retu->_messenger, _byte_address );
@@ -1023,18 +1141,18 @@ av_session_t *av_init_session()
 
     /* ------------------ */
 
-    toxav_register_callstate_callback(callback_call_started, OnStart);
-    toxav_register_callstate_callback(callback_call_canceled, OnCancel);
-    toxav_register_callstate_callback(callback_call_rejected, OnReject);
-    toxav_register_callstate_callback(callback_call_ended, OnEnd);
-    toxav_register_callstate_callback(callback_recv_invite, OnInvite);
+    toxav_register_callstate_callback(callback_call_started, av_OnStart);
+    toxav_register_callstate_callback(callback_call_canceled, av_OnCancel);
+    toxav_register_callstate_callback(callback_call_rejected, av_OnReject);
+    toxav_register_callstate_callback(callback_call_ended, av_OnEnd);
+    toxav_register_callstate_callback(callback_recv_invite, av_OnInvite);
 
-    toxav_register_callstate_callback(callback_recv_ringing, OnRinging);
-    toxav_register_callstate_callback(callback_recv_starting, OnStarting);
-    toxav_register_callstate_callback(callback_recv_ending, OnEnding);
+    toxav_register_callstate_callback(callback_recv_ringing, av_OnRinging);
+    toxav_register_callstate_callback(callback_recv_starting, av_OnStarting);
+    toxav_register_callstate_callback(callback_recv_ending, av_OnEnding);
 
-    toxav_register_callstate_callback(callback_recv_error, OnError);
-    toxav_register_callstate_callback(callback_requ_timeout, OnRequestTimeout);
+    toxav_register_callstate_callback(callback_recv_error, av_OnError);
+    toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout);
 
     /* ------------------ */
 
@@ -1310,6 +1428,8 @@ int main ( int argc, char *argv [] )
 
     av_session_t *_phone = av_init_session();
 
+    assert ( _phone );
+    
     tox_callback_friend_request(_phone->_messenger, av_friend_requ, _phone);
     tox_callback_status_message(_phone->_messenger, av_friend_active, _phone);
 
@@ -1341,7 +1461,7 @@ int main ( int argc, char *argv [] )
          "================================================================================\n"
          "%s\n"
          "================================================================================"
-         , _phone->_my_public_id );
+         , trim_spaces(_phone->_my_public_id) );
 
 
     do_phone (_phone);

@@ -46,18 +46,28 @@ struct jitter_buffer {
     uint8_t id_set;
 };
 
+int empty_queue(struct jitter_buffer *q)
+{
+    while (q->size > 0) {
+        rtp_free_msg(NULL, q->queue[q->front]);
+        q->front++;
+        
+        if (q->front == q->capacity)
+            q->front = 0;
+        
+        q->size--;
+    }
+    
+    q->id_set = 0;
+    q->queue_ready = 0;
+    return 0;
+}
 
 struct jitter_buffer *create_queue(int capacity)
 {
     struct jitter_buffer *q;
-    q = (struct jitter_buffer *)calloc(sizeof(struct jitter_buffer), 1);
-    q->queue = (RTPMessage **)calloc(sizeof(RTPMessage *), capacity);
-    int i = 0;
-
-    for (i = 0; i < capacity; ++i) {
-        q->queue[i] = NULL;
-    }
-
+    q = calloc(sizeof(struct jitter_buffer), 1);
+    q->queue = calloc(sizeof(RTPMessage *), capacity);
     q->size = 0;
     q->capacity = capacity;
     q->front = 0;
@@ -81,7 +91,7 @@ uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a, uint3
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
 RTPMessage *dequeue(struct jitter_buffer *q, int *success)
 {
-    if (q->size == 0 || q->queue_ready == 0) {
+    if (q->size == 0 || q->queue_ready == 0) { /* Empty queue */
         q->queue_ready = 0;
         *success = 0;
         return NULL;
@@ -103,13 +113,13 @@ RTPMessage *dequeue(struct jitter_buffer *q, int *success)
             q->current_ts = next_ts;
         } else {
             if (sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
-                printf("nextid: %d current: %d\n", next_id, q->current_id);
+                /*printf("nextid: %d current: %d\n", next_id, q->current_id);*/
                 q->current_id = (q->current_id + 1) % MAX_SEQU_NUM;
                 *success = 2; /* tell the decoder the packet is lost */
                 return NULL;
             } else {
                 /* packet too old */
-                printf("packet too old\n");
+                /*printf("packet too old\n");*/
                 *success = 0;
                 return NULL;
             }
@@ -128,27 +138,12 @@ RTPMessage *dequeue(struct jitter_buffer *q, int *success)
     return q->queue[front];
 }
 
-int empty_queue(struct jitter_buffer *q)
-{
-    while (q->size > 0) {
-        q->size--;
-        rtp_free_msg(NULL, q->queue[q->front]);
-        q->front++;
-
-        if (q->front == q->capacity)
-            q->front = 0;
-    }
-
-    q->id_set = 0;
-    q->queue_ready = 0;
-    return 0;
-}
 
 int queue(struct jitter_buffer *q, RTPMessage *pk)
 {
-    if (q->size == q->capacity) {
-        printf("buffer full, emptying buffer...\n");
+    if (q->size == q->capacity) { /* Full, empty queue */
         empty_queue(q);
+        /*rtp_free_msg(NULL, pk);*/
         return 0;
     }
 
@@ -180,7 +175,7 @@ int queue(struct jitter_buffer *q, RTPMessage *pk)
             temp = q->queue[a];
             q->queue[a] = q->queue[b];
             q->queue[b] = temp;
-            printf("had to swap\n");
+            /*printf("had to swap\n");*/
         } else {
             break;
         }
@@ -229,7 +224,7 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     int res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
     if (res) {
-        printf("Failed to get config: %s\n", vpx_codec_err_to_string(res));
+        fprintf(stderr, "Failed to get config: %s\n", vpx_codec_err_to_string(res));
         return -1;
     }
 
@@ -266,49 +261,43 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint16_t video_height,
                                  uint32_t video_bitrate )
 {
-    CodecState *_retu = calloc(sizeof(CodecState), 1);
-    assert(_retu);
+    CodecState *retu = calloc(sizeof(CodecState), 1);
+    assert(retu);
 
-    _retu->audio_bitrate = audio_bitrate;
-    _retu->audio_sample_rate = audio_sample_rate;
+    retu->audio_bitrate = audio_bitrate;
+    retu->audio_sample_rate = audio_sample_rate;
 
     /* Encoders */
-    if (!video_width || !video_height) {
-        video_width = 320;
-        video_height = 240;
+    if (!video_width || !video_height) { /* Disable video */
+        /*video_width = 320;
+        video_height = 240; */
+    }
+    else {
+        retu->supported_actions |= ( 0 == init_video_encoder(retu, video_width, video_height, video_bitrate) ) ? v_encoding : 0;
+        retu->supported_actions |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
     }
 
-    if ( 0 == init_video_encoder(_retu, video_width, video_height, video_bitrate) )
-        printf("Video encoder initialized!\n");
+    retu->supported_actions |= ( 0 == init_audio_encoder(retu, audio_channels) ) ? a_encoding : 0;
+    retu->supported_actions |= ( 0 == init_audio_decoder(retu, audio_channels) ) ? a_decoding : 0;
 
-    if ( 0 == init_audio_encoder(_retu, audio_channels) )
-        printf("Audio encoder initialized!\n");
-
-
-    /* Decoders */
-    if ( 0 == init_video_decoder(_retu) )
-        printf("Video decoder initialized!\n");
-
-    if ( 0 == init_audio_decoder(_retu, audio_channels) )
-        printf("Audio decoder initialized!\n");
-
-
-    return _retu;
+    return retu;
 }
 
 void codec_terminate_session ( CodecState *cs )
 {
-    if ( cs->audio_encoder ) {
+    if ( cs->audio_encoder ) 
         opus_encoder_destroy(cs->audio_encoder);
-        printf("Terminated encoder!\n");
-    }
-
-    if ( cs->audio_decoder ) {
+    
+    if ( cs->audio_decoder ) 
         opus_decoder_destroy(cs->audio_decoder);
-        printf("Terminated decoder!\n");
-    }
+    
 
-    /* TODO: Terminate video */
-    vpx_codec_destroy(&cs->v_decoder);
-    vpx_codec_destroy(&cs->v_encoder);
+    /* TODO: Terminate video 
+     *           Do what???
+     */
+    if ( cs->supported_actions & v_decoding )
+        vpx_codec_destroy(&cs->v_decoder);
+    
+    if ( cs->supported_actions & v_encoding )
+        vpx_codec_destroy(&cs->v_encoder);
 }

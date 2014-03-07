@@ -262,17 +262,8 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
         return NULL;
     }
 
-    if ( _cc > 0 ) {
-        _retu->csrc = calloc (_cc, sizeof (uint32_t));
-        assert(_retu->csrc);
-
-    } else { /* But this should not happen ever */
-        /* Deallocate */
-        free(_retu);
-        return NULL;
-    }
-
-
+    memset(_retu->csrc, 0, 16);
+    
     _retu->marker_payloadt = *_it;
     ++_it;
     _retu->length = _length;
@@ -362,13 +353,11 @@ uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
     _it += 4;
     U32_to_bytes( _it, header->ssrc);
 
-    if ( header->csrc ) {
-        uint8_t _x;
+    uint8_t _x;
 
-        for ( _x = 0; _x < _cc; _x++ ) {
-            _it += 4;
-            U32_to_bytes( _it, header->csrc[_x]);
-        }
+    for ( _x = 0; _x < _cc; _x++ ) {
+        _it += 4;
+        U32_to_bytes( _it, header->csrc[_x]);
     }
 
     return _it + 4;
@@ -424,19 +413,11 @@ RTPHeader *build_header ( RTPSession *session )
     _retu->timestamp = ((uint32_t)(current_time() / 1000)); /* micro to milli */
     _retu->ssrc = session->ssrc;
 
-    if ( session->cc > 0 ) {
-        _retu->csrc = calloc(session->cc, sizeof (uint32_t));
-        assert(_retu->csrc);
+    int i;
 
-        int i;
-
-        for ( i = 0; i < session->cc; i++ ) {
-            _retu->csrc[i] = session->csrc[i];
-        }
-    } else {
-        _retu->csrc = NULL;
-    }
-
+    for ( i = 0; i < session->cc; i++ ) 
+        _retu->csrc[i] = session->csrc[i];
+        
     _retu->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
 
     return _retu;
@@ -480,9 +461,7 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
             _retu->length -= ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
             _from_pos += ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
         } else { /* Error */
-            free (_retu->ext_header);
-            free (_retu->header);
-            free (_retu);
+            rtp_free_msg(NULL, _retu);
             return NULL;
         }
     } else {
@@ -545,7 +524,7 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
             _decrypted_length = decrypt_data_symmetric(
                                     (uint8_t *)_session->decrypt_key, _session->nonce_cycle, data + 3, length - 3, _plain );
 
-            if ( !_decrypted_length ) return -1; /* This packet is not encrypted properly */
+            if ( _decrypted_length == -1 ) return -1; /* This packet is not encrypted properly */
 
             /* Otherwise, if decryption is ok with new cycle, set new cycle
              */
@@ -554,7 +533,7 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
             _decrypted_length = decrypt_data_symmetric(
                                     (uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
 
-            if ( !_decrypted_length ) return -1; /* This is just an error */
+            if ( _decrypted_length == -1 ) return -1; /* This is just an error */
 
             /* A new cycle setting. */
             memcpy(_session->nonce_cycle, _session->decrypt_nonce, crypto_secretbox_NONCEBYTES);
@@ -801,16 +780,11 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
 void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
 {
     if ( !session ) {
-        free ( msg->header->csrc );
-
         if ( msg->ext_header ) {
             free ( msg->ext_header->table );
             free ( msg->ext_header );
         }
     } else {
-        if ( session->csrc != msg->header->csrc )
-            free ( msg->header->csrc );
-
         if ( msg->ext_header && session->ext_header != msg->ext_header ) {
             free ( msg->ext_header->table );
             free ( msg->ext_header );
@@ -917,15 +891,21 @@ int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
 {
     if ( !session )
         return -1;
-
+        
     custom_user_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
-
+    
+    rtp_release_session_recv(session);
+    
+    pthread_mutex_lock(&session->mutex);
+    
     free ( session->ext_header );
     free ( session->csrc );
     free ( session->decrypt_nonce );
     free ( session->encrypt_nonce );
     free ( session->nonce_cycle );
 
+    pthread_mutex_unlock(&session->mutex);
+    
     pthread_mutex_destroy(&session->mutex);
 
     /* And finally free session */
