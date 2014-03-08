@@ -662,37 +662,43 @@ void tox_kill(Tox *tox);
 void tox_do(Tox *tox);
 
 /*
- * tox_wait_prepare(): function should be called under lock
+ * tox_wait_data_size():
+ *
+ *  returns a size of data buffer to allocate. the size is constant.
+ *
+ * tox_wait_prepare(): function should be called under lock every time we want to call tox_wait_execute()
  * Prepares the data required to call tox_wait_execute() asynchronously
  *
- * data[] is reserved and kept by the caller
- * *lenptr is in/out: in = reserved data[], out = required data[]
+ * data[] should be of at least tox_wait_data_size() size and it's reserved and kept by the caller
+ * Use that data[] to call tox_wait_execute()
  *
  *  returns  1 on success
- *  returns  0 if *lenptr is insufficient
- *  returns -1 if lenptr is NULL
+ *  returns  0 if data was NULL
  *
  *
  * tox_wait_execute(): function can be called asynchronously
- * Waits for something to happen on the socket for up to milliseconds milliseconds.
- * *** Function MUSTN'T poll. ***
- * The function mustn't modify anything at all, so it can be called completely
- * asynchronously without any worry.
+ * Waits for something to happen on the socket for up to seconds seconds and mircoseconds microseconds.
+ * mircoseconds should be between 0 and 999999.
+ * If you set either or both seconds and microseconds to negatives, it will block indefinetly until there
+ * is an activity.
  *
- *  returns  1 if there is socket activity (i.e. tox_do() should be called)
- *  returns  0 if the timeout was reached
- *  returns -1 if data was NULL or len too short
+ *  returns  2 if there is socket activity (i.e. tox_do() should be called)
+ *  returns  1 if the timeout was reached (tox_do() should be called anyway. it's advised to call it at least
+ *             once per second)
+ *  returns  0 if data was NULL
  *
  *
- * tox_wait_cleanup(): function should be called under lock
+ * tox_wait_cleanup(): function should be called under lock,  every time tox_wait_execute() finishes
  * Stores results from tox_wait_execute().
  *
- * data[]/len shall be the exact same as given to tox_wait_execute()
+ *  returns  1 on success
+ *  returns  0 if data was NULL
  *
  */
-int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr);
-int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds);
-void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len);
+size_t tox_wait_data_size();
+int tox_wait_prepare(Tox *tox, uint8_t *data);
+int tox_wait_execute(uint8_t *data, long seconds, long microseconds);
+int tox_wait_cleanup(Tox *tox, uint8_t *data);
 
 
 /* SAVING AND LOADING FUNCTIONS: */

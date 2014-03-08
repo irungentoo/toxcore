@@ -2342,19 +2342,24 @@ void do_messenger(Messenger *m)
 /*
  * functions to avoid excessive polling
  */
-int wait_prepare_messenger(Messenger *m, uint8_t *data, uint16_t *lenptr)
+size_t wait_data_size()
 {
-    return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data, lenptr);
+    return networking_wait_data_size();
 }
 
-int wait_execute_messenger(Messenger *m, uint8_t *data, uint16_t len, uint16_t milliseconds)
+int wait_prepare_messenger(Messenger *m, uint8_t *data)
 {
-    return networking_wait_execute(data, len, milliseconds);
-};
+    return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data);
+}
 
-void wait_cleanup_messenger(Messenger *m, uint8_t *data, uint16_t len)
+int wait_execute_messenger(uint8_t *data, long seconds, long microseconds)
 {
-    networking_wait_cleanup(m->net, data, len);
+    return networking_wait_execute(data, seconds, microseconds);
+}
+
+int wait_cleanup_messenger(Messenger *m, uint8_t *data)
+{
+    return networking_wait_cleanup(m->net, data);
 }
 
 /* new messenger format for load/save, more robust and forward compatible */
