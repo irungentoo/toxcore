@@ -1662,6 +1662,12 @@ int custom_user_packet_registerhandler(Messenger *m, int friendnumber, uint8_t b
 
 int send_custom_user_packet(Messenger *m, int friendnumber, uint8_t *data, uint32_t length)
 {
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -1;
+
     IP_Port ip_port = get_friend_ipport(m, friendnumber);
 
     if (ip_port.port == 0)
@@ -2026,6 +2032,7 @@ void do_friends(Messenger *m)
                             break;
 
                         group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
+                        /* This is just there to speedup joining. */
                         chat_bootstrap(m->chats[groupnum], get_friend_ipport(m, i), data + crypto_box_PUBLICKEYBYTES);
                         break;
                     }

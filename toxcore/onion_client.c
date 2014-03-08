@@ -528,6 +528,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
             continue;
 
         ++num_nodes;
+
         if (list_nodes[i].is_stored) {
             if (random_path(onion_c->dht, &onion_c->friends_list[friend_num].onion_paths, ~0, &path[num_good]) == -1)
                 continue;
