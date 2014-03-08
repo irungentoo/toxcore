@@ -283,6 +283,7 @@ int32_t getfriend_id(Messenger *m, uint8_t *client_id);
  *  return -1 if failure
  */
 int getclient_id(Messenger *m, int32_t friendnumber, uint8_t *client_id);
+int get_address_of_friend(Messenger *m, int32_t friendnumber, uint8_t *friend_address);
 
 /* Remove a friend.
  *
@@ -305,6 +306,7 @@ int m_get_friend_connectionstatus(Messenger *m, int32_t friendnumber);
  *  return 0 if friend doesn't exist.
  */
 int m_friend_exists(Messenger *m, int32_t friendnumber);
+int m_friend_was_seen(Messenger *m, int32_t friendnumber);
 
 /* Send a text chat message to an online friend.
  *

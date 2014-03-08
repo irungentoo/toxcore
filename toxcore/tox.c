@@ -98,6 +98,12 @@ int tox_get_client_id(Tox *tox, int32_t friendnumber, uint8_t *client_id)
     return getclient_id(m, friendnumber, client_id);
 }
 
+int tox_get_friend_address(Tox *tox, int32_t friendnumber, uint8_t *friend_address)
+{
+    Messenger *m = tox;
+    return get_address_of_friend(m, friendnumber, friend_address);
+}
+
 /* Remove a friend. */
 int tox_del_friend(Tox *tox, int32_t friendnumber)
 {
@@ -126,6 +132,11 @@ int tox_friend_exists(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
     return m_friend_exists(m, friendnumber);
+}
+
+int tox_friend_seen(Tox *tox, int32_t friendnumber) {
+    Messenger *m = tox;
+    return m_friend_was_seen(m, friendnumber);
 }
 
 /* Send a text chat message to an online friend.

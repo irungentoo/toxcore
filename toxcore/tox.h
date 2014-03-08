@@ -145,6 +145,14 @@ int32_t tox_get_friend_number(Tox *tox, uint8_t *client_id);
  */
 int tox_get_client_id(Tox *tox, int32_t friendnumber, uint8_t *client_id);
 
+/* Copies the known friend address with nospam and checksum into friend_address.
+ * Make sure that client_id is of size TOX_FRIEND_ADDRESS_SIZE.
+ * Note: If the friend was not added by tox_addfriend, nospam will be 0.
+ *  return 0 if success.
+ *  return -1 if failure.
+ */
+int tox_get_friend_address(Tox *tox, int32_t friendnumber, uint8_t *friend_address);
+
 /* Remove a friend.
  *
  *  return 0 if success.
@@ -167,6 +175,13 @@ int tox_get_friend_connection_status(Tox *tox, int32_t friendnumber);
  */
 int tox_friend_exists(Tox *tox, int32_t friendnumber);
 
+/* Checks if the friend has been online before.
+ *
+ *  return 1 if friend has been online.
+ *  return 0 if friend has not or doesn't exist.
+ */
+int tox_friend_seen(Tox *tox, int32_t friendnumber);
+    
 /* Send a text chat message to an online friend.
  *
  *  return the message id if packet was successfully put into the send queue.
