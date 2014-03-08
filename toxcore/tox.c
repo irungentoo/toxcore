@@ -767,22 +767,27 @@ void tox_do(Tox *tox)
 /*
  * functions to avoid excessive polling
  */
-int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr)
+
+size_t tox_wait_data_size()
 {
-    Messenger *m = tox;
-    return wait_prepare_messenger(m, data, lenptr);
+    return wait_data_size();
 }
 
-int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds)
+int tox_wait_prepare(Tox *tox, uint8_t *data)
 {
     Messenger *m = tox;
-    return wait_execute_messenger(m, data, len, milliseconds);
+    return wait_prepare_messenger(m, data);
 }
 
-void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len)
+int tox_wait_execute(uint8_t *data, long seconds, long microseconds)
+{
+    return wait_execute_messenger(data, seconds, microseconds);
+}
+
+int tox_wait_cleanup(Tox *tox, uint8_t *data)
 {
     Messenger *m = tox;
-    wait_cleanup_messenger(m, data, len);
+    return wait_cleanup_messenger(m, data);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */
