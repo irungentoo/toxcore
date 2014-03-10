@@ -126,7 +126,7 @@ typedef struct av_session_s {
     AVCodec *webcam_decoder;
 #endif
 } av_session_t;
-
+av_session_t *_phone;
 
 void av_allocate_friend(av_session_t *_phone, int _id, int _active)
 {
@@ -858,7 +858,7 @@ int phone_startmedia_loop ( ToxAv *arg )
 
     /* Only checks for last peer */
     if ( toxav_get_peer_transmission_type(arg, 0) == TypeVideo &&
-            0 > event.rise(encode_video_thread, toxav_get_agent_handler(arg)) ) {
+            0 > event.rise(encode_video_thread, _phone) ) {
         INFO("Error while starting encode_video_thread()");
         return -1;
     }
@@ -873,7 +873,7 @@ int phone_startmedia_loop ( ToxAv *arg )
 
     /* Only checks for last peer */
     if ( toxav_get_peer_transmission_type(arg, 0) == TypeVideo &&
-            0 > event.rise(decode_video_thread, toxav_get_agent_handler(arg)) ) {
+        0 > event.rise(decode_video_thread, _phone) ) {
         INFO("Error while starting decode_video_thread()");
         return -1;
     }
@@ -886,7 +886,7 @@ int phone_startmedia_loop ( ToxAv *arg )
 
     /* One threaded audio */
     
-    if ( 0 > event.rise(one_threaded_audio, toxav_get_agent_handler(arg)) ) {
+    if ( 0 > event.rise(one_threaded_audio, _phone) ) {
         INFO ("Shit-head");
         return -1;
     }
@@ -945,8 +945,6 @@ void *callback_recv_starting ( void *_arg )
 }
 void *callback_recv_ending ( void *_arg )
 {
-    av_session_t *_phone = toxav_get_agent_handler(_arg);
-
     _phone->running_encaud = 0;
     _phone->running_decaud = 0;
     _phone->running_encvid = 0;
@@ -995,8 +993,6 @@ void *callback_call_rejected ( void *_arg )
 }
 void *callback_call_ended ( void *_arg )
 {
-    av_session_t *_phone = toxav_get_agent_handler(_arg);
-
     _phone->running_encaud = 0;
     _phone->running_decaud = 0;
     _phone->running_encvid = 0;
@@ -1137,22 +1133,22 @@ failed_init_ffmpeg: ;
     fraddr_to_str( _byte_address, _retu->_my_public_id );
 
 
-    _retu->av = toxav_new(_retu->_messenger, _retu, width, height);
+    _retu->av = toxav_new(_retu->_messenger, width, height);
 
     /* ------------------ */
 
-    toxav_register_callstate_callback(callback_call_started, av_OnStart);
-    toxav_register_callstate_callback(callback_call_canceled, av_OnCancel);
-    toxav_register_callstate_callback(callback_call_rejected, av_OnReject);
-    toxav_register_callstate_callback(callback_call_ended, av_OnEnd);
-    toxav_register_callstate_callback(callback_recv_invite, av_OnInvite);
+    toxav_register_callstate_callback(callback_call_started, av_OnStart, _retu->av);
+    toxav_register_callstate_callback(callback_call_canceled, av_OnCancel, _retu->av);
+    toxav_register_callstate_callback(callback_call_rejected, av_OnReject, _retu->av);
+    toxav_register_callstate_callback(callback_call_ended, av_OnEnd, _retu->av);
+    toxav_register_callstate_callback(callback_recv_invite, av_OnInvite, _retu->av);
 
-    toxav_register_callstate_callback(callback_recv_ringing, av_OnRinging);
-    toxav_register_callstate_callback(callback_recv_starting, av_OnStarting);
-    toxav_register_callstate_callback(callback_recv_ending, av_OnEnding);
+    toxav_register_callstate_callback(callback_recv_ringing, av_OnRinging, _retu->av);
+    toxav_register_callstate_callback(callback_recv_starting, av_OnStarting, _retu->av);
+    toxav_register_callstate_callback(callback_recv_ending, av_OnEnding, _retu->av);
 
-    toxav_register_callstate_callback(callback_recv_error, av_OnError);
-    toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout);
+    toxav_register_callstate_callback(callback_recv_error, av_OnError, _retu->av);
+    toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout, _retu->av);
 
     /* ------------------ */
 
@@ -1426,7 +1422,7 @@ int main ( int argc, char *argv [] )
         return 1;
     }
 
-    av_session_t *_phone = av_init_session();
+    _phone = av_init_session();
 
     assert ( _phone );
     

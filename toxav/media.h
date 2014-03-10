@@ -38,14 +38,14 @@
 /* Audio encoding/decoding */
 #include <opus/opus.h>
 
-enum _actions
+typedef enum _Capabilities
 {
-    no_actions,
+    none,
     a_encoding = 1 << 0,
     a_decoding = 1 << 1,
     v_encoding = 1 << 2,
     v_decoding = 1 << 3
-};
+} Capabilities;
 
 typedef struct _CodecState {
 
@@ -64,7 +64,7 @@ typedef struct _CodecState {
     /* audio decoding */
     OpusDecoder *audio_decoder;
 
-    uint64_t supported_actions; /* Encoding decoding etc */
+    uint64_t capabilities; /* supports*/
     
 } CodecState;
 

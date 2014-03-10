@@ -273,12 +273,12 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
         video_height = 240; */
     }
     else {
-        retu->supported_actions |= ( 0 == init_video_encoder(retu, video_width, video_height, video_bitrate) ) ? v_encoding : 0;
-        retu->supported_actions |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
+        retu->capabilities |= ( 0 == init_video_encoder(retu, video_width, video_height, video_bitrate) ) ? v_encoding : 0;
+        retu->capabilities |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
     }
 
-    retu->supported_actions |= ( 0 == init_audio_encoder(retu, audio_channels) ) ? a_encoding : 0;
-    retu->supported_actions |= ( 0 == init_audio_decoder(retu, audio_channels) ) ? a_decoding : 0;
+    retu->capabilities |= ( 0 == init_audio_encoder(retu, audio_channels) ) ? a_encoding : 0;
+    retu->capabilities |= ( 0 == init_audio_decoder(retu, audio_channels) ) ? a_decoding : 0;
 
     return retu;
 }
@@ -295,9 +295,9 @@ void codec_terminate_session ( CodecState *cs )
     /* TODO: Terminate video 
      *           Do what???
      */
-    if ( cs->supported_actions & v_decoding )
+    if ( cs->capabilities & v_decoding )
         vpx_codec_destroy(&cs->v_decoder);
     
-    if ( cs->supported_actions & v_encoding )
+    if ( cs->capabilities & v_encoding )
         vpx_codec_destroy(&cs->v_encoder);
 }
