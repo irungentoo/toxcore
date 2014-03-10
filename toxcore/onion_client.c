@@ -291,6 +291,22 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, uint8_t *publ
     return 0;
 }
 
+static int good_to_ping(Last_Pinged *last_pinged, uint8_t *last_pinged_index, uint8_t *client_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < MAX_STORED_PINGED_NODES; ++i) {
+        if (!is_timeout(last_pinged[i].timestamp, MIN_NODE_PING_TIME))
+            if (memcmp(last_pinged[i].client_id, client_id, crypto_box_PUBLICKEYBYTES) == 0)
+                return 0;
+    }
+
+    memcpy(last_pinged[*last_pinged_index % MAX_STORED_PINGED_NODES].client_id, client_id, crypto_box_PUBLICKEYBYTES);
+    last_pinged[*last_pinged_index % MAX_STORED_PINGED_NODES].timestamp = unix_time();
+    ++*last_pinged_index;
+    return 1;
+}
+
 static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *nodes, uint16_t num_nodes,
                              IP_Port source)
 {
@@ -304,14 +320,21 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
     uint8_t *reference_id = NULL;
     uint32_t *ping_nodes_sent_second = NULL;
 
+    Last_Pinged *last_pinged = NULL;
+    uint8_t *last_pinged_index = NULL;
+
     if (num == 0) {
         list_nodes = onion_c->clients_announce_list;
         reference_id = onion_c->dht->c->self_public_key;
         ping_nodes_sent_second = &onion_c->ping_nodes_sent_second;
+        last_pinged = onion_c->last_pinged;
+        last_pinged_index = &onion_c->last_pinged_index;
     } else {
         list_nodes = onion_c->friends_list[num - 1].clients_list;
         reference_id = onion_c->friends_list[num - 1].real_client_id;
         ping_nodes_sent_second = &onion_c->friends_list[num - 1].ping_nodes_sent_second;
+        last_pinged = onion_c->friends_list[num - 1].last_pinged;
+        last_pinged_index = &onion_c->friends_list[num - 1].last_pinged_index;
     }
 
     uint32_t i, j;
@@ -337,7 +360,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
                 }
             }
 
-            if (j == MAX_ONION_CLIENTS) {
+            if (j == MAX_ONION_CLIENTS && good_to_ping(last_pinged, last_pinged_index, nodes[i].client_id)) {
                 if (client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].client_id, NULL, ~0) == 0)
                     ++*ping_nodes_sent_second;
             }
@@ -888,7 +911,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
     onion_c->Onion_Data_Handlers[byte].object = object;
 }
 
-#define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 7
+#define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 10
 #define ANNOUNCE_INTERVAL_ANNOUNCED ONION_NODE_PING_INTERVAL
 
 static void do_announce(Onion_Client *onion_c)

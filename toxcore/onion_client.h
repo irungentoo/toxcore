@@ -47,6 +47,9 @@
    second per peer. */
 #define MAX_PING_NODES_SECOND_PEER 5
 
+#define MAX_STORED_PINGED_NODES 9
+#define MIN_NODE_PING_TIME 10
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -66,6 +69,11 @@ typedef struct {
     uint64_t last_path_success[NUMBER_ONION_PATHS];
     uint64_t path_creation_time[NUMBER_ONION_PATHS];
 } Onion_Client_Paths;
+
+typedef struct {
+    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint64_t    timestamp;
+} Last_Pinged;
 
 typedef struct {
     uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
@@ -88,6 +96,9 @@ typedef struct {
 
     Onion_Client_Paths onion_paths;
     uint32_t ping_nodes_sent_second;
+
+    Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
+    uint8_t last_pinged_index;
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
@@ -109,6 +120,9 @@ typedef struct {
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
 
     uint32_t ping_nodes_sent_second;
+
+    Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
+    uint8_t last_pinged_index;
     struct {
         oniondata_handler_callback function;
         void *object;
