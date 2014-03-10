@@ -30,6 +30,7 @@
 
 void unix_time_update();
 uint64_t unix_time();
+struct tm *get_timedate();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 

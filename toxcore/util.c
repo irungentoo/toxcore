@@ -47,6 +47,13 @@ uint64_t unix_time()
     return unix_time_value;
 }
 
+struct tm *get_timedate()
+{
+    uint64_t t = unix_time();
+    struct tm *tm = localtime(&t);
+    return tm;
+}
+
 int is_timeout(uint64_t timestamp, uint64_t timeout)
 {
     return timestamp + timeout <= unix_time_value;

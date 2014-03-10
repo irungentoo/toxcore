@@ -25,6 +25,7 @@
 #define TOX_H
 
 #include <stdint.h>
+#include <time.h>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #ifndef WINVER
@@ -280,6 +281,11 @@ int tox_get_self_status_message(Tox *tox, uint8_t *buf, uint32_t maxlen);
  */
 TOX_USERSTATUS tox_get_user_status(Tox *tox, int friendnumber);
 TOX_USERSTATUS tox_get_self_user_status(Tox *tox);
+
+/* copies the last time friendnumber was seen online to timedate.
+ * returns 0 on success, -1 if friend has never been seen or on error.
+ */
+int tox_get_last_online(Tox *tox, int friendnumber, struct tm *timedate);
 
 /* Set our typing status for a friend.
  * You are responsible for turning it on or off.

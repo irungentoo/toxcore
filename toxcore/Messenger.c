@@ -276,7 +276,7 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
 
             if (m->numfriends == i)
-                ++ m->numfriends;
+                ++m->numfriends;
 
             return i;
         }
@@ -321,7 +321,7 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
 
             if (m->numfriends == i)
-                ++ m->numfriends;
+                ++m->numfriends;
 
             return i;
         }
@@ -617,6 +617,15 @@ USERSTATUS m_get_self_userstatus(Messenger *m)
     return m->userstatus;
 }
 
+int m_get_last_online(Messenger *m, int friendnumber, struct tm *timedate)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    memcpy(timedate, &m->friendlist[friendnumber].last_online, sizeof(struct tm));
+    return 0;
+}
+
 int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing)
 {
     if (is_typing != 0 && is_typing != 1) {
@@ -688,6 +697,11 @@ static void set_friend_userstatus(Messenger *m, int friendnumber, USERSTATUS sta
 static void set_friend_typing(Messenger *m, int friendnumber, uint8_t is_typing)
 {
     m->friendlist[friendnumber].is_typing = is_typing;
+}
+
+static void set_friend_last_online(Messenger *m, int friendnumber, struct tm *timedate)
+{
+    memcpy(&m->friendlist[friendnumber].last_online, timedate, sizeof(struct tm));
 }
 
 /* Sets whether we send read receipts for friendnumber. */
@@ -1889,6 +1903,7 @@ void do_friends(Messenger *m)
                 switch (packet_id) {
                     case PACKET_ID_PING: {
                         m->friendlist[i].ping_lastrecv = temp_time;
+                        set_friend_last_online(m, i, get_timedate());
                         break;
                     }
 
@@ -2353,6 +2368,7 @@ struct SAVED_FRIEND {
     uint16_t statusmessage_length;
     uint8_t userstatus;
     uint32_t friendrequest_nospam;
+    struct tm last_online;
 };
 
 static uint32_t saved_friendslist_size(Messenger *m)
@@ -2382,6 +2398,7 @@ static uint32_t friends_list_save(Messenger *m, uint8_t *data)
                 memcpy(temp.statusmessage, m->friendlist[i].statusmessage, m->friendlist[i].statusmessage_length);
                 temp.statusmessage_length = htons(m->friendlist[i].statusmessage_length);
                 temp.userstatus = m->friendlist[i].userstatus;
+                memcpy(&temp.last_online, &m->friendlist[i].last_online, sizeof(struct tm));
             }
 
             memcpy(data + num * sizeof(struct SAVED_FRIEND), &temp, sizeof(struct SAVED_FRIEND));
@@ -2409,6 +2426,7 @@ static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
             setfriendname(m, fnum, temp.name, ntohs(temp.name_length));
             set_friend_statusmessage(m, fnum, temp.statusmessage, ntohs(temp.statusmessage_length));
             set_friend_userstatus(m, fnum, temp.userstatus);
+            set_friend_last_online(m, fnum, &temp.last_online);
         } else if (temp.status != 0) {
             /* TODO: This is not a good way to do this. */
             uint8_t address[FRIEND_ADDRESS_SIZE];
