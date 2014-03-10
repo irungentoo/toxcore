@@ -283,7 +283,7 @@ TOX_USERSTATUS tox_get_user_status(Tox *tox, int friendnumber);
 TOX_USERSTATUS tox_get_self_user_status(Tox *tox);
 
 /* copies the last time friendnumber was seen online to timedate.
- * returns 0 on success, -1 if friend has never been seen or on error.
+ * returns 0 on success, -1 on error.
  */
 int tox_get_last_online(Tox *tox, int friendnumber, struct tm *timedate);
 

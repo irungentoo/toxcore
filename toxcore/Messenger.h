@@ -406,7 +406,7 @@ USERSTATUS m_get_userstatus(Messenger *m, int friendnumber);
 USERSTATUS m_get_self_userstatus(Messenger *m);
 
 /* copies the last time friendnumber was seen online to timedate.
- * returns 0 on success, -1 if friend has never been seen or on error.
+ * returns 0 on success, -1 on error.
  */
 int m_get_last_online(Messenger *m, int friendnumber, struct tm *timedate);
 
