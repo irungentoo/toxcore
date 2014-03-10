@@ -86,7 +86,6 @@ typedef enum {
 
 /**
  * @brief Error indicators.
- *
  */
 typedef enum {
     ErrorNone = 0,
@@ -105,6 +104,17 @@ typedef enum {
 
 
 /**
+ * @brief Locally supported capabilities.
+ */
+typedef enum {
+    None,
+    AudioEncoding = 1 << 0,
+    AudioDecoding = 1 << 1,
+    VideoEncoding = 1 << 2,
+    VideoDecoding = 1 << 3
+} ToxAvCapabilities;
+
+/**
  * @brief Start new A/V session. There can only be one session at the time. If you register more
  *        it will result in undefined behaviour.
  *
@@ -115,7 +125,7 @@ typedef enum {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox *messenger, void *userdata, uint16_t video_width, uint16_t video_height);
+ToxAv *toxav_new(Tox *messenger, uint16_t video_width, uint16_t video_height);
 
 /**
  * @brief Remove A/V session.
@@ -132,7 +142,7 @@ void toxav_kill(ToxAv *av);
  * @param id One of the ToxAvCallbackID values
  * @return void
  */
-void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID id);
+void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID id, void *userdata);
 
 /**
  * @brief Call user. Use its friend_id.
@@ -292,52 +302,14 @@ int toxav_get_peer_transmission_type ( ToxAv *av, int peer );
 int toxav_get_peer_id ( ToxAv* av, int peer );
 
 /**
- * @brief Get reference to an object that is handling av session.
- *
- * @param av Handler.
- * @return void*
- */
-void *toxav_get_agent_handler ( ToxAv *av );
-
-/**
- * @brief Is video encoding supported
+ * @brief Is certain capability supported
  * 
  * @param av Handler
  * @return int
  * @retval 1 Yes.
  * @retval 0 No.
  */
-int toxav_video_encoding ( ToxAv* av );
-
-/**
- * @brief Is video decoding supported
- * 
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
- */
-int toxav_video_decoding ( ToxAv* av );
-
-/**
- * @brief Is audio encoding supported
- * 
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
- */
-int toxav_audio_encoding ( ToxAv* av );
-
-/**
- * @brief Is audio decoding supported
- * 
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
- */
-int toxav_audio_decoding ( ToxAv* av );
+int toxav_capability_supported ( ToxAv* av, ToxAvCapabilities capability );
 
 /**
  * @brief Get messenger handle

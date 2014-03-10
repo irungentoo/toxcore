@@ -143,7 +143,7 @@ typedef enum {
  * @param id The id.
  * @return void
  */
-void msi_register_callback(MSICallback callback, MSICallbackID id);
+void msi_register_callback(MSICallback callback, MSICallbackID id, void* userdata);
 
 
 /**
