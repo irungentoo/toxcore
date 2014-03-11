@@ -890,7 +890,7 @@ int phone_startmedia_loop ( ToxAv *arg )
         INFO ("Shit-head");
         return -1;
     }
-    
+     
     return 0;
 }
 
@@ -912,7 +912,7 @@ int phone_startmedia_loop ( ToxAv *arg )
 
 /* Some example callbacks */
 
-void *callback_recv_invite ( void *_arg )
+void callback_recv_invite ( void *_arg )
 {
     assert(_arg);
 
@@ -926,14 +926,12 @@ void *callback_recv_invite ( void *_arg )
             break;
     }
 
-    pthread_exit(NULL);
 }
-void *callback_recv_ringing ( void *_arg )
+void callback_recv_ringing ( void *_arg )
 {
     INFO ( "Ringing!" );
-    pthread_exit(NULL);
 }
-void *callback_recv_starting ( void *_arg )
+void callback_recv_starting ( void *_arg )
 {
     if ( 0 != phone_startmedia_loop(_arg) ) {
         INFO("Starting call failed!");
@@ -941,9 +939,8 @@ void *callback_recv_starting ( void *_arg )
         INFO ("Call started! ( press h to hangup )");
     }
 
-    pthread_exit(NULL);
 }
-void *callback_recv_ending ( void *_arg )
+void callback_recv_ending ( void *_arg )
 {
     _phone->running_encaud = 0;
     _phone->running_decaud = 0;
@@ -960,18 +957,16 @@ void *callback_recv_ending ( void *_arg )
         usleep(10000000);
 
     INFO ( "Call ended!" );
-    pthread_exit(NULL);
 }
 
-void *callback_recv_error ( void *_arg )
+void callback_recv_error ( void *_arg )
 {
     /*MSISession* _session = _arg;
 
     INFO( "Error: %s", _session->last_error_str ); */
-    pthread_exit(NULL);
 }
 
-void *callback_call_started ( void *_arg )
+void callback_call_started ( void *_arg )
 {
     if ( 0 != phone_startmedia_loop(_arg) ) {
         INFO("Starting call failed!");
@@ -979,19 +974,16 @@ void *callback_call_started ( void *_arg )
         INFO ("Call started! ( press h to hangup )");
     }
 
-    pthread_exit(NULL);
 }
-void *callback_call_canceled ( void *_arg )
+void callback_call_canceled ( void *_arg )
 {
     INFO ( "Call canceled!" );
-    pthread_exit(NULL);
 }
-void *callback_call_rejected ( void *_arg )
+void callback_call_rejected ( void *_arg )
 {
     INFO ( "Call rejected!" );
-    pthread_exit(NULL);
 }
-void *callback_call_ended ( void *_arg )
+void callback_call_ended ( void *_arg )
 {
     _phone->running_encaud = 0;
     _phone->running_decaud = 0;
@@ -1011,13 +1003,11 @@ void *callback_call_ended ( void *_arg )
     
     toxav_kill_transmission(_phone->av);
     INFO ( "Call ended!" );
-    pthread_exit(NULL);
 }
 
-void *callback_requ_timeout ( void *_arg )
+void callback_requ_timeout ( void *_arg )
 {
     INFO( "No answer! " );
-    pthread_exit(NULL);
 }
 
 av_session_t *av_init_session()

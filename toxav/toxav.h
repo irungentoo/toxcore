@@ -29,7 +29,7 @@
 /* vpx_image_t */
 #include <vpx/vpx_image.h>
 
-typedef void *( *ToxAVCallback ) ( void *arg );
+typedef void ( *ToxAVCallback ) ( void *arg );
 typedef struct _ToxAv ToxAv;
 
 #ifndef __TOX_DEFINED__

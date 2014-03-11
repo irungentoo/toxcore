@@ -33,7 +33,7 @@
 #define CALL_ID_LEN 12
 
 
-typedef void *( *MSICallback ) ( void *arg );
+typedef void ( *MSICallback ) ( void *arg );
 
 
 /**

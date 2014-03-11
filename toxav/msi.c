@@ -36,6 +36,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define inline__ inline __attribute__((always_inline))
+
 #define same(x, y) strcmp((const char*) x, (const char*) y) == 0
 
 #define MSI_MAXMSG_SIZE 1024
@@ -117,6 +119,12 @@ static struct _Callbacks {
     void* data;
 } callbacks[10] = {0};
 
+inline__ void invoke_callback(MSICallbackID id)
+{
+    /*if ( callbacks[id].function ) event.rise ( callbacks[id].function, callbacks[id].data );*/
+    if ( callbacks[id].function ) callbacks[id].function ( callbacks[id].data );
+}
+
 /*static MSICallback callbacks[10] = {0};*/
 
 
@@ -153,7 +161,7 @@ typedef enum {
  * @param request The request.
  * @return const uint8_t* The string
  */
-static inline const uint8_t *stringify_request ( MSIRequest request )
+static inline__ const uint8_t *stringify_request ( MSIRequest request )
 {
     static const uint8_t *strings[] = {
         ( uint8_t * ) "INVITE",
@@ -182,7 +190,7 @@ typedef enum {
  * @param response The response.
  * @return const uint8_t* The string
  */
-static inline const uint8_t *stringify_response ( MSIResponse response )
+static inline__ const uint8_t *stringify_response ( MSIResponse response )
 {
     static const uint8_t *strings[] = {
         ( uint8_t * ) "ringing",
@@ -550,7 +558,7 @@ typedef enum {
  * @param error_code The code.
  * @return const uint8_t* The string.
  */
-static inline const uint8_t *stringify_error ( MSICallError error_code )
+static inline__ const uint8_t *stringify_error ( MSICallError error_code )
 {
     static const uint8_t *strings[] = {
         ( uint8_t * ) "",
@@ -572,7 +580,7 @@ static inline const uint8_t *stringify_error ( MSICallError error_code )
  * @param error_code The code.
  * @return const uint8_t* The string.
  */
-static inline const uint8_t *stringify_error_code ( MSICallError error_code )
+static inline__ const uint8_t *stringify_error_code ( MSICallError error_code )
 {
     static const uint8_t *strings[] = {
         ( uint8_t * ) "",
@@ -679,7 +687,7 @@ int handle_error ( MSISession *session, MSICallError errid, uint32_t to )
     session->last_error_id = errid;
     session->last_error_str = stringify_error ( errid );
 
-    if ( callbacks[MSI_OnError].function ) event.rise ( callbacks[MSI_OnError].function, callbacks[MSI_OnError].data );
+    invoke_callback(MSI_OnError);
 
     return 0;
 }
@@ -873,7 +881,7 @@ int handle_recv_invite ( MSISession *session, MSIMessage *msg )
     send_message ( session, _msg_ringing, msg->friend_id );
     free_message ( _msg_ringing );
 
-    if ( callbacks[MSI_OnInvite].function ) event.rise ( callbacks[MSI_OnInvite].function, callbacks[MSI_OnInvite].data );
+    invoke_callback(MSI_OnInvite);
 
     return 1;
 }
@@ -897,7 +905,7 @@ int handle_recv_start ( MSISession *session, MSIMessage *msg )
 
     flush_peer_type ( session, msg, 0 );
 
-    if ( callbacks[MSI_OnStart].function ) event.rise ( callbacks[MSI_OnStart].function, callbacks[MSI_OnStart].data );
+    invoke_callback(MSI_OnStart);
 
     return 1;
 }
@@ -914,7 +922,9 @@ int handle_recv_reject ( MSISession *session, MSIMessage *msg )
     free_message ( _msg_end );
 
     event.timer_release ( session->call->request_timer_id );
-    if ( callbacks[MSI_OnReject].function ) event.rise ( callbacks[MSI_OnReject].function, callbacks[MSI_OnReject].data );
+    
+    invoke_callback(MSI_OnReject);
+    
     session->call->request_timer_id = event.timer_alloc ( handle_timeout, session, m_deftout );
 
     return 1;
@@ -925,12 +935,11 @@ int handle_recv_cancel ( MSISession *session, MSIMessage *msg )
 
     if ( has_call_error ( session, msg ) == 0 )
         return 0;
-
-
+    
+    invoke_callback(MSI_OnCancel);
+    
     terminate_call ( session );
-
-    if ( callbacks[MSI_OnCancel].function ) event.rise ( callbacks[MSI_OnCancel].function, callbacks[MSI_OnCancel].data );
-
+    
     return 1;
 }
 int handle_recv_end ( MSISession *session, MSIMessage *msg )
@@ -945,10 +954,9 @@ int handle_recv_end ( MSISession *session, MSIMessage *msg )
     send_message ( session, _msg_ending, msg->friend_id );
     free_message ( _msg_ending );
 
+    invoke_callback(MSI_OnEnd);
+
     terminate_call ( session );
-
-    if ( callbacks[MSI_OnEnd].function ) event.rise ( callbacks[MSI_OnEnd].function, callbacks[MSI_OnEnd].data );
-
     return 1;
 }
 
@@ -961,7 +969,8 @@ int handle_recv_ringing ( MSISession *session, MSIMessage *msg )
         return 0;
 
     session->call->ringing_timer_id = event.timer_alloc ( handle_timeout, session, session->call->ringing_tout_ms );
-    if ( callbacks[MSI_OnRinging].function ) event.rise ( callbacks[MSI_OnRinging].function, callbacks[MSI_OnRinging].data );
+    
+    invoke_callback(MSI_OnRinging);
 
     return 1;
 }
@@ -1000,7 +1009,8 @@ int handle_recv_starting ( MSISession *session, MSIMessage *msg )
 
     flush_peer_type ( session, msg, 0 );
 
-    if ( callbacks[MSI_OnStarting].function ) event.rise ( callbacks[MSI_OnStarting].function, callbacks[MSI_OnStarting].data );
+    invoke_callback(MSI_OnStarting);
+    
     event.timer_release ( session->call->ringing_timer_id );
 
     return 1;
@@ -1015,8 +1025,7 @@ int handle_recv_ending ( MSISession *session, MSIMessage *msg )
     /* Stop timer */
     event.timer_release ( session->call->request_timer_id );
     
-    /* Call callback */
-    if ( callbacks[MSI_OnEnding].function ) callbacks[MSI_OnEnding].function (callbacks[MSI_OnEnding].data);
+    invoke_callback(MSI_OnEnding);
     
     /* Terminate call */
     terminate_call ( session );
@@ -1034,10 +1043,9 @@ int handle_recv_error ( MSISession *session, MSIMessage *msg )
         session->last_error_str = stringify_error ( session->last_error_id );
     }
 
+    invoke_callback(MSI_OnEnding);
+    
     terminate_call ( session );
-
-    if ( callbacks[MSI_OnEnding].function ) event.rise ( callbacks[MSI_OnEnding].function, callbacks[MSI_OnEnding].data );
-
     return 1;
 }
 
