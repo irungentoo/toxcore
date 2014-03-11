@@ -197,7 +197,7 @@ int init_video_decoder(CodecState *cs)
 {
     if (vpx_codec_dec_init_ver(&cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0,
                                VPX_DECODER_ABI_VERSION) != VPX_CODEC_OK) {
-        fprintf(stderr, "Init video_decoder failed!\n");
+        /*fprintf(stderr, "Init video_decoder failed!\n");*/
         return -1;
     }
 
@@ -210,7 +210,7 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
     cs->audio_decoder = opus_decoder_create(cs->audio_sample_rate, audio_channels, &rc );
 
     if ( rc != OPUS_OK ) {
-        fprintf(stderr, "Error while starting audio decoder!\n");
+        /*fprintf(stderr, "Error while starting audio decoder!\n");*/
         return -1;
     }
 
@@ -224,7 +224,7 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     int res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
     if (res) {
-        fprintf(stderr, "Failed to get config: %s\n", vpx_codec_err_to_string(res));
+        /*fprintf(stderr, "Failed to get config: %s\n", vpx_codec_err_to_string(res));*/
         return -1;
     }
 
@@ -234,7 +234,7 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
 
     if (vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0,
                                VPX_ENCODER_ABI_VERSION) != VPX_CODEC_OK) {
-        fprintf(stderr, "Failed to initialize encoder\n");
+        /*fprintf(stderr, "Failed to initialize encoder\n");*/
         return -1;
     }
 

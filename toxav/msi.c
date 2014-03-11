@@ -729,7 +729,10 @@ void *handle_timeout ( void *arg )
 {
     /* Send hangup either way */
     MSISession *_session = arg;
-
+    
+    if ( callbacks[MSI_OnRequestTimeout].function ) callbacks[MSI_OnRequestTimeout].function ( callbacks[MSI_OnRequestTimeout].data );
+    if ( callbacks[MSI_OnEnding].function ) callbacks[MSI_OnEnding ].function ( callbacks[MSI_OnEnding].data );
+    
     if ( _session && _session->call ) {
 
         uint32_t *_peers = _session->call->peers;
@@ -743,9 +746,6 @@ void *handle_timeout ( void *arg )
             msi_cancel ( arg, _peers[_it], "Timeout" );
 
     }
-
-    if ( callbacks[MSI_OnRequestTimeout].function ) callbacks[MSI_OnRequestTimeout].function ( callbacks[MSI_OnRequestTimeout].data );
-    if ( callbacks[MSI_OnEnding].function ) callbacks[MSI_OnEnding ].function ( callbacks[MSI_OnEnding].data );
 
     return NULL;
 }
