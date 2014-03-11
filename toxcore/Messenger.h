@@ -155,7 +155,6 @@ typedef struct {
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t ping_lastrecv;
     uint64_t ping_lastsent;
-    struct tm last_online;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
     int invited_groups[MAX_INVITED_GROUPS];
@@ -405,10 +404,10 @@ int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen);
 USERSTATUS m_get_userstatus(Messenger *m, int friendnumber);
 USERSTATUS m_get_self_userstatus(Messenger *m);
 
-/* copies the last time friendnumber was seen online to timedate.
- * returns 0 on success, -1 on error.
+/* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
+ * returns -1 on error.
  */
-int m_get_last_online(Messenger *m, int friendnumber, struct tm *timedate);
+uint64_t m_get_last_online(Messenger *m, int friendnumber);
 
 /* Set our typing status for a friend.
  * You are responsible for turning it on or off.

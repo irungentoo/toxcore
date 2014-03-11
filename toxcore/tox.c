@@ -270,13 +270,13 @@ TOX_USERSTATUS tox_get_self_user_status(Tox *tox)
     return (TOX_USERSTATUS)m_get_self_userstatus(m);
 }
 
-/* copies the last time friendnumber was seen online to timedate.
- * returns 0 on success, -1 on error.
+/* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
+ * returns -1 on error.
  */
-int tox_get_last_online(Tox *tox, int friendnumber, struct tm *timedate)
+uint64_t tox_get_last_online(Tox *tox, int friendnumber)
 {
     Messenger *m = tox;
-    return m_get_last_online(m, friendnumber, timedate);
+    return m_get_last_online(m, friendnumber);
 }
 
 /* Set our typing status for a friend.
