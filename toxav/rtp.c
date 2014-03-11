@@ -751,7 +751,7 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
 
     /*if ( full_length != sendpacket ( messenger->net, *((IP_Port*) &session->dest), _send_data, full_length) ) {*/
     if ( full_length != send_custom_user_packet(messenger, session->dest, _send_data, full_length) ) {
-        printf("Rtp error: %s\n", strerror(errno));
+        fprintf(stderr, "Rtp error: %s\n", strerror(errno));
         return -1;
     }
 

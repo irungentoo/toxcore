@@ -67,7 +67,6 @@ typedef struct _ToxAv {
     struct jitter_buffer *j_buf;
     CodecState *cs;
 
-    void *agent_handler;
 } ToxAv;
 
 /**
@@ -81,7 +80,7 @@ typedef struct _ToxAv {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new( Tox *messenger, void *userdata, uint16_t video_width, uint16_t video_height)
+ToxAv *toxav_new( Tox* messenger, uint16_t video_width, uint16_t video_height)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
 
@@ -100,8 +99,6 @@ ToxAv *toxav_new( Tox *messenger, void *userdata, uint16_t video_width, uint16_t
 
     av->cs = codec_init_session(AUDIO_BITRATE, AUDIO_FRAME_DURATION, AUDIO_SAMPLE_RATE, AUDIO_CHANNELS, video_width,
                                 video_height, VIDEO_BITRATE);
-
-    av->agent_handler = userdata;
 
     return av;
 }
@@ -136,9 +133,9 @@ void toxav_kill ( ToxAv *av )
  * @param id One of the ToxAvCallbackID values
  * @return void
  */
-void toxav_register_callstate_callback ( ToxAVCallback callback, ToxAvCallbackID id )
+void toxav_register_callstate_callback ( ToxAVCallback callback, ToxAvCallbackID id, void* userdata )
 {
-    msi_register_callback((MSICallback)callback, (MSICallbackID) id);
+    msi_register_callback((MSICallback)callback, (MSICallbackID) id, userdata);
 }
 
 /**
@@ -569,68 +566,16 @@ int toxav_get_peer_id ( ToxAv* av, int peer )
 }
 
 /**
- * @brief Get reference to an object that is handling av session.
- *
- * @param av Handler.
- * @return void*
- */
-void *toxav_get_agent_handler ( ToxAv *av )
-{
-    return av->agent_handler;
-}
-
-/**
- * @brief Is video encoding supported
+ * @brief Is certain capability supported
  * 
  * @param av Handler
  * @return int
  * @retval 1 Yes.
  * @retval 0 No.
  */
-inline__ int toxav_video_encoding ( ToxAv* av )
+inline__ int toxav_capability_supported ( ToxAv* av, ToxAvCapabilities capability )
 {
-    return av->cs->supported_actions & v_encoding;
-}
-
-
-/**
- * @brief Is video decoding supported
- * 
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
- */
-inline__ int toxav_video_decoding ( ToxAv* av )
-{
-    return av->cs->supported_actions & v_decoding;
-}
-
-/**
- * @brief Is audio encoding supported
- * 
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
- */
-inline__ int toxav_audio_encoding ( ToxAv* av )
-{
-    return av->cs->supported_actions & a_encoding;
-}
-
-
-/**
- * @brief Is audio decoding supported
- * 
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
- */
-inline__ int toxav_audio_decoding ( ToxAv* av )
-{
-    return av->cs->supported_actions & a_decoding;
+    return av->cs->capabilities & (Capabilities) capability;
 }
 
 /**

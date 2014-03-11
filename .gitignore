@@ -48,6 +48,7 @@ config.status
 stamp-h1
 autom4te.cache
 libtoxcore.pc
+libtoxav.pc
 libtool
 .deps
 .libs
