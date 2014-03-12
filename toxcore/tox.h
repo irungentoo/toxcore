@@ -250,7 +250,6 @@ uint16_t tox_get_self_name(Tox *tox, uint8_t *name, uint16_t nlen);
 int tox_get_name(Tox *tox, int friendnumber, uint8_t *name);
 
 /* Set our user status.
- * You are responsible for freeing status after.
  *
  *  returns 0 on success.
  *  returns -1 on failure.
