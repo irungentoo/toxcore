@@ -2416,7 +2416,7 @@ static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
             memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp.friendrequest_nospam), sizeof(uint32_t));
             uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
             memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
-            m_addfriend(m, address, temp.info, temp.info_size);
+            m_addfriend(m, address, temp.info, ntohs(temp.info_size));
         }
     }
 
