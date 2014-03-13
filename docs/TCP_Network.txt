@@ -78,6 +78,8 @@ received
 client sent the server the public key and the public key we sent to the client, 
 the next with base nonce + 1...)
 
+The connection is set to an unconfirmed state until a packet is recieved and 
+decrypted correctly using the information in the handshake.
 
 each packet sent to/from the server has an id (the first byte of the plain text 
 data of the packet.)
