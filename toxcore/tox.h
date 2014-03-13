@@ -25,7 +25,6 @@
 #define TOX_H
 
 #include <stdint.h>
-#include <time.h>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #ifndef WINVER
