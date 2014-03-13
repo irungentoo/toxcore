@@ -270,6 +270,15 @@ TOX_USERSTATUS tox_get_self_user_status(Tox *tox)
     return (TOX_USERSTATUS)m_get_self_userstatus(m);
 }
 
+/* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
+ * returns -1 on error.
+ */
+uint64_t tox_get_last_online(Tox *tox, int friendnumber)
+{
+    Messenger *m = tox;
+    return m_get_last_online(m, friendnumber);
+}
+
 /* Set our typing status for a friend.
  * You are responsible for turning it on or off.
  *
@@ -292,7 +301,6 @@ int tox_get_is_typing(Tox *tox, int friendnumber)
     Messenger *m = tox;
     return m_get_istyping(m, friendnumber);
 }
-
 
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).
