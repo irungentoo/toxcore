@@ -117,7 +117,7 @@ typedef struct _MSIMessage {
 static struct _Callbacks {
     MSICallback function;
     void* data;
-} callbacks[10] = {0};
+} callbacks[11] = {0};
 
 inline__ void invoke_callback(MSICallbackID id)
 {
@@ -653,7 +653,8 @@ void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8
 
                 for ( ; i < session->call->peer_count; i ++ )
                     if ( session->call->peers[i] == friend_num ) {
-                        msi_stopcall(session); /* Stop the call for now */
+                        invoke_callback(MSI_OnPeerTimeout);
+                        /*msi_stopcall(session); /* Stop the call for now */
                         return;
                     }
             }
@@ -747,9 +748,8 @@ void *handle_timeout ( void *arg )
 
     }
 
-    return NULL;
+    pthread_exit(NULL);
 }
-
 
 /**
  * @brief Add peer to peer list.
@@ -1244,12 +1244,11 @@ int msi_terminate_session ( MSISession *session )
     assert ( session );
 
     int _status = 0;
-
-    terminate_call ( session );
+    
+    /* If have call, cancel it */
+    if ( session->call ) msi_cancel(session, 0, "MSI session terminated!");
+    
     m_callback_msi_packet((struct Messenger *) session->messenger_handle, NULL, NULL);
-
-
-    /* TODO: Clean it up more? */
 
     free ( session );
     return _status;
