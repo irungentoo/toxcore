@@ -58,6 +58,9 @@ So if you would inspect the TCP stream you would see:
 [[uint16_t (length of data)][data]][[uint16_t (length of 
 data)][data]][[uint16_t (length of data)][data]]
 
+Note that both handshake packets don't have this format (the length for them is 
+always the same so we don't need to specify it.)
+
 When the client connects to the server, he sends this packet:
 [public key of client (32 bytes)][nonce for the encrypted data [24 
 bytes]][encrypted with the private key of the client and public key of the 

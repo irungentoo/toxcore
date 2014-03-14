@@ -41,7 +41,7 @@ Friend_requests.c:
 
 [NOT STARTED] Make the core save/datafile portable across client versions/different processor architectures.
 
-[NOT STARTED] A way for people to connect to people on Tox if they are behind a bad NAT that 
+[IN PROGRESS] A way for people to connect to people on Tox if they are behind a bad NAT that 
 blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 
 [NEEDS TESTING] Make the save made with tox_save_encrypted(...) harder to brute force.

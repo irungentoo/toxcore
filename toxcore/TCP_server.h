@@ -22,11 +22,11 @@
 
 #include "net_crypto.h"
 
-#define TCP_MAX_BACKLOG 128
+#define MAX_INCOMMING_CONNECTIONS 32
+
+#define TCP_MAX_BACKLOG MAX_INCOMMING_CONNECTIONS
 
 #define MAX_PACKET_SIZE 8192
-
-#define MAX_INCOMMING_CONNECTIONS 32
 
 #define TCP_HANDSHAKE_PLAIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES)
 #define TCP_SERVER_HANDSHAKE_SIZE (crypto_box_NONCEBYTES + TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
@@ -57,6 +57,8 @@ typedef struct {
     uint8_t secret_key[crypto_box_SECRETKEYBYTES];
     TCP_Secure_Connection incomming_connection_queue[MAX_INCOMMING_CONNECTIONS];
     uint16_t incomming_connection_queue_index;
+    TCP_Secure_Connection unconfirmed_connection_queue[MAX_INCOMMING_CONNECTIONS];
+    uint16_t unconfirmed_connection_queue_index;
 } TCP_Server;
 
 /* Create new TCP server instance.

@@ -118,7 +118,7 @@ static uint16_t read_length(sock_t sock)
     int count;
     ioctl(sock, FIONREAD, &count);
 
-    if (count >= sizeof(uint16_t)) {
+    if ((unsigned int)count >= sizeof(uint16_t)) {
         uint16_t length;
         int len = recv(sock, &length, sizeof(uint16_t), 0);
 
@@ -169,7 +169,7 @@ static void kill_TCP_connection(TCP_Secure_Connection *con)
     memset(con, 0, sizeof(TCP_Secure_Connection));
 }
 
-/* return 0 if everything went well.
+/* return 1 if everything went well.
  * return -1 if the connection must be killed.
  */
 static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint16_t length, uint8_t *self_secret_key)
@@ -209,35 +209,23 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
 
     encrypt_precompute(plain, temp_secret_key, con->shared_key);
     con->status = TCP_STATUS_UNCONFIRMED;
-    return 0;
+    return 1;
 }
 
-/* return 0 if everything went well.
+/* return 1 if connection handshake was handled correctly.
+ * return 0 if we didn't get it yet.
  * return -1 if the connection must be killed.
  */
 static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_secret_key)
 {
-    while (1) {
-        if (con->next_packet_length == 0) {
-            uint16_t len = read_length(con->sock);
+    uint8_t data[TCP_CLIENT_HANDSHAKE_SIZE];
+    int len = 0;
 
-            if (len == 0)
-                break;
-
-            if (len != TCP_CLIENT_HANDSHAKE_SIZE)
-                return -1;
-
-            con->next_packet_length = len;
-        } else {
-            uint8_t data[con->next_packet_length];
-
-            if (read_TCP_packet(con->sock, data, con->next_packet_length) != -1) {
-                return handle_TCP_handshake(con, data, con->next_packet_length, self_secret_key);
-            } else {
-                break;
-            }
-        }
+    if ((len = read_TCP_packet(con->sock, data, TCP_CLIENT_HANDSHAKE_SIZE)) != -1) {
+        return handle_TCP_handshake(con, data, len, self_secret_key);
     }
+
+    return 0;
 }
 
 /* return 1 on success
@@ -253,8 +241,17 @@ static int accept_connection(TCP_Server *TCP_server, sock_t sock)
         return 0;
     }
 
-    printf("accepted %u\n", sock);
+    TCP_Secure_Connection *conn =
+        &TCP_server->incomming_connection_queue[TCP_server->incomming_connection_queue_index % MAX_INCOMMING_CONNECTIONS];
 
+    if (conn->status != TCP_STATUS_NO_STATUS)
+        kill_TCP_connection(conn);
+
+    conn->status = TCP_STATUS_CONNECTED;
+    conn->sock = sock;
+    conn->next_packet_length = 0;
+
+    ++TCP_server->incomming_connection_queue_index;
     return 1;
 }
 
@@ -288,7 +285,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
     if (num_sockets == 0 || ports == NULL)
         return NULL;
 
-    TCP_Server *temp = calloc(1, sizeof(Networking_Core));
+    TCP_Server *temp = calloc(1, sizeof(TCP_Server));
 
     if (temp == NULL)
         return NULL;
@@ -324,20 +321,61 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
     return temp;
 }
 
-void do_TCP_server(TCP_Server *TCP_server)
+static void do_TCP_accept_new(TCP_Server *TCP_server)
 {
     uint32_t i;
 
     for (i = 0; i < TCP_server->num_listening_socks; ++i) {
         struct sockaddr_storage addr;
-        int addrlen = sizeof(addr);
+        unsigned int addrlen = sizeof(addr);
         sock_t sock;
 
         do {
             sock = accept(TCP_server->socks_listening[i], (struct sockaddr *)&addr, &addrlen);
-            //TODO
         } while (accept_connection(TCP_server, sock));
     }
+}
+
+static void do_TCP_incomming(TCP_Server *TCP_server)
+{
+    uint32_t i;
+
+    for (i = 0; i < MAX_INCOMMING_CONNECTIONS; ++i) {
+        if (TCP_server->incomming_connection_queue[i].status != TCP_STATUS_CONNECTED)
+            continue;
+
+        int ret = read_connection_handshake(&TCP_server->incomming_connection_queue[i], TCP_server->secret_key);
+
+        if (ret == -1) {
+            kill_TCP_connection(&TCP_server->incomming_connection_queue[i]);
+        } else if (ret == 1) {
+            TCP_Secure_Connection *conn_old = &TCP_server->incomming_connection_queue[i];
+            TCP_Secure_Connection *conn_new =
+                &TCP_server->unconfirmed_connection_queue[TCP_server->unconfirmed_connection_queue_index % MAX_INCOMMING_CONNECTIONS];
+
+            if (conn_new->status != TCP_STATUS_NO_STATUS)
+                kill_TCP_connection(conn_new);
+
+            memcpy(conn_new, conn_old, sizeof(TCP_Secure_Connection));
+            memset(conn_old, 0, sizeof(TCP_Secure_Connection));
+            ++TCP_server->unconfirmed_connection_queue_index;
+        }
+    }
+}
+
+static void do_TCP_unconfirmed(TCP_Server *TCP_server)
+{
+    uint32_t i;
+
+    for (i = 0; i < MAX_INCOMMING_CONNECTIONS; ++i) {
+        if (TCP_server->incomming_connection_queue[i].status != TCP_STATUS_CONNECTED)
+            continue;
+    }
+}
+void do_TCP_server(TCP_Server *TCP_server)
+{
+    do_TCP_accept_new(TCP_server);
+    do_TCP_incomming(TCP_server);
 }
 
 void kill_TCP_server(TCP_Server *TCP_server)
