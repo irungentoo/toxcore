@@ -1,4 +1,4 @@
-/* network.h
+/* network.c
  *
  * Functions for the core networking.
  *
