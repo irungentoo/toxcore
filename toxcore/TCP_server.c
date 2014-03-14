@@ -161,21 +161,62 @@ static int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
     return -1;
 }
 
-/* return 0 if everything went well.
- * return -1 if the connection must be killed.
+/* Kill a TCP_Secure_Connection
  */
-static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+static void kill_TCP_connection(TCP_Secure_Connection *con)
 {
-
+    kill_sock(con->sock);
+    memset(con, 0, sizeof(TCP_Secure_Connection));
 }
 
 /* return 0 if everything went well.
  * return -1 if the connection must be killed.
  */
-static int read_connection_handshake(TCP_Secure_Connection *con)
+static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint16_t length, uint8_t *self_secret_key)
 {
-    int ok = 1;
+    if (length != TCP_CLIENT_HANDSHAKE_SIZE)
+        return -1;
 
+    if (con->status != TCP_STATUS_CONNECTED)
+        return -1;
+
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    encrypt_precompute(data, self_secret_key, shared_key);
+    uint8_t plain[TCP_HANDSHAKE_PLAIN_SIZE];
+    int len = decrypt_data_fast(shared_key, data + crypto_box_PUBLICKEYBYTES,
+                                data + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES, plain);
+
+    if (len != TCP_HANDSHAKE_PLAIN_SIZE)
+        return -1;
+
+    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t resp_plain[TCP_HANDSHAKE_PLAIN_SIZE];
+    crypto_box_keypair(resp_plain, temp_secret_key);
+    random_nonce(con->sent_nonce);
+    memcpy(resp_plain + crypto_box_PUBLICKEYBYTES, con->sent_nonce, crypto_box_NONCEBYTES);
+    memcpy(con->recv_nonce, plain + crypto_box_PUBLICKEYBYTES, crypto_box_NONCEBYTES);
+
+    uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
+    new_nonce(response);
+
+    len = encrypt_data_fast(shared_key, response, resp_plain, TCP_HANDSHAKE_PLAIN_SIZE, response + crypto_box_NONCEBYTES);
+
+    if (len != TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
+        return -1;
+
+    if (TCP_SERVER_HANDSHAKE_SIZE != send(con->sock, response, TCP_SERVER_HANDSHAKE_SIZE, 0))
+        return -1;
+
+    encrypt_precompute(plain, temp_secret_key, con->shared_key);
+    con->status = TCP_STATUS_UNCONFIRMED;
+    return 0;
+}
+
+/* return 0 if everything went well.
+ * return -1 if the connection must be killed.
+ */
+static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_secret_key)
+{
     while (1) {
         if (con->next_packet_length == 0) {
             uint16_t len = read_length(con->sock);
@@ -183,7 +224,7 @@ static int read_connection_handshake(TCP_Secure_Connection *con)
             if (len == 0)
                 break;
 
-            if (len != TCP_SERVER_HANDSHAKE_SIZE)
+            if (len != TCP_CLIENT_HANDSHAKE_SIZE)
                 return -1;
 
             con->next_packet_length = len;
@@ -191,7 +232,7 @@ static int read_connection_handshake(TCP_Secure_Connection *con)
             uint8_t data[con->next_packet_length];
 
             if (read_TCP_packet(con->sock, data, con->next_packet_length) != -1) {
-                return handle_TCP_handshake(con, data, con->next_packet_length);
+                return handle_TCP_handshake(con, data, con->next_packet_length, self_secret_key);
             } else {
                 break;
             }
@@ -210,7 +251,7 @@ static int accept_connection(TCP_Server *TCP_server, sock_t sock)
     if (!set_nonblock(sock)) {
         kill_sock(sock);
         return 0;
-    }//TODO
+    }
 
     printf("accepted %u\n", sock);
 
@@ -241,7 +282,8 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
     return sock;
 }
 
-TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports)
+TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports, uint8_t *public_key,
+                           uint8_t *secret_key)
 {
     if (num_sockets == 0 || ports == NULL)
         return NULL;
@@ -277,6 +319,8 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
         }
     }
 
+    memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(temp->secret_key, secret_key, crypto_box_SECRETKEYBYTES);
     return temp;
 }
 

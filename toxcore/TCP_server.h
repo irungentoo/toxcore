@@ -28,7 +28,8 @@
 
 #define MAX_INCOMMING_CONNECTIONS 32
 
-#define TCP_SERVER_HANDSHAKE_SIZE (crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_MACBYTES)
+#define TCP_HANDSHAKE_PLAIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES)
+#define TCP_SERVER_HANDSHAKE_SIZE (crypto_box_NONCEBYTES + TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
 #define TCP_CLIENT_HANDSHAKE_SIZE (crypto_box_PUBLICKEYBYTES + TCP_SERVER_HANDSHAKE_SIZE)
 
 enum {
@@ -52,12 +53,16 @@ typedef struct {
     sock_t *socks_listening;
     unsigned int num_listening_socks;
 
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t secret_key[crypto_box_SECRETKEYBYTES];
     TCP_Secure_Connection incomming_connection_queue[MAX_INCOMMING_CONNECTIONS];
+    uint16_t incomming_connection_queue_index;
 } TCP_Server;
 
 /* Create new TCP server instance.
  */
-TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports);
+TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports, uint8_t *public_key,
+                           uint8_t *secret_key);
 
 /* Run the TCP_server
  */
