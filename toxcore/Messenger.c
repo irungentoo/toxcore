@@ -276,7 +276,7 @@ int m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
 
             if (m->numfriends == i)
-                ++ m->numfriends;
+                ++m->numfriends;
 
             return i;
         }
@@ -321,7 +321,7 @@ int m_addfriend_norequest(Messenger *m, uint8_t *client_id)
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
 
             if (m->numfriends == i)
-                ++ m->numfriends;
+                ++m->numfriends;
 
             return i;
         }
@@ -615,6 +615,14 @@ USERSTATUS m_get_userstatus(Messenger *m, int friendnumber)
 USERSTATUS m_get_self_userstatus(Messenger *m)
 {
     return m->userstatus;
+}
+
+uint64_t m_get_last_online(Messenger *m, int friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    return m->friendlist[friendnumber].ping_lastrecv;
 }
 
 int m_set_usertyping(Messenger *m, int friendnumber, uint8_t is_typing)
@@ -2353,6 +2361,7 @@ struct SAVED_FRIEND {
     uint16_t statusmessage_length;
     uint8_t userstatus;
     uint32_t friendrequest_nospam;
+    uint64_t ping_lastrecv;
 };
 
 static uint32_t saved_friendslist_size(Messenger *m)
@@ -2382,6 +2391,11 @@ static uint32_t friends_list_save(Messenger *m, uint8_t *data)
                 memcpy(temp.statusmessage, m->friendlist[i].statusmessage, m->friendlist[i].statusmessage_length);
                 temp.statusmessage_length = htons(m->friendlist[i].statusmessage_length);
                 temp.userstatus = m->friendlist[i].userstatus;
+
+                uint8_t lastonline[sizeof(uint64_t)];
+                memcpy(lastonline, &m->friendlist[i].ping_lastrecv, sizeof(uint64_t));
+                host_to_net(lastonline, sizeof(uint64_t));
+                memcpy(&temp.ping_lastrecv, lastonline, sizeof(uint64_t));
             }
 
             memcpy(data + num * sizeof(struct SAVED_FRIEND), &temp, sizeof(struct SAVED_FRIEND));
@@ -2409,6 +2423,11 @@ static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
             setfriendname(m, fnum, temp.name, ntohs(temp.name_length));
             set_friend_statusmessage(m, fnum, temp.statusmessage, ntohs(temp.statusmessage_length));
             set_friend_userstatus(m, fnum, temp.userstatus);
+
+            uint8_t lastonline[sizeof(uint64_t)];
+            memcpy(lastonline, &temp.ping_lastrecv, sizeof(uint64_t));
+            net_to_host(lastonline, sizeof(uint64_t));
+            memcpy(&m->friendlist[fnum].ping_lastrecv, lastonline, sizeof(uint64_t));
         } else if (temp.status != 0) {
             /* TODO: This is not a good way to do this. */
             uint8_t address[FRIEND_ADDRESS_SIZE];
@@ -2852,4 +2871,3 @@ uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size)
 
     return ret;
 }
-

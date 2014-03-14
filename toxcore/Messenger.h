@@ -404,6 +404,11 @@ int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen);
 USERSTATUS m_get_userstatus(Messenger *m, int friendnumber);
 USERSTATUS m_get_self_userstatus(Messenger *m);
 
+/* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
+ * returns -1 on error.
+ */
+uint64_t m_get_last_online(Messenger *m, int friendnumber);
+
 /* Set our typing status for a friend.
  * You are responsible for turning it on or off.
  *
@@ -770,4 +775,3 @@ uint32_t count_chatlist(Messenger *m);
 uint32_t copy_chatlist(Messenger *m, int *out_list, uint32_t list_size);
 
 #endif
-
