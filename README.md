@@ -32,7 +32,8 @@ The goal of this project is to create a configuration-free P2P Skype replacement
 
 ## Documentation:
 
-- [Installation](/INSTALL.md)
+- [Installation](/INSTALL.md)<br />
+- [Tox Core API](http://api.libtoxcore.so)<br />
 - [DHT Protocol](http://wiki.tox.im/index.php/DHT)<br />
 - [Lossless UDP Protocol](http://wiki.tox.im/index.php/Lossless_UDP)<br />
 - [Crypto](http://wiki.tox.im/index.php/Crypto)<br />
