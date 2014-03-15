@@ -654,7 +654,6 @@ void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8
                 for ( ; i < session->call->peer_count; i ++ )
                     if ( session->call->peers[i] == friend_num ) {
                         invoke_callback(MSI_OnPeerTimeout);
-                        /*msi_stopcall(session); /* Stop the call for now */
                         return;
                     }
             }
