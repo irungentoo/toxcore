@@ -131,7 +131,8 @@ typedef enum {
 
     /* Protocol */
     MSI_OnError,
-    MSI_OnRequestTimeout
+    MSI_OnRequestTimeout,
+    MSI_OnPeerTimeout
 
 } MSICallbackID;
 

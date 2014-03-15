@@ -1147,18 +1147,21 @@ failed_init_ffmpeg: ;
 
 int av_terminate_session(av_session_t *_phone)
 {
-    toxav_hangup(_phone->av);
-
-    free(_phone->_friends);
-    pthread_mutex_destroy ( &_phone->_mutex );
-
+    _phone->running_decaud = 0;
+    usleep(100000); /* Wait for tox_poll to end */
+    
+    toxav_kill(_phone->av);
+    printf("\r[i] KILLED AV ARGH!\n");
+    
+    usleep(1000000); /* Wait for cancel request to be sent */
     Tox *_p = _phone->_messenger;
     _phone->_messenger = NULL;
-    usleep(100000); /* Wait for tox_poll to end */
-
     tox_kill(_p);
-    toxav_kill(_phone->av);
 
+    
+    free(_phone->_friends);
+    pthread_mutex_destroy ( &_phone->_mutex );
+    
     free(_phone);
 
     printf("\r[i] Quit!\n");

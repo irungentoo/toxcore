@@ -70,8 +70,8 @@ typedef enum {
 
     /* Protocol */
     av_OnError,
-    av_OnRequestTimeout
-
+    av_OnRequestTimeout,
+    av_OnPeerTimeout
 } ToxAvCallbackID;
 
 
