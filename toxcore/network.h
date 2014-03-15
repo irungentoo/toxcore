@@ -312,9 +312,10 @@ void networking_poll(Networking_Core *net);
 /*
  * functions to avoid excessive polling
  */
-int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr);
-int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds);
-void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len);
+size_t networking_wait_data_size();
+int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data);
+int networking_wait_execute(uint8_t *data, long seconds, long microseconds);
+int networking_wait_cleanup(Networking_Core *net, uint8_t *data);
 
 /* Initialize networking.
  * bind to ip and port.

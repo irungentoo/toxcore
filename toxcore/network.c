@@ -315,17 +315,17 @@ typedef struct {
     uint64_t send_fail_eagain;
 } select_info;
 
-int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data, uint16_t *lenptr)
+size_t networking_wait_data_size()
 {
-    if ((data == NULL) || !lenptr || (*lenptr < sizeof(select_info))) {
-        if (lenptr) {
-            *lenptr = sizeof(select_info);
-            return 0;
-        } else
-            return -1;
+    return sizeof(select_info);
+}
+
+int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data)
+{
+    if (data == NULL) {
+        return 0;
     }
 
-    *lenptr = sizeof(select_info);
     select_info *s = (select_info *)data;
     s->sock = net->sock;
     s->sendqueue_length = sendqueue_length;
@@ -335,25 +335,41 @@ int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uin
     return 1;
 }
 
-int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
+/* *** Function MUSTN'T poll. ***
+* The function mustn't modify anything at all, so it can be called completely
+* asynchronously without any worry.
+*/
+int networking_wait_execute(uint8_t *data, long seconds, long microseconds)
 {
     /* WIN32: supported since Win2K, but might need some adjustements */
     /* UNIX: this should work for any remotely Unix'ish system */
+
+    if (data == NULL) {
+        return 0;
+    }
 
     select_info *s = (select_info *)data;
 
     /* add only if we had a failed write */
     int writefds_add = 0;
 
+    /* if send_fail_eagain is set, that means that socket's buffer was full and couldn't fit data we tried to send,
+    *  so this is the only case when we need to know when the socket becomes write-ready, i.e. socket's buffer gets
+    *  some free space for us to put data to be sent in, but select will tell us that the socket is writable even
+    *  if we can fit a small part of our data (say 1 byte), so we wait some time, in hope that large enough chunk
+    *  of socket's buffer will be available (at least that's how I understand intentions of the previous author of
+    *  that code)
+    */
     if (s->send_fail_eagain != 0) {
         // current_time(): microseconds
         uint64_t now = current_time();
 
         /* s->sendqueue_length: might be used to guess how long we keep checking */
-        /* for now, threshold is hardcoded to 500ms, too long for a really really
+        /* for now, threshold is hardcoded to 250ms, too long for a really really
          * fast link, but too short for a sloooooow link... */
-        if (now - s->send_fail_eagain < 500000)
+        if (now - s->send_fail_eagain < 250000) {
             writefds_add = 1;
+        }
     }
 
     int nfds = 1 + s->sock;
@@ -366,27 +382,34 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
     fd_set writefds;
     FD_ZERO(&writefds);
 
-    if (writefds_add)
+    if (writefds_add) {
         FD_SET(s->sock, &writefds);
+    }
 
     fd_set exceptfds;
     FD_ZERO(&exceptfds);
     FD_SET(s->sock, &exceptfds);
 
     struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = milliseconds * 1000;
+    struct timeval *timeout_ptr = &timeout;
+
+    if (seconds < 0 || microseconds < 0) {
+        timeout_ptr = NULL;
+    } else {
+        timeout.tv_sec = seconds;
+        timeout.tv_usec = microseconds;
+    }
 
 #ifdef LOGGING
     errno = 0;
 #endif
     /* returns -1 on error, 0 on timeout, the socket on activity */
-    int res = select(nfds, &readfds, &writefds, &exceptfds, &timeout);
+    int res = select(nfds, &readfds, &writefds, &exceptfds, timeout_ptr);
 #ifdef LOGGING
 
     /* only dump if not timeout */
     if (res) {
-        sprintf(logbuffer, "select(%d): %d (%d, %s) - %d %d %d\n", milliseconds, res, errno,
+        sprintf(logbuffer, "select(%d, %d): %d (%d, %s) - %d %d %d\n", microseconds, seconds, res, errno,
                 strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
                 FD_ISSET(s->sock, &exceptfds));
         loglog(logbuffer);
@@ -394,18 +417,26 @@ int networking_wait_execute(uint8_t *data, uint16_t len, uint16_t milliseconds)
 
 #endif
 
-    if (FD_ISSET(s->sock, &writefds))
+    if (FD_ISSET(s->sock, &writefds)) {
         s->send_fail_reset = 1;
+    }
 
-    return res > 0 ? 1 : 0;
+    return res > 0 ? 2 : 1;
 }
 
-void networking_wait_cleanup(Networking_Core *net, uint8_t *data, uint16_t len)
+int networking_wait_cleanup(Networking_Core *net, uint8_t *data)
 {
+    if (data == NULL) {
+        return 0;
+    }
+
     select_info *s = (select_info *)data;
 
-    if (s->send_fail_reset)
+    if (s->send_fail_reset) {
         net->send_fail_eagain = 0;
+    }
+    
+    return 1;
 }
 
 uint8_t at_startup_ran = 0;

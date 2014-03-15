@@ -60,7 +60,7 @@ void tox_get_address(Tox *tox, uint8_t *address)
  *  (the nospam for that friend was set to the new one).
  *  return FAERR_NOMEM if increasing the friend list size fails.
  */
-int tox_add_friend(Tox *tox, uint8_t *address, uint8_t *data, uint16_t length)
+int32_t tox_add_friend(Tox *tox, uint8_t *address, uint8_t *data, uint16_t length)
 {
     Messenger *m = tox;
     return m_addfriend(m, address, data, length);
@@ -71,16 +71,16 @@ int tox_add_friend(Tox *tox, uint8_t *address, uint8_t *data, uint16_t length)
  *  return the friend number if success.
  *  return -1 if failure.
  */
-int tox_add_friend_norequest(Tox *tox, uint8_t *client_id)
+int32_t tox_add_friend_norequest(Tox *tox, uint8_t *client_id)
 {
     Messenger *m = tox;
     return m_addfriend_norequest(m, client_id);
 }
 
-/*  return the friend id associated to that client id.
+/*  return the friend number associated to that client id.
  *  return -1 if no such friend.
  */
-int tox_get_friend_id(Tox *tox, uint8_t *client_id)
+int32_t tox_get_friend_number(Tox *tox, uint8_t *client_id)
 {
     Messenger *m = tox;
     return getfriend_id(m, client_id);
@@ -92,14 +92,14 @@ int tox_get_friend_id(Tox *tox, uint8_t *client_id)
  *  return 0 if success.
  *  return -1 if failure.
  */
-int tox_get_client_id(Tox *tox, int friend_id, uint8_t *client_id)
+int tox_get_client_id(Tox *tox, int32_t friendnumber, uint8_t *client_id)
 {
     Messenger *m = tox;
-    return getclient_id(m, friend_id, client_id);
+    return getclient_id(m, friendnumber, client_id);
 }
 
 /* Remove a friend. */
-int tox_del_friend(Tox *tox, int friendnumber)
+int tox_del_friend(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
     return m_delfriend(m, friendnumber);
@@ -111,7 +111,7 @@ int tox_del_friend(Tox *tox, int friendnumber)
  *  return 0 if friend is not connected to us (Offline).
  *  return -1 on failure.
  */
-int tox_get_friend_connection_status(Tox *tox, int friendnumber)
+int tox_get_friend_connection_status(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
     return m_get_friend_connectionstatus(m, friendnumber);
@@ -122,7 +122,7 @@ int tox_get_friend_connection_status(Tox *tox, int friendnumber)
  *  return 1 if friend exists.
  *  return 0 if friend doesn't exist.
  */
-int tox_friend_exists(Tox *tox, int friendnumber)
+int tox_friend_exists(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
     return m_friend_exists(m, friendnumber);
@@ -137,13 +137,13 @@ int tox_friend_exists(Tox *tox, int friendnumber)
  *  m_sendmessage_withid will send a message with the id of your choosing,
  *  however we can generate an id for you by calling plain m_sendmessage.
  */
-uint32_t tox_send_message(Tox *tox, int friendnumber, uint8_t *message, uint32_t length)
+uint32_t tox_send_message(Tox *tox, int32_t friendnumber, uint8_t *message, uint32_t length)
 {
     Messenger *m = tox;
     return m_sendmessage(m, friendnumber, message, length);
 }
 
-uint32_t tox_send_message_withid(Tox *tox, int friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
+uint32_t tox_send_message_withid(Tox *tox, int32_t friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
 {
     Messenger *m = tox;
     return m_sendmessage_withid(m, friendnumber, theid, message, length);
@@ -159,13 +159,13 @@ uint32_t tox_send_message_withid(Tox *tox, int friendnumber, uint32_t theid, uin
  *  m_sendaction_withid will send an action message with the id of your choosing,
  *  however we can generate an id for you by calling plain m_sendaction.
  */
-uint32_t tox_send_action(Tox *tox, int friendnumber, uint8_t *action, uint32_t length)
+uint32_t tox_send_action(Tox *tox, int32_t friendnumber, uint8_t *action, uint32_t length)
 {
     Messenger *m = tox;
     return m_sendaction(m, friendnumber, action, length);
 }
 
-uint32_t tox_send_action_withid(Tox *tox, int friendnumber, uint32_t theid, uint8_t *action, uint32_t length)
+uint32_t tox_send_action_withid(Tox *tox, int32_t friendnumber, uint32_t theid, uint8_t *action, uint32_t length)
 {
     Messenger *m = tox;
     return m_sendaction_withid(m, friendnumber, theid, action, length);
@@ -187,16 +187,15 @@ int tox_set_name(Tox *tox, uint8_t *name, uint16_t length)
 
 /* Get your nickname.
  * m -  The messanger context to use.
- * name - Pointer to a string for the name.
- * nlen -  The length of the string buffer.
+ * name - Pointer to a string for the name. (must be at least MAX_NAME_LENGTH)
  *
  *  return length of the name.
  *  return 0 on error.
  */
-uint16_t tox_get_self_name(Tox *tox, uint8_t *name, uint16_t nlen)
+uint16_t tox_get_self_name(Tox *tox, uint8_t *name)
 {
     Messenger *m = tox;
-    return getself_name(m, name, nlen);
+    return getself_name(m, name);
 }
 
 /* Get name of friendnumber and put it in name.
@@ -205,10 +204,25 @@ uint16_t tox_get_self_name(Tox *tox, uint8_t *name, uint16_t nlen)
  *  return length of name (with the NULL terminator) if success.
  *  return -1 if failure.
  */
-int tox_get_name(Tox *tox, int friendnumber, uint8_t *name)
+int tox_get_name(Tox *tox, int32_t friendnumber, uint8_t *name)
 {
     Messenger *m = tox;
     return getname(m, friendnumber, name);
+}
+
+/*  returns the length of name on success.
+ *  returns -1 on failure.
+ */
+int tox_get_name_size(Tox *tox, int32_t friendnumber)
+{
+    Messenger *m = tox;
+    return m_get_name_size(m, friendnumber);
+}
+
+int tox_get_self_name_size(Tox *tox)
+{
+    Messenger *m = tox;
+    return m_get_self_name_size(m);
 }
 
 /* Set our user status;
@@ -222,26 +236,32 @@ int tox_set_status_message(Tox *tox, uint8_t *status, uint16_t length)
     return m_set_statusmessage(m, status, length);
 }
 
-int tox_set_user_status(Tox *tox, TOX_USERSTATUS status)
+int tox_set_user_status(Tox *tox, uint8_t status)
 {
     Messenger *m = tox;
-    return m_set_userstatus(m, (USERSTATUS)status);
+    return m_set_userstatus(m, status);
 }
 
-/*  return the length of friendnumber's status message, including null.
- *  Pass it into malloc.
+/*  returns the length of status message on success.
+ *  returns -1 on failure.
  */
-int tox_get_status_message_size(Tox *tox, int friendnumber)
+int tox_get_status_message_size(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
     return m_get_statusmessage_size(m, friendnumber);
+}
+
+int tox_get_self_status_message_size(Tox *tox)
+{
+    Messenger *m = tox;
+    return m_get_self_statusmessage_size(m);
 }
 
 /* Copy friendnumber's status message into buf, truncating if size is over maxlen.
  * Get the size you need to allocate from m_get_statusmessage_size.
  * The self variant will copy our own status message.
  */
-int tox_get_status_message(Tox *tox, int friendnumber, uint8_t *buf, uint32_t maxlen)
+int tox_get_status_message(Tox *tox, int32_t friendnumber, uint8_t *buf, uint32_t maxlen)
 {
     Messenger *m = tox;
     return m_copy_statusmessage(m, friendnumber, buf, maxlen);
@@ -258,16 +278,16 @@ int tox_get_self_status_message(Tox *tox, uint8_t *buf, uint32_t maxlen)
  * As above, the self variant will return our own USERSTATUS.
  * If friendnumber is invalid, this shall return USERSTATUS_INVALID.
  */
-TOX_USERSTATUS tox_get_user_status(Tox *tox, int friendnumber)
+uint8_t tox_get_user_status(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
-    return (TOX_USERSTATUS)m_get_userstatus(m, friendnumber);
+    return m_get_userstatus(m, friendnumber);
 }
 
-TOX_USERSTATUS tox_get_self_user_status(Tox *tox)
+uint8_t tox_get_self_user_status(Tox *tox)
 {
     Messenger *m = tox;
-    return (TOX_USERSTATUS)m_get_self_userstatus(m);
+    return m_get_self_userstatus(m);
 }
 
 /* Set our typing status for a friend.
@@ -276,7 +296,7 @@ TOX_USERSTATUS tox_get_self_user_status(Tox *tox)
  * returns 0 on success.
  * returns -1 on failure.
  */
-int tox_set_user_is_typing(Tox *tox, int friendnumber, uint8_t is_typing)
+int tox_set_user_is_typing(Tox *tox, int32_t friendnumber, uint8_t is_typing)
 {
     Messenger *m = tox;
     return m_set_usertyping(m, friendnumber, is_typing);
@@ -287,7 +307,7 @@ int tox_set_user_is_typing(Tox *tox, int friendnumber, uint8_t is_typing)
  * returns 0 if friend is not typing.
  * returns 1 if friend is typing.
  */
-int tox_get_is_typing(Tox *tox, int friendnumber)
+int tox_get_is_typing(Tox *tox, int32_t friendnumber)
 {
     Messenger *m = tox;
     return m_get_istyping(m, friendnumber);
@@ -297,7 +317,7 @@ int tox_get_is_typing(Tox *tox, int friendnumber)
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).
  */
-void tox_set_sends_receipts(Tox *tox, int friendnumber, int yesno)
+void tox_set_sends_receipts(Tox *tox, int32_t friendnumber, int yesno)
 {
     Messenger *m = tox;
     m_set_sends_receipts(m, friendnumber, yesno);
@@ -324,7 +344,7 @@ uint32_t tox_get_num_online_friends(Tox *tox)
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-uint32_t tox_get_friendlist(Tox *tox, int *out_list, uint32_t list_size)
+uint32_t tox_get_friendlist(Tox *tox, int32_t *out_list, uint32_t list_size)
 {
     Messenger *m = tox;
     return copy_friendlist(m, out_list, list_size);
@@ -341,9 +361,9 @@ void tox_callback_friend_request(Tox *tox, void (*function)(uint8_t *, uint8_t *
 
 
 /* Set the function that will be executed when a message from a friend is received.
- *  Function format is: function(int friendnumber, uint8_t * message, uint32_t length)
+ *  Function format is: function(int32_t friendnumber, uint8_t * message, uint32_t length)
  */
-void tox_callback_friend_message(Tox *tox, void (*function)(Messenger *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_friend_message(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
                                  void *userdata)
 {
     Messenger *m = tox;
@@ -351,9 +371,9 @@ void tox_callback_friend_message(Tox *tox, void (*function)(Messenger *tox, int,
 }
 
 /* Set the function that will be executed when an action from a friend is received.
- *  function format is: function(int friendnumber, uint8_t * action, uint32_t length)
+ *  function format is: function(int32_t friendnumber, uint8_t * action, uint32_t length)
  */
-void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
                                 void *userdata)
 {
     Messenger *m = tox;
@@ -361,10 +381,10 @@ void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int, 
 }
 
 /* Set the callback for name changes.
- *  function(int friendnumber, uint8_t *newname, uint16_t length)
+ *  function(int32_t friendnumber, uint8_t *newname, uint16_t length)
  *  You are not responsible for freeing newname.
  */
-void tox_callback_name_change(Tox *tox, void (*function)(Messenger *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_name_change(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
                               void *userdata)
 {
     Messenger *m = tox;
@@ -372,10 +392,10 @@ void tox_callback_name_change(Tox *tox, void (*function)(Messenger *tox, int, ui
 }
 
 /* Set the callback for status message changes.
- *  function(int friendnumber, uint8_t *newstatus, uint16_t length)
+ *  function(int32_t friendnumber, uint8_t *newstatus, uint16_t length)
  *  You are not responsible for freeing newstatus.
  */
-void tox_callback_status_message(Tox *tox, void (*function)(Messenger *tox, int, uint8_t *, uint16_t, void *),
+void tox_callback_status_message(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
                                  void *userdata)
 {
     Messenger *m = tox;
@@ -383,25 +403,26 @@ void tox_callback_status_message(Tox *tox, void (*function)(Messenger *tox, int,
 }
 
 /* Set the callback for status type changes.
- *  function(int friendnumber, USERSTATUS kind)
+ *  function(int32_t friendnumber, USERSTATUS kind)
  */
-void tox_callback_user_status(Tox *tox, void (*function)(Messenger *tox, int, TOX_USERSTATUS, void *), void *userdata)
+void tox_callback_user_status(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, void *),
+                              void *userdata)
 {
     Messenger *m = tox;
     m_callback_userstatus(m, function, userdata);
 }
 
 /* Set the callback for typing changes.
- *  function (int friendnumber, int is_typing)
+ *  function (int32_t friendnumber, int is_typing)
  */
-void tox_callback_typing_change(Tox *tox, void (*function)(Messenger *tox, int, int, void *), void *userdata)
+void tox_callback_typing_change(Tox *tox, void (*function)(Messenger *tox, int32_t, int, void *), void *userdata)
 {
     Messenger *m = tox;
     m_callback_typingchange(m, function, userdata);
 }
 
 /* Set the callback for read receipts.
- *  function(int friendnumber, uint32_t receipt)
+ *  function(int32_t friendnumber, uint32_t receipt)
  *
  *  If you are keeping a record of returns from m_sendmessage;
  *  receipt might be one of those values, meaning the message
@@ -409,14 +430,14 @@ void tox_callback_typing_change(Tox *tox, void (*function)(Messenger *tox, int, 
  *  Since core doesn't track ids for you, receipt may not correspond to any message.
  *  in that case, you should discard it.
  */
-void tox_callback_read_receipt(Tox *tox, void (*function)(Messenger *tox, int, uint32_t, void *), void *userdata)
+void tox_callback_read_receipt(Tox *tox, void (*function)(Messenger *tox, int32_t, uint32_t, void *), void *userdata)
 {
     Messenger *m = tox;
     m_callback_read_receipt(m, function, userdata);
 }
 
 /* Set the callback for connection status changes.
- *  function(int friendnumber, uint8_t status)
+ *  function(int32_t friendnumber, uint8_t status)
  *
  *  Status:
  *    0 -- friend went offline after being previously online
@@ -426,7 +447,8 @@ void tox_callback_read_receipt(Tox *tox, void (*function)(Messenger *tox, int, u
  *  being previously online" part. It's assumed that when adding friends,
  *  their connection status is offline.
  */
-void tox_callback_connection_status(Tox *tox, void (*function)(Messenger *tox, int, uint8_t, void *), void *userdata)
+void tox_callback_connection_status(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, void *),
+                                    void *userdata)
 {
     Messenger *m = tox;
     m_callback_connectionstatus(m, function, userdata);
@@ -436,9 +458,9 @@ void tox_callback_connection_status(Tox *tox, void (*function)(Messenger *tox, i
 
 /* Set the callback for group invites.
  *
- *  Function(Tox *tox, int friendnumber, uint8_t *group_public_key, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t *group_public_key, void *userdata)
  */
-void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int, uint8_t *, void *), void *userdata)
+void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, void *), void *userdata)
 {
     Messenger *m = tox;
     m_callback_group_invite(m, function, userdata);
@@ -513,7 +535,7 @@ int tox_group_peername(Tox *tox, int groupnumber, int peernumber, uint8_t *name)
  * return 0 on success
  * return -1 on failure
  */
-int tox_invite_friend(Tox *tox, int friendnumber, int groupnumber)
+int tox_invite_friend(Tox *tox, int32_t friendnumber, int groupnumber)
 {
     Messenger *m = tox;
     return invite_friend(m, friendnumber, groupnumber);
@@ -523,7 +545,7 @@ int tox_invite_friend(Tox *tox, int friendnumber, int groupnumber)
  * returns group number on success
  * returns -1 on failure.
  */
-int tox_join_groupchat(Tox *tox, int friendnumber, uint8_t *friend_group_public_key)
+int tox_join_groupchat(Tox *tox, int32_t friendnumber, uint8_t *friend_group_public_key)
 {
     Messenger *m = tox;
     return join_groupchat(m, friendnumber, friend_group_public_key);
@@ -598,9 +620,9 @@ uint32_t tox_get_chatlist(Tox *tox, int *out_list, uint32_t list_size)
 
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
-void tox_callback_file_send_request(Tox *tox, void (*function)(Messenger *tox, int, uint8_t, uint64_t, uint8_t *,
+void tox_callback_file_send_request(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint64_t, uint8_t *,
                                     uint16_t,
                                     void *), void *userdata)
 {
@@ -609,10 +631,10 @@ void tox_callback_file_send_request(Tox *tox, void (*function)(Messenger *tox, i
 }
 /* Set the callback for file control requests.
  *
- *  Function(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void tox_callback_file_control(Tox *tox, void (*function)(Messenger *tox, int, uint8_t, uint8_t, uint8_t, uint8_t *,
+void tox_callback_file_control(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint8_t, uint8_t, uint8_t *,
                                uint16_t, void *), void *userdata)
 {
     Messenger *m = tox;
@@ -620,10 +642,10 @@ void tox_callback_file_control(Tox *tox, void (*function)(Messenger *tox, int, u
 }
 /* Set the callback for file data.
  *
- *  Function(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void tox_callback_file_data(Tox *tox, void (*function)(Messenger *tox, int, uint8_t, uint8_t *, uint16_t length,
+void tox_callback_file_data(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint8_t *, uint16_t length,
                             void *),
                             void *userdata)
 
@@ -636,7 +658,7 @@ void tox_callback_file_data(Tox *tox, void (*function)(Messenger *tox, int, uint
  *  return file number on success
  *  return -1 on failure
  */
-int tox_new_file_sender(Tox *tox, int friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length)
+int tox_new_file_sender(Tox *tox, int32_t friendnumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length)
 {
     Messenger *m = tox;
     return new_filesender(m, friendnumber, filesize, filename, filename_length);
@@ -647,7 +669,7 @@ int tox_new_file_sender(Tox *tox, int friendnumber, uint64_t filesize, uint8_t *
  *  return 0 on success
  *  return -1 on failure
  */
-int tox_file_send_control(Tox *tox, int friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
+int tox_file_send_control(Tox *tox, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
                           uint8_t *data, uint16_t length)
 {
     Messenger *m = tox;
@@ -658,7 +680,7 @@ int tox_file_send_control(Tox *tox, int friendnumber, uint8_t send_receive, uint
  *  return 0 on success
  *  return -1 on failure
  */
-int tox_file_send_data(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length)
+int tox_file_send_data(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length)
 {
     Messenger *m = tox;
     return file_data(m, friendnumber, filenumber, data, length);
@@ -669,7 +691,7 @@ int tox_file_send_data(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t *
  *  return size on success
  *  return -1 on failure (currently will never return -1)
  */
-int tox_file_data_size(Tox *tox, int friendnumber)
+int tox_file_data_size(Tox *tox, int32_t friendnumber)
 {
     return MAX_DATA_SIZE - crypto_box_MACBYTES - 3;
 }
@@ -681,7 +703,7 @@ int tox_file_data_size(Tox *tox, int friendnumber)
  *  return number of bytes remaining to be sent/received on success
  *  return 0 on failure
  */
-uint64_t tox_file_data_remaining(Tox *tox, int friendnumber, uint8_t filenumber, uint8_t send_receive)
+uint64_t tox_file_data_remaining(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8_t send_receive)
 {
     Messenger *m = tox;
     return file_dataremaining(m, friendnumber, filenumber, send_receive);
@@ -745,22 +767,27 @@ void tox_do(Tox *tox)
 /*
  * functions to avoid excessive polling
  */
-int tox_wait_prepare(Tox *tox, uint8_t *data, uint16_t *lenptr)
+
+size_t tox_wait_data_size()
 {
-    Messenger *m = tox;
-    return wait_prepare_messenger(m, data, lenptr);
+    return wait_data_size();
 }
 
-int tox_wait_execute(Tox *tox, uint8_t *data, uint16_t len, uint16_t milliseconds)
+int tox_wait_prepare(Tox *tox, uint8_t *data)
 {
     Messenger *m = tox;
-    return wait_execute_messenger(m, data, len, milliseconds);
+    return wait_prepare_messenger(m, data);
 }
 
-void tox_wait_cleanup(Tox *tox, uint8_t *data, uint16_t len)
+int tox_wait_execute(uint8_t *data, long seconds, long microseconds)
+{
+    return wait_execute_messenger(data, seconds, microseconds);
+}
+
+int tox_wait_cleanup(Tox *tox, uint8_t *data)
 {
     Messenger *m = tox;
-    wait_cleanup_messenger(m, data, len);
+    return wait_cleanup_messenger(m, data);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */
