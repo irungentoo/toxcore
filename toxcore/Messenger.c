@@ -721,9 +721,11 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno)
 
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t); */
 /* Set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata)
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, uint8_t *, uint8_t *, uint16_t, void *),
+                              void *userdata)
 {
-    callback_friendrequest(&(m->fr), function, userdata);
+    void (*handle_friendrequest)(void *, uint8_t *, uint8_t *, uint16_t, void *) = function;
+    callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
 }
 
 /* Set the function that will be executed when a message from a friend is received. */

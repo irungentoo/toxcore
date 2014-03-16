@@ -98,9 +98,9 @@ typedef struct Tox Tox;
 #endif
 
 /* NOTE: Strings in Tox are all UTF-8, (This means that there is no terminating NULL character.)
- * 
+ *
  * The exact buffer you send will be received at the other end without modification.
- * 
+ *
  * Do not treat Tox strings as C strings.
  */
 
@@ -228,7 +228,6 @@ int tox_get_name_size(Tox *tox, int32_t friendnumber);
 int tox_get_self_name_size(Tox *tox);
 
 /* Set our user status.
- * You are responsible for freeing status after.
  *
  * userstatus must be one of TOX_USERSTATUS values.
  *
@@ -300,7 +299,8 @@ uint32_t tox_get_friendlist(Tox *tox, int32_t *out_list, uint32_t list_size);
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(Tox *tox, uint8_t * public_key, uint8_t * data, uint16_t length, void *userdata)
  */
-void tox_callback_friend_request(Tox *tox, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata);
+void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, uint8_t *, uint8_t *, uint16_t, void *),
+                                 void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(Tox *tox, int friendnumber, uint8_t * message, uint32_t length, void *userdata)

@@ -1064,7 +1064,7 @@ int av_terminate_session(av_session_t *_phone)
 /****** AV HELPER FUNCTIONS ******/
 
 /* Auto accept friend request */
-void av_friend_requ(uint8_t *_public_key, uint8_t *_data, uint16_t _length, void *_userdata)
+void av_friend_requ(Tox *_messenger, uint8_t *_public_key, uint8_t *_data, uint16_t _length, void *_userdata)
 {
     av_session_t *_phone = _userdata;
     av_allocate_friend (_phone, -1, 0);

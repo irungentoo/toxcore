@@ -353,7 +353,8 @@ uint32_t tox_get_friendlist(Tox *tox, int32_t *out_list, uint32_t list_size)
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
  */
-void tox_callback_friend_request(Tox *tox, void (*function)(uint8_t *, uint8_t *, uint16_t, void *), void *userdata)
+void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, uint8_t *, uint8_t *, uint16_t, void *),
+                                 void *userdata)
 {
     Messenger *m = tox;
     m_callback_friendrequest(m, function, userdata);

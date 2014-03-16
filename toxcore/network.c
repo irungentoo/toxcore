@@ -435,7 +435,7 @@ int networking_wait_cleanup(Networking_Core *net, uint8_t *data)
     if (s->send_fail_reset) {
         net->send_fail_eagain = 0;
     }
-    
+
     return 1;
 }
 

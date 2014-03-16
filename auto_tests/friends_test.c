@@ -116,7 +116,7 @@ int parent_friend_request(DHT *dht)
     return 0;
 }
 
-void child_got_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
+void child_got_request(Messenger *m, uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
 {
     fputs("OK\nsending status to parent", stdout);
     fflush(stdout);

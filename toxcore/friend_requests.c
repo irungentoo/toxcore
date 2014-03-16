@@ -72,11 +72,12 @@ uint32_t get_nospam(Friend_Requests *fr)
 
 
 /* Set the function that will be executed when a friend request is received. */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *),
-                            void *userdata)
+void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, uint8_t *, uint8_t *, uint16_t, void *),
+                            void *object, void *userdata)
 {
     fr->handle_friendrequest = function;
     fr->handle_friendrequest_isset = 1;
+    fr->handle_friendrequest_object = object;
     fr->handle_friendrequest_userdata = userdata;
 }
 /* Set the function used to check if a friend request should be displayed to the user or not. */
@@ -145,7 +146,8 @@ static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t 
     memcpy(message, packet + 4, length - 4);
     message[sizeof(message) - 1] = 0; /* Be sure the message is null terminated. */
 
-    (*fr->handle_friendrequest)(source_pubkey, message, length - 4, fr->handle_friendrequest_userdata);
+    (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, length - 4,
+                                fr->handle_friendrequest_userdata);
     return 0;
 }
 
