@@ -36,10 +36,6 @@
 #include "network.h"
 #include "util.h"
 
-#ifndef IPV6_V6ONLY
-#define IPV6_V6ONLY 27
-#endif
-
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
 static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)

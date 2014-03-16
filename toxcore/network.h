@@ -44,6 +44,10 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
+#ifndef IPV6_V6ONLY
+#define IPV6_V6ONLY 27
+#endif
+
 typedef unsigned int sock_t;
 /* sa_family_t is the sockaddr_in / sockaddr_in6 family field */
 typedef short sa_family_t;

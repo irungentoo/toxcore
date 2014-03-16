@@ -159,7 +159,7 @@ int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypt
 }
 
 /* Increment the given nonce by 1. */
-static void increment_nonce(uint8_t *nonce)
+void increment_nonce(uint8_t *nonce)
 {
     uint32_t i;
 

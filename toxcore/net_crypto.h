@@ -132,6 +132,9 @@ int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, 
  */
 int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain);
 
+/* Increment the given nonce by 1. */
+void increment_nonce(uint8_t *nonce);
+
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce);
 

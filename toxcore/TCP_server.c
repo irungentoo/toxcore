@@ -115,12 +115,17 @@ static int bind_to_port(sock_t sock, int family, uint16_t port)
  */
 static uint16_t read_length(sock_t sock)
 {
-    int count;
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+    unsigned long count = 0;
+    ioctlsocket(sock, FIONREAD, &count);
+#else
+    int count = 0;
     ioctl(sock, FIONREAD, &count);
+#endif
 
     if ((unsigned int)count >= sizeof(uint16_t)) {
         uint16_t length;
-        int len = recv(sock, &length, sizeof(uint16_t), 0);
+        int len = recv(sock, (uint8_t *)&length, sizeof(uint16_t), 0);
 
         if (len != sizeof(uint16_t)) {
             fprintf(stderr, "FAIL recv packet\n");
@@ -144,8 +149,13 @@ static uint16_t read_length(sock_t sock)
  */
 static int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
 {
-    int count;
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+    unsigned long count = 0;
+    ioctlsocket(sock, FIONREAD, &count);
+#else
+    int count = 0;
     ioctl(sock, FIONREAD, &count);
+#endif
 
     if (count >= length) {
         int len = recv(sock, data, length, 0);
@@ -155,8 +165,78 @@ static int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
             return -1;
         }
 
-        return length;
+        return len;
     }
+
+    return -1;
+}
+
+/* return length of recieved packet on success.
+ * return 0 if could not read any packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int read_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_t *data, uint16_t max_len)
+{
+    if (con->next_packet_length == 0) {
+        uint16_t len = read_length(con->sock);
+
+        if (len == (uint16_t)~0)
+            return -1;
+
+        if (len == 0)
+            return 0;
+
+        con->next_packet_length = len;
+    }
+
+    if (max_len + crypto_box_MACBYTES < con->next_packet_length)
+        return -1;
+
+    uint8_t data_encrypted[con->next_packet_length];
+    int len_packet = read_TCP_packet(con->sock, data_encrypted, con->next_packet_length);
+
+    if (len_packet != con->next_packet_length)
+        return 0;
+
+    con->next_packet_length = 0;
+
+    int len = decrypt_data_fast(con->shared_key, con->recv_nonce, data_encrypted, len_packet, data);
+
+    if (len + crypto_box_MACBYTES != len_packet)
+        return -1;
+
+    increment_nonce(con->recv_nonce);
+
+    return len;
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+{
+    if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE)
+        return -1;
+
+    uint8_t packet[sizeof(uint16_t) + length + crypto_box_MACBYTES];
+
+    length = htons(length);
+    memcpy(packet, &length, sizeof(uint16_t));
+    uint32_t len = encrypt_data_fast(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
+
+    if (len != (sizeof(packet) - sizeof(uint16_t)))
+        return -1;
+
+    increment_nonce(con->sent_nonce);
+
+    len = send(con->sock, packet, sizeof(packet), 0);
+
+    if (len == sizeof(packet))
+        return 1;
+
+    if (len <= 0)
+        return 0;
 
     return -1;
 }
@@ -224,6 +304,13 @@ static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_s
     if ((len = read_TCP_packet(con->sock, data, TCP_CLIENT_HANDSHAKE_SIZE)) != -1) {
         return handle_TCP_handshake(con, data, len, self_secret_key);
     }
+
+    return 0;
+}
+
+
+static int confirm_TCP_connection(TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+{
 
     return 0;
 }
@@ -368,8 +455,24 @@ static void do_TCP_unconfirmed(TCP_Server *TCP_server)
     uint32_t i;
 
     for (i = 0; i < MAX_INCOMMING_CONNECTIONS; ++i) {
-        if (TCP_server->incomming_connection_queue[i].status != TCP_STATUS_CONNECTED)
+        TCP_Secure_Connection *conn = &TCP_server->unconfirmed_connection_queue[i];
+
+        if (conn->status != TCP_STATUS_UNCONFIRMED)
             continue;
+
+        uint8_t packet[MAX_PACKET_SIZE];
+        int len = read_packet_TCP_secure_connection(conn, packet, sizeof(packet));
+
+        if (len == 0) {
+            continue;
+        } else if (len == -1) {
+            kill_TCP_connection(conn);
+            continue;
+        } else {
+            //TODO
+            confirm_TCP_connection(conn, packet, len);
+            kill_TCP_connection(conn);
+        }
     }
 }
 void do_TCP_server(TCP_Server *TCP_server)
