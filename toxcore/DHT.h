@@ -38,9 +38,6 @@
 /* The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 8
 
-/* Maximum newly announced nodes to ping per TIME_TOPING seconds. */
-#define MAX_TOPING 16
-
 /* Ping timeout in seconds */
 #define PING_TIMEOUT 3
 

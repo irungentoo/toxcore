@@ -37,8 +37,11 @@
 
 #define PING_NUM_MAX 512
 
-/* Ping newly announced nodes to ping per TIME_TOPING seconds*/
-#define TIME_TOPING 5
+/* Maximum newly announced nodes to ping per TIME_TO_PING seconds. */
+#define MAX_TO_PING 16
+
+/* Ping newly announced nodes to ping per TIME_TO_PING seconds*/
+#define TIME_TO_PING 5
 
 typedef struct {
     IP_Port  ip_port;
@@ -54,8 +57,8 @@ struct PING {
     size_t      num_pings;
     size_t      pos_pings;
 
-    Node_format toping[MAX_TOPING];
-    uint64_t    last_toping;
+    Node_format to_ping[MAX_TO_PING];
+    uint64_t    last_to_ping;
 };
 
 static int is_ping_timeout(uint64_t time)
@@ -230,7 +233,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
 
     // Send response
     send_ping_response(ping, source, packet + 1, ping_id, shared_key);
-    add_toping(ping, packet + 1, source);
+    add_to_ping(ping, packet + 1, source);
 
     return 0;
 }
@@ -274,8 +277,8 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
 }
 
 
-/* Add nodes to the toping list.
- * All nodes in this list are pinged every TIME_TOPING seconds
+/* Add nodes to the to_ping list.
+ * All nodes in this list are pinged every TIME_TO_PING seconds
  * and are then removed from the list.
  * If the list is full the nodes farthest from our client_id are replaced.
  * The purpose of this list is to enable quick integration of new nodes into the
@@ -284,25 +287,25 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_toping(PING *ping, uint8_t *client_id, IP_Port ip_port)
+int add_to_ping(PING *ping, uint8_t *client_id, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip))
         return -1;
 
     uint32_t i;
 
-    for (i = 0; i < MAX_TOPING; ++i) {
-        if (!ip_isset(&ping->toping[i].ip_port.ip)) {
-            memcpy(ping->toping[i].client_id, client_id, CLIENT_ID_SIZE);
-            ipport_copy(&ping->toping[i].ip_port, &ip_port);
+    for (i = 0; i < MAX_TO_PING; ++i) {
+        if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
+            memcpy(ping->to_ping[i].client_id, client_id, CLIENT_ID_SIZE);
+            ipport_copy(&ping->to_ping[i].ip_port, &ip_port);
             return 0;
         }
     }
 
-    for (i = 0; i < MAX_TOPING; ++i) {
-        if (id_closest(ping->dht->self_public_key, ping->toping[i].client_id, client_id) == 2) {
-            memcpy(ping->toping[i].client_id, client_id, CLIENT_ID_SIZE);
-            ipport_copy(&ping->toping[i].ip_port, &ip_port);
+    for (i = 0; i < MAX_TO_PING; ++i) {
+        if (id_closest(ping->dht->self_public_key, ping->to_ping[i].client_id, client_id) == 2) {
+            memcpy(ping->to_ping[i].client_id, client_id, CLIENT_ID_SIZE);
+            ipport_copy(&ping->to_ping[i].ip_port, &ip_port);
             return 0;
         }
     }
@@ -311,23 +314,23 @@ int add_toping(PING *ping, uint8_t *client_id, IP_Port ip_port)
 }
 
 
-/* Ping all the valid nodes in the toping list every TIME_TOPING seconds.
- * This function must be run at least once every TIME_TOPING seconds.
+/* Ping all the valid nodes in the to_ping list every TIME_TO_PING seconds.
+ * This function must be run at least once every TIME_TO_PING seconds.
  */
-void do_toping(PING *ping)
+void do_to_ping(PING *ping)
 {
-    if (!is_timeout(ping->last_toping, TIME_TOPING))
+    if (!is_timeout(ping->last_to_ping, TIME_TO_PING))
         return;
 
-    ping->last_toping = unix_time();
+    ping->last_to_ping = unix_time();
     uint32_t i;
 
-    for (i = 0; i < MAX_TOPING; ++i) {
-        if (!ip_isset(&ping->toping[i].ip_port.ip))
+    for (i = 0; i < MAX_TO_PING; ++i) {
+        if (!ip_isset(&ping->to_ping[i].ip_port.ip))
             return;
 
-        send_ping_request(ping, ping->toping[i].ip_port, ping->toping[i].client_id);
-        ip_reset(&ping->toping[i].ip_port.ip);
+        send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].client_id);
+        ip_reset(&ping->to_ping[i].ip_port.ip);
     }
 }
 

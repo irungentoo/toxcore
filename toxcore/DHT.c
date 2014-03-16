@@ -1072,7 +1072,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     sendnodes_ipv6(dht, source, packet + 1, plain,
                    plain + CLIENT_ID_SIZE, shared_key); /* TODO: prevent possible amplification attacks */
 
-    add_toping(dht->ping, packet + 1, source);
+    add_to_ping(dht->ping, packet + 1, source);
     //send_ping_request(dht, source, packet + 1); /* TODO: make this smarter? */
 
     return 0;
@@ -2362,7 +2362,7 @@ void do_DHT(DHT *dht)
     do_Close(dht);
     do_DHT_friends(dht);
     do_NAT(dht);
-    do_toping(dht->ping);
+    do_to_ping(dht->ping);
     do_hardening(dht);
 #ifdef ENABLE_ASSOC_DHT
 
