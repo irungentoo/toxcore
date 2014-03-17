@@ -5,6 +5,8 @@ With the rise of governmental monitoring programs, Tox, a FOSS initiative, aims 
 
 [**Website**](https://tox.im) **|** [**Wiki**](http://wiki.tox.im/) **|** [**Blog**](https://blog.libtoxcore.so/) **|** [**FAQ**](http://wiki.tox.im/FAQ) **|** [**Binaries**](http://download.tox.im/) **|** [**Clients**](http://wiki.tox.im/Client) **|** [**Compiling**](http://wiki.tox.im/Installing) **|** [**API**](http://api.libtoxcore.so/) **|** [**Qt-GUI**](https://github.com/nurupo/ProjectTox-Qt-GUI) **|** **IRC:** #tox@freenode
 
+[![ScreenShot](http://vexx.us/Other/toxvid.png)](https://www.youtube.com/watch?v=9Q4uoIjk3RA)
+
 
 ## The Complex Stuff:
 ### UDP vs. TCP
