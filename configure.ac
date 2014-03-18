@@ -62,7 +62,6 @@ AC_ARG_ENABLE([nacl],
             WANT_NACL="no"
         elif test "x$enableval" = "xyes"; then
             WANT_NACL="yes"
-            AC_DISABLE_SHARED
         fi
     ]
 )
@@ -214,6 +213,12 @@ AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
+
+if test "x$WANT_NACL" = "xyes"; then
+    disable_shared=yes
+    enable_static=yes
+fi
+
 
 WIN32=no
 AC_CANONICAL_HOST
