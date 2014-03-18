@@ -62,6 +62,7 @@ AC_ARG_ENABLE([nacl],
             WANT_NACL="no"
         elif test "x$enableval" = "xyes"; then
             WANT_NACL="yes"
+            AC_DISABLE_SHARED
         fi
     ]
 )
