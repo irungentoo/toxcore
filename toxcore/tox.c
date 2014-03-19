@@ -804,22 +804,53 @@ int tox_wait_cleanup(Tox *tox, uint8_t *data)
 /*  return size of the messenger data (for saving). */
 uint32_t tox_size(Tox *tox)
 {
-    Messenger *m = tox;
-    return messenger_size(m);
+    /* Messenger *m = tox;
+    return messenger_size(m); */
+    txd_intermediate_t im = txd_intermediate_from_tox(tox);
+    uint64_t r = txd_get_size_of_intermediate(im);
+    txd_intermediate_free(im);
+    return (uint32_t)r;
 }
 
 /* Save the messenger in data (must be allocated memory of size Messenger_size()). */
 void tox_save(Tox *tox, uint8_t *data)
 {
-    Messenger *m = tox;
-    messenger_save(m, data);
+    /* Messenger *m = tox;
+    messenger_save(m, data); */
+    txd_intermediate_t im = txd_intermediate_from_tox(tox);
+    uint64_t bs = txd_get_size_of_intermediate(im);
+    txd_export_to_buf_prealloc(im, data, bs, TXD_ALL_BLOCKS);
+    txd_intermediate_free(im);
 }
-
 /* Load the messenger from data of size length. */
 int tox_load(Tox *tox, uint8_t *data, uint32_t length)
 {
-    Messenger *m = tox;
-    return messenger_load(m, data, length);
+    /* Compatibility hack: we'll switch on the magic numbers in data. */
+    if (length < 4)
+        return -1;
+    uint32_t magic = ntohl(*((uint32_t *)data));
+    switch (magic) {
+        case 0: {
+            Messenger *m = tox;
+            return messenger_load(m, data, length);
+        }
+        case 0xE6A19C00: {
+            /* and we can't use the const name because it's 
+             * only runtime const...
+             * hopefully this can be removed once everyone has
+             * transitioned to the new format. */
+            txd_intermediate_t im = NULL;
+            uint32_t ret = txd_intermediate_from_buf(data, length, &im);
+            if (ret == TXD_ERR_SUCCESS) {
+                txd_restore_intermediate(im, tox);
+                txd_intermediate_free(im);
+            }
+            return ret == TXD_ERR_SUCCESS ? 0 : -1;
+        }
+        default:
+            break;
+    }
+    return -1;
 }
 
 /* return the size of data to pass to messenger_save_encrypted(...)

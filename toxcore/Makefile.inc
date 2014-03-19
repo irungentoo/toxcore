@@ -1,7 +1,8 @@
 lib_LTLIBRARIES += libtoxcore.la
 
 libtoxcore_la_include_HEADERS = \
-                        ../toxcore/tox.h
+                        ../toxcore/tox.h \
+                        ../toxcore/data.h
 
 libtoxcore_la_includedir = $(includedir)/tox
 
@@ -35,7 +36,11 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/onion_announce.c \
                         ../toxcore/onion_client.h \
                         ../toxcore/onion_client.c \
-                        ../toxcore/misc_tools.h
+                        ../toxcore/misc_tools.h \
+                        ../toxcore/data_export.c \
+                        ../toxcore/data_intermediate.c \
+                        ../toxcore/data_private.h \
+                        ../toxcore/data.h
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
