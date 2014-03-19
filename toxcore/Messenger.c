@@ -1969,6 +1969,9 @@ void do_friends(Messenger *m)
 
                         USERSTATUS status = data[0];
 
+                        if (status >= USERSTATUS_INVALID)
+                            break;
+
                         if (m->friend_userstatuschange)
                             m->friend_userstatuschange(m, i, status, m->friend_userstatuschange_userdata);
 
