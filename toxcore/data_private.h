@@ -77,61 +77,62 @@ static inline void _txd_write_int_64_be(uint64_t the_int, uint8_t *buf)
 
 static inline uint32_t _txd_read_int_32_be(const uint8_t *buf)
 {
-    return *((uint32_t*)buf);
+    return *((uint32_t *)buf);
 }
 
 static inline uint64_t _txd_read_int_64_be(const uint8_t *buf)
 {
-    return *((uint64_t*)buf);
+    return *((uint64_t *)buf);
 }
 
 static inline void _txd_write_int_64(uint64_t the_int, uint8_t *buf)
 {
-    #if BYTE_ORDER == LITTLE_ENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
     _txd_write_int_64_le(the_int, buf);
-    #elif BYTE_ORDER == BIG_ENDIAN
+#elif BYTE_ORDER == BIG_ENDIAN
     _txd_write_int_64_be(the_int, buf);
-    #else
-    #error u w0t m8
-    #endif
+#else
+#error u w0t m8
+#endif
 }
 
 static inline void _txd_write_int_32(uint32_t the_int, uint8_t *buf)
 {
-    #if BYTE_ORDER == LITTLE_ENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
     _txd_write_int_32_le(the_int, buf);;
-    #elif BYTE_ORDER == BIG_ENDIAN
+#elif BYTE_ORDER == BIG_ENDIAN
     _txd_write_int_32_be(the_int, buf);;
-    #else
-    #error u w0t m8
-    #endif
+#else
+#error u w0t m8
+#endif
 }
 
 static inline uint64_t _txd_read_int_64(const uint8_t *buf)
 {
-    #if BYTE_ORDER == LITTLE_ENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
     return _txd_read_int_64_le(buf);
-    #elif BYTE_ORDER == BIG_ENDIAN
+#elif BYTE_ORDER == BIG_ENDIAN
     return _txd_read_int_64_be(buf);
-    #else
-    #error u w0t m8
-    #endif
+#else
+#error u w0t m8
+#endif
 }
 
 static inline uint32_t _txd_read_int_32(const uint8_t *buf)
 {
-    #if BYTE_ORDER == LITTLE_ENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
     return _txd_read_int_32_le(buf);
-    #elif BYTE_ORDER == BIG_ENDIAN
+#elif BYTE_ORDER == BIG_ENDIAN
     return _txd_read_int_32_be(buf);
-    #else
-    #error u w0t m8
-    #endif
+#else
+#error u w0t m8
+#endif
 }
 
 static inline void _txd_kill_memory(void *buf, size_t size)
 {
     volatile char *p = buf;
+
     while (size--) {
         *p++ = 0;
     }

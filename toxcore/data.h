@@ -57,7 +57,7 @@ extern const uint32_t TXD_ERR_SUCCESS;
 extern const uint32_t TXD_ERR_NOT_IMPLEMENTED;
 
 
-/* Selective archival constants. 
+/* Selective archival constants.
  * Use bitwise or to combine flags, then pass them to
  * txd_export_to_buf_ex(). */
 
@@ -132,7 +132,7 @@ void txd_copy_public_key(txd_intermediate_t interm, uint8_t *out_);
 /* note: use with caution - the secret key should not be copied
  * willy-nilly */
 void txd_copy_secret_key(txd_intermediate_t interm, uint8_t *out_);
-/* technically a 4-byte int, but we handle it like bytes 
+/* technically a 4-byte int, but we handle it like bytes
  * because core does too */
 void txd_copy_nospam(txd_intermediate_t interm, uint8_t *out_);
 
@@ -164,7 +164,7 @@ void txd_copy_dht_ip6(txd_intermediate_t interm, uint32_t node, uint8_t *out_);
 uint64_t txd_get_size_of_intermediate(txd_intermediate_t im);
 /**
  * Same as txd_get_size_of_intermediate.
- * For arc_blocks, pass in a bitmask of TXD_ARC_* constants, 
+ * For arc_blocks, pass in a bitmask of TXD_ARC_* constants,
  * or TXD_ALL_BLOCKS.
  * @param arc_blocks bitmask of TXD_ARC_* representing the blocks you are going
  *                   to archive
