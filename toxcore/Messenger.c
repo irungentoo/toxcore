@@ -733,7 +733,7 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno)
 void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, uint8_t *, uint8_t *, uint16_t, void *),
                               void *userdata)
 {
-    void (*handle_friendrequest)(void *, uint8_t *, uint8_t *, uint16_t, void *) = function;
+    void (*handle_friendrequest)(void *, uint8_t *, uint8_t *, uint16_t, void *) = (void *)function;
     callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
 }
 
