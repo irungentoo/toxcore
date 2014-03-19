@@ -19,12 +19,13 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
-void accept_friend_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
+void accept_friend_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
 {
-    Tox *t = userdata;
+    if (*((uint32_t *)userdata) != 974536)
+        return;
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
-        tox_add_friend_norequest(t, public_key);
+        tox_add_friend_norequest(m, public_key);
     }
 }
 uint32_t messages_received;
@@ -114,7 +115,8 @@ START_TEST(test_few_clients)
     Tox *tox2 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     Tox *tox3 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
-    tox_callback_friend_request(tox2, accept_friend_request, tox2);
+    uint32_t to_compare = 974536;
+    tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(tox2, address);
     int test = tox_add_friend(tox3, address, (uint8_t *)"Gentoo", 7);
@@ -140,7 +142,7 @@ START_TEST(test_few_clients)
     }
 
     printf("tox clients connected\n");
-    uint32_t to_compare = 974536;
+    to_compare = 974536;
     tox_callback_friend_message(tox3, print_message, &to_compare);
     tox_send_message(tox2, 0, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
 
@@ -267,7 +269,8 @@ START_TEST(test_many_clients)
     for (i = 0; i < NUM_TOXES; ++i) {
         toxes[i] = tox_new(TOX_ENABLE_IPV6_DEFAULT);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
-        tox_callback_friend_request(toxes[i], accept_friend_request, toxes[i]);
+        uint32_t to_comp = 974536;
+        tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
     }
 
     struct {

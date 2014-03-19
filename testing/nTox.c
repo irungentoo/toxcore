@@ -862,7 +862,7 @@ void do_refresh()
     refresh();
 }
 
-void print_request(uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
+void print_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
 {
     new_lines("[i] received friend request with message:");
     new_lines((char *)data);
@@ -1243,7 +1243,7 @@ int main(int argc, char *argv[])
 
     new_lines("[i] change username with /n");
     uint8_t name[TOX_MAX_NAME_LENGTH + 1];
-    uint16_t namelen = tox_get_self_name(m, name, sizeof(name));
+    uint16_t namelen = tox_get_self_name(m, name);
     name[namelen] = 0;
 
     if (namelen > 0) {

@@ -30,8 +30,9 @@
 
 typedef struct {
     uint32_t nospam;
-    void (*handle_friendrequest)(uint8_t *, uint8_t *, uint16_t, void *);
+    void (*handle_friendrequest)(void *, uint8_t *, uint8_t *, uint16_t, void *);
     uint8_t handle_friendrequest_isset;
+    void *handle_friendrequest_object;
     void *handle_friendrequest_userdata;
 
     int (*filter_function)(uint8_t *, void *);
@@ -57,8 +58,8 @@ uint32_t get_nospam(Friend_Requests *fr);
 /* Set the function that will be executed when a friend request for us is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length, void * userdata)
  */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(uint8_t *, uint8_t *, uint16_t, void *),
-                            void *userdata);
+void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, uint8_t *, uint8_t *, uint16_t, void *),
+                            void *object, void *userdata);
 
 /* Set the function used to check if a friend request should be displayed to the user or not.
  * Function format is int function(uint8_t * public_key, void * userdata)
