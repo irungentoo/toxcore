@@ -56,6 +56,8 @@ extern "C" {
 #endif
 
 #define TOX_MAX_NAME_LENGTH 128
+/* Maximum message and action length that can be sent. */
+#define TOX_MAX_MESSAGE_LENGTH 1003
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_CLIENT_ID_SIZE 32
 

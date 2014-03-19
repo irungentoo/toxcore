@@ -1255,13 +1255,7 @@ int main(int argc, char *argv[])
     time_t timestamp0 = time(NULL);
 
     uint8_t pollok = 0;
-    uint16_t len = 0;
-
-    if (!tox_wait_prepare(m, NULL, &len))
-        pollok = 1;
-    else
-        new_lines("[i] failed to setup for low cpu consumption");
-
+    uint16_t len = tox_wait_data_size();
     uint8_t data[len];
 
     while (1) {
@@ -1283,10 +1277,10 @@ int main(int argc, char *argv[])
             // during file transfer wasting cpu cycles is almost unavoidable
             c_sleep(1);
         else {
-            if (pollok && (tox_wait_prepare(m, data, &len) == 1)) {
+            if (pollok && (tox_wait_prepare(m, data) == 1)) {
                 /* 250ms is more than fast enough in "regular" mode */
-                tox_wait_execute(m, data, len, 100);
-                tox_wait_cleanup(m, data, len);
+                tox_wait_execute(data, 0, 100000);
+                tox_wait_cleanup(m, data);
             } else
                 c_sleep(25);
         }
