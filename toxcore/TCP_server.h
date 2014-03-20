@@ -32,6 +32,18 @@
 #define TCP_SERVER_HANDSHAKE_SIZE (crypto_box_NONCEBYTES + TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
 #define TCP_CLIENT_HANDSHAKE_SIZE (crypto_box_PUBLICKEYBYTES + TCP_SERVER_HANDSHAKE_SIZE)
 
+#define NUM_RESERVED_PORTS 16
+#define NUM_CLIENT_CONNECTIONS (256 - NUM_RESERVED_PORTS)
+
+#define TCP_PACKET_ROUTING_REQUEST  0
+#define TCP_PACKET_ROUTING_RESPONSE 1
+#define TCP_PACKET_CONNECTION_NOTIFICATION 2
+#define TCP_PACKET_DISCONNECT_NOTIFICATION 3
+#define TCP_PACKET_ONION_REQUEST  8
+#define TCP_PACKET_ONION_RESPONSE 9
+
+#define ARRAY_ENTRY_SIZE 6
+
 enum {
     TCP_STATUS_NO_STATUS,
     TCP_STATUS_CONNECTED,
@@ -39,7 +51,7 @@ enum {
     TCP_STATUS_CONFIRMED,
 };
 
-typedef struct {
+typedef struct TCP_Secure_Connection {
     uint8_t status;
     sock_t  sock;
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -47,7 +59,12 @@ typedef struct {
     uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     uint16_t next_packet_length;
+    struct {
+        struct TCP_Secure_Connection *connection;
+        uint8_t other_id;
+    } connections[NUM_CLIENT_CONNECTIONS];
 } TCP_Secure_Connection;
+
 
 typedef struct {
     sock_t *socks_listening;
@@ -59,6 +76,10 @@ typedef struct {
     uint16_t incomming_connection_queue_index;
     TCP_Secure_Connection unconfirmed_connection_queue[MAX_INCOMMING_CONNECTIONS];
     uint16_t unconfirmed_connection_queue_index;
+
+    TCP_Secure_Connection *accepted_connection_array;
+    uint32_t size_accepted_connections;
+    uint32_t num_accepted_connections;
 } TCP_Server;
 
 /* Create new TCP server instance.

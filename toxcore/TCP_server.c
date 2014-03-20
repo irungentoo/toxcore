@@ -109,6 +109,83 @@ static int bind_to_port(sock_t sock, int family, uint16_t port)
     return (bind(sock, (struct sockaddr *)&addr, addrsize) == 0);
 }
 
+/* Set the size of the connection list to numfriends.
+ *
+ *  return -1 if realloc fails.
+ *  return 0 if it succeeds.
+ */
+static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
+{
+    if (num == 0) {
+        free(TCP_server->accepted_connection_array);
+        TCP_server->accepted_connection_array = NULL;
+        TCP_server->size_accepted_connections = 0;
+        return 0;
+    }
+
+    TCP_Secure_Connection *new_connections = realloc(TCP_server->accepted_connection_array,
+            num * sizeof(TCP_Secure_Connection));
+
+    if (new_connections == NULL)
+        return -1;
+
+    TCP_server->accepted_connection_array = new_connections;
+    TCP_server->size_accepted_connections = num;
+    return 0;
+}
+
+/* Add accepted TCP connection to the list.
+ *
+ * return index on success
+ * return -1 on failure
+ */
+static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
+{
+    int index = -1;
+
+    if (TCP_server->size_accepted_connections == TCP_server->num_accepted_connections) {
+        if (realloc_connection(TCP_server, TCP_server->size_accepted_connections + 4) == -1)
+            return -1;
+
+        index = TCP_server->num_accepted_connections;
+    } else {
+        uint32_t i;
+
+        for (i = TCP_server->size_accepted_connections; i != 0; --i) {
+            if (TCP_server->accepted_connection_array[i - 1].status == TCP_STATUS_NO_STATUS) {
+                index = i - 1;
+                break;
+            }
+        }
+    }
+
+    if (index == -1) {
+        fprintf(stderr, "FAIL index is -1\n");
+        return -1;
+    }
+
+    memcpy(&TCP_server->accepted_connection_array[index], con, sizeof(TCP_Secure_Connection));
+    ++TCP_server->num_accepted_connections;
+    return index;
+}
+
+static int del_accepted(TCP_Server *TCP_server, int index)
+{
+    if ((uint32_t)index >= TCP_server->size_accepted_connections)
+        return -1;
+
+    if (TCP_server->accepted_connection_array[index].status == TCP_STATUS_NO_STATUS)
+        return -1;
+
+    memset(&TCP_server->accepted_connection_array[index], 0, sizeof(TCP_Secure_Connection));
+    --TCP_server->num_accepted_connections;
+
+    if (TCP_server->num_accepted_connections == 0)
+        realloc_connection(TCP_server, 0);
+
+    return 0;
+}
+
 /* return length on success
  * return 0 if nothing has been read from socket.
  * return ~0 on failure.
@@ -308,10 +385,25 @@ static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_s
     return 0;
 }
 
-
-static int confirm_TCP_connection(TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+/* return 0 on success
+ * return -1 on failure
+ */
+static int handle_TCP_packet(TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
 {
 
+    return 0;
+}
+
+
+static int confirm_TCP_connection(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+{
+    int index = add_accepted(TCP_server, con);
+
+    if (index == -1)
+        return -1;
+
+    //TODO
+    //handle_TCP_packet(TCP_Secure_Connection *con, data, length);
     return 0;
 }
 
@@ -469,16 +561,26 @@ static void do_TCP_unconfirmed(TCP_Server *TCP_server)
             kill_TCP_connection(conn);
             continue;
         } else {
-            //TODO
-            confirm_TCP_connection(conn, packet, len);
-            kill_TCP_connection(conn);
+            if (confirm_TCP_connection(TCP_server, conn, packet, len) == -1) {
+                kill_TCP_connection(conn);
+            } else {
+                memset(conn, 0, sizeof(TCP_Secure_Connection));
+            }
         }
     }
 }
+
+static void do_TCP_confirmed(TCP_Server *TCP_server)
+{
+    uint32_t i;
+
+}
+
 void do_TCP_server(TCP_Server *TCP_server)
 {
     do_TCP_accept_new(TCP_server);
     do_TCP_incomming(TCP_server);
+    do_TCP_confirmed(TCP_server);
 }
 
 void kill_TCP_server(TCP_Server *TCP_server)
