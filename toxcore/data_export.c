@@ -10,16 +10,15 @@
 #include <stdlib.h>
 #include "data.h"
 #include "data_private.h"
+#pragma GCC diagnostic ignored "-Wmultichar"
 
 /* you'll never guess which utf-8 character this is!
  * yep, you were right! it's [REDACTED] */
-#pragma GCC diagnostic ignored "-Wmultichar"
 const txd_fourcc_t TXD_FORMAT_BINARY1 = 0xE6A19C00;
-const txd_fourcc_t TXD_BLOCK_SELF    = 'SELf';
-const txd_fourcc_t TXD_BLOCK_KEYS    = 'KEYs';
-const txd_fourcc_t TXD_BLOCK_FRIENDS = 'FRNd';
-const txd_fourcc_t TXD_BLOCK_DHT     = 'DHt*';
-#pragma GCC diagnostic warning "-Wmultichar"
+#define TXD_BLOCK_SELF    ((txd_fourcc_t)'SELf')
+#define TXD_BLOCK_KEYS    ((txd_fourcc_t)'KEYs')
+#define TXD_BLOCK_FRIENDS ((txd_fourcc_t)'FRNd')
+#define TXD_BLOCK_DHT     ((txd_fourcc_t)'DHt*')
 
 const uint32_t TXD_ARC_SELF_BLOCK = 1;
 const uint32_t TXD_ARC_KEYS_BLOCK = 1 << 1;
