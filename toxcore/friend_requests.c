@@ -113,6 +113,25 @@ static int request_received(Friend_Requests *fr, uint8_t *client_id)
     return 0;
 }
 
+/* Remove client id from received_requests list.
+ *
+ *  return 0 if it removed it successfully.
+ *  return -1 if it didn't find it.
+ */
+int remove_request_received(Friend_Requests *fr, uint8_t *client_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < MAX_RECEIVED_STORED; ++i) {
+        if (id_equal(fr->received_requests[i], client_id)) {
+            memset(fr->received_requests[i], 0, crypto_box_PUBLICKEYBYTES);
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 
 static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {

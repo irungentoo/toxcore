@@ -346,6 +346,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
     crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
     free(m->friendlist[friendnumber].statusmessage);
+    remove_request_received(&(m->fr), m->friendlist[friendnumber].client_id);
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
 
