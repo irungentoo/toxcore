@@ -282,7 +282,7 @@ int tox_set_user_is_typing(Tox *tox, int32_t friendnumber, uint8_t is_typing);
  * returns 0 if friend is not typing.
  * returns 1 if friend is typing.
  */
-int tox_get_is_typing(Tox *tox, int32_t friendnumber);
+uint8_t tox_get_is_typing(Tox *tox, int32_t friendnumber);
 
 /* Sets whether we send read receipts for friendnumber.
  * This function is not lazy, and it will fail if yesno is not (0 or 1).
