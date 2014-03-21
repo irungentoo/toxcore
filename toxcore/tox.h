@@ -342,9 +342,9 @@ void tox_callback_status_message(Tox *tox, void (*function)(Tox *tox, int32_t, u
 void tox_callback_user_status(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, void *), void *userdata);
 
 /* Set the callback for typing changes.
- *  function (Tox *tox, int32_t friendnumber, int is_typing, void *userdata)
+ *  function (Tox *tox, int32_t friendnumber, uint8_t is_typing, void *userdata)
  */
-void tox_callback_typing_change(Tox *tox, void (*function)(Tox *tox, int32_t, int, void *), void *userdata);
+void tox_callback_typing_change(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, void *), void *userdata);
 
 /* Set the callback for read receipts.
  *  function(Tox *tox, int32_t friendnumber, uint32_t receipt, void *userdata)

@@ -772,7 +772,7 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int32_t,
     m->friend_userstatuschange_userdata = userdata;
 }
 
-void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, int32_t, int, void *), void *userdata)
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, int32_t, uint8_t, void *), void *userdata)
 {
     m->friend_typingchange = function;
     m->friend_typingchange_userdata = userdata;

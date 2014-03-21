@@ -52,7 +52,7 @@ void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length
 
 uint32_t typing_changes;
 
-void print_typingchange(Tox *m, int friendnumber, int typing, void *userdata)
+void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;

@@ -422,9 +422,9 @@ void tox_callback_user_status(Tox *tox, void (*function)(Messenger *tox, int32_t
 }
 
 /* Set the callback for typing changes.
- *  function (int32_t friendnumber, int is_typing)
+ *  function (int32_t friendnumber, uint8_t is_typing)
  */
-void tox_callback_typing_change(Tox *tox, void (*function)(Messenger *tox, int32_t, int, void *), void *userdata)
+void tox_callback_typing_change(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, void *), void *userdata)
 {
     Messenger *m = tox;
     m_callback_typingchange(m, function, userdata);
