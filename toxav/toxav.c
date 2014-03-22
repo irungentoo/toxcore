@@ -228,17 +228,18 @@ int toxav_reject ( ToxAv *av, const char *reason )
  *
  * @param av Handler.
  * @param reason Optional reason.
+ * @param peer_id peer friend_id
  * @return int
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_cancel ( ToxAv *av, const char *reason )
+int toxav_cancel ( ToxAv *av, int peer_id, const char *reason )
 {
     if ( !av->msi_session->call ) {
         return ErrorNoCall;
     }
 
-    return msi_cancel(av->msi_session, 0, reason);
+    return msi_cancel(av->msi_session, peer_id, reason);
 }
 
 /**
