@@ -60,7 +60,7 @@ typedef struct TCP_Secure_Connection {
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     uint16_t next_packet_length;
     struct {
-        struct TCP_Secure_Connection *connection;
+        uint32_t index;
         uint8_t other_id;
     } connections[NUM_CLIENT_CONNECTIONS];
 } TCP_Secure_Connection;

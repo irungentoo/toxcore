@@ -165,6 +165,7 @@ static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
     }
 
     memcpy(&TCP_server->accepted_connection_array[index], con, sizeof(TCP_Secure_Connection));
+    TCP_server->accepted_connection_array[index].status = TCP_STATUS_CONFIRMED;
     ++TCP_server->num_accepted_connections;
     return index;
 }
@@ -385,11 +386,70 @@ static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_s
     return 0;
 }
 
+static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number)
+{
+    if (con_number >= NUM_CLIENT_CONNECTIONS)
+        return -1;
+
+    uint32_t index = con->connections[con_number].index;
+    uint8_t other_id = con->connections[con_number].other_id;
+
+    if (index) {
+        --index;
+
+        if (index >= TCP_server->size_accepted_connections)
+            return -1;
+
+        TCP_server->accepted_connection_array[index].connections[other_id].other_id = 0;
+        TCP_server->accepted_connection_array[index].connections[other_id].index = 0;
+        con->connections[con_number].index = 0;
+        con->connections[con_number].other_id = 0;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 /* return 0 on success
  * return -1 on failure
  */
-static int handle_TCP_packet(TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+static int handle_TCP_packet(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
 {
+    if (length == 0)
+        return -1;
+
+    switch (data[0]) {
+        case TCP_PACKET_ROUTING_REQUEST: {
+
+            break;
+        }
+
+        case TCP_PACKET_CONNECTION_NOTIFICATION: {
+
+            break;
+        }
+
+        case TCP_PACKET_DISCONNECT_NOTIFICATION: {
+            if (length != 2)
+                return -1;
+
+            return disconnect_conection_index(TCP_server, con, data[1] - NUM_RESERVED_PORTS);
+        }
+
+        case TCP_PACKET_ONION_REQUEST: {
+
+            break;
+        }
+
+        case TCP_PACKET_ONION_RESPONSE: {
+
+            break;
+        }
+
+        default: {
+            break;
+        }
+    }
 
     return 0;
 }
@@ -574,6 +634,28 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
 {
     uint32_t i;
 
+    for (i = 0; i < TCP_server->size_accepted_connections; ++i) {
+        TCP_Secure_Connection *conn = &TCP_server->accepted_connection_array[i];
+
+        if (conn->status != TCP_STATUS_CONFIRMED)
+            continue;
+
+        uint8_t packet[MAX_PACKET_SIZE];
+        int len = read_packet_TCP_secure_connection(conn, packet, sizeof(packet));
+
+        if (len == 0) {
+            continue;
+        } else if (len == -1) {
+            kill_TCP_connection(conn);
+            del_accepted(TCP_server, i);
+            continue;
+        } else {
+            if (handle_TCP_packet(TCP_server, conn, packet, len) == -1) {
+                kill_TCP_connection(conn);
+                del_accepted(TCP_server, i);
+            }
+        }
+    }
 }
 
 void do_TCP_server(TCP_Server *TCP_server)
