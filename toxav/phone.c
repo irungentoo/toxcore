@@ -942,19 +942,14 @@ void callback_recv_starting ( void *_arg )
 }
 void callback_recv_ending ( void *_arg )
 {
+    INFO ( "Call ended!" );
     _phone->running_encaud = 0;
     _phone->running_decaud = 0;
     _phone->running_encvid = 0;
     _phone->running_decvid = 0;
 
     /* Wait until all threads are done */
-
-    while ( _phone->running_encaud != -1 ||
-            _phone->running_decaud != -1 ||
-            _phone->running_encvid != -1 ||
-            _phone->running_decvid != -1 )
-
-        usleep(10000000);
+    usleep(100000); 
 
     INFO ( "Call ended!" );
 }
