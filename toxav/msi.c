@@ -30,7 +30,6 @@
 
 #include "msi.h"
 #include "event.h"
-#include "../toxcore/tox.h"
 
 
 #include <assert.h>
