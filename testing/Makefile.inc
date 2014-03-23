@@ -36,6 +36,7 @@ DHT_test_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
@@ -52,6 +53,7 @@ Lossless_UDP_testclient_LDADD = \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
@@ -68,6 +70,7 @@ Lossless_UDP_testserver_LDADD = \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
@@ -82,6 +85,7 @@ Messenger_test_LDADD =  $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
@@ -98,6 +102,7 @@ crypto_speed_test_LDADD = \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
@@ -114,6 +119,7 @@ tox_sync_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 endif

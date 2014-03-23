@@ -38,6 +38,7 @@ NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
 LIBCHECK_FOUND="no"
 WANT_NACL="no"
+ADD_NACL_OBJECTS_TO_PKGCONFIG="yes"
 
 TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
 TOXAV_LT_LDFLAGS="-version-info $LIBTOXAV_LT_VERSION"
@@ -207,18 +208,17 @@ AC_ARG_WITH(libsodium-libs,
         ]
 )
 
+if test "x$WANT_NACL" = "xyes"; then
+    enable_shared=no
+    enable_static=yes
+fi
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
-
-if test "x$WANT_NACL" = "xyes"; then
-    disable_shared=yes
-    enable_static=yes
-fi
-
 
 WIN32=no
 AC_CANONICAL_HOST
@@ -234,6 +234,7 @@ case $host_os in
         LDFLAGS="$LDFLAGS -L/usr/local/lib"
         CFLAGS="$CFLAGS -I/usr/local/include"
         CPPFLAGS="$CPPFLAGS -I/usr/local/include"
+        ADD_NACL_OBJECTS_TO_PKGCONFIG="no"
     ;;
 esac
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
@@ -245,6 +246,8 @@ AC_SUBST(EXTRA_LT_LDFLAGS)
 if test "x$WANT_NACL" = "xyes"; then
     NACL_LIBS=
     NACL_LDFLAGS=
+    NACL_OBJECTS=
+    NACL_OBJECTS_PKGCONFIG=
     LDFLAGS_SAVE="$LDFLAGS"
     if test -n "$NACL_SEARCH_LIBS"; then
         LDFLAGS="-L$NACL_SEARCH_LIBS $LDFLAGS"
@@ -268,14 +271,19 @@ if test "x$WANT_NACL" = "xyes"; then
 
     if (test -f "$NACL_SEARCH_LIBS/cpucycles.o") &&
        (test -f "$NACL_SEARCH_LIBS/randombytes.o"); then
-        NACL_LIBS="$NACL_LIBS $NACL_SEARCH_LIBS/cpucycles.o $NACL_SEARCH_LIBS/randombytes.o"
+        NACL_OBJECTS="$NACL_SEARCH_LIBS/cpucycles.o $NACL_SEARCH_LIBS/randombytes.o"
+        if test "x$ADD_NACL_OBJECTS_TO_PKGCONFIG" = "xyes"; then
+            NACL_OBJECTS_PKGCONFIG="$NACL_OBJECTS"
+        fi
     else
-        AC_MSG_ERROR([nacl weirdness: required object files cpucycles.o randombytes.o not found])
+        AC_MSG_ERROR([required NaCl object files cpucycles.o randombytes.o not found, please specify their location using the --with-nacl-libs parameter])
     fi
 
     LDFLAGS="$LDFLAGS_SAVE"
     AC_SUBST(NACL_LIBS)
     AC_SUBST(NACL_LDFLAGS)
+    AC_SUBST(NACL_OBJECTS)
+    AC_SUBST(NACL_OBJECTS_PKGCONFIG)
 else
     LIBSODIUM_LIBS=
     LIBSODIUM_LDFLAGS=

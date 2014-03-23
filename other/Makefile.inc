@@ -12,6 +12,7 @@ DHT_bootstrap_LDADD =   $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
