@@ -419,15 +419,11 @@ static int handle_TCP_packet(TCP_Server *TCP_server, TCP_Secure_Connection *con,
         return -1;
 
     switch (data[0]) {
-        case TCP_PACKET_ROUTING_REQUEST: {
-
+        case TCP_PACKET_ROUTING_REQUEST:
             break;
-        }
 
-        case TCP_PACKET_CONNECTION_NOTIFICATION: {
-
+        case TCP_PACKET_CONNECTION_NOTIFICATION:
             break;
-        }
 
         case TCP_PACKET_DISCONNECT_NOTIFICATION: {
             if (length != 2)
@@ -436,19 +432,14 @@ static int handle_TCP_packet(TCP_Server *TCP_server, TCP_Secure_Connection *con,
             return disconnect_conection_index(TCP_server, con, data[1] - NUM_RESERVED_PORTS);
         }
 
-        case TCP_PACKET_ONION_REQUEST: {
-
+        case TCP_PACKET_ONION_REQUEST:
             break;
-        }
 
-        case TCP_PACKET_ONION_RESPONSE: {
-
+        case TCP_PACKET_ONION_RESPONSE:
             break;
-        }
 
-        default: {
+        default:
             break;
-        }
     }
 
     return 0;
