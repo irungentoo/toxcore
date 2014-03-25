@@ -170,6 +170,11 @@ static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
     return index;
 }
 
+/* Delete accepted connection from list.
+ *
+ * return 0 on success
+ * return -1 on failure
+ */
 static int del_accepted(TCP_Server *TCP_server, int index)
 {
     if ((uint32_t)index >= TCP_server->size_accepted_connections)
@@ -185,6 +190,22 @@ static int del_accepted(TCP_Server *TCP_server, int index)
         realloc_connection(TCP_server, 0);
 
     return 0;
+}
+
+/* return index corresponding to connection with peer on success
+ * return -1 on failure.
+ */
+static int get_TCP_connection_index(TCP_Server *TCP_server, uint8_t *public_key)
+{
+    //TODO optimize this function.
+    uint32_t i;
+
+    for (i = 0; i < TCP_server->size_accepted_connections; ++i) {
+        if (memcmp(TCP_server->accepted_connection_array[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0)
+            return i;
+    }
+
+    return -1;
 }
 
 /* return length on success
@@ -386,24 +407,71 @@ static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_s
     return 0;
 }
 
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_routing_response(TCP_Secure_Connection *con, uint8_t rpid, uint8_t *public_key)
+{
+    uint8_t data[1 + 1 + crypto_box_PUBLICKEYBYTES];
+    data[0] = TCP_PACKET_ROUTING_RESPONSE;
+    data[1] = rpid;
+    memcpy(data + 2, public_key, crypto_box_PUBLICKEYBYTES);
+
+    return write_packet_TCP_secure_connection(con, data, sizeof(data));
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_connect_notification(TCP_Secure_Connection *con, uint8_t id)
+{
+    uint8_t data[2] = {TCP_PACKET_CONNECTION_NOTIFICATION, id};
+    return write_packet_TCP_secure_connection(con, data, sizeof(data));
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_disconnect_notification(TCP_Secure_Connection *con, uint8_t id)
+{
+    uint8_t data[2] = {TCP_PACKET_DISCONNECT_NOTIFICATION, id};
+    return write_packet_TCP_secure_connection(con, data, sizeof(data));
+}
+
+/* return 0 on success.
+ * return -1 on failure (connection must be killed).
+ */
+static int handle_TCP_routing_req(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t *public_key)
+{
+    //TODO
+    return 0;
+}
+
 static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number)
 {
     if (con_number >= NUM_CLIENT_CONNECTIONS)
         return -1;
 
-    uint32_t index = con->connections[con_number].index;
-    uint8_t other_id = con->connections[con_number].other_id;
+    if (con->connections[con_number].status) {
+        uint32_t index = con->connections[con_number].index;
+        uint8_t other_id = con->connections[con_number].other_id;
 
-    if (index) {
-        --index;
+        if (con->connections[con_number].status == 2) {
 
-        if (index >= TCP_server->size_accepted_connections)
-            return -1;
+            if (index >= TCP_server->size_accepted_connections)
+                return -1;
 
-        TCP_server->accepted_connection_array[index].connections[other_id].other_id = 0;
-        TCP_server->accepted_connection_array[index].connections[other_id].index = 0;
+            TCP_server->accepted_connection_array[index].connections[other_id].other_id = 0;
+            TCP_server->accepted_connection_array[index].connections[other_id].index = 0;
+            TCP_server->accepted_connection_array[index].connections[other_id].status = 1;
+        }
+
         con->connections[con_number].index = 0;
         con->connections[con_number].other_id = 0;
+        con->connections[con_number].status = 0;
         return 0;
     } else {
         return -1;
@@ -420,11 +488,15 @@ static int handle_TCP_packet(TCP_Server *TCP_server, TCP_Secure_Connection *con,
 
     switch (data[0]) {
         case TCP_PACKET_ROUTING_REQUEST: {
+            if (length != 1 + crypto_box_PUBLICKEYBYTES)
+                return -1;
 
-            break;
+            return handle_TCP_routing_req(TCP_server, con, data + 1);
         }
 
         case TCP_PACKET_CONNECTION_NOTIFICATION: {
+            if (length != 2)
+                return -1;
 
             break;
         }
@@ -447,7 +519,31 @@ static int handle_TCP_packet(TCP_Server *TCP_server, TCP_Secure_Connection *con,
         }
 
         default: {
-            break;
+            if (data[0] < NUM_RESERVED_PORTS)
+                return -1;
+
+            uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
+
+            if (con_id >= NUM_CLIENT_CONNECTIONS)
+                return -1;
+
+            if (con->connections[con_id].status == 0)
+                return -1;
+
+            if (con->connections[con_id].status != 2)
+                return 0;
+
+            uint32_t index = con->connections[con_id].index;
+            uint8_t other_con_id = con->connections[con_id].other_id;
+            uint8_t new_data[length];
+            memcpy(new_data, data, length);
+            new_data[0] = other_con_id;
+            int ret = write_packet_TCP_secure_connection(&TCP_server->accepted_connection_array[index], new_data, length);
+
+            if (ret == -1)
+                return -1;
+
+            return 0;
         }
     }
 
