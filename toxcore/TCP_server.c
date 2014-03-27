@@ -309,6 +309,35 @@ static int read_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_t
     return len;
 }
 
+/* return 0 if pending data was sent completely
+ * return -1 if it wasn't
+ */
+static int send_pending_data(TCP_Secure_Connection *con)
+{
+    if (con->last_packet_length == 0) {
+        return 0;
+    }
+
+    uint16_t left = con->last_packet_length - con->last_packet_sent;
+    int len = send(con->sock, con->last_packet + con->last_packet_sent, left, 0);
+
+    if (len <= 0)
+        return -1;
+
+    if (len == left) {
+        con->last_packet_length = 0;
+        con->last_packet_sent = 0;
+        return 0;
+    }
+
+    if (len > left)
+        return -1;
+
+    con->last_packet_sent += len;
+    return -1;
+
+}
+
 /* return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
@@ -318,26 +347,32 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_
     if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE)
         return -1;
 
+    if (send_pending_data(con) == -1)
+        return 0;
+
     uint8_t packet[sizeof(uint16_t) + length + crypto_box_MACBYTES];
 
-    uint16_t c_length = htons(length) + crypto_box_MACBYTES;
+    uint16_t c_length = htons(length + crypto_box_MACBYTES);
     memcpy(packet, &c_length, sizeof(uint16_t));
-    uint32_t len = encrypt_data_fast(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
+    int len = encrypt_data_fast(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
-    if (len != (sizeof(packet) - sizeof(uint16_t)))
+    if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t)))
         return -1;
 
     increment_nonce(con->sent_nonce);
 
     len = send(con->sock, packet, sizeof(packet), 0);
 
-    if (len == sizeof(packet))
+    if ((unsigned int)len == sizeof(packet))
         return 1;
 
     if (len <= 0)
         return 0;
 
-    return -1;
+    memcpy(con->last_packet, packet, length);
+    con->last_packet_length = sizeof(packet);
+    con->last_packet_sent = len;
+    return 1;
 }
 
 /* Kill a TCP_Secure_Connection
@@ -368,6 +403,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
     if (len != TCP_HANDSHAKE_PLAIN_SIZE)
         return -1;
 
+    memcpy(con->public_key, data, crypto_box_PUBLICKEYBYTES);
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
     uint8_t resp_plain[TCP_HANDSHAKE_PLAIN_SIZE];
     crypto_box_keypair(resp_plain, temp_secret_key);
@@ -427,7 +463,7 @@ static int send_routing_response(TCP_Secure_Connection *con, uint8_t rpid, uint8
  */
 static int send_connect_notification(TCP_Secure_Connection *con, uint8_t id)
 {
-    uint8_t data[2] = {TCP_PACKET_CONNECTION_NOTIFICATION, id};
+    uint8_t data[2] = {TCP_PACKET_CONNECTION_NOTIFICATION, id + NUM_RESERVED_PORTS};
     return write_packet_TCP_secure_connection(con, data, sizeof(data));
 }
 
@@ -437,7 +473,7 @@ static int send_connect_notification(TCP_Secure_Connection *con, uint8_t id)
  */
 static int send_disconnect_notification(TCP_Secure_Connection *con, uint8_t id)
 {
-    uint8_t data[2] = {TCP_PACKET_DISCONNECT_NOTIFICATION, id};
+    uint8_t data[2] = {TCP_PACKET_DISCONNECT_NOTIFICATION, id + NUM_RESERVED_PORTS};
     return write_packet_TCP_secure_connection(con, data, sizeof(data));
 }
 
@@ -449,6 +485,14 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, uint8
     uint32_t i;
     uint32_t index = ~0;
     TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[con_id];
+
+    /* If person tries to cennect to himself we deny the request*/
+    if (memcmp(con->public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (send_routing_response(con, 0, public_key) == -1)
+            return -1;
+
+        return 0;
+    }
 
     for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
         if (con->connections[i].status == 0) {
@@ -464,7 +508,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, uint8
         return 0;
     }
 
-    int ret = send_routing_response(con, index, public_key);
+    int ret = send_routing_response(con, index + NUM_RESERVED_PORTS, public_key);
 
     if (ret == 0)
         return 0;
@@ -801,6 +845,7 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
         if (conn->status != TCP_STATUS_CONFIRMED)
             continue;
 
+        send_pending_data(conn);
         uint8_t packet[MAX_PACKET_SIZE];
         int len = read_packet_TCP_secure_connection(conn, packet, sizeof(packet));
 

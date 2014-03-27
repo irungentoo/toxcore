@@ -26,7 +26,7 @@
 
 #define TCP_MAX_BACKLOG MAX_INCOMMING_CONNECTIONS
 
-#define MAX_PACKET_SIZE 8192
+#define MAX_PACKET_SIZE 2048
 
 #define TCP_HANDSHAKE_PLAIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES)
 #define TCP_SERVER_HANDSHAKE_SIZE (crypto_box_NONCEBYTES + TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
@@ -65,6 +65,9 @@ typedef struct TCP_Secure_Connection {
         uint32_t index;
         uint8_t other_id;
     } connections[NUM_CLIENT_CONNECTIONS];
+    uint8_t last_packet[2 + MAX_PACKET_SIZE];
+    uint16_t last_packet_length;
+    uint16_t last_packet_sent;
 } TCP_Secure_Connection;
 
 
