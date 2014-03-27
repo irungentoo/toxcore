@@ -262,7 +262,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
         return NULL;
     }
 
-    memset(_retu->csrc, 0, 16);
+    memset(_retu->csrc, 0, 16 * sizeof (uint32_t));
     
     _retu->marker_payloadt = *_it;
     ++_it;
