@@ -100,6 +100,10 @@ special ids and packets:
 [uint8_t id (2)][uint8_t (packet id of connection that got connected)]
 3 - Disconnect notification:
 [uint8_t id (3)][uint8_t (packet id of connection that got disconnected)]
+4 - ping packet
+[uint8_t id (4)][uint64_t ping_id]
+5 - ping response (pong)
+[uint8_t id (5)][uint64_t ping_id]
 8 - onion packet (same format as initial onion packet (See: Prevent 
 tracking.txt) but packet id is 8 instead of 128)
 9 - onion packet response (same format as onion packet with id 142 but id is 9 
@@ -128,6 +132,13 @@ routed connection is cleared and a disconnect notification is sent to the peer
 If the server receives an onion packet he handles it the same as he would if it 
 was one received normally via UDP, he must also assure himself that any 
 responses must be sent to the proper client.
+
+Ping responses must have the same ping_id as the request.
+
+If the server recieves a ping packet he must respond with a ping response.
+
+The server will send a ping packet to clients every 30 seconds, they have 30 
+seconds to respond, if they don't the connection is deleted.
 
 Client:
 

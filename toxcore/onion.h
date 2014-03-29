@@ -86,6 +86,15 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
  */
 int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret);
 
+/* Function to handle/send received decrypted versions of the packet sent with send_onion_packet.
+ *
+ * return 0 on success.
+ * return 1 on failure.
+ *
+ * Used to handle these packets that are received in a non traditional way (by TCP for example).
+ */
+int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uint8_t *nonce);
+
 Onion *new_onion(DHT *dht);
 
 void kill_onion(Onion *onion);

@@ -612,9 +612,26 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *d
             return disconnect_conection_index(TCP_server, con, data[1] - NUM_RESERVED_PORTS);
         }
 
-        case TCP_PACKET_ONION_REQUEST: {
+        case TCP_PACKET_PING: {
+            if (length != 1 + sizeof(uint64_t))
+                return -1;
 
             break;
+        }
+
+        case TCP_PACKET_PONG: {
+            if (length != 1 + sizeof(uint64_t))
+                return -1;
+
+            break;
+        }
+
+        case TCP_PACKET_ONION_REQUEST: {
+            //if (length <= 1 + crypto_box_NONCEBYTES + ONION_SEND_BASE*2)
+            //    return -1;
+
+            //TODO onion_send_1(Onion *onion, data + 1 + crypto_box_NONCEBYTES, length - (1 + crypto_box_NONCEBYTES), IP_Port source, data + 1);
+            return 0;
         }
 
         case TCP_PACKET_ONION_RESPONSE: {
@@ -638,7 +655,7 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *d
                 return 0;
 
             uint32_t index = con->connections[con_id].index;
-            uint8_t other_con_id = con->connections[con_id].other_id;
+            uint8_t other_con_id = con->connections[con_id].other_id + NUM_RESERVED_PORTS;
             uint8_t new_data[length];
             memcpy(new_data, data, length);
             new_data[0] = other_con_id;
@@ -847,18 +864,19 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
 
         send_pending_data(conn);
         uint8_t packet[MAX_PACKET_SIZE];
-        int len = read_packet_TCP_secure_connection(conn, packet, sizeof(packet));
+        int len;
 
-        if (len == 0) {
-            continue;
-        } else if (len == -1) {
-            kill_TCP_connection(conn);
-            del_accepted(TCP_server, i);
-            continue;
-        } else {
+        while ((len = read_packet_TCP_secure_connection(conn, packet, sizeof(packet)))) {
+            if (len == -1) {
+                kill_TCP_connection(conn);
+                del_accepted(TCP_server, i);
+                break;
+            }
+
             if (handle_TCP_packet(TCP_server, i, packet, len) == -1) {
                 kill_TCP_connection(conn);
                 del_accepted(TCP_server, i);
+                break;
             }
         }
     }

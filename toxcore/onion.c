@@ -181,13 +181,18 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     if ((uint32_t)len != length - (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES))
         return 1;
 
+    return onion_send_1(onion, plain, len, source, packet + 1);
+}
+
+int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uint8_t *nonce)
+{
     IP_Port send_to;
     memcpy(&send_to, plain, sizeof(IP_Port));
     to_host_family(&send_to.ip);
 
     uint8_t data[MAX_ONION_SIZE];
     data[0] = NET_PACKET_ONION_SEND_1;
-    memcpy(data + 1, packet + 1, crypto_box_NONCEBYTES);
+    memcpy(data + 1, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + crypto_box_NONCEBYTES, plain + sizeof(IP_Port), len - sizeof(IP_Port));
     uint32_t data_len = 1 + crypto_box_NONCEBYTES + (len - sizeof(IP_Port));
     uint8_t *ret_part = data + data_len;
