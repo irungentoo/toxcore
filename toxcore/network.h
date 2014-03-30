@@ -161,21 +161,30 @@ typedef int sock_t;
 #define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
-typedef union {
+
+/* TODO: remove padding bytes next time we need to break compatibility with old versions of core. */
+
+typedef union __attribute__ ((__packed__))
+{
     uint8_t uint8[4];
     uint16_t uint16[2];
     uint32_t uint32;
     struct in_addr in_addr;
-} IP4;
+}
+IP4;
 
-typedef union {
+typedef union __attribute__ ((__packed__))
+{
     uint8_t uint8[16];
     uint16_t uint16[8];
     uint32_t uint32[4];
+    uint64_t uint64[2];
     struct in6_addr in6_addr;
-} IP6;
+}
+IP6;
 
-typedef struct {
+typedef struct __attribute__ ((__packed__))
+{
     uint8_t family;
     /* Not used for anything right now. */
     uint8_t padding[3];
@@ -183,9 +192,11 @@ typedef struct {
         IP4 ip4;
         IP6 ip6;
     };
-} IP;
+}
+IP;
 
-typedef union {
+typedef union __attribute__ ((__packed__))
+{
     struct {
         IP4 ip;
         uint16_t port;
@@ -193,11 +204,13 @@ typedef union {
         uint16_t padding;
     };
     uint8_t uint8[8];
-} IP4_Port;
+}
+IP4_Port;
 
-typedef struct IP_Port {
+typedef struct __attribute__ ((__packed__)) IP_Port {
     IP ip;
     uint16_t port;
+    uint16_t padding;
 } IP_Port;
 
 #define TOX_ENABLE_IPV6_DEFAULT 1

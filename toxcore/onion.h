@@ -34,6 +34,9 @@ typedef struct {
     Shared_Keys shared_keys_1;
     Shared_Keys shared_keys_2;
     Shared_Keys shared_keys_3;
+
+    int (*recv_1_function)(void *, IP_Port, uint8_t *, uint16_t);
+    void *callback_object;
 } Onion;
 
 #define ONION_RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
@@ -92,8 +95,17 @@ int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint3
  * return 1 on failure.
  *
  * Used to handle these packets that are received in a non traditional way (by TCP for example).
+ *
+ * Source family must be set to something else than AF_INET6 or AF_INET so that the callback gets called
+ * when the response is received.
  */
 int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uint8_t *nonce);
+
+/* Set the callback to be called when the dest ip_port doesn't have AF_INET6 or AF_INET as the family.
+ *
+ * Format: function(void *object, IP_Port dest, uint8_t *data, uint32_t length)
+ */
+void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, uint8_t *, uint16_t), void *object);
 
 Onion *new_onion(DHT *dht);
 

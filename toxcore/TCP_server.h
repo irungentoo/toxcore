@@ -21,6 +21,7 @@
 */
 
 #include "net_crypto.h"
+#include "onion.h"
 
 #define MAX_INCOMMING_CONNECTIONS 32
 
@@ -46,6 +47,8 @@
 
 #define ARRAY_ENTRY_SIZE 6
 
+#define TCP_ONION_FAMILY (AF_INET6 + 1)
+
 enum {
     TCP_STATUS_NO_STATUS,
     TCP_STATUS_CONNECTED,
@@ -70,10 +73,13 @@ typedef struct TCP_Secure_Connection {
     uint8_t last_packet[2 + MAX_PACKET_SIZE];
     uint16_t last_packet_length;
     uint16_t last_packet_sent;
+
+    uint64_t identifier;
 } TCP_Secure_Connection;
 
 
 typedef struct {
+    Onion *onion;
     sock_t *socks_listening;
     unsigned int num_listening_socks;
 
@@ -87,12 +93,14 @@ typedef struct {
     TCP_Secure_Connection *accepted_connection_array;
     uint32_t size_accepted_connections;
     uint32_t num_accepted_connections;
+
+    uint64_t counter;
 } TCP_Server;
 
 /* Create new TCP server instance.
  */
 TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports, uint8_t *public_key,
-                           uint8_t *secret_key);
+                           uint8_t *secret_key, Onion *onion);
 
 /* Run the TCP_server
  */

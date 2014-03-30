@@ -398,13 +398,20 @@ static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     uint32_t data_len = length - (1 + RETURN_1);
 
+    if (onion->recv_1_function && send_to.ip.family != AF_INET && send_to.ip.family != AF_INET6)
+        return onion->recv_1_function(onion->callback_object, send_to, packet + (1 + RETURN_1), data_len);
+
     if ((uint32_t)sendpacket(onion->net, send_to, packet + (1 + RETURN_1), data_len) != data_len)
         return 1;
 
     return 0;
 }
 
-
+void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, uint8_t *, uint16_t), void *object)
+{
+    onion->recv_1_function = function;
+    onion->callback_object = object;
+}
 
 Onion *new_onion(DHT *dht)
 {

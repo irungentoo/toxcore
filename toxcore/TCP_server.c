@@ -167,6 +167,7 @@ static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
     memcpy(&TCP_server->accepted_connection_array[index], con, sizeof(TCP_Secure_Connection));
     TCP_server->accepted_connection_array[index].status = TCP_STATUS_CONFIRMED;
     ++TCP_server->num_accepted_connections;
+    TCP_server->accepted_connection_array[index].identifier = ++TCP_server->counter;
     return index;
 }
 
@@ -580,6 +581,29 @@ static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connect
     }
 }
 
+static int handle_onion_recv_1(void *object, IP_Port dest, uint8_t *data, uint16_t length)
+{
+    TCP_Server *TCP_server = object;
+    uint32_t index = dest.ip.ip6.uint32[0];
+
+    if (index >= TCP_server->size_accepted_connections)
+        return 1;
+
+    TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[index];
+
+    if (con->identifier != dest.ip.ip6.uint64[1])
+        return 1;
+
+    uint8_t packet[1 + length];
+    memcpy(packet + 1, data, length);
+    packet[0] = TCP_PACKET_ONION_RESPONSE;
+
+    if (write_packet_TCP_secure_connection(con, packet, sizeof(packet)) != 1)
+        return 1;
+
+    return 0;
+}
+
 /* return 0 on success
  * return -1 on failure
  */
@@ -627,16 +651,23 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *d
         }
 
         case TCP_PACKET_ONION_REQUEST: {
-            //if (length <= 1 + crypto_box_NONCEBYTES + ONION_SEND_BASE*2)
-            //    return -1;
+            if (TCP_server->onion) {
+                if (length <= 1 + crypto_box_NONCEBYTES + ONION_SEND_BASE * 2)
+                    return -1;
 
-            //TODO onion_send_1(Onion *onion, data + 1 + crypto_box_NONCEBYTES, length - (1 + crypto_box_NONCEBYTES), IP_Port source, data + 1);
+                IP_Port source;
+                source.ip.family = TCP_ONION_FAMILY;
+                source.ip.ip6.uint32[0] = con_id;
+                source.ip.ip6.uint64[1] = con->identifier;
+                onion_send_1(TCP_server->onion, data + 1 + crypto_box_NONCEBYTES, length - (1 + crypto_box_NONCEBYTES), source,
+                             data + 1);
+            }
+
             return 0;
         }
 
         case TCP_PACKET_ONION_RESPONSE: {
-
-            break;
+            return -1;
         }
 
         default: {
@@ -741,7 +772,7 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
 }
 
 TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports, uint8_t *public_key,
-                           uint8_t *secret_key)
+                           uint8_t *secret_key, Onion *onion)
 {
     if (num_sockets == 0 || ports == NULL)
         return NULL;
@@ -750,6 +781,11 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
 
     if (temp == NULL)
         return NULL;
+
+    if (onion) {
+        temp->onion = onion;
+        set_callback_handle_recv_1(onion, &handle_onion_recv_1, temp);
+    }
 
     temp->socks_listening = calloc(num_sockets, sizeof(sock_t));
 
@@ -896,6 +932,10 @@ void kill_TCP_server(TCP_Server *TCP_server)
 
     for (i = 0; i < TCP_server->num_listening_socks; ++i) {
         kill_sock(TCP_server->socks_listening[i]);
+    }
+
+    if (TCP_server->onion) {
+        set_callback_handle_recv_1(TCP_server->onion, NULL, NULL);
     }
 
     free(TCP_server->socks_listening);

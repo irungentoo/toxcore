@@ -28,7 +28,7 @@ START_TEST(test_basic)
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key);
+    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
 
     sock_t sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
@@ -202,7 +202,7 @@ START_TEST(test_some)
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key);
+    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
 
     struct sec_TCP_con *con1 = new_TCP_con(tcp_s);
