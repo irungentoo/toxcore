@@ -4,7 +4,7 @@ TODO list.
 
 Networking:
     [NOT STARTED] UPnP port forwarding.
-    [NOT STARTED] NAT-PMP port forwarding.
+    [NOT STARTED] PCP port forwarding.
 
 DHT:
     [ALMOST DONE] Metadata collection prevention. (docs/Prevent_Tracking.txt)
