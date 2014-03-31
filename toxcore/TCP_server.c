@@ -26,6 +26,8 @@
 #include <sys/ioctl.h>
 #endif
 
+#include "util.h"
+
 /* return 1 if valid
  * return 0 if not valid
  */
@@ -168,6 +170,8 @@ static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
     TCP_server->accepted_connection_array[index].status = TCP_STATUS_CONFIRMED;
     ++TCP_server->num_accepted_connections;
     TCP_server->accepted_connection_array[index].identifier = ++TCP_server->counter;
+    TCP_server->accepted_connection_array[index].last_pinged = unix_time();
+    TCP_server->accepted_connection_array[index].ping_id = 0;
     return index;
 }
 
@@ -640,14 +644,29 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *d
             if (length != 1 + sizeof(uint64_t))
                 return -1;
 
-            break;
+            uint8_t response[1 + sizeof(uint64_t)];
+            response[0] = TCP_PACKET_PONG;
+            memcpy(response + 1, data + 1, sizeof(uint64_t));
+            write_packet_TCP_secure_connection(con, response, sizeof(response));
+            return 0;
         }
 
         case TCP_PACKET_PONG: {
             if (length != 1 + sizeof(uint64_t))
                 return -1;
 
-            break;
+            uint64_t ping_id;
+            memcpy(&ping_id, data + 1, sizeof(uint64_t));
+
+            if (ping_id) {
+                if (ping_id == con->ping_id) {
+                    con->ping_id = 0;
+                }
+
+                return 0;
+            } else {
+                return -1;
+            }
         }
 
         case TCP_PACKET_ONION_REQUEST: {
@@ -898,6 +917,29 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
         if (conn->status != TCP_STATUS_CONFIRMED)
             continue;
 
+        if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY)) {
+            uint8_t ping[1 + sizeof(uint64_t)];
+            ping[0] = TCP_PACKET_PING;
+            uint64_t ping_id = random_64b();
+
+            if (!ping_id)
+                ++ping_id;
+
+            memcpy(ping + 1, &ping_id, sizeof(uint64_t));
+            int ret = write_packet_TCP_secure_connection(conn, ping, sizeof(ping));
+
+            if (ret == 1) {
+                conn->last_pinged = unix_time();
+                conn->ping_id = ping_id;
+            }
+        }
+
+        if (conn->ping_id && is_timeout(conn->last_pinged, TCP_PING_TIMEOUT)) {
+            kill_TCP_connection(conn);
+            del_accepted(TCP_server, i);
+            continue;
+        }
+
         send_pending_data(conn);
         uint8_t packet[MAX_PACKET_SIZE];
         int len;
@@ -920,6 +962,8 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
 
 void do_TCP_server(TCP_Server *TCP_server)
 {
+    unix_time_update();
+
     do_TCP_accept_new(TCP_server);
     do_TCP_incomming(TCP_server);
     do_TCP_unconfirmed(TCP_server);

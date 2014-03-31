@@ -101,9 +101,9 @@ special ids and packets:
 3 - Disconnect notification:
 [uint8_t id (3)][uint8_t (packet id of connection that got disconnected)]
 4 - ping packet
-[uint8_t id (4)][uint64_t ping_id]
+[uint8_t id (4)][uint64_t ping_id (0 is invalid)]
 5 - ping response (pong)
-[uint8_t id (5)][uint64_t ping_id]
+[uint8_t id (5)][uint64_t ping_id (0 is invalid)]
 8 - onion packet (same format as initial onion packet (See: Prevent 
 tracking.txt) but packet id is 8 instead of 128)
 9 - onion packet response (same format as onion packet with id 142 but id is 9 

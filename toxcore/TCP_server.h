@@ -49,6 +49,10 @@
 
 #define TCP_ONION_FAMILY (AF_INET6 + 1)
 
+/* frequency to ping connected nodes and timeout in seconds */
+#define TCP_PING_FREQUENCY 30
+#define TCP_PING_TIMEOUT 20
+
 enum {
     TCP_STATUS_NO_STATUS,
     TCP_STATUS_CONNECTED,
@@ -75,6 +79,9 @@ typedef struct TCP_Secure_Connection {
     uint16_t last_packet_sent;
 
     uint64_t identifier;
+
+    uint64_t last_pinged;
+    uint64_t ping_id;
 } TCP_Secure_Connection;
 
 
