@@ -234,6 +234,9 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
     int32_t friend_id = getfriend_id(m, client_id);
 
     if (friend_id != -1) {
+        if (m->friendlist[friend_id].status >= FRIEND_CONFIRMED)
+            return FAERR_ALREADYSENT;
+
         uint32_t nospam;
         memcpy(&nospam, address + crypto_box_PUBLICKEYBYTES, sizeof(nospam));
 
