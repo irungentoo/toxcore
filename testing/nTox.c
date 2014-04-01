@@ -1020,7 +1020,8 @@ void print_groupchatpeers(Tox *m, int groupnumber)
     }
 
     uint8_t names[num][TOX_MAX_NAME_LENGTH];
-    tox_group_get_names(m, groupnumber, names, num);
+    uint16_t lengths[num];
+    tox_group_get_names(m, groupnumber, names, lengths, num);
     int i;
     char numstr[16];
     char header[] = "[g]+ ";
@@ -1030,7 +1031,7 @@ void print_groupchatpeers(Tox *m, int groupnumber)
     size_t len_total = header_len;
 
     for (i = 0; i < num; ++i) {
-        size_t len_name = strlen((char *)names[i]);
+        size_t len_name = lengths[i];
         size_t len_num = sprintf(numstr, "%i: ", i);
 
         if (len_num + len_name + len_total + 3 >= STRING_LENGTH) {
@@ -1042,7 +1043,7 @@ void print_groupchatpeers(Tox *m, int groupnumber)
 
         strcpy(msg + len_total, numstr);
         len_total += len_num;
-        strcpy(msg + len_total, (char *)names[i]);
+        memcpy(msg + len_total, (char *)names[i], len_name);
         len_total += len_name;
 
         if (i < num - 1) {

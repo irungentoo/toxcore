@@ -1243,16 +1243,18 @@ int group_number_peers(Messenger *m, int groupnumber)
  *
  * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
  *
+ * Copies the lengths of the names to lengths[length]
+ *
  * returns the number of peers on success.
  *
  * return -1 on failure.
  */
-int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], uint16_t length)
+int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[], uint16_t length)
 {
     if (groupnumber_not_valid(m, groupnumber))
         return -1;
 
-    return group_client_names(m->chats[groupnumber], names, length);
+    return group_client_names(m->chats[groupnumber], names, lengths, length);
 }
 
 static int handle_group(void *object, IP_Port source, uint8_t *packet, uint32_t length)

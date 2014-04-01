@@ -274,6 +274,16 @@ START_TEST(test_some)
     ck_assert_msg(len == sizeof(test_packet), "wrong len %u", len);
     ck_assert_msg(memcmp(data, test_packet, sizeof(test_packet)) == 0, "packet is wrong %u %u %u %u", data[0], data[1],
                   data[sizeof(test_packet) - 2], data[sizeof(test_packet) - 1]);
+
+    uint8_t ping_packet[1 + sizeof(uint64_t)] = {4, 8, 6, 9, 67};
+    write_packet_TCP_secure_connection(con1, ping_packet, sizeof(ping_packet));
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    len = read_packet_sec_TCP(con1, data, 2 + sizeof(ping_packet) + crypto_box_MACBYTES);
+    ck_assert_msg(len == sizeof(ping_packet), "wrong len %u", len);
+    ck_assert_msg(data[0] == 5, "wrong packet id %u", data[0]);
+    ck_assert_msg(memcmp(ping_packet + 1, data + 1, sizeof(uint64_t)) == 0, "wrong packet data");
 }
 END_TEST
 

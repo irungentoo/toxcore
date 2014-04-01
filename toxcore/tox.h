@@ -462,11 +462,14 @@ int tox_group_number_peers(Tox *tox, int groupnumber);
  *
  * Copies the names of the peers to the name[length][TOX_MAX_NAME_LENGTH] array.
  *
+ * Copies the lengths of the names to lengths[length]
+ *
  * returns the number of peers on success.
  *
  * return -1 on failure.
  */
-int tox_group_get_names(Tox *tox, int groupnumber, uint8_t names[][TOX_MAX_NAME_LENGTH], uint16_t length);
+int tox_group_get_names(Tox *tox, int groupnumber, uint8_t names[][TOX_MAX_NAME_LENGTH], uint16_t lengths[],
+                        uint16_t length);
 
 /* Return the number of chats in the instance m.
  * You should use this to determine how much memory to allocate
