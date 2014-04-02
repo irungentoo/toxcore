@@ -2246,7 +2246,9 @@ void do_messenger(Messenger *m)
 
     if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         loglog(" = = = = = = = = \n");
+#ifdef ENABLE_ASSOC_DHT
         Assoc_status(m->dht->assoc);
+#endif
 
         if (m->numchats > 0) {
             size_t c;

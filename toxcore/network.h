@@ -307,6 +307,31 @@ typedef struct {
     uint64_t send_fail_eagain;
 } Networking_Core;
 
+/* Check if socket is valid.
+ *
+ * return 1 if valid
+ * return 0 if not valid
+ */
+int sock_valid(sock_t sock);
+
+/* Close the socket.
+ */
+void kill_sock(sock_t sock);
+
+/* Set socket as nonblocking
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_nonblock(sock_t sock);
+
+/* Set socket to dual (IPv4 + IPv6 socket)
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_dualstack(sock_t sock);
+
 /*  return current time in milleseconds since the epoch. */
 uint64_t current_time(void);
 

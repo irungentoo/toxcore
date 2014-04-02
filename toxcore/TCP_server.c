@@ -1,7 +1,7 @@
 /*
 * TCP_server.c -- Implementation of the TCP relay server part of Tox.
 *
-*  Copyright (C) 2013 Tox project All Rights Reserved.
+*  Copyright (C) 2014 Tox project All Rights Reserved.
 *
 *  This file is part of Tox.
 *
@@ -27,62 +27,6 @@
 #endif
 
 #include "util.h"
-
-/* return 1 if valid
- * return 0 if not valid
- */
-static int sock_valid(sock_t sock)
-{
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-
-    if (sock == INVALID_SOCKET) {
-#else
-
-    if (sock < 0) {
-#endif
-        return 0;
-    }
-
-    return 1;
-}
-
-static void kill_sock(sock_t sock)
-{
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    closesocket(sock);
-#else
-    close(sock);
-#endif
-}
-
-/* return 1 on success
- * return 0 on failure
- */
-static int set_nonblock(sock_t sock)
-{
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    u_long mode = 1;
-    return (ioctlsocket(sock, FIONBIO, &mode) == 0);
-#else
-    return (fcntl(sock, F_SETFL, O_NONBLOCK, 1) == 0);
-#endif
-}
-
-/* return 1 on success
- * return 0 on failure
- */
-static int set_dualstack(sock_t sock)
-{
-    char ipv6only = 0;
-    socklen_t optsize = sizeof(ipv6only);
-    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
-
-    if ((res == 0) && (ipv6only == 0))
-        return 1;
-
-    ipv6only = 0;
-    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only)) == 0);
-}
 
 /* return 1 on success
  * return 0 on failure
@@ -747,7 +691,7 @@ static int accept_connection(TCP_Server *TCP_server, sock_t sock)
     if (!sock_valid(sock))
         return 0;
 
-    if (!set_nonblock(sock)) {
+    if (!set_socket_nonblock(sock)) {
         kill_sock(sock);
         return 0;
     }
@@ -774,10 +718,10 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
         return ~0;
     }
 
-    int ok = set_nonblock(sock);
+    int ok = set_socket_nonblock(sock);
 
     if (ok && family == AF_INET6) {
-        ok = set_dualstack(sock);
+        ok = set_socket_dualstack(sock);
     }
 
     ok = ok && bind_to_port(sock, family, port) && (listen(sock, TCP_MAX_BACKLOG) == 0);

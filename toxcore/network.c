@@ -104,6 +104,70 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
 
 #endif
 
+/* Check if socket is valid.
+ *
+ * return 1 if valid
+ * return 0 if not valid
+ */
+int sock_valid(sock_t sock)
+{
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+
+    if (sock == INVALID_SOCKET) {
+#else
+
+    if (sock < 0) {
+#endif
+        return 0;
+    }
+
+    return 1;
+}
+
+/* Close the socket.
+ */
+void kill_sock(sock_t sock)
+{
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+    closesocket(sock);
+#else
+    close(sock);
+#endif
+}
+
+/* Set socket as nonblocking
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_nonblock(sock_t sock)
+{
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+    u_long mode = 1;
+    return (ioctlsocket(sock, FIONBIO, &mode) == 0);
+#else
+    return (fcntl(sock, F_SETFL, O_NONBLOCK, 1) == 0);
+#endif
+}
+
+/* Set socket to dual (IPv4 + IPv6 socket)
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_dualstack(sock_t sock)
+{
+    char ipv6only = 0;
+    socklen_t optsize = sizeof(ipv6only);
+    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
+
+    if ((res == 0) && (ipv6only == 0))
+        return 1;
+
+    ipv6only = 0;
+    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only)) == 0);
+}
+
 /*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void)
 {
@@ -508,24 +572,13 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     temp->sock = socket(temp->family, SOCK_DGRAM, IPPROTO_UDP);
 
     /* Check for socket error. */
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-
-    if (temp->sock == INVALID_SOCKET) { /* MSDN recommends this. */
-        free(temp);
-        return NULL;
-    }
-
-#else /* !WIN32 */
-
-    if (temp->sock < 0) {
+    if (!sock_valid(temp->sock)) {
 #ifdef DEBUG
         fprintf(stderr, "Failed to get a socket?! %u, %s\n", errno, strerror(errno));
 #endif
         free(temp);
         return NULL;
     }
-
-#endif /* !WIN32 */
 
     /* Functions to increase the size of the send and receive UDP buffers.
      */
@@ -538,14 +591,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
 
     /* Set socket nonblocking. */
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    /* I think this works for Windows. */
-    u_long mode = 1;
-    /* ioctl(sock, FIONBIO, &mode); */
-    ioctlsocket(temp->sock, FIONBIO, &mode);
-#else /* !WIN32 */
-    fcntl(temp->sock, F_SETFL, O_NONBLOCK, 1);
-#endif /* !WIN32 */
+    if (!set_socket_nonblock(temp->sock)) {
+        kill_networking(temp);
+        return NULL;
+    }
 
     /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
     uint16_t *portptr = NULL;
@@ -579,43 +628,19 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     }
 
     if (ip.family == AF_INET6) {
-        char ipv6only = 0;
-        socklen_t optsize = sizeof(ipv6only);
 #ifdef LOGGING
-        errno = 0;
+        int is_dualstack =
 #endif
-        int res = getsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
+            set_socket_dualstack(temp->sock);
+#ifdef LOGGING
 
-        if ((res == 0) && (ipv6only == 0)) {
-#ifdef LOGGING
-            loglog("Dual-stack socket: enabled per default.\n");
-#endif
+        if (is_dualstack) {
+            loglog("Dual-stack socket: enabled.\n");
         } else {
-            ipv6only = 0;
-#ifdef LOGGING
-
-            if (res < 0) {
-                sprintf(logbuffer, "Dual-stack socket: Failed to query default. (%d, %s)\n",
-                        errno, strerror(errno));
-                loglog(logbuffer);
-            }
-
-            errno = 0;
-            res =
-#endif
-                setsockopt(temp->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, sizeof(ipv6only));
-#ifdef LOGGING
-
-            if (res < 0) {
-                sprintf(logbuffer,
-                        "Dual-stack socket: Failed to enable, won't be able to receive from/send to IPv4 addresses. (%u, %s)\n",
-                        errno, strerror(errno));
-                loglog(logbuffer);
-            } else
-                loglog("Dual-stack socket: Enabled successfully.\n");
-
-#endif
+            loglog("Dual-stack socket: Failed to enable, won't be able to receive from/send to IPv4 addresses.\n");
         }
+
+#endif
 
         /* multicast local nodes */
         struct ipv6_mreq mreq;
@@ -626,7 +651,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         mreq.ipv6mr_interface = 0;
 #ifdef LOGGING
         errno = 0;
-        res =
+        int res =
 #endif
             setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
 #ifdef LOGGING
@@ -701,11 +726,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 /* Function to cleanup networking stuff. */
 void kill_networking(Networking_Core *net)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    closesocket(net->sock);
-#else
-    close(net->sock);
-#endif
+    kill_sock(net->sock);
     free(net);
     return;
 }
