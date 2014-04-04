@@ -1934,7 +1934,7 @@ void do_friends(Messenger *m)
                     }
 
                     case PACKET_ID_NICKNAME: {
-                        if (data_length >= MAX_NAME_LENGTH || data_length == 0)
+                        if (data_length > MAX_NAME_LENGTH || data_length == 0)
                             break;
 
                         /* Make sure the NULL terminator is present. */
@@ -1946,7 +1946,7 @@ void do_friends(Messenger *m)
                         if (m->friend_namechange)
                             m->friend_namechange(m, i, data_terminated, data_length, m->friend_namechange_userdata);
 
-                        memcpy(m->friendlist[i].name, data_terminated, data_length + 1);
+                        memcpy(m->friendlist[i].name, data_terminated, data_length);
                         m->friendlist[i].name_length = data_length;
 
                         break;

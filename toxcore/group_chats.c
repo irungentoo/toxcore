@@ -335,7 +335,7 @@ int group_peername(Group_Chat *chat, int peernum, uint8_t *name)
 
 static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t contents_len)
 {
-    if (contents_len >= MAX_NICK_BYTES || contents_len == 0)
+    if (contents_len > MAX_NICK_BYTES || contents_len == 0)
         return;
 
     /* same name as already stored? */
@@ -344,8 +344,6 @@ static void setnick(Group_Chat *chat, int peernum, uint8_t *contents, uint16_t c
             return;
 
     memcpy(chat->group[peernum].nick, contents, contents_len);
-    /* Force null termination */
-    chat->group[peernum].nick[contents_len] = 0;
     chat->group[peernum].nick_len = contents_len;
 
     if (chat->peer_namelistchange != NULL)
