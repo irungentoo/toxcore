@@ -370,7 +370,16 @@ void tox_callback_read_receipt(Tox *tox, void (*function)(Tox *tox, int32_t, uin
  */
 void tox_callback_connection_status(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, void *), void *userdata);
 
-/**********GROUP CHAT FUNCTIONS: WARNING WILL BREAK A LOT************/
+
+/**********ADVANCED FUNCTIONS (If you don't know what they do you can safely ignore them.)  ************/
+
+/* Functions to get/set the nospam part of the id.
+ */
+uint32_t tox_get_nospam(Tox *tox);
+void tox_set_nospam(Tox *tox, uint32_t nospam);
+
+
+/**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 
 /* Set the callback for group invites.
  *

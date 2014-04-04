@@ -463,7 +463,23 @@ void tox_callback_connection_status(Tox *tox, void (*function)(Messenger *tox, i
     m_callback_connectionstatus(m, function, userdata);
 }
 
-/**********GROUP CHAT FUNCTIONS: WARNING WILL BREAK A LOT************/
+/**********ADVANCED FUNCTIONS (If you don't know what they do you can safely ignore them.)  ************/
+
+/* Functions to get/set the nospam part of the id.
+ */
+uint32_t tox_get_nospam(Tox *tox)
+{
+    Messenger *m = tox;
+    return get_nospam(&(m->fr));
+}
+
+void tox_set_nospam(Tox *tox, uint32_t nospam)
+{
+    Messenger *m = tox;
+    set_nospam(&(m->fr), nospam);
+}
+
+/**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 
 /* Set the callback for group invites.
  *
