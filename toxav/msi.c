@@ -1066,9 +1066,7 @@ int handle_recv_ending ( MSISession *session, MSIMessage *msg )
     if ( has_call_error ( session, msg ) == 0 )
         return 0;
     
-    /* Stop timer */
-    invoke_callback(MSI_OnEnding);
-    
+    /* Stop timer */    
     event.timer_release ( session->call->request_timer_id );
     
     invoke_callback(MSI_OnEnding);
