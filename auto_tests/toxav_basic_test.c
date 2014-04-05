@@ -460,7 +460,7 @@ END_TEST
 
 Suite *tox_suite(void)
 {
-    Suite *s = suite_create("Tox");
+    Suite *s = suite_create("ToxAV");
     
     TCase *tc_av = tcase_create("A/V");
     tcase_add_test(tc_av, test_AV);
