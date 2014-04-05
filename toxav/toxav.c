@@ -427,7 +427,7 @@ inline__ int toxav_recv_video ( ToxAv *av, vpx_image_t **output)
     do {
         recved_size = toxav_recv_rtp_payload(av, TypeVideo, packet);
 
-        if (recved_size > 0) 
+        if (recved_size < 0) 
             fprintf(stderr, "Error decoding: %s\n", vpx_codec_err_to_string(vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0)));
         
     } while (recved_size > 0);
@@ -436,11 +436,10 @@ inline__ int toxav_recv_video ( ToxAv *av, vpx_image_t **output)
     vpx_image_t *img;
     img = vpx_codec_get_frame(&av->cs->v_decoder, &iter);
 
-    if (img == NULL)
-        return ErrorInternal;
-
     *output = img;
     return 0;
+    /* Yeah, i set output to be NULL if nothing received
+     */
 }
 
 /**
