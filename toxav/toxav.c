@@ -35,12 +35,6 @@
 
 #include "toxav.h"
 
-/* Default video bitrate in bytes/s */
-#define VIDEO_BITRATE   (10*1000*100)
-
-/* Default audio bitrate in bits/s */
-#define AUDIO_BITRATE   64000
-
 /* Assume 60 fps*/
 #define MAX_ENCODE_TIME_US ((1000 / 60) * 1000)
 
@@ -80,7 +74,7 @@ typedef struct _ToxAv {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new( Tox* messenger, uint16_t video_width, uint16_t video_height)
+ToxAv *toxav_new( Tox* messenger, ToxAvCodecSettings* codec_settings)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
 
@@ -95,10 +89,15 @@ ToxAv *toxav_new( Tox* messenger, uint16_t video_width, uint16_t video_height)
     av->rtp_sessions[0] = av->rtp_sessions [1] = NULL;
 
     /* NOTE: This should be user defined or? */
-    av->j_buf = create_queue(20);
+    av->j_buf = create_queue(codec_settings->jbuf_capacity);
 
-    av->cs = codec_init_session(AUDIO_BITRATE, AUDIO_FRAME_DURATION, AUDIO_SAMPLE_RATE, AUDIO_CHANNELS, video_width,
-                                video_height, VIDEO_BITRATE);
+    av->cs = codec_init_session(codec_settings->audio_bitrate, 
+                                codec_settings->audio_frame_duration, 
+                                codec_settings->audio_sample_rate,
+                                codec_settings->audio_channels,
+                                codec_settings->video_width,
+                                codec_settings->video_height,
+                                codec_settings->video_bitrate);
 
     return av;
 }
