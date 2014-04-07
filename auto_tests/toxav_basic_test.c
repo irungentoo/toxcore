@@ -191,10 +191,12 @@ START_TEST(test_AV)
 
     printf("All set after %llu seconds! Starting call...\n", time(NULL) - cur_time);
 
+    ToxAvCodecSettings muhcaps = av_DefaultSettings;
+    muhcaps.video_height = muhcaps.video_width = 128;
 
     Status status_control = {
-        {none, toxav_new(Alice, 128, 128), NULL},
-        {none, toxav_new(Bob, 128, 128), NULL},
+        {none, toxav_new(Alice, &muhcaps), NULL},
+        {none, toxav_new(Bob, &muhcaps), NULL},
     };
 
 

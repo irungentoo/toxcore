@@ -50,6 +50,8 @@
 #include "event.h"
 #include "../toxcore/tox.h"
 
+#define AUDIO_FRAME_SIZE (av_DefaultSettings.audio_sample_rate * av_DefaultSettings.audio_frame_duration / 1000)
+
 #ifdef TOX_FFMPEG
 /* Video encoding/decoding */
 #include <libavcodec/avcodec.h>
@@ -1055,7 +1057,7 @@ av_session_t *av_init_session()
 
     _retu->audio_capture_device =
         (struct ALCdevice *)alcCaptureOpenDevice(
-            device_names[selection], AUDIO_SAMPLE_RATE, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE * 4);
+            device_names[selection], av_DefaultSettings.audio_sample_rate, AL_FORMAT_MONO16, AUDIO_FRAME_SIZE * 4);
 
 
     if (alcGetError((ALCdevice *)_retu->audio_capture_device) != AL_NO_ERROR) {
@@ -1117,8 +1119,10 @@ failed_init_ffmpeg: ;
     tox_get_address(_retu->_messenger, _byte_address );
     fraddr_to_str( _byte_address, _retu->_my_public_id );
 
-
-    _retu->av = toxav_new(_retu->_messenger, width, height);
+    ToxAvCodecSettings cs = av_DefaultSettings;
+    cs.video_height = height;
+    cs.video_width = width;
+    _retu->av = toxav_new(_retu->_messenger, &cs);
 
     /* ------------------ */
 

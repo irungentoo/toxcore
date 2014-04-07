@@ -39,18 +39,6 @@ typedef struct Tox Tox;
 
 #define RTP_PAYLOAD_SIZE 65535
 
-/* Number of audio channels. */
-#define AUDIO_CHANNELS 1
-
-/* Audio frame duration in miliseconds */
-#define AUDIO_FRAME_DURATION    20
-
-/* Audio sample rate recommended to be 48kHz for Opus */
-#define AUDIO_SAMPLE_RATE   48000
-
-/* The amount of samples in one audio frame */
-#define AUDIO_FRAME_SIZE    (AUDIO_SAMPLE_RATE*AUDIO_FRAME_DURATION/1000)
-
 
 /**
  * @brief Callbacks ids that handle the call states.
@@ -114,6 +102,35 @@ typedef enum {
     VideoDecoding = 1 << 3
 } ToxAvCapabilities;
 
+
+/**
+ * @brief Encoding settings.
+ */
+typedef struct _ToxAvCodecSettings {
+    uint32_t video_bitrate; /* In bits/s */
+    uint16_t video_width; /* In px */
+    uint16_t video_height; /* In px */
+    
+    uint32_t audio_bitrate; /* In bits/s */
+    uint16_t audio_frame_duration; /* In ms */
+    uint32_t audio_sample_rate; /* In Hz */
+    uint32_t audio_channels;
+    
+    uint32_t jbuf_capacity; /* Size of jitter buffer */
+} ToxAvCodecSettings;
+
+static const ToxAvCodecSettings av_DefaultSettings = {
+    1000000,
+    800,
+    600,
+    
+    64000,
+    20,
+    48000,
+    1,
+    20
+};
+
 /**
  * @brief Start new A/V session. There can only be one session at the time. If you register more
  *        it will result in undefined behaviour.
@@ -125,7 +142,7 @@ typedef enum {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox *messenger, uint16_t video_width, uint16_t video_height);
+ToxAv *toxav_new(Tox *messenger, ToxAvCodecSettings* codec_settings);
 
 /**
  * @brief Remove A/V session.
