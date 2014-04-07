@@ -426,8 +426,8 @@ inline__ int toxav_recv_video ( ToxAv *av, vpx_image_t **output)
     do {
         recved_size = toxav_recv_rtp_payload(av, TypeVideo, packet);
 
-        if (recved_size < 0) 
-            fprintf(stderr, "Error decoding: %s\n", vpx_codec_err_to_string(vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0)));
+        if (recved_size > 0 && ( error = vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0) ) != VPX_CODEC_OK) 
+            fprintf(stderr, "Error decoding: %s\n", vpx_codec_err_to_string(error));
         
     } while (recved_size > 0);
 
