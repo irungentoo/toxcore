@@ -10,6 +10,8 @@
 #include <time.h>
 
 #include "../toxcore/TCP_server.h"
+#include "../toxcore/TCP_client.h"
+
 #include "../toxcore/util.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -21,7 +23,7 @@
 
 #define NUM_PORTS 3
 
-uint16_t ports[NUM_PORTS] = {12345, 33445, 25643};
+uint16_t ports[NUM_PORTS] = {1234, 33445, 25643};
 
 START_TEST(test_basic)
 {
@@ -30,6 +32,7 @@ START_TEST(test_basic)
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
+    ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
 
     sock_t sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     struct sockaddr_in6 addr6_loopback = {0};
@@ -204,6 +207,7 @@ START_TEST(test_some)
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
+    ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
 
     struct sec_TCP_con *con1 = new_TCP_con(tcp_s);
     struct sec_TCP_con *con2 = new_TCP_con(tcp_s);
@@ -287,6 +291,69 @@ START_TEST(test_some)
 }
 END_TEST
 
+START_TEST(test_client)
+{
+    unix_time_update();
+    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(self_public_key, self_secret_key);
+    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
+    ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
+    ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
+
+    uint8_t f_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t f_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(f_public_key, f_secret_key);
+    IP_Port ip_port_tcp_s;
+
+    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.ip.family = AF_INET6;
+    ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
+    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key);
+    c_sleep(50);
+    do_TCP_connection(conn);
+    ck_assert_msg(conn->status == TCP_CLIENT_UNCONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_UNCONFIRMED,
+                  conn->status);
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_TCP_connection(conn);
+    ck_assert_msg(conn->status == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
+                  conn->status);
+}
+END_TEST
+
+START_TEST(test_client_invalid)
+{
+    unix_time_update();
+    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(self_public_key, self_secret_key);
+
+    uint8_t f_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t f_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(f_public_key, f_secret_key);
+    IP_Port ip_port_tcp_s;
+
+    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.ip.family = AF_INET6;
+    ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
+    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key);
+    c_sleep(50);
+    do_TCP_connection(conn);
+    ck_assert_msg(conn->status == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONNECTING,
+                  conn->status);
+    c_sleep(5000);
+    do_TCP_connection(conn);
+    ck_assert_msg(conn->status == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONNECTING,
+                  conn->status);
+    c_sleep(6000);
+    do_TCP_connection(conn);
+    ck_assert_msg(conn->status == TCP_CLIENT_DISCONNECTED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_DISCONNECTED,
+                  conn->status);
+}
+END_TEST
+
 #define DEFTESTCASE(NAME) \
     TCase *tc_##NAME = tcase_create(#NAME); \
     tcase_add_test(tc_##NAME, test_##NAME); \
@@ -301,6 +368,8 @@ Suite *TCP_suite(void)
 
     DEFTESTCASE_SLOW(basic, 5);
     DEFTESTCASE_SLOW(some, 10);
+    DEFTESTCASE_SLOW(client, 10);
+    DEFTESTCASE_SLOW(client_invalid, 15);
     return s;
 }
 

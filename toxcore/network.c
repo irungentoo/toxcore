@@ -500,7 +500,7 @@ int networking_wait_cleanup(Networking_Core *net, uint8_t *data)
 }
 
 uint8_t at_startup_ran = 0;
-static int at_startup(void)
+int networking_at_startup(void)
 {
     if (at_startup_ran != 0)
         return 0;
@@ -556,7 +556,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         return NULL;
     }
 
-    if (at_startup() != 0)
+    if (networking_at_startup() != 0)
         return NULL;
 
     Networking_Core *temp = calloc(1, sizeof(Networking_Core));
@@ -946,7 +946,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     hints.ai_family   = family;
     hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
 
-    if (at_startup() != 0)
+    if (networking_at_startup() != 0)
         return 0;
 
     rc = getaddrinfo(address, NULL, &hints, &server);

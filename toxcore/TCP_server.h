@@ -20,8 +20,15 @@
 *
 */
 
+#ifndef TCP_SERVER_H
+#define TCP_SERVER_H
+
 #include "net_crypto.h"
 #include "onion.h"
+
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#define MSG_NOSIGNAL 0
+#endif
 
 #define MAX_INCOMMING_CONNECTIONS 32
 
@@ -116,3 +123,21 @@ void do_TCP_server(TCP_Server *TCP_server);
 /* Kill the TCP server
  */
 void kill_TCP_server(TCP_Server *TCP_server);
+
+/* Read the next two bytes in TCP stream then convert them to
+ * length (host byte order).
+ *
+ * return length on success
+ * return 0 if nothing has been read from socket.
+ * return ~0 on failure.
+ */
+uint16_t read_TCP_length(sock_t sock);
+
+/* Read length bytes from socket.
+ *
+ * return length on success
+ * return -1 on failure/no data in buffer.
+ */
+int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length);
+
+#endif

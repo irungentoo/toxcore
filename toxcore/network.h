@@ -307,6 +307,13 @@ typedef struct {
     uint64_t send_fail_eagain;
 } Networking_Core;
 
+/* Run this before creating sockets.
+ *
+ * return 0 on success
+ * return -1 on failure
+ */
+int networking_at_startup(void);
+
 /* Check if socket is valid.
  *
  * return 1 if valid

@@ -157,11 +157,14 @@ static int get_TCP_connection_index(TCP_Server *TCP_server, uint8_t *public_key)
     return -1;
 }
 
-/* return length on success
+/* Read the next two bytes in TCP stream then convert them to
+ * length (host byte order).
+ *
+ * return length on success
  * return 0 if nothing has been read from socket.
  * return ~0 on failure.
  */
-static uint16_t read_length(sock_t sock)
+uint16_t read_TCP_length(sock_t sock)
 {
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     unsigned long count = 0;
@@ -173,7 +176,7 @@ static uint16_t read_length(sock_t sock)
 
     if ((unsigned int)count >= sizeof(uint16_t)) {
         uint16_t length;
-        int len = recv(sock, (uint8_t *)&length, sizeof(uint16_t), 0);
+        int len = recv(sock, (uint8_t *)&length, sizeof(uint16_t), MSG_NOSIGNAL);
 
         if (len != sizeof(uint16_t)) {
             fprintf(stderr, "FAIL recv packet\n");
@@ -192,10 +195,12 @@ static uint16_t read_length(sock_t sock)
     return 0;
 }
 
-/* return length on success
- * return -1 on failure
+/* Read length bytes from socket.
+ *
+ * return length on success
+ * return -1 on failure/no data in buffer.
  */
-static int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
+int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
 {
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     unsigned long count = 0;
@@ -206,7 +211,7 @@ static int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
 #endif
 
     if (count >= length) {
-        int len = recv(sock, data, length, 0);
+        int len = recv(sock, data, length, MSG_NOSIGNAL);
 
         if (len != length) {
             fprintf(stderr, "FAIL recv packet\n");
@@ -226,7 +231,7 @@ static int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
 static int read_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_t *data, uint16_t max_len)
 {
     if (con->next_packet_length == 0) {
-        uint16_t len = read_length(con->sock);
+        uint16_t len = read_TCP_length(con->sock);
 
         if (len == (uint16_t)~0)
             return -1;
@@ -268,7 +273,7 @@ static int send_pending_data(TCP_Secure_Connection *con)
     }
 
     uint16_t left = con->last_packet_length - con->last_packet_sent;
-    int len = send(con->sock, con->last_packet + con->last_packet_sent, left, 0);
+    int len = send(con->sock, con->last_packet + con->last_packet_sent, left, MSG_NOSIGNAL);
 
     if (len <= 0)
         return -1;
@@ -310,7 +315,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_
 
     increment_nonce(con->sent_nonce);
 
-    len = send(con->sock, packet, sizeof(packet), 0);
+    len = send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL);
 
     if ((unsigned int)len == sizeof(packet))
         return 1;
@@ -368,7 +373,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
     if (len != TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
         return -1;
 
-    if (TCP_SERVER_HANDSHAKE_SIZE != send(con->sock, response, TCP_SERVER_HANDSHAKE_SIZE, 0))
+    if (TCP_SERVER_HANDSHAKE_SIZE != send(con->sock, response, TCP_SERVER_HANDSHAKE_SIZE, MSG_NOSIGNAL))
         return -1;
 
     encrypt_precompute(plain, temp_secret_key, con->shared_key);
@@ -740,15 +745,14 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
     if (num_sockets == 0 || ports == NULL)
         return NULL;
 
+    if (networking_at_startup() != 0) {
+        return NULL;
+    }
+
     TCP_Server *temp = calloc(1, sizeof(TCP_Server));
 
     if (temp == NULL)
         return NULL;
-
-    if (onion) {
-        temp->onion = onion;
-        set_callback_handle_recv_1(onion, &handle_onion_recv_1, temp);
-    }
 
     temp->socks_listening = calloc(num_sockets, sizeof(sock_t));
 
@@ -774,6 +778,16 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
             temp->socks_listening[temp->num_listening_socks] = sock;
             ++temp->num_listening_socks;
         }
+    }
+
+    if (temp->num_listening_socks == 0) {
+        free(temp);
+        return NULL;
+    }
+
+    if (onion) {
+        temp->onion = onion;
+        set_callback_handle_recv_1(onion, &handle_onion_recv_1, temp);
     }
 
     memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
