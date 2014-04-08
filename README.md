@@ -10,6 +10,8 @@ With the rise of governmental monitoring programs, Tox, a FOSS initiative, aims 
 ### UDP vs. TCP
 Tox must use UDP simply because [hole punching](http://en.wikipedia.org/wiki/UDP_hole_punching) with TCP is not as reliable.
 
+But for people who under bad firewall, tox must use TCP relays [How it's going to work](https://github.com/irungentoo/ProjectTox-Core/blob/master/docs/TCP_Network.txt)
+
 ### Connecting & Communicating
 Every peer is represented as a [byte string][String] (the public key [Tox ID] of the peer). By using torrent-style DHT, peers can find the IP of other peers by using their Tox ID. Once the IP is obtained, peers can initiate a [secure](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto) connection with each other. Once the connection is made, peers can exchange messages, send files, start video chats, etc. using encrypted communications.
 
