@@ -25,8 +25,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "media.h"
 #include "rtp.h"
+#include "media.h"
 #include "msi.h"
 
 #include <stdlib.h>
@@ -51,7 +51,7 @@ typedef enum {
 
 } ThreadState;
 
-typedef struct _ToxAv {
+struct _ToxAv {
     Messenger *messenger;
 
     MSISession *msi_session; /** Main msi session */
@@ -61,7 +61,7 @@ typedef struct _ToxAv {
     struct jitter_buffer *j_buf;
     CodecState *cs;
 
-} ToxAv;
+};
 
 /**
  * @brief Start new A/V session. There can only be one session at the time. If you register more
