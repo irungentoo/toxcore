@@ -46,6 +46,9 @@
 #else
 
 #include <sys/types.h>
+#ifdef __OpenBSD__
+#include <netinet/in_systm.h>
+#endif
 #include <netinet/in.h>
 #include <netinet/ip.h>
 
