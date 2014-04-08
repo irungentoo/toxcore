@@ -230,7 +230,7 @@ case $host_os in
     *solaris*)
         LIBS="$LIBS -lssp -lsocket -lnsl"
     ;;
-    *freebsd*)
+    *freebsd*|*openbsd*)
         LDFLAGS="$LDFLAGS -L/usr/local/lib"
         CFLAGS="$CFLAGS -I/usr/local/include"
         CPPFLAGS="$CPPFLAGS -I/usr/local/include"
