@@ -22,8 +22,8 @@ EXTRA_DIST = \
 	$(top_srcdir)/docs/updates/Symmetric-NAT-Transversal.md \
 	$(top_srcdir)/tools/README \
 	$(top_srcdir)/tools/astylerc \
-	$(top_srcdir)/tools/pre-commit 
-	
+	$(top_srcdir)/tools/pre-commit
+
 if BUILD_AV
 
 pkgconfig_DATA += $(top_builddir)/libtoxav.pc

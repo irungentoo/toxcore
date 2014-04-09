@@ -25,7 +25,7 @@ Build dependencies:
 
 Note: package fetching commands may vary by OS.
 
-On Ubuntu: 
+On Ubuntu:
 
 ```bash
 sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
@@ -38,9 +38,9 @@ yum groupinstall "Development Tools"
 yum install libtool autoconf automake check check-devel
 ```
 
-On SunOS: 
+On SunOS:
 
-```pfexcec 
+```pfexcec
 pkg install autoconf automake gcc-47
 ```
 On FreeBSD 10+:
@@ -62,7 +62,7 @@ cd ..
 ```
 
 
-Or if checkinstall is not easily available for your distribution (e.g. Fedora), 
+Or if checkinstall is not easily available for your distribution (e.g., Fedora),
 this will install the libs to /usr/local/lib and the headers to /usr/local/include:
 
 ```bash
@@ -142,7 +142,7 @@ make install
 
 Grab the following packages:
   * https://gnu.org/software/libtool/
-  * https://gnu.org/software/autoconf/ 
+  * https://gnu.org/software/autoconf/
   * https://gnu.org/software/automake/
   * https://github.com/jedisct1/libsodium
   * http://check.sourceforge.net/
@@ -180,7 +180,8 @@ You should install:
   - [MinGW](http://sourceforge.net/projects/mingw/)
 
 When installing MinGW, make sure to select the MSYS option in the installer.
-MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all operations (i.e. generating/running configure script, compiling, etc.) from the MinGW shell.
+MinGW will install an "MinGW shell" (you should get a shortcut for it), make
+sure to perform all operations (i.e., generating/running configure script, compiling, etc.) from the MinGW shell.
 
 First download the source tarball from https://download.libsodium.org/libsodium/releases/ and build it.
 Assuming that you got the libsodium-0.4.2.tar.gz release:
@@ -193,7 +194,8 @@ make install
 cd ..
 ```
 
-You can also use a precompiled win32 binary of libsodium, however you will have to place the files in places where they can be found, i.e. dll's go to /bin headers to /include and libraries to /lib directories in your MinGW shell.
+You can also use a precompiled win32 binary of libsodium, however you will have
+to place the files in places where they can be found, i.e., dll's go to /bin headers to /include and libraries to /lib directories in your MinGW shell.
 
 Next, install ProjectTox-Core library, should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
 
@@ -243,7 +245,7 @@ While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox 
 <a name="libtoxav" />
 ####libtoxav:
 
-'libtoxav' is needed for A/V support and it's enabled by default. You can disable it by adding --disable-av argument to ./configure script like so: 
+'libtoxav' is needed for A/V support and it's enabled by default. You can disable it by adding --disable-av argument to ./configure script like so:
 ```bash
 ./configure --disable-av
 ```
