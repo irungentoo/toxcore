@@ -559,9 +559,9 @@ void *decode_video_thread(void *arg)
     while (_phone->running_decvid) {
         //recved_size = toxav_recv_rtp_payload(_phone->av, TypeVideo, dest);
         //if (recved_size) {
-        vpx_image_t *image;
+        vpx_image_t *image = NULL;
 
-        if (toxav_recv_video(_phone->av, &image) == 0) {
+        if (toxav_recv_video(_phone->av, &image) == 0 && image) {
             //memcpy(dec_video_packet.data, dest, recved_size);
             //dec_video_packet.size = recved_size;
 
