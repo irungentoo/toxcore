@@ -158,7 +158,7 @@ NACL_SEARCH_LIBS=
 
 AC_ARG_WITH(dependency-search,
     AC_HELP_STRING([--with-dependency-search=DIR],
-                   [search for dependencies in DIR, i.e. look for libraries in
+                   [search for dependencies in DIR, i.e., look for libraries in
                     DIR/lib and for headers in DIR/include]),
     [
         DEPSEARCH="$withval"
@@ -675,7 +675,7 @@ AC_CONFIG_FILES([Makefile
                  build/Makefile
                  libtoxcore.pc
                 ])
-                    
+
 AM_COND_IF(BUILD_AV,
   [
     AC_CONFIG_FILES([libtoxav.pc])
