@@ -726,10 +726,18 @@ int tox_wait_cleanup(Tox *tox, uint8_t *data);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
-/*  return size of messenger data (for saving). */
+/*  return size of messenger data (for saving).
+ * This function is deprecated and is only retained for compatibility 
+ * purposes.
+ * See tox/data.h for replacement API.
+ */
 uint32_t tox_size(Tox *tox);
 
-/* Save the messenger in data (must be allocated memory of size Messenger_size()). */
+/* Save the messenger in data (must be allocated memory of size Messenger_size()). 
+ * This function is deprecated and is only retained for compatibility
+ * purposes.
+ * See tox/data.h for replacement API.
+ */
 void tox_save(Tox *tox, uint8_t *data);
 
 /* Load the messenger from data of size length.
@@ -764,6 +772,7 @@ int tox_save_encrypted(Tox *tox, uint8_t *data, uint8_t *key, uint16_t key_lengt
  */
 int tox_load_encrypted(Tox *tox, uint8_t *data, uint32_t length, uint8_t *key, uint16_t key_length);
 
+#include "data.h"
 
 #ifdef __cplusplus
 }
