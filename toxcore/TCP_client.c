@@ -130,12 +130,6 @@ static int send_pending_data(TCP_Client_Connection *con)
     return -1;
 }
 
-static int send_disconnect_packet(TCP_Client_Connection *TCP_connection)
-{
-
-    return 0;
-}
-
 /* Create new TCP connection to ip_port/public_key
  */
 TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, uint8_t *self_public_key,

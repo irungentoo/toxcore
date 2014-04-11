@@ -1,7 +1,7 @@
 if BUILD_TESTS
 
-TESTS = messenger_autotest crypto_test network_test assoc_test onion_test tox_test
-check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test tox_test
+TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test
+check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test
 
 
 AUTOTEST_CFLAGS = \
@@ -52,13 +52,18 @@ assoc_test_CFLAGS = $(AUTOTEST_CFLAGS)
 assoc_test_LDADD = $(AUTOTEST_LDADD)
 
 
-
 onion_test_SOURCES = ../auto_tests/onion_test.c
 
 onion_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 onion_test_LDADD = $(AUTOTEST_LDADD)
 
+
+TCP_test_SOURCES = ../auto_tests/TCP_test.c
+
+TCP_test_CFLAGS = $(AUTOTEST_CFLAGS)
+
+TCP_test_LDADD = $(AUTOTEST_LDADD)
 
 
 tox_test_SOURCES = ../auto_tests/tox_test.c
