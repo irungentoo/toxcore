@@ -130,6 +130,103 @@ static int send_pending_data(TCP_Client_Connection *con)
     return -1;
 }
 
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
+{
+    if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE)
+        return -1;
+
+    if (send_pending_data(con) == -1)
+        return 0;
+
+    uint8_t packet[sizeof(uint16_t) + length + crypto_box_MACBYTES];
+
+    uint16_t c_length = htons(length + crypto_box_MACBYTES);
+    memcpy(packet, &c_length, sizeof(uint16_t));
+    int len = encrypt_data_fast(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
+
+    if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t)))
+        return -1;
+
+    increment_nonce(con->sent_nonce);
+
+    len = send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL);
+
+    if ((unsigned int)len == sizeof(packet))
+        return 1;
+
+    if (len <= 0)
+        return 0;
+
+    memcpy(con->last_packet, packet, length);
+    con->last_packet_length = sizeof(packet);
+    con->last_packet_sent = len;
+    return 1;
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key)
+{
+    uint8_t packet[1 + crypto_box_PUBLICKEYBYTES];
+    packet[0] = TCP_PACKET_ROUTING_REQUEST;
+    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
+    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_disconnect_notification(TCP_Client_Connection *con, uint8_t id)
+{
+    uint8_t packet[1 + 1];
+    packet[0] = TCP_PACKET_DISCONNECT_NOTIFICATION;
+    packet[1] = id;
+    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_ping_request(TCP_Client_Connection *con, uint64_t ping_id)
+{
+    uint8_t packet[1 + sizeof(uint64_t)];
+    packet[0] = TCP_PACKET_PING;
+    memcpy(packet + 1, &ping_id, sizeof(uint64_t));
+    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_ping_response(TCP_Client_Connection *con, uint64_t ping_id)
+{
+    uint8_t packet[1 + sizeof(uint64_t)];
+    packet[0] = TCP_PACKET_PONG;
+    memcpy(packet + 1, &ping_id, sizeof(uint64_t));
+    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+static int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
+{
+    uint8_t packet[1 + length];
+    packet[0] = TCP_PACKET_ONION_REQUEST;
+    memcpy(packet + 1, data, length);
+    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
 /* Create new TCP connection to ip_port/public_key
  */
 TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, uint8_t *self_public_key,
@@ -176,8 +273,51 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, 
     return temp;
 }
 
-static int do_confirmed_TCP(TCP_Client_Connection *TCP_connection)
+/* return 0 on success
+ * return -1 on failure
+ */
+static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_t length)
 {
+    if (length == 0)
+        return -1;
+
+    switch (data[0]) {
+        case TCP_PACKET_PING: {
+            if (length != 1 + sizeof(uint64_t))
+                return -1;
+
+            uint64_t ping_id;
+            memcpy(&ping_id, data + 1, sizeof(uint64_t));
+            send_ping_response(conn, ping_id);
+            return 0;
+        }
+
+        default: {
+
+        }
+    }
+
+    return 0;
+}
+
+static int do_confirmed_TCP(TCP_Client_Connection *conn)
+{
+    send_pending_data(conn);
+    uint8_t packet[MAX_PACKET_SIZE];
+    int len;
+
+    while ((len = read_packet_TCP_secure_connection(conn->sock, &conn->next_packet_length, conn->shared_key,
+                  conn->recv_nonce, packet, sizeof(packet)))) {
+        if (len == -1) {
+            conn->status = TCP_CLIENT_DISCONNECTED;
+            break;
+        }
+
+        if (handle_TCP_packet(conn, packet, len) == -1) {
+            conn->status = TCP_CLIENT_DISCONNECTED;
+            break;
+        }
+    }
 
     return 0;
 }

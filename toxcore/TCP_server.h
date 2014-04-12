@@ -140,4 +140,12 @@ uint16_t read_TCP_length(sock_t sock);
  */
 int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length);
 
+/* return length of recieved packet on success.
+ * return 0 if could not read any packet.
+ * return -1 on failure (connection must be killed).
+ */
+int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, uint8_t *shared_key,
+                                      uint8_t *recv_nonce, uint8_t *data, uint16_t max_len);
+
+
 #endif

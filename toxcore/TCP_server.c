@@ -228,10 +228,11 @@ int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
-static int read_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_t *data, uint16_t max_len)
+int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, uint8_t *shared_key,
+                                      uint8_t *recv_nonce, uint8_t *data, uint16_t max_len)
 {
-    if (con->next_packet_length == 0) {
-        uint16_t len = read_TCP_length(con->sock);
+    if (*next_packet_length == 0) {
+        uint16_t len = read_TCP_length(sock);
 
         if (len == (uint16_t)~0)
             return -1;
@@ -239,26 +240,26 @@ static int read_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_t
         if (len == 0)
             return 0;
 
-        con->next_packet_length = len;
+        *next_packet_length = len;
     }
 
-    if (max_len + crypto_box_MACBYTES < con->next_packet_length)
+    if (max_len + crypto_box_MACBYTES < *next_packet_length)
         return -1;
 
-    uint8_t data_encrypted[con->next_packet_length];
-    int len_packet = read_TCP_packet(con->sock, data_encrypted, con->next_packet_length);
+    uint8_t data_encrypted[*next_packet_length];
+    int len_packet = read_TCP_packet(sock, data_encrypted, *next_packet_length);
 
-    if (len_packet != con->next_packet_length)
+    if (len_packet != *next_packet_length)
         return 0;
 
-    con->next_packet_length = 0;
+    *next_packet_length = 0;
 
-    int len = decrypt_data_fast(con->shared_key, con->recv_nonce, data_encrypted, len_packet, data);
+    int len = decrypt_data_fast(shared_key, recv_nonce, data_encrypted, len_packet, data);
 
     if (len + crypto_box_MACBYTES != len_packet)
         return -1;
 
-    increment_nonce(con->recv_nonce);
+    increment_nonce(recv_nonce);
 
     return len;
 }
@@ -848,7 +849,8 @@ static void do_TCP_unconfirmed(TCP_Server *TCP_server)
             continue;
 
         uint8_t packet[MAX_PACKET_SIZE];
-        int len = read_packet_TCP_secure_connection(conn, packet, sizeof(packet));
+        int len = read_packet_TCP_secure_connection(conn->sock, &conn->next_packet_length, conn->shared_key, conn->recv_nonce,
+                  packet, sizeof(packet));
 
         if (len == 0) {
             continue;
@@ -902,7 +904,8 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
         uint8_t packet[MAX_PACKET_SIZE];
         int len;
 
-        while ((len = read_packet_TCP_secure_connection(conn, packet, sizeof(packet)))) {
+        while ((len = read_packet_TCP_secure_connection(conn->sock, &conn->next_packet_length, conn->shared_key,
+                      conn->recv_nonce, packet, sizeof(packet)))) {
             if (len == -1) {
                 kill_TCP_connection(conn);
                 del_accepted(TCP_server, i);
