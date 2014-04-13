@@ -253,6 +253,11 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, 
         return NULL;
     }
 
+    if (!set_socket_nosigpipe(sock)) {
+        kill_sock(sock);
+        return 0;
+    }
+
     if (!(set_socket_nonblock(sock) && connect_sock_to(sock, ip_port))) {
         kill_sock(sock);
         return NULL;

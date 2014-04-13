@@ -702,6 +702,11 @@ static int accept_connection(TCP_Server *TCP_server, sock_t sock)
         return 0;
     }
 
+    if (!set_socket_nosigpipe(sock)) {
+        kill_sock(sock);
+        return 0;
+    }
+
     TCP_Secure_Connection *conn =
         &TCP_server->incomming_connection_queue[TCP_server->incomming_connection_queue_index % MAX_INCOMMING_CONNECTIONS];
 

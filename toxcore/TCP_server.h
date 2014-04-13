@@ -26,7 +26,7 @@
 #include "net_crypto.h"
 #include "onion.h"
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
 #define MSG_NOSIGNAL 0
 #endif
 
