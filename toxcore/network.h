@@ -332,6 +332,13 @@ void kill_sock(sock_t sock);
  */
 int set_socket_nonblock(sock_t sock);
 
+/* Set socket to not emit SIGPIPE
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_nosigpipe(sock_t sock);
+
 /* Set socket to dual (IPv4 + IPv6 socket)
  *
  * return 1 on success

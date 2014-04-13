@@ -150,6 +150,21 @@ int set_socket_nonblock(sock_t sock)
 #endif
 }
 
+/* Set socket to not emit SIGPIPE
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_nosigpipe(sock_t sock)
+{
+#if defined(__MACH__)
+    int set = 1;
+    return (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int)) == 0);
+#else
+    return 1;
+#endif
+}
+
 /* Set socket to dual (IPv4 + IPv6 socket)
  *
  * return 1 on success
