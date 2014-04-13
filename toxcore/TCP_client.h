@@ -55,6 +55,14 @@ typedef struct  {
 
     uint64_t last_pinged;
     uint64_t ping_id;
+
+    struct {
+        uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
+        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+    } connections[NUM_CLIENT_CONNECTIONS];
+
+    int (*onion_callback)(void *object, uint8_t *data, uint16_t length);
+    void *onion_callback_object;
 } TCP_Client_Connection;
 
 /* Create new TCP connection to ip_port/public_key
@@ -70,9 +78,13 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection);
  */
 void kill_TCP_connection(TCP_Client_Connection *TCP_connection);
 
-int get_TCP_connection_status(TCP_Client_Connection *TCP_connection);
-
-int read_TCP_connection(TCP_Client_Connection *TCP_connection, uint8_t *data);
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length);
+void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, uint8_t *data,
+                            uint16_t length), void *object);
 
 
 #endif

@@ -219,12 +219,19 @@ static int send_ping_response(TCP_Client_Connection *con, uint64_t ping_id)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
+int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
 {
     uint8_t packet[1 + length];
     packet[0] = TCP_PACKET_ONION_REQUEST;
     memcpy(packet + 1, data, length);
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
+void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, uint8_t *data,
+                            uint16_t length), void *object)
+{
+    con->onion_callback = onion_callback;
+    con->onion_callback_object = object;
 }
 
 /* Create new TCP connection to ip_port/public_key
@@ -282,6 +289,18 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
         return -1;
 
     switch (data[0]) {
+        case TCP_PACKET_ROUTING_RESPONSE: {
+            return 0;
+        }
+
+        case TCP_PACKET_CONNECTION_NOTIFICATION: {
+            return 0;
+        }
+
+        case TCP_PACKET_DISCONNECT_NOTIFICATION: {
+            return 0;
+        }
+
         case TCP_PACKET_PING: {
             if (length != 1 + sizeof(uint64_t))
                 return -1;
@@ -292,8 +311,35 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
             return 0;
         }
 
-        default: {
+        case TCP_PACKET_PONG: {
+            if (length != 1 + sizeof(uint64_t))
+                return -1;
 
+            uint64_t ping_id;
+            memcpy(&ping_id, data + 1, sizeof(uint64_t));
+
+            if (ping_id) {
+                if (ping_id == conn->ping_id) {
+                    conn->ping_id = 0;
+                }
+
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+
+        case TCP_PACKET_ONION_RESPONSE: {
+            conn->onion_callback(conn->onion_callback_object, data + 1, length - 1);
+            return 0;
+        }
+
+        default: {
+            if (data[0] < NUM_RESERVED_PORTS)
+                return -1;
+
+            uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
+            //TODO
         }
     }
 
@@ -305,6 +351,25 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn)
     send_pending_data(conn);
     uint8_t packet[MAX_PACKET_SIZE];
     int len;
+
+    if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY)) {
+        uint64_t ping_id = random_64b();
+
+        if (!ping_id)
+            ++ping_id;
+
+        int ret = send_ping_request(conn, ping_id);
+
+        if (ret == 1) {
+            conn->last_pinged = unix_time();
+            conn->ping_id = ping_id;
+        }
+    }
+
+    if (conn->ping_id && is_timeout(conn->last_pinged, TCP_PING_TIMEOUT)) {
+        conn->status = TCP_CLIENT_DISCONNECTED;
+        return 0;
+    }
 
     while ((len = read_packet_TCP_secure_connection(conn->sock, &conn->next_packet_length, conn->shared_key,
                   conn->recv_nonce, packet, sizeof(packet)))) {

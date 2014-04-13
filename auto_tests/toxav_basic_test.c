@@ -296,8 +296,8 @@ START_TEST(test_AV)
         toxav_recv_video(status_control.Alice.av, &video_storage);
 
         if ( video_storage ) {
-            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 || 
-                           memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 || 
+            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
+                           memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
                            memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Bob is invalid");*/
         }
 
@@ -351,8 +351,8 @@ START_TEST(test_AV)
         toxav_recv_video(status_control.Alice.av, &video_storage);
 
         if ( video_storage ) {
-            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 || 
-            memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 || 
+            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
+            memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
             memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Bob is invalid");*/
         }
 
@@ -370,8 +370,8 @@ START_TEST(test_AV)
         toxav_recv_video(status_control.Bob.av, &video_storage);
 
         if ( video_storage ) {
-            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 || 
-            memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 || 
+            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
+            memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
             memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Alice is invalid");*/
         }
 

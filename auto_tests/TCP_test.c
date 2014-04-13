@@ -320,6 +320,18 @@ START_TEST(test_client)
     do_TCP_connection(conn);
     ck_assert_msg(conn->status == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
                   conn->status);
+    c_sleep(500);
+    do_TCP_connection(conn);
+    ck_assert_msg(conn->status == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
+                  conn->status);
+    c_sleep(500);
+    do_TCP_connection(conn);
+    ck_assert_msg(conn->status == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
+                  conn->status);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    ck_assert_msg(conn->status == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
+                  conn->status);
 }
 END_TEST
 
