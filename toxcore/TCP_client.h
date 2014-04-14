@@ -101,6 +101,13 @@ void routing_response_handler(TCP_Client_Connection *con, int (*response_callbac
                               uint8_t *public_key), void *object);
 void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint8_t connection_id,
                             uint8_t status), void *object);
+
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure.
+ */
+int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_t length);
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint8_t connection_id,
                           uint8_t *data, uint16_t length), void *object);
 

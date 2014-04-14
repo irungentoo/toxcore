@@ -291,6 +291,47 @@ START_TEST(test_some)
 }
 END_TEST
 
+static int response_callback_good;
+static uint8_t response_callback_connection_id;
+static uint8_t response_callback_public_key[crypto_box_PUBLICKEYBYTES];
+static int response_callback(void *object, uint8_t connection_id, uint8_t *public_key)
+{
+    if (object != (void *)1)
+        return 1;
+
+    response_callback_connection_id = connection_id;
+    memcpy(response_callback_public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    response_callback_good++;
+}
+static int status_callback_good;
+static uint8_t status_callback_connection_id;
+static uint8_t status_callback_status;
+static int status_callback(void *object, uint8_t connection_id, uint8_t status)
+{
+    if (object != (void *)2)
+        return 1;
+
+    status_callback_connection_id = connection_id;
+    status_callback_status = status;
+    status_callback_good++;
+}
+static int data_callback_good;
+static int data_callback(void *object, uint8_t connection_id, uint8_t *data, uint16_t length)
+{
+    if (object != (void *)3)
+        return 1;
+
+    if (length != 5)
+        return 1;
+
+    if (data[0] == 1 && data[1] == 2 && data[2] == 3 && data[3] == 4 && data[4] == 5) {
+        data_callback_good++;
+        return 0;
+    }
+
+    return 1;
+}
+
 START_TEST(test_client)
 {
     unix_time_update();
@@ -332,6 +373,46 @@ START_TEST(test_client)
     c_sleep(50);
     ck_assert_msg(conn->status == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
                   conn->status);
+
+    uint8_t f2_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t f2_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(f2_public_key, f2_secret_key);
+    TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key);
+    routing_response_handler(conn, response_callback, (void *)1);
+    routing_status_handler(conn, status_callback, (void *)2);
+    routing_data_handler(conn, data_callback, (void *)3);
+    response_callback_good = status_callback_good = data_callback_good = 0;
+    c_sleep(50);
+    do_TCP_connection(conn);
+    do_TCP_connection(conn2);
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_TCP_connection(conn);
+    do_TCP_connection(conn2);
+    c_sleep(50);
+    send_routing_request(conn, f2_public_key);
+    send_routing_request(conn2, f_public_key);
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_TCP_connection(conn);
+    do_TCP_connection(conn2);
+    ck_assert_msg(response_callback_good == 1, "response callback not called");
+    ck_assert_msg(memcmp(response_callback_public_key, f2_public_key, crypto_box_PUBLICKEYBYTES) == 0, "wrong public key");
+    ck_assert_msg(status_callback_good == 1, "status callback not called");
+    ck_assert_msg(status_callback_status == 2, "wrong status");
+    ck_assert_msg(status_callback_connection_id == response_callback_connection_id, "connection ids not equal");
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    uint8_t data[5] = {1, 2, 3, 4, 5};
+    ck_assert_msg(send_data(conn2, 0, data, 5) == 1, "send data failed");
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_TCP_connection(conn);
+    do_TCP_connection(conn2);
+    ck_assert_msg(data_callback_good == 1, "data callback not called");
 }
 END_TEST
 

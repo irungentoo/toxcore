@@ -193,6 +193,24 @@ void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(v
     con->status_callback_object = object;
 }
 
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure.
+ */
+int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_t length)
+{
+    if (con_id >= NUM_CLIENT_CONNECTIONS)
+        return -1;
+
+    if (con->connections[con_id].status != 2)
+        return -1;
+
+    uint8_t packet[1 + length];
+    packet[0] = con_id + NUM_RESERVED_PORTS;
+    memcpy(packet + 1, data, length);
+    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint8_t connection_id,
                           uint8_t *data, uint16_t length), void *object)
 {
