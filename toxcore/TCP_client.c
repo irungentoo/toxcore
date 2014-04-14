@@ -171,13 +171,35 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, uint8_
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key)
+int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key)
 {
     uint8_t packet[1 + crypto_box_PUBLICKEYBYTES];
     packet[0] = TCP_PACKET_ROUTING_REQUEST;
     memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
 }
+
+void routing_response_handler(TCP_Client_Connection *con, int (*response_callback)(void *object, uint8_t connection_id,
+                              uint8_t *public_key), void *object)
+{
+    con->response_callback = response_callback;
+    con->response_callback_object = object;
+}
+
+void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint8_t connection_id,
+                            uint8_t status), void *object)
+{
+    con->status_callback = status_callback;
+    con->status_callback_object = object;
+}
+
+void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint8_t connection_id,
+                          uint8_t *data, uint16_t length), void *object)
+{
+    con->data_callback = data_callback;
+    con->data_callback_object = object;
+}
+
 
 /* return 1 on success.
  * return 0 if could not send packet.
@@ -290,19 +312,68 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, 
  */
 static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_t length)
 {
-    if (length == 0)
+    if (length <= 1)
         return -1;
 
     switch (data[0]) {
         case TCP_PACKET_ROUTING_RESPONSE: {
+            if (length != 1 + 1 + crypto_box_PUBLICKEYBYTES)
+                return -1;
+
+            if (data[1] < NUM_RESERVED_PORTS)
+                return 0;
+
+            uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+
+            if (conn->connections[con_id].status != 0)
+                return -1;
+
+            conn->connections[con_id].status = 1;
+            memcpy(conn->connections[con_id].public_key, data + 2, crypto_box_PUBLICKEYBYTES);
+
+            if (conn->response_callback)
+                conn->response_callback(conn->response_callback_object, con_id, conn->connections[con_id].public_key);
+
             return 0;
         }
 
         case TCP_PACKET_CONNECTION_NOTIFICATION: {
+            if (length != 1 + 1)
+                return -1;
+
+            if (data[1] < NUM_RESERVED_PORTS)
+                return -1;
+
+            uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+
+            if (conn->connections[con_id].status != 1)
+                return -1;
+
+            conn->connections[con_id].status = 2;
+
+            if (conn->status_callback)
+                conn->status_callback(conn->status_callback_object, con_id, conn->connections[con_id].status);
+
             return 0;
         }
 
         case TCP_PACKET_DISCONNECT_NOTIFICATION: {
+            if (length != 1 + 1)
+                return -1;
+
+            if (data[1] < NUM_RESERVED_PORTS)
+                return -1;
+
+            uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+
+            if (conn->connections[con_id].status != 2)
+                return -1;
+
+            conn->connections[con_id].status = 1;
+
+            if (conn->status_callback)
+                conn->status_callback(conn->status_callback_object, con_id, conn->connections[con_id].status);
+
             return 0;
         }
 
@@ -344,7 +415,9 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
                 return -1;
 
             uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
-            //TODO
+
+            if (conn->data_callback)
+                conn->data_callback(conn->data_callback_object, con_id, data + 1, length - 1);
         }
     }
 

@@ -31,6 +31,10 @@
 #include "../toxcore/friend_requests.h"
 #include "../toxcore/util.h"
 
+#ifdef TCP_RELAY_ENABLED
+#include "../toxcore/TCP_server.h"
+#endif
+
 #include "../testing/misc_tools.c"
 
 #ifdef DHT_NODE_EXTRA_PACKETS
@@ -129,6 +133,18 @@ int main(int argc, char *argv[])
     printf("Public key: ");
     uint32_t i;
 
+#ifdef TCP_RELAY_ENABLED
+#define NUM_PORTS 3
+    uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
+    TCP_Server *tcp_s = new_TCP_server(ipv6enabled, NUM_PORTS, ports, dht->self_public_key, dht->self_secret_key, onion);
+
+    if (tcp_s == NULL) {
+        printf("TCP server failed to initialize.\n");
+        exit(1);
+    }
+
+#endif
+
     FILE *file;
     file = fopen("PUBLIC_ID.txt", "w");
 
@@ -177,6 +193,9 @@ int main(int argc, char *argv[])
             last_LANdiscovery = unix_time();
         }
 
+#ifdef TCP_RELAY_ENABLED
+        do_TCP_server(tcp_s);
+#endif
         networking_poll(dht->c->lossless_udp->net);
 
         c_sleep(1);

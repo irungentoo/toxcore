@@ -60,6 +60,12 @@ typedef struct  {
         uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     } connections[NUM_CLIENT_CONNECTIONS];
+    int (*response_callback)(void *object, uint8_t connection_id, uint8_t *public_key);
+    void *response_callback_object;
+    int (*status_callback)(void *object, uint8_t connection_id, uint8_t status);
+    void *status_callback_object;
+    int (*data_callback)(void *object, uint8_t connection_id, uint8_t *data, uint16_t length);
+    void *data_callback_object;
 
     int (*onion_callback)(void *object, uint8_t *data, uint16_t length);
     void *onion_callback_object;
@@ -86,5 +92,16 @@ int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t lengt
 void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, uint8_t *data,
                             uint16_t length), void *object);
 
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key);
+void routing_response_handler(TCP_Client_Connection *con, int (*response_callback)(void *object, uint8_t connection_id,
+                              uint8_t *public_key), void *object);
+void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint8_t connection_id,
+                            uint8_t status), void *object);
+void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint8_t connection_id,
+                          uint8_t *data, uint16_t length), void *object);
 
 #endif
