@@ -268,10 +268,14 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
         }
     }
 
-    int nodes_length = pack_nodes(pl + 1 + ONION_PING_ID_SIZE, sizeof(nodes_list), nodes_list, num_nodes);
+    int nodes_length = 0;
 
-    if (nodes_length <= 0)
-        return 1;
+    if (num_nodes != 0) {
+        nodes_length = pack_nodes(pl + 1 + ONION_PING_ID_SIZE, sizeof(nodes_list), nodes_list, num_nodes);
+
+        if (nodes_length <= 0)
+            return 1;
+    }
 
     uint8_t data[ONION_ANNOUNCE_RESPONSE_MAX_SIZE];
     len = encrypt_data_fast(shared_key, nonce, pl, 1 + ONION_PING_ID_SIZE + nodes_length,

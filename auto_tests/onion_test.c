@@ -186,6 +186,7 @@ START_TEST(test_basic)
     while (handled_test_3 == 0) {
         do_onion(onion1);
         do_onion(onion2);
+        c_sleep(50);
     }
 
     randombytes(sb_data, sizeof(sb_data));
