@@ -247,14 +247,8 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
 
     /*Respond with a announce response packet*/
     Node_format nodes_list[MAX_SENT_NODES];
-    uint32_t num_nodes = get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, source.ip.family,
-                                         LAN_ip(source.ip) == 0, 1);
-
-    uint32_t i;
-
-    for (i = 0; i < num_nodes; ++i)
-        to_net_family(&nodes_list[i].ip_port.ip);
-
+    uint32_t num_nodes = get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, 0, LAN_ip(source.ip) == 0,
+                                         1);
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
 
@@ -274,13 +268,16 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
         }
     }
 
-    memcpy(pl + 1 + ONION_PING_ID_SIZE, nodes_list, num_nodes * sizeof(Node_format));
+    int nodes_length = pack_nodes(pl + 1 + ONION_PING_ID_SIZE, sizeof(nodes_list), nodes_list, num_nodes);
+
+    if (nodes_length <= 0)
+        return 1;
 
     uint8_t data[ONION_ANNOUNCE_RESPONSE_MAX_SIZE];
-    len = encrypt_data_fast(shared_key, nonce, pl, 1 + ONION_PING_ID_SIZE + num_nodes * sizeof(Node_format),
+    len = encrypt_data_fast(shared_key, nonce, pl, 1 + ONION_PING_ID_SIZE + nodes_length,
                             data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES);
 
-    if ((uint32_t)len != 1 + ONION_PING_ID_SIZE + num_nodes * sizeof(Node_format) + crypto_box_MACBYTES)
+    if (len != 1 + ONION_PING_ID_SIZE + nodes_length + crypto_box_MACBYTES)
         return 1;
 
     data[0] = NET_PACKET_ANNOUNCE_RESPONSE;

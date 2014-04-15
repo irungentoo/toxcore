@@ -52,6 +52,8 @@
 /* Redefinitions of variables for safe transfer over wire. */
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
+#define TOX_TCP_INET 130
+#define TOX_TCP_INET6 138
 
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
 #define DHT_FAKE_FRIEND_NUMBER 4
@@ -128,16 +130,27 @@ typedef struct {
     NAT         nat;
 } DHT_Friend;
 
-/* this must be kept even if IP_Port is expanded: wire compatibility */
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    IP4_Port    ip_port;
-} Node4_format;
-
-typedef struct {
+typedef struct __attribute__ ((__packed__))
+{
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
-} Node_format;
+}
+Node_format;
+
+/* Pack number of nodes into data of maxlength length.
+ *
+ * return length of packed nodes on success.
+ * return -1 on failure.
+ */
+int pack_nodes(uint8_t *data, uint16_t length, Node_format *nodes, uint16_t number);
+
+/* Unpack data of length into nodes of size (in number of nodes).
+ *
+ * return number of unpacked nodes on success.
+ * return -1 on failure.
+ */
+int unpack_nodes(Node_format *nodes, uint16_t size, uint8_t *data, uint16_t length);
+
 
 /*----------------------------------------------------------------------------------*/
 /* struct to store some shared keys so we don't have to regenerate them for each request. */
@@ -251,7 +264,7 @@ int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2);
 /* Get the (maximum MAX_SENT_NODES) closest nodes to client_id we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
  *
- * sa_family = family (IPv4 or IPv6)?
+ * sa_family = family (IPv4 or IPv6) (0 if we don't care)?
  * is_LAN = return some LAN ips (true or false)
  * want_good = do we want tested nodes or not? (TODO)
  *

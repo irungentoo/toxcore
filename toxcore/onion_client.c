@@ -345,8 +345,6 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
         if (*ping_nodes_sent_second > MAX_PING_NODES_SECOND_PEER)
             return 0;
 
-        to_host_family(&nodes[i].ip_port.ip);
-
         if (!lan_ips_accepted)
             if (LAN_ip(nodes[i].ip_port.ip) == 0)
                 continue;
@@ -377,10 +375,7 @@ static int handle_announce_response(void *object, IP_Port source, uint8_t *packe
     if (length < ONION_ANNOUNCE_RESPONSE_MIN_SIZE || length > ONION_ANNOUNCE_RESPONSE_MAX_SIZE)
         return 1;
 
-    if ((length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE) % sizeof(Node_format) != 0)
-        return 1;
-
-    uint16_t num_nodes = (length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE) / sizeof(Node_format);
+    uint16_t len_nodes = length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE;
 
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     IP_Port ip_port;
@@ -389,7 +384,7 @@ static int handle_announce_response(void *object, IP_Port source, uint8_t *packe
     if (num > onion_c->num_friends)
         return 1;
 
-    uint8_t plain[1 + ONION_PING_ID_SIZE + num_nodes * sizeof(Node_format)];
+    uint8_t plain[1 + ONION_PING_ID_SIZE + len_nodes];
     int len = -1;
 
     if (num == 0) {
@@ -409,15 +404,19 @@ static int handle_announce_response(void *object, IP_Port source, uint8_t *packe
     if ((uint32_t)len != sizeof(plain))
         return 1;
 
-
     if (client_add_to_list(onion_c, num, public_key, ip_port, plain[0], plain + 1, source) == -1)
         return 1;
 
-    Node_format nodes[MAX_SENT_NODES];
-    memcpy(nodes, plain + 1 + ONION_PING_ID_SIZE, num_nodes * sizeof(Node_format));
+    if (len_nodes != 0) {
+        Node_format nodes[MAX_SENT_NODES];
+        int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, plain + 1 + ONION_PING_ID_SIZE, len_nodes);
 
-    if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1)
-        return 1;
+        if (num_nodes <= 0)
+            return 1;
+
+        if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1)
+            return 1;
+    }
 
     return 0;
 }
@@ -469,9 +468,6 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
     if (length > FAKEID_DATA_MAX_LENGTH)
         return 1;
 
-    if ((length - FAKEID_DATA_MIN_LENGTH) % sizeof(Node_format) != 0)
-        return 1;
-
     int friend_num = onion_friend_num(onion_c, source_pubkey);
 
     if (friend_num == -1)
@@ -500,14 +496,20 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
         memcpy(onion_c->friends_list[friend_num].fake_client_id, data + 1 + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES);
     }
 
-    uint16_t num_nodes = (length - FAKEID_DATA_MIN_LENGTH) / sizeof(Node_format);
-    Node_format nodes[num_nodes];
-    memcpy(nodes, data + 1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES, sizeof(nodes));
-    uint32_t i;
+    uint16_t len_nodes = length - FAKEID_DATA_MIN_LENGTH;
 
-    for (i = 0; i < num_nodes; ++i) {
-        to_host_family(&nodes[i].ip_port.ip);
-        DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].client_id, onion_c->friends_list[friend_num].fake_client_id);
+    if (len_nodes != 0) {
+        Node_format nodes[MAX_SENT_NODES];
+        int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, data + 1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES, len_nodes);
+
+        if (num_nodes <= 0)
+            return 1;
+
+        int i;
+
+        for (i = 0; i < num_nodes; ++i) {
+            DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].client_id, onion_c->friends_list[friend_num].fake_client_id);
+        }
     }
 
     return 0;
@@ -658,19 +660,19 @@ static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num, uint
     memcpy(data + 1 + sizeof(uint64_t), onion_c->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     Node_format nodes[MAX_SENT_NODES];
     uint16_t num_nodes = closelist_nodes(onion_c->dht, nodes, MAX_SENT_NODES);
-    uint32_t i;
+    int nodes_len = pack_nodes(data + FAKEID_DATA_MIN_LENGTH, FAKEID_DATA_MAX_LENGTH - FAKEID_DATA_MIN_LENGTH, nodes,
+                               num_nodes);
 
-    for (i = 0; i < num_nodes; ++i)
-        to_net_family(&nodes[i].ip_port.ip);
+    if (nodes_len <= 0)
+        return -1;
 
-    memcpy(data + FAKEID_DATA_MIN_LENGTH, nodes, sizeof(Node_format) * num_nodes);
     int num1 = -1, num2 = -1;
 
     if (onion_dht_both != 1)
-        num1 = send_onion_data(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + sizeof(Node_format) * num_nodes);
+        num1 = send_onion_data(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + nodes_len);
 
     if (onion_dht_both != 0)
-        num2 = send_dht_fakeid(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + sizeof(Node_format) * num_nodes);
+        num2 = send_dht_fakeid(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + nodes_len);
 
     if (num1 == -1)
         return num2;

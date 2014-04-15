@@ -79,12 +79,9 @@ Protocol
 
 Node format: 
 ```
-[char array (node_id), length=32 bytes][ip (in network byte order), length=4 bytes][port (in network byte order), length=2 bytes][Padding , length=2 bytes]
+[uint8_t family (2 == IPv4, 10 == IPv6, 130 == TCP IPv4, 138 == TCP IPv6)][ip (in network byte order), length=4 bytes if ipv4, 16 bytes if ipv6][port (in network byte order), length=2 bytes][char array (node_id), length=32 bytes]
 ```
-see also: DHT.h (Node4_format struct)
-
-IPv6 Node format: 
-see: DHT.h (Node_format struct)
+see also: DHT.h (pack_nodes() and unpack_nodes())
 
 Valid queries and Responses:
 
@@ -102,12 +99,7 @@ Packet contents:
 ```
 Valid replies: a send_nodes packet
 
-Send_nodes (response (for ipv4 addresses)): 
+Send_nodes (response (for all addresses)): 
 ```
-[byte with value: 03][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[Nodes in node format, length=40 * (number of nodes (maximum of 8 nodes)) bytes][Encrypted data, length=NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
-```
-
-Send_nodes_IPv6 (response (for ipv6 addresses)): 
-```
-[byte with value: 04][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[Nodes in ipv6_node format, length=56 * (number of nodes (maximum of 8 nodes)) bytes][Encrypted data, length=NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
+[byte with value: 04][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[Nodes in node format, length=?? * (number of nodes (maximum of 8 nodes)) bytes][Encrypted data, length=NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
 ```
