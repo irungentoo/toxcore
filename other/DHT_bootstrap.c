@@ -31,6 +31,8 @@
 #include "../toxcore/friend_requests.h"
 #include "../toxcore/util.h"
 
+#define TCP_RELAY_ENABLED
+
 #ifdef TCP_RELAY_ENABLED
 #include "../toxcore/TCP_server.h"
 #endif
