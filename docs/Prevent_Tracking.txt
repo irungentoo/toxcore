@@ -110,7 +110,8 @@ encrypted with that temporary private key and the nonce and the public key from 
 (if Node D contains the ret data for the node, it sends the stuff in this packet as a data to route response packet to the right node)
 
 The data in the previous packet is in format: [real public key of sender]
-encrypted with real private key of the sender, the nonce in the data packet and the real public key of the reciever:[[uint8_t id][data (optional)]]
+encrypted with real private key of the sender, the nonce in the data packet and
+the real public key of the receiver:[[uint8_t id][data (optional)]]
 
 Data sent to us:
 announce response packet:
@@ -153,5 +154,5 @@ Data packets:
 
 To tell our friend what our DHT public key is so that he can connect to us we send a data packet 
 with id 156 and the data being:[uint64_t (in network byte order) no_replay, the packet will only be 
-accepted if this number is bigger than the last one recieved] [our dht public key][Node_Format * (
+accepted if this number is bigger than the last one received] [our dht public key][Node_Format * (
 maximum of 8) nodes closest to us so that the friend can find us faster]

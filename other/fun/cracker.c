@@ -32,7 +32,7 @@ void print_key(uint8_t *client_id)
 int main(int argc, char *argv[])
 {
     if (argc < 2) {
-        printf("usage: ./cracker public_key(or beggining of one in hex format)\n");
+        printf("usage: ./cracker public_key(or beginning of one in hex format)\n");
         return 0;
     }
 

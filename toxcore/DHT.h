@@ -192,7 +192,7 @@ typedef struct {
 void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, uint8_t *secret_key, uint8_t *client_id);
 
 /* Copy shared_key to decrypt DHT packet from client_id into shared_key
- * for packets that we recieve.
+ * for packets that we receive.
  */
 void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, uint8_t *client_id);
 

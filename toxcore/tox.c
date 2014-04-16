@@ -186,7 +186,7 @@ int tox_set_name(Tox *tox, uint8_t *name, uint16_t length)
 }
 
 /* Get your nickname.
- * m -  The messanger context to use.
+ * m -  The messenger context to use.
  * name - Pointer to a string for the name. (must be at least MAX_NAME_LENGTH)
  *
  *  return length of the name.

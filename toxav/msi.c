@@ -206,7 +206,7 @@ static inline__ const uint8_t *stringify_response ( MSIResponse response )
 
 #define ON_HEADER(iterator, header, descriptor, size_const) \
 ( memcmp(iterator, descriptor, size_const) == 0){ /* Okay */ \
-    iterator += size_const; /* Set iterator at begining of value part */ \
+    iterator += size_const; /* Set iterator at beginning of value part */ \
     if ( *iterator != value_byte ) { assert(0); return -1; }\
     iterator ++;\
     uint16_t _value_size = (uint16_t) *(iterator ) << 8 | \
@@ -225,7 +225,7 @@ static inline__ const uint8_t *stringify_response ( MSIResponse response )
  * @param msg Container.
  * @param data The data.
  * @return int
- * @retval -1 Error occured.
+ * @retval -1 Error occurred.
  * @retval 0 Success.
  */
 int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
@@ -338,7 +338,7 @@ void free_message ( MSIMessage *msg )
  * @param type Request or response.
  * @param type_id Type of request/response.
  * @return MSIMessage* Created message.
- * @retval NULL Error occured.
+ * @retval NULL Error occurred.
  */
 MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
 {
@@ -367,7 +367,7 @@ MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
  *
  * @param data The data.
  * @return MSIMessage* Parsed message.
- * @retval NULL Error occured.
+ * @retval NULL Error occurred.
  */
 MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
 {
@@ -422,7 +422,7 @@ uint8_t *append_header_to_string (
 
     *dest = field_byte; /* Set the first byte */
 
-    uint8_t *_getback_byte = dest + 1; /* remeber the byte we were on */
+    uint8_t *_getback_byte = dest + 1; /* remember the byte we were on */
     dest += 3; /* swith to 4th byte where field value starts */
 
     /* Now set the field value and calculate it's length */
@@ -604,7 +604,7 @@ static inline__ const uint8_t *stringify_error_code ( MSICallError error_code )
  * @param msg The message.
  * @param to Where to.
  * @return int
- * @retval -1 Error occured.
+ * @retval -1 Error occurred.
  * @retval 0 Success.
  */
 int send_message ( MSISession *session, MSIMessage *msg, uint32_t to )
@@ -721,7 +721,7 @@ int handle_error ( MSISession *session, MSICallError errid, uint32_t to )
  * @param msg The message.
  * @return int
  * @retval -1 No error.
- * @retval 0 Error occured and response sent.
+ * @retval 0 Error occurred and response sent.
  */
 int has_call_error ( MSISession *session, MSIMessage *msg )
 {
@@ -830,7 +830,7 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
  *
  * @param session Control session.
  * @return int
- * @retval -1 Error occured.
+ * @retval -1 Error occurred.
  * @retval 0 Success.
  */
 int terminate_call ( MSISession *session )
@@ -882,7 +882,7 @@ int handle_recv_invite ( MSISession *session, MSIMessage *msg )
              * B calls A. Who has advantage is set bey calculating
              * 'bigger' Call id and then that call id is being used in
              * future. User with 'bigger' Call id has the advantage
-             * as in he will wait the reponse from the other.
+             * as in he will wait the response from the other.
              */
             
             if ( call_id_bigger (session->call->id, msg->callid.header_value) == 1 ) { /* Peer has advantage */
@@ -1250,7 +1250,7 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id, void* userd
  * @param messenger Tox* object.
  * @param user_agent User agent, i.e. 'Venom'; 'QT-gui'
  * @return MSISession* The created session.
- * @retval NULL Error occured.
+ * @retval NULL Error occurred.
  */
 MSISession *msi_init_session ( Messenger* messenger )
 {
@@ -1351,7 +1351,7 @@ int msi_invite ( MSISession *session, MSICallType call_type, uint32_t rngsec, ui
  *
  * @param session Control session.
  * @return int
- * @retval -1 Error occured.
+ * @retval -1 Error occurred.
  * @retval 0 Success.
  */
 int msi_hangup ( MSISession *session )

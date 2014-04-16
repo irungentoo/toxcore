@@ -156,7 +156,7 @@ int new_connection(Lossless_UDP *ludp, IP_Port ip_port);
 int getconnection_id(Lossless_UDP *ludp, IP_Port ip_port);
 
 /*
- *  return an integer corresponding to the next connection in our incoming connection list with at least numpackets in the recieve queue.
+ *  return an integer corresponding to the next connection in our incoming connection list with at least numpackets in the receive queue.
  *  return -1 if there are no new incoming connections in the list.
  */
 int incoming_connection(Lossless_UDP *ludp, uint32_t numpackets);
