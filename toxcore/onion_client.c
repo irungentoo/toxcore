@@ -286,7 +286,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, uint8_t *publ
 
     list_nodes[index].is_stored = is_stored;
     list_nodes[index].timestamp = unix_time();
-    list_nodes[index].last_pinged = unix_time();
+    list_nodes[index].last_pinged = 0;
     list_nodes[index].path_used = set_path_timeouts(onion_c, num, source);
     return 0;
 }
@@ -863,6 +863,11 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 
             ++count;
 
+            if (list_nodes[i].last_pinged == 0) {
+                list_nodes[i].last_pinged = unix_time();
+                continue;
+            }
+
             if (is_timeout(list_nodes[i].last_pinged, ANNOUNCE_FRIEND)) {
                 if (client_send_announce_request(onion_c, friendnum + 1, list_nodes[i].ip_port, list_nodes[i].client_id, 0, ~0) == 0) {
                     list_nodes[i].last_pinged = unix_time();
@@ -931,6 +936,13 @@ static void do_announce(Onion_Client *onion_c)
             continue;
 
         ++count;
+
+        /* Don't announce ourselves the first time this is run to new peers */
+        if (list_nodes[i].last_pinged == 0) {
+            list_nodes[i].last_pinged = 1;
+            continue;
+        }
+
         uint32_t interval = ANNOUNCE_INTERVAL_NOT_ANNOUNCED;
 
         if (list_nodes[i].is_stored) {

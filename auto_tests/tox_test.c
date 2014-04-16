@@ -110,7 +110,7 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
 
 START_TEST(test_few_clients)
 {
-    long long unsigned int cur_time = time(NULL);
+    long long unsigned int con_time, cur_time = time(NULL);
     Tox *tox1 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     Tox *tox2 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     Tox *tox3 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
@@ -131,6 +131,7 @@ START_TEST(test_few_clients)
 
         if (tox_isconnected(tox1) && tox_isconnected(tox2) && tox_isconnected(tox3) && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
+            con_time = time(NULL);
             off = 0;
         }
 
@@ -141,7 +142,7 @@ START_TEST(test_few_clients)
         c_sleep(50);
     }
 
-    printf("tox clients connected\n");
+    printf("tox clients connected took %llu seconds\n", time(NULL) - con_time);
     to_compare = 974536;
     tox_callback_friend_message(tox3, print_message, &to_compare);
     tox_send_message(tox2, 0, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
@@ -331,7 +332,7 @@ Suite *tox_suite(void)
     Suite *s = suite_create("Tox");
 
     DEFTESTCASE_SLOW(few_clients, 50);
-    DEFTESTCASE_SLOW(many_clients, 300);
+    DEFTESTCASE_SLOW(many_clients, 150);
     return s;
 }
 
