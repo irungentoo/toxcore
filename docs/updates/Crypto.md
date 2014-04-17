@@ -74,4 +74,4 @@ Crypto request packets
 
 The encrypted message is encrypted with crypto_box() (using Bobs public key, Alice's private key and the nonce (randomly generated 24 bytes)) and is a message from Alice in which she tells Bob who she is.
 
-Each node can route the request to the reciever if they are connected to him. This is to bypass bad NATs.
+Each node can route the request to the receiver if they are connected to him. This is to bypass bad NATs.

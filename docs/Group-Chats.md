@@ -21,18 +21,18 @@ See DHT, currently uses the IPv6 Node_format.
 Get nodes (Request):
 Packet contents: 
 ```
-[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the reciever:[char with a value of 48][random 8 byte (ping_id)]
+[char with a value of 48][Bob's (The receiver's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the receiver:[char with a value of 48][random 8 byte (ping_id)]
 ```
 Valid replies: a send_nodes packet
 
 Send_nodes (response): 
 ```
-[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the reciever:[char with a value of 49][random 8 byte (ping_id)][Nodes in node format, length=40 * (number of nodes (maximum of 6 nodes)) bytes]]
+[char with a value of 48][Bob's (The receiver's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the receiver:[char with a value of 49][random 8 byte (ping_id)][Nodes in node format, length=40 * (number of nodes (maximum of 6 nodes)) bytes]]
 ```
 
 Broadcast packet:
 ```
-[char with a value of 48][Bob's (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][nonce][Encrypted with the nonce, private key of the sender and public key of the reciever:[char with a value of 50][Data to send to everyone]]
+[char with a value of 48][Bob's (The receiver's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][nonce][Encrypted with the nonce, private key of the sender and public key of the receiver:[char with a value of 50][Data to send to everyone]]
 ```
 
 

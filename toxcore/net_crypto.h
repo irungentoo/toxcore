@@ -162,7 +162,7 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
 
 /* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.
- * recv_public_key is public key of reciever.
+ * recv_public_key is public key of receiver.
  * packet must be an array of MAX_DATA_SIZE big.
  * Data represents the data we send with the request with length being the length of the data.
  * request_id is the id of the request (32 = friend request, 254 = ping request).

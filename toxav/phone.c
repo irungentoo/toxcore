@@ -5,7 +5,7 @@
  *   This file is for testing/reference purposes only, hence
  *   it is _poorly_ designed and it does not fully reflect the
  *   quaility of msi nor rtp. Although toxmsi* and toxrtp* are tested
- *   there is always possiblity of crashes. If crash occures,
+ *   there is always possibility of crashes. If crash occures,
  *   contact me ( mannol ) on either irc channel #tox-dev @ freenode.net:6667
  *   or eniz_vukovic@hotmail.com
  *
@@ -612,7 +612,7 @@ void *decode_video_thread(void *arg)
 
         } //else {
 
-        /* TODO: request the sender to create a new i-frame immediatly */
+        /* TODO: request the sender to create a new i-frame immediately */
         //printf("Bad video packet\n");
         //}
         //}
