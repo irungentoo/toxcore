@@ -144,7 +144,7 @@ typedef enum {
  * @param id The id.
  * @return void
  */
-void msi_register_callback(MSICallback callback, MSICallbackID id, void* userdata);
+void msi_register_callback(MSICallback callback, MSICallbackID id, void *userdata);
 
 
 /**
@@ -207,7 +207,7 @@ int msi_answer ( MSISession *session, MSICallType call_type );
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession* session, uint32_t peer, const char* reason );
+int msi_cancel ( MSISession *session, uint32_t peer, const char *reason );
 
 
 /**

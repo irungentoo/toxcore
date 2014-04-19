@@ -74,7 +74,7 @@ struct _ToxAv {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new( Tox* messenger, ToxAvCodecSettings* codec_settings)
+ToxAv *toxav_new( Tox *messenger, ToxAvCodecSettings *codec_settings)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
 
@@ -91,8 +91,8 @@ ToxAv *toxav_new( Tox* messenger, ToxAvCodecSettings* codec_settings)
     /* NOTE: This should be user defined or? */
     av->j_buf = create_queue(codec_settings->jbuf_capacity);
 
-    av->cs = codec_init_session(codec_settings->audio_bitrate, 
-                                codec_settings->audio_frame_duration, 
+    av->cs = codec_init_session(codec_settings->audio_bitrate,
+                                codec_settings->audio_frame_duration,
                                 codec_settings->audio_sample_rate,
                                 codec_settings->audio_channels,
                                 codec_settings->video_width,
@@ -132,7 +132,7 @@ void toxav_kill ( ToxAv *av )
  * @param id One of the ToxAvCallbackID values
  * @return void
  */
-void toxav_register_callstate_callback ( ToxAVCallback callback, ToxAvCallbackID id, void* userdata )
+void toxav_register_callstate_callback ( ToxAVCallback callback, ToxAvCallbackID id, void *userdata )
 {
     msi_register_callback((MSICallback)callback, (MSICallbackID) id, userdata);
 }
@@ -266,7 +266,7 @@ int toxav_stop_call ( ToxAv *av )
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_prepare_transmission ( ToxAv* av, int support_video )
+int toxav_prepare_transmission ( ToxAv *av, int support_video )
 {
     assert(av->msi_session);
 
@@ -307,6 +307,7 @@ int toxav_prepare_transmission ( ToxAv* av, int support_video )
             return ErrorStartingVideoRtp;
         }
     }
+
     return ErrorNone;
 }
 
@@ -332,8 +333,8 @@ int toxav_kill_transmission ( ToxAv *av )
 
     av->rtp_sessions[audio_index] = NULL;
     av->rtp_sessions[video_index] = NULL;
-    
-    
+
+
     return ErrorNone;
 }
 
@@ -422,13 +423,13 @@ inline__ int toxav_recv_video ( ToxAv *av, vpx_image_t **output)
     uint8_t packet [RTP_PAYLOAD_SIZE];
     int recved_size = 0;
     int error;
-    
+
     do {
         recved_size = toxav_recv_rtp_payload(av, TypeVideo, packet);
 
-        if (recved_size > 0 && ( error = vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0) ) != VPX_CODEC_OK) 
+        if (recved_size > 0 && ( error = vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0) ) != VPX_CODEC_OK)
             fprintf(stderr, "Error decoding: %s\n", vpx_codec_err_to_string(error));
-        
+
     } while (recved_size > 0);
 
     vpx_codec_iter_t iter = NULL;
@@ -548,42 +549,42 @@ int toxav_get_peer_transmission_type ( ToxAv *av, int peer )
 
 /**
  * @brief Get id of peer participating in conversation
- * 
+ *
  * @param av Handler
  * @param peer peer index
  * @return int
  * @retval ToxAvError No peer id
  */
-int toxav_get_peer_id ( ToxAv* av, int peer )
+int toxav_get_peer_id ( ToxAv *av, int peer )
 {
     assert(av->msi_session);
-    
+
     if ( peer < 0 || !av->msi_session->call || av->msi_session->call->peer_count <= peer )
         return ErrorInternal;
-    
+
     return av->msi_session->call->peers[peer];
 }
 
 /**
  * @brief Is certain capability supported
- * 
+ *
  * @param av Handler
  * @return int
  * @retval 1 Yes.
  * @retval 0 No.
  */
-inline__ int toxav_capability_supported ( ToxAv* av, ToxAvCapabilities capability )
+inline__ int toxav_capability_supported ( ToxAv *av, ToxAvCapabilities capability )
 {
     return av->cs->capabilities & (Capabilities) capability;
 }
 
 /**
  * @brief Get messenger handle
- * 
+ *
  * @param av Handler.
  * @return Tox*
  */
-inline__ Tox* toxav_get_tox ( ToxAv* av )
+inline__ Tox *toxav_get_tox ( ToxAv *av )
 {
-    return (Tox*)av->messenger;
+    return (Tox *)av->messenger;
 }
