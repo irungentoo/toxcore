@@ -1,0 +1,41 @@
+The TCP client and TCP server part are in a state that can be considered 
+feature complete. Why doesn't Tox support TCP yet even if those parts are 
+complete?
+
+The answer is that a way to ensure a smooth switchover between the TCP and UDP 
+needs to be added. If Tox first connects to the other user using TCP but then 
+due to pure chance manages to connect using the faster direct UDP connection 
+Tox must switch seamlessly from the TCP to the UDP connection without there 
+being any data loss or the other user going offline and then back online. The 
+transition must be seamless whatever both connected users are doing be it 
+transferring files or simply chatting together.
+
+Possible evil/bad or simply TCP relays going offline must not impact the 
+connection between both clients.
+
+Typically Tox will use more than one TCP relay to connect to other peers for 
+maximum connection stability which means there must be a way for Tox to take 
+advantage of multiple relays in a way that the user will never be aware if one
+of them goes offline/tries to slow down the connection/decides to corrupt 
+packets/etc..
+
+To accomplish this Tox needs something between the low level protocol (TCP) and 
+high level Tox messaging protocol hence the name middle level.
+
+The plan is to move some functionality from lossless_UDP to a higher level: 
+more specifically the functionality for detecting which packets a peer is 
+missing and the ability to request and send them again. lossless UDP uses plain 
+text packets to request missing packets from the other peer while Tox is 
+currently designed to kill the connection if any packet tampering is detected. 
+This works very well when connecting directly with someone because if the 
+attacker can modify packets it means he can kill your connection anyways. With 
+TCP relays however that is not the case as such the packets used to request 
+missing packets must be encrypted. If it is detected that a packet has been 
+tampered, the connection must stay intact while the evil relay must be 
+disconnected from and replaced with a good relay, the behavior must be the same 
+as if the relay had just suddenly gone online. Of course something to protect 
+from evil "friends" framing relays must also be implemented.
+
+Detailed implementation details:
+
+Coming soon.
