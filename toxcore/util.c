@@ -67,22 +67,17 @@ uint32_t id_copy(uint8_t *dest, uint8_t *src)
 
 void host_to_net(uint8_t *num, uint16_t numbytes)
 {
-    union {
-        uint32_t i;
-        uint8_t c[4];
-    } a;
-    a.i = 1;
+#ifndef WORDS_BIGENDIAN
+    uint32_t i;
+    uint8_t buff[numbytes];
 
-    if (a.c[0] == 1) {
-        uint32_t i;
-        uint8_t buff[numbytes];
-
-        for (i = 0; i < numbytes; ++i) {
-            buff[i] = num[numbytes - i - 1];
-        }
-
-        memcpy(num, buff, numbytes);
+    for (i = 0; i < numbytes; ++i) {
+        buff[i] = num[numbytes - i - 1];
     }
+
+    memcpy(num, buff, numbytes);
+#endif
+    return;
 }
 
 /* state load/save */
