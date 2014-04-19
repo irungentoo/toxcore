@@ -110,12 +110,12 @@ typedef struct _ToxAvCodecSettings {
     uint32_t video_bitrate; /* In bits/s */
     uint16_t video_width; /* In px */
     uint16_t video_height; /* In px */
-    
+
     uint32_t audio_bitrate; /* In bits/s */
     uint16_t audio_frame_duration; /* In ms */
     uint32_t audio_sample_rate; /* In Hz */
     uint32_t audio_channels;
-    
+
     uint32_t jbuf_capacity; /* Size of jitter buffer */
 } ToxAvCodecSettings;
 
@@ -123,7 +123,7 @@ static const ToxAvCodecSettings av_DefaultSettings = {
     1000000,
     800,
     600,
-    
+
     64000,
     20,
     48000,
@@ -142,7 +142,7 @@ static const ToxAvCodecSettings av_DefaultSettings = {
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox *messenger, ToxAvCodecSettings* codec_settings);
+ToxAv *toxav_new(Tox *messenger, ToxAvCodecSettings *codec_settings);
 
 /**
  * @brief Remove A/V session.
@@ -216,7 +216,7 @@ int toxav_reject(ToxAv *av, const char *reason);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_cancel(ToxAv* av, int peer_id, const char* reason);
+int toxav_cancel(ToxAv *av, int peer_id, const char *reason);
 
 /**
  * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
@@ -311,30 +311,30 @@ int toxav_get_peer_transmission_type ( ToxAv *av, int peer );
 
 /**
  * @brief Get id of peer participating in conversation
- * 
+ *
  * @param av Handler
  * @param peer peer index
  * @return int
  * @retval ToxAvError No peer id
  */
-int toxav_get_peer_id ( ToxAv* av, int peer );
+int toxav_get_peer_id ( ToxAv *av, int peer );
 
 /**
  * @brief Is certain capability supported
- * 
+ *
  * @param av Handler
  * @return int
  * @retval 1 Yes.
  * @retval 0 No.
  */
-int toxav_capability_supported ( ToxAv* av, ToxAvCapabilities capability );
+int toxav_capability_supported ( ToxAv *av, ToxAvCapabilities capability );
 
 /**
  * @brief Get messenger handle
- * 
+ *
  * @param av Handler.
  * @return Tox*
  */
-Tox* toxav_get_tox ( ToxAv* av );
+Tox *toxav_get_tox ( ToxAv *av );
 
 #endif /* __TOXAV */

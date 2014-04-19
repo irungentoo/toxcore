@@ -263,7 +263,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
     }
 
     memset(_retu->csrc, 0, 16 * sizeof (uint32_t));
-    
+
     _retu->marker_payloadt = *_it;
     ++_it;
     _retu->length = _length;
@@ -415,9 +415,9 @@ RTPHeader *build_header ( RTPSession *session )
 
     int i;
 
-    for ( i = 0; i < session->cc; i++ ) 
+    for ( i = 0; i < session->cc; i++ )
         _retu->csrc[i] = session->csrc[i];
-        
+
     _retu->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
 
     return _retu;
@@ -892,13 +892,13 @@ int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
 {
     if ( !session )
         return -1;
-        
+
     custom_user_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
-    
+
     rtp_release_session_recv(session);
-    
+
     pthread_mutex_lock(&session->mutex);
-    
+
     free ( session->ext_header );
     free ( session->csrc );
     free ( session->decrypt_nonce );
@@ -906,7 +906,7 @@ int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
     free ( session->nonce_cycle );
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     pthread_mutex_destroy(&session->mutex);
 
     /* And finally free session */

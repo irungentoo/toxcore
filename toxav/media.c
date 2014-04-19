@@ -51,13 +51,13 @@ int empty_queue(struct jitter_buffer *q)
     while (q->size > 0) {
         rtp_free_msg(NULL, q->queue[q->front]);
         q->front++;
-        
+
         if (q->front == q->capacity)
             q->front = 0;
-        
+
         q->size--;
     }
-    
+
     q->id_set = 0;
     q->queue_ready = 0;
     return 0;
@@ -271,8 +271,7 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
     if (!video_width || !video_height) { /* Disable video */
         /*video_width = 320;
         video_height = 240; */
-    }
-    else {
+    } else {
         retu->capabilities |= ( 0 == init_video_encoder(retu, video_width, video_height, video_bitrate) ) ? v_encoding : 0;
         retu->capabilities |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
     }
@@ -285,19 +284,19 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
 
 void codec_terminate_session ( CodecState *cs )
 {
-    if ( cs->audio_encoder ) 
+    if ( cs->audio_encoder )
         opus_encoder_destroy(cs->audio_encoder);
-    
-    if ( cs->audio_decoder ) 
-        opus_decoder_destroy(cs->audio_decoder);
-    
 
-    /* TODO: Terminate video 
+    if ( cs->audio_decoder )
+        opus_decoder_destroy(cs->audio_decoder);
+
+
+    /* TODO: Terminate video
      *           Do what???
      */
     if ( cs->capabilities & v_decoding )
         vpx_codec_destroy(&cs->v_decoder);
-    
+
     if ( cs->capabilities & v_encoding )
         vpx_codec_destroy(&cs->v_encoder);
 }

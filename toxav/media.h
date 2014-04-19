@@ -38,8 +38,7 @@
 /* Audio encoding/decoding */
 #include <opus.h>
 
-typedef enum _Capabilities
-{
+typedef enum _Capabilities {
     none,
     a_encoding = 1 << 0,
     a_decoding = 1 << 1,
@@ -65,7 +64,7 @@ typedef struct _CodecState {
     OpusDecoder *audio_decoder;
 
     uint64_t capabilities; /* supports*/
-    
+
 } CodecState;
 
 struct jitter_buffer *create_queue(int capacity);

@@ -117,7 +117,7 @@ typedef struct _MSIMessage {
 
 static struct _Callbacks {
     MSICallback function;
-    void* data;
+    void *data;
 } callbacks[11] = {0};
 
 inline__ void invoke_callback(MSICallbackID id)
@@ -620,19 +620,20 @@ int send_message ( MSISession *session, MSIMessage *msg, uint32_t to )
 
 /**
  * @brief Determine 'bigger' call id
- * 
+ *
  * @param first duh
  * @param second duh
  * @return int
  * @retval 0 it's first
  * @retval 1 it's second
  */
-int call_id_bigger( const uint8_t* first, const uint8_t* second)
+int call_id_bigger( const uint8_t *first, const uint8_t *second)
 {
     int i = 0;
+
     for (; i < CALL_ID_LEN; i ++) {
-        
-        if ( first[i] != second[i] ) 
+
+        if ( first[i] != second[i] )
             return first[i] > second [i] ? 0 : 1;
     }
 }
@@ -650,10 +651,10 @@ void flush_peer_type ( MSISession *session, MSIMessage *msg, int peer_id )
 {
     if ( msg->calltype.header_value ) {
         uint8_t hdrval [MSI_MAXMSG_SIZE]; /* Make sure no overflow */
-        
+
         memcpy(hdrval, msg->calltype.header_value, msg->calltype.size);
         hdrval[msg->calltype.size] = '\0';
-        
+
         if ( strcmp ( ( const char * ) hdrval, CT_AUDIO_HEADER_VALUE ) == 0 ) {
             session->call->type_peer[peer_id] = type_audio;
 
@@ -753,13 +754,13 @@ void *handle_timeout ( void *arg )
      * their timeout
      */
     MSISession *_session = arg;
-        
+
     invoke_callback(MSI_OnRequestTimeout);
-        
+
     if ( _session && _session->call ) {
-       
+
         /* TODO: Cancel all? */
-        /* uint16_t _it = 0;        
+        /* uint16_t _it = 0;
         for ( ; _it < _session->call->peer_count; _it++ ) */
         msi_cancel ( _session, _session->call->peers [0], "Request timedout" );
     }
@@ -875,28 +876,26 @@ int handle_recv_invite ( MSISession *session, MSIMessage *msg )
 {
     assert ( session );
 
-    
+
     if ( session->call ) {
-        if ( session->call->peers[0] == msg->friend_id ) { 
-            /* The glare case. A calls B when at the same time 
+        if ( session->call->peers[0] == msg->friend_id ) {
+            /* The glare case. A calls B when at the same time
              * B calls A. Who has advantage is set bey calculating
              * 'bigger' Call id and then that call id is being used in
              * future. User with 'bigger' Call id has the advantage
              * as in he will wait the response from the other.
              */
-            
+
             if ( call_id_bigger (session->call->id, msg->callid.header_value) == 1 ) { /* Peer has advantage */
                 terminate_call(session);
-            } 
-            else {
+            } else {
                 return 0; /* Wait for ringing from peer */
             }
-                
-        }
-        else {
+
+        } else {
             handle_error ( session, error_busy, msg->friend_id );
             return 0;
-        }        
+        }
     }
 
     if ( !msg->callid.header_value ) {
@@ -956,7 +955,7 @@ int handle_recv_reject ( MSISession *session, MSIMessage *msg )
     send_message ( session, _msg_ending, msg->friend_id );
     free_message ( _msg_ending );
 
-    
+
     invoke_callback(MSI_OnReject);
     /*
     event.timer_release ( session->call->request_timer_id );
@@ -964,26 +963,26 @@ int handle_recv_reject ( MSISession *session, MSIMessage *msg )
     */
 
     terminate_call(session);
-    
+
     return 1;
 }
 int handle_recv_cancel ( MSISession *session, MSIMessage *msg )
 {
     assert ( session );
-    
+
     if ( has_call_error ( session, msg ) == 0 )
         return 0;
-    
+
     /* Act as end message */
-    
+
     MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
     send_message ( session, _msg_ending, msg->friend_id );
     free_message ( _msg_ending );
-    
+
     invoke_callback(MSI_OnCancel);
-    
+
     terminate_call ( session );
-    
+
     return 1;
 }
 int handle_recv_end ( MSISession *session, MSIMessage *msg )
@@ -1013,7 +1012,7 @@ int handle_recv_ringing ( MSISession *session, MSIMessage *msg )
         return 0;
 
     session->call->ringing_timer_id = event.timer_alloc ( handle_timeout, session, session->call->ringing_tout_ms );
-    
+
     invoke_callback(MSI_OnRinging);
 
     return 1;
@@ -1054,7 +1053,7 @@ int handle_recv_starting ( MSISession *session, MSIMessage *msg )
     flush_peer_type ( session, msg, 0 );
 
     invoke_callback(MSI_OnStarting);
-    
+
     event.timer_release ( session->call->ringing_timer_id );
 
     return 1;
@@ -1062,15 +1061,15 @@ int handle_recv_starting ( MSISession *session, MSIMessage *msg )
 int handle_recv_ending ( MSISession *session, MSIMessage *msg )
 {
     assert ( session );
-    
+
     if ( has_call_error ( session, msg ) == 0 )
         return 0;
-    
-    /* Stop timer */    
+
+    /* Stop timer */
     event.timer_release ( session->call->request_timer_id );
-    
+
     invoke_callback(MSI_OnEnding);
-    
+
     /* Terminate call */
     terminate_call ( session );
 
@@ -1088,7 +1087,7 @@ int handle_recv_error ( MSISession *session, MSIMessage *msg )
     }
 
     invoke_callback(MSI_OnEnding);
-    
+
     terminate_call ( session );
     return 1;
 }
@@ -1146,11 +1145,11 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
     /* Now handle message */
 
     if ( _msg->request.header_value ) { /* Handle request */
-        
+
         if ( _msg->response.size > 32 ) goto free_end;
-        
+
         uint8_t _request_value[32];
-        
+
         memcpy(_request_value, _msg->request.header_value, _msg->request.size);
         _request_value[_msg->request.size] = '\0';
 
@@ -1173,14 +1172,14 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
         else goto free_end;
 
     } else if ( _msg->response.header_value ) { /* Handle response */
-        
+
         if ( _msg->response.size > 32 ) goto free_end;
-        
+
         uint8_t _response_value[32];
-        
+
         memcpy(_response_value, _msg->response.header_value, _msg->response.size);
         _response_value[_msg->response.size] = '\0';
-        
+
         if ( same ( _response_value, stringify_response ( ringing ) ) ) {
             handle_recv_ringing ( _session, _msg );
 
@@ -1192,7 +1191,7 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
 
         } else if ( same ( _response_value, stringify_response ( error ) ) ) {
             handle_recv_error ( _session, _msg );
-            
+
         } else goto free_end;
 
         /* Got response so cancel timer */
@@ -1201,7 +1200,8 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
 
     }
 
-    free_end:free_message ( _msg );
+free_end:
+    free_message ( _msg );
 }
 
 
@@ -1237,7 +1237,7 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
  * @param id The id.
  * @return void
  */
-void msi_register_callback ( MSICallback callback, MSICallbackID id, void* userdata )
+void msi_register_callback ( MSICallback callback, MSICallbackID id, void *userdata )
 {
     callbacks[id].function = callback;
     callbacks[id].data = userdata;
@@ -1252,7 +1252,7 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id, void* userd
  * @return MSISession* The created session.
  * @retval NULL Error occurred.
  */
-MSISession *msi_init_session ( Messenger* messenger )
+MSISession *msi_init_session ( Messenger *messenger )
 {
     assert ( messenger );
 
@@ -1288,15 +1288,16 @@ int msi_terminate_session ( MSISession *session )
     assert ( session );
 
     int _status = 0;
-    
+
     /* If have call, cancel it */
-    if ( session->call ) { 
+    if ( session->call ) {
         /* Cancel all? */
-        uint16_t _it = 0;        
+        uint16_t _it = 0;
+
         for ( ; _it < session->call->peer_count; _it++ )
             msi_cancel ( session, session->call->peers [_it], "MSI session terminated!" );
     }
-    
+
     m_callback_msi_packet((struct Messenger *) session->messenger_handle, NULL, NULL);
 
     free ( session );
@@ -1365,15 +1366,15 @@ int msi_hangup ( MSISession *session )
 
     /* hangup for each peer */
     int _it = 0;
-    
-    for ( ; _it < session->call->peer_count; _it ++ ) 
+
+    for ( ; _it < session->call->peer_count; _it ++ )
         send_message ( session, _msg_end, session->call->peers[_it] );
-    
+
 
     free_message ( _msg_end );
 
     session->call->request_timer_id = event.timer_alloc ( handle_timeout, session, m_deftout );
-    
+
     return 0;
 }
 
@@ -1433,13 +1434,13 @@ int msi_cancel ( MSISession *session, uint32_t peer, const char *reason )
 
     MSIMessage *_msg_cancel = msi_new_message ( TYPE_REQUEST, stringify_request ( cancel ) );
 
-    if ( reason ) msi_msg_set_reason(_msg_cancel, (const uint8_t*)reason, strlen(reason));
+    if ( reason ) msi_msg_set_reason(_msg_cancel, (const uint8_t *)reason, strlen(reason));
 
     send_message ( session, _msg_cancel, peer );
     free_message ( _msg_cancel );
-    
+
     session->call->request_timer_id = event.timer_alloc ( handle_timeout, session, m_deftout );
-    
+
     return 0;
 }
 
