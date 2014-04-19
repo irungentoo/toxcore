@@ -739,17 +739,6 @@ uint64_t tox_file_data_remaining(Tox *tox, int32_t friendnumber, uint8_t filenum
 
 /***************END OF FILE SENDING FUNCTIONS******************/
 
-/* Use these functions to bootstrap the client.
- * Sends a get nodes request to the given node with ip port and public_key.
- */
-void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port _ip_port, uint8_t *public_key)
-{
-    Messenger *m = tox;
-    IP_Port ip_port;
-    memcpy(&ip_port, &_ip_port, sizeof(IP_Port));
-    DHT_bootstrap(m->dht, ip_port, public_key);
-}
-
 int tox_bootstrap_from_address(Tox *tox, const char *address,
                                uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
 {

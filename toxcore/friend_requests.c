@@ -137,7 +137,7 @@ static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t 
 {
     Friend_Requests *fr = object;
 
-    if (length <= 1 + sizeof(fr->nospam))
+    if (length <= 1 + sizeof(fr->nospam) || length > MAX_DATA_SIZE)
         return 1;
 
     ++packet;

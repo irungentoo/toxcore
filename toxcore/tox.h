@@ -601,43 +601,6 @@ uint64_t tox_file_data_remaining(Tox *tox, int32_t friendnumber, uint8_t filenum
 
 /***************END OF FILE SENDING FUNCTIONS******************/
 
-/* WARNING: DEPRECATED, DO NOT USE. */
-typedef union {
-    uint8_t  c[4];
-    uint16_t s[2];
-    uint32_t i;
-} tox_IP4;
-
-typedef union {
-    uint8_t uint8[16];
-    uint16_t uint16[8];
-    uint32_t uint32[4];
-    struct in6_addr in6_addr;
-} tox_IP6;
-
-typedef struct {
-    uint8_t family;
-    /* Not used for anything right now. */
-    uint8_t padding[3];
-    union {
-        tox_IP4 ip4;
-        tox_IP6 ip6;
-    };
-} tox_IP;
-
-/* will replace IP_Port as soon as the complete infrastructure is in place
- * removed the unused union and padding also */
-typedef struct {
-    tox_IP    ip;
-    uint16_t  port;
-} tox_IP_Port;
-/* WARNING: DEPRECATED, DO NOT USE. */
-/* Sends a "get nodes" request to the given node with ip, port and public_key
- *   to setup connections
- */
-void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
-
-
 /*
  * Use this function to bootstrap the client.
  */
