@@ -163,16 +163,40 @@ void increment_nonce(uint8_t *nonce)
 {
     uint32_t i;
 
-    for (i = 0; i < crypto_box_NONCEBYTES; ++i) {
-        ++nonce[i];
+    for (i = crypto_box_NONCEBYTES; i != 0; --i) {
+        ++nonce[i - 1];
 
-        if (nonce[i] != 0)
+        if (nonce[i - 1] != 0)
             break;
     }
 }
+/* increment the given nonce by num */
+void increment_nonce_number(uint8_t *nonce, uint32_t num)
+{
+    uint32_t num1, num2;
+    memcpy(&num1, nonce + (crypto_box_NONCEBYTES - sizeof(num1)), sizeof(num1));
+    num1 = ntohl(num1);
+    num2 = num + num1;
+
+    if (num2 < num1) {
+        uint32_t i;
+
+        for (i = crypto_box_NONCEBYTES - sizeof(num1); i != 0; --i) {
+            ++nonce[i - 1];
+
+            if (nonce[i - 1] != 0)
+                break;
+        }
+    }
+
+    num2 = htonl(num2);
+    memcpy(nonce + (crypto_box_NONCEBYTES - sizeof(num2)), &num2, sizeof(num2));
+}
 
 #if crypto_box_NONCEBYTES != crypto_secretbox_NONCEBYTES
-/*if they no longer equal each other, this function must be split into two.*/
+/*if they no longer equal each other, this function and the previous ones
+ *must be split into two.
+ */
 #error random_nonce(): crypto_box_NONCEBYTES must equal crypto_secretbox_NONCEBYTES.
 #endif
 /* Fill the given nonce with random bytes. */
