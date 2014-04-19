@@ -2733,12 +2733,13 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 /* Load the messenger from data of size length. */
 int messenger_load(Messenger *m, uint8_t *data, uint32_t length)
 {
-    uint32_t cookie_len = 2 * sizeof(uint32_t);
+    uint32_t data32[2];
+    uint32_t cookie_len = sizeof(data32);
 
     if (length < cookie_len)
         return -1;
 
-    uint32_t *data32 = (uint32_t *)data;
+    memcpy(data32, data, sizeof(data32));
 
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL))
         return load_state(messenger_load_state_callback, m, data + cookie_len,

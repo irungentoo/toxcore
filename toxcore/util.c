@@ -99,11 +99,11 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
     uint16_t type;
     uint32_t length_sub, cookie_type;
-    uint32_t size32 = sizeof(uint32_t), size_head = size32 * 2;
+    uint32_t size_head = sizeof(uint32_t) * 2;
 
     while (length >= size_head) {
-        length_sub = *(uint32_t *)data;
-        cookie_type = *(uint32_t *)(data + size32);
+        memcpy(&length_sub, data, sizeof(length_sub));
+        memcpy(&cookie_type, data + sizeof(length_sub), sizeof(cookie_type));
         data += size_head;
         length -= size_head;
 
