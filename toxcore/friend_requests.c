@@ -135,18 +135,15 @@ int remove_request_received(Friend_Requests *fr, uint8_t *client_id)
 
 static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
 {
-    if (length == 0)
+    Friend_Requests *fr = object;
+
+    if (length <= 1 + sizeof(fr->nospam))
         return 1;
 
     ++packet;
     --length;
 
-    Friend_Requests *fr = object;
-
     if (fr->handle_friendrequest_isset == 0)
-        return 1;
-
-    if (length <= sizeof(fr->nospam))
         return 1;
 
     if (request_received(fr, source_pubkey))
@@ -161,11 +158,12 @@ static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t 
 
     addto_receivedlist(fr, source_pubkey);
 
-    uint8_t message[length - 4 + 1];
-    memcpy(message, packet + 4, length - 4);
+    uint32_t message_len = length - sizeof(fr->nospam);
+    uint8_t message[message_len + 1];
+    memcpy(message, packet + sizeof(fr->nospam), message_len);
     message[sizeof(message) - 1] = 0; /* Be sure the message is null terminated. */
 
-    (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, length - 4,
+    (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, message_len,
                                 fr->handle_friendrequest_userdata);
     return 0;
 }
