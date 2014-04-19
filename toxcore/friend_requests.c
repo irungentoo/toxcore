@@ -37,7 +37,7 @@
  */
 int send_friendrequest(Onion_Client *onion_c, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
 {
-    if (length + sizeof(nospam_num) > MAX_DATA_SIZE)
+    if (length + sizeof(nospam_num) >= MAX_DATA_SIZE)
         return -1;
 
     uint8_t temp[MAX_DATA_SIZE];
