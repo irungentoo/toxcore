@@ -373,11 +373,6 @@ int getname(Messenger *m, int32_t friendnumber, uint8_t *name);
 int m_get_name_size(Messenger *m, int32_t friendnumber);
 int m_get_self_name_size(Messenger *m);
 
-/* returns valid ip port of connected friend on success
- * returns zeroed out IP_Port on failure
- */
-IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber);
-
 /* Set our user status.
  * You are responsible for freeing status after.
  *

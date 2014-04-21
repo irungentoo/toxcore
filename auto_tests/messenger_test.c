@@ -299,27 +299,6 @@ START_TEST(test_messenger_state_saveloadsave)
 }
 END_TEST
 
-START_TEST(test_messenger_state_saveload_encrypted)
-{
-    uint8_t addr[FRIEND_ADDRESS_SIZE];
-    getaddress(m, addr);
-    Messenger *m_temp = new_messenger(TOX_ENABLE_IPV6_DEFAULT);
-
-    size_t size = messenger_size_encrypted(m);
-    uint8_t buffer[size];
-    messenger_save_encrypted(m, buffer, "Gentoo", sizeof("Gentoo"));
-
-    ck_assert_msg(messenger_load_encrypted(m_temp, buffer, size, "Ubuntu", sizeof("Ubuntu")) == -1,
-                  "Bad password didn't make the function fail.");
-    ck_assert_msg(messenger_load_encrypted(m_temp, buffer, size, "Gentoo", sizeof("Gentoo")) == 0,
-                  "Good password didn't make the function succeed.");
-    uint8_t addr1[FRIEND_ADDRESS_SIZE];
-    getaddress(m_temp, addr1);
-    ck_assert_msg(memcmp(addr1, addr, FRIEND_ADDRESS_SIZE) == 0, "Didn't load messenger successfully");
-    kill_messenger(m_temp);
-}
-END_TEST
-
 #define DEFTESTCASE(NAME) \
     TCase *tc_##NAME = tcase_create(#NAME); \
     tcase_add_test(tc_##NAME, test_##NAME); \
@@ -331,7 +310,6 @@ Suite *messenger_suite(void)
 
     DEFTESTCASE(dht_state_saveloadsave);
     DEFTESTCASE(messenger_state_saveloadsave);
-    DEFTESTCASE(messenger_state_saveload_encrypted);
 
     DEFTESTCASE(getself_name);
     DEFTESTCASE(m_get_userstatus_size);

@@ -37,6 +37,8 @@
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(Messenger *m, int32_t friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length);
 
+static IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber);
+
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
 static uint8_t friend_not_valid(Messenger *m, int32_t friendnumber)
 {
@@ -875,7 +877,7 @@ static uint8_t groupnumber_not_valid(Messenger *m, int groupnumber)
 /* returns valid ip port of connected friend on success
  * returns zeroed out IP_Port on failure
  */
-IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber)
+static IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber)
 {
     IP_Port zero;
     memset(&zero, 0, sizeof(zero));
