@@ -736,24 +736,6 @@ void messenger_save(Messenger *m, uint8_t *data);
 /* Load the messenger from data of size length. */
 int messenger_load(Messenger *m, uint8_t *data, uint32_t length);
 
-/* return the size of data to pass to messenger_save_encrypted(...)
- */
-uint32_t messenger_size_encrypted(Messenger *m);
-
-/* Save the messenger, encrypting the data with key of length key_length
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int messenger_save_encrypted(Messenger *m, uint8_t *data, uint8_t *key, uint16_t key_length);
-
-/* Load the messenger from data of size length encrypted with key of key_length.
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int messenger_load_encrypted(Messenger *m, uint8_t *data, uint32_t length, uint8_t *key, uint16_t key_length);
-
 /* Return the number of friends in the instance m.
  * You should use this to determine how much memory to allocate
  * for copy_friendlist. */

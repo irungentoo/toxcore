@@ -97,8 +97,8 @@ int main(int argc, char *argv[])
     starttime = get_time();
 
     for (trialno = 0; trialno < numtrials; trialno++) {
-        encrypt_data_fast(k1, n, m, sizeof(m), c);
-        decrypt_data_fast(k2, n, c, sizeof(c), m);
+        encrypt_data_symmetric(k1, n, m, sizeof(m), c);
+        decrypt_data_symmetric(k2, n, c, sizeof(c), m);
     }
 
     endtime = get_time();

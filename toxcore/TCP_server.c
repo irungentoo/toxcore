@@ -258,7 +258,7 @@ int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length,
 
     *next_packet_length = 0;
 
-    int len = decrypt_data_fast(shared_key, recv_nonce, data_encrypted, len_packet, data);
+    int len = decrypt_data_symmetric(shared_key, recv_nonce, data_encrypted, len_packet, data);
 
     if (len + crypto_box_MACBYTES != len_packet)
         return -1;
@@ -313,7 +313,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_
 
     uint16_t c_length = htons(length + crypto_box_MACBYTES);
     memcpy(packet, &c_length, sizeof(uint16_t));
-    int len = encrypt_data_fast(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
+    int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
     if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t)))
         return -1;
@@ -356,7 +356,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     encrypt_precompute(data, self_secret_key, shared_key);
     uint8_t plain[TCP_HANDSHAKE_PLAIN_SIZE];
-    int len = decrypt_data_fast(shared_key, data + crypto_box_PUBLICKEYBYTES,
+    int len = decrypt_data_symmetric(shared_key, data + crypto_box_PUBLICKEYBYTES,
                                 data + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES, plain);
 
     if (len != TCP_HANDSHAKE_PLAIN_SIZE)
@@ -373,7 +373,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
     new_nonce(response);
 
-    len = encrypt_data_fast(shared_key, response, resp_plain, TCP_HANDSHAKE_PLAIN_SIZE, response + crypto_box_NONCEBYTES);
+    len = encrypt_data_symmetric(shared_key, response, resp_plain, TCP_HANDSHAKE_PLAIN_SIZE, response + crypto_box_NONCEBYTES);
 
     if (len != TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
         return -1;

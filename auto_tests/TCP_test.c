@@ -89,7 +89,7 @@ START_TEST(test_basic)
     uint8_t r_req[2 + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES];
     uint16_t size = 1 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES;
     size = htons(size);
-    ret = encrypt_data_fast(f_shared_key, f_nonce, r_req_p, 1 + crypto_box_PUBLICKEYBYTES, r_req + 2);
+    ret = encrypt_data_symmetric(f_shared_key, f_nonce, r_req_p, 1 + crypto_box_PUBLICKEYBYTES, r_req + 2);
     increment_nonce(f_nonce);
     memcpy(r_req, &size, 2);
     uint32_t i;
@@ -110,7 +110,7 @@ START_TEST(test_basic)
     memcpy(&size, packet_resp, 2);
     ck_assert_msg(ntohs(size) == 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES, "Wrong packet size.");
     uint8_t packet_resp_plain[4096];
-    ret = decrypt_data_fast(f_shared_key, f_nonce_r, packet_resp + 2, recv_data_len - 2, packet_resp_plain);
+    ret = decrypt_data_symmetric(f_shared_key, f_nonce_r, packet_resp + 2, recv_data_len - 2, packet_resp_plain);
     ck_assert_msg(ret != -1, "decryption failed");
     increment_nonce(f_nonce_r);
     ck_assert_msg(packet_resp_plain[0] == 1, "wrong packet id %u", packet_resp_plain[0]);
@@ -179,7 +179,7 @@ int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, u
 
     uint16_t c_length = htons(length + crypto_box_MACBYTES);
     memcpy(packet, &c_length, sizeof(uint16_t));
-    int len = encrypt_data_fast(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
+    int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
     if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t)))
         return -1;
@@ -194,7 +194,7 @@ int read_packet_sec_TCP(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
 {
     int len;
     ck_assert_msg((len = recv(con->sock, data, length, 0)) == length, "wrong len %i\n", len);
-    ck_assert_msg((len = decrypt_data_fast(con->shared_key, con->recv_nonce, data + 2, length - 2, data)) != -1,
+    ck_assert_msg((len = decrypt_data_symmetric(con->shared_key, con->recv_nonce, data + 2, length - 2, data)) != -1,
                   "Decrypt failed");
     increment_nonce(con->recv_nonce);
     return len;

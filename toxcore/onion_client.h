@@ -113,7 +113,7 @@ typedef struct {
 
     Onion_Client_Paths onion_paths;
 
-    uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
     uint64_t last_run;
 
     uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];

@@ -177,7 +177,7 @@ typedef struct {
     uint32_t       close_bootstrap_times;
 
     /* Note: this key should not be/is not used to transmit any sensitive materials */
-    uint8_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    uint8_t      secret_symmetric_key[crypto_box_KEYBYTES];
     /* DHT keypair */
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];

@@ -28,7 +28,7 @@
 typedef struct {
     DHT     *dht;
     Networking_Core *net;
-    uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
     uint64_t timestamp;
 
     Shared_Keys shared_keys_1;
@@ -39,9 +39,9 @@ typedef struct {
     void *callback_object;
 } Onion;
 
-#define ONION_RETURN_1 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
-#define ONION_RETURN_2 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + ONION_RETURN_1)
-#define ONION_RETURN_3 (crypto_secretbox_NONCEBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES + ONION_RETURN_2)
+#define ONION_RETURN_1 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
+#define ONION_RETURN_2 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES + ONION_RETURN_1)
+#define ONION_RETURN_3 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES + ONION_RETURN_2)
 
 #define ONION_SEND_BASE (crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
 #define ONION_SEND_3 (crypto_box_NONCEBYTES + ONION_SEND_BASE + ONION_RETURN_2)

@@ -23,7 +23,7 @@
 #ifndef TCP_SERVER_H
 #define TCP_SERVER_H
 
-#include "net_crypto.h"
+#include "crypto_core.h"
 #include "onion.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)

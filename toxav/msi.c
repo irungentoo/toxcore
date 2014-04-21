@@ -932,11 +932,11 @@ int handle_recv_start ( MSISession *session, MSIMessage *msg )
 
     session->call->state = call_active;
 
-    session->call->key_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
-    memcpy ( session->call->key_peer, msg->cryptokey.header_value, crypto_secretbox_KEYBYTES );
+    session->call->key_peer = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
+    memcpy ( session->call->key_peer, msg->cryptokey.header_value, crypto_box_KEYBYTES );
 
-    session->call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
-    memcpy ( session->call->nonce_peer, msg->nonce.header_value,  crypto_secretbox_NONCEBYTES );
+    session->call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
+    memcpy ( session->call->nonce_peer, msg->nonce.header_value,  crypto_box_NONCEBYTES );
 
     flush_peer_type ( session, msg, 0 );
 
@@ -1030,24 +1030,24 @@ int handle_recv_starting ( MSISession *session, MSIMessage *msg )
     }
 
     /* Generate local key/nonce to send */
-    session->call->key_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
+    session->call->key_local = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
     new_symmetric_key ( session->call->key_local );
 
-    session->call->nonce_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
+    session->call->nonce_local = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
     new_nonce ( session->call->nonce_local );
 
     /* Save peer key/nonce */
-    session->call->key_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
-    memcpy ( session->call->key_peer, msg->cryptokey.header_value, crypto_secretbox_KEYBYTES );
+    session->call->key_peer = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
+    memcpy ( session->call->key_peer, msg->cryptokey.header_value, crypto_box_KEYBYTES );
 
-    session->call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
-    memcpy ( session->call->nonce_peer, msg->nonce.header_value,  crypto_secretbox_NONCEBYTES );
+    session->call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
+    memcpy ( session->call->nonce_peer, msg->nonce.header_value,  crypto_box_NONCEBYTES );
 
     session->call->state = call_active;
 
     MSIMessage *_msg_start = msi_new_message ( TYPE_REQUEST, stringify_request ( start ) );
-    msi_msg_set_cryptokey ( _msg_start, session->call->key_local, crypto_secretbox_KEYBYTES );
-    msi_msg_set_nonce ( _msg_start, session->call->nonce_local, crypto_secretbox_NONCEBYTES );
+    msi_msg_set_cryptokey ( _msg_start, session->call->key_local, crypto_box_KEYBYTES );
+    msi_msg_set_nonce ( _msg_start, session->call->nonce_local, crypto_box_NONCEBYTES );
     send_message ( session, _msg_start, msg->friend_id );
     free_message ( _msg_start );
 
@@ -1402,14 +1402,14 @@ int msi_answer ( MSISession *session, MSICallType call_type )
 
     /* Now set the local encryption key and pass it with STARTING message */
 
-    session->call->key_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_KEYBYTES );
+    session->call->key_local = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
     new_symmetric_key ( session->call->key_local );
 
-    session->call->nonce_local = calloc ( sizeof ( uint8_t ), crypto_secretbox_NONCEBYTES );
+    session->call->nonce_local = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
     new_nonce ( session->call->nonce_local );
 
-    msi_msg_set_cryptokey ( _msg_starting, session->call->key_local, crypto_secretbox_KEYBYTES );
-    msi_msg_set_nonce ( _msg_starting, session->call->nonce_local, crypto_secretbox_NONCEBYTES );
+    msi_msg_set_cryptokey ( _msg_starting, session->call->key_local, crypto_box_KEYBYTES );
+    msi_msg_set_nonce ( _msg_starting, session->call->nonce_local, crypto_box_NONCEBYTES );
 
     send_message ( session, _msg_starting, session->call->peers[session->call->peer_count - 1] );
     free_message ( _msg_starting );

@@ -829,33 +829,3 @@ int tox_load(Tox *tox, uint8_t *data, uint32_t length)
     Messenger *m = tox;
     return messenger_load(m, data, length);
 }
-
-/* return the size of data to pass to messenger_save_encrypted(...)
- */
-uint32_t tox_size_encrypted(Tox *tox)
-{
-    Messenger *m = tox;
-    return messenger_size_encrypted(m);
-}
-
-/* Save the messenger, encrypting the data with key of length key_length
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_save_encrypted(Tox *tox, uint8_t *data, uint8_t *key, uint16_t key_length)
-{
-    Messenger *m = tox;
-    return messenger_save_encrypted(m, data, key, key_length);
-}
-
-/* Load the messenger from data of size length encrypted with key of key_length.
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_load_encrypted(Tox *tox, uint8_t *data, uint32_t length, uint8_t *key, uint16_t key_length)
-{
-    Messenger *m = tox;
-    return messenger_load_encrypted(m, data, length, key, key_length);
-}

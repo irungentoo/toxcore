@@ -168,7 +168,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
 
-    rc = encrypt_data_fast(shared_key,
+    rc = encrypt_data_symmetric(shared_key,
                            pk + 1 + CLIENT_ID_SIZE,
                            (uint8_t *) &ping_id, sizeof(ping_id),
                            pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
@@ -193,7 +193,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
-    rc = encrypt_data_fast(shared_encryption_key,
+    rc = encrypt_data_symmetric(shared_encryption_key,
                            pk + 1 + CLIENT_ID_SIZE,
                            (uint8_t *) &ping_id, sizeof(ping_id),
                            pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES );
@@ -222,7 +222,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
 
     // Decrypt ping_id
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
-    rc = decrypt_data_fast(shared_key,
+    rc = decrypt_data_symmetric(shared_key,
                            packet + 1 + CLIENT_ID_SIZE,
                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                            sizeof(ping_id) + crypto_box_MACBYTES,
@@ -259,7 +259,7 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
 
     --ping_index;
     // Decrypt ping_id
-    rc = decrypt_data_fast(ping->pings[ping_index].shared_key,
+    rc = decrypt_data_symmetric(ping->pings[ping_index].shared_key,
                            packet + 1 + CLIENT_ID_SIZE,
                            packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                            sizeof(ping_id) + crypto_box_MACBYTES,

@@ -116,9 +116,9 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key
     memcpy(plain + sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES, &ip_port, sizeof(IP_Port));
 
     int len = encrypt_data_symmetric(onion_c->secret_symmetric_key, sendback, plain, sizeof(plain),
-                                     sendback + crypto_secretbox_NONCEBYTES);
+                                     sendback + crypto_box_NONCEBYTES);
 
-    if ((uint32_t)len + crypto_secretbox_NONCEBYTES != ONION_ANNOUNCE_SENDBACK_DATA_LENGTH)
+    if ((uint32_t)len + crypto_box_NONCEBYTES != ONION_ANNOUNCE_SENDBACK_DATA_LENGTH)
         return -1;
 
     return 0;
@@ -137,8 +137,8 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key
 static uint32_t check_sendback(Onion_Client *onion_c, uint8_t *sendback, uint8_t *ret_pubkey, IP_Port *ret_ip_port)
 {
     uint8_t plain[sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port)];
-    int len = decrypt_data_symmetric(onion_c->secret_symmetric_key, sendback, sendback + crypto_secretbox_NONCEBYTES,
-                                     ONION_ANNOUNCE_SENDBACK_DATA_LENGTH - crypto_secretbox_NONCEBYTES, plain);
+    int len = decrypt_data_symmetric(onion_c->secret_symmetric_key, sendback, sendback + crypto_box_NONCEBYTES,
+                                     ONION_ANNOUNCE_SENDBACK_DATA_LENGTH - crypto_box_NONCEBYTES, plain);
 
     if ((uint32_t)len != sizeof(plain))
         return ~0;

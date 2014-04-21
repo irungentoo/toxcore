@@ -26,8 +26,9 @@
 #include "config.h"
 #endif
 
-#include "group_chats.h"
+#include "DHT.h"
 #include "assoc.h"
+#include "group_chats.h"
 #include "LAN_discovery.h"
 #include "util.h"
 

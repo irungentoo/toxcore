@@ -925,7 +925,7 @@ end:
     return 0;
 }
 
-#define NODES_ENCRYPTED_MESSAGE_LENGTH (crypto_secretbox_NONCEBYTES + sizeof(uint64_t) + sizeof(Node_format) + sizeof(Node_format) + crypto_secretbox_MACBYTES)
+#define NODES_ENCRYPTED_MESSAGE_LENGTH (crypto_box_NONCEBYTES + sizeof(uint64_t) + sizeof(Node_format) + sizeof(Node_format) + crypto_box_MACBYTES)
 
 /* Send a getnodes request.
    sendback_node is the node that it will send back the response to (set to NULL to disable this) */
@@ -958,9 +958,9 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
                                        nonce,
                                        plain_message,
                                        sizeof(temp_time) + sizeof(reciever) + sizeof(Node_format),
-                                       encrypted_message + crypto_secretbox_NONCEBYTES);
+                                       encrypted_message + crypto_box_NONCEBYTES);
 
-    if (len_m != NODES_ENCRYPTED_MESSAGE_LENGTH - crypto_secretbox_NONCEBYTES)
+    if (len_m != NODES_ENCRYPTED_MESSAGE_LENGTH - crypto_box_NONCEBYTES)
         return -1;
 
     uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
@@ -973,7 +973,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     DHT_get_shared_key_sent(dht, shared_key, public_key);
-    int len = encrypt_data_fast( shared_key,
+    int len = encrypt_data_symmetric( shared_key,
                                  nonce,
                                  plain,
                                  CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
@@ -1019,7 +1019,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
         return -1;
 
     memcpy(plain + nodes_length, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
-    int len = encrypt_data_fast( shared_encryption_key,
+    int len = encrypt_data_symmetric( shared_encryption_key,
                                  nonce,
                                  plain,
                                  nodes_length + NODES_ENCRYPTED_MESSAGE_LENGTH,
@@ -1052,7 +1052,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
-    int len = decrypt_data_fast( shared_key,
+    int len = decrypt_data_symmetric( shared_key,
                                  packet + 1 + CLIENT_ID_SIZE,
                                  packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                                  CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
@@ -1075,8 +1075,8 @@ static uint8_t sent_getnode_to_node(DHT *dht, uint8_t *client_id, IP_Port node_i
 {
     uint8_t plain_message[NODES_ENCRYPTED_MESSAGE_LENGTH];
 
-    if (decrypt_data_symmetric(dht->secret_symmetric_key, encrypted_data, encrypted_data + crypto_secretbox_NONCEBYTES,
-                               NODES_ENCRYPTED_MESSAGE_LENGTH - crypto_secretbox_NONCEBYTES,
+    if (decrypt_data_symmetric(dht->secret_symmetric_key, encrypted_data, encrypted_data + crypto_box_NONCEBYTES,
+                               NODES_ENCRYPTED_MESSAGE_LENGTH - crypto_box_NONCEBYTES,
                                plain_message) != sizeof(uint64_t) + sizeof(Node_format) * 2)
         return 0;
 
@@ -1121,7 +1121,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
     uint8_t plain[data_size + NODES_ENCRYPTED_MESSAGE_LENGTH];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     DHT_get_shared_key_sent(dht, shared_key, packet + 1);
-    int len = decrypt_data_fast(
+    int len = decrypt_data_symmetric(
                   shared_key,
                   packet + 1 + CLIENT_ID_SIZE,
                   packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,

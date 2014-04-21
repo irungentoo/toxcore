@@ -115,11 +115,11 @@ static void generate_ping_id(Onion_Announce *onion_a, uint64_t time, uint8_t *pu
                              uint8_t *ping_id)
 {
     time /= PING_ID_TIMEOUT;
-    uint8_t data[crypto_secretbox_KEYBYTES + sizeof(time) + crypto_box_PUBLICKEYBYTES + sizeof(ret_ip_port)];
-    memcpy(data, onion_a->secret_bytes, crypto_secretbox_KEYBYTES);
-    memcpy(data + crypto_secretbox_KEYBYTES, &time, sizeof(time));
-    memcpy(data + crypto_secretbox_KEYBYTES + sizeof(time), public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(data + crypto_secretbox_KEYBYTES + sizeof(time) + crypto_box_PUBLICKEYBYTES, &ret_ip_port, sizeof(ret_ip_port));
+    uint8_t data[crypto_box_KEYBYTES + sizeof(time) + crypto_box_PUBLICKEYBYTES + sizeof(ret_ip_port)];
+    memcpy(data, onion_a->secret_bytes, crypto_box_KEYBYTES);
+    memcpy(data + crypto_box_KEYBYTES, &time, sizeof(time));
+    memcpy(data + crypto_box_KEYBYTES + sizeof(time), public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(data + crypto_box_KEYBYTES + sizeof(time) + crypto_box_PUBLICKEYBYTES, &ret_ip_port, sizeof(ret_ip_port));
     crypto_hash_sha256(ping_id, data, sizeof(data));
 }
 
@@ -221,7 +221,7 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
     get_shared_key(&onion_a->shared_keys_recv, shared_key, onion_a->dht->self_secret_key, packet_public_key);
 
     uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
-    int len = decrypt_data_fast(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+    int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
                                 ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH +
                                 crypto_box_MACBYTES, plain);
 
@@ -278,7 +278,7 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
     }
 
     uint8_t data[ONION_ANNOUNCE_RESPONSE_MAX_SIZE];
-    len = encrypt_data_fast(shared_key, nonce, pl, 1 + ONION_PING_ID_SIZE + nodes_length,
+    len = encrypt_data_symmetric(shared_key, nonce, pl, 1 + ONION_PING_ID_SIZE + nodes_length,
                             data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES);
 
     if (len != 1 + ONION_PING_ID_SIZE + nodes_length + crypto_box_MACBYTES)

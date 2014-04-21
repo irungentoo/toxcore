@@ -9,6 +9,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/DHT.c \
                         ../toxcore/network.h \
                         ../toxcore/network.c \
+                        ../toxcore/crypto_core.h \
+                        ../toxcore/crypto_core.c \
                         ../toxcore/Lossless_UDP.h \
                         ../toxcore/Lossless_UDP.c \
                         ../toxcore/net_crypto.h \

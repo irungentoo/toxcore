@@ -25,8 +25,6 @@
 #define FRIEND_REQUESTS_H
 
 #include "onion_client.h"
-#include "net_crypto.h"
-
 
 typedef struct {
     uint32_t nospam;
