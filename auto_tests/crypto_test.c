@@ -236,8 +236,8 @@ START_TEST(test_large_data)
     c1len = encrypt_data_symmetric(k, n, m1, sizeof(m1), c1);
     c2len = encrypt_data_symmetric(k, n, m2, sizeof(m2), c2);
 
-    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt max size");
-    ck_assert_msg(c2len == -1, "incorrectly succeeded encrypting massive size");
+    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt");
+    ck_assert_msg(c2len == sizeof(m2) + crypto_box_MACBYTES, "could not encrypt");
 
     m1plen = decrypt_data_symmetric(k, n, c1, c1len, m1prime);
 
