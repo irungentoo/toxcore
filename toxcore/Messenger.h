@@ -38,7 +38,8 @@
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
-#define PACKET_ID_PING 0
+/* NOTE: Packet ids below 16 must never be used. */
+#define PACKET_ID_ALIVE 16
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
@@ -79,10 +80,6 @@ enum {
     FAERR_SETNEWNOSPAM = -7,
     FAERR_NOMEM = -8
 };
-
-/* Don't assume MAX_STATUSMESSAGE_LENGTH will stay at 128, it may be increased
- * to an absurdly large number later.
- */
 
 /* Default start timeout in seconds between friend requests. */
 #define FRIENDREQUEST_TIMEOUT 5;

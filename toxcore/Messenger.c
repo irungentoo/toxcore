@@ -689,7 +689,7 @@ static int send_user_istyping(Messenger *m, int32_t friendnumber, uint8_t is_typ
 
 static int send_ping(Messenger *m, int32_t friendnumber)
 {
-    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_PING, 0, 0);
+    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_ALIVE, 0, 0);
 
     if (ret == 1)
         m->friendlist[friendnumber].ping_lastsent = unix_time();
@@ -1928,7 +1928,7 @@ void do_friends(Messenger *m)
                 uint32_t data_length = len - 1;
 
                 switch (packet_id) {
-                    case PACKET_ID_PING: {
+                    case PACKET_ID_ALIVE: {
                         m->friendlist[i].ping_lastrecv = temp_time;
                         break;
                     }
