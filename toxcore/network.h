@@ -126,6 +126,8 @@ typedef int sock_t;
 #define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
 #define NET_PACKET_SYNC            17  /* SYNC packet ID. */
 #define NET_PACKET_DATA            18  /* Data packet ID. */
+#define NET_PACKET_COOKIE_REQUEST  24  /* Cookie request packet */
+#define NET_PACKET_COOKIE_RESPONSE 25  /* Cookie response packet */
 #define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
 #define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
 #define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
@@ -157,6 +159,11 @@ typedef int sock_t;
 #define TOX_PORTRANGE_FROM 33445
 #define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
+
+/* TCP related */
+#define TCP_ONION_FAMILY (AF_INET6 + 1)
+#define TCP_INET (AF_INET6 + 2)
+#define TCP_INET6 (AF_INET6 + 3)
 
 typedef union __attribute__ ((__packed__))
 {

@@ -38,4 +38,26 @@ from evil "friends" framing relays must also be implemented.
 
 Detailed implementation details:
 
-Coming soon.
+cookie request packet:
+[uint8_t 24][Senders DHT Public key (32 bytes)][Random nonce (24 
+bytes)][Encrypted message containing: [Senders real public key (32 
+bytes)][Recievers real public key (32 bytes)]]
+Encrypted message is encrypted with sender DHT private key, recievers DHT public 
+key and the nonce.
+
+cookie response packet:
+[uint8_t 25][Random nonce (24 bytes)][Encrypted message containing: [Cookie]]
+Encrypted message is encrypted with sender DHT private key, recievers DHT public 
+key and the nonce.
+
+The Cookie should be basically:
+[nonce][encrypted data:[uint64_t time][Senders real public key (32 
+bytes)][Recievers real public key (32 bytes)]]
+
+Handshake packet:
+[uint8_t 26][Cookie][nonce][Encrypted message containing: [random 24 bytes base 
+nonce][session public key of the peer (32 bytes)]]
+
+The handshake packet is encrypted using the real private key of the sender, the 
+real private key of the reciever and the nonce.
+

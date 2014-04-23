@@ -163,7 +163,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, uint8_t *secr
     }
 }
 
-/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
  * for packets that we recieve.
  */
 void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
@@ -171,7 +171,7 @@ void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
     return get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
 }
 
-/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
  * for packets that we send.
  */
 void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
@@ -974,10 +974,10 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     DHT_get_shared_key_sent(dht, shared_key, public_key);
     int len = encrypt_data_symmetric( shared_key,
-                                 nonce,
-                                 plain,
-                                 CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
-                                 encrypt );
+                                      nonce,
+                                      plain,
+                                      CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                                      encrypt );
 
     if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
         return -1;
@@ -1020,10 +1020,10 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
 
     memcpy(plain + nodes_length, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
     int len = encrypt_data_symmetric( shared_encryption_key,
-                                 nonce,
-                                 plain,
-                                 nodes_length + NODES_ENCRYPTED_MESSAGE_LENGTH,
-                                 encrypt );
+                                      nonce,
+                                      plain,
+                                      nodes_length + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                                      encrypt );
 
     if ((unsigned int)len != nodes_length + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
         return -1;
@@ -1053,10 +1053,10 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric( shared_key,
-                                 packet + 1 + CLIENT_ID_SIZE,
-                                 packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                 CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
-                                 plain );
+                                      packet + 1 + CLIENT_ID_SIZE,
+                                      packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                                      CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
+                                      plain );
 
     if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH)
         return 1;
@@ -2283,6 +2283,7 @@ DHT *new_DHT(Net_Crypto *c)
         DHT_addfriend(dht, random_key_bytes);
     }
 
+    c->dht = dht;
     return dht;
 }
 
@@ -2317,6 +2318,7 @@ void kill_DHT(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, NULL, NULL);
     cryptopacket_registerhandler(dht->c, CRYPTO_PACKET_NAT_PING, NULL, NULL);
     cryptopacket_registerhandler(dht->c, CRYPTO_PACKET_HARDENING, NULL, NULL);
+    dht->c->dht = 0;
     kill_ping(dht->ping);
     free(dht->friends_list);
     free(dht);

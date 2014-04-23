@@ -54,8 +54,6 @@
 
 #define ARRAY_ENTRY_SIZE 6
 
-#define TCP_ONION_FAMILY (AF_INET6 + 1)
-
 /* frequency to ping connected nodes and timeout in seconds */
 #define TCP_PING_FREQUENCY 30
 #define TCP_PING_TIMEOUT 20

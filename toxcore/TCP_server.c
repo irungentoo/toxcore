@@ -357,7 +357,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
     encrypt_precompute(data, self_secret_key, shared_key);
     uint8_t plain[TCP_HANDSHAKE_PLAIN_SIZE];
     int len = decrypt_data_symmetric(shared_key, data + crypto_box_PUBLICKEYBYTES,
-                                data + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES, plain);
+                                     data + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES, plain);
 
     if (len != TCP_HANDSHAKE_PLAIN_SIZE)
         return -1;
@@ -373,7 +373,8 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
     new_nonce(response);
 
-    len = encrypt_data_symmetric(shared_key, response, resp_plain, TCP_HANDSHAKE_PLAIN_SIZE, response + crypto_box_NONCEBYTES);
+    len = encrypt_data_symmetric(shared_key, response, resp_plain, TCP_HANDSHAKE_PLAIN_SIZE,
+                                 response + crypto_box_NONCEBYTES);
 
     if (len != TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
         return -1;

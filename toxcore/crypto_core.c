@@ -65,6 +65,7 @@ int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, 
 
     if (crypto_box_afternm(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce, secret_key) != 0)
         return -1;
+
     /* Unpad the encrypted message. */
     memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length + crypto_box_MACBYTES);
     return length + crypto_box_MACBYTES;

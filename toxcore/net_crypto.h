@@ -25,6 +25,7 @@
 #define NET_CRYPTO_H
 
 #include "Lossless_UDP.h"
+#include "DHT.h"
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
 #define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
@@ -67,6 +68,7 @@ typedef struct {
 
 typedef struct {
     Lossless_UDP *lossless_udp;
+    DHT *dht;
 
     Crypto_Connection *crypto_connections;
 
@@ -75,6 +77,9 @@ typedef struct {
     /* Our public and secret keys. */
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+
+    /* The secret key used for cookies */
+    uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
 
     Cryptopacket_Handles cryptopackethandlers[256];
 } Net_Crypto;
