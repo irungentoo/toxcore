@@ -90,7 +90,7 @@ int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format de
 int send_data_request(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *public_key,
                       uint8_t *encrypt_public_key, uint8_t *nonce, uint8_t *data, uint16_t length)
 {
-    if (DATA_REQUEST_MIN_SIZE + length > ONION_MAX_DATA_SIZE)
+    if ((unsigned int)DATA_REQUEST_MIN_SIZE + length > ONION_MAX_DATA_SIZE)
         return -1;
 
     uint8_t packet[DATA_REQUEST_MIN_SIZE + length];

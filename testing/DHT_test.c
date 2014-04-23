@@ -187,9 +187,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
-
-    new_keys(dht->c);
+    DHT *dht = new_DHT(new_networking(ip, PORT));
     printf("OUR ID: ");
     uint32_t i;
 
@@ -245,7 +243,7 @@ int main(int argc, char *argv[])
                     }
                 }
         */
-        networking_poll(dht->c->lossless_udp->net);
+        networking_poll(dht->net);
 
         print_clientlist(dht);
         print_friendlist(dht);

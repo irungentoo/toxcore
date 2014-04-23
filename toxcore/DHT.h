@@ -337,6 +337,10 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
  */
 int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length);
 
+/* Function to handle crypto packets.
+ */
+void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_callback cb, void *object);
+
 /* NAT PUNCHING FUNCTIONS */
 
 /* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.

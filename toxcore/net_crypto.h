@@ -87,9 +87,6 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  */
 int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
 
-/* Function to call when request beginning with byte is received. */
-void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object);
-
 /* Start a secure connection with other peer who has public_key and ip_port.
  *
  *  return -1 if failure.
