@@ -36,9 +36,9 @@
 #include "config.h"
 #endif
 
-#include "../../toxcore/DHT.h"
-#include "../../toxcore/friend_requests.h"
+#include "../../toxcore/onion_announce.h"
 #include "../../toxcore/LAN_discovery.h"
+#include "../../toxcore/util.h"
 
 #include "../../testing/misc_tools.c"
 
@@ -75,11 +75,12 @@ int manage_keys(DHT *dht, char *keys_file_path)
             return 0;
         }
 
-        load_keys(dht->c, keys);
+        memcpy(dht->self_public_key, keys, crypto_box_PUBLICKEYBYTES);
+        memcpy(dht->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
     } else {
         // Otherwise save new keys
-        new_keys(dht->c);
-        save_keys(dht->c, keys);
+        memcpy(keys, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(keys + crypto_box_PUBLICKEYBYTES, dht->self_secret_key, crypto_box_SECRETKEYBYTES);
 
         keys_file = fopen(keys_file_path, "w");
 
@@ -91,10 +92,6 @@ int manage_keys(DHT *dht, char *keys_file_path)
     }
 
     fclose(keys_file);
-
-    // We want our DHT public key to be the same as our internal one since this is a bootstrap node
-    memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
 
     return 1;
 }
@@ -351,7 +348,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, enable_ipv6);
 
-    DHT *dht = new_DHT(new_net_crypto(new_networking(ip, port)));
+    DHT *dht = new_DHT(new_networking(ip, port));
 
     if (dht == NULL) {
         syslog(LOG_ERR, "Couldn't initialize Tox DHT instance. Exiting.\n");
@@ -384,7 +381,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    print_public_key(dht->c->self_public_key);
+    print_public_key(dht->self_public_key);
 
     // Write the PID file
     FILE *pidf = fopen(pid_file_path, "w");
