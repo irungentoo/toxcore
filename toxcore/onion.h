@@ -39,6 +39,8 @@ typedef struct {
     void *callback_object;
 } Onion;
 
+#define ONION_MAX_PACKET_SIZE 1400
+
 #define ONION_RETURN_1 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
 #define ONION_RETURN_2 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES + ONION_RETURN_1)
 #define ONION_RETURN_3 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES + ONION_RETURN_2)
@@ -47,6 +49,9 @@ typedef struct {
 #define ONION_SEND_3 (crypto_box_NONCEBYTES + ONION_SEND_BASE + ONION_RETURN_2)
 #define ONION_SEND_2 (crypto_box_NONCEBYTES + ONION_SEND_BASE*2 + ONION_RETURN_1)
 #define ONION_SEND_1 (crypto_box_NONCEBYTES + ONION_SEND_BASE*3)
+
+#define ONION_MAX_DATA_SIZE (ONION_MAX_PACKET_SIZE - (ONION_SEND_1 + 1))
+#define ONION_RESPONSE_MAX_DATA_SIZE (ONION_MAX_PACKET_SIZE - (1 + ONION_RETURN_3))
 
 typedef struct {
     uint8_t shared_key1[crypto_box_BEFORENMBYTES];
@@ -76,6 +81,7 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes);
 /* Create and send a onion packet.
  *
  * Use Onion_Path path to send data of length to dest.
+ * Maximum length of data is ONION_MAX_DATA_SIZE.
  *
  * return -1 on failure.
  * return 0 on success.
@@ -83,6 +89,7 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes);
 int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length);
 
 /* Create and send a onion response sent initially to dest with.
+ * Maximum length of data is ONION_RESPONSE_MAX_DATA_SIZE.
  *
  * return -1 on failure.
  * return 0 on success.

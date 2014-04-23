@@ -24,7 +24,7 @@
 #ifndef DHT_H
 #define DHT_H
 
-#include "net_crypto.h"
+#include "crypto_core.h"
 
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
@@ -168,8 +168,15 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 
+typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data,
+        uint32_t len);
+
 typedef struct {
-    Net_Crypto  *c;
+    cryptopacket_handler_callback function;
+    void *object;
+} Cryptopacket_Handles;
+
+typedef struct {
     Networking_Core *net;
 
     Client_data    close_clientlist[LCLIENT_LIST];
@@ -193,6 +200,8 @@ typedef struct {
     struct Assoc  *assoc;
 #endif
     uint64_t       last_run;
+
+    Cryptopacket_Handles cryptopackethandlers[256];
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
@@ -354,7 +363,7 @@ void DHT_save(DHT *dht, uint8_t *data);
 int DHT_load(DHT *dht, uint8_t *data, uint32_t length);
 
 /* Initialize DHT. */
-DHT *new_DHT(Net_Crypto *c);
+DHT *new_DHT(Networking_Core *net);
 
 void kill_DHT(DHT *dht);
 

@@ -249,113 +249,6 @@ int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uin
     return 1;
 }
 
-/* Create a request to peer.
- * send_public_key and send_secret_key are the pub/secret keys of the sender.
- * recv_public_key is public key of reciever.
- * packet must be an array of MAX_DATA_SIZE big.
- * Data represents the data we send with the request with length being the length of the data.
- * request_id is the id of the request (32 = friend request, 254 = ping request).
- *
- *  return -1 on failure.
- *  return the length of the created packet on success.
- */
-int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
-                   uint8_t *data, uint32_t length, uint8_t request_id)
-{
-    if (MAX_DATA_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
-        return -1;
-
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    uint8_t temp[MAX_DATA_SIZE];
-    memcpy(temp + 1, data, length);
-    temp[0] = request_id;
-    new_nonce(nonce);
-    int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
-                           1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
-
-    if (len == -1)
-        return -1;
-
-    packet[0] = NET_PACKET_CRYPTO;
-    memcpy(packet + 1, recv_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, send_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES * 2, nonce, crypto_box_NONCEBYTES);
-
-    return len + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES;
-}
-
-/* Puts the senders public key in the request in public_key, the data from the request
- * in data if a friend or ping request was sent to us and returns the length of the data.
- * packet is the request packet and length is its length.
- *
- *  return -1 if not valid request.
- */
-int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, uint8_t *packet, uint16_t length)
-{
-    if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES &&
-            length <= MAX_DATA_SIZE) {
-        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
-            memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
-            uint8_t nonce[crypto_box_NONCEBYTES];
-            uint8_t temp[MAX_DATA_SIZE];
-            memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
-            int len1 = decrypt_data(public_key, self_secret_key, nonce,
-                                    packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
-                                    length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
-
-            if (len1 == -1 || len1 == 0)
-                return -1;
-
-            request_id[0] = temp[0];
-            --len1;
-            memcpy(data, temp + 1, len1);
-            return len1;
-        }
-    }
-
-    return -1;
-}
-
-void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object)
-{
-    c->cryptopackethandlers[byte].function = cb;
-    c->cryptopackethandlers[byte].object = object;
-}
-
-static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, uint32_t length)
-{
-    DHT *dht = object;
-
-    if (packet[0] == NET_PACKET_CRYPTO) {
-        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES ||
-                length > MAX_DATA_SIZE + crypto_box_MACBYTES)
-            return 1;
-
-        if (memcmp(packet + 1, dht->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) { // Check if request is for us.
-            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-            uint8_t data[MAX_DATA_SIZE];
-            uint8_t number;
-            int len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
-
-            if (len == -1 || len == 0)
-                return 1;
-
-            if (!dht->c->cryptopackethandlers[number].function) return 1;
-
-            return dht->c->cryptopackethandlers[number].function(dht->c->cryptopackethandlers[number].object, source, public_key,
-                    data, len);
-
-        } else { /* If request is not for us, try routing it. */
-            int retval = route_packet(dht, packet + 1, packet, length);
-
-            if ((unsigned int)retval == length)
-                return 0;
-        }
-    }
-
-    return 1;
-}
 
 /* Send a crypto handshake packet containing an encrypted secret nonce and session public key
  * to peer with connection_id and public_key.
@@ -774,11 +667,11 @@ static void receive_crypto(Net_Crypto *c)
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(Networking_Core *net)
+Net_Crypto *new_net_crypto(DHT *dht)
 {
     unix_time_update();
 
-    if (net == NULL)
+    if (dht == NULL)
         return NULL;
 
     Net_Crypto *temp = calloc(1, sizeof(Net_Crypto));
@@ -786,7 +679,8 @@ Net_Crypto *new_net_crypto(Networking_Core *net)
     if (temp == NULL)
         return NULL;
 
-    temp->lossless_udp = new_lossless_udp(net);
+    temp->dht = dht;
+    temp->lossless_udp = new_lossless_udp(dht->net);
 
     if (temp->lossless_udp == NULL) {
         free(temp);
@@ -796,12 +690,6 @@ Net_Crypto *new_net_crypto(Networking_Core *net)
     new_keys(temp);
     new_symmetric_key(temp->secret_symmetric_key);
     return temp;
-}
-
-void init_cryptopackets(void *dht)
-{
-    DHT *s_dht = dht;
-    networking_registerhandler(s_dht->c->lossless_udp->net, NET_PACKET_CRYPTO, &cryptopacket_handle, s_dht);
 }
 
 static void kill_timedout(Net_Crypto *c)

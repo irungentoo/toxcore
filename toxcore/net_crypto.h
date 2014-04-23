@@ -27,12 +27,6 @@
 #include "Lossless_UDP.h"
 #include "DHT.h"
 
-#define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
-#define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
-#define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
-#define CRYPTO_PACKET_GROUP_CHAT_GET_NODES      48 /* Group chat get Nodes packet */
-#define CRYPTO_PACKET_GROUP_CHAT_SEND_NODES     49 /* Group chat send Nodes packet */
-#define CRYPTO_PACKET_GROUP_CHAT_BROADCAST      50 /* Group chat broadcast packet */
 #define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
 
 #define CRYPTO_CONN_NO_CONNECTION 0
@@ -58,13 +52,6 @@ typedef struct {
 
 } Crypto_Connection;
 
-typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data,
-        uint32_t len);
-
-typedef struct {
-    cryptopacket_handler_callback function;
-    void *object;
-} Cryptopacket_Handles;
 
 typedef struct {
     Lossless_UDP *lossless_udp;
@@ -79,9 +66,7 @@ typedef struct {
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
 
     /* The secret key used for cookies */
-    uint8_t secret_symmetric_key[crypto_secretbox_KEYBYTES];
-
-    Cryptopacket_Handles cryptopackethandlers[256];
+    uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
 } Net_Crypto;
 
 #include "DHT.h"
@@ -101,26 +86,6 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  *  return 1 if data was put into the queue.
  */
 int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
-
-/* Create a request to peer.
- * send_public_key and send_secret_key are the pub/secret keys of the sender.
- * recv_public_key is public key of reciever.
- * packet must be an array of MAX_DATA_SIZE big.
- * Data represents the data we send with the request with length being the length of the data.
- * request_id is the id of the request (32 = friend request, 254 = ping request).
- *
- * return -1 on failure.
- * return the length of the created packet on success.
- */
-int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
-                   uint8_t *data, uint32_t length, uint8_t request_id);
-
-/* puts the senders public key in the request in public_key, the data from the request
-   in data if a friend or ping request was sent to us and returns the length of the data.
-   packet is the request packet and length is its length
-   return -1 if not valid request. */
-int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, uint8_t *packet, uint16_t length);
 
 /* Function to call when request beginning with byte is received. */
 void cryptopacket_registerhandler(Net_Crypto *c, uint8_t byte, cryptopacket_handler_callback cb, void *object);
@@ -186,15 +151,13 @@ void load_keys(Net_Crypto *c, uint8_t *keys);
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(Networking_Core *net);
+Net_Crypto *new_net_crypto(DHT *dht);
 
 /* Main loop. */
 void do_net_crypto(Net_Crypto *c);
 
 void kill_net_crypto(Net_Crypto *c);
 
-/* Initialize the cryptopacket handling. */
-void init_cryptopackets(void *dht);
 
 
 #endif

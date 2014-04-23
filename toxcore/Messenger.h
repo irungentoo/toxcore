@@ -44,9 +44,9 @@
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_TYPING 51
-#define PACKET_ID_RECEIPT 65
+#define PACKET_ID_RECEIPT 63
 #define PACKET_ID_MESSAGE 64
-#define PACKET_ID_ACTION 63
+#define PACKET_ID_ACTION 65
 #define PACKET_ID_MSI 69
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
@@ -134,7 +134,7 @@ typedef struct {
     uint64_t friendrequest_lastsent; // Time at which the last friend request was sent.
     uint32_t friendrequest_timeout; // The timeout between successful friendrequest sending attempts.
     uint8_t status; // 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
-    uint8_t info[MAX_DATA_SIZE]; // the data that is sent during the friend requests we do.
+    uint8_t info[MAX_FRIEND_REQUEST_DATA_SIZE]; // the data that is sent during the friend requests we do.
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
     uint8_t name_sent; // 0 if we didn't send our name to this friend 1 if we have.

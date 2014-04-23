@@ -26,8 +26,6 @@
 #include "onion.h"
 #include "util.h"
 
-#define MAX_ONION_SIZE MAX_DATA_SIZE
-
 #define RETURN_1 ONION_RETURN_1
 #define RETURN_2 ONION_RETURN_2
 #define RETURN_3 ONION_RETURN_3
@@ -89,13 +87,14 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
 /* Create and send a onion packet.
  *
  * Use Onion_Path path to send data of length to dest.
+ * Maximum length of data is ONION_MAX_DATA_SIZE.
  *
  * return -1 on failure.
  * return 0 on success.
  */
 int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
 {
-    if (1 + length + SEND_1 > MAX_ONION_SIZE || length == 0)
+    if (1 + length + SEND_1 > ONION_MAX_PACKET_SIZE || length == 0)
         return -1;
 
     to_net_family(&dest.ip);
@@ -142,13 +141,18 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
 
     return 0;
 }
+
 /* Create and send a onion response sent initially to dest with.
+ * Maximum length of data is ONION_RESPONSE_MAX_DATA_SIZE.
  *
  * return -1 on failure.
  * return 0 on success.
  */
 int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret)
 {
+    if (length > ONION_RESPONSE_MAX_DATA_SIZE || length == 0)
+        return -1;
+
     uint8_t packet[1 + RETURN_3 + length];
     packet[0] = NET_PACKET_ONION_RECV_3;
     memcpy(packet + 1, ret, RETURN_3);
@@ -164,7 +168,7 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
 {
     Onion *onion = object;
 
-    if (length > MAX_ONION_SIZE)
+    if (length > ONION_MAX_PACKET_SIZE)
         return 1;
 
     if (length <= 1 + SEND_1)
@@ -172,7 +176,7 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
 
     change_symmetric_key(onion);
 
-    uint8_t plain[MAX_ONION_SIZE];
+    uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     get_shared_key(&onion->shared_keys_1, shared_key, onion->dht->self_secret_key, packet + 1 + crypto_box_NONCEBYTES);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
@@ -190,7 +194,7 @@ int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uin
     memcpy(&send_to, plain, sizeof(IP_Port));
     to_host_family(&send_to.ip);
 
-    uint8_t data[MAX_ONION_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_SEND_1;
     memcpy(data + 1, nonce, crypto_box_NONCEBYTES);
     memcpy(data + 1 + crypto_box_NONCEBYTES, plain + sizeof(IP_Port), len - sizeof(IP_Port));
@@ -215,7 +219,7 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 {
     Onion *onion = object;
 
-    if (length > MAX_ONION_SIZE)
+    if (length > ONION_MAX_PACKET_SIZE)
         return 1;
 
     if (length <= 1 + SEND_2)
@@ -223,7 +227,7 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     change_symmetric_key(onion);
 
-    uint8_t plain[MAX_ONION_SIZE];
+    uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     get_shared_key(&onion->shared_keys_2, shared_key, onion->dht->self_secret_key, packet + 1 + crypto_box_NONCEBYTES);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
@@ -236,7 +240,7 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     memcpy(&send_to, plain, sizeof(IP_Port));
     to_host_family(&send_to.ip);
 
-    uint8_t data[MAX_ONION_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_SEND_2;
     memcpy(data + 1, packet + 1, crypto_box_NONCEBYTES);
     memcpy(data + 1 + crypto_box_NONCEBYTES, plain + sizeof(IP_Port), len - sizeof(IP_Port));
@@ -264,7 +268,7 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
 {
     Onion *onion = object;
 
-    if (length > MAX_ONION_SIZE)
+    if (length > ONION_MAX_PACKET_SIZE)
         return 1;
 
     if (length <= 1 + SEND_3)
@@ -272,7 +276,7 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
 
     change_symmetric_key(onion);
 
-    uint8_t plain[MAX_ONION_SIZE];
+    uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     get_shared_key(&onion->shared_keys_3, shared_key, onion->dht->self_secret_key, packet + 1 + crypto_box_NONCEBYTES);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
@@ -285,7 +289,7 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     memcpy(&send_to, plain, sizeof(IP_Port));
     to_host_family(&send_to.ip);
 
-    uint8_t data[MAX_ONION_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE];
     memcpy(data, plain + sizeof(IP_Port), len - sizeof(IP_Port));
     uint32_t data_len = (len - sizeof(IP_Port));
     uint8_t *ret_part = data + (len - sizeof(IP_Port));
@@ -312,7 +316,7 @@ static int handle_recv_3(void *object, IP_Port source, uint8_t *packet, uint32_t
 {
     Onion *onion = object;
 
-    if (length > MAX_ONION_SIZE)
+    if (length > ONION_MAX_PACKET_SIZE)
         return 1;
 
     if (length <= 1 + RETURN_3)
@@ -330,7 +334,7 @@ static int handle_recv_3(void *object, IP_Port source, uint8_t *packet, uint32_t
     IP_Port send_to;
     memcpy(&send_to, plain, sizeof(IP_Port));
 
-    uint8_t data[MAX_ONION_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_RECV_2;
     memcpy(data + 1, plain + sizeof(IP_Port), RETURN_2);
     memcpy(data + 1 + RETURN_2, packet + 1 + RETURN_3, length - (1 + RETURN_3));
@@ -346,7 +350,7 @@ static int handle_recv_2(void *object, IP_Port source, uint8_t *packet, uint32_t
 {
     Onion *onion = object;
 
-    if (length > MAX_ONION_SIZE)
+    if (length > ONION_MAX_PACKET_SIZE)
         return 1;
 
     if (length <= 1 + RETURN_2)
@@ -364,7 +368,7 @@ static int handle_recv_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     IP_Port send_to;
     memcpy(&send_to, plain, sizeof(IP_Port));
 
-    uint8_t data[MAX_ONION_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_RECV_1;
     memcpy(data + 1, plain + sizeof(IP_Port), RETURN_1);
     memcpy(data + 1 + RETURN_1, packet + 1 + RETURN_2, length - (1 + RETURN_2));
@@ -380,7 +384,7 @@ static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 {
     Onion *onion = object;
 
-    if (length > MAX_ONION_SIZE)
+    if (length > ONION_MAX_PACKET_SIZE)
         return 1;
 
     if (length <= 1 + RETURN_1)
@@ -424,7 +428,7 @@ Onion *new_onion(DHT *dht)
         return NULL;
 
     onion->dht = dht;
-    onion->net = dht->c->lossless_udp->net;
+    onion->net = dht->net;
     new_symmetric_key(onion->secret_symmetric_key);
     onion->timestamp = unix_time();
 

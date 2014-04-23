@@ -1685,7 +1685,7 @@ int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id)
 static int send_NATping(DHT *dht, uint8_t *public_key, uint64_t ping_id, uint8_t type)
 {
     uint8_t data[sizeof(uint64_t) + 1];
-    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
 
     int num = 0;
 
@@ -1896,7 +1896,7 @@ static int send_hardening_req(DHT *dht, Node_format *sendto, uint8_t type, uint8
     if (length > HARDREQ_DATA_SIZE - 1)
         return -1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
     uint8_t data[HARDREQ_DATA_SIZE] = {0};
     data[0] = type;
     memcpy(data + 1, contents, length);
@@ -1925,7 +1925,7 @@ static int send_hardening_getnode_res(DHT *dht, Node_format *sendto, uint8_t *qu
     if (!ip_isset(&sendto->ip_port.ip))
         return -1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
     uint8_t data[1 + CLIENT_ID_SIZE + nodes_data_length];
     data[0] = CHECK_TYPE_GETNODE_RES;
     memcpy(data + 1, queried_client_id, CLIENT_ID_SIZE);
@@ -2242,12 +2242,54 @@ void do_hardening(DHT *dht)
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_DHT(Net_Crypto *c)
+void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_callback cb, void *object)
+{
+    dht->cryptopackethandlers[byte].function = cb;
+    dht->cryptopackethandlers[byte].object = object;
+}
+
+static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+{
+    DHT *dht = object;
+
+    if (packet[0] == NET_PACKET_CRYPTO) {
+        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES ||
+                length > MAX_CRYPTO_REQUEST_SIZE + crypto_box_MACBYTES)
+            return 1;
+
+        if (memcmp(packet + 1, dht->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) { // Check if request is for us.
+            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+            uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
+            uint8_t number;
+            int len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
+
+            if (len == -1 || len == 0)
+                return 1;
+
+            if (!dht->cryptopackethandlers[number].function) return 1;
+
+            return dht->cryptopackethandlers[number].function(dht->cryptopackethandlers[number].object, source, public_key,
+                    data, len);
+
+        } else { /* If request is not for us, try routing it. */
+            int retval = route_packet(dht, packet + 1, packet, length);
+
+            if ((unsigned int)retval == length)
+                return 0;
+        }
+    }
+
+    return 1;
+}
+
+/*----------------------------------------------------------------------------------*/
+
+DHT *new_DHT(Networking_Core *net)
 {
     /* init time */
     unix_time_update();
 
-    if (c == NULL)
+    if (net == NULL)
         return NULL;
 
     DHT *dht = calloc(1, sizeof(DHT));
@@ -2255,8 +2297,7 @@ DHT *new_DHT(Net_Crypto *c)
     if (dht == NULL)
         return NULL;
 
-    dht->c = c;
-    dht->net = c->lossless_udp->net;
+    dht->net = net;
     dht->ping = new_ping(dht);
 
     if (dht->ping == NULL) {
@@ -2266,9 +2307,9 @@ DHT *new_DHT(Net_Crypto *c)
 
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, &handle_getnodes, dht);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
-    init_cryptopackets(dht);
-    cryptopacket_registerhandler(c, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
-    cryptopacket_registerhandler(c, CRYPTO_PACKET_HARDENING, &handle_hardening, dht);
+    networking_registerhandler(dht->net, NET_PACKET_CRYPTO, &cryptopacket_handle, dht);
+    cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
+    cryptopacket_registerhandler(dht, CRYPTO_PACKET_HARDENING, &handle_hardening, dht);
 
     new_symmetric_key(dht->secret_symmetric_key);
     crypto_box_keypair(dht->self_public_key, dht->self_secret_key);
@@ -2283,7 +2324,6 @@ DHT *new_DHT(Net_Crypto *c)
         DHT_addfriend(dht, random_key_bytes);
     }
 
-    c->dht = dht;
     return dht;
 }
 
@@ -2316,9 +2356,8 @@ void kill_DHT(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, NULL, NULL);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES, NULL, NULL);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, NULL, NULL);
-    cryptopacket_registerhandler(dht->c, CRYPTO_PACKET_NAT_PING, NULL, NULL);
-    cryptopacket_registerhandler(dht->c, CRYPTO_PACKET_HARDENING, NULL, NULL);
-    dht->c->dht = 0;
+    cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, NULL, NULL);
+    cryptopacket_registerhandler(dht, CRYPTO_PACKET_HARDENING, NULL, NULL);
     kill_ping(dht->ping);
     free(dht->friends_list);
     free(dht);

@@ -37,10 +37,10 @@
  */
 int send_friendrequest(Onion_Client *onion_c, uint8_t *public_key, uint32_t nospam_num, uint8_t *data, uint32_t length)
 {
-    if (length + sizeof(nospam_num) >= MAX_DATA_SIZE)
+    if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
         return -1;
 
-    uint8_t temp[MAX_DATA_SIZE];
+    uint8_t temp[1 + sizeof(nospam_num) + length];
     temp[0] = CRYPTO_PACKET_FRIEND_REQ;
     memcpy(temp + 1, &nospam_num, sizeof(nospam_num));
     memcpy(temp + 1 + sizeof(nospam_num), data, length);
@@ -50,7 +50,7 @@ int send_friendrequest(Onion_Client *onion_c, uint8_t *public_key, uint32_t nosp
     if (friend_num == -1)
         return -1;
 
-    int num = send_onion_data(onion_c, friend_num, temp, 1 + sizeof(nospam_num) + length);
+    int num = send_onion_data(onion_c, friend_num, temp, sizeof(temp));
 
     if (num <= 0)
         return -1;
@@ -137,7 +137,7 @@ static int friendreq_handlepacket(void *object, uint8_t *source_pubkey, uint8_t 
 {
     Friend_Requests *fr = object;
 
-    if (length <= 1 + sizeof(fr->nospam) || length > MAX_DATA_SIZE)
+    if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE)
         return 1;
 
     ++packet;

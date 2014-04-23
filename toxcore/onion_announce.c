@@ -32,7 +32,7 @@
 #define ANNOUNCE_REQUEST_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_MACBYTES)
 #define ANNOUNCE_REQUEST_SIZE_RECV (ANNOUNCE_REQUEST_SIZE + ONION_RETURN_3)
 
-#define DATA_REQUEST_MIN_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define DATA_REQUEST_MIN_SIZE ONION_DATA_REQUEST_MIN_SIZE
 #define DATA_REQUEST_MIN_SIZE_RECV (DATA_REQUEST_MIN_SIZE + ONION_RETURN_3)
 
 /* Create and send an onion announce request packet.
@@ -90,6 +90,9 @@ int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format de
 int send_data_request(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *public_key,
                       uint8_t *encrypt_public_key, uint8_t *nonce, uint8_t *data, uint16_t length)
 {
+    if (DATA_REQUEST_MIN_SIZE + length > ONION_MAX_DATA_SIZE)
+        return -1;
+
     uint8_t packet[DATA_REQUEST_MIN_SIZE + length];
     packet[0] = NET_PACKET_ONION_DATA_REQUEST;
     memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
@@ -304,7 +307,7 @@ static int handle_data_request(void *object, IP_Port source, uint8_t *packet, ui
     if (length <= DATA_REQUEST_MIN_SIZE_RECV)
         return 1;
 
-    if (length >= MAX_DATA_SIZE)
+    if (length > ONION_MAX_PACKET_SIZE)
         return 1;
 
     int index = in_entries(onion_a, packet + 1);

@@ -214,9 +214,7 @@ void getaddress(Messenger *m, uint8_t *address)
  */
 int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t length)
 {
-    if (length >= (MAX_DATA_SIZE - crypto_box_PUBLICKEYBYTES
-                   - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
-                   + crypto_box_ZEROBYTES))
+    if (length > MAX_FRIEND_REQUEST_DATA_SIZE)
         return FAERR_TOOLONG;
 
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
@@ -1757,26 +1755,26 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
-    m->net_crypto = new_net_crypto(m->net);
+    m->dht = new_DHT(m->net);
 
-    if (m->net_crypto == NULL) {
+    if (m->dht == NULL) {
         kill_networking(m->net);
         free(m);
         return NULL;
     }
 
-    m->dht = new_DHT(m->net_crypto);
+    m->net_crypto = new_net_crypto(m->dht);
 
-    if (m->dht == NULL) {
-        kill_net_crypto(m->net_crypto);
+    if (m->net_crypto == NULL) {
         kill_networking(m->net);
+        kill_DHT(m->dht);
         free(m);
         return NULL;
     }
 
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
-    m->onion_c =  new_onion_client(m->dht);
+    m->onion_c =  new_onion_client(m->net_crypto);
 
     if (!(m->onion && m->onion_a && m->onion_c)) {
         kill_onion(m->onion);
@@ -2409,10 +2407,12 @@ int wait_cleanup_messenger(Messenger *m, uint8_t *data)
 #define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
 #define MESSENGER_STATE_TYPE_STATUS        6
 
+#define SAVED_FRIEND_REQUEST_SIZE 1024
+
 struct SAVED_FRIEND {
     uint8_t status;
     uint8_t client_id[CLIENT_ID_SIZE];
-    uint8_t info[MAX_DATA_SIZE]; // the data that is sent during the friend requests we do.
+    uint8_t info[SAVED_FRIEND_REQUEST_SIZE]; // the data that is sent during the friend requests we do.
     uint16_t info_size; // Length of the info.
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
@@ -2428,7 +2428,7 @@ struct SAVED_FRIEND {
 struct SAVED_FRIEND_OLD {
     uint8_t status;
     uint8_t client_id[CLIENT_ID_SIZE];
-    uint8_t info[MAX_DATA_SIZE];
+    uint8_t info[1024];
     uint16_t info_size;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
@@ -2456,7 +2456,12 @@ static uint32_t friends_list_save(Messenger *m, uint8_t *data)
             memcpy(temp.client_id, m->friendlist[i].client_id, CLIENT_ID_SIZE);
 
             if (temp.status < 3) {
-                memcpy(temp.info, m->friendlist[i].info, m->friendlist[i].info_size);
+                if (m->friendlist[i].info_size > SAVED_FRIEND_REQUEST_SIZE) {
+                    memcpy(temp.info, m->friendlist[i].info, SAVED_FRIEND_REQUEST_SIZE);
+                } else {
+                    memcpy(temp.info, m->friendlist[i].info, m->friendlist[i].info_size);
+                }
+
                 temp.info_size = htons(m->friendlist[i].info_size);
                 temp.friendrequest_nospam = m->friendlist[i].friendrequest_nospam;
             } else {

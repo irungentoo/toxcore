@@ -40,6 +40,9 @@
 #error announce response packets assume that ONION_PING_ID_SIZE is equal to crypto_box_PUBLICKEYBYTES
 #endif
 
+#define ONION_DATA_REQUEST_MIN_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define MAX_DATA_REQUEST_SIZE (ONION_MAX_DATA_SIZE - ONION_DATA_REQUEST_MIN_SIZE)
+
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     IP_Port ret_ip_port;
@@ -85,6 +88,8 @@ int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format de
  * encrypt_public_key is the public key used to encrypt the data packet.
  *
  * nonce is the nonce to encrypt this packet with
+ *
+ * The maximum length of data is MAX_DATA_REQUEST_SIZE.
  *
  * return -1 on failure.
  * return 0 on success.

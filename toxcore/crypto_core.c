@@ -167,3 +167,72 @@ void new_nonce(uint8_t *nonce)
     increment_nonce(base_nonce);
     memcpy(nonce, base_nonce, crypto_box_NONCEBYTES);
 }
+
+/* Create a request to peer.
+ * send_public_key and send_secret_key are the pub/secret keys of the sender.
+ * recv_public_key is public key of reciever.
+ * packet must be an array of MAX_CRYPTO_REQUEST_SIZE big.
+ * Data represents the data we send with the request with length being the length of the data.
+ * request_id is the id of the request (32 = friend request, 254 = ping request).
+ *
+ *  return -1 on failure.
+ *  return the length of the created packet on success.
+ */
+int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
+                   uint8_t *data, uint32_t length, uint8_t request_id)
+{
+    if (MAX_CRYPTO_REQUEST_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 +
+            crypto_box_MACBYTES)
+        return -1;
+
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
+    memcpy(temp + 1, data, length);
+    temp[0] = request_id;
+    new_nonce(nonce);
+    int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
+                           1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
+
+    if (len == -1)
+        return -1;
+
+    packet[0] = NET_PACKET_CRYPTO;
+    memcpy(packet + 1, recv_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, send_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES * 2, nonce, crypto_box_NONCEBYTES);
+
+    return len + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES;
+}
+
+/* Puts the senders public key in the request in public_key, the data from the request
+ * in data if a friend or ping request was sent to us and returns the length of the data.
+ * packet is the request packet and length is its length.
+ *
+ *  return -1 if not valid request.
+ */
+int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, uint8_t *packet, uint16_t length)
+{
+    if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES &&
+            length <= MAX_CRYPTO_REQUEST_SIZE) {
+        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
+            uint8_t nonce[crypto_box_NONCEBYTES];
+            uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
+            memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
+            int len1 = decrypt_data(public_key, self_secret_key, nonce,
+                                    packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
+                                    length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
+
+            if (len1 == -1 || len1 == 0)
+                return -1;
+
+            request_id[0] = temp[0];
+            --len1;
+            memcpy(data, temp + 1, len1);
+            return len1;
+        }
+    }
+
+    return -1;
+}

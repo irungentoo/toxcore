@@ -25,6 +25,7 @@
 
 #include "network.h"
 
+
 /* return zero if the buffer contains only zeros. */
 uint8_t crypto_iszero(uint8_t *buffer, uint32_t blen);
 
@@ -82,5 +83,35 @@ void new_symmetric_key(uint8_t *key);
 
 /*Gives a nonce guaranteed to be different from previous ones.*/
 void new_nonce(uint8_t *nonce);
+
+#define MAX_CRYPTO_REQUEST_SIZE 1024
+
+#define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
+#define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
+#define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
+#define CRYPTO_PACKET_GROUP_CHAT_GET_NODES      48 /* Group chat get Nodes packet */
+#define CRYPTO_PACKET_GROUP_CHAT_SEND_NODES     49 /* Group chat send Nodes packet */
+#define CRYPTO_PACKET_GROUP_CHAT_BROADCAST      50 /* Group chat broadcast packet */
+
+/* Create a request to peer.
+ * send_public_key and send_secret_key are the pub/secret keys of the sender.
+ * recv_public_key is public key of reciever.
+ * packet must be an array of MAX_CRYPTO_REQUEST_SIZE big.
+ * Data represents the data we send with the request with length being the length of the data.
+ * request_id is the id of the request (32 = friend request, 254 = ping request).
+ *
+ * return -1 on failure.
+ * return the length of the created packet on success.
+ */
+int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
+                   uint8_t *data, uint32_t length, uint8_t request_id);
+
+/* puts the senders public key in the request in public_key, the data from the request
+   in data if a friend or ping request was sent to us and returns the length of the data.
+   packet is the request packet and length is its length
+   return -1 if not valid request. */
+int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, uint8_t *packet, uint16_t length);
+
 
 #endif

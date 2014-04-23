@@ -25,6 +25,7 @@
 #define ONION_CLIENT_H
 
 #include "onion_announce.h"
+#include "net_crypto.h"
 
 #define MAX_ONION_CLIENTS 8
 #define ONION_NODE_PING_INTERVAL 30
@@ -105,6 +106,7 @@ typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, 
 
 typedef struct {
     DHT     *dht;
+    Net_Crypto *c;
     Networking_Core *net;
     Onion_Friend    *friends_list;
     uint16_t       num_friends;
@@ -170,8 +172,11 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
  */
 int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
 
+#define ONION_DATA_IN_RESPONSE_MIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define ONION_CLIENT_MAX_DATA_SIZE (MAX_DATA_REQUEST_SIZE - ONION_DATA_IN_RESPONSE_MIN_SIZE)
 
 /* Send data of length length to friendnum.
+ * Maximum length of data is ONION_CLIENT_MAX_DATA_SIZE.
  * This data will be recieved by the friend using the Onion_Data_Handlers callbacks.
  *
  * Even if this function succeeds, the friend might not recieve any data.
@@ -186,7 +191,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
 
 void do_onion_client(Onion_Client *onion_c);
 
-Onion_Client *new_onion_client(DHT *dht);
+Onion_Client *new_onion_client(Net_Crypto *c);
 
 void kill_onion_client(Onion_Client *onion_c);
 

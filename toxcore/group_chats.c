@@ -32,7 +32,7 @@
 #include "LAN_discovery.h"
 #include "util.h"
 
-#define GROUPCHAT_MAXDATA_LENGTH (MAX_DATA_SIZE - (1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES))
+#define GROUPCHAT_MAXDATA_LENGTH (MAX_CRYPTO_REQUEST_SIZE - (1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES))
 #define GROUPCHAT_MAXPLAINDATA_LENGTH (GROUPCHAT_MAXDATA_LENGTH - crypto_box_MACBYTES)
 
 #define GROUP_MAX_SENDNODES (GROUP_CLOSE_CONNECTIONS * 2)
@@ -181,7 +181,7 @@ static int send_groupchatpacket(Group_Chat *chat, IP_Port ip_port, uint8_t *publ
     if (id_equal(chat->self_public_key, public_key))
         return -1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
     int len = create_request(chat->self_public_key, chat->self_secret_key, packet, public_key, data, length, request_id);
     packet[0] = NET_PACKET_GROUP_CHATS;
 
@@ -587,10 +587,10 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
 
 static uint8_t send_data(Group_Chat *chat, uint8_t *data, uint32_t len, uint8_t message_id)
 {
-    if (len + GROUP_DATA_MIN_SIZE > MAX_DATA_SIZE) /*NOTE: not the real maximum len.*/
+    if (len + GROUP_DATA_MIN_SIZE > MAX_CRYPTO_REQUEST_SIZE) /*NOTE: not the real maximum len.*/
         return 1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
     ++chat->message_number;
 
     if (chat->message_number == 0)
@@ -616,11 +616,11 @@ static uint8_t send_data(Group_Chat *chat, uint8_t *data, uint32_t len, uint8_t 
 
 int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, uint32_t length)
 {
-    if (length > MAX_DATA_SIZE)
+    if (length > MAX_CRYPTO_REQUEST_SIZE)
         return 1;
 
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t data[MAX_DATA_SIZE];
+    uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
     uint8_t number;
     int len = handle_request(chat->self_public_key, chat->self_secret_key, public_key, data, &number, packet, length);
 
