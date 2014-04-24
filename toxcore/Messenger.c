@@ -1816,6 +1816,10 @@ void kill_messenger(Messenger *m)
     kill_DHT(m->dht);
     kill_net_crypto(m->net_crypto);
     kill_networking(m->net);
+    for (i = 0; i < m->numfriends; ++i) {
+        if (m->friendlist[i].statusmessage)
+            free(m->friendlist[i].statusmessage);
+    }
     free(m->friendlist);
     free(m);
 }
