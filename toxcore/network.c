@@ -172,7 +172,7 @@ int set_socket_nosigpipe(sock_t sock)
  */
 int set_socket_dualstack(sock_t sock)
 {
-    char ipv6only = 0;
+    int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
     int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
 
