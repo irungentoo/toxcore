@@ -409,7 +409,7 @@ static int handle_announce_response(void *object, IP_Port source, uint8_t *packe
 
     if (len_nodes != 0) {
         Node_format nodes[MAX_SENT_NODES];
-        int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, plain + 1 + ONION_PING_ID_SIZE, len_nodes);
+        int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, plain + 1 + ONION_PING_ID_SIZE, len_nodes);
 
         if (num_nodes <= 0)
             return 1;
@@ -500,7 +500,8 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
 
     if (len_nodes != 0) {
         Node_format nodes[MAX_SENT_NODES];
-        int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, data + 1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES, len_nodes);
+        int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, data + 1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES,
+                                     len_nodes);
 
         if (num_nodes <= 0)
             return 1;

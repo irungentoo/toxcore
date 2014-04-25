@@ -235,12 +235,14 @@ int pack_nodes(uint8_t *data, uint16_t length, Node_format *nodes, uint16_t numb
     return packed_length;
 }
 
-/* Unpack data of length into nodes of size (in number of nodes).
+/* Unpack data of length into nodes of size max_num_nodes.
+ * Put the length of the data processed in processed_data_len.
  *
  * return number of unpacked nodes on success.
  * return -1 on failure.
  */
-int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint8_t *data, uint16_t length)
+int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, uint8_t *data,
+                 uint16_t length)
 {
     uint32_t num = 0, len_processed = 0;
 
@@ -273,6 +275,9 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint8_t *data, uint
             return -1;
         }
     }
+
+    if (processed_data_len)
+        *processed_data_len = len_processed;
 
     return num;
 }
@@ -991,7 +996,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 }
 
 /* Send a send nodes response: message for IPv6 nodes */
-static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data,
+static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *sendback_data,
                           uint16_t length, uint8_t *shared_encryption_key)
 {
     /* Check if packet is going to be sent to ourself. */
@@ -1022,7 +1027,7 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
         return -1;
 
     plain[0] = num_nodes;
-    memcpy(plain + 1 + nodes_length, encrypted_data, length);
+    memcpy(plain + 1 + nodes_length, sendback_data, length);
     int len = encrypt_data_symmetric( shared_encryption_key,
                                       nonce,
                                       plain,
@@ -1042,30 +1047,36 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
 
 static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
-    DHT *dht = object;
+    uint32_t cmp_len = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + crypto_box_MACBYTES;
 
-    if (length != ( 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH +
-                    crypto_box_MACBYTES ))
+    if (length <= cmp_len)
         return 1;
+
+    if (length > cmp_len + NODES_ENCRYPTED_MESSAGE_LENGTH)
+        return 1;
+
+    uint16_t sendback_data_length = length - cmp_len;
+
+    DHT *dht = object;
 
     /* Check if packet is from ourself. */
     if (id_equal(packet + 1, dht->self_public_key))
         return 1;
 
-    uint8_t plain[CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t plain[CLIENT_ID_SIZE + sendback_data_length];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric( shared_key,
                                       packet + 1 + CLIENT_ID_SIZE,
                                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                      CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
+                                      CLIENT_ID_SIZE + sendback_data_length + crypto_box_MACBYTES,
                                       plain );
 
-    if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH)
+    if (len != CLIENT_ID_SIZE + sendback_data_length)
         return 1;
 
-    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE, NODES_ENCRYPTED_MESSAGE_LENGTH, shared_key);
+    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE, sendback_data_length, shared_key);
 
     add_to_ping(dht->ping, packet + 1, source);
 
@@ -1144,7 +1155,14 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
     if (!sent_getnode_to_node(dht, packet + 1, source, plain + 1 + data_size, &sendback_node))
         return 1;
 
-    int num_nodes = unpack_nodes(plain_nodes, plain[0], plain + 1, data_size);
+    uint16_t length_nodes = 0;
+    int num_nodes = unpack_nodes(plain_nodes, plain[0], &length_nodes, plain + 1, data_size);
+
+    if (length_nodes != data_size)
+        return 1;
+
+    if (num_nodes != plain[0])
+        return 1;
 
     if (num_nodes <= 0)
         return 1;
@@ -2030,7 +2048,7 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
 
             uint16_t length_nodes = length - 1 - CLIENT_ID_SIZE;
             Node_format nodes[MAX_SENT_NODES];
-            int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, packet + 1 + CLIENT_ID_SIZE, length_nodes);
+            int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, packet + 1 + CLIENT_ID_SIZE, length_nodes);
 
             /* TODO: MAX_SENT_NODES nodes should be returned at all times
              (right now we have a small network size so it could cause problems for testing and etc..) */

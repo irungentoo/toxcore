@@ -144,12 +144,14 @@ Node_format;
  */
 int pack_nodes(uint8_t *data, uint16_t length, Node_format *nodes, uint16_t number);
 
-/* Unpack data of length into nodes of size (in number of nodes).
+/* Unpack data of length into nodes of size max_num_nodes.
+ * Put the length of the data processed in processed_data_len.
  *
  * return number of unpacked nodes on success.
  * return -1 on failure.
  */
-int unpack_nodes(Node_format *nodes, uint16_t size, uint8_t *data, uint16_t length);
+int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, uint8_t *data,
+                 uint16_t length);
 
 
 /*----------------------------------------------------------------------------------*/
