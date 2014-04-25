@@ -240,11 +240,11 @@ int pack_nodes(uint8_t *data, uint16_t length, Node_format *nodes, uint16_t numb
  * return number of unpacked nodes on success.
  * return -1 on failure.
  */
-int unpack_nodes(Node_format *nodes, uint16_t size, uint8_t *data, uint16_t length)
+int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint8_t *data, uint16_t length)
 {
     uint32_t num = 0, len_processed = 0;
 
-    while (num < size && len_processed < length) {
+    while (num < max_num_nodes && len_processed < length) {
         if (data[len_processed] == TOX_AF_INET) {
             uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + CLIENT_ID_SIZE;
 
@@ -992,15 +992,18 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 
 /* Send a send nodes response: message for IPv6 nodes */
 static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *encrypted_data,
-                          uint8_t *shared_encryption_key)
+                          uint16_t length, uint8_t *shared_encryption_key)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->self_public_key))
         return -1;
 
+    if (length > NODES_ENCRYPTED_MESSAGE_LENGTH || length == 0)
+        return -1;
+
     size_t Node_format_size = sizeof(Node_format);
     uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES
-                 + Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
+                 + Node_format_size * MAX_SENT_NODES + length + crypto_box_MACBYTES];
 
     Node_format nodes_list[MAX_SENT_NODES];
     uint32_t num_nodes = get_close_nodes(dht, client_id, nodes_list, 0, LAN_ip(ip_port.ip) == 0, 1);
@@ -1008,24 +1011,25 @@ static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_
     if (num_nodes == 0)
         return 0;
 
-    uint8_t plain[Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH];
-    uint8_t encrypt[Node_format_size * MAX_SENT_NODES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES];
+    uint8_t plain[1 + Node_format_size * MAX_SENT_NODES + length];
+    uint8_t encrypt[sizeof(plain) + crypto_box_MACBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    int nodes_length = pack_nodes(plain, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
+    int nodes_length = pack_nodes(plain + 1, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
 
     if (nodes_length <= 0)
         return -1;
 
-    memcpy(plain + nodes_length, encrypted_data, NODES_ENCRYPTED_MESSAGE_LENGTH);
+    plain[0] = num_nodes;
+    memcpy(plain + 1 + nodes_length, encrypted_data, length);
     int len = encrypt_data_symmetric( shared_encryption_key,
                                       nonce,
                                       plain,
-                                      nodes_length + NODES_ENCRYPTED_MESSAGE_LENGTH,
+                                      1 + nodes_length + length,
                                       encrypt );
 
-    if ((unsigned int)len != nodes_length + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES)
+    if (len != 1 + nodes_length + length + crypto_box_MACBYTES)
         return -1;
 
     data[0] = NET_PACKET_SEND_NODES_IPV6;
@@ -1061,7 +1065,7 @@ static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32
     if (len != CLIENT_ID_SIZE + NODES_ENCRYPTED_MESSAGE_LENGTH)
         return 1;
 
-    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE, shared_key);
+    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE, NODES_ENCRYPTED_MESSAGE_LENGTH, shared_key);
 
     add_to_ping(dht->ping, packet + 1, source);
 
@@ -1105,7 +1109,8 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
                                  Node_format *plain_nodes, uint16_t size_plain_nodes, uint32_t *num_nodes_out)
 {
     DHT *dht = object;
-    uint32_t cid_size = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES;
+    uint32_t cid_size = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + 1 + NODES_ENCRYPTED_MESSAGE_LENGTH +
+                        crypto_box_MACBYTES;
 
     if (length <= cid_size) /* too short */
         return 1;
@@ -1118,25 +1123,28 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
     if (data_size > sizeof(Node_format) * MAX_SENT_NODES) /* invalid length */
         return 1;
 
-    uint8_t plain[data_size + NODES_ENCRYPTED_MESSAGE_LENGTH];
+    uint8_t plain[1 + data_size + NODES_ENCRYPTED_MESSAGE_LENGTH];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     DHT_get_shared_key_sent(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric(
                   shared_key,
                   packet + 1 + CLIENT_ID_SIZE,
                   packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                  data_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
+                  1 + data_size + NODES_ENCRYPTED_MESSAGE_LENGTH + crypto_box_MACBYTES,
                   plain);
 
     if ((unsigned int)len != sizeof(plain))
         return 1;
 
-    Node_format sendback_node;
-
-    if (!sent_getnode_to_node(dht, packet + 1, source, plain + data_size, &sendback_node))
+    if (plain[0] > size_plain_nodes || plain[0] == 0)
         return 1;
 
-    int num_nodes = unpack_nodes(plain_nodes, size_plain_nodes, plain, data_size);
+    Node_format sendback_node;
+
+    if (!sent_getnode_to_node(dht, packet + 1, source, plain + 1 + data_size, &sendback_node))
+        return 1;
+
+    int num_nodes = unpack_nodes(plain_nodes, plain[0], plain + 1, data_size);
 
     if (num_nodes <= 0)
         return 1;
@@ -1146,7 +1154,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
 
     *num_nodes_out = num_nodes;
 
-    send_hardening_getnode_res(dht, &sendback_node, packet + 1, plain, data_size);
+    send_hardening_getnode_res(dht, &sendback_node, packet + 1, plain + 1, data_size);
     return 0;
 }
 
