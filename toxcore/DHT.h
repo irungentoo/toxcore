@@ -36,7 +36,7 @@
 #define LCLIENT_LIST 32
 
 /* The max number of nodes to send with send nodes. */
-#define MAX_SENT_NODES 8
+#define MAX_SENT_NODES 4
 
 /* Ping timeout in seconds */
 #define PING_TIMEOUT 3
