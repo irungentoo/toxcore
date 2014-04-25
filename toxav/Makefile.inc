@@ -68,6 +68,7 @@ phone_LDADD =   libtoxav.la \
                 $(OPUS_LIBS) \
                 $(VPX_LIBS)\
                 $(PTHREAD_LIBS)\
+                $(NACL_OBJECTS) \
                 $(NACL_LIBS)
 
 

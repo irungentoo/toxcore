@@ -14,6 +14,7 @@ AUTOTEST_LDADD = \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(CHECK_LIBS)
 
