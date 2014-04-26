@@ -327,12 +327,6 @@ int friend_ips(DHT *dht, IP_Port *ip_portlist, uint8_t *friend_id);
 
 /* SAVE/LOAD functions */
 
-/* Get the size of the DHT (for saving). */
-uint32_t DHT_size(DHT *dht);
-
-/* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(DHT *dht, uint8_t *data);
-
 /* Load the DHT from data of size size.
  *
  *  return -1 if failure.
