@@ -78,8 +78,10 @@ static void fetch_broadcast_info(uint16_t port)
 
         struct sockaddr_in *sock4 = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
 
-        if (broadcast_count >= MAX_INTERFACES)
+        if (broadcast_count >= MAX_INTERFACES) {
+            close(sock);
             return;
+        }
 
         IP_Port *ip_port = &broadcast_ip_port[broadcast_count];
         ip_port->ip.family = AF_INET;
