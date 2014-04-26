@@ -834,6 +834,12 @@ void tox_save(Tox *tox, uint8_t *data)
     messenger_save(m, data);
 }
 
+int32_t tox_export(Tox *tox, uint8_t **data, uint64_t *out_length)
+{
+    Messenger *m = tox;
+    messenger_export(m, data, out_length);
+}
+
 /* Load the messenger from data of size length. */
 int tox_load(Tox *tox, uint8_t *data, uint32_t length)
 {

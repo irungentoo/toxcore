@@ -737,7 +737,7 @@ void tox_save(Tox *tox, uint8_t *data);
 /* Saves the messenger. It allocs the buffer for you, and returns by reference
  * in data. Length is also returned in out_length. 
  * You are responsible for freeing it if tox_export returns 0. */
-int32_t tox_export(Tox *m, uint8_t **data, uint64_t *out_length);
+int32_t tox_export(Tox *tox, uint8_t **data, uint64_t *out_length);
 
 /* Load the messenger from data of size length.
  *
