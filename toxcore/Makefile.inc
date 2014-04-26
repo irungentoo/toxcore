@@ -1,7 +1,8 @@
 lib_LTLIBRARIES += libtoxcore.la
 
 libtoxcore_la_include_HEADERS = \
-                        ../toxcore/tox.h
+                        ../toxcore/tox.h \
+                        ../toxcore/data.h
 
 libtoxcore_la_includedir = $(includedir)/tox
 
@@ -39,7 +40,11 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/TCP_client.c \
                         ../toxcore/TCP_server.h \
                         ../toxcore/TCP_server.c \
-                        ../toxcore/misc_tools.h
+                        ../toxcore/misc_tools.h \
+                        ../toxcore/data_intermediate.c \
+                        ../toxcore/data_export.c \
+                        ../toxcore/data.h \
+                        ../toxcore/data_private.h
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \

@@ -29,6 +29,7 @@
 #include "assoc.h"
 #include "network.h"
 #include "util.h"
+#include "data.h"
 
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -2234,6 +2235,12 @@ static char *ID2String(uint8_t *client_id)
 /* The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m)
 {
+    /* this is a hack for api-compatibility.
+     * it should be removed ASAP, once everyone
+     * has updated their tox files to the new format. */
+    if (m->cached_intermediate)
+        txd_intermediate_free(m->cached_intermediate);
+    
     unix_time_update();
 
     networking_poll(m->net);
@@ -2440,48 +2447,6 @@ struct SAVED_FRIEND_OLD {
     uint32_t friendrequest_nospam;
 };
 
-static uint32_t saved_friendslist_size(Messenger *m)
-{
-    return count_friendlist(m) * sizeof(struct SAVED_FRIEND);
-}
-
-static uint32_t friends_list_save(Messenger *m, uint8_t *data)
-{
-    uint32_t i;
-    uint32_t num = 0;
-
-    for (i = 0; i < m->numfriends; i++) {
-        if (m->friendlist[i].status > 0) {
-            struct SAVED_FRIEND temp;
-            memset(&temp, 0, sizeof(struct SAVED_FRIEND));
-            temp.status = m->friendlist[i].status;
-            memcpy(temp.client_id, m->friendlist[i].client_id, CLIENT_ID_SIZE);
-
-            if (temp.status < 3) {
-                memcpy(temp.info, m->friendlist[i].info, m->friendlist[i].info_size);
-                temp.info_size = htons(m->friendlist[i].info_size);
-                temp.friendrequest_nospam = m->friendlist[i].friendrequest_nospam;
-            } else {
-                memcpy(temp.name, m->friendlist[i].name, m->friendlist[i].name_length);
-                temp.name_length = htons(m->friendlist[i].name_length);
-                memcpy(temp.statusmessage, m->friendlist[i].statusmessage, m->friendlist[i].statusmessage_length);
-                temp.statusmessage_length = htons(m->friendlist[i].statusmessage_length);
-                temp.userstatus = m->friendlist[i].userstatus;
-
-                uint8_t lastonline[sizeof(uint64_t)];
-                memcpy(lastonline, &m->friendlist[i].ping_lastrecv, sizeof(uint64_t));
-                host_to_net(lastonline, sizeof(uint64_t));
-                memcpy(&temp.ping_lastrecv, lastonline, sizeof(uint64_t));
-            }
-
-            memcpy(data + num * sizeof(struct SAVED_FRIEND), &temp, sizeof(struct SAVED_FRIEND));
-            num++;
-        }
-    }
-
-    return num * sizeof(struct SAVED_FRIEND);
-}
-
 static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
 {
     int old_data = 0;
@@ -2529,81 +2494,48 @@ static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
     return num;
 }
 
-/*  return size of the messenger data (for saving) */
+/*  return size of the messenger data (for saving) 
+ *  messenger_save and messenger_size must be called without 
+ *  advancing the run loop.
+ *  note: this function is retained for api compatibility only,
+ *  you should call messenger_export() instead. */
 uint32_t messenger_size(Messenger *m)
 {
-    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
-    return   size32 * 2                                      // global cookie
-             + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
-             + sizesubhead + DHT_size(m->dht)                  // DHT
-             + sizesubhead + saved_friendslist_size(m)         // Friendlist itself.
-             + sizesubhead + m->name_length                    // Own nickname.
-             + sizesubhead + m->statusmessage_length           // status message
-             + sizesubhead + 1                                 // status
-             ;
+    if (!m->cached_intermediate) {
+        /* a void cast is used because we do not have a definition for
+         * the Tox type at this level. */
+        m->cached_intermediate = txd_intermediate_from_tox((void *)m);
+    }
+
+    return (uint32_t)txd_get_size_of_intermediate(m->cached_intermediate);
 }
 
-static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
-{
-    uint32_t *data32 = (uint32_t *)data;
-    data32[0] = len;
-    data32[1] = (MESSENGER_STATE_COOKIE_TYPE << 16) | type;
-    data += sizeof(uint32_t) * 2;
-    return data;
-}
-
-
-/* Save the messenger in data of size Messenger_size(). */
+/* Save the messenger in data of size Messenger_size().
+ * note: this function is retained for api compatibility only,
+ * you should call messenger_export() instead. */
 void messenger_save(Messenger *m, uint8_t *data)
 {
-    uint32_t len;
-    uint16_t type;
-    uint32_t *data32, size32 = sizeof(uint32_t);
+    if (!m->cached_intermediate) {
+        /* a void cast is used because we do not have a definition for
+         * the Tox type at this level. */
+        m->cached_intermediate = txd_intermediate_from_tox((void *)m);
+    }
 
-    data32 = (uint32_t *)data;
-    data32[0] = 0;
-    data32[1] = MESSENGER_STATE_COOKIE_GLOBAL;
-    data += size32 * 2;
+    txd_export_to_buf_prealloc(m->cached_intermediate, data,
+                               txd_get_size_of_intermediate(m->cached_intermediate),
+                               TXD_ALL_BLOCKS);
+}
 
-#ifdef DEBUG
-    assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
-#endif
-    len = size32 + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
-    type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
-    data = z_state_save_subheader(data, len, type);
-    *(uint32_t *)data = get_nospam(&(m->fr));
-    save_keys(m->net_crypto, data + size32);
-    data += len;
-
-    len = DHT_size(m->dht);
-    type = MESSENGER_STATE_TYPE_DHT;
-    data = z_state_save_subheader(data, len, type);
-    DHT_save(m->dht, data);
-    data += len;
-
-    len = saved_friendslist_size(m);
-    type = MESSENGER_STATE_TYPE_FRIENDS;
-    data = z_state_save_subheader(data, len, type);
-    friends_list_save(m, data);
-    data += len;
-
-    len = m->name_length;
-    type = MESSENGER_STATE_TYPE_NAME;
-    data = z_state_save_subheader(data, len, type);
-    memcpy(data, m->name, len);
-    data += len;
-
-    len = m->statusmessage_length;
-    type = MESSENGER_STATE_TYPE_STATUSMESSAGE;
-    data = z_state_save_subheader(data, len, type);
-    memcpy(data, m->statusmessage, len);
-    data += len;
-
-    len = 1;
-    type = MESSENGER_STATE_TYPE_STATUS;
-    data = z_state_save_subheader(data, len, type);
-    *data = m->userstatus;
-    data += len;
+/* Save messenger data, allocating a buffer for you.
+ * if it returns 0, *data will be a pointer to the buffer,
+ * and the buffer's length will be *out_length. */
+int32_t messenger_export(Messenger *m, uint8_t **data, uint64_t *out_length)
+{
+    txd_intermediate_t exp = txd_intermediate_from_tox((void *)m);
+    /* at the current time of writing, it never fails */
+    int32_t err = txd_export_to_buf(exp, data, out_length);
+    txd_intermediate_free(exp);
+    return err;
 }
 
 static int messenger_load_state_callback_old(void *outer, uint8_t *data, uint32_t length, uint16_t type)
@@ -2735,7 +2667,7 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
 }
 
 /* Load the messenger from data of size length. */
-int messenger_load(Messenger *m, uint8_t *data, uint32_t length)
+int messenger_load_old(Messenger *m, uint8_t *data, uint32_t length)
 {
     uint32_t cookie_len = 2 * sizeof(uint32_t);
 
@@ -2753,6 +2685,29 @@ int messenger_load(Messenger *m, uint8_t *data, uint32_t length)
                           length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
     else       /* old state file */
         return -1;
+}
+
+/* length should be changed to uint64_t asap.
+ * the error code will either be 0 (success), -1 (failure for old format),
+ * or one of the TXD_ERR constants (failure for new format, include data.h
+ * to define them) */
+int messenger_load(Messenger *m, uint8_t *data, uint32_t length) {
+    uint32_t magic = ntohl(*(uint32_t *)data);
+
+    /* if it's the old format */
+    if (magic == 0) {
+        return messenger_load_old(m, data, length);
+    } else {
+        txd_intermediate_t core = NULL;
+        int32_t error = txd_intermediate_from_buf(data, length, &core);
+
+        if (error)
+            return error;
+
+        txd_restore_intermediate(core, (void *)m);
+        txd_intermediate_free(core);
+    }
+    return 0;
 }
 
 /* return the size of data to pass to messenger_save_encrypted(...)

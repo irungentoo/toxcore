@@ -238,6 +238,7 @@ typedef struct Messenger {
     void (*msi_packet)(struct Messenger *m, int32_t, uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
 
+    void *cached_intermediate;
 } Messenger;
 
 /* Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
@@ -730,11 +731,16 @@ int wait_cleanup_messenger(Messenger *m, uint8_t *data);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
-/* return size of the messenger data (for saving). */
+/* return size of the messenger data (for saving). 
+ * (Deprecated. use messenger_export) */
 uint32_t messenger_size(Messenger *m);
 
-/* Save the messenger in data (must be allocated memory of size Messenger_size()) */
+/* Save the messenger in data (must be allocated memory of size Messenger_size()) 
+ * (Deprecated. use messenger_export) */
 void messenger_save(Messenger *m, uint8_t *data);
+
+/* Save the messenger in data, allocating it for you */
+int32_t messenger_export(Messenger *m, uint8_t **data, uint64_t *out_length);
 
 /* Load the messenger from data of size length. */
 int messenger_load(Messenger *m, uint8_t *data, uint32_t length);
