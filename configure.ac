@@ -34,6 +34,9 @@ BUILD_AV="yes"
 BUILD_PHONE="no"
 BUILD_TESTING="yes"
 
+LOGGING="no"
+LOGGING_OUTNAM="libtoxcore.log"
+
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
 LIBCHECK_FOUND="no"
@@ -80,6 +83,55 @@ AC_ARG_ENABLE([randombytes-stir],
     ]
 )
 
+AC_ARG_ENABLE([logging],
+    [AC_HELP_STRING([--enable-logging], [enable logging (default: auto)]) ],
+    [
+        if test "x$enableval" = "xyes"; then
+            LOGGING="yes"
+            
+            AC_DEFINE([LOGGING], [], [If logging enabled])
+            AC_DEFINE([LOGGER_LEVEL], [DEBUG], [LoggerLevel value])
+            AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$LOGGING_OUTNAM"], [Output of logger])
+        fi
+    ]
+)
+
+AC_ARG_WITH(logger-level,
+    AC_HELP_STRING([--with-logger-level=LEVEL],
+                   [Logger levels: INFO; DEBUG; WARNING; ERROR ]),
+    [
+        if test "x$LOGGING" = "xno"; then
+            AC_MSG_WARN([Logging disabled!])
+        else
+            if test "x$withval" = "xINFO"; then
+                AC_DEFINE([LOGGER_LEVEL], [INFO], [LoggerLevel value])
+                
+            elif test "x$withval" = "xDEBUG"; then
+                AC_DEFINE([LOGGER_LEVEL], [DEBUG], [LoggerLevel value])
+                
+            elif test "x$withval" = "xWARNING"; then
+                AC_DEFINE([LOGGER_LEVEL], [WARNING], [LoggerLevel value])
+                
+            elif test "x$withval" = "xERROR"; then
+                AC_DEFINE([LOGGER_LEVEL], [ERROR], [LoggerLevel value])
+            else
+                AC_MSG_WARN([Invalid logger level: $withval. Using default 'DEBUG'])
+            fi
+        fi
+    ]
+)
+
+AC_ARG_WITH(logger-path,
+    AC_HELP_STRING([--with-logger-path=DIR],
+                   [Path of logger output]),
+    [
+        if test "x$LOGGING" = "xno"; then
+            AC_MSG_WARN([Logging disabled!])
+        else
+            AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$withval""/""$LOGGING_OUTNAM"], [Output of logger])
+        fi
+    ]
+)
 
 PKG_PROG_PKG_CONFIG
 

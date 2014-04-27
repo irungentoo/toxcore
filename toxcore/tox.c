@@ -26,6 +26,7 @@
 #endif
 
 #include "Messenger.h"
+#include "logger.h"
 
 #define __TOX_DEFINED__
 typedef struct Messenger Tox;
@@ -773,6 +774,7 @@ int tox_isconnected(Tox *tox)
  */
 Tox *tox_new(uint8_t ipv6enabled)
 {
+    LOGGER_INIT(LOGGER_OUTPUT_FILE, LOGGER_LEVEL);
     return new_messenger(ipv6enabled);
 }
 

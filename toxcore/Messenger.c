@@ -25,6 +25,7 @@
 #include "config.h"
 #endif
 
+#include "logger.h"
 #include "Messenger.h"
 #include "assoc.h"
 #include "network.h"
@@ -2245,7 +2246,7 @@ void do_messenger(Messenger *m)
 #ifdef LOGGING
 
     if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
-        loglog(" = = = = = = = = \n");
+        
 #ifdef ENABLE_ASSOC_DHT
         Assoc_status(m->dht->assoc);
 #endif
@@ -2254,12 +2255,10 @@ void do_messenger(Messenger *m)
             size_t c;
 
             for (c = 0; c < m->numchats; c++) {
-                loglog("---------------- \n");
                 Assoc_status(m->chats[c]->assoc);
             }
         }
 
-        loglog(" = = = = = = = = \n");
 
         lastdump = unix_time();
         uint32_t client, last_pinged;
@@ -2276,14 +2275,12 @@ void do_messenger(Messenger *m)
                     if (last_pinged > 999)
                         last_pinged = 999;
 
-                    snprintf(logbuffer, sizeof(logbuffer), "C[%2u] %s:%u [%3u] %s\n",
-                             client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                             last_pinged, ID2String(cptr->client_id));
-                    loglog(logbuffer);
+                    LOGGER_DEBUG("C[%2u] %s:%u [%3u] %s",
+                                 client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
+                                 last_pinged, ID2String(cptr->client_id));
                 }
         }
-
-        loglog(" = = = = = = = = \n");
+        
 
         uint32_t friend, dhtfriend;
 
@@ -2311,9 +2308,7 @@ void do_messenger(Messenger *m)
                 dht2m[m2dht[friend]] = friend;
 
         if (m->numfriends != m->dht->num_friends) {
-            sprintf(logbuffer, "Friend num in DHT %u != friend num in msger %u\n",
-                    m->dht->num_friends, m->numfriends);
-            loglog(logbuffer);
+            LOGGER_DEBUG("Friend num in DHT %u != friend num in msger %u\n", m->dht->num_friends, m->numfriends);
         }
 
         uint32_t ping_lastrecv;
@@ -2334,14 +2329,11 @@ void do_messenger(Messenger *m)
                 if (ping_lastrecv > 999)
                     ping_lastrecv = 999;
 
-                snprintf(logbuffer, sizeof(logbuffer), "F[%2u:%2u] <%s> %02i [%03u] %s\n",
-                         dht2m[friend], friend, msgfptr->name, msgfptr->crypt_connection_id,
-                         ping_lastrecv, ID2String(msgfptr->client_id));
-                loglog(logbuffer);
+                LOGGER_DEBUG("F[%2u:%2u] <%s> %02i [%03u] %s",
+                             dht2m[friend], friend, msgfptr->name, msgfptr->crypt_connection_id,
+                             ping_lastrecv, ID2String(msgfptr->client_id));
             } else {
-                snprintf(logbuffer, sizeof(logbuffer), "F[--:%2u] %s\n",
-                         friend, ID2String(dhtfptr->client_id));
-                loglog(logbuffer);
+                LOGGER_DEBUG("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -2355,20 +2347,16 @@ void do_messenger(Messenger *m)
 
                         if (last_pinged > 999)
                             last_pinged = 999;
-
-                        snprintf(logbuffer, sizeof(logbuffer), "F[%2u] => C[%2u] %s:%u [%3u] %s\n",
-                                 friend, client, ip_ntoa(&assoc->ip_port.ip),
-                                 ntohs(assoc->ip_port.port), last_pinged,
-                                 ID2String(cptr->client_id));
-                        loglog(logbuffer);
+                        
+                        LOGGER_DEBUG("F[%2u] => C[%2u] %s:%u [%3u] %s",
+                                     friend, client, ip_ntoa(&assoc->ip_port.ip),
+                                     ntohs(assoc->ip_port.port), last_pinged,
+                                     ID2String(cptr->client_id));
                     }
             }
         }
-
-        loglog(" = = = = = = = = \n");
     }
-
-#endif
+#endif /* LOGGING */
 }
 
 /*

@@ -45,11 +45,4 @@ typedef int (*load_state_callback_func)(void *outer, uint8_t *data, uint32_t len
 int load_state(load_state_callback_func load_state_callback, void *outer,
                uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
-#ifdef LOGGING
-extern char logbuffer[512];
-void loginit(uint16_t port);
-void loglog(char *text);
-void logexit();
-#endif
-
 #endif /* __UTIL_H__ */

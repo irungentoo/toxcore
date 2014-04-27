@@ -98,6 +98,6 @@ void kill_Assoc(Assoc *assoc);
 
 #ifdef LOGGING
 void Assoc_status(Assoc *assoc);
-#endif
+#endif /* LOGGING */
 
 #endif /* !__ASSOC_H__ */
