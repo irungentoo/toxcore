@@ -46,9 +46,6 @@ static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection
  */
 static int create_cookie_request(Net_Crypto *c, uint8_t *packet, uint8_t *dht_public_key, uint8_t *real_public_key)
 {
-    if (!c->dht)
-        return -1;
-
     uint8_t plain[COOKIE_REQUEST_PLAIN_LENGTH];
 
     memcpy(plain, c->self_public_key, crypto_box_PUBLICKEYBYTES);
@@ -123,7 +120,7 @@ static int open_cookie(uint8_t *bytes, uint8_t *cookie, uint8_t *encryption_key)
 }
 
 
-/* Create a cookie request packet and put it in packet.
+/* Create a cookie response packet and put it in packet.
  * request_plain must be COOKIE_REQUEST_PLAIN_LENGTH bytes.
  * packet must be of size COOKIE_RESPONSE_LENGTH or bigger.
  *
@@ -157,9 +154,6 @@ static int create_cookie_response(Net_Crypto *c, uint8_t *packet, uint8_t *reque
 static int handle_cookie_request(Net_Crypto *c, uint8_t *request_plain, uint8_t *shared_key, uint8_t *packet,
                                  uint16_t length)
 {
-    if (!c->dht)
-        return -1;
-
     if (length != COOKIE_REQUEST_LENGTH)
         return -1;
 
@@ -170,6 +164,28 @@ static int handle_cookie_request(Net_Crypto *c, uint8_t *request_plain, uint8_t 
 
     if (len != COOKIE_REQUEST_PLAIN_LENGTH)
         return -1;
+
+    return 0;
+}
+
+/* Handle the cookie request packet (for raw UDP)
+ */
+static int udp_handle_cookie_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+{
+    Net_Crypto *c = c;
+    uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+
+    if (handle_cookie_request(c, request_plain, shared_key, packet, length) != 0)
+        return 1;
+
+    uint8_t data[COOKIE_RESPONSE_LENGTH];
+
+    if (create_cookie_response(c, data, request_plain, shared_key) != sizeof(data))
+        return 1;
+
+    if ((uint32_t)sendpacket(c->dht->net, source, data, sizeof(data)) != sizeof(data))
+        return 1;
 
     return 0;
 }
@@ -689,6 +705,8 @@ Net_Crypto *new_net_crypto(DHT *dht)
 
     new_keys(temp);
     new_symmetric_key(temp->secret_symmetric_key);
+
+    networking_registerhandler(dht->net, NET_PACKET_COOKIE_REQUEST, &udp_handle_cookie_request, temp);
     return temp;
 }
 
