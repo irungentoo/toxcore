@@ -42,6 +42,19 @@ uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
     return check; // We return zero if mem is made out of zeroes.
 }
 
+/* Use this instead of memcmp; not vulnerable to timing attacks.
+   returns 0 if both mem locations of length are equal. */
+unsigned int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length)
+{
+    unsigned int i, check = 0;;
+
+    for (i = 0; i < length; ++i) {
+        check |= mem1[i] ^ mem2[i];
+    }
+
+    return check;
+}
+
 /* Precomputes the shared key from their public_key and our secret_key.
  * This way we can avoid an expensive elliptic curve scalar multiply for each
  * encrypt/decrypt operation.

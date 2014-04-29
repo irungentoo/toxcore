@@ -42,13 +42,13 @@ cookie request packet:
 [uint8_t 24][Senders DHT Public key (32 bytes)][Random nonce (24 
 bytes)][Encrypted message containing: [Senders real public key (32 
 bytes)][Recievers real public key (32 bytes)]]
-Encrypted message is encrypted with sender DHT private key, recievers DHT public 
-key and the nonce.
+Encrypted message is encrypted with sender DHT private key, recievers DHT 
+public key and the nonce.
 
 cookie response packet:
 [uint8_t 25][Random nonce (24 bytes)][Encrypted message containing: [Cookie]]
-Encrypted message is encrypted with sender DHT private key, recievers DHT public 
-key and the nonce.
+Encrypted message is encrypted with sender DHT private key, recievers DHT 
+public key and the nonce.
 
 The Cookie should be basically:
 [nonce][encrypted data:[uint64_t time][Senders real public key (32 
@@ -61,3 +61,22 @@ nonce][session public key of the peer (32 bytes)]]
 The handshake packet is encrypted using the real private key of the sender, the 
 real private key of the reciever and the nonce.
 
+
+Alice wants to connect to bob.
+
+Alice sends a cookie request packet to bob and gets a cookie response back.
+
+Alice then generates a nonce and a temporary public/private keypair.
+
+Alice then takes that nonce and just generated private key and the obtained 
+cookie and puts them in a handshake packet which she sends to bob.
+
+Bob gets the handshake packet, accepts the connection request, then generates a 
+nonce and a temporary public/private keypair and sends a handshake packet back 
+with this just generated information and with the cookie field being random 
+data/zeros.
+
+Both then use these temporary keys to generate the session key with which every 
+data packet sent and recieved will be encrypted and decrypted. The nonce sent 
+in the handshake will be used to encrypt the first data packet sent, the nonce 
++ 1 the second, the nonce + 2 the third and so on.
