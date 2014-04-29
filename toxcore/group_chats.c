@@ -519,8 +519,11 @@ static int handle_data(Group_Chat *chat, uint8_t *data, uint32_t len)
     if (chat->group[peernum].last_message_number == 0) {
         chat->group[peernum].last_message_number = message_num;
     } else if (message_num - chat->group[peernum].last_message_number > 64 ||
-               message_num == chat->group[peernum].last_message_number)
+               message_num == chat->group[peernum].last_message_number) {
         return 1;
+    } else if (message_num == chat->message_number) { // The message is sent by us and bounced back by other clients
+        return 1;
+    }
 
     chat->group[peernum].last_message_number = message_num;
 
