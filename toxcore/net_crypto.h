@@ -57,6 +57,8 @@ typedef struct {
     uint16_t number; /* Lossless_UDP connection number corresponding to this connection. */
     uint64_t timeout;
 
+    uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
+
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
     uint64_t temp_packet_sent_time; /* The time at which the last temp_packet was sent in ms. */

@@ -41,12 +41,14 @@ Detailed implementation details:
 cookie request packet:
 [uint8_t 24][Senders DHT Public key (32 bytes)][Random nonce (24 
 bytes)][Encrypted message containing: [Senders real public key (32 
-bytes)][Recievers real public key (32 bytes)]]
+bytes)][Recievers real public key (32 bytes)][uint64_t number (must be sent back 
+untouched in cookie response)]]
 Encrypted message is encrypted with sender DHT private key, recievers DHT 
 public key and the nonce.
 
 cookie response packet:
-[uint8_t 25][Random nonce (24 bytes)][Encrypted message containing: [Cookie]]
+[uint8_t 25][Random nonce (24 bytes)][Encrypted message containing: 
+[Cookie][uint64_t number (that was sent in the request)]]
 Encrypted message is encrypted with sender DHT private key, recievers DHT 
 public key and the nonce.
 
