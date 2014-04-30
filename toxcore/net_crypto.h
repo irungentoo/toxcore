@@ -30,10 +30,15 @@
 #define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
 
 #define CRYPTO_CONN_NO_CONNECTION 0
-#define CRYPTO_CONN_HANDSHAKE_SENT 1
-#define CRYPTO_CONN_NOT_CONFIRMED 2
-#define CRYPTO_CONN_ESTABLISHED 3
-#define CRYPTO_CONN_TIMED_OUT 4
+#define CRYPTO_CONN_COOKIE_REQUESTED 1 //send cookie request packets
+#define CRYPTO_CONN_HANDSHAKE_SENT 2 //send handshake packets
+#define CRYPTO_CONN_NOT_CONFIRMED 3 //send handshake packets
+#define CRYPTO_CONN_ESTABLISHED 4
+#define CRYPTO_CONN_TIMED_OUT 5
+
+#define CRYPTO_PACKET_BUFFER_SIZE 64
+
+#define MAX_CRYPTO_PACKET_SIZE 1400
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
@@ -43,15 +48,27 @@ typedef struct {
     uint8_t sessionsecret_key[crypto_box_SECRETKEYBYTES]; /* Our private key for this session. */
     uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
     uint8_t shared_key[crypto_box_BEFORENMBYTES]; /* The precomputed shared key from encrypt_precompute. */
-    uint8_t status; /* 0 if no connection, 1 we have sent a handshake, 2 if connection is not confirmed yet
-                     * (we have received a handshake but no empty data packet), 3 if the connection is established.
-                     * 4 if the connection is timed out.
+    uint8_t status; /* 0 if no connection, 1 we are sending cookie request packets,
+                     * 2 if we are sending handshake packets
+                     * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
+                     * 4 if the connection is established.
+                     * 5 if the connection is timed out.
                      */
     uint16_t number; /* Lossless_UDP connection number corresponding to this connection. */
     uint64_t timeout;
 
+    uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
+    uint16_t temp_packet_length;
+    uint64_t temp_packet_sent_time; /* The time at which the last temp_packet was sent in ms. */
 } Crypto_Connection;
 
+typedef struct {
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
+    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
+    uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
+    uint8_t *cookie;
+    uint8_t cookie_length;
+} New_Connection;
 
 typedef struct {
     Lossless_UDP *lossless_udp;
@@ -67,9 +84,12 @@ typedef struct {
 
     /* The secret key used for cookies */
     uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
+
+    int (*new_connection_callback)(void *object, New_Connection *n_c);
+    void *new_connection_callback_object;
 } Net_Crypto;
 
-#include "DHT.h"
+
 
 /*  return 0 if there is no received data in the buffer.
  *  return -1  if the packet was discarded.

@@ -212,7 +212,7 @@ static int handle_cookie_response(Net_Crypto *c, uint8_t *cookie, uint8_t *packe
     return COOKIE_LENGTH;
 }
 
-#define HANDSHAKE_PACKET_LENGTH (1 + COOKIE_LENGTH + crypto_box_NONCEBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define HANDSHAKE_PACKET_LENGTH (1 + COOKIE_LENGTH + crypto_box_NONCEBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_hash_sha512_BYTES + COOKIE_LENGTH + crypto_box_MACBYTES)
 
 /* Create a handshake packet and put it in packet.
  * cookie must be COOKIE_LENGTH bytes.
@@ -224,9 +224,18 @@ static int handle_cookie_response(Net_Crypto *c, uint8_t *cookie, uint8_t *packe
 static int create_crypto_handshake(Net_Crypto *c, uint8_t *packet, uint8_t *cookie, uint8_t *nonce, uint8_t *session_pk,
                                    uint8_t *peer_real_pk)
 {
-    uint8_t plain[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
+    uint8_t plain[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_hash_sha512_BYTES + COOKIE_LENGTH];
     memcpy(plain, nonce, crypto_box_NONCEBYTES);
     memcpy(plain + crypto_box_NONCEBYTES, session_pk, crypto_box_PUBLICKEYBYTES);
+    crypto_hash_sha512(plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, cookie, COOKIE_LENGTH);
+    uint8_t cookie_plain[COOKIE_REQUEST_PLAIN_LENGTH];
+    memcpy(cookie_plain, peer_real_pk, crypto_box_PUBLICKEYBYTES);
+    memcpy(cookie_plain + crypto_box_PUBLICKEYBYTES, c->self_public_key, crypto_box_PUBLICKEYBYTES);
+
+    if (create_cookie(plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_hash_sha512_BYTES, cookie_plain,
+                      c->secret_symmetric_key) != 0)
+        return -1;
+
     new_nonce(packet + 1 + COOKIE_LENGTH);
     int len = encrypt_data(peer_real_pk, c->self_secret_key, packet + 1 + COOKIE_LENGTH, plain, sizeof(plain),
                            packet + 1 + COOKIE_LENGTH + crypto_box_NONCEBYTES);
@@ -242,18 +251,23 @@ static int create_crypto_handshake(Net_Crypto *c, uint8_t *packet, uint8_t *cook
 
 /* Handle a crypto handshake packet of length.
  * put the nonce contained in the packet in nonce,
- * the session public key in session_pk and
- * the real public key of the peer in peer_real_pk.
+ * the session public key in session_pk
+ * the real public key of the peer in peer_real_pk and
+ * the cookie inside the encrypted part of the packet in cookie.
+ *
+ * if expected_real_pk isn't NULL it denotes the real public key
+ * the packet should be from.
  *
  * nonce must be at least crypto_box_NONCEBYTES
  * session_pk must be at least crypto_box_PUBLICKEYBYTES
  * peer_real_pk must be at least crypto_box_PUBLICKEYBYTES
+ * cookie must be at least COOKIE_LENGTH
  *
  * return -1 on failure.
  * return 0 on success.
  */
 static int handle_crypto_handshake(Net_Crypto *c, uint8_t *nonce, uint8_t *session_pk, uint8_t *peer_real_pk,
-                                   uint8_t *packet, uint32_t length)
+                                   uint8_t *cookie, uint8_t *packet, uint32_t length, uint8_t *expected_real_pk)
 {
     if (length != HANDSHAKE_PACKET_LENGTH)
         return -1;
@@ -263,10 +277,17 @@ static int handle_crypto_handshake(Net_Crypto *c, uint8_t *nonce, uint8_t *sessi
     if (open_cookie(cookie_plain, packet + 1, c->secret_symmetric_key) != 0)
         return -1;
 
+    if (expected_real_pk)
+        if (crypto_cmp(cookie_plain, expected_real_pk, crypto_box_PUBLICKEYBYTES) != 0)
+            return -1;
+
     if (crypto_cmp(cookie_plain + crypto_box_PUBLICKEYBYTES, c->self_public_key, crypto_box_PUBLICKEYBYTES) != 0)
         return -1;
 
-    uint8_t plain[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
+    uint8_t cookie_hash[crypto_hash_sha512_BYTES];
+    crypto_hash_sha512(cookie_hash, packet + 1, COOKIE_LENGTH);
+
+    uint8_t plain[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_hash_sha512_BYTES + COOKIE_LENGTH];
     int len = decrypt_data(cookie_plain, c->self_secret_key, packet + 1 + COOKIE_LENGTH,
                            packet + 1 + COOKIE_LENGTH + crypto_box_NONCEBYTES,
                            HANDSHAKE_PACKET_LENGTH - (1 + COOKIE_LENGTH + crypto_box_NONCEBYTES), plain);
@@ -274,40 +295,206 @@ static int handle_crypto_handshake(Net_Crypto *c, uint8_t *nonce, uint8_t *sessi
     if (len != sizeof(plain))
         return -1;
 
+    if (memcmp(cookie_hash, plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, crypto_hash_sha512_BYTES) != 0)
+        return -1;
+
     memcpy(nonce, plain, crypto_box_NONCEBYTES);
     memcpy(session_pk, plain + crypto_box_NONCEBYTES, crypto_box_PUBLICKEYBYTES);
+    memcpy(cookie, plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_hash_sha512_BYTES, COOKIE_LENGTH);
     memcpy(peer_real_pk, cookie_plain, crypto_box_PUBLICKEYBYTES);
     return 0;
 }
 
-/* Handle a crypto handshake packet of length without opening the cookie from peer
- * with the real public key peer_real_pk.
- * put the nonce contained in the packet in nonce and the session public key in
- * session_pk.
- *
- * nonce must be at least crypto_box_NONCEBYTES
- * session_pk must be at least crypto_box_PUBLICKEYBYTES
+
+static Crypto_Connection *get_crypto_connection(Net_Crypto *c, int crypt_connection_id)
+{
+    if (crypt_connection_id_not_valid(c, crypt_connection_id))
+        return 0;
+
+    return &c->crypto_connections[crypt_connection_id];
+}
+
+
+/* Sends a packet to the peer using the fastest route.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_crypto_handshake_nocookie(Net_Crypto *c, uint8_t *nonce, uint8_t *session_pk, uint8_t *packet,
-        uint32_t length, uint8_t *peer_real_pk)
+static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint16_t length)
 {
-    if (length != HANDSHAKE_PACKET_LENGTH)
+//TODO
+
+
+}
+
+/* Add a new temp packet to send repeatedly.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int new_temp_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *packet, uint16_t length)
+{
+    if (length == 0 || length > MAX_CRYPTO_PACKET_SIZE)
         return -1;
 
-    uint8_t plain[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
-    int len = decrypt_data(peer_real_pk, c->self_secret_key, packet + 1 + COOKIE_LENGTH,
-                           packet + 1 + COOKIE_LENGTH + crypto_box_NONCEBYTES,
-                           HANDSHAKE_PACKET_LENGTH - (1 + COOKIE_LENGTH + crypto_box_NONCEBYTES), plain);
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
-    if (len != sizeof(plain))
+    if (conn == 0)
         return -1;
 
-    memcpy(nonce, plain, crypto_box_NONCEBYTES);
-    memcpy(session_pk, plain + crypto_box_NONCEBYTES, crypto_box_PUBLICKEYBYTES);
+    uint8_t *temp_packet = malloc(length);
+
+    if (temp_packet == 0)
+        return -1;
+
+    if (conn->temp_packet)
+        free(conn->temp_packet);
+
+    memcpy(temp_packet, packet, length);
+    conn->temp_packet = temp_packet;
+    conn->temp_packet_length = length;
+    conn->temp_packet_sent_time = 0;
     return 0;
+}
+
+/* Clear the temp packet.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int clear_temp_packet(Net_Crypto *c, int crypt_connection_id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    if (conn->temp_packet)
+        free(conn->temp_packet);
+
+    conn->temp_packet = 0;
+    conn->temp_packet_length = 0;
+    conn->temp_packet_sent_time = 0;
+    return 0;
+}
+
+
+/* Send the temp packet.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int send_temp_packet(Net_Crypto *c, int crypt_connection_id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    if (!conn->temp_packet)
+        return -1;
+
+    if (send_packet_to(c, crypt_connection_id, conn->temp_packet, conn->temp_packet_length) != 0)
+        return -1;
+
+    conn->temp_packet_sent_time = current_time();
+    return 0;
+}
+
+/* Handle a packet that was recieved for the connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint8_t *packet, uint16_t length)
+{
+    if (length == 0 || length > MAX_CRYPTO_PACKET_SIZE)
+        return -1;
+
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    switch (packet[0]) {
+        case NET_PACKET_COOKIE_RESPONSE: {
+            if (conn->status != CRYPTO_CONN_COOKIE_REQUESTED)
+                return -1;
+
+            uint8_t cookie[COOKIE_LENGTH];
+
+            if (handle_cookie_response(c, cookie, packet, length, conn->shared_key) != sizeof(cookie))
+                return -1;
+
+            uint8_t handshake_packet[HANDSHAKE_PACKET_LENGTH];
+
+            if (create_crypto_handshake(c, handshake_packet, cookie, conn->sent_nonce, conn->sessionpublic_key,
+                                        conn->public_key) != sizeof(handshake_packet))
+                return -1;
+
+            if (new_temp_packet(c, crypt_connection_id, handshake_packet, sizeof(handshake_packet)) != 0)
+                return -1;
+
+            send_temp_packet(c, crypt_connection_id);
+            conn->status = CRYPTO_CONN_HANDSHAKE_SENT;
+            return 0;
+        }
+
+        case NET_PACKET_CRYPTO_HS: {
+            if (conn->status == CRYPTO_CONN_COOKIE_REQUESTED || conn->status == CRYPTO_CONN_HANDSHAKE_SENT) {
+                uint8_t peer_real_pk[crypto_box_PUBLICKEYBYTES];
+                uint8_t cookie[COOKIE_LENGTH];
+
+                if (handle_crypto_handshake(c, conn->recv_nonce, conn->peersessionpublic_key, peer_real_pk, cookie, packet, length,
+                                            conn->public_key) != 0)
+                    return -1;
+
+                encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
+
+                conn->status = CRYPTO_CONN_NOT_CONFIRMED;
+            } else {
+                return -1;
+            }
+
+            return 0;
+        }
+
+        case NET_PACKET_CRYPTO_DATA: {
+            if (conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED) {
+                //TODO
+            } else {
+                return -1;
+            }
+
+            return 0;
+        }
+
+        default: {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *object, New_Connection *n_c),
+                            void *object)
+{
+    c->new_connection_callback = new_connection_callback;
+    c->new_connection_callback_object = object;
+}
+
+static int handle_new_connection_handshake(Net_Crypto *c, uint8_t *data, uint16_t length)
+{
+
+
+}
+
+int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
+{
+
+
 }
 /*  return 0 if there is no received data in the buffer.
  *  return -1  if the packet was discarded.

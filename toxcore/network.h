@@ -104,6 +104,7 @@ typedef int sock_t;
 #include <crypto_box.h>
 #include <randombytes.h>
 #include <crypto_hash_sha256.h>
+#include <crypto_hash_sha512.h>
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
@@ -334,7 +335,7 @@ int set_socket_nosigpipe(sock_t sock);
  */
 int set_socket_dualstack(sock_t sock);
 
-/*  return current time in milleseconds since the epoch. */
+/*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void);
 
 /*  return a random number.

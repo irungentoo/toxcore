@@ -56,10 +56,12 @@ bytes)][Recievers real public key (32 bytes)]]
 
 Handshake packet:
 [uint8_t 26][Cookie][nonce][Encrypted message containing: [random 24 bytes base 
-nonce][session public key of the peer (32 bytes)]]
+nonce][session public key of the peer (32 bytes)][sha512 hash of the entire 
+Cookie sitting outside the encrypted part][Other Cookie (used by the other to 
+respond to the handshake packet)]]
 
 The handshake packet is encrypted using the real private key of the sender, the 
-real private key of the reciever and the nonce.
+real private key of the receiver and the nonce.
 
 
 Alice wants to connect to bob.
@@ -68,15 +70,16 @@ Alice sends a cookie request packet to bob and gets a cookie response back.
 
 Alice then generates a nonce and a temporary public/private keypair.
 
-Alice then takes that nonce and just generated private key and the obtained 
-cookie and puts them in a handshake packet which she sends to bob.
+Alice then takes that nonce and just generated private key, the obtained 
+cookie, creates a new cookie and puts them in a handshake packet which she 
+sends to bob.
 
 Bob gets the handshake packet, accepts the connection request, then generates a 
 nonce and a temporary public/private keypair and sends a handshake packet back 
-with this just generated information and with the cookie field being random 
-data/zeros.
+with this just generated information and with the cookie field being the Other 
+Cookie contained in the received handshake.
 
 Both then use these temporary keys to generate the session key with which every 
-data packet sent and recieved will be encrypted and decrypted. The nonce sent 
+data packet sent and received will be encrypted and decrypted. The nonce sent 
 in the handshake will be used to encrypt the first data packet sent, the nonce 
 + 1 the second, the nonce + 2 the third and so on.
