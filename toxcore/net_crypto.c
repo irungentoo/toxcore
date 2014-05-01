@@ -46,6 +46,8 @@ static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection
 #define COOKIE_RESPONSE_LENGTH (1 + crypto_box_NONCEBYTES + COOKIE_LENGTH + sizeof(uint64_t) + crypto_box_MACBYTES)
 
 /* Create a cookie request packet and put it in packet.
+ * dht_public_key is the dht public key of the other
+ * real_public_key is the real public key of the other.
  *
  * packet must be of size COOKIE_REQUEST_LENGTH or bigger.
  *
@@ -426,7 +428,7 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
 
     switch (packet[0]) {
         case NET_PACKET_COOKIE_RESPONSE: {
-            if (conn->status != CRYPTO_CONN_COOKIE_REQUESTED)
+            if (conn->status != CRYPTO_CONN_COOKIE_REQUESTING)
                 return -1;
 
             uint8_t cookie[COOKIE_LENGTH];
@@ -453,7 +455,7 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
         }
 
         case NET_PACKET_CRYPTO_HS: {
-            if (conn->status == CRYPTO_CONN_COOKIE_REQUESTED || conn->status == CRYPTO_CONN_HANDSHAKE_SENT) {
+            if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING || conn->status == CRYPTO_CONN_HANDSHAKE_SENT) {
                 uint8_t peer_real_pk[crypto_box_PUBLICKEYBYTES];
                 uint8_t cookie[COOKIE_LENGTH];
 
@@ -489,6 +491,95 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
     return 0;
 }
 
+/* Set the size of the friend list to numfriends.
+ *
+ *  return -1 if realloc fails.
+ *  return 0 if it succeeds.
+ */
+static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
+{
+    if (num == 0) {
+        free(c->crypto_connections);
+        c->crypto_connections = NULL;
+        return 0;
+    }
+
+    Crypto_Connection *newcrypto_connections = realloc(c->crypto_connections, num * sizeof(Crypto_Connection));
+
+    if (newcrypto_connections == NULL)
+        return -1;
+
+    c->crypto_connections = newcrypto_connections;
+    return 0;
+}
+
+
+/* Create a new empty crypto connection.
+ *
+ * return -1 on failure.
+ * return connection id on success.
+ */
+static int create_crypto_connection(Net_Crypto *c)
+{
+    uint32_t i;
+
+    for (i = 0; i <= c->crypto_connections_length; ++i) {
+        if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION)
+            return i;
+    }
+
+    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1)
+        return -1;
+
+    memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
+    int id = c->crypto_connections_length;
+    ++c->crypto_connections_length;
+    return id;
+}
+
+/* Wipe a crypto connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
+{
+    if (crypt_connection_id_not_valid(c, crypt_connection_id))
+        return -1;
+
+    uint32_t i;
+    memset(&(c->crypto_connections[crypt_connection_id]), 0 , sizeof(Crypto_Connection));
+
+    for (i = c->crypto_connections_length; i != 0; --i) {
+        if (c->crypto_connections[i - 1].status != CRYPTO_CONN_NO_CONNECTION)
+            break;
+    }
+
+    if (c->crypto_connections_length != i) {
+        c->crypto_connections_length = i;
+        realloc_cryptoconnection(c, c->crypto_connections_length);
+    }
+
+    return 0;
+}
+
+/* Get crypto connection id from public key of peer.
+ *
+ *  return -1 if there are no connections like we are looking for.
+ *  return id if it found it.
+ */
+static int getcryptconnection_id(Net_Crypto *c, uint8_t *public_key)
+{
+    uint32_t i;
+
+    for (i = 0; i < c->crypto_connections_length; ++i) {
+        if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION)
+            if (memcmp(public_key, c->crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+                return i;
+    }
+
+    return -1;
+}
 
 void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *object, New_Connection *n_c),
                             void *object)
@@ -497,17 +588,136 @@ void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *
     c->new_connection_callback_object = object;
 }
 
-static int handle_new_connection_handshake(Net_Crypto *c, uint8_t *data, uint16_t length)
+/* Handle a handshake packet by someone who wants to initiate a new connection with us.
+ * This calls the callback set by new_connection_handler() if the handshake is ok.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, uint8_t *data, uint16_t length)
 {
+    New_Connection n_c;
+    n_c.cookie = malloc(COOKIE_LENGTH);
 
+    if (n_c.cookie == NULL)
+        return -1;
 
+    n_c.source = source;
+    n_c.cookie_length = COOKIE_LENGTH;
+
+    if (handle_crypto_handshake(c, n_c.recv_nonce, n_c.peersessionpublic_key, n_c.public_key, n_c.cookie, data, length,
+                                0) != 0)
+        return -1;
+
+    return c->new_connection_callback(c->new_connection_callback_object, &n_c);
 }
 
+/* Accept a crypto connection.
+ *
+ * return -1 on failure.
+ * return connection id on success.
+ */
 int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
 {
+    //TODO: do something with n_c->source.
+    if (getcryptconnection_id(c, n_c->public_key) != -1)
+        return -1;
 
+    int crypt_connection_id = create_crypto_connection(c);
 
+    if (crypt_connection_id == -1)
+        return -1;
+
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    memcpy(conn->public_key, n_c->public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(conn->recv_nonce, n_c->recv_nonce, crypto_box_NONCEBYTES);
+    memcpy(conn->peersessionpublic_key, n_c->peersessionpublic_key, crypto_box_PUBLICKEYBYTES);
+    random_nonce(conn->sent_nonce);
+    crypto_box_keypair(conn->sessionpublic_key, conn->sessionsecret_key);
+    encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
+
+    if (n_c->cookie_length != COOKIE_LENGTH)
+        return -1;
+
+    uint8_t handshake_packet[HANDSHAKE_PACKET_LENGTH];
+
+    if (create_crypto_handshake(c, handshake_packet, n_c->cookie, conn->sent_nonce, conn->sessionpublic_key,
+                                conn->public_key) != sizeof(handshake_packet))
+        return -1;
+
+    if (new_temp_packet(c, crypt_connection_id, handshake_packet, sizeof(handshake_packet)) != 0)
+        return -1;
+
+    send_temp_packet(c, crypt_connection_id);
+    conn->status = CRYPTO_CONN_NOT_CONFIRMED;
+    return crypt_connection_id;
 }
+
+/* Create a crypto connection.
+ * If one to that real public key already exists, return it.
+ *
+ * return -1 on failure.
+ * return connection id on success.
+ */
+int new_crypto_connection(Net_Crypto *c, uint8_t *real_public_key)
+{
+    int crypt_connection_id = getcryptconnection_id(c, real_public_key);
+
+    if (crypt_connection_id != -1)
+        return crypt_connection_id;
+
+    crypt_connection_id = create_crypto_connection(c);
+
+    if (crypt_connection_id == -1)
+        return -1;
+
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    memcpy(conn->public_key, real_public_key, crypto_box_PUBLICKEYBYTES);
+    random_nonce(conn->sent_nonce);
+    crypto_box_keypair(conn->sessionpublic_key, conn->sessionsecret_key);
+    conn->status = CRYPTO_CONN_COOKIE_REQUESTING;
+    return crypt_connection_id;
+}
+
+/* Set the DHT public key of the crypto connection.
+ * If one to that real public key already exists, return it.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int set_conection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    memcpy(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES);
+    conn->dht_public_key_set = 1;
+
+    if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
+        conn->cookie_request_number = random_64b();
+        uint8_t cookie_request[COOKIE_REQUEST_LENGTH];
+
+        if (create_cookie_request(c, cookie_request, conn->dht_public_key, conn->public_key,
+                                  conn->cookie_request_number) != sizeof(cookie_request))
+            return -1;
+
+        if (new_temp_packet(c, crypt_connection_id, cookie_request, sizeof(cookie_request)) != 0)
+            return -1;
+    }//TODO
+
+    return 0;
+}
+
 /*  return 0 if there is no received data in the buffer.
  *  return -1  if the packet was discarded.
  *  return length of received data if successful.

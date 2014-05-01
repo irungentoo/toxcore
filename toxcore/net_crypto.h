@@ -30,7 +30,7 @@
 #define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
 
 #define CRYPTO_CONN_NO_CONNECTION 0
-#define CRYPTO_CONN_COOKIE_REQUESTED 1 //send cookie request packets
+#define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets
 #define CRYPTO_CONN_HANDSHAKE_SENT 2 //send handshake packets
 #define CRYPTO_CONN_NOT_CONFIRMED 3 //send handshake packets
 #define CRYPTO_CONN_ESTABLISHED 4
@@ -39,7 +39,7 @@
 #define CRYPTO_PACKET_BUFFER_SIZE 64
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
-
+#define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + crypto_box_MACBYTES))
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
@@ -58,6 +58,8 @@ typedef struct {
     uint64_t timeout;
 
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
+    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
+    uint8_t dht_public_key_set; /* True if the dht public key is set, false if it isn't. */
 
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
@@ -65,6 +67,7 @@ typedef struct {
 } Crypto_Connection;
 
 typedef struct {
+    IP_Port source;
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
     uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
