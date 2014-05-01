@@ -85,3 +85,12 @@ Both then use these temporary keys to generate the session key with which every
 data packet sent and received will be encrypted and decrypted. The nonce sent 
 in the handshake will be used to encrypt the first data packet sent, the nonce 
 + 1 the second, the nonce + 2 the third and so on.
+
+Data packets:
+
+[uint8_t 27][uint16_t (in network byte order) the last 2 bytes of the nonce used 
+to encrypt this][encrypted with the session key and a nonce:[data]]
+
+Data in the data packets:
+...
+

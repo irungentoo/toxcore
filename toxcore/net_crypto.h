@@ -40,6 +40,10 @@
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + crypto_box_MACBYTES))
+
+/* Interval in ms between sending cookie request/handshake packets. */
+#define CRYPTO_SEND_PACKET_INTERVAL 500
+
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
@@ -64,6 +68,10 @@ typedef struct {
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
     uint64_t temp_packet_sent_time; /* The time at which the last temp_packet was sent in ms. */
+
+    IP_Port ip_port; /* The ip and port to contact this guy directly.*/
+    uint64_t direct_lastrecv_time; /* The Time at which we last receive a direct packet. */
+
 } Crypto_Connection;
 
 typedef struct {

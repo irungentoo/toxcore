@@ -9,12 +9,6 @@
 #include <check.h>
 #include <stdlib.h>
 #include <time.h>
-#ifndef VANILLA_NACL
-#include <sodium.h>
-#else
-#include <crypto_box.h>
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-#endif
 
 void rand_bytes(uint8_t *b, size_t blen)
 {
@@ -275,6 +269,7 @@ START_TEST(test_large_data_symmetric)
     ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
 }
 END_TEST
+
 
 #define DEFTESTCASE(NAME) \
     TCase *NAME = tcase_create(#NAME); \

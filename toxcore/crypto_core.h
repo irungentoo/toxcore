@@ -43,7 +43,7 @@
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
-unsigned int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length);
+int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length);
 
 /* Encrypts plain of length length to encrypted of length + 16 using the
  * public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
