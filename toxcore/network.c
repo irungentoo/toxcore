@@ -204,21 +204,6 @@ uint64_t current_time(void)
 #endif
 }
 
-/*  return a random number.
- */
-uint32_t random_int(void)
-{
-    uint32_t randnum;
-    randombytes((uint8_t *)&randnum , sizeof(randnum));
-    return randnum;
-}
-
-uint64_t random_64b(void)
-{
-    uint64_t randnum;
-    randombytes((uint8_t *)&randnum, sizeof(randnum));
-    return randnum;
-}
 
 #ifdef LOGGING
 static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res);

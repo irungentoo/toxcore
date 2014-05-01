@@ -25,6 +25,7 @@
 #define DHT_H
 
 #include "crypto_core.h"
+#include "network.h"
 
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES

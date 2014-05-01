@@ -25,6 +25,7 @@
 #define LOSSLESS_UDP_H
 
 #include "network.h"
+#include "crypto_core.h"
 #include "misc_tools.h"
 
 

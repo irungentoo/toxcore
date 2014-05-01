@@ -325,11 +325,6 @@ int set_socket_dualstack(sock_t sock);
 /*  return current UNIX time in microseconds (us). */
 uint64_t current_time(void);
 
-/*  return a random number.
- */
-uint32_t random_int(void);
-uint64_t random_64b(void);
-
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port. */

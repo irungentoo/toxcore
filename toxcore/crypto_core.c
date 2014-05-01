@@ -50,6 +50,22 @@ int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length)
     return (1 & ((check - 1) >> 8)) - 1;
 }
 
+/*  return a random number.
+ */
+uint32_t random_int(void)
+{
+    uint32_t randnum;
+    randombytes((uint8_t *)&randnum , sizeof(randnum));
+    return randnum;
+}
+
+uint64_t random_64b(void)
+{
+    uint64_t randnum;
+    randombytes((uint8_t *)&randnum, sizeof(randnum));
+    return randnum;
+}
+
 /* Precomputes the shared key from their public_key and our secret_key.
  * This way we can avoid an expensive elliptic curve scalar multiply for each
  * encrypt/decrypt operation.

@@ -45,6 +45,15 @@
    return -1 if they are not. */
 int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length);
 
+/*  return a random number.
+ *
+ * random_int for a 32bin int.
+ * random_64b for a 64bit int.
+ */
+uint32_t random_int(void);
+uint64_t random_64b(void);
+
+
 /* Encrypts plain of length length to encrypted of length + 16 using the
  * public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
  *
