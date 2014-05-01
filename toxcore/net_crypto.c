@@ -856,45 +856,6 @@ static int handle_cryptohandshake(Net_Crypto *c, uint8_t *public_key, uint8_t *s
     return 1;
 }
 
-/* Get crypto connection id from public key of peer.
- *
- *  return -1 if there are no connections like we are looking for.
- *  return id if it found it.
- */
-static int getcryptconnection_id(Net_Crypto *c, uint8_t *public_key)
-{
-    uint32_t i;
-
-    for (i = 0; i < c->crypto_connections_length; ++i) {
-        if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION)
-            if (memcmp(public_key, c->crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
-                return i;
-    }
-
-    return -1;
-}
-
-/* Set the size of the friend list to numfriends.
- *
- *  return -1 if realloc fails.
- *  return 0 if it succeeds.
- */
-static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
-{
-    if (num == 0) {
-        free(c->crypto_connections);
-        c->crypto_connections = NULL;
-        return 0;
-    }
-
-    Crypto_Connection *newcrypto_connections = realloc(c->crypto_connections, num * sizeof(Crypto_Connection));
-
-    if (newcrypto_connections == NULL)
-        return -1;
-
-    c->crypto_connections = newcrypto_connections;
-    return 0;
-}
 
 /* Start a secure connection with other peer who has public_key and ip_port.
  *
