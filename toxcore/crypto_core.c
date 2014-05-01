@@ -29,30 +29,25 @@
 
 #include "crypto_core.h"
 
-/* Use this instead of memcmp; not vulnerable to timing attacks. */
-uint8_t crypto_iszero(uint8_t *mem, uint32_t length)
-{
-    uint8_t check = 0;
-    uint32_t i;
-
-    for (i = 0; i < length; ++i) {
-        check |= mem[i];
-    }
-
-    return check; // We return zero if mem is made out of zeroes.
-}
 
 /* Use this instead of memcmp; not vulnerable to timing attacks.
-   returns 0 if both mem locations of length are equal. */
+   returns 0 if both mem locations of length are equal,
+   return -1 if they are not. */
 unsigned int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length)
 {
-    unsigned int i, check = 0;;
+    if (length == 16) {
+        return crypto_verify_16(mem1, mem2);
+    } else if (length == 32) {
+        return crypto_verify_32(mem1, mem2);
+    }
+
+    unsigned int i, check = 0;
 
     for (i = 0; i < length; ++i) {
         check |= mem1[i] ^ mem2[i];
     }
 
-    return check;
+    return (1 & ((check - 1) >> 8)) - 1;
 }
 
 /* Precomputes the shared key from their public_key and our secret_key.

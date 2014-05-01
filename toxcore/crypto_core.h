@@ -25,12 +25,24 @@
 
 #include "network.h"
 
+#ifndef VANILLA_NACL
+/* We use libsodium by default. */
+#include <sodium.h>
+#else
+#include <crypto_box.h>
+#include <randombytes.h>
+#include <crypto_hash_sha256.h>
+#include <crypto_hash_sha512.h>
+#include <crypto_verify_16.h>
+#include <crypto_verify_32.h>
+#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
+#endif
 
-/* return zero if the buffer contains only zeros. */
-uint8_t crypto_iszero(uint8_t *buffer, uint32_t blen);
+#define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
 
 /* Use this instead of memcmp; not vulnerable to timing attacks.
-   returns 0 if both mem locations of length are equal. */
+   returns 0 if both mem locations of length are equal,
+   return -1 if they are not. */
 unsigned int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length);
 
 /* Encrypts plain of length length to encrypted of length + 16 using the

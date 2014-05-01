@@ -97,19 +97,6 @@ typedef int sock_t;
 #endif
 #endif
 
-#ifndef VANILLA_NACL
-/* We use libsodium by default. */
-#include <sodium.h>
-#else
-#include <crypto_box.h>
-#include <randombytes.h>
-#include <crypto_hash_sha256.h>
-#include <crypto_hash_sha512.h>
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-#endif
-
-#define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
-
 #ifndef IPV6_ADD_MEMBERSHIP
 #ifdef  IPV6_JOIN_GROUP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
