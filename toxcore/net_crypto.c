@@ -560,6 +560,19 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
 
                 encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
 
+                if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
+                    uint8_t handshake_packet[HANDSHAKE_PACKET_LENGTH];
+
+                    if (create_crypto_handshake(c, handshake_packet, cookie, conn->sent_nonce, conn->sessionpublic_key,
+                                                conn->public_key) != sizeof(handshake_packet))
+                        return -1;
+
+                    if (new_temp_packet(c, crypt_connection_id, handshake_packet, sizeof(handshake_packet)) != 0)
+                        return -1;
+
+                    send_temp_packet(c, crypt_connection_id);
+                }
+
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
             } else {
                 return -1;
