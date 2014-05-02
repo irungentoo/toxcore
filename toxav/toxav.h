@@ -87,7 +87,8 @@ typedef enum {
     ErrorStartingVideoRtp = -8 , /* Error in toxav_prepare_transmission() */
     ErrorTerminatingAudioRtp = -9, /* Returned in toxav_kill_transmission() */
     ErrorTerminatingVideoRtp = -10, /* Returned in toxav_kill_transmission() */
-
+    ErrorPacketTooLarge = -11, /* Buffer exceeds size while encoding */
+    
 } ToxAvError;
 
 
@@ -276,7 +277,7 @@ int toxav_recv_audio( ToxAv* av, uint32_t call_index, int frame_size, int16_t* d
 int toxav_send_video ( ToxAv* av, uint32_t call_index, vpx_image_t* input);
 
 /**
- * @brief Encode and send audio frame.
+ * @brief Send audio frame.
  *
  * @param av Handler.
  * @param frame The frame (raw 16 bit signed pcm with AUDIO_CHANNELS channels audio.)
@@ -287,6 +288,22 @@ int toxav_send_video ( ToxAv* av, uint32_t call_index, vpx_image_t* input);
  * @retval ToxAvError On error.
  */
 int toxav_send_audio ( ToxAv* av, uint32_t call_index, const int16_t* frame, int frame_size);
+
+int toxav_prepare_video_frame ( ToxAv* av, uint8_t* dest, int dest_max, vpx_image_t* input );
+
+/**
+ * @brief Encode audio frame
+ * 
+ * @param av Handler
+ * @param dest dest
+ * @param dest_max Max dest size
+ * @param frame The frame
+ * @param frame_size The frame size
+ * @return int
+ * @retval ToxAvError On error.
+ * @retval >0 On success
+ */
+int toxav_prepare_audio_frame ( ToxAv* av, int16_t* dest, int dest_max, const int16_t* frame, int frame_size);
 
 /**
  * @brief Get peer transmission type. It can either be audio or video.
@@ -320,11 +337,23 @@ int toxav_get_peer_id ( ToxAv* av, uint32_t call_index, int peer );
 int toxav_capability_supported ( ToxAv* av, ToxAvCapabilities capability );
 
 /**
- * @brief Get messenger handle
+ * @brief Set queue limit
  * 
- * @param av Handler.
- * @return Tox*
+ * @param av Handler
+ * @param call_index index
+ * @param limit the limit
+ * @return void
  */
-Tox* toxav_get_tox ( ToxAv* av );
+void toxav_set_audio_queue_limit ( ToxAv* av, uint32_t call_index, uint64_t limit );
+
+/**
+ * @brief Set queue limit
+ * 
+ * @param av Handler
+ * @param call_index index
+ * @param limit the limit
+ * @return void
+ */
+void toxav_set_video_queue_limit ( ToxAv* av, uint32_t call_index, uint64_t limit );
 
 #endif /* __TOXAV */

@@ -26,6 +26,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "../toxcore/logger.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -34,17 +36,6 @@
 #include "rtp.h"
 #include "media.h"
 
-struct jitter_buffer {
-    RTPMessage **queue;
-    uint16_t capacity;
-    uint16_t size;
-    uint16_t front;
-    uint16_t rear;
-    uint8_t queue_ready;
-    uint16_t current_id;
-    uint32_t current_ts;
-    uint8_t id_set;
-};
 
 int empty_queue(struct jitter_buffer *q)
 {
@@ -79,14 +70,7 @@ struct jitter_buffer *create_queue(int capacity)
     return q;
 }
 
-/* returns 1 if 'a' has a higher sequence number than 'b' */
-uint8_t sequence_number_older(uint16_t sn_a, uint16_t sn_b, uint32_t ts_a, uint32_t ts_b)
-{
-    /* TODO: There is already this kind of function in toxrtp.c.
-     *       Maybe merge?
-     */
-    return (sn_a > sn_b || ts_a > ts_b);
-}
+#define sequnum_older(sn_a, sn_b, ts_a, ts_b) (sn_a > sn_b || ts_a > ts_b)
 
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
 RTPMessage *dequeue(struct jitter_buffer *q, int *success)
@@ -112,14 +96,13 @@ RTPMessage *dequeue(struct jitter_buffer *q, int *success)
             q->current_id = next_id;
             q->current_ts = next_ts;
         } else {
-            if (sequence_number_older(next_id, q->current_id, next_ts, q->current_ts)) {
-                /*printf("nextid: %d current: %d\n", next_id, q->current_id);*/
+            if (sequnum_older(next_id, q->current_id, next_ts, q->current_ts)) {
+                LOGGER_DEBUG("nextid: %d current: %d\n", next_id, q->current_id);
                 q->current_id = (q->current_id + 1) % MAX_SEQU_NUM;
                 *success = 2; /* tell the decoder the packet is lost */
                 return NULL;
             } else {
-                /* packet too old */
-                /*printf("packet too old\n");*/
+                LOGGER_DEBUG("Packet too old");
                 *success = 0;
                 return NULL;
             }
@@ -139,12 +122,11 @@ RTPMessage *dequeue(struct jitter_buffer *q, int *success)
 }
 
 
-int queue(struct jitter_buffer *q, RTPMessage *pk)
+void queue(struct jitter_buffer* q, RTPMessage* pk)
 {
     if (q->size == q->capacity) { /* Full, empty queue */
+        LOGGER_DEBUG("Queue full, emptying...");
         empty_queue(q);
-        /*rtp_free_msg(NULL, pk);*/
-        return 0;
     }
 
     if (q->size > 8)
@@ -169,13 +151,13 @@ int queue(struct jitter_buffer *q, RTPMessage *pk)
         if (b < 0)
             b += q->capacity;
 
-        if (sequence_number_older(q->queue[b]->header->sequnum, q->queue[a]->header->sequnum,
-                                  q->queue[b]->header->timestamp, q->queue[a]->header->timestamp)) {
+        if (sequnum_older(q->queue[b]->header->sequnum, q->queue[a]->header->sequnum,
+                          q->queue[b]->header->timestamp, q->queue[a]->header->timestamp)) {
             RTPMessage *temp;
             temp = q->queue[a];
             q->queue[a] = q->queue[b];
             q->queue[b] = temp;
-            /*printf("had to swap\n");*/
+            LOGGER_DEBUG("Had to swap");
         } else {
             break;
         }
@@ -185,19 +167,14 @@ int queue(struct jitter_buffer *q, RTPMessage *pk)
         if (a < 0)
             a += q->capacity;
     }
-
-    if (pk)
-        return 1;
-
-    return 0;
 }
 
 
 int init_video_decoder(CodecState *cs)
 {
-    if (vpx_codec_dec_init_ver(&cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0,
-                               VPX_DECODER_ABI_VERSION) != VPX_CODEC_OK) {
-        /*fprintf(stderr, "Init video_decoder failed!\n");*/
+    int rc = vpx_codec_dec_init_ver(&cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0, VPX_DECODER_ABI_VERSION);
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
 
@@ -210,7 +187,7 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
     cs->audio_decoder = opus_decoder_create(cs->audio_sample_rate, audio_channels, &rc );
 
     if ( rc != OPUS_OK ) {
-        /*fprintf(stderr, "Error while starting audio decoder!\n");*/
+        LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
         return -1;
     }
 
@@ -221,10 +198,10 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
 int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t video_bitrate)
 {
     vpx_codec_enc_cfg_t  cfg;
-    int res = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
+    int rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
-    if (res) {
-        /*fprintf(stderr, "Failed to get config: %s\n", vpx_codec_err_to_string(res));*/
+    if (rc) {
+        LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
 
@@ -232,9 +209,10 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     cfg.g_w = width;
     cfg.g_h = height;
 
-    if (vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0,
-                               VPX_ENCODER_ABI_VERSION) != VPX_CODEC_OK) {
-        /*fprintf(stderr, "Failed to initialize encoder\n");*/
+    rc = vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, VPX_ENCODER_ABI_VERSION);
+    
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
 
@@ -243,13 +221,30 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
 
 int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
 {
-    int err = OPUS_OK;
-    cs->audio_encoder = opus_encoder_create(cs->audio_sample_rate, audio_channels, OPUS_APPLICATION_AUDIO, &err);
-    err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_bitrate));
-    err = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
+    int rc = OPUS_OK;
+    cs->audio_encoder = opus_encoder_create(cs->audio_sample_rate, audio_channels, OPUS_APPLICATION_AUDIO, &rc);
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_bitrate));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
 
 
-    return err == OPUS_OK ? 0 : -1;
+    return 0;
 }
 
 
@@ -293,7 +288,7 @@ void codec_terminate_session ( CodecState *cs )
     
 
     /* TODO: Terminate video 
-     *           Do what???
+     *           Do what?
      */
     if ( cs->capabilities & v_decoding )
         vpx_codec_destroy(&cs->v_decoder);

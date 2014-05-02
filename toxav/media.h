@@ -68,9 +68,22 @@ typedef struct _CodecState {
     
 } CodecState;
 
+
+struct jitter_buffer {
+    RTPMessage **queue;
+    uint16_t capacity;
+    uint16_t size;
+    uint16_t front;
+    uint16_t rear;
+    uint8_t queue_ready;
+    uint16_t current_id;
+    uint32_t current_ts;
+    uint8_t id_set;
+};
+
 struct jitter_buffer *create_queue(int capacity);
 
-int queue(struct jitter_buffer *q, RTPMessage *pk);
+void queue(struct jitter_buffer *q, RTPMessage *pk);
 RTPMessage *dequeue(struct jitter_buffer *q, int *success);
 
 

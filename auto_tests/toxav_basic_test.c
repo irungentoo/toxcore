@@ -500,11 +500,6 @@ Suite *tox_suite(void)
     tcase_set_timeout(tc_av_flows, 100); /* Timeout on 100 too much? */
     suite_add_tcase(s, tc_av_flows);
     
-    TCase *tc_av_three_calls = tcase_create("AV_three_calls");
-    tcase_add_test(tc_av_three_calls, test_AV_three_calls);
-    tcase_set_timeout(tc_av_three_calls, 100); /* Timeout on 100 too much? */
-    suite_add_tcase(s, tc_av_three_calls);
-
     return s;
 }
 int main(int argc, char *argv[])

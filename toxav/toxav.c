@@ -105,7 +105,7 @@ ToxAv *toxav_new( Tox* messenger, ToxAvCodecSettings* codec_settings, uint32_t m
     av->msi_session = msi_init_session(av->messenger, max_calls);
     av->msi_session->agent_handler = av;
 
-    av->rtp_sessions = calloc(sizeof(RTPSession), max_calls);
+    av->rtp_sessions = calloc(sizeof(CallRTPSessions), max_calls);
     av->max_calls = max_calls;
     
     av->j_buf = create_queue(codec_settings->jbuf_capacity);
@@ -288,8 +288,9 @@ int toxav_stop_call ( ToxAv* av, uint32_t call_index )
  */
 int toxav_prepare_transmission ( ToxAv* av, uint32_t call_index, int support_video )
 {
-    if ( !av->msi_session || !av->msi_session->calls[call_index] ) {
-        return ErrorNoCall;
+    if ( !av->msi_session || av->msi_session->max_calls <= call_index || !av->msi_session->calls[call_index] ) {
+        /*fprintf(stderr, "Error while starting audio RTP session: invalid call!\n");*/
+        return ErrorInternal;
     }
 
     av->rtp_sessions[call_index].crtps[audio_index] = 
@@ -305,10 +306,11 @@ int toxav_prepare_transmission ( ToxAv* av, uint32_t call_index, int support_vid
 
 
     if ( !av->rtp_sessions[call_index].crtps[audio_index] ) {
-        fprintf(stderr, "Error while starting audio RTP session!\n");
+        /*fprintf(stderr, "Error while starting audio RTP session!\n");*/
         return ErrorStartingAudioRtp;
     }
-
+    
+    
     if ( support_video ) {
         av->rtp_sessions[call_index].crtps[video_index] = 
             rtp_init_session (
@@ -323,10 +325,12 @@ int toxav_prepare_transmission ( ToxAv* av, uint32_t call_index, int support_vid
 
 
         if ( !av->rtp_sessions[call_index].crtps[video_index] ) {
-            fprintf(stderr, "Error while starting video RTP session!\n");
+            /*fprintf(stderr, "Error while starting video RTP session!\n");*/
             return ErrorStartingVideoRtp;
         }
     }
+    
+    
     return ErrorNone;
 }
 
@@ -341,12 +345,12 @@ int toxav_prepare_transmission ( ToxAv* av, uint32_t call_index, int support_vid
 int toxav_kill_transmission ( ToxAv *av, uint32_t call_index )
 {
     if ( av->rtp_sessions[call_index].crtps[audio_index] && -1 == rtp_terminate_session(av->rtp_sessions[call_index].crtps[audio_index], av->messenger) ) {
-        fprintf(stderr, "Error while terminating audio RTP session!\n");
+        /*fprintf(stderr, "Error while terminating audio RTP session!\n");*/
         return ErrorTerminatingAudioRtp;
     }
 
     if ( av->rtp_sessions[call_index].crtps[video_index] && -1 == rtp_terminate_session(av->rtp_sessions[call_index].crtps[video_index], av->messenger) ) {
-        fprintf(stderr, "Error while terminating video RTP session!\n");
+        /*fprintf(stderr, "Error while terminating video RTP session!\n");*/
         return ErrorTerminatingVideoRtp;
     }
 
@@ -441,13 +445,15 @@ inline__ int toxav_recv_video ( ToxAv *av, uint32_t call_index, vpx_image_t **ou
 
     uint8_t packet [RTP_PAYLOAD_SIZE];
     int recved_size = 0;
-    int error;
+    int rc;
     
     do {
         recved_size = toxav_recv_rtp_payload(av, call_index, TypeVideo, packet);
 
-        if (recved_size > 0 && ( error = vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0) ) != VPX_CODEC_OK) 
-            fprintf(stderr, "Error decoding: %s\n", vpx_codec_err_to_string(error));
+        if (recved_size > 0 && ( rc = vpx_codec_decode(&av->cs->v_decoder, packet, recved_size, NULL, 0) ) != VPX_CODEC_OK) {
+            /*fprintf(stderr, "Error decoding video: %s\n", vpx_codec_err_to_string(rc));*/
+            return ErrorInternal;
+        }
         
     } while (recved_size > 0);
 
@@ -472,8 +478,9 @@ inline__ int toxav_recv_video ( ToxAv *av, uint32_t call_index, vpx_image_t **ou
  */
 inline__ int toxav_send_video ( ToxAv *av, uint32_t call_index, vpx_image_t *input)
 {
-    if (vpx_codec_encode(&av->cs->v_encoder, input, av->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US) != VPX_CODEC_OK) {
-        fprintf(stderr, "Could not encode video frame\n");
+    int rc = vpx_codec_encode(&av->cs->v_encoder, input, av->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
+    if ( rc != VPX_CODEC_OK) {
+        /*fprintf(stderr, "Could not encode video frame: %s\n", vpx_codec_err_to_string(rc));*/
         return ErrorInternal;
     }
 
@@ -491,9 +498,38 @@ inline__ int toxav_send_video ( ToxAv *av, uint32_t call_index, vpx_image_t *inp
     }
 
     if (sent > 0)
-        return 0;
+        return ErrorNone;
 
     return ErrorInternal;
+}
+
+int toxav_prepare_video_frame(ToxAv* av, uint8_t* dest, int dest_max, vpx_image_t* input)
+{
+    int rc = vpx_codec_encode(&av->cs->v_encoder, input, av->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
+    if ( rc != VPX_CODEC_OK) {
+        /*fprintf(stderr, "Could not encode video frame: %s\n", vpx_codec_err_to_string(rc));*/
+        return ErrorInternal;
+    }
+    ++av->cs->frame_counter;
+    
+    vpx_codec_iter_t iter = NULL;
+    const vpx_codec_cx_pkt_t *pkt;
+    int counted = 0, copied = 0;
+    
+    while ( (pkt = vpx_codec_get_cx_data(&av->cs->v_encoder, &iter)) ) {
+        if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
+            
+            if ( copied + pkt->data.frame.sz > dest_max ) return ErrorPacketTooLarge;
+            
+            mempcpy(dest + copied, pkt->data.frame.buf, pkt->data.frame.sz);
+            
+            if (toxav_send_rtp_payload(av, call_index, TypeVideo, pkt->data.frame.buf, pkt->data.frame.sz) != -1)
+                ++counted;
+        }
+    }
+    
+    if (counted > 0)
+        return ErrorNone;
 }
 
 /**
@@ -517,16 +553,22 @@ inline__ int toxav_recv_audio ( ToxAv *av, uint32_t call_index, int frame_size, 
     int recved_size = toxav_recv_rtp_payload(av, call_index, TypeAudio, packet);
 
     if ( recved_size == ErrorAudioPacketLost ) {
-        return opus_decode(av->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
+        int dec_size = opus_decode(av->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
+        
+        if ( dec_size != OPUS_OK ) return ErrorInternal;
+        
     } else if ( recved_size ) {
-        return opus_decode(av->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
+        int dec_size = opus_decode(av->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
+        
+        if ( dec_size != OPUS_OK ) return ErrorInternal;
+        
     } else {
         return 0; /* Nothing received */
     }
 }
 
 /**
- * @brief Encode and send audio frame.
+ * @brief Send audio frame.
  *
  * @param av Handler.
  * @param frame The frame (raw 16 bit signed pcm with AUDIO_CHANNELS channels audio.)
@@ -538,13 +580,29 @@ inline__ int toxav_recv_audio ( ToxAv *av, uint32_t call_index, int frame_size, 
  */
 inline__ int toxav_send_audio ( ToxAv *av, uint32_t call_index, const int16_t *frame, int frame_size)
 {
-    uint8_t temp_data[RTP_PAYLOAD_SIZE];
-    int32_t ret = opus_encode(av->cs->audio_encoder, frame, frame_size, temp_data, sizeof(temp_data));
+    return toxav_send_rtp_payload(av, call_index, TypeAudio, frame, frame_size);
+}
 
-    if (ret <= 0)
+/**
+ * @brief Encode audio frame
+ * 
+ * @param av Handler
+ * @param dest dest
+ * @param dest_max Max dest size
+ * @param frame The frame
+ * @param frame_size The frame size
+ * @return int
+ * @retval ToxAvError On error.
+ * @retval >0 On success
+ */
+int toxav_prepare_audio_frame ( ToxAv* av, int16_t* dest, int dest_max, const int16_t* frame, int frame_size)
+{
+    int32_t rc = opus_encode(av->cs->audio_encoder, frame, frame_size, dest, dest_max);
+    
+    if (rc <= 0)
         return ErrorInternal;
-
-    return toxav_send_rtp_payload(av, call_index, TypeAudio, temp_data, ret);
+    
+    return rc;
 }
 
 /**
@@ -598,12 +656,27 @@ inline__ int toxav_capability_supported ( ToxAv* av, ToxAvCapabilities capabilit
 }
 
 /**
- * @brief Get messenger handle
+ * @brief Set queue limit
  * 
- * @param av Handler.
- * @return Tox*
+ * @param av Handler
+ * @param call_index index
+ * @param limit the limit
+ * @return void
  */
-inline__ Tox* toxav_get_tox ( ToxAv* av )
+void toxav_set_audio_queue_limit(ToxAv* av, uint32_t call_index, uint64_t limit)
 {
-    return (Tox*)av->messenger;
+    rtp_queue_adjust_limit(av->rtp_sessions[call_index].crtps[audio_index], limit);
+}
+
+/**
+ * @brief Set queue limit
+ * 
+ * @param av Handler
+ * @param call_index index
+ * @param limit the limit
+ * @return void
+ */
+void toxav_set_video_queue_limit(ToxAv* av, uint32_t call_index, uint64_t limit)
+{
+    rtp_queue_adjust_limit(av->rtp_sessions[call_index].crtps[video_index], limit);
 }

@@ -932,6 +932,7 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
     
     if ( _call_idx == session->max_calls ) { 
         LOGGER_WARNING("Reached maximum amount of calls!");
+        return NULL;
     }
     
 
@@ -1017,7 +1018,7 @@ int terminate_call ( MSISession *session, MSICall *call )
 /********** Request handlers **********/
 int handle_recv_invite ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'invite' on call: %s", call? (char*)call->id : "making new");
+    LOGGER_DEBUG("Session: %p Handling 'invite' on call: %s", session, call? (char*)call->id : "making new");
     
     if ( call ) {
         if ( call->peers[0] == msg->friend_id ) { 
@@ -1071,7 +1072,7 @@ int handle_recv_invite ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_start ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'start' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'start' on call: %s", session, call->id );
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return -1;
@@ -1095,7 +1096,7 @@ int handle_recv_start ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_reject ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'reject' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'reject' on call: %s", session, call->id);
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
@@ -1118,7 +1119,7 @@ int handle_recv_reject ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_cancel ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'cancel' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %s", session, call->id );
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
@@ -1137,7 +1138,7 @@ int handle_recv_cancel ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_end ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'end' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'end' on call: %s", session, call->id );
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
@@ -1156,7 +1157,7 @@ int handle_recv_end ( MSISession *session, MSICall* call, MSIMessage *msg )
 /********** Response handlers **********/
 int handle_recv_ringing ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'ringing' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
@@ -1169,7 +1170,7 @@ int handle_recv_ringing ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_starting ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'starting' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'starting' on call: %s", session, call->id );
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
@@ -1210,7 +1211,7 @@ int handle_recv_starting ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_ending ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Handling 'ending' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
@@ -1232,7 +1233,7 @@ int handle_recv_error ( MSISession *session, MSICall* call, MSIMessage *msg )
         return -1;
     }
     
-    LOGGER_DEBUG("Handling 'error' on call: %s", call->id );
+    LOGGER_DEBUG("Session: %p Handling 'error' on call: %s", session, call->id );
 
     /* Handle error accordingly */
     if ( msg->reason.header_value ) {
@@ -1490,7 +1491,8 @@ int msi_terminate_session ( MSISession *session )
     }
     
     m_callback_msi_packet((struct Messenger *) session->messenger_handle, NULL, NULL);
-
+    
+    LOGGER_DEBUG("Terminated session: %p", session);
     free ( session );
     return _status;
 }
@@ -1507,7 +1509,7 @@ int msi_terminate_session ( MSISession *session )
  */
 int msi_invite ( MSISession* session, uint32_t* call_index, MSICallType call_type, uint32_t rngsec, uint32_t friend_id )
 {
-    LOGGER_DEBUG("Inviting friend: %u", friend_id);
+    LOGGER_DEBUG("Session: %p Inviting friend: %u", session, friend_id);
     
     MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
     
@@ -1553,7 +1555,7 @@ int msi_invite ( MSISession* session, uint32_t* call_index, MSICallType call_typ
  */
 int msi_hangup ( MSISession* session, uint32_t call_index )
 {
-    LOGGER_DEBUG("Hanging up call: %u", call_index);
+    LOGGER_DEBUG("Session: %p Hanging up call: %u", session, call_index);
     
     if ( call_index >= session->max_calls || !session->calls[call_index] ) {
         LOGGER_ERROR("Invalid call index!");
@@ -1592,7 +1594,7 @@ int msi_hangup ( MSISession* session, uint32_t call_index )
  */
 int msi_answer ( MSISession* session, uint32_t call_index, MSICallType call_type )
 {
-    LOGGER_DEBUG("Answering call: %u", call_index);
+    LOGGER_DEBUG("Session: %p Answering call: %u", session, call_index);
     
     if ( call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
@@ -1641,7 +1643,7 @@ int msi_answer ( MSISession* session, uint32_t call_index, MSICallType call_type
  */
 int msi_cancel ( MSISession *session, uint32_t call_index, uint32_t peer, const char *reason )
 {
-    LOGGER_DEBUG("Canceling call: %u; reason:", call_index, reason? reason : "Unknown");
+    LOGGER_DEBUG("Session: %p Canceling call: %u; reason:", session, call_index, reason? reason : "Unknown");
     
     if ( call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
@@ -1670,7 +1672,7 @@ int msi_cancel ( MSISession *session, uint32_t call_index, uint32_t peer, const 
  */
 int msi_reject ( MSISession *session, uint32_t call_index, const uint8_t *reason )
 {
-    LOGGER_DEBUG("Rejecting call: %u; reason:", call_index, reason? (char*)reason : "Unknown");
+    LOGGER_DEBUG("Session: %p Rejecting call: %u; reason:", session, call_index, reason? (char*)reason : "Unknown");
     
     if ( call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
@@ -1699,7 +1701,7 @@ int msi_reject ( MSISession *session, uint32_t call_index, const uint8_t *reason
  */
 int msi_stopcall ( MSISession *session, uint32_t call_index )
 {
-    LOGGER_DEBUG("Stopping call index: %u", call_index);
+    LOGGER_DEBUG("Session: %p Stopping call index: %u", session, call_index);
     
     if ( call_index >= session->max_calls || !session->calls[call_index] )
         return -1;
