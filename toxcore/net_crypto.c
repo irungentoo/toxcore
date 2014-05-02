@@ -385,7 +385,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
 /* Get the lowest 2 bytes from the nonce and convert
  * them to host byte format before returning them.
  */
-uint16_t get_nonce_uint16(uint8_t *nonce)
+static uint16_t get_nonce_uint16(uint8_t *nonce)
 {
     uint16_t num;
     memcpy(&num, nonce + (crypto_box_NONCEBYTES - sizeof(uint16_t)), sizeof(uint16_t));
@@ -618,7 +618,7 @@ static int create_crypto_connection(Net_Crypto *c)
 {
     uint32_t i;
 
-    for (i = 0; i <= c->crypto_connections_length; ++i) {
+    for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION)
             return i;
     }
