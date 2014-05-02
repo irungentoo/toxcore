@@ -705,7 +705,7 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
  *
  * The set function should return -1 on failure and 0 on success.
  *
- * n_c is only valid for the duration of this function.
+ * n_c is only valid for the duration of the function call.
  */
 void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *object, New_Connection *n_c),
                             void *object)
@@ -968,31 +968,7 @@ static void send_crypto_packets(Net_Crypto *c)
  */
 int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
 {
-    if (crypt_connection_id_not_valid(c, crypt_connection_id))
-        return 0;
 
-    if (c->crypto_connections[crypt_connection_id].status != CRYPTO_CONN_ESTABLISHED)
-        return 0;
-
-    uint8_t temp_data[MAX_DATA_SIZE];
-    int length = read_packet(c->lossless_udp, c->crypto_connections[crypt_connection_id].number, temp_data);
-
-    if (length == 0)
-        return 0;
-
-    if (temp_data[0] != 3)
-        return -1;
-
-    int len = decrypt_data_symmetric(c->crypto_connections[crypt_connection_id].shared_key,
-                                     c->crypto_connections[crypt_connection_id].recv_nonce,
-                                     temp_data + 1, length - 1, data);
-
-    if (len != -1) {
-        increment_nonce(c->crypto_connections[crypt_connection_id].recv_nonce);
-        return len;
-    }
-
-    return -1;
 }
 
 /* returns the number of packet slots left in the sendbuffer.
@@ -1000,10 +976,7 @@ int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
  */
 uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
 {
-    if (crypt_connection_id_not_valid(c, crypt_connection_id))
-        return 0;
 
-    return num_free_sendqueue_slots(c->lossless_udp, c->crypto_connections[crypt_connection_id].number);
 }
 
 /*  return 0 if data could not be put in packet queue.
@@ -1011,93 +984,7 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  */
 int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
 {
-    if (crypt_connection_id_not_valid(c, crypt_connection_id))
-        return 0;
 
-    if (length - crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES > MAX_DATA_SIZE - 1)
-        return 0;
-
-    if (c->crypto_connections[crypt_connection_id].status != CRYPTO_CONN_ESTABLISHED)
-        return 0;
-
-    uint8_t temp_data[MAX_DATA_SIZE];
-    int len = encrypt_data_symmetric(c->crypto_connections[crypt_connection_id].shared_key,
-                                     c->crypto_connections[crypt_connection_id].sent_nonce,
-                                     data, length, temp_data + 1);
-
-    if (len == -1)
-        return 0;
-
-    temp_data[0] = 3;
-
-    if (write_packet(c->lossless_udp, c->crypto_connections[crypt_connection_id].number, temp_data, len + 1) == 0)
-        return 0;
-
-    increment_nonce(c->crypto_connections[crypt_connection_id].sent_nonce);
-    return 1;
-}
-
-
-/* Send a crypto handshake packet containing an encrypted secret nonce and session public key
- * to peer with connection_id and public_key.
- * The packet is encrypted with a random nonce which is sent in plain text with the packet.
- */
-static int send_cryptohandshake(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
-                                uint8_t *session_key)
-{
-    uint8_t temp_data[MAX_DATA_SIZE];
-    uint8_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
-    uint8_t nonce[crypto_box_NONCEBYTES];
-
-    new_nonce(nonce);
-    memcpy(temp, secret_nonce, crypto_box_NONCEBYTES);
-    memcpy(temp + crypto_box_NONCEBYTES, session_key, crypto_box_PUBLICKEYBYTES);
-
-    int len = encrypt_data(public_key, c->self_secret_key, nonce, temp, crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
-                           1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + temp_data);
-
-    if (len == -1)
-        return 0;
-
-    temp_data[0] = 2;
-    memcpy(temp_data + 1, c->self_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(temp_data + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
-    return write_packet(c->lossless_udp, connection_id, temp_data,
-                        len + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
-}
-
-/* Extract secret nonce, session public key and public_key from a packet(data) with length length.
- *
- *  return 1 if successful.
- *  return 0 if failure.
- */
-static int handle_cryptohandshake(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce,
-                                  uint8_t *session_key, uint8_t *data, uint16_t length)
-{
-    int pad = (- crypto_box_BOXZEROBYTES + crypto_box_ZEROBYTES);
-
-    if (length != 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES
-            + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + pad) {
-        return 0;
-    }
-
-    if (data[0] != 2)
-        return 0;
-
-    uint8_t temp[crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES];
-
-    memcpy(public_key, data + 1, crypto_box_PUBLICKEYBYTES);
-
-    int len = decrypt_data(public_key, c->self_secret_key, data + 1 + crypto_box_PUBLICKEYBYTES,
-                           data + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
-                           crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + pad, temp);
-
-    if (len != crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES)
-        return 0;
-
-    memcpy(secret_nonce, temp, crypto_box_NONCEBYTES);
-    memcpy(session_key, temp + crypto_box_NONCEBYTES, crypto_box_PUBLICKEYBYTES);
-    return 1;
 }
 
 
@@ -1108,92 +995,7 @@ static int handle_cryptohandshake(Net_Crypto *c, uint8_t *public_key, uint8_t *s
  */
 int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
 {
-    uint32_t i;
-    int id_existing = getcryptconnection_id(c, public_key);
 
-    if (id_existing != -1) {
-        IP_Port c_ip = connection_ip(c->lossless_udp, c->crypto_connections[id_existing].number);
-
-        if (ipport_equal(&c_ip, &ip_port))
-            return -1;
-    }
-
-    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1
-            || c->crypto_connections == NULL)
-        return -1;
-
-    memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
-    c->crypto_connections[c->crypto_connections_length].number = ~0;
-
-    for (i = 0; i <= c->crypto_connections_length; ++i) {
-        if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION) {
-            int id_new = new_connection(c->lossless_udp, ip_port);
-
-            if (id_new == -1)
-                return -1;
-
-            c->crypto_connections[i].number = id_new;
-            c->crypto_connections[i].status = CRYPTO_CONN_HANDSHAKE_SENT;
-            random_nonce(c->crypto_connections[i].recv_nonce);
-            memcpy(c->crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
-            crypto_box_keypair(c->crypto_connections[i].sessionpublic_key, c->crypto_connections[i].sessionsecret_key);
-            c->crypto_connections[i].timeout = unix_time() + CRYPTO_HANDSHAKE_TIMEOUT;
-
-            if (c->crypto_connections_length == i)
-                ++c->crypto_connections_length;
-
-            if (send_cryptohandshake(c, id_new, public_key,  c->crypto_connections[i].recv_nonce,
-                                     c->crypto_connections[i].sessionpublic_key) == 1) {
-                increment_nonce(c->crypto_connections[i].recv_nonce);
-                return i;
-            }
-
-            return -1; /* This should never happen. */
-        }
-    }
-
-    return -1;
-}
-
-/* Handle an incoming connection.
- *
- *  return -1 if no crypto inbound connection.
- *  return incoming connection id (Lossless_UDP one) if there is an incoming crypto connection.
- *
- * Put the public key of the peer in public_key, the secret_nonce from the handshake into secret_nonce
- * and the session public key for the connection in session_key.
- * to accept it see: accept_crypto_inbound(...).
- * to refuse it just call kill_connection(...) on the connection id.
- */
-int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key)
-{
-    while (1) {
-        int incoming_con = incoming_connection(c->lossless_udp, 1);
-
-        if (incoming_con != -1) {
-            if (is_connected(c->lossless_udp, incoming_con) == LUDP_TIMED_OUT) {
-                kill_connection(c->lossless_udp, incoming_con);
-                continue;
-            }
-
-            if (id_packet(c->lossless_udp, incoming_con) == 2) {
-                uint8_t temp_data[MAX_DATA_SIZE];
-                uint16_t len = read_packet_silent(c->lossless_udp, incoming_con, temp_data);
-
-                if (handle_cryptohandshake(c, public_key, secret_nonce, session_key, temp_data, len)) {
-                    return incoming_con;
-                } else {
-                    kill_connection(c->lossless_udp, incoming_con);
-                }
-            } else {
-                kill_connection(c->lossless_udp, incoming_con);
-            }
-        } else {
-            break;
-        }
-    }
-
-    return -1;
 }
 
 /* Kill a crypto connection.
@@ -1203,94 +1005,7 @@ int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, ui
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
-    if (crypt_connection_id_not_valid(c, crypt_connection_id))
-        return 1;
 
-    if (c->crypto_connections[crypt_connection_id].status != CRYPTO_CONN_NO_CONNECTION) {
-        c->crypto_connections[crypt_connection_id].status = CRYPTO_CONN_NO_CONNECTION;
-        kill_connection(c->lossless_udp, c->crypto_connections[crypt_connection_id].number);
-        memset(&(c->crypto_connections[crypt_connection_id]), 0 , sizeof(Crypto_Connection));
-        c->crypto_connections[crypt_connection_id].number = ~0;
-        uint32_t i;
-
-        for (i = c->crypto_connections_length; i != 0; --i) {
-            if (c->crypto_connections[i - 1].status != CRYPTO_CONN_NO_CONNECTION)
-                break;
-        }
-
-        if (c->crypto_connections_length != i) {
-            c->crypto_connections_length = i;
-            realloc_cryptoconnection(c, c->crypto_connections_length);
-        }
-
-        return 0;
-    }
-
-    return 1;
-}
-
-/* Accept an incoming connection using the parameters provided by crypto_inbound.
- *
- *  return -1 if not successful.
- *  return the crypt_connection_id if successful.
- */
-int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
-                          uint8_t *session_key)
-{
-    uint32_t i;
-
-    if (discard_packet(c->lossless_udp, connection_id) == -1)
-        return -1;
-
-    /*
-     * if(getcryptconnection_id(public_key) != -1)
-     * {
-     *     return -1;
-     * }
-     */
-
-    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1
-            || c->crypto_connections == NULL)
-        return -1;
-
-    memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
-    c->crypto_connections[c->crypto_connections_length].number = ~0;
-
-    for (i = 0; i <= c->crypto_connections_length; ++i) {
-        if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION) {
-            c->crypto_connections[i].number = connection_id;
-            c->crypto_connections[i].status = CRYPTO_CONN_NOT_CONFIRMED;
-            c->crypto_connections[i].timeout = unix_time() + CRYPTO_HANDSHAKE_TIMEOUT;
-            random_nonce(c->crypto_connections[i].recv_nonce);
-            memcpy(c->crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
-            memcpy(c->crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
-            increment_nonce(c->crypto_connections[i].sent_nonce);
-            memcpy(c->crypto_connections[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
-
-            crypto_box_keypair(c->crypto_connections[i].sessionpublic_key, c->crypto_connections[i].sessionsecret_key);
-
-            if (c->crypto_connections_length == i)
-                ++c->crypto_connections_length;
-
-            if (send_cryptohandshake(c, connection_id, public_key, c->crypto_connections[i].recv_nonce,
-                                     c->crypto_connections[i].sessionpublic_key) == 1) {
-                increment_nonce(c->crypto_connections[i].recv_nonce);
-                uint32_t zero = 0;
-                encrypt_precompute(c->crypto_connections[i].peersessionpublic_key,
-                                   c->crypto_connections[i].sessionsecret_key,
-                                   c->crypto_connections[i].shared_key);
-                c->crypto_connections[i].status =
-                    CRYPTO_CONN_ESTABLISHED; /* Connection status needs to be 3 for write_cryptpacket() to work. */
-                write_cryptpacket(c, i, ((uint8_t *)&zero), sizeof(zero));
-                c->crypto_connections[i].status = CRYPTO_CONN_NOT_CONFIRMED; /* Set it to its proper value right after. */
-                return i;
-            }
-
-            return -1; /* This should never happen. */
-        }
-    }
-
-    return -1;
 }
 
 /*  return 0 if no connection.
@@ -1333,84 +1048,7 @@ void load_keys(Net_Crypto *c, uint8_t *keys)
 /* Handle received packets for not yet established crypto connections. */
 static void receive_crypto(Net_Crypto *c)
 {
-    uint32_t i;
-    uint64_t temp_time = unix_time();
 
-    for (i = 0; i < c->crypto_connections_length; ++i) {
-        if (c->crypto_connections[i].status == CRYPTO_CONN_NO_CONNECTION)
-            continue;
-
-        if (c->crypto_connections[i].status == CRYPTO_CONN_HANDSHAKE_SENT) {
-            uint8_t temp_data[MAX_DATA_SIZE];
-            uint8_t secret_nonce[crypto_box_NONCEBYTES];
-            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-            uint8_t session_key[crypto_box_PUBLICKEYBYTES];
-            uint16_t len;
-
-            if (id_packet(c->lossless_udp, c->crypto_connections[i].number) == 2) { /* Handle handshake packet. */
-                len = read_packet(c->lossless_udp, c->crypto_connections[i].number, temp_data);
-
-                if (handle_cryptohandshake(c, public_key, secret_nonce, session_key, temp_data, len)) {
-                    if (memcmp(public_key, c->crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
-                        memcpy(c->crypto_connections[i].sent_nonce, secret_nonce, crypto_box_NONCEBYTES);
-                        memcpy(c->crypto_connections[i].peersessionpublic_key, session_key, crypto_box_PUBLICKEYBYTES);
-                        increment_nonce(c->crypto_connections[i].sent_nonce);
-                        uint32_t zero = 0;
-                        encrypt_precompute(c->crypto_connections[i].peersessionpublic_key,
-                                           c->crypto_connections[i].sessionsecret_key,
-                                           c->crypto_connections[i].shared_key);
-                        c->crypto_connections[i].status =
-                            CRYPTO_CONN_ESTABLISHED; /* Connection status needs to be 3 for write_cryptpacket() to work. */
-                        write_cryptpacket(c, i, ((uint8_t *)&zero), sizeof(zero));
-                        c->crypto_connections[i].status = CRYPTO_CONN_NOT_CONFIRMED; /* Set it to its proper value right after. */
-                    } else {
-                        /* This should not happen, timeout the connection if it does. */
-                        c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
-                    }
-                } else {
-                    /* This should not happen, timeout the connection if it does. */
-                    c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
-                }
-            } else if (id_packet(c->lossless_udp,
-                                 c->crypto_connections[i].number) != (uint8_t)~0) {
-                /* This should not happen, timeout the connection if it does. */
-                c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
-            }
-        }
-
-        if (c->crypto_connections[i].status == CRYPTO_CONN_NOT_CONFIRMED) {
-            if (id_packet(c->lossless_udp, c->crypto_connections[i].number) == 3) {
-                uint8_t temp_data[MAX_DATA_SIZE];
-                uint8_t data[MAX_DATA_SIZE];
-                int length = read_packet(c->lossless_udp, c->crypto_connections[i].number, temp_data);
-                int len = decrypt_data(c->crypto_connections[i].peersessionpublic_key,
-                                       c->crypto_connections[i].sessionsecret_key,
-                                       c->crypto_connections[i].recv_nonce, temp_data + 1, length - 1, data);
-                uint32_t zero = 0;
-
-                if (len == sizeof(uint32_t) && memcmp(((uint8_t *)&zero), data, sizeof(uint32_t)) == 0) {
-                    increment_nonce(c->crypto_connections[i].recv_nonce);
-                    encrypt_precompute(c->crypto_connections[i].peersessionpublic_key,
-                                       c->crypto_connections[i].sessionsecret_key,
-                                       c->crypto_connections[i].shared_key);
-                    c->crypto_connections[i].status = CRYPTO_CONN_ESTABLISHED;
-                    c->crypto_connections[i].timeout = ~0;
-                    /* Connection is accepted. */
-                    confirm_connection(c->lossless_udp, c->crypto_connections[i].number);
-                } else {
-                    /* This should not happen, timeout the connection if it does. */
-                    c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
-                }
-            } else if (id_packet(c->lossless_udp, c->crypto_connections[i].number) != (uint8_t)~0) {
-                /* This should not happen, timeout the connection if it does. */
-                c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
-            }
-        }
-
-        if (temp_time > c->crypto_connections[i].timeout) {
-            c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
-        }
-    }
 }
 
 /* Run this to (re)initialize net_crypto.
@@ -1429,12 +1067,6 @@ Net_Crypto *new_net_crypto(DHT *dht)
         return NULL;
 
     temp->dht = dht;
-    temp->lossless_udp = new_lossless_udp(dht->net);
-
-    if (temp->lossless_udp == NULL) {
-        free(temp);
-        return NULL;
-    }
 
     new_keys(temp);
     new_symmetric_key(temp->secret_symmetric_key);
@@ -1451,9 +1083,7 @@ static void kill_timedout(Net_Crypto *c)
     uint32_t i;
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
-        if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION
-                && is_connected(c->lossless_udp, c->crypto_connections[i].number) == LUDP_TIMED_OUT)
-            c->crypto_connections[i].status = CRYPTO_CONN_TIMED_OUT;
+//TODO
     }
 }
 
@@ -1461,9 +1091,9 @@ static void kill_timedout(Net_Crypto *c)
 void do_net_crypto(Net_Crypto *c)
 {
     unix_time_update();
-    do_lossless_udp(c->lossless_udp);
     kill_timedout(c);
     receive_crypto(c);
+    send_crypto_packets(c);
 }
 
 void kill_net_crypto(Net_Crypto *c)
@@ -1474,7 +1104,10 @@ void kill_net_crypto(Net_Crypto *c)
         crypto_kill(c, i);
     }
 
-    kill_lossless_udp(c->lossless_udp);
+    networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_REQUEST, NULL, NULL);
+    networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_RESPONSE, NULL, NULL);
+    networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_HS, NULL, NULL);
+    networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_DATA, NULL, NULL);
     memset(c, 0, sizeof(Net_Crypto));
     free(c);
 }

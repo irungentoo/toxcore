@@ -406,10 +406,10 @@ uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, uint8_t *message, uin
 
 uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
 {
-    if (length >= (MAX_DATA_SIZE - sizeof(theid)))
+    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)))
         return 0;
 
-    uint8_t temp[MAX_DATA_SIZE];
+    uint8_t temp[MAX_CRYPTO_DATA_SIZE];
     theid = htonl(theid);
     memcpy(temp, &theid, sizeof(theid));
     memcpy(temp + sizeof(theid), message, length);
@@ -440,10 +440,10 @@ uint32_t m_sendaction(Messenger *m, int32_t friendnumber, uint8_t *action, uint3
 
 uint32_t m_sendaction_withid(Messenger *m, int32_t friendnumber, uint32_t theid, uint8_t *action, uint32_t length)
 {
-    if (length >= (MAX_DATA_SIZE - sizeof(theid)))
+    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)))
         return 0;
 
-    uint8_t temp[MAX_DATA_SIZE];
+    uint8_t temp[MAX_CRYPTO_DATA_SIZE];
     theid = htonl(theid);
     memcpy(temp, &theid, sizeof(theid));
     memcpy(temp + sizeof(theid), action, length);
@@ -840,7 +840,7 @@ int write_cryptpacket_id(Messenger *m, int32_t friendnumber, uint8_t packet_id, 
     if (friend_not_valid(m, friendnumber))
         return 0;
 
-    if (length >= MAX_DATA_SIZE || m->friendlist[friendnumber].status != FRIEND_ONLINE)
+    if (length >= MAX_CRYPTO_DATA_SIZE || m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return 0;
 
     uint8_t packet[length + 1];
@@ -888,7 +888,7 @@ static IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber)
     if (is_cryptoconnected(m->net_crypto, crypt_id) != CRYPTO_CONN_ESTABLISHED)
         return zero;
 
-    return connection_ip(m->net_crypto->lossless_udp, m->net_crypto->crypto_connections[crypt_id].number);
+    return m->net_crypto->crypto_connections[crypt_id].ip_port;
 }
 
 /* returns the group number of the chat with public key group_public_key.
@@ -1395,7 +1395,7 @@ int new_filesender(Messenger *m, int32_t friendnumber, uint64_t filesize, uint8_
 int file_control(Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
                  uint8_t *data, uint16_t length)
 {
-    if (length > MAX_DATA_SIZE - 3)
+    if (length > MAX_CRYPTO_DATA_SIZE - 3)
         return -1;
 
     if (friend_not_valid(m, friendnumber))
@@ -1412,7 +1412,7 @@ int file_control(Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8
     if (send_receive > 1)
         return -1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t packet[MAX_CRYPTO_DATA_SIZE];
     packet[0] = send_receive;
     packet[1] = filenumber;
     packet[2] = message_id;
@@ -1482,7 +1482,7 @@ int file_control(Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8
  */
 int file_data(Messenger *m, int32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length)
 {
-    if (length > MAX_DATA_SIZE - 1)
+    if (length > MAX_CRYPTO_DATA_SIZE - 1)
         return -1;
 
     if (friend_not_valid(m, friendnumber))
@@ -1495,7 +1495,7 @@ int file_data(Messenger *m, int32_t friendnumber, uint8_t filenumber, uint8_t *d
     if (crypto_num_free_sendqueue_slots(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id) < MIN_SLOTS_FREE)
         return -1;
 
-    uint8_t packet[MAX_DATA_SIZE];
+    uint8_t packet[MAX_CRYPTO_DATA_SIZE];
     packet[0] = filenumber;
     memcpy(packet + 1, data, length);
 
@@ -1738,6 +1738,23 @@ static void LANdiscovery(Messenger *m)
     }
 }
 
+int handle_new_connections(void *object, New_Connection *n_c)
+{
+    Messenger *m = object;
+    int friend_id = getfriend_id(m, n_c->public_key);
+
+    if (friend_id != -1) {
+        if (m->friendlist[friend_id].crypt_connection_id != -1)
+            return -1;
+
+        m->friendlist[friend_id].crypt_connection_id = accept_crypto_connection(m->net_crypto, n_c);
+        set_friend_status(m, friend_id, FRIEND_CONFIRMED);
+    }
+
+    return -1;
+}
+
+
 /* Run this at startup. */
 Messenger *new_messenger(uint8_t ipv6enabled)
 {
@@ -1771,6 +1788,8 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         free(m);
         return NULL;
     }
+
+    new_connection_handler(m->net_crypto, &handle_new_connections, m);
 
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
@@ -1843,7 +1862,7 @@ void do_friends(Messenger *m)
 {
     uint32_t i;
     int len;
-    uint8_t temp[MAX_DATA_SIZE];
+    uint8_t temp[MAX_CRYPTO_DATA_SIZE];
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < m->numfriends; ++i) {
@@ -2184,32 +2203,8 @@ void do_friends(Messenger *m)
     }
 }
 
-void do_inbound(Messenger *m)
-{
-    uint8_t secret_nonce[crypto_box_NONCEBYTES];
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t session_key[crypto_box_PUBLICKEYBYTES];
-    int inconnection = crypto_inbound(m->net_crypto, public_key, secret_nonce, session_key);
 
-    if (inconnection != -1) {
-        int friend_id = getfriend_id(m, public_key);
 
-        if (friend_id != -1) {
-            if (m_get_friend_connectionstatus(m, friend_id) == 1) {
-                kill_connection(m->net_crypto->lossless_udp, inconnection);
-                return;
-            }
-
-            crypto_kill(m->net_crypto, m->friendlist[friend_id].crypt_connection_id);
-            m->friendlist[friend_id].crypt_connection_id =
-                accept_crypto_inbound(m->net_crypto, inconnection, public_key, secret_nonce, session_key);
-
-            set_friend_status(m, friend_id, FRIEND_CONFIRMED);
-        } else {
-            kill_connection(m->net_crypto->lossless_udp, inconnection);
-        }
-    }
-}
 
 #ifdef LOGGING
 #define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60UL
@@ -2238,7 +2233,6 @@ void do_messenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friends(m);
-    do_inbound(m);
     do_allgroupchats(m);
     LANdiscovery(m);
 
@@ -2381,7 +2375,9 @@ size_t wait_data_size()
 
 int wait_prepare_messenger(Messenger *m, uint8_t *data)
 {
-    return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data);
+    //TODO
+    //return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data);
+    return networking_wait_prepare(m->net, 1024, data);
 }
 
 int wait_execute_messenger(uint8_t *data, long seconds, long microseconds)

@@ -24,7 +24,6 @@
 #ifndef NET_CRYPTO_H
 #define NET_CRYPTO_H
 
-#include "Lossless_UDP.h"
 #include "DHT.h"
 
 #define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
@@ -39,6 +38,8 @@
 #define CRYPTO_PACKET_BUFFER_SIZE 64
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
+
+/* Max size of data in packets TODO*/
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + crypto_box_MACBYTES))
 
 /* Interval in ms between sending cookie request/handshake packets. */
@@ -58,7 +59,6 @@ typedef struct {
                      * 4 if the connection is established.
                      * 5 if the connection is timed out.
                      */
-    uint16_t number; /* Lossless_UDP connection number corresponding to this connection. */
     uint64_t timeout;
 
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
@@ -71,7 +71,6 @@ typedef struct {
 
     IP_Port ip_port; /* The ip and port to contact this guy directly.*/
     uint64_t direct_lastrecv_time; /* The Time at which we last receive a direct packet. */
-
 } Crypto_Connection;
 
 typedef struct {
@@ -84,7 +83,6 @@ typedef struct {
 } New_Connection;
 
 typedef struct {
-    Lossless_UDP *lossless_udp;
     DHT *dht;
 
     Crypto_Connection *crypto_connections;
@@ -102,6 +100,22 @@ typedef struct {
     void *new_connection_callback_object;
 } Net_Crypto;
 
+
+/* Set function to be called when someone requests a new connection to us.
+ *
+ * The set function should return -1 on failure and 0 on success.
+ *
+ * n_c is only valid for the duration of the function call.
+ */
+void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *object, New_Connection *n_c),
+                            void *object);
+
+/* Accept a crypto connection.
+ *
+ * return -1 on failure.
+ * return connection id on success.
+ */
+int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
 
 
 /*  return 0 if there is no received data in the buffer.
@@ -134,25 +148,6 @@ int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port);
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 
-/* Handle an incoming connection.
- *
- *  return -1 if no crypto inbound connection.
- *  return incoming connection id (Lossless_UDP one) if there is an incoming crypto connection.
- *
- *  Put the public key of the peer in public_key, the secret_nonce from the handshake into secret_nonce
- *  and the session public key for the connection in session_key.
- *  to accept it see: accept_crypto_inbound(...).
- *  to refuse it just call kill_connection(...) on the connection id.
- */
-int crypto_inbound(Net_Crypto *c, uint8_t *public_key, uint8_t *secret_nonce, uint8_t *session_key);
-
-/* Accept an incoming connection using the parameters provided by crypto_inbound.
- *
- *  return -1 if not successful.
- *  return crypt_connection_id if successful.
- */
-int accept_crypto_inbound(Net_Crypto *c, int connection_id, uint8_t *public_key, uint8_t *secret_nonce,
-                          uint8_t *session_key);
 
 /*  return 0 if no connection.
  *  return 1 we have sent a handshake

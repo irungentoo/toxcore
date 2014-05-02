@@ -34,6 +34,7 @@
 #include "onion_client.h"
 
 #define MAX_NAME_LENGTH 128
+/* TODO: this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
