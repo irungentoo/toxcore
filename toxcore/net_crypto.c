@@ -506,6 +506,32 @@ static int send_temp_packet(Net_Crypto *c, int crypt_connection_id)
     return 0;
 }
 
+/* Create a handshake packet and set it as a temp packet.
+ * cookie must be COOKIE_LENGTH.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int create_send_handshake(Net_Crypto *c, int crypt_connection_id, uint8_t *cookie)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    uint8_t handshake_packet[HANDSHAKE_PACKET_LENGTH];
+
+    if (create_crypto_handshake(c, handshake_packet, cookie, conn->sent_nonce, conn->sessionpublic_key,
+                                conn->public_key) != sizeof(handshake_packet))
+        return -1;
+
+    if (new_temp_packet(c, crypt_connection_id, handshake_packet, sizeof(handshake_packet)) != 0)
+        return -1;
+
+    send_temp_packet(c, crypt_connection_id);
+    return 0;
+}
+
 /* Handle a packet that was recieved for the connection.
  *
  * return -1 on failure.
@@ -535,16 +561,9 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
             if (number != conn->cookie_request_number)
                 return -1;
 
-            uint8_t handshake_packet[HANDSHAKE_PACKET_LENGTH];
-
-            if (create_crypto_handshake(c, handshake_packet, cookie, conn->sent_nonce, conn->sessionpublic_key,
-                                        conn->public_key) != sizeof(handshake_packet))
+            if (create_send_handshake(c, crypt_connection_id, cookie) != 0)
                 return -1;
 
-            if (new_temp_packet(c, crypt_connection_id, handshake_packet, sizeof(handshake_packet)) != 0)
-                return -1;
-
-            send_temp_packet(c, crypt_connection_id);
             conn->status = CRYPTO_CONN_HANDSHAKE_SENT;
             return 0;
         }
@@ -561,16 +580,8 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
                 encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
 
                 if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
-                    uint8_t handshake_packet[HANDSHAKE_PACKET_LENGTH];
-
-                    if (create_crypto_handshake(c, handshake_packet, cookie, conn->sent_nonce, conn->sessionpublic_key,
-                                                conn->public_key) != sizeof(handshake_packet))
+                    if (create_send_handshake(c, crypt_connection_id, cookie) != 0)
                         return -1;
-
-                    if (new_temp_packet(c, crypt_connection_id, handshake_packet, sizeof(handshake_packet)) != 0)
-                        return -1;
-
-                    send_temp_packet(c, crypt_connection_id);
                 }
 
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
@@ -761,9 +772,12 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, uint8_
             memcpy(conn->peersessionpublic_key, n_c.peersessionpublic_key, crypto_box_PUBLICKEYBYTES);
             encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
 
-            conn->status = CRYPTO_CONN_NOT_CONFIRMED;
             crypto_connection_add_source(c, crypt_connection_id, source);
-            ret = 0;
+
+            if (create_send_handshake(c, crypt_connection_id, n_c.cookie) == 0) {
+                conn->status = CRYPTO_CONN_NOT_CONFIRMED;
+                ret = 0;
+            }
         }
 
         free(n_c.cookie);
@@ -805,13 +819,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
     if (n_c->cookie_length != COOKIE_LENGTH)
         return -1;
 
-    uint8_t handshake_packet[HANDSHAKE_PACKET_LENGTH];
-
-    if (create_crypto_handshake(c, handshake_packet, n_c->cookie, conn->sent_nonce, conn->sessionpublic_key,
-                                conn->public_key) != sizeof(handshake_packet))
-        return -1;
-
-    if (new_temp_packet(c, crypt_connection_id, handshake_packet, sizeof(handshake_packet)) != 0)
+    if (create_send_handshake(c, crypt_connection_id, n_c->cookie) != 0)
         return -1;
 
     send_temp_packet(c, crypt_connection_id);
@@ -1058,12 +1066,6 @@ void load_keys(Net_Crypto *c, uint8_t *keys)
     memcpy(c->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
 }
 
-/* Handle received packets for not yet established crypto connections. */
-static void receive_crypto(Net_Crypto *c)
-{
-
-}
-
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
@@ -1105,7 +1107,6 @@ void do_net_crypto(Net_Crypto *c)
 {
     unix_time_update();
     kill_timedout(c);
-    receive_crypto(c);
     send_crypto_packets(c);
 }
 

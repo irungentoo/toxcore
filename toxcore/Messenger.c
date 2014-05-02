@@ -1738,7 +1738,7 @@ static void LANdiscovery(Messenger *m)
     }
 }
 
-int handle_new_connections(void *object, New_Connection *n_c)
+static int handle_new_connections(void *object, New_Connection *n_c)
 {
     Messenger *m = object;
     int friend_id = getfriend_id(m, n_c->public_key);
