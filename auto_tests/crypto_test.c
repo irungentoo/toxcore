@@ -209,11 +209,11 @@ START_TEST(test_large_data)
 
     unsigned char n[crypto_box_NONCEBYTES];
 
-    unsigned char m1[MAX_DATA_SIZE - crypto_box_MACBYTES];
+    unsigned char m1[MAX_CRYPTO_PACKET_SIZE - crypto_box_MACBYTES];
     unsigned char c1[sizeof(m1) + crypto_box_MACBYTES];
     unsigned char m1prime[sizeof(m1)];
 
-    unsigned char m2[MAX_DATA_SIZE];
+    unsigned char m2[MAX_CRYPTO_PACKET_SIZE];
     unsigned char c2[sizeof(m2) + crypto_box_MACBYTES];
 
     int c1len, c2len;
