@@ -183,8 +183,9 @@ int set_socket_dualstack(sock_t sock)
     return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only)) == 0);
 }
 
+
 /*  return current UNIX time in microseconds (us). */
-uint64_t current_time(void)
+static uint64_t current_time_actual(void)
 {
     uint64_t time;
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -204,6 +205,37 @@ uint64_t current_time(void)
 #endif
 }
 
+
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+static uint64_t last_monotime;
+static uint64_t add_monotime;
+#endif
+
+/* return current monotonic time in milliseconds (ms). */
+uint64_t current_time_monotonic(void)
+{
+    uint64_t time;
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+    time = (uint64_t)GetTickCount() + add_monotime;
+
+    if (time < last_monotime) { /* Prevent time from ever decreasing because of 32 bit wrap. */
+        uint32_t add = ~0;
+        add_monotime += add;
+        time += add;
+    }
+
+    last_monotime = time;
+#else
+    struct timespec monotime;
+#if defined(__linux__)
+    clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
+#else
+    clock_gettime(CLOCK_MONOTONIC, &monotime);
+#endif
+    time = 1000ULL * monotime.tv_sec + (monotime.tv_nsec / 1000000ULL);
+#endif
+    return time;
+}
 
 #ifdef LOGGING
 static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res);
@@ -273,7 +305,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
     if ((res >= 0) && ((uint32_t)res == length))
         net->send_fail_eagain = 0;
     else if ((res < 0) && (errno == EWOULDBLOCK))
-        net->send_fail_eagain = current_time();
+        net->send_fail_eagain = current_time_monotonic();
 
     return res;
 }
@@ -421,13 +453,13 @@ int networking_wait_execute(uint8_t *data, long seconds, long microseconds)
     *  that code)
     */
     if (s->send_fail_eagain != 0) {
-        // current_time(): microseconds
-        uint64_t now = current_time();
+        // current_time(): milliseconds
+        uint64_t now = current_time_monotonic();
 
         /* s->sendqueue_length: might be used to guess how long we keep checking */
         /* for now, threshold is hardcoded to 250ms, too long for a really really
          * fast link, but too short for a sloooooow link... */
-        if (now - s->send_fail_eagain < 250000) {
+        if (now - s->send_fail_eagain < 250) {
             writefds_add = 1;
         }
     }
@@ -522,9 +554,9 @@ int networking_at_startup(void)
         return -1;
 
 #else
-    srandom((uint32_t)current_time());
+    srandom((uint32_t)current_time_actual());
 #endif
-    srand((uint32_t)current_time());
+    srand((uint32_t)current_time_actual());
     at_startup_ran = 1;
     return 0;
 }

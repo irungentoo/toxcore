@@ -322,8 +322,8 @@ int set_socket_nosigpipe(sock_t sock);
  */
 int set_socket_dualstack(sock_t sock);
 
-/*  return current UNIX time in microseconds (us). */
-uint64_t current_time(void);
+/* return current monotonic time in milliseconds (ms). */
+uint64_t current_time_monotonic(void);
 
 /* Basic network functions: */
 

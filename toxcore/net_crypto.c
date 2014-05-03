@@ -379,7 +379,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
         return -1;
 
     increment_nonce(conn->sent_nonce);
-    conn->last_data_packet_sent = current_time(); //TODO remove this.
+    conn->last_data_packet_sent = current_time_monotonic(); //TODO remove this.
     return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
 }
 
@@ -505,7 +505,7 @@ static int send_temp_packet(Net_Crypto *c, int crypt_connection_id)
     if (send_packet_to(c, crypt_connection_id, conn->temp_packet, conn->temp_packet_length) != 0)
         return -1;
 
-    conn->temp_packet_sent_time = current_time();
+    conn->temp_packet_sent_time = current_time_monotonic();
     ++conn->temp_packet_num_sent;
     return 0;
 }
@@ -738,7 +738,7 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
 
     if (source.ip.family == AF_INET || source.ip.family == AF_INET6) {
         conn->ip_port = source;
-        conn->direct_lastrecv_time = current_time();
+        conn->direct_lastrecv_time = current_time_monotonic();
         return 0;
     }
 
@@ -1032,14 +1032,14 @@ static int udp_handle_packet(void *object, IP_Port source, uint8_t *packet, uint
     if (conn == 0)
         return -1;
 
-    conn->direct_lastrecv_time = current_time();
+    conn->direct_lastrecv_time = current_time_monotonic();
     return 0;
 }
 
 static void send_crypto_packets(Net_Crypto *c)
 {
     uint32_t i;
-    uint64_t temp_time = current_time();
+    uint64_t temp_time = current_time_monotonic();
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);
@@ -1047,12 +1047,12 @@ static void send_crypto_packets(Net_Crypto *c)
         if (conn == 0)
             return;
 
-        if ((CRYPTO_SEND_PACKET_INTERVAL * 1000ULL) + conn->temp_packet_sent_time < temp_time) {
+        if (CRYPTO_SEND_PACKET_INTERVAL + conn->temp_packet_sent_time < temp_time) {
             send_temp_packet(c, i);
         }
 
         if (conn->status >= CRYPTO_CONN_NOT_CONFIRMED
-                && (500ULL * 1000ULL) + conn->last_data_packet_sent < temp_time) {//TODO remove this.
+                && (500ULL + conn->last_data_packet_sent) < temp_time) {//TODO remove this.
             uint8_t data[4] = {};
             send_data_packet(c, i, data, 4);
         }
@@ -1159,7 +1159,7 @@ Net_Crypto *new_net_crypto(DHT *dht)
 static void kill_timedout(Net_Crypto *c)
 {
     uint32_t i;
-    uint64_t temp_time = current_time();
+    //uint64_t temp_time = current_time_monotonic();
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);

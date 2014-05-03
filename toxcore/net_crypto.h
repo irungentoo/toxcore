@@ -72,7 +72,8 @@ typedef struct {
     uint32_t temp_packet_num_sent;
 
     IP_Port ip_port; /* The ip and port to contact this guy directly.*/
-    uint64_t direct_lastrecv_time; /* The Time at which we last receive a direct packet. */
+    uint64_t direct_lastrecv_time; /* The Time at which we last received a direct packet in ms. */
+
 
     int (*connection_status_callback)(void *object, int id, uint8_t status);
     void *connection_status_callback_object;
