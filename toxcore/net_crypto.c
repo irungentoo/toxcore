@@ -379,6 +379,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
         return -1;
 
     increment_nonce(conn->sent_nonce);
+    conn->last_data_packet_sent = current_time(); //TODO remove this.
     return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
 }
 
@@ -459,6 +460,7 @@ static int new_temp_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *pack
     conn->temp_packet = temp_packet;
     conn->temp_packet_length = length;
     conn->temp_packet_sent_time = 0;
+    conn->temp_packet_num_sent = 0;
     return 0;
 }
 
@@ -480,6 +482,7 @@ static int clear_temp_packet(Net_Crypto *c, int crypt_connection_id)
     conn->temp_packet = 0;
     conn->temp_packet_length = 0;
     conn->temp_packet_sent_time = 0;
+    conn->temp_packet_num_sent = 0;
     return 0;
 }
 
@@ -503,6 +506,7 @@ static int send_temp_packet(Net_Crypto *c, int crypt_connection_id)
         return -1;
 
     conn->temp_packet_sent_time = current_time();
+    ++conn->temp_packet_num_sent;
     return 0;
 }
 
@@ -594,7 +598,24 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
 
         case NET_PACKET_CRYPTO_DATA: {
             if (conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED) {
-                //TODO
+                uint8_t data[MAX_DATA_DATA_PACKET_SIZE];
+                int len = handle_data_packet(c, crypt_connection_id, data, packet, length);
+
+                if (len == -1)
+                    return -1;
+
+                if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
+                    if (conn->connection_status_callback)
+                        conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
+
+                    clear_temp_packet(c, crypt_connection_id);
+                    conn->status = CRYPTO_CONN_ESTABLISHED;
+                }
+
+                if (conn->connection_data_callback)
+                    conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, data, len);
+
+                //TODO add buffers and packet requesting.
             } else {
                 return -1;
             }
@@ -870,6 +891,9 @@ int set_conection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t
     if (conn == 0)
         return -1;
 
+    if (conn->dht_public_key_set == 1 && memcmp(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+        return -1;
+
     memcpy(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES);
     conn->dht_public_key_set = 1;
 
@@ -905,6 +929,52 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
         conn->direct_lastrecv_time = 0;
     }
 
+    return 0;
+}
+
+/* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
+ *
+ * The set function should return -1 on failure and 0 on success.
+ * Note that if this function is set, the connection will clear itself on disconnect.
+ * Object and id will be passed to this function untouched.
+ * status is 1 if the connection is going online, 0 if it is going offline.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int connection_status_handler(Net_Crypto *c, int crypt_connection_id, int (*connection_status_callback)(void *object,
+                              int id, uint8_t status), void *object, int id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    conn->connection_status_callback = connection_status_callback;
+    conn->connection_status_callback_object = object;
+    conn->connection_status_callback_id = id;
+    return 0;
+}
+
+/* Set function to be called when connection with crypt_connection_id receives a data packet of length.
+ *
+ * The set function should return -1 on failure and 0 on success.
+ * Object and id will be passed to this function untouched.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int connection_data_handler(Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
+                            int id, uint8_t *data, uint16_t length), void *object, int id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    conn->connection_data_callback = connection_data_callback;
+    conn->connection_data_callback_object = object;
+    conn->connection_data_callback_id = id;
     return 0;
 }
 
@@ -977,27 +1047,26 @@ static void send_crypto_packets(Net_Crypto *c)
         if (conn == 0)
             return;
 
-        if ((CRYPTO_SEND_PACKET_INTERVAL * 1000UL) + conn->temp_packet_sent_time < temp_time) {
+        if ((CRYPTO_SEND_PACKET_INTERVAL * 1000ULL) + conn->temp_packet_sent_time < temp_time) {
             send_temp_packet(c, i);
+        }
+
+        if (conn->status >= CRYPTO_CONN_NOT_CONFIRMED
+                && (500ULL * 1000ULL) + conn->last_data_packet_sent < temp_time) {//TODO remove this.
+            uint8_t data[4] = {};
+            send_data_packet(c, i, data, 4);
         }
     }
 }
 
-/*  return 0 if there is no received data in the buffer.
- *  return -1  if the packet was discarded.
- *  return length of received data if successful.
- */
-int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data)
-{
-
-}
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
  */
 uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
 {
-
+    //TODO
+    return 0;
 }
 
 /*  return 0 if data could not be put in packet queue.
@@ -1005,28 +1074,22 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  */
 int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
 {
+    //TODO
+    if (send_data_packet(c, crypt_connection_id, data, length) == 0)
+        return 1;
 
-}
-
-
-/* Start a secure connection with other peer who has public_key and ip_port.
- *
- *  return -1 if failure.
- *  return crypt_connection_id of the initialized connection if everything went well.
- */
-int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port)
-{
-
+    return 0;
 }
 
 /* Kill a crypto connection.
  *
- *  return 0 if killed successfully.
- *  return 1 if there was a problem.
+ * return -1 on failure.
+ * return 0 on success.
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
-
+    //TODO
+    return wipe_crypto_connection(c, crypt_connection_id);
 }
 
 /*  return 0 if no connection.
@@ -1096,9 +1159,35 @@ Net_Crypto *new_net_crypto(DHT *dht)
 static void kill_timedout(Net_Crypto *c)
 {
     uint32_t i;
+    uint64_t temp_time = current_time();
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
-//TODO
+        Crypto_Connection *conn = get_crypto_connection(c, i);
+
+        if (conn == 0)
+            return;
+
+        if (conn->status == CRYPTO_CONN_NO_CONNECTION || conn->status == CRYPTO_CONN_TIMED_OUT)
+            continue;
+
+        if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING || conn->status == CRYPTO_CONN_HANDSHAKE_SENT
+                || conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
+            if (conn->temp_packet_num_sent < MAX_NUM_SENDPACKET_TRIES)
+                continue;
+
+            if (conn->connection_status_callback) {
+                conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 0);
+                crypto_kill(c, i);
+                continue;
+            }
+
+            conn->status = CRYPTO_CONN_TIMED_OUT;
+            continue;
+        }
+
+        if (conn->status == CRYPTO_CONN_ESTABLISHED) {
+            //TODO: add a timeout here?
+        }
     }
 }
 

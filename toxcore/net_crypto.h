@@ -44,6 +44,9 @@
 
 /* Interval in ms between sending cookie request/handshake packets. */
 #define CRYPTO_SEND_PACKET_INTERVAL 500
+/* The maximum number of times we try to send the cookie request and handshake
+   before giving up. */
+#define MAX_NUM_SENDPACKET_TRIES 10
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
@@ -59,8 +62,6 @@ typedef struct {
                      * 4 if the connection is established.
                      * 5 if the connection is timed out.
                      */
-    uint64_t timeout;
-
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
     uint8_t dht_public_key_set; /* True if the dht public key is set, false if it isn't. */
@@ -68,9 +69,20 @@ typedef struct {
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
     uint64_t temp_packet_sent_time; /* The time at which the last temp_packet was sent in ms. */
+    uint32_t temp_packet_num_sent;
 
     IP_Port ip_port; /* The ip and port to contact this guy directly.*/
     uint64_t direct_lastrecv_time; /* The Time at which we last receive a direct packet. */
+
+    int (*connection_status_callback)(void *object, int id, uint8_t status);
+    void *connection_status_callback_object;
+    int connection_status_callback_id;
+
+    int (*connection_data_callback)(void *object, int id, uint8_t *data, uint16_t length);
+    void *connection_data_callback_object;
+    int connection_data_callback_id;
+
+    uint64_t last_data_packet_sent;
 } Crypto_Connection;
 
 typedef struct {
@@ -117,12 +129,52 @@ void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *
  */
 int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
 
-
-/*  return 0 if there is no received data in the buffer.
- *  return -1  if the packet was discarded.
- *  return length of received data if successful.
+/* Create a crypto connection.
+ * If one to that real public key already exists, return it.
+ *
+ * return -1 on failure.
+ * return connection id on success.
  */
-int read_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data);
+int new_crypto_connection(Net_Crypto *c, uint8_t *real_public_key);
+
+/* Set the DHT public key of the crypto connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int set_conection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
+
+/* Set the direct ip of the crypto connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port);
+
+/* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
+ *
+ * The set function should return -1 on failure and 0 on success.
+ * Note that if this function is set, the connection will clear itself on disconnect.
+ * Object and id will be passed to this function untouched.
+ * status is 1 if the connection is going online, 0 if it is going offline.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int connection_status_handler(Net_Crypto *c, int crypt_connection_id, int (*connection_status_callback)(void *object,
+                              int id, uint8_t status), void *object, int id);
+
+/* Set function to be called when connection with crypt_connection_id receives a data packet of length.
+ *
+ * The set function should return -1 on failure and 0 on success.
+ * Object and id will be passed to this function untouched.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int connection_data_handler(Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
+                            int id, uint8_t *data, uint16_t length), void *object, int id);
+
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
@@ -134,17 +186,11 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  */
 int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
 
-/* Start a secure connection with other peer who has public_key and ip_port.
- *
- *  return -1 if failure.
- *  return crypt_connection_id of the initialized connection if everything went well.
- */
-int crypto_connect(Net_Crypto *c, uint8_t *public_key, IP_Port ip_port);
 
 /* Kill a crypto connection.
  *
- *  return 0 if killed successfully.
- *  return 1 if there was a problem.
+ * return -1 on failure.
+ * return 0 on success.
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 

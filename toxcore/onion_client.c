@@ -796,14 +796,12 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     return friend_num;
 }
 
-/* Get the ip of friend friendnum and put it in ip_port
+/* Copy friends DHT public key into dht_key.
  *
- *  return -1, -- if client_id does NOT refer to a friend
- *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
- *  return  1, ip if client_id refers to a friend and we found him
- *
+ * return -1 on failure (no key copied).
+ * return 0 on success (key copied).
  */
-int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
+int onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
@@ -814,8 +812,27 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
     if (!onion_c->friends_list[friend_num].is_fake_clientid)
         return -1;
 
-    return DHT_getfriendip(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, ip_port);
+    memcpy(dht_key, onion_c->friends_list[friend_num].fake_client_id, crypto_box_PUBLICKEYBYTES);
+    return 0;
 }
+
+/* Get the ip of friend friendnum and put it in ip_port
+ *
+ *  return -1, -- if client_id does NOT refer to a friend
+ *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
+ *  return  1, ip if client_id refers to a friend and we found him
+ *
+ */
+int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
+{
+    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
+
+    if (onion_getfriend_DHT_pubkey(onion_c, friend_num, dht_public_key) != 0)
+        return -1;
+
+    return DHT_getfriendip(onion_c->dht, dht_public_key, ip_port);
+}
+
 
 /* Set if friend is online or not.
  * NOTE: This function is there and should be used so that we don't send useless packets to the friend if he is online.

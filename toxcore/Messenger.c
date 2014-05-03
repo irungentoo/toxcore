@@ -1857,12 +1857,307 @@ static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t)
     }
 }
 
+static int handle_status(void *object, int i, uint8_t status)
+{
+    uint64_t temp_time = unix_time();
+    Messenger *m = object;
+
+    if (status) { /* Went online. */
+        set_friend_status(m, i, FRIEND_ONLINE);
+        m->friendlist[i].name_sent = 0;
+        m->friendlist[i].userstatus_sent = 0;
+        m->friendlist[i].statusmessage_sent = 0;
+        m->friendlist[i].ping_lastrecv = temp_time;
+    } else { /* Went offline. */
+        m->friendlist[i].crypt_connection_id = -1;
+
+        if (m->friendlist[i].status == FRIEND_ONLINE) {
+            set_friend_status(m, i, FRIEND_CONFIRMED);
+        }
+    }
+
+    return 0;
+}
+
+static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
+{
+    if (len == 0)
+        return -1;
+
+    Messenger *m = object;
+    uint64_t temp_time = unix_time();
+    uint8_t packet_id = temp[0];
+    uint8_t *data = temp + 1;
+    uint32_t data_length = len - 1;
+
+    if (m->friendlist[i].status != FRIEND_ONLINE)
+        return -1;
+
+    switch (packet_id) {
+        case PACKET_ID_ALIVE: {
+            m->friendlist[i].ping_lastrecv = temp_time;
+            break;
+        }
+
+        case PACKET_ID_NICKNAME: {
+            if (data_length > MAX_NAME_LENGTH || data_length == 0)
+                break;
+
+            /* Make sure the NULL terminator is present. */
+            uint8_t data_terminated[data_length + 1];
+            memcpy(data_terminated, data, data_length);
+            data_terminated[data_length] = 0;
+
+            /* inform of namechange before we overwrite the old name */
+            if (m->friend_namechange)
+                m->friend_namechange(m, i, data_terminated, data_length, m->friend_namechange_userdata);
+
+            memcpy(m->friendlist[i].name, data_terminated, data_length);
+            m->friendlist[i].name_length = data_length;
+
+            break;
+        }
+
+        case PACKET_ID_STATUSMESSAGE: {
+            if (data_length == 0 || data_length > MAX_STATUSMESSAGE_LENGTH)
+                break;
+
+            /* Make sure the NULL terminator is present. */
+            uint8_t data_terminated[data_length + 1];
+            memcpy(data_terminated, data, data_length);
+            data_terminated[data_length] = 0;
+
+            if (m->friend_statusmessagechange)
+                m->friend_statusmessagechange(m, i, data_terminated, data_length,
+                                              m->friend_statuschange_userdata);
+
+            set_friend_statusmessage(m, i, data_terminated, data_length);
+            break;
+        }
+
+        case PACKET_ID_USERSTATUS: {
+            if (data_length != 1)
+                break;
+
+            USERSTATUS status = data[0];
+
+            if (status >= USERSTATUS_INVALID)
+                break;
+
+            if (m->friend_userstatuschange)
+                m->friend_userstatuschange(m, i, status, m->friend_userstatuschange_userdata);
+
+            set_friend_userstatus(m, i, status);
+            break;
+        }
+
+        case PACKET_ID_TYPING: {
+            if (data_length != 1)
+                break;
+
+            uint8_t typing = data[0];
+
+            set_friend_typing(m, i, typing);
+
+            if (m->friend_typingchange)
+                m->friend_typingchange(m, i, typing, m->friend_typingchange_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_MESSAGE: {
+            uint8_t *message_id = data;
+            uint8_t message_id_length = 4;
+
+            if (data_length <= message_id_length)
+                break;
+
+            uint8_t *message = data + message_id_length;
+            uint16_t message_length = data_length - message_id_length;
+
+            /* Make sure the NULL terminator is present. */
+            uint8_t message_terminated[message_length + 1];
+            memcpy(message_terminated, message, message_length);
+            message_terminated[message_length] = 0;
+
+            if (m->friendlist[i].receives_read_receipts) {
+                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
+            }
+
+            if (m->friend_message)
+                (*m->friend_message)(m, i, message_terminated, message_length, m->friend_message_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_ACTION: {
+            uint8_t *message_id = data;
+            uint8_t message_id_length = 4;
+
+            if (data_length <= message_id_length)
+                break;
+
+            uint8_t *action = data + message_id_length;
+            uint16_t action_length = data_length - message_id_length;
+
+            /* Make sure the NULL terminator is present. */
+            uint8_t action_terminated[action_length + 1];
+            memcpy(action_terminated, action, action_length);
+            action_terminated[action_length] = 0;
+
+            if (m->friendlist[i].receives_read_receipts) {
+                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
+            }
+
+            if (m->friend_action)
+                (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_RECEIPT: {
+            uint32_t msgid;
+
+            if (data_length < sizeof(msgid))
+                break;
+
+            memcpy(&msgid, data, sizeof(msgid));
+            msgid = ntohl(msgid);
+
+            if (m->read_receipt)
+                (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_INVITE_GROUPCHAT: {
+            if (data_length != crypto_box_PUBLICKEYBYTES)
+                break;
+
+            if (m->group_invite)
+                (*m->group_invite)(m, i, data, m->group_invite_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_JOIN_GROUPCHAT: {
+            if (data_length != crypto_box_PUBLICKEYBYTES * 2)
+                break;
+
+            int groupnum = group_num(m, data);
+
+            if (groupnum == -1)
+                break;
+
+            if (!group_invited(m, i, groupnum))
+                break;
+
+            group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
+            /* This is just there to speedup joining. */
+            chat_bootstrap(m->chats[groupnum], get_friend_ipport(m, i), data + crypto_box_PUBLICKEYBYTES);
+            break;
+        }
+
+        case PACKET_ID_FILE_SENDREQUEST: {
+            if (data_length < 1 + sizeof(uint64_t) + 1)
+                break;
+
+            uint8_t filenumber = data[0];
+            uint64_t filesize;
+            net_to_host(data + 1, sizeof(filesize));
+            memcpy(&filesize, data + 1, sizeof(filesize));
+            m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
+            m->friendlist[i].file_receiving[filenumber].size = filesize;
+            m->friendlist[i].file_receiving[filenumber].transferred = 0;
+
+            /* Force NULL terminate file name. */
+            uint8_t filename_terminated[data_length - 1 - sizeof(uint64_t) + 1];
+            memcpy(filename_terminated, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t));
+            filename_terminated[data_length - 1 - sizeof(uint64_t)] = 0;
+
+            if (m->file_sendrequest)
+                (*m->file_sendrequest)(m, i, filenumber, filesize, filename_terminated, data_length - 1 - sizeof(uint64_t),
+                                       m->file_sendrequest_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_FILE_CONTROL: {
+            if (data_length < 3)
+                break;
+
+            uint8_t send_receive = data[0];
+            uint8_t filenumber = data[1];
+            uint8_t control_type = data[2];
+
+            if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3) == -1)
+                break;
+
+            if (m->file_filecontrol)
+                (*m->file_filecontrol)(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3,
+                                       m->file_filecontrol_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_FILE_DATA: {
+            if (data_length < 2)
+                break;
+
+            uint8_t filenumber = data[0];
+
+            if (m->friendlist[i].file_receiving[filenumber].status == FILESTATUS_NONE)
+                break;
+
+            m->friendlist[i].file_receiving[filenumber].transferred += (data_length - 1);
+
+            if (m->file_filedata)
+                (*m->file_filedata)(m, i, filenumber, data + 1, data_length - 1, m->file_filedata_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_MSI: {
+            if (data_length == 0)
+                break;
+
+            if (m->msi_packet)
+                (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata);
+        }
+
+        default: {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static int friend_new_connection(Messenger *m, int32_t friendnumber, uint8_t *real_public_key)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    if (m->friendlist[friendnumber].crypt_connection_id != -1) {
+        return -1;
+    }
+
+    int id = new_crypto_connection(m->net_crypto, real_public_key);
+
+    if (id == -1)
+        return -1;
+
+    m->friendlist[friendnumber].crypt_connection_id = id;
+    connection_status_handler(m->net_crypto, id, &handle_status, m, friendnumber);
+    connection_data_handler(m->net_crypto, id, &handle_packet, m, friendnumber);
+    return 0;
+
+}
+
 /* TODO: Make this function not suck. */
 void do_friends(Messenger *m)
 {
     uint32_t i;
-    int len;
-    uint8_t temp[MAX_CRYPTO_DATA_SIZE];
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < m->numfriends; ++i) {
@@ -1886,35 +2181,21 @@ void do_friends(Messenger *m)
                 check_friend_request_timed_out(m, i, temp_time);
             }
 
+            friend_new_connection(m, i, m->friendlist[i].client_id);
+            uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
+
+            if (onion_getfriend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key) == 0) {
+                set_conection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key);
+            }
+
             IP_Port friendip;
-            int friendok = onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip);
 
-            switch (is_cryptoconnected(m->net_crypto, m->friendlist[i].crypt_connection_id)) {
-                case CRYPTO_CONN_NO_CONNECTION:
-                    if (friendok == 1)
-                        m->friendlist[i].crypt_connection_id = crypto_connect(m->net_crypto, m->friendlist[i].client_id, friendip);
-
-                    break;
-
-                case CRYPTO_CONN_ESTABLISHED: /* Connection is established. */
-                    set_friend_status(m, i, FRIEND_ONLINE);
-                    m->friendlist[i].name_sent = 0;
-                    m->friendlist[i].userstatus_sent = 0;
-                    m->friendlist[i].statusmessage_sent = 0;
-                    m->friendlist[i].ping_lastrecv = temp_time;
-                    break;
-
-                case CRYPTO_CONN_TIMED_OUT:
-                    crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
-                    m->friendlist[i].crypt_connection_id = -1;
-                    break;
-
-                default:
-                    break;
+            if (onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip) == 1) {
+                set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, friendip);
             }
         }
 
-        while (m->friendlist[i].status == FRIEND_ONLINE) { /* friend is online. */
+        if (m->friendlist[i].status == FRIEND_ONLINE) { /* friend is online. */
             if (m->friendlist[i].name_sent == 0) {
                 if (m_sendname(m, i, m->name, m->name_length))
                     m->friendlist[i].name_sent = 1;
@@ -1939,265 +2220,18 @@ void do_friends(Messenger *m)
                 send_ping(m, i);
             }
 
-            len = read_cryptpacket(m->net_crypto, m->friendlist[i].crypt_connection_id, temp);
-
-            if (len > 0) {
-                uint8_t packet_id = temp[0];
-                uint8_t *data = temp + 1;
-                uint32_t data_length = len - 1;
-
-                switch (packet_id) {
-                    case PACKET_ID_ALIVE: {
-                        m->friendlist[i].ping_lastrecv = temp_time;
-                        break;
-                    }
-
-                    case PACKET_ID_NICKNAME: {
-                        if (data_length > MAX_NAME_LENGTH || data_length == 0)
-                            break;
-
-                        /* Make sure the NULL terminator is present. */
-                        uint8_t data_terminated[data_length + 1];
-                        memcpy(data_terminated, data, data_length);
-                        data_terminated[data_length] = 0;
-
-                        /* inform of namechange before we overwrite the old name */
-                        if (m->friend_namechange)
-                            m->friend_namechange(m, i, data_terminated, data_length, m->friend_namechange_userdata);
-
-                        memcpy(m->friendlist[i].name, data_terminated, data_length);
-                        m->friendlist[i].name_length = data_length;
-
-                        break;
-                    }
-
-                    case PACKET_ID_STATUSMESSAGE: {
-                        if (data_length == 0 || data_length > MAX_STATUSMESSAGE_LENGTH)
-                            break;
-
-                        /* Make sure the NULL terminator is present. */
-                        uint8_t data_terminated[data_length + 1];
-                        memcpy(data_terminated, data, data_length);
-                        data_terminated[data_length] = 0;
-
-                        if (m->friend_statusmessagechange)
-                            m->friend_statusmessagechange(m, i, data_terminated, data_length,
-                                                          m->friend_statuschange_userdata);
-
-                        set_friend_statusmessage(m, i, data_terminated, data_length);
-                        break;
-                    }
-
-                    case PACKET_ID_USERSTATUS: {
-                        if (data_length != 1)
-                            break;
-
-                        USERSTATUS status = data[0];
-
-                        if (status >= USERSTATUS_INVALID)
-                            break;
-
-                        if (m->friend_userstatuschange)
-                            m->friend_userstatuschange(m, i, status, m->friend_userstatuschange_userdata);
-
-                        set_friend_userstatus(m, i, status);
-                        break;
-                    }
-
-                    case PACKET_ID_TYPING: {
-                        if (data_length != 1)
-                            break;
-
-                        uint8_t typing = data[0];
-
-                        set_friend_typing(m, i, typing);
-
-                        if (m->friend_typingchange)
-                            m->friend_typingchange(m, i, typing, m->friend_typingchange_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_MESSAGE: {
-                        uint8_t *message_id = data;
-                        uint8_t message_id_length = 4;
-
-                        if (data_length <= message_id_length)
-                            break;
-
-                        uint8_t *message = data + message_id_length;
-                        uint16_t message_length = data_length - message_id_length;
-
-                        /* Make sure the NULL terminator is present. */
-                        uint8_t message_terminated[message_length + 1];
-                        memcpy(message_terminated, message, message_length);
-                        message_terminated[message_length] = 0;
-
-                        if (m->friendlist[i].receives_read_receipts) {
-                            write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
-                        }
-
-                        if (m->friend_message)
-                            (*m->friend_message)(m, i, message_terminated, message_length, m->friend_message_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_ACTION: {
-                        uint8_t *message_id = data;
-                        uint8_t message_id_length = 4;
-
-                        if (data_length <= message_id_length)
-                            break;
-
-                        uint8_t *action = data + message_id_length;
-                        uint16_t action_length = data_length - message_id_length;
-
-                        /* Make sure the NULL terminator is present. */
-                        uint8_t action_terminated[action_length + 1];
-                        memcpy(action_terminated, action, action_length);
-                        action_terminated[action_length] = 0;
-
-                        if (m->friendlist[i].receives_read_receipts) {
-                            write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
-                        }
-
-                        if (m->friend_action)
-                            (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_RECEIPT: {
-                        uint32_t msgid;
-
-                        if (data_length < sizeof(msgid))
-                            break;
-
-                        memcpy(&msgid, data, sizeof(msgid));
-                        msgid = ntohl(msgid);
-
-                        if (m->read_receipt)
-                            (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_INVITE_GROUPCHAT: {
-                        if (data_length != crypto_box_PUBLICKEYBYTES)
-                            break;
-
-                        if (m->group_invite)
-                            (*m->group_invite)(m, i, data, m->group_invite_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_JOIN_GROUPCHAT: {
-                        if (data_length != crypto_box_PUBLICKEYBYTES * 2)
-                            break;
-
-                        int groupnum = group_num(m, data);
-
-                        if (groupnum == -1)
-                            break;
-
-                        if (!group_invited(m, i, groupnum))
-                            break;
-
-                        group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
-                        /* This is just there to speedup joining. */
-                        chat_bootstrap(m->chats[groupnum], get_friend_ipport(m, i), data + crypto_box_PUBLICKEYBYTES);
-                        break;
-                    }
-
-                    case PACKET_ID_FILE_SENDREQUEST: {
-                        if (data_length < 1 + sizeof(uint64_t) + 1)
-                            break;
-
-                        uint8_t filenumber = data[0];
-                        uint64_t filesize;
-                        net_to_host(data + 1, sizeof(filesize));
-                        memcpy(&filesize, data + 1, sizeof(filesize));
-                        m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
-                        m->friendlist[i].file_receiving[filenumber].size = filesize;
-                        m->friendlist[i].file_receiving[filenumber].transferred = 0;
-
-                        /* Force NULL terminate file name. */
-                        uint8_t filename_terminated[data_length - 1 - sizeof(uint64_t) + 1];
-                        memcpy(filename_terminated, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t));
-                        filename_terminated[data_length - 1 - sizeof(uint64_t)] = 0;
-
-                        if (m->file_sendrequest)
-                            (*m->file_sendrequest)(m, i, filenumber, filesize, filename_terminated, data_length - 1 - sizeof(uint64_t),
-                                                   m->file_sendrequest_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_FILE_CONTROL: {
-                        if (data_length < 3)
-                            break;
-
-                        uint8_t send_receive = data[0];
-                        uint8_t filenumber = data[1];
-                        uint8_t control_type = data[2];
-
-                        if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3) == -1)
-                            break;
-
-                        if (m->file_filecontrol)
-                            (*m->file_filecontrol)(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3,
-                                                   m->file_filecontrol_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_FILE_DATA: {
-                        if (data_length < 2)
-                            break;
-
-                        uint8_t filenumber = data[0];
-
-                        if (m->friendlist[i].file_receiving[filenumber].status == FILESTATUS_NONE)
-                            break;
-
-                        m->friendlist[i].file_receiving[filenumber].transferred += (data_length - 1);
-
-                        if (m->file_filedata)
-                            (*m->file_filedata)(m, i, filenumber, data + 1, data_length - 1, m->file_filedata_userdata);
-
-                        break;
-                    }
-
-                    case PACKET_ID_MSI: {
-                        if (data_length == 0)
-                            break;
-
-                        if (m->msi_packet)
-                            (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata);
-                    }
-
-                    default: {
-                        break;
-                    }
-                }
-            } else {
-                if (is_cryptoconnected(m->net_crypto,
-                                       m->friendlist[i].crypt_connection_id) == CRYPTO_CONN_TIMED_OUT) { /* If the connection timed out, kill it. */
-                    crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
-                    m->friendlist[i].crypt_connection_id = -1;
-                    set_friend_status(m, i, FRIEND_CONFIRMED);
-                }
-
-                if (m->friendlist[i].ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
-                    /* If we stopped recieving ping packets, kill it. */
-                    crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
-                    m->friendlist[i].crypt_connection_id = -1;
-                    set_friend_status(m, i, FRIEND_CONFIRMED);
-                }
-
-                break;
+            if (is_cryptoconnected(m->net_crypto,
+                                   m->friendlist[i].crypt_connection_id) == CRYPTO_CONN_TIMED_OUT) { /* If the connection timed out, kill it. */
+                crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
+                m->friendlist[i].crypt_connection_id = -1;
+                set_friend_status(m, i, FRIEND_CONFIRMED);
+            }
+
+            if (m->friendlist[i].ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
+                /* If we stopped recieving ping packets, kill it. */
+                crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
+                m->friendlist[i].crypt_connection_id = -1;
+                set_friend_status(m, i, FRIEND_CONFIRMED);
             }
         }
     }
