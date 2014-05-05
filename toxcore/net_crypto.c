@@ -459,6 +459,8 @@ static int64_t read_data_beg_buffer(Packets_Array *array, Packet_Data *data)
     memcpy(data, array->buffer[num], sizeof(Packet_Data));
     uint32_t id = array->buffer_start;
     ++array->buffer_start;
+    free(array->buffer[num]);
+    array->buffer[num] = NULL;
     return id;
 }
 
