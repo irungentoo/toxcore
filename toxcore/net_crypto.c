@@ -358,6 +358,138 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
     return 0;
 }
 
+/** START: Array Related functions **/
+
+
+/* Return number of packets in array
+ * Note that holes are counted too.
+ */
+static uint32_t num_packets_array(Packets_Array *array)
+{
+    return array->buffer_end - array->buffer_start;
+}
+
+/* Add data with packet number to array.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int add_data_to_buffer(Packets_Array *array, uint32_t number, Packet_Data *data)
+{
+    if (number - array->buffer_start > CRYPTO_PACKET_BUFFER_SIZE)
+        return -1;
+
+    uint32_t num = number % CRYPTO_PACKET_BUFFER_SIZE;
+
+    if (array->buffer[num])
+        return -1;
+
+    Packet_Data *new_d = malloc(sizeof(Packet_Data));
+
+    if (new_d == NULL)
+        return -1;
+
+    memcpy(new_d, data, sizeof(Packet_Data));
+    array->buffer[num] = new_d;
+
+    if ((number - array->buffer_start) >= (array->buffer_end - array->buffer_start))
+        array->buffer_end = number + 1;
+
+    return 0;
+}
+
+/* Copy data with packet number to data.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int copy_data_number(Packets_Array *array, Packet_Data *data, uint32_t number)
+{
+    uint32_t num_spots = array->buffer_end - array->buffer_start;
+
+    if (array->buffer_end - number > num_spots || number - array->buffer_start >= num_spots)
+        return -1;
+
+    uint32_t num = number % CRYPTO_PACKET_BUFFER_SIZE;
+
+    if (!array->buffer[num])
+        return -1;
+
+    memcpy(data, array->buffer[num], sizeof(Packet_Data));
+    return 0;
+}
+
+/* Add data to end of array.
+ *
+ * return -1 on failure.
+ * return packet number on success.
+ */
+static int64_t add_data_end_of_buffer(Packets_Array *array, Packet_Data *data)
+{
+    if (num_packets_array(array) >= CRYPTO_PACKET_BUFFER_SIZE)
+        return -1;
+
+    Packet_Data *new_d = malloc(sizeof(Packet_Data));
+
+    if (new_d == NULL)
+        return -1;
+
+    memcpy(new_d, data, sizeof(Packet_Data));
+    uint32_t id = array->buffer_end;
+    array->buffer[id % CRYPTO_PACKET_BUFFER_SIZE] = new_d;
+    ++array->buffer_end;
+    return id;
+}
+
+/* Read data from begginning of array.
+ *
+ * return -1 on failure.
+ * return packet number on success.
+ */
+static int64_t read_data_beg_buffer(Packets_Array *array, Packet_Data *data)
+{
+    if (array->buffer_end == array->buffer_start)
+        return -1;
+
+    uint32_t num = array->buffer_start % CRYPTO_PACKET_BUFFER_SIZE;
+
+    if (!array->buffer[num])
+        return -1;
+
+    memcpy(data, array->buffer[num], sizeof(Packet_Data));
+    uint32_t id = array->buffer_start;
+    ++array->buffer_start;
+    return id;
+}
+
+/* Delete all packets in array before number (but not number)
+ *
+ * return -1 on failure.
+ * return 0 on success
+ */
+static int clear_buffer_until(Packets_Array *array, uint32_t number)
+{
+    uint32_t num_spots = array->buffer_end - array->buffer_start;
+
+    if (array->buffer_end - number >= num_spots || number - array->buffer_start > num_spots)
+        return -1;
+
+    uint32_t i;
+
+    for (i = array->buffer_start; i != number; ++i) {
+        uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
+
+        if (array->buffer[num]) {
+            free(array->buffer[num]);
+            array->buffer[num] = NULL;
+        }
+    }
+
+    array->buffer_start = i;
+    return 0;
+}
+/** END: Array Related functions **/
+
 #define MAX_DATA_DATA_PACKET_SIZE (MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + crypto_box_MACBYTES))
 
 static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint16_t length)
@@ -381,6 +513,47 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
     increment_nonce(conn->sent_nonce);
     conn->last_data_packet_sent = current_time_monotonic(); //TODO remove this.
     return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
+}
+
+static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint32_t buffer_start, uint32_t num,
+                                   uint8_t *data, uint32_t length)
+{
+    num = htonl(num);
+    buffer_start = htonl(buffer_start);
+    uint8_t packet[sizeof(uint32_t) + sizeof(uint32_t) + length];
+    memcpy(packet, &buffer_start, sizeof(uint32_t));
+    memcpy(packet + sizeof(uint32_t), &num, sizeof(uint32_t));
+    memcpy(packet + (sizeof(uint32_t) * 2), data, length);
+
+    return send_data_packet(c, crypt_connection_id, packet, sizeof(packet));
+}
+
+/*  return -1 if data could not be put in packet queue.
+ *  return positive packet number if data was put into the queue.
+ */
+static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
+{
+    if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
+        return -1;
+
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    Packet_Data dt;
+    dt.time = current_time_monotonic();
+    dt.length = length;
+    memcpy(dt.data, data, length);
+    int64_t packet_num = add_data_end_of_buffer(&conn->send_array, &dt);
+
+    if (packet_num == -1)
+        return -1;
+
+    if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) != 0)
+        printf("send_data_packet failed\n");
+
+    return packet_num;
 }
 
 /* Get the lowest 2 bytes from the nonce and convert
@@ -432,6 +605,7 @@ static int handle_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *d
 
     return len;
 }
+
 
 /* Add a new temp packet to send repeatedly.
  *
@@ -536,6 +710,80 @@ static int create_send_handshake(Net_Crypto *c, int crypt_connection_id, uint8_t
     return 0;
 }
 
+/* Handle a recieved data packet.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint8_t *packet, uint16_t length)
+{
+    if (length > MAX_CRYPTO_PACKET_SIZE || length <= CRYPTO_DATA_PACKET_MIN_SIZE)
+        return -1;
+
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    uint8_t data[MAX_DATA_DATA_PACKET_SIZE];
+    int len = handle_data_packet(c, crypt_connection_id, data, packet, length);
+
+    if (len <= (int)(sizeof(uint32_t) * 2))
+        return -1;
+
+    uint32_t buffer_start, num;
+    memcpy(&buffer_start, data, sizeof(uint32_t));
+    memcpy(&num, data + sizeof(uint32_t), sizeof(uint32_t));
+    buffer_start = ntohl(buffer_start);
+    num = ntohl(num);
+
+    if (buffer_start != conn->send_array.buffer_start && clear_buffer_until(&conn->send_array, buffer_start) != 0)
+        return -1;
+
+    uint8_t *real_data = data + (sizeof(uint32_t) * 2);
+    uint16_t real_length = len - (sizeof(uint32_t) * 2);
+
+    while (real_data[0] == 0) { /* Remove Padding */
+        ++real_data;
+        --real_length;
+
+        if (real_length == 0)
+            return -1;
+    }
+
+    if (real_data[0] == PACKET_ID_REQUEST) {
+        if (real_length <= 1)
+            return -1;
+
+
+        //TODO
+    } else {
+        Packet_Data dt;
+        dt.time = current_time_monotonic();
+        dt.length = real_length;
+        memcpy(dt.data, real_data, real_length);
+
+        if (add_data_to_buffer(&conn->recv_array, num, &dt) != 0)
+            return -1;
+
+        while (read_data_beg_buffer(&conn->recv_array, &dt) != -1) {
+            if (conn->connection_data_callback)
+                conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, dt.data,
+                                               dt.length);
+        }
+    }
+
+    if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
+        if (conn->connection_status_callback)
+            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
+
+        clear_temp_packet(c, crypt_connection_id);
+        conn->status = CRYPTO_CONN_ESTABLISHED;
+    }
+
+    return 0;
+}
+
 /* Handle a packet that was recieved for the connection.
  *
  * return -1 on failure.
@@ -598,24 +846,7 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
 
         case NET_PACKET_CRYPTO_DATA: {
             if (conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED) {
-                uint8_t data[MAX_DATA_DATA_PACKET_SIZE];
-                int len = handle_data_packet(c, crypt_connection_id, data, packet, length);
-
-                if (len == -1)
-                    return -1;
-
-                if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
-                    if (conn->connection_status_callback)
-                        conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
-
-                    clear_temp_packet(c, crypt_connection_id);
-                    conn->status = CRYPTO_CONN_ESTABLISHED;
-                }
-
-                if (conn->connection_data_callback)
-                    conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, data, len);
-
-                //TODO add buffers and packet requesting.
+                return handle_data_packet_helper(c, crypt_connection_id, packet, length);
             } else {
                 return -1;
             }
@@ -1053,8 +1284,8 @@ static void send_crypto_packets(Net_Crypto *c)
 
         if (conn->status >= CRYPTO_CONN_NOT_CONFIRMED
                 && (500ULL + conn->last_data_packet_sent) < temp_time) {//TODO remove this.
-            uint8_t data[4] = {};
-            send_data_packet(c, i, data, 4);
+            uint8_t data[4] = {5, 2};
+            send_lossless_packet(c, i, data, 4);
         }
     }
 }
@@ -1065,20 +1296,38 @@ static void send_crypto_packets(Net_Crypto *c)
  */
 uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
 {
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return 0;
+
     //TODO
-    return 0;
+    return CRYPTO_PACKET_BUFFER_SIZE - num_packets_array(&conn->send_array);
 }
 
-/*  return 0 if data could not be put in packet queue.
- *  return 1 if data was put into the queue.
- */
-int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
-{
-    //TODO
-    if (send_data_packet(c, crypt_connection_id, data, length) == 0)
-        return 1;
 
-    return 0;
+
+
+/*  return -1 if data could not be put in packet queue.
+ *  return positive packet number if data was put into the queue.
+ */
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
+{
+    if (length == 0)
+        return -1;
+
+    if (data[0] < CRYPTO_RESERVED_PACKETS)
+        return -1;
+
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    if (conn->status != CRYPTO_CONN_ESTABLISHED)
+        return -1;
+
+    return send_lossless_packet(c, crypt_connection_id, data, length);
 }
 
 /* Kill a crypto connection.

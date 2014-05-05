@@ -849,7 +849,7 @@ int write_cryptpacket_id(Messenger *m, int32_t friendnumber, uint8_t packet_id, 
     if (length != 0)
         memcpy(packet + 1, data, length);
 
-    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1);
+    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1) != -1;
 }
 
 /**********GROUP CHATS************/

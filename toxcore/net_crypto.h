@@ -35,18 +35,37 @@
 #define CRYPTO_CONN_ESTABLISHED 4
 #define CRYPTO_CONN_TIMED_OUT 5
 
-#define CRYPTO_PACKET_BUFFER_SIZE 64
+#define CRYPTO_PACKET_BUFFER_SIZE 64 /* Must be a power of 2 */
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
 
+#define CRYPTO_DATA_PACKET_MIN_SIZE (1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + crypto_box_MACBYTES)
+
 /* Max size of data in packets TODO*/
-#define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + crypto_box_MACBYTES))
+#define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - CRYPTO_DATA_PACKET_MIN_SIZE)
 
 /* Interval in ms between sending cookie request/handshake packets. */
 #define CRYPTO_SEND_PACKET_INTERVAL 500
 /* The maximum number of times we try to send the cookie request and handshake
    before giving up. */
-#define MAX_NUM_SENDPACKET_TRIES 10
+#define MAX_NUM_SENDPACKET_TRIES 8
+
+#define PACKET_ID_PADDING 0
+#define PACKET_ID_REQUEST 1
+
+#define CRYPTO_RESERVED_PACKETS 16
+
+typedef struct {
+    uint64_t time;
+    uint16_t length;
+    uint8_t data[MAX_CRYPTO_DATA_SIZE];
+} Packet_Data;
+
+typedef struct {
+    Packet_Data *buffer[CRYPTO_PACKET_BUFFER_SIZE];
+    uint32_t  buffer_start;
+    uint32_t  buffer_end; /* packet numbers in array: {buffer_start, buffer_end) */
+} Packets_Array;
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
@@ -74,6 +93,8 @@ typedef struct {
     IP_Port ip_port; /* The ip and port to contact this guy directly.*/
     uint64_t direct_lastrecv_time; /* The Time at which we last received a direct packet in ms. */
 
+    Packets_Array send_array;
+    Packets_Array recv_array;
 
     int (*connection_status_callback)(void *object, int id, uint8_t status);
     void *connection_status_callback_object;
@@ -99,6 +120,7 @@ typedef struct {
     DHT *dht;
 
     Crypto_Connection *crypto_connections;
+    //TCP_Client_Connection *tcp_connections;
 
     uint32_t crypto_connections_length; /* Length of connections array. */
 
@@ -182,10 +204,10 @@ int connection_data_handler(Net_Crypto *c, int crypt_connection_id, int (*connec
  */
 uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id);
 
-/*  return 0 if data could not be put in packet queue.
- *  return 1 if data was put into the queue.
+/*  return -1 if data could not be put in packet queue.
+ *  return positive packet number if data was put into the queue.
  */
-int write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
 
 
 /* Kill a crypto connection.
