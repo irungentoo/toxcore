@@ -410,7 +410,7 @@ RTPHeader *build_header ( RTPSession *session )
     ADD_SETTING_PAYLOAD ( _retu, session->payload_type );
 
     _retu->sequnum = session->sequnum;
-    _retu->timestamp = ((uint32_t)(current_time() / 1000)); /* micro to milli */
+    _retu->timestamp = current_time_monotonic(); /* milliseconds */
     _retu->ssrc = session->ssrc;
 
     int i;
