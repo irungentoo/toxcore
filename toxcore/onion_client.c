@@ -253,16 +253,9 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, uint8_t *publ
     int index = -1;
     uint32_t i;
 
-    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
-        if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT)
-                || id_closest(reference_id, list_nodes[i].client_id, public_key) == 2) {
-            index = i;
-
-            if (i != 0)
-                break;
-        } else {
-            break;
-        }
+    if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
+            || id_closest(reference_id, list_nodes[0].client_id, public_key) == 2) {
+        index = 0;
     }
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
