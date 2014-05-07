@@ -627,7 +627,7 @@ static int handle_dht_fakeid(void *object, IP_Port source, uint8_t *source_pubke
     if ((uint32_t)len != length - (DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES))
         return 1;
 
-    if (memcpy(source_pubkey, packet, crypto_box_PUBLICKEYBYTES) != 0)
+    if (memcmp(source_pubkey, plain + 1 + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES) != 0)
         return 1;
 
     return handle_fakeid_announce(onion_c, packet, plain, len);
