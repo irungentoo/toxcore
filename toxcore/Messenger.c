@@ -1747,12 +1747,30 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
 
     IP ip;
-    ip_init(&ip, ipv6enabled);
-    m->net = new_networking(ip, TOX_PORT_DEFAULT);
 
-    if (m->net == NULL) {
-        free(m);
-        return NULL;
+    /* Issue #771 - https://github.com/irungentoo/ProjectTox-Core/issues/771 */
+    int tries = 0;
+    while( m->net == NULL )
+    {
+        ip_init(&ip, ipv6enabled);
+        m->net = new_networking(ip, TOX_PORT_DEFAULT);
+
+        if( m != NULL )
+            break;
+
+        tries++;
+
+        if (tries > 3) { // A minute and a half is enough wait time.
+            free(m);
+            return NULL;
+        }
+
+// Why the fuck isn't sleep in the C standard.
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+        Sleep(30000);
+#else // !WIN32
+        sleep(30);
+#endif
     }
 
     m->net_crypto = new_net_crypto(m->net);
@@ -1851,6 +1869,13 @@ void do_friends(Messenger *m)
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < m->numfriends; ++i) {
+        if (m->friendlist[i].status == FRIEND_IGNORE) {
+            if(m->friendlist[i].crypt_connection_id != -1) {
+                crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
+                m->friendlist[i].crypt_connection_id = -1;
+            }
+            break;
+        }
         if (m->friendlist[i].status == FRIEND_ADDED) {
             int fr = send_friendrequest(m->onion_c, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam,
                                         m->friendlist[i].info,

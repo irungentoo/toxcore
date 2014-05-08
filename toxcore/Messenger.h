@@ -64,6 +64,7 @@ enum {
     FRIEND_REQUESTED,
     FRIEND_CONFIRMED,
     FRIEND_ONLINE,
+    FRIEND_IGNORE,
 };
 
 /* Errors for m_addfriend
