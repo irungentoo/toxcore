@@ -88,7 +88,7 @@ enum {
 /* Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 5
 
-/* If no packets are recieved from friend in this time interval, kill the connection. */
+/* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
 
 /* USERSTATUS -
@@ -352,7 +352,7 @@ int setname(Messenger *m, uint8_t *name, uint16_t length);
 
 /*
  * Get your nickname.
- * m - The messanger context to use.
+ * m - The messenger context to use.
  * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
  *
  *  return length of the name.

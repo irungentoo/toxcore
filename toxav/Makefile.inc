@@ -18,15 +18,18 @@ libtoxav_la_SOURCES = ../toxav/event.h \
 
 libtoxav_la_CFLAGS = -I../toxcore \
                      -I../toxav \
+                     $(LIBSODIUM_CFLAGS) \
                      $(NACL_CFLAGS) \
                      $(AV_CFLAGS) \
                      $(PTHREAD_CFLAGS)
 
 libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
+                      $(LIBSODIUM_LDFLAGS) \
                       $(NACL_LDFLAGS) \
                       $(EXTRA_LT_LDFLAGS)
 
 libtoxav_la_LIBADD =  libtoxcore.la \
+                      $(LIBSODIUM_LIBS) \
                       $(NACL_LIBS) \
                       $(PTHREAD_LIBS) \
                       $(AV_LIBS)

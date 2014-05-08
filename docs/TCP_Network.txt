@@ -81,7 +81,7 @@ received
 client sent the server the public key and the public key we sent to the client, 
 the next with base nonce + 1...)
 
-The connection is set to an unconfirmed state until a packet is recieved and 
+The connection is set to an unconfirmed state until a packet is received and 
 decrypted correctly using the information in the handshake.
 
 each packet sent to/from the server has an id (the first byte of the plain text 
@@ -135,7 +135,7 @@ responses must be sent to the proper client.
 
 Ping responses must have the same ping_id as the request.
 
-If the server recieves a ping packet he must respond with a ping response.
+If the server receives a ping packet he must respond with a ping response.
 
 The server will send a ping packet to clients every 30 seconds, they have 30 
 seconds to respond, if they don't the connection is deleted.

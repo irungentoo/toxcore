@@ -34,7 +34,7 @@ msi_session_t* - pointer to a newly created msi session handler.
 ###msi_session_t reference:
 
 How to handle msi session:
-Controling is done via callbacks and action handlers.
+Controlling is done via callbacks and action handlers.
 First register callbacks for every state/action received and make sure
 NOT TO PLACE SOMETHING LIKE LOOPS THAT TAKES A LOT OF TIME TO EXECUTE; every callback is being called 
 directly from event loop. You can find examples in phone.c.

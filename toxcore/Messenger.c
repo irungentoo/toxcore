@@ -1835,6 +1835,10 @@ void kill_messenger(Messenger *m)
     kill_net_crypto(m->net_crypto);
     kill_DHT(m->dht);
     kill_networking(m->net);
+    for (i = 0; i < m->numfriends; ++i) {
+        if (m->friendlist[i].statusmessage)
+            free(m->friendlist[i].statusmessage);
+    }
     free(m->friendlist);
     free(m);
 }
@@ -2228,7 +2232,7 @@ void do_friends(Messenger *m)
             }
 
             if (m->friendlist[i].ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
-                /* If we stopped recieving ping packets, kill it. */
+                /* If we stopped receiving ping packets, kill it. */
                 crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                 m->friendlist[i].crypt_connection_id = -1;
                 set_friend_status(m, i, FRIEND_CONFIRMED);

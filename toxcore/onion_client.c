@@ -509,9 +509,9 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
     return 0;
 }
 /* Send data of length length to friendnum.
- * This data will be recieved by the friend using the Onion_Data_Handlers callbacks.
+ * This data will be received by the friend using the Onion_Data_Handlers callbacks.
  *
- * Even if this function succeeds, the friend might not recieve any data.
+ * Even if this function succeeds, the friend might not receive any data.
  *
  * return the number of packets sent on success
  * return -1 on failure.
@@ -574,7 +574,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32
 
 /* Try to send the fakeid via the DHT instead of onion
  *
- * Even if this function succeeds, the friend might not recieve any data.
+ * Even if this function succeeds, the friend might not receive any data.
  *
  * return the number of packets sent on success
  * return -1 on failure.

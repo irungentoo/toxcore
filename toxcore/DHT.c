@@ -164,7 +164,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, uint8_t *secr
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
- * for packets that we recieve.
+ * for packets that we receive.
  */
 void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, uint8_t *client_id)
 {
@@ -688,7 +688,7 @@ static int replace_possible_bad(    Client_data    *list,
 
     sort_list(list, length, comp_client_id);
 
-    /* TODO: decide if the folowing lines should stay commented or not.
+    /* TODO: decide if the following lines should stay commented or not.
     if (id_closest(comp_client_id, list[0].client_id, client_id) == 1)
         return 0;*/
 
@@ -949,20 +949,20 @@ static int getnodes(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *cli
 
     uint64_t temp_time = unix_time();
     memcpy(plain_message, &temp_time, sizeof(temp_time));
-    Node_format reciever;
-    memcpy(reciever.client_id, public_key, CLIENT_ID_SIZE);
-    reciever.ip_port = ip_port;
-    memcpy(plain_message + sizeof(temp_time), &reciever, sizeof(reciever));
+    Node_format receiver;
+    memcpy(receiver.client_id, public_key, CLIENT_ID_SIZE);
+    receiver.ip_port = ip_port;
+    memcpy(plain_message + sizeof(temp_time), &receiver, sizeof(receiver));
 
     if (sendback_node != NULL)
-        memcpy(plain_message + sizeof(temp_time) + sizeof(reciever), sendback_node, sizeof(Node_format));
+        memcpy(plain_message + sizeof(temp_time) + sizeof(receiver), sendback_node, sizeof(Node_format));
     else
-        memset(plain_message + sizeof(temp_time) + sizeof(reciever), 0, sizeof(Node_format));
+        memset(plain_message + sizeof(temp_time) + sizeof(receiver), 0, sizeof(Node_format));
 
     int len_m = encrypt_data_symmetric(dht->secret_symmetric_key,
                                        nonce,
                                        plain_message,
-                                       sizeof(temp_time) + sizeof(reciever) + sizeof(Node_format),
+                                       sizeof(temp_time) + sizeof(receiver) + sizeof(Node_format),
                                        encrypted_message + crypto_box_NONCEBYTES);
 
     if (len_m != NODES_ENCRYPTED_MESSAGE_LENGTH - crypto_box_NONCEBYTES)

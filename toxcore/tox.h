@@ -210,7 +210,7 @@ int tox_set_name(Tox *tox, uint8_t *name, uint16_t length);
 
 /*
  * Get your nickname.
- * m - The messanger context to use.
+ * m - The messenger context to use.
  * name - needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
  *
  *  return length of name.
@@ -515,11 +515,11 @@ uint32_t tox_get_chatlist(Tox *tox, int *out_list, uint32_t list_size);
  * tox_file_data_remaining(...) can be used to know how many bytes are left to send/receive.
  *
  * If the connection breaks during file sending (The other person goes offline without pausing the sending and then comes back)
- * the reciever must send a control packet with receive_send == 0 message_id = TOX_FILECONTROL_RESUME_BROKEN and the data being
- * a uint64_t (in host byte order) containing the number of bytes recieved.
+ * the receiver must send a control packet with receive_send == 0 message_id = TOX_FILECONTROL_RESUME_BROKEN and the data being
+ * a uint64_t (in host byte order) containing the number of bytes received.
  *
- * If the sender recieves this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
- * then he must start sending file data from the position (data , uint64_t in host byte order) recieved in the TOX_FILECONTROL_RESUME_BROKEN packet.
+ * If the sender receives this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
+ * then he must start sending file data from the position (data , uint64_t in host byte order) received in the TOX_FILECONTROL_RESUME_BROKEN packet.
  *
  * More to come...
  */

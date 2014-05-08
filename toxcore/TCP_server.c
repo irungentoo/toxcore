@@ -228,7 +228,7 @@ int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
     return -1;
 }
 
-/* return length of recieved packet on success.
+/* return length of received packet on success.
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
