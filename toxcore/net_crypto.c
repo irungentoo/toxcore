@@ -398,12 +398,13 @@ static int add_data_to_buffer(Packets_Array *array, uint32_t number, Packet_Data
     return 0;
 }
 
-/* Copy data with packet number to data.
+/* Get pointer of data with packet number.
  *
  * return -1 on failure.
- * return 0 on success.
+ * return 0 if data at number is empty.
+ * return 1 if data pointer was put in data.
  */
-static int copy_data_number(Packets_Array *array, Packet_Data *data, uint32_t number)
+static int get_data_pointer(Packets_Array *array, Packet_Data **data, uint32_t number)
 {
     uint32_t num_spots = array->buffer_end - array->buffer_start;
 
@@ -413,10 +414,10 @@ static int copy_data_number(Packets_Array *array, Packet_Data *data, uint32_t nu
     uint32_t num = number % CRYPTO_PACKET_BUFFER_SIZE;
 
     if (!array->buffer[num])
-        return -1;
+        return 0;
 
-    memcpy(data, array->buffer[num], sizeof(Packet_Data));
-    return 0;
+    *data = array->buffer[num];
+    return 1;
 }
 
 /* Add data to end of array.
@@ -490,10 +491,126 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
     array->buffer_start = i;
     return 0;
 }
+
+/* Create a packet request packet from recv_array and send_buffer_end into
+ * data of length.
+ *
+ * return -1 on failure.
+ * return length of packet on success.
+ */
+static int generate_request_packet(uint8_t *data, uint16_t length, Packets_Array *recv_array, uint32_t send_buffer_end)
+{
+    if (length <= (sizeof(uint32_t) * 2))
+        return -1;
+
+    uint32_t recv_buffer_start = htonl(recv_array->buffer_start);
+    send_buffer_end = htonl(send_buffer_end);
+    memcpy(data, &recv_buffer_start, sizeof(uint32_t));
+    memcpy(data + sizeof(uint32_t), &send_buffer_end, sizeof(uint32_t));
+    data[sizeof(uint32_t) * 2] = PACKET_ID_REQUEST;
+
+    uint16_t cur_len = sizeof(uint32_t) * 2 + 1;
+
+    if (recv_array->buffer_start == recv_array->buffer_end)
+        return cur_len;
+
+    if (length <= cur_len)
+        return cur_len;
+
+    uint32_t i, n = 1;
+
+    for (i = recv_array->buffer_start; i != recv_array->buffer_end; ++i) {
+        uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
+
+        if (!recv_array->buffer[num]) {
+            data[cur_len] = n;
+            n = 0;
+            ++cur_len;
+
+            if (length <= cur_len)
+                return cur_len;
+
+        } else if (n == 255) {
+            data[cur_len] = 0;
+            n = 0;
+            ++cur_len;
+
+            if (length <= cur_len)
+                return cur_len;
+        }
+
+        ++n;
+    }
+
+    return cur_len;
+}
+
+/* Handle a request data packet.
+ * Remove all the packets the other recieved from the array.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int handle_request_packet(Packets_Array *send_array, uint8_t *data, uint16_t length)
+{
+    if (length < 1)
+        return -1;
+
+    if (data[0] != PACKET_ID_REQUEST)
+        return -1;
+
+    if (length == 1)
+        return 0;
+
+    ++data;
+    --length;
+
+    uint32_t i, n = 1;
+
+    for (i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
+        if (length == 0)
+            break;
+
+        uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
+
+        if (n == data[0]) {
+            if (send_array->buffer[num]) {
+                send_array->buffer[num]->time = 0;
+            }
+
+            ++data;
+            --length;
+            n = 0;
+        } else {
+            free(send_array->buffer[num]);
+            send_array->buffer[num] = NULL;
+        }
+
+        if (n == 255) {
+            n = 1;
+
+            if (data[0] != 0)
+                return -1;
+
+            ++data;
+            --length;
+        } else {
+            ++n;
+        }
+    }
+
+    return 0;
+}
+
 /** END: Array Related functions **/
 
 #define MAX_DATA_DATA_PACKET_SIZE (MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + crypto_box_MACBYTES))
 
+/* Creates and sends a data packet to the peer using the fastest route.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
 static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint16_t length)
 {
     if (length == 0 || length + (1 + sizeof(uint16_t) + crypto_box_MACBYTES) > MAX_CRYPTO_PACKET_SIZE)
@@ -517,6 +634,11 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
     return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
 }
 
+/* Creates and sends a data packet with buffer_start and num to the peer using the fastest route.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
 static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint32_t buffer_start, uint32_t num,
                                    uint8_t *data, uint32_t length)
 {
@@ -606,6 +728,64 @@ static int handle_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *d
     }
 
     return len;
+}
+
+/* Send a request packet.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int send_request_packet(Net_Crypto *c, int crypt_connection_id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    uint8_t packet[MAX_DATA_DATA_PACKET_SIZE];
+    int len = generate_request_packet(packet, sizeof(packet), &conn->recv_array, conn->send_array.buffer_end);
+
+    if (len == -1)
+        return -1;
+
+    return send_data_packet(c, crypt_connection_id, packet, len);
+}
+
+/* Send up to max num previously requested data packets.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint16_t max_num)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    uint32_t i;
+
+    for (i = 0; i < max_num; ++i) {
+        Packet_Data *dt;
+        uint32_t packet_num = (i + conn->send_array.buffer_start);
+        int ret = get_data_pointer(&conn->send_array, &dt, packet_num);
+
+        if (ret == -1) {
+            return -1;
+        } else if (ret == 0) {
+            continue;
+        }
+
+        if (dt->time != 0) {
+            continue;
+        }
+
+        dt->time = current_time_monotonic();
+
+        if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
+                                    dt->length) != 0)
+            printf("send_data_packet failed\n");
+    }
 }
 
 
@@ -754,11 +934,12 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uin
     }
 
     if (real_data[0] == PACKET_ID_REQUEST) {
-        if (real_length <= 1)
+        if (handle_request_packet(&conn->send_array, real_data, real_length) != 0) {
+            printf("fail %u %u\n", real_data[0], real_length);
             return -1;
+        }
 
-
-        //TODO
+        //TODO: use num.
     } else {
         Packet_Data dt;
         dt.time = current_time_monotonic();
@@ -772,6 +953,16 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uin
             if (conn->connection_data_callback)
                 conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, dt.data,
                                                dt.length);
+        }
+
+        //send a data request packet for every x number of data packets recieved.
+        ++conn->packet_counter;
+
+        if (conn->packet_counter > (CRYPTO_PACKET_BUFFER_SIZE / 4)) {
+            if (send_request_packet(c, crypt_connection_id) != 0)
+                return -1;
+
+            conn->packet_counter = 0;
         }
     }
 
@@ -1285,10 +1476,12 @@ static void send_crypto_packets(Net_Crypto *c)
         }
 
         if (conn->status >= CRYPTO_CONN_NOT_CONFIRMED
-                && (500ULL + conn->last_data_packet_sent) < temp_time) {//TODO remove this.
-            uint8_t data[4] = {5, 2};
-            send_lossless_packet(c, i, data, 4);
+                && (CRYPTO_SEND_PACKET_INTERVAL + conn->last_data_packet_sent) < temp_time) {
+            send_request_packet(c, i);
         }
+
+        //TODO
+        send_requested_packets(c, i, ~0);
     }
 }
 

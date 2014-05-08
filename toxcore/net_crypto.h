@@ -35,7 +35,7 @@
 #define CRYPTO_CONN_ESTABLISHED 4
 #define CRYPTO_CONN_TIMED_OUT 5
 
-#define CRYPTO_PACKET_BUFFER_SIZE 64 /* Must be a power of 2 */
+#define CRYPTO_PACKET_BUFFER_SIZE 128 /* Must be a power of 2 */
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
 
@@ -105,6 +105,8 @@ typedef struct {
     int connection_data_callback_id;
 
     uint64_t last_data_packet_sent;
+
+    uint32_t packet_counter;
 } Crypto_Connection;
 
 typedef struct {

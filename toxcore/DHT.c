@@ -1582,7 +1582,7 @@ static int friend_iplist(DHT *dht, IP_Port *ip_portlist, uint16_t friend_num)
 /* Send the following packet to everyone who tells us they are connected to friend_id.
  *
  *  return ip for friend.
- *  return number of nodes the packet was sent to. (Only works if more than (MAX_FRIEND_CLIENTS / 2).
+ *  return number of nodes the packet was sent to. (Only works if more than (MAX_FRIEND_CLIENTS / 4).
  */
 int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length)
 {
