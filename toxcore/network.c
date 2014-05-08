@@ -297,7 +297,6 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
  *  ip and port of sender is put into ip_port.
  *  Packet data is put into data.
  *  Packet length is put into length.
- *  Dump all empty packets.
  */
 static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
@@ -311,7 +310,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     *length = 0;
     int fail_or_len = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
-    if (fail_or_len <= 0) {
+    if (fail_or_len < 0) {
 #ifdef LOGGING
 
         if ((fail_or_len < 0) && (errno != EWOULDBLOCK)) {
@@ -320,7 +319,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
         }
 
 #endif
-        return -1; /* Nothing received or empty packet. */
+        return -1; /* Nothing received. */
     }
 
     *length = (uint32_t)fail_or_len;
