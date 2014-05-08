@@ -2395,66 +2395,6 @@ void kill_DHT(DHT *dht)
 #define DHT_STATE_TYPE_FRIENDS_ASSOC46  3
 #define DHT_STATE_TYPE_CLIENTS_ASSOC46  4
 
-/* Get the size of the DHT (for saving). */
-uint32_t DHT_size(DHT *dht)
-{
-    uint32_t num = 0, i;
-
-    for (i = 0; i < LCLIENT_LIST; ++i)
-        if ((dht->close_clientlist[i].assoc4.timestamp != 0) ||
-                (dht->close_clientlist[i].assoc6.timestamp != 0))
-            num++;
-
-    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
-    return size32
-           + sizesubhead + sizeof(DHT_Friend) * dht->num_friends
-           + sizesubhead + sizeof(Client_data) * num;
-}
-
-static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
-{
-    uint32_t *data32 = (uint32_t *)data;
-    data32[0] = len;
-    data32[1] = (DHT_STATE_COOKIE_TYPE << 16) | type;
-    data += sizeof(uint32_t) * 2;
-    return data;
-}
-
-/* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(DHT *dht, uint8_t *data)
-{
-    uint32_t len;
-    uint16_t type;
-    *(uint32_t *)data = DHT_STATE_COOKIE_GLOBAL;
-    data += sizeof(uint32_t);
-
-    len = sizeof(DHT_Friend) * dht->num_friends;
-    type = DHT_STATE_TYPE_FRIENDS_ASSOC46;
-    data = z_state_save_subheader(data, len, type);
-    memcpy(data, dht->friends_list, len);
-    data += len;
-
-    uint32_t num = 0, i;
-
-    for (i = 0; i < LCLIENT_LIST; ++i)
-        if ((dht->close_clientlist[i].assoc4.timestamp != 0) ||
-                (dht->close_clientlist[i].assoc6.timestamp != 0))
-            num++;
-
-    len = num * sizeof(Client_data);
-    type = DHT_STATE_TYPE_CLIENTS_ASSOC46;
-    data = z_state_save_subheader(data, len, type);
-
-    if (num) {
-        Client_data *clients = (Client_data *)data;
-
-        for (num = 0, i = 0; i < LCLIENT_LIST; ++i)
-            if ((dht->close_clientlist[i].assoc4.timestamp != 0) ||
-                    (dht->close_clientlist[i].assoc6.timestamp != 0))
-                memcpy(&clients[num++], &dht->close_clientlist[i], sizeof(Client_data));
-    }
-}
-
 static int dht_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
 {
     DHT *dht = outer;

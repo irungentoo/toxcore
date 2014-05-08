@@ -726,11 +726,18 @@ int tox_wait_cleanup(Tox *tox, uint8_t *data);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
-/*  return size of messenger data (for saving). */
+/*  return size of messenger data (for saving).
+ *  Deprecated. use tox_export */
 uint32_t tox_size(Tox *tox);
 
-/* Save the messenger in data (must be allocated memory of size Messenger_size()). */
+/* Save the messenger in data (must be allocated memory of size Messenger_size()).
+ * Deprecated. use tox_export */
 void tox_save(Tox *tox, uint8_t *data);
+
+/* Saves the messenger. It allocs the buffer for you, and returns by reference
+ * in data. Length is also returned in out_length. 
+ * You are responsible for freeing it if tox_export returns 0. */
+int32_t tox_export(Tox *tox, uint8_t **data, uint64_t *out_length);
 
 /* Load the messenger from data of size length.
  *
