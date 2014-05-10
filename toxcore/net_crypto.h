@@ -26,8 +26,6 @@
 
 #include "DHT.h"
 
-#define CRYPTO_HANDSHAKE_TIMEOUT (CONNECTION_TIMEOUT * 2)
-
 #define CRYPTO_CONN_NO_CONNECTION 0
 #define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets
 #define CRYPTO_CONN_HANDSHAKE_SENT 2 //send handshake packets
@@ -104,7 +102,7 @@ typedef struct {
     void *connection_data_callback_object;
     int connection_data_callback_id;
 
-    uint64_t last_data_packet_sent;
+    uint64_t last_request_packet_sent;
 
     uint32_t packet_counter;
 } Crypto_Connection;

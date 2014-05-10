@@ -492,6 +492,23 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
     return 0;
 }
 
+/* Set array buffer end to number.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int set_buffer_end(Packets_Array *array, uint32_t number)
+{
+    if ((number - array->buffer_start) > CRYPTO_PACKET_BUFFER_SIZE)
+        return -1;
+
+    if ((number - array->buffer_end) > CRYPTO_PACKET_BUFFER_SIZE)
+        return -1;
+
+    array->buffer_end = number;
+    return 0;
+}
+
 /* Create a packet request packet from recv_array and send_buffer_end into
  * data of length.
  *
@@ -549,7 +566,7 @@ static int generate_request_packet(uint8_t *data, uint16_t length, Packets_Array
  * Remove all the packets the other recieved from the array.
  *
  * return -1 on failure.
- * return 0 on success.
+ * return number of requested packets on success.
  */
 static int handle_request_packet(Packets_Array *send_array, uint8_t *data, uint16_t length)
 {
@@ -566,6 +583,7 @@ static int handle_request_packet(Packets_Array *send_array, uint8_t *data, uint1
     --length;
 
     uint32_t i, n = 1;
+    uint32_t requested = 0;
 
     for (i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
         if (length == 0)
@@ -581,6 +599,7 @@ static int handle_request_packet(Packets_Array *send_array, uint8_t *data, uint1
             ++data;
             --length;
             n = 0;
+            ++requested;
         } else {
             free(send_array->buffer[num]);
             send_array->buffer[num] = NULL;
@@ -599,7 +618,7 @@ static int handle_request_packet(Packets_Array *send_array, uint8_t *data, uint1
         }
     }
 
-    return 0;
+    return requested;
 }
 
 /** END: Array Related functions **/
@@ -630,7 +649,6 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
         return -1;
 
     increment_nonce(conn->sent_nonce);
-    conn->last_data_packet_sent = current_time_monotonic(); //TODO remove this.
     return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
 }
 
@@ -754,7 +772,7 @@ static int send_request_packet(Net_Crypto *c, int crypt_connection_id)
 /* Send up to max num previously requested data packets.
  *
  * return -1 on failure.
- * return 0 on success.
+ * return number of packets sent on success.
  */
 static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint16_t max_num)
 {
@@ -763,7 +781,7 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint16
     if (conn == 0)
         return -1;
 
-    uint32_t i;
+    uint32_t i, num_sent = 0;
 
     for (i = 0; i < max_num; ++i) {
         Packet_Data *dt;
@@ -783,9 +801,11 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint16
         dt->time = current_time_monotonic();
 
         if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
-                                    dt->length) != 0)
-            printf("send_data_packet failed\n");
+                                    dt->length) == 0)
+            ++num_sent;
     }
+
+    return num_sent;
 }
 
 
@@ -934,12 +954,14 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uin
     }
 
     if (real_data[0] == PACKET_ID_REQUEST) {
-        if (handle_request_packet(&conn->send_array, real_data, real_length) != 0) {
+        int requested = handle_request_packet(&conn->send_array, real_data, real_length);
+
+        if (requested == -1) {
             printf("fail %u %u\n", real_data[0], real_length);
             return -1;
         }
 
-        //TODO: use num.
+        set_buffer_end(&conn->recv_array, num);
     } else {
         Packet_Data dt;
         dt.time = current_time_monotonic();
@@ -1476,8 +1498,11 @@ static void send_crypto_packets(Net_Crypto *c)
         }
 
         if (conn->status >= CRYPTO_CONN_NOT_CONFIRMED
-                && (CRYPTO_SEND_PACKET_INTERVAL + conn->last_data_packet_sent) < temp_time) {
-            send_request_packet(c, i);
+                && (CRYPTO_SEND_PACKET_INTERVAL + conn->last_request_packet_sent) < temp_time) {
+            if (send_request_packet(c, i) == 0) {
+                conn->last_request_packet_sent = temp_time;
+            }
+
         }
 
         //TODO
