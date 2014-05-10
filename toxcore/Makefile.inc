@@ -50,6 +50,7 @@ libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        $(RT_LIBS) \
                         $(WINSOCK2_LIBS)
 
 libtoxcore_la_LIBADD =  $(LIBSODIUM_LIBS) \
