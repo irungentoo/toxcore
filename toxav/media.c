@@ -36,8 +36,7 @@
 #include "rtp.h"
 #include "media.h"
 
-
-int empty_queue(struct jitter_buffer *q)
+int empty_queue(JitterBuffer *q)
 {
     while (q->size > 0) {
         rtp_free_msg(NULL, q->queue[q->front]);
@@ -54,11 +53,11 @@ int empty_queue(struct jitter_buffer *q)
     return 0;
 }
 
-struct jitter_buffer *create_queue(int capacity)
+JitterBuffer *create_queue(int capacity)
 {
-    struct jitter_buffer *q;
-    q = calloc(sizeof(struct jitter_buffer), 1);
-    q->queue = calloc(sizeof(RTPMessage *), capacity);
+    JitterBuffer *q;
+    if ( !(q = calloc(sizeof(JitterBuffer), 1)) ) return NULL;
+    if (!(q->queue = calloc(sizeof(RTPMessage *), capacity))) return NULL;
     q->size = 0;
     q->capacity = capacity;
     q->front = 0;
@@ -70,10 +69,20 @@ struct jitter_buffer *create_queue(int capacity)
     return q;
 }
 
+void terminate_queue(JitterBuffer* q)
+{
+    int i;
+    for ( i = 0; i < q->capacity; i ++ ) {
+        rtp_free_msg(NULL, q->queue[i]);
+    }
+    free(q->queue);
+    free(q);
+}
+
 #define sequnum_older(sn_a, sn_b, ts_a, ts_b) (sn_a > sn_b || ts_a > ts_b)
 
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
-RTPMessage *dequeue(struct jitter_buffer *q, int *success)
+RTPMessage *dequeue(JitterBuffer *q, int *success)
 {
     if (q->size == 0 || q->queue_ready == 0) { /* Empty queue */
         q->queue_ready = 0;
@@ -122,10 +131,10 @@ RTPMessage *dequeue(struct jitter_buffer *q, int *success)
 }
 
 
-void queue(struct jitter_buffer* q, RTPMessage* pk)
+void queue(JitterBuffer* q, RTPMessage* pk)
 {
     if (q->size == q->capacity) { /* Full, empty queue */
-        LOGGER_DEBUG("Queue full, emptying...");
+        LOGGER_DEBUG("Queue full s(%d) c(%d), emptying...", q->size, q->capacity);
         empty_queue(q);
     }
 
@@ -257,7 +266,7 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint32_t video_bitrate )
 {
     CodecState *retu = calloc(sizeof(CodecState), 1);
-    assert(retu);
+    if(!retu) return NULL;
 
     retu->audio_bitrate = audio_bitrate;
     retu->audio_sample_rate = audio_sample_rate;
@@ -275,6 +284,11 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
     retu->capabilities |= ( 0 == init_audio_encoder(retu, audio_channels) ) ? a_encoding : 0;
     retu->capabilities |= ( 0 == init_audio_decoder(retu, audio_channels) ) ? a_decoding : 0;
 
+    if ( retu->capabilities == 0  ) { /* everything failed */
+        free (retu);
+        return NULL;
+    }
+    
     return retu;
 }
 

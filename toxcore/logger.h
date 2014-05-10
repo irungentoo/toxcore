@@ -25,10 +25,10 @@
 #ifndef __TOXLOGGER
 #define __TOXLOGGER
 
+#include <string.h>
 // #define LOGGING
 
 #ifdef LOGGING 
-#include <string.h>
 
 typedef enum _LoggerLevel 
 {

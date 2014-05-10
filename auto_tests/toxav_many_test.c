@@ -131,12 +131,9 @@ void* in_thread_call (void* arg)
     int step = 0,running = 1; 
     int call_idx;
     
-    int16_t sample_payload[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    vpx_image_t *sample_image = vpx_img_alloc(NULL, VPX_IMG_FMT_I420, 128, 128, 1);
     
-    memcpy(sample_image->planes[VPX_PLANE_Y], sample_payload, 10);
-    memcpy(sample_image->planes[VPX_PLANE_U], sample_payload, 10);
-    memcpy(sample_image->planes[VPX_PLANE_V], sample_payload, 10);
+    int16_t sample_payload[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    uint8_t prepared_payload[1000];
     
     
     /* NOTE: CALLEE WILL ALWAHYS NEED CALL_IDX == 0 */
@@ -159,60 +156,43 @@ void* in_thread_call (void* arg)
                 if (this_call->Caller.status == InCall) { /* I think this is okay */
                     call_print(call_idx, "Sending rtp ...");
                     
+                    ToxAvCodecSettings cast = av_DefaultSettings;
+                    
                     c_sleep(1000); /* We have race condition here */
-                    toxav_prepare_transmission(this_call->Callee.av, 0, 1);
-                    toxav_prepare_transmission(this_call->Caller.av, call_idx, 1);
+                    toxav_prepare_transmission(this_call->Callee.av, 0, &cast, 1);
+                    toxav_prepare_transmission(this_call->Caller.av, call_idx, &cast, 1);
+                    
+                    int payload_size = toxav_prepare_audio_frame(this_call->Caller.av, call_idx, prepared_payload, 1000, sample_payload, 120);
+                    if (!( payload_size > 0 )) {
+                        ck_assert_msg ( 0, "Failed to encode payload" );
+                    }
                     
                     while (time(NULL) - start < 10) { /* 10 seconds */
                         /* Both send */
-                        toxav_send_audio(this_call->Caller.av, call_idx, sample_payload, 10);
-                        toxav_send_video(this_call->Caller.av, call_idx, sample_image);
+                        toxav_send_audio(this_call->Caller.av, call_idx, prepared_payload, payload_size);
                         
-                        toxav_send_audio(this_call->Callee.av, 0, sample_payload, 10);
-                        toxav_send_video(this_call->Callee.av, 0, sample_image);
+                        toxav_send_audio(this_call->Callee.av, 0, prepared_payload, payload_size);
                         
+                        call_print(time(NULL) - start, "Blaaah");
                         /* Both receive */
-                        int16_t storage[10];
-                        vpx_image_t *video_storage;
+                        int16_t storage[1000];
                         int recved;
                         
-                        /* Payload from CALLEE */
-                        recved = toxav_recv_audio(this_call->Caller.av, call_idx, 10, storage);
-                        
-                        if ( recved ) {
-                            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLEE is invalid");*/
-                            memset(storage, 0, 10);
-                        }
-                        
-                        /* Video payload */
-                        toxav_recv_video(this_call->Caller.av, call_idx, &video_storage);
-                        
-                        if ( video_storage ) {
-                            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 || 
-                             *   memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 || 
-                             *   memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from CALLEE is invalid");*/
-                            vpx_img_free(video_storage);
-                        }
-                        
-                        
-                        
                         /* Payload from CALLER */
-                        recved = toxav_recv_audio(this_call->Callee.av, 0, 10, storage);
+                        recved = toxav_recv_audio(this_call->Callee.av, 0, 120, storage);
                         
                         if ( recved ) {
                             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLER is invalid");*/
                         }
                         
-                        /* Video payload */
-                        toxav_recv_video(this_call->Callee.av, 0, &video_storage);
+                        /* Payload from CALLEE */
+                        recved = toxav_recv_audio(this_call->Caller.av, call_idx, 120, storage);
                         
-                        if ( video_storage ) {
-                            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 || 
-                             *   memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 || 
-                             *   memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from CALLER is invalid");*/
-                            vpx_img_free(video_storage);
-                        }    
-                        
+                        if ( recved ) {
+                            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLEE is invalid");*/
+                        }
+                         
+                        //c_sleep(20);
                     }
                     
                     step++; /* This terminates the loop */
@@ -247,6 +227,7 @@ void* in_thread_call (void* arg)
 
 
 START_TEST(test_AV_three_calls)
+// void test_AV_three_calls()
 {
     long long unsigned int cur_time = time(NULL);
     Tox *bootstrap_node = tox_new(0);
@@ -306,23 +287,20 @@ START_TEST(test_AV_three_calls)
     
     printf("All set after %llu seconds! Starting call...\n", time(NULL) - cur_time);
     
-    
-    ToxAvCodecSettings cast = av_DefaultSettings;
-    
-    ToxAv* uniqcallerav = toxav_new(caller, &cast, 3);
+    ToxAv* uniqcallerav = toxav_new(caller, 3);
     
     Status status_control = {
         0,
         {none, uniqcallerav, 0},
-        {none, toxav_new(callees[0], &cast, 1), 0},
+        {none, toxav_new(callees[0], 1), 0},
         
         0,
         {none, uniqcallerav},
-        {none, toxav_new(callees[1], &cast, 1), 1},
+        {none, toxav_new(callees[1], 1), 1},
         
         0,
         {none, uniqcallerav},
-        {none, toxav_new(callees[2], &cast, 1), 2}
+        {none, toxav_new(callees[2], 1), 2}
     };
         
     
@@ -404,4 +382,7 @@ int main(int argc, char *argv[])
     
     return number_failed;
     
+//     test_AV_three_calls();
+//     
+//     return 0;
 }

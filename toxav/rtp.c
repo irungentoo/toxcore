@@ -754,11 +754,12 @@ RTPMessage *rtp_recv_msg ( RTPSession *session )
         return NULL;
     }
     
+    pthread_mutex_lock(&session->mutex);
+    
     if ( session->queue_size == 0 ) {
         return NULL;
     }
     
-    pthread_mutex_lock(&session->mutex);
     
     RTPMessage *_retu = session->oldest_msg;
 
@@ -768,8 +769,11 @@ RTPMessage *rtp_recv_msg ( RTPSession *session )
     if ( !session->oldest_msg )
         session->last_msg = NULL;
 
+    session->queue_size --;
+    
     pthread_mutex_unlock(&session->mutex);
 
+    
     return _retu;
 }
 
