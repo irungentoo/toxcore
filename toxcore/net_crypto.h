@@ -33,7 +33,13 @@
 #define CRYPTO_CONN_ESTABLISHED 4
 #define CRYPTO_CONN_TIMED_OUT 5
 
-#define CRYPTO_PACKET_BUFFER_SIZE 128 /* Must be a power of 2 */
+#define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
+
+/* Minimum packet rate per second. */
+#define CRYPTO_PACKET_MIN_RATE 40.0
+
+/* Minimum packet queue max length. */
+#define CRYPTO_MIN_QUEUE_LENGTH 8
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
 
@@ -105,6 +111,14 @@ typedef struct {
     uint64_t last_request_packet_sent;
 
     uint32_t packet_counter;
+    double packet_recv_rate;
+    uint64_t packet_counter_set;
+
+    double packet_send_rate;
+    uint32_t packets_left;
+    uint64_t last_packets_left_set;
+
+    uint8_t sending; /* indicates if data is being sent or not. */
 } Crypto_Connection;
 
 typedef struct {
