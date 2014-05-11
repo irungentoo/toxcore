@@ -1527,7 +1527,7 @@ static void send_crypto_packets(Net_Crypto *c)
             send_temp_packet(c, i);
         }
 
-        if (conn->status >= CRYPTO_CONN_NOT_CONFIRMED
+        if ((conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED)
                 && (CRYPTO_SEND_PACKET_INTERVAL + conn->last_request_packet_sent) < temp_time) {
             if (send_request_packet(c, i) == 0) {
                 conn->last_request_packet_sent = temp_time;

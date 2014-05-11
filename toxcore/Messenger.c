@@ -1738,6 +1738,9 @@ static void LANdiscovery(Messenger *m)
     }
 }
 
+static int handle_status(void *object, int i, uint8_t status);
+static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len);
+
 static int handle_new_connections(void *object, New_Connection *n_c)
 {
     Messenger *m = object;
@@ -1747,8 +1750,12 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         if (m->friendlist[friend_id].crypt_connection_id != -1)
             return -1;
 
-        m->friendlist[friend_id].crypt_connection_id = accept_crypto_connection(m->net_crypto, n_c);
+        int id = accept_crypto_connection(m->net_crypto, n_c);
+        connection_status_handler(m->net_crypto, id, &handle_status, m, friend_id);
+        connection_data_handler(m->net_crypto, id, &handle_packet, m, friend_id);
+        m->friendlist[friend_id].crypt_connection_id = id;
         set_friend_status(m, friend_id, FRIEND_CONFIRMED);
+        return 0;
     }
 
     return -1;
