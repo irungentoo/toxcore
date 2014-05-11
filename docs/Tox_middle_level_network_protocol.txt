@@ -100,6 +100,7 @@ lossy][data]
 data ids:
 0: padding (skipped until we hit a non zero (data id) byte)
 1: packet request packet (lossy packet)
+2: connection kill packet (lossy packet) (tells the other that the connection is over)
 ...
 16+: reserved for Messenger usage (lossless packets).
 

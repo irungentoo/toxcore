@@ -56,6 +56,7 @@
 
 #define PACKET_ID_PADDING 0
 #define PACKET_ID_REQUEST 1
+#define PACKET_ID_KILL    2
 
 #define CRYPTO_RESERVED_PACKETS 16
 
@@ -119,6 +120,8 @@ typedef struct {
     uint64_t last_packets_left_set;
 
     uint8_t sending; /* indicates if data is being sent or not. */
+
+    uint8_t killed; /* set to 1 to kill the connection. */
 } Crypto_Connection;
 
 typedef struct {

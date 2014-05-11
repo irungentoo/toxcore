@@ -918,6 +918,23 @@ static int create_send_handshake(Net_Crypto *c, int crypt_connection_id, uint8_t
     return 0;
 }
 
+/* Send a kill packet.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int send_kill_packet(Net_Crypto *c, int crypt_connection_id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    uint8_t kill_packet = PACKET_ID_KILL;
+    return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end,
+                                   &kill_packet, sizeof(kill_packet));
+}
+
 /* Handle a recieved data packet.
  *
  * return -1 on failure.
@@ -969,6 +986,9 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uin
         }
 
         set_buffer_end(&conn->recv_array, num);
+    } else if (real_data[0] == PACKET_ID_KILL) {
+        conn->killed = 1;
+        return 0;
     } else {
         Packet_Data dt;
         dt.time = current_time_monotonic();
@@ -1627,6 +1647,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
     //TODO
+    send_kill_packet(c, crypt_connection_id);
     return wipe_crypto_connection(c, crypt_connection_id);
 }
 
@@ -1713,6 +1734,11 @@ static void kill_timedout(Net_Crypto *c)
             if (conn->temp_packet_num_sent < MAX_NUM_SENDPACKET_TRIES)
                 continue;
 
+            conn->killed = 1;
+
+        }
+
+        if (conn->killed) {
             if (conn->connection_status_callback) {
                 conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 0);
                 crypto_kill(c, i);
