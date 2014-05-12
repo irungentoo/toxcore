@@ -176,10 +176,12 @@ START_TEST(test_basic)
     ck_assert_msg((onion1_a != NULL) && (onion2_a != NULL), "Onion_Announce failed initializing.");
     uint8_t zeroes[64] = {0};
     randombytes(sb_data, sizeof(sb_data));
+    uint64_t s;
+    memcpy(&s, sb_data, sizeof(uint64_t));
     memcpy(test_3_pub_key, nodes[3].client_id, crypto_box_PUBLICKEYBYTES);
     ret = send_announce_request(onion1->net, &path, nodes[3], onion1->dht->self_public_key,
                                 onion1->dht->self_secret_key,
-                                zeroes, onion1->dht->self_public_key, onion1->dht->self_public_key, sb_data);
+                                zeroes, onion1->dht->self_public_key, onion1->dht->self_public_key, s);
     ck_assert_msg(ret == 0, "Failed to create/send onion announce_request packet.");
     handled_test_3 = 0;
 
@@ -190,11 +192,12 @@ START_TEST(test_basic)
     }
 
     randombytes(sb_data, sizeof(sb_data));
+    memcpy(&s, sb_data, sizeof(uint64_t));
     memcpy(onion2_a->entries[1].public_key, onion2->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     onion2_a->entries[1].time = unix_time();
     networking_registerhandler(onion1->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_test_4, onion1);
     send_announce_request(onion1->net, &path, nodes[3], onion1->dht->self_public_key, onion1->dht->self_secret_key,
-                          test_3_ping_id, onion1->dht->self_public_key, onion1->dht->self_public_key, sb_data);
+                          test_3_ping_id, onion1->dht->self_public_key, onion1->dht->self_public_key, s);
 
     while (memcmp(onion2_a->entries[ONION_ANNOUNCE_MAX_ENTRIES - 2].public_key, onion1->dht->self_public_key,
                   crypto_box_PUBLICKEYBYTES) != 0) {
