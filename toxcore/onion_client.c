@@ -28,6 +28,9 @@
 #include "util.h"
 #include "LAN_discovery.h"
 
+/* defines for the array size and
+   timeout for onion announce packets. */
+#define ANNOUNCE_ARRAY_SIZE 256
 #define ANNOUNCE_TIMEOUT 10
 
 /* Create a new path or use an old suitable one (if pathnum is valid)
@@ -105,20 +108,15 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, IP_Port s
  * return 0 on success
  *
  */
-static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key, IP_Port ip_port, uint8_t *sendback)
+static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key, IP_Port ip_port, uint64_t *sendback)
 {
-    uint8_t plain[sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port)];
-    uint64_t time = unix_time();
-    random_nonce(sendback);
-    memcpy(plain, &num, sizeof(uint32_t));
-    memcpy(plain + sizeof(uint32_t), &time, sizeof(uint64_t));
-    memcpy(plain + sizeof(uint32_t) + sizeof(uint64_t), public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(plain + sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES, &ip_port, sizeof(IP_Port));
+    uint8_t data[sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port)];
+    memcpy(data, &num, sizeof(uint32_t));
+    memcpy(data + sizeof(uint32_t), public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(data + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES, &ip_port, sizeof(IP_Port));
+    *sendback = ping_array_add(&onion_c->announce_ping_array, data, sizeof(data));
 
-    int len = encrypt_data_symmetric(onion_c->secret_symmetric_key, sendback, plain, sizeof(plain),
-                                     sendback + crypto_box_NONCEBYTES);
-
-    if ((uint32_t)len + crypto_box_NONCEBYTES != ONION_ANNOUNCE_SENDBACK_DATA_LENGTH)
+    if (*sendback == 0)
         return -1;
 
     return 0;
@@ -136,24 +134,17 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key
  */
 static uint32_t check_sendback(Onion_Client *onion_c, uint8_t *sendback, uint8_t *ret_pubkey, IP_Port *ret_ip_port)
 {
-    uint8_t plain[sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port)];
-    int len = decrypt_data_symmetric(onion_c->secret_symmetric_key, sendback, sendback + crypto_box_NONCEBYTES,
-                                     ONION_ANNOUNCE_SENDBACK_DATA_LENGTH - crypto_box_NONCEBYTES, plain);
+    uint64_t sback;
+    memcpy(&sback, sendback, sizeof(uint64_t));
+    uint8_t data[sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port)];
 
-    if ((uint32_t)len != sizeof(plain))
+    if (ping_array_check(data, sizeof(data), &onion_c->announce_ping_array, sback) != sizeof(data))
         return ~0;
 
-    uint64_t timestamp;
-    memcpy(&timestamp, plain + sizeof(uint32_t), sizeof(uint64_t));
-    uint64_t temp_time = unix_time();
-
-    if (timestamp + ANNOUNCE_TIMEOUT < temp_time || temp_time < timestamp)
-        return ~0;
-
-    memcpy(ret_pubkey, plain + sizeof(uint32_t) + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES);
-    memcpy(ret_ip_port, plain + sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES, sizeof(IP_Port));
+    memcpy(ret_pubkey, data + sizeof(uint32_t), crypto_box_PUBLICKEYBYTES);
+    memcpy(ret_ip_port, data + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES, sizeof(IP_Port));
     uint32_t num;
-    memcpy(&num, plain, sizeof(uint32_t));
+    memcpy(&num, data, sizeof(uint32_t));
     return num;
 }
 
@@ -163,9 +154,9 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     if (num > onion_c->num_friends)
         return -1;
 
-    uint8_t sendback[ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
+    uint64_t sendback;
 
-    if (new_sendback(onion_c, num, dest_pubkey, dest, sendback) == -1)
+    if (new_sendback(onion_c, num, dest_pubkey, dest, &sendback) == -1)
         return -1;
 
     uint8_t zero_ping_id[ONION_PING_ID_SIZE] = {0};
@@ -1010,6 +1001,11 @@ Onion_Client *new_onion_client(Net_Crypto *c)
     if (onion_c == NULL)
         return NULL;
 
+    if (ping_array_init(&onion_c->announce_ping_array, ANNOUNCE_ARRAY_SIZE, ANNOUNCE_TIMEOUT) != 0) {
+        free(onion_c);
+        return NULL;
+    }
+
     onion_c->dht = c->dht;
     onion_c->net = c->dht->net;
     onion_c->c = c;
@@ -1028,6 +1024,7 @@ void kill_onion_client(Onion_Client *onion_c)
     if (onion_c == NULL)
         return;
 
+    ping_array_free_all(&onion_c->announce_ping_array);
     realloc_onion_friends(onion_c, 0);
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);

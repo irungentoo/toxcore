@@ -50,14 +50,14 @@
  * return 0 on success.
  */
 int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format dest, uint8_t *public_key,
-                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data)
+                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint64_t sendback_data)
 {
     uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
     memcpy(plain, ping_id, ONION_PING_ID_SIZE);
     memcpy(plain + ONION_PING_ID_SIZE, client_id, crypto_box_PUBLICKEYBYTES);
     memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES, data_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES, sendback_data,
-           ONION_ANNOUNCE_SENDBACK_DATA_LENGTH);
+    memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES, &sendback_data,
+           sizeof(sendback_data));
     uint8_t packet[ANNOUNCE_REQUEST_SIZE];
     packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
     random_nonce(packet + 1);

@@ -29,7 +29,7 @@
 #define ONION_ANNOUNCE_TIMEOUT 300
 #define ONION_PING_ID_SIZE crypto_hash_sha256_BYTES
 
-#define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (crypto_box_NONCEBYTES + sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
+#define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (sizeof(uint64_t))
 
 #define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + 1 + ONION_PING_ID_SIZE + crypto_box_MACBYTES)
 #define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
@@ -76,7 +76,7 @@ typedef struct {
  * return 0 on success.
  */
 int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format dest, uint8_t *public_key,
-                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data);
+                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint64_t sendback_data);
 
 /* Create and send an onion data request packet.
  *

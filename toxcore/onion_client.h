@@ -26,6 +26,7 @@
 
 #include "onion_announce.h"
 #include "net_crypto.h"
+#include "ping_array.h"
 
 #define MAX_ONION_CLIENTS 8
 #define ONION_NODE_PING_INTERVAL 30
@@ -124,6 +125,8 @@ typedef struct {
     uint32_t ping_nodes_sent_second;
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
+
+    Ping_Array announce_ping_array;
     uint8_t last_pinged_index;
     struct {
         oniondata_handler_callback function;

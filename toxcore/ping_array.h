@@ -53,7 +53,7 @@ uint64_t ping_array_add(Ping_Array *array, uint8_t *data, uint32_t length);
 /* Check if ping_id is valid and not timed out.
  *
  * On success, copies the data into data of length,
- * 
+ *
  * return length of data copied on success.
  * return -1 on failure.
  */
