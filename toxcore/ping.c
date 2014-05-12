@@ -34,6 +34,7 @@
 
 #include "network.h"
 #include "util.h"
+#include "ping_array.h"
 
 #define PING_NUM_MAX 512
 
@@ -43,109 +44,18 @@
 /* Ping newly announced nodes to ping per TIME_TO_PING seconds*/
 #define TIME_TO_PING 3
 
-typedef struct {
-    IP_Port  ip_port;
-    uint64_t id;
-    uint64_t timestamp;
-    uint8_t  shared_key[crypto_box_BEFORENMBYTES];
-} pinged_t;
 
 struct PING {
     DHT *dht;
 
-    pinged_t    pings[PING_NUM_MAX];
-    size_t      num_pings;
-    size_t      pos_pings;
-
+    Ping_Array  ping_array;
     Node_format to_ping[MAX_TO_PING];
     uint64_t    last_to_ping;
 };
 
-static int is_ping_timeout(uint64_t time)
-{
-    return is_timeout(time, PING_TIMEOUT);
-}
-
-static void remove_timeouts(PING *ping)    // O(n)
-{
-    size_t i, id;
-    size_t new_pos = ping->pos_pings;
-    size_t new_num = ping->num_pings;
-
-    // Loop through buffer, oldest first.
-    for (i = 0; i < ping->num_pings; i++) {
-        id = (ping->pos_pings + i) % PING_NUM_MAX;
-
-        if (is_ping_timeout(ping->pings[id].timestamp)) {
-            new_pos++;
-            new_num--;
-        }
-        // Break here because list is sorted.
-        else {
-            break;
-        }
-    }
-
-    ping->num_pings = new_num;
-    ping->pos_pings = new_pos % PING_NUM_MAX;
-}
-
-static uint64_t add_ping(PING *ping, IP_Port ipp, uint8_t *shared_encryption_key)  // O(n)
-{
-    size_t p;
-
-    remove_timeouts(ping);
-
-    /* Remove oldest ping if full buffer. */
-    if (ping->num_pings == PING_NUM_MAX) {
-        ping->num_pings--;
-        ping->pos_pings = (ping->pos_pings + 1) % PING_NUM_MAX;
-    }
-
-    /* Insert new ping at end of list. */
-    p = (ping->pos_pings + ping->num_pings) % PING_NUM_MAX;
-
-    ping->pings[p].ip_port   = ipp;
-    ping->pings[p].timestamp = unix_time();
-    ping->pings[p].id        = random_64b();
-    memcpy(ping->pings[p].shared_key, shared_encryption_key, crypto_box_BEFORENMBYTES);
-
-    ping->num_pings++;
-    return ping->pings[p].id;
-}
-
-/* checks if ip/port or ping_id are already in the list to ping
- * if both are set, both must match, otherwise the set must match
- *
- *  returns 0 if neither is set or no match was found
- *  returns the (index + 1) of the match if one was found
- */
-static int is_pinging(PING *ping, IP_Port ipp, uint64_t ping_id)
-{
-    // O(n) TODO: Replace this with something else.
-
-    /* at least one MUST be set */
-    uint8_t ip_valid = ip_isset(&ipp.ip);
-
-    if (!ip_valid && !ping_id)
-        return 0;
-
-    size_t i;
-
-    remove_timeouts(ping);
-
-    for (i = 0; i < ping->num_pings; i++) {
-        size_t id = (ping->pos_pings + i) % PING_NUM_MAX;
-
-        if (!ping_id || (ping->pings[id].id == ping_id))
-            if (!ip_valid || ipport_equal(&ping->pings[id].ip_port, &ipp))
-                return id + 1;
-    }
-
-    return 0;
-}
 
 #define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(uint64_t) + crypto_box_MACBYTES)
+#define PING_DATA_SIZE (CLIENT_ID_SIZE + sizeof(IP_Port))
 
 int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
 {
@@ -153,7 +63,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     int       rc;
     uint64_t  ping_id;
 
-    if (is_pinging(ping, ipp, 0) || id_equal(client_id, ping->dht->self_public_key))
+    if (id_equal(client_id, ping->dht->self_public_key))
         return 1;
 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -161,7 +71,13 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     // generate key to encrypt ping_id with recipient privkey
     DHT_get_shared_key_sent(ping->dht, shared_key, client_id);
     // Generate random ping_id.
-    ping_id = add_ping(ping, ipp, shared_key);
+    uint8_t data[PING_DATA_SIZE];
+    id_copy(data, client_id);
+    memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
+    ping_id = ping_array_add(&ping->ping_array, data, sizeof(data));
+
+    if (ping_id == 0)
+        return 1;
 
     pk[0] = NET_PACKET_PING_REQUEST;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
@@ -252,14 +168,13 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
     if (id_equal(packet + 1, ping->dht->self_public_key))
         return 1;
 
-    int ping_index = is_pinging(ping, source, 0);
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
-    if (!ping_index)
-        return 1;
+    // generate key to encrypt ping_id with recipient privkey
+    DHT_get_shared_key_sent(ping->dht, shared_key, packet + 1);
 
-    --ping_index;
     // Decrypt ping_id
-    rc = decrypt_data_symmetric(ping->pings[ping_index].shared_key,
+    rc = decrypt_data_symmetric(shared_key,
                                 packet + 1 + CLIENT_ID_SIZE,
                                 packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                                 sizeof(ping_id) + crypto_box_MACBYTES,
@@ -268,11 +183,21 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
     if (rc != sizeof(ping_id))
         return 1;
 
-    if (ping->pings[ping_index].id != ping_id)
+    uint8_t data[PING_DATA_SIZE];
+
+    if (ping_array_check(data, sizeof(data), &ping->ping_array, ping_id) != sizeof(data))
+        return 1;
+
+    if (!id_equal(packet + 1, data))
+        return 1;
+
+    IP_Port ipp;
+    memcpy(&ipp, data + CLIENT_ID_SIZE, sizeof(IP_Port));
+
+    if (!ipport_equal(&ipp, &source))
         return 1;
 
     addto_lists(dht, source, packet + 1);
-
     return 0;
 }
 
@@ -348,6 +273,11 @@ PING *new_ping(DHT *dht)
     if (ping == NULL)
         return NULL;
 
+    if (ping_array_init(&ping->ping_array, PING_NUM_MAX, PING_TIMEOUT) != 0) {
+        free(ping);
+        return NULL;
+    }
+
     ping->dht = dht;
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, &handle_ping_request, dht);
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, dht);
@@ -359,6 +289,7 @@ void kill_ping(PING *ping)
 {
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, NULL, NULL);
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, NULL, NULL);
+    ping_array_free_all(&ping->ping_array);
 
     free(ping);
 }
