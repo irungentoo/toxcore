@@ -292,6 +292,12 @@ START_TEST(test_many_clients)
 loop_top:
         pairs[i].tox1 = rand() % NUM_TOXES;
         pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+
+        for (j = 0; j < i; ++j) {
+            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
+                goto loop_top;
+        }
+
         tox_get_address(toxes[pairs[i].tox1], address);
         int test = tox_add_friend(toxes[pairs[i].tox2], address, (uint8_t *)"Gentoo", 7);
 
