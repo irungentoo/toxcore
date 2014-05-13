@@ -205,24 +205,43 @@ int pack_nodes(uint8_t *data, uint16_t length, Node_format *nodes, uint16_t numb
     uint32_t i, packed_length = 0;
 
     for (i = 0; i < number; ++i) {
+        int ipv6 = -1;
+        uint8_t net_family;
+
         if (nodes[i].ip_port.ip.family == AF_INET) {
+            ipv6 = 0;
+            net_family = TOX_AF_INET;
+        } else if (nodes[i].ip_port.ip.family == TCP_INET) {
+            ipv6 = 0;
+            net_family = TOX_TCP_INET;
+        } else if (nodes[i].ip_port.ip.family == AF_INET6) {
+            ipv6 = 1;
+            net_family = TOX_AF_INET6;
+        } else if (nodes[i].ip_port.ip.family == TCP_INET6) {
+            ipv6 = 1;
+            net_family = TOX_TCP_INET6;
+        } else {
+            return -1;
+        }
+
+        if (ipv6 == 0) {
             uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + CLIENT_ID_SIZE;
 
             if (packed_length + size > length)
                 return -1;
 
-            data[packed_length] = TOX_AF_INET;
+            data[packed_length] = net_family;
             memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip4, sizeof(IP4));
             memcpy(data + packed_length + 1 + sizeof(IP4), &nodes[i].ip_port.port, sizeof(uint16_t));
             memcpy(data + packed_length + 1 + sizeof(IP4) + sizeof(uint16_t), nodes[i].client_id, CLIENT_ID_SIZE);
             packed_length += size;
-        } else if (nodes[i].ip_port.ip.family == AF_INET6) {
+        } else if (ipv6 == 1) {
             uint32_t size = 1 + sizeof(IP6) + sizeof(uint16_t) + CLIENT_ID_SIZE;
 
             if (packed_length + size > length)
                 return -1;
 
-            data[packed_length] = TOX_AF_INET6;
+            data[packed_length] = net_family;
             memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip6, sizeof(IP6));
             memcpy(data + packed_length + 1 + sizeof(IP6), &nodes[i].ip_port.port, sizeof(uint16_t));
             memcpy(data + packed_length + 1 + sizeof(IP6) + sizeof(uint16_t), nodes[i].client_id, CLIENT_ID_SIZE);
@@ -237,35 +256,61 @@ int pack_nodes(uint8_t *data, uint16_t length, Node_format *nodes, uint16_t numb
 
 /* Unpack data of length into nodes of size max_num_nodes.
  * Put the length of the data processed in processed_data_len.
+ * tcp_enabled sets if TCP nodes are expected (true) or not (false).
  *
  * return number of unpacked nodes on success.
  * return -1 on failure.
  */
 int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, uint8_t *data,
-                 uint16_t length)
+                 uint16_t length, uint8_t tcp_enabled)
 {
     uint32_t num = 0, len_processed = 0;
 
     while (num < max_num_nodes && len_processed < length) {
+        int ipv6 = -1;
+        uint8_t host_family;
+
         if (data[len_processed] == TOX_AF_INET) {
+            ipv6 = 0;
+            host_family = AF_INET;
+        } else if (data[len_processed] == TOX_TCP_INET) {
+            if (!tcp_enabled)
+                return -1;
+
+            ipv6 = 0;
+            host_family = TCP_INET;
+        } else if (data[len_processed] == TOX_AF_INET6) {
+            ipv6 = 1;
+            host_family = AF_INET6;
+        } else if (data[len_processed] == TOX_TCP_INET6) {
+            if (!tcp_enabled)
+                return -1;
+
+            ipv6 = 1;
+            host_family = TCP_INET6;
+        } else {
+            return -1;
+        }
+
+        if (ipv6 == 0) {
             uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + CLIENT_ID_SIZE;
 
             if (len_processed + size > length)
                 return -1;
 
-            nodes[num].ip_port.ip.family = AF_INET;
+            nodes[num].ip_port.ip.family = host_family;
             memcpy(&nodes[num].ip_port.ip.ip4, data + len_processed + 1, sizeof(IP4));
             memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + sizeof(IP4), sizeof(uint16_t));
             memcpy(nodes[num].client_id, data + len_processed + 1 + sizeof(IP4) + sizeof(uint16_t), CLIENT_ID_SIZE);
             len_processed += size;
             ++num;
-        } else if (data[len_processed] == TOX_AF_INET6) {
+        } else if (ipv6 == 1) {
             uint32_t size = 1 + sizeof(IP6) + sizeof(uint16_t) + CLIENT_ID_SIZE;
 
             if (len_processed + size > length)
                 return -1;
 
-            nodes[num].ip_port.ip.family = AF_INET6;
+            nodes[num].ip_port.ip.family = host_family;
             memcpy(&nodes[num].ip_port.ip.ip6, data + len_processed + 1, sizeof(IP6));
             memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + sizeof(IP6), sizeof(uint16_t));
             memcpy(nodes[num].client_id, data + len_processed + 1 + sizeof(IP6) + sizeof(uint16_t), CLIENT_ID_SIZE);
@@ -1156,7 +1201,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, uint8_t *packet, 
         return 1;
 
     uint16_t length_nodes = 0;
-    int num_nodes = unpack_nodes(plain_nodes, plain[0], &length_nodes, plain + 1, data_size);
+    int num_nodes = unpack_nodes(plain_nodes, plain[0], &length_nodes, plain + 1, data_size, 0);
 
     if (length_nodes != data_size)
         return 1;
@@ -2048,7 +2093,7 @@ static int handle_hardening(void *object, IP_Port source, uint8_t *source_pubkey
 
             uint16_t length_nodes = length - 1 - CLIENT_ID_SIZE;
             Node_format nodes[MAX_SENT_NODES];
-            int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, packet + 1 + CLIENT_ID_SIZE, length_nodes);
+            int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, packet + 1 + CLIENT_ID_SIZE, length_nodes, 0);
 
             /* TODO: MAX_SENT_NODES nodes should be returned at all times
              (right now we have a small network size so it could cause problems for testing and etc..) */
