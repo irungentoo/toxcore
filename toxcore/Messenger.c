@@ -885,7 +885,12 @@ static IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber)
 
     int crypt_id = m->friendlist[friendnumber].crypt_connection_id;
 
-    if (is_cryptoconnected(m->net_crypto, crypt_id) != CRYPTO_CONN_ESTABLISHED)
+    uint8_t direct_connected;
+
+    if (crypto_connection_status(m->net_crypto, crypt_id, &direct_connected) != CRYPTO_CONN_ESTABLISHED)
+        return zero;
+
+    if (direct_connected == 0)
         return zero;
 
     return m->net_crypto->crypto_connections[crypt_id].ip_port;
@@ -2201,10 +2206,15 @@ void do_friends(Messenger *m)
                 set_conection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key);
             }
 
-            IP_Port friendip;
+            uint8_t direct_connected;
+            unsigned int status = crypto_connection_status(m->net_crypto, m->friendlist[i].crypt_connection_id, &direct_connected);
 
-            if (onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip) == 1) {
-                set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, friendip);
+            if (direct_connected == 0 || status == CRYPTO_CONN_COOKIE_REQUESTING) {
+                IP_Port friendip;
+
+                if (onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip) == 1) {
+                    set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, friendip);
+                }
             }
         }
 
@@ -2231,13 +2241,6 @@ void do_friends(Messenger *m)
 
             if (m->friendlist[i].ping_lastsent + FRIEND_PING_INTERVAL < temp_time) {
                 send_ping(m, i);
-            }
-
-            if (is_cryptoconnected(m->net_crypto,
-                                   m->friendlist[i].crypt_connection_id) == CRYPTO_CONN_TIMED_OUT) { /* If the connection timed out, kill it. */
-                crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
-                m->friendlist[i].crypt_connection_id = -1;
-                set_friend_status(m, i, FRIEND_CONFIRMED);
             }
 
             if (m->friendlist[i].ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {

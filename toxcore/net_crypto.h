@@ -235,13 +235,11 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 
 
-/*  return 0 if no connection.
- *  return 1 we have sent a handshake
- *  return 2 if connexion is not confirmed yet (we have received a handshake but no empty data packet).
- *  return 3 if the connection is established.
- *  return 4 if the connection is timed out and waiting to be killed.
+/* return one of CRYPTO_CONN_* values indicating the state of the connection.
+ *
+ * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  */
-int is_cryptoconnected(Net_Crypto *c, int crypt_connection_id);
+unsigned int crypto_connection_status(Net_Crypto *c, int crypt_connection_id, uint8_t *direct_connected);
 
 
 /* Generate our public and private keys.

@@ -1309,7 +1309,6 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
     if (create_send_handshake(c, crypt_connection_id, n_c->cookie) != 0)
         return -1;
 
-    send_temp_packet(c, crypt_connection_id);
     conn->status = CRYPTO_CONN_NOT_CONFIRMED;
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     crypto_connection_add_source(c, crypt_connection_id, n_c->source);
@@ -1651,18 +1650,23 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
     return wipe_crypto_connection(c, crypt_connection_id);
 }
 
-/*  return 0 if no connection.
- *  return 1 we have sent a handshake.
- *  return 2 if connection is not confirmed yet (we have received a handshake but no empty data packet).
- *  return 3 if the connection is established.
- *  return 4 if the connection is timed out and waiting to be killed.
+/* return one of CRYPTO_CONN_* values indicating the state of the connection.
+ *
+ * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  */
-int is_cryptoconnected(Net_Crypto *c, int crypt_connection_id)
+unsigned int crypto_connection_status(Net_Crypto *c, int crypt_connection_id, uint8_t *direct_connected)
 {
-    if ((unsigned int)crypt_connection_id < c->crypto_connections_length)
-        return c->crypto_connections[crypt_connection_id].status;
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
-    return CRYPTO_CONN_NO_CONNECTION;
+    if (conn == 0)
+        return CRYPTO_CONN_NO_CONNECTION;
+
+    *direct_connected = 0;
+
+    if ((CRYPTO_SEND_PACKET_INTERVAL * MAX_NUM_SENDPACKET_TRIES + conn->direct_lastrecv_time) > current_time_monotonic())
+        *direct_connected = 1;
+
+    return conn->status;
 }
 
 void new_keys(Net_Crypto *c)
