@@ -42,7 +42,7 @@
 #define MAX_TO_PING 8
 
 /* Ping newly announced nodes to ping per TIME_TO_PING seconds*/
-#define TIME_TO_PING 3
+#define TIME_TO_PING 8
 
 
 struct PING {
@@ -201,6 +201,32 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
     return 0;
 }
 
+/* Check if client_id with ip_port is in the list.
+ *
+ * return 1 if it is.
+ * return 0 if it isn't.
+ */
+static int in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Port ip_port)
+{
+    uint32_t i;
+
+    for (i = 0; i < length; ++i) {
+        if (id_equal(list[i].client_id, client_id)) {
+            IPPTsPng *ipptp;
+
+            if (ip_port.ip.family == AF_INET) {
+                ipptp = &list[i].assoc4;
+            } else {
+                ipptp = &list[i].assoc6;
+            }
+
+            if (!is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT) && ipport_equal(&ipptp->ip_port, &ip_port))
+                return 1;
+        }
+    }
+
+    return 0;
+}
 
 /* Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TO_PING seconds
@@ -215,6 +241,9 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
 int add_to_ping(PING *ping, uint8_t *client_id, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip))
+        return -1;
+
+    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, client_id, ip_port))
         return -1;
 
     uint32_t i;

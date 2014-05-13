@@ -382,7 +382,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
 /* Check if client with client_id is already in node format list of length length.
  *
  *  return 1 if true.
- *  return 2 if false.
+ *  return 0 if false.
  */
 static int client_in_nodelist(Node_format *list, uint32_t length, uint8_t *client_id)
 {
