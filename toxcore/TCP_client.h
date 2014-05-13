@@ -59,12 +59,13 @@ typedef struct  {
     struct {
         uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+        uint32_t number;
     } connections[NUM_CLIENT_CONNECTIONS];
     int (*response_callback)(void *object, uint8_t connection_id, uint8_t *public_key);
     void *response_callback_object;
-    int (*status_callback)(void *object, uint8_t connection_id, uint8_t status);
+    int (*status_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t status);
     void *status_callback_object;
-    int (*data_callback)(void *object, uint8_t connection_id, uint8_t *data, uint16_t length);
+    int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t *data, uint16_t length);
     void *data_callback_object;
 
     int (*onion_callback)(void *object, uint8_t *data, uint16_t length);
@@ -99,16 +100,24 @@ void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(vo
 int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key);
 void routing_response_handler(TCP_Client_Connection *con, int (*response_callback)(void *object, uint8_t connection_id,
                               uint8_t *public_key), void *object);
-void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint8_t connection_id,
-                            uint8_t status), void *object);
+void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint32_t number,
+                            uint8_t connection_id, uint8_t status), void *object);
 
+/* Set the number that will be used as an argument in the callbacks related to con_id.
+ *
+ * When not set by this function, the number is ~0.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32_t number);
 
 /* return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */
 int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_t length);
-void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint8_t connection_id,
-                          uint8_t *data, uint16_t length), void *object);
+void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
+                          uint8_t connection_id, uint8_t *data, uint16_t length), void *object);
 
 #endif

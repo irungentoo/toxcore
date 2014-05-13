@@ -189,8 +189,8 @@ void routing_response_handler(TCP_Client_Connection *con, int (*response_callbac
     con->response_callback_object = object;
 }
 
-void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint8_t connection_id,
-                            uint8_t status), void *object)
+void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint32_t number,
+                            uint8_t connection_id, uint8_t status), void *object)
 {
     con->status_callback = status_callback;
     con->status_callback_object = object;
@@ -214,8 +214,27 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
 }
 
-void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint8_t connection_id,
-                          uint8_t *data, uint16_t length), void *object)
+/* Set the number that will be used as an argument in the callbacks related to con_id.
+ *
+ * When not set by this function, the number is ~0.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32_t number)
+{
+    if (con_id >= NUM_CLIENT_CONNECTIONS)
+        return -1;
+
+    if (con->connections[con_id].status == 0)
+        return -1;
+
+    con->connections[con_id].number = number;
+    return 0;
+}
+
+void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
+                          uint8_t connection_id, uint8_t *data, uint16_t length), void *object)
 {
     con->data_callback = data_callback;
     con->data_callback_object = object;
@@ -350,6 +369,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
                 return -1;
 
             conn->connections[con_id].status = 1;
+            conn->connections[con_id].number = ~0;
             memcpy(conn->connections[con_id].public_key, data + 2, crypto_box_PUBLICKEYBYTES);
 
             if (conn->response_callback)
@@ -373,7 +393,8 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
             conn->connections[con_id].status = 2;
 
             if (conn->status_callback)
-                conn->status_callback(conn->status_callback_object, con_id, conn->connections[con_id].status);
+                conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
+                                      conn->connections[con_id].status);
 
             return 0;
         }
@@ -393,7 +414,8 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
             conn->connections[con_id].status = 1;
 
             if (conn->status_callback)
-                conn->status_callback(conn->status_callback_object, con_id, conn->connections[con_id].status);
+                conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
+                                      conn->connections[con_id].status);
 
             return 0;
         }
@@ -438,7 +460,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
             uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
 
             if (conn->data_callback)
-                conn->data_callback(conn->data_callback_object, con_id, data + 1, length - 1);
+                conn->data_callback(conn->data_callback_object, conn->connections[con_id].number, con_id, data + 1, length - 1);
         }
     }
 
