@@ -296,7 +296,9 @@ static uint8_t response_callback_connection_id;
 static uint8_t response_callback_public_key[crypto_box_PUBLICKEYBYTES];
 static int response_callback(void *object, uint8_t connection_id, uint8_t *public_key)
 {
-    set_tcp_connection_number(object - 2, connection_id, 7);
+    if (set_tcp_connection_number(object - 2, connection_id, 7) != 0)
+        return 1;
+
     response_callback_connection_id = connection_id;
     memcpy(response_callback_public_key, public_key, crypto_box_PUBLICKEYBYTES);
     response_callback_good++;
@@ -384,7 +386,7 @@ START_TEST(test_client)
     uint8_t f2_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(f2_public_key, f2_secret_key);
     TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key);
-    routing_response_handler(conn, response_callback, conn + 2);
+    routing_response_handler(conn, response_callback, ((void *)conn) + 2);
     routing_status_handler(conn, status_callback, (void *)2);
     routing_data_handler(conn, data_callback, (void *)3);
     response_callback_good = status_callback_good = data_callback_good = 0;
