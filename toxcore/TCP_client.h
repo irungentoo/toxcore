@@ -67,6 +67,8 @@ typedef struct  {
     void *status_callback_object;
     int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t *data, uint16_t length);
     void *data_callback_object;
+    int (*oob_data_callback)(void *object, uint8_t *public_key, uint8_t *data, uint16_t length);
+    void *oob_data_callback_object;
 
     int (*onion_callback)(void *object, uint8_t *data, uint16_t length);
     void *onion_callback_object;
@@ -119,5 +121,14 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
 int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_t length);
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
                           uint8_t connection_id, uint8_t *data, uint16_t length), void *object);
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure.
+ */
+int send_oob_packet(TCP_Client_Connection *con, uint8_t *public_key, uint8_t *data, uint16_t length);
+void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, uint8_t *public_key,
+                      uint8_t *data, uint16_t length), void *object);
+
 
 #endif

@@ -508,6 +508,31 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, uint8
     return 0;
 }
 
+/* return 0 on success.
+ * return -1 on failure (connection must be killed).
+ */
+static int handle_TCP_oob_send(TCP_Server *TCP_server, uint32_t con_id, uint8_t *public_key, uint8_t *data,
+                               uint16_t length)
+{
+    if (length == 0 || length > TCP_MAX_OOB_DATA_LENGTH)
+        return -1;
+
+    TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[con_id];
+
+    int other_index = get_TCP_connection_index(TCP_server, public_key);
+
+    if (other_index != -1) {
+        uint8_t resp_packet[1 + crypto_box_PUBLICKEYBYTES + length];
+        resp_packet[0] = TCP_PACKET_OOB_RECV;
+        memcpy(resp_packet + 1, con->public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(resp_packet + 1 + crypto_box_PUBLICKEYBYTES, data, length);
+        write_packet_TCP_secure_connection(&TCP_server->accepted_connection_array[other_index], resp_packet,
+                                           sizeof(resp_packet));
+    }
+
+    return 0;
+}
+
 static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number)
 {
     if (con_number >= NUM_CLIENT_CONNECTIONS)
@@ -622,6 +647,14 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *d
             } else {
                 return -1;
             }
+        }
+
+        case TCP_PACKET_OOB_SEND: {
+            if (length <= 1 + crypto_box_PUBLICKEYBYTES)
+                return -1;
+
+            return handle_TCP_oob_send(TCP_server, con_id, data + 1, data + 1 + crypto_box_PUBLICKEYBYTES,
+                                       length - (1 + crypto_box_PUBLICKEYBYTES));
         }
 
         case TCP_PACKET_ONION_REQUEST: {

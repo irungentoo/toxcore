@@ -52,7 +52,6 @@ static int is_path_used(Onion_Client_Paths *onion_paths, Node_format *nodes)
         }
 
         if (ipport_equal(&onion_paths->paths[i].ip_port1, &nodes[0].ip_port)) {
-            printf("bad\n");
             return i;
         }
     }

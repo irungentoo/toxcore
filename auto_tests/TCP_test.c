@@ -340,6 +340,27 @@ static int data_callback(void *object, uint32_t number, uint8_t connection_id, u
     return 1;
 }
 
+static int oob_data_callback_good;
+static uint8_t oob_pubkey[crypto_box_PUBLICKEYBYTES];
+static int oob_data_callback(void *object, uint8_t *public_key, uint8_t *data, uint16_t length)
+{
+    if (object != (void *)4)
+        return 1;
+
+    if (length != 5)
+        return 1;
+
+    if (memcmp(public_key, oob_pubkey, crypto_box_PUBLICKEYBYTES) != 0)
+        return 1;
+
+    if (data[0] == 1 && data[1] == 2 && data[2] == 3 && data[3] == 4 && data[4] == 5) {
+        oob_data_callback_good++;
+        return 0;
+    }
+
+    return 1;
+}
+
 START_TEST(test_client)
 {
     unix_time_update();
@@ -389,7 +410,8 @@ START_TEST(test_client)
     routing_response_handler(conn, response_callback, ((void *)conn) + 2);
     routing_status_handler(conn, status_callback, (void *)2);
     routing_data_handler(conn, data_callback, (void *)3);
-    response_callback_good = status_callback_good = data_callback_good = 0;
+    oob_data_handler(conn, oob_data_callback, (void *)4);
+    oob_data_callback_good = response_callback_good = status_callback_good = data_callback_good = 0;
     c_sleep(50);
     do_TCP_connection(conn);
     do_TCP_connection(conn2);
@@ -399,6 +421,9 @@ START_TEST(test_client)
     do_TCP_connection(conn);
     do_TCP_connection(conn2);
     c_sleep(50);
+    uint8_t data[5] = {1, 2, 3, 4, 5};
+    memcpy(oob_pubkey, f2_public_key, crypto_box_PUBLICKEYBYTES);
+    send_oob_packet(conn2, f_public_key, data, 5);
     send_routing_request(conn, f2_public_key);
     send_routing_request(conn2, f_public_key);
     c_sleep(50);
@@ -406,6 +431,7 @@ START_TEST(test_client)
     c_sleep(50);
     do_TCP_connection(conn);
     do_TCP_connection(conn2);
+    ck_assert_msg(oob_data_callback_good == 1, "oob callback not called");
     ck_assert_msg(response_callback_good == 1, "response callback not called");
     ck_assert_msg(memcmp(response_callback_public_key, f2_public_key, crypto_box_PUBLICKEYBYTES) == 0, "wrong public key");
     ck_assert_msg(status_callback_good == 1, "status callback not called");
@@ -413,7 +439,6 @@ START_TEST(test_client)
     ck_assert_msg(status_callback_connection_id == response_callback_connection_id, "connection ids not equal");
     c_sleep(50);
     do_TCP_server(tcp_s);
-    uint8_t data[5] = {1, 2, 3, 4, 5};
     ck_assert_msg(send_data(conn2, 0, data, 5) == 1, "send data failed");
     c_sleep(50);
     do_TCP_server(tcp_s);

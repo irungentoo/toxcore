@@ -214,6 +214,23 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
 }
 
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure.
+ */
+int send_oob_packet(TCP_Client_Connection *con, uint8_t *public_key, uint8_t *data, uint16_t length)
+{
+    if (length == 0 || length > TCP_MAX_OOB_DATA_LENGTH)
+        return -1;
+
+    uint8_t packet[1 + crypto_box_PUBLICKEYBYTES + length];
+    packet[0] = TCP_PACKET_OOB_SEND;
+    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, data, length);
+    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+}
+
+
 /* Set the number that will be used as an argument in the callbacks related to con_id.
  *
  * When not set by this function, the number is ~0.
@@ -240,6 +257,12 @@ void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void 
     con->data_callback_object = object;
 }
 
+void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, uint8_t *public_key,
+                      uint8_t *data, uint16_t length), void *object)
+{
+    con->oob_data_callback = oob_data_callback;
+    con->oob_data_callback_object = object;
+}
 
 /* return 1 on success.
  * return 0 if could not send packet.
@@ -446,6 +469,17 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
             } else {
                 return -1;
             }
+        }
+
+        case TCP_PACKET_OOB_RECV: {
+            if (length <= 1 + crypto_box_PUBLICKEYBYTES)
+                return -1;
+
+            if (conn->oob_data_callback)
+                conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + crypto_box_PUBLICKEYBYTES,
+                                        length - (1 + crypto_box_PUBLICKEYBYTES));
+
+            return 0;
         }
 
         case TCP_PACKET_ONION_RESPONSE: {
