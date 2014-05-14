@@ -33,6 +33,33 @@
 #define ANNOUNCE_ARRAY_SIZE 256
 #define ANNOUNCE_TIMEOUT 10
 
+
+/*
+ * return -1 if nodes are suitable for creating a new path.
+ * return path number of already existing similar path if one already exists.
+ */
+static int is_path_used(Onion_Client_Paths *onion_paths, Node_format *nodes)
+{
+    uint32_t i;
+
+    for (i = 0; i < NUMBER_ONION_PATHS; ++i) {
+        if (is_timeout(onion_paths->last_path_success[i], ONION_PATH_TIMEOUT)) {
+            continue;
+        }
+
+        if (is_timeout(onion_paths->path_creation_time[i], ONION_PATH_MAX_LIFETIME)) {
+            continue;
+        }
+
+        if (ipport_equal(&onion_paths->paths[i].ip_port1, &nodes[0].ip_port)) {
+            printf("bad\n");
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 /* Create a new path or use an old suitable one (if pathnum is valid)
  * or a rondom one from onion_paths.
  *
@@ -54,11 +81,17 @@ static int random_path(DHT *dht, Onion_Client_Paths *onion_paths, uint32_t pathn
         if (random_nodes_path(dht, nodes, 3) != 3)
             return -1;
 
-        if (create_onion_path(dht, &onion_paths->paths[pathnum], nodes) == -1)
-            return -1;
+        int n = is_path_used(onion_paths, nodes);
 
-        onion_paths->last_path_success[pathnum] = unix_time() + ONION_PATH_FIRST_TIMEOUT - ONION_PATH_TIMEOUT;
-        onion_paths->path_creation_time[pathnum] = unix_time();
+        if (n == -1) {
+            if (create_onion_path(dht, &onion_paths->paths[pathnum], nodes) == -1)
+                return -1;
+
+            onion_paths->last_path_success[pathnum] = unix_time() + ONION_PATH_FIRST_TIMEOUT - ONION_PATH_TIMEOUT;
+            onion_paths->path_creation_time[pathnum] = unix_time();
+        } else {
+            pathnum = n;
+        }
     }
 
     memcpy(path, &onion_paths->paths[pathnum], sizeof(Onion_Path));
