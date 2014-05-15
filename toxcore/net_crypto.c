@@ -1549,15 +1549,15 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 if ((double)num_packets_array(&conn->send_array) < 0.3 * (conn->packet_send_rate)) {
                     conn->packet_send_rate *= 1.2;
-                } else if ((double)num_packets_array(&conn->send_array) > 0.5 * (conn->packet_send_rate)) {
+                } else if ((double)num_packets_array(&conn->send_array) > 0.4 * (conn->packet_send_rate)) {
                     conn->packet_send_rate *= 0.8;
                 }
 
                 if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending)
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
 
-                if (conn->packet_send_rate > CRYPTO_PACKET_BUFFER_SIZE * 8)
-                    conn->packet_send_rate = CRYPTO_PACKET_BUFFER_SIZE * 8;
+                if (conn->packet_send_rate > CRYPTO_PACKET_BUFFER_SIZE * 2)
+                    conn->packet_send_rate = CRYPTO_PACKET_BUFFER_SIZE * 2;
 
             }
 
