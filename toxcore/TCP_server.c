@@ -610,15 +610,6 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
     }
 }
 
-static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number)
-{
-    if (rm_connection_index(TCP_server, con, con_number) != 0)
-        return -1;
-
-    send_disconnect_notification(con, con_number);
-    return 0;
-}
-
 static int handle_onion_recv_1(void *object, IP_Port dest, uint8_t *data, uint16_t length)
 {
     TCP_Server *TCP_server = object;
@@ -671,7 +662,7 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *d
             if (length != 2)
                 return -1;
 
-            return disconnect_conection_index(TCP_server, con, data[1] - NUM_RESERVED_PORTS);
+            return rm_connection_index(TCP_server, con, data[1] - NUM_RESERVED_PORTS);
         }
 
         case TCP_PACKET_PING: {
