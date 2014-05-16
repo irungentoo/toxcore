@@ -59,7 +59,7 @@
 
 /* frequency to ping connected nodes and timeout in seconds */
 #define TCP_PING_FREQUENCY 30
-#define TCP_PING_TIMEOUT 20
+#define TCP_PING_TIMEOUT 10
 
 enum {
     TCP_STATUS_NO_STATUS,
