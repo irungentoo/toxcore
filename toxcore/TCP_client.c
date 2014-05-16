@@ -532,6 +532,10 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn)
         if (ret == 1) {
             conn->last_pinged = unix_time();
             conn->ping_id = ping_id;
+        } else {
+            if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY + TCP_PING_TIMEOUT)) {
+                conn->status = TCP_CLIENT_DISCONNECTED;
+            }
         }
     }
 
