@@ -304,6 +304,20 @@ static int send_ping_response(TCP_Client_Connection *con, uint64_t ping_id)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
+int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id)
+{
+    if (con_id >= NUM_CLIENT_CONNECTIONS)
+        return -1;
+
+    con->connections[con_id].status = 0;
+    con->connections[con_id].number = 0;
+    return send_disconnect_notification(con, con_id + NUM_RESERVED_PORTS);
+}
+
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
 int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
 {
     uint8_t packet[1 + length];
@@ -564,6 +578,7 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
 
         if (sizeof(data) == len) {
             if (handle_handshake(TCP_connection, data) == 0) {
+                TCP_connection->kill_at = ~0;
                 TCP_connection->status = TCP_CLIENT_CONFIRMED;
             } else {
                 TCP_connection->kill_at = 0;

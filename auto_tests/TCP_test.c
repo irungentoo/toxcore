@@ -446,6 +446,15 @@ START_TEST(test_client)
     do_TCP_connection(conn);
     do_TCP_connection(conn2);
     ck_assert_msg(data_callback_good == 1, "data callback not called");
+    status_callback_good = 0;
+    send_disconnect_request(conn2, 0);
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_TCP_connection(conn);
+    do_TCP_connection(conn2);
+    ck_assert_msg(status_callback_good == 1, "status callback not called");
+    ck_assert_msg(status_callback_status == 1, "wrong status");
 }
 END_TEST
 

@@ -105,6 +105,12 @@ void routing_response_handler(TCP_Client_Connection *con, int (*response_callbac
 void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint32_t number,
                             uint8_t connection_id, uint8_t status), void *object);
 
+/* return 1 on success.
+ * return 0 if could not send packet.
+ * return -1 on failure (connection must be killed).
+ */
+int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id);
+
 /* Set the number that will be used as an argument in the callbacks related to con_id.
  *
  * When not set by this function, the number is ~0.
