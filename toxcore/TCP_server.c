@@ -350,6 +350,8 @@ static void kill_TCP_connection(TCP_Secure_Connection *con)
     memset(con, 0, sizeof(TCP_Secure_Connection));
 }
 
+static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number);
+
 /* Kill an accepted TCP_Secure_Connection
  *
  * return -1 on failure.
@@ -359,6 +361,12 @@ static int kill_accepted(TCP_Server *TCP_server, int index)
 {
     if ((uint32_t)index >= TCP_server->size_accepted_connections)
         return -1;
+
+    uint32_t i;
+
+    for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
+        rm_connection_index(TCP_server, &TCP_server->accepted_connection_array[index], i);
+    }
 
     sock_t sock = TCP_server->accepted_connection_array[index].sock;
 
@@ -482,9 +490,16 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, uint8
     }
 
     for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
-        if (con->connections[i].status == 0) {
+        if (con->connections[i].status != 0) {
+            if (memcmp(public_key, con->connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+                if (send_routing_response(con, i + NUM_RESERVED_PORTS, public_key) == -1) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            }
+        } else if (index == (uint32_t)~0) {
             index = i;
-            break;
         }
     }
 
@@ -560,7 +575,12 @@ static int handle_TCP_oob_send(TCP_Server *TCP_server, uint32_t con_id, uint8_t 
     return 0;
 }
 
-static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number)
+/* Remove connection with con_number from the connections array of con.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number)
 {
     if (con_number >= NUM_CLIENT_CONNECTIONS)
         return -1;
@@ -584,12 +604,19 @@ static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connect
         con->connections[con_number].index = 0;
         con->connections[con_number].other_id = 0;
         con->connections[con_number].status = 0;
-        //TODO: return values?
-        send_disconnect_notification(con, con_number);
         return 0;
     } else {
         return -1;
     }
+}
+
+static int disconnect_conection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number)
+{
+    if (rm_connection_index(TCP_server, con, con_number) != 0)
+        return -1;
+
+    send_disconnect_notification(con, con_number);
+    return 0;
 }
 
 static int handle_onion_recv_1(void *object, IP_Port dest, uint8_t *data, uint16_t length)
