@@ -60,62 +60,62 @@ void accept_friend_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t 
 
 
 /******************************************************************************/
-void callback_recv_invite ( uint32_t call_index, void *_arg )
+void callback_recv_invite ( int32_t call_index, void *_arg )
 {/*    
     Status *cast = _arg;
     
     cast->calls[call_index].Callee.status = Ringing;*/
 }
-void callback_recv_ringing ( uint32_t call_index, void *_arg )
+void callback_recv_ringing ( int32_t call_index, void *_arg )
 {    
     Status *cast = _arg;
     
     cast->calls[call_index].Caller.status = Ringing;
 }
-void callback_recv_starting ( uint32_t call_index, void *_arg )
+void callback_recv_starting ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
     
     cast->calls[call_index].Caller.status = InCall;
 }
-void callback_recv_ending ( uint32_t call_index, void *_arg )
+void callback_recv_ending ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     cast->calls[call_index].Caller.status = Ended;
 }
 
-void callback_recv_error ( uint32_t call_index, void *_arg )
+void callback_recv_error ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "AV internal error");
 }
 
-void callback_call_started ( uint32_t call_index, void *_arg )
+void callback_call_started ( int32_t call_index, void *_arg )
 {/*
     Status *cast = _arg;
     
     cast->calls[call_index].Callee.status = InCall;*/
 }
-void callback_call_canceled ( uint32_t call_index, void *_arg )
+void callback_call_canceled ( int32_t call_index, void *_arg )
 {/*
     Status *cast = _arg;
     
     cast->calls[call_index].Callee.status = Cancel;*/
 }
-void callback_call_rejected ( uint32_t call_index, void *_arg )
+void callback_call_rejected ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
     
     cast->calls[call_index].Caller.status = Rejected;
 }
-void callback_call_ended ( uint32_t call_index, void *_arg )
+void callback_call_ended ( int32_t call_index, void *_arg )
 {/*
     Status *cast = _arg;
     
     cast->calls[call_index].Callee.status = Ended;*/
 }
 
-void callback_requ_timeout ( uint32_t call_index, void *_arg )
+void callback_requ_timeout ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "No answer!");
 }

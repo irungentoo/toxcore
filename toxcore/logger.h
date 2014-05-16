@@ -53,7 +53,7 @@ char* logger_timestr (char* dest);
 #define _SFILE (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
-#define WRITE_FORMAT(__LEVEL__, format) char* the_str = calloc(sizeof(char), strlen(format)+ 500); sprintf(the_str, "[%u] [%s] [%s] [%s:%d %s()] %s\n", \
+#define WRITE_FORMAT(__LEVEL__, format) char* the_str = calloc(sizeof(char), strlen(format)+ 500); sprintf(the_str, "\n[%u] [%s] [%s] [%s:%d %s()] %s", \
                              logger_get_pid(), logger_stringify_level(__LEVEL__), logger_timestr(__time__), _SFILE, __LINE__, __func__, format)
 
 /* Use these macros */

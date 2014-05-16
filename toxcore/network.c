@@ -374,7 +374,7 @@ void networking_poll(Networking_Core *net)
         if (length < 1) continue;
 
         if (!(net->packethandlers[data[0]].function)) {
-            LOGGER_WARNING("[%02u] -- Packet has no handler.\n", data[0]);
+            LOGGER_WARNING("[%02u] -- Packet has no handler", data[0]);
             continue;
         }
 

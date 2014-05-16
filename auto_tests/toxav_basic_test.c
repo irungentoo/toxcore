@@ -58,7 +58,7 @@ void accept_friend_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t 
 
 
 /******************************************************************************/
-void callback_recv_invite ( uint32_t call_index, void *_arg )
+void callback_recv_invite ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
     
@@ -66,14 +66,14 @@ void callback_recv_invite ( uint32_t call_index, void *_arg )
     cast->Bob.status = Ringing;
     cast->Bob.call_index = call_index;
 }
-void callback_recv_ringing ( uint32_t call_index, void *_arg )
+void callback_recv_ringing ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     /* Alice always sends invite */
     cast->Alice.status = Ringing;
 }
-void callback_recv_starting ( uint32_t call_index, void *_arg )
+void callback_recv_starting ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
@@ -82,7 +82,7 @@ void callback_recv_starting ( uint32_t call_index, void *_arg )
     cast->Alice.status = InCall;
     toxav_prepare_transmission(cast->Alice.av, call_index, &muhcaps, 1);
 }
-void callback_recv_ending ( uint32_t call_index, void *_arg )
+void callback_recv_ending ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
@@ -95,12 +95,12 @@ void callback_recv_ending ( uint32_t call_index, void *_arg )
     }
 }
 
-void callback_recv_error ( uint32_t call_index, void *_arg )
+void callback_recv_error ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "AV internal error");
 }
 
-void callback_call_started ( uint32_t call_index, void *_arg )
+void callback_call_started ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
@@ -109,14 +109,14 @@ void callback_call_started ( uint32_t call_index, void *_arg )
     cast->Bob.status = InCall;
     toxav_prepare_transmission(cast->Bob.av, call_index, &muhcaps, 1);
 }
-void callback_call_canceled ( uint32_t call_index, void *_arg )
+void callback_call_canceled ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     printf ( "Call Canceled for Bob!\n" );
     cast->Bob.status = Cancel;
 }
-void callback_call_rejected ( uint32_t call_index, void *_arg )
+void callback_call_rejected ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
@@ -125,7 +125,7 @@ void callback_call_rejected ( uint32_t call_index, void *_arg )
     /* If Bob rejects, call is ended for alice and she sends ending */
     cast->Alice.status = Rejected;
 }
-void callback_call_ended ( uint32_t call_index, void *_arg )
+void callback_call_ended ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
@@ -133,7 +133,7 @@ void callback_call_ended ( uint32_t call_index, void *_arg )
     cast->Bob.status = Ended;
 }
 
-void callback_requ_timeout ( uint32_t call_index, void *_arg )
+void callback_requ_timeout ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "No answer!");
 }

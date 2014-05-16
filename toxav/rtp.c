@@ -652,36 +652,6 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
 
 
 
-
-
-
-
-/********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- *
- *
- *
- * PUBLIC API FUNCTIONS IMPLEMENTATIONS
- *
- *
- *
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************/
-
-
-
-
-
-
-
-
-
 /**
  * @brief Release all messages held by session.
  *
@@ -757,6 +727,7 @@ RTPMessage *rtp_recv_msg ( RTPSession *session )
     pthread_mutex_lock(&session->mutex);
     
     if ( session->queue_size == 0 ) {
+        pthread_mutex_unlock(&session->mutex);
         return NULL;
     }
     
@@ -890,12 +861,13 @@ RTPSession *rtp_init_session ( int            payload_type,
     assert(_retu);
 
     if ( -1 == custom_user_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, _retu) ||
-        !encrypt_key, !decrypt_key, !encrypt_nonce, !decrypt_nonce
-    ) {
+               !encrypt_key || !decrypt_key || !encrypt_nonce || !decrypt_nonce) {
         LOGGER_ERROR("Error setting custom register handler for rtp session");
         free(_retu);
         return NULL;
     }
+    
+    LOGGER_DEBUG("Registered packet handler: pt: %d; fid: %d", payload_type, friend_num);
 
     _retu->version   = RTP_VERSION;   /* It's always 2 */
     _retu->padding   = 0;             /* If some additional data is needed about the packet */

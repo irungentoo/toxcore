@@ -71,10 +71,7 @@ JitterBuffer *create_queue(int capacity)
 
 void terminate_queue(JitterBuffer* q)
 {
-    int i;
-    for ( i = 0; i < q->capacity; i ++ ) {
-        rtp_free_msg(NULL, q->queue[i]);
-    }
+    empty_queue(q);
     free(q->queue);
     free(q);
 }

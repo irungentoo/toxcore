@@ -60,8 +60,8 @@ void __attribute__((destructor)) terminate_logger()
     
     time_t tim = time(NULL);
     
-    logger_write(ERROR, "============== Closing logger ==============\n"
-                        "Time: %s", asctime(localtime(&tim)));
+    logger_write(ERROR, "\n============== Closing logger [%u] ==============\n"
+                        "Time: %s", logger_get_pid(), asctime(localtime(&tim)));
     
     fclose(logger.log_file);
 }
@@ -96,12 +96,12 @@ int logger_init(const char* file_name, LoggerLevel level)
     sprintf(final_l, "%s"/*.%u"*/, file_name, logger_get_pid());
     
     if ( logger.log_file ) { 
-        fprintf(stderr, "Error opening logger name: %s with level %d: already opened!\n", final_l, level);
+        fprintf(stderr, "Error opening logger name: %s with level %d: %s!\n", final_l, level, strerror(errno));
         free (final_l);
         return -1;
     }
     
-    logger.log_file = fopen(final_l, "wb");
+    logger.log_file = fopen(final_l, "ab");
     
     if ( logger.log_file == NULL ) {
         char error[1000];
@@ -120,8 +120,8 @@ int logger_init(const char* file_name, LoggerLevel level)
     
     
     time_t tim = time(NULL);
-    logger_write(ERROR, "============== Starting logger ==============\n"
-                        "Time: %s", asctime(localtime(&tim)));
+    logger_write(ERROR, "\n============== Starting logger [%u] ==============\n"
+                        "Time: %s", logger_get_pid(), asctime(localtime(&tim)));
     
     
     

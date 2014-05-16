@@ -29,7 +29,7 @@
 /* vpx_image_t */
 #include <vpx/vpx_image.h>
 
-typedef void ( *ToxAVCallback ) ( uint32_t, void *arg );
+typedef void ( *ToxAVCallback ) ( int32_t, void *arg );
 typedef struct _ToxAv ToxAv;
 
 #ifndef __TOX_DEFINED__
@@ -133,7 +133,7 @@ extern const ToxAvCodecSettings av_DefaultSettings;
  * @return ToxAv*
  * @retval NULL On error.
  */
-ToxAv *toxav_new(Tox *messenger, uint32_t max_calls);
+ToxAv *toxav_new(Tox *messenger, int32_t max_calls);
 
 /**
  * @brief Remove A/V session.
@@ -163,7 +163,7 @@ void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID 
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_call(ToxAv *av, uint32_t* call_index, int user, ToxAvCallType call_type, int ringing_seconds);
+int toxav_call(ToxAv *av, int32_t* call_index, int user, ToxAvCallType call_type, int ringing_seconds);
 
 /**
  * @brief Hangup active call.
@@ -173,7 +173,7 @@ int toxav_call(ToxAv *av, uint32_t* call_index, int user, ToxAvCallType call_typ
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_hangup(ToxAv *av, uint32_t call_index);
+int toxav_hangup(ToxAv *av, int32_t call_index);
 
 /**
  * @brief Answer incomming call.
@@ -184,7 +184,7 @@ int toxav_hangup(ToxAv *av, uint32_t call_index);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_answer(ToxAv *av, uint32_t call_index, ToxAvCallType call_type );
+int toxav_answer(ToxAv *av, int32_t call_index, ToxAvCallType call_type );
 
 /**
  * @brief Reject incomming call.
@@ -195,7 +195,7 @@ int toxav_answer(ToxAv *av, uint32_t call_index, ToxAvCallType call_type );
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_reject(ToxAv *av, uint32_t call_index, const char *reason);
+int toxav_reject(ToxAv *av, int32_t call_index, const char *reason);
 
 /**
  * @brief Cancel outgoing request.
@@ -207,7 +207,7 @@ int toxav_reject(ToxAv *av, uint32_t call_index, const char *reason);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_cancel(ToxAv* av, uint32_t call_index, int peer_id, const char* reason);
+int toxav_cancel(ToxAv* av, int32_t call_index, int peer_id, const char* reason);
 
 /**
  * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
@@ -217,7 +217,7 @@ int toxav_cancel(ToxAv* av, uint32_t call_index, int peer_id, const char* reason
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_stop_call(ToxAv *av, uint32_t call_index);
+int toxav_stop_call(ToxAv *av, int32_t call_index);
 
 /**
  * @brief Must be call before any RTP transmission occurs.
@@ -228,7 +228,7 @@ int toxav_stop_call(ToxAv *av, uint32_t call_index);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_prepare_transmission(ToxAv* av, uint32_t call_index, ToxAvCodecSettings* codec_settings, int support_video);
+int toxav_prepare_transmission(ToxAv* av, int32_t call_index, ToxAvCodecSettings* codec_settings, int support_video);
 
 /**
  * @brief Call this at the end of the transmission.
@@ -238,7 +238,7 @@ int toxav_prepare_transmission(ToxAv* av, uint32_t call_index, ToxAvCodecSetting
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_kill_transmission(ToxAv *av, uint32_t call_index);
+int toxav_kill_transmission(ToxAv* av, int32_t call_index);
 
 /**
  * @brief Receive decoded video packet.
@@ -249,7 +249,7 @@ int toxav_kill_transmission(ToxAv *av, uint32_t call_index);
  * @retval 0 Success.
  * @retval ToxAvError On Error.
  */
-int toxav_recv_video ( ToxAv* av, uint32_t call_index, vpx_image_t** output);
+int toxav_recv_video ( ToxAv* av, int32_t call_index, vpx_image_t** output);
 
 /**
  * @brief Receive decoded audio frame.
@@ -263,7 +263,7 @@ int toxav_recv_video ( ToxAv* av, uint32_t call_index, vpx_image_t** output);
  * @retval >=0 Size of received data in frames/samples.
  * @retval ToxAvError On error.
  */
-int toxav_recv_audio( ToxAv* av, uint32_t call_index, int frame_size, int16_t* dest );
+int toxav_recv_audio( ToxAv* av, int32_t call_index, int frame_size, int16_t* dest );
 
 /**
  * @brief Encode and send video packet.
@@ -275,7 +275,7 @@ int toxav_recv_audio( ToxAv* av, uint32_t call_index, int frame_size, int16_t* d
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_send_video ( ToxAv* av, uint32_t call_index, const uint8_t* frame, int frame_size);
+int toxav_send_video ( ToxAv* av, int32_t call_index, const uint8_t* frame, int frame_size);
 
 /**
  * @brief Send audio frame.
@@ -288,7 +288,7 @@ int toxav_send_video ( ToxAv* av, uint32_t call_index, const uint8_t* frame, int
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_send_audio ( ToxAv* av, uint32_t call_index, const uint8_t* frame, int frame_size);
+int toxav_send_audio ( ToxAv* av, int32_t call_index, const uint8_t* frame, int frame_size);
 
 /**
  * @brief Encode video frame
@@ -301,7 +301,7 @@ int toxav_send_audio ( ToxAv* av, uint32_t call_index, const uint8_t* frame, int
  * @retval ToxAvError On error.
  * @retval >0 On success
  */
-int toxav_prepare_video_frame ( ToxAv* av, uint32_t call_index, uint8_t* dest, int dest_max, vpx_image_t* input );
+int toxav_prepare_video_frame ( ToxAv* av, int32_t call_index, uint8_t* dest, int dest_max, vpx_image_t* input );
 
 /**
  * @brief Encode audio frame
@@ -315,7 +315,7 @@ int toxav_prepare_video_frame ( ToxAv* av, uint32_t call_index, uint8_t* dest, i
  * @retval ToxAvError On error.
  * @retval >0 On success
  */
-int toxav_prepare_audio_frame ( ToxAv* av, uint32_t call_index, uint8_t* dest, int dest_max, const int16_t* frame, int frame_size);
+int toxav_prepare_audio_frame ( ToxAv* av, int32_t call_index, uint8_t* dest, int dest_max, const int16_t* frame, int frame_size);
 
 /**
  * @brief Get peer transmission type. It can either be audio or video.
@@ -326,7 +326,7 @@ int toxav_prepare_audio_frame ( ToxAv* av, uint32_t call_index, uint8_t* dest, i
  * @retval ToxAvCallType On success.
  * @retval ToxAvError On error.
  */
-int toxav_get_peer_transmission_type ( ToxAv *av, uint32_t call_index, int peer );
+int toxav_get_peer_transmission_type ( ToxAv* av, int32_t call_index, int peer );
 
 /**
  * @brief Get id of peer participating in conversation
@@ -336,7 +336,7 @@ int toxav_get_peer_transmission_type ( ToxAv *av, uint32_t call_index, int peer 
  * @return int
  * @retval ToxAvError No peer id
  */
-int toxav_get_peer_id ( ToxAv* av, uint32_t call_index, int peer );
+int toxav_get_peer_id ( ToxAv* av, int32_t call_index, int peer );
 
 /**
  * @brief Is certain capability supported
@@ -346,7 +346,7 @@ int toxav_get_peer_id ( ToxAv* av, uint32_t call_index, int peer );
  * @retval 1 Yes.
  * @retval 0 No.
  */
-int toxav_capability_supported ( ToxAv* av, uint32_t call_index, ToxAvCapabilities capability );
+int toxav_capability_supported ( ToxAv* av, int32_t call_index, ToxAvCapabilities capability );
 
 /**
  * @brief Set queue limit
@@ -356,7 +356,7 @@ int toxav_capability_supported ( ToxAv* av, uint32_t call_index, ToxAvCapabiliti
  * @param limit the limit
  * @return void
  */
-void toxav_set_audio_queue_limit ( ToxAv* av, uint32_t call_index, uint64_t limit );
+int toxav_set_audio_queue_limit ( ToxAv* av, int32_t call_index, uint64_t limit );
 
 /**
  * @brief Set queue limit
@@ -366,6 +366,8 @@ void toxav_set_audio_queue_limit ( ToxAv* av, uint32_t call_index, uint64_t limi
  * @param limit the limit
  * @return void
  */
-void toxav_set_video_queue_limit ( ToxAv* av, uint32_t call_index, uint64_t limit );
+int toxav_set_video_queue_limit ( ToxAv* av, int32_t call_index, uint64_t limit );
 
+
+Tox* toxav_get_tox(ToxAv* av);
 #endif /* __TOXAV */

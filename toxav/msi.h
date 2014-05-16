@@ -33,7 +33,7 @@
 #define CALL_ID_LEN 12
 
 
-typedef void ( *MSICallback ) ( uint32_t, void *arg );
+typedef void ( *MSICallback ) ( int32_t, void *arg );
 
 
 /**
@@ -89,7 +89,7 @@ typedef struct _MSICall {                  /* Call info structure */
     uint32_t            *peers;
     uint16_t            peer_count;
 
-    uint32_t            call_idx;          /* Index of this call in MSISession */
+    int32_t             call_idx;          /* Index of this call in MSISession */
 } MSICall;
 
 
@@ -101,7 +101,7 @@ typedef struct _MSISession {
 
     /* Call handlers */
     struct _MSICall **calls;
-    uint32_t max_calls;
+    int32_t max_calls;
 
     int            last_error_id; /* Determine the last error */
     const uint8_t *last_error_str;
@@ -158,7 +158,7 @@ void msi_register_callback(MSICallback callback, MSICallbackID id, void* userdat
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession *msi_init_session ( Messenger *messenger, uint32_t max_calls );
+MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls );
 
 
 /**
@@ -180,7 +180,7 @@ int msi_terminate_session ( MSISession *session );
  * @param friend_id The friend.
  * @return int
  */
-int msi_invite ( MSISession *session, uint32_t* call_index, MSICallType call_type, uint32_t rngsec, uint32_t friend_id );
+int msi_invite ( MSISession *session, int32_t* call_index, MSICallType call_type, uint32_t rngsec, uint32_t friend_id );
 
 
 /**
@@ -192,7 +192,7 @@ int msi_invite ( MSISession *session, uint32_t* call_index, MSICallType call_typ
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int msi_hangup ( MSISession *session, uint32_t call_index );
+int msi_hangup ( MSISession *session, int32_t call_index );
 
 
 /**
@@ -203,7 +203,7 @@ int msi_hangup ( MSISession *session, uint32_t call_index );
  * @param call_type Answer with Audio or Video(both).
  * @return int
  */
-int msi_answer ( MSISession *session, uint32_t call_index, MSICallType call_type );
+int msi_answer ( MSISession *session, int32_t call_index, MSICallType call_type );
 
 
 /**
@@ -215,7 +215,7 @@ int msi_answer ( MSISession *session, uint32_t call_index, MSICallType call_type
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession* session, uint32_t call_index, uint32_t peer, const char* reason );
+int msi_cancel ( MSISession* session, int32_t call_index, uint32_t peer, const char* reason );
 
 
 /**
@@ -226,7 +226,7 @@ int msi_cancel ( MSISession* session, uint32_t call_index, uint32_t peer, const 
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_reject ( MSISession *session, uint32_t call_index, const uint8_t *reason );
+int msi_reject ( MSISession *session, int32_t call_index, const uint8_t *reason );
 
 
 /**
@@ -236,6 +236,6 @@ int msi_reject ( MSISession *session, uint32_t call_index, const uint8_t *reason
  * @param call_index To which call is this action handled.
  * @return int
  */
-int msi_stopcall ( MSISession *session, uint32_t call_index );
+int msi_stopcall ( MSISession *session, int32_t call_index );
 
 #endif /* __TOXMSI */

@@ -122,7 +122,7 @@ static struct _Callbacks {
     void* data;
 } callbacks[11] = {0};
 
-inline__ void invoke_callback(uint32_t call_index, MSICallbackID id)
+inline__ void invoke_callback(int32_t call_index, MSICallbackID id)
 {
     /*if ( callbacks[id].function ) event.rise ( callbacks[id].function, callbacks[id].data );*/
     if ( callbacks[id].function ) { 
@@ -209,18 +209,7 @@ static inline__ const uint8_t *stringify_response ( MSIResponse response )
 }
 
 
-#define ON_HEADER(iterator, header, descriptor, size_const) \
-( memcmp(iterator, descriptor, size_const) == 0){ /* Okay */ \
-    iterator += size_const; /* Set iterator at begining of value part */ \
-    if ( *iterator != value_byte ) { assert(0); return -1; }\
-    iterator ++;\
-    uint16_t _value_size = (uint16_t) *(iterator ) << 8 | \
-    (uint16_t) *(iterator + 1); \
-    header.header_value = calloc(sizeof(uint8_t), _value_size); \
-    header.size = _value_size; \
-    memcpy(header.header_value, iterator + 2, _value_size);\
-    iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ \
-}
+
 
 /**
  * @brief Parse raw 'data' received from socket into MSIMessage struct.
@@ -235,6 +224,19 @@ static inline__ const uint8_t *stringify_response ( MSIResponse response )
  */
 int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
 {
+    
+#define ON_HEADER(iterator, header, descriptor, size_const) \
+( memcmp(iterator, descriptor, size_const) == 0){ /* Okay */ \
+iterator += size_const; /* Set iterator at begining of value part */ \
+if ( *iterator != value_byte ) { assert(0); return -1; }\
+    iterator ++;\
+    uint16_t _value_size = (uint16_t) *(iterator ) << 8 | \
+    (uint16_t) *(iterator + 1); \
+    header.header_value = calloc(sizeof(uint8_t), _value_size); \
+    header.size = _value_size; \
+    memcpy(header.header_value, iterator + 2, _value_size);\
+    iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ }
+    
     if ( msg == NULL ) {
         LOGGER_ERROR("Could not parse message: no storage!");
     }
@@ -537,10 +539,6 @@ uint8_t *append_header_to_string (
 }
 
 
-#define CLEAN_ASSIGN(added, var, field, header)\
-if ( header.header_value ) { var = append_header_to_string(var, (const uint8_t*)field, header.header_value, header.size, &added); }
-
-
 /**
  * @brief Convert MSIMessage struct to _sendable_ string.
  *
@@ -550,6 +548,9 @@ if ( header.header_value ) { var = append_header_to_string(var, (const uint8_t*)
  */
 uint16_t message_to_send ( MSIMessage *msg, uint8_t *dest )
 {
+    #define CLEAN_ASSIGN(added, var, field, header)\
+    if ( header.header_value ) { var = append_header_to_string(var, (const uint8_t*)field, header.header_value, header.size, &added); }
+    
     if (msg == NULL) {
         LOGGER_ERROR("Empty message!");
         return 0;
@@ -857,35 +858,6 @@ int has_call_error ( MSISession *session, MSICall* call, MSIMessage *msg )
 
 
 /**
- * @brief Function called at request timeout. If not called in thread it might cause trouble
- *
- * @param arg Control session
- * @return void*
- */
-void *handle_timeout ( void *arg )
-{
-    /* TODO: Cancel might not arrive there; set up
-     * timers on these cancels and terminate call on
-     * their timeout
-     */
-    MSICall *_call = arg;
-    
-    LOGGER_DEBUG("[Call: %s] Request timed out!", _call->id);
-    
-    invoke_callback(_call->call_idx, MSI_OnRequestTimeout);
-        
-    if ( _call && _call->session ) {
-       
-        /* TODO: Cancel all? */
-        /* uint16_t _it = 0;        
-        for ( ; _it < _session->call->peer_count; _it++ ) */
-        msi_cancel ( _call->session, _call->call_idx, _call->peers [0], "Request timed out" );
-    }
-
-    pthread_exit(NULL);
-}
-
-/**
  * @brief Add peer to peer list.
  *
  * @param call What call.
@@ -903,6 +875,8 @@ void add_peer( MSICall *call, int peer_id )
     }
 
     call->peers[call->peer_count - 1] = peer_id;
+    
+    LOGGER_DEBUG("Added peer: %d", peer_id);
 }
 
 
@@ -922,7 +896,7 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
         return NULL;
     }
     
-    uint32_t _call_idx = 0;
+    int32_t _call_idx = 0;
     for (; _call_idx < session->max_calls; _call_idx ++) {
         if ( !session->calls[_call_idx] ) {
             session->calls[_call_idx] = calloc ( sizeof ( MSICall ), 1 );
@@ -1015,6 +989,37 @@ int terminate_call ( MSISession *session, MSICall *call )
 }
 
 
+/**
+ * @brief Function called at request timeout. If not called in thread it might cause trouble
+ *
+ * @param arg Control session
+ * @return void*
+ */
+void *handle_timeout ( void *arg )
+{
+    /* TODO: Cancel might not arrive there; set up
+     * timers on these cancels and terminate call on
+     * their timeout
+     */
+    MSICall *_call = arg;
+    
+    LOGGER_DEBUG("[Call: %s] Request timed out!", _call->id);
+    
+    invoke_callback(_call->call_idx, MSI_OnRequestTimeout);
+    
+    if ( _call && _call->session ) {
+        
+        /* TODO: Cancel all? */
+        /* uint16_t _it = 0;        
+         *       for ( ; _it < _session->call->peer_count; _it++ ) */
+        msi_cancel ( _call->session, _call->call_idx, _call->peers [0], "Request timed out" );
+        terminate_call(_call->session, _call);
+    }
+    
+    pthread_exit(NULL);
+}
+
+
 /********** Request handlers **********/
 int handle_recv_invite ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
@@ -1072,7 +1077,7 @@ int handle_recv_invite ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_start ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Session: %p Handling 'start' on call: %s", session, call->id );
+    LOGGER_DEBUG("Session: %p Handling 'start' on call: %s, friend id: %d", session, call->id, msg->friend_id );
     
     if ( has_call_error ( session, call, msg ) == 0 )
         return -1;
@@ -1125,10 +1130,10 @@ int handle_recv_cancel ( MSISession *session, MSICall* call, MSIMessage *msg )
         return 0;
     
     /* Act as end message */
-    
+    /*
     MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
     send_message ( session, call, _msg_ending, msg->friend_id );
-    free_message ( _msg_ending );
+    free_message ( _msg_ending );*/
     
     invoke_callback(call->call_idx, MSI_OnCancel);
     
@@ -1383,31 +1388,6 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
 }
 
 
-/********************************************************************************************************************
- * *******************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- *
- *
- *
- * PUBLIC API FUNCTIONS IMPLEMENTATIONS
- *
- *
- *
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************/
-
-
-
-
-
-
-
-
 /**
  * @brief Callback setter.
  *
@@ -1430,7 +1410,7 @@ void msi_register_callback ( MSICallback callback, MSICallbackID id, void* userd
  * @return MSISession* The created session.
  * @retval NULL Error occured.
  */
-MSISession *msi_init_session ( Messenger* messenger, uint32_t max_calls )
+MSISession *msi_init_session ( Messenger* messenger, int32_t max_calls )
 {
     if (messenger == NULL) {
         LOGGER_ERROR("Could not init session on empty messenger!");
@@ -1507,13 +1487,13 @@ int msi_terminate_session ( MSISession *session )
  * @param friend_id The friend.
  * @return int
  */
-int msi_invite ( MSISession* session, uint32_t* call_index, MSICallType call_type, uint32_t rngsec, uint32_t friend_id )
+int msi_invite ( MSISession* session, int32_t* call_index, MSICallType call_type, uint32_t rngsec, uint32_t friend_id )
 {
     LOGGER_DEBUG("Session: %p Inviting friend: %u", session, friend_id);
     
     MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
     
-    MSICall* _call = init_call ( session, 1, rngsec ); /* Just one for now */
+    MSICall* _call = init_call ( session, 1, rngsec ); /* Just one peer for now */
     if ( !_call ) return -1; /* Cannot handle more calls */
     
     *call_index = _call->call_idx;
@@ -1553,11 +1533,11 @@ int msi_invite ( MSISession* session, uint32_t* call_index, MSICallType call_typ
  * @retval -1 Error occured.
  * @retval 0 Success.
  */
-int msi_hangup ( MSISession* session, uint32_t call_index )
+int msi_hangup ( MSISession* session, int32_t call_index )
 {
     LOGGER_DEBUG("Session: %p Hanging up call: %u", session, call_index);
     
-    if ( call_index >= session->max_calls || !session->calls[call_index] ) {
+    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ) {
         LOGGER_ERROR("Invalid call index!");
         return -1;
     }
@@ -1592,11 +1572,11 @@ int msi_hangup ( MSISession* session, uint32_t call_index )
  * @param call_type Answer with Audio or Video(both).
  * @return int
  */
-int msi_answer ( MSISession* session, uint32_t call_index, MSICallType call_type )
+int msi_answer ( MSISession* session, int32_t call_index, MSICallType call_type )
 {
     LOGGER_DEBUG("Session: %p Answering call: %u", session, call_index);
     
-    if ( call_index >= session->max_calls || !session->calls[call_index] ){
+    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
         return -1;
     }
@@ -1641,11 +1621,11 @@ int msi_answer ( MSISession* session, uint32_t call_index, MSICallType call_type
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_cancel ( MSISession *session, uint32_t call_index, uint32_t peer, const char *reason )
+int msi_cancel ( MSISession* session, int32_t call_index, uint32_t peer, const char* reason )
 {
     LOGGER_DEBUG("Session: %p Canceling call: %u; reason:", session, call_index, reason? reason : "Unknown");
     
-    if ( call_index >= session->max_calls || !session->calls[call_index] ){
+    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
         return -1;
     }
@@ -1670,11 +1650,11 @@ int msi_cancel ( MSISession *session, uint32_t call_index, uint32_t peer, const 
  * @param call_id To which call is this action handled.
  * @return int
  */
-int msi_reject ( MSISession *session, uint32_t call_index, const uint8_t *reason )
+int msi_reject ( MSISession* session, int32_t call_index, const uint8_t* reason )
 {
     LOGGER_DEBUG("Session: %p Rejecting call: %u; reason:", session, call_index, reason? (char*)reason : "Unknown");
     
-    if ( call_index >= session->max_calls || !session->calls[call_index] ){
+    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
         return -1;
     }
@@ -1699,11 +1679,11 @@ int msi_reject ( MSISession *session, uint32_t call_index, const uint8_t *reason
  * @param call_id To which call is this action handled.
  * @return int
  */
-int msi_stopcall ( MSISession *session, uint32_t call_index )
+int msi_stopcall ( MSISession* session, int32_t call_index )
 {
     LOGGER_DEBUG("Session: %p Stopping call index: %u", session, call_index);
     
-    if ( call_index >= session->max_calls || !session->calls[call_index] )
+    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] )
         return -1;
 
     /* just terminate it */
