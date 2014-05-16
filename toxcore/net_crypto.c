@@ -1454,7 +1454,7 @@ static int connect_peer_tcp(Net_Crypto *c, int crypt_connection_id)
  * return -1 on failure.
  * return 0 on success.
  */
-int set_conection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
+int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 

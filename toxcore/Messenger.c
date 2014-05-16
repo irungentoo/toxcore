@@ -2203,7 +2203,7 @@ void do_friends(Messenger *m)
             uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
 
             if (onion_getfriend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key) == 0) {
-                set_conection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key);
+                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key);
             }
 
             uint8_t direct_connected;

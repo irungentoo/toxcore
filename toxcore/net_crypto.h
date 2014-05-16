@@ -189,7 +189,7 @@ int new_crypto_connection(Net_Crypto *c, uint8_t *real_public_key);
  * return -1 on failure.
  * return 0 on success.
  */
-int set_conection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
+int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
 
 /* Set the direct ip of the crypto connection.
  *
