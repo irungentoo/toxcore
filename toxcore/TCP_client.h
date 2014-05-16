@@ -56,6 +56,8 @@ typedef struct  {
     uint64_t last_pinged;
     uint64_t ping_id;
 
+    void *net_crypto_pointer;
+    uint32_t net_crypto_location;
     struct {
         uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];

@@ -25,6 +25,7 @@
 #define NET_CRYPTO_H
 
 #include "DHT.h"
+#include "TCP_client.h"
 
 #define CRYPTO_CONN_NO_CONNECTION 0
 #define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets
@@ -59,6 +60,8 @@
 #define PACKET_ID_KILL    2
 
 #define CRYPTO_RESERVED_PACKETS 16
+
+#define MAX_TCP_CONNECTIONS 8
 
 typedef struct {
     uint64_t time;
@@ -122,6 +125,9 @@ typedef struct {
     uint8_t sending; /* indicates if data is being sent or not. */
 
     uint8_t killed; /* set to 1 to kill the connection. */
+
+    uint8_t status_tcp[MAX_TCP_CONNECTIONS];
+    uint8_t con_number_tcp[MAX_TCP_CONNECTIONS];
 } Crypto_Connection;
 
 typedef struct {
@@ -137,7 +143,8 @@ typedef struct {
     DHT *dht;
 
     Crypto_Connection *crypto_connections;
-    //TCP_Client_Connection *tcp_connections;
+    TCP_Client_Connection *tcp_connections_new[MAX_TCP_CONNECTIONS];
+    TCP_Client_Connection *tcp_connections[MAX_TCP_CONNECTIONS];
 
     uint32_t crypto_connections_length; /* Length of connections array. */
 
@@ -226,6 +233,12 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  */
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
 
+/* Add a tcp relay to the array.
+ *
+ * return 0 if it was added.
+ * return -1 if it wasn't.
+ */
+int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, uint8_t *public_key);
 
 /* Kill a crypto connection.
  *
