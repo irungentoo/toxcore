@@ -414,8 +414,8 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
         if (direct_connected && (uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length)
             return 0;
 
-        if (length < 96
-                || data[0] == NET_PACKET_CRYPTO_HS) //TODO: a better way of sending packets directly to confirm the others ip.
+        //TODO: a better way of sending packets directly to confirm the others ip.
+        if (length < 96 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS)
             sendpacket(c->dht->net, conn->ip_port, data, length);
 
     }
