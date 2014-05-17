@@ -497,21 +497,8 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
         return 1;
 
     onion_c->friends_list[friend_num].last_noreplay = no_replay;
-
-    if (memcmp(data + 1 + sizeof(uint64_t), onion_c->friends_list[friend_num].fake_client_id,
-               crypto_box_PUBLICKEYBYTES) != 0) {
-        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
-
-        onion_c->friends_list[friend_num].last_seen = unix_time();
-
-        if (DHT_addfriend(onion_c->dht, data + 1 + sizeof(uint64_t)) == 1) {
-            return 1;
-        }
-
-        onion_c->friends_list[friend_num].is_fake_clientid = 1;
-        onion_c->friends_list[friend_num].fake_client_id_timestamp = current_time_monotonic();
-        memcpy(onion_c->friends_list[friend_num].fake_client_id, data + 1 + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES);
-    }
+    onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t), current_time_monotonic());
+    onion_c->friends_list[friend_num].last_seen = unix_time();
 
     uint16_t len_nodes = length - FAKEID_DATA_MIN_LENGTH;
 
@@ -811,6 +798,43 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     }
 
     return friend_num;
+}
+
+/* Set a friends DHT public key.
+ * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
+ * the other peer.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key, uint64_t timestamp)
+{
+    if ((uint32_t)friend_num >= onion_c->num_friends)
+        return -1;
+
+    if (onion_c->friends_list[friend_num].status == 0)
+        return -1;
+
+    if (onion_c->friends_list[friend_num].fake_client_id_timestamp >= timestamp)
+        return -1;
+
+    if (onion_c->friends_list[friend_num].is_fake_clientid) {
+        if (memcmp(dht_key, onion_c->friends_list[friend_num].fake_client_id, crypto_box_PUBLICKEYBYTES) == 0) {
+            return -1;
+        }
+
+        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
+    }
+
+    if (DHT_addfriend(onion_c->dht, dht_key) == 1) {
+        return -1;
+    }
+
+    onion_c->friends_list[friend_num].is_fake_clientid = 1;
+    onion_c->friends_list[friend_num].fake_client_id_timestamp = timestamp;
+    memcpy(onion_c->friends_list[friend_num].fake_client_id, dht_key, crypto_box_PUBLICKEYBYTES);
+
+    return 0;
 }
 
 /* Copy friends DHT public key into dht_key.

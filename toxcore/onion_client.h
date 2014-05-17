@@ -176,6 +176,15 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
  */
 int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
 
+/* Set a friends DHT public key.
+ * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
+ * the other peer.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key, uint64_t timestamp);
+
 /* Copy friends DHT public key into dht_key.
  *
  * return 0 on failure (no key copied).
