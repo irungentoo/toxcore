@@ -408,8 +408,16 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
 
     //TODO: on bad networks, direct connections might not last indefinitely.
     if (conn->ip_port.ip.family != 0) {
-        if ((uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length)
+        uint8_t direct_connected = 0;
+        crypto_connection_status(c, crypt_connection_id, &direct_connected);
+
+        if (direct_connected && (uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length)
             return 0;
+
+        if (length < 96
+                || data[0] == NET_PACKET_CRYPTO_HS) //TODO: a better way of sending packets directly to confirm the others ip.
+            sendpacket(c->dht->net, conn->ip_port, data, length);
+
     }
 
     //TODO: spread packets over many relays, detect and kill bad relays.
@@ -1487,6 +1495,26 @@ static int connect_peer_tcp(Net_Crypto *c, int crypt_connection_id)
 
     return 0;
 }
+
+/* Copy friends DHT public key into dht_key.
+ *
+ * return 0 on failure (no key copied).
+ * return timestamp on success (key copied).
+ */
+uint64_t get_connection_dht_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return 0;
+
+    if (conn->dht_public_key_set == 0)
+        return 0;
+
+    memcpy(dht_public_key, conn->dht_public_key, crypto_box_PUBLICKEYBYTES);
+    return conn->dht_public_key_timestamp;
+}
+
 
 /* Set the DHT public key of the crypto connection.
  * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to

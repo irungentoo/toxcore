@@ -186,6 +186,13 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
  */
 int new_crypto_connection(Net_Crypto *c, uint8_t *real_public_key);
 
+/* Copy friends DHT public key into dht_key.
+ *
+ * return 0 on failure (no key copied).
+ * return timestamp on success (key copied).
+ */
+uint64_t get_connection_dht_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
+
 /* Set the DHT public key of the crypto connection.
  * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
  * the other peer.
