@@ -721,7 +721,7 @@ int tox_file_send_data(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8
  */
 int tox_file_data_size(Tox *tox, int32_t friendnumber)
 {
-    return MAX_CRYPTO_DATA_SIZE - 3;
+    return MAX_CRYPTO_DATA_SIZE - 2;
 }
 
 /* Give the number of bytes left to be sent/received.

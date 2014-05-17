@@ -92,6 +92,7 @@ typedef struct {
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
     uint8_t dht_public_key_set; /* True if the dht public key is set, false if it isn't. */
+    uint64_t dht_public_key_timestamp; /* Timestamp of the last time we confirmed the key was correct. */
 
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
@@ -186,11 +187,13 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
 int new_crypto_connection(Net_Crypto *c, uint8_t *real_public_key);
 
 /* Set the DHT public key of the crypto connection.
+ * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
+ * the other peer.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
+int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key, uint64_t timestamp);
 
 /* Set the direct ip of the crypto connection.
  *

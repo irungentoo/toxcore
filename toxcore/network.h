@@ -154,6 +154,7 @@ typedef int sock_t;
 #define TCP_ONION_FAMILY (AF_INET6 + 1)
 #define TCP_INET (AF_INET6 + 2)
 #define TCP_INET6 (AF_INET6 + 3)
+#define TCP_FAMILY (AF_INET6 + 4)
 
 typedef union __attribute__ ((__packed__))
 {

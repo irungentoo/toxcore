@@ -233,7 +233,33 @@ static int tcp_handle_cookie_request(Net_Crypto *c, TCP_Client_Connection *TCP_c
     if (create_cookie_response(c, data, request_plain, shared_key, dht_public_key) != sizeof(data))
         return -1;
 
-    if ((uint32_t)send_data(TCP_con, conn_id, data, sizeof(data)) != 1)
+    if (send_data(TCP_con, conn_id, data, sizeof(data)) != 1)
+        return -1;
+
+    return 0;
+}
+
+/* Handle the cookie request packet (for TCP oob packets)
+ */
+static int tcp_oob_handle_cookie_request(Net_Crypto *c, TCP_Client_Connection *TCP_con, uint8_t *dht_public_key,
+        uint8_t *packet, uint32_t length)
+{
+    uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t dht_public_key_temp[crypto_box_PUBLICKEYBYTES];
+
+    if (handle_cookie_request(c, request_plain, shared_key, dht_public_key_temp, packet, length) != 0)
+        return -1;
+
+    if (memcmp(dht_public_key, dht_public_key_temp, crypto_box_PUBLICKEYBYTES) != 0)
+        return -1;
+
+    uint8_t data[COOKIE_RESPONSE_LENGTH];
+
+    if (create_cookie_response(c, data, request_plain, shared_key, dht_public_key) != sizeof(data))
+        return -1;
+
+    if (send_oob_packet(TCP_con, dht_public_key, data, sizeof(data)) != 1)
         return -1;
 
     return 0;
@@ -1115,7 +1141,7 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint
 
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
                 /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-                set_connection_dht_public_key(c, crypt_connection_id, dht_public_key);
+                set_connection_dht_public_key(c, crypt_connection_id, dht_public_key, current_time_monotonic());
             } else {
                 return -1;
             }
@@ -1326,7 +1352,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, uint8_
             if (create_send_handshake(c, crypt_connection_id, n_c.cookie, n_c.dht_public_key) == 0) {
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
                 /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-                set_connection_dht_public_key(c, crypt_connection_id, n_c.dht_public_key);
+                set_connection_dht_public_key(c, crypt_connection_id, n_c.dht_public_key, current_time_monotonic());
                 ret = 0;
             }
         }
@@ -1375,7 +1401,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
 
     conn->status = CRYPTO_CONN_NOT_CONFIRMED;
     /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-    set_connection_dht_public_key(c, crypt_connection_id, n_c->dht_public_key);
+    set_connection_dht_public_key(c, crypt_connection_id, n_c->dht_public_key, current_time_monotonic());
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     crypto_connection_add_source(c, crypt_connection_id, n_c->source);
     return crypt_connection_id;
@@ -1463,15 +1489,20 @@ static int connect_peer_tcp(Net_Crypto *c, int crypt_connection_id)
 }
 
 /* Set the DHT public key of the crypto connection.
+ * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
+ * the other peer.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
+int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key, uint64_t timestamp)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == 0)
+        return -1;
+
+    if (timestamp <= conn->dht_public_key_timestamp)
         return -1;
 
     if (conn->dht_public_key_set == 1 && memcmp(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
@@ -1483,6 +1514,7 @@ int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, uint8_
 
     memcpy(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES);
     conn->dht_public_key_set = 1;
+    conn->dht_public_key_timestamp = timestamp;
 
     if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
         conn->cookie_request_number = random_64b();
@@ -1597,6 +1629,43 @@ static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_i
     return 0;
 }
 
+static int tcp_oob_callback(void *object, uint8_t *public_key, uint8_t *data, uint16_t length)
+{
+    if (length == 0 || length > MAX_CRYPTO_PACKET_SIZE)
+        return -1;
+
+    TCP_Client_Connection *TCP_con = object;
+    Net_Crypto *c = TCP_con->net_crypto_pointer;
+    uint32_t location = TCP_con->net_crypto_location;
+
+    if (data[0] == NET_PACKET_COOKIE_REQUEST) {
+        return tcp_oob_handle_cookie_request(c, TCP_con, public_key, data, length);
+    }
+
+    int crypt_connection_id = getcryptconnection_id_dht_pubkey(c, public_key);
+
+    if (crypt_connection_id == -1) {
+        IP_Port source;
+        source.ip.family = TCP_FAMILY;
+        source.ip.ip6.uint32[0] = location;
+
+        if (data[0] != NET_PACKET_CRYPTO_HS) {
+            fprintf(stderr, "tcp snhappen %u\n", data[0]);
+            return -1;
+        }
+
+        if (handle_new_connection_handshake(c, source, data, length) != 0)
+            return -1;
+
+        return 0;
+    }
+
+    if (handle_packet_connection(c, crypt_connection_id, data, length) != 0)
+        return -1;
+
+    return 0;
+}
+
 /* Check if tcp connection to public key can be created.
  *
  * return -1 if it can't.
@@ -1696,6 +1765,7 @@ static int add_tcp_connected(Net_Crypto *c, TCP_Client_Connection *tcp_con)
     routing_response_handler(tcp_con, tcp_response_callback, tcp_con);
     routing_status_handler(tcp_con, tcp_status_callback, tcp_con);
     routing_data_handler(tcp_con, tcp_data_callback, tcp_con);
+    oob_data_handler(tcp_con, tcp_oob_callback, tcp_con);
     c->tcp_connections[tcp_num] = tcp_con;
     return 0;
 }

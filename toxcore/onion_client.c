@@ -509,6 +509,7 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
         }
 
         onion_c->friends_list[friend_num].is_fake_clientid = 1;
+        onion_c->friends_list[friend_num].fake_client_id_timestamp = current_time_monotonic();
         memcpy(onion_c->friends_list[friend_num].fake_client_id, data + 1 + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES);
     }
 
@@ -814,22 +815,22 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
 
 /* Copy friends DHT public key into dht_key.
  *
- * return -1 on failure (no key copied).
- * return 0 on success (key copied).
+ * return 0 on failure (no key copied).
+ * return timestamp on success (key copied).
  */
-int onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
+uint64_t onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
-        return -1;
+        return 0;
 
     if (onion_c->friends_list[friend_num].status == 0)
-        return -1;
+        return 0;
 
     if (!onion_c->friends_list[friend_num].is_fake_clientid)
-        return -1;
+        return 0;
 
     memcpy(dht_key, onion_c->friends_list[friend_num].fake_client_id, crypto_box_PUBLICKEYBYTES);
-    return 0;
+    return onion_c->friends_list[friend_num].fake_client_id_timestamp;
 }
 
 /* Get the ip of friend friendnum and put it in ip_port
@@ -843,7 +844,7 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
 {
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
 
-    if (onion_getfriend_DHT_pubkey(onion_c, friend_num, dht_public_key) != 0)
+    if (onion_getfriend_DHT_pubkey(onion_c, friend_num, dht_public_key) == 0)
         return -1;
 
     return DHT_getfriendip(onion_c->dht, dht_public_key, ip_port);

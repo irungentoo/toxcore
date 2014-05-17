@@ -82,6 +82,7 @@ typedef struct {
     uint8_t is_online; /* Set by the onion_set_friend_status function. */
 
     uint8_t is_fake_clientid; /* 0 if we don't know the fake client id of the other 1 if we do. */
+    uint64_t fake_client_id_timestamp;
     uint8_t fake_client_id[crypto_box_PUBLICKEYBYTES];
     uint8_t real_client_id[crypto_box_PUBLICKEYBYTES];
 
@@ -177,10 +178,10 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
 
 /* Copy friends DHT public key into dht_key.
  *
- * return -1 on failure (no key copied).
- * return 0 on success (key copied).
+ * return 0 on failure (no key copied).
+ * return timestamp on success (key copied).
  */
-int onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
+uint64_t onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
 
 #define ONION_DATA_IN_RESPONSE_MIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
 #define ONION_CLIENT_MAX_DATA_SIZE (MAX_DATA_REQUEST_SIZE - ONION_DATA_IN_RESPONSE_MIN_SIZE)
