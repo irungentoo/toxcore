@@ -73,11 +73,21 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
         return 0;
     }
 
+    if (num == TCP_server->size_accepted_connections) {
+        return 0;
+    }
+
     TCP_Secure_Connection *new_connections = realloc(TCP_server->accepted_connection_array,
             num * sizeof(TCP_Secure_Connection));
 
     if (new_connections == NULL)
         return -1;
+
+    if (num > TCP_server->size_accepted_connections) {
+        uint32_t old_size = TCP_server->size_accepted_connections;
+        uint32_t size_new_entries = (num - old_size) * sizeof(TCP_Secure_Connection);
+        memset(new_connections + old_size, 0, size_new_entries);
+    }
 
     TCP_server->accepted_connection_array = new_connections;
     TCP_server->size_accepted_connections = num;
