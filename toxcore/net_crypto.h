@@ -133,6 +133,7 @@ typedef struct {
 typedef struct {
     IP_Port source;
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
+    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer. */
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
     uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
     uint8_t *cookie;

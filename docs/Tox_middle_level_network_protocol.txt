@@ -41,7 +41,7 @@ Detailed implementation details:
 cookie request packet:
 [uint8_t 24][Senders DHT Public key (32 bytes)][Random nonce (24 
 bytes)][Encrypted message containing: [Senders real public key (32 
-bytes)][Recievers real public key (32 bytes)][uint64_t number (must be sent 
+bytes)][padding (32 bytes)][uint64_t number (must be sent 
 back untouched in cookie response)]]
 Encrypted message is encrypted with sender DHT private key, recievers DHT 
 public key and the nonce.
@@ -54,7 +54,7 @@ public key and the nonce.
 
 The Cookie should be basically:
 [nonce][encrypted data:[uint64_t time][Senders real public key (32 
-bytes)][Recievers real public key (32 bytes)]]
+bytes)][Senders dht public key (32 bytes)]]
 
 Handshake packet:
 [uint8_t 26][Cookie][nonce][Encrypted message containing: [random 24 bytes base 
