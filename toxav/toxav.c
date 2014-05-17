@@ -122,26 +122,18 @@ void toxav_kill ( ToxAv *av )
     
     int i = 0;
     for (; i < av->max_calls; i ++) {
-        if ( av->calls[i].crtps[audio_index] ) {
+        if ( av->calls[i].crtps[audio_index] ) 
             rtp_terminate_session(av->calls[i].crtps[audio_index], av->msi_session->messenger_handle);
-        }
         
-        if ( av->calls[i].crtps[video_index] ) {
+        
+        if ( av->calls[i].crtps[video_index] ) 
             rtp_terminate_session(av->calls[i].crtps[video_index], av->msi_session->messenger_handle);
-        }
         
-        av->calls[i].crtps[audio_index] = NULL;
-        av->calls[i].crtps[video_index] = NULL;
         
-        if ( av->calls[i].j_buf ) { 
-            terminate_queue(av->calls[i].j_buf);
-            av->calls[i].j_buf = NULL;
-        }
         
-        if ( av->calls[i].cs ) { 
-            codec_terminate_session(av->calls[i].cs);
-            av->calls[i].cs = NULL;
-        }
+        if ( av->calls[i].j_buf ) terminate_queue(av->calls[i].j_buf);
+        
+        if ( av->calls[i].cs ) codec_terminate_session(av->calls[i].cs);
     }
     
     free(av->calls);
@@ -568,18 +560,20 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
     if ( recved_size == ErrorAudioPacketLost ) {
         int dec_size = opus_decode(call->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
         
-        if ( dec_size != OPUS_OK ) 
+        if ( dec_size < 0 ) {
+            LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
             return ErrorInternal;
-        else
-            return dec_size;
+        }
+        else return dec_size;
         
     } else if ( recved_size ) {
         int dec_size = opus_decode(call->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
         
-        if ( dec_size != OPUS_OK ) 
+        if ( dec_size < 0 ) {
+            LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
             return ErrorInternal;
-        else
-            return dec_size;
+        }
+        else return dec_size;
     } else {
         return 0; /* Nothing received */
     }
