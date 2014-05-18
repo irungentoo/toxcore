@@ -290,7 +290,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
         size_t motd_length = tmp_motd_length > MAX_MOTD_LENGTH ? MAX_MOTD_LENGTH : tmp_motd_length;
         *motd = malloc(motd_length);
         strncpy(*motd, tmp_motd, motd_length);
-        (*motd)[MAX_MOTD_LENGTH - 1] = '\0';
+        (*motd)[motd_length - 1] = '\0';
     }
 
     config_destroy(&cfg);
