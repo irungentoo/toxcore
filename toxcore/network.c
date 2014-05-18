@@ -33,6 +33,12 @@
 #include <errno.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
+#include <sodium.h>
 #include "network.h"
 #include "util.h"
 
@@ -229,6 +235,16 @@ uint64_t current_time_monotonic(void)
     struct timespec monotime;
 #if defined(__linux__)
     clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
+#elif defined(__APPLE__)
+    clock_serv_t muhclock;
+    mach_timespec_t machtime;
+
+    host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &muhclock);
+    clock_get_time(muhclock, &machtime);
+    mach_port_deallocate(mach_task_self(), muhclock);
+
+    monotime.tv_sec = machtime.tv_sec;
+    monotime.tv_nsec = machtime.tv_nsec;
 #else
     clock_gettime(CLOCK_MONOTONIC, &monotime);
 #endif
