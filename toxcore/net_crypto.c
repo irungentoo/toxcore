@@ -1823,6 +1823,41 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, uint8_t *public_key)
     return -1;
 }
 
+/* Copy a maximum of num TCP relays we are connected to to tcp_relays.
+ * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
+ *
+ * return number of relays copied to tcp_relays on success.
+ * return 0 on failure.
+ */
+unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, uint16_t num)
+{
+    if (num == 0)
+        return 0;
+
+    uint32_t i;
+    uint16_t copied = 0;
+
+    for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
+        if (c->tcp_connections[i] != NULL) {
+            memcpy(tcp_relays[copied].client_id, c->tcp_connections[i]->public_key, crypto_box_PUBLICKEYBYTES);
+            tcp_relays[copied].ip_port = c->tcp_connections[i]->ip_port;
+
+            if (tcp_relays[copied].ip_port.ip.family == AF_INET) {
+                tcp_relays[copied].ip_port.ip.family = TCP_INET;
+            } else if (tcp_relays[copied].ip_port.ip.family == AF_INET6) {
+                tcp_relays[copied].ip_port.ip.family = TCP_INET6;
+            }
+
+            ++copied;
+
+            if (copied == num)
+                return copied;
+        }
+    }
+
+    return copied;
+}
+
 /* Add a connected tcp connection to the tcp_connections array.
  *
  * return 0 if it was added.

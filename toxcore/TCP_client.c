@@ -372,6 +372,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, 
     temp->status = TCP_CLIENT_CONNECTING;
     temp->sock = sock;
     memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    temp->ip_port = ip_port;
 
     if (generate_handshake(temp, self_public_key, self_secret_key) == -1) {
         kill_sock(sock);

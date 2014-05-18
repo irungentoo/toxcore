@@ -739,12 +739,38 @@ uint64_t tox_file_data_remaining(Tox *tox, int32_t friendnumber, uint8_t filenum
 
 /***************END OF FILE SENDING FUNCTIONS******************/
 
+/* TODO: expose this properly. */
+static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
+{
+    Messenger *m = tox;
+    IP_Port ip_port_v64;
+    IP *ip_extra = NULL;
+    IP_Port ip_port_v4;
+    ip_init(&ip_port_v64.ip, ipv6enabled);
+
+    if (ipv6enabled) {
+        /* setup for getting BOTH: an IPv6 AND an IPv4 address */
+        ip_port_v64.ip.family = AF_UNSPEC;
+        ip_reset(&ip_port_v4.ip);
+        ip_extra = &ip_port_v4.ip;
+    }
+
+    if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
+        ip_port_v64.port = port;
+        add_tcp_relay(m->net_crypto, ip_port_v64, public_key);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 int tox_bootstrap_from_address(Tox *tox, const char *address,
                                uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
 {
     Messenger *m = tox;
+    tox_add_tcp_relay(tox, address, ipv6enabled, port, public_key);
     return DHT_bootstrap_from_address(m->dht, address, ipv6enabled, port, public_key);
-};
+}
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.

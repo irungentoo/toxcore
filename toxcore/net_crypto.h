@@ -267,6 +267,14 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  */
 int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, uint8_t *public_key);
 
+/* Copy a maximum of num TCP relays we are connected to to tcp_relays.
+ * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
+ *
+ * return number of relays copied to tcp_relays on success.
+ * return 0 on failure.
+ */
+unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, uint16_t num);
+
 /* Kill a crypto connection.
  *
  * return -1 on failure.

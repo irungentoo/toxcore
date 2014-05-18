@@ -195,6 +195,21 @@ void getaddress(Messenger *m, uint8_t *address)
     memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(nospam), &checksum, sizeof(checksum));
 }
 
+/* callback for recv TCP relay nodes. */
+static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_port, uint8_t *public_key)
+{
+    Messenger *m = object;
+
+    if (friend_not_valid(m, number))
+        return -1;
+
+    if (m->friendlist[number].crypt_connection_id != -1) {
+        return add_tcp_relay_peer(m->net_crypto, m->friendlist[number].crypt_connection_id, ip_port, public_key);
+    } else {
+        return add_tcp_relay(m->net_crypto, ip_port, public_key);
+    }
+}
+
 /*
  * Add a friend.
  * Set the data that will be sent along with friend request.
@@ -277,6 +292,7 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
+            recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
 
             if (m->numfriends == i)
                 ++m->numfriends;
@@ -322,6 +338,7 @@ int32_t m_addfriend_norequest(Messenger *m, uint8_t *client_id)
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
+            recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
 
             if (m->numfriends == i)
                 ++m->numfriends;

@@ -40,6 +40,7 @@ typedef struct  {
     uint8_t status;
     sock_t  sock;
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* public key of the server */
+    IP_Port ip_port; /* The ip and port of the server */
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
     uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
     uint8_t shared_key[crypto_box_BEFORENMBYTES];

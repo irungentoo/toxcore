@@ -102,6 +102,10 @@ typedef struct {
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
     uint8_t last_pinged_index;
+
+    int (*tcp_relay_node_callback)(void *object, uint32_t number, IP_Port ip_port, uint8_t *public_key);
+    void *tcp_relay_node_callback_object;
+    uint32_t tcp_relay_node_callback_number;
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
@@ -175,6 +179,17 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
  *
  */
 int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
+
+/* Set the function for this friend that will be callbacked with object and number
+ * when that friends gives us one of the TCP relays he is connected to.
+ *
+ * object and number will be passed as argument to this function.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
+                           uint32_t number, IP_Port ip_port, uint8_t *public_key), void *object, uint32_t number);
 
 /* Set a friends DHT public key.
  * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to

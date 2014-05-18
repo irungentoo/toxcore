@@ -505,7 +505,7 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
     if (len_nodes != 0) {
         Node_format nodes[MAX_SENT_NODES];
         int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, data + 1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES,
-                                     len_nodes, 0);
+                                     len_nodes, 1);
 
         if (num_nodes <= 0)
             return 1;
@@ -513,7 +513,17 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
         int i;
 
         for (i = 0; i < num_nodes; ++i) {
-            DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].client_id, onion_c->friends_list[friend_num].fake_client_id);
+            uint8_t family = nodes[i].ip_port.ip.family;
+
+            if (family == AF_INET || family == AF_INET6) {
+                DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].client_id, onion_c->friends_list[friend_num].fake_client_id);
+            } else if (family == TCP_INET || family == TCP_INET6) {
+                if (onion_c->friends_list[friend_num].tcp_relay_node_callback) {
+                    void *obj = onion_c->friends_list[friend_num].tcp_relay_node_callback_object;
+                    uint32_t number = onion_c->friends_list[friend_num].tcp_relay_node_callback_number;
+                    onion_c->friends_list[friend_num].tcp_relay_node_callback(obj, number, nodes[i].ip_port, nodes[i].client_id);
+                }
+            }
         }
     }
 
@@ -664,8 +674,9 @@ static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num, uint
     memcpy(data + 1, &no_replay, sizeof(no_replay));
     memcpy(data + 1 + sizeof(uint64_t), onion_c->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     Node_format nodes[MAX_SENT_NODES];
-    uint16_t num_nodes = closelist_nodes(onion_c->dht, nodes, MAX_SENT_NODES);
-
+    uint16_t num_relays = copy_connected_tcp_relays(onion_c->c, nodes, (MAX_SENT_NODES / 2));
+    uint16_t num_nodes = closelist_nodes(onion_c->dht, &nodes[num_relays], MAX_SENT_NODES - num_relays);
+    num_nodes += num_relays;
     int nodes_len = 0;
 
     if (num_nodes != 0) {
@@ -798,6 +809,26 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     }
 
     return friend_num;
+}
+
+/* Set the function for this friend that will be callbacked with object and number
+ * when that friends gives us one of the TCP relays he is connected to.
+ *
+ * object and number will be passed as argument to this function.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
+                           uint32_t number, IP_Port ip_port, uint8_t *public_key), void *object, uint32_t number)
+{
+    if ((uint32_t)friend_num >= onion_c->num_friends)
+        return -1;
+
+    onion_c->friends_list[friend_num].tcp_relay_node_callback = tcp_relay_node_callback;
+    onion_c->friends_list[friend_num].tcp_relay_node_callback_object = object;
+    onion_c->friends_list[friend_num].tcp_relay_node_callback_number = number;
+    return 0;
 }
 
 /* Set a friends DHT public key.
