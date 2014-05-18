@@ -185,10 +185,12 @@ typedef struct __attribute__ ((__packed__))
 }
 IP;
 
-typedef struct __attribute__ ((__packed__)) IP_Port {
+typedef struct __attribute__ ((__packed__)) __attribute__((gcc_struct))
+{
     IP ip;
     uint16_t port;
-} IP_Port;
+}
+IP_Port;
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
