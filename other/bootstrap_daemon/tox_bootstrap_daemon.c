@@ -50,6 +50,7 @@
 // misc
 #include "../../testing/misc_tools.c"
 
+
 #define DAEMON_NAME "tox_bootstrap_daemon"
 
 #define SLEEP_TIME_MILLISECONDS 30
@@ -60,7 +61,7 @@
 #define DEFAULT_PORT                 33445
 #define DEFAULT_ENABLE_IPV6          0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false
-#define DEFAULT_ENABLE_TCP_RELAY     1
+#define DEFAULT_ENABLE_TCP_RELAY     1 // 1 - true, 0 - false
 
 #define MIN_ALLOWED_PORT 1
 #define MAX_ALLOWED_PORT 65535
@@ -356,7 +357,7 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
         }
 
         // Process settings
-        if (strlen(bs_public_key) != 64) {
+        if (strlen(bs_public_key) != crypto_box_PUBLICKEYBYTES*2) {
             syslog(LOG_WARNING, "Bootstrap node #%d: Invalid '%s': %s. Skipping the node.\n", i, NAME_PUBLIC_KEY,
                    bs_public_key);
             goto next;
@@ -380,9 +381,9 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
         syslog(LOG_DEBUG, "Successfully added bootstrap node #%d: %s:%d %s\n", i, bs_address, bs_port, bs_public_key);
 
 next:
-        // config_setting_lookup_string() allocates string inside and doesn't allow us to free it
-        // so in order to reuse `bs_public_key` and `bs_address` we have to remove the element
-        // which will cause libconfig to free allocated strings
+        // config_setting_lookup_string() allocates string inside and doesn't allow us to free it direcly
+        // though it's freed when the element is removed, so we free it right away in order to keep memory
+        // consumption minimal
         config_setting_remove_elem(node_list, 0);
         i++;
     }
@@ -396,17 +397,13 @@ next:
 
 void print_public_key(uint8_t *public_key)
 {
-    char buffer[64 + 1];
+    char buffer[2*crypto_box_PUBLICKEYBYTES + 1];
     int index = 0;
 
     int i;
 
-    for (i = 0; i < 32; i++) {
-        if (public_key[i] < 16) {
-            index += sprintf(buffer + index, "0");
-        }
-
-        index += sprintf(buffer + index, "%hhX", public_key[i]);
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
+        index += sprintf(buffer + index, "%02hhX", public_key[i]);
     }
 
     syslog(LOG_INFO, "Public Key: %s\n", buffer);
@@ -466,10 +463,6 @@ int main(int argc, char *argv[])
     if (!(onion && onion_a)) {
         syslog(LOG_ERR, "Couldn't initialize Tox Onion. Exiting.\n");
         return 1;
-    }
-
-    if (enable_lan_discovery) {
-        LANdiscovery_init(dht);
     }
 
     if (manage_keys(dht, keys_file_path)) {
@@ -558,6 +551,10 @@ int main(int argc, char *argv[])
     uint16_t htons_port = htons(port);
 
     int waiting_for_dht_connection = 1;
+
+    if (enable_lan_discovery) {
+        LANdiscovery_init(dht);
+    }
 
     while (1) {
         do_DHT(dht);
