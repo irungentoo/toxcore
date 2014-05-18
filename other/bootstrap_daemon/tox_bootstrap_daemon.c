@@ -164,8 +164,8 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
         }
 
         (*tcp_relay_ports)[*tcp_relay_port_count] = config_setting_get_int(elem);
-        if ((*tcp_relay_ports)[i] < MIN_ALLOWED_PORT || (*tcp_relay_ports)[i] > MAX_ALLOWED_PORT) {
-            syslog(LOG_WARNING, "Port #%d: Invalid port: %u, should be in [%d, %d]. Skipping.\n", i, (*tcp_relay_ports)[i], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
+        if ((*tcp_relay_ports)[*tcp_relay_port_count] < MIN_ALLOWED_PORT || (*tcp_relay_ports)[*tcp_relay_port_count] > MAX_ALLOWED_PORT) {
+            syslog(LOG_WARNING, "Port #%d: Invalid port: %u, should be in [%d, %d]. Skipping.\n", i, (*tcp_relay_ports)[*tcp_relay_port_count], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
             continue;
         }
 
@@ -173,7 +173,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
     }
 
     // the loop above skips invalid ports, so we adjust the allocated memory size
-    *tcp_relay_ports = realloc(*tcp_relay_ports, *tcp_relay_port_count * sizeof(uint16_t));
+    *tcp_relay_ports = realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
 }
 
 // Gets general config options
