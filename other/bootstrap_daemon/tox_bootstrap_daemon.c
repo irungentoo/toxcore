@@ -485,8 +485,7 @@ int main(int argc, char *argv[])
 
     // Check if the PID file exists
     if (fopen(pid_file_path, "r")) {
-        syslog(LOG_ERR, "Another instance of the daemon is already running, PID file %s exists. Exiting.\n", pid_file_path);
-        return 1;
+        syslog(LOG_ERR, "Another instance of the daemon is already running, PID file %s exists.\n", pid_file_path);
     }
 
     IP ip;
@@ -555,10 +554,10 @@ int main(int argc, char *argv[])
     print_public_key(dht->self_public_key);
 
     // Write the PID file
-    FILE *pidf = fopen(pid_file_path, "w");
+    FILE *pidf = fopen(pid_file_path, "a+");
 
     if (pidf == NULL) {
-        syslog(LOG_ERR, "Can't open the PID file for writing: %s. Exiting.\n", pid_file_path);
+        syslog(LOG_ERR, "Couldn't open the PID file for writing: %s. Exiting.\n", pid_file_path);
         return 1;
     }
 
@@ -575,7 +574,7 @@ int main(int argc, char *argv[])
     }
 
     if (pid > 0) {
-        fprintf(pidf, "%d\n", pid);
+        fprintf(pidf, "%d ", pid);
         fclose(pidf);
         syslog(LOG_DEBUG, "Forked successfully: PID: %d.\n", pid);
         return 0;
