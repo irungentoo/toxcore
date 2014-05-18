@@ -406,6 +406,8 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
     if (conn == 0)
         return -1;
 
+    int direct_send_attempt = 0;
+
     //TODO: on bad networks, direct connections might not last indefinitely.
     if (conn->ip_port.ip.family != 0) {
         uint8_t direct_connected = 0;
@@ -415,8 +417,10 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
             return 0;
 
         //TODO: a better way of sending packets directly to confirm the others ip.
-        if (length < 96 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS)
-            sendpacket(c->dht->net, conn->ip_port, data, length);
+        if (length < 96 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS) {
+            if ((uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length)
+                direct_send_attempt = 1;
+        }
 
     }
 
@@ -436,6 +440,11 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
                 return 0;
         }
     }
+
+    if (direct_send_attempt) {
+        return 0;
+    }
+
     return -1;
 }
 
