@@ -38,7 +38,6 @@
 #include <mach/mach.h>
 #endif
 
-#include <sodium.h>
 #include "network.h"
 #include "util.h"
 
@@ -545,6 +544,11 @@ int networking_wait_cleanup(Networking_Core *net, uint8_t *data)
 
     return 1;
 }
+
+#ifndef VANILLA_NACL
+/* Used for sodium_init() */
+#include <sodium.h>
+#endif
 
 uint8_t at_startup_ran = 0;
 int networking_at_startup(void)
