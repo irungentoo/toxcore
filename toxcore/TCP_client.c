@@ -404,7 +404,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_
             uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
 
             if (conn->connections[con_id].status != 0)
-                return -1;
+                return 0;
 
             conn->connections[con_id].status = 1;
             conn->connections[con_id].number = ~0;
