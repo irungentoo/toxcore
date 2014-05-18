@@ -48,10 +48,12 @@
 #include "../../toxcore/util.h"
 
 // misc
+#include "../bootstrap_node_packets.c"
 #include "../../testing/misc_tools.c"
 
 
 #define DAEMON_NAME "tox_bootstrap_daemon"
+#define DAEMON_VERSION_NUMBER 2014051700UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
 
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
@@ -62,6 +64,8 @@
 #define DEFAULT_ENABLE_IPV6          0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_TCP_RELAY     1 // 1 - true, 0 - false
+#define DEFAULT_ENABLE_MOTD          1 // 1 - true, 0 - false
+#define DEFAULT_MOTD                 DAEMON_NAME
 
 #define MIN_ALLOWED_PORT 1
 #define MAX_ALLOWED_PORT 65535
@@ -129,7 +133,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
     }
 
     if (config_setting_is_array(ports_array) == CONFIG_FALSE) {
-        syslog(LOG_WARNING, "'%s' setting should be an array. Array syntax: 'setting = [value1, value2, ...]'.\n");
+        syslog(LOG_WARNING, "'%s' setting should be an array. Array syntax: 'setting = [value1, value2, ...]'.\n", NAME_TCP_RELAY_PORTS);
         return;
     }
 
@@ -161,7 +165,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 
         (*tcp_relay_ports)[*tcp_relay_port_count] = config_setting_get_int(elem);
         if ((*tcp_relay_ports)[i] < MIN_ALLOWED_PORT || (*tcp_relay_ports)[i] > MAX_ALLOWED_PORT) {
-            syslog(LOG_WARNING, "Port #%d: Invalid port value, should be in [%d, %d]. Skipping.\n", i, MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
+            syslog(LOG_WARNING, "Port #%d: Invalid port: %u, should be in [%d, %d]. Skipping.\n", i, (*tcp_relay_ports)[i], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
             continue;
         }
 
@@ -176,12 +180,14 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 //
 // Important: you are responsible for freeing `pid_file_path` and `keys_file_path`
 //            also, iff `tcp_relay_ports_count` > 0, then you are responsible for freeing `tcp_relay_ports`
+//            and also `motd` iff `enable_motd` is set
 //
 // returns 1 on success
 //         0 on failure, doesn't modify any data pointed by arguments
 
 int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
-                       int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports, int *tcp_relay_port_count)
+                       int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports, int *tcp_relay_port_count,
+                       int *enable_motd, char **motd)
 {
     config_t cfg;
 
@@ -191,6 +197,8 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     const char *NAME_ENABLE_IPV6          = "enable_ipv6";
     const char *NAME_ENABLE_LAN_DISCOVERY = "enable_lan_discovery";
     const char *NAME_ENABLE_TCP_RELAY     = "enable_tcp_relay";
+    const char *NAME_ENABLE_MOTD          = "enable_motd";
+    const char *NAME_MOTD                 = "motd";
 
     config_init(&cfg);
 
@@ -261,6 +269,30 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
         *tcp_relay_port_count = 0;
     }
 
+    // Get MOTD option
+    if (config_lookup_bool(&cfg, NAME_ENABLE_MOTD, enable_motd) == CONFIG_FALSE) {
+        syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_MOTD);
+        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_ENABLE_MOTD,
+               DEFAULT_ENABLE_MOTD ? "true" : "false");
+        *enable_motd = DEFAULT_ENABLE_MOTD;
+    }
+
+    if (*enable_motd) {
+        // Get MOTD
+        const char *tmp_motd;
+
+        if (config_lookup_string(&cfg, NAME_MOTD, &tmp_motd) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_MOTD);
+            syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_MOTD, DEFAULT_MOTD);
+            tmp_motd = DEFAULT_MOTD;
+        }
+        size_t tmp_motd_length = strlen(tmp_motd) + 1;
+        size_t motd_length = tmp_motd_length > MAX_MOTD_LENGTH ? MAX_MOTD_LENGTH : tmp_motd_length;
+        *motd = malloc(motd_length);
+        strncpy(*motd, tmp_motd, motd_length);
+        (*motd)[MAX_MOTD_LENGTH - 1] = '\0';
+    }
+
     config_destroy(&cfg);
 
     syslog(LOG_DEBUG, "Successfully read:\n");
@@ -269,6 +301,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     syslog(LOG_DEBUG, "'%s': %d\n", NAME_PORT,                 *port);
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_IPV6,          *enable_ipv6          ? "true" : "false");
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_LAN_DISCOVERY, *enable_lan_discovery ? "true" : "false");
+
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_TCP_RELAY,     *enable_tcp_relay     ? "true" : "false");
     // show info about tcp ports only if tcp relay is enabled
     if (*enable_tcp_relay) {
@@ -281,6 +314,11 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
                 syslog(LOG_DEBUG, "Port #%d: %u\n", i, (*tcp_relay_ports)[i]);
             }
         }
+    }
+
+    syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_MOTD,          *enable_motd          ? "true" : "false");
+    if (*enable_motd) {
+        syslog(LOG_DEBUG, "'%s': %s\n", NAME_MOTD, *motd);
     }
 
     return 1;
@@ -415,6 +453,8 @@ int main(int argc, char *argv[])
 {
     openlog(DAEMON_NAME, LOG_NOWAIT | LOG_PID, LOG_DAEMON);
 
+    syslog(LOG_INFO, "Running \"%s\" version %lu.\n", DAEMON_NAME, DAEMON_VERSION_NUMBER);
+
     if (argc < 2) {
         syslog(LOG_ERR, "Please specify a path to a configuration file as the first argument. Exiting.\n");
         return 1;
@@ -428,8 +468,10 @@ int main(int argc, char *argv[])
     int enable_tcp_relay;
     uint16_t *tcp_relay_ports;
     int tcp_relay_port_count;
+    int enable_motd;
+    char *motd;
 
-    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_lan_discovery, &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count)) {
+    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_lan_discovery, &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count, &enable_motd, &motd)) {
         syslog(LOG_DEBUG, "General config read successfully\n");
     } else {
         syslog(LOG_ERR, "Couldn't read config file: %s. Exiting.\n", cfg_file_path);
@@ -465,8 +507,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    if (enable_motd) {
+        if (bootstrap_set_callbacks(dht->net, DAEMON_VERSION_NUMBER, (uint8_t*)motd, strlen(motd) + 1) == 0) {
+            syslog(LOG_DEBUG, "Set MOTD successfully.\n");
+        } else {
+            syslog(LOG_ERR, "Couldn't set MOTD: %s. Exiting.\n", motd);
+            return 1;
+        }
+        free(motd);
+    }
+
     if (manage_keys(dht, keys_file_path)) {
-        syslog(LOG_DEBUG, "Keys are managed successfully\n");
+        syslog(LOG_DEBUG, "Keys are managed successfully.\n");
     } else {
         syslog(LOG_ERR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
         return 1;
@@ -485,14 +537,16 @@ int main(int argc, char *argv[])
         // tcp_relay_port_count != 0 at this point
         free(tcp_relay_ports);
 
-        if (tcp_server == NULL) {
+        if (tcp_server != NULL) {
+            syslog(LOG_DEBUG, "Initialized Tox TCP server successfully.\n");
+        } else {
             syslog(LOG_ERR, "Couldn't initialize Tox TCP server. Exiting.\n");
             return 1;
         }
     }
 
     if (bootstrap_from_config(cfg_file_path, dht, enable_ipv6)) {
-        syslog(LOG_DEBUG, "List of bootstrap nodes read successfully\n");
+        syslog(LOG_DEBUG, "List of bootstrap nodes read successfully.\n");
     } else {
         syslog(LOG_ERR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
         return 1;
@@ -554,6 +608,7 @@ int main(int argc, char *argv[])
 
     if (enable_lan_discovery) {
         LANdiscovery_init(dht);
+        syslog(LOG_DEBUG, "Initialized LAN discovery.\n");
     }
 
     while (1) {
