@@ -1778,6 +1778,9 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
         ip_port.ip.family = AF_INET6;
     }
 
+    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6)
+        return -1;
+
     uint32_t i;
 
     for (i = 0; i < conn->num_tcp_relays; ++i) {
@@ -1817,6 +1820,15 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  */
 int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, uint8_t *public_key)
 {
+    if (ip_port.ip.family == TCP_INET) {
+        ip_port.ip.family = AF_INET;
+    } else if (ip_port.ip.family == TCP_INET6) {
+        ip_port.ip.family = AF_INET6;
+    }
+
+    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6)
+        return -1;
+
     if (tcp_connection_check(c, public_key) != 0)
         return -1;
 

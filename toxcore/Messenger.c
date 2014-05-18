@@ -2477,9 +2477,10 @@ int wait_cleanup_messenger(Messenger *m, uint8_t *data)
 #define MESSENGER_STATE_TYPE_NAME          4
 #define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
 #define MESSENGER_STATE_TYPE_STATUS        6
+#define MESSENGER_STATE_TYPE_TCP_RELAY     10
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
-
+#define NUM_SAVED_TCP_RELAYS 8
 struct SAVED_FRIEND {
     uint8_t status;
     uint8_t client_id[CLIENT_ID_SIZE];
@@ -2614,6 +2615,7 @@ uint32_t messenger_size(Messenger *m)
              + sizesubhead + m->name_length                    // Own nickname.
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
+             + sizesubhead + NUM_SAVED_TCP_RELAYS * sizeof(Node_format) //TCP relays
              ;
 }
 
@@ -2678,74 +2680,15 @@ void messenger_save(Messenger *m, uint8_t *data)
     data = z_state_save_subheader(data, len, type);
     *data = m->userstatus;
     data += len;
-}
 
-static int messenger_load_state_callback_old(void *outer, uint8_t *data, uint32_t length, uint16_t type)
-{
-    Messenger *m = outer;
-
-    switch (type) {
-        case MESSENGER_STATE_TYPE_NOSPAMKEYS:
-            if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
-                set_nospam(&(m->fr), *(uint32_t *)data);
-                load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
-#ifdef ENABLE_ASSOC_DHT
-
-                if (m->dht->assoc)
-                    Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
-
-#endif
-            } else
-                return -1;    /* critical */
-
-            break;
-
-        case MESSENGER_STATE_TYPE_DHT:
-            DHT_load(m->dht, data, length);
-            break;
-
-        case MESSENGER_STATE_TYPE_FRIENDS:
-            if (!(length % sizeof(Friend))) {
-                uint16_t num = length / sizeof(Friend);
-                Friend *friends = (Friend *)data;
-                uint32_t i;
-
-                for (i = 0; i < num; ++i) {
-                    if (friends[i].status >= 3) {
-                        int fnum = m_addfriend_norequest(m, friends[i].client_id);
-                        setfriendname(m, fnum, friends[i].name, friends[i].name_length);
-                        /* set_friend_statusmessage(fnum, temp[i].statusmessage, temp[i].statusmessage_length); */
-                    } else if (friends[i].status != 0) {
-                        /* TODO: This is not a good way to do this. */
-                        uint8_t address[FRIEND_ADDRESS_SIZE];
-                        id_copy(address, friends[i].client_id);
-                        memcpy(address + crypto_box_PUBLICKEYBYTES, &(friends[i].friendrequest_nospam), sizeof(uint32_t));
-                        uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
-                        memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), &checksum, sizeof(checksum));
-                        m_addfriend(m, address, friends[i].info, friends[i].info_size);
-                    }
-                }
-            }
-
-            break;
-
-        case MESSENGER_STATE_TYPE_NAME:
-            if ((length > 0) && (length < MAX_NAME_LENGTH)) {
-                setname(m, data, length);
-            }
-
-            break;
-
-#ifdef DEBUG
-
-        default:
-            fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
-                    length, type);
-            break;
-#endif
-    }
-
-    return 0;
+    Node_format relays[NUM_SAVED_TCP_RELAYS];
+    len = sizeof(relays);
+    type = MESSENGER_STATE_TYPE_TCP_RELAY;
+    data = z_state_save_subheader(data, len, type);
+    memset(relays, 0, len);
+    copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
+    memcpy(data, relays, len);
+    data += len;
 }
 
 static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
@@ -2796,6 +2739,22 @@ static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t le
             }
 
             break;
+
+        case MESSENGER_STATE_TYPE_TCP_RELAY: {
+            Node_format relays[NUM_SAVED_TCP_RELAYS];
+
+            if (length != sizeof(relays)) {
+                return -1;
+            }
+
+            memcpy(relays, data, length);
+            uint32_t i;
+
+            for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
+                add_tcp_relay(m->net_crypto, relays[i].ip_port, relays[i].client_id);
+            }
+        }
+        break;
 #ifdef DEBUG
 
         default:
@@ -2822,11 +2781,7 @@ int messenger_load(Messenger *m, uint8_t *data, uint32_t length)
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL))
         return load_state(messenger_load_state_callback, m, data + cookie_len,
                           length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
-
-    else if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL_OLD))
-        return load_state(messenger_load_state_callback_old, m, data + cookie_len,
-                          length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
-    else       /* old state file */
+    else
         return -1;
 }
 
