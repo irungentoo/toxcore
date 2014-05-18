@@ -58,14 +58,16 @@
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
 
-#define DEFAULT_PID_FILE_PATH        ".tox_bootstrap_daemon.pid"
-#define DEFAULT_KEYS_FILE_PATH       ".tox_bootstrap_daemon.keys"
-#define DEFAULT_PORT                 33445
-#define DEFAULT_ENABLE_IPV6          0 // 1 - true, 0 - false
-#define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false
-#define DEFAULT_ENABLE_TCP_RELAY     1 // 1 - true, 0 - false
-#define DEFAULT_ENABLE_MOTD          1 // 1 - true, 0 - false
-#define DEFAULT_MOTD                 DAEMON_NAME
+#define DEFAULT_PID_FILE_PATH         ".tox_bootstrap_daemon.pid"
+#define DEFAULT_KEYS_FILE_PATH        ".tox_bootstrap_daemon.keys"
+#define DEFAULT_PORT                  33445
+#define DEFAULT_ENABLE_IPV6           0 // 1 - true, 0 - false
+#define DEFAULT_ENABLE_LAN_DISCOVERY  1 // 1 - true, 0 - false
+#define DEFAULT_ENABLE_TCP_RELAY      1 // 1 - true, 0 - false
+#define DEFAULT_TCP_RELAY_PORTS       443, 3389, 33445 // comma-separated list of ports. make sure to adjust DEFAULT_TCP_RELAY_PORTS_COUNT accordingly
+#define DEFAULT_TCP_RELAY_PORTS_COUNT 3
+#define DEFAULT_ENABLE_MOTD           1 // 1 - true, 0 - false
+#define DEFAULT_MOTD                  DAEMON_NAME
 
 #define MIN_ALLOWED_PORT 1
 #define MAX_ALLOWED_PORT 65535
@@ -129,6 +131,33 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 
     if (ports_array == NULL) {
         syslog(LOG_WARNING, "No '%s' setting in the configuration file.\n", NAME_TCP_RELAY_PORTS);
+        syslog(LOG_WARNING, "Using default '%s':\n", NAME_TCP_RELAY_PORTS);
+
+        uint16_t default_ports[DEFAULT_TCP_RELAY_PORTS_COUNT] = {DEFAULT_TCP_RELAY_PORTS};
+
+        int i;
+
+        for (i = 0; i < DEFAULT_TCP_RELAY_PORTS_COUNT; i ++) {
+            syslog(LOG_WARNING, "Port #%d: %u\n", i, default_ports[i]);
+        }
+
+        // similar procedure to the one of reading config file below
+        *tcp_relay_ports = malloc(DEFAULT_TCP_RELAY_PORTS_COUNT * sizeof(uint16_t));
+
+        for (i = 0; i < DEFAULT_TCP_RELAY_PORTS_COUNT; i ++) {
+
+            (*tcp_relay_ports)[*tcp_relay_port_count] = default_ports[i];
+            if ((*tcp_relay_ports)[*tcp_relay_port_count] < MIN_ALLOWED_PORT || (*tcp_relay_ports)[*tcp_relay_port_count] > MAX_ALLOWED_PORT) {
+                syslog(LOG_WARNING, "Port #%d: Invalid port: %u, should be in [%d, %d]. Skipping.\n", i, (*tcp_relay_ports)[*tcp_relay_port_count], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
+                continue;
+            }
+
+            (*tcp_relay_port_count) ++;
+        }
+
+        // the loop above skips invalid ports, so we adjust the allocated memory size
+        *tcp_relay_ports = realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
+
         return;
     }
 
