@@ -830,6 +830,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *
         return -1;
     }
 
+    onion_c->friends_list[friend_num].last_seen = unix_time();
     onion_c->friends_list[friend_num].is_fake_clientid = 1;
     onion_c->friends_list[friend_num].fake_client_id_timestamp = timestamp;
     memcpy(onion_c->friends_list[friend_num].fake_client_id, dht_key, crypto_box_PUBLICKEYBYTES);

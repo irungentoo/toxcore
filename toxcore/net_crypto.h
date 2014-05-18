@@ -61,7 +61,13 @@
 
 #define CRYPTO_RESERVED_PACKETS 16
 
-#define MAX_TCP_CONNECTIONS 8
+#define MAX_TCP_CONNECTIONS 32
+#define MAX_TCP_RELAYS_PEER 4
+
+#define STATUS_TCP_NULL      0
+#define STATUS_TCP_OFFLINE   1
+#define STATUS_TCP_INVISIBLE 2 /* we know the other peer is connected to this relay but he isn't appearing online */
+#define STATUS_TCP_ONLINE    3
 
 typedef struct {
     uint64_t time;
@@ -127,8 +133,11 @@ typedef struct {
 
     uint8_t killed; /* set to 1 to kill the connection. */
 
-    uint8_t status_tcp[MAX_TCP_CONNECTIONS];
+    uint8_t status_tcp[MAX_TCP_CONNECTIONS]; /* set to one of STATUS_TCP_* */
     uint8_t con_number_tcp[MAX_TCP_CONNECTIONS];
+
+    Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
+    uint16_t num_tcp_relays;
 } Crypto_Connection;
 
 typedef struct {
@@ -243,6 +252,13 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  *  return positive packet number if data was put into the queue.
  */
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
+
+/* Add a tcp relay, associating it to a crypt_connection_id.
+ *
+ * return 0 if it was added.
+ * return -1 if it wasn't.
+ */
+int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, uint8_t *public_key);
 
 /* Add a tcp relay to the array.
  *

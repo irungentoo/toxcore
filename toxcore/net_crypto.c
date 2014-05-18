@@ -424,12 +424,18 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
     uint32_t i;
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
-        if (conn->status_tcp[i] == 2) {/* friend is connected to this relay. */
+        if (conn->status_tcp[i] == STATUS_TCP_ONLINE) {/* friend is connected to this relay. */
             if (send_data(c->tcp_connections[i], conn->con_number_tcp[i], data, length) == 1)
                 return 0;
         }
     }
 
+    for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
+        if (conn->status_tcp[i] == STATUS_TCP_INVISIBLE) {
+            if (send_oob_packet(c->tcp_connections[i], conn->dht_public_key, data, length) == 1)
+                return 0;
+        }
+    }
     return -1;
 }
 
@@ -1461,9 +1467,9 @@ static int disconnect_peer_tcp(Net_Crypto *c, int crypt_connection_id)
     uint32_t i;
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
-        if (conn->status_tcp[i]) {
+        if (conn->status_tcp[i] != STATUS_TCP_NULL) {
             send_disconnect_request(c->tcp_connections[i], conn->con_number_tcp[i]);
-            conn->status_tcp[i] = 0;
+            conn->status_tcp[i] = STATUS_TCP_NULL;
             conn->con_number_tcp[i] = 0;
         }
     }
@@ -1575,9 +1581,10 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
         conn->ip_port = ip_port;
         conn->direct_lastrecv_time = 0;
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
 static int tcp_response_callback(void *object, uint8_t connection_id, uint8_t *public_key)
@@ -1605,8 +1612,17 @@ static int tcp_response_callback(void *object, uint8_t connection_id, uint8_t *p
     if (c->tcp_connections[location] != TCP_con)
         return -1;
 
-    conn->status_tcp[location] = 1;
     conn->con_number_tcp[location] = connection_id;
+    uint32_t i;
+
+    for (i = 0; i < conn->num_tcp_relays; ++i) {
+        if (memcmp(TCP_con->public_key, conn->tcp_relays[i].client_id, crypto_box_PUBLICKEYBYTES) == 0) {
+            conn->status_tcp[location] = STATUS_TCP_INVISIBLE;
+            return 0;
+        }
+    }
+
+    conn->status_tcp[location] = STATUS_TCP_OFFLINE;
     return 0;
 }
 
@@ -1628,13 +1644,19 @@ static int tcp_status_callback(void *object, uint32_t number, uint8_t connection
     if (c->tcp_connections[location] != TCP_con)
         return -1;
 
-    conn->status_tcp[location] = status;
+    if (status == 1) {
+        conn->status_tcp[location] = STATUS_TCP_OFFLINE;
+    } else if (status == 2) {
+        conn->status_tcp[location] = STATUS_TCP_ONLINE;
+    }
+
     conn->con_number_tcp[location] = connection_id;
     return 0;
 }
 
 static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_id, uint8_t *data, uint16_t length)
 {
+
     if (length == 0)
         return -1;
 
@@ -1727,6 +1749,56 @@ static int tcp_connection_check(Net_Crypto *c, uint8_t *public_key)
         return -1;
 
     return 0;
+}
+
+/* Add a tcp relay, associating it to a crypt_connection_id.
+ *
+ * return 0 if it was added.
+ * return -1 if it wasn't.
+ */
+int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, uint8_t *public_key)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    if (ip_port.ip.family == TCP_INET) {
+        ip_port.ip.family = AF_INET;
+    } else if (ip_port.ip.family == TCP_INET6) {
+        ip_port.ip.family = AF_INET6;
+    }
+
+    uint32_t i;
+
+    for (i = 0; i < conn->num_tcp_relays; ++i) {
+        if (memcmp(conn->tcp_relays[i].client_id, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            conn->tcp_relays[i].ip_port = ip_port;
+            return 0;
+        }
+    }
+
+    if (conn->num_tcp_relays == MAX_TCP_RELAYS_PEER) {
+        uint16_t index = rand() % MAX_TCP_RELAYS_PEER;
+        conn->tcp_relays[index].ip_port = ip_port;
+        memcpy(conn->tcp_relays[index].client_id, public_key, crypto_box_PUBLICKEYBYTES);
+    } else {
+        conn->tcp_relays[conn->num_tcp_relays].ip_port = ip_port;
+        memcpy(conn->tcp_relays[conn->num_tcp_relays].client_id, public_key, crypto_box_PUBLICKEYBYTES);
+        ++conn->num_tcp_relays;
+    }
+
+    for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
+        if (c->tcp_connections[i] == NULL)
+            continue;
+
+        if (memcmp(c->tcp_connections[i]->public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (conn->status_tcp[i] == STATUS_TCP_OFFLINE)
+                conn->status_tcp[i] = STATUS_TCP_INVISIBLE;
+        }
+    }
+
+    return add_tcp_relay(c, ip_port, public_key);
 }
 
 /* Add a tcp relay to the array.
@@ -1834,7 +1906,7 @@ static void clear_disconnected_tcp_peer(Crypto_Connection *conn, uint32_t number
     if (number >= MAX_TCP_CONNECTIONS)
         return;
 
-    conn->status_tcp[number] = 0;
+    conn->status_tcp[number] = STATUS_TCP_NULL;
     conn->con_number_tcp[number] = 0;
 }
 
@@ -2253,6 +2325,11 @@ void kill_net_crypto(Net_Crypto *c)
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         crypto_kill(c, i);
+    }
+
+    for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
+        kill_TCP_connection(c->tcp_connections_new[i]);
+        kill_TCP_connection(c->tcp_connections[i]);
     }
 
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_REQUEST, NULL, NULL);

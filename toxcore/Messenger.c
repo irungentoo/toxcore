@@ -2203,17 +2203,15 @@ void do_friends(Messenger *m)
         }
 
         if (m->friendlist[i].crypt_connection_id != -1) {
-            uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
-            uint64_t timestamp = onion_getfriend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key);
+            uint8_t dht_public_key1[crypto_box_PUBLICKEYBYTES];
+            uint64_t timestamp1 = onion_getfriend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key1);
+            uint8_t dht_public_key2[crypto_box_PUBLICKEYBYTES];
+            uint64_t timestamp2 = get_connection_dht_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key2);
 
-            if (timestamp != 0) {
-                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key, timestamp);
-            }
-
-            timestamp = get_connection_dht_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key);
-
-            if (timestamp != 0) {
-                onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key, timestamp);
+            if (timestamp1 > timestamp2) {
+                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key1, timestamp1);
+            } else if (timestamp1 < timestamp2) {
+                onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key2, timestamp2);
             }
 
             uint8_t direct_connected;

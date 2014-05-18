@@ -604,6 +604,9 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
  */
 void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
 {
+    if (TCP_connection == NULL)
+        return;
+
     kill_sock(TCP_connection->sock);
     memset(TCP_connection, 0, sizeof(TCP_Client_Connection));
     free(TCP_connection);
