@@ -18,7 +18,7 @@ USER=tom
 CFG=/home/$USER/.$NAME/conf
 DAEMON=/home/$USER/.$NAME/$NAME
 DAEMON_ARGS="$CFG"
-PIDFILE=/home/$USER/.$NAME/pid
+PIDFILE=/home/$USER/.$NAME/."$NAME".pid
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Exit if the package is not installed

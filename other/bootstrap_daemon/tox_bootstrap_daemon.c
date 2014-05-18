@@ -53,7 +53,7 @@
 
 
 #define DAEMON_NAME "tox_bootstrap_daemon"
-#define DAEMON_VERSION_NUMBER 2014051700UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
+#define DAEMON_VERSION_NUMBER 2014051800UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
 
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
