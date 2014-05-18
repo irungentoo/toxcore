@@ -62,6 +62,9 @@
 #define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_TCP_RELAY     1
 
+#define MIN_ALLOWED_PORT 1
+#define MAX_ALLOWED_PORT 65535
+
 
 // Uses the already existing key or creates one if it didn't exist
 //
@@ -156,8 +159,8 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
         }
 
         (*tcp_relay_ports)[*tcp_relay_port_count] = config_setting_get_int(elem);
-        if ((*tcp_relay_ports)[i] < 1 || (*tcp_relay_ports)[i] > 65535) {
-            syslog(LOG_WARNING, "Port #%d: Invalid port value, should be in [1, 65535]. Skipping.\n", i);
+        if ((*tcp_relay_ports)[i] < MIN_ALLOWED_PORT || (*tcp_relay_ports)[i] > MAX_ALLOWED_PORT) {
+            syslog(LOG_WARNING, "Port #%d: Invalid port value, should be in [%d, %d]. Skipping.\n", i, MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
             continue;
         }
 
@@ -359,9 +362,8 @@ int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
             goto next;
         }
 
-        // not (1 <= port <= 65535)
-        if (bs_port < 1 || bs_port > 65535) {
-            syslog(LOG_WARNING, "Bootstrap node #%d: Invalid '%s': %d. Skipping the node.\n", i, NAME_PORT, bs_port);
+        if (bs_port < MIN_ALLOWED_PORT || bs_port > MAX_ALLOWED_PORT) {
+            syslog(LOG_WARNING, "Bootstrap node #%d: Invalid '%s': %d, should be in [%d, %d]. Skipping the node.\n", i, NAME_PORT, bs_port, MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
             goto next;
         }
 
@@ -437,9 +439,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // not (1 <= port <= 65535)
-    if (port < 1 || port > 65535) {
-        syslog(LOG_ERR, "Invalid port: %d, must be 1 <= port <= 65535. Exiting.\n", port);
+    if (port < MIN_ALLOWED_PORT || port > MAX_ALLOWED_PORT) {
+        syslog(LOG_ERR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", port, MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
         return 1;
     }
 
