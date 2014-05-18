@@ -11,12 +11,12 @@
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="Tox DHT bootstrap server daemon"
+DESC="Tox DHT bootstrap daemon"
 NAME=tox_bootstrap_daemon
 # You may want to change USER if you are using it anywhere else
 USER=tom
 CFG=/home/$USER/.$NAME/conf
-DAEMON=/home/$USER/$NAME
+DAEMON=/home/$USER/.$NAME/$NAME
 DAEMON_ARGS="$CFG"
 PIDFILE=/home/$USER/.$NAME/pid
 SCRIPTNAME=/etc/init.d/$NAME
