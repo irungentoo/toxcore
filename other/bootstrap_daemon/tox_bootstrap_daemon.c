@@ -21,25 +21,33 @@
  *
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+// system provided
+#include <arpa/inet.h>
 #include <syslog.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+// C
 #include <stdio.h>
 #include <stdlib.h>
-#include <libconfig.h>
-#include <arpa/inet.h>
 #include <string.h>
 
+// 3rd party
+#include <libconfig.h>
+
+// ./configure
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "../../toxcore/onion_announce.h"
+// toxcore
 #include "../../toxcore/LAN_discovery.h"
+#include "../../toxcore/onion_announce.h"
+#include "../../toxcore/TCP_server.h"
 #include "../../toxcore/util.h"
 
+// misc
 #include "../../testing/misc_tools.c"
 
 #define DAEMON_NAME "tox_bootstrap_daemon"
@@ -52,6 +60,7 @@
 #define DEFAULT_PORT                 33445
 #define DEFAULT_ENABLE_IPV6          0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY 1 // 1 - true, 0 - false
+#define DEFAULT_ENABLE_TCP_RELAY     1
 
 
 // Uses the already existing key or creates one if it didn't exist
@@ -96,15 +105,79 @@ int manage_keys(DHT *dht, char *keys_file_path)
     return 1;
 }
 
+// Parses tcp relay ports from `cfg` and puts them into `tcp_relay_ports` array
+//
+// Supposed to be called from get_general_config only
+//
+// Important: iff `tcp_relay_port_count` > 0, then you are responsible for freeing `tcp_relay_ports`
+
+void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int *tcp_relay_port_count)
+{
+    const char *NAME_TCP_RELAY_PORTS = "tcp_relay_ports";
+
+    *tcp_relay_port_count = 0;
+
+    config_setting_t *ports_array = config_lookup(cfg, NAME_TCP_RELAY_PORTS);
+
+    if (ports_array == NULL) {
+        syslog(LOG_WARNING, "No '%s' setting in the configuration file.\n", NAME_TCP_RELAY_PORTS);
+        return;
+    }
+
+    if (config_setting_is_array(ports_array) == CONFIG_FALSE) {
+        syslog(LOG_WARNING, "'%s' setting should be an array. Array syntax: 'setting = [value1, value2, ...]'.\n");
+        return;
+    }
+
+    int config_port_count = config_setting_length(ports_array);
+    if (config_port_count == 0) {
+        syslog(LOG_WARNING, "'%s' is empty.\n", NAME_TCP_RELAY_PORTS);
+        return;
+    }
+
+    *tcp_relay_ports = malloc(config_port_count * sizeof(uint16_t));
+
+    config_setting_t *elem;
+    int i;
+
+    for (i = 0; i < config_port_count; i ++) {
+
+        elem = config_setting_get_elem(ports_array, i);
+
+        if (elem == NULL) {
+            // it's NULL if `ports_array` is not an array (we have that check ealier) or if `i` is out of range, which should not be
+            syslog(LOG_WARNING, "Port #%d: Something went wrong while parsing the port. Stopping reading ports.\n", i);
+            break;
+        }
+
+        if (config_setting_is_number(elem) == CONFIG_FALSE) {
+            syslog(LOG_WARNING, "Port #%d: Not a number. Skipping.\n", i);
+            continue;
+        }
+
+        (*tcp_relay_ports)[*tcp_relay_port_count] = config_setting_get_int(elem);
+        if ((*tcp_relay_ports)[i] < 1 || (*tcp_relay_ports)[i] > 65535) {
+            syslog(LOG_WARNING, "Port #%d: Invalid port value, should be in [1, 65535]. Skipping.\n", i);
+            continue;
+        }
+
+        (*tcp_relay_port_count) ++;
+    }
+
+    // the loop above skips invalid ports, so we adjust the allocated memory size
+    *tcp_relay_ports = realloc(*tcp_relay_ports, *tcp_relay_port_count * sizeof(uint16_t));
+}
+
 // Gets general config options
 //
 // Important: you are responsible for freeing `pid_file_path` and `keys_file_path`
+//            also, iff `tcp_relay_ports_count` > 0, then you are responsible for freeing `tcp_relay_ports`
 //
 // returns 1 on success
 //         0 on failure, doesn't modify any data pointed by arguments
 
 int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
-                       int *enable_lan_discovery)
+                       int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports, int *tcp_relay_port_count)
 {
     config_t cfg;
 
@@ -113,6 +186,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     const char *NAME_KEYS_FILE_PATH       = "keys_file_path";
     const char *NAME_ENABLE_IPV6          = "enable_ipv6";
     const char *NAME_ENABLE_LAN_DISCOVERY = "enable_lan_discovery";
+    const char *NAME_ENABLE_TCP_RELAY     = "enable_tcp_relay";
 
     config_init(&cfg);
 
@@ -169,6 +243,20 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
         *enable_lan_discovery = DEFAULT_ENABLE_LAN_DISCOVERY;
     }
 
+    // Get TCP relay option
+    if (config_lookup_bool(&cfg, NAME_ENABLE_TCP_RELAY, enable_tcp_relay) == CONFIG_FALSE) {
+        syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_TCP_RELAY);
+        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_ENABLE_TCP_RELAY,
+               DEFAULT_ENABLE_TCP_RELAY ? "true" : "false");
+        *enable_tcp_relay = DEFAULT_ENABLE_TCP_RELAY;
+    }
+
+    if (*enable_tcp_relay) {
+        parse_tcp_relay_ports_config(&cfg, tcp_relay_ports, tcp_relay_port_count);
+    } else {
+        *tcp_relay_port_count = 0;
+    }
+
     config_destroy(&cfg);
 
     syslog(LOG_DEBUG, "Successfully read:\n");
@@ -177,6 +265,19 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     syslog(LOG_DEBUG, "'%s': %d\n", NAME_PORT,                 *port);
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_IPV6,          *enable_ipv6          ? "true" : "false");
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_LAN_DISCOVERY, *enable_lan_discovery ? "true" : "false");
+    syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_TCP_RELAY,     *enable_tcp_relay     ? "true" : "false");
+    // show info about tcp ports only if tcp relay is enabled
+    if (*enable_tcp_relay) {
+        if (*tcp_relay_port_count == 0) {
+            syslog(LOG_DEBUG, "No TCP ports could be read.\n");
+        } else {
+            syslog(LOG_DEBUG, "Read %d TCP ports:\n", *tcp_relay_port_count);
+            int i;
+            for (i = 0; i < *tcp_relay_port_count; i ++) {
+                syslog(LOG_DEBUG, "Port #%d: %u\n", i, (*tcp_relay_ports)[i]);
+            }
+        }
+    }
 
     return 1;
 }
@@ -325,8 +426,11 @@ int main(int argc, char *argv[])
     int port;
     int enable_ipv6;
     int enable_lan_discovery;
+    int enable_tcp_relay;
+    uint16_t *tcp_relay_ports;
+    int tcp_relay_port_count;
 
-    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_lan_discovery)) {
+    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_lan_discovery, &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count)) {
         syslog(LOG_DEBUG, "General config read successfully\n");
     } else {
         syslog(LOG_ERR, "Couldn't read config file: %s. Exiting.\n", cfg_file_path);
@@ -372,6 +476,25 @@ int main(int argc, char *argv[])
     } else {
         syslog(LOG_ERR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
         return 1;
+    }
+
+    TCP_Server *tcp_server = NULL;
+
+    if (enable_tcp_relay) {
+        if (tcp_relay_port_count == 0) {
+            syslog(LOG_ERR, "No TCP relay ports read. Exiting.\n");
+            return 1;
+        }
+
+        tcp_server = new_TCP_server(enable_ipv6, tcp_relay_port_count, tcp_relay_ports, dht->self_public_key, dht->self_secret_key, onion);
+
+        // tcp_relay_port_count != 0 at this point
+        free(tcp_relay_ports);
+
+        if (tcp_server == NULL) {
+            syslog(LOG_ERR, "Couldn't initialize Tox TCP server. Exiting.\n");
+            return 1;
+        }
     }
 
     if (bootstrap_from_config(cfg_file_path, dht, enable_ipv6)) {
@@ -441,6 +564,10 @@ int main(int argc, char *argv[])
         if (enable_lan_discovery && is_timeout(last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
             send_LANdiscovery(htons_port, dht);
             last_LANdiscovery = unix_time();
+        }
+
+        if (enable_tcp_relay) {
+            do_TCP_server(tcp_server);
         }
 
         networking_poll(dht->net);

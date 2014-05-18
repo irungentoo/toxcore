@@ -20,6 +20,12 @@ enable_ipv6 = false
 // Automatically bootstrap with nodes on local area network.
 enable_lan_discovery = true
 
+enable_tcp_relay = true
+
+// Tox uses 443 and 3389 ports by default, so it's highly recommended to keep
+// them
+tcp_relay_ports = [443, 3389]
+
 // Any number of nodes the daemon will bootstrap itself from.
 // Remember to replace the provided example with your own node list.
 // There is a maintained list of bootstrap nodes on Tox's wiki, if you need it.
