@@ -195,6 +195,9 @@ int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uin
     ipport_unpack(&send_to, plain);
     to_host_family(&send_to.ip);
 
+    uint8_t ip_port[SIZE_IPPORT];
+    ipport_pack(ip_port, &source);
+
     uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_SEND_1;
     memcpy(data + 1, nonce, crypto_box_NONCEBYTES);
@@ -202,7 +205,7 @@ int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uin
     uint32_t data_len = 1 + crypto_box_NONCEBYTES + (len - SIZE_IPPORT);
     uint8_t *ret_part = data + data_len;
     new_nonce(ret_part);
-    len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, (uint8_t *)&source, SIZE_IPPORT,
+    len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, ip_port, SIZE_IPPORT,
                                  ret_part + crypto_box_NONCEBYTES);
 
     if (len != SIZE_IPPORT + crypto_box_MACBYTES)
