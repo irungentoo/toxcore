@@ -44,11 +44,6 @@
 #define ONION_PATH_TIMEOUT 30
 #define ONION_PATH_MAX_LIFETIME 600
 
-/* A cheap way of making it take less bandwidth at startup:
-   by limiting the number of ping packets we can send per
-   second per peer. */
-#define MAX_PING_NODES_SECOND_PEER 5
-
 #define MAX_STORED_PINGED_NODES 9
 #define MIN_NODE_PING_TIME 10
 
@@ -98,7 +93,6 @@ typedef struct {
     uint64_t last_seen;
 
     Onion_Client_Paths onion_paths;
-    uint32_t ping_nodes_sent_second;
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
     uint8_t last_pinged_index;
@@ -126,8 +120,6 @@ typedef struct {
 
     uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
-
-    uint32_t ping_nodes_sent_second;
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
 
