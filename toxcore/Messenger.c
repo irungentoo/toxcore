@@ -2183,7 +2183,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             Node_format nodes[MAX_SHARED_RELAYS];
             int n;
 
-            if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data, data_length, 1) == -1))
+            if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data, data_length, 1)) == -1)
                 break;
 
             int i;
