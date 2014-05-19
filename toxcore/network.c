@@ -891,6 +891,31 @@ void ipport_copy(IP_Port *target, IP_Port *source)
     memcpy(target, source, sizeof(IP_Port));
 };
 
+/* packing and unpacking functions */
+void ip_pack(uint8_t *data, IP *source)
+{
+    data[0] = source->family;
+    memcpy(data + 1, &source->ip6, SIZE_IP6);
+}
+
+void ip_unpack(IP *target, uint8_t *data)
+{
+    target->family = data[0];
+    memcpy(&target->ip6, data + 1, SIZE_IP6);
+}
+
+void ipport_pack(uint8_t *data, IP_Port *source)
+{
+    ip_pack(data, &source->ip);
+    memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
+}
+
+void ipport_unpack(IP_Port *target, uint8_t *data)
+{
+    ip_unpack(&target->ip, data);
+    memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
+}
+
 /* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
