@@ -60,6 +60,9 @@
 /* Max number of groups we can invite someone at the same time to. */
 #define MAX_INVITED_GROUPS 64
 
+/* Max number of tcp relays sent to friends */
+#define MAX_SHARED_RELAYS 16
+
 /* Status definitions. */
 enum {
     NOFRIEND,

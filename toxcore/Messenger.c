@@ -716,11 +716,11 @@ static int send_ping(Messenger *m, int32_t friendnumber)
 
 static int send_relays(Messenger *m, int32_t friendnumber)
 {
-    Node_format nodes[MAX_TCP_CONNECTIONS];
+    Node_format nodes[MAX_SHARED_RELAYS];
     uint8_t data[1024];
     int n, length;
 
-    n = copy_connected_tcp_relays(m->net_crypto, nodes, MAX_TCP_CONNECTIONS);
+    n = copy_connected_tcp_relays(m->net_crypto, nodes, MAX_SHARED_RELAYS);
     length = pack_nodes(data, sizeof(data), nodes, n);
 
     int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_SHARE_RELAYS, data, length);
@@ -2180,14 +2180,15 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_SHARE_RELAYS: {
-            Node_format nodes[MAX_TCP_CONNECTIONS];
+            Node_format nodes[MAX_SHARED_RELAYS];
             int n;
 
-            if ((n = unpack_nodes(nodes, MAX_TCP_CONNECTIONS, NULL, data, data_length, 1) == -1))
+            if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data, data_length, 1) == -1))
                 break;
 
             int i;
-            for(i = 0; i < n; i++) {
+
+            for (i = 0; i < n; i++) {
                 add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].client_id);
             }
         }
