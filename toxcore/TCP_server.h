@@ -23,10 +23,10 @@
 #ifndef TCP_SERVER_H
 #define TCP_SERVER_H
 
-#include "net_crypto.h"
+#include "crypto_core.h"
 #include "onion.h"
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
 #define MSG_NOSIGNAL 0
 #endif
 
@@ -39,6 +39,7 @@
 #define TCP_HANDSHAKE_PLAIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES)
 #define TCP_SERVER_HANDSHAKE_SIZE (crypto_box_NONCEBYTES + TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
 #define TCP_CLIENT_HANDSHAKE_SIZE (crypto_box_PUBLICKEYBYTES + TCP_SERVER_HANDSHAKE_SIZE)
+#define TCP_MAX_OOB_DATA_LENGTH 1024
 
 #define NUM_RESERVED_PORTS 16
 #define NUM_CLIENT_CONNECTIONS (256 - NUM_RESERVED_PORTS)
@@ -49,16 +50,16 @@
 #define TCP_PACKET_DISCONNECT_NOTIFICATION 3
 #define TCP_PACKET_PING 4
 #define TCP_PACKET_PONG 5
+#define TCP_PACKET_OOB_SEND 6
+#define TCP_PACKET_OOB_RECV 7
 #define TCP_PACKET_ONION_REQUEST  8
 #define TCP_PACKET_ONION_RESPONSE 9
 
 #define ARRAY_ENTRY_SIZE 6
 
-#define TCP_ONION_FAMILY (AF_INET6 + 1)
-
 /* frequency to ping connected nodes and timeout in seconds */
 #define TCP_PING_FREQUENCY 30
-#define TCP_PING_TIMEOUT 20
+#define TCP_PING_TIMEOUT 10
 
 enum {
     TCP_STATUS_NO_STATUS,
@@ -139,5 +140,13 @@ uint16_t read_TCP_length(sock_t sock);
  * return -1 on failure/no data in buffer.
  */
 int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length);
+
+/* return length of received packet on success.
+ * return 0 if could not read any packet.
+ * return -1 on failure (connection must be killed).
+ */
+int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, uint8_t *shared_key,
+                                      uint8_t *recv_nonce, uint8_t *data, uint16_t max_len);
+
 
 #endif

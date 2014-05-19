@@ -31,6 +31,12 @@
 #include "../toxcore/friend_requests.h"
 #include "../toxcore/util.h"
 
+#define TCP_RELAY_ENABLED
+
+#ifdef TCP_RELAY_ENABLED
+#include "../toxcore/TCP_server.h"
+#endif
+
 #include "../testing/misc_tools.c"
 
 #ifdef DHT_NODE_EXTRA_PACKETS
@@ -69,11 +75,12 @@ void manage_keys(DHT *dht)
             exit(1);
         }
 
-        load_keys(dht->c, keys);
+        memcpy(dht->self_public_key, keys, crypto_box_PUBLICKEYBYTES);
+        memcpy(dht->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
         printf("Keys loaded successfully.\n");
     } else {
-        new_keys(dht->c);
-        save_keys(dht->c, keys);
+        memcpy(keys, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(keys + crypto_box_PUBLICKEYBYTES, dht->self_secret_key, crypto_box_SECRETKEYBYTES);
         keys_file = fopen("key", "w");
 
         if (fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file) != KEYS_SIZE) {
@@ -107,7 +114,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(new_net_crypto(new_networking(ip, PORT)));
+    DHT *dht = new_DHT(new_networking(ip, PORT));
     Onion *onion = new_onion(dht);
     Onion_Announce *onion_a = new_onion_announce(dht);
 
@@ -123,27 +130,33 @@ int main(int argc, char *argv[])
     perror("Initialization");
 
     manage_keys(dht);
-    /* We want our DHT public key to be the same as our internal one since this is a bootstrap node */
-    memcpy(dht->self_public_key, dht->c->self_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(dht->self_secret_key, dht->c->self_secret_key, crypto_box_SECRETKEYBYTES);
     printf("Public key: ");
     uint32_t i;
+
+#ifdef TCP_RELAY_ENABLED
+#define NUM_PORTS 3
+    uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
+    TCP_Server *tcp_s = new_TCP_server(ipv6enabled, NUM_PORTS, ports, dht->self_public_key, dht->self_secret_key, onion);
+
+    if (tcp_s == NULL) {
+        printf("TCP server failed to initialize.\n");
+        exit(1);
+    }
+
+#endif
 
     FILE *file;
     file = fopen("PUBLIC_ID.txt", "w");
 
     for (i = 0; i < 32; i++) {
-        if (dht->c->self_public_key[i] < 16)
-            printf("0");
-
-        printf("%hhX", dht->c->self_public_key[i]);
-        fprintf(file, "%hhX", dht->c->self_public_key[i]);
+        printf("%02hhX", dht->self_public_key[i]);
+        fprintf(file, "%02hhX", dht->self_public_key[i]);
     }
 
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", ntohs(dht->c->lossless_udp->net->port));
+    printf("Port: %u\n", ntohs(dht->net->port));
 
     if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
@@ -177,7 +190,10 @@ int main(int argc, char *argv[])
             last_LANdiscovery = unix_time();
         }
 
-        networking_poll(dht->c->lossless_udp->net);
+#ifdef TCP_RELAY_ENABLED
+        do_TCP_server(tcp_s);
+#endif
+        networking_poll(dht->net);
 
         c_sleep(1);
     }

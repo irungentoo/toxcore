@@ -36,10 +36,14 @@
 
 /* don't call into system billions of times for no reason */
 static uint64_t unix_time_value;
+static uint64_t unix_base_time_value;
 
 void unix_time_update()
 {
-    unix_time_value = (uint64_t)time(NULL);
+    if (unix_base_time_value == 0)
+        unix_base_time_value = ((uint64_t)time(NULL) - (current_time_monotonic() / 1000ULL));
+
+    unix_time_value = (current_time_monotonic() / 1000ULL) + unix_base_time_value;
 }
 
 uint64_t unix_time()
@@ -49,7 +53,7 @@ uint64_t unix_time()
 
 int is_timeout(uint64_t timestamp, uint64_t timeout)
 {
-    return timestamp + timeout <= unix_time_value;
+    return timestamp + timeout <= unix_time();
 }
 
 
@@ -67,22 +71,17 @@ uint32_t id_copy(uint8_t *dest, uint8_t *src)
 
 void host_to_net(uint8_t *num, uint16_t numbytes)
 {
-    union {
-        uint32_t i;
-        uint8_t c[4];
-    } a;
-    a.i = 1;
+#ifndef WORDS_BIGENDIAN
+    uint32_t i;
+    uint8_t buff[numbytes];
 
-    if (a.c[0] == 1) {
-        uint32_t i;
-        uint8_t buff[numbytes];
-
-        for (i = 0; i < numbytes; ++i) {
-            buff[i] = num[numbytes - i - 1];
-        }
-
-        memcpy(num, buff, numbytes);
+    for (i = 0; i < numbytes; ++i) {
+        buff[i] = num[numbytes - i - 1];
     }
+
+    memcpy(num, buff, numbytes);
+#endif
+    return;
 }
 
 /* state load/save */
@@ -99,11 +98,11 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
     uint16_t type;
     uint32_t length_sub, cookie_type;
-    uint32_t size32 = sizeof(uint32_t), size_head = size32 * 2;
+    uint32_t size_head = sizeof(uint32_t) * 2;
 
     while (length >= size_head) {
-        length_sub = *(uint32_t *)data;
-        cookie_type = *(uint32_t *)(data + size32);
+        memcpy(&length_sub, data, sizeof(length_sub));
+        memcpy(&cookie_type, data + sizeof(length_sub), sizeof(cookie_type));
         data += size_head;
         length -= size_head;
 

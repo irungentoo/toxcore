@@ -9,8 +9,10 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/DHT.c \
                         ../toxcore/network.h \
                         ../toxcore/network.c \
-                        ../toxcore/Lossless_UDP.h \
-                        ../toxcore/Lossless_UDP.c \
+                        ../toxcore/crypto_core.h \
+                        ../toxcore/crypto_core.c \
+                        ../toxcore/ping_array.h \
+                        ../toxcore/ping_array.c \
                         ../toxcore/net_crypto.h \
                         ../toxcore/net_crypto.c \
                         ../toxcore/friend_requests.h \
@@ -52,6 +54,7 @@ libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        $(RT_LIBS) \
                         $(WINSOCK2_LIBS)
 
 libtoxcore_la_LIBADD =  $(LIBSODIUM_LIBS) \

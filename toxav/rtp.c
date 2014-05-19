@@ -170,8 +170,8 @@ inline__ void increase_nonce(uint8_t *nonce, uint16_t target)
     uint16_t _nonce_counter;
 
     uint8_t _reverse_bytes[2];
-    _reverse_bytes[0] = nonce[crypto_secretbox_NONCEBYTES - 1];
-    _reverse_bytes[1] = nonce[crypto_secretbox_NONCEBYTES - 2];
+    _reverse_bytes[0] = nonce[crypto_box_NONCEBYTES - 1];
+    _reverse_bytes[1] = nonce[crypto_box_NONCEBYTES - 2];
 
     bytes_to_U16(&_nonce_counter, _reverse_bytes );
 
@@ -179,8 +179,8 @@ inline__ void increase_nonce(uint8_t *nonce, uint16_t target)
     if (_nonce_counter > UINT16_MAX - target ) { /* 2 bytes are not long enough */
         uint8_t _it = 3;
 
-        while ( _it <= crypto_secretbox_NONCEBYTES ) _it += ++nonce[crypto_secretbox_NONCEBYTES - _it] ?
-                    crypto_secretbox_NONCEBYTES : 1;
+        while ( _it <= crypto_box_NONCEBYTES ) _it += ++nonce[crypto_box_NONCEBYTES - _it] ?
+                    crypto_box_NONCEBYTES : 1;
 
         _nonce_counter = _nonce_counter - (UINT16_MAX - target ); /* Assign the rest of it */
     } else { /* Increase nonce */
@@ -191,8 +191,8 @@ inline__ void increase_nonce(uint8_t *nonce, uint16_t target)
     /* Assign the last bytes */
 
     U16_to_bytes( _reverse_bytes, _nonce_counter);
-    nonce [crypto_secretbox_NONCEBYTES - 1] = _reverse_bytes[0];
-    nonce [crypto_secretbox_NONCEBYTES - 2] = _reverse_bytes[1];
+    nonce [crypto_box_NONCEBYTES - 1] = _reverse_bytes[0];
+    nonce [crypto_box_NONCEBYTES - 2] = _reverse_bytes[1];
 
 }
 
@@ -416,7 +416,7 @@ RTPHeader *build_header ( RTPSession *session )
     ADD_SETTING_PAYLOAD ( _retu, session->payload_type );
 
     _retu->sequnum = session->sequnum;
-    _retu->timestamp = ((uint32_t)(current_time() / 1000)); /* micro to milli */
+    _retu->timestamp = current_time_monotonic(); /* milliseconds */
     _retu->ssrc = session->ssrc;
 
     int i;
@@ -505,7 +505,7 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
     RTPSession *_session = object;
     RTPMessage *_msg;
     
-    if ( !_session || length < 13 + crypto_secretbox_MACBYTES) { /* 12 is the minimum length for rtp + desc. byte */
+    if ( !_session || length < 13 + crypto_box_MACBYTES) { /* 12 is the minimum length for rtp + desc. byte */
         LOGGER_WARNING("No session or invalid length of received buffer!");
         return -1;
     }
@@ -521,12 +521,13 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
     bytes_to_U16(&_sequnum, data + 1);
 
     /* Clculate the right nonce */
-    uint8_t _calculated[crypto_secretbox_NONCEBYTES];
-    memcpy(_calculated, _session->decrypt_nonce, crypto_secretbox_NONCEBYTES);
+    uint8_t _calculated[crypto_box_NONCEBYTES];
+    memcpy(_calculated, _session->decrypt_nonce, crypto_box_NONCEBYTES);
     increase_nonce ( _calculated, _sequnum );
 
     /* Decrypt message */
-    int _decrypted_length = decrypt_data_symmetric((uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
+    int _decrypted_length = decrypt_data_symmetric(
+                                (uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
 
     /* This packet is either not encrypted properly or late
      */
@@ -557,8 +558,8 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
             }
 
             /* A new cycle setting. */
-            memcpy(_session->nonce_cycle, _session->decrypt_nonce, crypto_secretbox_NONCEBYTES);
-            memcpy(_session->decrypt_nonce, _calculated, crypto_secretbox_NONCEBYTES);
+            memcpy(_session->nonce_cycle, _session->decrypt_nonce, crypto_box_NONCEBYTES);
+            memcpy(_session->decrypt_nonce, _calculated, crypto_box_NONCEBYTES);
         }
     }
 
@@ -774,8 +775,8 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     _send_data[0] = session->prefix;
 
     /* Generate the right nonce */
-    uint8_t _calculated[crypto_secretbox_NONCEBYTES];
-    memcpy(_calculated, session->encrypt_nonce, crypto_secretbox_NONCEBYTES);
+    uint8_t _calculated[crypto_box_NONCEBYTES];
+    memcpy(_calculated, session->encrypt_nonce, crypto_box_NONCEBYTES);
     increase_nonce ( _calculated, msg->header->sequnum );
 
     /* Need to skip 2 bytes that are for sequnum */
@@ -798,7 +799,7 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     /* Set sequ number */
     if ( session->sequnum >= MAX_SEQU_NUM ) {
         session->sequnum = 0;
-        memcpy(session->encrypt_nonce, _calculated, crypto_secretbox_NONCEBYTES);
+        memcpy(session->encrypt_nonce, _calculated, crypto_box_NONCEBYTES);
     } else {
         session->sequnum++;
     }
@@ -888,16 +889,16 @@ RTPSession *rtp_init_session ( int            payload_type,
     _retu->decrypt_key = decrypt_key;
 
     /* Need to allocate new memory */
-    _retu->encrypt_nonce = calloc ( crypto_secretbox_NONCEBYTES, sizeof (uint8_t) );
+    _retu->encrypt_nonce = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) );
     assert(_retu->encrypt_nonce);
-    _retu->decrypt_nonce = calloc ( crypto_secretbox_NONCEBYTES, sizeof (uint8_t) );
+    _retu->decrypt_nonce = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) );
     assert(_retu->decrypt_nonce);
-    _retu->nonce_cycle   = calloc ( crypto_secretbox_NONCEBYTES, sizeof (uint8_t) );
+    _retu->nonce_cycle   = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) );
     assert(_retu->nonce_cycle);
 
-    memcpy(_retu->encrypt_nonce, encrypt_nonce, crypto_secretbox_NONCEBYTES);
-    memcpy(_retu->decrypt_nonce, decrypt_nonce, crypto_secretbox_NONCEBYTES);
-    memcpy(_retu->nonce_cycle  , decrypt_nonce, crypto_secretbox_NONCEBYTES);
+    memcpy(_retu->encrypt_nonce, encrypt_nonce, crypto_box_NONCEBYTES);
+    memcpy(_retu->decrypt_nonce, decrypt_nonce, crypto_box_NONCEBYTES);
+    memcpy(_retu->nonce_cycle  , decrypt_nonce, crypto_box_NONCEBYTES);
 
     _retu->csrc = calloc(1, sizeof (uint32_t));
     assert(_retu->csrc);

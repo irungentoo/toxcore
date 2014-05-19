@@ -29,11 +29,15 @@
 #include "config.h"
 #endif
 
-#define LOGGING
 #include "logger.h"
 
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <errno.h>
+#endif
+
+#ifdef __APPLE__
+#include <mach/clock.h>
+#include <mach/mach.h>
 #endif
 
 #include "network.h"
@@ -153,6 +157,21 @@ int set_socket_nonblock(sock_t sock)
 #endif
 }
 
+/* Set socket to not emit SIGPIPE
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_nosigpipe(sock_t sock)
+{
+#if defined(__MACH__)
+    int set = 1;
+    return (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int)) == 0);
+#else
+    return 1;
+#endif
+}
+
 /* Set socket to dual (IPv4 + IPv6 socket)
  *
  * return 1 on success
@@ -160,7 +179,7 @@ int set_socket_nonblock(sock_t sock)
  */
 int set_socket_dualstack(sock_t sock)
 {
-    char ipv6only = 0;
+    int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
     int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
 
@@ -171,8 +190,9 @@ int set_socket_dualstack(sock_t sock)
     return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only)) == 0);
 }
 
+
 /*  return current UNIX time in microseconds (us). */
-uint64_t current_time(void)
+static uint64_t current_time_actual(void)
 {
     uint64_t time;
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -192,29 +212,52 @@ uint64_t current_time(void)
 #endif
 }
 
-/*  return a random number.
- */
-uint32_t random_int(void)
-{
-    uint32_t randnum;
-    randombytes((uint8_t *)&randnum , sizeof(randnum));
-    return randnum;
-}
 
-uint64_t random_64b(void)
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+static uint64_t last_monotime;
+static uint64_t add_monotime;
+#endif
+
+/* return current monotonic time in milliseconds (ms). */
+uint64_t current_time_monotonic(void)
 {
-    uint64_t randnum;
-    randombytes((uint8_t *)&randnum, sizeof(randnum));
-    return randnum;
+    uint64_t time;
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+    time = (uint64_t)GetTickCount() + add_monotime;
+
+    if (time < last_monotime) { /* Prevent time from ever decreasing because of 32 bit wrap. */
+        uint32_t add = ~0;
+        add_monotime += add;
+        time += add;
+    }
+
+    last_monotime = time;
+#else
+    struct timespec monotime;
+#if defined(__linux__)
+    clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
+#elif defined(__APPLE__)
+    clock_serv_t muhclock;
+    mach_timespec_t machtime;
+
+    host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &muhclock);
+    clock_get_time(muhclock, &machtime);
+    mach_port_deallocate(mach_task_self(), muhclock);
+
+    monotime.tv_sec = machtime.tv_sec;
+    monotime.tv_nsec = machtime.tv_nsec;
+#else
+    clock_gettime(CLOCK_MONOTONIC, &monotime);
+#endif
+    time = 1000ULL * monotime.tv_sec + (monotime.tv_nsec / 1000000ULL);
+#endif
+    return time;
 }
 
 /* In case no logging */
 #ifndef LOGGING
-
 #define loglogdata(__message__, __buffer__, __buflen__, __ip_port__, __res__)
-
-#else
-    
+#else    
 #define data_0(__buflen__, __buffer__) __buflen__ > 4 ? ntohl(*(uint32_t *)&__buffer__[1]) : 0
 #define data_1(__buflen__, __buffer__) __buflen__ > 7 ? ntohl(*(uint32_t *)&__buffer__[5]) : 0
     
@@ -299,7 +342,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
     if ((res >= 0) && ((uint32_t)res == length))
         net->send_fail_eagain = 0;
     else if ((res < 0) && (errno == EWOULDBLOCK))
-        net->send_fail_eagain = current_time();
+        net->send_fail_eagain = current_time_monotonic();
 
     return res;
 }
@@ -308,7 +351,6 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
  *  ip and port of sender is put into ip_port.
  *  Packet data is put into data.
  *  Packet length is put into length.
- *  Dump all empty packets.
  */
 static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
@@ -322,7 +364,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     *length = 0;
     int fail_or_len = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
-    if (fail_or_len <= 0) {
+    if (fail_or_len < 0) {
         
         LOGGER_SCOPE( if ((fail_or_len < 0) && (errno != EWOULDBLOCK)) 
                 LOGGER_ERROR("Unexpected error reading from socket: %u, %s\n", errno, strerror(errno)); );
@@ -438,13 +480,13 @@ int networking_wait_execute(uint8_t *data, long seconds, long microseconds)
     *  that code)
     */
     if (s->send_fail_eagain != 0) {
-        // current_time(): microseconds
-        uint64_t now = current_time();
+        // current_time(): milliseconds
+        uint64_t now = current_time_monotonic();
 
         /* s->sendqueue_length: might be used to guess how long we keep checking */
         /* for now, threshold is hardcoded to 250ms, too long for a really really
          * fast link, but too short for a sloooooow link... */
-        if (now - s->send_fail_eagain < 250000) {
+        if (now - s->send_fail_eagain < 250) {
             writefds_add = 1;
         }
     }
@@ -508,6 +550,11 @@ int networking_wait_cleanup(Networking_Core *net, uint8_t *data)
     return 1;
 }
 
+#ifndef VANILLA_NACL
+/* Used for sodium_init() */
+#include <sodium.h>
+#endif
+
 uint8_t at_startup_ran = 0;
 int networking_at_startup(void)
 {
@@ -531,9 +578,9 @@ int networking_at_startup(void)
         return -1;
 
 #else
-    srandom((uint32_t)current_time());
+    srandom((uint32_t)current_time_actual());
 #endif
-    srand((uint32_t)current_time());
+    srand((uint32_t)current_time_actual());
     at_startup_ran = 1;
     return 0;
 }
@@ -637,7 +684,6 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     }
 
     if (ip.family == AF_INET6) {
-        
 #ifdef LOGGING
         int is_dualstack = 
 #endif /* LOGGING */
@@ -650,7 +696,6 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
-        
 #ifdef LOGGING
         int res =
 #endif /* LOGGING */
@@ -828,6 +873,31 @@ void ipport_copy(IP_Port *target, IP_Port *source)
 
     memcpy(target, source, sizeof(IP_Port));
 };
+
+/* packing and unpacking functions */
+void ip_pack(uint8_t *data, IP *source)
+{
+    data[0] = source->family;
+    memcpy(data + 1, &source->ip6, SIZE_IP6);
+}
+
+void ip_unpack(IP *target, uint8_t *data)
+{
+    target->family = data[0];
+    memcpy(&target->ip6, data + 1, SIZE_IP6);
+}
+
+void ipport_pack(uint8_t *data, IP_Port *source)
+{
+    ip_pack(data, &source->ip);
+    memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
+}
+
+void ipport_unpack(IP_Port *target, uint8_t *data)
+{
+    ip_unpack(&target->ip, data);
+    memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
+}
 
 /* ip_ntoa
  *   converts ip into a string

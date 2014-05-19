@@ -27,6 +27,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <stdlib.h>
+#include "../toxcore/network.h" /* current_time_monotonic() */
 #include "event.h"
 
 #define _GNU_SOURCE
@@ -199,7 +200,7 @@ void *event_poll( void *arg )
 
         if ( _event_handler->timed_events ) {
 
-            uint32_t _time = ((uint32_t)(current_time() / 1000));
+            uint32_t _time = ((uint32_t)current_time_monotonic());
 
             if ( _event_handler->timed_events[0].timeout < _time ) {
 
@@ -249,7 +250,7 @@ int throw_timer_event ( void * (func)(void *), void *arg, unsigned timeout)
 
     size_t _counter = event_handler.timed_events_count;
 
-    event_handler.timed_events[_counter - 1].timeout = timeout + ((uint32_t)(current_time() / 1000));
+    event_handler.timed_events[_counter - 1].timeout = timeout + ((uint32_t)current_time_monotonic());
     event_handler.timed_events[_counter - 1].id = _unique_id;
     ++_unique_id;
 
@@ -330,7 +331,7 @@ int reset_timer_event ( int id, uint32_t timeout )
     /* Find it and change */
     for ( ; _i; _i-- ) {
         if ( _it->id == id ) {
-            _it->timeout = timeout + ((uint32_t)(current_time() / 1000));
+            _it->timeout = timeout + ((uint32_t)current_time_monotonic());
             break;
         }
 

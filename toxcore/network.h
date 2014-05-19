@@ -89,27 +89,12 @@ typedef int sock_t;
 #endif
 
 #if defined(__sun__)
-#define __EXTENSIONS__ 1 // SunOS! 
+#define __EXTENSIONS__ 1 // SunOS!
 #if defined(__SunOS5_6__) || defined(__SunOS5_7__) || defined(__SunOS5_8__) || defined(__SunOS5_9__) || defined(__SunOS5_10__)
 //Nothing needed
 #else
 #define __MAKECONTEXT_V2_SOURCE 1
 #endif
-#endif
-
-#ifndef VANILLA_NACL
-/* We use libsodium by default. */
-#include <sodium.h>
-#else
-#include <crypto_box.h>
-#include <crypto_secretbox.h>
-#include <randombytes.h>
-#include <crypto_hash_sha256.h>
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-#endif
-
-#ifndef crypto_secretbox_MACBYTES
-#define crypto_secretbox_MACBYTES (crypto_secretbox_ZEROBYTES - crypto_secretbox_BOXZEROBYTES)
 #endif
 
 #ifndef IPV6_ADD_MEMBERSHIP
@@ -129,6 +114,10 @@ typedef int sock_t;
 #define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
 #define NET_PACKET_SYNC            17  /* SYNC packet ID. */
 #define NET_PACKET_DATA            18  /* Data packet ID. */
+#define NET_PACKET_COOKIE_REQUEST  24  /* Cookie request packet */
+#define NET_PACKET_COOKIE_RESPONSE 25  /* Cookie response packet */
+#define NET_PACKET_CRYPTO_HS       26  /* Crypto handshake packet */
+#define NET_PACKET_CRYPTO_DATA     27  /* Crypto data packet */
 #define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
 #define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
 #define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
@@ -161,8 +150,11 @@ typedef int sock_t;
 #define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
-
-/* TODO: remove padding bytes next time we need to break compatibility with old versions of core. */
+/* TCP related */
+#define TCP_ONION_FAMILY (AF_INET6 + 1)
+#define TCP_INET (AF_INET6 + 2)
+#define TCP_INET6 (AF_INET6 + 3)
+#define TCP_FAMILY (AF_INET6 + 4)
 
 typedef union __attribute__ ((__packed__))
 {
@@ -186,8 +178,6 @@ IP6;
 typedef struct __attribute__ ((__packed__))
 {
     uint8_t family;
-    /* Not used for anything right now. */
-    uint8_t padding[3];
     union {
         IP4 ip4;
         IP6 ip6;
@@ -195,23 +185,19 @@ typedef struct __attribute__ ((__packed__))
 }
 IP;
 
-typedef union __attribute__ ((__packed__))
+typedef struct __attribute__ ((__packed__)) __attribute__((gcc_struct))
 {
-    struct {
-        IP4 ip;
-        uint16_t port;
-        /* Not used for anything right now. */
-        uint16_t padding;
-    };
-    uint8_t uint8[8];
-}
-IP4_Port;
-
-typedef struct __attribute__ ((__packed__)) IP_Port {
     IP ip;
     uint16_t port;
-    uint16_t padding;
-} IP_Port;
+}
+IP_Port;
+
+
+#define SIZE_IP4 4
+#define SIZE_IP6 16
+#define SIZE_IP (1 + SIZE_IP6)
+#define SIZE_PORT 2
+#define SIZE_IPPORT (SIZE_IP + SIZE_PORT)
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
@@ -249,6 +235,16 @@ int ipport_isset(IP_Port *ipport);
 void ip_copy(IP *target, IP *source);
 /* copies an ip_port structure */
 void ipport_copy(IP_Port *target, IP_Port *source);
+
+
+/* packs IP into data, writes SIZE_IP bytes to data */
+void ip_pack(uint8_t *data, IP *source);
+/* unpacks IP from data, reads SIZE_IP bytes from data */
+void ip_unpack(IP *target, uint8_t *data);
+/* packs IP_Port into data, writes SIZE_IPPORT bytes to data */
+void ipport_pack(uint8_t *data, IP_Port *source);
+/* unpacks IP_Port from data, reads SIZE_IPPORT bytes to data */
+void ipport_unpack(IP_Port *target, uint8_t *data);
 
 /*
  * addr_resolve():
@@ -332,6 +328,13 @@ void kill_sock(sock_t sock);
  */
 int set_socket_nonblock(sock_t sock);
 
+/* Set socket to not emit SIGPIPE
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_nosigpipe(sock_t sock);
+
 /* Set socket to dual (IPv4 + IPv6 socket)
  *
  * return 1 on success
@@ -339,13 +342,8 @@ int set_socket_nonblock(sock_t sock);
  */
 int set_socket_dualstack(sock_t sock);
 
-/*  return current time in milleseconds since the epoch. */
-uint64_t current_time(void);
-
-/*  return a random number.
- */
-uint32_t random_int(void);
-uint64_t random_64b(void);
+/* return current monotonic time in milliseconds (ms). */
+uint64_t current_time_monotonic(void);
 
 /* Basic network functions: */
 

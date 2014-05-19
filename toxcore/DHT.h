@@ -24,7 +24,8 @@
 #ifndef DHT_H
 #define DHT_H
 
-#include "net_crypto.h"
+#include "crypto_core.h"
+#include "network.h"
 
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
@@ -36,7 +37,7 @@
 #define LCLIENT_LIST 32
 
 /* The max number of nodes to send with send nodes. */
-#define MAX_SENT_NODES 8
+#define MAX_SENT_NODES 4
 
 /* Ping timeout in seconds */
 #define PING_TIMEOUT 3
@@ -52,6 +53,8 @@
 /* Redefinitions of variables for safe transfer over wire. */
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
+#define TOX_TCP_INET 130
+#define TOX_TCP_INET6 138
 
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
 #define DHT_FAKE_FRIEND_NUMBER 4
@@ -128,16 +131,30 @@ typedef struct {
     NAT         nat;
 } DHT_Friend;
 
-/* this must be kept even if IP_Port is expanded: wire compatibility */
-typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
-    IP4_Port    ip_port;
-} Node4_format;
-
-typedef struct {
+typedef struct __attribute__ ((__packed__))
+{
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
-} Node_format;
+}
+Node_format;
+
+/* Pack number of nodes into data of maxlength length.
+ *
+ * return length of packed nodes on success.
+ * return -1 on failure.
+ */
+int pack_nodes(uint8_t *data, uint16_t length, Node_format *nodes, uint16_t number);
+
+/* Unpack data of length into nodes of size max_num_nodes.
+ * Put the length of the data processed in processed_data_len.
+ * tcp_enabled sets if TCP nodes are expected (true) or not (false).
+ *
+ * return number of unpacked nodes on success.
+ * return -1 on failure.
+ */
+int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, uint8_t *data,
+                 uint16_t length, uint8_t tcp_enabled);
+
 
 /*----------------------------------------------------------------------------------*/
 /* struct to store some shared keys so we don't have to regenerate them for each request. */
@@ -155,8 +172,15 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 
+typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, uint8_t *source_pubkey, uint8_t *data,
+        uint32_t len);
+
 typedef struct {
-    Net_Crypto  *c;
+    cryptopacket_handler_callback function;
+    void *object;
+} Cryptopacket_Handles;
+
+typedef struct {
     Networking_Core *net;
 
     Client_data    close_clientlist[LCLIENT_LIST];
@@ -164,7 +188,7 @@ typedef struct {
     uint32_t       close_bootstrap_times;
 
     /* Note: this key should not be/is not used to transmit any sensitive materials */
-    uint8_t      secret_symmetric_key[crypto_secretbox_KEYBYTES];
+    uint8_t      secret_symmetric_key[crypto_box_KEYBYTES];
     /* DHT keypair */
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
@@ -180,6 +204,8 @@ typedef struct {
     struct Assoc  *assoc;
 #endif
     uint64_t       last_run;
+
+    Cryptopacket_Handles cryptopackethandlers[256];
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
@@ -191,12 +217,12 @@ typedef struct {
  */
 void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, uint8_t *secret_key, uint8_t *client_id);
 
-/* Copy shared_key to decrypt DHT packet from client_id into shared_key
- * for packets that we recieve.
+/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
+ * for packets that we receive.
  */
 void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, uint8_t *client_id);
 
-/* Copy shared_key to decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
  * for packets that we send.
  */
 void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, uint8_t *client_id);
@@ -251,7 +277,7 @@ int id_closest(uint8_t *id, uint8_t *id1, uint8_t *id2);
 /* Get the (maximum MAX_SENT_NODES) closest nodes to client_id we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
  *
- * sa_family = family (IPv4 or IPv6)?
+ * sa_family = family (IPv4 or IPv6) (0 if we don't care)?
  * is_LAN = return some LAN ips (true or false)
  * want_good = do we want tested nodes or not? (TODO)
  *
@@ -315,6 +341,10 @@ int route_packet(DHT *dht, uint8_t *client_id, uint8_t *packet, uint32_t length)
  */
 int route_tofriend(DHT *dht, uint8_t *friend_id, uint8_t *packet, uint32_t length);
 
+/* Function to handle crypto packets.
+ */
+void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_callback cb, void *object);
+
 /* NAT PUNCHING FUNCTIONS */
 
 /* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.
@@ -341,7 +371,7 @@ void DHT_save(DHT *dht, uint8_t *data);
 int DHT_load(DHT *dht, uint8_t *data, uint32_t length);
 
 /* Initialize DHT. */
-DHT *new_DHT(Net_Crypto *c);
+DHT *new_DHT(Networking_Core *net);
 
 void kill_DHT(DHT *dht);
 

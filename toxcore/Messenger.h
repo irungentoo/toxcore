@@ -34,18 +34,20 @@
 #include "onion_client.h"
 
 #define MAX_NAME_LENGTH 128
+/* TODO: this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
-#define PACKET_ID_PING 0
+/* NOTE: Packet ids below 16 must never be used. */
+#define PACKET_ID_ALIVE 16
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_TYPING 51
-#define PACKET_ID_RECEIPT 65
+#define PACKET_ID_RECEIPT 63
 #define PACKET_ID_MESSAGE 64
-#define PACKET_ID_ACTION 63
+#define PACKET_ID_ACTION 65
 #define PACKET_ID_MSI 69
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
@@ -80,17 +82,13 @@ enum {
     FAERR_NOMEM = -8
 };
 
-/* Don't assume MAX_STATUSMESSAGE_LENGTH will stay at 128, it may be increased
- * to an absurdly large number later.
- */
-
 /* Default start timeout in seconds between friend requests. */
 #define FRIENDREQUEST_TIMEOUT 5;
 
 /* Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 5
 
-/* If no packets are recieved from friend in this time interval, kill the connection. */
+/* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
 
 /* USERSTATUS -
@@ -137,7 +135,7 @@ typedef struct {
     uint64_t friendrequest_lastsent; // Time at which the last friend request was sent.
     uint32_t friendrequest_timeout; // The timeout between successful friendrequest sending attempts.
     uint8_t status; // 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
-    uint8_t info[MAX_DATA_SIZE]; // the data that is sent during the friend requests we do.
+    uint8_t info[MAX_FRIEND_REQUEST_DATA_SIZE]; // the data that is sent during the friend requests we do.
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
     uint8_t name_sent; // 0 if we didn't send our name to this friend 1 if we have.
@@ -354,7 +352,7 @@ int setname(Messenger *m, uint8_t *name, uint16_t length);
 
 /*
  * Get your nickname.
- * m - The messanger context to use.
+ * m - The messenger context to use.
  * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
  *
  *  return length of the name.
@@ -375,11 +373,6 @@ int getname(Messenger *m, int32_t friendnumber, uint8_t *name);
  */
 int m_get_name_size(Messenger *m, int32_t friendnumber);
 int m_get_self_name_size(Messenger *m);
-
-/* returns valid ip port of connected friend on success
- * returns zeroed out IP_Port on failure
- */
-IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber);
 
 /* Set our user status.
  * You are responsible for freeing status after.
@@ -738,24 +731,6 @@ void messenger_save(Messenger *m, uint8_t *data);
 
 /* Load the messenger from data of size length. */
 int messenger_load(Messenger *m, uint8_t *data, uint32_t length);
-
-/* return the size of data to pass to messenger_save_encrypted(...)
- */
-uint32_t messenger_size_encrypted(Messenger *m);
-
-/* Save the messenger, encrypting the data with key of length key_length
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int messenger_save_encrypted(Messenger *m, uint8_t *data, uint8_t *key, uint16_t key_length);
-
-/* Load the messenger from data of size length encrypted with key of key_length.
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int messenger_load_encrypted(Messenger *m, uint8_t *data, uint32_t length, uint8_t *key, uint16_t key_length);
 
 /* Return the number of friends in the instance m.
  * You should use this to determine how much memory to allocate

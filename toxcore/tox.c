@@ -187,7 +187,7 @@ int tox_set_name(Tox *tox, uint8_t *name, uint16_t length)
 }
 
 /* Get your nickname.
- * m -  The messanger context to use.
+ * m -  The messenger context to use.
  * name - Pointer to a string for the name. (must be at least MAX_NAME_LENGTH)
  *
  *  return length of the name.
@@ -722,7 +722,7 @@ int tox_file_send_data(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8
  */
 int tox_file_data_size(Tox *tox, int32_t friendnumber)
 {
-    return MAX_DATA_SIZE - crypto_box_MACBYTES - 3;
+    return MAX_CRYPTO_DATA_SIZE - 2;
 }
 
 /* Give the number of bytes left to be sent/received.
@@ -740,23 +740,38 @@ uint64_t tox_file_data_remaining(Tox *tox, int32_t friendnumber, uint8_t filenum
 
 /***************END OF FILE SENDING FUNCTIONS******************/
 
-/* Use these functions to bootstrap the client.
- * Sends a get nodes request to the given node with ip port and public_key.
- */
-void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port _ip_port, uint8_t *public_key)
+/* TODO: expose this properly. */
+static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
 {
     Messenger *m = tox;
-    IP_Port ip_port;
-    memcpy(&ip_port, &_ip_port, sizeof(IP_Port));
-    DHT_bootstrap(m->dht, ip_port, public_key);
+    IP_Port ip_port_v64;
+    IP *ip_extra = NULL;
+    IP_Port ip_port_v4;
+    ip_init(&ip_port_v64.ip, ipv6enabled);
+
+    if (ipv6enabled) {
+        /* setup for getting BOTH: an IPv6 AND an IPv4 address */
+        ip_port_v64.ip.family = AF_UNSPEC;
+        ip_reset(&ip_port_v4.ip);
+        ip_extra = &ip_port_v4.ip;
+    }
+
+    if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
+        ip_port_v64.port = port;
+        add_tcp_relay(m->net_crypto, ip_port_v64, public_key);
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 int tox_bootstrap_from_address(Tox *tox, const char *address,
                                uint8_t ipv6enabled, uint16_t port, uint8_t *public_key)
 {
     Messenger *m = tox;
+    tox_add_tcp_relay(tox, address, ipv6enabled, port, public_key);
     return DHT_bootstrap_from_address(m->dht, address, ipv6enabled, port, public_key);
-};
+}
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
@@ -841,34 +856,4 @@ int tox_load(Tox *tox, uint8_t *data, uint32_t length)
 {
     Messenger *m = tox;
     return messenger_load(m, data, length);
-}
-
-/* return the size of data to pass to messenger_save_encrypted(...)
- */
-uint32_t tox_size_encrypted(Tox *tox)
-{
-    Messenger *m = tox;
-    return messenger_size_encrypted(m);
-}
-
-/* Save the messenger, encrypting the data with key of length key_length
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_save_encrypted(Tox *tox, uint8_t *data, uint8_t *key, uint16_t key_length)
-{
-    Messenger *m = tox;
-    return messenger_save_encrypted(m, data, key, key_length);
-}
-
-/* Load the messenger from data of size length encrypted with key of key_length.
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_load_encrypted(Tox *tox, uint8_t *data, uint32_t length, uint8_t *key, uint16_t key_length)
-{
-    Messenger *m = tox;
-    return messenger_load_encrypted(m, data, length, key, key_length);
 }

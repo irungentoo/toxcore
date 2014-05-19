@@ -22,8 +22,6 @@ endif
 if BUILD_TESTING
 
 noinst_PROGRAMS +=      DHT_test \
-                        Lossless_UDP_testclient \
-                        Lossless_UDP_testserver \
                         Messenger_test \
                         crypto_speed_test
 
@@ -33,40 +31,6 @@ DHT_test_CFLAGS =       $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS)
 
 DHT_test_LDADD =        $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
-                        libtoxcore.la \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
-                        $(WINSOCK2_LIBS)
-
-
-Lossless_UDP_testclient_SOURCES = \
-                        ../testing/Lossless_UDP_testclient.c
-
-Lossless_UDP_testclient_CFLAGS = \
-                        $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS)
-
-Lossless_UDP_testclient_LDADD = \
-                        $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
-                        libtoxcore.la \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
-                        $(WINSOCK2_LIBS)
-
-
-Lossless_UDP_testserver_SOURCES = \
-                        ../testing/Lossless_UDP_testserver.c
-
-Lossless_UDP_testserver_CFLAGS = \
-                        $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS)
-
-Lossless_UDP_testserver_LDADD = \
-                        $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \

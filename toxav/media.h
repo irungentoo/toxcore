@@ -36,7 +36,7 @@
 #define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
 
 /* Audio encoding/decoding */
-#include <opus/opus.h>
+#include <opus.h>
 
 typedef enum _Capabilities
 {

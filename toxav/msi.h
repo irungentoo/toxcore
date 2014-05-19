@@ -84,7 +84,7 @@ typedef struct _MSICall {                  /* Call info structure */
     int                 ringing_timer_id;  /* Timer id for ringing timeout */
 
     pthread_mutex_t     mutex;             /* It's to be assumed that call will have
-                                            * seperate thread so add mutex
+                                            * separate thread so add mutex
                                             */
     uint32_t            *peers;
     uint16_t            peer_count;
@@ -156,7 +156,7 @@ void msi_register_callback(MSICallback callback, MSICallbackID id, void* userdat
  * @param messenger Tox* object.
  * @param max_calls Amount of calls possible
  * @return MSISession* The created session.
- * @retval NULL Error occured.
+ * @retval NULL Error occurred.
  */
 MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls );
 
@@ -189,7 +189,7 @@ int msi_invite ( MSISession *session, int32_t* call_index, MSICallType call_type
  * @param session Control session.
  * @param call_index To which call is this action handled.
  * @return int
- * @retval -1 Error occured.
+ * @retval -1 Error occurred.
  * @retval 0 Success.
  */
 int msi_hangup ( MSISession *session, int32_t call_index );

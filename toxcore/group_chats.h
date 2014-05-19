@@ -25,8 +25,6 @@
 #ifndef GROUP_CHATS_H
 #define GROUP_CHATS_H
 
-#include "net_crypto.h"
-
 #define MAX_NICK_BYTES 128
 
 typedef struct {

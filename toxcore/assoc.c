@@ -29,7 +29,7 @@
  * Candidates are kept in buckets of hash tables. The hash
  * function is calculated from the client_id. Up to
  * HASH_COLLIDE_COUNT alternative positions are tried if
- * the inital position is already used by a different entry.
+ * the initial position is already used by a different entry.
  * The collision function is multiplicative, not additive.
  *
  * A new candidate can bump an existing candidate, if it is

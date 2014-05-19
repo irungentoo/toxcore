@@ -29,7 +29,7 @@
 #define ONION_ANNOUNCE_TIMEOUT 300
 #define ONION_PING_ID_SIZE crypto_hash_sha256_BYTES
 
-#define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (crypto_secretbox_NONCEBYTES + sizeof(uint32_t) + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_secretbox_MACBYTES)
+#define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (sizeof(uint64_t))
 
 #define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + 1 + ONION_PING_ID_SIZE + crypto_box_MACBYTES)
 #define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
@@ -39,6 +39,9 @@
 #if ONION_PING_ID_SIZE != crypto_box_PUBLICKEYBYTES
 #error announce response packets assume that ONION_PING_ID_SIZE is equal to crypto_box_PUBLICKEYBYTES
 #endif
+
+#define ONION_DATA_REQUEST_MIN_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define MAX_DATA_REQUEST_SIZE (ONION_MAX_DATA_SIZE - ONION_DATA_REQUEST_MIN_SIZE)
 
 typedef struct {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -52,8 +55,8 @@ typedef struct {
     DHT     *dht;
     Networking_Core *net;
     Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
-    /* This is crypto_secretbox_KEYBYTES long just so we can use new_symmetric_key() to fill it */
-    uint8_t secret_bytes[crypto_secretbox_KEYBYTES];
+    /* This is crypto_box_KEYBYTES long just so we can use new_symmetric_key() to fill it */
+    uint8_t secret_bytes[crypto_box_KEYBYTES];
 
     Shared_Keys shared_keys_recv;
 } Onion_Announce;
@@ -73,7 +76,7 @@ typedef struct {
  * return 0 on success.
  */
 int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format dest, uint8_t *public_key,
-                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint8_t *sendback_data);
+                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint64_t sendback_data);
 
 /* Create and send an onion data request packet.
  *
@@ -85,6 +88,8 @@ int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format de
  * encrypt_public_key is the public key used to encrypt the data packet.
  *
  * nonce is the nonce to encrypt this packet with
+ *
+ * The maximum length of data is MAX_DATA_REQUEST_SIZE.
  *
  * return -1 on failure.
  * return 0 on success.

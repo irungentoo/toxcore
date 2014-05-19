@@ -210,7 +210,7 @@ int tox_set_name(Tox *tox, uint8_t *name, uint16_t length);
 
 /*
  * Get your nickname.
- * m - The messanger context to use.
+ * m - The messenger context to use.
  * name - needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
  *
  *  return length of name.
@@ -515,11 +515,11 @@ uint32_t tox_get_chatlist(Tox *tox, int *out_list, uint32_t list_size);
  * tox_file_data_remaining(...) can be used to know how many bytes are left to send/receive.
  *
  * If the connection breaks during file sending (The other person goes offline without pausing the sending and then comes back)
- * the reciever must send a control packet with receive_send == 0 message_id = TOX_FILECONTROL_RESUME_BROKEN and the data being
- * a uint64_t (in host byte order) containing the number of bytes recieved.
+ * the receiver must send a control packet with receive_send == 0 message_id = TOX_FILECONTROL_RESUME_BROKEN and the data being
+ * a uint64_t (in host byte order) containing the number of bytes received.
  *
- * If the sender recieves this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
- * then he must start sending file data from the position (data , uint64_t in host byte order) recieved in the TOX_FILECONTROL_RESUME_BROKEN packet.
+ * If the sender receives this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
+ * then he must start sending file data from the position (data , uint64_t in host byte order) received in the TOX_FILECONTROL_RESUME_BROKEN packet.
  *
  * More to come...
  */
@@ -600,43 +600,6 @@ int tox_file_data_size(Tox *tox, int32_t friendnumber);
 uint64_t tox_file_data_remaining(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8_t send_receive);
 
 /***************END OF FILE SENDING FUNCTIONS******************/
-
-/* WARNING: DEPRECATED, DO NOT USE. */
-typedef union {
-    uint8_t  c[4];
-    uint16_t s[2];
-    uint32_t i;
-} tox_IP4;
-
-typedef union {
-    uint8_t uint8[16];
-    uint16_t uint16[8];
-    uint32_t uint32[4];
-    struct in6_addr in6_addr;
-} tox_IP6;
-
-typedef struct {
-    uint8_t family;
-    /* Not used for anything right now. */
-    uint8_t padding[3];
-    union {
-        tox_IP4 ip4;
-        tox_IP6 ip6;
-    };
-} tox_IP;
-
-/* will replace IP_Port as soon as the complete infrastructure is in place
- * removed the unused union and padding also */
-typedef struct {
-    tox_IP    ip;
-    uint16_t  port;
-} tox_IP_Port;
-/* WARNING: DEPRECATED, DO NOT USE. */
-/* Sends a "get nodes" request to the given node with ip, port and public_key
- *   to setup connections
- */
-void tox_bootstrap_from_ip(Tox *tox, tox_IP_Port ip_port, uint8_t *public_key);
-
 
 /*
  * Use this function to bootstrap the client.
@@ -738,32 +701,6 @@ void tox_save(Tox *tox, uint8_t *data);
  *  returns -1 on failure
  */
 int tox_load(Tox *tox, uint8_t *data, uint32_t length);
-
-/**/
-
-/* return the size of data to pass to messenger_save_encrypted(...)
- */
-uint32_t tox_size_encrypted(Tox *tox);
-
-/* Save the messenger, encrypting the data with key of length key_length
- *
- * This functions simply calls and then encrypt the output of tox_save(..)
- * with crypto_secretbox(...) from NaCl/libsodium with the key
- * given to crypto_secretbox(...) being the SHA256 sum of the key
- * passed to this function.
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_save_encrypted(Tox *tox, uint8_t *data, uint8_t *key, uint16_t key_length);
-
-/* Load the messenger from data of size length encrypted with key of key_length.
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_load_encrypted(Tox *tox, uint8_t *data, uint32_t length, uint8_t *key, uint16_t key_length);
-
 
 #ifdef __cplusplus
 }
