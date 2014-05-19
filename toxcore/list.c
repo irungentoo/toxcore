@@ -36,7 +36,7 @@
  * -some considerations since the array size is never perfect
  */
 
- #define INDEX(i) (-i -1)
+#define INDEX(i) (-i -1)
 
 /* Find data in list
  *
@@ -75,8 +75,7 @@ static int find(LIST *list, void *data)
             }
 
             delta = (delta) / 2;
-            if(delta == 0)
-            {
+            if(delta == 0) {
                 delta = 1;
                 d = 1;
             }
@@ -142,6 +141,11 @@ int list_add(LIST *list, void *data, int id)
     //increase the size of the arrays by one
     list->data = realloc(list->data, list->size * (list->n + 1));
     list->ids = realloc(list->ids, sizeof(int) * (list->n + 1));
+
+    if(!list->data || !list->ids)
+    {
+        return 0;
+    }
 
     //insert data to element array
     memmove(list->data + (i + 1) * list->size, list->data + i * list->size, (list->n - i) * list->size);

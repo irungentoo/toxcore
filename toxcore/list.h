@@ -27,13 +27,12 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef struct
-{
+typedef struct {
     uint32_t n; //number of elements
     uint32_t size; //size of the elements
     void *data; //array of elements
     int *ids; //array of element ids
-}LIST;
+} LIST;
 
 /* Initialize a list, element_size is the size of the elements in the list */
 void list_init(LIST *list, uint32_t element_size);
