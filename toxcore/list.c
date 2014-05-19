@@ -144,11 +144,22 @@ int list_add(LIST *list, void *data, int id)
     i = -i - 1;
 
     //increase the size of the arrays by one
-    list->data = realloc(list->data, list->size * (list->n + 1));
-    list->ids = realloc(list->ids, sizeof(int) * (list->n + 1));
+    void *p;
 
-    if (!list->data || !list->ids) {
+    p = realloc(list->data, list->size * (list->n + 1));
+
+    if (!p) {
         return 0;
+    } else {
+        list->data = p;
+    }
+
+    p = realloc(list->ids, sizeof(int) * (list->n + 1));
+
+    if (!p) {
+        return 0;
+    } else {
+        list->ids = p;
     }
 
     //insert data to element array
