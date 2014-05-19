@@ -195,7 +195,7 @@ IP_Port;
 
 #define SIZE_IP4 4
 #define SIZE_IP6 16
-#define SIZE_IP (1 + SIZEOF_IP6)
+#define SIZE_IP (1 + SIZE_IP6)
 #define SIZE_PORT 2
 #define SIZE_IPPORT (SIZE_IP + SIZE_PORT)
 

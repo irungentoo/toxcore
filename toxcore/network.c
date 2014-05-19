@@ -906,13 +906,13 @@ void ip_unpack(IP *target, uint8_t *data)
 
 void ipport_pack(uint8_t *data, IP_Port *source)
 {
-    ip_pack(data, &source.ip);
+    ip_pack(data, &source->ip);
     memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
 }
 
 void ipport_unpack(IP_Port *target, uint8_t *data)
 {
-    ip_unpack(&target.ip, data);
+    ip_unpack(&target->ip, data);
     memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
 }
 
