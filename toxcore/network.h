@@ -237,9 +237,13 @@ void ip_copy(IP *target, IP *source);
 void ipport_copy(IP_Port *target, IP_Port *source);
 
 
+/* packs IP into data, writes SIZE_IP bytes to data */
 void ip_pack(uint8_t *data, IP *source);
+/* unpacks IP from data, reads SIZE_IP bytes from data */
 void ip_unpack(IP *target, uint8_t *data);
+/* packs IP_Port into data, writes SIZE_IPPORT bytes to data */
 void ipport_pack(uint8_t *data, IP_Port *source);
+/* unpacks IP_Port from data, reads SIZE_IPPORT bytes to data */
 void ipport_unpack(IP_Port *target, uint8_t *data);
 
 /*
