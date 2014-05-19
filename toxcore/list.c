@@ -48,7 +48,7 @@
 static int find(LIST *list, void *data)
 {
     //should work well, but could be improved
-    if(list->n == 0) {
+    if (list->n == 0) {
         return INDEX(0);
     }
 
@@ -58,30 +58,32 @@ static int find(LIST *list, void *data)
     int d = -1; //used to determine if closest match is found
     //closest match is found if we move back to where we have already been
 
-    while(1) {
+    while (1) {
         int r = memcmp(data, list->data + list->size * i, list->size);
-        if(r == 0) {
+
+        if (r == 0) {
             return list->ids[i];
         }
 
-        if(r > 0) {
+        if (r > 0) {
             //data is greater
             //move down
             i += delta;
 
-            if(d == 0 || i == list->n) {
+            if (d == 0 || i == list->n) {
                 //reached bottom of list, or closest match
                 return INDEX(i);
             }
 
             delta = (delta) / 2;
-            if(delta == 0) {
+
+            if (delta == 0) {
                 delta = 1;
                 d = 1;
             }
         } else {
             //data is smaller
-            if(d == 1 || i == 0) {
+            if (d == 1 || i == 0) {
                 //reached top or list or closest match
                 return INDEX(i);
             }
@@ -90,7 +92,8 @@ static int find(LIST *list, void *data)
             i -= delta;
 
             delta = (delta) / 2;
-            if(delta == 0) {
+
+            if (delta == 0) {
                 delta = 1;
                 d = 0;
             }
@@ -118,8 +121,9 @@ void list_free(LIST *list)
 int list_find(LIST *list, void *data)
 {
     int r = find(list, data);
+
     //return only -1 and positive values
-    if(r < 0) {
+    if (r < 0) {
         r = -1;
     }
 
@@ -131,7 +135,8 @@ int list_add(LIST *list, void *data, int id)
     //find where the new element should be inserted
     //see: return value of find()
     int i = find(list, data);
-    if(i >= 0) {
+
+    if (i >= 0) {
         //already in list
         return 0;
     }
@@ -142,8 +147,7 @@ int list_add(LIST *list, void *data, int id)
     list->data = realloc(list->data, list->size * (list->n + 1));
     list->ids = realloc(list->ids, sizeof(int) * (list->n + 1));
 
-    if(!list->data || !list->ids)
-    {
+    if (!list->data || !list->ids) {
         return 0;
     }
 
@@ -164,8 +168,9 @@ int list_add(LIST *list, void *data, int id)
 void list_remove(LIST *list, int id)
 {
     int i;
-    for(i = 0; i < list->n; i++) {
-        if(list->ids[i] == id) {
+
+    for (i = 0; i < list->n; i++) {
+        if (list->ids[i] == id) {
             //decrease number of elements
             list->n--;
 
