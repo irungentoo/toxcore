@@ -89,7 +89,7 @@ typedef int sock_t;
 #endif
 
 #if defined(__sun__)
-#define __EXTENSIONS__ 1 // SunOS! 
+#define __EXTENSIONS__ 1 // SunOS!
 #if defined(__SunOS5_6__) || defined(__SunOS5_7__) || defined(__SunOS5_8__) || defined(__SunOS5_9__) || defined(__SunOS5_10__)
 //Nothing needed
 #else
@@ -192,6 +192,13 @@ typedef struct __attribute__ ((__packed__)) __attribute__((gcc_struct))
 }
 IP_Port;
 
+
+#define SIZE_IP4 4
+#define SIZE_IP6 16
+#define SIZE_IP (1 + SIZEOF_IP6)
+#define SIZE_PORT 2
+#define SIZE_IPPORT (SIZE_IP + SIZE_PORT)
+
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
 /* ip_ntoa
@@ -228,6 +235,12 @@ int ipport_isset(IP_Port *ipport);
 void ip_copy(IP *target, IP *source);
 /* copies an ip_port structure */
 void ipport_copy(IP_Port *target, IP_Port *source);
+
+
+void ip_pack(uint8_t *data, IP *source);
+void ip_unpack(IP *target, uint8_t *data);
+void ipport_pack(uint8_t *data, IP_Port *source);
+void ipport_unpack(IP_Port *target, uint8_t *data);
 
 /*
  * addr_resolve():

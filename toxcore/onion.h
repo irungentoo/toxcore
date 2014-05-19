@@ -41,11 +41,11 @@ typedef struct {
 
 #define ONION_MAX_PACKET_SIZE 1400
 
-#define ONION_RETURN_1 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
-#define ONION_RETURN_2 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES + ONION_RETURN_1)
-#define ONION_RETURN_3 (crypto_box_NONCEBYTES + sizeof(IP_Port) + crypto_box_MACBYTES + ONION_RETURN_2)
+#define ONION_RETURN_1 (crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_MACBYTES)
+#define ONION_RETURN_2 (crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_MACBYTES + ONION_RETURN_1)
+#define ONION_RETURN_3 (crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_MACBYTES + ONION_RETURN_2)
 
-#define ONION_SEND_BASE (crypto_box_PUBLICKEYBYTES + sizeof(IP_Port) + crypto_box_MACBYTES)
+#define ONION_SEND_BASE (crypto_box_PUBLICKEYBYTES + SIZE_IPPORT + crypto_box_MACBYTES)
 #define ONION_SEND_3 (crypto_box_NONCEBYTES + ONION_SEND_BASE + ONION_RETURN_2)
 #define ONION_SEND_2 (crypto_box_NONCEBYTES + ONION_SEND_BASE*2 + ONION_RETURN_1)
 #define ONION_SEND_1 (crypto_box_NONCEBYTES + ONION_SEND_BASE*3)
