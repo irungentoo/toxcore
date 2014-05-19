@@ -6,13 +6,13 @@ port = 33445
 // A key file is like a password, so keep it where no one can read it.
 // The daemon should have permission to read/write to it.
 // Remember to replace the provided example with your own path.
-keys_file_path = "/home/tom/.tox_bootstrap_daemon/keys"
+keys_file_path = "/home/tom/.tox_bootstrap_daemon/.tox_bootstrap_daemon.keys"
 
 // The PID file written to by daemon.
 // Make sure that the user who runs the daemon has permissions to write to the
 // PID file.
 // Remember to replace the provided example with your own path.
-pid_file_path = "/home/tom/.tox_bootstrap_daemon/pid"
+pid_file_path = "/home/tom/.tox_bootstrap_daemon/.tox_bootstrap_daemon.pid"
 
 // Enable IPv6.
 enable_ipv6 = false
@@ -22,9 +22,9 @@ enable_lan_discovery = true
 
 enable_tcp_relay = true
 
-// Tox uses 443 and 3389 ports by default, so it's highly recommended to keep
+// Tox uses 443, 3389 and 33445 ports by default, so it's highly recommended to keep
 // them.
-tcp_relay_ports = [443, 3389]
+tcp_relay_ports = [443, 3389, 33445]
 
 // It's planned to use message of the day as a convenient method of checking
 // whether a node is up or not, though there are other methods of doing that.
