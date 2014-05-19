@@ -1,0 +1,118 @@
+The TCP client and TCP server part are in a state that can be considered 
+feature complete. Why doesn't Tox support TCP yet even if those parts are 
+complete?
+
+The answer is that a way to ensure a smooth switchover between the TCP and UDP 
+needs to be added. If Tox first connects to the other user using TCP but then 
+due to pure chance manages to connect using the faster direct UDP connection 
+Tox must switch seamlessly from the TCP to the UDP connection without there 
+being any data loss or the other user going offline and then back online. The 
+transition must be seamless whatever both connected users are doing be it 
+transferring files or simply chatting together.
+
+Possible evil/bad or simply TCP relays going offline must not impact the 
+connection between both clients.
+
+Typically Tox will use more than one TCP relay to connect to other peers for 
+maximum connection stability which means there must be a way for Tox to take 
+advantage of multiple relays in a way that the user will never be aware if one
+of them goes offline/tries to slow down the connection/decides to corrupt 
+packets/etc..
+
+To accomplish this Tox needs something between the low level protocol (TCP) and 
+high level Tox messaging protocol hence the name middle level.
+
+The plan is to move some functionality from lossless_UDP to a higher level: 
+more specifically the functionality for detecting which packets a peer is 
+missing and the ability to request and send them again. lossless UDP uses plain 
+text packets to request missing packets from the other peer while Tox is 
+currently designed to kill the connection if any packet tampering is detected. 
+This works very well when connecting directly with someone because if the 
+attacker can modify packets it means he can kill your connection anyways. With 
+TCP relays however that is not the case as such the packets used to request 
+missing packets must be encrypted. If it is detected that a packet has been 
+tampered, the connection must stay intact while the evil relay must be 
+disconnected from and replaced with a good relay, the behavior must be the same 
+as if the relay had just suddenly gone online. Of course something to protect 
+from evil "friends" framing relays must also be implemented.
+
+Detailed implementation details:
+
+cookie request packet:
+[uint8_t 24][Senders DHT Public key (32 bytes)][Random nonce (24 
+bytes)][Encrypted message containing: [Senders real public key (32 
+bytes)][padding (32 bytes)][uint64_t number (must be sent 
+back untouched in cookie response)]]
+Encrypted message is encrypted with sender DHT private key, recievers DHT 
+public key and the nonce.
+
+cookie response packet:
+[uint8_t 25][Random nonce (24 bytes)][Encrypted message containing: 
+[Cookie][uint64_t number (that was sent in the request)]]
+Encrypted message is encrypted with sender DHT private key, recievers DHT 
+public key and the nonce.
+
+The Cookie should be basically:
+[nonce][encrypted data:[uint64_t time][Senders real public key (32 
+bytes)][Senders dht public key (32 bytes)]]
+
+Handshake packet:
+[uint8_t 26][Cookie][nonce][Encrypted message containing: [random 24 bytes base 
+nonce][session public key of the peer (32 bytes)][sha512 hash of the entire 
+Cookie sitting outside the encrypted part][Other Cookie (used by the other to 
+respond to the handshake packet)]]
+
+The handshake packet is encrypted using the real private key of the sender, the 
+real private key of the receiver and the nonce.
+
+
+Alice wants to connect to bob.
+
+Alice sends a cookie request packet to bob and gets a cookie response back.
+
+Alice then generates a nonce and a temporary public/private keypair.
+
+Alice then takes that nonce and just generated private key, the obtained 
+cookie, creates a new cookie and puts them in a handshake packet which she 
+sends to bob.
+
+Bob gets the handshake packet, accepts the connection request, then generates a 
+nonce and a temporary public/private keypair and sends a handshake packet back 
+with this just generated information and with the cookie field being the Other 
+Cookie contained in the received handshake.
+
+Both then use these temporary keys to generate the session key with which every 
+data packet sent and received will be encrypted and decrypted. The nonce sent 
+in the handshake will be used to encrypt the first data packet sent, the nonce 
++ 1 the second, the nonce + 2 the third and so on.
+
+Data packets:
+
+[uint8_t 27][uint16_t (in network byte order) the last 2 bytes of the nonce 
+used to encrypt this][encrypted with the session key and a nonce:[plain data]]
+
+Plain data in the data packets:
+
+[uint32_t our recvbuffers buffer_start, (highest packet number handled + 
+1)][uint32_t packet number if lossless, our sendbuffer buffer_end if 
+lossy][data]
+
+data ids:
+0: padding (skipped until we hit a non zero (data id) byte)
+1: packet request packet (lossy packet)
+2: connection kill packet (lossy packet) (tells the other that the connection is over)
+...
+16+: reserved for Messenger usage (lossless packets).
+
+packet request packet: [uint8_t (1)][uint8_t num][uint8_t num][uint8_t 
+num]...[uint8_t num]
+
+the list of nums are a list of packet numbers the other is requesting.
+to get the real packet numbers from this list take the recvbuffers buffer_start 
+from the packet, substract 1 to it and put it in packet_num then start from the 
+beggining of the num list: if num is zero, add 255 to packet_num then do the 
+next num. if num isn't zero, add its value to packet_num, note that the other 
+has requested we send this packet again to them then continue to the next num in 
+the list. 
+
+

@@ -72,21 +72,22 @@ typedef struct _MSICall {                  /* Call info structure */
 
     uint8_t             id[CALL_ID_LEN];   /* Random value identifying the call */
 
-    uint8_t             *key_local;        /* The key for encryption */
-    uint8_t             *key_peer;         /* The key for decryption */
+    uint8_t            *key_local;         /* The key for encryption */
+    uint8_t            *key_peer;          /* The key for decryption */
 
-    uint8_t             *nonce_local;      /* Local nonce */
-    uint8_t             *nonce_peer;       /* Peer nonce  */
+    uint8_t            *nonce_local;       /* Local nonce */
+    uint8_t            *nonce_peer;        /* Peer nonce  */
 
     int                 ringing_tout_ms;   /* Ringing timeout in ms */
 
     int                 request_timer_id;  /* Timer id for outgoing request/action */
     int                 ringing_timer_id;  /* Timer id for ringing timeout */
 
+
     pthread_mutex_t     mutex;             /* It's to be assumed that call will have
                                             * separate thread so add mutex
                                             */
-    uint32_t            *peers;
+    uint32_t           *peers;
     uint16_t            peer_count;
 
     int32_t             call_idx;          /* Index of this call in MSISession */

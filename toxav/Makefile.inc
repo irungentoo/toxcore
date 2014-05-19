@@ -34,5 +34,4 @@ libtoxav_la_LIBADD =  libtoxcore.la \
                       $(PTHREAD_LIBS) \
                       $(AV_LIBS)
 
-
 endif

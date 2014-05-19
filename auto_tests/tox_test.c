@@ -96,21 +96,26 @@ void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t 
 }
 
 uint64_t size_recv;
+uint8_t num;
 void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
     uint8_t *f_data = malloc(length);
-    memset(f_data, 6, length);
+    memset(f_data, num, length);
+    ++num;
 
-    if (memcmp(f_data, data, length) == 0)
+    if (memcmp(f_data, data, length) == 0) {
         size_recv += length;
+    } else {
+        printf("FILE_CORRUPTED\n");
+    }
 }
 
 START_TEST(test_few_clients)
 {
-    long long unsigned int cur_time = time(NULL);
+    long long unsigned int con_time, cur_time = time(NULL);
     Tox *tox1 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     Tox *tox2 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
     Tox *tox3 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
@@ -131,6 +136,7 @@ START_TEST(test_few_clients)
 
         if (tox_isconnected(tox1) && tox_isconnected(tox2) && tox_isconnected(tox3) && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
+            con_time = time(NULL);
             off = 0;
         }
 
@@ -141,7 +147,7 @@ START_TEST(test_few_clients)
         c_sleep(50);
     }
 
-    printf("tox clients connected\n");
+    printf("tox clients connected took %llu seconds\n", time(NULL) - con_time);
     to_compare = 974536;
     tox_callback_friend_message(tox3, print_message, &to_compare);
     tox_send_message(tox2, 0, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
@@ -227,8 +233,8 @@ START_TEST(test_few_clients)
     ck_assert_msg(fnum != -1, "tox_new_file_sender fail");
     int fpiece_size = tox_file_data_size(tox2, 0);
     uint8_t *f_data = malloc(fpiece_size);
-    memset(f_data, 6, fpiece_size);
-
+    uint8_t num = 0;
+    memset(f_data, num, fpiece_size);
     while (1) {
         file_sent = 0;
         tox_do(tox1);
@@ -241,6 +247,8 @@ START_TEST(test_few_clients)
                     sendf_ok = 0;
                     tox_file_send_control(tox2, 0, 0, fnum, TOX_FILECONTROL_FINISHED, NULL, 0);
                 }
+                ++num;
+                memset(f_data, num, fpiece_size);
 
                 totalf_size -= fpiece_size;
             }
@@ -284,6 +292,12 @@ START_TEST(test_many_clients)
 loop_top:
         pairs[i].tox1 = rand() % NUM_TOXES;
         pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+
+        for (j = 0; j < i; ++j) {
+            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
+                goto loop_top;
+        }
+
         tox_get_address(toxes[pairs[i].tox1], address);
         int test = tox_add_friend(toxes[pairs[i].tox2], address, (uint8_t *)"Gentoo", 7);
 
@@ -331,7 +345,7 @@ Suite *tox_suite(void)
     Suite *s = suite_create("Tox");
 
     DEFTESTCASE_SLOW(few_clients, 50);
-    DEFTESTCASE_SLOW(many_clients, 300);
+    DEFTESTCASE_SLOW(many_clients, 150);
     return s;
 }
 

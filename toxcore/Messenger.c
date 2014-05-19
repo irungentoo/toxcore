@@ -2048,6 +2048,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             if (m->friend_action)
                 (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
 
+
             break;
         }
 
@@ -2207,7 +2208,7 @@ void do_friends(Messenger *m)
                 m->friendlist[i].friendrequest_lastsent = temp_time;
             }
         }
-
+        
         if (m->friendlist[i].status == FRIEND_REQUESTED
                 || m->friendlist[i].status == FRIEND_CONFIRMED) { /* friend is not online. */
             if (m->friendlist[i].status == FRIEND_REQUESTED) {

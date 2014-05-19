@@ -9,12 +9,6 @@
 #include <check.h>
 #include <stdlib.h>
 #include <time.h>
-#ifndef VANILLA_NACL
-#include <sodium.h>
-#else
-#include <crypto_box.h>
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-#endif
 
 void rand_bytes(uint8_t *b, size_t blen)
 {
@@ -126,12 +120,12 @@ START_TEST(test_fast_known)
     ck_assert_msg(sizeof(test_c) == sizeof(c), "sanity check failed");
     ck_assert_msg(sizeof(test_m) == sizeof(m), "sanity check failed");
 
-    clen = encrypt_data_fast(k, nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
+    clen = encrypt_data_symmetric(k, nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
 
     ck_assert_msg(memcmp(test_c, c, sizeof(c)) == 0, "cyphertext doesn't match test vector");
     ck_assert_msg(clen == sizeof(c) / sizeof(unsigned char), "wrong ciphertext length");
 
-    mlen = decrypt_data_fast(k, nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
+    mlen = decrypt_data_symmetric(k, nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
 
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");
@@ -186,8 +180,8 @@ START_TEST(test_endtoend)
         //Encrypt all four ways
         c1len = encrypt_data(pk2, sk1, n, m, mlen, c1);
         c2len = encrypt_data(pk1, sk2, n, m, mlen, c2);
-        c3len = encrypt_data_fast(k1, n, m, mlen, c3);
-        c4len = encrypt_data_fast(k2, n, m, mlen, c4);
+        c3len = encrypt_data_symmetric(k1, n, m, mlen, c3);
+        c4len = encrypt_data_symmetric(k2, n, m, mlen, c4);
 
         ck_assert_msg(c1len == c2len && c1len == c3len && c1len == c4len, "cyphertext lengths differ");
         ck_assert_msg(c1len == mlen + (int)crypto_box_MACBYTES, "wrong cyphertext length");
@@ -197,8 +191,8 @@ START_TEST(test_endtoend)
         //Decrypt all four ways
         m1len = decrypt_data(pk2, sk1, n, c1, c1len, m1);
         m2len = decrypt_data(pk1, sk2, n, c1, c1len, m2);
-        m3len = decrypt_data_fast(k1, n, c1, c1len, m3);
-        m4len = decrypt_data_fast(k2, n, c1, c1len, m4);
+        m3len = decrypt_data_symmetric(k1, n, c1, c1len, m3);
+        m4len = decrypt_data_symmetric(k2, n, c1, c1len, m4);
 
         ck_assert_msg(m1len == m2len && m1len == m3len && m1len == m4len, "decrypted text lengths differ");
         ck_assert_msg(m1len == mlen, "wrong decrypted text length");
@@ -215,11 +209,11 @@ START_TEST(test_large_data)
 
     unsigned char n[crypto_box_NONCEBYTES];
 
-    unsigned char m1[MAX_DATA_SIZE - crypto_box_MACBYTES];
+    unsigned char m1[MAX_CRYPTO_PACKET_SIZE - crypto_box_MACBYTES];
     unsigned char c1[sizeof(m1) + crypto_box_MACBYTES];
     unsigned char m1prime[sizeof(m1)];
 
-    unsigned char m2[MAX_DATA_SIZE];
+    unsigned char m2[MAX_CRYPTO_PACKET_SIZE];
     unsigned char c2[sizeof(m2) + crypto_box_MACBYTES];
 
     int c1len, c2len;
@@ -233,13 +227,13 @@ START_TEST(test_large_data)
     //Generate key
     rand_bytes(k, crypto_box_BEFORENMBYTES);
 
-    c1len = encrypt_data_fast(k, n, m1, sizeof(m1), c1);
-    c2len = encrypt_data_fast(k, n, m2, sizeof(m2), c2);
+    c1len = encrypt_data_symmetric(k, n, m1, sizeof(m1), c1);
+    c2len = encrypt_data_symmetric(k, n, m2, sizeof(m2), c2);
 
-    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt max size");
-    ck_assert_msg(c2len == -1, "incorrectly succeeded encrypting massive size");
+    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt");
+    ck_assert_msg(c2len == sizeof(m2) + crypto_box_MACBYTES, "could not encrypt");
 
-    m1plen = decrypt_data_fast(k, n, c1, c1len, m1prime);
+    m1plen = decrypt_data_symmetric(k, n, c1, c1len, m1prime);
 
     ck_assert_msg(m1plen == sizeof(m1), "decrypted text lengths differ");
     ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
@@ -248,9 +242,9 @@ END_TEST
 
 START_TEST(test_large_data_symmetric)
 {
-    unsigned char k[crypto_secretbox_KEYBYTES];
+    unsigned char k[crypto_box_KEYBYTES];
 
-    unsigned char n[crypto_secretbox_NONCEBYTES];
+    unsigned char n[crypto_box_NONCEBYTES];
 
     unsigned char m1[16 * 16 * 16];
     unsigned char c1[sizeof(m1) + crypto_box_MACBYTES];
@@ -275,6 +269,7 @@ START_TEST(test_large_data_symmetric)
     ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
 }
 END_TEST
+
 
 #define DEFTESTCASE(NAME) \
     TCase *NAME = tcase_create(#NAME); \

@@ -79,18 +79,15 @@ Protocol
 
 Node format: 
 ```
-[char array (node_id), length=32 bytes][ip (in network byte order), length=4 bytes][port (in network byte order), length=2 bytes][Padding , length=2 bytes]
+[uint8_t family (2 == IPv4, 10 == IPv6, 130 == TCP IPv4, 138 == TCP IPv6)][ip (in network byte order), length=4 bytes if ipv4, 16 bytes if ipv6][port (in network byte order), length=2 bytes][char array (node_id), length=32 bytes]
 ```
-see also: DHT.h (Node4_format struct)
-
-IPv6 Node format: 
-see: DHT.h (Node_format struct)
+see also: DHT.h (pack_nodes() and unpack_nodes())
 
 Valid queries and Responses:
 
 Ping(Request and response): 
 ```
-[byte with value: 00 for request, 01 for response][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender: [random 8 byte (ping_id)]]
+[byte with value: 00 for request, 01 for response][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender: [1 byte type (0 for request, 1 for response)][random 8 byte (ping_id)]]
 ```
 ping_id = a random integer, the response must contain the exact same number as the request
 
@@ -98,16 +95,11 @@ ping_id = a random integer, the response must contain the exact same number as t
 Get nodes (Request):
 Packet contents: 
 ```
-[byte with value: 02][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[char array: requested_node_id (node_id of which we want the ip), length=32 bytes][Encrypted data (must be sent back unmodified by in the response), length=NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
+[byte with value: 02][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[char array: requested_node_id (node_id of which we want the ip), length=32 bytes][Sendback data (must be sent back unmodified by in the response), length=1 to NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
 ```
 Valid replies: a send_nodes packet
 
-Send_nodes (response (for ipv4 addresses)): 
+Send_nodes (response (for all addresses)): 
 ```
-[byte with value: 03][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[Nodes in node format, length=40 * (number of nodes (maximum of 8 nodes)) bytes][Encrypted data, length=NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
-```
-
-Send_nodes_IPv6 (response (for ipv6 addresses)): 
-```
-[byte with value: 04][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[Nodes in ipv6_node format, length=56 * (number of nodes (maximum of 8 nodes)) bytes][Encrypted data, length=NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
+[byte with value: 04][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[uint8_t number of nodes in this packet][Nodes in node format, length=?? * (number of nodes (maximum of 8 nodes)) bytes][Sendback data, length=1 to NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
 ```
