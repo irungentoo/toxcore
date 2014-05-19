@@ -41,6 +41,7 @@
 
 /* NOTE: Packet ids below 16 must never be used. */
 #define PACKET_ID_ALIVE 16
+#define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
@@ -88,8 +89,12 @@ enum {
 /* Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 5
 
+/* Interval between the sending of tcp relay information */
+#define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
+
 /* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
+
 
 /* USERSTATUS -
  * Represents userstatuses someone can have.
@@ -153,6 +158,7 @@ typedef struct {
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t ping_lastrecv;
     uint64_t ping_lastsent;
+    uint64_t share_relays_lastsent;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
     int invited_groups[MAX_INVITED_GROUPS];

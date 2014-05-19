@@ -714,6 +714,25 @@ static int send_ping(Messenger *m, int32_t friendnumber)
     return ret;
 }
 
+static int send_relays(Messenger *m, int32_t friendnumber)
+{
+    Node_format nodes[MAX_TCP_CONNECTIONS];
+    uint8_t data[1024];
+    int n, length;
+
+    n = copy_connected_tcp_relays(m->net_crypto, nodes, MAX_TCP_CONNECTIONS);
+    length = pack_nodes(data, sizeof(data), nodes, n);
+
+    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_SHARE_RELAYS, data, length);
+
+    if (ret == 1)
+        m->friendlist[friendnumber].share_relays_lastsent = unix_time();
+
+    return ret;
+}
+
+
+
 static int set_friend_statusmessage(Messenger *m, int32_t friendnumber, uint8_t *status, uint16_t length)
 {
     if (friend_not_valid(m, friendnumber))
@@ -2160,6 +2179,19 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata);
         }
 
+        case PACKET_ID_SHARE_RELAYS: {
+            Node_format nodes[MAX_TCP_CONNECTIONS];
+            int n;
+
+            if ((n = unpack_nodes(nodes, MAX_TCP_CONNECTIONS, NULL, data, data_length, 1) == -1))
+                break;
+
+            int i;
+            for(i = 0; i < n; i++) {
+                add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].client_id);
+            }
+        }
+
         default: {
             break;
         }
@@ -2273,6 +2305,10 @@ void do_friends(Messenger *m)
                 crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
                 m->friendlist[i].crypt_connection_id = -1;
                 set_friend_status(m, i, FRIEND_CONFIRMED);
+            }
+
+            if (m->friendlist[i].share_relays_lastsent + FRIEND_SHARE_RELAYS_INTERVAL < temp_time) {
+                send_relays(m, i);
             }
         }
     }
