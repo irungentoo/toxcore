@@ -176,23 +176,21 @@ int list_add(LIST *list, void *data, int id)
     return 1;
 }
 
-void list_remove(LIST *list, int id)
+int list_remove(LIST *list, void *data, int id)
 {
-    int i;
+    int i = find(list, data);
 
-    for (i = 0; i < list->n; i++) {
-        if (list->ids[i] == id) {
-            //decrease number of elements
-            list->n--;
-
-            //move elements in both arrays down by one
-            memmove(list->data + i * list->size, list->data + (i + 1) * list->size, (list->n - i) * list->size);
-            memmove(&list->ids[i], &list->ids[i + 1], (list->n - i) * sizeof(int));
-
-            //return causes it to only remove the first element with the specified id
-            //(as opposed to all elements with that id if there are more than one - but there normally should not be)
-            //i--;
-            return;
-        }
+    if (i < 0) {
+        return 0;
     }
+
+    if (list->ids[i] != id) {
+        //this should never happen
+        return 0;
+    }
+
+    memmove(list->data + i * list->size, list->data + (i + 1) * list->size, (list->n - i) * list->size);
+    memmove(&list->ids[i], &list->ids[i + 1], (list->n - i) * sizeof(int));
+
+    return 1;
 }

@@ -56,5 +56,10 @@ int list_find(LIST *list, void *data);
  */
 int list_add(LIST *list, void *data, int id);
 
-/* Remove an element from the list */
-void list_remove(LIST *list, int id);
+/* Remove element from the list
+ *
+ * return value:
+ *  1 : success
+ *  0 : failure (element not found or id does not match
+ */
+int list_remove(LIST *list, void *data, int id);
