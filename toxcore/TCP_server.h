@@ -25,6 +25,7 @@
 
 #include "crypto_core.h"
 #include "onion.h"
+#include "list.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
 #define MSG_NOSIGNAL 0
@@ -110,6 +111,8 @@ typedef struct {
     uint32_t num_accepted_connections;
 
     uint64_t counter;
+
+    LIST accepted_key_list;
 } TCP_Server;
 
 /* Create new TCP server instance.

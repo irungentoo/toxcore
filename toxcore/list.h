@@ -23,6 +23,9 @@
  *
  */
 
+#ifndef LIST_H
+#define LIST_H
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -63,3 +66,5 @@ int list_add(LIST *list, void *data, int id);
  *  0 : failure (element not found or id does not match
  */
 int list_remove(LIST *list, void *data, int id);
+
+#endif

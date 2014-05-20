@@ -99,15 +99,7 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
  */
 static int get_TCP_connection_index(TCP_Server *TCP_server, uint8_t *public_key)
 {
-    //TODO optimize this function.
-    uint32_t i;
-
-    for (i = 0; i < TCP_server->size_accepted_connections; ++i) {
-        if (memcmp(TCP_server->accepted_connection_array[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0)
-            return i;
-    }
-
-    return -1;
+    return list_find(&TCP_server->accepted_key_list, public_key);
 }
 
 
@@ -154,6 +146,10 @@ static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
     TCP_server->accepted_connection_array[index].identifier = ++TCP_server->counter;
     TCP_server->accepted_connection_array[index].last_pinged = unix_time();
     TCP_server->accepted_connection_array[index].ping_id = 0;
+
+    if (!list_add(&TCP_server->accepted_key_list, con->public_key, index))
+        return -1;
+
     return index;
 }
 
@@ -168,6 +164,9 @@ static int del_accepted(TCP_Server *TCP_server, int index)
         return -1;
 
     if (TCP_server->accepted_connection_array[index].status == TCP_STATUS_NO_STATUS)
+        return -1;
+
+    if (!list_remove(&TCP_server->accepted_key_list, TCP_server->accepted_connection_array[index].public_key, index))
         return -1;
 
     memset(&TCP_server->accepted_connection_array[index], 0, sizeof(TCP_Secure_Connection));
@@ -888,6 +887,9 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
 
     memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(temp->secret_key, secret_key, crypto_box_SECRETKEYBYTES);
+
+    list_init(&temp->accepted_key_list, crypto_box_PUBLICKEYBYTES);
+
     return temp;
 }
 
@@ -1039,6 +1041,8 @@ void kill_TCP_server(TCP_Server *TCP_server)
     if (TCP_server->onion) {
         set_callback_handle_recv_1(TCP_server->onion, NULL, NULL);
     }
+
+    list_free(&TCP_server->accepted_key_list);
 
     free(TCP_server->socks_listening);
     free(TCP_server);
