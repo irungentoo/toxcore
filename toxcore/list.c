@@ -36,7 +36,7 @@
  * -some considerations since the array size is never perfect
  */
 
-#define INDEX(i) (-i -1)
+#define INDEX(i) (~i)
 
 /* Find data in list
  *
@@ -141,7 +141,7 @@ int list_add(LIST *list, void *data, int id)
         return 0;
     }
 
-    i = -i - 1;
+    i = ~i;
 
     //increase the size of the arrays by one
     void *p;
