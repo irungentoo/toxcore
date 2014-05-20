@@ -189,6 +189,8 @@ int list_remove(LIST *list, void *data, int id)
         return 0;
     }
 
+    list->n--;
+
     memmove(list->data + i * list->size, list->data + (i + 1) * list->size, (list->n - i) * list->size);
     memmove(&list->ids[i], &list->ids[i + 1], (list->n - i) * sizeof(int));
 

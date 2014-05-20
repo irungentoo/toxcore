@@ -140,15 +140,15 @@ static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
         return -1;
     }
 
+    if (!list_add(&TCP_server->accepted_key_list, con->public_key, index))
+        return -1;
+
     memcpy(&TCP_server->accepted_connection_array[index], con, sizeof(TCP_Secure_Connection));
     TCP_server->accepted_connection_array[index].status = TCP_STATUS_CONFIRMED;
     ++TCP_server->num_accepted_connections;
     TCP_server->accepted_connection_array[index].identifier = ++TCP_server->counter;
     TCP_server->accepted_connection_array[index].last_pinged = unix_time();
     TCP_server->accepted_connection_array[index].ping_id = 0;
-
-    if (!list_add(&TCP_server->accepted_key_list, con->public_key, index))
-        return -1;
 
     return index;
 }
