@@ -41,6 +41,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/TCP_client.c \
                         ../toxcore/TCP_server.h \
                         ../toxcore/TCP_server.c \
+                        ../toxcore/list.c \
+                        ../toxcore/list.h \
                         ../toxcore/misc_tools.h
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
