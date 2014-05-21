@@ -260,6 +260,7 @@ AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
 WIN32=no
+MACH=no
 AC_CANONICAL_HOST
 case $host_os in
     *mingw*)
@@ -274,6 +275,9 @@ case $host_os in
         CFLAGS="$CFLAGS -I/usr/local/include"
         CPPFLAGS="$CPPFLAGS -I/usr/local/include"
         ADD_NACL_OBJECTS_TO_PKGCONFIG="no"
+    ;;
+    darwin*)
+        MACH=yes
     ;;
 esac
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
@@ -427,7 +431,7 @@ AC_C_BIGENDIAN
 # Checks for library functions.
 AC_FUNC_FORK
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
-if test "x$WIN32" != "xyes"; then
+if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes"); then
     AC_CHECK_LIB(rt, clock_gettime,
         [
             RT_LIBS="-lrt"

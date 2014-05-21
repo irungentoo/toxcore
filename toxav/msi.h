@@ -40,7 +40,7 @@ typedef void ( *MSICallback ) ( int32_t, void *arg );
  * @brief Call type identifier. Also used as rtp callback prefix.
  */
 typedef enum {
-    type_audio = 70,
+    type_audio = 192,
     type_video
 } MSICallType;
 

@@ -41,6 +41,7 @@
 
 /* NOTE: Packet ids below 16 must never be used. */
 #define PACKET_ID_ALIVE 16
+#define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
@@ -58,6 +59,9 @@
 
 /* Max number of groups we can invite someone at the same time to. */
 #define MAX_INVITED_GROUPS 64
+
+/* Max number of tcp relays sent to friends */
+#define MAX_SHARED_RELAYS 16
 
 /* Status definitions. */
 enum {
@@ -88,8 +92,12 @@ enum {
 /* Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 5
 
+/* Interval between the sending of tcp relay information */
+#define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
+
 /* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
+
 
 /* USERSTATUS -
  * Represents userstatuses someone can have.
@@ -153,12 +161,16 @@ typedef struct {
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t ping_lastrecv;
     uint64_t ping_lastsent;
+    uint64_t share_relays_lastsent;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
     int invited_groups[MAX_INVITED_GROUPS];
     uint16_t invited_groups_num;
 
-    Packet_Handles packethandlers[TOTAL_USERPACKETS];
+    struct {
+        int (*function)(void *object, uint8_t *data, uint32_t len);
+        void *object;
+    } packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
 } Friend;
 
 typedef struct {
@@ -688,8 +700,8 @@ int m_msi_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t len
  * return -1 on failure.
  * return 0 on success.
  */
-int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte, packet_handler_callback cb,
-                                       void *object);
+int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+                                       int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object);
 
 /* High level function to send custom user packets.
  *
