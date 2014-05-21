@@ -1,6 +1,6 @@
 if BUILD_DHT_BOOTSTRAP_DAEMON
 
-noinst_PROGRAMS += tox_bootstrap_daemon
+bin_PROGRAMS += tox_bootstrap_daemon
 
 tox_bootstrap_daemon_SOURCES = \
                         ../other/bootstrap_daemon/tox_bootstrap_daemon.c
