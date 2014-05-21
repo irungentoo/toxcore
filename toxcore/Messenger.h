@@ -167,7 +167,10 @@ typedef struct {
     int invited_groups[MAX_INVITED_GROUPS];
     uint16_t invited_groups_num;
 
-    Packet_Handles packethandlers[TOTAL_USERPACKETS];
+    struct {
+        int (*function)(void *object, uint8_t *data, uint32_t len);
+        void *object;
+    } packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
 } Friend;
 
 typedef struct {
@@ -697,8 +700,8 @@ int m_msi_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t len
  * return -1 on failure.
  * return 0 on success.
  */
-int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte, packet_handler_callback cb,
-                                       void *object);
+int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+                                       int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object);
 
 /* High level function to send custom user packets.
  *

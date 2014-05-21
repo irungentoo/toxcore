@@ -491,7 +491,7 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t length )
+int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
 {
     RTPSession *_session = object;
     RTPMessage *_msg;
@@ -544,11 +544,6 @@ int rtp_handle_packet ( void *object, IP_Port ip_port, uint8_t *data, uint32_t l
     _msg = msg_parse ( _sequnum, _plain, _decrypted_length );
 
     if ( !_msg ) return -1;
-
-    /* Hopefully this goes well
-     * NOTE: Is this even used?
-     */
-    memcpy(&_msg->from, &ip_port, sizeof(IP_Port));
 
     /* Check if message came in late */
     if ( check_late_message(_session, _msg) < 0 ) { /* Not late */

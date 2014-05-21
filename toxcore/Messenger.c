@@ -1699,46 +1699,35 @@ int m_msi_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t len
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length);
 }
 
-static int32_t friendnum_from_ip_port(Messenger *m, IP_Port ip_port)
-{
-    uint32_t i;
-
-    for (i = 0; i < m->numonline_friends; ++i) {
-        if (ipport_equal(&m->online_friendlist[i].ip_port, &ip_port))
-            return m->online_friendlist[i].friend_num;
-    }
-
-    return -1;
-}
-
-static int handle_custom_user_packet(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_custom_user_packet(void *object, int friend_num, uint8_t *packet, uint16_t length)
 {
     Messenger *m = object;
-    int32_t friend_num = friendnum_from_ip_port(m, source);
 
-    if (friend_num == -1)
+    if (friend_not_valid(m, friend_num))
         return 1;
 
-    if (m->friendlist[friend_num].packethandlers[packet[0] % TOTAL_USERPACKETS].function)
-        return m->friendlist[friend_num].packethandlers[packet[0] % TOTAL_USERPACKETS].function(
-                   m->friendlist[friend_num].packethandlers[packet[0] % TOTAL_USERPACKETS].object, source, packet, length);
+    if (m->friendlist[friend_num].packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function)
+        return m->friendlist[friend_num].packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function(
+                   m->friendlist[friend_num].packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].object, packet, length);
 
     return 1;
 }
 
 
-int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte, packet_handler_callback cb,
-                                       void *object)
+int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+                                       int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    if (byte < NET_PACKET_CUSTOM_RANGE_START || byte >= NET_PACKET_CUSTOM_RANGE_END)
+    if (byte < PACKET_ID_LOSSY_RANGE_START)
         return -1;
 
-    m->friendlist[friendnumber].packethandlers[byte % TOTAL_USERPACKETS].function = cb;
-    m->friendlist[friendnumber].packethandlers[byte % TOTAL_USERPACKETS].object = object;
-    networking_registerhandler(m->net, byte, handle_custom_user_packet, m);
+    if (byte >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
+        return -1;
+
+    m->friendlist[friendnumber].packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].function = packet_handler_callback;
+    m->friendlist[friendnumber].packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].object = object;
     return 0;
 }
 
@@ -1750,12 +1739,10 @@ int send_custom_user_packet(Messenger *m, int32_t friendnumber, uint8_t *data, u
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -1;
 
-    IP_Port ip_port = get_friend_ipport(m, friendnumber);
-
-    if (ip_port.port == 0)
+    if (m->friendlist[friendnumber].crypt_connection_id == -1)
         return -1;
 
-    return sendpacket(m->net, ip_port, data, length);
+    return send_lossy_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length);
 }
 
 
@@ -1794,6 +1781,7 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         int id = accept_crypto_connection(m->net_crypto, n_c);
         connection_status_handler(m->net_crypto, id, &handle_status, m, friend_id);
         connection_data_handler(m->net_crypto, id, &handle_packet, m, friend_id);
+        connection_lossy_data_handler(m->net_crypto, id, &handle_custom_user_packet, m, friend_id);
         m->friendlist[friend_id].crypt_connection_id = id;
         set_friend_status(m, friend_id, FRIEND_CONFIRMED);
         return 0;
@@ -2218,8 +2206,8 @@ static int friend_new_connection(Messenger *m, int32_t friendnumber, uint8_t *re
     m->friendlist[friendnumber].crypt_connection_id = id;
     connection_status_handler(m->net_crypto, id, &handle_status, m, friendnumber);
     connection_data_handler(m->net_crypto, id, &handle_packet, m, friendnumber);
+    connection_lossy_data_handler(m->net_crypto, id, &handle_custom_user_packet, m, friendnumber);
     return 0;
-
 }
 
 /* TODO: Make this function not suck. */

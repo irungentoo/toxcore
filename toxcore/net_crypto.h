@@ -69,6 +69,10 @@
 #define STATUS_TCP_INVISIBLE 2 /* we know the other peer is connected to this relay but he isn't appearing online */
 #define STATUS_TCP_ONLINE    3
 
+/* All packets starting with a byte in this range are considered lossy packets. */
+#define PACKET_ID_LOSSY_RANGE_START 192
+#define PACKET_ID_LOSSY_RANGE_SIZE 63
+
 typedef struct {
     uint64_t time;
     uint16_t length;
@@ -118,6 +122,10 @@ typedef struct {
     int (*connection_data_callback)(void *object, int id, uint8_t *data, uint16_t length);
     void *connection_data_callback_object;
     int connection_data_callback_id;
+
+    int (*connection_lossy_data_callback)(void *object, int id, uint8_t *data, uint16_t length);
+    void *connection_lossy_data_callback_object;
+    int connection_lossy_data_callback_id;
 
     uint64_t last_request_packet_sent;
 
@@ -231,7 +239,7 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port);
 int connection_status_handler(Net_Crypto *c, int crypt_connection_id, int (*connection_status_callback)(void *object,
                               int id, uint8_t status), void *object, int id);
 
-/* Set function to be called when connection with crypt_connection_id receives a data packet of length.
+/* Set function to be called when connection with crypt_connection_id receives a lossless data packet of length.
  *
  * The set function should return -1 on failure and 0 on success.
  * Object and id will be passed to this function untouched.
@@ -243,15 +251,37 @@ int connection_data_handler(Net_Crypto *c, int crypt_connection_id, int (*connec
                             int id, uint8_t *data, uint16_t length), void *object, int id);
 
 
+/* Set function to be called when connection with crypt_connection_id receives a lossy data packet of length.
+ *
+ * The set function should return -1 on failure and 0 on success.
+ * Object and id will be passed to this function untouched.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
+                                  int (*connection_lossy_data_callback)(void *object, int id, uint8_t *data, uint16_t length), void *object, int id);
+
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
  */
 uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id);
 
-/*  return -1 if data could not be put in packet queue.
- *  return positive packet number if data was put into the queue.
+/* Sends a lossless cryptopacket.
+ *
+ * return -1 if data could not be put in packet queue.
+ * return positive packet number if data was put into the queue.
+ *
+ * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
  */
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
+
+/* return -1 on failure.
+ * return 0 on success.
+ *
+ * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
+ */
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
 
 /* Add a tcp relay, associating it to a crypt_connection_id.
  *

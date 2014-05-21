@@ -1079,7 +1079,7 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uin
     } else if (real_data[0] == PACKET_ID_KILL) {
         conn->killed = 1;
         return 0;
-    } else {
+    } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
         Packet_Data dt;
         dt.time = current_time_monotonic();
         dt.length = real_length;
@@ -1096,6 +1096,16 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uin
 
         /* Packet counter. */
         ++conn->packet_counter;
+    } else if (real_data[0] >= PACKET_ID_LOSSY_RANGE_START &&
+               real_data[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE)) {
+
+        if (conn->connection_lossy_data_callback)
+            conn->connection_lossy_data_callback(conn->connection_lossy_data_callback_object,
+                                                 conn->connection_lossy_data_callback_id, real_data, real_length);
+
+        set_buffer_end(&conn->recv_array, num);
+    } else {
+        return -1;
     }
 
     if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
@@ -2050,6 +2060,28 @@ int connection_data_handler(Net_Crypto *c, int crypt_connection_id, int (*connec
     return 0;
 }
 
+/* Set function to be called when connection with crypt_connection_id receives a lossy data packet of length.
+ *
+ * The set function should return -1 on failure and 0 on success.
+ * Object and id will be passed to this function untouched.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
+                                  int (*connection_lossy_data_callback)(void *object, int id, uint8_t *data, uint16_t length), void *object, int id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    conn->connection_lossy_data_callback = connection_lossy_data_callback;
+    conn->connection_lossy_data_callback_object = object;
+    conn->connection_lossy_data_callback_id = id;
+    return 0;
+}
+
 /* Get the crypto connection id from the ip_port.
  *
  * return -1 on failure.
@@ -2211,8 +2243,12 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
 
 
 
-/*  return -1 if data could not be put in packet queue.
- *  return positive packet number if data was put into the queue.
+/* Sends a lossless cryptopacket.
+ *
+ * return -1 if data could not be put in packet queue.
+ * return positive packet number if data was put into the queue.
+ *
+ * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
  */
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
 {
@@ -2220,6 +2256,9 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
         return -1;
 
     if (data[0] < CRYPTO_RESERVED_PACKETS)
+        return -1;
+
+    if (data[0] >= PACKET_ID_LOSSY_RANGE_START)
         return -1;
 
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
@@ -2241,6 +2280,31 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
     --conn->packets_left;
     conn->sending = CRYPTO_MIN_QUEUE_LENGTH;
     return ret;
+}
+
+/* return -1 on failure.
+ * return 0 on success.
+ *
+ * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
+ */
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
+{
+    if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
+        return -1;
+
+    if (data[0] < PACKET_ID_LOSSY_RANGE_START)
+        return -1;
+
+    if (data[0] >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
+        return -1;
+
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data,
+                                   length);
 }
 
 /* Kill a crypto connection.

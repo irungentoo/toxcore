@@ -75,7 +75,6 @@ typedef struct _RTPMessage {
 
     uint8_t       data[MAX_RTP_SIZE];
     uint32_t      length;
-    IP_Port   from;
 
     struct _RTPMessage   *next;
 } RTPMessage;
