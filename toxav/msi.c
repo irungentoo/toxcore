@@ -777,11 +777,11 @@ void *handle_timeout ( void *arg )
 void add_peer( MSICall *call, int peer_id )
 {
     if ( !call->peers ) {
-        call->peers = calloc(sizeof(int), 1);
+        call->peers = calloc(sizeof(uint32_t), 1);
         call->peer_count = 1;
     } else {
         call->peer_count ++;
-        call->peers = realloc( call->peers, sizeof(int) * call->peer_count);
+        call->peers = realloc( call->peers, sizeof(uint32_t) * call->peer_count);
     }
 
     call->peers[call->peer_count - 1] = peer_id;
