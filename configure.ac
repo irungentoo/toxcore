@@ -139,6 +139,17 @@ AC_ARG_ENABLE([daemon],
     ]
 )
 
+AC_ARG_ENABLE([nort],
+    [AC_HELP_STRING([--disable-rt], [Disables the librt check (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            DISABLE_RT="no"
+        elif test "x$enableval" = "xyes"; then
+            DISABLE_RT="yes"
+        fi
+    ]
+)
+
 AC_ARG_ENABLE([testing],
     [AC_HELP_STRING([--disable-testing], [build various testing tools (default: auto)]) ],
     [
@@ -392,7 +403,7 @@ AC_C_BIGENDIAN
 # Checks for library functions.
 AC_FUNC_FORK
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
-if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes"); then
+if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes") && (test "x$DISABLE_RT" != "xyes"); then
     AC_CHECK_LIB(rt, clock_gettime,
         [
             RT_LIBS="-lrt"
