@@ -428,8 +428,7 @@ static uint8_t candidates_create_internal(Assoc *assoc, hash_t hash, uint8_t *id
         // enumerated lists are superior to magic numbers
         if (!is_timeout(entry->used_at, BAD_NODE_TIMEOUT))
             check = USED;
-
-        if (!is_timeout(entry->seen_at, CANDIDATES_SEEN_TIMEOUT))
+        else if (!is_timeout(entry->seen_at, CANDIDATES_SEEN_TIMEOUT))
             check = SEENG;
         else if (!is_timeout(entry->heard_at, CANDIDATES_HEARD_TIMEOUT))
             check = SEENB_HEARDG;
