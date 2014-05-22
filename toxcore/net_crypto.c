@@ -30,6 +30,8 @@
 
 #include "net_crypto.h"
 #include "util.h"
+#include "math.h"
+
 static uint8_t crypt_connection_id_not_valid(Net_Crypto *c, int crypt_connection_id)
 {
     return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
@@ -2180,15 +2182,31 @@ static void send_crypto_packets(Net_Crypto *c)
             }
 
             if ((PACKET_COUNTER_AVERAGE_INTERVAL + conn->packet_counter_set) < temp_time) {
-                conn->packet_recv_rate = (double)conn->packet_counter / ((double)(temp_time - conn->packet_counter_set) / 1000.0);
+
+                double dt = temp_time - conn->packet_counter_set;
+
+                conn->packet_recv_rate = (double)conn->packet_counter / (dt / 1000.0);
                 conn->packet_counter = 0;
                 conn->packet_counter_set = temp_time;
 
-                if ((double)num_packets_array(&conn->send_array) < 0.3 * (conn->packet_send_rate)) {
-                    conn->packet_send_rate *= 1.2;
-                } else if ((double)num_packets_array(&conn->send_array) > 0.4 * (conn->packet_send_rate)) {
-                    conn->packet_send_rate *= 0.8;
-                }
+                //most important constant, higher makes it less agressive (minimize packet loss)
+                //keep it >=0
+#define RATE_ADD_POWER 100.0
+
+                double dropped = (conn->dropped + (double)conn->packets_resent / dt) / 2.0;
+                double realrate = (conn->packet_send_rate - dropped * 1000.0);
+
+                //newrate is reduced rate based on dropped packets
+                double newrate = (realrate + conn->packet_send_rate) / 2.0;
+
+                //rate_add is rate increase (needs to be improved)
+                double ratio = realrate / conn->packet_send_rate;
+                double rate_add = (newrate / 40.0 + sqrt(newrate)) * pow(ratio, RATE_ADD_POWER);;
+
+                conn->packet_send_rate = newrate + rate_add;
+
+                conn->dropped = dropped;
+                conn->packets_resent = 0;
 
                 if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending)
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
@@ -2202,7 +2220,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->last_packets_left_set = temp_time;
                 conn->packets_left = conn->packet_send_rate;
             } else if (((1000.0 / conn->packet_send_rate) + conn->last_packets_left_set) < temp_time) {
-                uint32_t num_packets = conn->packet_send_rate * ((double)(temp_time - conn->last_packets_left_set) / 1000.0);
+                uint32_t num_packets = conn->packet_send_rate * ((double)(temp_time - conn->last_packets_left_set) / 1000.0) + 0.5;
 
                 if (conn->packets_left > num_packets * 2 + CRYPTO_MIN_QUEUE_LENGTH) {
                     conn->packets_left = num_packets * 2 + CRYPTO_MIN_QUEUE_LENGTH;
@@ -2215,11 +2233,13 @@ static void send_crypto_packets(Net_Crypto *c)
 
             int ret = send_requested_packets(c, i, conn->packets_left);
 
+            conn->packets_resent += ret;
+
             if (ret != -1) {
                 conn->packets_left -= ret;
             }
 
-            if (conn->sending != 0 && num_packets_array(&conn->send_array) < CRYPTO_MIN_QUEUE_LENGTH) {
+            if (conn->sending != 0 && num_packets_array(&conn->send_array) < CRYPTO_MIN_QUEUE_LENGTH / 2) {
                 --conn->sending;
             }
         }

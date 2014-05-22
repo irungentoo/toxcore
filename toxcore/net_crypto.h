@@ -137,6 +137,9 @@ typedef struct {
     uint32_t packets_left;
     uint64_t last_packets_left_set;
 
+    double dropped;
+    uint32_t packets_resent;
+
     uint8_t sending; /* indicates if data is being sent or not. */
 
     uint8_t killed; /* set to 1 to kill the connection. */
