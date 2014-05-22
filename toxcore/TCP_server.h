@@ -27,6 +27,10 @@
 #include "onion.h"
 #include "list.h"
 
+#ifdef TCP_SERVER_USE_EPOLL
+#include "sys/epoll.h"
+#endif
+
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
 #define MSG_NOSIGNAL 0
 #endif
@@ -62,6 +66,13 @@
 #define TCP_PING_FREQUENCY 30
 #define TCP_PING_TIMEOUT 10
 
+#ifdef TCP_SERVER_USE_EPOLL
+#define TCP_SOCKET_LISTENING 0
+#define TCP_SOCKET_INCOMING 1
+#define TCP_SOCKET_UNCONFIRMED 2
+#define TCP_SOCKET_CONFIRMED 3
+#endif
+
 enum {
     TCP_STATUS_NO_STATUS,
     TCP_STATUS_CONNECTED,
@@ -96,6 +107,10 @@ typedef struct TCP_Secure_Connection {
 
 typedef struct {
     Onion *onion;
+
+    #ifdef TCP_SERVER_USE_EPOLL
+    int efd;
+    #endif
     sock_t *socks_listening;
     unsigned int num_listening_socks;
 
