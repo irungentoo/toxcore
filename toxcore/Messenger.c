@@ -1699,7 +1699,7 @@ int m_msi_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t len
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length);
 }
 
-static int handle_custom_user_packet(void *object, int friend_num, uint8_t *packet, uint16_t length)
+static int handle_custom_lossy_packet(void *object, int friend_num, uint8_t *packet, uint16_t length)
 {
     Messenger *m = object;
 
@@ -1714,8 +1714,8 @@ static int handle_custom_user_packet(void *object, int friend_num, uint8_t *pack
 }
 
 
-int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                       int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object)
+int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+                                        int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1731,7 +1731,7 @@ int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8
     return 0;
 }
 
-int send_custom_user_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length)
+int send_custom_lossy_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1781,7 +1781,7 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         int id = accept_crypto_connection(m->net_crypto, n_c);
         connection_status_handler(m->net_crypto, id, &handle_status, m, friend_id);
         connection_data_handler(m->net_crypto, id, &handle_packet, m, friend_id);
-        connection_lossy_data_handler(m->net_crypto, id, &handle_custom_user_packet, m, friend_id);
+        connection_lossy_data_handler(m->net_crypto, id, &handle_custom_lossy_packet, m, friend_id);
         m->friendlist[friend_id].crypt_connection_id = id;
         set_friend_status(m, friend_id, FRIEND_CONFIRMED);
         return 0;
@@ -2206,7 +2206,7 @@ static int friend_new_connection(Messenger *m, int32_t friendnumber, uint8_t *re
     m->friendlist[friendnumber].crypt_connection_id = id;
     connection_status_handler(m->net_crypto, id, &handle_status, m, friendnumber);
     connection_data_handler(m->net_crypto, id, &handle_packet, m, friendnumber);
-    connection_lossy_data_handler(m->net_crypto, id, &handle_custom_user_packet, m, friendnumber);
+    connection_lossy_data_handler(m->net_crypto, id, &handle_custom_lossy_packet, m, friendnumber);
     return 0;
 }
 

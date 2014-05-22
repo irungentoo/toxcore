@@ -745,7 +745,7 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
 
 
     /*if ( full_length != sendpacket ( messenger->net, *((IP_Port*) &session->dest), _send_data, full_length) ) {*/
-    if ( full_length != send_custom_user_packet(messenger, session->dest, _send_data, full_length) ) {
+    if ( 0 != send_custom_lossy_packet(messenger, session->dest, _send_data, full_length) ) {
         /*fprintf(stderr, "Rtp error: %s\n", strerror(errno));*/
         rtp_free_msg ( session, msg );
         return -1;
@@ -818,7 +818,7 @@ RTPSession *rtp_init_session ( int            payload_type,
     assert(_retu);
 
     /*networking_registerhandler(messenger->net, payload_type, rtp_handle_packet, _retu);*/
-    if ( -1 == custom_user_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, _retu) ) {
+    if ( -1 == custom_lossy_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, _retu) ) {
         /*fprintf(stderr, "Error setting custom register handler for rtp session\n");*/
         free(_retu);
         return NULL;
@@ -888,7 +888,7 @@ int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
     if ( !session )
         return -1;
         
-    custom_user_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
+    custom_lossy_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
     
     rtp_release_session_recv(session);
     

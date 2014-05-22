@@ -695,20 +695,20 @@ int m_msi_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t len
 
 /**********************************************/
 
-/* Set handlers for custom user packets (RTP packets for example.)
+/* Set handlers for custom lossy packets (RTP packets for example.)
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int custom_user_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                       int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object);
+int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+                                        int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object);
 
-/* High level function to send custom user packets.
+/* High level function to send custom lossy packets.
  *
  * return -1 on failure.
- * return number of bytes sent on success.
+ * return 0 on success.
  */
-int send_custom_user_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length);
+int send_custom_lossy_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length);
 
 /**********************************************/
 /* Run this at startup.
