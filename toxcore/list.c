@@ -41,7 +41,7 @@
 /* Find data in list
  *
  * return value:
- *  >= 0 : id associated with data
+ *  >= 0 : index of data in array
  *  < 0  : no match, returns index (return value is INDEX(index)) where
  *         the data should be inserted
  */
@@ -62,7 +62,7 @@ static int find(LIST *list, void *data)
         int r = memcmp(data, list->data + list->size * i, list->size);
 
         if (r == 0) {
-            return list->ids[i];
+            return i;
         }
 
         if (r > 0) {
@@ -127,7 +127,7 @@ int list_find(LIST *list, void *data)
         r = -1;
     }
 
-    return r;
+    return list->ids[r];
 }
 
 int list_add(LIST *list, void *data, int id)
