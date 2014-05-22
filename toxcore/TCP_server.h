@@ -108,9 +108,9 @@ typedef struct TCP_Secure_Connection {
 typedef struct {
     Onion *onion;
 
-    #ifdef TCP_SERVER_USE_EPOLL
+#ifdef TCP_SERVER_USE_EPOLL
     int efd;
-    #endif
+#endif
     sock_t *socks_listening;
     unsigned int num_listening_socks;
 

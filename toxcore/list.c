@@ -124,7 +124,7 @@ int list_find(LIST *list, void *data)
 
     //return only -1 and positive values
     if (r < 0) {
-        r = -1;
+        return -1;
     }
 
     return list->ids[r];

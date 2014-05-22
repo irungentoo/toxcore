@@ -990,7 +990,7 @@ static int do_unconfirmed(TCP_Server *TCP_server, uint32_t i)
     }
 }
 
-static int do_confirmed_recv(TCP_Server *TCP_server, uint32_t i)
+static void do_confirmed_recv(TCP_Server *TCP_server, uint32_t i)
 {
     TCP_Secure_Connection *conn = &TCP_server->accepted_connection_array[i];
 
@@ -1129,8 +1129,6 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     sock_t sock_new;
 
                     sock_new = accept(sock, (struct sockaddr *)&addr, &addrlen);
-
-                    struct sockaddr a = *(struct sockaddr *)&addr;
 
                     int index_new = TCP_server->incomming_connection_queue_index % MAX_INCOMMING_CONNECTIONS;
 
