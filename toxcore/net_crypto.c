@@ -2189,27 +2189,73 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->packet_counter = 0;
                 conn->packet_counter_set = temp_time;
 
-                //most important constant, higher makes it less agressive (minimize packet loss)
-                //keep it >=0
-#define RATE_ADD_POWER 100.0
+                /* conjestion control
+                    calculate a new value of conn->packet_send_rate based on some data
+                    notes: needs improvement but seems to work fine for packet loss <1%
+                 */
 
-                double dropped = (conn->dropped + (double)conn->packets_resent / dt) / 2.0;
-                double realrate = (conn->packet_send_rate - dropped * 1000.0);
+                //hack to prevent 1 packet lost from affecting calculations at low send rates
+                if (conn->packets_resent == 1) {
+                    conn->packets_resent = 0;
+                }
 
-                //newrate is reduced rate based on dropped packets
-                double newrate = (realrate + conn->packet_send_rate) / 2.0;
+                //new "dropped" value: weighted average of previous value and packet drop rate measured by the number of packets which were resends of previous packets
+                double dropped = (conn->dropped) * 0.5 + (conn->packets_resent / dt) * 0.5;
 
-                //rate_add is rate increase (needs to be improved)
-                double ratio = realrate / conn->packet_send_rate;
-                double rate_add = (newrate / 40.0 + sqrt(newrate)) * pow(ratio, RATE_ADD_POWER);;
+                //since the "dropped" packets measure is delayed in time from the actual # of dropped packets,
+                // ignore dropped packet measure for a second after it becomes high and the send rate is lowered as a result
+                double drop_ignore_new;
 
-                conn->packet_send_rate = newrate + rate_add;
+                if (conn->drop_ignore_start + 1000 < temp_time) {
+                    drop_ignore_new = 0.0;
+
+                    if ((dropped * 1000.0) / conn->packet_send_rate >= 0.10) {
+                        conn->drop_ignore_start = temp_time;
+                    }
+                } else {
+                    drop_ignore_new = (dropped > conn->drop_ignore) ? dropped : conn->drop_ignore;
+                }
+
+                //calculate the "real" send rate (send rate - drop rate)
+                double r = conn->packet_send_rate;
+                double realrate = (r - (dropped - drop_ignore_new) * 1000.0);
+
+                if (dropped < drop_ignore_new) {
+                    realrate = r;
+                }
+
+
+                //calculate exponential increase in rate, triggered when drop rate is below 5% for 5 seconds
+                if ((dropped * 1000.0) / conn->packet_send_rate >= 0.05) {
+                    conn->rate_increase_stop_start = temp_time;
+                }
+
+                if (conn->rate_increase_stop_start + 5000 < temp_time) {
+                    if (conn->rate_increase < 1.0) {
+                        conn->rate_increase = 1.0;
+                    }
+
+                    conn->rate_increase *= pow(1.1, pow(realrate / r, 10.0));;
+                } else {
+                    conn->rate_increase = 0.0;
+                }
+
+
+                //"constant" linear increase in rate
+                double linear_increase = realrate * 0.0025 + 1.0;
+
+                //final send rate: average of "real" and previous send rates + increases
+                conn->packet_send_rate = (realrate + conn->packet_send_rate) / 2.0 + conn->rate_increase + linear_increase;
+
 
                 conn->dropped = dropped;
+                conn->drop_ignore = drop_ignore_new;
                 conn->packets_resent = 0;
 
-                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending)
+                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending) {
+                    conn->rate_increase = 0;
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
+                }
 
                 if (conn->packet_send_rate > CRYPTO_PACKET_BUFFER_SIZE * 2)
                     conn->packet_send_rate = CRYPTO_PACKET_BUFFER_SIZE * 2;
@@ -2233,9 +2279,10 @@ static void send_crypto_packets(Net_Crypto *c)
 
             int ret = send_requested_packets(c, i, conn->packets_left);
 
-            conn->packets_resent += ret;
+
 
             if (ret != -1) {
+                conn->packets_resent += ret;
                 conn->packets_left -= ret;
             }
 
