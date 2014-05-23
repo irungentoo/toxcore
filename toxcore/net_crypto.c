@@ -2257,8 +2257,9 @@ static void send_crypto_packets(Net_Crypto *c)
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
                 }
 
-                if (conn->packet_send_rate > CRYPTO_PACKET_BUFFER_SIZE * 2)
-                    conn->packet_send_rate = CRYPTO_PACKET_BUFFER_SIZE * 2;
+                if (conn->sending != 0 && num_packets_array(&conn->send_array) < CRYPTO_MIN_QUEUE_LENGTH / 2) {
+                    --conn->sending;
+                }
 
             }
 
@@ -2284,10 +2285,6 @@ static void send_crypto_packets(Net_Crypto *c)
             if (ret != -1) {
                 conn->packets_resent += ret;
                 conn->packets_left -= ret;
-            }
-
-            if (conn->sending != 0 && num_packets_array(&conn->send_array) < CRYPTO_MIN_QUEUE_LENGTH / 2) {
-                --conn->sending;
             }
         }
     }
