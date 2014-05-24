@@ -1485,8 +1485,10 @@ int msi_terminate_session ( MSISession *session )
     for (; idx < session->max_calls; idx ++) if ( session->calls[idx] ) { 
         /* Cancel all? */
         uint16_t _it = 0;        
-        for ( ; _it < session->calls[idx]->peer_count; _it++ )
-            msi_cancel ( session, idx, session->calls[idx]->peers [_it], "MSI session terminated!" );
+        /*for ( ; _it < session->calls[idx]->peer_count; _it++ )
+         * FIXME: will not work on multiple peers, must cancel call for all peers
+         */
+        msi_cancel ( session, idx, session->calls[idx]->peers [_it], "MSI session terminated!" );
     }
     
     
