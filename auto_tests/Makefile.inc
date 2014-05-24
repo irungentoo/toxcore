@@ -1,9 +1,7 @@
 if BUILD_TESTS
 
-TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test 
-#toxav_basic_test toxav_many_test
-check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test 
-#toxav_basic_test toxav_many_test
+TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test
+check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
@@ -20,11 +18,11 @@ AUTOTEST_LDADD = \
                         $(CHECK_LIBS)
 
 
-#Tests don't work atm
+
 if BUILD_AV
-#TESTS += toxav_basic_test
-#check_PROGRAMS += toxav_basic_test
-#AUTOTEST_LDADD += libtoxav.la
+TESTS += toxav_basic_test toxav_many_test
+check_PROGRAMS += toxav_basic_test toxav_many_test
+AUTOTEST_LDADD += libtoxav.la
 endif
 
 messenger_autotest_SOURCES = ../auto_tests/messenger_test.c
@@ -76,20 +74,20 @@ tox_test_CFLAGS = $(AUTOTEST_CFLAGS)
 tox_test_LDADD = $(AUTOTEST_LDADD)
 
 
-#Tests don't work atm
+
 if BUILD_AV
-#toxav_basic_test_SOURCES = ../auto_tests/toxav_basic_test.c
+toxav_basic_test_SOURCES = ../auto_tests/toxav_basic_test.c
 
-#toxav_basic_test_CFLAGS = $(AUTOTEST_CFLAGS)
+toxav_basic_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
-#toxav_basic_test_LDADD = $(AUTOTEST_LDADD)
+toxav_basic_test_LDADD = $(AUTOTEST_LDADD)
 
 
-#toxav_many_test_SOURCES = ../auto_tests/toxav_many_test.c
+toxav_many_test_SOURCES = ../auto_tests/toxav_many_test.c
 
-#toxav_many_test_CFLAGS = $(AUTOTEST_CFLAGS)
+toxav_many_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
-#toxav_many_test_LDADD = $(AUTOTEST_LDADD)
+toxav_many_test_LDADD = $(AUTOTEST_LDADD)
 endif
 
 endif

@@ -13,6 +13,7 @@
 
 #include "../toxcore/tox.h"
 #include "../toxcore/logger.h"
+#include "../toxcore/crypto_core.h"
 #include "../toxav/toxav.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -131,9 +132,11 @@ void* in_thread_call (void* arg)
     int step = 0,running = 1; 
     int call_idx;
     
+    const int frame_size = (av_DefaultSettings.audio_sample_rate * av_DefaultSettings.audio_frame_duration / 1000);
+    int16_t sample_payload[frame_size];
+    randombytes_salsa20_random_buf(sample_payload, sizeof(int16_t) * frame_size);
     
-    int16_t sample_payload[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    uint8_t prepared_payload[1000];
+    uint8_t prepared_payload[RTP_PAYLOAD_SIZE];
     
     
     /* NOTE: CALLEE WILL ALWAHYS NEED CALL_IDX == 0 */
@@ -162,10 +165,11 @@ void* in_thread_call (void* arg)
                     toxav_prepare_transmission(this_call->Callee.av, 0, &cast, 1);
                     toxav_prepare_transmission(this_call->Caller.av, call_idx, &cast, 1);
                     
-                    int payload_size = toxav_prepare_audio_frame(this_call->Caller.av, call_idx, prepared_payload, 1000, sample_payload, 120);
-                    if (!( payload_size > 0 )) {
+                    int payload_size = toxav_prepare_audio_frame(this_call->Caller.av, call_idx, prepared_payload, RTP_PAYLOAD_SIZE, sample_payload, frame_size);
+                    if ( payload_size < 0 ) {
                         ck_assert_msg ( 0, "Failed to encode payload" );
                     }
+                    
                     
                     while (time(NULL) - start < 10) { /* 10 seconds */
                         /* Both send */
@@ -173,26 +177,25 @@ void* in_thread_call (void* arg)
                         
                         toxav_send_audio(this_call->Callee.av, 0, prepared_payload, payload_size);
                         
-                        call_print(time(NULL) - start, "Blaaah");
                         /* Both receive */
-                        int16_t storage[1000];
+                        int16_t storage[RTP_PAYLOAD_SIZE];
                         int recved;
                         
                         /* Payload from CALLER */
-                        recved = toxav_recv_audio(this_call->Callee.av, 0, 120, storage);
+                        recved = toxav_recv_audio(this_call->Callee.av, 0, frame_size, storage);
                         
                         if ( recved ) {
                             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLER is invalid");*/
                         }
                         
                         /* Payload from CALLEE */
-                        recved = toxav_recv_audio(this_call->Caller.av, call_idx, 120, storage);
+                        recved = toxav_recv_audio(this_call->Caller.av, call_idx, frame_size, storage);
                         
                         if ( recved ) {
                             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLEE is invalid");*/
                         }
                          
-                        //c_sleep(20);
+                        c_sleep(20);
                     }
                     
                     step++; /* This terminates the loop */

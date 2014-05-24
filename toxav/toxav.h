@@ -67,7 +67,7 @@ typedef enum {
  * @brief Call type identifier.
  */
 typedef enum {
-    TypeAudio = 70,
+    TypeAudio = 192,
     TypeVideo
 } ToxAvCallType;
 

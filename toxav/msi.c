@@ -792,8 +792,10 @@ MSICall* find_call ( MSISession* session, uint8_t* call_id )
     
     uint32_t i = 0;
     for (; i < session->max_calls; i ++ ) 
-        if ( session->calls[i] && memcmp(session->calls[i]->id, call_id, CALL_ID_LEN) == 0 ) 
+        if ( session->calls[i] && memcmp(session->calls[i]->id, call_id, CALL_ID_LEN) == 0 ) {
+            LOGGER_DEBUG("Found call id: %s", session->calls[i]->id);
             return session->calls[i];
+        }
         
     return NULL;
 }
@@ -843,8 +845,9 @@ int has_call_error ( MSISession *session, MSICall* call, MSIMessage *msg )
         return handle_error ( session, call, error_no_callid, msg->friend_id );
 
     } else if ( !call ) {
-        return handle_error ( session, call, error_no_call, msg->friend_id );
-
+        LOGGER_WARNING("Handling message while no call!");
+        return 0;
+        
     } else if ( memcmp ( call->id, msg->callid.header_value, CALL_ID_LEN ) != 0 ) {
         return handle_error ( session, call, error_id_mismatch, msg->friend_id );
 
@@ -957,7 +960,10 @@ int terminate_call ( MSISession *session, MSICall *call )
         LOGGER_WARNING("Tried to terminate non-existing call!");
         return -1;
     }
-
+    
+    int rc = pthread_mutex_trylock(&session->mutex); /* Lock if not locked */
+    
+    LOGGER_DEBUG("Terminated call id: %d", call->call_idx);
     /* Check event loop and cancel timed events if there are any
      * NOTE: This has to be done before possibly
      * locking the mutex the second time
@@ -982,6 +988,9 @@ int terminate_call ( MSISession *session, MSICall *call )
 
     free ( call );
 
+    if ( rc != EBUSY ) /* Unlock if locked by this call */
+        pthread_mutex_unlock(&session->mutex);
+    
     return 0;
 }
 
@@ -1159,10 +1168,10 @@ int handle_recv_end ( MSISession *session, MSICall* call, MSIMessage *msg )
 /********** Response handlers **********/
 int handle_recv_ringing ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
-    
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
+    
+    LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
 
     call->ringing_timer_id = event.timer_alloc ( handle_timeout, call, call->ringing_tout_ms );
     
@@ -1172,10 +1181,11 @@ int handle_recv_ringing ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_starting ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Session: %p Handling 'starting' on call: %s", session, call->id );
-    
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
+    
+    LOGGER_DEBUG("Session: %p Handling 'starting' on call: %s", session, call->id );
+    
 
     if ( !msg->cryptokey.header_value ) {
         return handle_error ( session, call, error_no_crypto_key, msg->friend_id );
@@ -1213,10 +1223,10 @@ int handle_recv_starting ( MSISession *session, MSICall* call, MSIMessage *msg )
 }
 int handle_recv_ending ( MSISession *session, MSICall* call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
-    
     if ( has_call_error ( session, call, msg ) == 0 )
         return 0;
+    
+    LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
     
     /* Stop timer */    
     event.timer_release ( call->request_timer_id );
@@ -1308,8 +1318,12 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
 
     _msg->friend_id = source;
     
+    pthread_mutex_lock(&_session->mutex);
+    
     /* Find what call */
     MSICall* _call = _msg->callid.header_value ? find_call(_session, _msg->callid.header_value ) : NULL;
+    
+    
     
     /* Now handle message */
     
@@ -1381,7 +1395,9 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
         LOGGER_WARNING("Invalid message: no resp nor requ headers");
     }
 
-    free_end:free_message ( _msg );
+free_end:
+    free_message ( _msg );
+    pthread_mutex_unlock(&_session->mutex);
 }
 
 
@@ -1438,6 +1454,8 @@ MSISession *msi_init_session ( Messenger* messenger, int32_t max_calls )
     /* This is called when remote terminates session */
     m_callback_connectionstatus_internal_av(messenger, handle_remote_connection_change, _retu);
     
+    pthread_mutex_init(&_retu->mutex, NULL);
+    
     LOGGER_DEBUG("New msi session: %p max calls: %u", _retu, max_calls);
     return _retu;
 }
@@ -1456,6 +1474,10 @@ int msi_terminate_session ( MSISession *session )
         return -1;
     }
 
+    pthread_mutex_lock(&session->mutex);
+    m_callback_msi_packet((struct Messenger *) session->messenger_handle, NULL, NULL);
+    pthread_mutex_unlock(&session->mutex);
+    
     int _status = 0;
     
     /* If have calls, cancel them */
@@ -1467,7 +1489,8 @@ int msi_terminate_session ( MSISession *session )
             msi_cancel ( session, idx, session->calls[idx]->peers [_it], "MSI session terminated!" );
     }
     
-    m_callback_msi_packet((struct Messenger *) session->messenger_handle, NULL, NULL);
+    
+    pthread_mutex_destroy(&session->mutex);
     
     LOGGER_DEBUG("Terminated session: %p", session);
     free ( session );
@@ -1486,12 +1509,17 @@ int msi_terminate_session ( MSISession *session )
  */
 int msi_invite ( MSISession* session, int32_t* call_index, MSICallType call_type, uint32_t rngsec, uint32_t friend_id )
 {
+    pthread_mutex_lock(&session->mutex);
+    
     LOGGER_DEBUG("Session: %p Inviting friend: %u", session, friend_id);
     
     MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
     
     MSICall* _call = init_call ( session, 1, rngsec ); /* Just one peer for now */
-    if ( !_call ) return -1; /* Cannot handle more calls */
+    if ( !_call ) { 
+        pthread_mutex_unlock(&session->mutex);
+        return -1; /* Cannot handle more calls */
+    }
     
     *call_index = _call->call_idx;
     
@@ -1517,6 +1545,8 @@ int msi_invite ( MSISession* session, int32_t* call_index, MSICallType call_type
     
     LOGGER_DEBUG("Invite sent");
     
+    pthread_mutex_unlock(&session->mutex);
+    
     return 0;
 }
 
@@ -1532,15 +1562,18 @@ int msi_invite ( MSISession* session, int32_t* call_index, MSICallType call_type
  */
 int msi_hangup ( MSISession* session, int32_t call_index )
 {
+    pthread_mutex_lock(&session->mutex);
     LOGGER_DEBUG("Session: %p Hanging up call: %u", session, call_index);
     
     if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ) {
         LOGGER_ERROR("Invalid call index!");
+        pthread_mutex_unlock(&session->mutex);
         return -1;
     }
     
     if ( !session->calls[call_index] || session->calls[call_index]->state != call_active ) {
         LOGGER_ERROR("No call with such index or call is not active!");
+        pthread_mutex_unlock(&session->mutex);
         return -1;
     }
 
@@ -1557,6 +1590,7 @@ int msi_hangup ( MSISession* session, int32_t call_index )
 
     session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );
     
+    pthread_mutex_unlock(&session->mutex);
     return 0;
 }
 
@@ -1571,10 +1605,12 @@ int msi_hangup ( MSISession* session, int32_t call_index )
  */
 int msi_answer ( MSISession* session, int32_t call_index, MSICallType call_type )
 {
+    pthread_mutex_lock(&session->mutex);
     LOGGER_DEBUG("Session: %p Answering call: %u", session, call_index);
     
     if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
+        pthread_mutex_unlock(&session->mutex);
         return -1;
     }
     
@@ -1605,7 +1641,8 @@ int msi_answer ( MSISession* session, int32_t call_index, MSICallType call_type 
     free_message ( _msg_starting );
 
     session->calls[call_index]->state = call_active;
-
+    
+    pthread_mutex_unlock(&session->mutex);
     return 0;
 }
 
@@ -1620,10 +1657,12 @@ int msi_answer ( MSISession* session, int32_t call_index, MSICallType call_type 
  */
 int msi_cancel ( MSISession* session, int32_t call_index, uint32_t peer, const char* reason )
 {
+    pthread_mutex_lock(&session->mutex);
     LOGGER_DEBUG("Session: %p Canceling call: %u; reason:", session, call_index, reason? reason : "Unknown");
     
     if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
+        pthread_mutex_unlock(&session->mutex);
         return -1;
     }
     
@@ -1634,7 +1673,9 @@ int msi_cancel ( MSISession* session, int32_t call_index, uint32_t peer, const c
     send_message ( session, session->calls[call_index], _msg_cancel, peer );
     free_message ( _msg_cancel );
     
-    session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );
+    /*session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );*/
+    terminate_call ( session, session->calls[call_index] );
+    pthread_mutex_unlock(&session->mutex);
     
     return 0;
 }
@@ -1649,10 +1690,12 @@ int msi_cancel ( MSISession* session, int32_t call_index, uint32_t peer, const c
  */
 int msi_reject ( MSISession* session, int32_t call_index, const uint8_t* reason )
 {
+    pthread_mutex_lock(&session->mutex);
     LOGGER_DEBUG("Session: %p Rejecting call: %u; reason:", session, call_index, reason? (char*)reason : "Unknown");
     
     if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ){
         LOGGER_ERROR("Invalid call index!");
+        pthread_mutex_unlock(&session->mutex);
         return -1;
     }
     
@@ -1664,7 +1707,8 @@ int msi_reject ( MSISession* session, int32_t call_index, const uint8_t* reason 
     free_message ( _msg_reject );
 
     session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );
-
+    
+    pthread_mutex_unlock(&session->mutex);
     return 0;
 }
 
@@ -1678,14 +1722,18 @@ int msi_reject ( MSISession* session, int32_t call_index, const uint8_t* reason 
  */
 int msi_stopcall ( MSISession* session, int32_t call_index )
 {
+    pthread_mutex_lock(&session->mutex);
     LOGGER_DEBUG("Session: %p Stopping call index: %u", session, call_index);
     
-    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] )
+    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ) {
+        pthread_mutex_unlock(&session->mutex);
         return -1;
+    }
 
     /* just terminate it */
 
     terminate_call ( session, session->calls[call_index] );
-
+    
+    pthread_mutex_unlock(&session->mutex);
     return 0;
 }

@@ -588,7 +588,7 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
     _session->queue_size++;
     
     pthread_mutex_unlock(&_session->mutex);
-
+    
     return 0;
 }
 
@@ -778,13 +778,12 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     int encrypted_length = encrypt_data_symmetric( /* TODO: msg->length - 2 (fix this properly)*/
                                (uint8_t *) session->encrypt_key, _calculated, msg->data + 2, msg->length, _send_data + 3 );
 
-    int full_length = encrypted_length + 3;
 
     _send_data[1] = msg->data[0];
     _send_data[2] = msg->data[1];
 
 
-    if ( full_length != send_custom_user_packet(messenger, session->dest, _send_data, full_length) ) {
+    if ( -1 == send_custom_user_packet(messenger, session->dest, _send_data, encrypted_length + 3) ) {
         LOGGER_WARNING("Failed to send full packet! std error: %s", strerror(errno));
         rtp_free_msg ( session, msg );
         return -1;
@@ -800,6 +799,7 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     }
 
     rtp_free_msg ( session, msg );
+        
     return 0;
 }
 

@@ -45,7 +45,7 @@ int logger_init(const char* file_name, LoggerLevel level);
 const char* logger_stringify_level(LoggerLevel level);
 unsigned logger_get_pid();
 void logger_write (LoggerLevel level, const char* format, ...);
-char* logger_timestr (char* dest);
+char* logger_timestr (char* dest, size_t max_size);
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define _SFILE (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
@@ -53,16 +53,16 @@ char* logger_timestr (char* dest);
 #define _SFILE (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
-#define WRITE_FORMAT(__LEVEL__, format) char* the_str = calloc(sizeof(char), strlen(format)+ 500); sprintf(the_str, "\n[%u] [%s] [%s] [%s:%d %s()] %s", \
-                             logger_get_pid(), logger_stringify_level(__LEVEL__), logger_timestr(__time__), _SFILE, __LINE__, __func__, format)
+#define WRITE_FORMAT(__LEVEL__, format) char __time__[20]; char* the_str = calloc(sizeof(char), strlen(format)+ 500); sprintf(the_str, "\n[%u] [%s] [%s] [%s:%d %s()] %s", \
+                             logger_get_pid(), logger_stringify_level(__LEVEL__), logger_timestr(__time__, 20), _SFILE, __LINE__, __func__, format)
 
 /* Use these macros */
 
 #define LOGGER_INIT(name, level) logger_init(name, level);
-#define LOGGER_INFO(format, ...) do { char __time__[20]; WRITE_FORMAT(INFO, format); logger_write( INFO, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
-#define LOGGER_DEBUG(format, ...) do { char __time__[20]; WRITE_FORMAT(DEBUG, format); logger_write( DEBUG, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
-#define LOGGER_WARNING(format, ...) do { char __time__[20]; WRITE_FORMAT(WARNING, format); logger_write( WARNING, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
-#define LOGGER_ERROR(format, ...) do { char __time__[20]; WRITE_FORMAT(ERROR, format); logger_write( ERROR, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
+#define LOGGER_INFO(format, ...) do { WRITE_FORMAT(INFO, format); logger_write( INFO, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
+#define LOGGER_DEBUG(format, ...) do { WRITE_FORMAT(DEBUG, format); logger_write( DEBUG, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
+#define LOGGER_WARNING(format, ...) do { WRITE_FORMAT(WARNING, format); logger_write( WARNING, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
+#define LOGGER_ERROR(format, ...) do { WRITE_FORMAT(ERROR, format); logger_write( ERROR, the_str, ##__VA_ARGS__ ); free(the_str); } while (0)
 
 /* To do some checks or similar only when logging use this */
 #define LOGGER_SCOPE(__SCOPE_DO__) do { __SCOPE_DO__ } while(0)

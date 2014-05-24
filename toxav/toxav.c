@@ -96,9 +96,10 @@ ToxAv *toxav_new( Tox* messenger, int32_t max_calls)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
 
-    if (av == NULL)
+    if (av == NULL) {
+        LOGGER_WARNING("Allocation failed!");
         return NULL;
-
+    }
     av->messenger = (Messenger *)messenger;
 
     av->msi_session = msi_init_session(av->messenger, max_calls);

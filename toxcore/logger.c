@@ -25,7 +25,6 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-
 #include "logger.h"
 
 #ifdef LOGGING
@@ -96,7 +95,7 @@ int logger_init(const char* file_name, LoggerLevel level)
     sprintf(final_l, "%s"/*.%u"*/, file_name, logger_get_pid());
     
     if ( logger.log_file ) { 
-        fprintf(stderr, "Error opening logger name: %s with level %d: %s!\n", final_l, level, strerror(errno));
+        fprintf(stderr, "Error opening logger name: %s with level %d: file already opened!\n", final_l, level);
         free (final_l);
         return -1;
     }
@@ -104,19 +103,15 @@ int logger_init(const char* file_name, LoggerLevel level)
     logger.log_file = fopen(final_l, "ab");
     
     if ( logger.log_file == NULL ) {
-        char error[1000];
-        if ( strerror_r(errno, error, 1000) == 0 ) 
-            fprintf(stderr, "Error opening logger file: %s; info: %s\n", final_l, error);
-        else
-            fprintf(stderr, "Error opening logger file: %s\n", final_l);
-        
+        fprintf(stderr, "Error opening logger file: %s; info: %s\n", final_l, strerror(errno));
+                
         free (final_l);
         return -1;
     }
     
     
     logger.level = level;
-    logger.start_time = current_time();
+    logger.start_time = current_time_monotonic();
     
     
     time_t tim = time(NULL);
@@ -147,10 +142,10 @@ void logger_write (LoggerLevel level, const char* format, ...)
     fflush(logger.log_file);
 }
 
-char* logger_timestr(char* dest)
+char* logger_timestr(char* dest, size_t max_size)
 {
-    uint64_t diff = (current_time() - logger.start_time) / 1000; /* ms */
-    sprintf(dest, "%"PRIu64"", diff);
+    uint64_t diff = (current_time_monotonic() - logger.start_time); /* ms */
+    snprintf(dest, max_size, "%"PRIu64"", diff);
     
     return dest;
 }
