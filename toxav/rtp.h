@@ -107,10 +107,6 @@ typedef struct _RTPSession {
      */
     RTPExtHeader   *ext_header;
 
-    /* External header identifiers */
-    int             resolution;
-    int             framerate;
-
 
     /* Since these are only references of the
      * call structure don't allocate or free
@@ -125,6 +121,9 @@ typedef struct _RTPSession {
 
     RTPMessage     *oldest_msg;
     RTPMessage     *last_msg; /* tail */
+
+    uint64_t        queue_limit;/* Default 100; modify per thy liking */
+    uint64_t        queue_size; /* currently holding << messages */
 
     /* Msg prefix for core to know when recving */
     uint8_t         prefix;
@@ -145,6 +144,15 @@ typedef struct _RTPSession {
  */
 int rtp_release_session_recv ( RTPSession *session );
 
+
+/**
+ * @brief Call this to change queue limit
+ *
+ * @param session The session
+ * @param limit new limit
+ * @return void
+ */
+void rtp_queue_adjust_limit ( RTPSession *session, uint64_t limit );
 
 /**
  * @brief Get's oldest message in the list.
@@ -194,7 +202,7 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
  * @retval NULL Error occurred.
  */
 RTPSession *rtp_init_session ( int            payload_type,
-                               Messenger           *messenger,
+                               Messenger     *messenger,
                                int            friend_num,
                                const uint8_t *encrypt_key,
                                const uint8_t *decrypt_key,

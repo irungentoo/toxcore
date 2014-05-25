@@ -25,6 +25,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "../toxcore/logger.h"
+
 #include "rtp.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -227,6 +229,7 @@ static const uint32_t payload_table[] = {
 RTPHeader *extract_header ( const uint8_t *payload, int length )
 {
     if ( !payload || !length ) {
+        LOGGER_WARNING("No payload to extract!");
         return NULL;
     }
 
@@ -245,6 +248,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
 
     if ( GET_FLAG_VERSION(_retu) != RTP_VERSION ) {
         /* Deallocate */
+        LOGGER_WARNING("Invalid version!");
         free(_retu);
         return NULL;
     }
@@ -258,12 +262,13 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
 
     if ( length < _length ) {
         /* Deallocate */
+        LOGGER_WARNING("Length invalid!");
         free(_retu);
         return NULL;
     }
 
     memset(_retu->csrc, 0, 16 * sizeof (uint32_t));
-    
+
     _retu->marker_payloadt = *_it;
     ++_it;
     _retu->length = _length;
@@ -304,6 +309,7 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
 
 
     if ( length < ( _ext_length * sizeof(uint32_t) ) ) {
+        LOGGER_WARNING("Length invalid!");
         free(_retu);
         return NULL;
     }
@@ -415,9 +421,9 @@ RTPHeader *build_header ( RTPSession *session )
 
     int i;
 
-    for ( i = 0; i < session->cc; i++ ) 
+    for ( i = 0; i < session->cc; i++ )
         _retu->csrc[i] = session->csrc[i];
-        
+
     _retu->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
 
     return _retu;
@@ -443,6 +449,7 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
     _retu->header = extract_header ( data, length ); /* It allocates memory and all */
 
     if ( !_retu->header ) {
+        LOGGER_WARNING("Header failed to extract!");
         free(_retu);
         return NULL;
     }
@@ -461,6 +468,7 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
             _retu->length -= ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
             _from_pos += ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
         } else { /* Error */
+            LOGGER_WARNING("Ext Header failed to extract!");
             rtp_free_msg(NULL, _retu);
             return NULL;
         }
@@ -471,6 +479,7 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
     if ( length - _from_pos <= MAX_RTP_SIZE )
         memcpy ( _retu->data, data + _from_pos, length - _from_pos );
     else {
+        LOGGER_WARNING("Invalid length!");
         rtp_free_msg(NULL, _retu);
         return NULL;
     }
@@ -496,8 +505,15 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
     RTPSession *_session = object;
     RTPMessage *_msg;
 
-    if ( !_session || length < 13 + crypto_box_MACBYTES) /* 12 is the minimum length for rtp + desc. byte */
+    if ( !_session || length < 13 + crypto_box_MACBYTES) { /* 12 is the minimum length for rtp + desc. byte */
+        LOGGER_WARNING("No session or invalid length of received buffer!");
         return -1;
+    }
+
+    if ( _session->queue_limit <= _session->queue_size ) {
+        LOGGER_WARNING("Queue limit reached!");
+        return -1;
+    }
 
     uint8_t _plain[MAX_UDP_PACKET_SIZE];
 
@@ -524,7 +540,10 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
             _decrypted_length = decrypt_data_symmetric(
                                     (uint8_t *)_session->decrypt_key, _session->nonce_cycle, data + 3, length - 3, _plain );
 
-            if ( _decrypted_length == -1 ) return -1; /* This packet is not encrypted properly */
+            if ( _decrypted_length == -1 ) {
+                LOGGER_WARNING("Packet not ecrypted properly!");
+                return -1; /* This packet is not encrypted properly */
+            }
 
             /* Otherwise, if decryption is ok with new cycle, set new cycle
              */
@@ -533,7 +552,10 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
             _decrypted_length = decrypt_data_symmetric(
                                     (uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
 
-            if ( _decrypted_length == -1 ) return -1; /* This is just an error */
+            if ( _decrypted_length == -1 ) {
+                LOGGER_WARNING("Error decrypting!");
+                return -1; /* This is just an error */
+            }
 
             /* A new cycle setting. */
             memcpy(_session->nonce_cycle, _session->decrypt_nonce, crypto_box_NONCEBYTES);
@@ -543,7 +565,10 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
 
     _msg = msg_parse ( _sequnum, _plain, _decrypted_length );
 
-    if ( !_msg ) return -1;
+    if ( !_msg ) {
+        LOGGER_WARNING("Could not parse message!");
+        return -1;
+    }
 
     /* Check if message came in late */
     if ( check_late_message(_session, _msg) < 0 ) { /* Not late */
@@ -559,6 +584,8 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
     } else {
         _session->last_msg = _session->oldest_msg = _msg;
     }
+
+    _session->queue_size++;
 
     pthread_mutex_unlock(&_session->mutex);
 
@@ -579,8 +606,10 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
  */
 RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t length )
 {
-    if ( !session )
+    if ( !session ) {
+        LOGGER_WARNING("No session!");
         return NULL;
+    }
 
     uint8_t *_from_pos;
     RTPMessage *_retu = calloc(1, sizeof (RTPMessage));
@@ -619,36 +648,6 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
 
 
 
-
-
-
-
-/********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- *
- *
- *
- * PUBLIC API FUNCTIONS IMPLEMENTATIONS
- *
- *
- *
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************
- ********************************************************************************************************************/
-
-
-
-
-
-
-
-
-
 /**
  * @brief Release all messages held by session.
  *
@@ -660,6 +659,7 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
 int rtp_release_session_recv ( RTPSession *session )
 {
     if ( !session ) {
+        LOGGER_WARNING("No session!");
         return -1;
     }
 
@@ -673,10 +673,36 @@ int rtp_release_session_recv ( RTPSession *session )
     }
 
     session->last_msg = session->oldest_msg = NULL;
+    session->queue_size = 0;
 
     pthread_mutex_unlock(&session->mutex);
 
     return 0;
+}
+
+
+/**
+ * @brief Call this to change queue limit
+ *
+ * @param session The session
+ * @param limit new limit
+ * @return void
+ */
+void rtp_queue_adjust_limit(RTPSession *session, uint64_t limit)
+{
+    RTPMessage *_tmp, * _it;
+    pthread_mutex_lock(&session->mutex);
+
+    for ( _it = session->oldest_msg; session->queue_size > limit; _it = _tmp ) {
+        _tmp = _it->next;
+        rtp_free_msg( session, _it);
+        session->queue_size --;
+    }
+
+    session->oldest_msg = _it;
+    session->queue_limit = limit;
+
+    pthread_mutex_unlock(&session->mutex);
 }
 
 
@@ -689,20 +715,31 @@ int rtp_release_session_recv ( RTPSession *session )
  */
 RTPMessage *rtp_recv_msg ( RTPSession *session )
 {
-    if ( !session )
+    if ( !session ) {
+        LOGGER_WARNING("No session!");
         return NULL;
-
-    RTPMessage *_retu = session->oldest_msg;
+    }
 
     pthread_mutex_lock(&session->mutex);
 
-    if ( _retu )
-        session->oldest_msg = _retu->next;
+    if ( session->queue_size == 0 ) {
+        pthread_mutex_unlock(&session->mutex);
+        return NULL;
+    }
+
+
+    RTPMessage *_retu = session->oldest_msg;
+
+    /*if (_retu)*/
+    session->oldest_msg = _retu->next;
 
     if ( !session->oldest_msg )
         session->last_msg = NULL;
 
+    session->queue_size --;
+
     pthread_mutex_unlock(&session->mutex);
+
 
     return _retu;
 }
@@ -723,7 +760,10 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
 {
     RTPMessage *msg = rtp_new_message (session, data, length);
 
-    if ( !msg ) return -1;
+    if ( !msg ) {
+        LOGGER_WARNING("No session!");
+        return -1;
+    }
 
     uint8_t _send_data [ MAX_UDP_PACKET_SIZE ];
 
@@ -738,15 +778,13 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     int encrypted_length = encrypt_data_symmetric( /* TODO: msg->length - 2 (fix this properly)*/
                                (uint8_t *) session->encrypt_key, _calculated, msg->data + 2, msg->length, _send_data + 3 );
 
-    int full_length = encrypted_length + 3;
 
     _send_data[1] = msg->data[0];
     _send_data[2] = msg->data[1];
 
 
-    /*if ( full_length != sendpacket ( messenger->net, *((IP_Port*) &session->dest), _send_data, full_length) ) {*/
-    if ( 0 != send_custom_lossy_packet(messenger, session->dest, _send_data, full_length) ) {
-        /*fprintf(stderr, "Rtp error: %s\n", strerror(errno));*/
+    if ( -1 == send_custom_lossy_packet(messenger, session->dest, _send_data, encrypted_length + 3) ) {
+        LOGGER_WARNING("Failed to send full packet! std error: %s", strerror(errno));
         rtp_free_msg ( session, msg );
         return -1;
     }
@@ -761,6 +799,7 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     }
 
     rtp_free_msg ( session, msg );
+
     return 0;
 }
 
@@ -817,12 +856,14 @@ RTPSession *rtp_init_session ( int            payload_type,
     RTPSession *_retu = calloc(1, sizeof(RTPSession));
     assert(_retu);
 
-    /*networking_registerhandler(messenger->net, payload_type, rtp_handle_packet, _retu);*/
-    if ( -1 == custom_lossy_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, _retu) ) {
-        /*fprintf(stderr, "Error setting custom register handler for rtp session\n");*/
+    if ( -1 == custom_lossy_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, _retu) ||
+            !encrypt_key || !decrypt_key || !encrypt_nonce || !decrypt_nonce) {
+        LOGGER_ERROR("Error setting custom register handler for rtp session");
         free(_retu);
         return NULL;
     }
+
+    LOGGER_DEBUG("Registered packet handler: pt: %d; fid: %d", payload_type, friend_num);
 
     _retu->version   = RTP_VERSION;   /* It's always 2 */
     _retu->padding   = 0;             /* If some additional data is needed about the packet */
@@ -838,8 +879,6 @@ RTPSession *rtp_init_session ( int            payload_type,
     _retu->rsequnum = _retu->sequnum = 1;
 
     _retu->ext_header = NULL; /* When needed allocate */
-    _retu->framerate = -1;
-    _retu->resolution = -1;
 
     _retu->encrypt_key = encrypt_key;
     _retu->decrypt_key = decrypt_key;
@@ -865,6 +904,8 @@ RTPSession *rtp_init_session ( int            payload_type,
     _retu->prefix = payload_type;
 
     _retu->oldest_msg = _retu->last_msg = NULL;
+    _retu->queue_limit = 100; /* Default */
+    _retu->queue_size = 0;
 
     pthread_mutex_init(&_retu->mutex, NULL);
     /*
@@ -885,15 +926,17 @@ RTPSession *rtp_init_session ( int            payload_type,
  */
 int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
 {
-    if ( !session )
+    if ( !session ) {
+        LOGGER_WARNING("No session!");
         return -1;
-        
+    }
+
     custom_lossy_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
-    
+
     rtp_release_session_recv(session);
-    
+
     pthread_mutex_lock(&session->mutex);
-    
+
     free ( session->ext_header );
     free ( session->csrc );
     free ( session->decrypt_nonce );
@@ -901,7 +944,7 @@ int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
     free ( session->nonce_cycle );
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     pthread_mutex_destroy(&session->mutex);
 
     /* And finally free session */

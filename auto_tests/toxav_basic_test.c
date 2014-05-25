@@ -12,6 +12,8 @@
 #include <assert.h>
 
 #include "../toxcore/tox.h"
+#include "../toxcore/logger.h"
+#include "../toxcore/crypto_core.h"
 #include "../toxav/toxav.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -20,6 +22,7 @@
 #include <unistd.h>
 #define c_sleep(x) usleep(1000*x)
 #endif
+
 
 
 typedef enum _CallStatus {
@@ -36,6 +39,7 @@ typedef struct _Party {
     CallStatus status;
     ToxAv *av;
     time_t *CallStarted;
+    int call_index;
 } Party;
 
 typedef struct _Status {
@@ -43,43 +47,45 @@ typedef struct _Status {
     Party Bob;
 } Status;
 
+/* My default settings */
+static ToxAvCodecSettings muhcaps;
+
 void accept_friend_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
 {
-    if (length == 15 && memcmp("ILIKESMALLTITS", data, 15) == 0) {
+    if (length == 7 && memcmp("gentoo", data, 7) == 0) {
         tox_add_friend_norequest(m, public_key);
     }
 }
 
 
 /******************************************************************************/
-void callback_recv_invite ( void *_arg )
+void callback_recv_invite ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     /* Bob always receives invite */
     cast->Bob.status = Ringing;
+    cast->Bob.call_index = call_index;
 }
-void callback_recv_ringing ( void *_arg )
+void callback_recv_ringing ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     /* Alice always sends invite */
     cast->Alice.status = Ringing;
 }
-void callback_recv_starting ( void *_arg )
+void callback_recv_starting ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     /* Alice always sends invite */
     printf("Call started on Alice side...\n");
     cast->Alice.status = InCall;
-    toxav_prepare_transmission(cast->Alice.av, 1);
+    toxav_prepare_transmission(cast->Alice.av, call_index, &muhcaps, 1);
 }
-void callback_recv_ending ( void *_arg )
+void callback_recv_ending ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
-
-
 
     if ( cast->Alice.status == Rejected) {
         printf ( "Call ended for Bob!\n" );
@@ -90,28 +96,28 @@ void callback_recv_ending ( void *_arg )
     }
 }
 
-void callback_recv_error ( void *_arg )
+void callback_recv_error ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "AV internal error");
 }
 
-void callback_call_started ( void *_arg )
+void callback_call_started ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     /* Alice always sends invite */
     printf("Call started on Bob side...\n");
     cast->Bob.status = InCall;
-    toxav_prepare_transmission(cast->Bob.av, 1);
+    toxav_prepare_transmission(cast->Bob.av, call_index, &muhcaps, 1);
 }
-void callback_call_canceled ( void *_arg )
+void callback_call_canceled ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
     printf ( "Call Canceled for Bob!\n" );
     cast->Bob.status = Cancel;
 }
-void callback_call_rejected ( void *_arg )
+void callback_call_rejected ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
@@ -120,7 +126,7 @@ void callback_call_rejected ( void *_arg )
     /* If Bob rejects, call is ended for alice and she sends ending */
     cast->Alice.status = Rejected;
 }
-void callback_call_ended ( void *_arg )
+void callback_call_ended ( int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
@@ -128,7 +134,7 @@ void callback_call_ended ( void *_arg )
     cast->Bob.status = Ended;
 }
 
-void callback_requ_timeout ( void *_arg )
+void callback_requ_timeout ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "No answer!");
 }
@@ -142,9 +148,9 @@ void callback_requ_timeout ( void *_arg )
     tox_do(bootstrap_node); tox_do(Alice); tox_do(Bob); \
     switch ( step ) {\
         case 0: /* Alice */  printf("Alice is calling...\n");\
-            toxav_call(status_control.Alice.av, 0, AliceCallType, 10); step++; break;\
+            toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, AliceCallType, 10); step++; break;\
         case 1: /* Bob */ if (status_control.Bob.status == Ringing) { printf("Bob answers...\n");\
-            cur_time = time(NULL); toxav_answer(status_control.Bob.av, BobCallType); step++; } break; \
+            cur_time = time(NULL); toxav_answer(status_control.Bob.av, status_control.Bob.call_index, BobCallType); step++; } break; \
         case 2: /* Rtp transmission */ \
             if (status_control.Bob.status == InCall && status_control.Alice.status == InCall)
 
@@ -153,7 +159,8 @@ void callback_requ_timeout ( void *_arg )
 case 3: /* Wait for Both to have status ended */\
 if (status_control.Alice.status == Ended && status_control.Bob.status == Ended) running = 0; break; } c_sleep(20); } } printf("\n");
 
-START_TEST(test_AV)
+START_TEST(test_AV_flows)
+// int test_AV_flows()
 {
     long long unsigned int cur_time = time(NULL);
     Tox *bootstrap_node = tox_new(0);
@@ -166,7 +173,7 @@ START_TEST(test_AV)
     tox_callback_friend_request(Alice, accept_friend_request, &to_compare);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(Alice, address);
-    int test = tox_add_friend(Bob, address, (uint8_t *)"ILIKESMALLTITS", 15);
+    int test = tox_add_friend(Bob, address, (uint8_t *)"gentoo", 7);
 
     ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
 
@@ -191,14 +198,13 @@ START_TEST(test_AV)
 
     printf("All set after %llu seconds! Starting call...\n", time(NULL) - cur_time);
 
-    ToxAvCodecSettings muhcaps = av_DefaultSettings;
+    muhcaps = av_DefaultSettings;
     muhcaps.video_height = muhcaps.video_width = 128;
 
     Status status_control = {
-        {none, toxav_new(Alice, &muhcaps), NULL},
-        {none, toxav_new(Bob, &muhcaps), NULL},
+        {none, toxav_new(Alice, 1), NULL, -1},
+        {none, toxav_new(Bob, 1), NULL, -1},
     };
-
 
     ck_assert_msg(status_control.Alice.av || status_control.Bob.av, "Failed to create 2 toxav instances");
 
@@ -217,8 +223,13 @@ START_TEST(test_AV)
     toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout, &status_control);
 
 
+    const int frame_size = (av_DefaultSettings.audio_sample_rate * av_DefaultSettings.audio_frame_duration / 1000);
+    int16_t sample_payload[frame_size];
+    randombytes_salsa20_random_buf(sample_payload, sizeof(int16_t) * frame_size);
 
-    int16_t sample_payload[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    uint8_t prepared_payload[RTP_PAYLOAD_SIZE];
+    int payload_size;
+
     vpx_image_t *sample_image = vpx_img_alloc(NULL, VPX_IMG_FMT_I420, 128, 128, 1);
 
     memcpy(sample_image->planes[VPX_PLANE_Y], sample_payload, 10);
@@ -233,25 +244,40 @@ START_TEST(test_AV)
     /*
      * Call with audio only on both sides. Alice calls Bob.
      */
+
+
     CALL_AND_START_LOOP(TypeAudio, TypeAudio) {
         /* Both send */
-        toxav_send_audio(status_control.Alice.av, sample_payload, 10);
-        toxav_send_audio(status_control.Bob.av, sample_payload, 10);
+        payload_size = toxav_prepare_audio_frame(status_control.Alice.av, status_control.Alice.call_index, prepared_payload,
+                       1000, sample_payload, frame_size);
+
+        if ( payload_size < 0 ) {
+            ck_assert_msg ( 0, "Failed to encode payload" );
+        }
+
+        toxav_send_audio(status_control.Alice.av, status_control.Alice.call_index, prepared_payload, payload_size);
+
+        payload_size = toxav_prepare_audio_frame(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, 1000,
+                       sample_payload, frame_size);
+
+        if ( payload_size < 0 ) {
+            ck_assert_msg ( 0, "Failed to encode payload" );
+        }
+
+        toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
 
         /* Both receive */
-        int16_t storage[10];
+        int16_t storage[frame_size];
         int recved;
 
-        /* Payload from Alice */
-        recved = toxav_recv_audio(status_control.Alice.av, 10, storage);
+        /* Payload from Bob */
+        recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
 
         if ( recved ) {
             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");*/
-            memset(storage, 0, 10);
         }
 
-        /* Payload from Bob */
-        recved = toxav_recv_audio(status_control.Bob.av, 10, storage);
+        recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
 
         if ( recved ) {
             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");*/
@@ -259,11 +285,11 @@ START_TEST(test_AV)
 
         if (time(NULL) - cur_time > 10) { /* Transmit for 10 seconds */
             step++; /* This terminates the loop */
-            toxav_kill_transmission(status_control.Alice.av);
-            toxav_kill_transmission(status_control.Bob.av);
+            toxav_kill_transmission(status_control.Alice.av, status_control.Alice.call_index);
+            toxav_kill_transmission(status_control.Bob.av, status_control.Bob.call_index);
 
             /* Call over Alice hangs up */
-            toxav_hangup(status_control.Alice.av);
+            toxav_hangup(status_control.Alice.av, status_control.Alice.call_index);
         }
     }
     TERMINATE_SCOPE()
@@ -274,38 +300,52 @@ START_TEST(test_AV)
      */
     CALL_AND_START_LOOP(TypeAudio, TypeVideo) {
         /* Both send */
-        toxav_send_audio(status_control.Alice.av, sample_payload, 10);
+        payload_size = toxav_prepare_audio_frame(status_control.Alice.av, status_control.Alice.call_index, prepared_payload,
+                       1000, sample_payload, frame_size);
 
-        toxav_send_audio(status_control.Bob.av, sample_payload, 10);
-        toxav_send_video(status_control.Bob.av, sample_image);
+        if ( payload_size < 0 ) {
+            ck_assert_msg ( 0, "Failed to encode payload" );
+        }
+
+        toxav_send_audio(status_control.Alice.av, status_control.Alice.call_index, prepared_payload, payload_size);
+
+        payload_size = toxav_prepare_audio_frame(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, 1000,
+                       sample_payload, frame_size);
+
+        if ( payload_size < 0 ) {
+            ck_assert_msg ( 0, "Failed to encode payload" );
+        }
+
+        toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
+//         toxav_send_video(status_control.Bob.av, status_control.Bob.call_index, sample_image);
 
         /* Both receive */
-        int16_t storage[10];
+        int16_t storage[frame_size];
         vpx_image_t *video_storage;
         int recved;
 
         /* Payload from Bob */
-        recved = toxav_recv_audio(status_control.Alice.av, 10, storage);
+        recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
 
         if ( recved ) {
             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");*/
-            memset(storage, 0, 10);
         }
 
         /* Video payload */
-        toxav_recv_video(status_control.Alice.av, &video_storage);
-
-        if ( video_storage ) {
-            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
-                           memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
-                           memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Bob is invalid");*/
-        }
+//         toxav_recv_video(status_control.Alice.av, status_control.Alice.call_index, &video_storage);
+//
+//         if ( video_storage ) {
+//             /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
+//                            memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
+//                            memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Bob is invalid");*/
+//             vpx_img_free(video_storage);
+//         }
 
 
 
 
         /* Payload from Alice */
-        recved = toxav_recv_audio(status_control.Bob.av, 10, storage);
+        recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
 
         if ( recved ) {
             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");*/
@@ -313,11 +353,11 @@ START_TEST(test_AV)
 
         if (time(NULL) - cur_time > 10) { /* Transmit for 10 seconds */
             step++; /* This terminates the loop */
-            toxav_kill_transmission(status_control.Alice.av);
-            toxav_kill_transmission(status_control.Bob.av);
+            toxav_kill_transmission(status_control.Alice.av, status_control.Alice.call_index);
+            toxav_kill_transmission(status_control.Bob.av, status_control.Bob.call_index);
 
             /* Call over Alice hangs up */
-            toxav_hangup(status_control.Alice.av);
+            toxav_hangup(status_control.Alice.av, status_control.Alice.call_index);
         }
     }
     TERMINATE_SCOPE()
@@ -328,61 +368,78 @@ START_TEST(test_AV)
      */
     CALL_AND_START_LOOP(TypeVideo, TypeVideo) {
         /* Both send */
-        toxav_send_audio(status_control.Alice.av, sample_payload, 10);
-        toxav_send_video(status_control.Alice.av, sample_image);
 
-        toxav_send_audio(status_control.Bob.av, sample_payload, 10);
-        toxav_send_video(status_control.Bob.av, sample_image);
+        payload_size = toxav_prepare_audio_frame(status_control.Alice.av, status_control.Alice.call_index, prepared_payload,
+                       1000, sample_payload, frame_size);
+
+        if ( payload_size < 0 ) {
+            ck_assert_msg ( 0, "Failed to encode payload" );
+        }
+
+        toxav_send_audio(status_control.Alice.av, status_control.Alice.call_index, prepared_payload, payload_size);
+
+        payload_size = toxav_prepare_audio_frame(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, 1000,
+                       sample_payload, frame_size);
+
+        if ( payload_size < 0 ) {
+            ck_assert_msg ( 0, "Failed to encode payload" );
+        }
+
+        toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
+
+//         toxav_send_video(status_control.Alice.av, status_control.Alice.call_index, sample_image);
+//         toxav_send_video(status_control.Bob.av, status_control.Bob.call_index, sample_image);
 
         /* Both receive */
-        int16_t storage[10];
+        int16_t storage[frame_size];
         vpx_image_t *video_storage;
         int recved;
 
         /* Payload from Bob */
-        recved = toxav_recv_audio(status_control.Alice.av, 10, storage);
+        recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
 
         if ( recved ) {
             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");*/
-            memset(storage, 0, 10);
         }
 
         /* Video payload */
-        toxav_recv_video(status_control.Alice.av, &video_storage);
-
-        if ( video_storage ) {
-            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
-            memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
-            memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Bob is invalid");*/
-        }
+//         toxav_recv_video(status_control.Alice.av, status_control.Alice.call_index, &video_storage);
+//
+//         if ( video_storage ) {
+//             /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
+//             memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
+//             memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Bob is invalid");*/
+//             vpx_img_free(video_storage);
+//         }
 
 
 
 
         /* Payload from Alice */
-        recved = toxav_recv_audio(status_control.Bob.av, 10, storage);
+        recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
 
         if ( recved ) {
             /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");*/
         }
 
         /* Video payload */
-        toxav_recv_video(status_control.Bob.av, &video_storage);
-
-        if ( video_storage ) {
-            /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
-            memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
-            memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Alice is invalid");*/
-        }
+//         toxav_recv_video(status_control.Bob.av, status_control.Bob.call_index, &video_storage);
+//
+//         if ( video_storage ) {
+//             /*ck_assert_msg( memcmp(video_storage->planes[VPX_PLANE_Y], sample_payload, 10) == 0 ||
+//             memcmp(video_storage->planes[VPX_PLANE_U], sample_payload, 10) == 0 ||
+//             memcmp(video_storage->planes[VPX_PLANE_V], sample_payload, 10) == 0 , "Payload from Alice is invalid");*/
+//             vpx_img_free(video_storage);
+//         }
 
 
         if (time(NULL) - cur_time > 10) { /* Transmit for 10 seconds */
             step++; /* This terminates the loop */
-            toxav_kill_transmission(status_control.Alice.av);
-            toxav_kill_transmission(status_control.Bob.av);
+            toxav_kill_transmission(status_control.Alice.av, status_control.Alice.call_index);
+            toxav_kill_transmission(status_control.Bob.av, status_control.Bob.call_index);
 
             /* Call over Alice hangs up */
-            toxav_hangup(status_control.Alice.av);
+            toxav_hangup(status_control.Alice.av, status_control.Alice.call_index);
         }
     }
     TERMINATE_SCOPE()
@@ -408,15 +465,14 @@ START_TEST(test_AV)
             switch ( step ) {
                 case 0: /* Alice */
                     printf("Alice is calling...\n");
-                    toxav_call(status_control.Alice.av, 0, TypeAudio, 10);
+                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, TypeAudio, 10);
                     step++;
                     break;
-                    \
 
                 case 1: /* Bob */
                     if (status_control.Bob.status == Ringing) {
                         printf("Bob rejects...\n");
-                        toxav_reject(status_control.Bob.av, "Who likes D's anyway?");
+                        toxav_reject(status_control.Bob.av, status_control.Bob.call_index, "Who likes D's anyway?");
                         step++;
                     }
 
@@ -450,7 +506,7 @@ START_TEST(test_AV)
             switch ( step ) {
                 case 0: /* Alice */
                     printf("Alice is calling...\n");
-                    toxav_call(status_control.Alice.av, 0, TypeAudio, 10);
+                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, TypeAudio, 10);
                     step++;
                     break;
                     \
@@ -458,14 +514,14 @@ START_TEST(test_AV)
                 case 1: /* Alice again */
                     if (status_control.Bob.status == Ringing) {
                         printf("Alice cancels...\n");
-                        toxav_cancel(status_control.Alice.av, 0, "Who likes D's anyway?");
+                        toxav_cancel(status_control.Alice.av, status_control.Alice.call_index, 0, "Who likes D's anyway?");
                         step++;
                     }
 
                     break;
 
                 case 2:  /* Wait for Both to have status ended */
-                    if (status_control.Alice.status == Ended && status_control.Bob.status == Cancel) running = 0;
+                    if (status_control.Bob.status == Cancel) running = 0;
 
                     break;
             }
@@ -484,15 +540,19 @@ END_TEST
 /*************************************************************************************************/
 
 
+/*************************************************************************************************/
+
+/*************************************************************************************************/
+
 
 Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
 
-    TCase *tc_av = tcase_create("A/V");
-    tcase_add_test(tc_av, test_AV);
-    tcase_set_timeout(tc_av, 100); /* Timeout on 100 too much? */
-    suite_add_tcase(s, tc_av);
+    TCase *tc_av_flows = tcase_create("AV_flows");
+    tcase_add_test(tc_av_flows, test_AV_flows);
+    tcase_set_timeout(tc_av_flows, 200);
+    suite_add_tcase(s, tc_av_flows);
 
     return s;
 }
@@ -509,4 +569,6 @@ int main(int argc, char *argv[])
     srunner_free(test_runner);
 
     return number_failed;
+
+//     return test_AV_flows();
 }

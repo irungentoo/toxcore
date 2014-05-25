@@ -235,6 +235,7 @@ START_TEST(test_few_clients)
     uint8_t *f_data = malloc(fpiece_size);
     uint8_t num = 0;
     memset(f_data, num, fpiece_size);
+
     while (1) {
         file_sent = 0;
         tox_do(tox1);
@@ -247,6 +248,7 @@ START_TEST(test_few_clients)
                     sendf_ok = 0;
                     tox_file_send_control(tox2, 0, 0, fnum, TOX_FILECONTROL_FINISHED, NULL, 0);
                 }
+
                 ++num;
                 memset(f_data, num, fpiece_size);
 

@@ -34,45 +34,4 @@ libtoxav_la_LIBADD =  libtoxcore.la \
                       $(PTHREAD_LIBS) \
                       $(AV_LIBS)
 
-
-endif
-
-
-
-
-
-
-if BUILD_PHONE
-
-
-noinst_PROGRAMS += phone
-
-phone_SOURCES = ../toxav/phone.c
-
-phone_CFLAGS = -I../toxcore \
-               -I../toxav \
-                $(AVFORMAT_CFLAGS) \
-                $(AVCODEC_CFLAGS) \
-                $(AVUTIL_CFLAGS) \
-                $(AVDEVICE_CFLAGS) \
-                $(SWSCALE_CFLAGS) \
-                $(SDL_CFLAGS) \
-                $(OPENAL_CFLAGS)
-
-phone_LDADD =   libtoxav.la \
-                libtoxcore.la \
-                $(AVFORMAT_LIBS) \
-                $(AVCODEC_LIBS) \
-                $(AVUTIL_LIBS) \
-                $(AVDEVICE_LIBS) \
-                $(SWSCALE_LIBS) \
-                $(SDL_LIBS) \
-                $(OPENAL_LIBS) \
-                $(OPUS_LIBS) \
-                $(VPX_LIBS)\
-                $(PTHREAD_LIBS)\
-                $(NACL_OBJECTS) \
-                $(NACL_LIBS)
-
-
 endif

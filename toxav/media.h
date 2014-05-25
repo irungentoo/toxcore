@@ -38,8 +38,7 @@
 /* Audio encoding/decoding */
 #include <opus.h>
 
-typedef enum _Capabilities
-{
+typedef enum _Capabilities {
     none,
     a_encoding = 1 << 0,
     a_decoding = 1 << 1,
@@ -65,13 +64,26 @@ typedef struct _CodecState {
     OpusDecoder *audio_decoder;
 
     uint64_t capabilities; /* supports*/
-    
+
 } CodecState;
 
-struct jitter_buffer *create_queue(int capacity);
 
-int queue(struct jitter_buffer *q, RTPMessage *pk);
-RTPMessage *dequeue(struct jitter_buffer *q, int *success);
+typedef struct _JitterBuffer {
+    RTPMessage **queue;
+    uint16_t capacity;
+    uint16_t size;
+    uint16_t front;
+    uint16_t rear;
+    uint8_t queue_ready;
+    uint16_t current_id;
+    uint32_t current_ts;
+    uint8_t id_set;
+} JitterBuffer;
+
+JitterBuffer *create_queue(int capacity);
+void terminate_queue(JitterBuffer *q);
+void queue(JitterBuffer *q, RTPMessage *pk);
+RTPMessage *dequeue(JitterBuffer *q, int *success);
 
 
 CodecState *codec_init_session ( uint32_t audio_bitrate,

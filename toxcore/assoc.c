@@ -3,6 +3,7 @@
 #include "config.h"
 #endif
 
+#include "logger.h"
 #include "DHT.h"
 #include "assoc.h"
 #include "ping.h"
@@ -523,9 +524,7 @@ static void client_id_self_update(Assoc *assoc)
         assoc->self_hash = id_hash(assoc, assoc->self_client_id);
     }
 
-#ifdef LOGGING
-    loglog("assoc: id is now set, purging cache of self-references...\n");
-#endif
+    LOGGER_DEBUG("id is now set, purging cache of self-references");
 
     /* if we already added some (or loaded some) entries,
      * look and remove if we find a match
@@ -820,10 +819,8 @@ Assoc *new_Assoc(size_t bits, size_t entries, uint8_t *public_id)
             entries_test = prime_upto_min9(entries_test - 1);
 
         if (entries_test != entries) {
-#ifdef LOGGING
-            sprintf(logbuffer, "new_Assoc(): trimmed %i to %i.\n", (int)entries, (int)entries_test);
-            loglog(logbuffer);
-#endif
+
+            LOGGER_DEBUG("trimmed %i to %i.\n", (int)entries, (int)entries_test);
             entries = (size_t)entries_test;
         }
     }
@@ -872,7 +869,7 @@ void Assoc_self_client_id_changed(Assoc *assoc, uint8_t *id)
 
 #ifdef LOGGING
 static char *idpart2str(uint8_t *id, size_t len);
-#endif
+#endif /* LOGGING */
 
 /* refresh buckets */
 void do_Assoc(Assoc *assoc, DHT *dht)
@@ -928,53 +925,31 @@ void do_Assoc(Assoc *assoc, DHT *dht)
                 break;
         }
 
-#ifdef LOGGING
-        size_t total = 0, written = sprintf(logbuffer, "assoc: [%u] => ",
-                                            (uint32_t)(candidate % assoc->candidates_bucket_count));
-
-        if (written > 0)
-            total += written;
-
-#endif
-
         if (seen) {
             IPPTsPng *ippts = seen->seen_family == AF_INET ? &seen->client.assoc4 : &seen->client.assoc6;
-#ifdef LOGGING
-            written = sprintf(logbuffer + total, " S[%s...] %s:%u", idpart2str(seen->client.client_id, 8),
-                              ip_ntoa(&ippts->ip_port.ip), htons(ippts->ip_port.port));
 
-            if (written > 0)
-                total += written;
+            LOGGER_DEBUG("[%u] => S[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
+                         idpart2str(seen->client.client_id, 8), ip_ntoa(&ippts->ip_port.ip), htons(ippts->ip_port.port));
 
-#endif
             DHT_getnodes(dht, &ippts->ip_port, seen->client.client_id, target_id);
             seen->getnodes = unix_time();
         }
 
         if (heard && (heard != seen)) {
             IP_Port *ipp = heard->heard_family == AF_INET ? &heard->assoc_heard4 : &heard->assoc_heard6;
-#ifdef LOGGING
-            written = sprintf(logbuffer + total, " H[%s...] %s:%u", idpart2str(heard->client.client_id, 8), ip_ntoa(&ipp->ip),
-                              htons(ipp->port));
 
-            if (written > 0)
-                total += written;
+            LOGGER_DEBUG("[%u] => H[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
+                         idpart2str(heard->client.client_id, 8), ip_ntoa(&ipp->ip), htons(ipp->port));
 
-#endif
             DHT_getnodes(dht, ipp, heard->client.client_id, target_id);
             heard->getnodes = unix_time();
         }
 
-#ifdef LOGGING
+        LOGGER_SCOPE (
 
-        if (!heard && !seen)
-            sprintf(logbuffer + total, "no nodes to talk to??\n");
-        else
-            /* for arcane reasons, sprintf(str, "\n") doesn't function */
-            sprintf(logbuffer + total, "%s", "\n");
-
-        loglog(logbuffer);
-#endif
+            if ( !heard && !seen )
+            LOGGER_DEBUG("[%u] => no nodes to talk to??", (uint32_t)(candidate % assoc->candidates_bucket_count));
+        );
     }
 }
 
@@ -1008,11 +983,11 @@ static char *idpart2str(uint8_t *id, size_t len)
 void Assoc_status(Assoc *assoc)
 {
     if (!assoc) {
-        loglog("Assoc status: no assoc\n");
+        LOGGER_INFO("Assoc status: no assoc");
         return;
     }
 
-    loglog("[b:p] hash => [id...] used, seen, heard\n");
+    LOGGER_INFO("[b:p] hash => [id...] used, seen, heard");
 
     size_t bid, cid, total = 0;
 
@@ -1023,24 +998,23 @@ void Assoc_status(Assoc *assoc)
             Client_entry *entry = &bucket->list[cid];
 
             if (entry->hash) {
-                sprintf(logbuffer, "[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
-                        (int)bid, (int)cid, entry->hash, idpart2str(entry->client.client_id, 8),
-                        entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
-                        entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
-                        entry->seen_at ? (entry->seen_family == AF_INET ? '4' : (entry->seen_family == AF_INET6 ? '6' : '?')) : '?',
-                            entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0,
-                            entry->heard_at ? (entry->heard_family == AF_INET ? '4' : (entry->heard_family == AF_INET6 ? '6' : '?')) : '?');
-                loglog(logbuffer);
                 total++;
+
+                LOGGER_INFO("[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
+                            (int)bid, (int)cid, entry->hash, idpart2str(entry->client.client_id, 8),
+                            entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
+                            entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
+                            entry->seen_at ? (entry->seen_family == AF_INET ? '4' : (entry->seen_family == AF_INET6 ? '6' : '?')) : '?',
+                                entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0,
+                                entry->heard_at ? (entry->heard_family == AF_INET ? '4' : (entry->heard_family == AF_INET6 ? '6' : '?')) : '?');
             }
         }
     }
 
     if (total) {
-        sprintf(logbuffer, "Total: %i entries, table usage %i%%.\n", (int)total,
-                (int)(total * 100 / (assoc->candidates_bucket_count * assoc->candidates_bucket_size)));
-        loglog(logbuffer);
+        LOGGER_INFO("Total: %i entries, table usage %i%%.\n", (int)total,
+                    (int)(total * 100 / (assoc->candidates_bucket_count * assoc->candidates_bucket_size)));
     }
 }
 
-#endif
+#endif /* LOGGING */

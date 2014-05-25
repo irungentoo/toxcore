@@ -29,6 +29,8 @@
 #include "config.h"
 #endif
 
+#include "logger.h"
+
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <errno.h>
 #endif
@@ -252,9 +254,29 @@ uint64_t current_time_monotonic(void)
     return time;
 }
 
-#ifdef LOGGING
-static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res);
-#endif
+/* In case no logging */
+#ifndef LOGGING
+#define loglogdata(__message__, __buffer__, __buflen__, __ip_port__, __res__)
+#else
+#define data_0(__buflen__, __buffer__) __buflen__ > 4 ? ntohl(*(uint32_t *)&__buffer__[1]) : 0
+#define data_1(__buflen__, __buffer__) __buflen__ > 7 ? ntohl(*(uint32_t *)&__buffer__[5]) : 0
+
+#define loglogdata(__message__, __buffer__, __buflen__, __ip_port__, __res__) \
+    (__ip_port__) .ip; \
+    if (__res__ < 0) /* Windows doesn't necessarily know %zu */ \
+        LOGGER_INFO("[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x", \
+                 __buffer__[0], __message__, (__buflen__ < 999 ? (uint16_t)__buflen__ : 999), 'E', \
+                 ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), errno, strerror(errno), data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__)); \
+    else if ((__res__ > 0) && ((size_t)__res__ <= __buflen__)) \
+        LOGGER_INFO("[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x", \
+                 __buffer__[0], __message__, (__res__ < 999 ? (size_t)__res__ : 999), ((size_t)__res__ < __buflen__ ? '<' : '='), \
+                 ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), 0, "OK", data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__)); \
+    else /* empty or overwrite */ \
+        LOGGER_INFO("[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x", \
+                 __buffer__[0], __message__, (size_t)__res__, (!__res__ ? '!' : '>'), __buflen__, \
+                 ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), 0, "OK", data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__));
+
+#endif /* LOGGING */
 
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
@@ -313,9 +335,9 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t le
     }
 
     int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
-#ifdef LOGGING
-    loglogdata("O=>", data, length, &ip_port, res);
-#endif
+
+    loglogdata("O=>", data, length, ip_port, res);
+
 
     if ((res >= 0) && ((uint32_t)res == length))
         net->send_fail_eagain = 0;
@@ -343,14 +365,10 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     int fail_or_len = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
     if (fail_or_len < 0) {
-#ifdef LOGGING
 
-        if ((fail_or_len < 0) && (errno != EWOULDBLOCK)) {
-            sprintf(logbuffer, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
-            loglog(logbuffer);
-        }
+        LOGGER_SCOPE( if ((fail_or_len < 0) && (errno != EWOULDBLOCK))
+                      LOGGER_ERROR("Unexpected error reading from socket: %u, %s\n", errno, strerror(errno)); );
 
-#endif
         return -1; /* Nothing received. */
     }
 
@@ -375,9 +393,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     } else
         return -1;
 
-#ifdef LOGGING
-    loglogdata("=>O", data, MAX_UDP_PACKET_SIZE, ip_port, *length);
-#endif
+    loglogdata("=>O", data, MAX_UDP_PACKET_SIZE, *ip_port, *length);
 
     return 0;
 }
@@ -400,10 +416,7 @@ void networking_poll(Networking_Core *net)
         if (length < 1) continue;
 
         if (!(net->packethandlers[data[0]].function)) {
-#ifdef LOGGING
-            sprintf(logbuffer, "[%02u] -- Packet has no handler.\n", data[0]);
-            loglog(logbuffer);
-#endif
+            LOGGER_WARNING("[%02u] -- Packet has no handler", data[0]);
             continue;
         }
 
@@ -506,22 +519,15 @@ int networking_wait_execute(uint8_t *data, long seconds, long microseconds)
         timeout.tv_usec = microseconds;
     }
 
-#ifdef LOGGING
-    errno = 0;
-#endif
     /* returns -1 on error, 0 on timeout, the socket on activity */
     int res = select(nfds, &readfds, &writefds, &exceptfds, timeout_ptr);
-#ifdef LOGGING
 
-    /* only dump if not timeout */
-    if (res) {
-        sprintf(logbuffer, "select(%d, %d): %d (%d, %s) - %d %d %d\n", microseconds, seconds, res, errno,
-                strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
-                FD_ISSET(s->sock, &exceptfds));
-        loglog(logbuffer);
-    }
+    LOGGER_SCOPE(
 
-#endif
+        if (res) LOGGER_INFO("select(%d, %d): %d (%d, %s) - %d %d %d\n", microseconds, seconds, res, errno,
+                             strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
+                             FD_ISSET(s->sock, &exceptfds));
+    );
 
     if (FD_ISSET(s->sock, &writefds)) {
         s->send_fail_reset = 1;
@@ -681,18 +687,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     if (ip.family == AF_INET6) {
 #ifdef LOGGING
         int is_dualstack =
-#endif
+#endif /* LOGGING */
             set_socket_dualstack(temp->sock);
-#ifdef LOGGING
-
-        if (is_dualstack) {
-            loglog("Dual-stack socket: enabled.\n");
-        } else {
-            loglog("Dual-stack socket: Failed to enable, won't be able to receive from/send to IPv4 addresses.\n");
-        }
-
-#endif
-
+        LOGGER_DEBUG( "Dual-stack socket: %s",
+                      is_dualstack ? "enabled" : "Failed to enable, won't be able to receive from/send to IPv4 addresses" );
         /* multicast local nodes */
         struct ipv6_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
@@ -701,20 +699,12 @@ Networking_Core *new_networking(IP ip, uint16_t port)
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
 #ifdef LOGGING
-        errno = 0;
         int res =
-#endif
+#endif /* LOGGING */
             setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
-#ifdef LOGGING
 
-        if (res < 0) {
-            sprintf(logbuffer, "Failed to activate local multicast membership. (%u, %s)\n",
-                    errno, strerror(errno));
-            loglog(logbuffer);
-        } else
-            loglog("Local multicast group FF02::1 joined successfully.\n");
-
-#endif
+        LOGGER_DEBUG(res < 0 ? "Failed to activate local multicast membership. (%u, %s)" :
+                     "Local multicast group FF02::1 joined successfully", errno, strerror(errno) );
     }
 
     /* a hanging program or a different user might block the standard port;
@@ -742,12 +732,8 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 
         if (!res) {
             temp->port = *portptr;
-#ifdef LOGGING
-            loginit(temp->port);
 
-            sprintf(logbuffer, "Bound successfully to %s:%u.\n", ip_ntoa(&ip), ntohs(temp->port));
-            loglog(logbuffer);
-#endif
+            LOGGER_DEBUG("Bound successfully to %s:%u", ip_ntoa(&ip), ntohs(temp->port));
 
             /* errno isn't reset on success, only set on failure, the failed
              * binds with parallel clients yield a -EPERM to the outside if
@@ -1114,31 +1100,3 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 
     return 1;
 };
-
-#ifdef LOGGING
-static char errmsg_ok[3] = "OK";
-static void loglogdata(char *message, uint8_t *buffer, size_t buflen, IP_Port *ip_port, ssize_t res)
-{
-    uint16_t port = ntohs(ip_port->port);
-    uint32_t data[2];
-    data[0] = buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
-    data[1] = buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
-
-    /* Windows doesn't necessarily know %zu */
-    if (res < 0) {
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x\n",
-                 buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
-                 ip_ntoa(&ip_port->ip), port, errno, strerror(errno), data[0], data[1]);
-    } else if ((res > 0) && ((size_t)res <= buflen))
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x\n",
-                 buffer[0], message, (res < 999 ? (size_t)res : 999), ((size_t)res < buflen ? '<' : '='),
-                 ip_ntoa(&ip_port->ip), port, 0, errmsg_ok, data[0], data[1]);
-    else /* empty or overwrite */
-        snprintf(logbuffer, sizeof(logbuffer), "[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x\n",
-                 buffer[0], message, (size_t)res, (!res ? '!' : '>'), buflen,
-                 ip_ntoa(&ip_port->ip), port, 0, errmsg_ok, data[0], data[1]);
-
-    logbuffer[sizeof(logbuffer) - 1] = 0;
-    loglog(logbuffer);
-}
-#endif

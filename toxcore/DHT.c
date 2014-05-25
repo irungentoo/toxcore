@@ -27,6 +27,8 @@
 #include "config.h"
 #endif
 
+#include "logger.h"
+
 #include "DHT.h"
 
 #ifdef ENABLE_ASSOC_DHT
@@ -347,18 +349,12 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             /* Refresh the client timestamp. */
             if (ip_port.ip.family == AF_INET) {
 
-#ifdef LOGGING
-
-                if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
-                    size_t x;
-                    x = sprintf(logbuffer, "coipil[%u]: switching ipv4 from %s:%u ", i,
-                                ip_ntoa(&list[i].assoc4.ip_port.ip), ntohs(list[i].assoc4.ip_port.port));
-                    sprintf(logbuffer + x, "to %s:%u\n",
+                LOGGER_SCOPE( if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                LOGGER_INFO("coipil[%u]: switching ipv4 from %s:%u to %s:%u", i,
+                            ip_ntoa(&list[i].assoc4.ip_port.ip), ntohs(list[i].assoc4.ip_port.port),
                             ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
-                    loglog(logbuffer);
                 }
-
-#endif
+                            );
 
                 if (LAN_ip(list[i].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
                     return 1;
@@ -367,18 +363,12 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
                 list[i].assoc4.timestamp = temp_time;
             } else if (ip_port.ip.family == AF_INET6) {
 
-#ifdef LOGGING
-
-                if (!ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
-                    size_t x;
-                    x = sprintf(logbuffer, "coipil[%u]: switching ipv6 from %s:%u ", i,
-                                ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port));
-                    sprintf(logbuffer + x, "to %s:%u\n",
+                LOGGER_SCOPE( if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                LOGGER_INFO("coipil[%u]: switching ipv6 from %s:%u to %s:%u", i,
+                            ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port),
                             ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
-                    loglog(logbuffer);
                 }
-
-#endif
+                            );
 
                 if (LAN_ip(list[i].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
                     return 1;
@@ -400,10 +390,9 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             /* Initialize client timestamp. */
             list[i].assoc4.timestamp = temp_time;
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-#ifdef LOGGING
-            sprintf(logbuffer, "coipil[%u]: switching client_id (ipv4) \n", i);
-            loglog(logbuffer);
-#endif
+
+            LOGGER_DEBUG("coipil[%u]: switching client_id (ipv4)", i);
+
             /* kill the other address, if it was set */
             memset(&list[i].assoc6, 0, sizeof(list[i].assoc6));
             return 1;
@@ -411,10 +400,9 @@ static int client_or_ip_port_in_list(Client_data *list, uint32_t length, uint8_t
             /* Initialize client timestamp. */
             list[i].assoc6.timestamp = temp_time;
             memcpy(list[i].client_id, client_id, CLIENT_ID_SIZE);
-#ifdef LOGGING
-            sprintf(logbuffer, "coipil[%u]: switching client_id (ipv6) \n", i);
-            loglog(logbuffer);
-#endif
+
+            LOGGER_DEBUG("coipil[%u]: switching client_id (ipv6)", i);
+
             /* kill the other address, if it was set */
             memset(&list[i].assoc4, 0, sizeof(list[i].assoc4));
             return 1;
@@ -602,18 +590,12 @@ int get_close_nodes(DHT *dht, uint8_t *client_id, Node_format *nodes_list, sa_fa
     uint8_t num_found = Assoc_get_close_entries(dht->assoc, &request);
 
     if (!num_found) {
-#ifdef LOGGING
-        loglog("get_close_nodes(): Assoc_get_close_entries() returned zero nodes.\n");
-#endif
-
+        LOGGER_DEBUG("get_close_nodes(): Assoc_get_close_entries() returned zero nodes");
         return get_somewhat_close_nodes(dht, client_id, nodes_list, sa_family, is_LAN, want_good);
     }
 
-#ifdef LOGGING
-    sprintf(logbuffer, "get_close_nodes(): Assoc_get_close_entries() returned %i 'direct' and %i 'indirect' nodes.\n",
-            request.count_good, num_found - request.count_good);
-    loglog(logbuffer);
-#endif
+    LOGGER_DEBUG("get_close_nodes(): Assoc_get_close_entries() returned %i 'direct' and %i 'indirect' nodes",
+                 request.count_good, num_found - request.count_good);
 
     uint8_t i, num_returned = 0;
 

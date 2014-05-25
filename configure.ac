@@ -31,8 +31,10 @@ BUILD_DHT_BOOTSTRAP_DAEMON="no"
 BUILD_NTOX="no"
 BUILD_TESTS="yes"
 BUILD_AV="yes"
-BUILD_PHONE="no"
 BUILD_TESTING="yes"
+
+LOGGING="no"
+LOGGING_OUTNAM="libtoxcore.log"
 
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
@@ -80,26 +82,63 @@ AC_ARG_ENABLE([randombytes-stir],
     ]
 )
 
-
-PKG_PROG_PKG_CONFIG
-
-AC_ARG_ENABLE([phone],
-    [AC_HELP_STRING([--enable-phone], [build test phone (default: auto)]) ],
+AC_ARG_ENABLE([logging],
+    [AC_HELP_STRING([--enable-logging], [enable logging (default: auto)]) ],
     [
-        if test "x$enableval" = "xno"; then
-            BUILD_PHONE="no"
-        elif test "x$enableval" = "xyes"; then
-            BUILD_PHONE="yes"
+        if test "x$enableval" = "xyes"; then
+            LOGGING="yes"
+            
+            AC_DEFINE([LOGGING], [], [If logging enabled])
+            AC_DEFINE([LOGGER_LEVEL], [DEBUG], [LoggerLevel value])
+            AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$LOGGING_OUTNAM"], [Output of logger])
         fi
     ]
 )
+
+AC_ARG_WITH(logger-level,
+    AC_HELP_STRING([--with-logger-level=LEVEL],
+                   [Logger levels: INFO; DEBUG; WARNING; ERROR ]),
+    [
+        if test "x$LOGGING" = "xno"; then
+            AC_MSG_WARN([Logging disabled!])
+        else
+            if test "x$withval" = "xINFO"; then
+                AC_DEFINE([LOGGER_LEVEL], [INFO], [LoggerLevel value])
+                
+            elif test "x$withval" = "xDEBUG"; then
+                AC_DEFINE([LOGGER_LEVEL], [DEBUG], [LoggerLevel value])
+                
+            elif test "x$withval" = "xWARNING"; then
+                AC_DEFINE([LOGGER_LEVEL], [WARNING], [LoggerLevel value])
+                
+            elif test "x$withval" = "xERROR"; then
+                AC_DEFINE([LOGGER_LEVEL], [ERROR], [LoggerLevel value])
+            else
+                AC_MSG_WARN([Invalid logger level: $withval. Using default 'DEBUG'])
+            fi
+        fi
+    ]
+)
+
+AC_ARG_WITH(logger-path,
+    AC_HELP_STRING([--with-logger-path=DIR],
+                   [Path of logger output]),
+    [
+        if test "x$LOGGING" = "xno"; then
+            AC_MSG_WARN([Logging disabled!])
+        else
+            AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$withval""/""$LOGGING_OUTNAM"], [Output of logger])
+        fi
+    ]
+)
+
+PKG_PROG_PKG_CONFIG
 
 AC_ARG_ENABLE([av],
     [AC_HELP_STRING([--disable-av], [build AV support libraries (default: auto)]) ],
     [
         if test "x$enableval" = "xno"; then
             BUILD_AV="no"
-            BUILD_PHONE="no"
         elif test "x$enableval" = "xyes"; then
             BUILD_AV="yes"
         fi
@@ -421,85 +460,8 @@ if test "x$BUILD_AV" = "xyes"; then
         [
             AC_MSG_WARN([disabling AV support: required pthread library not found])
             BUILD_AV="no"
-            BUILD_PHONE="no"
         ]
     )
-fi
-
-if test "x$BUILD_PHONE" = "xyes"; then
-    PKG_CHECK_MODULES([AVFORMAT], [libavformat],
-        [],
-        [
-            AC_MSG_WARN([disabling phone $AVFORMAT_PKG_ERRORS])
-            BUILD_PHONE="no"
-        ]
-    )
-fi
-
-if test "x$BUILD_PHONE" = "xyes"; then
-    PKG_CHECK_MODULES([AVCODEC], [libavcodec],
-        [],
-        [
-            AC_MSG_WARN([disabling phone $AVCODEC_PKG_ERRORS])
-            BUILD_PHONE="no"
-        ]
-    )
-fi
-
-if test "x$BUILD_PHONE" = "xyes"; then
-    PKG_CHECK_MODULES([AVUTIL], [libavutil],
-        [],
-        [
-            AC_MSG_WARN([disabling phone $AVUTIL_PKG_ERRORS])
-            BUILD_PHONE="no"
-        ]
-    )
-fi
-
-if test "x$BUILD_PHONE" = "xyes"; then
-    PKG_CHECK_MODULES([AVDEVICE], [libavdevice],
-        [],
-        [
-            AC_MSG_WARN([disabling phone $AVDEVICE_PKG_ERRORS])
-            BUILD_PHONE="no"
-        ]
-    )
-fi
-
-if test "x$BUILD_PHONE" = "xyes"; then
-    PKG_CHECK_MODULES([SWSCALE], [libswscale],
-        [],
-        [
-            AC_MSG_WARN([disabling phone $SWSCALE_PKG_ERRORS])
-            BUILD_PHONE="no"
-        ]
-    )
-fi
-
-if test "x$BUILD_PHONE" = "xyes"; then
-    PKG_CHECK_MODULES([SDL], [sdl],
-        [],
-        [
-            AC_MSG_WARN([disabling phone $SDL_PKG_ERRORS])
-            BUILD_PHONE="no"
-        ]
-    )
-fi
-
-if test "x$BUILD_PHONE" = "xyes"; then
-    PKG_CHECK_MODULES([OPENAL], [openal],
-        [],
-        [
-            AC_MSG_WARN([disabling phone $OPENAL_PKG_ERRORS])
-            BUILD_PHONE="no"
-        ]
-    )
-fi
-
-#If all dependencies are here add support video define for phone.c
-if test "x$BUILD_PHONE" == "xyes"; then
-    #Set FFMpeg define
-    AC_DEFINE([TOX_FFMPEG], [1], [Support video])
 fi
 
 if test "x$BUILD_AV" = "xyes"; then
@@ -508,7 +470,6 @@ if test "x$BUILD_AV" = "xyes"; then
         [
             AC_MSG_WARN([disabling AV support $OPUS_PKG_ERRORS])
             BUILD_AV="no"
-            BUILD_PHONE="no"
         ]
     )
 fi
@@ -519,7 +480,6 @@ if test "x$BUILD_AV" = "xyes"; then
         [
             AC_MSG_WARN([disabling AV support $VPX_PKG_ERRORS])
             BUILD_AV="no"
-            BUILD_PHONE="no"
         ]
     )
 fi
@@ -693,7 +653,6 @@ AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" =
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_NTOX, test "x$BUILD_NTOX" = "xyes")
 AM_CONDITIONAL(BUILD_AV, test "x$BUILD_AV" = "xyes")
-AM_CONDITIONAL(BUILD_PHONE, test "x$BUILD_PHONE" = "xyes")
 AM_CONDITIONAL(BUILD_TESTING, test "x$BUILD_TESTING" = "xyes")
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 
