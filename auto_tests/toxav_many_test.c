@@ -138,7 +138,7 @@ void *in_thread_call (void *arg)
 
     const int frame_size = (av_DefaultSettings.audio_sample_rate * av_DefaultSettings.audio_frame_duration / 1000);
     int16_t sample_payload[frame_size];
-    randombytes_salsa20_random_buf(sample_payload, sizeof(int16_t) * frame_size);
+    randombytes((uint8_t *)sample_payload, sizeof(int16_t) * frame_size);
 
     uint8_t prepared_payload[RTP_PAYLOAD_SIZE];
 
