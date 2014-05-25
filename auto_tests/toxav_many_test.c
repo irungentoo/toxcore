@@ -223,7 +223,7 @@ void *in_thread_call (void *arg)
             case 3: /* Wait for Both to have status ended */
                 if (this_call->Caller.status == Ended) {
                     c_sleep(1000); /* race condition */
-                    this_call->Callee.status == Ended;
+                    this_call->Callee.status = Ended;
                     running = 0;
                 }
 
