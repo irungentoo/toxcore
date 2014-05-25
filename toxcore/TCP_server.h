@@ -110,6 +110,7 @@ typedef struct {
 
 #ifdef TCP_SERVER_USE_EPOLL
     int efd;
+    uint64_t last_run_pinged;
 #endif
     sock_t *socks_listening;
     unsigned int num_listening_socks;

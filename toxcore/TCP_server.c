@@ -1031,6 +1031,13 @@ static void do_TCP_unconfirmed(TCP_Server *TCP_server)
 
 static void do_TCP_confirmed(TCP_Server *TCP_server)
 {
+#ifdef TCP_SERVER_USE_EPOLL
+
+    if (TCP_server->last_run_pinged == unix_time())
+        return;
+
+    TCP_server->last_run_pinged = unix_time();
+#endif
     uint32_t i;
 
     for (i = 0; i < TCP_server->size_accepted_connections; ++i) {
