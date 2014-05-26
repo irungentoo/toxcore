@@ -857,6 +857,8 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
             add_online_friend(m, friendnumber);
         }
 
+        m->friendlist[friendnumber].status = status;
+
         if (m->friend_connectionstatuschange)
             m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
 
