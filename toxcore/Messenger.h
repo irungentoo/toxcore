@@ -173,10 +173,6 @@ typedef struct {
     } packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
 } Friend;
 
-typedef struct {
-    uint32_t friend_num;
-    IP_Port ip_port;
-} Online_Friend;
 
 typedef struct Messenger {
 
@@ -200,7 +196,6 @@ typedef struct Messenger {
     Friend *friendlist;
     uint32_t numfriends;
 
-    Online_Friend *online_friendlist;
     uint32_t numonline_friends;
 
     Group_Chat **chats;

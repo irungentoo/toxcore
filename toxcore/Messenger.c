@@ -38,8 +38,6 @@
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(Messenger *m, int32_t friendnumber, uint8_t packet_id, uint8_t *data, uint32_t length);
 
-static IP_Port get_friend_ipport(Messenger *m, int32_t friendnumber);
-
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
 static uint8_t friend_not_valid(Messenger *m, int32_t friendnumber)
 {
@@ -51,27 +49,6 @@ static int add_online_friend(Messenger *m, int32_t friendnumber)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    IP_Port temp_ip_port = get_friend_ipport(m, friendnumber);
-
-    if (temp_ip_port.port == 0)
-        return -1;
-
-    uint32_t i;
-
-    for (i = 0; i < m->numonline_friends; ++i) {
-        if (m->online_friendlist[i].friend_num == (uint32_t)friendnumber)
-            return 0;
-    }
-
-    Online_Friend *temp;
-    temp = realloc(m->online_friendlist, sizeof(Online_Friend) * (m->numonline_friends + 1));
-
-    if (temp == NULL)
-        return -1;
-
-    m->online_friendlist = temp;
-    m->online_friendlist[m->numonline_friends].friend_num = friendnumber;
-    m->online_friendlist[m->numonline_friends].ip_port = temp_ip_port;
     ++m->numonline_friends;
     return 0;
 }
@@ -79,37 +56,11 @@ static int add_online_friend(Messenger *m, int32_t friendnumber)
 
 static int remove_online_friend(Messenger *m, int32_t friendnumber)
 {
-    uint32_t i;
-    Online_Friend *temp;
+    if (friend_not_valid(m, friendnumber))
+        return -1;
 
-    for (i = 0; i < m->numonline_friends; ++i) {
-        /* Equal */
-        if (m->online_friendlist[i].friend_num == (uint32_t)friendnumber) {
-            --m->numonline_friends;
-
-            if (m->numonline_friends != i) {
-                memcpy( &m->online_friendlist[i],
-                        &m->online_friendlist[m->numonline_friends],
-                        sizeof(Online_Friend) );
-            }
-
-            if (m->numonline_friends == 0) {
-                free(m->online_friendlist);
-                m->online_friendlist = NULL;
-                return 0;
-            }
-
-            temp = realloc(m->online_friendlist, sizeof(Online_Friend) * (m->numonline_friends));
-
-            if (temp == NULL)
-                return -1;
-
-            m->online_friendlist = temp;
-            return 0;
-        }
-    }
-
-    return -1;
+    --m->numonline_friends;
+    return 0;
 }
 /* Set the size of the friend list to numfriends.
  *
