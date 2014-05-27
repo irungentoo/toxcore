@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tox], [0.0.0], [http://tox.im])
+AC_INIT([tox], [0.0.0], [https://tox.im])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
@@ -178,13 +178,13 @@ AC_ARG_ENABLE([daemon],
     ]
 )
 
-AC_ARG_ENABLE([nort],
+AC_ARG_ENABLE([rt],
     [AC_HELP_STRING([--disable-rt], [Disables the librt check (default: auto)]) ],
     [
         if test "x$enableval" = "xno"; then
-            DISABLE_RT="no"
-        elif test "x$enableval" = "xyes"; then
             DISABLE_RT="yes"
+        elif test "x$enableval" = "xyes"; then
+            DISABLE_RT="no"
         fi
     ]
 )
@@ -294,6 +294,11 @@ esac
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 
 AC_SUBST(EXTRA_LT_LDFLAGS)
+
+# Needed math flags for some compilers
+
+MATH_LDFLAGS="-lm"
+AC_SUBST(MATH_LDFLAGS)
 
 # Checks for libraries.
 
