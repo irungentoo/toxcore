@@ -7,6 +7,8 @@ libtoxcore_la_includedir = $(includedir)/tox
 
 libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/DHT.c \
+                        ../toxcore/dumb.h \
+                        ../toxcore/dumb.c \
                         ../toxcore/network.h \
                         ../toxcore/network.c \
                         ../toxcore/crypto_core.h \
