@@ -42,6 +42,7 @@
 
 #include "network.h"
 #include "util.h"
+#include "dumb.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
@@ -235,7 +236,8 @@ uint64_t current_time_monotonic(void)
 #else
     struct timespec monotime;
 #if defined(__linux__)
-    clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
+    clockid_t dumb = (clockid_t)clock_monotonic_raw();
+    clock_gettime(dumb, &monotime);
 #elif defined(__APPLE__)
     clock_serv_t muhclock;
     mach_timespec_t machtime;
