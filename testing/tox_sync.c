@@ -46,7 +46,7 @@ typedef struct {
     FILE *file;
     uint16_t friendnum;
     uint8_t filenumber;
-    uint8_t nextpiece[1024];
+    uint8_t nextpiece[1400];
     uint16_t piecelength;
 } File_t;
 File_t file_senders[NUM_FILE_SENDERS];
@@ -62,8 +62,8 @@ void send_filesenders(Tox *m)
             continue;
 
         while (1) {
-            if (!tox_file_send_data(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
-                                    file_senders[i].piecelength))
+            if (tox_file_send_data(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
+                                   file_senders[i].piecelength) != 0)
                 break;
 
             file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_file_data_size(m, file_senders[i].friendnum),
@@ -160,7 +160,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
         return;
     }
 
-    if (tox_file_send_control(m, friendnumber, 1, filenumber, TOX_FILECONTROL_ACCEPT, 0, 0)) {
+    if (tox_file_send_control(m, friendnumber, 1, filenumber, TOX_FILECONTROL_ACCEPT, 0, 0) == 0) {
         printf("Accepted file transfer. (file: %s)\n", fullpath);
     }
 
