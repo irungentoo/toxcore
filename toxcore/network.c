@@ -234,7 +234,7 @@ uint64_t current_time_monotonic(void)
     last_monotime = time;
 #else
     struct timespec monotime;
-#if defined(__linux__)
+#if defined(__linux__) && defined(CLOCK_MONOTONIC_RAW)
     clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
 #elif defined(__APPLE__)
     clock_serv_t muhclock;
