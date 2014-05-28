@@ -26,6 +26,7 @@
 
 #include "crypto_core.h"
 #include "network.h"
+#include "ping_array.h"
 
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
@@ -41,6 +42,9 @@
 
 /* Ping timeout in seconds */
 #define PING_TIMEOUT 3
+
+/* size of DHT ping arrays. */
+#define DHT_PING_ARRAY_SIZE 512
 
 /* Ping interval in seconds for each node in our lists. */
 #define PING_INTERVAL 60
@@ -200,6 +204,8 @@ typedef struct {
     Shared_Keys shared_keys_sent;
 
     struct PING   *ping;
+    Ping_Array    dht_ping_array;
+    Ping_Array    dht_harden_ping_array;
 #ifdef ENABLE_ASSOC_DHT
     struct Assoc  *assoc;
 #endif
