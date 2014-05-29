@@ -1027,7 +1027,7 @@ void *handle_timeout ( void *arg )
         /* uint16_t _it = 0;
          *       for ( ; _it < _session->call->peer_count; _it++ ) */
         msi_cancel ( _call->session, _call->call_idx, _call->peers [0], "Request timed out" );
-        terminate_call(_call->session, _call);
+        /*terminate_call(_call->session, _call);*/
     }
 
     pthread_exit(NULL);
