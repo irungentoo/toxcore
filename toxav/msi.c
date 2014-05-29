@@ -1089,8 +1089,10 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
     send_message ( session, new_call, _msg_ringing, msg->friend_id );
     free_message ( _msg_ringing );
 
-    invoke_callback(new_call->call_idx, MSI_OnInvite);
     pthread_mutex_unlock(&session->mutex);
+    
+    invoke_callback(new_call->call_idx, MSI_OnInvite);
+    
     return 1;
 }
 int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
@@ -1119,8 +1121,9 @@ int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     flush_peer_type ( call, msg, 0 );
 
-    invoke_callback(call->call_idx, MSI_OnStart);
     pthread_mutex_unlock(&session->mutex);
+    
+    invoke_callback(call->call_idx, MSI_OnStart);
     return 1;
 }
 int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
@@ -1140,6 +1143,8 @@ int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
     free_message ( _msg_ending );
 
 
+    pthread_mutex_unlock(&session->mutex);
+    
     invoke_callback(call->call_idx, MSI_OnReject);
     /*
     event.timer_release ( session->call->request_timer_id );
@@ -1147,7 +1152,6 @@ int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
     */
 
     terminate_call(session, call);
-    pthread_mutex_unlock(&session->mutex);
     return 1;
 }
 int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *msg )
@@ -1166,10 +1170,10 @@ int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *msg )
     send_message ( session, call, _msg_ending, msg->friend_id );
     free_message ( _msg_ending );*/
 
+    pthread_mutex_unlock(&session->mutex);
     invoke_callback(call->call_idx, MSI_OnCancel);
 
     terminate_call ( session, call );
-    pthread_mutex_unlock(&session->mutex);
     return 1;
 }
 int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
@@ -1187,10 +1191,11 @@ int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
     send_message ( session, call, _msg_ending, msg->friend_id );
     free_message ( _msg_ending );
 
+    pthread_mutex_unlock(&session->mutex);
+    
     invoke_callback(call->call_idx, MSI_OnEnd);
 
     terminate_call ( session, call );
-    pthread_mutex_unlock(&session->mutex);
     return 1;
 }
 
@@ -1207,9 +1212,9 @@ int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     call->ringing_timer_id = event.timer_alloc ( handle_timeout, call, call->ringing_tout_ms );
 
-    invoke_callback(call->call_idx, MSI_OnRinging);
-
     pthread_mutex_unlock(&session->mutex);
+    
+    invoke_callback(call->call_idx, MSI_OnRinging);
     return 1;
 }
 int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
@@ -1254,11 +1259,11 @@ int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     flush_peer_type ( call, msg, 0 );
 
-    invoke_callback(call->call_idx, MSI_OnStarting);
 
     event.timer_release ( call->ringing_timer_id );
-
     pthread_mutex_unlock(&session->mutex);
+    
+    invoke_callback(call->call_idx, MSI_OnStarting);
     return 1;
 }
 int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
@@ -1274,12 +1279,13 @@ int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
     /* Stop timer */
     event.timer_release ( call->request_timer_id );
 
+    pthread_mutex_unlock(&session->mutex);
+    
     invoke_callback(call->call_idx, MSI_OnEnding);
 
     /* Terminate call */
     terminate_call ( session, call );
 
-    pthread_mutex_unlock(&session->mutex);
     return 1;
 }
 int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
@@ -1301,11 +1307,12 @@ int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
         LOGGER_DEBUG("Error reason: %s", session->last_error_str);
     }
 
+    pthread_mutex_unlock(&session->mutex);
+    
     invoke_callback(call->call_idx, MSI_OnEnding);
 
     terminate_call ( session, call );
     
-    pthread_mutex_unlock(&session->mutex);
     return 1;
 }
 
