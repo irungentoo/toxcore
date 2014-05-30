@@ -59,7 +59,10 @@ JitterBuffer *create_queue(int capacity)
 
     if ( !(q = calloc(sizeof(JitterBuffer), 1)) ) return NULL;
 
-    if (!(q->queue = calloc(sizeof(RTPMessage *), capacity))) return NULL;
+    if (!(q->queue = calloc(sizeof(RTPMessage *), capacity))) {
+        free(q);
+        return NULL;
+    }
 
     q->size = 0;
     q->capacity = capacity;

@@ -328,7 +328,8 @@ var.size = t_size; }
 void free_message ( MSIMessage *msg )
 {
     if ( msg == NULL ) {
-        LOGGER_ERROR("Tried to free empty message");
+        LOGGER_WARNING("Tried to free empty message");
+        return;
     }
 
     free ( msg->calltype.header_value );
@@ -818,6 +819,11 @@ MSICall *find_call ( MSISession *session, uint8_t *call_id )
  */
 int handle_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_t to )
 {
+    if (!call) {
+        LOGGER_WARNING("Cannot handle error on 'null' call");
+        return -1;
+    }
+    
     LOGGER_DEBUG("Sending error: %d on call: %s", errid, call->id);
 
     MSIMessage *_msg_error = msi_new_message ( TYPE_RESPONSE, stringify_response ( error ) );
@@ -1041,6 +1047,7 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
     
     pthread_mutex_lock(&session->mutex);
     
+    
     if ( call ) {
         if ( call->peers[0] == msg->friend_id ) {
             /* The glare case. A calls B when at the same time
@@ -1051,7 +1058,18 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
              */
 
             if ( call_id_bigger (call->id, msg->callid.header_value) == 1 ) { /* Peer has advantage */
+                
+                /* Terminate call; peer will timeout(call) if call initialization (magically) fails */
                 terminate_call(session, call);
+                
+                call = init_call ( session, 1, 0 );
+                
+                if ( !call ) {
+                    pthread_mutex_unlock(&session->mutex);
+                    LOGGER_ERROR("Starting call");
+                    return 0;
+                }
+                
             } else {
                 pthread_mutex_unlock(&session->mutex);
                 return 0; /* Wait for ringing from peer */
@@ -1063,6 +1081,15 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
             return 0;
         }
     }
+    else {
+        call = init_call ( session, 1, 0 );
+        
+        if ( !call ) {
+            pthread_mutex_unlock(&session->mutex);
+            LOGGER_ERROR("Starting call");
+            return 0;
+        }
+    }
 
     if ( !msg->callid.header_value ) {
         handle_error ( session, call, error_no_callid, msg->friend_id );
@@ -1070,28 +1097,20 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
         return 0;
     }
 
-    MSICall *new_call = init_call ( session, 1, 0 );
+    memcpy ( call->id, msg->callid.header_value, CALL_ID_LEN );
+    call->state = call_starting;
 
-    if ( !new_call ) {
-        handle_error ( session, call, error_busy, msg->friend_id );
-        pthread_mutex_unlock(&session->mutex);
-        return 0;
-    }
+    add_peer( call, msg->friend_id);
 
-    memcpy ( new_call->id, msg->callid.header_value, CALL_ID_LEN );
-    new_call->state = call_starting;
-
-    add_peer( new_call, msg->friend_id);
-
-    flush_peer_type ( new_call, msg, 0 );
+    flush_peer_type ( call, msg, 0 );
 
     MSIMessage *_msg_ringing = msi_new_message ( TYPE_RESPONSE, stringify_response ( ringing ) );
-    send_message ( session, new_call, _msg_ringing, msg->friend_id );
+    send_message ( session, call, _msg_ringing, msg->friend_id );
     free_message ( _msg_ringing );
-
+    
     pthread_mutex_unlock(&session->mutex);
     
-    invoke_callback(new_call->call_idx, MSI_OnInvite);
+    invoke_callback(call->call_idx, MSI_OnInvite);
     
     return 1;
 }
@@ -1418,6 +1437,10 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
             goto free_end;
         }
 
+        /* Got response so cancel timer */
+        if ( _call )
+            event.timer_release ( _call->request_timer_id );
+
         uint8_t _response_value[32];
 
         memcpy(_response_value, _msg->response.header_value, _msg->response.size);
@@ -1439,10 +1462,6 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
             LOGGER_WARNING("Uknown response");
             goto free_end;
         }
-
-        /* Got response so cancel timer */
-        if ( _call )
-            event.timer_release ( _call->request_timer_id );
 
     } else {
         LOGGER_WARNING("Invalid message: no resp nor requ headers");
@@ -1568,13 +1587,13 @@ int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type
 
     LOGGER_DEBUG("Session: %p Inviting friend: %u", session, friend_id);
 
-    MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
 
     MSICall *_call = init_call ( session, 1, rngsec ); /* Just one peer for now */
 
     if ( !_call ) {
         pthread_mutex_unlock(&session->mutex);
-        return -1; /* Cannot handle more calls */
+        LOGGER_ERROR("Cannot handle more calls");
+        return -1;
     }
 
     *call_index = _call->call_idx;
@@ -1584,6 +1603,8 @@ int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type
     add_peer(_call, friend_id );
 
     _call->type_local = call_type;
+    
+    MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
 
     /* Do whatever with message */
     if ( call_type == type_audio ) {
