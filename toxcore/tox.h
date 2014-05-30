@@ -644,48 +644,13 @@ Tox *tox_new(uint8_t ipv6enabled);
  * Free all datastructures. */
 void tox_kill(Tox *tox);
 
-/* The main loop that needs to be run at least 20 times per second. */
-void tox_do(Tox *tox);
-
-/*
- * tox_wait_data_size():
- *
- *  returns a size of data buffer to allocate. the size is constant.
- *
- * tox_wait_prepare(): function should be called under lock every time we want to call tox_wait_execute()
- * Prepares the data required to call tox_wait_execute() asynchronously
- *
- * data[] should be of at least tox_wait_data_size() size and it's reserved and kept by the caller
- * Use that data[] to call tox_wait_execute()
- *
- *  returns  1 on success
- *  returns  0 if data was NULL
- *
- *
- * tox_wait_execute(): function can be called asynchronously
- * Waits for something to happen on the socket for up to seconds seconds and mircoseconds microseconds.
- * mircoseconds should be between 0 and 999999.
- * If you set either or both seconds and microseconds to negatives, it will block indefinetly until there
- * is an activity.
- *
- *  returns  2 if there is socket activity (i.e. tox_do() should be called)
- *  returns  1 if the timeout was reached (tox_do() should be called anyway. it's advised to call it at least
- *             once per second)
- *  returns  0 if data was NULL
- *
- *
- * tox_wait_cleanup(): function should be called under lock,  every time tox_wait_execute() finishes
- * Stores results from tox_wait_execute().
- *
- *  returns  1 on success
- *  returns  0 if data was NULL
- *
+/* Return the optimal interval in milliseconds between tox_do() calls.
+ * This function should be called after every tox_do() call for best performance.
  */
-size_t tox_wait_data_size();
-int tox_wait_prepare(Tox *tox, uint8_t *data);
-int tox_wait_execute(uint8_t *data, long seconds, long microseconds);
-int tox_wait_cleanup(Tox *tox, uint8_t *data);
+uint32_t tox_do_run_interval(Tox *tox);
 
+/* The main loop that needs to be run in intervals of tox_do_run_interval() ms. */
+void tox_do(Tox *tox);
 
 /* SAVING AND LOADING FUNCTIONS: */
 
