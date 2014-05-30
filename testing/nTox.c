@@ -542,6 +542,7 @@ void line_eval(Tox *m, char *line)
         } else if (inpt_command == 'q') { //exit
             save_data(m);
             endwin();
+            tox_kill(m);
             exit(EXIT_SUCCESS);
         } else if (inpt_command == 'c') { //set conversation partner
             if (line[2] == 'r') {
@@ -1274,17 +1275,8 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (numfilesenders > 0)
-            // during file transfer wasting cpu cycles is almost unavoidable
-            c_sleep(1);
-        else {
-            if (pollok && (tox_wait_prepare(m, data) == 1)) {
-                /* 250ms is more than fast enough in "regular" mode */
-                tox_wait_execute(data, 0, 100000);
-                tox_wait_cleanup(m, data);
-            } else
-                c_sleep(25);
-        }
+
+        c_sleep(tox_do_run_interval(m));
 
         send_filesenders(m);
         tox_do(m);

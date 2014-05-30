@@ -782,6 +782,16 @@ int tox_isconnected(Tox *tox)
     return DHT_isconnected(m->dht);
 }
 
+/* Return the optimal interval in milliseconds between tox_do() calls.
+ * This function should be called after every tox_do() call for best performance.
+ */
+uint32_t tox_do_run_interval(Tox *tox)
+{
+    Messenger *m = tox;
+    //TODO
+    return 10;
+}
+
 /* Run this at startup.
  *
  *  return allocated instance of tox on success.
