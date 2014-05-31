@@ -27,6 +27,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../toxcore/logger.h"
+#include "../toxcore/util.h"
 
 #include "msi.h"
 #include "event.h"
@@ -36,8 +37,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-
-#define inline__ inline __attribute__((always_inline))
 
 #define same(x, y) strcmp((const char*) x, (const char*) y) == 0
 
@@ -222,76 +221,80 @@ static inline__ const uint8_t *stringify_response ( MSIResponse response )
 int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
 {
 
-#define ON_HEADER(iterator, header, descriptor, size_const) \
-( memcmp(iterator, descriptor, size_const) == 0){ /* Okay */ \
-iterator += size_const; /* Set iterator at begining of value part */ \
-if ( *iterator != value_byte ) { assert(0); return -1; }\
-    iterator ++;\
-    uint16_t _value_size = (uint16_t) *(iterator ) << 8 | \
-    (uint16_t) *(iterator + 1); \
-    header.header_value = calloc(sizeof(uint8_t), _value_size); \
-    header.size = _value_size; \
-    memcpy(header.header_value, iterator + 2, _value_size);\
-    iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ }
+#define ON_HEADER(iterator, size_con, header, descriptor, type_size_const) \
+( memcmp(iterator, descriptor, type_size_const) == 0){ /* Okay */ \
+iterator += type_size_const; /* Set iterator at begining of value part */ \
+if ( *iterator != value_byte || size_con <= type_size_const) { return -1; } size_con -= type_size_const; \
+iterator ++; if(size_con <= 3) {return -1;} size_con -= 3; \
+uint16_t _value_size; memcpy(&_value_size, iterator, sizeof(_value_size)); _value_size = ntohs(_value_size);\
+if(size_con < _value_size) { return -1; } size_con -= _value_size; \
+header.header_value = calloc(sizeof(uint8_t), _value_size); \
+header.size = _value_size; \
+memcpy(header.header_value, iterator + 2, _value_size);\
+iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ }
 
     if ( msg == NULL ) {
         LOGGER_ERROR("Could not parse message: no storage!");
+        return -1;
     }
 
     if ( data[length - 1] ) /* End byte must have value 0 */
         return -1;
 
     const uint8_t *_it = data;
-
+    uint16_t size_max = length;
+    
     while ( *_it ) {/* until end_byte is hit */
 
         uint16_t itedlen = (_it - data) + 2;
 
         if ( *_it == field_byte && itedlen < length ) {
 
-            uint16_t _size = ( uint16_t ) * ( _it + 1 ) << 8 |
-                             ( uint16_t ) * ( _it + 2 );
-
+            uint16_t _size;
+            memcpy(&_size, _it + 1, sizeof(_size)); 
+            _size = ntohs(_size);
+            
             if ( itedlen + _size > length ) return -1;
 
             _it += 3; /* place it at the field value beginning */
-
+            size_max -= 3;
+            
             switch ( _size ) { /* Compare the size of the hardcoded values ( vary fast and convenient ) */
 
                 case 4: { /* INFO header */
-                    if ON_HEADER ( _it, msg->info, INFO_FIELD, 4 )
+                    if ON_HEADER ( _it, size_max, msg->info, INFO_FIELD, 4 )
                     }
                 break;
 
                 case 5: { /* NONCE header */
-                    if ON_HEADER ( _it, msg->nonce, NONCE_FIELD, 5 )
+                    if ON_HEADER ( _it, size_max, msg->nonce, NONCE_FIELD, 5 )
                     }
                 break;
 
                 case 6: { /* Reason header */
-                    if ON_HEADER ( _it, msg->reason, REASON_FIELD, 6 )
+                    if ON_HEADER ( _it, size_max, msg->reason, REASON_FIELD, 6 )
                     }
                 break;
 
                 case 7: { /* Version, Request, Call-id headers */
-                    if ON_HEADER ( _it, msg->version, VERSION_FIELD, 7 )
-                        else if ON_HEADER ( _it, msg->request, REQUEST_FIELD, 7 )
-                            else if ON_HEADER ( _it, msg->callid, CALLID_FIELD, 7 )
-                            }
+                    if ON_HEADER ( _it, size_max, msg->version, VERSION_FIELD, 7 )
+                    else if ON_HEADER ( _it, size_max, msg->request, REQUEST_FIELD, 7 )
+                    else if ON_HEADER ( _it, size_max, msg->callid, CALLID_FIELD, 7 )
+                    }
                 break;
 
                 case 8: { /* Response header */
-                    if ON_HEADER ( _it, msg->response, RESPONSE_FIELD, 8 )
+                    if ON_HEADER ( _it, size_max, msg->response, RESPONSE_FIELD, 8 )
                     }
                 break;
 
                 case 9: { /* Call-type header */
-                    if ON_HEADER ( _it, msg->calltype, CALLTYPE_FIELD, 9 )
+                    if ON_HEADER ( _it, size_max, msg->calltype, CALLTYPE_FIELD, 9 )
                     }
                 break;
 
                 case 10: { /* Crypto-key headers */
-                    if ON_HEADER ( _it, msg->cryptokey, CRYPTOKEY_FIELD, 10 )
+                    if ON_HEADER ( _it, size_max, msg->cryptokey, CRYPTOKEY_FIELD, 10 )
                     }
                 break;
 
@@ -509,24 +512,22 @@ uint8_t *append_header_to_string (
     _total += _i;
 
     /* Now set the length of the field byte */
-    *_getback_byte = ( uint8_t ) _i >> 8;
-
-    _getback_byte++;
-
-    *_getback_byte = ( uint8_t ) _i;
+    uint16_t _convert;
+    
+    
+    _convert = htons(_i);
+    memcpy(_getback_byte, &_convert, sizeof(_convert));
 
     /* for value part do it regulary */
     *dest = value_byte;
 
     dest++;
 
-    *dest = ( uint8_t ) value_len >> 8;
-
-    dest++;
-
-    *dest = ( uint8_t ) value_len;
-
-    dest++;
+    
+    _convert = htons(value_len);
+    memcpy(dest, &_convert, sizeof(_convert));
+    
+    dest+=2;
 
     for ( _i = value_len; _i; --_i ) {
         *dest = *_hvit;
