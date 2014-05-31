@@ -2277,6 +2277,25 @@ static char *ID2String(uint8_t *client_id)
 }
 #endif
 
+/* Minimum messenger run interval in ms */
+#define MIN_RUN_INTERVAL 1000
+
+/* Return the time in milliseconds before do_messenger() should be called again
+ * for optimal performance.
+ *
+ * returns time (in ms) before the next do_messenger() needs to be run on success.
+ */
+uint32_t messenger_run_interval(Messenger *m)
+{
+    uint32_t crypto_interval = crypto_run_interval(m->net_crypto);
+
+    if (crypto_interval > MIN_RUN_INTERVAL) {
+        return MIN_RUN_INTERVAL;
+    } else {
+        return crypto_interval;
+    }
+}
+
 /* The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m)
 {

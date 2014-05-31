@@ -258,7 +258,14 @@ START_TEST(test_few_clients)
         if (file_sent && size_recv == file_size)
             break;
 
-        c_sleep(10);
+        uint32_t tox1_interval = tox_do_interval(tox1);
+        uint32_t tox2_interval = tox_do_interval(tox2);
+        uint32_t tox3_interval = tox_do_interval(tox3);
+        if (tox2_interval > tox3_interval) {
+            c_sleep(tox3_interval);
+        } else {
+            c_sleep(tox2_interval);
+        }
     }
 
     printf("100MB file sent in %llu seconds\n", time(NULL) - f_time);

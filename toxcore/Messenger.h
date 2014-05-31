@@ -720,6 +720,13 @@ void kill_messenger(Messenger *M);
 /* The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m);
 
+/* Return the time in milliseconds before do_messenger() should be called again
+ * for optimal performance.
+ *
+ * returns time (in ms) before the next do_messenger() needs to be run on success.
+ */
+uint32_t messenger_run_interval(Messenger *m);
+
 /*
  * functions to avoid excessive polling
  */
