@@ -15,7 +15,6 @@ nTox_LDADD =            $(LIBSODIUM_LDFLAGS) \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
-                        $(MATH_LDFLAGS) \
                         $(NCURSES_LIBS) \
                         $(WINSOCK2_LIBS)
 endif
@@ -53,7 +52,6 @@ Messenger_test_LDADD =  $(LIBSODIUM_LDFLAGS) \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
-                        $(MATH_LDFLAGS) \
                         $(WINSOCK2_LIBS)
 
 
@@ -88,7 +86,6 @@ tox_sync_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
-                        $(MATH_LDFLAGS) \
                         $(WINSOCK2_LIBS)
 endif
 
