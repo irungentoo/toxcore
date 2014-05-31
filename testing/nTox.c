@@ -1276,7 +1276,7 @@ int main(int argc, char *argv[])
         }
 
 
-        c_sleep(tox_do_run_interval(m));
+        c_sleep(tox_do_interval(m));
 
         send_filesenders(m);
         tox_do(m);

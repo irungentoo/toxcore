@@ -644,12 +644,14 @@ Tox *tox_new(uint8_t ipv6enabled);
  * Free all datastructures. */
 void tox_kill(Tox *tox);
 
-/* Return the optimal interval in milliseconds between tox_do() calls.
- * This function should be called after every tox_do() call for best performance.
+/* Return the time in milliseconds before tox_do() should be called again
+ * for optimal performance.
+ *
+ * returns time (in ms) before the next tox_do() needs to be run on success.
  */
-uint32_t tox_do_run_interval(Tox *tox);
+uint32_t tox_do_interval(Tox *tox);
 
-/* The main loop that needs to be run in intervals of tox_do_run_interval() ms. */
+/* The main loop that needs to be run in intervals of tox_do_interval() ms. */
 void tox_do(Tox *tox);
 
 /* SAVING AND LOADING FUNCTIONS: */

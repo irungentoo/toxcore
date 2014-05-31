@@ -180,6 +180,9 @@ typedef struct {
 
     int (*new_connection_callback)(void *object, New_Connection *n_c);
     void *new_connection_callback_object;
+
+    /* The current optimal sleep time */
+    uint32_t current_sleep_time;
 } Net_Crypto;
 
 
@@ -343,6 +346,10 @@ void load_keys(Net_Crypto *c, uint8_t *keys);
  *  Sets all the global connection variables to their default values.
  */
 Net_Crypto *new_net_crypto(DHT *dht);
+
+/* return the optimal interval in ms for running do_net_crypto.
+ */
+uint32_t crypto_run_interval(Net_Crypto *c);
 
 /* Main loop. */
 void do_net_crypto(Net_Crypto *c);
