@@ -27,6 +27,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../toxcore/logger.h"
+#include "../toxcore/util.h"
 
 #include "msi.h"
 #include "event.h"
@@ -36,8 +37,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-
-#define inline__ inline __attribute__((always_inline))
 
 #define same(x, y) strcmp((const char*) x, (const char*) y) == 0
 
@@ -226,13 +225,12 @@ int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
 ( memcmp(iterator, descriptor, size_const) == 0){ /* Okay */ \
 iterator += size_const; /* Set iterator at begining of value part */ \
 if ( *iterator != value_byte ) { assert(0); return -1; }\
-    iterator ++;\
-    uint16_t _value_size = (uint16_t) *(iterator ) << 8 | \
-    (uint16_t) *(iterator + 1); \
-    header.header_value = calloc(sizeof(uint8_t), _value_size); \
-    header.size = _value_size; \
-    memcpy(header.header_value, iterator + 2, _value_size);\
-    iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ }
+iterator ++;\
+uint16_t _value_size; bytes_to_U16(&_value_size, iterator); \
+header.header_value = calloc(sizeof(uint8_t), _value_size); \
+header.size = _value_size; \
+memcpy(header.header_value, iterator + 2, _value_size);\
+iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ }
 
     if ( msg == NULL ) {
         LOGGER_ERROR("Could not parse message: no storage!");
@@ -249,9 +247,9 @@ if ( *iterator != value_byte ) { assert(0); return -1; }\
 
         if ( *_it == field_byte && itedlen < length ) {
 
-            uint16_t _size = ( uint16_t ) * ( _it + 1 ) << 8 |
-                             ( uint16_t ) * ( _it + 2 );
-
+            uint16_t _size;
+            bytes_to_U16(&_size, _it + 1);
+            
             if ( itedlen + _size > length ) return -1;
 
             _it += 3; /* place it at the field value beginning */

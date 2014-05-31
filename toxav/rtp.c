@@ -26,6 +26,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../toxcore/logger.h"
+#include "../toxcore/util.h"
 
 #include "rtp.h"
 #include <assert.h>
@@ -36,9 +37,6 @@
 #define PAYLOAD_ID_VALUE_VP8  2
 
 #define size_32 4
-
-#define inline__ inline __attribute__((always_inline))
-
 
 #define ADD_FLAG_VERSION(_h, _v) do { ( _h->flags ) &= 0x3F; ( _h->flags ) |= ( ( ( _v ) << 6 ) & 0xC0 ); } while(0)
 #define ADD_FLAG_PADDING(_h, _v) do { if ( _v > 0 ) _v = 1; ( _h->flags ) &= 0xDF; ( _h->flags ) |= ( ( ( _v ) << 5 ) & 0x20 ); } while(0)
@@ -53,89 +51,6 @@
 #define GET_FLAG_CSRCC(_h) ( _h->flags & 0x0f )
 #define GET_SETTING_MARKER(_h) (( _h->marker_payloadt ) >> 7)
 #define GET_SETTING_PAYLOAD(_h) ((_h->marker_payloadt) & 0x7f)
-
-
-/**
- * @brief Converts 4 bytes to uint32_t
- *
- * @param dest Where to convert
- * @param bytes What bytes
- * @return void
- */
-inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
-{
-    *dest =
-#ifdef WORDS_BIGENDIAN
-        ( ( uint32_t ) *  bytes )              |
-        ( ( uint32_t ) * ( bytes + 1 ) << 8 )  |
-        ( ( uint32_t ) * ( bytes + 2 ) << 16 ) |
-        ( ( uint32_t ) * ( bytes + 3 ) << 24 ) ;
-#else
-        ( ( uint32_t ) *  bytes        << 24 ) |
-        ( ( uint32_t ) * ( bytes + 1 ) << 16 ) |
-        ( ( uint32_t ) * ( bytes + 2 ) << 8 )  |
-        ( ( uint32_t ) * ( bytes + 3 ) ) ;
-#endif
-}
-
-/**
- * @brief Converts 2 bytes to uint16_t
- *
- * @param dest Where to convert
- * @param bytes What bytes
- * @return void
- */
-inline__ void bytes_to_U16(uint16_t *dest, const uint8_t *bytes)
-{
-    *dest =
-#ifdef WORDS_BIGENDIAN
-        ( ( uint16_t ) *   bytes ) |
-        ( ( uint16_t ) * ( bytes + 1 ) << 8 );
-#else
-        ( ( uint16_t ) *   bytes << 8 ) |
-        ( ( uint16_t ) * ( bytes + 1 ) );
-#endif
-}
-
-/**
- * @brief Convert uint32_t to byte string of size 4
- *
- * @param dest Where to convert
- * @param value The value
- * @return void
- */
-inline__ void U32_to_bytes(uint8_t *dest, uint32_t value)
-{
-#ifdef WORDS_BIGENDIAN
-    *(dest)     = ( value );
-    *(dest + 1) = ( value >> 8 );
-    *(dest + 2) = ( value >> 16 );
-    *(dest + 3) = ( value >> 24 );
-#else
-    *(dest)     = ( value >> 24 );
-    *(dest + 1) = ( value >> 16 );
-    *(dest + 2) = ( value >> 8 );
-    *(dest + 3) = ( value );
-#endif
-}
-
-/**
- * @brief Convert uint16_t to byte string of size 2
- *
- * @param dest Where to convert
- * @param value The value
- * @return void
- */
-inline__ void U16_to_bytes(uint8_t *dest, uint16_t value)
-{
-#ifdef WORDS_BIGENDIAN
-    *(dest)     = ( value );
-    *(dest + 1) = ( value >> 8 );
-#else
-    *(dest)     = ( value >> 8 );
-    *(dest + 1) = ( value );
-#endif
-}
 
 
 /**

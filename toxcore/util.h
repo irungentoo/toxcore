@@ -28,6 +28,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define inline__ inline __attribute__((always_inline))
+
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
@@ -44,5 +46,18 @@ void host_to_net(uint8_t *num, uint16_t numbytes);
 typedef int (*load_state_callback_func)(void *outer, uint8_t *data, uint32_t len, uint16_t type);
 int load_state(load_state_callback_func load_state_callback, void *outer,
                uint8_t *data, uint32_t length, uint16_t cookie_inner);
+
+/* Converts 4 bytes to uint32_t */
+void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);
+
+/* Converts 2 bytes to uint16_t */
+void bytes_to_U16(uint16_t *dest, const uint8_t *bytes);
+
+/* Convert uint32_t to byte string of size 4 */
+void U32_to_bytes(uint8_t *dest, uint32_t value);
+
+/* Convert uint16_t to byte string of size 2 */
+void U16_to_bytes(uint8_t *dest, uint16_t value);
+
 
 #endif /* __UTIL_H__ */
