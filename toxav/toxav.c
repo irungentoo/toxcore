@@ -532,7 +532,7 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
         if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
             if ( copied + pkt->data.frame.sz > dest_max ) return ErrorPacketTooLarge;
 
-            mempcpy(dest + copied, pkt->data.frame.buf, pkt->data.frame.sz);
+            memcpy(dest + copied, pkt->data.frame.buf, pkt->data.frame.sz);
             copied += pkt->data.frame.sz;
         }
     }
