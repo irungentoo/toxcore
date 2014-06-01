@@ -1005,8 +1005,8 @@ void Assoc_status(Assoc *assoc)
                             entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
                             entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
                             entry->seen_at ? (entry->seen_family == AF_INET ? '4' : (entry->seen_family == AF_INET6 ? '6' : '?')) : '?',
-                                entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0,
-                                entry->heard_at ? (entry->heard_family == AF_INET ? '4' : (entry->heard_family == AF_INET6 ? '6' : '?')) : '?');
+                            entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0,
+                            entry->heard_at ? (entry->heard_family == AF_INET ? '4' : (entry->heard_family == AF_INET6 ? '6' : '?')) : '?');
             }
         }
     }

@@ -26,49 +26,19 @@
 
 #include <stdint.h>
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-#ifndef WINVER
-//Windows XP
-#define WINVER 0x0501
-#endif
-
-#include <winsock2.h>
-#include <windows.h>
-#include <ws2tcpip.h>
-
-
-#ifndef true
-#define true 1
-#endif
-#ifndef false
-#define false 0
-#endif
-#else
-
-#include <sys/types.h>
-#ifdef __OpenBSD__
-#include <netinet/in_systm.h>
-#endif
-#include <netinet/in.h>
-#include <netinet/ip.h>
-
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define TOX_MAX_NAME_LENGTH 128
-/* Maximum message and action length that can be sent. */
-#define TOX_MAX_MESSAGE_LENGTH 1003
+
+/* Maximum length of single messages after which they should be split. */
+#define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_CLIENT_ID_SIZE 32
 
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
-
-#define TOX_PORTRANGE_FROM 33445
-#define TOX_PORTRANGE_TO   33545
-#define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
@@ -177,6 +147,10 @@ int tox_friend_exists(Tox *tox, int32_t friendnumber);
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  *
+ * maximum length of messages is TOX_MAX_MESSAGE_LENGTH, your client must split larger messages
+ * or else sending them will not work. No the core will not split messages for you because that
+ * requires me to parse UTF-8.
+ *
  * You will want to retain the return value, it will be passed to your read_receipt callback
  * if one is received.
  * m_sendmessage_withid will send a message with the id of your choosing,
@@ -189,6 +163,10 @@ uint32_t tox_send_message_withid(Tox *tox, int32_t friendnumber, uint32_t theid,
  *
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
+ *
+ * maximum length of actions is TOX_MAX_MESSAGE_LENGTH, your client must split larger actions
+ * or else sending them will not work. No the core will not split actions for you because that
+ * requires me to parse UTF-8.
  *
  *  You will want to retain the return value, it will be passed to your read_receipt callback
  *  if one is received.
@@ -235,6 +213,7 @@ int tox_get_self_name_size(Tox *tox);
 /* Set our user status.
  *
  * userstatus must be one of TOX_USERSTATUS values.
+ * max length of the status is TOX_MAX_STATUSMESSAGE_LENGTH.
  *
  *  returns 0 on success.
  *  returns -1 on failure.
