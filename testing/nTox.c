@@ -1257,8 +1257,6 @@ int main(int argc, char *argv[])
     time_t timestamp0 = time(NULL);
 
     uint8_t pollok = 0;
-    uint16_t len = tox_wait_data_size();
-    uint8_t data[len];
 
     while (1) {
         if (on == 0) {

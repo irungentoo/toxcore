@@ -727,14 +727,6 @@ void do_messenger(Messenger *m);
  */
 uint32_t messenger_run_interval(Messenger *m);
 
-/*
- * functions to avoid excessive polling
- */
-size_t wait_data_size();
-int wait_prepare_messenger(Messenger *m, uint8_t *data);
-int wait_execute_messenger(uint8_t *data, long seconds, long microseconds);
-int wait_cleanup_messenger(Messenger *m, uint8_t *data);
-
 /* SAVING AND LOADING FUNCTIONS: */
 
 /* return size of the messenger data (for saving). */

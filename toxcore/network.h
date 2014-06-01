@@ -350,14 +350,6 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 /* Call this several times a second. */
 void networking_poll(Networking_Core *net);
 
-/*
- * functions to avoid excessive polling
- */
-size_t networking_wait_data_size();
-int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data);
-int networking_wait_execute(uint8_t *data, long seconds, long microseconds);
-int networking_wait_cleanup(Networking_Core *net, uint8_t *data);
-
 /* Initialize networking.
  * bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).

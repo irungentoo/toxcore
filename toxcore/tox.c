@@ -820,32 +820,6 @@ void tox_do(Tox *tox)
     do_messenger(m);
 }
 
-/*
- * functions to avoid excessive polling
- */
-
-size_t tox_wait_data_size()
-{
-    return wait_data_size();
-}
-
-int tox_wait_prepare(Tox *tox, uint8_t *data)
-{
-    Messenger *m = tox;
-    return wait_prepare_messenger(m, data);
-}
-
-int tox_wait_execute(uint8_t *data, long seconds, long microseconds)
-{
-    return wait_execute_messenger(data, seconds, microseconds);
-}
-
-int tox_wait_cleanup(Tox *tox, uint8_t *data)
-{
-    Messenger *m = tox;
-    return wait_cleanup_messenger(m, data);
-}
-
 /* SAVING AND LOADING FUNCTIONS: */
 
 /*  return size of the messenger data (for saving). */

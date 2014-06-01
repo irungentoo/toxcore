@@ -2427,31 +2427,6 @@ void do_messenger(Messenger *m)
 #endif /* LOGGING */
 }
 
-/*
- * functions to avoid excessive polling
- */
-size_t wait_data_size()
-{
-    return networking_wait_data_size();
-}
-
-int wait_prepare_messenger(Messenger *m, uint8_t *data)
-{
-    //TODO
-    //return networking_wait_prepare(m->net, sendqueue_total(m->net_crypto->lossless_udp), data);
-    return networking_wait_prepare(m->net, 1024, data);
-}
-
-int wait_execute_messenger(uint8_t *data, long seconds, long microseconds)
-{
-    return networking_wait_execute(data, seconds, microseconds);
-}
-
-int wait_cleanup_messenger(Messenger *m, uint8_t *data)
-{
-    return networking_wait_cleanup(m->net, data);
-}
-
 /* new messenger format for load/save, more robust and forward compatible */
 
 #define MESSENGER_STATE_COOKIE_GLOBAL_OLD 0x15ed1b1e
