@@ -139,10 +139,16 @@ typedef int sock_t;
 /* Only used for bootstrap nodes */
 #define BOOTSTRAP_INFO_PACKET_ID 240
 
-
-#define TOX_PORTRANGE_FROM 33445
-#define TOX_PORTRANGE_TO   33545
-#define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
+/* Master port definitions are in tox.h */
+#ifndef TOX_PORTRANGE_FROM
+    #define TOX_PORTRANGE_FROM 33445
+#endif
+#ifndef TOX_PORTRANGE_TO
+    #define TOX_PORTRANGE_TO   33545
+#endif
+#ifndef TOX_PORT_DEFAULT
+    #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
+#endif
 
 /* TCP related */
 #define TCP_ONION_FAMILY (AF_INET6 + 1)
