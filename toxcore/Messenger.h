@@ -96,7 +96,7 @@ enum {
 #define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
 
 /* If no packets are received from friend in this time interval, kill the connection. */
-#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
+#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
 
 
 /* USERSTATUS -

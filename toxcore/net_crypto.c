@@ -2427,7 +2427,7 @@ unsigned int crypto_connection_status(Net_Crypto *c, int crypt_connection_id, ui
 
     *direct_connected = 0;
 
-    if ((CRYPTO_SEND_PACKET_INTERVAL * MAX_NUM_SENDPACKET_TRIES + conn->direct_lastrecv_time) > current_time_monotonic())
+    if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > current_time_monotonic())
         *direct_connected = 1;
 
     return conn->status;
