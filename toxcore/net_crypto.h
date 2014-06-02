@@ -55,6 +55,9 @@
    before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
 
+/* The timeout of no recieved UDP packets before the direct UDP connection is considered dead. */
+#define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL * 2)
+
 #define PACKET_ID_PADDING 0
 #define PACKET_ID_REQUEST 1
 #define PACKET_ID_KILL    2
