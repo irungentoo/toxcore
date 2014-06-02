@@ -500,6 +500,15 @@ uint32_t tox_get_chatlist(Tox *tox, int *out_list, uint32_t list_size);
  * If the sender receives this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
  * then he must start sending file data from the position (data , uint64_t in host byte order) received in the TOX_FILECONTROL_RESUME_BROKEN packet.
  *
+ * To pause a file transfer send a control packet with control_type == TOX_FILECONTROL_PAUSE.
+ * To unpause a file transfer send a control packet with control_type == TOX_FILECONTROL_ACCEPT.
+ *
+ * If you receive a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_PAUSE, you must stop sending filenumber until the other
+ * person sends a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT with the filenumber being a paused filenumber.
+ *
+ * If you receive a control packet with receive_send == 0 and control_type == TOX_FILECONTROL_PAUSE, it means the sender of filenumber has paused the
+ * transfer and will resume it later with a control packet with receive_send == 0 and control_type == TOX_FILECONTROL_ACCEPT for that file number.
+ *
  * More to come...
  */
 
