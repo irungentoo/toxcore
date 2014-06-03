@@ -26,7 +26,8 @@ libtoxav_la_CFLAGS = -I../toxcore \
 libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
                       $(LIBSODIUM_LDFLAGS) \
                       $(NACL_LDFLAGS) \
-                      $(EXTRA_LT_LDFLAGS)
+                      $(EXTRA_LT_LDFLAGS) \
+                      $(WINSOCK2_LIBS)
 
 libtoxav_la_LIBADD =  libtoxcore.la \
                       $(LIBSODIUM_LIBS) \
