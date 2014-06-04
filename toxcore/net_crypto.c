@@ -607,18 +607,14 @@ static int set_buffer_end(Packets_Array *array, uint32_t number)
  * return -1 on failure.
  * return length of packet on success.
  */
-static int generate_request_packet(uint8_t *data, uint16_t length, Packets_Array *recv_array, uint32_t send_buffer_end)
+static int generate_request_packet(uint8_t *data, uint16_t length, Packets_Array *recv_array)
 {
-    if (length <= (sizeof(uint32_t) * 2))
+    if (length == 0)
         return -1;
 
-    uint32_t recv_buffer_start = htonl(recv_array->buffer_start);
-    send_buffer_end = htonl(send_buffer_end);
-    memcpy(data, &recv_buffer_start, sizeof(uint32_t));
-    memcpy(data + sizeof(uint32_t), &send_buffer_end, sizeof(uint32_t));
-    data[sizeof(uint32_t) * 2] = PACKET_ID_REQUEST;
+    data[0] = PACKET_ID_REQUEST;
 
-    uint16_t cur_len = sizeof(uint32_t) * 2 + 1;
+    uint16_t cur_len = 1;
 
     if (recv_array->buffer_start == recv_array->buffer_end)
         return cur_len;
@@ -857,13 +853,13 @@ static int send_request_packet(Net_Crypto *c, int crypt_connection_id)
     if (conn == 0)
         return -1;
 
-    uint8_t packet[MAX_DATA_DATA_PACKET_SIZE];
-    int len = generate_request_packet(packet, sizeof(packet), &conn->recv_array, conn->send_array.buffer_end);
+    uint8_t data[MAX_CRYPTO_DATA_SIZE];
+    int len = generate_request_packet(data, sizeof(data), &conn->recv_array);
 
     if (len == -1)
         return -1;
 
-    return send_data_packet(c, crypt_connection_id, packet, len);
+    return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data, len);
 }
 
 /* Send up to max num previously requested data packets.
