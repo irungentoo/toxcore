@@ -76,6 +76,8 @@
 #define PACKET_ID_LOSSY_RANGE_START 192
 #define PACKET_ID_LOSSY_RANGE_SIZE 63
 
+#define CRYPTO_MAX_PADDING 8 /* All packets will be padded a number of bytes based on this number. */
+
 typedef struct {
     uint64_t time;
     uint16_t length;

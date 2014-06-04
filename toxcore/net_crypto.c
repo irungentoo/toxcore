@@ -752,12 +752,17 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
 static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint32_t buffer_start, uint32_t num,
                                    uint8_t *data, uint32_t length)
 {
+    if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
+        return -1;
+
     num = htonl(num);
     buffer_start = htonl(buffer_start);
-    uint8_t packet[sizeof(uint32_t) + sizeof(uint32_t) + length];
+    uint16_t padding_length = (MAX_CRYPTO_DATA_SIZE - length) % CRYPTO_MAX_PADDING;
+    uint8_t packet[sizeof(uint32_t) + sizeof(uint32_t) + padding_length + length];
     memcpy(packet, &buffer_start, sizeof(uint32_t));
     memcpy(packet + sizeof(uint32_t), &num, sizeof(uint32_t));
-    memcpy(packet + (sizeof(uint32_t) * 2), data, length);
+    memset(packet + (sizeof(uint32_t) * 2), 0, padding_length);
+    memcpy(packet + (sizeof(uint32_t) * 2) + padding_length, data, length);
 
     return send_data_packet(c, crypt_connection_id, packet, sizeof(packet));
 }
