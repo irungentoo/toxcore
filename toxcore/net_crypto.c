@@ -2142,6 +2142,9 @@ static int udp_handle_packet(void *object, IP_Port source, uint8_t *packet, uint
     return 0;
 }
 
+/* Value to set sending variable */
+#define CONN_SENDING_VALUE 2
+
 /* The dT for the average packet recieving rate calculations.
    Also used as the */
 #define PACKET_COUNTER_AVERAGE_INTERVAL 200
@@ -2291,6 +2294,7 @@ static void send_crypto_packets(Net_Crypto *c)
             int ret = send_requested_packets(c, i, conn->packets_left);
 
             if (ret != -1) {
+                conn->sending = CONN_SENDING_VALUE;
                 conn->packets_resent += ret;
                 conn->packets_left -= ret;
             }
@@ -2372,7 +2376,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
         return -1;
 
     --conn->packets_left;
-    conn->sending = CRYPTO_MIN_QUEUE_LENGTH;
+    conn->sending = CONN_SENDING_VALUE;
     return ret;
 }
 
