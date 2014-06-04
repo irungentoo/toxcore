@@ -96,7 +96,7 @@ enum {
 #define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
 
 /* If no packets are received from friend in this time interval, kill the connection. */
-#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
+#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
 
 
 /* USERSTATUS -
@@ -720,13 +720,12 @@ void kill_messenger(Messenger *M);
 /* The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m);
 
-/*
- * functions to avoid excessive polling
+/* Return the time in milliseconds before do_messenger() should be called again
+ * for optimal performance.
+ *
+ * returns time (in ms) before the next do_messenger() needs to be run on success.
  */
-size_t wait_data_size();
-int wait_prepare_messenger(Messenger *m, uint8_t *data);
-int wait_execute_messenger(uint8_t *data, long seconds, long microseconds);
-int wait_cleanup_messenger(Messenger *m, uint8_t *data);
+uint32_t messenger_run_interval(Messenger *m);
 
 /* SAVING AND LOADING FUNCTIONS: */
 

@@ -52,7 +52,8 @@
 int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format dest, uint8_t *public_key,
                           uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint64_t sendback_data)
 {
-    uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
+    uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES +
+                  ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
     memcpy(plain, ping_id, ONION_PING_ID_SIZE);
     memcpy(plain + ONION_PING_ID_SIZE, client_id, crypto_box_PUBLICKEYBYTES);
     memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES, data_public_key, crypto_box_PUBLICKEYBYTES);
@@ -223,7 +224,8 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     get_shared_key(&onion_a->shared_keys_recv, shared_key, onion_a->dht->self_secret_key, packet_public_key);
 
-    uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
+    uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES +
+                  ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
                                      ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH +
                                      crypto_box_MACBYTES, plain);

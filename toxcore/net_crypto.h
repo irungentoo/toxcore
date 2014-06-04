@@ -37,7 +37,7 @@
 #define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
 
 /* Minimum packet rate per second. */
-#define CRYPTO_PACKET_MIN_RATE 40.0
+#define CRYPTO_PACKET_MIN_RATE 8.0
 
 /* Minimum packet queue max length. */
 #define CRYPTO_MIN_QUEUE_LENGTH 8
@@ -54,6 +54,9 @@
 /* The maximum number of times we try to send the cookie request and handshake
    before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
+
+/* The timeout of no recieved UDP packets before the direct UDP connection is considered dead. */
+#define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL * 2)
 
 #define PACKET_ID_PADDING 0
 #define PACKET_ID_REQUEST 1
@@ -180,6 +183,9 @@ typedef struct {
 
     int (*new_connection_callback)(void *object, New_Connection *n_c);
     void *new_connection_callback_object;
+
+    /* The current optimal sleep time */
+    uint32_t current_sleep_time;
 } Net_Crypto;
 
 
@@ -343,6 +349,10 @@ void load_keys(Net_Crypto *c, uint8_t *keys);
  *  Sets all the global connection variables to their default values.
  */
 Net_Crypto *new_net_crypto(DHT *dht);
+
+/* return the optimal interval in ms for running do_net_crypto.
+ */
+uint32_t crypto_run_interval(Net_Crypto *c);
 
 /* Main loop. */
 void do_net_crypto(Net_Crypto *c);

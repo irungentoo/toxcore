@@ -10,9 +10,10 @@ nTox_CFLAGS =           $(LIBSODIUM_CFLAGS) \
                         $(NCURSES_CFLAGS)
 
 nTox_LDADD =            $(LIBSODIUM_LDFLAGS) \
-						$(NAC_LDFLAGS) \
+                        $(NAC_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(NCURSES_LIBS) \
                         $(WINSOCK2_LIBS)

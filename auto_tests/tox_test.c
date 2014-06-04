@@ -35,7 +35,10 @@ void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, v
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (length == sizeof("Install Gentoo") && memcmp(string, "Install Gentoo", sizeof("Install Gentoo")) == 0)
+    uint8_t cmp_msg[TOX_MAX_MESSAGE_LENGTH];
+    memset(cmp_msg, 'G', sizeof(cmp_msg));
+
+    if (length == TOX_MAX_MESSAGE_LENGTH && memcmp(string, cmp_msg, sizeof(cmp_msg)) == 0)
         ++messages_received;
 }
 
@@ -150,7 +153,11 @@ START_TEST(test_few_clients)
     printf("tox clients connected took %llu seconds\n", time(NULL) - con_time);
     to_compare = 974536;
     tox_callback_friend_message(tox3, print_message, &to_compare);
-    tox_send_message(tox2, 0, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
+    memset(msgs, 'G', sizeof(msgs));
+    ck_assert_msg(tox_send_message(tox2, 0, msgs, TOX_MAX_MESSAGE_LENGTH + 1) == 0,
+                  "TOX_MAX_MESSAGE_LENGTH is too small\n");
+    ck_assert_msg(tox_send_message(tox2, 0, msgs, TOX_MAX_MESSAGE_LENGTH) != 0, "TOX_MAX_MESSAGE_LENGTH is too big\n");
 
     while (1) {
         messages_received = 0;
@@ -258,7 +265,15 @@ START_TEST(test_few_clients)
         if (file_sent && size_recv == file_size)
             break;
 
-        c_sleep(10);
+        uint32_t tox1_interval = tox_do_interval(tox1);
+        uint32_t tox2_interval = tox_do_interval(tox2);
+        uint32_t tox3_interval = tox_do_interval(tox3);
+
+        if (tox2_interval > tox3_interval) {
+            c_sleep(tox3_interval);
+        } else {
+            c_sleep(tox2_interval);
+        }
     }
 
     printf("100MB file sent in %llu seconds\n", time(NULL) - f_time);

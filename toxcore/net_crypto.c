@@ -2142,6 +2142,9 @@ static int udp_handle_packet(void *object, IP_Port source, uint8_t *packet, uint
     return 0;
 }
 
+/* Value to set sending variable */
+#define CONN_SENDING_VALUE 2
+
 /* The dT for the average packet recieving rate calculations.
    Also used as the */
 #define PACKET_COUNTER_AVERAGE_INTERVAL 200
@@ -2154,6 +2157,8 @@ static void send_crypto_packets(Net_Crypto *c)
 {
     uint32_t i;
     uint64_t temp_time = current_time_monotonic();
+    double total_send_rate = 0;
+    uint32_t peak_request_packet_interval = ~0;
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);
@@ -2174,10 +2179,18 @@ static void send_crypto_packets(Net_Crypto *c)
         }
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
-            if (((double)num_packets_array(&conn->recv_array) / (conn->packet_recv_rate + 1.0)) * (double)(
-                        temp_time - conn->last_request_packet_sent) > REQUEST_PACKETS_COMPARE_CONSTANT) {
-                if (send_request_packet(c, i) == 0) {
-                    conn->last_request_packet_sent = temp_time;
+            if (conn->packet_recv_rate > CRYPTO_PACKET_MIN_RATE) {
+                double request_packet_interval = (REQUEST_PACKETS_COMPARE_CONSTANT / (((double)num_packets_array(
+                                                      &conn->recv_array) + 1.0) / (conn->packet_recv_rate + 1.0)));
+
+                if (temp_time - conn->last_request_packet_sent > (uint64_t)request_packet_interval) {
+                    if (send_request_packet(c, i) == 0) {
+                        conn->last_request_packet_sent = temp_time;
+                    }
+                }
+
+                if (request_packet_interval < peak_request_packet_interval) {
+                    peak_request_packet_interval = request_packet_interval;
                 }
             }
 
@@ -2280,13 +2293,37 @@ static void send_crypto_packets(Net_Crypto *c)
 
             int ret = send_requested_packets(c, i, conn->packets_left);
 
-
-
             if (ret != -1) {
+                conn->sending = CONN_SENDING_VALUE;
                 conn->packets_resent += ret;
                 conn->packets_left -= ret;
             }
+
+            if (conn->packet_send_rate > CRYPTO_PACKET_MIN_RATE * 1.5) {
+                total_send_rate += conn->packet_send_rate;
+            }
         }
+    }
+
+    c->current_sleep_time = ~0;
+    uint32_t sleep_time = peak_request_packet_interval;
+
+    if (c->current_sleep_time > sleep_time) {
+        c->current_sleep_time = sleep_time;
+    }
+
+    if (total_send_rate > CRYPTO_PACKET_MIN_RATE) {
+        sleep_time = (1000.0 / total_send_rate);
+
+        if (c->current_sleep_time > sleep_time) {
+            c->current_sleep_time = sleep_time + 1;
+        }
+    }
+
+    sleep_time = CRYPTO_SEND_PACKET_INTERVAL;
+
+    if (c->current_sleep_time > sleep_time) {
+        c->current_sleep_time = sleep_time;
     }
 }
 
@@ -2303,9 +2340,6 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
 
     return conn->packets_left;
 }
-
-
-
 
 /* Sends a lossless cryptopacket.
  *
@@ -2342,7 +2376,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
         return -1;
 
     --conn->packets_left;
-    conn->sending = CRYPTO_MIN_QUEUE_LENGTH;
+    conn->sending = CONN_SENDING_VALUE;
     return ret;
 }
 
@@ -2397,7 +2431,7 @@ unsigned int crypto_connection_status(Net_Crypto *c, int crypt_connection_id, ui
 
     *direct_connected = 0;
 
-    if ((CRYPTO_SEND_PACKET_INTERVAL * MAX_NUM_SENDPACKET_TRIES + conn->direct_lastrecv_time) > current_time_monotonic())
+    if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > current_time_monotonic())
         *direct_connected = 1;
 
     return conn->status;
@@ -2446,6 +2480,8 @@ Net_Crypto *new_net_crypto(DHT *dht)
     new_keys(temp);
     new_symmetric_key(temp->secret_symmetric_key);
 
+    temp->current_sleep_time = CRYPTO_SEND_PACKET_INTERVAL;
+
     networking_registerhandler(dht->net, NET_PACKET_COOKIE_REQUEST, &udp_handle_cookie_request, temp);
     networking_registerhandler(dht->net, NET_PACKET_COOKIE_RESPONSE, &udp_handle_packet, temp);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_HS, &udp_handle_packet, temp);
@@ -2491,6 +2527,13 @@ static void kill_timedout(Net_Crypto *c)
             //TODO: add a timeout here?
         }
     }
+}
+
+/* return the optimal interval in ms for running do_net_crypto.
+ */
+uint32_t crypto_run_interval(Net_Crypto *c)
+{
+    return c->current_sleep_time;
 }
 
 /* Main loop. */

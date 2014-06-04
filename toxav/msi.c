@@ -824,7 +824,7 @@ int handle_error ( MSISession *session, MSICall *call, MSICallError errid, uint3
         LOGGER_WARNING("Cannot handle error on 'null' call");
         return -1;
     }
-    
+
     LOGGER_DEBUG("Sending error: %d on call: %s", errid, call->id);
 
     MSIMessage *_msg_error = msi_new_message ( TYPE_RESPONSE, stringify_response ( error ) );
@@ -1045,10 +1045,10 @@ void *handle_timeout ( void *arg )
 int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     LOGGER_DEBUG("Session: %p Handling 'invite' on call: %s", session, call ? (char *)call->id : "making new");
-    
+
     pthread_mutex_lock(&session->mutex);
-    
-    
+
+
     if ( call ) {
         if ( call->peers[0] == msg->friend_id ) {
             /* The glare case. A calls B when at the same time
@@ -1059,18 +1059,18 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
              */
 
             if ( call_id_bigger (call->id, msg->callid.header_value) == 1 ) { /* Peer has advantage */
-                
+
                 /* Terminate call; peer will timeout(call) if call initialization (magically) fails */
                 terminate_call(session, call);
-                
+
                 call = init_call ( session, 1, 0 );
-                
+
                 if ( !call ) {
                     pthread_mutex_unlock(&session->mutex);
                     LOGGER_ERROR("Starting call");
                     return 0;
                 }
-                
+
             } else {
                 pthread_mutex_unlock(&session->mutex);
                 return 0; /* Wait for ringing from peer */
@@ -1081,10 +1081,9 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
             pthread_mutex_unlock(&session->mutex);
             return 0;
         }
-    }
-    else {
+    } else {
         call = init_call ( session, 1, 0 );
-        
+
         if ( !call ) {
             pthread_mutex_unlock(&session->mutex);
             LOGGER_ERROR("Starting call");
@@ -1108,29 +1107,30 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
     MSIMessage *_msg_ringing = msi_new_message ( TYPE_RESPONSE, stringify_response ( ringing ) );
     send_message ( session, call, _msg_ringing, msg->friend_id );
     free_message ( _msg_ringing );
-    
+
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnInvite);
-    
+
     return 1;
 }
 int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     LOGGER_DEBUG("Session: %p Handling 'start' on call: %s, friend id: %d", session, call->id, msg->friend_id );
-    
+
     pthread_mutex_lock(&session->mutex);
 
     if ( has_call_error ( session, call, msg ) == 0 ) {
         pthread_mutex_unlock(&session->mutex);
         return -1;
     }
-    
+
     if ( !msg->cryptokey.header_value ) {
         int rc = handle_error ( session, call, error_no_crypto_key, msg->friend_id );
         pthread_mutex_unlock(&session->mutex);
         return rc;
     }
+
     call->state = call_active;
 
     call->key_peer = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
@@ -1142,7 +1142,7 @@ int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
     flush_peer_type ( call, msg, 0 );
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnStart);
     return 1;
 }
@@ -1151,7 +1151,7 @@ int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
     LOGGER_DEBUG("Session: %p Handling 'reject' on call: %s", session, call->id);
 
     pthread_mutex_lock(&session->mutex);
-    
+
     if ( has_call_error ( session, call, msg ) == 0 )  {
         pthread_mutex_unlock(&session->mutex);
         return 0;
@@ -1164,7 +1164,7 @@ int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
 
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnReject);
     /*
     event.timer_release ( session->call->request_timer_id );
@@ -1179,11 +1179,12 @@ int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *msg )
     LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %s", session, call->id );
 
     pthread_mutex_lock(&session->mutex);
-    
+
     if ( has_call_error ( session, call, msg ) == 0 ) {
         pthread_mutex_unlock(&session->mutex);
         return 0;
     }
+
     /* Act as end message */
     /*
     MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
@@ -1201,7 +1202,7 @@ int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
     LOGGER_DEBUG("Session: %p Handling 'end' on call: %s", session, call->id );
 
     pthread_mutex_lock(&session->mutex);
-    
+
     if ( has_call_error ( session, call, msg ) == 0 ) {
         pthread_mutex_unlock(&session->mutex);
         return 0;
@@ -1212,7 +1213,7 @@ int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
     free_message ( _msg_ending );
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnEnd);
 
     terminate_call ( session, call );
@@ -1223,29 +1224,30 @@ int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
 int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     pthread_mutex_lock(&session->mutex);
-    
+
     if ( has_call_error ( session, call, msg ) == 0 ) {
         pthread_mutex_unlock(&session->mutex);
         return 0;
     }
+
     LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
 
     call->ringing_timer_id = event.timer_alloc ( handle_timeout, call, call->ringing_tout_ms );
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnRinging);
     return 1;
 }
 int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     pthread_mutex_lock(&session->mutex);
-    
+
     if ( has_call_error ( session, call, msg ) == 0 ) {
         pthread_mutex_unlock(&session->mutex);
         return 0;
     }
-    
+
     LOGGER_DEBUG("Session: %p Handling 'starting' on call: %s", session, call->id );
 
 
@@ -1282,7 +1284,7 @@ int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     event.timer_release ( call->ringing_timer_id );
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnStarting);
     return 1;
 }
@@ -1294,13 +1296,14 @@ int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
         pthread_mutex_unlock(&session->mutex);
         return 0;
     }
+
     LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
 
     /* Stop timer */
     event.timer_release ( call->request_timer_id );
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnEnding);
 
     /* Terminate call */
@@ -1311,7 +1314,7 @@ int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
 int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     pthread_mutex_lock(&session->mutex);
-    
+
     if ( !call ) {
         LOGGER_WARNING("Handling 'error' on non-existing call!");
         pthread_mutex_unlock(&session->mutex);
@@ -1328,11 +1331,11 @@ int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
     }
 
     pthread_mutex_unlock(&session->mutex);
-    
+
     invoke_callback(call->call_idx, MSI_OnEnding);
 
     terminate_call ( session, call );
-    
+
     return 1;
 }
 
@@ -1604,7 +1607,7 @@ int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type
     add_peer(_call, friend_id );
 
     _call->type_local = call_type;
-    
+
     MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
 
     /* Do whatever with message */

@@ -782,6 +782,17 @@ int tox_isconnected(Tox *tox)
     return DHT_isconnected(m->dht);
 }
 
+/* Return the time in milliseconds before tox_do() should be called again
+ * for optimal performance.
+ *
+ * returns time (in ms) before the next tox_do() needs to be run on success.
+ */
+uint32_t tox_do_interval(Tox *tox)
+{
+    Messenger *m = tox;
+    return messenger_run_interval(m);
+}
+
 /* Run this at startup.
  *
  *  return allocated instance of tox on success.
@@ -807,32 +818,6 @@ void tox_do(Tox *tox)
 {
     Messenger *m = tox;
     do_messenger(m);
-}
-
-/*
- * functions to avoid excessive polling
- */
-
-size_t tox_wait_data_size()
-{
-    return wait_data_size();
-}
-
-int tox_wait_prepare(Tox *tox, uint8_t *data)
-{
-    Messenger *m = tox;
-    return wait_prepare_messenger(m, data);
-}
-
-int tox_wait_execute(uint8_t *data, long seconds, long microseconds)
-{
-    return wait_execute_messenger(data, seconds, microseconds);
-}
-
-int tox_wait_cleanup(Tox *tox, uint8_t *data)
-{
-    Messenger *m = tox;
-    return wait_cleanup_messenger(m, data);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */
