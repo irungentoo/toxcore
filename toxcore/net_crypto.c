@@ -859,7 +859,8 @@ static int send_request_packet(Net_Crypto *c, int crypt_connection_id)
     if (len == -1)
         return -1;
 
-    return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data, len);
+    return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data,
+                                   len);
 }
 
 /* Send up to max num previously requested data packets.
