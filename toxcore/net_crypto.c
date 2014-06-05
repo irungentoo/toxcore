@@ -2298,7 +2298,10 @@ static void send_crypto_packets(Net_Crypto *c)
             int ret = send_requested_packets(c, i, conn->packets_left);
 
             if (ret != -1) {
-                conn->sending = CONN_SENDING_VALUE;
+                if (ret != 0) {
+                    conn->sending = CONN_SENDING_VALUE;
+                }
+
                 conn->packets_resent += ret;
                 conn->packets_left -= ret;
             }
