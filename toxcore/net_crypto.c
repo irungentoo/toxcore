@@ -1328,7 +1328,14 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
         return -1;
 
     if (source.ip.family == AF_INET || source.ip.family == AF_INET6) {
-        conn->ip_port = source;
+        if (!ipport_equal(&source, &conn->ip_port)) {
+            if (!list_add(&c->ip_port_list, &source, crypt_connection_id))
+                return -1;
+
+            list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+            conn->ip_port = source;
+        }
+
         conn->direct_lastrecv_time = current_time_monotonic();
         return 0;
     }
@@ -1602,9 +1609,12 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
         return -1;
 
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
-        conn->ip_port = ip_port;
-        conn->direct_lastrecv_time = 0;
-        return 0;
+        if (list_add(&c->ip_port_list, &ip_port, crypt_connection_id)) {
+            list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+            conn->ip_port = ip_port;
+            conn->direct_lastrecv_time = 0;
+            return 0;
+        }
     }
 
     return -1;
@@ -2093,15 +2103,7 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
  */
 static int crypto_id_ip_port(Net_Crypto *c, IP_Port ip_port)
 {
-    uint32_t i;
-
-    for (i = 0; i < c->crypto_connections_length; ++i) {
-        if (is_alive(c->crypto_connections[i].status))
-            if (ipport_equal(&ip_port, &c->crypto_connections[i].ip_port))
-                return i;
-    }
-
-    return -1;
+    return list_find(&c->ip_port_list, &ip_port);
 }
 
 #define CRYPTO_MIN_PACKET_SIZE (1 + sizeof(uint16_t) + crypto_box_MACBYTES)
@@ -2414,9 +2416,14 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
-    //TODO
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
     send_kill_packet(c, crypt_connection_id);
     disconnect_peer_tcp(c, crypt_connection_id);
+    list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
     return wipe_crypto_connection(c, crypt_connection_id);
 }
 
@@ -2488,6 +2495,8 @@ Net_Crypto *new_net_crypto(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_COOKIE_RESPONSE, &udp_handle_packet, temp);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_HS, &udp_handle_packet, temp);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_DATA, &udp_handle_packet, temp);
+
+    list_init(&temp->ip_port_list, sizeof(IP_Port));
     return temp;
 }
 
@@ -2561,6 +2570,7 @@ void kill_net_crypto(Net_Crypto *c)
         kill_TCP_connection(c->tcp_connections[i]);
     }
 
+    list_free(&c->ip_port_list);
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_REQUEST, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_RESPONSE, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_HS, NULL, NULL);
