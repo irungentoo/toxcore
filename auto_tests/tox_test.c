@@ -279,6 +279,10 @@ START_TEST(test_few_clients)
     printf("100MB file sent in %llu seconds\n", time(NULL) - f_time);
 
     printf("test_few_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
+
+    tox_kill(tox1);
+    tox_kill(tox2);
+    tox_kill(tox3);
 }
 END_TEST
 
@@ -346,6 +350,10 @@ loop_top:
     }
 
     printf("test_many_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        tox_kill(toxes[i]);
+    }
 }
 END_TEST
 
