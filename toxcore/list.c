@@ -55,6 +55,10 @@ static int find(LIST *list, void *data)
     uint32_t i = list->n / 2; //current position in the array
     uint32_t delta = i / 2;   //how much we move in the array
 
+    if (!delta) {
+        delta = 1;
+    }
+
     int d = -1; //used to determine if closest match is found
     //closest match is found if we move back to where we have already been
 
