@@ -1329,10 +1329,10 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
 
     if (source.ip.family == AF_INET || source.ip.family == AF_INET6) {
         if (!ipport_equal(&source, &conn->ip_port)) {
-            if (!list_add(&c->ip_port_list, &source, crypt_connection_id))
+            if (!bs_list_add(&c->ip_port_list, &source, crypt_connection_id))
                 return -1;
 
-            list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+            bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
             conn->ip_port = source;
         }
 
@@ -1609,8 +1609,8 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
         return -1;
 
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
-        if (list_add(&c->ip_port_list, &ip_port, crypt_connection_id)) {
-            list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        if (bs_list_add(&c->ip_port_list, &ip_port, crypt_connection_id)) {
+            bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
             conn->ip_port = ip_port;
             conn->direct_lastrecv_time = 0;
             return 0;
@@ -2103,7 +2103,7 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
  */
 static int crypto_id_ip_port(Net_Crypto *c, IP_Port ip_port)
 {
-    return list_find(&c->ip_port_list, &ip_port);
+    return bs_list_find(&c->ip_port_list, &ip_port);
 }
 
 #define CRYPTO_MIN_PACKET_SIZE (1 + sizeof(uint16_t) + crypto_box_MACBYTES)
@@ -2426,7 +2426,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 
     send_kill_packet(c, crypt_connection_id);
     disconnect_peer_tcp(c, crypt_connection_id);
-    list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+    bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
     return wipe_crypto_connection(c, crypt_connection_id);
 }
 
@@ -2499,7 +2499,7 @@ Net_Crypto *new_net_crypto(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_HS, &udp_handle_packet, temp);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_DATA, &udp_handle_packet, temp);
 
-    list_init(&temp->ip_port_list, sizeof(IP_Port));
+    bs_list_init(&temp->ip_port_list, sizeof(IP_Port));
     return temp;
 }
 
@@ -2573,7 +2573,7 @@ void kill_net_crypto(Net_Crypto *c)
         kill_TCP_connection(c->tcp_connections[i]);
     }
 
-    list_free(&c->ip_port_list);
+    bs_list_free(&c->ip_port_list);
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_REQUEST, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_RESPONSE, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_HS, NULL, NULL);

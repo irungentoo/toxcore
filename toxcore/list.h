@@ -35,13 +35,13 @@ typedef struct {
     uint32_t size; //size of the elements
     void *data; //array of elements
     int *ids; //array of element ids
-} LIST;
+} BS_LIST;
 
 /* Initialize a list, element_size is the size of the elements in the list */
-void list_init(LIST *list, uint32_t element_size);
+void bs_list_init(BS_LIST *list, uint32_t element_size);
 
 /* Free a list initiated with list_init */
-void list_free(LIST *list);
+void bs_list_free(BS_LIST *list);
 
 /* Retrieve the id of an element in the list
  *
@@ -49,7 +49,7 @@ void list_free(LIST *list);
  *  >= 0 : id associated with data
  *  -1   : failure
  */
-int list_find(LIST *list, void *data);
+int bs_list_find(BS_LIST *list, void *data);
 
 /* Add an element with associated id to the list
  *
@@ -57,7 +57,7 @@ int list_find(LIST *list, void *data);
  *  1 : success
  *  0 : failure (data already in list)
  */
-int list_add(LIST *list, void *data, int id);
+int bs_list_add(BS_LIST *list, void *data, int id);
 
 /* Remove element from the list
  *
@@ -65,6 +65,6 @@ int list_add(LIST *list, void *data, int id);
  *  1 : success
  *  0 : failure (element not found or id does not match
  */
-int list_remove(LIST *list, void *data, int id);
+int bs_list_remove(BS_LIST *list, void *data, int id);
 
 #endif

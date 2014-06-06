@@ -189,7 +189,7 @@ typedef struct {
     /* The current optimal sleep time */
     uint32_t current_sleep_time;
 
-    LIST ip_port_list;
+    BS_LIST ip_port_list;
 } Net_Crypto;
 
 

@@ -45,7 +45,7 @@
  *  < 0  : no match, returns index (return value is INDEX(index)) where
  *         the data should be inserted
  */
-static int find(LIST *list, void *data)
+static int find(BS_LIST *list, void *data)
 {
     //should work well, but could be improved
     if (list->n == 0) {
@@ -106,7 +106,7 @@ static int find(LIST *list, void *data)
 }
 
 
-void list_init(LIST *list, uint32_t element_size)
+void bs_list_init(BS_LIST *list, uint32_t element_size)
 {
     //set initial values
     list->n = 0;
@@ -115,14 +115,14 @@ void list_init(LIST *list, uint32_t element_size)
     list->ids = NULL;
 }
 
-void list_free(LIST *list)
+void bs_list_free(BS_LIST *list)
 {
     //free both arrays
     free(list->data);
     free(list->ids);
 }
 
-int list_find(LIST *list, void *data)
+int bs_list_find(BS_LIST *list, void *data)
 {
     int r = find(list, data);
 
@@ -134,7 +134,7 @@ int list_find(LIST *list, void *data)
     return list->ids[r];
 }
 
-int list_add(LIST *list, void *data, int id)
+int bs_list_add(BS_LIST *list, void *data, int id)
 {
     //find where the new element should be inserted
     //see: return value of find()
@@ -180,7 +180,7 @@ int list_add(LIST *list, void *data, int id)
     return 1;
 }
 
-int list_remove(LIST *list, void *data, int id)
+int bs_list_remove(BS_LIST *list, void *data, int id)
 {
     int i = find(list, data);
 
