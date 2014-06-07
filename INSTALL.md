@@ -11,7 +11,6 @@
     - [Advanced configure options] (#aconf)
     - [A/V support](#av)
       - [libtoxav] (#libtoxav)
-      - [Test phone] (#phone)
     - [Bootstrap daemon] (#bootstrapd)
     - [nTox] (#ntox)
 
@@ -232,7 +231,6 @@ While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox 
   - --disable-silent-rules verbose build output (undo: "make V=0")
   - --disable-tests build unit tests (default: auto)
   - --disable-av disable A/V support (default: auto) see: [libtoxav](#libtoxav)
-  - --enable-phone build phone (default: no) see: [Test phone](#phone)
   - --enable-ntox build nTox client (default: no) see: [nTox](#ntox)
   - --enable-daemon build DHT bootstrap daemon (default=no) see: [Bootstrap daemon](#bootstrapd)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
@@ -288,45 +286,6 @@ make -j3
 sudo make install
 cd ..
 ```
-
-
-<a name="phone" />
-####Test phone:
-
-Test phone is disabled by default. You can enable it by adding --enable-phone argument to ./configure script like so:
-```bash
-./configure --enable-phone
-```
-It can be compiled with or without video capturing enabled. There are 4 dependencies for phone: openal, ffmpeg, sdl and swscale. If any of the later 3 are not installed video support is dropped.
-
-Install on fedora:
-```bash
-yum install libopenal-devel libswscale-devel SDL*
-```
-
-Install on ubuntu:
-```bash
-sudo apt-get install libopenal-dev libswscale-dev libsdl-dev
-```
-
-Now grap recent [FFmpeg](https://git.videolan.org/?p=ffmpeg.git) libraries and install them:
-```bash
-git clone git://source.ffmpeg.org/ffmpeg.git
-cd ffmpeg
-git checkout n2.0.2
-./configure --prefix=`pwd`/install --disable-programs
-make && make install
-cd ..
-```
-
-You are now ready to compile with phone!
-
-Note: Don't forget to run core configure like so:
-```bash
-./configure --with-dependency-search=`pwd`/../ffmpeg/install
-```
-before compiling the phone.
-
 
 <a name="bootstrapd" />
 ###Bootstrap daemon:
