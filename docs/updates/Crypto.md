@@ -1,6 +1,3 @@
-Draft proposal for how crypto will be implemented.
-
-
 Encryption library used: http://nacl.cr.yp.to/
 
 
@@ -8,8 +5,6 @@ When running the program for the first time the crypto_box_keypair() function is
 generate the users public-private key pair. (32 bytes each)
 
 The generated public key is set as the client_id of the peer.
-
-Note that only the crypto connection runs on top of Lossless UDP. The friend requests do not.
 
 Adding a friend
 ---------------
@@ -27,7 +22,7 @@ Alice sends a onion data (see: Prevent_tracking.txt) packet to bob with the encr
 
 Ex message: hello bob it's me alice -_- add me pl0x.
 
-For more info on the nospam see: [[Spam Prevention]]
+For more info on the nospam see: Spam_Prevention.txt
         
 Bob receives the request and decrypts the message using the function crypto_box_open()
         
@@ -45,25 +40,7 @@ In the next step only crypto_box() is used for encryption and only crypto_box_op
 Connecting to an already added friend
 -------------------------------------
 
-Alice and Bob are friends.  
-As soon as they connect they each generate a new keypair which will only be used for the current connection (The session keys).  
-They then send themselves the following packet (the crypto handshake) (encrypted part encrypted with the public nonce in the packet the public key of the receiver and private key of the sender) 
-```
-[char with a value of 02][Senders Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted message containing: [random 24 bytes base nonce][session public key of the peer (32 bytes)]]
-```
-    
-If the packet is decrypted successfully:  
-Each start using the secret nonce, the public key provided by the other and their own session private key to encrypt data packets (adding to it + 1 for each packet.) 
-Each node sends themselves an empty data packet (data packet with 4 encrypted zero bytes)  
-Data packet:  
-````
-[char with a value of 03][Encrypted data]
-````
-Each data packet received is decrypted using the secret nonce sent to the other (with +1 added for the first packet +2 for the second, etc...) along with the private session key of the receiver.  
-Every data packet sent is encrypted using the secret nonce we received (with +1 added for the first packet +2 for the second, etc...), the session public key of the receiver and the session private key of the sender.  
-    
-The encrypted connection is only deemed successful when the empty data packet is received and decrypted successfully.
-
+see: Tox_middle_level_network_protocol.txt
 
 Crypto request packets
 --------------------------------------
