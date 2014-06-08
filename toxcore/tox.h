@@ -127,6 +127,26 @@ int tox_get_client_id(Tox *tox, int32_t friendnumber, uint8_t *client_id);
  */
 int tox_del_friend(Tox *tox, int32_t friendnumber);
 
+/* Blocks a friend.
+ *
+ *  return 0 if success
+ *  return -1 if failure (friend is not confirmed)
+ */
+int tox_block_friend(Tox *tox, int32_t friendnumber);
+
+/* Unblocks a friend.
+ *
+ *  return 0 on success (currently always returns 0) 
+ */
+int tox_unblock_friend(Tox *tox, int32_t friendnumber);
+
+/* Checks if friend is blocked.
+ *
+ *  return 1 if friend is blocked.
+ *  return 0 if friend is not blocked
+ */
+int tox_friend_is_blocked(Tox *tox, int32_t friendnumber);
+
 /* Checks friend's connecting status.
  *
  *  return 1 if friend is connected to us (Online).
