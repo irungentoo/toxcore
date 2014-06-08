@@ -192,7 +192,7 @@ int LAN_ip(IP ip)
             return 0;
 
         /* embedded IPv4-in-IPv6 */
-        if (IN6_IS_ADDR_V4MAPPED(&ip.ip6.in6_addr)) {
+        if (IPV6_IPV4_IN_V6(ip.ip6)) {
             IP ip4;
             ip4.family = AF_INET;
             ip4.ip4.uint32 = ip.ip6.uint32[3];
@@ -200,7 +200,7 @@ int LAN_ip(IP ip)
         }
 
         /* localhost in IPv6 (::1) */
-        if (IN6_IS_ADDR_LOOPBACK(&ip.ip6.in6_addr))
+        if (ip.ip6.uint64[0] == 0 && ip.ip6.uint32[2] == 0 && ip.ip6.uint32[3] == htonl(1))
             return 0;
     }
 

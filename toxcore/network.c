@@ -386,7 +386,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
         ip_port->ip.ip6.in6_addr = addr_in6->sin6_addr;
         ip_port->port = addr_in6->sin6_port;
 
-        if (IN6_IS_ADDR_V4MAPPED(&ip_port->ip.ip6.in6_addr)) {
+        if (IPV6_IPV4_IN_V6(ip_port->ip.ip6)) {
             ip_port->ip.family = AF_INET;
             ip_port->ip.ip4.uint32 = ip_port->ip.ip6.uint32[3];
         }
@@ -451,8 +451,6 @@ int networking_at_startup(void)
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR)
         return -1;
 
-#else
-    srandom((uint32_t)current_time_actual());
 #endif
     srand((uint32_t)current_time_actual());
     at_startup_ran = 1;
@@ -665,10 +663,10 @@ int ip_equal(IP *a, IP *b)
 
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
     if ((a->family == AF_INET) && (b->family == AF_INET6)) {
-        if (IN6_IS_ADDR_V4MAPPED(&b->ip6.in6_addr))
+        if (IPV6_IPV4_IN_V6(b->ip6))
             return (a->ip4.in_addr.s_addr == b->ip6.uint32[3]);
     } else if ((a->family == AF_INET6)  && (b->family == AF_INET)) {
-        if (IN6_IS_ADDR_V4MAPPED(&a->ip6.in6_addr))
+        if (IPV6_IPV4_IN_V6(a->ip6))
             return (a->ip6.uint32[3] == b->ip4.in_addr.s_addr);
     }
 
