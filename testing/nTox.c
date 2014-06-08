@@ -36,6 +36,7 @@
 #include <netdb.h>
 #endif
 
+#include <sys/select.h>
 
 #include "nTox.h"
 #include "misc_tools.c"
@@ -1166,6 +1167,30 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
     fclose(pFile);
 }
 
+char timeout_getch(Tox *m)
+{
+    char c;
+    int slpval = tox_do_interval(m);
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(0, &fds);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = slpval * 1000;
+
+    c = ERR;
+    int n = select(1, &fds, NULL, NULL, &tv);
+    if (n < 0) {
+        new_lines("select error: maybe interupted");
+    } else if (n == 0) {
+    } else {
+        c = getch();
+    }
+
+    return c;
+}
+
 int main(int argc, char *argv[])
 {
     /* minimalistic locale support (i.e. when printing dates) */
@@ -1274,13 +1299,12 @@ int main(int argc, char *argv[])
         }
 
 
-        c_sleep(tox_do_interval(m));
 
         send_filesenders(m);
         tox_do(m);
         do_refresh();
 
-        c = getch();
+        c = timeout_getch(m);
 
         if (c == ERR || c == 27)
             continue;
