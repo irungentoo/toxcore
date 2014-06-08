@@ -390,7 +390,7 @@ void line_eval(Tox *m, char *line)
             int num = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                if (tox_send_message(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1) + 1) < 1) {
+                if (tox_send_message(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1)) < 1) {
                     char sss[256];
                     sprintf(sss, "[i] could not send message to friend num %u", num);
                     new_lines(sss);
@@ -427,7 +427,7 @@ void line_eval(Tox *m, char *line)
             }
 
             status[i - 3] = 0;
-            tox_set_status_message(m, status, strlen((char *)status) + 1);
+            tox_set_status_message(m, status, strlen((char *)status));
             char numstring[100];
             sprintf(numstring, "[i] changed status to %s", (char *)status);
             new_lines(numstring);
@@ -518,7 +518,7 @@ void line_eval(Tox *m, char *line)
             int groupnumber = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                int res = tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1) + 1);
+                int res = tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1));
 
                 if (res == 0) {
                     char msg[32 + STRING_LENGTH];
@@ -602,7 +602,7 @@ void line_eval(Tox *m, char *line)
         if (conversation_default != 0) {
             if (conversation_default > 0) {
                 int friendnumber = conversation_default - 1;
-                uint32_t res = tox_send_message(m, friendnumber, (uint8_t *)line, strlen(line) + 1);
+                uint32_t res = tox_send_message(m, friendnumber, (uint8_t *)line, strlen(line));
 
                 if (res == 0) {
                     char sss[128];
@@ -612,7 +612,7 @@ void line_eval(Tox *m, char *line)
                     print_formatted_message(m, line, friendnumber, 1);
             } else {
                 int groupnumber = - conversation_default - 1;
-                int res = tox_group_message_send(m, groupnumber, (uint8_t *)line, strlen(line) + 1);
+                int res = tox_group_message_send(m, groupnumber, (uint8_t *)line, strlen(line));
 
                 if (res == 0) {
                     char msg[32 + STRING_LENGTH];
@@ -1060,7 +1060,7 @@ void print_groupchatpeers(Tox *m, int groupnumber)
 void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *message, uint16_t length, void *userdata)
 {
     char msg[256 + length];
-    uint8_t name[TOX_MAX_NAME_LENGTH];
+    uint8_t name[TOX_MAX_NAME_LENGTH] = {0};
     int len = tox_group_peername(m, groupnumber, peernumber, name);
 
     //print_groupchatpeers(m, groupnumber);
@@ -1093,7 +1093,7 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
             sprintf(msg, "[g] #%i: Peer %i left.", groupnumber, peernumber);
             new_lines(msg);
         } else {
-            uint8_t peername[TOX_MAX_NAME_LENGTH];
+            uint8_t peername[TOX_MAX_NAME_LENGTH] = {0};
             int len = tox_group_peername(m, groupnumber, peernumber, peername);
 
             if (len <= 0)
@@ -1104,7 +1104,7 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
             new_lines(msg);
         }
     } else if (change == TOX_CHAT_CHANGE_PEER_NAME) {
-        uint8_t peername[TOX_MAX_NAME_LENGTH];
+        uint8_t peername[TOX_MAX_NAME_LENGTH] = {0};
         int len = tox_group_peername(m, groupnumber, peernumber, peername);
 
         if (len <= 0)
