@@ -106,6 +106,32 @@ int tox_del_friend(Tox *tox, int32_t friendnumber)
     return m_delfriend(m, friendnumber);
 }
 
+/* Blocks a friend. */
+int tox_block_friend(Tox *tox, int32_t friendnumber)
+{
+    Messenger *m = tox;
+    return m_block_friend(m, friendnumber);
+}
+
+/* unblocks a friend. */
+int tox_unblock_friend(Tox *tox, int32_t friendnumber)
+{
+    Messenger *m = tox;
+    return m_unblock_friend(m, friendnumber);
+}
+
+/* Checks if friend is blocked.
+ *
+ *  return 1 if friend is blocked.
+ *  return 0 if friend is not blocked
+ */
+int tox_friend_is_blocked(Tox *tox, int32_t friendnumber)
+{
+    Messenger *m = tox;
+    return m_friend_is_blocked(m, friendnumber);
+}
+
+
 /* Checks friend's connecting status.
  *
  *  return 1 if friend is connected to us (Online).

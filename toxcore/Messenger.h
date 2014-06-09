@@ -162,6 +162,7 @@ typedef struct {
     uint64_t ping_lastrecv;
     uint64_t ping_lastsent;
     uint64_t share_relays_lastsent;
+    uint8_t is_blocked;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
     int invited_groups[MAX_INVITED_GROUPS];
@@ -295,6 +296,26 @@ int getclient_id(Messenger *m, int32_t friendnumber, uint8_t *client_id);
  *  return -1 if failure
  */
 int m_delfriend(Messenger *m, int32_t friendnumber);
+
+/* Blocks a friend.
+ *
+ *  return 0 if success
+ *  return -1 if failure (friend is not confirmed)
+ */
+int m_block_friend(Messenger *m, int32_t friendnumber);
+
+/* Unblocks a friend.
+ *
+ *  return 0 on success (currently always returns 0) 
+ */
+int m_unblock_friend(Messenger *m, int32_t friendnumber);
+
+/* Checks if friend is blocked.
+ *
+ *  return 1 if friend is blocked
+ *  return 0 if friend is not blocked 
+ */
+int m_friend_is_blocked(Messenger *m, int32_t friendnumber);
 
 /* Checks friend's connecting status.
  *

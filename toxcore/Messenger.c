@@ -242,6 +242,7 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
             memcpy(m->friendlist[i].info, data, length);
             m->friendlist[i].info_size = length;
             m->friendlist[i].message_id = 0;
+            m->friendlist[i].is_blocked = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
             recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
@@ -289,6 +290,7 @@ int32_t m_addfriend_norequest(Messenger *m, uint8_t *client_id)
             m->friendlist[i].userstatus = USERSTATUS_NONE;
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
+            m->friendlist[i].is_blocked = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
 
@@ -1729,6 +1731,9 @@ static int handle_new_connections(void *object, New_Connection *n_c)
     int friend_id = getfriend_id(m, n_c->public_key);
 
     if (friend_id != -1) {
+        if (m->friendlist[friend_id].is_blocked)
+            return -1;
+
         if (m->friendlist[friend_id].crypt_connection_id != -1)
             return -1;
 
@@ -1744,6 +1749,46 @@ static int handle_new_connections(void *object, New_Connection *n_c)
     return -1;
 }
 
+/* Blocks a friend.
+ *
+ *  return 0 if success
+ *  return -1 if failure (friend is not confirmed)
+ */
+int m_block_friend(Messenger *m, int32_t friendnumber)
+{
+    if (m->friendlist[friendnumber].status < FRIEND_CONFIRMED)
+        return -1;
+
+    crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
+    m->friendlist[friendnumber].crypt_connection_id = -1;
+    m->friendlist[friendnumber].is_blocked = 1;
+
+    if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
+        set_friend_status(m, friendnumber, FRIEND_CONFIRMED);
+    }
+
+    return 0;
+}
+
+/* Unblocks a friend.
+ *
+ *  return 0 on success (currently always returns 0) 
+ */
+int m_unblock_friend(Messenger *m, int32_t friendnumber)
+{
+    m->friendlist[friendnumber].is_blocked = 0;
+    return 0;
+}
+
+/* Checks if friend is blocked.
+ *
+ *  return 1 if friend is blocked
+ *  return 0 if friend is not blocked 
+ */
+int m_friend_is_blocked(Messenger *m, int32_t friendnumber)
+{
+    return m->friendlist[friendnumber].is_blocked;
+}
 
 /* Run this at startup. */
 Messenger *new_messenger(uint8_t ipv6enabled)
@@ -2149,6 +2194,9 @@ static int friend_new_connection(Messenger *m, int32_t friendnumber, uint8_t *re
     if (friend_not_valid(m, friendnumber))
         return -1;
 
+    if (m->friendlist[friendnumber].is_blocked)
+        return -1;
+
     if (m->friendlist[friendnumber].crypt_connection_id != -1) {
         return -1;
     }
@@ -2443,6 +2491,7 @@ void do_messenger(Messenger *m)
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
 #define NUM_SAVED_TCP_RELAYS 8
+
 struct SAVED_FRIEND {
     uint8_t status;
     uint8_t client_id[CLIENT_ID_SIZE];
@@ -2455,6 +2504,7 @@ struct SAVED_FRIEND {
     uint8_t userstatus;
     uint32_t friendrequest_nospam;
     uint64_t ping_lastrecv;
+    uint8_t is_blocked;
 };
 
 /* for backwards compatibility with last version of SAVED_FRIEND.
@@ -2462,14 +2512,15 @@ struct SAVED_FRIEND {
 struct SAVED_FRIEND_OLD {
     uint8_t status;
     uint8_t client_id[CLIENT_ID_SIZE];
-    uint8_t info[1024];
-    uint16_t info_size;
+    uint8_t info[SAVED_FRIEND_REQUEST_SIZE]; // the data that is sent during the friend requests we do.
+    uint16_t info_size; // Length of the info.
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
     uint8_t statusmessage[MAX_STATUSMESSAGE_LENGTH];
     uint16_t statusmessage_length;
     uint8_t userstatus;
     uint32_t friendrequest_nospam;
+    uint64_t ping_lastrecv;
 };
 
 static uint32_t saved_friendslist_size(Messenger *m)
@@ -2504,6 +2555,7 @@ static uint32_t friends_list_save(Messenger *m, uint8_t *data)
                 memcpy(temp.statusmessage, m->friendlist[i].statusmessage, m->friendlist[i].statusmessage_length);
                 temp.statusmessage_length = htons(m->friendlist[i].statusmessage_length);
                 temp.userstatus = m->friendlist[i].userstatus;
+                temp.is_blocked = m->friendlist[i].is_blocked;
 
                 uint8_t lastonline[sizeof(uint64_t)];
                 memcpy(lastonline, &m->friendlist[i].ping_lastrecv, sizeof(uint64_t));
@@ -2545,12 +2597,15 @@ static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
             setfriendname(m, fnum, temp.name, ntohs(temp.name_length));
             set_friend_statusmessage(m, fnum, temp.statusmessage, ntohs(temp.statusmessage_length));
             set_friend_userstatus(m, fnum, temp.userstatus);
+            uint8_t lastonline[sizeof(uint64_t)];
+            memcpy(lastonline, &temp.ping_lastrecv, sizeof(uint64_t));
+            net_to_host(lastonline, sizeof(uint64_t));
+            memcpy(&m->friendlist[fnum].ping_lastrecv, lastonline, sizeof(uint64_t));
 
             if (!old_data) {
-                uint8_t lastonline[sizeof(uint64_t)];
-                memcpy(lastonline, &temp.ping_lastrecv, sizeof(uint64_t));
-                net_to_host(lastonline, sizeof(uint64_t));
-                memcpy(&m->friendlist[fnum].ping_lastrecv, lastonline, sizeof(uint64_t));
+                if (temp.is_blocked) {
+                    m_block_friend(m, fnum);
+                }
             }
         } else if (temp.status != 0) {
             /* TODO: This is not a good way to do this. */
