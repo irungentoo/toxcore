@@ -45,7 +45,7 @@
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
-static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
+static const char *inet_ntop(sa_family_t family, void *addr, const char *buf, size_t bufsize)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
@@ -78,7 +78,7 @@ static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t b
     return NULL;
 }
 
-static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
+static int inet_pton(sa_family_t family, const char *addrString, const void *addrbuf)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
@@ -281,7 +281,7 @@ uint64_t current_time_monotonic(void)
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
  */
-int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length)
+int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length)
 {
     /* socket AF_INET, but target IP NOT: can't send */
     if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
@@ -404,7 +404,7 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
     net->packethandlers[byte].object = object;
 }
 
-void networking_poll(Networking_Core *net)
+void networking_poll(const Networking_Core *net)
 {
     unix_time_update();
 
@@ -646,7 +646,7 @@ void kill_networking(Networking_Core *net)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ip_equal(IP *a, IP *b)
+int ip_equal(const IP *a, const IP *b)
 {
     if (!a || !b)
         return 0;
@@ -679,7 +679,7 @@ int ip_equal(IP *a, IP *b)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ipport_equal(IP_Port *a, IP_Port *b)
+int ipport_equal(const IP_Port *a, const IP_Port *b)
 {
     if (!a || !b)
         return 0;
@@ -710,7 +710,7 @@ void ip_init(IP *ip, uint8_t ipv6enabled)
 };
 
 /* checks if ip is valid */
-int ip_isset(IP *ip)
+int ip_isset(const IP *ip)
 {
     if (!ip)
         return 0;
@@ -719,7 +719,7 @@ int ip_isset(IP *ip)
 };
 
 /* checks if ip is valid */
-int ipport_isset(IP_Port *ipport)
+int ipport_isset(const IP_Port *ipport)
 {
     if (!ipport)
         return 0;
@@ -731,7 +731,7 @@ int ipport_isset(IP_Port *ipport)
 };
 
 /* copies an ip structure (careful about direction!) */
-void ip_copy(IP *target, IP *source)
+void ip_copy(IP *target, const IP *source)
 {
     if (!source || !target)
         return;
@@ -740,7 +740,7 @@ void ip_copy(IP *target, IP *source)
 };
 
 /* copies an ip_port structure (careful about direction!) */
-void ipport_copy(IP_Port *target, IP_Port *source)
+void ipport_copy(IP_Port *target, const IP_Port *source)
 {
     if (!source || !target)
         return;
@@ -749,25 +749,25 @@ void ipport_copy(IP_Port *target, IP_Port *source)
 };
 
 /* packing and unpacking functions */
-void ip_pack(uint8_t *data, IP *source)
+void ip_pack(uint8_t *data, const IP *source)
 {
     data[0] = source->family;
     memcpy(data + 1, &source->ip6, SIZE_IP6);
 }
 
-void ip_unpack(IP *target, uint8_t *data)
+void ip_unpack(IP *target, const uint8_t *data)
 {
     target->family = data[0];
     memcpy(&target->ip6, data + 1, SIZE_IP6);
 }
 
-void ipport_pack(uint8_t *data, IP_Port *source)
+void ipport_pack(uint8_t *data, const IP_Port *source)
 {
     ip_pack(data, &source->ip);
     memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
 }
 
-void ipport_unpack(IP_Port *target, uint8_t *data)
+void ipport_unpack(IP_Port *target, const uint8_t *data)
 {
     ip_unpack(&target->ip, data);
     memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
@@ -779,7 +779,7 @@ void ipport_unpack(IP_Port *target, uint8_t *data)
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
 static char addresstext[96];
-const char *ip_ntoa(IP *ip)
+const char *ip_ntoa(const IP *ip)
 {
     if (ip) {
         if (ip->family == AF_INET) {
