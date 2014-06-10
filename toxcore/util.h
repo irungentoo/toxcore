@@ -36,8 +36,8 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 
 /* id functions */
-bool id_equal(uint8_t *dest, uint8_t *src);
-uint32_t id_copy(uint8_t *dest, uint8_t *src); /* return value is CLIENT_ID_SIZE */
+bool id_equal(const uint8_t *dest, const uint8_t *src);
+uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)

@@ -58,12 +58,12 @@ int is_timeout(uint64_t timestamp, uint64_t timeout)
 
 
 /* id functions */
-bool id_equal(uint8_t *dest, uint8_t *src)
+bool id_equal(const uint8_t *dest, const uint8_t *src)
 {
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
-uint32_t id_copy(uint8_t *dest, uint8_t *src)
+uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
     return CLIENT_ID_SIZE;
