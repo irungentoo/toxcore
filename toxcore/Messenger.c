@@ -2429,7 +2429,6 @@ void do_messenger(Messenger *m)
 
 /* new messenger format for load/save, more robust and forward compatible */
 
-#define MESSENGER_STATE_COOKIE_GLOBAL_OLD 0x15ed1b1e
 #define MESSENGER_STATE_COOKIE_GLOBAL 0x15ed1b1f
 
 #define MESSENGER_STATE_COOKIE_TYPE      0x01ce
@@ -2455,21 +2454,6 @@ struct SAVED_FRIEND {
     uint8_t userstatus;
     uint32_t friendrequest_nospam;
     uint64_t ping_lastrecv;
-};
-
-/* for backwards compatibility with last version of SAVED_FRIEND.
-   must never be bigger than SAVED_FRIEND. */
-struct SAVED_FRIEND_OLD {
-    uint8_t status;
-    uint8_t client_id[CLIENT_ID_SIZE];
-    uint8_t info[1024];
-    uint16_t info_size;
-    uint8_t name[MAX_NAME_LENGTH];
-    uint16_t name_length;
-    uint8_t statusmessage[MAX_STATUSMESSAGE_LENGTH];
-    uint16_t statusmessage_length;
-    uint8_t userstatus;
-    uint32_t friendrequest_nospam;
 };
 
 static uint32_t saved_friendslist_size(Messenger *m)
@@ -2521,37 +2505,26 @@ static uint32_t friends_list_save(Messenger *m, uint8_t *data)
 
 static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
 {
-    int old_data = 0;
-
     if (length % sizeof(struct SAVED_FRIEND) != 0) {
-        if (length % sizeof(struct SAVED_FRIEND_OLD) != 0)
-            return -1;
-
-        old_data = 1;
+        return -1;
     }
 
-    /* if old data file is being used, offset size of current SAVED_FRIEND struct with size of old one */
-    uint32_t diff = old_data ? sizeof(struct SAVED_FRIEND) - sizeof(struct SAVED_FRIEND_OLD) : 0;
-    uint32_t struct_size = sizeof(struct SAVED_FRIEND) - diff;
-    uint32_t num = length / struct_size;
+    uint32_t num = length / sizeof(struct SAVED_FRIEND);
     uint32_t i;
 
     for (i = 0; i < num; ++i) {
         struct SAVED_FRIEND temp;
-        memcpy(&temp, data + i * struct_size, struct_size);
+        memcpy(&temp, data + i * sizeof(struct SAVED_FRIEND), sizeof(struct SAVED_FRIEND));
 
         if (temp.status >= 3) {
             int fnum = m_addfriend_norequest(m, temp.client_id);
             setfriendname(m, fnum, temp.name, ntohs(temp.name_length));
             set_friend_statusmessage(m, fnum, temp.statusmessage, ntohs(temp.statusmessage_length));
             set_friend_userstatus(m, fnum, temp.userstatus);
-
-            if (!old_data) {
-                uint8_t lastonline[sizeof(uint64_t)];
-                memcpy(lastonline, &temp.ping_lastrecv, sizeof(uint64_t));
-                net_to_host(lastonline, sizeof(uint64_t));
-                memcpy(&m->friendlist[fnum].ping_lastrecv, lastonline, sizeof(uint64_t));
-            }
+            uint8_t lastonline[sizeof(uint64_t)];
+            memcpy(lastonline, &temp.ping_lastrecv, sizeof(uint64_t));
+            net_to_host(lastonline, sizeof(uint64_t));
+            memcpy(&m->friendlist[fnum].ping_lastrecv, lastonline, sizeof(uint64_t));
         } else if (temp.status != 0) {
             /* TODO: This is not a good way to do this. */
             uint8_t address[FRIEND_ADDRESS_SIZE];
