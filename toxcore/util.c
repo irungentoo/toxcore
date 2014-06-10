@@ -86,7 +86,7 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
 
 /* state load/save */
 int load_state(load_state_callback_func load_state_callback, void *outer,
-               uint8_t *data, uint32_t length, uint16_t cookie_inner)
+               const uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {
     if (!load_state_callback || !data) {
 #ifdef DEBUG

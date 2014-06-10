@@ -467,7 +467,7 @@ static int handle_data_response(void *object, IP_Port source, uint8_t *packet, u
 #define FAKEID_DATA_ID 156
 #define FAKEID_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES)
 #define FAKEID_DATA_MAX_LENGTH (FAKEID_DATA_MIN_LENGTH + sizeof(Node_format)*MAX_SENT_NODES)
-static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t length)
+static int handle_fakeid_announce(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint32_t length)
 {
     Onion_Client *onion_c = object;
 
@@ -483,8 +483,8 @@ static int handle_fakeid_announce(void *object, uint8_t *source_pubkey, uint8_t 
         return 1;
 
     uint64_t no_replay;
-    net_to_host(data + 1, sizeof(no_replay));
     memcpy(&no_replay, data + 1, sizeof(uint64_t));
+    net_to_host((uint8_t *) &no_replay, sizeof(no_replay));
 
     if (no_replay <= onion_c->friends_list[friend_num].last_noreplay)
         return 1;
@@ -623,7 +623,7 @@ static int send_dht_fakeid(Onion_Client *onion_c, int friend_num, uint8_t *data,
     return route_tofriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, packet, len);
 }
 
-static int handle_dht_fakeid(void *object, IP_Port source, uint8_t *source_pubkey, uint8_t *packet, uint32_t length)
+static int handle_dht_fakeid(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet, uint32_t length)
 {
     Onion_Client *onion_c = object;
 
@@ -702,7 +702,7 @@ static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num, uint
  * return -1 on failure.
  * return friend number on success.
  */
-int onion_friend_num(Onion_Client *onion_c, uint8_t *client_id)
+int onion_friend_num(const Onion_Client *onion_c, const uint8_t *client_id)
 {
     uint32_t i;
 
@@ -744,7 +744,7 @@ static int realloc_onion_friends(Onion_Client *onion_c, uint32_t num)
  * return -1 on failure.
  * return the friend number on success or if the friend was already added.
  */
-int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id)
+int onion_addfriend(Onion_Client *onion_c, const uint8_t *client_id)
 {
     int num = onion_friend_num(onion_c, client_id);
 
@@ -831,7 +831,7 @@ int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_rela
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key, uint64_t timestamp)
+int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key, uint64_t timestamp)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;

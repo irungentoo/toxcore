@@ -144,7 +144,7 @@ uint32_t group_sendaction(Group_Chat *chat, uint8_t *action, uint32_t length);
  *
  * returns -1 on failure, 0 on success.
  */
-int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len);
+int set_nick(Group_Chat *chat, const uint8_t *nick, uint16_t nick_len);
 
 /*
  * Tell everyone about a new peer (a person we are inviting for example.)

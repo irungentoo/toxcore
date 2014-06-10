@@ -86,7 +86,7 @@ int realloc_friendlist(Messenger *m, uint32_t num)
 /*  return the friend id associated to that public key.
  *  return -1 if no such friend.
  */
-int32_t getfriend_id(Messenger *m, uint8_t *client_id)
+int32_t getfriend_id(const Messenger *m, const uint8_t *client_id)
 {
     uint32_t i;
 
@@ -256,7 +256,7 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
     return FAERR_UNKNOWN;
 }
 
-int32_t m_addfriend_norequest(Messenger *m, uint8_t *client_id)
+int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
 {
     if (getfriend_id(m, client_id) != -1)
         return -1;
@@ -356,7 +356,7 @@ int m_friend_exists(Messenger *m, int32_t friendnumber)
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  */
-uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, uint8_t *message, uint32_t length)
+uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length)
 {
     if (friend_not_valid(m, friendnumber))
         return 0;
@@ -373,7 +373,7 @@ uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, uint8_t *message, uin
     return 0;
 }
 
-uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, uint8_t *message, uint32_t length)
+uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message, uint32_t length)
 {
     if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)))
         return 0;
@@ -456,7 +456,7 @@ int setfriendname(Messenger *m, int32_t friendnumber, uint8_t *name, uint16_t le
  *  return 0 if success.
  *  return -1 if failure.
  */
-int setname(Messenger *m, uint8_t *name, uint16_t length)
+int setname(Messenger *m, const uint8_t *name, uint16_t length)
 {
     if (length > MAX_NAME_LENGTH || length == 0)
         return -1;
@@ -519,7 +519,7 @@ int m_get_self_name_size(Messenger *m)
     return m->name_length;
 }
 
-int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length)
+int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
 {
     if (length > MAX_STATUSMESSAGE_LENGTH)
         return -1;
@@ -722,10 +722,10 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno)
 
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t); */
 /* Set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, uint8_t *, uint8_t *, uint16_t, void *),
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t, void *),
                               void *userdata)
 {
-    void (*handle_friendrequest)(void *, uint8_t *, uint8_t *, uint16_t, void *) = (void *)function;
+    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, uint16_t, void *) = (void *)function;
     callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
 }
 
@@ -1701,7 +1701,7 @@ int send_custom_lossy_packet(Messenger *m, int32_t friendnumber, uint8_t *data, 
 
 
 /* Function to filter out some friend requests*/
-static int friend_already_added(uint8_t *client_id, void *data)
+static int friend_already_added(const uint8_t *client_id, void *data)
 {
     Messenger *m = data;
 
@@ -2503,7 +2503,7 @@ static uint32_t friends_list_save(Messenger *m, uint8_t *data)
     return num * sizeof(struct SAVED_FRIEND);
 }
 
-static int friends_list_load(Messenger *m, uint8_t *data, uint32_t length)
+static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
 {
     if (length % sizeof(struct SAVED_FRIEND) != 0) {
         return -1;
@@ -2626,7 +2626,7 @@ void messenger_save(Messenger *m, uint8_t *data)
     data += len;
 }
 
-static int messenger_load_state_callback(void *outer, uint8_t *data, uint32_t length, uint16_t type)
+static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
 {
     Messenger *m = outer;
 

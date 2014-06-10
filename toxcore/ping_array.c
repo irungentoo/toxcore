@@ -59,7 +59,7 @@ static void ping_array_clear_timedout(Ping_Array *array)
  * return ping_id on success.
  * return 0 on failure.
  */
-uint64_t ping_array_add(Ping_Array *array, uint8_t *data, uint32_t length)
+uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
 {
     ping_array_clear_timedout(array);
     uint32_t index = array->last_added % array->total_size;

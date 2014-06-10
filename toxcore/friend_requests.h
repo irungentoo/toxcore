@@ -30,12 +30,12 @@
 
 typedef struct {
     uint32_t nospam;
-    void (*handle_friendrequest)(void *, uint8_t *, uint8_t *, uint16_t, void *);
+    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, uint16_t, void *);
     uint8_t handle_friendrequest_isset;
     void *handle_friendrequest_object;
     void *handle_friendrequest_userdata;
 
-    int (*filter_function)(uint8_t *, void *);
+    int (*filter_function)(const uint8_t *, void *);
     void *filter_function_userdata;
     /* NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
      *  TODO: Make this better (This will most likely tie in with the way we will handle spam.)
@@ -66,14 +66,14 @@ int remove_request_received(Friend_Requests *fr, uint8_t *client_id);
 /* Set the function that will be executed when a friend request for us is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length, void * userdata)
  */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, uint8_t *, uint8_t *, uint16_t, void *),
+void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, uint16_t, void *),
                             void *object, void *userdata);
 
 /* Set the function used to check if a friend request should be displayed to the user or not.
  * Function format is int function(uint8_t * public_key, void * userdata)
  * It must return 0 if the request is ok (anything else if it is bad.)
  */
-void set_filter_function(Friend_Requests *fr, int (*function)(uint8_t *, void *), void *userdata);
+void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, void *), void *userdata);
 
 /* Sets up friendreq packet handlers. */
 void friendreq_init(Friend_Requests *fr, Onion_Client *onion_c);

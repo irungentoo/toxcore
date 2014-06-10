@@ -36,12 +36,12 @@ typedef struct PING PING;
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_to_ping(PING *ping, uint8_t *client_id, IP_Port ip_port);
+int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port);
 void do_to_ping(PING *ping);
 
 PING *new_ping(DHT *dht);
 void kill_ping(PING *ping);
 
-int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id);
+int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *client_id);
 
 #endif /* __PING_H__ */

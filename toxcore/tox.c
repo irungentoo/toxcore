@@ -138,7 +138,7 @@ int tox_friend_exists(Tox *tox, int32_t friendnumber)
  *  m_sendmessage_withid will send a message with the id of your choosing,
  *  however we can generate an id for you by calling plain m_sendmessage.
  */
-uint32_t tox_send_message(Tox *tox, int32_t friendnumber, uint8_t *message, uint32_t length)
+uint32_t tox_send_message(Tox *tox, int32_t friendnumber, const uint8_t *message, uint32_t length)
 {
     Messenger *m = tox;
     return m_sendmessage(m, friendnumber, message, length);
@@ -362,7 +362,7 @@ uint32_t tox_get_friendlist(Tox *tox, int32_t *out_list, uint32_t list_size)
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
  */
-void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, uint8_t *, uint8_t *, uint16_t, void *),
+void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, const uint8_t *, const uint8_t *, uint16_t, void *),
                                  void *userdata)
 {
     Messenger *m = tox;

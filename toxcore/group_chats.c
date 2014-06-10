@@ -675,7 +675,7 @@ static uint32_t group_send_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_l
     return send_data(chat, nick, nick_len, GROUP_CHAT_PEER_NICK);
 }
 
-int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len)
+int set_nick(Group_Chat *chat, const uint8_t *nick, uint16_t nick_len)
 {
     if (nick_len > MAX_NICK_BYTES || nick_len == 0)
         return -1;

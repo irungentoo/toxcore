@@ -43,9 +43,9 @@ void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
 
 /* state load/save */
-typedef int (*load_state_callback_func)(void *outer, uint8_t *data, uint32_t len, uint16_t type);
+typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
 int load_state(load_state_callback_func load_state_callback, void *outer,
-               uint8_t *data, uint32_t length, uint16_t cookie_inner);
+               const uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
 /* Converts 4 bytes to uint32_t */
 void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);

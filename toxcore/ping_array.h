@@ -48,7 +48,7 @@ typedef struct {
  * return ping_id on success.
  * return 0 on failure.
  */
-uint64_t ping_array_add(Ping_Array *array, uint8_t *data, uint32_t length);
+uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length);
 
 /* Check if ping_id is valid and not timed out.
  *

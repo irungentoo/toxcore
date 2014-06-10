@@ -274,12 +274,12 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
  *  return the friend number if success.
  *  return -1 if failure.
  */
-int32_t m_addfriend_norequest(Messenger *m, uint8_t *client_id);
+int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id);
 
 /*  return the friend number associated to that client id.
  *  return -1 if no such friend.
  */
-int32_t getfriend_id(Messenger *m, uint8_t *client_id);
+int32_t getfriend_id(const Messenger *m, const uint8_t *client_id);
 
 /* Copies the public key associated to that friend id into client_id buffer.
  * Make sure that client_id is of size CLIENT_ID_SIZE.
@@ -321,8 +321,8 @@ int m_friend_exists(Messenger *m, int32_t friendnumber);
  *  m_sendmessage_withid will send a message with the id of your choosing,
  *  however we can generate an id for you by calling plain m_sendmessage.
  */
-uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, uint8_t *message, uint32_t length);
-uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
+uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length);
+uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message, uint32_t length);
 
 /* Send an action to an online friend.
  *
@@ -355,7 +355,7 @@ int setfriendname(Messenger *m, int32_t friendnumber, uint8_t *name, uint16_t le
  *  return 0 if success.
  *  return -1 if failure.
  */
-int setname(Messenger *m, uint8_t *name, uint16_t length);
+int setname(Messenger *m, const uint8_t *name, uint16_t length);
 
 /*
  * Get your nickname.
@@ -387,7 +387,7 @@ int m_get_self_name_size(Messenger *m);
  *  returns 0 on success.
  *  returns -1 on failure.
  */
-int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length);
+int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length);
 int m_set_userstatus(Messenger *m, uint8_t status);
 
 /*  return the length of friendnumber's status message, including null on success.
@@ -442,7 +442,7 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno);
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
  */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, uint8_t *, uint8_t *, uint16_t, void *),
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t, void *),
                               void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.

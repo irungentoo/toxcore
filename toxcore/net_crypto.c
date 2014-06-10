@@ -2466,7 +2466,7 @@ void save_keys(Net_Crypto *c, uint8_t *keys)
 /* Load the public and private keys from the keys array.
  * Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
  */
-void load_keys(Net_Crypto *c, uint8_t *keys)
+void load_keys(Net_Crypto *c, const uint8_t *keys)
 {
     memcpy(c->self_public_key, keys, crypto_box_PUBLICKEYBYTES);
     memcpy(c->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
