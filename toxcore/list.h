@@ -41,7 +41,7 @@ typedef struct {
 void bs_list_init(BS_LIST *list, uint32_t element_size);
 
 /* Free a list initiated with list_init */
-void bs_list_free(BS_LIST *list);
+void bs_list_free(const BS_LIST *list);
 
 /* Retrieve the id of an element in the list
  *
@@ -49,7 +49,7 @@ void bs_list_free(BS_LIST *list);
  *  >= 0 : id associated with data
  *  -1   : failure
  */
-int bs_list_find(BS_LIST *list, void *data);
+int bs_list_find(const BS_LIST *list, const void *data);
 
 /* Add an element with associated id to the list
  *
@@ -57,14 +57,14 @@ int bs_list_find(BS_LIST *list, void *data);
  *  1 : success
  *  0 : failure (data already in list)
  */
-int bs_list_add(BS_LIST *list, void *data, int id);
+int bs_list_add(BS_LIST *list, const void *data, int id);
 
 /* Remove element from the list
  *
  * return value:
  *  1 : success
- *  0 : failure (element not found or id does not match
+ *  0 : failure (element not found or id does not match)
  */
-int bs_list_remove(BS_LIST *list, void *data, int id);
+int bs_list_remove(BS_LIST *list, const void *data, int id);
 
 #endif
