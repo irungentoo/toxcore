@@ -96,7 +96,6 @@ typedef enum {
  * @brief Locally supported capabilities.
  */
 typedef enum {
-    None,
     AudioEncoding = 1 << 0,
     AudioDecoding = 1 << 1,
     VideoEncoding = 1 << 2,
