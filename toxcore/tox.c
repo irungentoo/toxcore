@@ -72,7 +72,7 @@ int32_t tox_add_friend(Tox *tox, uint8_t *address, uint8_t *data, uint16_t lengt
  *  return the friend number if success.
  *  return -1 if failure.
  */
-int32_t tox_add_friend_norequest(Tox *tox, uint8_t *client_id)
+int32_t tox_add_friend_norequest(Tox *tox, const uint8_t *client_id)
 {
     Messenger *m = tox;
     return m_addfriend_norequest(m, client_id);
