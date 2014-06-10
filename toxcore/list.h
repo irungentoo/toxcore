@@ -41,7 +41,7 @@ typedef struct {
 void bs_list_init(BS_LIST *list, uint32_t element_size);
 
 /* Free a list initiated with list_init */
-void bs_list_free(const BS_LIST *list);
+void bs_list_free(BS_LIST *list);
 
 /* Retrieve the id of an element in the list
  *

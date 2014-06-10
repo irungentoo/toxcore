@@ -544,8 +544,8 @@ static void get_close_nodes_inner(const uint8_t *client_id, Node_format *nodes_l
  *
  * want_good : do we want only good nodes as checked with the hardening returned or not?
  */
-static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
-                                    uint8_t is_LAN, uint8_t want_good)
+static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list,
+                                    sa_family_t sa_family, uint8_t is_LAN, uint8_t want_good)
 {
     uint32_t num_nodes = 0, i;
     get_close_nodes_inner(client_id, nodes_list, sa_family,
@@ -565,8 +565,8 @@ static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *client_id, No
     return num_nodes;
 }
 
-int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
-                    uint8_t want_good)
+int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
+                    uint8_t is_LAN, uint8_t want_good)
 {
     memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
 #ifdef ENABLE_ASSOC_DHT
@@ -961,7 +961,8 @@ end:
 
 /* Send a getnodes request.
    sendback_node is the node that it will send back the response to (set to NULL to disable this) */
-static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id, const Node_format *sendback_node)
+static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id,
+                    const Node_format *sendback_node)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->self_public_key))
@@ -1017,8 +1018,8 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
 }
 
 /* Send a send nodes response: message for IPv6 nodes */
-static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id, const uint8_t *sendback_data,
-                          uint16_t length, const uint8_t *shared_encryption_key)
+static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id,
+                          const uint8_t *sendback_data, uint16_t length, const uint8_t *shared_encryption_key)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->self_public_key))
@@ -1128,8 +1129,8 @@ static uint8_t sent_getnode_to_node(DHT *dht, const uint8_t *client_id, IP_Port 
 }
 
 /* Function is needed in following functions. */
-static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto, const uint8_t *queried_client_id, const uint8_t *nodes_data,
-                                      uint16_t nodes_data_length);
+static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto, const uint8_t *queried_client_id,
+                                      const uint8_t *nodes_data, uint16_t nodes_data_length);
 
 static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *packet, uint32_t length,
                                  Node_format *plain_nodes, uint16_t size_plain_nodes, uint32_t *num_nodes_out)
@@ -1753,7 +1754,8 @@ static int send_NATping(DHT *dht, const uint8_t *public_key, uint64_t ping_id, u
 }
 
 /* Handle a received ping request for. */
-static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet, uint32_t length)
+static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
+                          uint32_t length)
 {
     if (length != sizeof(uint64_t) + 1)
         return 1;
@@ -1962,8 +1964,8 @@ static int send_hardening_getnode_req(DHT *dht, Node_format *dest, Node_format *
 }
 
 /* Send a get node hardening response */
-static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto, const uint8_t *queried_client_id, const uint8_t *nodes_data,
-                                      uint16_t nodes_data_length)
+static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto, const uint8_t *queried_client_id,
+                                      const uint8_t *nodes_data, uint16_t nodes_data_length)
 {
     if (!ip_isset(&sendto->ip_port.ip))
         return -1;
@@ -2032,7 +2034,8 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
 #define HARDEN_TIMEOUT 1200
 
 /* Handle a received hardening packet */
-static int handle_hardening(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet, uint32_t length)
+static int handle_hardening(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
+                            uint32_t length)
 {
     DHT *dht = object;
 

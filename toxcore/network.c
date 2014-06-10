@@ -45,7 +45,7 @@
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
-static const char *inet_ntop(sa_family_t family, void *addr, const char *buf, size_t bufsize)
+static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
@@ -78,7 +78,7 @@ static const char *inet_ntop(sa_family_t family, void *addr, const char *buf, si
     return NULL;
 }
 
-static int inet_pton(sa_family_t family, const char *addrString, const void *addrbuf)
+static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
@@ -404,7 +404,7 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
     net->packethandlers[byte].object = object;
 }
 
-void networking_poll(const Networking_Core *net)
+void networking_poll(Networking_Core *net)
 {
     unix_time_update();
 

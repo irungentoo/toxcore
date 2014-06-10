@@ -76,7 +76,8 @@ void encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, ui
     crypto_box_beforenm(enc_key, public_key, secret_key);
 }
 
-int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length, uint8_t *encrypted)
+int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
+                           uint8_t *encrypted)
 {
     if (length == 0)
         return -1;
@@ -95,7 +96,8 @@ int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
     return length + crypto_box_MACBYTES;
 }
 
-int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length, uint8_t *plain)
+int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length,
+                           uint8_t *plain)
 {
     if (length <= crypto_box_BOXZEROBYTES)
         return -1;
@@ -202,8 +204,8 @@ void new_nonce(uint8_t *nonce)
  *  return -1 on failure.
  *  return the length of the created packet on success.
  */
-int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet, const uint8_t *recv_public_key,
-                   const uint8_t *data, uint32_t length, uint8_t request_id)
+int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
+                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id)
 {
     if (MAX_CRYPTO_REQUEST_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 +
             crypto_box_MACBYTES)

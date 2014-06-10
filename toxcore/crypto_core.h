@@ -84,7 +84,8 @@ void encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, ui
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
-int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length, uint8_t *encrypted);
+int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
+                           uint8_t *encrypted);
 
 /* Decrypts encrypted of length length to plain of length length - 16 using a
  * secret key crypto_box_KEYBYTES big and a 24 byte nonce.
@@ -92,7 +93,8 @@ int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
-int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length, uint8_t *plain);
+int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length,
+                           uint8_t *plain);
 
 /* Increment the given nonce by 1. */
 void increment_nonce(uint8_t *nonce);
@@ -128,8 +130,8 @@ void new_nonce(uint8_t *nonce);
  * return -1 on failure.
  * return the length of the created packet on success.
  */
-int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet, const uint8_t *recv_public_key,
-                   const uint8_t *data, uint32_t length, uint8_t request_id);
+int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
+                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id);
 
 /* puts the senders public key in the request in public_key, the data from the request
    in data if a friend or ping request was sent to us and returns the length of the data.

@@ -102,7 +102,8 @@ typedef struct {
     uint32_t tcp_relay_node_callback_number;
 } Onion_Friend;
 
-typedef int (*oniondata_handler_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint32_t len);
+typedef int (*oniondata_handler_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data,
+        uint32_t len);
 
 typedef struct {
     DHT     *dht;

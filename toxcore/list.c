@@ -115,7 +115,7 @@ void bs_list_init(BS_LIST *list, uint32_t element_size)
     list->ids = NULL;
 }
 
-void bs_list_free(const BS_LIST *list)
+void bs_list_free(BS_LIST *list)
 {
     //free both arrays
     free(list->data);

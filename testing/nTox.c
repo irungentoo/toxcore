@@ -864,7 +864,7 @@ void do_refresh()
     refresh();
 }
 
-void print_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
+void print_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
     new_lines("[i] received friend request with message:");
     new_lines((char *)data);
@@ -1181,6 +1181,7 @@ char timeout_getch(Tox *m)
 
     c = ERR;
     int n = select(1, &fds, NULL, NULL, &tv);
+
     if (n < 0) {
         new_lines("select error: maybe interupted");
     } else if (n == 0) {

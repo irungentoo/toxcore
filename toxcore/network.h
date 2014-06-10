@@ -338,7 +338,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint3
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
 
 /* Call this several times a second. */
-void networking_poll(const Networking_Core *net);
+void networking_poll(Networking_Core *net);
 
 /* Initialize networking.
  * bind to ip and port.

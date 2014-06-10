@@ -373,7 +373,8 @@ uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *messag
     return 0;
 }
 
-uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message, uint32_t length)
+uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message,
+                              uint32_t length)
 {
     if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)))
         return 0;
@@ -722,8 +723,8 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno)
 
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t); */
 /* Set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t, void *),
-                              void *userdata)
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t,
+                              void *), void *userdata)
 {
     void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, uint16_t, void *) = (void *)function;
     callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
@@ -1294,8 +1295,7 @@ static void do_allgroupchats(Messenger *m)
  *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
 void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint64_t, uint8_t *,
-                               uint16_t,
-                               void *), void *userdata)
+                               uint16_t, void *), void *userdata)
 {
     m->file_sendrequest = function;
     m->file_sendrequest_userdata = userdata;
@@ -1307,8 +1307,7 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int3
  *
  */
 void callback_file_control(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t, uint8_t, uint8_t *,
-                           uint16_t,
-                           void *), void *userdata)
+                           uint16_t, void *), void *userdata)
 {
     m->file_filecontrol = function;
     m->file_filecontrol_userdata = userdata;
@@ -1320,8 +1319,7 @@ void callback_file_control(Messenger *m, void (*function)(Messenger *m, int32_t,
  *
  */
 void callback_file_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, uint16_t length,
-                        void *),
-                        void *userdata)
+                        void *), void *userdata)
 {
     m->file_filedata = function;
     m->file_filedata_userdata = userdata;

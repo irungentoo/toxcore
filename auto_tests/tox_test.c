@@ -19,7 +19,7 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
-void accept_friend_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;

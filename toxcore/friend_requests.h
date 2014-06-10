@@ -66,8 +66,8 @@ int remove_request_received(Friend_Requests *fr, uint8_t *client_id);
 /* Set the function that will be executed when a friend request for us is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length, void * userdata)
  */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, uint16_t, void *),
-                            void *object, void *userdata);
+void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, uint16_t,
+                            void *), void *object, void *userdata);
 
 /* Set the function used to check if a friend request should be displayed to the user or not.
  * Function format is int function(uint8_t * public_key, void * userdata)

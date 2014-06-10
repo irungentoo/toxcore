@@ -176,8 +176,8 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 
-typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, const uint8_t *source_pubkey, const uint8_t *data,
-        uint32_t len);
+typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
+        const uint8_t *data, uint32_t len);
 
 typedef struct {
     cryptopacket_handler_callback function;
@@ -290,8 +290,8 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2);
  * return the number of nodes returned.
  *
  */
-int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family, uint8_t is_LAN,
-                    uint8_t want_good);
+int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
+                    uint8_t is_LAN, uint8_t want_good);
 
 
 /* Put up to max_num nodes in nodes from the closelist.

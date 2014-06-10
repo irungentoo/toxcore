@@ -623,7 +623,8 @@ static int send_dht_fakeid(Onion_Client *onion_c, int friend_num, uint8_t *data,
     return route_tofriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, packet, len);
 }
 
-static int handle_dht_fakeid(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet, uint32_t length)
+static int handle_dht_fakeid(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
+                             uint32_t length)
 {
     Onion_Client *onion_c = object;
 

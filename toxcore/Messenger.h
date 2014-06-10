@@ -322,7 +322,8 @@ int m_friend_exists(Messenger *m, int32_t friendnumber);
  *  however we can generate an id for you by calling plain m_sendmessage.
  */
 uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length);
-uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message, uint32_t length);
+uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message,
+                              uint32_t length);
 
 /* Send an action to an online friend.
  *
@@ -442,8 +443,8 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno);
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
  */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t, void *),
-                              void *userdata);
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t,
+                              void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(int32_t friendnumber, uint8_t * message, uint32_t length)
@@ -612,8 +613,7 @@ int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], 
  *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
 void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint64_t, uint8_t *,
-                               uint16_t,
-                               void *), void *userdata);
+                               uint16_t, void *), void *userdata);
 
 /* Set the callback for file control requests.
  *
@@ -629,8 +629,7 @@ void callback_file_control(Messenger *m, void (*function)(Messenger *m, int32_t,
  *
  */
 void callback_file_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, uint16_t length,
-                        void *),
-                        void *userdata);
+                        void *), void *userdata);
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
