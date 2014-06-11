@@ -2320,7 +2320,8 @@ void do_messenger(Messenger *m)
             size_t c;
 
             for (c = 0; c < m->numchats; c++) {
-                Assoc_status(m->chats[c]->assoc);
+                if (m->chats[c])
+                    Assoc_status(m->chats[c]->assoc);
             }
         }
 
