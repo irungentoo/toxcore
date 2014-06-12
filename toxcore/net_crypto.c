@@ -728,16 +728,21 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
     if (conn == 0)
         return -1;
 
+    pthread_mutex_lock(&conn->mutex);
     uint8_t packet[1 + sizeof(uint16_t) + length + crypto_box_MACBYTES];
     packet[0] = NET_PACKET_CRYPTO_DATA;
     memcpy(packet + 1, conn->sent_nonce + (crypto_box_NONCEBYTES - sizeof(uint16_t)), sizeof(uint16_t));
     int len = encrypt_data_symmetric(conn->shared_key, conn->sent_nonce, data, length, packet + 1 + sizeof(uint16_t));
 
-    if (len + 1 + sizeof(uint16_t) != sizeof(packet))
+    if (len + 1 + sizeof(uint16_t) != sizeof(packet)) {
+        pthread_mutex_unlock(&conn->mutex);
         return -1;
+    }
 
     increment_nonce(conn->sent_nonce);
-    return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
+    int ret = send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
+    pthread_mutex_unlock(&conn->mutex);
+    return ret;
 }
 
 /* Creates and sends a data packet with buffer_start and num to the peer using the fastest route.
@@ -1246,6 +1251,7 @@ static int create_crypto_connection(Net_Crypto *c)
 
     memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
     int id = c->crypto_connections_length;
+    pthread_mutex_init(&c->crypto_connections[id].mutex, NULL);
     ++c->crypto_connections_length;
     return id;
 }
@@ -1261,6 +1267,7 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
         return -1;
 
     uint32_t i;
+    pthread_mutex_destroy(&c->crypto_connections[crypt_connection_id].mutex);
     memset(&(c->crypto_connections[crypt_connection_id]), 0 , sizeof(Crypto_Connection));
 
     for (i = c->crypto_connections_length; i != 0; --i) {

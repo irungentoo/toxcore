@@ -459,15 +459,13 @@ if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes") && (test "x$DISABLE_R
     )
 fi
 
-if test "x$BUILD_AV" = "xyes"; then
-    AX_PTHREAD(
-        [],
-        [
-            AC_MSG_WARN([disabling AV support: required pthread library not found])
-            BUILD_AV="no"
-        ]
-    )
-fi
+
+AX_PTHREAD(
+    [],
+    [
+        AC_MSG_ERROR([required library pthread was not found on your system])
+    ]
+)
 
 if test "x$BUILD_AV" = "xyes"; then
     PKG_CHECK_MODULES([OPUS], [opus],

@@ -26,6 +26,7 @@
 
 #include "DHT.h"
 #include "TCP_client.h"
+#include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
 #define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets
@@ -155,6 +156,8 @@ typedef struct {
 
     Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
     uint16_t num_tcp_relays;
+
+    pthread_mutex_t mutex;
 } Crypto_Connection;
 
 typedef struct {

@@ -2184,6 +2184,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             for (i = 0; i < n; i++) {
                 add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].client_id);
             }
+
             break;
         }
 
