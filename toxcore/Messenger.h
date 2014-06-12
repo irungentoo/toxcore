@@ -63,6 +63,10 @@
 /* Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS 16
 
+/* All packets starting with a byte in this range can be used for anything. */
+#define PACKET_ID_LOSSLESS_RANGE_START 160
+#define PACKET_ID_LOSSLESS_RANGE_SIZE 32
+
 /* Status definitions. */
 enum {
     NOFRIEND,
@@ -170,7 +174,12 @@ typedef struct {
     struct {
         int (*function)(void *object, uint8_t *data, uint32_t len);
         void *object;
-    } packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
+    } lossy_packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
+
+    struct {
+        int (*function)(void *object, uint8_t *data, uint32_t len);
+        void *object;
+    } lossless_packethandlers[PACKET_ID_LOSSLESS_RANGE_SIZE];
 } Friend;
 
 
@@ -703,6 +712,24 @@ int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint
  * return 0 on success.
  */
 int send_custom_lossy_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length);
+
+
+/* Set handlers for custom lossless packets.
+ *
+ * byte must be in PACKET_ID_LOSSLESS_RANGE_START PACKET_ID_LOSSLESS_RANGE_SIZE range.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+        int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object);
+
+/* High level function to send custom lossless packets.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_custom_lossless_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length);
 
 /**********************************************/
 /* Run this at startup.

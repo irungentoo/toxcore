@@ -1658,13 +1658,12 @@ static int handle_custom_lossy_packet(void *object, int friend_num, uint8_t *pac
     if (friend_not_valid(m, friend_num))
         return 1;
 
-    if (m->friendlist[friend_num].packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function)
-        return m->friendlist[friend_num].packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function(
-                   m->friendlist[friend_num].packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].object, packet, length);
+    if (m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function)
+        return m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function(
+                   m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].object, packet, length);
 
     return 1;
 }
-
 
 int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
                                         int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object)
@@ -1678,8 +1677,8 @@ int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint
     if (byte >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
         return -1;
 
-    m->friendlist[friendnumber].packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].function = packet_handler_callback;
-    m->friendlist[friendnumber].packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].object = object;
+    m->friendlist[friendnumber].lossy_packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].function = packet_handler_callback;
+    m->friendlist[friendnumber].lossy_packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].object = object;
     return 0;
 }
 
@@ -1697,6 +1696,57 @@ int send_custom_lossy_packet(Messenger *m, int32_t friendnumber, uint8_t *data, 
     return send_lossy_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length);
 }
 
+static int handle_custom_lossless_packet(void *object, int friend_num, uint8_t *packet, uint16_t length)
+{
+    Messenger *m = object;
+
+    if (friend_not_valid(m, friend_num))
+        return -1;
+
+    if (packet[0] < PACKET_ID_LOSSLESS_RANGE_START)
+        return -1;
+
+    if (packet[0] >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
+        return -1;
+
+    if (m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function)
+        return m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function(
+                   m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].object, packet, length);
+
+    return 1;
+}
+
+int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+        int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    if (byte < PACKET_ID_LOSSLESS_RANGE_START)
+        return -1;
+
+    if (byte >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
+        return -1;
+
+    m->friendlist[friendnumber].lossless_packethandlers[byte % PACKET_ID_LOSSLESS_RANGE_SIZE].function =
+        packet_handler_callback;
+    m->friendlist[friendnumber].lossless_packethandlers[byte % PACKET_ID_LOSSLESS_RANGE_SIZE].object = object;
+    return 0;
+}
+
+int send_custom_lossless_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -1;
+
+    if (m->friendlist[friendnumber].crypt_connection_id == -1)
+        return -1;
+
+    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length) != -1;
+}
 
 /* Function to filter out some friend requests*/
 static int friend_already_added(const uint8_t *client_id, void *data)
@@ -2118,6 +2168,8 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             if (m->msi_packet)
                 (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata);
+
+            break;
         }
 
         case PACKET_ID_SHARE_RELAYS: {
@@ -2132,9 +2184,11 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             for (i = 0; i < n; i++) {
                 add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].client_id);
             }
+            break;
         }
 
         default: {
+            handle_custom_lossless_packet(object, i, temp, len);
             break;
         }
     }
