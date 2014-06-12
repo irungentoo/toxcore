@@ -47,7 +47,6 @@ blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 [NEEDS TESTING] Make the save made with tox_save_encrypted(...) harder to brute force.
 See: (https://github.com/jencka/ProjectTox-libtoxdata)
 
-[IN PROGRESS] GUI (no official GUI chosen yet, will most likely be: 
-https://github.com/nurupo/ProjectTox-Qt-GUI or https://github.com/naxuroqa/Venom)
+[IN PROGRESS] GUI (no official GUI chosen yet)
 
 [NOT STARTED] Security audit from professionals
