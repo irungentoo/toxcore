@@ -1261,7 +1261,7 @@ int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], 
     return group_client_names(m->chats[groupnumber], names, lengths, length);
 }
 
-static int handle_group(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_group(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Messenger *m = object;
 

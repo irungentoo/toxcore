@@ -164,7 +164,7 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key
  * return ~0 on failure
  * return num (see new_sendback(...)) on success
  */
-static uint32_t check_sendback(Onion_Client *onion_c, uint8_t *sendback, uint8_t *ret_pubkey, IP_Port *ret_ip_port)
+static uint32_t check_sendback(Onion_Client *onion_c, const uint8_t *sendback, uint8_t *ret_pubkey, IP_Port *ret_ip_port)
 {
     uint64_t sback;
     memcpy(&sback, sendback, sizeof(uint64_t));
@@ -377,7 +377,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *n
     return 0;
 }
 
-static int handle_announce_response(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_announce_response(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion_Client *onion_c = object;
 
@@ -432,7 +432,7 @@ static int handle_announce_response(void *object, IP_Port source, uint8_t *packe
 
 #define DATA_IN_RESPONSE_MIN_SIZE ONION_DATA_IN_RESPONSE_MIN_SIZE
 
-static int handle_data_response(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_data_response(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion_Client *onion_c = object;
 

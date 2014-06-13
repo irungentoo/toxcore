@@ -149,7 +149,7 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret)
+int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data, uint32_t length, const uint8_t *ret)
 {
     if (length > ONION_RESPONSE_MAX_DATA_SIZE || length == 0)
         return -1;
@@ -165,7 +165,7 @@ int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint3
     return 0;
 }
 
-static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_send_initial(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -189,7 +189,7 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     return onion_send_1(onion, plain, len, source, packet + 1);
 }
 
-int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uint8_t *nonce)
+int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce)
 {
     IP_Port send_to;
     ipport_unpack(&send_to, plain);
@@ -219,7 +219,7 @@ int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uin
     return 0;
 }
 
-static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -268,7 +268,7 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -316,7 +316,7 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
 }
 
 
-static int handle_recv_3(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -350,7 +350,7 @@ static int handle_recv_3(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-static int handle_recv_2(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -384,7 +384,7 @@ static int handle_recv_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -417,7 +417,7 @@ static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, uint8_t *, uint16_t), void *object)
+void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, const uint8_t *, uint16_t), void *object)
 {
     onion->recv_1_function = function;
     onion->callback_object = object;

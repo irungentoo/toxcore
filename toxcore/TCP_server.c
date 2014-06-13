@@ -619,7 +619,7 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
     }
 }
 
-static int handle_onion_recv_1(void *object, IP_Port dest, uint8_t *data, uint16_t length)
+static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, uint16_t length)
 {
     TCP_Server *TCP_server = object;
     uint32_t index = dest.ip.ip6.uint32[0];

@@ -115,7 +115,7 @@ int send_data_request(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
 }
 
 /* Generate a ping_id and put it in ping_id */
-static void generate_ping_id(Onion_Announce *onion_a, uint64_t time, uint8_t *public_key, IP_Port ret_ip_port,
+static void generate_ping_id(Onion_Announce *onion_a, uint64_t time, const uint8_t *public_key, IP_Port ret_ip_port,
                              uint8_t *ping_id)
 {
     time /= PING_ID_TIMEOUT;
@@ -132,7 +132,7 @@ static void generate_ping_id(Onion_Announce *onion_a, uint64_t time, uint8_t *pu
  * return -1 if no
  * return position in list if yes
  */
-static int in_entries(Onion_Announce *onion_a, uint8_t *public_key)
+static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 {
     uint32_t i;
 
@@ -179,8 +179,8 @@ static int cmp_entry(const void *a, const void *b)
  * return -1 if failure
  * return position if added
  */
-static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, uint8_t *public_key, uint8_t *data_public_key,
-                          uint8_t *ret)
+static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const uint8_t *public_key, const uint8_t *data_public_key,
+                          const uint8_t *ret)
 {
 
     int pos = in_entries(onion_a, public_key);
@@ -213,14 +213,14 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, uint8_t 
     return in_entries(onion_a, public_key);
 }
 
-static int handle_announce_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_announce_request(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion_Announce *onion_a = object;
 
     if (length != ANNOUNCE_REQUEST_SIZE_RECV)
         return 1;
 
-    uint8_t *packet_public_key = packet + 1 + crypto_box_NONCEBYTES;
+    const uint8_t *packet_public_key = packet + 1 + crypto_box_NONCEBYTES;
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     get_shared_key(&onion_a->shared_keys_recv, shared_key, onion_a->dht->self_secret_key, packet_public_key);
 
@@ -302,7 +302,7 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
     return 0;
 }
 
-static int handle_data_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_data_request(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion_Announce *onion_a = object;
 
