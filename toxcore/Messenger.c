@@ -1184,6 +1184,11 @@ int join_groupchat(Messenger *m, int32_t friendnumber, uint8_t *friend_group_pub
     if (groupnum == -1)
         return -1;
 
+    IP_Port friend_ip = get_friend_ipport(m, friendnumber);
+
+    if (friend_ip.ip.family == 0)
+        return -1;
+
     id_copy(data, friend_group_public_key);
     id_copy(data + crypto_box_PUBLICKEYBYTES, m->chats[groupnum]->self_public_key);
 
