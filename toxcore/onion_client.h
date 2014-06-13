@@ -212,7 +212,7 @@ uint64_t onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32_t length);
+int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint32_t length);
 
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object);

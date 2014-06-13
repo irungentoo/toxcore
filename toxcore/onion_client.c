@@ -530,7 +530,7 @@ static int handle_fakeid_announce(void *object, const uint8_t *source_pubkey, co
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32_t length)
+int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint32_t length)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
