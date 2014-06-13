@@ -40,6 +40,8 @@
 
 #include <dirent.h>
 #include <stdio.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define NUM_FILE_SENDERS 256
 typedef struct {
