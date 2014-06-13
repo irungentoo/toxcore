@@ -105,7 +105,7 @@ int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
     uint8_t temp_plain[length + crypto_box_ZEROBYTES];
     uint8_t temp_encrypted[length + crypto_box_BOXZEROBYTES];
 
-    memset(temp_plain, 0, crypto_box_BOXZEROBYTES);
+    memset(temp_encrypted, 0, crypto_box_BOXZEROBYTES);
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); // Pad the message with 16 0 bytes.
 
     if (crypto_box_open_afternm(temp_plain, temp_encrypted, length + crypto_box_BOXZEROBYTES, nonce, secret_key) != 0)
