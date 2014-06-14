@@ -84,8 +84,11 @@ void tox_dns3_kill(void *dns3_object)
     free(dns3_object);
 }
 
-/* Generate a dns3 string of string_max_len used to query the dns server reffered to by to
+/* Generate a dns3 string of string_max_len used to query the dns server referred to by to
  * dns3_object for a tox id registered to user with name of name_len.
+ *
+ * the uint32_t pointed by request_id will be set to the request id which must be passed to
+ * tox_decrypt_dns3_TXT() to correctly decode the response.
  *
  * This is what the string returned looks like:
  * 4haaaaipr1o3mz0bxweox541airydbovqlbju51mb4p0ebxq.rlqdj4kkisbep2ks3fj2nvtmk4daduqiueabmexqva1jc
@@ -93,12 +96,13 @@ void tox_dns3_kill(void *dns3_object)
  * returns length of string on sucess.
  * returns -1 on failure.
  */
-int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string_max_len, uint8_t *name,
-                             uint8_t name_len)
+int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string_max_len, uint32_t *request_id,
+                             uint8_t *name, uint8_t name_len)
 {
 #define DOT_INTERVAL (6 * 5)
     int base = (sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + name_len + crypto_box_MACBYTES);
     int end_len = ((base * 8) / 5) + (base / DOT_INTERVAL) + !!(base % 5);
+    end_len -= !(base % DOT_INTERVAL);
 
     if (end_len > string_max_len)
         return -1;
@@ -121,14 +125,16 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
     uint8_t bits = 0;
     int i;
 
-    for (i = 0; i < (total_len / DOT_INTERVAL); ++i) {
+    for (i = !(total_len % DOT_INTERVAL); i < (total_len / DOT_INTERVAL); ++i) {
         _encode(string, buff, DOT_INTERVAL);
         *string = '.';
         ++string;
     }
 
-    _encode(string, buff, total_len % DOT_INTERVAL);
+    int left = total_len - (buff - buffer);
+    _encode(string, buff, left);
 #undef DOT_INTERVAL
+    *request_id = d->nonce;
     ++d->nonce;
 
     if (d->nonce == d->nonce_start) {
@@ -136,7 +142,7 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
     }
 
     if (end_len != string - old_str) {
-        printf("tox_generate_dns3_string Fail\n");
+        printf("tox_generate_dns3_string Fail, %u != %u\n", end_len, string - old_str);
         return -1;
     }
 
@@ -189,18 +195,21 @@ static int decode(uint8_t *dest, uint8_t *src)
 /* Decode and decrypt the id_record returned of length id_record_len into
  * tox_id (needs to be at least TOX_FRIEND_ADDRESS_SIZE).
  *
+ * request_id is the request id given by tox_generate_dns3_string() when creating the request.
+ *
  * the id_record passed to this function should look somewhat like this:
- * 4haaaa2vgcxuycbuctvauik3plsv3d3aadv4zfjfhi3thaizwxinelrvigchv0ah3qjcsx5qhmaksb2lv2hm5cwbtx0yp
+ * 2vgcxuycbuctvauik3plsv3d3aadv4zfjfhi3thaizwxinelrvigchv0ah3qjcsx5qhmaksb2lv2hm5cwbtx0yp
  *
  * returns -1 on failure.
  * returns 0 on success.
  *
  */
-int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record, uint32_t id_record_len)
+int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record, uint32_t id_record_len,
+                         uint32_t request_id)
 {
     DNS_Object *d = dns3_object;
 
-    if (id_record_len != 93)
+    if (id_record_len != 87)
         return -1;
 
     /*if (id_record_len > 255 || id_record_len <= (sizeof(uint32_t) + crypto_box_MACBYTES))
@@ -213,9 +222,9 @@ int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record,
         return -1;
 
     uint8_t nonce[crypto_box_NONCEBYTES] = {0};
-    memcpy(nonce, data, sizeof(uint32_t));
+    memcpy(nonce, &request_id, sizeof(uint32_t));
     nonce[sizeof(uint32_t)] = 1;
-    int len = decrypt_data_symmetric(d->shared_key, nonce, data + sizeof(uint32_t), length - sizeof(uint32_t), tox_id);
+    int len = decrypt_data_symmetric(d->shared_key, nonce, data, length, tox_id);
 
     if (len != FRIEND_ADDRESS_SIZE)
         return -1;
