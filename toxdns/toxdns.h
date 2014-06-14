@@ -31,13 +31,14 @@
  * 1. Get the public key of a server that supports tox dns3.
  * 2. use tox_dns3_new() to create a new object to create DNS requests
  * and handle responses for that server.
- * 3. Use tox_generate_dns3_string() to generate a string based on the name we want to query.
+ * 3. Use tox_generate_dns3_string() to generate a string based on the name we want to query and a request_id
+ * that must be stored somewhere for when we want to decrypt the response.
  * 4. take the string and use it for your DNS request like this:
  * _4haaaaipr1o3mz0bxweox541airydbovqlbju51mb4p0ebxq.rlqdj4kkisbep2ks3fj2nvtmk4daduqiueabmexqva1jc._tox.utox.org
- *
  * 5. The TXT in the DNS you receive should look like this:
  * v=tox3;id=2vgcxuycbuctvauik3plsv3d3aadv4zfjfhi3thaizwxinelrvigchv0ah3qjcsx5qhmaksb2lv2hm5cwbtx0yp
- * 6. Take the id string and use it with tox_decrypt_dns3_TXT() to get the Tox id returned by the DNS server.
+ * 6. Take the id string and use it with tox_decrypt_dns3_TXT() and the request_id corresponding to the 
+ * request we stored earlier to get the Tox id returned by the DNS server.
  */
 
 /* Create a new tox_dns3 object for server with server_public_key of size TOX_CLIENT_ID_SIZE.
