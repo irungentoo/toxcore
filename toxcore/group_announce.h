@@ -23,22 +23,21 @@
 
 typedef struct ANNOUNCE ANNOUNCE;
 
-/* Add nodes to the to_ping list.
- * All nodes in this list are pinged every TIME_TOPING seconds
- * and are then removed from the list.
- * If the list is full the nodes farthest from our client_id are replaced.
- * The purpose of this list is to enable quick integration of new nodes into the
- * network while preventing amplification attacks.
- *
- *  return 0 if node was added.
- *  return -1 if node was not added.
- */
-int add_to_announce(ANNOUNCE *announce, uint8_t *client_id, IP_Port ip_port);
-void do_to_announce(ANNOUNCE *announce);
+typedef struct __attribute__ ((__packed__))
+{
+    uint8_t client_id[CLIENT_ID_SIZE];
+    uint8_t chat_id[CLIENT_ID_SIZE]
+    IP_Port ip_port;
+}
+Announced_node_format;
+
+int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, IP_Port ip_port);
+void do_announced_nodes(ANNOUNCE *announce);
 
 ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
-int send_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id);
+int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id);
+
 
 #endif /* __GROUP_ANNOUNCE_H__ */
