@@ -120,7 +120,7 @@ static int create_cookie(uint8_t *cookie, uint8_t *bytes, uint8_t *encryption_ke
  * return -1 on failure.
  * return 0 on success.
  */
-static int open_cookie(uint8_t *bytes, uint8_t *cookie, uint8_t *encryption_key)
+static int open_cookie(uint8_t *bytes, const uint8_t *cookie, const uint8_t *encryption_key)
 {
     uint8_t contents[COOKIE_CONTENTS_LENGTH];
     int len = decrypt_data_symmetric(encryption_key, cookie, cookie + crypto_box_NONCEBYTES,
@@ -178,7 +178,7 @@ static int create_cookie_response(Net_Crypto *c, uint8_t *packet, uint8_t *reque
  * return 0 on success.
  */
 static int handle_cookie_request(Net_Crypto *c, uint8_t *request_plain, uint8_t *shared_key, uint8_t *dht_public_key,
-                                 uint8_t *packet, uint16_t length)
+                                 const uint8_t *packet, uint16_t length)
 {
     if (length != COOKIE_REQUEST_LENGTH)
         return -1;
@@ -197,7 +197,7 @@ static int handle_cookie_request(Net_Crypto *c, uint8_t *request_plain, uint8_t 
 
 /* Handle the cookie request packet (for raw UDP)
  */
-static int udp_handle_cookie_request(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int udp_handle_cookie_request(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Net_Crypto *c = object;
     uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
@@ -275,8 +275,8 @@ static int tcp_oob_handle_cookie_request(Net_Crypto *c, TCP_Client_Connection *T
  * return -1 on failure.
  * return COOKIE_LENGTH on success.
  */
-static int handle_cookie_response(uint8_t *cookie, uint64_t *number, uint8_t *packet, uint32_t length,
-                                  uint8_t *shared_key)
+static int handle_cookie_response(uint8_t *cookie, uint64_t *number, const uint8_t *packet, uint32_t length,
+                                  const uint8_t *shared_key)
 {
     if (length != COOKIE_RESPONSE_LENGTH)
         return -1;
@@ -349,7 +349,7 @@ static int create_crypto_handshake(Net_Crypto *c, uint8_t *packet, uint8_t *cook
  * return 0 on success.
  */
 static int handle_crypto_handshake(Net_Crypto *c, uint8_t *nonce, uint8_t *session_pk, uint8_t *peer_real_pk,
-                                   uint8_t *dht_public_key, uint8_t *cookie, uint8_t *packet, uint32_t length, uint8_t *expected_real_pk)
+                                   uint8_t *dht_public_key, uint8_t *cookie, const uint8_t *packet, uint32_t length, uint8_t *expected_real_pk)
 {
     if (length != HANDSHAKE_PACKET_LENGTH)
         return -1;
@@ -815,7 +815,7 @@ static uint16_t get_nonce_uint16(uint8_t *nonce)
  * return -1 on failure.
  * return length of data on success.
  */
-static int handle_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint8_t *packet, uint16_t length)
+static int handle_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, const uint8_t *packet, uint16_t length)
 {
     if (length <= (1 + sizeof(uint16_t) + crypto_box_MACBYTES) || length > MAX_CRYPTO_PACKET_SIZE)
         return -1;
@@ -1039,7 +1039,7 @@ static int send_kill_packet(Net_Crypto *c, int crypt_connection_id)
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint8_t *packet, uint16_t length)
+static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length)
 {
     if (length > MAX_CRYPTO_PACKET_SIZE || length <= CRYPTO_DATA_PACKET_MIN_SIZE)
         return -1;
@@ -1133,7 +1133,7 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uin
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, uint8_t *packet, uint16_t length)
+static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_PACKET_SIZE)
         return -1;
@@ -1370,7 +1370,7 @@ void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, uint8_t *data, uint16_t length)
+static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, const uint8_t *data, uint16_t length)
 {
     New_Connection n_c;
     n_c.cookie = malloc(COOKIE_LENGTH);
@@ -2123,7 +2123,7 @@ static int crypto_id_ip_port(Net_Crypto *c, IP_Port ip_port)
  * Crypto data packets.
  *
  */
-static int udp_handle_packet(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     if (length <= CRYPTO_MIN_PACKET_SIZE || length > MAX_CRYPTO_PACKET_SIZE)
         return 1;

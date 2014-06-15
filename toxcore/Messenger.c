@@ -959,7 +959,7 @@ static int get_chat_num(Messenger *m, Group_Chat *chat)
     return -1;
 }
 
-static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *message, uint16_t length, void *userdata)
+static void group_message_function(Group_Chat *chat, int peer_number, const uint8_t *message, uint16_t length, void *userdata)
 {
     Messenger *m = userdata;
     int i = get_chat_num(m, chat);
@@ -975,7 +975,7 @@ static void group_message_function(Group_Chat *chat, int peer_number, uint8_t *m
         (*m->group_message)(m, i, peer_number, message_terminated, length, m->group_message_userdata);
 }
 
-static void group_action_function(Group_Chat *chat, int peer_number, uint8_t *action, uint16_t length, void *userdata)
+static void group_action_function(Group_Chat *chat, int peer_number, const uint8_t *action, uint16_t length, void *userdata)
 {
     Messenger *m = userdata;
     int i = get_chat_num(m, chat);
@@ -1261,7 +1261,7 @@ int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], 
     return group_client_names(m->chats[groupnumber], names, lengths, length);
 }
 
-static int handle_group(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_group(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Messenger *m = object;
 

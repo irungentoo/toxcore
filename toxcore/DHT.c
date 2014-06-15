@@ -1067,7 +1067,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     return sendpacket(dht->net, ip_port, data, 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + len);
 }
 
-static int handle_getnodes(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     uint32_t cmp_len = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + crypto_box_MACBYTES;
 
@@ -1194,7 +1194,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     return 0;
 }
 
-static int handle_sendnodes_ipv6(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
     Node_format plain_nodes[MAX_SENT_NODES];
@@ -2296,7 +2296,7 @@ void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_c
     dht->cryptopackethandlers[byte].object = object;
 }
 
-static int cryptopacket_handle(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
 
