@@ -164,7 +164,8 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key
  * return ~0 on failure
  * return num (see new_sendback(...)) on success
  */
-static uint32_t check_sendback(Onion_Client *onion_c, const uint8_t *sendback, uint8_t *ret_pubkey, IP_Port *ret_ip_port)
+static uint32_t check_sendback(Onion_Client *onion_c, const uint8_t *sendback, uint8_t *ret_pubkey,
+                               IP_Port *ret_ip_port)
 {
     uint64_t sback;
     memcpy(&sback, sendback, sizeof(uint64_t));

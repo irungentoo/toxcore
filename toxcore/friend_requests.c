@@ -35,7 +35,8 @@
  *  return  0 if it sent the friend request directly to the friend.
  *  return the number of peers it was routed through if it did not send it directly.
  */
-int send_friendrequest(const Onion_Client *onion_c, const uint8_t *public_key, uint32_t nospam_num, const uint8_t *data, uint32_t length)
+int send_friendrequest(const Onion_Client *onion_c, const uint8_t *public_key, uint32_t nospam_num, const uint8_t *data,
+                       uint32_t length)
 {
     if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
         return -1;

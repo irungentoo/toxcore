@@ -167,11 +167,11 @@ typedef enum {
 static inline__ const uint8_t *stringify_request ( MSIRequest request )
 {
     static const uint8_t *strings[] = {
-        ( uint8_t * ) "INVITE",
-        ( uint8_t * ) "START",
-        ( uint8_t * ) "CANCEL",
-        ( uint8_t * ) "REJECT",
-        ( uint8_t * ) "END"
+        ( uint8_t *) "INVITE",
+        ( uint8_t *) "START",
+        ( uint8_t *) "CANCEL",
+        ( uint8_t *) "REJECT",
+        ( uint8_t *) "END"
     };
 
     return strings[request];
@@ -196,10 +196,10 @@ typedef enum {
 static inline__ const uint8_t *stringify_response ( MSIResponse response )
 {
     static const uint8_t *strings[] = {
-        ( uint8_t * ) "ringing",
-        ( uint8_t * ) "starting",
-        ( uint8_t * ) "ending",
-        ( uint8_t * ) "error"
+        ( uint8_t *) "ringing",
+        ( uint8_t *) "starting",
+        ( uint8_t *) "ending",
+        ( uint8_t *) "error"
     };
 
     return strings[response];
@@ -243,7 +243,7 @@ iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte
 
     const uint8_t *_it = data;
     uint16_t size_max = length;
-    
+
     while ( *_it ) {/* until end_byte is hit */
 
         uint16_t itedlen = (_it - data) + 2;
@@ -251,14 +251,14 @@ iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte
         if ( *_it == field_byte && itedlen < length ) {
 
             uint16_t _size;
-            memcpy(&_size, _it + 1, sizeof(_size)); 
+            memcpy(&_size, _it + 1, sizeof(_size));
             _size = ntohs(_size);
-            
+
             if ( itedlen + _size > length ) return -1;
 
             _it += 3; /* place it at the field value beginning */
             size_max -= 3;
-            
+
             switch ( _size ) { /* Compare the size of the hardcoded values ( vary fast and convenient ) */
 
                 case 4: { /* INFO header */
@@ -278,9 +278,9 @@ iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte
 
                 case 7: { /* Version, Request, Call-id headers */
                     if ON_HEADER ( _it, size_max, msg->version, VERSION_FIELD, 7 )
-                    else if ON_HEADER ( _it, size_max, msg->request, REQUEST_FIELD, 7 )
-                    else if ON_HEADER ( _it, size_max, msg->callid, CALLID_FIELD, 7 )
-                    }
+                        else if ON_HEADER ( _it, size_max, msg->request, REQUEST_FIELD, 7 )
+                            else if ON_HEADER ( _it, size_max, msg->callid, CALLID_FIELD, 7 )
+                            }
                 break;
 
                 case 8: { /* Response header */
@@ -513,9 +513,10 @@ uint8_t *append_header_to_string (
 
     /* Now set the length of the field byte */
     uint16_t _convert;
-    
-    
+
+
     _convert = htons(_i);
+
     memcpy(_getback_byte, &_convert, sizeof(_convert));
 
     /* for value part do it regulary */
@@ -523,11 +524,12 @@ uint8_t *append_header_to_string (
 
     dest++;
 
-    
+
     _convert = htons(value_len);
+
     memcpy(dest, &_convert, sizeof(_convert));
-    
-    dest+=2;
+
+    dest += 2;
 
     for ( _i = value_len; _i; --_i ) {
         *dest = *_hvit;
@@ -645,13 +647,13 @@ typedef enum {
 static inline__ const uint8_t *stringify_error ( MSICallError error_code )
 {
     static const uint8_t *strings[] = {
-        ( uint8_t * ) "",
-        ( uint8_t * ) "Using dead call",
-        ( uint8_t * ) "Call id not set to any call",
-        ( uint8_t * ) "Call id not available",
-        ( uint8_t * ) "No active call in session",
-        ( uint8_t * ) "No Crypto-key set",
-        ( uint8_t * ) "Callee busy"
+        ( uint8_t *) "",
+        ( uint8_t *) "Using dead call",
+        ( uint8_t *) "Call id not set to any call",
+        ( uint8_t *) "Call id not available",
+        ( uint8_t *) "No active call in session",
+        ( uint8_t *) "No Crypto-key set",
+        ( uint8_t *) "Callee busy"
     };
 
     return strings[error_code];
@@ -667,13 +669,13 @@ static inline__ const uint8_t *stringify_error ( MSICallError error_code )
 static inline__ const uint8_t *stringify_error_code ( MSICallError error_code )
 {
     static const uint8_t *strings[] = {
-        ( uint8_t * ) "",
-        ( uint8_t * ) "1",
-        ( uint8_t * ) "2",
-        ( uint8_t * ) "3",
-        ( uint8_t * ) "4",
-        ( uint8_t * ) "5",
-        ( uint8_t * ) "6"
+        ( uint8_t *) "",
+        ( uint8_t *) "1",
+        ( uint8_t *) "2",
+        ( uint8_t *) "3",
+        ( uint8_t *) "4",
+        ( uint8_t *) "5",
+        ( uint8_t *) "6"
     };
 
     return strings[error_code];
@@ -756,10 +758,10 @@ void flush_peer_type ( MSICall *call, MSIMessage *msg, int peer_id )
         memcpy(hdrval, msg->calltype.header_value, msg->calltype.size);
         hdrval[msg->calltype.size] = '\0';
 
-        if ( strcmp ( ( const char * ) hdrval, CT_AUDIO_HEADER_VALUE ) == 0 ) {
+        if ( strcmp ( ( const char *) hdrval, CT_AUDIO_HEADER_VALUE ) == 0 ) {
             call->type_peer[peer_id] = type_audio;
 
-        } else if ( strcmp ( ( const char * ) hdrval, CT_VIDEO_HEADER_VALUE ) == 0 ) {
+        } else if ( strcmp ( ( const char *) hdrval, CT_VIDEO_HEADER_VALUE ) == 0 ) {
             call->type_peer[peer_id] = type_video;
         } else {} /* Error */
     } else {} /* Error */
@@ -831,7 +833,7 @@ int handle_error ( MSISession *session, MSICall *call, MSICallError errid, uint3
 
     const uint8_t *_error_code_str = stringify_error_code ( errid );
 
-    msi_msg_set_reason ( _msg_error, _error_code_str, strlen ( ( const char * ) _error_code_str ) );
+    msi_msg_set_reason ( _msg_error, _error_code_str, strlen ( ( const char *) _error_code_str ) );
     send_message ( session, call, _msg_error, to );
     free_message ( _msg_error );
 
@@ -1325,7 +1327,7 @@ int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     /* Handle error accordingly */
     if ( msg->reason.header_value ) {
-        session->last_error_id = atoi ( ( const char * ) msg->reason.header_value );
+        session->last_error_id = atoi ( ( const char *) msg->reason.header_value );
         session->last_error_str = stringify_error ( session->last_error_id );
         LOGGER_DEBUG("Error reason: %s", session->last_error_str);
     }
@@ -1612,9 +1614,9 @@ int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type
 
     /* Do whatever with message */
     if ( call_type == type_audio ) {
-        msi_msg_set_calltype ( _msg_invite, ( const uint8_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
+        msi_msg_set_calltype ( _msg_invite, ( const uint8_t *) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
     } else {
-        msi_msg_set_calltype ( _msg_invite, ( const uint8_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
+        msi_msg_set_calltype ( _msg_invite, ( const uint8_t *) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
     }
 
     send_message ( session, _call, _msg_invite, friend_id );
@@ -1702,10 +1704,10 @@ int msi_answer ( MSISession *session, int32_t call_index, MSICallType call_type 
 
     if ( call_type == type_audio ) {
         msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t * ) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
+        ( _msg_starting, ( const uint8_t *) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
     } else {
         msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t * ) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
+        ( _msg_starting, ( const uint8_t *) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
     }
 
     /* Now set the local encryption key and pass it with STARTING message */

@@ -172,7 +172,8 @@ uint32_t group_numpeers(const Group_Chat *chat);
  *
  * returns the number of peers.
  */
-uint32_t group_client_names(const Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[], uint16_t length);
+uint32_t group_client_names(const Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[],
+                            uint16_t length);
 
 /* Kill a group chat
  *

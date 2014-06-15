@@ -175,8 +175,8 @@ static int add_closepeer(Group_Chat *chat, const uint8_t *client_id, IP_Port ip_
     return -1;
 }
 
-static int send_groupchatpacket(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *data, uint32_t length,
-                                uint8_t request_id)
+static int send_groupchatpacket(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *data,
+                                uint32_t length, uint8_t request_id)
 {
     if (id_equal(chat->self_public_key, public_key))
         return -1;
@@ -718,7 +718,8 @@ uint32_t group_numpeers(const Group_Chat *chat)
     return chat->numpeers;
 }
 
-uint32_t group_client_names(const Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[], uint16_t length)
+uint32_t group_client_names(const Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[],
+                            uint16_t length)
 {
     uint32_t i;
 

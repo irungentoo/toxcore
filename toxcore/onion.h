@@ -112,7 +112,8 @@ int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, con
  *
  * Format: function(void *object, IP_Port dest, uint8_t *data, uint32_t length)
  */
-void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, const uint8_t *, uint16_t), void *object);
+void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, const uint8_t *, uint16_t),
+                                void *object);
 
 Onion *new_onion(DHT *dht);
 

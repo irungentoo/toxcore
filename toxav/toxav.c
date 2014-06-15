@@ -351,7 +351,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
 int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 {
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
-    
+
     CallSpecific *call = &av->calls[call_index];
 
     if ( call->crtps[audio_index] && -1 == rtp_terminate_session(call->crtps[audio_index], av->messenger) ) {
@@ -398,7 +398,7 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
                                       uint16_t length )
 {
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
-    
+
     if ( av->calls[call_index].crtps[type - TypeAudio] )
         return rtp_send_msg ( av->calls[call_index].crtps[type - TypeAudio], av->msi_session->messenger_handle, payload,
                               length );
@@ -418,6 +418,7 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
 inline__ int toxav_recv_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallType type, uint8_t *dest )
 {
     if ( !dest ) return ErrorInternal;
+
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
 
     CallSpecific *call = &av->calls[call_index];
@@ -470,6 +471,7 @@ inline__ int toxav_recv_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
 inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **output)
 {
     if ( !output ) return ErrorInternal;
+
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
 
     uint8_t packet [RTP_PAYLOAD_SIZE];
@@ -507,6 +509,7 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
 inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, int frame_size)
 {
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
+
     return toxav_send_rtp_payload(av, call_index, TypeVideo, frame, frame_size);
 }
 
@@ -524,7 +527,7 @@ inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *fr
 inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, vpx_image_t *input)
 {
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
-    
+
     CallSpecific *call = &av->calls[call_index];
 
     int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
@@ -567,6 +570,7 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
 inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, int16_t *dest )
 {
     if ( !dest ) return ErrorInternal;
+
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
 
     CallSpecific *call = &av->calls[call_index];
@@ -609,6 +613,7 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
 inline__ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *frame, int frame_size)
 {
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
+
     return toxav_send_rtp_payload(av, call_index, TypeAudio, frame, frame_size);
 }
 
@@ -628,6 +633,7 @@ inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t 
         const int16_t *frame, int frame_size)
 {
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
+
     int32_t rc = opus_encode(av->calls[call_index].cs->audio_encoder, frame, frame_size, dest, dest_max);
 
     if (rc < 0) {
@@ -649,7 +655,8 @@ inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t 
  */
 int toxav_get_peer_transmission_type ( ToxAv *av, int32_t call_index, int peer )
 {
-    if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] || av->msi_session->calls[call_index]->peer_count <= peer )
+    if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index]
+            || av->msi_session->calls[call_index]->peer_count <= peer )
         return ErrorInternal;
 
     return av->msi_session->calls[call_index]->type_peer[peer];
@@ -667,7 +674,8 @@ int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer )
 {
     assert(av->msi_session);
 
-    if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] || av->msi_session->calls[call_index]->peer_count <= peer )
+    if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index]
+            || av->msi_session->calls[call_index]->peer_count <= peer )
         return ErrorInternal;
 
     return av->msi_session->calls[call_index]->peers[peer];

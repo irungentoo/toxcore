@@ -179,8 +179,8 @@ static int cmp_entry(const void *a, const void *b)
  * return -1 if failure
  * return position if added
  */
-static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const uint8_t *public_key, const uint8_t *data_public_key,
-                          const uint8_t *ret)
+static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const uint8_t *public_key,
+                          const uint8_t *data_public_key, const uint8_t *ret)
 {
 
     int pos = in_entries(onion_a, public_key);

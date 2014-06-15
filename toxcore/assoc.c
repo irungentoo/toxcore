@@ -315,8 +315,8 @@ static int entry_heard_store(Client_entry *entry, const IPPTs *ippts)
 }
 
 /* maps Assoc callback signature to id_closest() */
-static int assoc_id_closest(const Assoc *assoc, void *callback_data, const uint8_t *client_id, const uint8_t *client_id1,
-                            const uint8_t *client_id2)
+static int assoc_id_closest(const Assoc *assoc, void *callback_data, const uint8_t *client_id,
+                            const uint8_t *client_id1, const uint8_t *client_id2)
 {
     return id_closest(client_id, client_id1, client_id2);
 }

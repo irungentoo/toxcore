@@ -51,7 +51,8 @@ typedef struct {
  * data is the data in the request and length is the length.
  * Maximum length of data is MAX_FRIEND_REQUEST_DATA_SIZE.
  */
-int send_friendrequest(const Onion_Client *onion_c, const uint8_t *public_key, uint32_t nospam_num, const uint8_t *data, uint32_t length);
+int send_friendrequest(const Onion_Client *onion_c, const uint8_t *public_key, uint32_t nospam_num, const uint8_t *data,
+                       uint32_t length);
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num);
 uint32_t get_nospam(const Friend_Requests *fr);

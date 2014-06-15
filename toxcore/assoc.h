@@ -35,7 +35,8 @@ typedef uint64_t (*Assoc_distance_absolute_callback)(const Assoc *assoc, void *c
 
 /* Central entry point for new associations: add a new candidate to the cache
  * returns 1 if entry is stored, 2 if existing entry was updated, 0 else */
-uint8_t Assoc_add_entry(Assoc *assoc, const uint8_t *id, const IPPTs *ippts_send, const IP_Port *ipp_recv, uint8_t used);
+uint8_t Assoc_add_entry(Assoc *assoc, const uint8_t *id, const IPPTs *ippts_send, const IP_Port *ipp_recv,
+                        uint8_t used);
 
 /*****************************************************************************/
 

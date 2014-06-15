@@ -815,7 +815,8 @@ static uint16_t get_nonce_uint16(uint8_t *nonce)
  * return -1 on failure.
  * return length of data on success.
  */
-static int handle_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, const uint8_t *packet, uint16_t length)
+static int handle_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, const uint8_t *packet,
+                              uint16_t length)
 {
     if (length <= (1 + sizeof(uint16_t) + crypto_box_MACBYTES) || length > MAX_CRYPTO_PACKET_SIZE)
         return -1;
