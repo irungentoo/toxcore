@@ -48,5 +48,6 @@ PING *new_ping(DHT *dht);
 void kill_ping(PING *ping);
 
 int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id);
+int send_custom_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id, char pingtype);
 
 #endif /* __PING_H__ */

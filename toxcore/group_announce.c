@@ -59,44 +59,7 @@ struct ANNOUNCE {
  */
 int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id)
 {
-    uint8_t   pk[DHT_PING_SIZE];
-    int       rc;
-    uint64_t  ping_id;
-
-    if (id_equal(client_id, ping->dht->self_public_key))
-        return 1;
-
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
-
-    // generate key to encrypt ping_id with recipient privkey
-    DHT_get_shared_key_sent(ping->dht, shared_key, client_id);
-    // Generate random ping_id.
-    uint8_t data[PING_DATA_SIZE];
-    id_copy(data, client_id);
-    memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
-    ping_id = ping_array_add(&ping->ping_array, data, sizeof(data));
-
-    if (ping_id == 0)
-        return 1;
-
-    uint8_t ping_plain[PING_PLAIN_SIZE];
-    ping_plain[0] = NET_PACKET_ANNOUNCE_REQUEST;
-    memcpy(ping_plain + 1, &ping_id, sizeof(ping_id));
-
-    pk[0] = NET_PACKET_ANNOUNCE_REQUEST;
-    id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
-    new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
-
-
-    rc = encrypt_data_symmetric(shared_key,
-                                pk + 1 + CLIENT_ID_SIZE,
-                                ping_plain, sizeof(ping_plain),
-                                pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
-
-    if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES)
-        return 1;
-
-    return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));    
+    return send_custom_ping_request(ping, ipp, client, NET_PACKET_ANNOUNCE_REQUEST);
 }
 
 static int handle_announce_request(void * _dht, IP_Port source, uint8_t *packet, uint32_t length)
