@@ -38,6 +38,6 @@ ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
 int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id);
-
+int get_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node)
 
 #endif /* __GROUP_ANNOUNCE_H__ */

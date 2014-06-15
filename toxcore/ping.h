@@ -36,6 +36,11 @@ typedef struct PING PING;
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
+
+#define PING_PLAIN_SIZE (1 + sizeof(uint64_t))
+#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + PING_PLAIN_SIZE + crypto_box_MACBYTES)
+#define PING_DATA_SIZE (CLIENT_ID_SIZE + sizeof(IP_Port))
+
 int add_to_ping(PING *ping, uint8_t *client_id, IP_Port ip_port);
 void do_to_ping(PING *ping);
 

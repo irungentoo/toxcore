@@ -40,7 +40,8 @@
 #define TIME_TO_PING 20
 
 #define ANNOUNCE_PLAIN_SIZE (1 + sizeof(uint64_t))
-#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
+ //Two CLIENT_ID_SIZE, cause we have client_id and chat_id
+#define DHT_ANNOUNCE_SIZE (1 + CLIENT_ID_SIZE + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
 #define ANNOUNCE_DATA_SIZE (CLIENT_ID_SIZE + CLIENT_ID_SIZE + sizeof(IP_Port))
 
 
@@ -79,10 +80,10 @@ int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id)
         return 1;
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
-    ping_plain[0] = NET_PACKET_PING_REQUEST;
+    ping_plain[0] = NET_PACKET_ANNOUNCE_REQUEST;
     memcpy(ping_plain + 1, &ping_id, sizeof(ping_id));
 
-    pk[0] = NET_PACKET_PING_REQUEST;
+    pk[0] = NET_PACKET_ANNOUNCE_REQUEST;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
@@ -98,12 +99,100 @@ int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));    
 }
 
-static int handle_announce_request(DHT * dht, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_announce_request(void * _dht, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    DHT *dht = _dht;
+    int rc;
+
+    if (length != DHT_PING_SIZE)
+        return 1;
+
+    PING *ping = dht->ping;
+
+    if (id_equal(packet + 1, ping->dht->self_public_key))
+        return 1;
+
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+
+    uint8_t ping_plain[PING_PLAIN_SIZE];
+    // Decrypt ping_id
+    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
+    rc = decrypt_data_symmetric(shared_key,
+                                packet + 1 + CLIENT_ID_SIZE,
+                                packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                                PING_PLAIN_SIZE + crypto_box_MACBYTES,
+                                ping_plain );
+
+    if (rc != sizeof(ping_plain))
+        return 1;
+
+    if (ping_plain[0] != NET_PACKET_ANNOUNCE_REQUEST)
+        return 1;
+
+    uint64_t   ping_id;
+    memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
+    // Send response
+    send_ping_response(ping, source, packet + 1, ping_id, shared_key);
+    add_to_ping(ping, packet + 1, source);
+
+    return 0;
 }
 
-static int get_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node)
+int get_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node)
 {
+
+    /* Check if packet is going to be sent to ourself. */
+    /*if (id_equal(public_key, dht->self_public_key))
+        return -1;
+
+    uint8_t plain_message[sizeof(Node_format) * 2] = {0};
+
+    Node_format receiver;
+    memcpy(receiver.client_id, public_key, CLIENT_ID_SIZE);
+    receiver.ip_port = ip_port;
+    memcpy(plain_message, &receiver, sizeof(receiver));
+
+    uint64_t ping_id = 0;
+
+    if (sendback_node != NULL) {
+        memcpy(plain_message + sizeof(receiver), sendback_node, sizeof(Node_format));
+        ping_id = ping_array_add(&dht->dht_harden_ping_array, plain_message, sizeof(plain_message));
+    } else {
+        ping_id = ping_array_add(&dht->dht_ping_array, plain_message, sizeof(receiver));
+    }
+
+    if (ping_id == 0)
+        return -1;
+
+    uint8_t plain[CLIENT_ID_SIZE + sizeof(ping_id)];
+    uint8_t encrypt[sizeof(plain) + crypto_box_MACBYTES];
+    uint8_t data[1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + sizeof(encrypt)];
+
+    memcpy(plain, client_id, CLIENT_ID_SIZE);
+    memcpy(plain + CLIENT_ID_SIZE, &ping_id, sizeof(ping_id));
+
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    DHT_get_shared_key_sent(dht, shared_key, public_key);
+
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    new_nonce(nonce);
+
+    int len = encrypt_data_symmetric( shared_key,
+                                      nonce,
+                                      plain,
+                                      sizeof(plain),
+                                      encrypt );
+
+    if (len != sizeof(encrypt))
+        return -1;
+
+    data[0] = NET_PACKET_GET_NODES;
+    memcpy(data + 1, dht->self_public_key, CLIENT_ID_SIZE);
+    memcpy(data + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+
+    return sendpacket(dht->net, ip_port, data, sizeof(data));
+*/
 }
 
 static int handle_get_announced_nodes_request(DHT * dht, IP_Port source, uint8_t *packet, uint32_t length)

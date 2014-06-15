@@ -54,10 +54,6 @@ struct PING {
 };
 
 
-#define PING_PLAIN_SIZE (1 + sizeof(uint64_t))
-#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + PING_PLAIN_SIZE + crypto_box_MACBYTES)
-#define PING_DATA_SIZE (CLIENT_ID_SIZE + sizeof(IP_Port))
-
 int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
 {
     uint8_t   pk[DHT_PING_SIZE];
