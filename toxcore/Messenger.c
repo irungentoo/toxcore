@@ -186,6 +186,10 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
 
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
     id_copy(client_id, address);
+
+    if (!public_key_valid(client_id))
+        return FAERR_BADCHECKSUM;
+
     uint16_t check, checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
     memcpy(&check, address + crypto_box_PUBLICKEYBYTES + sizeof(uint32_t), sizeof(check));
 
@@ -259,6 +263,9 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
 {
     if (getfriend_id(m, client_id) != -1)
+        return -1;
+
+    if (!public_key_valid(client_id))
         return -1;
 
     /* Resize the friend list if necessary. */

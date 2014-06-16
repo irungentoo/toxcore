@@ -66,6 +66,20 @@ uint64_t random_64b(void)
     return randnum;
 }
 
+/* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
+ * This should only be used for input validation.
+ *
+ * return 0 if it isn't.
+ * return 1 if it is.
+ */
+int public_key_valid(const uint8_t *public_key)
+{
+    if (public_key[31] >= 128) /* Last bit of key is always zero. */
+        return 0;
+
+    return 1;
+}
+
 /* Precomputes the shared key from their public_key and our secret_key.
  * This way we can avoid an expensive elliptic curve scalar multiply for each
  * encrypt/decrypt operation.

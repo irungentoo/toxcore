@@ -53,6 +53,13 @@ int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, uint32_t length);
 uint32_t random_int(void);
 uint64_t random_64b(void);
 
+/* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
+ * This should only be used for input validation.
+ *
+ * return 0 if it isn't.
+ * return 1 if it is.
+ */
+int public_key_valid(const uint8_t *public_key);
 
 /* Encrypts plain of length length to encrypted of length + 16 using the
  * public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
