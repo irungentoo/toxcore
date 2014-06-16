@@ -36,30 +36,63 @@
 /* Maximum newly announced online (in terms of group chats) nodes to ping per TIME_TO_PING seconds. */
 #define MAX_ANNOUNCED_NODES 30
 
- /* Ping newly announced nodes every TIME_TO_PING seconds*/
-#define TIME_TO_PING 20
-
-#define ANNOUNCE_PLAIN_SIZE (1 + sizeof(uint64_t))
- //Two CLIENT_ID_SIZE, cause we have client_id and chat_id
-#define DHT_ANNOUNCE_SIZE (1 + CLIENT_ID_SIZE + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
-#define ANNOUNCE_DATA_SIZE (CLIENT_ID_SIZE + CLIENT_ID_SIZE + sizeof(IP_Port))
+// CLIENT_ID_SIZE for chat_id in ANNOUNCE_PLAIN_SIZE
+#define ANNOUNCE_PLAIN_SIZE (1 + CLIENT_ID_SIZE + sizeof(uint64_t))
+#define DHT_ANNOUNCE_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
+//#define ANNOUNCE_DATA_SIZE (CLIENT_ID_SIZE + CLIENT_ID_SIZE + sizeof(IP_Port))
 
 
 struct ANNOUNCE {
     DHT *dht;
-
-    Ping_Array ping_array; //not sure if we need this for now... see do_announced_nodes function
     Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES];
-    uint64_t last_to_ping;
 };
 
 /* Send announce request
- * For members of group chat, who want to announce being online now
+ * For members of group chat, who want to announce being online at the current moment
  * Announcing node should send chat_id together with other info
+ * We store pinged nodes in PING structure
  */
-int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id)
+int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id)
 {
-    return send_custom_ping_request(ping, ipp, client, NET_PACKET_ANNOUNCE_REQUEST);
+    uint8_t   pk[DHT_ANNOUNCE_SIZE];
+    int       rc;
+    uint64_t  ping_id;
+
+    if (id_equal(client_id, ping->dht->self_public_key))
+        return 1;
+
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+
+    // generate key to encrypt ping_id with recipient privkey
+    DHT_get_shared_key_sent(ping->dht, shared_key, client_id);
+    // Generate random ping_id.
+    uint8_t data[PING_DATA_SIZE];
+    id_copy(data, client_id);
+    memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
+    ping_id = ping_array_add(&ping->ping_array, data, sizeof(data));
+
+    if (ping_id == 0)
+        return 1;
+
+    uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
+    announce_plain[0] = NET_PACKET_ANNOUNCE_REQUEST;
+    id_copy(announce_plain + 1, chat_id);     // Our pubkey
+    memcpy(announce_plain + 1 + CLIENT_ID_SIZE, &ping_id, sizeof(ping_id));
+
+    pk[0] = NET_PACKET_ANNOUNCE_REQUEST;
+    id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
+    new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
+
+    //rc - length
+    rc = encrypt_data_symmetric(shared_key,
+                                pk + 1 + CLIENT_ID_SIZE,
+                                announce_plain, sizeof(announce_plain),
+                                pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
+
+    if (rc != ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
+        return 1;
+
+    return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));    
 }
 
 static int handle_announce_request(void * _dht, IP_Port source, uint8_t *packet, uint32_t length)
@@ -67,36 +100,37 @@ static int handle_announce_request(void * _dht, IP_Port source, uint8_t *packet,
     DHT *dht = _dht;
     int rc;
 
-    if (length != DHT_PING_SIZE)
+    if (length != DHT_ANNOUNCE_SIZE)
         return 1;
 
-    PING *ping = dht->ping;
-
-    if (id_equal(packet + 1, ping->dht->self_public_key))
+    if (id_equal(packet + 1, dht->self_public_key))
         return 1;
 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
-    uint8_t ping_plain[PING_PLAIN_SIZE];
+    uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
     // Decrypt ping_id
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     rc = decrypt_data_symmetric(shared_key,
                                 packet + 1 + CLIENT_ID_SIZE,
                                 packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                PING_PLAIN_SIZE + crypto_box_MACBYTES,
-                                ping_plain );
+                                ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES,
+                                announce_plain);
 
-    if (rc != sizeof(ping_plain))
+    if (rc != sizeof(announce_plain))
         return 1;
 
-    if (ping_plain[0] != NET_PACKET_ANNOUNCE_REQUEST)
+    if (announce_plain[0] != NET_PACKET_ANNOUNCE_REQUEST)
         return 1;
 
     uint64_t   ping_id;
-    memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
-    // Send response
-    send_ping_response(ping, source, packet + 1, ping_id, shared_key);
-    add_to_ping(ping, packet + 1, source);
+    memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
+
+    //Here, we need to save (client_id, chat_id) in our ANNOUNCE structure
+
+    // Send response. For now I don't see why we should create new type of response
+    // And I'm not sure if we need to response:)
+    //send_ping_response(dht->ping, source, packet + 1, ping_id, shared_key);
 
     return 0;
 }
@@ -160,14 +194,11 @@ int get_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key,
 
 static int handle_get_announced_nodes_request(DHT * dht, IP_Port source, uint8_t *packet, uint32_t length)
 {
-}
-
-
-/*
+ /*
  * static int sendnodes_ipv6(DHT *dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, uint8_t *sendback_data,
  *                         uint16_t length, uint8_t *shared_encryption_key)
  */
-
+}
 
 /* Add nodes to the announced_nodes list.
  * All nodes in this list are pinged every TIME_TO_PING seconds
@@ -219,17 +250,6 @@ int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id
 
     return -1;
 }
-
-/* Ping all the valid nodes in the announced_nodes list every TIME_TO_PING seconds.
- * This function must be run at least once every TIME_TO_PING seconds.
- */
-//Probably we need to send another new type of request - is_announced, but I would rather go for
-//storing announced node in the list until they replaced by new ones.
-
-/*void do_announced_nodes(ANNOUNCE *announce)
-{
-}
-*/
 
 ANNOUNCE *new_announce(DHT *dht)
 {

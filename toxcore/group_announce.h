@@ -23,21 +23,13 @@
 
 typedef struct ANNOUNCE ANNOUNCE;
 
-typedef struct __attribute__ ((__packed__))
-{
-    uint8_t client_id[CLIENT_ID_SIZE];
-    uint8_t chat_id[CLIENT_ID_SIZE]
-    IP_Port ip_port;
-}
-Announced_node_format;
 
 int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, IP_Port ip_port);
-void do_announced_nodes(ANNOUNCE *announce);
 
 ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
-int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id);
-int get_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node)
+int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id);
+int get_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node);
 
 #endif /* __GROUP_ANNOUNCE_H__ */

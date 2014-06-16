@@ -54,7 +54,7 @@ struct PING {
 };
 
 
-int send_custom_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id, char pingtype)
+int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
@@ -77,10 +77,10 @@ int send_custom_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id, char p
         return 1;
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
-    ping_plain[0] = pingtype;
+    ping_plain[0] = NET_PACKET_PING_REQUEST;
     memcpy(ping_plain + 1, &ping_id, sizeof(ping_id));
 
-    pk[0] = pingtypes;
+    pk[0] = NET_PACKET_PING_REQUEST;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
     new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
 
@@ -94,11 +94,6 @@ int send_custom_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id, char p
         return 1;
 
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
-}
-
-int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
-{
-    return send_custom_ping_request(ping, ipp, client_id, NET_PACKET_PING_REQUEST);
 }
 
 static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint64_t ping_id,

@@ -142,6 +142,14 @@ typedef struct __attribute__ ((__packed__))
 }
 Node_format;
 
+typedef struct __attribute__ ((__packed__))
+{
+    uint8_t client_id[CLIENT_ID_SIZE];
+    uint8_t chat_id[CLIENT_ID_SIZE]
+    IP_Port ip_port;
+}
+Announced_node_format;
+
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
