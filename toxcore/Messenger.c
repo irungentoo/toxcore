@@ -270,17 +270,17 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
 
     /* Resize the friend list if necessary. */
     if (realloc_friendlist(m, m->numfriends + 1) != 0)
-        return FAERR_NOMEM;
+        return -1;
 
     if (id_equal(client_id, m->net_crypto->self_public_key))
-        return FAERR_OWNKEY;
+        return -1;
 
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
     int32_t onion_friendnum = onion_addfriend(m->onion_c, client_id);
 
     if (onion_friendnum == -1)
-        return FAERR_UNKNOWN;
+        return -1;
 
     uint32_t i;
 
