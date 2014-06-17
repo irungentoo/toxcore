@@ -24,6 +24,8 @@
 #ifndef DHT_H
 #define DHT_H
 
+#include <assert.h>
+
 #include "crypto_core.h"
 #include "network.h"
 #include "ping_array.h"
