@@ -79,8 +79,8 @@ typedef struct  {
 
 /* Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, uint8_t *self_public_key,
-        uint8_t *self_secret_key);
+TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
+        const uint8_t *self_secret_key);
 
 /* Run the TCP connection
  */

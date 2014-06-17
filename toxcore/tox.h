@@ -295,27 +295,27 @@ void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, const uint
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * message, uint32_t length, void *userdata)
  */
-void tox_callback_friend_message(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_friend_message(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                                  void *userdata);
 
 /* Set the function that will be executed when an action from a friend is received.
  *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * action, uint32_t length, void *userdata)
  */
-void tox_callback_friend_action(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_friend_action(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                                 void *userdata);
 
 /* Set the callback for name changes.
  *  function(Tox *tox, int32_t friendnumber, uint8_t *newname, uint16_t length, void *userdata)
  *  You are not responsible for freeing newname
  */
-void tox_callback_name_change(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_name_change(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                               void *userdata);
 
 /* Set the callback for status message changes.
  *  function(Tox *tox, int32_t friendnumber, uint8_t *newstatus, uint16_t length, void *userdata)
  *  You are not responsible for freeing newstatus.
  */
-void tox_callback_status_message(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_status_message(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                                  void *userdata);
 
 /* Set the callback for status type changes.
@@ -367,20 +367,20 @@ void tox_set_nospam(Tox *tox, uint32_t nospam);
  *
  *  Function(Tox *tox, int friendnumber, uint8_t *group_public_key, void *userdata)
  */
-void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t *, void *), void *userdata);
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, void *), void *userdata);
 
 /* Set the callback for group messages.
  *
  *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
-void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t *, uint16_t, void *),
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
                                 void *userdata);
 
 /* Set the callback for group actions.
  *
  *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
  */
-void tox_callback_group_action(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t *, uint16_t, void *),
+void tox_callback_group_action(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
                                void *userdata);
 
 /* Set callback function for peer name list changes.
@@ -523,7 +523,7 @@ enum {
  *
  *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
-void tox_callback_file_send_request(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t, uint64_t, uint8_t *, uint16_t,
+void tox_callback_file_send_request(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t, uint64_t, const uint8_t *, uint16_t,
                                     void *), void *userdata);
 
 /* Set the callback for file control requests.
@@ -534,7 +534,7 @@ void tox_callback_file_send_request(Tox *tox, void (*function)(Tox *m, int32_t, 
  *  Function(Tox *tox, int32_t friendnumber, uint8_t receive_send, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void tox_callback_file_control(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t, uint8_t, uint8_t, uint8_t *,
+void tox_callback_file_control(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t, uint8_t, uint8_t, const uint8_t *,
                                uint16_t, void *), void *userdata);
 
 /* Set the callback for file data.
@@ -542,7 +542,7 @@ void tox_callback_file_control(Tox *tox, void (*function)(Tox *m, int32_t, uint8
  *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void tox_callback_file_data(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t, uint8_t *, uint16_t length, void *),
+void tox_callback_file_data(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t, const uint8_t *, uint16_t length, void *),
                             void *userdata);
 
 

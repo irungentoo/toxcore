@@ -851,7 +851,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
  * return 0 on success.
  */
 int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
-                           uint32_t number, IP_Port ip_port, uint8_t *public_key), void *object, uint32_t number)
+                           uint32_t number, IP_Port ip_port, const uint8_t *public_key), void *object, uint32_t number)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;

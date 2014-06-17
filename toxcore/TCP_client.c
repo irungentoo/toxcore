@@ -65,7 +65,7 @@ static int connect_sock_to(sock_t sock, IP_Port ip_port)
 /* return 0 on success.
  * return -1 on failure.
  */
-static int generate_handshake(TCP_Client_Connection *TCP_conn, uint8_t *self_public_key, uint8_t *self_secret_key)
+static int generate_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *self_public_key, const uint8_t *self_secret_key)
 {
     uint8_t plain[crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES];
     crypto_box_keypair(plain, TCP_conn->temp_secret_key);
@@ -335,8 +335,8 @@ void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(vo
 
 /* Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, uint8_t *self_public_key,
-        uint8_t *self_secret_key)
+TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
+        const uint8_t *self_secret_key)
 {
     if (networking_at_startup() != 0) {
         return NULL;

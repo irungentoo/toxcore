@@ -373,7 +373,7 @@ void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, const uint
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(int32_t friendnumber, uint8_t * message, uint32_t length)
  */
-void tox_callback_friend_message(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_friend_message(Tox *tox, void (*function)(Messenger *tox, int32_t, const uint8_t *, uint16_t, void *),
                                  void *userdata)
 {
     Messenger *m = tox;
@@ -383,7 +383,7 @@ void tox_callback_friend_message(Tox *tox, void (*function)(Messenger *tox, int3
 /* Set the function that will be executed when an action from a friend is received.
  *  function format is: function(int32_t friendnumber, uint8_t * action, uint32_t length)
  */
-void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int32_t, const uint8_t *, uint16_t, void *),
                                 void *userdata)
 {
     Messenger *m = tox;
@@ -394,7 +394,7 @@ void tox_callback_friend_action(Tox *tox, void (*function)(Messenger *tox, int32
  *  function(int32_t friendnumber, uint8_t *newname, uint16_t length)
  *  You are not responsible for freeing newname.
  */
-void tox_callback_name_change(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_name_change(Tox *tox, void (*function)(Messenger *tox, int32_t, const uint8_t *, uint16_t, void *),
                               void *userdata)
 {
     Messenger *m = tox;
@@ -405,7 +405,7 @@ void tox_callback_name_change(Tox *tox, void (*function)(Messenger *tox, int32_t
  *  function(int32_t friendnumber, uint8_t *newstatus, uint16_t length)
  *  You are not responsible for freeing newstatus.
  */
-void tox_callback_status_message(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, uint16_t, void *),
+void tox_callback_status_message(Tox *tox, void (*function)(Messenger *tox, int32_t, const uint8_t *, uint16_t, void *),
                                  void *userdata)
 {
     Messenger *m = tox;
@@ -486,7 +486,7 @@ void tox_set_nospam(Tox *tox, uint32_t nospam)
  *
  *  Function(Tox *tox, int32_t friendnumber, uint8_t *group_public_key, void *userdata)
  */
-void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t *, void *), void *userdata)
+void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_t, const uint8_t *, void *), void *userdata)
 {
     Messenger *m = tox;
     m_callback_group_invite(m, function, userdata);
@@ -496,7 +496,7 @@ void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_
  *
  *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
-void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, int, uint8_t *, uint16_t, void *),
+void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, int, const uint8_t *, uint16_t, void *),
                                 void *userdata)
 {
     Messenger *m = tox;
@@ -507,7 +507,7 @@ void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, 
  *
  *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
  */
-void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, int, uint8_t *, uint16_t, void *),
+void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, int, const uint8_t *, uint16_t, void *),
                                void *userdata)
 {
     Messenger *m = tox;
@@ -651,7 +651,7 @@ uint32_t tox_get_chatlist(Tox *tox, int *out_list, uint32_t list_size)
  *
  *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
-void tox_callback_file_send_request(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint64_t, uint8_t *,
+void tox_callback_file_send_request(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint64_t, const uint8_t *,
                                     uint16_t,
                                     void *), void *userdata)
 {
@@ -663,7 +663,7 @@ void tox_callback_file_send_request(Tox *tox, void (*function)(Messenger *tox, i
  *  Function(Tox *tox, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void tox_callback_file_control(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint8_t, uint8_t, uint8_t *,
+void tox_callback_file_control(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint8_t, uint8_t, const uint8_t *,
                                uint16_t, void *), void *userdata)
 {
     Messenger *m = tox;
@@ -674,7 +674,7 @@ void tox_callback_file_control(Tox *tox, void (*function)(Messenger *tox, int32_
  *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void tox_callback_file_data(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, uint8_t *, uint16_t length,
+void tox_callback_file_data(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, const uint8_t *, uint16_t length,
                             void *),
                             void *userdata)
 

@@ -751,7 +751,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *dat
  * return 0 on success.
  */
 static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint32_t buffer_start, uint32_t num,
-                                   uint8_t *data, uint32_t length)
+                                   const uint8_t *data, uint32_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
@@ -771,7 +771,7 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
 /*  return -1 if data could not be put in packet queue.
  *  return positive packet number if data was put into the queue.
  */
-static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
+static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
@@ -1317,7 +1317,7 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
  *  return -1 if there are no connections like we are looking for.
  *  return id if it found it.
  */
-static int getcryptconnection_id(Net_Crypto *c, uint8_t *public_key)
+static int getcryptconnection_id(Net_Crypto *c, const uint8_t *public_key)
 {
     uint32_t i;
 
@@ -1493,7 +1493,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
  * return -1 on failure.
  * return connection id on success.
  */
-int new_crypto_connection(Net_Crypto *c, uint8_t *real_public_key)
+int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key)
 {
     int crypt_connection_id = getcryptconnection_id(c, real_public_key);
 
@@ -1790,7 +1790,7 @@ static int tcp_oob_callback(void *object, uint8_t *public_key, uint8_t *data, ui
  * return -1 if it can't.
  * return 0 if it can.
  */
-static int tcp_connection_check(Net_Crypto *c, uint8_t *public_key)
+static int tcp_connection_check(Net_Crypto *c, const uint8_t *public_key)
 {
     uint32_t i;
 
@@ -1825,7 +1825,7 @@ static int tcp_connection_check(Net_Crypto *c, uint8_t *public_key)
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, uint8_t *public_key)
+int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, const uint8_t *public_key)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -1878,7 +1878,7 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, uint8_t *public_key)
+int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
 {
     if (ip_port.ip.family == TCP_INET) {
         ip_port.ip.family = AF_INET;
@@ -2119,7 +2119,7 @@ int connection_data_handler(Net_Crypto *c, int crypt_connection_id, int (*connec
  * return 0 on success.
  */
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
-                                  int (*connection_lossy_data_callback)(void *object, int id, uint8_t *data, uint16_t length), void *object, int id)
+                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object, int id)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -2390,7 +2390,7 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  *
  * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
  */
-int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
 {
     if (length == 0)
         return -1;
@@ -2427,7 +2427,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data,
  *
  * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
  */
-int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length)
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;

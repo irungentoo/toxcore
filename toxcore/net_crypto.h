@@ -129,7 +129,7 @@ typedef struct {
     void *connection_data_callback_object;
     int connection_data_callback_id;
 
-    int (*connection_lossy_data_callback)(void *object, int id, uint8_t *data, uint16_t length);
+    int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
     void *connection_lossy_data_callback_object;
     int connection_lossy_data_callback_id;
 
@@ -220,7 +220,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
  * return -1 on failure.
  * return connection id on success.
  */
-int new_crypto_connection(Net_Crypto *c, uint8_t *real_public_key);
+int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key);
 
 /* Copy friends DHT public key into dht_key.
  *
@@ -279,7 +279,7 @@ int connection_data_handler(Net_Crypto *c, int crypt_connection_id, int (*connec
  * return 0 on success.
  */
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
-                                  int (*connection_lossy_data_callback)(void *object, int id, uint8_t *data, uint16_t length), void *object, int id);
+                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object, int id);
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
@@ -293,28 +293,28 @@ uint32_t crypto_num_free_sendqueue_slots(Net_Crypto *c, int crypt_connection_id)
  *
  * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
  */
-int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
 
 /* return -1 on failure.
  * return 0 on success.
  *
  * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
  */
-int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, uint8_t *data, uint32_t length);
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
 
 /* Add a tcp relay, associating it to a crypt_connection_id.
  *
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, uint8_t *public_key);
+int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, const uint8_t *public_key);
 
 /* Add a tcp relay to the array.
  *
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, uint8_t *public_key);
+int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
