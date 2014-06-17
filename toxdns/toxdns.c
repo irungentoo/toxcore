@@ -26,6 +26,7 @@
 #endif
 
 #include "../toxcore/Messenger.h"
+#include "toxdns.h"
 
 static const char base32[32] = {"abcdefghijklmnopqrstuvwxyz012345"};
 

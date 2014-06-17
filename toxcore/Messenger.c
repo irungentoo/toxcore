@@ -1858,8 +1858,6 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
-    m_set_statusmessage(m, (uint8_t *)"Online", sizeof("Online"));
-
     friendreq_init(&(m->fr), m->onion_c);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
