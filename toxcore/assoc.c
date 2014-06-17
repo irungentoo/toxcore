@@ -981,7 +981,7 @@ static char *idpart2str(uint8_t *id, size_t len)
     return buffer;
 }
 
-void Assoc_status(Assoc *assoc)
+void Assoc_status(const Assoc *assoc)
 {
     if (!assoc) {
         LOGGER_INFO("Assoc status: no assoc");
