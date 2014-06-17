@@ -25,6 +25,10 @@
 #include "config.h"
 #endif
 
+#ifdef DEBUG
+#include <assert.h>
+#endif
+
 #include "logger.h"
 #include "Messenger.h"
 #include "assoc.h"
