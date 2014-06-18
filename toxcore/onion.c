@@ -84,17 +84,19 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
     return 0;
 }
 
-/* Create and send a onion packet.
+/* Create a onion packet.
  *
- * Use Onion_Path path to send data of length to dest.
+ * Use Onion_Path path to create packet for data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
+ * packet should be at least ONION_MAX_PACKET_SIZE big.
  *
  * return -1 on failure.
- * return 0 on success.
+ * return length of created packet on success.
  */
-int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest, uint8_t *data,
+                        uint32_t length)
 {
-    if (1 + length + SEND_1 > ONION_MAX_PACKET_SIZE || length == 0)
+    if (1 + length + SEND_1 > max_packet_length || length == 0)
         return -1;
 
     to_net_family(&dest.ip);
@@ -126,7 +128,6 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
     if ((uint32_t)len != SIZE_IPPORT + SEND_BASE + length + crypto_box_MACBYTES)
         return -1;
 
-    uint8_t packet[1 + length + SEND_1];
     packet[0] = NET_PACKET_ONION_SEND_INITIAL;
     memcpy(packet + 1, nonce, crypto_box_NONCEBYTES);
     memcpy(packet + 1 + crypto_box_NONCEBYTES, path->public_key1, crypto_box_PUBLICKEYBYTES);
@@ -137,7 +138,26 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
     if ((uint32_t)len != SIZE_IPPORT + SEND_BASE * 2 + length + crypto_box_MACBYTES)
         return -1;
 
-    if ((uint32_t)sendpacket(net, path->ip_port1, packet, sizeof(packet)) != sizeof(packet))
+    return 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + len;
+}
+
+/* Create and send a onion packet.
+ *
+ * Use Onion_Path path to send data of length to dest.
+ * Maximum length of data is ONION_MAX_DATA_SIZE.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
+{
+    uint8_t packet[ONION_MAX_PACKET_SIZE];
+    int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
+
+    if (len == -1)
+        return -1;
+
+    if (sendpacket(net, path->ip_port1, packet, len) != len)
         return -1;
 
     return 0;

@@ -933,7 +933,7 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
         LOGGER_WARNING("Allocation failed!");
         return NULL;
     }
-    
+
     _call->call_idx = _call_idx;
     _call->type_peer = calloc ( sizeof ( MSICallType ), peers );
 
@@ -1028,7 +1028,7 @@ void *handle_timeout ( void *arg )
 
     if (_call) {
         LOGGER_DEBUG("[Call: %s] Request timed out!", _call->id);
-    
+
         invoke_callback(_call->call_idx, MSI_OnRequestTimeout);
     }
 

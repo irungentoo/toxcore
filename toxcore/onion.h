@@ -78,6 +78,18 @@ typedef struct {
  */
 int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes);
 
+/* Create a onion packet.
+ *
+ * Use Onion_Path path to create packet for data of length to dest.
+ * Maximum length of data is ONION_MAX_DATA_SIZE.
+ * packet should be at least ONION_MAX_PACKET_SIZE big.
+ *
+ * return -1 on failure.
+ * return length of created packet on success.
+ */
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest, uint8_t *data,
+                        uint32_t length);
+
 /* Create and send a onion packet.
  *
  * Use Onion_Path path to send data of length to dest.
