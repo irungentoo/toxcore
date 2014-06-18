@@ -26,6 +26,10 @@
 #define __TOXAV
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* vpx_image_t */
 #include <vpx/vpx_image.h>
 
@@ -370,4 +374,9 @@ int toxav_set_video_queue_limit ( ToxAv *av, int32_t call_index, uint64_t limit 
 
 
 Tox *toxav_get_tox(ToxAv *av);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __TOXAV */
