@@ -27,6 +27,10 @@
 #include "config.h"
 #endif
 
+#ifdef DEBUG
+#include <assert.h>
+#endif
+
 #include "logger.h"
 
 #include "DHT.h"
