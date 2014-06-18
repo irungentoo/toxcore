@@ -26,7 +26,6 @@
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
-#include <assert.h>
 
 #include "net_crypto.h"
 #include "DHT.h"
