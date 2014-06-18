@@ -17,8 +17,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- *
- *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 #ifdef HAVE_CONFIG_H
