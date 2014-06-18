@@ -26,7 +26,6 @@
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
-
 #include "net_crypto.h"
 #include "DHT.h"
 #include "friend_requests.h"
