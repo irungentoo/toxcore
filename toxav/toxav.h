@@ -17,14 +17,16 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- *
- *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 
 #ifndef __TOXAV
 #define __TOXAV
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* vpx_image_t */
 #include <vpx/vpx_image.h>
@@ -370,4 +372,9 @@ int toxav_set_video_queue_limit ( ToxAv *av, int32_t call_index, uint64_t limit 
 
 
 Tox *toxav_get_tox(ToxAv *av);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __TOXAV */
