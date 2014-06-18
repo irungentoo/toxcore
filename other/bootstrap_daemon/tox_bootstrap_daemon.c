@@ -91,6 +91,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
         size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (read_size != KEYS_SIZE) {
+            fclose(keys_file);
             return 0;
         }
 
@@ -106,6 +107,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
         size_t write_size = fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (write_size != KEYS_SIZE) {
+            fclose(keys_file);
             return 0;
         }
     }
@@ -174,12 +176,9 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 
     *tcp_relay_ports = malloc(config_port_count * sizeof(uint16_t));
 
-    config_setting_t *elem;
     int i;
-
     for (i = 0; i < config_port_count; i ++) {
-
-        elem = config_setting_get_elem(ports_array, i);
+        config_setting_t *elem = config_setting_get_elem(ports_array, i);
 
         if (elem == NULL) {
             // it's NULL if `ports_array` is not an array (we have that check ealier) or if `i` is out of range, which should not be
@@ -513,8 +512,10 @@ int main(int argc, char *argv[])
     }
 
     // Check if the PID file exists
-    if (fopen(pid_file_path, "r")) {
+    FILE* pid_file;
+    if (pid_file = fopen(pid_file_path, "r")) {
         syslog(LOG_ERR, "Another instance of the daemon is already running, PID file %s exists.\n", pid_file_path);
+        fclose(pid_file);
     }
 
     IP ip;
@@ -596,17 +597,19 @@ int main(int argc, char *argv[])
     // Fork off from the parent process
     pid_t pid = fork();
 
-    if (pid < 0) {
-        fclose(pidf);
-        syslog(LOG_ERR, "Forking failed. Exiting.\n");
-        return 1;
-    }
-
     if (pid > 0) {
         fprintf(pidf, "%d ", pid);
         fclose(pidf);
         syslog(LOG_DEBUG, "Forked successfully: PID: %d.\n", pid);
         return 0;
+    }
+    else {
+        fclose(pidf);
+    }
+    
+    if (pid < 0) {
+        syslog(LOG_ERR, "Forking failed. Exiting.\n");
+        return 1;
     }
 
     // Change the file mode mask
