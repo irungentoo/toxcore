@@ -25,6 +25,7 @@
 #define TOXDNS_H
 
 #include <stdint.h>
+#include "../toxcore/crypto_core.c"
 
 /* How to use this api to make secure tox dns3 requests:
  *
