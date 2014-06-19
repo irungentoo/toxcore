@@ -580,10 +580,12 @@ int m_copy_statusmessage(Messenger *m, int32_t friendnumber, uint8_t *buf, uint3
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
-
-    memset(buf, 0, maxlen);
-    memcpy(buf, m->friendlist[friendnumber].statusmessage, MIN(maxlen, m->friendlist[friendnumber].statusmessage_length));
-    return MIN(maxlen, m->friendlist[friendnumber].statusmessage_length);
+    
+    int msglen = MIN(maxlen, m->friendlist[friendnumber].statusmessage_length);
+    
+    memcpy(buf, m->friendlist[friendnumber].statusmessage, msglen);
+    memset(buf+msglen, 0, maxlen-msglen);
+    return msglen;
 }
 
 /* return the size of friendnumber's user status.
@@ -596,9 +598,10 @@ int m_get_self_statusmessage_size(Messenger *m)
 
 int m_copy_self_statusmessage(Messenger *m, uint8_t *buf, uint32_t maxlen)
 {
-    memset(buf, 0, maxlen);
-    memcpy(buf, m->statusmessage, MIN(maxlen, m->statusmessage_length));
-    return MIN(maxlen, m->statusmessage_length);
+    int msglen = MIN(maxlen, m->statusmessage_length);
+    memcpy(buf, m->statusmessage, msglen);
+    memset(buf+msglen, 0, maxlen-msglen);
+    return msglen;
 }
 
 uint8_t m_get_userstatus(Messenger *m, int32_t friendnumber)
@@ -2693,7 +2696,6 @@ void messenger_save(Messenger *m, uint8_t *data)
     memset(relays, 0, len);
     copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
     memcpy(data, relays, len);
-    data += len;
 }
 
 static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
