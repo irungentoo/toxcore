@@ -212,6 +212,8 @@ typedef struct {
     Shared_Keys shared_keys_sent;
 
     struct PING   *ping;
+    struct ANNOUNCE * announce;
+    
     Ping_Array    dht_ping_array;
     Ping_Array    dht_harden_ping_array;
 #ifdef ENABLE_ASSOC_DHT
