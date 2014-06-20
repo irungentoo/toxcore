@@ -36,6 +36,7 @@ int load_file(char *filename, char **result)
 
     if (size != fread(*result, sizeof(char), size, f)) {
         free(*result);
+        fclose(f);
         return -2; // -2 means file reading fail
     }
 
