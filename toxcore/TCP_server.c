@@ -915,7 +915,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
     memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(temp->secret_key, secret_key, crypto_box_SECRETKEYBYTES);
 
-    bs_list_init(&temp->accepted_key_list, crypto_box_PUBLICKEYBYTES);
+    bs_list_init(&temp->accepted_key_list, crypto_box_PUBLICKEYBYTES, 8);
 
     return temp;
 }
