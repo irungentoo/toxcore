@@ -596,10 +596,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
      */
     uint16_t port_to_try = port;
     *portptr = htons(port_to_try);
-    int tries, res;
+    int tries;
 
     for (tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++) {
-        res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
+        int res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
 
         if (!res) {
             temp->port = *portptr;

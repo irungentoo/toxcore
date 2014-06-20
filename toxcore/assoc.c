@@ -886,7 +886,7 @@ void do_Assoc(Assoc *assoc, DHT *dht)
          * send getnode() requests to both */
         uint8_t *target_id = NULL;
         Client_entry *heard = NULL, *seen = NULL;
-        size_t i, k, m, bckt;
+        size_t i, k, m;
 
         for (i = 1; i < assoc->candidates_bucket_count; i++) {
             if (i % 2)
@@ -894,7 +894,7 @@ void do_Assoc(Assoc *assoc, DHT *dht)
             else
                 k = i >> 1;
 
-            bckt = (candidate + k) % assoc->candidates_bucket_count;
+            size_t bckt = (candidate + k) % assoc->candidates_bucket_count;
 
             for (m = 0; m < assoc->candidates_bucket_size; m++)
                 if (assoc->candidates[bckt].list[m].hash) {

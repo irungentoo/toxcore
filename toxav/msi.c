@@ -431,8 +431,11 @@ MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
  */
 int stringify_message(MSIMessage *msg, char *dest)
 {
+// THIS CODE HAS NO EFFECT, AND THE ARGUMENTS ARE NOT MODIFIED
+#if 0 
+
 #define HDR_TO_STR(__dest, __hdr) if (__hdr.header_value) {\
-    char nltstr[MSI_MAXMSG_SIZE]; memset(nltstr, '\0', MSI_MAXMSG_SIZE); int i = 0; \
+    char nltstr[MSI_MAXMSG_SIZE]; memset(nltstr+__hdr.size, '\0', MSI_MAXMSG_SIZE-__hdr.size); int i = 0; \
     for ( ; i < __hdr.size; i ++) nltstr[i] = (char)__hdr.header_value[i]; \
     }
 
@@ -452,6 +455,7 @@ int stringify_message(MSIMessage *msg, char *dest)
 //         U8_TO_NLTCHAR(msg->version.header_value, msg->version.size, nltstr, MSI_MAXMSG_SIZE);
 //         sprintf(dest, "Version: %s\n", nltstr);
 //     }
+#endif
 
     return 0;
 }
