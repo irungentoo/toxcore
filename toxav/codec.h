@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _AVCODEC_H_
-#define _AVCODEC_H_
+#ifndef _CODEC_H_
+#define _CODEC_H_
 
 #include <stdio.h>
 #include <math.h>
@@ -46,6 +46,8 @@ typedef enum _Capabilities {
     v_decoding = 1 << 3
 } Capabilities;
 
+
+
 typedef struct _CodecState {
 
     /* video encoding */
@@ -64,7 +66,9 @@ typedef struct _CodecState {
     OpusDecoder *audio_decoder;
 
     uint64_t capabilities; /* supports*/
-
+    
+    /* Voice activity detection */
+    float samples_per_frame;
 } CodecState;
 
 
@@ -92,8 +96,12 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint32_t audio_channels,
                                  uint16_t video_width,
                                  uint16_t video_height,
-                                 uint32_t video_bitrate );
+                                 uint32_t video_bitrate);
 
 void codec_terminate_session(CodecState *cs);
 
-#endif
+
+/* return 1 if has voice, 0 if not */
+int calculate_VAD_from_PCM(int16_t* PCM, size_t frame_size, float energy);
+
+#endif /* _CODEC_H_ */

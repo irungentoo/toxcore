@@ -34,7 +34,8 @@
 #include <assert.h>
 
 #include "rtp.h"
-#include "media.h"
+#include "codec.h"
+
 
 int empty_queue(JitterBuffer *q)
 {
@@ -292,7 +293,10 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
         free (retu);
         return NULL;
     }
-
+    
+    float frame_duration_sec = audio_frame_duration / 1000;
+    retu->samples_per_frame = audio_sample_rate * frame_duration_sec;    
+    
     return retu;
 }
 
@@ -313,4 +317,29 @@ void codec_terminate_session ( CodecState *cs )
 
     if ( cs->capabilities & v_encoding )
         vpx_codec_destroy(&cs->v_encoder);
+}
+
+inline float calculate_sum_sq (int16_t* n, size_t k)
+{
+    float result = 0;
+    size_t i = 0;
+    
+    for ( ; i < k; i ++) {
+        result += (float) (n[i] * n[i]);
+    }
+    
+    return result;
+}
+
+int calculate_VAD_from_PCM( int16_t* PCM, size_t frame_size, float energy)
+{
+//     int i = 0;
+//     for (; i < frame_size; i ++) {
+    LOGGER_DEBUG("Frame size: %d ref: %f", frame_size, energy);
+    float frame_energy = sqrt(calculate_sum_sq(PCM, frame_size)) / frame_size;
+    LOGGER_DEBUG("Frame energy calculated: %f", frame_energy);
+    if ( frame_energy > energy) return 1;
+//     }
+
+    return 0;
 }

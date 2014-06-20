@@ -90,7 +90,8 @@ typedef enum {
     ErrorTerminatingAudioRtp = -9, /* Returned in toxav_kill_transmission() */
     ErrorTerminatingVideoRtp = -10, /* Returned in toxav_kill_transmission() */
     ErrorPacketTooLarge = -11, /* Buffer exceeds size while encoding */
-
+    ErrorInvalidCodecState = -12, /* Codec state not initialized */
+    
 } ToxAvError;
 
 
@@ -372,6 +373,8 @@ int toxav_set_video_queue_limit ( ToxAv *av, int32_t call_index, uint64_t limit 
 
 
 Tox *toxav_get_tox(ToxAv *av);
+
+int toxav_has_activity ( int16_t* PCM, uint16_t frame_size, float ref_energy );
 
 #ifdef __cplusplus
 }

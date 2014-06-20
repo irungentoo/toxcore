@@ -27,12 +27,11 @@
 #define _GNU_SOURCE /* implicit declaration warning */
 
 #include "rtp.h"
-#include "media.h"
+#include "codec.h"
 #include "msi.h"
 #include "toxav.h"
 
 #include "../toxcore/logger.h"
-
 
 #include <assert.h>
 #include <stdlib.h>
@@ -732,4 +731,9 @@ inline__ int toxav_set_video_queue_limit(ToxAv *av, int32_t call_index, uint64_t
 inline__ Tox *toxav_get_tox(ToxAv *av)
 {
     return (Tox *)av->messenger;
+}
+
+int toxav_has_activity(int16_t* PCM, uint16_t frame_size, float ref_energy)
+{
+    return calculate_VAD_from_PCM(PCM, frame_size, ref_energy);
 }
