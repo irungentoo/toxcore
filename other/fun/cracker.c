@@ -17,7 +17,7 @@
 #include <randombytes.h>
 
 /* Sodium include*/
-//#include <libsodium.h>
+//#include <sodium.h>
 
 void print_key(uint8_t *client_id)
 {
