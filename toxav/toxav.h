@@ -118,6 +118,7 @@ typedef struct _ToxAvCodecSettings {
     uint16_t audio_frame_duration; /* In ms */
     uint32_t audio_sample_rate; /* In Hz */
     uint32_t audio_channels;
+    uint32_t audio_VAD_tolerance; /* In ms */
 
     uint32_t jbuf_capacity; /* Size of jitter buffer */
 } ToxAvCodecSettings;
@@ -374,7 +375,7 @@ int toxav_set_video_queue_limit ( ToxAv *av, int32_t call_index, uint64_t limit 
 
 Tox *toxav_get_tox(ToxAv *av);
 
-int toxav_has_activity ( int16_t* PCM, uint16_t frame_size, float ref_energy );
+int toxav_has_activity ( ToxAv *av, int32_t call_index, int16_t* PCM, uint16_t frame_size, float ref_energy );
 
 #ifdef __cplusplus
 }

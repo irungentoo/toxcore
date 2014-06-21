@@ -36,6 +36,8 @@
 #include "rtp.h"
 #include "codec.h"
 
+const uint16_t min_jbuf_size = 10;
+const uint16_t min_readiness_idx = 6; /* when is buffer ready to dqq */
 
 int empty_queue(JitterBuffer *q)
 {
@@ -66,7 +68,7 @@ JitterBuffer *create_queue(int capacity)
     }
 
     q->size = 0;
-    q->capacity = capacity;
+    q->capacity = capacity >= min_jbuf_size ? capacity : min_jbuf_size;
     q->front = 0;
     q->rear = -1;
     q->queue_ready = 0;
@@ -142,14 +144,12 @@ void queue(JitterBuffer *q, RTPMessage *pk)
         empty_queue(q);
     }
 
-    if (q->size > 8)
-        q->queue_ready = 1;
+    if (q->size >= min_readiness_idx) q->queue_ready = 1;
 
     ++q->size;
     ++q->rear;
 
-    if (q->rear == q->capacity)
-        q->rear = 0;
+    if (q->rear == q->capacity) q->rear = 0;
 
     q->queue[q->rear] = pk;
 
@@ -177,8 +177,7 @@ void queue(JitterBuffer *q, RTPMessage *pk)
 
         a -= 1;
 
-        if (a < 0)
-            a += q->capacity;
+        if (a < 0) a += q->capacity;
     }
 }
 
@@ -266,6 +265,7 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint16_t audio_frame_duration,
                                  uint32_t audio_sample_rate,
                                  uint32_t audio_channels,
+                                 uint32_t audio_VAD_tolerance_ms,
                                  uint16_t video_width,
                                  uint16_t video_height,
                                  uint32_t video_bitrate )
@@ -294,8 +294,9 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
         return NULL;
     }
     
-    float frame_duration_sec = audio_frame_duration / 1000;
-    retu->samples_per_frame = audio_sample_rate * frame_duration_sec;    
+    
+    retu->EVAD_tolerance = audio_VAD_tolerance_ms > audio_frame_duration ? 
+            audio_VAD_tolerance_ms / audio_frame_duration : audio_frame_duration;
     
     return retu;
 }
@@ -308,10 +309,6 @@ void codec_terminate_session ( CodecState *cs )
     if ( cs->audio_decoder )
         opus_decoder_destroy(cs->audio_decoder);
 
-
-    /* TODO: Terminate video
-     *           Do what?
-     */
     if ( cs->capabilities & v_decoding )
         vpx_codec_destroy(&cs->v_decoder);
 
@@ -319,27 +316,24 @@ void codec_terminate_session ( CodecState *cs )
         vpx_codec_destroy(&cs->v_encoder);
 }
 
-inline float calculate_sum_sq (int16_t* n, size_t k)
+inline float calculate_sum_sq (int16_t* n, uint16_t k)
 {
     float result = 0;
-    size_t i = 0;
+    uint16_t i = 0;
     
-    for ( ; i < k; i ++) {
-        result += (float) (n[i] * n[i]);
-    }
-    
+    for ( ; i < k; i ++) result += (float) (n[i] * n[i]);
     return result;
 }
 
-int calculate_VAD_from_PCM( int16_t* PCM, size_t frame_size, float energy)
+int energy_VAD(CodecState* cs, int16_t* PCM, uint16_t frame_size, float energy)
 {
-//     int i = 0;
-//     for (; i < frame_size; i ++) {
-    LOGGER_DEBUG("Frame size: %d ref: %f", frame_size, energy);
     float frame_energy = sqrt(calculate_sum_sq(PCM, frame_size)) / frame_size;
-    LOGGER_DEBUG("Frame energy calculated: %f", frame_energy);
-    if ( frame_energy > energy) return 1;
-//     }
-
+    
+    if ( frame_energy > energy) { 
+        cs->EVAD_tolerance_cr = cs->EVAD_tolerance; /* Reset counter */
+        return 1;
+    }
+    
+    if ( cs->EVAD_tolerance_cr ) { cs->EVAD_tolerance_cr --; return 1; }    
     return 0;
 }
