@@ -1,21 +1,21 @@
-![Project Tox](https://raw.github.com/irungentoo/ProjectTox-Core/master/other/tox.png "Project Tox")
+![Project Tox](https://raw.github.com/irungentoo/toxcore/master/other/tox.png "Project Tox")
 ***
 
 With the rise of governmental monitoring programs, Tox, a FOSS initiative, aims to be an easy to use, all-in-one communication platform that ensures their users full privacy and secure message delivery.<br /> <br />
 
-[**Website**](https://tox.im) **|** [**Wiki**](http://wiki.tox.im/) **|** [**Blog**](https://blog.libtoxcore.so/) **|** [**FAQ**](http://wiki.tox.im/FAQ) **|** [**Binaries**](http://download.tox.im/) **|** [**Clients**](http://wiki.tox.im/Client) **|** [**Compiling**](http://wiki.tox.im/Installing) **|** [**API**](http://api.libtoxcore.so/) **|** [**Qt-GUI**](https://github.com/nurupo/ProjectTox-Qt-GUI) **|** **IRC:** #tox@freenode
+[**Website**](https://tox.im) **|** [**Wiki**](https://wiki.tox.im/) **|** [**Blog**](https://blog.libtoxcore.so/) **|** [**FAQ**](http://wiki.tox.im/FAQ) **|** [**Binaries**](https://wiki.tox.im/Binaries) **|** [**Clients**](https://wiki.tox.im/Client) **|** [**Compiling**](https://wiki.tox.im/Installing) **|** [**API**](https://libtoxcore.so/) **|**  **|** **IRC:** #tox@freenode
 
 
 ## The Complex Stuff:
 ### UDP vs. TCP
-Tox must use UDP simply because [hole punching](http://en.wikipedia.org/wiki/UDP_hole_punching) with TCP is not as reliable.
+Tox must use UDP simply because [hole punching](https://en.wikipedia.org/wiki/UDP_hole_punching) with TCP is not as reliable.
 However, Tox does use [TCP relays](https://github.com/irungentoo/ProjectTox-Core/blob/master/docs/TCP_Network.txt) as a fallback if it encounters a firewall that prevents UDP hole punching.
 
 ### Connecting & Communicating
-Every peer is represented as a [byte string][String] (the public key [Tox ID] of the peer). By using torrent-style DHT, peers can find the IP of other peers by using their Tox ID. Once the IP is obtained, peers can initiate a [secure](https://github.com/irungentoo/ProjectTox-Core/wiki/Crypto) connection with each other. Once the connection is made, peers can exchange messages, send files, start video chats, etc. using encrypted communications.
+Every peer is represented as a [byte string][String] (the public key [Tox ID] of the peer). By using torrent-style DHT, peers can find the IP of other peers by using their Tox ID. Once the IP is obtained, peers can initiate a [secure](https://github.com/irungentoo/toxcore/wiki/Crypto) connection with each other. Once the connection is made, peers can exchange messages, send files, start video chats, etc. using encrypted communications.
 
 
-**Current build status:** [![Build Status](https://travis-ci.org/irungentoo/ProjectTox-Core.png?branch=master)](https://travis-ci.org/irungentoo/ProjectTox-Core)
+**Current build status:** [![Build Status](https://travis-ci.org/irungentoo/toxcore.png?branch=master)](https://travis-ci.org/irungentoo/toxcore)
 
 
 ## Q&A:
@@ -34,9 +34,9 @@ The goal of this project is to create a configuration-free P2P Skype replacement
 ## Documentation:
 
 - [Installation](/INSTALL.md)
-- [DHT Protocol](http://wiki.tox.im/index.php/DHT)<br />
-- [Lossless UDP Protocol](http://wiki.tox.im/index.php/Lossless_UDP)<br />
-- [Crypto](http://wiki.tox.im/index.php/Crypto)<br />
-- [Ideas](http://wiki.tox.im/index.php/Ideas)
+- [DHT Protocol](https://wiki.tox.im/index.php/DHT)<br />
+- [Lossless UDP Protocol](https://wiki.tox.im/index.php/Lossless_UDP)<br />
+- [Crypto](https://wiki.tox.im/index.php/Crypto)<br />
+- [Ideas](https://wiki.tox.im/index.php/Ideas)
 
 [String]: https://en.wikipedia.org/wiki/String_(computer_science)
