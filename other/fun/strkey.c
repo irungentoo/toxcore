@@ -57,11 +57,11 @@ void print_key(unsigned char *key)
 
 int main(int argc, char *argv[])
 {
-    unsigned char public_key[crypto_box_PUBLICKEYBYTES + 1]; // null terminator
+    unsigned char public_key[crypto_box_PUBLICKEYBYTES]; // null terminator
     unsigned char secret_key[crypto_box_SECRETKEYBYTES];
     int offset = 0;
     size_t len;
-    unsigned char desired_bin[crypto_box_PUBLICKEYBYTES + 1]; // null terminator
+    unsigned char desired_bin[crypto_box_PUBLICKEYBYTES]; // null terminator
 
     if (argc == 3) {
         offset = atoi(argv[1]);
@@ -89,23 +89,30 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    desired_bin[len/2] = '\0';
-    public_key[crypto_box_PUBLICKEYBYTES + 1] = '\0';
+    len /= 2;
 
 #ifdef PRINT_TRIES_COUNT
     long long unsigned int tries = 0;
 #endif
 
     if (offset < 0) {
+        int found = 0;
         do {
 #ifdef PRINT_TRIES_COUNT
-	    tries ++;
+            tries ++;
 #endif
             crypto_box_keypair(public_key, secret_key);
-        } while (strstr(public_key, desired_bin) == 0);
+            int i;
+            for (i = 0; i <= crypto_box_PUBLICKEYBYTES - len; i ++) {
+                if (memcmp(public_key + i, desired_bin, len) == 0) {
+                    found = 1;
+                    break;
+                }
+            }
+        } while (!found);
     } else {
-        unsigned char *p = public_key  + offset;
-        len /= 2;
+        unsigned char *p = public_key + offset;
+
         do {
 #ifdef PRINT_TRIES_COUNT
 	    tries ++;
