@@ -45,17 +45,18 @@ pkg install autoconf automake gcc-47
 On FreeBSD 10+:
 
 ```tcsh
-pkg install automake autoconf
+pkg install net-im/tox
 ```
+Note, if you install from ports select NaCl for performance, and sodium if you want it to be portable.
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/0.4.2
+git checkout tags/0.5.0
 ./autogen.sh
 ./configure && make check
-sudo checkinstall --install --pkgname libsodium --pkgversion 0.4.2 --nodoc
+sudo checkinstall --install --pkgname libsodium --pkgversion 0.5.0 --nodoc
 sudo ldconfig
 cd ..
 ```
@@ -67,7 +68,7 @@ this will install the libs to /usr/local/lib and the headers to /usr/local/inclu
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/0.4.2
+git checkout tags/0.5.0
 ./autogen.sh
 ./configure
 make check
@@ -183,10 +184,10 @@ MinGW will install an "MinGW shell" (you should get a shortcut for it), make
 sure to perform all operations (i.e., generating/running configure script, compiling, etc.) from the MinGW shell.
 
 First download the source tarball from https://download.libsodium.org/libsodium/releases/ and build it.
-Assuming that you got the libsodium-0.4.2.tar.gz release:
+Assuming that you got the libsodium-0.5.0.tar.gz release:
 ```cmd
-tar -zxvf libsodium-0.4.2.tar.gz
-cd libsodium-0.4.2
+tar -zxvf libsodium-0.5.0.tar.gz
+cd libsodium-0.5.0
 ./configure
 make
 make install
