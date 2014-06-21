@@ -531,11 +531,11 @@ void line_eval(Tox *m, char *line)
                 }
             }
         } else if (inpt_command == 't') {
-            char msg[512];
             char *posi[1];
             int friendnum = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
+                char msg[512];
                 sprintf(msg, "[t] Sending file %s to friendnum %u filenumber is %i (-1 means failure)", *posi + 1, friendnum,
                         add_filesender(m, friendnum, *posi + 1));
                 new_lines(msg);
@@ -634,7 +634,7 @@ void line_eval(Tox *m, char *line)
  * otherwise turns spaces into newlines if possible */
 void wrap(char output[STRING_LENGTH_WRAPPED], char input[STRING_LENGTH], int line_width)
 {
-    size_t i, k, m, len = strlen(input);
+    size_t i, len = strlen(input);
 
     if ((line_width < 4) || (len < (size_t)line_width)) {
         /* if line_width ridiculously tiny, it's not worth the effort */
@@ -652,8 +652,8 @@ void wrap(char output[STRING_LENGTH_WRAPPED], char input[STRING_LENGTH], int lin
 
     for (i = line_width; i < len; i += line_width) {
         /* look backward for a space to expand/turn into a new line */
-        k = i;
-        m = i - line_width;
+        size_t k = i;
+        size_t m = i - line_width;
 
         while (input[k] != ' ' && k > m) {
             k--;
@@ -837,7 +837,6 @@ void do_refresh()
 {
     int count = 0;
     char wrap_output[STRING_LENGTH_WRAPPED];
-    int L;
     int i;
 
     for (i = 0; i < HISTORY; i++) {
@@ -846,7 +845,7 @@ void do_refresh()
         else
             wrap(wrap_output, lines[i], x);
 
-        L = count_lines(wrap_output);
+        int L = count_lines(wrap_output);
         count = count + L;
 
         if (count < y) {
@@ -921,11 +920,10 @@ static char *data_file_name = NULL;
 static int load_data(Tox *m)
 {
     FILE *data_file = fopen(data_file_name, "r");
-    size_t size = 0;
 
     if (data_file) {
         fseek(data_file, 0, SEEK_END);
-        size = ftell(data_file);
+        size_t size = ftell(data_file);
         rewind(data_file);
 
         uint8_t data[size];
@@ -1215,7 +1213,6 @@ int main(int argc, char *argv[])
         exit(1);
 
     int on = 0;
-    int c = 0;
     char *filename = "data";
     char idstring[200] = {0};
     Tox *m;
@@ -1282,8 +1279,6 @@ int main(int argc, char *argv[])
 
     time_t timestamp0 = time(NULL);
 
-    uint8_t pollok = 0;
-
     while (1) {
         if (on == 0) {
             if (tox_isconnected(m)) {
@@ -1305,7 +1300,7 @@ int main(int argc, char *argv[])
         tox_do(m);
         do_refresh();
 
-        c = timeout_getch(m);
+        int c = timeout_getch(m);
 
         if (c == ERR || c == 27)
             continue;

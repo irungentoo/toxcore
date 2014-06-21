@@ -2221,11 +2221,11 @@ uint16_t random_nodes_path(DHT *dht, Node_format *nodes, uint16_t max_num)
         return 0;
 
     uint16_t count = 0;
-    Client_data *list = NULL;
     uint16_t list_size = 0;
     uint32_t i;
 
     for (i = 0; i < max_num; ++i) {
+        Client_data *list = NULL;
         uint16_t rand_num = rand() % (dht->num_friends);
         list = dht->friends_list[rand_num].client_list;
         list_size = MAX_FRIEND_CLIENTS;
