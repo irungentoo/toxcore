@@ -818,9 +818,10 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
         return ~0;
     }
 
-    int ok = 1;
 #ifndef TCP_SERVER_USE_EPOLL
-    ok = set_socket_nonblock(sock);
+    int ok = set_socket_nonblock(sock);
+#else
+    int ok = 1;
 #endif
 
     if (ok && family == AF_INET6) {

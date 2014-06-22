@@ -475,16 +475,20 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
 
     uint8_t packet [RTP_PAYLOAD_SIZE];
-    int recved_size = 0;
-    int rc;
     CallSpecific *call = &av->calls[call_index];
+
+    int recved_size = 0;
 
     do {
         recved_size = toxav_recv_rtp_payload(av, call_index, TypeVideo, packet);
 
-        if (recved_size > 0 && ( rc = vpx_codec_decode(&call->cs->v_decoder, packet, recved_size, NULL, 0) ) != VPX_CODEC_OK) {
-            LOGGER_ERROR("Error decoding video: %s\n", vpx_codec_err_to_string(rc));
-            return ErrorInternal;
+        if (recved_size > 0) {
+            int rc = vpx_codec_decode(&call->cs->v_decoder, packet, recved_size, NULL, 0);
+
+            if (rc != VPX_CODEC_OK) {
+                LOGGER_ERROR("Error decoding video: %s\n", vpx_codec_err_to_string(rc));
+                return ErrorInternal;
+            }
         }
 
     } while (recved_size > 0);

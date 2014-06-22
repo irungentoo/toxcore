@@ -154,12 +154,11 @@ void queue(JitterBuffer *q, RTPMessage *pk)
     q->queue[q->rear] = pk;
 
     int a;
-    int b;
     int j;
     a = q->rear;
 
     for (j = 0; j < q->size - 1; ++j) {
-        b = a - 1;
+        int b = a - 1;
 
         if (b < 0)
             b += q->capacity;

@@ -604,7 +604,7 @@ int rtp_release_session_recv ( RTPSession *session )
 void rtp_queue_adjust_limit(RTPSession *session, uint64_t limit)
 {
     pthread_mutex_lock(&session->mutex);
-    
+
     RTPMessage *_tmp, * _it = session->oldest_msg;
 
     for ( ; session->queue_size > limit; _it = _tmp ) {
