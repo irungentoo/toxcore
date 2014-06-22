@@ -317,6 +317,7 @@ START_TEST(test_AV_flows)
         }
 
         toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
+        
 //         toxav_send_video(status_control.Bob.av, status_control.Bob.call_index, sample_image);
 
         /* Both receive */

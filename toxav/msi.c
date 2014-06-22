@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define same(x, y) strcmp((const char*) x, (const char*) y) == 0
 
@@ -628,7 +629,8 @@ void t_randomstr ( uint8_t *str, size_t size )
 
 
 typedef enum {
-    error_deadcall = 1,  /* has call id but it's from old call */
+    error_none,
+    error_deadcall,      /* has call id but it's from old call */
     error_id_mismatch,   /* non-existing call */
 
     error_no_callid,     /* not having call id */
@@ -820,9 +822,9 @@ MSICall *find_call ( MSISession *session, uint8_t *call_id )
  * @param errid The id.
  * @param to Where to?
  * @return int
- * @retval 0 It's always success.
+ * @retval -1/0 It's usually always success.
  */
-int handle_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_t to )
+int send_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_t to )
 {
     if (!call) {
         LOGGER_WARNING("Cannot handle error on 'null' call");
@@ -842,37 +844,11 @@ int handle_error ( MSISession *session, MSICall *call, MSICallError errid, uint3
     session->last_error_id = errid;
     session->last_error_str = stringify_error ( errid );
 
-    invoke_callback(call->call_idx, MSI_OnError);
+    /* invoke_callback(call->call_idx, MSI_OnError); */
 
     return 0;
 }
 
-
-/**
- * @brief Determine the error if any.
- *
- * @param session Control session.
- * @param msg The message.
- * @return int
- * @retval -1 No error.
- * @retval 0 Error occurred and response sent.
- */
-int has_call_error ( MSISession *session, MSICall *call, MSIMessage *msg )
-{
-    if ( !msg->callid.header_value ) {
-        return handle_error ( session, call, error_no_callid, msg->friend_id );
-
-    } else if ( !call ) {
-        LOGGER_WARNING("Handling message while no call!");
-        return 0;
-
-    } else if ( memcmp ( call->id, msg->callid.header_value, CALL_ID_LEN ) != 0 ) {
-        return handle_error ( session, call, error_id_mismatch, msg->friend_id );
-
-    }
-
-    return -1;
-}
 
 
 /**
@@ -1083,7 +1059,8 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
             }
 
         } else {
-            handle_error ( session, call, error_busy, msg->friend_id ); /* TODO: Ugh*/
+            send_error ( session, call, error_busy, msg->friend_id ); /* TODO: Ugh*/
+            terminate_call(session, call);
             pthread_mutex_unlock(&session->mutex);
             return 0;
         }
@@ -1098,7 +1075,8 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
     }
 
     if ( !msg->callid.header_value ) {
-        handle_error ( session, call, error_no_callid, msg->friend_id );
+        send_error ( session, call, error_no_callid, msg->friend_id );
+        terminate_call(session, call);
         pthread_mutex_unlock(&session->mutex);
         return 0;
     }
@@ -1121,18 +1099,19 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
     return 1;
 }
 int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
-{
+{    
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'start' on no call");
+        return 0;
+    }
+    
     LOGGER_DEBUG("Session: %p Handling 'start' on call: %s, friend id: %d", session, call->id, msg->friend_id );
 
     pthread_mutex_lock(&session->mutex);
 
-    if ( has_call_error ( session, call, msg ) == 0 ) {
-        pthread_mutex_unlock(&session->mutex);
-        return -1;
-    }
-
     if ( !msg->cryptokey.header_value ) {
-        int rc = handle_error ( session, call, error_no_crypto_key, msg->friend_id );
+        int rc = send_error ( session, call, error_no_crypto_key, msg->friend_id );
+        terminate_call(session, call);
         pthread_mutex_unlock(&session->mutex);
         return rc;
     }
@@ -1154,15 +1133,14 @@ int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
 }
 int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'start' on no call");
+        return 0;
+    }
+    
     LOGGER_DEBUG("Session: %p Handling 'reject' on call: %s", session, call->id);
 
     pthread_mutex_lock(&session->mutex);
-
-    if ( has_call_error ( session, call, msg ) == 0 )  {
-        pthread_mutex_unlock(&session->mutex);
-        return 0;
-    }
-
 
     MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
     send_message ( session, call, _msg_ending, msg->friend_id );
@@ -1182,20 +1160,16 @@ int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
 }
 int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'start' on no call");
+        return 0;
+    }
+    
     LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %s", session, call->id );
 
     pthread_mutex_lock(&session->mutex);
 
-    if ( has_call_error ( session, call, msg ) == 0 ) {
-        pthread_mutex_unlock(&session->mutex);
-        return 0;
-    }
-
     /* Act as end message */
-    /*
-    MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
-    send_message ( session, call, _msg_ending, msg->friend_id );
-    free_message ( _msg_ending );*/
 
     pthread_mutex_unlock(&session->mutex);
     invoke_callback(call->call_idx, MSI_OnCancel);
@@ -1205,14 +1179,14 @@ int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *msg )
 }
 int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'start' on no call");
+        return 0;
+    }
+    
     LOGGER_DEBUG("Session: %p Handling 'end' on call: %s", session, call->id );
 
     pthread_mutex_lock(&session->mutex);
-
-    if ( has_call_error ( session, call, msg ) == 0 ) {
-        pthread_mutex_unlock(&session->mutex);
-        return 0;
-    }
 
     MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
     send_message ( session, call, _msg_ending, msg->friend_id );
@@ -1229,12 +1203,12 @@ int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
 /********** Response handlers **********/
 int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
-    pthread_mutex_lock(&session->mutex);
-
-    if ( has_call_error ( session, call, msg ) == 0 ) {
-        pthread_mutex_unlock(&session->mutex);
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
+    
+    pthread_mutex_lock(&session->mutex);
 
     LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
 
@@ -1247,18 +1221,19 @@ int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 }
 int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
-    pthread_mutex_lock(&session->mutex);
-
-    if ( has_call_error ( session, call, msg ) == 0 ) {
-        pthread_mutex_unlock(&session->mutex);
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
+    
+    pthread_mutex_lock(&session->mutex);
 
     LOGGER_DEBUG("Session: %p Handling 'starting' on call: %s", session, call->id );
 
 
     if ( !msg->cryptokey.header_value ) {
-        int rc = handle_error ( session, call, error_no_crypto_key, msg->friend_id );
+        int rc = send_error ( session, call, error_no_crypto_key, msg->friend_id );
+        terminate_call(session, call);
         pthread_mutex_unlock(&session->mutex);
         return rc;
     }
@@ -1296,13 +1271,13 @@ int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
 }
 int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
-    pthread_mutex_lock(&session->mutex);
-
-    if ( has_call_error ( session, call, msg ) == 0 ) {
-        pthread_mutex_unlock(&session->mutex);
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
-
+    
+    pthread_mutex_lock(&session->mutex);
+    
     LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
 
     /* Stop timer */
