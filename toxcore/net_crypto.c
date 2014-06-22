@@ -2507,7 +2507,7 @@ Net_Crypto *new_net_crypto(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_HS, &udp_handle_packet, temp);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_DATA, &udp_handle_packet, temp);
 
-    bs_list_init(&temp->ip_port_list, sizeof(IP_Port));
+    bs_list_init(&temp->ip_port_list, sizeof(IP_Port), 8);
     return temp;
 }
 
