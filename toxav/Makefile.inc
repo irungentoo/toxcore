@@ -10,8 +10,8 @@ libtoxav_la_SOURCES = ../toxav/event.h \
                       ../toxav/rtp.c \
                       ../toxav/msi.h \
                       ../toxav/msi.c \
-                      ../toxav/media.h \
-                      ../toxav/media.c \
+                      ../toxav/codec.h \
+                      ../toxav/codec.c \
                       ../toxav/toxav.h \
                       ../toxav/toxav.c
 

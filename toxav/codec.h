@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _AVCODEC_H_
-#define _AVCODEC_H_
+#ifndef _CODEC_H_
+#define _CODEC_H_
 
 #include <stdio.h>
 #include <math.h>
@@ -46,6 +46,8 @@ typedef enum _Capabilities {
     v_decoding = 1 << 3
 } Capabilities;
 
+extern const uint16_t min_jbuf_size;
+
 typedef struct _CodecState {
 
     /* video encoding */
@@ -65,6 +67,9 @@ typedef struct _CodecState {
 
     uint64_t capabilities; /* supports*/
 
+    /* Voice activity detection */
+    uint32_t EVAD_tolerance; /* In frames */
+    uint32_t EVAD_tolerance_cr;
 } CodecState;
 
 
@@ -90,10 +95,15 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint16_t audio_frame_duration,
                                  uint32_t audio_sample_rate,
                                  uint32_t audio_channels,
+                                 uint32_t audio_VAD_tolerance_ms,
                                  uint16_t video_width,
                                  uint16_t video_height,
-                                 uint32_t video_bitrate );
+                                 uint32_t video_bitrate);
 
 void codec_terminate_session(CodecState *cs);
 
-#endif
+
+/* Calculate energy and return 1 if has voice, 0 if not */
+int energy_VAD(CodecState *cs, int16_t *PCM, uint16_t frame_size, float energy);
+
+#endif /* _CODEC_H_ */

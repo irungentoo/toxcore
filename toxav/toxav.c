@@ -27,12 +27,11 @@
 #define _GNU_SOURCE /* implicit declaration warning */
 
 #include "rtp.h"
-#include "media.h"
+#include "codec.h"
 #include "msi.h"
 #include "toxav.h"
 
 #include "../toxcore/logger.h"
-
 
 #include <assert.h>
 #include <stdlib.h>
@@ -78,7 +77,9 @@ const ToxAvCodecSettings av_DefaultSettings = {
     20,
     48000,
     1,
-    20
+    600,
+
+    10
 };
 
 
@@ -331,6 +332,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
                                   codec_settings->audio_frame_duration,
                                   codec_settings->audio_sample_rate,
                                   codec_settings->audio_channels,
+                                  codec_settings->audio_VAD_tolerance,
                                   codec_settings->video_width,
                                   codec_settings->video_height,
                                   codec_settings->video_bitrate);
@@ -736,4 +738,11 @@ inline__ int toxav_set_video_queue_limit(ToxAv *av, int32_t call_index, uint64_t
 inline__ Tox *toxav_get_tox(ToxAv *av)
 {
     return (Tox *)av->messenger;
+}
+
+int toxav_has_activity(ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t frame_size, float ref_energy)
+{
+    if ( !av->calls[call_index].cs ) return ErrorInvalidCodecState;
+
+    return energy_VAD(av->calls[call_index].cs, PCM, frame_size, ref_energy);
 }

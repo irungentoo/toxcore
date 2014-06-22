@@ -257,7 +257,7 @@ iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte
             _it += 3; /* place it at the field value beginning */
             size_max -= 3;
 
-            switch ( _size ) { /* Compare the size of the hardcoded values ( vary fast and convenient ) */
+            switch ( _size ) { /* Compare the size of the hardcoded values ( very convenient ) */
 
                 case 4: { /* INFO header */
                     if ON_HEADER ( _it, size_max, msg->info, INFO_FIELD, 4 )
