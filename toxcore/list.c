@@ -140,14 +140,16 @@ int bs_list_init(BS_LIST *list, uint32_t element_size, uint32_t initial_capacity
     //set initial values
     list->n = 0;
     list->element_size = element_size;
-    if (initial_capacity == 0) {
-        list->data = NULL;
-        list->ids = NULL;
-    } else {
+    list->capacity = 0;
+    list->data = NULL;
+    list->ids = NULL;
+
+    if (initial_capacity != 0) {
         if (!resize(list, initial_capacity)) {
             return 0;
         }
     }
+
     list->capacity = initial_capacity;
 
     return 1;
@@ -188,15 +190,18 @@ int bs_list_add(BS_LIST *list, const void *data, int id)
     //increase the size of the arrays if needed
     if (list->n == list->capacity) {
         // 1.5 * n + 1
-        const uint32_t new_capacity = list->n + list->n/2 + 1;
+        const uint32_t new_capacity = list->n + list->n / 2 + 1;
+
         if (!resize(list, new_capacity)) {
             return 0;
         }
+
         list->capacity = new_capacity;
     }
 
     //insert data to element array
-    memmove(list->data + (i + 1) * list->element_size, list->data + i * list->element_size, (list->n - i) * list->element_size);
+    memmove(list->data + (i + 1) * list->element_size, list->data + i * list->element_size,
+            (list->n - i) * list->element_size);
     memcpy(list->data + i * list->element_size, data, list->element_size);
 
     //insert id to id array
@@ -223,17 +228,18 @@ int bs_list_remove(BS_LIST *list, const void *data, int id)
     }
 
     //decrease the size of the arrays if needed
-    if (list->n < list->capacity/2) {
-        const uint32_t new_capacity = list->capacity/2;
-        if (!resize(list, new_capacity)) {
-            return 0;
+    if (list->n < list->capacity / 2) {
+        const uint32_t new_capacity = list->capacity / 2;
+
+        if (resize(list, new_capacity)) {
+            list->capacity = new_capacity;
         }
-        list->capacity = new_capacity;
     }
 
     list->n--;
 
-    memmove(list->data + i * list->element_size, list->data + (i + 1) * list->element_size, (list->n - i) * list->element_size);
+    memmove(list->data + i * list->element_size, list->data + (i + 1) * list->element_size,
+            (list->n - i) * list->element_size);
     memmove(&list->ids[i], &list->ids[i + 1], (list->n - i) * sizeof(int));
 
     return 1;
