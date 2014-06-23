@@ -39,6 +39,8 @@
 // CLIENT_ID_SIZE for chat_id in ANNOUNCE_PLAIN_SIZE
 #define ANNOUNCE_PLAIN_SIZE (1 + CLIENT_ID_SIZE + sizeof(uint64_t))
 #define DHT_ANNOUNCE_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
+#define SEND_ANNOUNCED_NODES_PLAIN_SIZE (1 + sizeof(Node_format) * MAX_SENT_NODES + sizeof(uint64_t))
+#define DHT_SEND_ANNOUNCED_NODES_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES)
 
 struct ANNOUNCE {
     DHT *dht;
@@ -54,7 +56,7 @@ int send_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, u
 {
     // Check if packet is going to be sent to ourself
     if (id_equal(client_id, announce->dht->self_public_key))
-        return 1;
+        return -1;
 
     // Generate random ping_id.
     uint8_t data[PING_DATA_SIZE];
@@ -63,7 +65,7 @@ int send_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, u
     uint64_t ping_id = ping_array_add(&announce->ping_array, data, sizeof(data));
 
     if (ping_id == 0)
-        return 1;
+        return -1;
 
     // Generate announce_plain == NET_PACKET_ANNOUNCE_REQUEST + chat_it + ping_id
     uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
@@ -87,7 +89,7 @@ int send_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, u
                                         encrypt);
 
     if (length != sizeof(encrypt))
-        return 1;
+        return -1;
 
     // Generate DHT packet == NET_PACKET_ANNOUNCE_REQUEST + client_id + nonce + announce_plain + crypto_box_MACBYTES
     uint8_t   pk[DHT_ANNOUNCE_SIZE];
@@ -105,11 +107,11 @@ static int handle_announce_request(void * _dht, IP_Port ipp, uint8_t *packet, ui
 
     // Check if we got packet of expected size
     if (length != DHT_ANNOUNCE_SIZE)
-        return 1;
+        return -1;
 
     // Check if packet is going to be sent to ourself
     if (id_equal(packet + 1, dht->self_public_key))
-        return 1;
+        return -1;
 
     // Generate key to decrypt announce_plain
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -118,17 +120,17 @@ static int handle_announce_request(void * _dht, IP_Port ipp, uint8_t *packet, ui
     // Decrypt announce_plain
     uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
     int length = decrypt_data_symmetric(shared_key,
-                                packet + 1 + CLIENT_ID_SIZE,
-                                packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES,
-                                announce_plain);
+                                        packet + 1 + CLIENT_ID_SIZE,
+                                        packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                                        ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES,
+                                        announce_plain);
 
     if (length != sizeof(announce_plain))
-        return 1;
+        return -1;
 
     // Check if we got correct packet type
     if (announce_plain[0] != NET_PACKET_ANNOUNCE_REQUEST)
-        return 1;
+        return -1;
 
     // Get ping_id
     uint64_t  ping_id;
@@ -158,9 +160,9 @@ int get_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint
     uint64_t ping_id = ping_array_add(dht->announce->ping_array, data, sizeof(data));
 
     if (ping_id == 0)
-        return 1;
+        return -1;
 
-    // Generate announce_plain == NET_PACKET_GET_ANNOUNCED_NODES + chat_it + ping_id
+    // Generate announce_plain == NET_PACKET_GET_ANNOUNCED_NODES + chat_id + ping_id
     uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
     announce_plain[0] = NET_PACKET_GET_ANNOUNCED_NODES;
     id_copy(announce_plain + 1, chat_id);
@@ -177,10 +179,10 @@ int get_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint
     // Generate encrypted data
     uint8_t encrypt[ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES];
     int length = encrypt_data_symmetric(shared_key,
-                                      nonce,
-                                      announce_plain,
-                                      sizeof(announce_plain),
-                                      encrypt);
+                                        nonce,
+                                        announce_plain,
+                                        sizeof(announce_plain),
+                                        encrypt);
 
     if (length != sizeof(encrypt))
         return -1;
@@ -201,11 +203,11 @@ static int handle_get_announced_nodes_request(void *object, IP_Port ipp, uint8_t
 
     // Check if we got packet of expected size
     if (length != DHT_ANNOUNCE_SIZE)
-        return 1;
+        return -1;
     
     // Check if packet is going to be sent to ourself
     if (id_equal(packet + 1, dht->self_public_key))
-        return 1;
+        return -1;
 
     // Generate key to decrypt announce_plain
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -214,17 +216,17 @@ static int handle_get_announced_nodes_request(void *object, IP_Port ipp, uint8_t
     // Decrypt announce_plain
     uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
     int length = decrypt_data_symmetric(shared_key,
-                                      packet + 1 + CLIENT_ID_SIZE,
-                                      packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                      ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES,
-                                      announce_plain);
+                                        packet + 1 + CLIENT_ID_SIZE,
+                                        packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                                        ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES,
+                                        announce_plain);
 
     if (length != sizeof(announce_plain))
-        return 1;
+        return -1;
 
     // Check if we got correct packet type
     if (announce_plain[0] != NET_PACKET_GET_ANNOUNCED_NODES)
-        return 1;
+        return -1;
 
     // Get ping_id
     uint64_t  ping_id;
@@ -237,7 +239,59 @@ static int handle_get_announced_nodes_request(void *object, IP_Port ipp, uint8_t
 }
 
 
+int send_announced_nodes_response( DHT *dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
+                                   uint8_t *shared_encryption_key )
+{ 
+    // Check if packet is going to be sent to ourself.
+    if (id_equal(client_id, dht->self_public_key))
+        return -1;
 
+    size_t Node_format_size = sizeof(Node_format);
+    
+    // Get announced nodes from ANNOUNCE list by chat_id
+    Node_format nodes_list[MAX_SENT_NODES];
+    uint32_t num_nodes = get_announced_nodes(dht, chat_id, nodes_list);
+    if (num_nodes == 0)
+        return 0;
+
+    // Generate announce_plain == num_nodes + nodes_length + ping_id
+    uint8_t announce_plain[SEND_ANNOUNCED_NODES_PLAIN_SIZE];
+    announce_plain[0] = num_nodes;
+    
+    int nodes_length = pack_nodes(announce_plain + 1, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
+    if (nodes_length <= 0)
+        return -1;
+    
+    memcpy(announce_plain + 1 + nodes_length, &ping_id, sizeof(ping_id)
+
+    // Generate new nonce
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    new_nonce(nonce);
+
+    // Generate encrypted data
+    uint8_t encrypt[sizeof(announce_plain) + crypto_box_MACBYTES];
+    int length = encrypt_data_symmetric(shared_encryption_key,
+                                        nonce,
+                                        plain,
+                                        sizeof(announce_plain),
+                                        encrypt);
+
+    if (length != sizeof(encrypt))
+        return -1;
+
+    // Generate DHT packet == NET_PACKET_SEND_ANNOUNCED_NODES + client_id + nonce + announce_plain + crypto_box_MACBYTES
+    uint8_t pk[DHT_SEND_ANNOUNCED_NODES_SIZE];
+    pk[0] = NET_PACKET_SEND_ANNOUNCED_NODES;
+    memcpy(pk + 1, dht->self_public_key, CLIENT_ID_SIZE);
+    memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, length);
+
+    return sendpacket(dht->net, ipp, pk, sizeof(pk));    
+}
+
+int handle_send_announced_nodes_response()
+{
+}
 
 /* Add nodes to the announced_nodes list.
  * If the list is full the nodes farthest from our client_id are replaced.
@@ -284,6 +338,15 @@ int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id
     }
 
     return -1;
+}
+
+/* Get nodes from the announced_nodes list given chat_id.
+ *
+ *  return 0 if found.
+ *  return -1 if not found.
+ */
+int get_announced_nodes(ANNOUNCE *announce, uint8_t *chat_id)
+{
 }
 
 ANNOUNCE *new_announce(DHT *dht)
