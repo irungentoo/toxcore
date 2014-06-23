@@ -533,10 +533,10 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
             continue;
         }
 
-        int8_t i = (int8_t)(packet[0] - call->frame_id);
+        uint8_t i = packet[0] - call->frame_id;
         if(i == 0) {
             /* piece of current frame */
-        } else if(i > 0) {
+        } else if(i > 0 && i < 128) {
             /* recieved a piece of a frame ahead, flush current frame and start reading this new frame */
             int rc = vpx_codec_decode(&call->cs->v_decoder, call->frame_buf, call->frame_limit, NULL, 0);
             call->frame_id = packet[0];
