@@ -116,7 +116,7 @@ typedef struct _MSIMessage {
 static struct _Callbacks {
     MSICallback function;
     void *data;
-} callbacks[11] = {0};
+} callbacks[11] = {{0}};
 
 inline__ void invoke_callback(int32_t call_index, MSICallbackID id)
 {
@@ -736,13 +736,7 @@ int send_message ( MSISession *session, MSICall *call, MSIMessage *msg, uint32_t
  */
 int call_id_bigger( const uint8_t *first, const uint8_t *second)
 {
-    int i = 0;
-
-    for (; i < CALL_ID_LEN; i ++) {
-
-        if ( first[i] != second[i] )
-            return first[i] > second [i] ? 0 : 1;
-    }
+    return (memcmp(first, second, CALL_ID_LEN) < 0);
 }
 
 

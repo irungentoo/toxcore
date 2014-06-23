@@ -26,6 +26,7 @@
 #endif
 
 #include "../toxcore/Messenger.h"
+#include "../toxcore/logger.h"
 #include "toxdns.h"
 
 static const char base32[32] = {"abcdefghijklmnopqrstuvwxyz012345"};
@@ -43,7 +44,7 @@ uint8_t i = 0; \
         } \
     } \
 } \
- 
+
 typedef struct {
     uint8_t temp_pk[crypto_box_PUBLICKEYBYTES];
     uint8_t temp_sk[crypto_box_SECRETKEYBYTES];
@@ -143,7 +144,7 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
     }
 
     if (end_len != string - old_str) {
-        printf("tox_generate_dns3_string Fail, %u != %u\n", end_len, string - old_str);
+        LOGGER_ERROR("tox_generate_dns3_string Fail, %u != %lu\n", end_len, string - old_str);
         return -1;
     }
 
