@@ -42,6 +42,7 @@
 
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
 #define VIDEOFRAME_PIECE_SIZE 0x500 /* 1.25 KiB*/
+#define VIDEOFRAME_HEADER_SIZE 0x2
 
 
 #define inline__ inline __attribute__((always_inline))
@@ -431,22 +432,21 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
 
             uint8_t load[3 + VIDEOFRAME_PIECE_SIZE];
             load[0] = av->calls[call_index].frame_outid++;
-            load[1] = numparts;
-            load[2] = 0;
+            load[1] = 0;
 
             int i;
             for(i = 0; i < numparts; i++) {
-                memcpy(load + 3, payload, VIDEOFRAME_PIECE_SIZE); payload += VIDEOFRAME_PIECE_SIZE;
-                if(send(load, 3 + VIDEOFRAME_PIECE_SIZE) != 0) {
+                memcpy(load + VIDEOFRAME_HEADER_SIZE, payload, VIDEOFRAME_PIECE_SIZE); payload += VIDEOFRAME_PIECE_SIZE;
+                if(send(load, VIDEOFRAME_HEADER_SIZE + VIDEOFRAME_PIECE_SIZE) != 0) {
                     return -1;
                 }
-                load[2]++;
+                load[1]++;
             }
 
             /* remainder = length % VIDEOFRAME_PIECE_SIZE, VIDEOFRAME_PIECE_SIZE if = 0 */
             length = ((length - 1) % VIDEOFRAME_PIECE_SIZE) + 1;
-            memcpy(load + 3, payload, length);
-            return send(load, 3 + length);
+            memcpy(load + VIDEOFRAME_HEADER_SIZE, payload, length);
+            return send(load, VIDEOFRAME_HEADER_SIZE + length);
         }
     } else {
         return -1;
@@ -529,7 +529,7 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
 
     int recved_size;
     while((recved_size = toxav_recv_rtp_payload(av, call_index, TypeVideo, packet)) > 0) {
-        if(recved_size < 3) {
+        if(recved_size < VIDEOFRAME_HEADER_SIZE) {
             continue;
         }
 
@@ -551,13 +551,13 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
             continue;
         }
 
-        if(packet[2] > (MAX_VIDEOFRAME_SIZE - VIDEOFRAME_PIECE_SIZE + 1) / VIDEOFRAME_PIECE_SIZE) { //TODO, fix this check? not sure
+        if(packet[1] > (MAX_VIDEOFRAME_SIZE - VIDEOFRAME_PIECE_SIZE + 1) / VIDEOFRAME_PIECE_SIZE) { //TODO, fix this check? not sure
             /* packet out of buffer range */
             continue;
         }
 
-        memcpy(call->frame_buf + packet[2] * VIDEOFRAME_PIECE_SIZE, packet + 3, recved_size - 3);
-        uint32_t limit = packet[2] * VIDEOFRAME_PIECE_SIZE + recved_size - 3;
+        memcpy(call->frame_buf + packet[1] * VIDEOFRAME_PIECE_SIZE, packet + VIDEOFRAME_HEADER_SIZE, recved_size - VIDEOFRAME_HEADER_SIZE);
+        uint32_t limit = packet[1] * VIDEOFRAME_PIECE_SIZE + recved_size - VIDEOFRAME_HEADER_SIZE;
         if(limit > call->frame_limit) {
             call->frame_limit = limit;
         }
