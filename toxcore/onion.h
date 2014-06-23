@@ -87,7 +87,7 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes);
  * return -1 on failure.
  * return length of created packet on success.
  */
-int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest, uint8_t *data,
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest, const uint8_t *data,
                         uint32_t length);
 
 /* Create and send a onion packet.
