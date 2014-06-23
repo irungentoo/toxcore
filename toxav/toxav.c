@@ -40,6 +40,9 @@
 /* Assume 60 fps*/
 #define MAX_ENCODE_TIME_US ((1000 / 60) * 1000)
 
+#define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
+#define VIDEOFRAME_PIECE_SIZE 0x500 /* 1.25 KiB*/
+
 
 #define inline__ inline __attribute__((always_inline))
 
@@ -58,6 +61,10 @@ typedef struct _CallSpecific {
                      * reuse them really.
                      */
     JitterBuffer *j_buf; /** Jitter buffer for audio */
+
+    uint32_t frame_limit; /* largest address written to in frame_buf for current input frame*/
+    uint8_t frame_id, frame_outid; /* id of input and output video frame */
+    void *frame_buf; /* buffer for split video payloads */
 } CallSpecific;
 
 
@@ -324,6 +331,16 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
             LOGGER_ERROR("Error while starting video RTP session!\n");
             return ErrorStartingVideoRtp;
         }
+
+        call->frame_limit = 0;
+        call->frame_id = 0;
+        call->frame_outid = 0;
+
+        call->frame_buf = calloc(MAX_VIDEOFRAME_SIZE, 1);
+        if (!call->frame_buf) {
+            return ErrorInternal;
+        }
+
     }
 
     if ( !(call->j_buf = create_queue(codec_settings->jbuf_capacity)) ) return ErrorInternal;
@@ -395,14 +412,47 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
  * @retval -1 Failure.
  */
 inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallType type, const uint8_t *payload,
-                                      uint16_t length )
+                                      unsigned int length )
 {
     if (cii(call_index, av->msi_session)) return ErrorNoCall;
 
-    if ( av->calls[call_index].crtps[type - TypeAudio] )
-        return rtp_send_msg ( av->calls[call_index].crtps[type - TypeAudio], av->msi_session->messenger_handle, payload,
-                              length );
-    else return -1;
+#define send(data, len) rtp_send_msg(av->calls[call_index].crtps[type - TypeAudio], av->msi_session->messenger_handle, data, len)
+
+    if (av->calls[call_index].crtps[type - TypeAudio]) {
+        if(type == TypeAudio) {
+            return send(payload, length);
+        } else {
+            if(length == 0 || length > MAX_VIDEOFRAME_SIZE) {
+                LOGGER_ERROR("Invalid video frame size: %u\n", length);
+                return -1;
+            }
+            /* number of pieces - 1*/
+            uint8_t numparts = (length - 1) / VIDEOFRAME_PIECE_SIZE;
+
+            uint8_t load[3 + VIDEOFRAME_PIECE_SIZE];
+            load[0] = av->calls[call_index].frame_outid++;
+            load[1] = numparts;
+            load[2] = 0;
+
+            int i;
+            for(i = 0; i < numparts; i++) {
+                memcpy(load + 3, payload, VIDEOFRAME_PIECE_SIZE); payload += VIDEOFRAME_PIECE_SIZE;
+                if(send(load, 3 + VIDEOFRAME_PIECE_SIZE) != 0) {
+                    return -1;
+                }
+                load[2]++;
+            }
+
+            /* remainder = length % VIDEOFRAME_PIECE_SIZE, VIDEOFRAME_PIECE_SIZE if = 0 */
+            length = ((length - 1) % VIDEOFRAME_PIECE_SIZE) + 1;
+            memcpy(load + 3, payload, length);
+            return send(load, 3 + length);
+        }
+    } else {
+        return -1;
+    }
+
+#undef send
 }
 
 /**
@@ -477,21 +527,41 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
     uint8_t packet [RTP_PAYLOAD_SIZE];
     CallSpecific *call = &av->calls[call_index];
 
-    int recved_size = 0;
+    int recved_size;
+    while((recved_size = toxav_recv_rtp_payload(av, call_index, TypeVideo, packet)) > 0) {
+        if(recved_size < 3) {
+            continue;
+        }
 
-    do {
-        recved_size = toxav_recv_rtp_payload(av, call_index, TypeVideo, packet);
-
-        if (recved_size > 0) {
-            int rc = vpx_codec_decode(&call->cs->v_decoder, packet, recved_size, NULL, 0);
-
+        int8_t i = (int8_t)(packet[0] - call->frame_id);
+        if(i == 0) {
+            /* piece of current frame */
+        } else if(i > 0) {
+            /* recieved a piece of a frame ahead, flush current frame and start reading this new frame */
+            int rc = vpx_codec_decode(&call->cs->v_decoder, call->frame_buf, call->frame_limit, NULL, 0);
+            call->frame_id = packet[0];
+            memset(call->frame_buf, 0, call->frame_limit);
+            call->frame_limit = 0;
             if (rc != VPX_CODEC_OK) {
                 LOGGER_ERROR("Error decoding video: %s\n", vpx_codec_err_to_string(rc));
                 return ErrorInternal;
             }
+        } else {
+            /* old packet, dont read */
+            continue;
         }
 
-    } while (recved_size > 0);
+        if(packet[2] > (MAX_VIDEOFRAME_SIZE - VIDEOFRAME_PIECE_SIZE + 1) / VIDEOFRAME_PIECE_SIZE) { //TODO, fix this check? not sure
+            /* packet out of buffer range */
+            continue;
+        }
+
+        memcpy(call->frame_buf + packet[2] * VIDEOFRAME_PIECE_SIZE, packet + 3, recved_size - 3);
+        uint32_t limit = packet[2] * VIDEOFRAME_PIECE_SIZE + recved_size - 3;
+        if(limit > call->frame_limit) {
+            call->frame_limit = limit;
+        }
+    }
 
     vpx_codec_iter_t iter = NULL;
     vpx_image_t *img;
