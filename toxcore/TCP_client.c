@@ -137,7 +137,7 @@ static int send_pending_data(TCP_Client_Connection *con)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
+static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
 {
     if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE)
         return -1;
@@ -183,7 +183,7 @@ int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key)
 }
 
 void routing_response_handler(TCP_Client_Connection *con, int (*response_callback)(void *object, uint8_t connection_id,
-                              uint8_t *public_key), void *object)
+                              const uint8_t *public_key), void *object)
 {
     con->response_callback = response_callback;
     con->response_callback_object = object;
@@ -200,7 +200,7 @@ void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(v
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_t length)
+int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length)
 {
     if (con_id >= NUM_CLIENT_CONNECTIONS)
         return -1;
@@ -218,7 +218,7 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_oob_packet(TCP_Client_Connection *con, uint8_t *public_key, uint8_t *data, uint16_t length)
+int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data, uint16_t length)
 {
     if (length == 0 || length > TCP_MAX_OOB_DATA_LENGTH)
         return -1;
@@ -251,14 +251,14 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
 }
 
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
-                          uint8_t connection_id, uint8_t *data, uint16_t length), void *object)
+                          uint8_t connection_id, const uint8_t *data, uint16_t length), void *object)
 {
     con->data_callback = data_callback;
     con->data_callback_object = object;
 }
 
-void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, uint8_t *public_key,
-                      uint8_t *data, uint16_t length), void *object)
+void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, const uint8_t *public_key,
+                      const uint8_t *data, uint16_t length), void *object)
 {
     con->oob_data_callback = oob_data_callback;
     con->oob_data_callback_object = object;
