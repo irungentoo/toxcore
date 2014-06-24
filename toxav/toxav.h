@@ -110,7 +110,7 @@ typedef enum {
  * @brief Encoding settings.
  */
 typedef struct _ToxAvCodecSettings {
-    uint32_t video_bitrate; /* In bits/s */
+    uint32_t video_bitrate; /* In kbits/s */
     uint16_t video_width; /* In px */
     uint16_t video_height; /* In px */
 
