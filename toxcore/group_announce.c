@@ -197,9 +197,9 @@ int get_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint
     return sendpacket(dht->net, ipp, pk, sizeof(pk));
 }
 
-static int handle_get_announced_nodes_request(void *object, IP_Port ipp, uint8_t *packet, uint32_t length)
+static int handle_get_announced_nodes_request(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
-    DHT *dht = object;
+    DHT *dht = _dht;
 
     // Check if we got packet of expected size
     if (length != DHT_ANNOUNCE_SIZE)
@@ -239,8 +239,8 @@ static int handle_get_announced_nodes_request(void *object, IP_Port ipp, uint8_t
 }
 
 
-int send_announced_nodes_response( DHT *dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
-                                   uint8_t *shared_encryption_key )
+int send_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
+                                  uint8_t *shared_encryption_key)
 { 
     // Check if packet is going to be sent to ourself.
     if (id_equal(client_id, dht->self_public_key))
@@ -250,9 +250,9 @@ int send_announced_nodes_response( DHT *dht, IP_Port ipp, uint8_t *client_id, ui
     
     // Get announced nodes from ANNOUNCE list by chat_id
     Node_format nodes_list[MAX_SENT_NODES];
-    uint32_t num_nodes = get_announced_nodes(dht, chat_id, nodes_list);
-    if (num_nodes == 0)
-        return 0;
+    uint32_t num_nodes = get_announced_nodes(dht->announce, chat_id, nodes_list);
+    if (num_nodes == -1)
+        return -1;
 
     // Generate announce_plain == num_nodes + nodes_length + ping_id
     uint8_t announce_plain[SEND_ANNOUNCED_NODES_PLAIN_SIZE];
@@ -289,7 +289,7 @@ int send_announced_nodes_response( DHT *dht, IP_Port ipp, uint8_t *client_id, ui
     return sendpacket(dht->net, ipp, pk, sizeof(pk));    
 }
 
-int handle_send_announced_nodes_response()
+int handle_send_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
 }
 
@@ -342,11 +342,23 @@ int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id
 
 /* Get nodes from the announced_nodes list given chat_id.
  *
- *  return 0 if found.
+ *  return num_nodes if found.
  *  return -1 if not found.
  */
-int get_announced_nodes(ANNOUNCE *announce, uint8_t *chat_id)
+int get_announced_nodes(ANNOUNCE *announce, uint8_t *chat_id, Node_format *nodes_list)
 {
+    uint32_t num_nodes = -1;
+    for (uint32_t i = 0; i < MAX_ANNOUNCED_NODES; i++) {
+        if (ip_isset(&announce->announced_nodes[i].ip_port.ip)) {
+            if (id_equal(chat_id, &announce->announced_nodes[i]).chat_id) {
+                num_nodes++;
+                memcpy(nodes_list[num_nodes].client_id, &announce->announced_nodes[i], CLIENT_ID_SIZE);
+                ipport_copy(nodes_list[num_nodes].ip_port, &announce->announced_nodes[i].ip_port);
+            }
+        }
+    }
+
+    return num_nodes+1;
 }
 
 ANNOUNCE *new_announce(DHT *dht)
