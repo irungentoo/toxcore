@@ -262,6 +262,10 @@ int toxav_cancel ( ToxAv *av, int32_t call_index, int peer_id, const char *reaso
         return ErrorNoCall;
     }
 
+    if ( av->msi_session->calls[call_index]->state != call_inviting ) {
+        return ErrorInvalidState;
+    }
+
     return msi_cancel(av->msi_session, call_index, peer_id, reason);
 }
 
