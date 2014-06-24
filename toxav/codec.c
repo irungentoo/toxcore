@@ -220,6 +220,11 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     cfg.rc_target_bitrate = video_bitrate;
     cfg.g_w = width;
     cfg.g_h = height;
+    cfg.g_pass = VPX_RC_ONE_PASS;
+    cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
+    cfg.g_lag_in_frames = 0;
+    cfg.kf_min_dist = 0;
+    cfg.kf_max_dist = 300;
 
     rc = vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, VPX_ENCODER_ABI_VERSION);
 
@@ -228,6 +233,7 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
         return -1;
     }
 
+    rc = vpx_codec_control(&cs->v_encoder, VP8E_SET_CPUUSED, 7);
     return 0;
 }
 

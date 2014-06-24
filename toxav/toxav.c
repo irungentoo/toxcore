@@ -38,7 +38,7 @@
 #include <string.h>
 
 /* Assume 60 fps*/
-#define MAX_ENCODE_TIME_US ((1000 / 60) * 1000)
+#define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
 
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
 #define VIDEOFRAME_PIECE_SIZE 0x500 /* 1.25 KiB*/
@@ -77,7 +77,7 @@ struct _ToxAv {
 };
 
 const ToxAvCodecSettings av_DefaultSettings = {
-    1000,
+    2000,
     800,
     600,
 
