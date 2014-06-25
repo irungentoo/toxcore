@@ -1488,7 +1488,7 @@ int file_control(Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8
     }
 }
 
-#define MIN_SLOTS_FREE 4
+#define MIN_SLOTS_FREE (CRYPTO_MIN_QUEUE_LENGTH / 2)
 /* Send file data.
  *
  *  return 0 on success

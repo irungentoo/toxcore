@@ -2289,7 +2289,7 @@ static void send_crypto_packets(Net_Crypto *c)
 
             if (conn->last_packets_left_set == 0) {
                 conn->last_packets_left_set = temp_time;
-                conn->packets_left = conn->packet_send_rate;
+                conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
             } else if (((1000.0 / conn->packet_send_rate) + conn->last_packets_left_set) < temp_time) {
                 uint32_t num_packets = conn->packet_send_rate * ((double)(temp_time - conn->last_packets_left_set) / 1000.0) + 0.5;
 
