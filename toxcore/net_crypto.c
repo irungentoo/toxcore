@@ -2159,7 +2159,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 
 /* The dT for the average packet recieving rate calculations.
    Also used as the */
-#define PACKET_COUNTER_AVERAGE_INTERVAL 200
+#define PACKET_COUNTER_AVERAGE_INTERVAL 100
 
 /* Ratio of recv queue size / recv packet rate (in seconds) times
  * the number of ms between request packets to send at that ratio
@@ -2225,13 +2225,13 @@ static void send_crypto_packets(Net_Crypto *c)
                 }
 
                 //new "dropped" value: weighted average of previous value and packet drop rate measured by the number of packets which were resends of previous packets
-                double dropped = (conn->dropped) * 0.5 + (conn->packets_resent / dt) * 0.5;
+                double dropped = (conn->dropped) * 0.30 + ((double)conn->packets_resent / dt) * 0.70;
 
                 //since the "dropped" packets measure is delayed in time from the actual # of dropped packets,
-                // ignore dropped packet measure for a second after it becomes high and the send rate is lowered as a result
+                // ignore dropped packet measure for 2 seconds after it becomes high and the send rate is lowered as a result
                 double drop_ignore_new;
 
-                if (conn->drop_ignore_start + 1000 < temp_time) {
+                if (conn->drop_ignore_start + 2000 < temp_time) {
                     drop_ignore_new = 0.0;
 
                     if ((dropped * 1000.0) / conn->packet_send_rate >= 0.10) {
@@ -2248,7 +2248,6 @@ static void send_crypto_packets(Net_Crypto *c)
                 if (dropped < drop_ignore_new) {
                     realrate = r;
                 }
-
 
                 //calculate exponential increase in rate, triggered when drop rate is below 5% for 5 seconds
                 if ((dropped * 1000.0) / conn->packet_send_rate >= 0.05) {
