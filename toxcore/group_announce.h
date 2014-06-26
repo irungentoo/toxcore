@@ -24,12 +24,12 @@
 typedef struct ANNOUNCE ANNOUNCE;
 
 
-int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, IP_Port ip_port);
+int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port);
 
 ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
-int send_announce_request(PING *ping, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id);
-int get_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node);
+int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id);
+int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id);
 
 #endif /* __GROUP_ANNOUNCE_H__ */
