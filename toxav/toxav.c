@@ -77,7 +77,7 @@ struct _ToxAv {
 };
 
 const ToxAvCodecSettings av_DefaultSettings = {
-    2000,
+    500,
     800,
     600,
 
@@ -87,7 +87,7 @@ const ToxAvCodecSettings av_DefaultSettings = {
     1,
     600,
 
-    10
+    6
 };
 
 

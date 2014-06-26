@@ -36,8 +36,8 @@
 #include "rtp.h"
 #include "codec.h"
 
-const uint16_t min_jbuf_size = 10;
-const uint16_t min_readiness_idx = 6; /* when is buffer ready to dqq */
+const uint16_t min_jbuf_size = 4;
+const uint16_t min_readiness_idx = 2; /* when is buffer ready to dqq */
 
 int empty_queue(JitterBuffer *q)
 {
