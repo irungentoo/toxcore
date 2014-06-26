@@ -112,10 +112,10 @@ typedef int sock_t;
 #define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID for IPv4 addresses. */
 #define NET_PACKET_SEND_NODES_IPV6 4   /* Send nodes response packet ID for other addresses. */
 
-// #define NET_PACKET_ANNOUNCE_REQUEST 5 /* Announce request packet ID */
-//#define NET_PACKET_ANNOUNCE_RESPONSE 6 /* Get announced nodes request packet ID */
-#define NET_PACKET_GET_ANNOUNCED_NODES 7 /* Get announced nodes request packet ID */
-#define NET_PACKET_SEND_ANNOUNCED_NODES 8 /* Get announced nodes request packet ID */
+#define NET_PACKET_GROUP_ANNOUNCE_REQUEST 5     /* Announce request packet ID */
+#define NET_PACKET_GROUP_ANNOUNCE_RESPONSE 6    /* Get announced nodes request packet ID */
+#define NET_PACKET_GET_GROUP_ANNOUNCED_NODES 7  /* Get announced nodes request packet ID */
+#define NET_PACKET_SEND_GROUP_ANNOUNCED_NODES 8 /* Get announced nodes request packet ID */
 
 
 #define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */

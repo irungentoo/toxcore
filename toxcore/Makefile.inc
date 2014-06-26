@@ -37,6 +37,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/logger.c \
                         ../toxcore/onion_announce.h \
                         ../toxcore/onion_announce.c \
+                        ../toxcore/group_announce.h \
+                        ../toxcore/group_announce.c \
                         ../toxcore/onion_client.h \
                         ../toxcore/onion_client.c \
                         ../toxcore/TCP_client.h \
