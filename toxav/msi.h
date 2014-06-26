@@ -50,7 +50,8 @@ typedef enum {
     call_inviting, /* when sending call invite */
     call_starting, /* when getting call invite */
     call_active,
-    call_hold
+    call_hold,
+    call_hanged_up
 
 } MSICallState;
 

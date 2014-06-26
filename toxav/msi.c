@@ -1641,6 +1641,7 @@ int msi_hangup ( MSISession *session, int32_t call_index )
     for ( ; _it < session->calls[call_index]->peer_count; _it ++ )
         send_message ( session, session->calls[call_index], _msg_end, session->calls[call_index]->peers[_it] );
 
+    session->calls[call_index]->state = call_hanged_up;
 
     free_message ( _msg_end );
 
