@@ -6,8 +6,10 @@
 #include "../toxcore/DHT.h"
 #include "../toxcore/ping.h"
 #include "../toxcore/group_announce.h"
+#include "../toxcore/Messenger.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /* TODO: maybe something like this already exists */
 void print_as_id(uint8_t *startptr)
@@ -15,6 +17,24 @@ void print_as_id(uint8_t *startptr)
     int i;
     for (i=0;i<CLIENT_ID_SIZE;i++)
         printf("%02x",startptr[i]);
+}
+
+void idle_cylce(Tox**peers, int peercount)
+{
+    int j;
+    for (j=0; j<peercount; j++)
+        tox_do(peers[j]);
+ 
+}
+
+void idle_n_secs(int n, Tox** peers, int peercount)
+{
+    int i,j;
+    for (i=0; i<n*1000; i+=50) /* msecs */
+    {
+        idle_cylce(peers, peercount);
+        usleep(50000); /* usecs */
+    }
 }
 
 /* TODO: this looks ugly by now */
@@ -55,12 +75,27 @@ void basicannouncetest()
     printf("\n");
     
     /* Announcing chat presence */
+    printf("Waiting until everybody connects to DHT\n");
+    for (;;)
+    {
+        idle_cylce(peers, 10);
+            
+        int numconnected=0;
+        for (i=0;i<10;i++)
+            numconnected+=tox_isconnected(peers[i]);
+        if (numconnected==10)
+            break;
+        usleep(50000);
+    }
+    
     for (i=0;i<9;i++)
     {
         // group_announce(clientids[(CLIENT_ID_SIZE+6)*i], chatids[CLIENT_ID_SIZE*(i/3)]);
     }
     
-    // sleep_and_tox_do
+    
+    printf("Waiting 10 seconds before sending requests\n");
+    idle_n_secs(10, peers, 10);
     
     /* Requesting chat lists */
     for (i=0;i<9;i++)
