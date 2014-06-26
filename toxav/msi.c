@@ -1738,7 +1738,8 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
     send_message ( session, session->calls[call_index], _msg_cancel, peer );
     free_message ( _msg_cancel );
 
-    /*session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );*/
+    /*session->calls[call_index]->state = call_hanged_up;
+      session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );*/
     terminate_call ( session, session->calls[call_index] );
     pthread_mutex_unlock(&session->mutex);
 
@@ -1771,6 +1772,8 @@ int msi_reject ( MSISession *session, int32_t call_index, const uint8_t *reason 
     send_message ( session, session->calls[call_index], _msg_reject,
                    session->calls[call_index]->peers[session->calls[call_index]->peer_count - 1] );
     free_message ( _msg_reject );
+
+    session->calls[call_index]->state = call_hanged_up;
 
     session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index],
             m_deftout );
