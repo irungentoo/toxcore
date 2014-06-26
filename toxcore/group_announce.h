@@ -21,15 +21,26 @@
 #ifndef __GROUP_ANNOUNCE_H__
 #define __GROUP_ANNOUNCE_H__
 
-typedef struct GROUP_ANNOUNCE GROUP_ANNOUNCE;
+#include "DHT.h"
+ 
+typedef struct ANNOUNCE ANNOUNCE;
 
+/* Maximum newly announced online (in terms of group chats) nodes to ping per TIME_TO_PING seconds. */
+#define MAX_ANNOUNCED_NODES 30
 
-int add_group_announced_nodes(GROUP_ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port);
+struct ANNOUNCE {
+    DHT *dht;
+    Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES];
+    Ping_Array  ping_array;
+    uint64_t    last_to_ping;
+};
 
-GROUP_ANNOUNCE *new_group_announce(DHT *dht);
-void kill_group_announce(GROUP_ANNOUNCE *announce);
+int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port);
 
-int send_group_announce_request(GROUP_ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id);
-int get_group_announced_nodes_request(DHT * dht, IP_Port ip_port, uint8_t *public_key, uint8_t *client_id, Node_format *sendback_node);
+ANNOUNCE *new_announce(DHT *dht);
+void kill_announce(ANNOUNCE *announce);
+
+int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id);
+int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id);
 
 #endif /* __GROUP_ANNOUNCE_H__ */

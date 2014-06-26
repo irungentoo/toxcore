@@ -59,7 +59,7 @@ int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format de
     memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES, &sendback_data,
            sizeof(sendback_data));
     uint8_t packet[ANNOUNCE_REQUEST_SIZE];
-    packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
+    packet[0] = NET_PACKET_ONION_ANNOUNCE_REQUEST;
     random_nonce(packet + 1);
 
     int len = encrypt_data(dest.client_id, secret_key, packet + 1, plain, sizeof(plain),
@@ -287,7 +287,7 @@ static int handle_announce_request(void *object, IP_Port source, uint8_t *packet
     if (len != 1 + ONION_PING_ID_SIZE + nodes_length + crypto_box_MACBYTES)
         return 1;
 
-    data[0] = NET_PACKET_ANNOUNCE_RESPONSE;
+    data[0] = NET_PACKET_ONION_ANNOUNCE_RESPONSE;
     memcpy(data + 1, plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES,
            ONION_ANNOUNCE_SENDBACK_DATA_LENGTH);
     memcpy(data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH, nonce, crypto_box_NONCEBYTES);
@@ -340,7 +340,7 @@ Onion_Announce *new_onion_announce(DHT *dht)
     onion_a->net = dht->net;
     new_symmetric_key(onion_a->secret_bytes);
 
-    networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_announce_request, onion_a);
+    networking_registerhandler(onion_a->net, NET_PACKET_ONION_ANNOUNCE_REQUEST, &handle_announce_request, onion_a);
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, &handle_data_request, onion_a);
 
     return onion_a;
@@ -351,7 +351,7 @@ void kill_onion_announce(Onion_Announce *onion_a)
     if (onion_a == NULL)
         return;
 
-    networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, NULL, NULL);
+    networking_registerhandler(onion_a->net, NET_PACKET_ONION_ANNOUNCE_REQUEST, NULL, NULL);
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, NULL, NULL);
     free(onion_a);
 }
