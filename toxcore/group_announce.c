@@ -34,8 +34,6 @@
 #include "ping_array.h"
 
 #define PING_NUM_MAX 512
-/* Maximum newly announced online (in terms of group chats) nodes to ping per TIME_TO_PING seconds. */
-#define MAX_ANNOUNCED_NODES 30
 
 // CLIENT_ID_SIZE for chat_id in ANNOUNCE_PLAIN_SIZE
 #define ANNOUNCE_PLAIN_SIZE (1 + CLIENT_ID_SIZE + sizeof(uint64_t))
@@ -43,13 +41,13 @@
 #define SEND_ANNOUNCED_NODES_PLAIN_SIZE (1 + sizeof(Node_format) * MAX_SENT_NODES + sizeof(uint64_t))
 #define DHT_SEND_ANNOUNCED_NODES_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES)
 
-struct ANNOUNCE {
+/*struct ANNOUNCE {
     DHT *dht;
     Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES];
     Ping_Array  ping_array;
     uint64_t    last_to_ping;
 };
-
+*/
 /* Send announce request
  * For members of group chat, who want to announce being online at the current moment
  */
