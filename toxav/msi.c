@@ -1204,6 +1204,12 @@ int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     pthread_mutex_lock(&session->mutex);
 
+    if ( call->ringing_timer_id ) {
+        LOGGER_WARNING("Call already ringing");
+        pthread_mutex_unlock(&session->mutex);
+        return 0;
+    }
+
     LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
 
     call->ringing_timer_id = event.timer_alloc ( handle_timeout, call, call->ringing_tout_ms );
