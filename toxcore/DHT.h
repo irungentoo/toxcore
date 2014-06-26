@@ -148,7 +148,7 @@ typedef struct __attribute__ ((__packed__))
     uint8_t chat_id[CLIENT_ID_SIZE];
     IP_Port ip_port;
 }
-Group_Announced_node_format;
+Announced_node_format;
 
 /* Pack number of nodes into data of maxlength length.
  *
@@ -212,7 +212,7 @@ typedef struct {
     Shared_Keys shared_keys_sent;
 
     struct PING   *ping;
-    struct GROUP_ANNOUNCE * group_announce;
+    struct ANNOUNCE * announce;
     
     Ping_Array    dht_ping_array;
     Ping_Array    dht_harden_ping_array;

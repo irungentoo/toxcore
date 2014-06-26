@@ -47,9 +47,7 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/TCP_server.c \
                         ../toxcore/list.c \
                         ../toxcore/list.h \
-                        ../toxcore/misc_tools.h \
-                        ../toxcore/group_announce.h \
-                        ../toxcore/group_announce.c
+                        ../toxcore/misc_tools.h 
 
 libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
