@@ -2349,8 +2349,9 @@ static char *ID2String(uint8_t *client_id)
 }
 #endif
 
-/* Minimum messenger run interval in ms */
-#define MIN_RUN_INTERVAL 1000
+/* Minimum messenger run interval in ms 
+   TODO: A/V */
+#define MIN_RUN_INTERVAL 50
 
 /* Return the time in milliseconds before do_messenger() should be called again
  * for optimal performance.
