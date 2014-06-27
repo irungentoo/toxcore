@@ -181,13 +181,13 @@ int set_socket_dualstack(sock_t sock)
 {
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
-    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
+    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&ipv6only, &optsize);
 
     if ((res == 0) && (ipv6only == 0))
         return 1;
 
     ipv6only = 0;
-    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only)) == 0);
+    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&ipv6only, sizeof(ipv6only)) == 0);
 }
 
 
