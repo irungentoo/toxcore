@@ -28,13 +28,6 @@ typedef struct ANNOUNCE ANNOUNCE;
 /* Maximum newly announced online (in terms of group chats) nodes to ping per TIME_TO_PING seconds. */
 #define MAX_ANNOUNCED_NODES 30
 
-struct ANNOUNCE {
-    DHT *dht;
-    Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES];
-    Ping_Array  ping_array;
-    uint64_t    last_to_ping;
-};
-
 int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port);
 
 ANNOUNCE *new_announce(DHT *dht);

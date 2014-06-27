@@ -44,7 +44,7 @@ void basicannouncetest()
      * we have 10 tox instances, they form 3 chats of 3 members
      * the 10ths then proceeds to query the list of chat's participants */
     Tox *peers[10];
-    int i;
+    int i,j;
     
     /* Init the nodes */
     printf("Nodes generated:\n");
@@ -52,8 +52,10 @@ void basicannouncetest()
     for (i=0; i<10; i++)
     {
         peers[i]=tox_new(TOX_ENABLE_IPV6_DEFAULT);
+        
         tox_get_address(peers[i],&clientids[(CLIENT_ID_SIZE+6)*i]);
         print_as_id(&clientids[CLIENT_ID_SIZE*i]);
+        printf(" :%d",((Messenger*)peers[i])->net->port);
         printf((i%3==2)?"\n---\n":"\n");
     }
     printf("\n");
@@ -88,9 +90,35 @@ void basicannouncetest()
         usleep(50000);
     }
     
+    printf("And 5 more seconds to connect to each other\n");
+    idle_n_secs(5, peers, 10);
+    
     for (i=0;i<9;i++)
     {
-        // group_announce(clientids[(CLIENT_ID_SIZE+6)*i], chatids[CLIENT_ID_SIZE*(i/3)]);
+        /* TODO: some of this code might be fit for adaptation in DHT.c */
+        DHT *dht=((Messenger*)peers[i])->dht;
+        int nclosest;
+        
+        /* Finding the closest peer to the chat id */
+        Node_format nodes[MAX_SENT_NODES];
+        Node_format *closest_node=NULL;
+        nclosest=get_close_nodes(dht, &clientids[(CLIENT_ID_SIZE+6)*i], nodes, 0, 1, 1);
+        
+        for (j=0; j<nclosest; j++)
+        {
+            /* printf("Found node: ");
+            print_as_id(nodes[j].client_id);
+            printf(" %s:%d\n",ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port); */
+            if (closest_node==NULL || (id_closest(&chatids[CLIENT_ID_SIZE*(i/3)], closest_node->client_id, nodes[j].client_id)==2))
+                closest_node=&nodes[j];
+        }
+
+        /* printf("Closest node: ");
+        print_as_id(closest_node->client_id);
+        printf("\n"); */
+        
+        // TODO: this segfaults by now :--D
+//         send_gc_announce_request(dht->announce, closest_node->ip_port, closest_node->client_id, &chatids[CLIENT_ID_SIZE*(i/3)]);
     }
     
     

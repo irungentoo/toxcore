@@ -41,13 +41,13 @@
 #define SEND_ANNOUNCED_NODES_PLAIN_SIZE (1 + sizeof(Node_format) * MAX_SENT_NODES + sizeof(uint64_t))
 #define DHT_SEND_ANNOUNCED_NODES_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES)
 
-/*struct ANNOUNCE {
+struct ANNOUNCE {
     DHT *dht;
     Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES];
     Ping_Array  ping_array;
     uint64_t    last_to_ping;
 };
-*/
+
 /* Send announce request
  * For members of group chat, who want to announce being online at the current moment
  */

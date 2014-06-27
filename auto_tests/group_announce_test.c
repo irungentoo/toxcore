@@ -19,6 +19,15 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+/* Not to define it in the header */
+struct ANNOUNCE {
+    DHT *dht;
+    Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES];
+    Ping_Array  ping_array;
+    uint64_t    last_to_ping;
+};
+
+
 void do_announce(ANNOUNCE *announce)
 {
     networking_poll(announce->dht->net);
@@ -73,6 +82,12 @@ START_TEST(test_basic)
 }
 END_TEST
 
+START_TEST(test_realworldannounce)
+{
+    
+}
+END_TEST
+
 #define DEFTESTCASE(NAME) \
     TCase *tc_##NAME = tcase_create(#NAME); \
     tcase_add_test(tc_##NAME, test_##NAME); \
@@ -87,6 +102,7 @@ Suite *announce_suite(void)
     Suite *s = suite_create("ANNOUNCE");
 
     DEFTESTCASE_SLOW(basic, 5);
+    DEFTESTCASE_SLOW(realworldannounce, 200);
     //DEFTESTCASE_SLOW(announce, 200);
     return s;
 }
