@@ -5,19 +5,12 @@
 #include "../toxcore/network.h"
 #include "../toxcore/DHT.h"
 #include "../toxcore/ping.h"
+#include "../toxcore/util.h"
 #include "../toxcore/group_announce.h"
 #include "../toxcore/Messenger.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-
-/* TODO: maybe something like this already exists */
-void print_as_id(uint8_t *startptr)
-{
-    int i;
-    for (i=0;i<CLIENT_ID_SIZE;i++)
-        printf("%02x",startptr[i]);
-}
 
 void idle_cylce(Tox**peers, int peercount)
 {
@@ -54,8 +47,7 @@ void basicannouncetest()
         peers[i]=tox_new(TOX_ENABLE_IPV6_DEFAULT);
         
         tox_get_address(peers[i],&clientids[(CLIENT_ID_SIZE+6)*i]);
-        print_as_id(&clientids[CLIENT_ID_SIZE*i]);
-        printf(" :%d",((Messenger*)peers[i])->net->port);
+        printf("%s :%d",id_toa(&clientids[CLIENT_ID_SIZE*i]),((Messenger*)peers[i])->net->port);
         printf((i%3==2)?"\n---\n":"\n");
     }
     printf("\n");
@@ -70,10 +62,7 @@ void basicannouncetest()
     
     printf("Chats generated:\n");
     for (i=0;i<3;i++)
-    {
-        print_as_id(&chatids[CLIENT_ID_SIZE*i]);
-        printf("\n");
-    }
+        printf("%s\n",id_toa(&chatids[CLIENT_ID_SIZE*i]));
     printf("\n");
     
     /* Announcing chat presence */
@@ -104,21 +93,16 @@ void basicannouncetest()
         Node_format *closest_node=NULL;
         nclosest=get_close_nodes(dht, &clientids[(CLIENT_ID_SIZE+6)*i], nodes, 0, 1, 1);
         
+        /* WARNING: keep in mind that DHT nodes have separate temporary ids */
         for (j=0; j<nclosest; j++)
         {
-            /* printf("Found node: ");
-            print_as_id(nodes[j].client_id);
-            printf(" %s:%d\n",ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port); */
+            /* printf("Found node: %s %s:%d\n",id_toa(nodes[j].client_id),ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port); */
             if (closest_node==NULL || (id_closest(&chatids[CLIENT_ID_SIZE*(i/3)], closest_node->client_id, nodes[j].client_id)==2))
                 closest_node=&nodes[j];
         }
 
-        /* printf("Closest node: ");
-        print_as_id(closest_node->client_id);
-        printf("\n"); */
-        
-        // TODO: this segfaults by now :--D
-//         send_gc_announce_request(dht->announce, closest_node->ip_port, closest_node->client_id, &chatids[CLIENT_ID_SIZE*(i/3)]);
+        /* printf("Closest node: %s\n", id_toa(closest_node->client_id)); */
+        send_gc_announce_request(dht->announce, closest_node->ip_port, closest_node->client_id, &chatids[CLIENT_ID_SIZE*(i/3)]);
     }
     
     

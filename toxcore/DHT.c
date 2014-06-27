@@ -36,6 +36,7 @@
 #endif
 
 #include "ping.h"
+#include "group_announce.h"
 
 #include "network.h"
 #include "LAN_discovery.h"
@@ -2344,8 +2345,9 @@ DHT *new_DHT(Networking_Core *net)
 
     dht->net = net;
     dht->ping = new_ping(dht);
+    dht->announce = new_announce(dht);
 
-    if (dht->ping == NULL) {
+    if (dht->ping == NULL || dht->announce == NULL) {
         kill_DHT(dht);
         return NULL;
     }

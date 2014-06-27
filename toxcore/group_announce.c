@@ -103,6 +103,7 @@ int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id
 static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
     DHT *dht = _dht;
+    printf("[TRACE] Got packet from %s:%d of length %d.\n",ip_ntoa(&ipp.ip), ipp.port, length);
 
     // Check if we got packet of expected size
     if (length != DHT_ANNOUNCE_SIZE)

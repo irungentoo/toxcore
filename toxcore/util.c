@@ -27,6 +27,7 @@
 #endif
 
 #include <time.h>
+#include <stdio.h>
 
 /* for CLIENT_ID_SIZE */
 #include "DHT.h"
@@ -67,6 +68,18 @@ uint32_t id_copy(uint8_t *dest, uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
     return CLIENT_ID_SIZE;
+}
+
+char *id_toa(uint8_t *id)
+{
+    static char str[CLIENT_ID_SIZE+1];
+    int i;
+    
+    str[CLIENT_ID_SIZE]=0;
+    for (i=0;i<CLIENT_ID_SIZE;i++)
+        sprintf(str+i,"%02x",id[i]);
+    
+    return str;
 }
 
 void host_to_net(uint8_t *num, uint16_t numbytes)
