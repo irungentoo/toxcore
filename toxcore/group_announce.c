@@ -103,7 +103,6 @@ int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id
 static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
     DHT *dht = _dht;
-    printf("[TRACE] Got packet from %s:%d of length %d.\n",ip_ntoa(&ipp.ip), ipp.port, length);
 
     // Check if we got packet of expected size
     if (length != DHT_ANNOUNCE_SIZE)
@@ -138,6 +137,11 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet,
 
     //Save (client_id, chat_id) in our ANNOUNCE structure
     add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp);
+    
+    printf("[TRACE] %s at %s:%d claims to be part of chat ", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port);
+    printf("%s\n", id_toa(announce_plain + 1));
+    
+    // TODO: repeat the message to the nodes closest to chat id if there is any closer node than we are
 
     //Not implemented, don't know if it's needed for now
     //send_announce_response(dht->announce, ipp, packet + 1, ping_id, shared_key);
@@ -231,6 +235,9 @@ static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_
     // Get ping_id
     uint64_t  ping_id;
     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
+    
+    printf("[TRACE] %s at %s:%d requests members of chat ", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port);
+    printf("%s\n", id_toa(announce_plain + 1));
 
     // Send nodes request
     send_gc_announced_nodes_response(dht, ipp, packet + 1, announce_plain + 1, ping_id, shared_key);
@@ -336,6 +343,8 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
     Node_format plain_nodes[MAX_SENT_NODES];
     uint16_t length_nodes = 0;
     uint32_t num_nodes = unpack_nodes(plain_nodes, announce_plain[0], &length_nodes, announce_plain + 1, data_size, 0);
+    
+    printf("[TRACE] Got sendnodes reply\n");
 
     if (length_nodes != data_size)
         return -1;

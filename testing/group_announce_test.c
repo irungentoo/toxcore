@@ -30,6 +30,30 @@ void idle_n_secs(int n, Tox** peers, int peercount)
     }
 }
 
+/* TODO: probably include that to DHT.c */
+void get_closest_known_node(DHT* dht, uint8_t *client_id, Node_format *out)
+{   
+    /* Finding the closest peer to the chat id */
+    static Node_format nodes[MAX_SENT_NODES];
+    Node_format *closest_node=NULL;
+    int nclosest, j;
+    nclosest=get_close_nodes(dht, client_id, nodes, 0, 1, 1);
+    
+    /* WARNING: keep in mind that DHT nodes have separate temporary ids */
+    for (j=0; j<nclosest; j++)
+    {
+        /* printf("Found node: %s %s:%d\n",id_toa(nodes[j].client_id),ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port); */
+        if (closest_node==NULL || (id_closest(client_id, closest_node->client_id, nodes[j].client_id)==2))
+            closest_node=&nodes[j];
+    }
+    
+    /* printf("Closest node: %s\n", id_toa(closest_node->client_id)); */
+    
+    /* Copy over to the result */
+    id_copy(out->client_id, closest_node->client_id);
+    memcpy(&out->ip_port, &closest_node->ip_port, sizeof(IP_Port));
+}
+
 /* TODO: this looks ugly by now */
 void basicannouncetest()
 {
@@ -86,23 +110,11 @@ void basicannouncetest()
     {
         /* TODO: some of this code might be fit for adaptation in DHT.c */
         DHT *dht=((Messenger*)peers[i])->dht;
-        int nclosest;
         
-        /* Finding the closest peer to the chat id */
-        Node_format nodes[MAX_SENT_NODES];
-        Node_format *closest_node=NULL;
-        nclosest=get_close_nodes(dht, &clientids[(CLIENT_ID_SIZE+6)*i], nodes, 0, 1, 1);
+        Node_format clnode;
+        get_closest_known_node(dht, &chatids[CLIENT_ID_SIZE*(i/3)], &clnode);
         
-        /* WARNING: keep in mind that DHT nodes have separate temporary ids */
-        for (j=0; j<nclosest; j++)
-        {
-            /* printf("Found node: %s %s:%d\n",id_toa(nodes[j].client_id),ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port); */
-            if (closest_node==NULL || (id_closest(&chatids[CLIENT_ID_SIZE*(i/3)], closest_node->client_id, nodes[j].client_id)==2))
-                closest_node=&nodes[j];
-        }
-
-        /* printf("Closest node: %s\n", id_toa(closest_node->client_id)); */
-        send_gc_announce_request(dht->announce, closest_node->ip_port, closest_node->client_id, &chatids[CLIENT_ID_SIZE*(i/3)]);
+        send_gc_announce_request(dht->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/3)]);
     }
     
     
@@ -110,10 +122,19 @@ void basicannouncetest()
     idle_n_secs(10, peers, 10);
     
     /* Requesting chat lists */
-    for (i=0;i<9;i++)
+    for (i=0;i<3;i++)
     {
-        // group_get_nodes(chatids[(CLIENT_ID_SIZE*(i/3)]);
+        /* The last node gets to ask everybody */
+        DHT *dht=((Messenger*)peers[9])->dht;
+        
+        Node_format clnode;
+        get_closest_known_node(dht, &chatids[CLIENT_ID_SIZE*i], &clnode);
+        
+        get_gc_announced_nodes_request(dht, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*i]);
     }
+    
+     printf("Waiting 10 seconds\n");
+    idle_n_secs(10, peers, 10);
     
     /* Deinit the nodes */
     for (i=0; i<10; i++)
