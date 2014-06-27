@@ -1,23 +1,22 @@
 #Install Instructions
 
 - [Installation](#installation)
-    - [Unix like](#unix)
-    - [OS X](#osx)
-      - [Homebrew](#homebrew)
-      - [Non-Homebrew](#non-homebrew)
-    - [Windows](#windows)
-      - [Cross-Compile](#windows-cross-compile)
-        - [Setting up a VM](#windows-cross-compile-vm)
-        - [Setting up the environment](#windows-cross-compile-environment)
-        - [Compiling](#windows-cross-compile-compiling)
-      - [Native](#windows-native)
-
+  - [Unix like](#unix)
+  - [OS X](#osx)
+    - [Homebrew](#homebrew)
+    - [Non-Homebrew](#non-homebrew)
+  - [Windows](#windows)
+    - [Cross-Compile](#windows-cross-compile)
+      - [Setting up a VM](#windows-cross-compile-vm)
+      - [Setting up the environment](#windows-cross-compile-environment)
+      - [Compiling](#windows-cross-compile-compiling)
+    - [Native](#windows-native)
 - [Additional](#additional)
-    - [Advanced configure options] (#aconf)
-    - [A/V support](#av)
-      - [libtoxav] (#libtoxav)
-    - [Bootstrap daemon] (#bootstrapd)
-    - [nTox] (#ntox)
+  - [Advanced configure options](#aconf)
+  - [A/V support](#av)
+    - [libtoxav](#libtoxav)
+  - [Bootstrap daemon](#bootstrapd)
+  - [nTox](#ntox)
 
 <a name="installation" />
 ##Installation
