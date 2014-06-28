@@ -304,14 +304,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
     CallSpecific *call = &av->calls[call_index];
 
     call->crtps[audio_index] =
-        rtp_init_session(
-            type_audio,
-            av->messenger,
-            av->msi_session->calls[call_index]->peers[0],
-            av->msi_session->calls[call_index]->key_peer,
-            av->msi_session->calls[call_index]->key_local,
-            av->msi_session->calls[call_index]->nonce_peer,
-            av->msi_session->calls[call_index]->nonce_local);
+        rtp_init_session(type_audio, av->messenger, av->msi_session->calls[call_index]->peers[0]);
 
 
     if ( !call->crtps[audio_index] ) {
@@ -322,14 +315,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
 
     if ( support_video ) {
         call->crtps[video_index] =
-            rtp_init_session (
-                type_video,
-                av->messenger,
-                av->msi_session->calls[call_index]->peers[0],
-                av->msi_session->calls[call_index]->key_peer,
-                av->msi_session->calls[call_index]->key_local,
-                av->msi_session->calls[call_index]->nonce_peer,
-                av->msi_session->calls[call_index]->nonce_local);
+            rtp_init_session(type_video, av->messenger, av->msi_session->calls[call_index]->peers[0]);
 
 
         if ( !call->crtps[video_index] ) {

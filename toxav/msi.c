@@ -31,7 +31,6 @@
 #include "event.h"
 
 
-#include <assert.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
@@ -85,8 +84,6 @@ GENERIC_HEADER ( CallType )
 GENERIC_HEADER ( CallId )
 GENERIC_HEADER ( Info )
 GENERIC_HEADER ( Reason )
-GENERIC_HEADER ( CryptoKey )
-GENERIC_HEADER ( Nonce )
 
 
 /**
@@ -103,8 +100,6 @@ typedef struct _MSIMessage {
     MSIHeaderInfo      info;
     MSIHeaderReason    reason;
     MSIHeaderCallId    callid;
-    MSIHeaderCryptoKey cryptokey;
-    MSIHeaderNonce     nonce;
 
     struct _MSIMessage *next;
 
@@ -138,8 +133,6 @@ inline__ void invoke_callback(int32_t call_index, MSICallbackID id)
 #define REASON_FIELD       "Reason"
 #define CALLTYPE_FIELD     "Call-type"
 #define CALLID_FIELD       "Call-id"
-#define CRYPTOKEY_FIELD    "Crypto-key"
-#define NONCE_FIELD        "Nonce"
 
 /* protocol descriptors */
 #define end_byte    0x0
@@ -227,7 +220,8 @@ if ( *iterator != value_byte || size_con <= type_size_const) { return -1; } size
 iterator ++; if(size_con <= 3) {return -1;} size_con -= 3; \
 uint16_t _value_size; memcpy(&_value_size, iterator, sizeof(_value_size)); _value_size = ntohs(_value_size);\
 if(size_con < _value_size) { return -1; } size_con -= _value_size; \
-header.header_value = calloc(sizeof(uint8_t), _value_size); \
+if ( !(header.header_value = calloc(sizeof(uint8_t), _value_size)) ); \
+LOGGER_ERROR("Allocation failed! Program might misbehave!"); \
 header.size = _value_size; \
 memcpy(header.header_value, iterator + 2, _value_size);\
 iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ }
@@ -265,11 +259,6 @@ iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte
                     }
                 break;
 
-                case 5: { /* NONCE header */
-                    if ON_HEADER ( _it, size_max, msg->nonce, NONCE_FIELD, 5 )
-                    }
-                break;
-
                 case 6: { /* Reason header */
                     if ON_HEADER ( _it, size_max, msg->reason, REASON_FIELD, 6 )
                     }
@@ -292,11 +281,6 @@ iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte
                     }
                 break;
 
-                case 10: { /* Crypto-key headers */
-                    if ON_HEADER ( _it, size_max, msg->cryptokey, CRYPTOKEY_FIELD, 10 )
-                    }
-                break;
-
                 default:
                     LOGGER_ERROR("Unkown field value");
                     return -1;
@@ -315,8 +299,8 @@ iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte
 
 
 #define ALLOCATE_HEADER( var, mheader_value, t_size) \
-var.header_value = calloc(sizeof *mheader_value, t_size); \
-if (var.header_value == NULL) { LOGGER_WARNING("Header allocation failed!"); } \
+if (!(var.header_value = calloc(sizeof *mheader_value, t_size))) \
+{ LOGGER_WARNING("Header allocation failed! Program might misbehave!"); } \
 else { memcpy(var.header_value, mheader_value, t_size); \
 var.size = t_size; }
 
@@ -339,8 +323,6 @@ void free_message ( MSIMessage *msg )
     free ( msg->response.header_value );
     free ( msg->version.header_value );
     free ( msg->info.header_value );
-    free ( msg->cryptokey.header_value );
-    free ( msg->nonce.header_value );
     free ( msg->reason.header_value );
     free ( msg->callid.header_value );
 
@@ -361,7 +343,7 @@ MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
     MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
 
     if ( _retu == NULL ) {
-        LOGGER_WARNING("Allocation failed!");
+        LOGGER_WARNING("Allocation failed! Program might misbehave!");
         return NULL;
     }
 
@@ -399,7 +381,7 @@ MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
     MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
 
     if ( _retu == NULL ) {
-        LOGGER_WARNING("Allocation failed!");
+        LOGGER_WARNING("Allocation failed! Program might misbehave!");
         return NULL;
     }
 
@@ -422,47 +404,6 @@ MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
 }
 
 
-
-/**
- * @brief Makes clear message presentation
- *
- * @param msg Message
- * @param dest Dest string
- * @return int
- */
-int stringify_message(MSIMessage *msg, char *dest)
-{
-// THIS CODE HAS NO EFFECT, AND THE ARGUMENTS ARE NOT MODIFIED
-#if 0
-
-#define HDR_TO_STR(__dest, __hdr) if (__hdr.header_value) {\
-    char nltstr[MSI_MAXMSG_SIZE]; memset(nltstr+__hdr.size, '\0', MSI_MAXMSG_SIZE-__hdr.size); int i = 0; \
-    for ( ; i < __hdr.size; i ++) nltstr[i] = (char)__hdr.header_value[i]; \
-    }
-
-    if ( !msg || !dest )
-        return -1;
-
-    HDR_TO_STR(dest, msg->version);
-    HDR_TO_STR(dest, msg->request);
-    HDR_TO_STR(dest, msg->response);
-    HDR_TO_STR(dest, msg->reason);
-    HDR_TO_STR(dest, msg->callid);
-    HDR_TO_STR(dest, msg->calltype);
-    HDR_TO_STR(dest, msg->cryptokey);
-    HDR_TO_STR(dest, msg->nonce);
-
-//     if (msg->version.header_value) {
-//         U8_TO_NLTCHAR(msg->version.header_value, msg->version.size, nltstr, MSI_MAXMSG_SIZE);
-//         sprintf(dest, "Version: %s\n", nltstr);
-//     }
-#endif
-
-    return 0;
-}
-
-
-
 /**
  * @brief Speaks for it self.
  *
@@ -482,7 +423,7 @@ uint8_t *append_header_to_string (
 {
     if ( dest == NULL ) {
         LOGGER_ERROR("No destination space!");
-        assert(dest);
+        return NULL;
     }
 
     if (header_value == NULL) {
@@ -577,8 +518,6 @@ uint16_t message_to_send ( MSIMessage *msg, uint8_t *dest )
     CLEAN_ASSIGN ( _size, _iterated, INFO_FIELD, msg->info );
     CLEAN_ASSIGN ( _size, _iterated, CALLID_FIELD, msg->callid );
     CLEAN_ASSIGN ( _size, _iterated, REASON_FIELD, msg->reason );
-    CLEAN_ASSIGN ( _size, _iterated, CRYPTOKEY_FIELD, msg->cryptokey );
-    CLEAN_ASSIGN ( _size, _iterated, NONCE_FIELD, msg->nonce );
 
     *_iterated = end_byte;
     _size ++;
@@ -589,7 +528,7 @@ uint16_t message_to_send ( MSIMessage *msg, uint8_t *dest )
 
 #define GENERIC_SETTER_DEFINITION(header) \
 void msi_msg_set_##header ( MSIMessage* _msg, const uint8_t* header_value, uint16_t _size ) \
-{ assert(_msg); assert(header_value); \
+{ if ( !_msg || !header_value) { LOGGER_WARNING("No setter values!"); return; } \
   free(_msg->header.header_value); \
   ALLOCATE_HEADER( _msg->header, header_value, _size )}
 
@@ -597,8 +536,6 @@ GENERIC_SETTER_DEFINITION ( calltype )
 GENERIC_SETTER_DEFINITION ( reason )
 GENERIC_SETTER_DEFINITION ( info )
 GENERIC_SETTER_DEFINITION ( callid )
-GENERIC_SETTER_DEFINITION ( cryptokey )
-GENERIC_SETTER_DEFINITION ( nonce )
 
 
 /**
@@ -608,7 +545,7 @@ GENERIC_SETTER_DEFINITION ( nonce )
  * @param size Size of string.
  * @return void
  */
-void t_randomstr ( uint8_t *str, size_t size )
+void t_randomstr ( uint8_t *str, uint32_t size )
 {
     if (str == NULL) {
         LOGGER_DEBUG("Empty destination!");
@@ -620,7 +557,7 @@ void t_randomstr ( uint8_t *str, size_t size )
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz";
 
-    size_t _it = 0;
+    uint32_t _it = 0;
 
     for ( ; _it < size; _it++ ) {
         str[_it] = _bytes[ random_int() % 61 ];
@@ -707,14 +644,6 @@ int send_message ( MSISession *session, MSICall *call, MSIMessage *msg, uint32_t
         LOGGER_WARNING("Parsing message failed; nothing sent!");
         return -1;
     }
-
-    /*
-    LOGGER_SCOPE(
-        char cast[MSI_MAXMSG_SIZE];
-        stringify_message(msg, cast);
-        LOGGER_DEBUG("[Call: %s] [to: %u] Sending message: len: %d\n%s", call->id, to, _length, cast);
-    );*/
-
 
     if ( m_msi_packet(session->messenger_handle, to, _msg_string_final, _length) ) {
         LOGGER_DEBUG("Sent message");
@@ -854,16 +783,18 @@ int send_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_
  */
 void add_peer( MSICall *call, int peer_id )
 {
-    if ( !call->peers ) {
-        call->peers = calloc(sizeof(uint32_t), 1);
-        call->peer_count = 1;
-    } else {
-        call->peer_count ++;
-        call->peers = realloc( call->peers, sizeof(uint32_t) * call->peer_count);
+    uint32_t* peers = !call->peers ? peers = calloc(sizeof(uint32_t), 1) :
+    realloc( call->peers, sizeof(uint32_t) * call->peer_count);
+        
+    if (!peers) {
+        LOGGER_WARNING("Allocation failed! Program might misbehave!");
+        return;
     }
-
+    
+    call->peer_count ++;
+    call->peers = peers;
     call->peers[call->peer_count - 1] = peer_id;
-
+    
     LOGGER_DEBUG("Added peer: %d", peer_id);
 }
 
@@ -888,7 +819,12 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
 
     for (; _call_idx < session->max_calls; _call_idx ++) {
         if ( !session->calls[_call_idx] ) {
-            session->calls[_call_idx] = calloc ( sizeof ( MSICall ), 1 );
+            
+            if (!(session->calls[_call_idx] = calloc ( sizeof ( MSICall ), 1 ))) {
+                LOGGER_WARNING("Allocation failed! Program might misbehave!");
+                return NULL;
+            }
+            
             break;
         }
     }
@@ -901,16 +837,11 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
 
     MSICall *_call = session->calls[_call_idx];
 
-    if ( _call == NULL ) {
-        LOGGER_WARNING("Allocation failed!");
-        return NULL;
-    }
-
     _call->call_idx = _call_idx;
-    _call->type_peer = calloc ( sizeof ( MSICallType ), peers );
 
-    if ( _call->type_peer == NULL ) {
-        LOGGER_WARNING("Allocation failed!");
+    if ( !(_call->type_peer = calloc ( sizeof ( MSICallType ), peers )) ) {
+        LOGGER_WARNING("Allocation failed! Program might misbehave!");
+        free(_call);
         return NULL;
     }
 
@@ -920,11 +851,6 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
 
     _call->request_timer_id = 0;
     _call->ringing_timer_id = 0;
-
-    _call->key_local = NULL;
-    _call->key_peer = NULL;
-    _call->nonce_local = NULL;
-    _call->nonce_peer = NULL;
 
     _call->ringing_tout_ms = ringing_timeout;
 
@@ -966,8 +892,6 @@ int terminate_call ( MSISession *session, MSICall *call )
     session->calls[call->call_idx] = NULL;
 
     free ( call->type_peer );
-    free ( call->key_local );
-    free ( call->key_peer );
     free ( call->peers);
 
     /* Release handle */
@@ -1103,20 +1027,7 @@ int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     pthread_mutex_lock(&session->mutex);
 
-    if ( !msg->cryptokey.header_value ) {
-        int rc = send_error ( session, call, error_no_crypto_key, msg->friend_id );
-        terminate_call(session, call);
-        pthread_mutex_unlock(&session->mutex);
-        return rc;
-    }
-
     call->state = call_active;
-
-    call->key_peer = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
-    memcpy ( call->key_peer, msg->cryptokey.header_value, crypto_box_KEYBYTES );
-
-    call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
-    memcpy ( call->nonce_peer, msg->nonce.header_value,  crypto_box_NONCEBYTES );
 
     flush_peer_type ( call, msg, 0 );
 
@@ -1230,33 +1141,9 @@ int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     LOGGER_DEBUG("Session: %p Handling 'starting' on call: %s", session, call->id );
 
-
-    if ( !msg->cryptokey.header_value ) {
-        int rc = send_error ( session, call, error_no_crypto_key, msg->friend_id );
-        terminate_call(session, call);
-        pthread_mutex_unlock(&session->mutex);
-        return rc;
-    }
-
-    /* Generate local key/nonce to send */
-    call->key_local = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
-    new_symmetric_key ( call->key_local );
-
-    call->nonce_local = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
-    new_nonce ( call->nonce_local );
-
-    /* Save peer key/nonce */
-    call->key_peer = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
-    memcpy ( call->key_peer, msg->cryptokey.header_value, crypto_box_KEYBYTES );
-
-    call->nonce_peer = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
-    memcpy ( call->nonce_peer, msg->nonce.header_value,  crypto_box_NONCEBYTES );
-
     call->state = call_active;
 
     MSIMessage *_msg_start = msi_new_message ( TYPE_REQUEST, stringify_request ( start ) );
-    msi_msg_set_cryptokey ( _msg_start, call->key_local, crypto_box_KEYBYTES );
-    msi_msg_set_nonce ( _msg_start, call->nonce_local, crypto_box_NONCEBYTES );
     send_message ( session, call, _msg_start, msg->friend_id );
     free_message ( _msg_start );
 
@@ -1491,14 +1378,19 @@ MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls )
     MSISession *_retu = calloc ( sizeof ( MSISession ), 1 );
 
     if (_retu == NULL) {
-        LOGGER_ERROR("Allocation failed!");
+        LOGGER_ERROR("Allocation failed! Program might misbehave!");
         return NULL;
     }
 
     _retu->messenger_handle = messenger;
     _retu->agent_handler = NULL;
-
-    _retu->calls = calloc( sizeof (MSICall *), max_calls );
+    
+    if (!(_retu->calls = calloc( sizeof (MSICall *), max_calls ))) {
+        LOGGER_ERROR("Allocation failed! Program might misbehave!");
+        free(_retu);
+        return NULL;
+    }
+    
     _retu->max_calls = max_calls;
 
     _retu->frequ = 10000; /* default value? */
@@ -1689,17 +1581,6 @@ int msi_answer ( MSISession *session, int32_t call_index, MSICallType call_type 
         msi_msg_set_calltype
         ( _msg_starting, ( const uint8_t *) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
     }
-
-    /* Now set the local encryption key and pass it with STARTING message */
-
-    session->calls[call_index]->key_local = calloc ( sizeof ( uint8_t ), crypto_box_KEYBYTES );
-    new_symmetric_key ( session->calls[call_index]->key_local );
-
-    session->calls[call_index]->nonce_local = calloc ( sizeof ( uint8_t ), crypto_box_NONCEBYTES );
-    new_nonce ( session->calls[call_index]->nonce_local );
-
-    msi_msg_set_cryptokey ( _msg_starting, session->calls[call_index]->key_local, crypto_box_KEYBYTES );
-    msi_msg_set_nonce ( _msg_starting, session->calls[call_index]->nonce_local, crypto_box_NONCEBYTES );
 
     send_message ( session, session->calls[call_index], _msg_starting,
                    session->calls[call_index]->peers[session->calls[call_index]->peer_count - 1] );
