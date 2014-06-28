@@ -72,12 +72,12 @@ uint32_t id_copy(uint8_t *dest, uint8_t *src)
 
 char *id_toa(uint8_t *id)
 {
-    static char str[CLIENT_ID_SIZE+1];
+    static char str[CLIENT_ID_SIZE*2+1];
     int i;
     
-    str[CLIENT_ID_SIZE]=0;
+    str[CLIENT_ID_SIZE*2]=0;
     for (i=0;i<CLIENT_ID_SIZE;i++)
-        sprintf(str+i,"%02x",id[i]);
+        sprintf(str+2*i,"%02x",id[i]);
     
     return str;
 }
