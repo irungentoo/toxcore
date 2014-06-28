@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 
+#include "logger.h"
 #include "DHT.h"
 #include "group_announce.h"
 #include "ping.h"
@@ -56,6 +57,7 @@ struct ANNOUNCE {
  */
 int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id)
 {
+    LOGGER_DEBUG("Inside announce request");
     // Check if packet is going to be sent to ourself
     if (id_equal(client_id, announce->dht->self_public_key))
         return -1;
@@ -112,6 +114,7 @@ int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id
  */
 static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
+    LOGGER_DEBUG("Inside handle announce request");
     DHT *dht = _dht;
 
     // Check if we got packet of expected size
@@ -166,6 +169,7 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet,
  */
 int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id)
 {
+    LOGGER_DEBUG("Inside get nodes request");
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(client_id, dht->self_public_key))
         return -1;
@@ -223,6 +227,8 @@ int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, u
  */
 static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
+    LOGGER_DEBUG("Inside handle get nodes request");
+
     DHT *dht = _dht;
 
     // Check if we got packet of expected size
@@ -271,6 +277,8 @@ static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_
 int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
                                   uint8_t *shared_encryption_key)
 { 
+    LOGGER_DEBUG("Inside send nodes response");
+
     // Check if packet is going to be sent to ourself.
     if (id_equal(client_id, dht->self_public_key))
         return -1;
@@ -280,6 +288,7 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     // Get announced nodes from ANNOUNCE list by chat_id
     Node_format nodes_list[MAX_SENT_NODES];
     uint32_t num_nodes = get_announced_nodes(dht->announce, chat_id, nodes_list);
+    //LOGGER_DEBUG("Inside send nodes response, num_nodes: %u", num_nodes);
     if (num_nodes == -1)
         return -1;
 
@@ -290,9 +299,8 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     int nodes_length = pack_nodes(announce_plain + 1, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
     if (nodes_length <= 0)
         return -1;
-    
+ 
     memcpy(announce_plain + 1 + nodes_length, &ping_id, sizeof(ping_id));
-
     // Generate new nonce
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
@@ -463,6 +471,8 @@ int get_announced_nodes(ANNOUNCE *announce, uint8_t *chat_id, Node_format *nodes
 
 ANNOUNCE *new_announce(DHT *dht)
 {
+    LOGGER_INIT(LOGGER_OUTPUT_FILE, LOGGER_LEVEL);
+
 	ANNOUNCE *announce = calloc(1, sizeof(ANNOUNCE));
 
     if (announce == NULL)

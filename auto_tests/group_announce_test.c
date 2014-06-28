@@ -37,6 +37,7 @@ void do_announce(ANNOUNCE *announce)
 static int handled_test_1;
 static int handle_test_1(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    handle_gc_announce_request(object, source, packet, length);
     handled_test_1 = 1;
     return 0;
 }
@@ -44,11 +45,15 @@ static int handle_test_1(void *object, IP_Port source, uint8_t *packet, uint32_t
 static int handled_test_2;
 static int handle_test_2(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    handled_test_2 = 1;
+    return 0;
 }
 
 static int handled_test_3;
 static int handle_test_3(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    handled_test_3 = 1;
+    return 0;
 }
 
 START_TEST(test_basic)
@@ -61,9 +66,9 @@ START_TEST(test_basic)
     ANNOUNCE *announce3 = new_announce(new_DHT(new_networking(ip, 34569)));    
     ck_assert_msg((announce1 != NULL) && (announce2 != NULL) && (announce3 != NULL), "ANNOUNCE failed initializing.");
 
-    networking_registerhandler(announce2->dht->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_test_1, announce2->dht);
-    networking_registerhandler(announce3->dht->net, NET_PACKET_GET_ANNOUNCED_NODES, &handle_test_2, announce3->dht);
-    networking_registerhandler(announce2->dht->net, NET_PACKET_SEND_ANNOUNCED_NODES, &handle_test_3, announce2->dht);
+    //networking_registerhandler(announce2->dht->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_test_1, announce2->dht);
+    //networking_registerhandler(announce2->dht->net, NET_PACKET_GET_ANNOUNCED_NODES, &handle_test_2, announce2->dht);
+    //networking_registerhandler(announce3->dht->net, NET_PACKET_SEND_ANNOUNCED_NODES, &handle_test_3, announce3->dht);
 
     IP_Port on1 = {ip, announce1->dht->net->port};
     Node_format n1;
@@ -85,16 +90,23 @@ START_TEST(test_basic)
     crypto_box_keypair(chat_public_key, chat_private_key);
 
     int result = send_gc_announce_request(announce1, n2.ip_port, n2.client_id, chat_public_key);
-    ck_assert_msg(result == 0, "Failed to create/send group announce packet.");
+    ck_assert_msg(result == 0, "Failed to create/send group announce request packet.");
 
     handled_test_1 = 0;
-
-    while (handled_test_1 == 0) {
+    int i;
+    for (i=0; i<20*1000; i+=50)
+    {
         do_announce(announce2);
     }
 
-    int result = send_gc_announce_request(announce1, n2.ip_port, n2.client_id, chat_public_key);
-    
+    result = get_gc_announced_nodes_request(announce3->dht, n2.ip_port, n2.client_id, chat_public_key);
+    ck_assert_msg(result == 0, "Failed to create/send group announce nodes request packet.");
+
+    for (i=0; i<20*1000; i+=50)
+    {
+        do_announce(announce2);
+        do_announce(announce3);
+    }
 
 }
 END_TEST
@@ -112,7 +124,7 @@ Suite *announce_suite(void)
 {
     Suite *s = suite_create("ANNOUNCE");
 
-    DEFTESTCASE_SLOW(basic, 5);
+    DEFTESTCASE_SLOW(basic, 50);
     return s;
 }
 
@@ -124,7 +136,7 @@ int main(int argc, char *argv[])
     SRunner *test_runner = srunner_create(announce);
 
     int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
+    srunner_run_all(test_runner, CK_VERBOSE);
     number_failed = srunner_ntests_failed(test_runner);
 
     srunner_free(test_runner);
