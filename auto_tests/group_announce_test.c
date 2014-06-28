@@ -96,9 +96,9 @@ START_TEST(test_basic)
 
     printf("Node_ID 1:\n");
     print_client_id(n1.client_id);
-    printf("Node_ID 2:\n");
+    printf("\nNode_ID 2:\n");
     print_client_id(n2.client_id);
-    printf("Node_ID 3:\n");
+    printf("\nNode_ID 3:\n");
     print_client_id(n3.client_id);
     printf("\n");
 

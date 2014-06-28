@@ -34,7 +34,7 @@
 #include "DHT.h"
 #include "ping.h"
 #include "ping_array.h"
- 
+
 #define PING_NUM_MAX 512
 
 // CLIENT_ID_SIZE for chat_id in ANNOUNCE_PLAIN_SIZE
@@ -184,6 +184,7 @@ int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, u
     id_copy(data, client_id);
     memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
     uint64_t ping_id = ping_array_add(&dht->announce->ping_array, data, sizeof(data));
+    printf("\tPing id in request: %u\n", ping_id);
 
     if (ping_id == 0)
         return -1;
@@ -266,7 +267,8 @@ static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_
     // Get ping_id
     uint64_t  ping_id;
     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
-    
+    printf("\tPing id in request handle: %u\n", ping_id);
+
     char originatortxt[CLIENT_ID_SIZE*2+1];
     char chatidtxt[CLIENT_ID_SIZE*2+1];
     strcpy(originatortxt, id_toa(packet + 1));
@@ -308,8 +310,10 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     int nodes_length = pack_nodes(announce_plain + 1, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
     if (nodes_length <= 0)
         return -1;
- 
+     
     memcpy(announce_plain + 1 + nodes_length, &ping_id, sizeof(ping_id));
+
+    printf("\tPing id in response: %u\n", ping_id);
     // Generate new nonce
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
@@ -319,10 +323,10 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     int encrypt_length = encrypt_data_symmetric(shared_encryption_key,
                                         nonce,
                                         announce_plain,
-                                        sizeof(announce_plain),
+                                        1 + nodes_length + sizeof(ping_id),
                                         encrypt);
 
-    if (encrypt_length != sizeof(encrypt))
+    if (encrypt_length != 1 + nodes_length + sizeof(ping_id) + crypto_box_MACBYTES)
         return -1;
 
     // Generate DHT packet == NET_PACKET_SEND_ANNOUNCED_NODES + client_id + nonce + announce_plain + crypto_box_MACBYTES
@@ -332,7 +336,8 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
 
-    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
+    uint32_t new_pk_length = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + encrypt_length;
+    if ((uint32_t)sendpacket(dht->net, ipp, pk, new_pk_length) != sizeof(new_pk_length))
         return -1;
 
     return 0;
@@ -350,9 +355,18 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
     printf("[TRACE] Got sendnodes reply\n");
 
     printf("\tChecking length\n");
+  
+    uint32_t cid_size = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + 1 + sizeof(uint64_t) + crypto_box_MACBYTES;  
     
-    // Check if we got packet of expected size
-    if (length != DHT_SEND_ANNOUNCED_NODES_SIZE)
+    if (length <= cid_size) /* too short */
+        return -1;
+
+    uint32_t data_size = length - cid_size;
+
+    if (data_size == 0)
+        return -1;
+
+    if (data_size > sizeof(Node_format) * MAX_SENT_NODES) /* invalid length */
         return -1;
 
     
@@ -372,11 +386,11 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
 
-    uint8_t announce_plain[SEND_ANNOUNCED_NODES_PLAIN_SIZE];
+    uint8_t announce_plain[1 + data_size + sizeof(uint64_t)];
     int announce_length = decrypt_data_symmetric(shared_key,
                                         packet + 1 + CLIENT_ID_SIZE,
                                         packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                        SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES,
+                                        sizeof(announce_plain) + crypto_box_MACBYTES,
                                         announce_plain);
     
     printf("\tChecking length\n");
@@ -393,11 +407,10 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
     
     // Get ping_id
     uint64_t ping_id;
-    uint32_t data_size = sizeof(Node_format) * MAX_SENT_NODES;
     memcpy(&ping_id, announce_plain + 1 + data_size, sizeof(ping_id));
 
     printf("\tCheck if it really is our request\n");
-    printf("\tPing id: %d\n", ping_id);
+    printf("\tPing id in handle response: %u\n", ping_id);
     
     //Check if we send getnodes request previously
     uint8_t data[PING_DATA_SIZE];
@@ -421,7 +434,17 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
     if (num_nodes != announce_plain[0])
         return -1;
 
+    printf("\tNum nodes: %u\n", num_nodes);
+
+    uint32_t i;
+    for (i = 0; i<num_nodes; i++) {
+        char client_id_txt[CLIENT_ID_SIZE*2+1];
+        strcpy(client_id_txt, id_toa(plain_nodes[i].client_id));
+        printf("\tClient_ID: %s\n", client_id_txt);
+    }
     //TODO need to store or pass plain_nodes somewhere
+
+    printf("\tPassed!!!\n");
     
     return 0;
 }
