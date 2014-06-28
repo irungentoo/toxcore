@@ -37,6 +37,8 @@ void do_announce(ANNOUNCE *announce)
 static int handled_test_1;
 static int handle_test_1(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
+    handled_test_1 = 1;
+    return 0;
 }
 
 static int handled_test_2;
@@ -78,13 +80,22 @@ START_TEST(test_basic)
     memcpy(n3.client_id, announce3->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     n3.ip_port = on3;
 
+    uint8_t chat_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t chat_private_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(chat_public_key, chat_private_key);
 
-}
-END_TEST
+    int result = send_gc_announce_request(announce1, n2.ip_port, n2.client_id, chat_public_key);
+    ck_assert_msg(result == 0, "Failed to create/send group announce packet.");
 
-START_TEST(test_realworldannounce)
-{
+    handled_test_1 = 0;
+
+    while (handled_test_1 == 0) {
+        do_announce(announce2);
+    }
+
+    int result = send_gc_announce_request(announce1, n2.ip_port, n2.client_id, chat_public_key);
     
+
 }
 END_TEST
 
@@ -102,8 +113,6 @@ Suite *announce_suite(void)
     Suite *s = suite_create("ANNOUNCE");
 
     DEFTESTCASE_SLOW(basic, 5);
-    DEFTESTCASE_SLOW(realworldannounce, 200);
-    //DEFTESTCASE_SLOW(announce, 200);
     return s;
 }
 

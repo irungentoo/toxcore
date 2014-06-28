@@ -50,6 +50,9 @@ struct ANNOUNCE {
 
 /* Send announce request
  * For members of group chat, who want to announce being online at the current moment
+ *
+ * return -1 on failure
+ * return 0 on success
  */
 int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id)
 {
@@ -97,9 +100,16 @@ int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id
     memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
 
-    return sendpacket(announce->dht->net, ipp, pk, sizeof(pk));    
+    if ((uint32_t)sendpacket(announce->dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
+        return -1;
+
+    return 0;    
 }
 
+ /*
+ * return -1 on failure.
+ * return 0 on success.
+ */
 static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
     DHT *dht = _dht;
@@ -150,6 +160,9 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet,
 }
 
 /* Send a getnodes request.
+ *
+ * return -1 on failure.
+ * return 0 on success.
  */
 int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id)
 {
@@ -198,9 +211,16 @@ int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, u
     memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
 
-    return sendpacket(dht->net, ipp, pk, sizeof(pk));
+    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
+        return -1;
+
+    return 0;
 }
 
+ /*
+ * return -1 on failure.
+ * return 0 on success.
+ */
 static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
     DHT *dht = _dht;
@@ -240,12 +260,14 @@ static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_
     printf("%s\n", id_toa(announce_plain + 1));
 
     // Send nodes request
-    send_gc_announced_nodes_response(dht, ipp, packet + 1, announce_plain + 1, ping_id, shared_key);
+    return send_gc_announced_nodes_response(dht, ipp, packet + 1, announce_plain + 1, ping_id, shared_key);
 
-    return 0;
 }
 
-
+ /*
+ * return -1 on failure.
+ * return 0 on success.
+ */
 int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
                                   uint8_t *shared_encryption_key)
 { 
@@ -293,9 +315,17 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
 
-    return sendpacket(dht->net, ipp, pk, sizeof(pk));    
+    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
+        return -1;
+
+    return 0;
+
 }
 
+ /*
+ * return -1 on failure.
+ * return 0 on success.
+ */
 int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
     DHT *dht = _dht;
@@ -366,6 +396,10 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
  *  return -1 if node was not added.
  */
 
+ /*
+ * return -1 on failure.
+ * return 0 on success.
+ */
 int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip))
