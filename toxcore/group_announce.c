@@ -25,12 +25,14 @@
 
 #include <stdint.h>
 
-#include "DHT.h"
 #include "group_announce.h"
-#include "ping.h"
+
+#include "logger.h"
+#include "util.h"
 
 #include "network.h"
-#include "util.h"
+#include "DHT.h"
+#include "ping.h"
 #include "ping_array.h"
 
 #define PING_NUM_MAX 512
@@ -148,8 +150,12 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet,
     //Save (client_id, chat_id) in our ANNOUNCE structure
     add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp);
     
-    printf("[TRACE] %s at %s:%d claims to be part of chat ", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port);
-    printf("%s\n", id_toa(announce_plain + 1));
+    char originatortxt[CLIENT_ID_SIZE*2+1];
+    char chatidtxt[CLIENT_ID_SIZE*2+1];
+    strcpy(originatortxt, id_toa(packet + 1));
+    strcpy(chatidtxt, id_toa(announce_plain + 1));
+    
+    LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, chatidtxt);
     
     // TODO: repeat the message to the nodes closest to chat id if there is any closer node than we are
 
@@ -256,8 +262,12 @@ static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_
     uint64_t  ping_id;
     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
     
-    printf("[TRACE] %s at %s:%d requests members of chat ", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port);
-    printf("%s\n", id_toa(announce_plain + 1));
+    char originatortxt[CLIENT_ID_SIZE*2+1];
+    char chatidtxt[CLIENT_ID_SIZE*2+1];
+    strcpy(originatortxt, id_toa(packet + 1));
+    strcpy(chatidtxt, id_toa(announce_plain + 1));
+    
+    LOGGER_INFO("handle_gc_ann_req: %s at %s:%d requests members of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, chatidtxt);
 
     // Send nodes request
     return send_gc_announced_nodes_response(dht, ipp, packet + 1, announce_plain + 1, ping_id, shared_key);
@@ -329,19 +339,28 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
 int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
 {
     DHT *dht = _dht;
+    
+    printf("[TRACE] Got sendnodes reply\n");
 
+    printf("\tChecking length\n");
+    
     // Check if we got packet of expected size
     if (length != DHT_SEND_ANNOUNCED_NODES_SIZE)
         return -1;
 
+    
+    printf("\tChecking self-sendings\n");
     // Check if packet is going to be sent to ourself
     if (id_equal(packet + 1, dht->self_public_key))
         return -1;
 
+    printf("\tChecking packet type\n");
     // Check if we got correct packet type
     if (packet[0] != NET_PACKET_SEND_ANNOUNCED_NODES)
         return -1;
 
+    printf("\tDecyphering\n");
+    
     // Generate key to decrypt announce_plain
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
@@ -352,32 +371,45 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
                                         packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                                         SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES,
                                         announce_plain);
+    
+    printf("\tChecking length\n");
 
     if (announce_length != sizeof(announce_plain))
         return -1;
 
+    printf("\tChecking count of nodes\n");
+    
     if (announce_plain[0] > MAX_SENT_NODES || announce_plain[0] <= 0)
         return -1;
 
+    printf("\tGetting ping id\n");
+    
     // Get ping_id
     uint64_t ping_id;
     uint32_t data_size = sizeof(Node_format) * MAX_SENT_NODES;
     memcpy(&ping_id, announce_plain + 1 + data_size, sizeof(ping_id));
 
+    printf("\tCheck if it really is our request\n");
+    printf("\tPing id: %d\n", ping_id);
+    
     //Check if we send getnodes request previously
     uint8_t data[PING_DATA_SIZE];
     if (ping_array_check(data, sizeof(data), &dht->announce->ping_array, ping_id) != sizeof(data))
         return -1;
 
+    printf("\tUnpack nodes\n");
+    
     //Unpack nodes
     Node_format plain_nodes[MAX_SENT_NODES];
     uint16_t length_nodes = 0;
     uint32_t num_nodes = unpack_nodes(plain_nodes, announce_plain[0], &length_nodes, announce_plain + 1, data_size, 0);
     
-    printf("[TRACE] Got sendnodes reply\n");
-
+    printf("\tCheck nodes length\n");
+    
     if (length_nodes != data_size)
         return -1;
+    
+    printf("\tChecking num nodes\n");
 
     if (num_nodes != announce_plain[0])
         return -1;

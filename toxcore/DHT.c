@@ -2411,6 +2411,7 @@ void kill_DHT(DHT *dht)
     ping_array_free_all(&dht->dht_ping_array);
     ping_array_free_all(&dht->dht_harden_ping_array);
     kill_ping(dht->ping);
+    kill_announce(dht->announce);
     free(dht->friends_list);
     free(dht);
 }

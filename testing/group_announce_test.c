@@ -12,6 +12,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef VANILLA_NACL
+#include <sodium.h>
+#else
+#include <randombytes.h>
+#endif
+
 void idle_cylce(Tox**peers, int peercount)
 {
     int j;
@@ -79,6 +85,8 @@ void basicannouncetest()
     /* For simplicity sake, one big array */
     uint8_t chatids[CLIENT_ID_SIZE*3];
     
+    randombytes_buf((void*)chatids, CLIENT_ID_SIZE*3);
+    
     /* NOTE: UNIX only by now */
     FILE *fp=fopen("/dev/urandom","r");
     fread(chatids, sizeof(uint8_t), CLIENT_ID_SIZE*3, fp);
@@ -114,7 +122,12 @@ void basicannouncetest()
         Node_format clnode;
         get_closest_known_node(dht, &chatids[CLIENT_ID_SIZE*(i/3)], &clnode);
         
-        send_gc_announce_request(dht->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/3)]);
+        if (send_gc_announce_request(dht->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/3)])<0)
+        {
+            /* TODO: change to check's wrappers when moving into auto_tests */
+            printf("Announcing failure");
+            goto cleanup;
+        }
     }
     
     
@@ -130,12 +143,18 @@ void basicannouncetest()
         Node_format clnode;
         get_closest_known_node(dht, &chatids[CLIENT_ID_SIZE*i], &clnode);
         
-        get_gc_announced_nodes_request(dht, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*i]);
+        if (get_gc_announced_nodes_request(dht, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*i])<0)
+        {
+            /* TODO: change to check's wrappers when moving into auto_tests */
+            printf("Requesting nodes failure");
+            goto cleanup;
+        }
     }
     
-     printf("Waiting 10 seconds\n");
-    idle_n_secs(10, peers, 10);
+    printf("Waiting 20 seconds\n");
+    idle_n_secs(20, peers, 10);
     
+    cleanup:
     /* Deinit the nodes */
     for (i=0; i<10; i++)
         tox_kill(peers[i]);
