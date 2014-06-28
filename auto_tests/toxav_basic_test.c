@@ -50,7 +50,7 @@ typedef struct _Status {
 /* My default settings */
 static ToxAvCodecSettings muhcaps;
 
-void accept_friend_request(Tox *m, uint8_t *public_key, uint8_t *data, uint16_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
         tox_add_friend_norequest(m, public_key);
@@ -317,6 +317,7 @@ START_TEST(test_AV_flows)
         }
 
         toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
+
 //         toxav_send_video(status_control.Bob.av, status_control.Bob.call_index, sample_image);
 
         /* Both receive */

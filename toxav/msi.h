@@ -17,8 +17,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- *
- *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 #ifndef __TOXMSI
@@ -52,7 +50,8 @@ typedef enum {
     call_inviting, /* when sending call invite */
     call_starting, /* when getting call invite */
     call_active,
-    call_hold
+    call_hold,
+    call_hanged_up
 
 } MSICallState;
 

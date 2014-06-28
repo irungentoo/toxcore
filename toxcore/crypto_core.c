@@ -33,7 +33,7 @@
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
-int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length)
+int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, uint32_t length)
 {
     if (length == 16) {
         return crypto_verify_16(mem1, mem2);
@@ -66,17 +66,32 @@ uint64_t random_64b(void)
     return randnum;
 }
 
+/* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
+ * This should only be used for input validation.
+ *
+ * return 0 if it isn't.
+ * return 1 if it is.
+ */
+int public_key_valid(const uint8_t *public_key)
+{
+    if (public_key[31] >= 128) /* Last bit of key is always zero. */
+        return 0;
+
+    return 1;
+}
+
 /* Precomputes the shared key from their public_key and our secret_key.
  * This way we can avoid an expensive elliptic curve scalar multiply for each
  * encrypt/decrypt operation.
  * enc_key has to be crypto_box_BEFORENMBYTES bytes long.
  */
-void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key)
+void encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key)
 {
     crypto_box_beforenm(enc_key, public_key, secret_key);
 }
 
-int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, uint32_t length, uint8_t *encrypted)
+int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
+                           uint8_t *encrypted)
 {
     if (length == 0)
         return -1;
@@ -95,7 +110,8 @@ int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, 
     return length + crypto_box_MACBYTES;
 }
 
-int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain)
+int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length,
+                           uint8_t *plain)
 {
     if (length <= crypto_box_BOXZEROBYTES)
         return -1;
@@ -103,7 +119,7 @@ int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypt
     uint8_t temp_plain[length + crypto_box_ZEROBYTES];
     uint8_t temp_encrypted[length + crypto_box_BOXZEROBYTES];
 
-    memset(temp_plain, 0, crypto_box_BOXZEROBYTES);
+    memset(temp_encrypted, 0, crypto_box_BOXZEROBYTES);
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length); // Pad the message with 16 0 bytes.
 
     if (crypto_box_open_afternm(temp_plain, temp_encrypted, length + crypto_box_BOXZEROBYTES, nonce, secret_key) != 0)
@@ -113,16 +129,16 @@ int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypt
     return length - crypto_box_MACBYTES;
 }
 
-int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *plain, uint32_t length, uint8_t *encrypted)
+int encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+                 const uint8_t *plain, uint32_t length, uint8_t *encrypted)
 {
     uint8_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
     return encrypt_data_symmetric(k, nonce, plain, length, encrypted);
 }
 
-int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *encrypted, uint32_t length, uint8_t *plain)
+int decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+                 const uint8_t *encrypted, uint32_t length, uint8_t *plain)
 {
     uint8_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
@@ -202,8 +218,8 @@ void new_nonce(uint8_t *nonce)
  *  return -1 on failure.
  *  return the length of the created packet on success.
  */
-int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
-                   uint8_t *data, uint32_t length, uint8_t request_id)
+int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
+                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id)
 {
     if (MAX_CRYPTO_REQUEST_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 +
             crypto_box_MACBYTES)
@@ -234,8 +250,8 @@ int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *
  *
  *  return -1 if not valid request.
  */
-int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, uint8_t *packet, uint16_t length)
+int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, const uint8_t *packet, uint16_t length)
 {
     if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES &&
             length <= MAX_CRYPTO_REQUEST_SIZE) {

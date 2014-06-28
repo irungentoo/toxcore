@@ -128,7 +128,7 @@ typedef struct {
 
     uint64_t counter;
 
-    LIST accepted_key_list;
+    BS_LIST accepted_key_list;
 } TCP_Server;
 
 /* Create new TCP server instance.

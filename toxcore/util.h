@@ -36,17 +36,17 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 
 /* id functions */
-bool id_equal(uint8_t *dest, uint8_t *src);
-uint32_t id_copy(uint8_t *dest, uint8_t *src); /* return value is CLIENT_ID_SIZE */
+bool id_equal(const uint8_t *dest, const uint8_t *src);
+uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 char* id_toa(uint8_t* id);  /* WARNING: returns static buffer */
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
 
 /* state load/save */
-typedef int (*load_state_callback_func)(void *outer, uint8_t *data, uint32_t len, uint16_t type);
+typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
 int load_state(load_state_callback_func load_state_callback, void *outer,
-               uint8_t *data, uint32_t length, uint16_t cookie_inner);
+               const uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
 /* Converts 4 bytes to uint32_t */
 void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);

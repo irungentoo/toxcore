@@ -41,12 +41,12 @@ typedef struct PING PING;
 #define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + PING_PLAIN_SIZE + crypto_box_MACBYTES)
 #define PING_DATA_SIZE (CLIENT_ID_SIZE + sizeof(IP_Port))
 
-int add_to_ping(PING *ping, uint8_t *client_id, IP_Port ip_port);
+int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port);
 void do_to_ping(PING *ping);
 
 PING *new_ping(DHT *dht);
 void kill_ping(PING *ping);
 
-int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id);
+int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *client_id);
 
 #endif /* __PING_H__ */

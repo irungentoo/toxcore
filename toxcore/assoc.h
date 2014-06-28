@@ -21,21 +21,22 @@ typedef struct Assoc Assoc;
 
 /* custom distance handler, if it's not ID-distance based
  * return values exactly like id_closest() */
-typedef int (*Assoc_distance_relative_callback)(Assoc *assoc, void *callback_data, uint8_t *client_id,
-        uint8_t *client_id1, uint8_t *client_id2);
+typedef int (*Assoc_distance_relative_callback)(const Assoc *assoc, void *callback_data, const uint8_t *client_id,
+        const uint8_t *client_id1, const uint8_t *client_id2);
 
 #define DISTANCE_INDEX_DISTANCE_BITS 44
 
 /* absolute distance: can be same for different client_id_check values
  * return value should have DISTANCE_INDEX_DISTANCE_BITS valid bits */
-typedef uint64_t (*Assoc_distance_absolute_callback)(Assoc *assoc, void *callback_data,
-        uint8_t *client_id_ref, uint8_t *client_id_check);
+typedef uint64_t (*Assoc_distance_absolute_callback)(const Assoc *assoc, void *callback_data,
+        const uint8_t *client_id_ref, const uint8_t *client_id_check);
 
 /*****************************************************************************/
 
 /* Central entry point for new associations: add a new candidate to the cache
  * returns 1 if entry is stored, 2 if existing entry was updated, 0 else */
-uint8_t Assoc_add_entry(Assoc *assoc, uint8_t *id, IPPTs *ippts_send, IP_Port *ipp_recv, uint8_t used);
+uint8_t Assoc_add_entry(Assoc *assoc, const uint8_t *id, const IPPTs *ippts_send, const IP_Port *ipp_recv,
+                        uint8_t used);
 
 /*****************************************************************************/
 
@@ -72,7 +73,7 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *close_entries
 /*****************************************************************************/
 
 /* create: default sizes (6, 5 => 320 entries) */
-Assoc *new_Assoc_default(uint8_t *public_id);
+Assoc *new_Assoc_default(const uint8_t *public_id);
 
 /* create: customized sizes
  * total is (2^bits) * entries
@@ -81,10 +82,10 @@ Assoc *new_Assoc_default(uint8_t *public_id);
  *
  * preferably bits should be large and entries small to ensure spread
  * in the search space (e. g. 5, 5 is preferable to 2, 41) */
-Assoc *new_Assoc(size_t bits, size_t entries, uint8_t *public_id);
+Assoc *new_Assoc(size_t bits, size_t entries, const uint8_t *public_id);
 
 /* public_id changed (loaded), update which entry isn't stored */
-void Assoc_self_client_id_changed(Assoc *assoc, uint8_t *public_id);
+void Assoc_self_client_id_changed(Assoc *assoc, const uint8_t *public_id);
 
 /* every 45s send out a getnodes() for a "random" bucket */
 #define ASSOC_BUCKET_REFRESH 45
@@ -97,7 +98,7 @@ void do_Assoc(Assoc *assoc, DHT *dht);
 void kill_Assoc(Assoc *assoc);
 
 #ifdef LOGGING
-void Assoc_status(Assoc *assoc);
+void Assoc_status(const Assoc *assoc);
 #endif /* LOGGING */
 
 #endif /* !__ASSOC_H__ */

@@ -99,7 +99,7 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
  */
 static int get_TCP_connection_index(TCP_Server *TCP_server, uint8_t *public_key)
 {
-    return list_find(&TCP_server->accepted_key_list, public_key);
+    return bs_list_find(&TCP_server->accepted_key_list, public_key);
 }
 
 
@@ -140,7 +140,7 @@ static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
         return -1;
     }
 
-    if (!list_add(&TCP_server->accepted_key_list, con->public_key, index))
+    if (!bs_list_add(&TCP_server->accepted_key_list, con->public_key, index))
         return -1;
 
     memcpy(&TCP_server->accepted_connection_array[index], con, sizeof(TCP_Secure_Connection));
@@ -166,7 +166,7 @@ static int del_accepted(TCP_Server *TCP_server, int index)
     if (TCP_server->accepted_connection_array[index].status == TCP_STATUS_NO_STATUS)
         return -1;
 
-    if (!list_remove(&TCP_server->accepted_key_list, TCP_server->accepted_connection_array[index].public_key, index))
+    if (!bs_list_remove(&TCP_server->accepted_key_list, TCP_server->accepted_connection_array[index].public_key, index))
         return -1;
 
     memset(&TCP_server->accepted_connection_array[index], 0, sizeof(TCP_Secure_Connection));
@@ -619,7 +619,7 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
     }
 }
 
-static int handle_onion_recv_1(void *object, IP_Port dest, uint8_t *data, uint16_t length)
+static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, uint16_t length)
 {
     TCP_Server *TCP_server = object;
     uint32_t index = dest.ip.ip6.uint32[0];
@@ -818,9 +818,10 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
         return ~0;
     }
 
-    int ok = 1;
 #ifndef TCP_SERVER_USE_EPOLL
-    ok = set_socket_nonblock(sock);
+    int ok = set_socket_nonblock(sock);
+#else
+    int ok = 1;
 #endif
 
     if (ok && family == AF_INET6) {
@@ -914,7 +915,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t 
     memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(temp->secret_key, secret_key, crypto_box_SECRETKEYBYTES);
 
-    list_init(&temp->accepted_key_list, crypto_box_PUBLICKEYBYTES);
+    bs_list_init(&temp->accepted_key_list, crypto_box_PUBLICKEYBYTES, 8);
 
     return temp;
 }
@@ -1229,7 +1230,7 @@ void kill_TCP_server(TCP_Server *TCP_server)
         set_callback_handle_recv_1(TCP_server->onion, NULL, NULL);
     }
 
-    list_free(&TCP_server->accepted_key_list);
+    bs_list_free(&TCP_server->accepted_key_list);
 
 #ifdef TCP_SERVER_USE_EPOLL
     close(TCP_server->efd);

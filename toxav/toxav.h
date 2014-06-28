@@ -17,14 +17,16 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- *
- *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 
 #ifndef __TOXAV
 #define __TOXAV
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* vpx_image_t */
 #include <vpx/vpx_image.h>
@@ -88,6 +90,7 @@ typedef enum {
     ErrorTerminatingAudioRtp = -9, /* Returned in toxav_kill_transmission() */
     ErrorTerminatingVideoRtp = -10, /* Returned in toxav_kill_transmission() */
     ErrorPacketTooLarge = -11, /* Buffer exceeds size while encoding */
+    ErrorInvalidCodecState = -12, /* Codec state not initialized */
 
 } ToxAvError;
 
@@ -96,7 +99,6 @@ typedef enum {
  * @brief Locally supported capabilities.
  */
 typedef enum {
-    None,
     AudioEncoding = 1 << 0,
     AudioDecoding = 1 << 1,
     VideoEncoding = 1 << 2,
@@ -108,7 +110,7 @@ typedef enum {
  * @brief Encoding settings.
  */
 typedef struct _ToxAvCodecSettings {
-    uint32_t video_bitrate; /* In bits/s */
+    uint32_t video_bitrate; /* In kbits/s */
     uint16_t video_width; /* In px */
     uint16_t video_height; /* In px */
 
@@ -116,6 +118,7 @@ typedef struct _ToxAvCodecSettings {
     uint16_t audio_frame_duration; /* In ms */
     uint32_t audio_sample_rate; /* In Hz */
     uint32_t audio_channels;
+    uint32_t audio_VAD_tolerance; /* In ms */
 
     uint32_t jbuf_capacity; /* Size of jitter buffer */
 } ToxAvCodecSettings;
@@ -371,4 +374,11 @@ int toxav_set_video_queue_limit ( ToxAv *av, int32_t call_index, uint64_t limit 
 
 
 Tox *toxav_get_tox(ToxAv *av);
+
+int toxav_has_activity ( ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t frame_size, float ref_energy );
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __TOXAV */

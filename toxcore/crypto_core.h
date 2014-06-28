@@ -43,7 +43,7 @@
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
-int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length);
+int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, uint32_t length);
 
 /*  return a random number.
  *
@@ -53,6 +53,13 @@ int crypto_cmp(uint8_t *mem1, uint8_t *mem2, uint32_t length);
 uint32_t random_int(void);
 uint64_t random_64b(void);
 
+/* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
+ * This should only be used for input validation.
+ *
+ * return 0 if it isn't.
+ * return 1 if it is.
+ */
+int public_key_valid(const uint8_t *public_key);
 
 /* Encrypts plain of length length to encrypted of length + 16 using the
  * public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
@@ -60,8 +67,8 @@ uint64_t random_64b(void);
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
-int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *plain, uint32_t length, uint8_t *encrypted);
+int encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+                 const uint8_t *plain, uint32_t length, uint8_t *encrypted);
 
 
 /* Decrypts encrypted of length length to plain of length length - 16 using the
@@ -70,13 +77,13 @@ int encrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
-int decrypt_data(uint8_t *public_key, uint8_t *secret_key, uint8_t *nonce,
-                 uint8_t *encrypted, uint32_t length, uint8_t *plain);
+int decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+                 const uint8_t *encrypted, uint32_t length, uint8_t *plain);
 
 /* Fast encrypt/decrypt operations. Use if this is not a one-time communication.
    encrypt_precompute does the shared-key generation once so it does not have
    to be preformed on every encrypt/decrypt. */
-void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_key);
+void encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key);
 
 /* Encrypts plain of length length to encrypted of length + 16 using a
  * secret key crypto_box_KEYBYTES big and a 24 byte nonce.
@@ -84,7 +91,8 @@ void encrypt_precompute(uint8_t *public_key, uint8_t *secret_key, uint8_t *enc_k
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
-int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, uint32_t length, uint8_t *encrypted);
+int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
+                           uint8_t *encrypted);
 
 /* Decrypts encrypted of length length to plain of length length - 16 using a
  * secret key crypto_box_KEYBYTES big and a 24 byte nonce.
@@ -92,7 +100,8 @@ int encrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *plain, 
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
-int decrypt_data_symmetric(uint8_t *secret_key, uint8_t *nonce, uint8_t *encrypted, uint32_t length, uint8_t *plain);
+int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length,
+                           uint8_t *plain);
 
 /* Increment the given nonce by 1. */
 void increment_nonce(uint8_t *nonce);
@@ -128,15 +137,15 @@ void new_nonce(uint8_t *nonce);
  * return -1 on failure.
  * return the length of the created packet on success.
  */
-int create_request(uint8_t *send_public_key, uint8_t *send_secret_key, uint8_t *packet, uint8_t *recv_public_key,
-                   uint8_t *data, uint32_t length, uint8_t request_id);
+int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
+                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id);
 
 /* puts the senders public key in the request in public_key, the data from the request
    in data if a friend or ping request was sent to us and returns the length of the data.
    packet is the request packet and length is its length
    return -1 if not valid request. */
-int handle_request(uint8_t *self_public_key, uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, uint8_t *packet, uint16_t length);
+int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, const uint8_t *packet, uint16_t length);
 
 
 #endif

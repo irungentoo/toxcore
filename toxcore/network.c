@@ -181,13 +181,13 @@ int set_socket_dualstack(sock_t sock)
 {
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
-    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
+    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&ipv6only, &optsize);
 
     if ((res == 0) && (ipv6only == 0))
         return 1;
 
     ipv6only = 0;
-    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only)) == 0);
+    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&ipv6only, sizeof(ipv6only)) == 0);
 }
 
 
@@ -281,7 +281,7 @@ uint64_t current_time_monotonic(void)
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
  */
-int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length)
+int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length)
 {
     /* socket AF_INET, but target IP NOT: can't send */
     if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
@@ -386,7 +386,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
         ip_port->ip.ip6.in6_addr = addr_in6->sin6_addr;
         ip_port->port = addr_in6->sin6_port;
 
-        if (IN6_IS_ADDR_V4MAPPED(&ip_port->ip.ip6.in6_addr)) {
+        if (IPV6_IPV4_IN_V6(ip_port->ip.ip6)) {
             ip_port->ip.family = AF_INET;
             ip_port->ip.ip4.uint32 = ip_port->ip.ip6.uint32[3];
         }
@@ -424,133 +424,6 @@ void networking_poll(Networking_Core *net)
     }
 }
 
-/*
- * function to avoid excessive polling
- */
-typedef struct {
-    sock_t   sock;
-    uint32_t sendqueue_length;
-    uint16_t send_fail_reset;
-    uint64_t send_fail_eagain;
-} select_info;
-
-size_t networking_wait_data_size()
-{
-    return sizeof(select_info);
-}
-
-int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data)
-{
-    if (data == NULL) {
-        return 0;
-    }
-
-    select_info *s = (select_info *)data;
-    s->sock = net->sock;
-    s->sendqueue_length = sendqueue_length;
-    s->send_fail_reset = 0;
-    s->send_fail_eagain = net->send_fail_eagain;
-
-    return 1;
-}
-
-/* *** Function MUSTN'T poll. ***
-* The function mustn't modify anything at all, so it can be called completely
-* asynchronously without any worry.
-*/
-int networking_wait_execute(uint8_t *data, long seconds, long microseconds)
-{
-    /* WIN32: supported since Win2K, but might need some adjustements */
-    /* UNIX: this should work for any remotely Unix'ish system */
-
-    if (data == NULL) {
-        return 0;
-    }
-
-    select_info *s = (select_info *)data;
-
-    /* add only if we had a failed write */
-    int writefds_add = 0;
-
-    /* if send_fail_eagain is set, that means that socket's buffer was full and couldn't fit data we tried to send,
-    *  so this is the only case when we need to know when the socket becomes write-ready, i.e. socket's buffer gets
-    *  some free space for us to put data to be sent in, but select will tell us that the socket is writable even
-    *  if we can fit a small part of our data (say 1 byte), so we wait some time, in hope that large enough chunk
-    *  of socket's buffer will be available (at least that's how I understand intentions of the previous author of
-    *  that code)
-    */
-    if (s->send_fail_eagain != 0) {
-        // current_time(): milliseconds
-        uint64_t now = current_time_monotonic();
-
-        /* s->sendqueue_length: might be used to guess how long we keep checking */
-        /* for now, threshold is hardcoded to 250ms, too long for a really really
-         * fast link, but too short for a sloooooow link... */
-        if (now - s->send_fail_eagain < 250) {
-            writefds_add = 1;
-        }
-    }
-
-    int nfds = 1 + s->sock;
-
-    /* the FD_ZERO calls might be superfluous */
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(s->sock, &readfds);
-
-    fd_set writefds;
-    FD_ZERO(&writefds);
-
-    if (writefds_add) {
-        FD_SET(s->sock, &writefds);
-    }
-
-    fd_set exceptfds;
-    FD_ZERO(&exceptfds);
-    FD_SET(s->sock, &exceptfds);
-
-    struct timeval timeout;
-    struct timeval *timeout_ptr = &timeout;
-
-    if (seconds < 0 || microseconds < 0) {
-        timeout_ptr = NULL;
-    } else {
-        timeout.tv_sec = seconds;
-        timeout.tv_usec = microseconds;
-    }
-
-    /* returns -1 on error, 0 on timeout, the socket on activity */
-    int res = select(nfds, &readfds, &writefds, &exceptfds, timeout_ptr);
-
-    LOGGER_SCOPE(
-
-        if (res) LOGGER_INFO("select(%d, %d): %d (%d, %s) - %d %d %d\n", microseconds, seconds, res, errno,
-                             strerror(errno), FD_ISSET(s->sock, &readfds), FD_ISSET(s->sock, &writefds),
-                             FD_ISSET(s->sock, &exceptfds));
-    );
-
-    if (FD_ISSET(s->sock, &writefds)) {
-        s->send_fail_reset = 1;
-    }
-
-    return res > 0 ? 2 : 1;
-}
-
-int networking_wait_cleanup(Networking_Core *net, uint8_t *data)
-{
-    if (data == NULL) {
-        return 0;
-    }
-
-    select_info *s = (select_info *)data;
-
-    if (s->send_fail_reset) {
-        net->send_fail_eagain = 0;
-    }
-
-    return 1;
-}
-
 #ifndef VANILLA_NACL
 /* Used for sodium_init() */
 #include <sodium.h>
@@ -578,8 +451,6 @@ int networking_at_startup(void)
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR)
         return -1;
 
-#else
-    srandom((uint32_t)current_time_actual());
 #endif
     srand((uint32_t)current_time_actual());
     at_startup_ran = 1;
@@ -725,10 +596,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
      */
     uint16_t port_to_try = port;
     *portptr = htons(port_to_try);
-    int tries, res;
+    int tries;
 
     for (tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++) {
-        res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
+        int res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
 
         if (!res) {
             temp->port = *portptr;
@@ -775,7 +646,7 @@ void kill_networking(Networking_Core *net)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ip_equal(IP *a, IP *b)
+int ip_equal(const IP *a, const IP *b)
 {
     if (!a || !b)
         return 0;
@@ -785,17 +656,17 @@ int ip_equal(IP *a, IP *b)
         if (a->family == AF_INET)
             return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
         else if (a->family == AF_INET6)
-            return IN6_ARE_ADDR_EQUAL(&a->ip6.in6_addr, &b->ip6.in6_addr);
+            return a->ip6.uint64[0] == b->ip6.uint64[0] && a->ip6.uint64[1] == b->ip6.uint64[1];
         else
             return 0;
     }
 
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
     if ((a->family == AF_INET) && (b->family == AF_INET6)) {
-        if (IN6_IS_ADDR_V4MAPPED(&b->ip6.in6_addr))
+        if (IPV6_IPV4_IN_V6(b->ip6))
             return (a->ip4.in_addr.s_addr == b->ip6.uint32[3]);
     } else if ((a->family == AF_INET6)  && (b->family == AF_INET)) {
-        if (IN6_IS_ADDR_V4MAPPED(&a->ip6.in6_addr))
+        if (IPV6_IPV4_IN_V6(a->ip6))
             return (a->ip6.uint32[3] == b->ip4.in_addr.s_addr);
     }
 
@@ -808,7 +679,7 @@ int ip_equal(IP *a, IP *b)
  *
  * returns 0 when not equal or when uninitialized
  */
-int ipport_equal(IP_Port *a, IP_Port *b)
+int ipport_equal(const IP_Port *a, const IP_Port *b)
 {
     if (!a || !b)
         return 0;
@@ -839,7 +710,7 @@ void ip_init(IP *ip, uint8_t ipv6enabled)
 };
 
 /* checks if ip is valid */
-int ip_isset(IP *ip)
+int ip_isset(const IP *ip)
 {
     if (!ip)
         return 0;
@@ -848,7 +719,7 @@ int ip_isset(IP *ip)
 };
 
 /* checks if ip is valid */
-int ipport_isset(IP_Port *ipport)
+int ipport_isset(const IP_Port *ipport)
 {
     if (!ipport)
         return 0;
@@ -860,7 +731,7 @@ int ipport_isset(IP_Port *ipport)
 };
 
 /* copies an ip structure (careful about direction!) */
-void ip_copy(IP *target, IP *source)
+void ip_copy(IP *target, const IP *source)
 {
     if (!source || !target)
         return;
@@ -869,7 +740,7 @@ void ip_copy(IP *target, IP *source)
 };
 
 /* copies an ip_port structure (careful about direction!) */
-void ipport_copy(IP_Port *target, IP_Port *source)
+void ipport_copy(IP_Port *target, const IP_Port *source)
 {
     if (!source || !target)
         return;
@@ -878,25 +749,25 @@ void ipport_copy(IP_Port *target, IP_Port *source)
 };
 
 /* packing and unpacking functions */
-void ip_pack(uint8_t *data, IP *source)
+void ip_pack(uint8_t *data, const IP *source)
 {
     data[0] = source->family;
     memcpy(data + 1, &source->ip6, SIZE_IP6);
 }
 
-void ip_unpack(IP *target, uint8_t *data)
+void ip_unpack(IP *target, const uint8_t *data)
 {
     target->family = data[0];
     memcpy(&target->ip6, data + 1, SIZE_IP6);
 }
 
-void ipport_pack(uint8_t *data, IP_Port *source)
+void ipport_pack(uint8_t *data, const IP_Port *source)
 {
     ip_pack(data, &source->ip);
     memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
 }
 
-void ipport_unpack(IP_Port *target, uint8_t *data)
+void ipport_unpack(IP_Port *target, const uint8_t *data)
 {
     ip_unpack(&target->ip, data);
     memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
@@ -908,7 +779,7 @@ void ipport_unpack(IP_Port *target, uint8_t *data)
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
 static char addresstext[96];
-const char *ip_ntoa(IP *ip)
+const char *ip_ntoa(const IP *ip)
 {
     if (ip) {
         if (ip->family == AF_INET) {

@@ -24,7 +24,8 @@ if BUILD_TESTING
 
 noinst_PROGRAMS +=      DHT_test \
                         Messenger_test \
-                        crypto_speed_test
+                        crypto_speed_test \
+                        dns3_test
 
 DHT_test_SOURCES =      ../testing/DHT_test.c
 
@@ -65,6 +66,24 @@ crypto_speed_test_CFLAGS = \
 crypto_speed_test_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        libtoxcore.la \
+                        $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
+                        $(NACL_LIBS) \
+                        $(WINSOCK2_LIBS)
+
+
+dns3_test_SOURCES = \
+                        ../testing/dns3_test.c
+
+dns3_test_CFLAGS = \
+                        $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS)
+
+dns3_test_LDADD = \
+                        $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
+                        libtoxdns.la \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \

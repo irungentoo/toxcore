@@ -24,7 +24,9 @@ Lossless UDP:
     [DONE] Call initiation
     [DONE] Encryption
     [IN PROGRESS] Auditing.
-    [NOT STARTED] Group chats
+    [NOT STARTED] Video packet splitting.
+    [NOT STARTED] Prevent audio skew.
+    [IN PROGRESS] Group chats.
 
 Friend_requests.c:
     [NOT STARTED] What happens when a friend request is received needs to be changed.
@@ -39,15 +41,22 @@ Friend_requests.c:
     [NOT STARTED] Group chats (They work with IPv6 but some things need to be tested.)
 
 
+[IN PROGRESS] Make toxcore thread safe.
+
 [NOT STARTED] Make the core save/datafile portable across client versions/different processor architectures.
 
-[IN PROGRESS] A way for people to connect to people on Tox if they are behind a bad NAT that 
+[MOSTLY DONE] A way for people to connect to people on Tox if they are behind a bad NAT that 
 blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 
 [NEEDS TESTING] Make the save made with tox_save_encrypted(...) harder to brute force.
 See: (https://github.com/jencka/ProjectTox-libtoxdata)
 
-[IN PROGRESS] GUI (no official GUI chosen yet, will most likely be: 
-https://github.com/nurupo/ProjectTox-Qt-GUI or https://github.com/naxuroqa/Venom)
+[IN PROGRESS] GUI (no official one chosen yet, a list of promising ones follows)
+https://github.com/notsecure/wintox
+https://github.com/naxuroqa/Venom
+https://github.com/Impyy/Toxy
+https://github.com/lehitoskin/blight
+https://github.com/nurupo/ProjectTox-Qt-GUI
+https://github.com/Astonex/Antox
 
 [NOT STARTED] Security audit from professionals

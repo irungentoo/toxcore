@@ -84,17 +84,19 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
     return 0;
 }
 
-/* Create and send a onion packet.
+/* Create a onion packet.
  *
- * Use Onion_Path path to send data of length to dest.
+ * Use Onion_Path path to create packet for data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
+ * packet should be at least ONION_MAX_PACKET_SIZE big.
  *
  * return -1 on failure.
- * return 0 on success.
+ * return length of created packet on success.
  */
-int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest, uint8_t *data,
+                        uint32_t length)
 {
-    if (1 + length + SEND_1 > ONION_MAX_PACKET_SIZE || length == 0)
+    if (1 + length + SEND_1 > max_packet_length || length == 0)
         return -1;
 
     to_net_family(&dest.ip);
@@ -126,7 +128,6 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
     if ((uint32_t)len != SIZE_IPPORT + SEND_BASE + length + crypto_box_MACBYTES)
         return -1;
 
-    uint8_t packet[1 + length + SEND_1];
     packet[0] = NET_PACKET_ONION_SEND_INITIAL;
     memcpy(packet + 1, nonce, crypto_box_NONCEBYTES);
     memcpy(packet + 1 + crypto_box_NONCEBYTES, path->public_key1, crypto_box_PUBLICKEYBYTES);
@@ -137,7 +138,26 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
     if ((uint32_t)len != SIZE_IPPORT + SEND_BASE * 2 + length + crypto_box_MACBYTES)
         return -1;
 
-    if ((uint32_t)sendpacket(net, path->ip_port1, packet, sizeof(packet)) != sizeof(packet))
+    return 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + len;
+}
+
+/* Create and send a onion packet.
+ *
+ * Use Onion_Path path to send data of length to dest.
+ * Maximum length of data is ONION_MAX_DATA_SIZE.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
+{
+    uint8_t packet[ONION_MAX_PACKET_SIZE];
+    int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
+
+    if (len == -1)
+        return -1;
+
+    if (sendpacket(net, path->ip_port1, packet, len) != len)
         return -1;
 
     return 0;
@@ -149,7 +169,7 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret)
+int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data, uint32_t length, const uint8_t *ret)
 {
     if (length > ONION_RESPONSE_MAX_DATA_SIZE || length == 0)
         return -1;
@@ -165,7 +185,7 @@ int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint3
     return 0;
 }
 
-static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_send_initial(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -189,7 +209,7 @@ static int handle_send_initial(void *object, IP_Port source, uint8_t *packet, ui
     return onion_send_1(onion, plain, len, source, packet + 1);
 }
 
-int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uint8_t *nonce)
+int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce)
 {
     IP_Port send_to;
     ipport_unpack(&send_to, plain);
@@ -219,7 +239,7 @@ int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uin
     return 0;
 }
 
-static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -268,7 +288,7 @@ static int handle_send_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -316,7 +336,7 @@ static int handle_send_2(void *object, IP_Port source, uint8_t *packet, uint32_t
 }
 
 
-static int handle_recv_3(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -350,7 +370,7 @@ static int handle_recv_3(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-static int handle_recv_2(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -384,7 +404,7 @@ static int handle_recv_2(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     Onion *onion = object;
 
@@ -417,7 +437,7 @@ static int handle_recv_1(void *object, IP_Port source, uint8_t *packet, uint32_t
     return 0;
 }
 
-void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, uint8_t *, uint16_t), void *object)
+void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, const uint8_t *, uint16_t), void *object)
 {
     onion->recv_1_function = function;
     onion->callback_object = object;

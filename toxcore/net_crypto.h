@@ -26,6 +26,7 @@
 
 #include "DHT.h"
 #include "TCP_client.h"
+#include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
 #define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets
@@ -37,10 +38,10 @@
 #define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
 
 /* Minimum packet rate per second. */
-#define CRYPTO_PACKET_MIN_RATE 40.0
+#define CRYPTO_PACKET_MIN_RATE 16.0
 
 /* Minimum packet queue max length. */
-#define CRYPTO_MIN_QUEUE_LENGTH 8
+#define CRYPTO_MIN_QUEUE_LENGTH 16
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
 
@@ -54,6 +55,9 @@
 /* The maximum number of times we try to send the cookie request and handshake
    before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
+
+/* The timeout of no recieved UDP packets before the direct UDP connection is considered dead. */
+#define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL * 2)
 
 #define PACKET_ID_PADDING 0
 #define PACKET_ID_REQUEST 1
@@ -72,6 +76,8 @@
 /* All packets starting with a byte in this range are considered lossy packets. */
 #define PACKET_ID_LOSSY_RANGE_START 192
 #define PACKET_ID_LOSSY_RANGE_SIZE 63
+
+#define CRYPTO_MAX_PADDING 8 /* All packets will be padded a number of bytes based on this number. */
 
 typedef struct {
     uint64_t time;
@@ -150,6 +156,8 @@ typedef struct {
 
     Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
     uint16_t num_tcp_relays;
+
+    pthread_mutex_t mutex;
 } Crypto_Connection;
 
 typedef struct {
@@ -183,6 +191,8 @@ typedef struct {
 
     /* The current optimal sleep time */
     uint32_t current_sleep_time;
+
+    BS_LIST ip_port_list;
 } Net_Crypto;
 
 
@@ -340,7 +350,7 @@ void save_keys(Net_Crypto *c, uint8_t *keys);
 /* Load the public and private keys from the keys array.
  *  Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
  */
-void load_keys(Net_Crypto *c, uint8_t *keys);
+void load_keys(Net_Crypto *c, const uint8_t *keys);
 
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.

@@ -62,9 +62,9 @@ typedef struct Group_Chat {
     uint32_t numpeers;
 
     uint32_t message_number;
-    void (*group_message)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
+    void (*group_message)(struct Group_Chat *m, int, const uint8_t *, uint16_t, void *);
     void *group_message_userdata;
-    void (*group_action)(struct Group_Chat *m, int, uint8_t *, uint16_t, void *);
+    void (*group_action)(struct Group_Chat *m, int, const uint8_t *, uint16_t, void *);
     void *group_action_userdata;
     void (*peer_namelistchange)(struct Group_Chat *m, int peer, uint8_t change, void *);
     void *group_namelistchange_userdata;
@@ -91,14 +91,14 @@ typedef struct Group_Chat {
  * return length of name if success
  * return -1 if failure
  */
-int group_peername(Group_Chat *chat, int peernum, uint8_t *name);
+int group_peername(const Group_Chat *chat, int peernum, uint8_t *name);
 
 /*
  * Set callback function for chat messages.
  *
  * format of function is: function(Group_Chat *chat, peer number, message, message length, userdata)
  */
-void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
+void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int, const uint8_t *, uint16_t, void *),
                            void *userdata);
 
 /*
@@ -106,7 +106,7 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
  *
  * format of function is: function(Group_Chat *chat, peer number, action, action length, userdata)
  */
-void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int, uint8_t *, uint16_t, void *),
+void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int, const uint8_t *, uint16_t, void *),
                           void *userdata);
 
 /*
@@ -130,27 +130,27 @@ void callback_namelistchange(Group_Chat *chat, void (*function)(Group_Chat *chat
  *
  * returns the number of peers it has sent it to.
  */
-uint32_t group_sendmessage(Group_Chat *chat, uint8_t *message, uint32_t length);
+uint32_t group_sendmessage(Group_Chat *chat, const uint8_t *message, uint32_t length);
 
 /*
  * Send an action to the group.
  *
  * returns the number of peers it has sent it to.
  */
-uint32_t group_sendaction(Group_Chat *chat, uint8_t *action, uint32_t length);
+uint32_t group_sendaction(Group_Chat *chat, const uint8_t *action, uint32_t length);
 
 /*
  * Set our nick for this group.
  *
  * returns -1 on failure, 0 on success.
  */
-int set_nick(Group_Chat *chat, uint8_t *nick, uint16_t nick_len);
+int set_nick(Group_Chat *chat, const uint8_t *nick, uint16_t nick_len);
 
 /*
  * Tell everyone about a new peer (a person we are inviting for example.)
  *
  */
-uint32_t group_newpeer(Group_Chat *chat, uint8_t *client_id);
+uint32_t group_newpeer(Group_Chat *chat, const uint8_t *client_id);
 
 
 /* Create a new group chat.
@@ -164,7 +164,7 @@ Group_Chat *new_groupchat(Networking_Core *net);
 
 /* Return the number of peers in the group chat.
  */
-uint32_t group_numpeers(Group_Chat *chat);
+uint32_t group_numpeers(const Group_Chat *chat);
 
 /* List all the peers in the group chat.
  *
@@ -172,7 +172,8 @@ uint32_t group_numpeers(Group_Chat *chat);
  *
  * returns the number of peers.
  */
-uint32_t group_client_names(Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[], uint16_t length);
+uint32_t group_client_names(const Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[],
+                            uint16_t length);
 
 /* Kill a group chat
  *
@@ -188,11 +189,11 @@ void do_groupchat(Group_Chat *chat);
 /* if we receive a group chat packet we call this function so it can be handled.
     return 0 if packet is handled correctly.
     return 1 if it didn't handle the packet or if the packet was shit. */
-int handle_groupchatpacket(Group_Chat *chat, IP_Port source, uint8_t *packet, uint32_t length);
+int handle_groupchatpacket(Group_Chat *chat, IP_Port source, const uint8_t *packet, uint32_t length);
 
 
-void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id);
-void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, uint8_t *client_id);
+void chat_bootstrap(Group_Chat *chat, IP_Port ip_port, const uint8_t *client_id);
+void chat_bootstrap_nonlazy(Group_Chat *chat, IP_Port ip_port, const uint8_t *client_id);
 
 
 #endif

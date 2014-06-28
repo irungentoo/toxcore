@@ -103,6 +103,8 @@ data ids:
 2: connection kill packet (lossy packet) (tells the other that the connection is over)
 ...
 16+: reserved for Messenger usage (lossless packets).
+192+: reserved for Messenger usage (lossy packets).
+255: reserved for Messenger usage (lossless packet)
 
 packet request packet: [uint8_t (1)][uint8_t num][uint8_t num][uint8_t 
 num]...[uint8_t num]

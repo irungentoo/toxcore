@@ -17,8 +17,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- *
- *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 #ifdef HAVE_CONFIG_H
@@ -605,10 +603,11 @@ int rtp_release_session_recv ( RTPSession *session )
  */
 void rtp_queue_adjust_limit(RTPSession *session, uint64_t limit)
 {
-    RTPMessage *_tmp, * _it;
     pthread_mutex_lock(&session->mutex);
 
-    for ( _it = session->oldest_msg; session->queue_size > limit; _it = _tmp ) {
+    RTPMessage *_tmp, * _it = session->oldest_msg;
+
+    for ( ; session->queue_size > limit; _it = _tmp ) {
         _tmp = _it->next;
         rtp_free_msg( session, _it);
         session->queue_size --;

@@ -63,6 +63,10 @@
 /* Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS 16
 
+/* All packets starting with a byte in this range can be used for anything. */
+#define PACKET_ID_LOSSLESS_RANGE_START 160
+#define PACKET_ID_LOSSLESS_RANGE_SIZE 32
+
 /* Status definitions. */
 enum {
     NOFRIEND,
@@ -96,7 +100,7 @@ enum {
 #define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
 
 /* If no packets are received from friend in this time interval, kill the connection. */
-#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 2)
+#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
 
 
 /* USERSTATUS -
@@ -170,7 +174,12 @@ typedef struct {
     struct {
         int (*function)(void *object, uint8_t *data, uint32_t len);
         void *object;
-    } packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
+    } lossy_packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
+
+    struct {
+        int (*function)(void *object, uint8_t *data, uint32_t len);
+        void *object;
+    } lossless_packethandlers[PACKET_ID_LOSSLESS_RANGE_SIZE];
 } Friend;
 
 
@@ -274,12 +283,12 @@ int32_t m_addfriend(Messenger *m, uint8_t *address, uint8_t *data, uint16_t leng
  *  return the friend number if success.
  *  return -1 if failure.
  */
-int32_t m_addfriend_norequest(Messenger *m, uint8_t *client_id);
+int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id);
 
 /*  return the friend number associated to that client id.
  *  return -1 if no such friend.
  */
-int32_t getfriend_id(Messenger *m, uint8_t *client_id);
+int32_t getfriend_id(const Messenger *m, const uint8_t *client_id);
 
 /* Copies the public key associated to that friend id into client_id buffer.
  * Make sure that client_id is of size CLIENT_ID_SIZE.
@@ -321,8 +330,9 @@ int m_friend_exists(Messenger *m, int32_t friendnumber);
  *  m_sendmessage_withid will send a message with the id of your choosing,
  *  however we can generate an id for you by calling plain m_sendmessage.
  */
-uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, uint8_t *message, uint32_t length);
-uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
+uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length);
+uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message,
+                              uint32_t length);
 
 /* Send an action to an online friend.
  *
@@ -355,7 +365,7 @@ int setfriendname(Messenger *m, int32_t friendnumber, uint8_t *name, uint16_t le
  *  return 0 if success.
  *  return -1 if failure.
  */
-int setname(Messenger *m, uint8_t *name, uint16_t length);
+int setname(Messenger *m, const uint8_t *name, uint16_t length);
 
 /*
  * Get your nickname.
@@ -387,7 +397,7 @@ int m_get_self_name_size(Messenger *m);
  *  returns 0 on success.
  *  returns -1 on failure.
  */
-int m_set_statusmessage(Messenger *m, uint8_t *status, uint16_t length);
+int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length);
 int m_set_userstatus(Messenger *m, uint8_t status);
 
 /*  return the length of friendnumber's status message, including null on success.
@@ -442,8 +452,8 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno);
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)
  */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, uint8_t *, uint8_t *, uint16_t, void *),
-                              void *userdata);
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t,
+                              void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(int32_t friendnumber, uint8_t * message, uint32_t length)
@@ -612,8 +622,7 @@ int group_names(Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], 
  *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
 void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint64_t, uint8_t *,
-                               uint16_t,
-                               void *), void *userdata);
+                               uint16_t, void *), void *userdata);
 
 /* Set the callback for file control requests.
  *
@@ -629,8 +638,7 @@ void callback_file_control(Messenger *m, void (*function)(Messenger *m, int32_t,
  *
  */
 void callback_file_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, uint16_t length,
-                        void *),
-                        void *userdata);
+                        void *), void *userdata);
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
@@ -705,6 +713,24 @@ int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint
  */
 int send_custom_lossy_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length);
 
+
+/* Set handlers for custom lossless packets.
+ *
+ * byte must be in PACKET_ID_LOSSLESS_RANGE_START PACKET_ID_LOSSLESS_RANGE_SIZE range.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
+        int (*packet_handler_callback)(void *object, uint8_t *data, uint32_t len), void *object);
+
+/* High level function to send custom lossless packets.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_custom_lossless_packet(Messenger *m, int32_t friendnumber, uint8_t *data, uint32_t length);
+
 /**********************************************/
 /* Run this at startup.
  *  return allocated instance of Messenger on success.
@@ -726,14 +752,6 @@ void do_messenger(Messenger *m);
  * returns time (in ms) before the next do_messenger() needs to be run on success.
  */
 uint32_t messenger_run_interval(Messenger *m);
-
-/*
- * functions to avoid excessive polling
- */
-size_t wait_data_size();
-int wait_prepare_messenger(Messenger *m, uint8_t *data);
-int wait_execute_messenger(uint8_t *data, long seconds, long microseconds);
-int wait_cleanup_messenger(Messenger *m, uint8_t *data);
 
 /* SAVING AND LOADING FUNCTIONS: */
 

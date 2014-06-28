@@ -102,7 +102,8 @@ typedef struct {
     uint32_t tcp_relay_node_callback_number;
 } Onion_Friend;
 
-typedef int (*oniondata_handler_callback)(void *object, uint8_t *source_pubkey, uint8_t *data, uint32_t len);
+typedef int (*oniondata_handler_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data,
+        uint32_t len);
 
 typedef struct {
     DHT     *dht;
@@ -136,14 +137,14 @@ typedef struct {
  * return -1 on failure.
  * return the friend number on success or if the friend was already added.
  */
-int onion_friend_num(Onion_Client *onion_c, uint8_t *client_id);
+int onion_friend_num(const Onion_Client *onion_c, const uint8_t *client_id);
 
 /* Add a friend who we want to connect to.
  *
  * return -1 on failure.
  * return the friend number on success.
  */
-int onion_addfriend(Onion_Client *onion_c, uint8_t *client_id);
+int onion_addfriend(Onion_Client *onion_c, const uint8_t *client_id);
 
 /* Delete a friend.
  *
@@ -190,7 +191,7 @@ int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_rela
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key, uint64_t timestamp);
+int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key, uint64_t timestamp);
 
 /* Copy friends DHT public key into dht_key.
  *
@@ -211,7 +212,7 @@ uint64_t onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32_t length);
+int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint32_t length);
 
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object);

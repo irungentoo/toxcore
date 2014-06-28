@@ -98,7 +98,7 @@ static void fetch_broadcast_info(uint16_t port)
  *  return 1 if sent to at least one broadcast target.
  *  return 0 on failure to find any valid broadcast target.
  */
-static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, uint8_t *data, uint16_t length)
+static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, const uint8_t *data, uint16_t length)
 {
     /* fetch only once? on every packet? every X seconds?
      * old: every packet, new: once */
@@ -192,7 +192,7 @@ int LAN_ip(IP ip)
             return 0;
 
         /* embedded IPv4-in-IPv6 */
-        if (IN6_IS_ADDR_V4MAPPED(&ip.ip6.in6_addr)) {
+        if (IPV6_IPV4_IN_V6(ip.ip6)) {
             IP ip4;
             ip4.family = AF_INET;
             ip4.ip4.uint32 = ip.ip6.uint32[3];
@@ -200,14 +200,14 @@ int LAN_ip(IP ip)
         }
 
         /* localhost in IPv6 (::1) */
-        if (IN6_IS_ADDR_LOOPBACK(&ip.ip6.in6_addr))
+        if (ip.ip6.uint64[0] == 0 && ip.ip6.uint32[2] == 0 && ip.ip6.uint32[3] == htonl(1))
             return 0;
     }
 
     return -1;
 }
 
-static int handle_LANdiscovery(void *object, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     DHT *dht = object;
 

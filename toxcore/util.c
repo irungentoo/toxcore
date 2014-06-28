@@ -59,12 +59,12 @@ int is_timeout(uint64_t timestamp, uint64_t timeout)
 
 
 /* id functions */
-bool id_equal(uint8_t *dest, uint8_t *src)
+bool id_equal(const uint8_t *dest, const uint8_t *src)
 {
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
-uint32_t id_copy(uint8_t *dest, uint8_t *src)
+uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
     return CLIENT_ID_SIZE;
@@ -99,7 +99,7 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
 
 /* state load/save */
 int load_state(load_state_callback_func load_state_callback, void *outer,
-               uint8_t *data, uint32_t length, uint16_t cookie_inner)
+               const uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {
     if (!load_state_callback || !data) {
 #ifdef DEBUG
@@ -151,56 +151,56 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
 {
     *dest =
-    #ifdef WORDS_BIGENDIAN
-    ( ( uint32_t ) *  bytes )              |
-    ( ( uint32_t ) * ( bytes + 1 ) << 8 )  |
-    ( ( uint32_t ) * ( bytes + 2 ) << 16 ) |
-    ( ( uint32_t ) * ( bytes + 3 ) << 24 ) ;
-    #else
-    ( ( uint32_t ) *  bytes        << 24 ) |
-    ( ( uint32_t ) * ( bytes + 1 ) << 16 ) |
-    ( ( uint32_t ) * ( bytes + 2 ) << 8 )  |
-    ( ( uint32_t ) * ( bytes + 3 ) ) ;
-    #endif
+#ifdef WORDS_BIGENDIAN
+        ( ( uint32_t ) *  bytes )              |
+        ( ( uint32_t ) * ( bytes + 1 ) << 8 )  |
+        ( ( uint32_t ) * ( bytes + 2 ) << 16 ) |
+        ( ( uint32_t ) * ( bytes + 3 ) << 24 ) ;
+#else
+        ( ( uint32_t ) *  bytes        << 24 ) |
+        ( ( uint32_t ) * ( bytes + 1 ) << 16 ) |
+        ( ( uint32_t ) * ( bytes + 2 ) << 8 )  |
+        ( ( uint32_t ) * ( bytes + 3 ) ) ;
+#endif
 }
 
 /* Converts 2 bytes to uint16_t */
 inline__ void bytes_to_U16(uint16_t *dest, const uint8_t *bytes)
 {
     *dest =
-    #ifdef WORDS_BIGENDIAN
-    ( ( uint16_t ) *   bytes ) |
-    ( ( uint16_t ) * ( bytes + 1 ) << 8 );
-    #else
-    ( ( uint16_t ) *   bytes << 8 ) |
-    ( ( uint16_t ) * ( bytes + 1 ) );
-    #endif
+#ifdef WORDS_BIGENDIAN
+        ( ( uint16_t ) *   bytes ) |
+        ( ( uint16_t ) * ( bytes + 1 ) << 8 );
+#else
+        ( ( uint16_t ) *   bytes << 8 ) |
+        ( ( uint16_t ) * ( bytes + 1 ) );
+#endif
 }
 
 /* Convert uint32_t to byte string of size 4 */
 inline__ void U32_to_bytes(uint8_t *dest, uint32_t value)
 {
-    #ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
     *(dest + 1) = ( value >> 8 );
     *(dest + 2) = ( value >> 16 );
     *(dest + 3) = ( value >> 24 );
-    #else
+#else
     *(dest)     = ( value >> 24 );
     *(dest + 1) = ( value >> 16 );
     *(dest + 2) = ( value >> 8 );
     *(dest + 3) = ( value );
-    #endif
+#endif
 }
 
 /* Convert uint16_t to byte string of size 2 */
 inline__ void U16_to_bytes(uint8_t *dest, uint16_t value)
 {
-    #ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
     *(dest + 1) = ( value >> 8 );
-    #else
+#else
     *(dest)     = ( value >> 8 );
     *(dest + 1) = ( value );
-    #endif
+#endif
 }

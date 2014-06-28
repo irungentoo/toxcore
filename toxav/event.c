@@ -17,8 +17,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- *
- *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 
@@ -68,9 +66,9 @@ typedef struct _EventHandler {
 
 } EventHandler;
 
-int throw_event( void * (func)(void *), void *arg );
+int throw_event( void *(func)(void *), void *arg );
 int reset_timer_event ( int id, uint32_t timeout );
-int throw_timer_event ( void * (func)(void *), void *arg, unsigned timeout);
+int throw_timer_event ( void *(func)(void *), void *arg, unsigned timeout);
 int cancel_timer_event ( int id );
 int execute_timer_event ( int id );
 
@@ -142,7 +140,7 @@ int pop_id ( EventContainer **event_container, size_t *counter, int id )
     return -1;
 }
 
-void push_event ( EventContainer **container, size_t *counter, void * (func)(void *), void *arg )
+void push_event ( EventContainer **container, size_t *counter, void *(func)(void *), void *arg )
 {
     EventContainer *_new = realloc((*container ), sizeof(EventContainer) * ((*counter ) + 1));
 
@@ -230,7 +228,7 @@ void *event_poll( void *arg )
     pthread_exit(NULL);
 }
 
-int throw_event( void * (func)(void *), void *arg )
+int throw_event( void *(func)(void *), void *arg )
 {
     pthread_t _tid;
     int _rc =
@@ -242,7 +240,7 @@ int throw_event( void * (func)(void *), void *arg )
 EventHandler event_handler;
 
 /* Place and order array of timers */
-int throw_timer_event ( void * (func)(void *), void *arg, unsigned timeout)
+int throw_timer_event ( void *(func)(void *), void *arg, unsigned timeout)
 {
     static int _unique_id = 1;
 

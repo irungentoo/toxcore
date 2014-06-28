@@ -17,8 +17,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  *
- *
- *   Report bugs/suggestions at #tox-dev @ freenode.net:6667
  */
 
 
@@ -39,9 +37,9 @@
  *
  */
 extern struct _Event {
-    int (*rise) (void * ( func ) ( void * ), void *arg);
+    int (*rise) (void *( func ) ( void *), void *arg);
     int (*timer_reset ) ( int id, unsigned timeout );
-    int (*timer_alloc) (void * ( func ) ( void * ), void *arg, unsigned timeout);
+    int (*timer_alloc) (void *( func ) ( void *), void *arg, unsigned timeout);
     int (*timer_release) (int id);
     int (*timer_now) ( int id );
 } event;

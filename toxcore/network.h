@@ -52,18 +52,6 @@ typedef unsigned int sock_t;
 /* sa_family_t is the sockaddr_in / sockaddr_in6 family field */
 typedef short sa_family_t;
 
-#ifndef IN6_ARE_ADDR_EQUAL
-#ifdef IN6_ADDR_EQUAL
-#define IN6_ARE_ADDR_EQUAL(a,b) IN6_ADDR_EQUAL(a,b)
-#else
-#define IN6_ARE_ADDR_EQUAL(a,b) \
-   ((((__const uint32_t *) (a))[0] == ((__const uint32_t *) (b))[0]) \
-   && (((__const uint32_t *) (a))[1] == ((__const uint32_t *) (b))[1]) \
-   && (((__const uint32_t *) (a))[2] == ((__const uint32_t *) (b))[2]) \
-   && (((__const uint32_t *) (a))[3] == ((__const uint32_t *) (b))[3]))
-#endif
-#endif
-
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #endif
@@ -199,6 +187,8 @@ typedef struct __attribute__ ((__packed__)) __attribute__((gcc_struct))
 }
 IP_Port;
 
+/* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
+#define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == htonl (0xffff)))
 
 #define SIZE_IP4 4
 #define SIZE_IP6 16
@@ -212,7 +202,7 @@ IP_Port;
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
  */
-const char *ip_ntoa(IP *ip);
+const char *ip_ntoa(const IP *ip);
 
 /* ip_equal
  *  compares two IPAny structures
@@ -220,7 +210,7 @@ const char *ip_ntoa(IP *ip);
  *
  * returns 0 when not equal or when uninitialized
  */
-int ip_equal(IP *a, IP *b);
+int ip_equal(const IP *a, const IP *b);
 
 /* ipport_equal
  *  compares two IPAny_Port structures
@@ -228,30 +218,30 @@ int ip_equal(IP *a, IP *b);
  *
  * returns 0 when not equal or when uninitialized
  */
-int ipport_equal(IP_Port *a, IP_Port *b);
+int ipport_equal(const IP_Port *a, const IP_Port *b);
 
 /* nulls out ip */
 void ip_reset(IP *ip);
 /* nulls out ip, sets family according to flag */
 void ip_init(IP *ip, uint8_t ipv6enabled);
 /* checks if ip is valid */
-int ip_isset(IP *ip);
+int ip_isset(const IP *ip);
 /* checks if ip is valid */
-int ipport_isset(IP_Port *ipport);
+int ipport_isset(const IP_Port *ipport);
 /* copies an ip structure */
-void ip_copy(IP *target, IP *source);
+void ip_copy(IP *target, const IP *source);
 /* copies an ip_port structure */
-void ipport_copy(IP_Port *target, IP_Port *source);
+void ipport_copy(IP_Port *target, const IP_Port *source);
 
 
 /* packs IP into data, writes SIZE_IP bytes to data */
-void ip_pack(uint8_t *data, IP *source);
+void ip_pack(uint8_t *data, const IP *source);
 /* unpacks IP from data, reads SIZE_IP bytes from data */
-void ip_unpack(IP *target, uint8_t *data);
+void ip_unpack(IP *target, const uint8_t *data);
 /* packs IP_Port into data, writes SIZE_IPPORT bytes to data */
-void ipport_pack(uint8_t *data, IP_Port *source);
+void ipport_pack(uint8_t *data, const IP_Port *source);
 /* unpacks IP_Port from data, reads SIZE_IPPORT bytes to data */
-void ipport_unpack(IP_Port *target, uint8_t *data);
+void ipport_unpack(IP_Port *target, const uint8_t *data);
 
 /*
  * addr_resolve():
@@ -293,7 +283,7 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
  * Packet data is put into data.
  * Packet length is put into length.
  */
-typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, uint8_t *data, uint32_t len);
+typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, const uint8_t *data, uint32_t len);
 
 typedef struct {
     packet_handler_callback function;
@@ -355,21 +345,13 @@ uint64_t current_time_monotonic(void);
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port. */
-int sendpacket(Networking_Core *net, IP_Port ip_port, uint8_t *data, uint32_t length);
+int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length);
 
 /* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
 
 /* Call this several times a second. */
 void networking_poll(Networking_Core *net);
-
-/*
- * functions to avoid excessive polling
- */
-size_t networking_wait_data_size();
-int networking_wait_prepare(Networking_Core *net, uint32_t sendqueue_length, uint8_t *data);
-int networking_wait_execute(uint8_t *data, long seconds, long microseconds);
-int networking_wait_cleanup(Networking_Core *net, uint8_t *data);
 
 /* Initialize networking.
  * bind to ip and port.

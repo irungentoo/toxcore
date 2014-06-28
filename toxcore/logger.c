@@ -91,7 +91,7 @@ const char *logger_stringify_level(LoggerLevel level)
 int logger_init(const char *file_name, LoggerLevel level)
 {
     char *final_l = calloc(sizeof(char), strlen(file_name) + 32);
-    sprintf(final_l, "%s"/*.%u"*/, file_name, logger_get_pid());
+    sprintf(final_l, "%s"/*.%u"*/, file_name/*, logger_get_pid()*/);
 
     if ( logger.log_file ) {
         fprintf(stderr, "Error opening logger name: %s with level %d: file already opened!\n", final_l, level);

@@ -35,7 +35,7 @@ typedef struct {
     Shared_Keys shared_keys_2;
     Shared_Keys shared_keys_3;
 
-    int (*recv_1_function)(void *, IP_Port, uint8_t *, uint16_t);
+    int (*recv_1_function)(void *, IP_Port, const uint8_t *, uint16_t);
     void *callback_object;
 } Onion;
 
@@ -78,6 +78,18 @@ typedef struct {
  */
 int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes);
 
+/* Create a onion packet.
+ *
+ * Use Onion_Path path to create packet for data of length to dest.
+ * Maximum length of data is ONION_MAX_DATA_SIZE.
+ * packet should be at least ONION_MAX_PACKET_SIZE big.
+ *
+ * return -1 on failure.
+ * return length of created packet on success.
+ */
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest, uint8_t *data,
+                        uint32_t length);
+
 /* Create and send a onion packet.
  *
  * Use Onion_Path path to send data of length to dest.
@@ -94,7 +106,7 @@ int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint32_t length, uint8_t *ret);
+int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data, uint32_t length, const uint8_t *ret);
 
 /* Function to handle/send received decrypted versions of the packet sent with send_onion_packet.
  *
@@ -106,13 +118,14 @@ int send_onion_response(Networking_Core *net, IP_Port dest, uint8_t *data, uint3
  * Source family must be set to something else than AF_INET6 or AF_INET so that the callback gets called
  * when the response is received.
  */
-int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, uint8_t *nonce);
+int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce);
 
 /* Set the callback to be called when the dest ip_port doesn't have AF_INET6 or AF_INET as the family.
  *
  * Format: function(void *object, IP_Port dest, uint8_t *data, uint32_t length)
  */
-void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, uint8_t *, uint16_t), void *object);
+void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, const uint8_t *, uint16_t),
+                                void *object);
 
 Onion *new_onion(DHT *dht);
 

@@ -26,41 +26,15 @@
 
 #include <stdint.h>
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-#ifndef WINVER
-//Windows XP
-#define WINVER 0x0501
-#endif
-
-#include <winsock2.h>
-#include <windows.h>
-#include <ws2tcpip.h>
-
-
-#ifndef true
-#define true 1
-#endif
-#ifndef false
-#define false 0
-#endif
-#else
-
-#include <sys/types.h>
-#ifdef __OpenBSD__
-#include <netinet/in_systm.h>
-#endif
-#include <netinet/in.h>
-#include <netinet/ip.h>
-
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define TOX_MAX_NAME_LENGTH 128
-/* Maximum message and action length that can be sent. */
-#define TOX_MAX_MESSAGE_LENGTH 1003
+
+/* Maximum length of single messages after which they should be split. */
+#define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_CLIENT_ID_SIZE 32
 
@@ -133,7 +107,7 @@ int32_t tox_add_friend(Tox *tox, uint8_t *address, uint8_t *data, uint16_t lengt
  *  return the friend number if success.
  *  return -1 if failure.
  */
-int32_t tox_add_friend_norequest(Tox *tox, uint8_t *client_id);
+int32_t tox_add_friend_norequest(Tox *tox, const uint8_t *client_id);
 
 /*  return the friend number associated to that client id.
     return -1 if no such friend */
@@ -173,18 +147,26 @@ int tox_friend_exists(Tox *tox, int32_t friendnumber);
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  *
+ * maximum length of messages is TOX_MAX_MESSAGE_LENGTH, your client must split larger messages
+ * or else sending them will not work. No the core will not split messages for you because that
+ * requires me to parse UTF-8.
+ *
  * You will want to retain the return value, it will be passed to your read_receipt callback
  * if one is received.
  * m_sendmessage_withid will send a message with the id of your choosing,
  * however we can generate an id for you by calling plain m_sendmessage.
  */
-uint32_t tox_send_message(Tox *tox, int32_t friendnumber, uint8_t *message, uint32_t length);
+uint32_t tox_send_message(Tox *tox, int32_t friendnumber, const uint8_t *message, uint32_t length);
 uint32_t tox_send_message_withid(Tox *tox, int32_t friendnumber, uint32_t theid, uint8_t *message, uint32_t length);
 
 /* Send an action to an online friend.
  *
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
+ *
+ * maximum length of actions is TOX_MAX_MESSAGE_LENGTH, your client must split larger actions
+ * or else sending them will not work. No the core will not split actions for you because that
+ * requires me to parse UTF-8.
  *
  *  You will want to retain the return value, it will be passed to your read_receipt callback
  *  if one is received.
@@ -231,6 +213,7 @@ int tox_get_self_name_size(Tox *tox);
 /* Set our user status.
  *
  * userstatus must be one of TOX_USERSTATUS values.
+ * max length of the status is TOX_MAX_STATUSMESSAGE_LENGTH.
  *
  *  returns 0 on success.
  *  returns -1 on failure.
@@ -306,8 +289,8 @@ uint32_t tox_get_friendlist(Tox *tox, int32_t *out_list, uint32_t list_size);
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(Tox *tox, uint8_t * public_key, uint8_t * data, uint16_t length, void *userdata)
  */
-void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, uint8_t *, uint8_t *, uint16_t, void *),
-                                 void *userdata);
+void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, const uint8_t *, const uint8_t *, uint16_t,
+                                 void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * message, uint32_t length, void *userdata)
@@ -516,6 +499,15 @@ uint32_t tox_get_chatlist(Tox *tox, int *out_list, uint32_t list_size);
  *
  * If the sender receives this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
  * then he must start sending file data from the position (data , uint64_t in host byte order) received in the TOX_FILECONTROL_RESUME_BROKEN packet.
+ *
+ * To pause a file transfer send a control packet with control_type == TOX_FILECONTROL_PAUSE.
+ * To unpause a file transfer send a control packet with control_type == TOX_FILECONTROL_ACCEPT.
+ *
+ * If you receive a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_PAUSE, you must stop sending filenumber until the other
+ * person sends a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT with the filenumber being a paused filenumber.
+ *
+ * If you receive a control packet with receive_send == 0 and control_type == TOX_FILECONTROL_PAUSE, it means the sender of filenumber has paused the
+ * transfer and will resume it later with a control packet with receive_send == 0 and control_type == TOX_FILECONTROL_ACCEPT for that file number.
  *
  * More to come...
  */

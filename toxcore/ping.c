@@ -54,7 +54,7 @@ struct PING {
 };
 
 
-int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
+int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *client_id)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
@@ -96,7 +96,7 @@ int send_ping_request(PING *ping, IP_Port ipp, uint8_t *client_id)
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint64_t ping_id,
+static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *client_id, uint64_t ping_id,
                               uint8_t *shared_encryption_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
@@ -125,7 +125,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, uint8_t *client_id, uint6
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     DHT       *dht = _dht;
     int        rc;
@@ -164,7 +164,7 @@ static int handle_ping_request(void *_dht, IP_Port source, uint8_t *packet, uint
     return 0;
 }
 
-static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uint32_t length)
+static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packet, uint32_t length)
 {
     DHT      *dht = _dht;
     int       rc;
@@ -221,13 +221,13 @@ static int handle_ping_response(void *_dht, IP_Port source, uint8_t *packet, uin
  * return 1 if it is.
  * return 0 if it isn't.
  */
-static int in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Port ip_port)
+static int in_list(const Client_data *list, uint32_t length, const uint8_t *client_id, IP_Port ip_port)
 {
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
         if (id_equal(list[i].client_id, client_id)) {
-            IPPTsPng *ipptp;
+            const IPPTsPng *ipptp;
 
             if (ip_port.ip.family == AF_INET) {
                 ipptp = &list[i].assoc4;
@@ -253,7 +253,7 @@ static int in_list(Client_data *list, uint32_t length, uint8_t *client_id, IP_Po
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_to_ping(PING *ping, uint8_t *client_id, IP_Port ip_port)
+int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip))
         return -1;
