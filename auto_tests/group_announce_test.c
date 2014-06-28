@@ -34,6 +34,15 @@ void do_announce(ANNOUNCE *announce)
     do_DHT(announce->dht);
 }
 
+void print_client_id(uint8_t *client_id)
+{
+    uint32_t j;
+
+    for (j = 0; j < CLIENT_ID_SIZE; j++) {
+        printf("%02hhX", client_id[j]);
+    }
+}
+
 static int handled_test_1;
 static int handle_test_1(void *object, IP_Port source, uint8_t *packet, uint32_t length)
 {
@@ -85,9 +94,21 @@ START_TEST(test_basic)
     memcpy(n3.client_id, announce3->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     n3.ip_port = on3;
 
+    printf("Node_ID 1:\n");
+    print_client_id(n1.client_id);
+    printf("Node_ID 2:\n");
+    print_client_id(n2.client_id);
+    printf("Node_ID 3:\n");
+    print_client_id(n3.client_id);
+    printf("\n");
+
     uint8_t chat_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t chat_private_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(chat_public_key, chat_private_key);
+
+    printf("Chat_ID:\n");
+    print_client_id(chat_public_key);
+    printf("\n");
 
     int result = send_gc_announce_request(announce1, n2.ip_port, n2.client_id, chat_public_key);
     ck_assert_msg(result == 0, "Failed to create/send group announce request packet.");
