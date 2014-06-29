@@ -71,12 +71,6 @@ typedef struct _MSICall {                  /* Call info structure */
 
     uint8_t             id[CALL_ID_LEN];   /* Random value identifying the call */
 
-    uint8_t            *key_local;         /* The key for encryption */
-    uint8_t            *key_peer;          /* The key for decryption */
-
-    uint8_t            *nonce_local;       /* Local nonce */
-    uint8_t            *nonce_peer;        /* Peer nonce  */
-
     int                 ringing_tout_ms;   /* Ringing timeout in ms */
 
     int                 request_timer_id;  /* Timer id for outgoing request/action */

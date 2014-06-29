@@ -27,7 +27,6 @@
 #include "../toxcore/util.h"
 
 #include "rtp.h"
-#include <assert.h>
 #include <stdlib.h>
 
 
@@ -50,7 +49,6 @@
 #define GET_SETTING_MARKER(_h) (( _h->marker_payloadt ) >> 7)
 #define GET_SETTING_PAYLOAD(_h) ((_h->marker_payloadt) & 0x7f)
 
-
 /**
  * @brief Checks if message came in late.
  *
@@ -69,46 +67,6 @@ inline__ int check_late_message (RTPSession *session, RTPMessage *msg)
      */
     return ( msg->header->sequnum < session->rsequnum && msg->header->timestamp < session->timestamp ) ? 0 : -1;
 }
-
-
-/**
- * @brief Increases nonce value by 'target'
- *
- * @param nonce The nonce
- * @param target The target
- * @return void
- */
-inline__ void increase_nonce(uint8_t *nonce, uint16_t target)
-{
-    uint16_t _nonce_counter;
-
-    uint8_t _reverse_bytes[2];
-    _reverse_bytes[0] = nonce[crypto_box_NONCEBYTES - 1];
-    _reverse_bytes[1] = nonce[crypto_box_NONCEBYTES - 2];
-
-    bytes_to_U16(&_nonce_counter, _reverse_bytes );
-
-    /* Check overflow */
-    if (_nonce_counter > UINT16_MAX - target ) { /* 2 bytes are not long enough */
-        uint8_t _it = 3;
-
-        while ( _it <= crypto_box_NONCEBYTES ) _it += ++nonce[crypto_box_NONCEBYTES - _it] ?
-                    crypto_box_NONCEBYTES : 1;
-
-        _nonce_counter = _nonce_counter - (UINT16_MAX - target ); /* Assign the rest of it */
-    } else { /* Increase nonce */
-
-        _nonce_counter += target;
-    }
-
-    /* Assign the last bytes */
-
-    U16_to_bytes( _reverse_bytes, _nonce_counter);
-    nonce [crypto_box_NONCEBYTES - 1] = _reverse_bytes[0];
-    nonce [crypto_box_NONCEBYTES - 2] = _reverse_bytes[1];
-
-}
-
 
 /**
  * @brief Speaks for it self.
@@ -146,10 +104,16 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
         return NULL;
     }
 
-    const uint8_t *_it = payload;
-
     RTPHeader *_retu = calloc(1, sizeof (RTPHeader));
-    assert(_retu);
+
+    if ( !_retu ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        return NULL;
+    }
+
+    bytes_to_U16(&_retu->sequnum, payload);
+
+    const uint8_t *_it = payload + 2;
 
     _retu->flags = *_it;
     ++_it;
@@ -214,7 +178,11 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
     const uint8_t *_it = payload;
 
     RTPExtHeader *_retu = calloc(1, sizeof (RTPExtHeader));
-    assert(_retu);
+
+    if ( !_retu ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        return NULL;
+    }
 
     uint16_t _ext_length;
     bytes_to_U16(&_ext_length, _it);
@@ -231,8 +199,11 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
     bytes_to_U16(&_retu->type, _it);
     _it += 2;
 
-    _retu->table = calloc(_ext_length, sizeof (uint32_t));
-    assert(_retu->table);
+    if ( !(_retu->table = calloc(_ext_length, sizeof (uint32_t))) ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        free(_retu);
+        return NULL;
+    }
 
     uint16_t _x;
 
@@ -319,7 +290,11 @@ uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
 RTPHeader *build_header ( RTPSession *session )
 {
     RTPHeader *_retu = calloc ( 1, sizeof (RTPHeader) );
-    assert(_retu);
+
+    if ( !_retu ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        return NULL;
+    }
 
     ADD_FLAG_VERSION ( _retu, session->version );
     ADD_FLAG_PADDING ( _retu, session->padding );
@@ -355,7 +330,7 @@ RTPHeader *build_header ( RTPSession *session )
  * @return RTPMessage*
  * @retval NULL Error occurred.
  */
-RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
+RTPMessage *msg_parse ( const uint8_t *data, int length )
 {
     RTPMessage *_retu = calloc(1, sizeof (RTPMessage));
 
@@ -367,11 +342,9 @@ RTPMessage *msg_parse ( uint16_t sequnum, const uint8_t *data, int length )
         return NULL;
     }
 
-    _retu->header->sequnum = sequnum;
+    uint16_t _from_pos = _retu->header->length;
+    _retu->length = length - _from_pos;
 
-    _retu->length = length - _retu->header->length;
-
-    uint16_t _from_pos = _retu->header->length - 2 /* Since sequ num is excluded */ ;
 
 
     if ( GET_FLAG_EXTENSION ( _retu->header ) ) {
@@ -418,7 +391,7 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
     RTPSession *_session = object;
     RTPMessage *_msg;
 
-    if ( !_session || length < 13 + crypto_box_MACBYTES) { /* 12 is the minimum length for rtp + desc. byte */
+    if ( !_session || length < 13 ) { /* 12 is the minimum length for rtp + desc. byte */
         LOGGER_WARNING("No session or invalid length of received buffer!");
         return -1;
     }
@@ -428,55 +401,7 @@ int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
         return -1;
     }
 
-    uint8_t _plain[MAX_UDP_PACKET_SIZE];
-
-    uint16_t _sequnum;
-    bytes_to_U16(&_sequnum, data + 1);
-
-    /* Clculate the right nonce */
-    uint8_t _calculated[crypto_box_NONCEBYTES];
-    memcpy(_calculated, _session->decrypt_nonce, crypto_box_NONCEBYTES);
-    increase_nonce ( _calculated, _sequnum );
-
-    /* Decrypt message */
-    int _decrypted_length = decrypt_data_symmetric(
-                                (uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
-
-    /* This packet is either not encrypted properly or late
-     */
-    if ( -1 == _decrypted_length ) {
-
-        /* If this is the case, then the packet is most likely late.
-         * Try with old nonce cycle.
-         */
-        if ( _session->rsequnum < _sequnum ) {
-            _decrypted_length = decrypt_data_symmetric(
-                                    (uint8_t *)_session->decrypt_key, _session->nonce_cycle, data + 3, length - 3, _plain );
-
-            if ( _decrypted_length == -1 ) {
-                LOGGER_WARNING("Packet not ecrypted properly!");
-                return -1; /* This packet is not encrypted properly */
-            }
-
-            /* Otherwise, if decryption is ok with new cycle, set new cycle
-             */
-        } else {
-            increase_nonce ( _calculated, MAX_SEQU_NUM );
-            _decrypted_length = decrypt_data_symmetric(
-                                    (uint8_t *)_session->decrypt_key, _calculated, data + 3, length - 3, _plain );
-
-            if ( _decrypted_length == -1 ) {
-                LOGGER_WARNING("Error decrypting!");
-                return -1; /* This is just an error */
-            }
-
-            /* A new cycle setting. */
-            memcpy(_session->nonce_cycle, _session->decrypt_nonce, crypto_box_NONCEBYTES);
-            memcpy(_session->decrypt_nonce, _calculated, crypto_box_NONCEBYTES);
-        }
-    }
-
-    _msg = msg_parse ( _sequnum, _plain, _decrypted_length );
+    _msg = msg_parse ( data + 1, length - 1 );
 
     if ( !_msg ) {
         LOGGER_WARNING("Could not parse message!");
@@ -526,22 +451,28 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
 
     uint8_t *_from_pos;
     RTPMessage *_retu = calloc(1, sizeof (RTPMessage));
-    assert(_retu);
+
+    if ( !_retu ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        return NULL;
+    }
 
     /* Sets header values and copies the extension header in _retu */
     _retu->header = build_header ( session ); /* It allocates memory and all */
     _retu->ext_header = session->ext_header;
 
 
-    uint32_t _total_length = length + _retu->header->length;
+    uint32_t _total_length = length + _retu->header->length + 1;
+
+    _retu->data[0] = session->prefix;
 
     if ( _retu->ext_header ) {
         _total_length += ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
 
-        _from_pos = add_header ( _retu->header, _retu->data );
+        _from_pos = add_header ( _retu->header, _retu->data + 1 );
         _from_pos = add_ext_header ( _retu->ext_header, _from_pos + 1 );
     } else {
-        _from_pos = add_header ( _retu->header, _retu->data );
+        _from_pos = add_header ( _retu->header, _retu->data + 1 );
     }
 
     /*
@@ -679,25 +610,7 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
         return -1;
     }
 
-    uint8_t _send_data [ MAX_UDP_PACKET_SIZE ];
-
-    _send_data[0] = session->prefix;
-
-    /* Generate the right nonce */
-    uint8_t _calculated[crypto_box_NONCEBYTES];
-    memcpy(_calculated, session->encrypt_nonce, crypto_box_NONCEBYTES);
-    increase_nonce ( _calculated, msg->header->sequnum );
-
-    /* Need to skip 2 bytes that are for sequnum */
-    int encrypted_length = encrypt_data_symmetric( /* TODO: msg->length - 2 (fix this properly)*/
-                               (uint8_t *) session->encrypt_key, _calculated, msg->data + 2, msg->length, _send_data + 3 );
-
-
-    _send_data[1] = msg->data[0];
-    _send_data[2] = msg->data[1];
-
-
-    if ( -1 == send_custom_lossy_packet(messenger, session->dest, _send_data, encrypted_length + 3) ) {
+    if ( -1 == send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length) ) {
         LOGGER_WARNING("Failed to send full packet! std error: %s", strerror(errno));
         rtp_free_msg ( session, msg );
         return -1;
@@ -705,13 +618,7 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
 
 
     /* Set sequ number */
-    if ( session->sequnum >= MAX_SEQU_NUM ) {
-        session->sequnum = 0;
-        memcpy(session->encrypt_nonce, _calculated, crypto_box_NONCEBYTES);
-    } else {
-        session->sequnum++;
-    }
-
+    session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
     rtp_free_msg ( session, msg );
 
     return 0;
@@ -752,26 +659,19 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
  * @param payload_type Type of payload used to send. You can use values in toxmsi.h::MSICallType
  * @param messenger Tox* object.
  * @param friend_num Friend id.
- * @param encrypt_key Speaks for it self.
- * @param decrypt_key Speaks for it self.
- * @param encrypt_nonce Speaks for it self.
- * @param decrypt_nonce Speaks for it self.
  * @return RTPSession* Created control session.
  * @retval NULL Error occurred.
  */
-RTPSession *rtp_init_session ( int            payload_type,
-                               Messenger     *messenger,
-                               int            friend_num,
-                               const uint8_t *encrypt_key,
-                               const uint8_t *decrypt_key,
-                               const uint8_t *encrypt_nonce,
-                               const uint8_t *decrypt_nonce )
+RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int friend_num )
 {
     RTPSession *_retu = calloc(1, sizeof(RTPSession));
-    assert(_retu);
 
-    if ( -1 == custom_lossy_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, _retu) ||
-            !encrypt_key || !decrypt_key || !encrypt_nonce || !decrypt_nonce) {
+    if ( !_retu ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        return NULL;
+    }
+
+    if ( -1 == custom_lossy_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, _retu)) {
         LOGGER_ERROR("Error setting custom register handler for rtp session");
         free(_retu);
         return NULL;
@@ -794,23 +694,12 @@ RTPSession *rtp_init_session ( int            payload_type,
 
     _retu->ext_header = NULL; /* When needed allocate */
 
-    _retu->encrypt_key = encrypt_key;
-    _retu->decrypt_key = decrypt_key;
 
-    /* Need to allocate new memory */
-    _retu->encrypt_nonce = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) );
-    assert(_retu->encrypt_nonce);
-    _retu->decrypt_nonce = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) );
-    assert(_retu->decrypt_nonce);
-    _retu->nonce_cycle   = calloc ( crypto_box_NONCEBYTES, sizeof (uint8_t) );
-    assert(_retu->nonce_cycle);
-
-    memcpy(_retu->encrypt_nonce, encrypt_nonce, crypto_box_NONCEBYTES);
-    memcpy(_retu->decrypt_nonce, decrypt_nonce, crypto_box_NONCEBYTES);
-    memcpy(_retu->nonce_cycle  , decrypt_nonce, crypto_box_NONCEBYTES);
-
-    _retu->csrc = calloc(1, sizeof (uint32_t));
-    assert(_retu->csrc);
+    if ( !(_retu->csrc = calloc(1, sizeof (uint32_t))) ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        free(_retu);
+        return NULL;
+    }
 
     _retu->csrc[0] = _retu->ssrc; /* Set my ssrc to the list receive */
 
@@ -853,9 +742,6 @@ int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
 
     free ( session->ext_header );
     free ( session->csrc );
-    free ( session->decrypt_nonce );
-    free ( session->encrypt_nonce );
-    free ( session->nonce_cycle );
 
     pthread_mutex_unlock(&session->mutex);
 

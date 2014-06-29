@@ -105,18 +105,6 @@ typedef struct _RTPSession {
      */
     RTPExtHeader   *ext_header;
 
-
-    /* Since these are only references of the
-     * call structure don't allocate or free
-     */
-
-    const uint8_t  *encrypt_key;
-    const uint8_t  *decrypt_key;
-    uint8_t        *encrypt_nonce;
-    uint8_t        *decrypt_nonce;
-
-    uint8_t        *nonce_cycle;
-
     RTPMessage     *oldest_msg;
     RTPMessage     *last_msg; /* tail */
 
@@ -192,20 +180,10 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
  * @param payload_type Type of payload used to send. You can use values in toxmsi.h::MSICallType
  * @param messenger Tox* object.
  * @param friend_num Friend id.
- * @param encrypt_key Speaks for it self.
- * @param decrypt_key Speaks for it self.
- * @param encrypt_nonce Speaks for it self.
- * @param decrypt_nonce Speaks for it self.
  * @return RTPSession* Created control session.
  * @retval NULL Error occurred.
  */
-RTPSession *rtp_init_session ( int            payload_type,
-                               Messenger     *messenger,
-                               int            friend_num,
-                               const uint8_t *encrypt_key,
-                               const uint8_t *decrypt_key,
-                               const uint8_t *encrypt_nonce,
-                               const uint8_t *decrypt_nonce );
+RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int friend_num );
 
 
 /**

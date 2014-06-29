@@ -2349,7 +2349,7 @@ static char *ID2String(uint8_t *client_id)
 }
 #endif
 
-/* Minimum messenger run interval in ms 
+/* Minimum messenger run interval in ms
    TODO: A/V */
 #define MIN_RUN_INTERVAL 50
 
