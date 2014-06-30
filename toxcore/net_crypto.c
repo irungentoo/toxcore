@@ -781,8 +781,29 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, uint
     if (conn == 0)
         return -1;
 
+    uint64_t temp_time = current_time_monotonic();
+
+    /* If last packet send failed, try to send packet again.
+       If sending it fails we won't be able to send the new packet. */
+    if (conn->maximum_speed_reached) {
+        Packet_Data *dt = NULL;
+        uint32_t packet_num = conn->send_array.buffer_end - 1;
+        int ret = get_data_pointer(&conn->send_array, &dt, packet_num);
+
+        if (ret == 1) {
+            if (!dt->time) {
+                if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
+                                            dt->length) != 0) {
+                    return -1;
+                }
+
+                dt->time = temp_time;
+            }
+        }
+    }
+
     Packet_Data dt;
-    dt.time = current_time_monotonic();
+    dt.time = temp_time;
     dt.length = length;
     memcpy(dt.data, data, length);
     int64_t packet_num = add_data_end_of_buffer(&conn->send_array, &dt);
@@ -790,8 +811,15 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, uint
     if (packet_num == -1)
         return -1;
 
-    if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) != 0)
+    conn->maximum_speed_reached = 0;
+
+    if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) != 0) {
+        Packet_Data *dt1 = NULL;
+        get_data_pointer(&conn->send_array, &dt1, packet_num);
+        dt1->time = 0;
+        conn->maximum_speed_reached = 1;
         fprintf(stderr, "send_data_packet failed\n");
+    }
 
     return packet_num;
 }
