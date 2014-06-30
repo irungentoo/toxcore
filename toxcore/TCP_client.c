@@ -90,7 +90,7 @@ static int generate_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *se
  * return 0 on success.
  * return -1 on failure.
  */
-static int handle_handshake(TCP_Client_Connection *TCP_conn, uint8_t *data)
+static int handle_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *data)
 {
     uint8_t plain[crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES];
     int len = decrypt_data_symmetric(TCP_conn->shared_key, data, data + crypto_box_NONCEBYTES,
@@ -318,7 +318,7 @@ int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
+int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
 {
     uint8_t packet[1 + length];
     packet[0] = TCP_PACKET_ONION_REQUEST;
@@ -326,7 +326,7 @@ int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t lengt
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
 }
 
-void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, uint8_t *data,
+void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
                             uint16_t length), void *object)
 {
     con->onion_callback = onion_callback;
@@ -388,7 +388,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
 /* return 0 on success
  * return -1 on failure
  */
-static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_t length)
+static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
 {
     if (length <= 1)
         return -1;

@@ -73,7 +73,7 @@ typedef struct  {
     int (*oob_data_callback)(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length);
     void *oob_data_callback_object;
 
-    int (*onion_callback)(void *object, uint8_t *data, uint16_t length);
+    int (*onion_callback)(void *object, const uint8_t *data, uint16_t length);
     void *onion_callback_object;
 } TCP_Client_Connection;
 
@@ -94,8 +94,8 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection);
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length);
-void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, uint8_t *data,
+int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length);
+void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
                             uint16_t length), void *object);
 
 /* return 1 on success.
