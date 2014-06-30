@@ -1114,7 +1114,7 @@ int del_groupchat(Messenger *m, int groupnumber)
  * return length of name if success
  * return -1 if failure
  */
-int m_group_peername(Messenger *m, int groupnumber, int peernumber, uint8_t *name)
+int m_group_peername(const Messenger *m, int groupnumber, int peernumber, uint8_t *name)
 {
     if ((unsigned int)groupnumber >= m->numchats)
         return -1;
