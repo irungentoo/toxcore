@@ -38,7 +38,7 @@
  * return -1 if nodes are suitable for creating a new path.
  * return path number of already existing similar path if one already exists.
  */
-static int is_path_used(Onion_Client_Paths *onion_paths, Node_format *nodes)
+static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format *nodes)
 {
     uint32_t i;
 
@@ -68,7 +68,7 @@ static int is_path_used(Onion_Client_Paths *onion_paths, Node_format *nodes)
  * TODO: Make this function better, it currently probably is vulnerable to some attacks that
  * could de anonimize us.
  */
-static int random_path(DHT *dht, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
+static int random_path(const DHT *dht, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
 {
     if (pathnum >= NUMBER_ONION_PATHS)
         pathnum = rand() % NUMBER_ONION_PATHS;
@@ -130,7 +130,7 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, IP_Port s
  * return -1 on failure.
  * return 0 on success.
  */
-static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, IP_Port ip_port, uint8_t *data, uint32_t length)
+static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, IP_Port ip_port, const uint8_t *data, uint32_t length)
 {
     if (ip_port.ip.family == AF_INET || ip_port.ip.family == AF_INET6) {
         if ((uint32_t)sendpacket(onion_c->net, ip_port, data, length) != length)
@@ -157,7 +157,7 @@ static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, IP_Port ip_por
  * return 0 on success
  *
  */
-static int new_sendback(Onion_Client *onion_c, uint32_t num, uint8_t *public_key, IP_Port ip_port, uint64_t *sendback)
+static int new_sendback(Onion_Client *onion_c, uint32_t num, const uint8_t *public_key, IP_Port ip_port, uint64_t *sendback)
 {
     uint8_t data[sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + sizeof(IP_Port)];
     memcpy(data, &num, sizeof(uint32_t));
@@ -198,8 +198,8 @@ static uint32_t check_sendback(Onion_Client *onion_c, const uint8_t *sendback, u
     return num;
 }
 
-static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_Port dest, uint8_t *dest_pubkey,
-                                        uint8_t *ping_id, uint32_t pathnum)
+static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_Port dest, const uint8_t *dest_pubkey,
+                                        const uint8_t *ping_id, uint32_t pathnum)
 {
     if (num > onion_c->num_friends)
         return -1;
@@ -279,8 +279,8 @@ static int cmp_entry(const void *a, const void *b)
     return 0;
 }
 
-static int client_add_to_list(Onion_Client *onion_c, uint32_t num, uint8_t *public_key, IP_Port ip_port,
-                              uint8_t is_stored, uint8_t *pingid_or_key, IP_Port source)
+static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t *public_key, IP_Port ip_port,
+                              uint8_t is_stored, const uint8_t *pingid_or_key, IP_Port source)
 {
     if (num > onion_c->num_friends)
         return -1;
@@ -338,7 +338,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, uint8_t *publ
     return 0;
 }
 
-static int good_to_ping(Last_Pinged *last_pinged, uint8_t *last_pinged_index, uint8_t *client_id)
+static int good_to_ping(Last_Pinged *last_pinged, uint8_t *last_pinged_index, const uint8_t *client_id)
 {
     uint32_t i;
 
@@ -354,7 +354,7 @@ static int good_to_ping(Last_Pinged *last_pinged, uint8_t *last_pinged_index, ui
     return 1;
 }
 
-static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, Node_format *nodes, uint16_t num_nodes,
+static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_format *nodes, uint16_t num_nodes,
                              IP_Port source)
 {
     if (num > onion_c->num_friends)
@@ -630,7 +630,7 @@ int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *
  * return the number of packets sent on success
  * return -1 on failure.
  */
-static int send_dht_fakeid(Onion_Client *onion_c, int friend_num, uint8_t *data, uint32_t length)
+static int send_dht_fakeid(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint32_t length)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
@@ -693,7 +693,7 @@ static int handle_dht_fakeid(void *object, IP_Port source, const uint8_t *source
  * return the number of packets sent on success
  * return -1 on failure.
  */
-static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num, uint8_t onion_dht_both)
+static int send_fakeid_announce(const Onion_Client *onion_c, uint16_t friend_num, uint8_t onion_dht_both)
 {
     if (friend_num >= onion_c->num_friends)
         return -1;
@@ -905,7 +905,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
  * return 0 on failure (no key copied).
  * return timestamp on success (key copied).
  */
-uint64_t onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
+uint64_t onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return 0;
@@ -927,7 +927,7 @@ uint64_t onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8
  *  return  1, ip if client_id refers to a friend and we found him
  *
  */
-int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
+int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
 {
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
 
