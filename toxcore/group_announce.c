@@ -45,7 +45,8 @@
 
 struct ANNOUNCE {
     DHT *dht;
-    Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES];
+    Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES]; // The nodes, which you store for others
+    Announced_node_format my_announced_nodes[MAX_ANNOUNCED_NODES]; // The nodes you found to join particular chat. Must be cleaned up after use.
     Ping_Array  ping_array;
     uint64_t    last_to_ping;
 };
@@ -56,9 +57,9 @@ struct ANNOUNCE {
  * return -1 on failure
  * return 0 on success
  */
-int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id)
+int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id)
 {
-    LOGGER_DEBUG("Inside announce request");
+    LOGGER_DEBUG("Inside group announce request");
     // Check if packet is going to be sent to ourself
     if (id_equal(client_id, announce->dht->self_public_key))
         return -1;
@@ -113,9 +114,9 @@ int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, uint8_t *client_id
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet, uint32_t length)
+static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
-    LOGGER_DEBUG("Inside handle announce request");
+    LOGGER_DEBUG("Inside handle group announce request");
     DHT *dht = _dht;
 
     // Check if we got packet of expected size
@@ -150,7 +151,7 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet,
     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
 
     //Save (client_id, chat_id) in our ANNOUNCE structure
-    add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp);
+    add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp, 0);
     
     char originatortxt[CLIENT_ID_SIZE*2+1];
     char chatidtxt[CLIENT_ID_SIZE*2+1];
@@ -172,9 +173,9 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, uint8_t *packet,
  * return -1 on failure.
  * return 0 on success.
  */
-int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id)
+int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id)
 {
-    LOGGER_DEBUG("Inside get nodes request");
+    LOGGER_DEBUG("Inside get announced nodes request");
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(client_id, dht->self_public_key))
         return -1;
@@ -184,7 +185,6 @@ int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, u
     id_copy(data, client_id);
     memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
     uint64_t ping_id = ping_array_add(&dht->announce->ping_array, data, sizeof(data));
-    printf("\tPing id in request: %u\n", ping_id);
 
     if (ping_id == 0)
         return -1;
@@ -231,9 +231,9 @@ int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, uint8_t *client_id, u
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
+static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
-    LOGGER_DEBUG("Inside handle get nodes request");
+    LOGGER_DEBUG("Inside handle get announced nodes request");
 
     DHT *dht = _dht;
 
@@ -267,14 +267,13 @@ static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_
     // Get ping_id
     uint64_t  ping_id;
     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
-    printf("\tPing id in request handle: %u\n", ping_id);
 
     char originatortxt[CLIENT_ID_SIZE*2+1];
     char chatidtxt[CLIENT_ID_SIZE*2+1];
     strcpy(originatortxt, id_toa(packet + 1));
     strcpy(chatidtxt, id_toa(announce_plain + 1));
     
-    LOGGER_INFO("handle_gc_ann_req: %s at %s:%d requests members of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, chatidtxt);
+    LOGGER_DEBUG("handle_gc_ann_req: %s at %s:%d requests members of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, chatidtxt);
 
     // Send nodes request
     return send_gc_announced_nodes_response(dht, ipp, packet + 1, announce_plain + 1, ping_id, shared_key);
@@ -285,10 +284,10 @@ static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, uint8_
  * return -1 on failure.
  * return 0 on success.
  */
-int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
+int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
                                   uint8_t *shared_encryption_key)
 { 
-    LOGGER_DEBUG("Inside send nodes response");
+    LOGGER_DEBUG("Inside send announced nodes response");
 
     // Check if packet is going to be sent to ourself.
     if (id_equal(client_id, dht->self_public_key))
@@ -297,8 +296,8 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     size_t Node_format_size = sizeof(Node_format);
     
     // Get announced nodes from ANNOUNCE list by chat_id
-    Node_format nodes_list[MAX_SENT_NODES];
-    uint32_t num_nodes = get_announced_nodes(dht->announce, chat_id, nodes_list);
+    Node_format * nodes_list[MAX_SENT_NODES];
+    uint32_t num_nodes = get_announced_nodes(dht->announce, chat_id, nodes_list, 0);
     //LOGGER_DEBUG("Inside send nodes response, num_nodes: %u", num_nodes);
     if (num_nodes == -1)
         return -1;
@@ -306,14 +305,14 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     // Generate announce_plain == num_nodes + nodes_length + ping_id
     uint8_t announce_plain[SEND_ANNOUNCED_NODES_PLAIN_SIZE];
     announce_plain[0] = num_nodes;
-    
-    int nodes_length = pack_nodes(announce_plain + 1, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
+    memcpy(announce_plain + 1, chat_id, CLIENT_ID_SIZE); 
+
+    int nodes_length = pack_nodes(announce_plain + 1 + CLIENT_ID_SIZE, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
     if (nodes_length <= 0)
         return -1;
-     
-    memcpy(announce_plain + 1 + nodes_length, &ping_id, sizeof(ping_id));
+    
+    memcpy(announce_plain + 1 + CLIENT_ID_SIZE + nodes_length, &ping_id, sizeof(ping_id));
 
-    printf("\tPing id in response: %u\n", ping_id);
     // Generate new nonce
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
@@ -323,10 +322,10 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
     int encrypt_length = encrypt_data_symmetric(shared_encryption_key,
                                         nonce,
                                         announce_plain,
-                                        1 + nodes_length + sizeof(ping_id),
+                                        1 + CLIENT_ID_SIZE + nodes_length + sizeof(ping_id),
                                         encrypt);
 
-    if (encrypt_length != 1 + nodes_length + sizeof(ping_id) + crypto_box_MACBYTES)
+    if (encrypt_length != 1 + CLIENT_ID_SIZE + nodes_length + sizeof(ping_id) + crypto_box_MACBYTES)
         return -1;
 
     // Generate DHT packet == NET_PACKET_SEND_ANNOUNCED_NODES + client_id + nonce + announce_plain + crypto_box_MACBYTES
@@ -348,103 +347,83 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, uint8_t *client_id, 
  * return -1 on failure.
  * return 0 on success.
  */
-int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *packet, uint32_t length)
+int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
+    LOGGER_DEBUG("Inside handle send announced nodes response");
+
     DHT *dht = _dht;
     
-    printf("[TRACE] Got sendnodes reply\n");
-
-    printf("\tChecking length\n");
-  
-    uint32_t cid_size = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + 1 + sizeof(uint64_t) + crypto_box_MACBYTES;  
-    
+    // Check packet size  
+    uint32_t cid_size = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + 1 + CLIENT_ID_SIZE + sizeof(uint64_t) + crypto_box_MACBYTES;  
     if (length <= cid_size) /* too short */
         return -1;
 
     uint32_t data_size = length - cid_size;
-
     if (data_size == 0)
         return -1;
-
     if (data_size > sizeof(Node_format) * MAX_SENT_NODES) /* invalid length */
         return -1;
 
-    
-    printf("\tChecking self-sendings\n");
     // Check if packet is going to be sent to ourself
     if (id_equal(packet + 1, dht->self_public_key))
         return -1;
 
-    printf("\tChecking packet type\n");
     // Check if we got correct packet type
     if (packet[0] != NET_PACKET_SEND_ANNOUNCED_NODES)
         return -1;
-
-    printf("\tDecyphering\n");
     
     // Generate key to decrypt announce_plain
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
 
-    uint8_t announce_plain[1 + data_size + sizeof(uint64_t)];
+    uint8_t announce_plain[1 + CLIENT_ID_SIZE + data_size + sizeof(uint64_t)];
     int announce_length = decrypt_data_symmetric(shared_key,
                                         packet + 1 + CLIENT_ID_SIZE,
                                         packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
                                         sizeof(announce_plain) + crypto_box_MACBYTES,
                                         announce_plain);
     
-    printf("\tChecking length\n");
-
     if (announce_length != sizeof(announce_plain))
         return -1;
-
-    printf("\tChecking count of nodes\n");
-    
+   
     if (announce_plain[0] > MAX_SENT_NODES || announce_plain[0] <= 0)
         return -1;
 
-    printf("\tGetting ping id\n");
-    
     // Get ping_id
     uint64_t ping_id;
-    memcpy(&ping_id, announce_plain + 1 + data_size, sizeof(ping_id));
+    memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE + data_size, sizeof(ping_id));
 
-    printf("\tCheck if it really is our request\n");
-    printf("\tPing id in handle response: %u\n", ping_id);
-    
     //Check if we send getnodes request previously
     uint8_t data[PING_DATA_SIZE];
     if (ping_array_check(data, sizeof(data), &dht->announce->ping_array, ping_id) != sizeof(data))
         return -1;
-
-    printf("\tUnpack nodes\n");
-    
+   
     //Unpack nodes
     Node_format plain_nodes[MAX_SENT_NODES];
     uint16_t length_nodes = 0;
-    uint32_t num_nodes = unpack_nodes(plain_nodes, announce_plain[0], &length_nodes, announce_plain + 1, data_size, 0);
-    
-    printf("\tCheck nodes length\n");
+    uint32_t num_nodes = unpack_nodes(plain_nodes, announce_plain[0], &length_nodes, announce_plain + 1 + CLIENT_ID_SIZE, data_size, 0);
     
     if (length_nodes != data_size)
         return -1;
-    
-    printf("\tChecking num nodes\n");
 
     if (num_nodes != announce_plain[0])
         return -1;
 
-    printf("\tNum nodes: %u\n", num_nodes);
+    char originatortxt[CLIENT_ID_SIZE*2+1];
+    char chatidtxt[CLIENT_ID_SIZE*2+1];
+    strcpy(originatortxt, id_toa(packet + 1));
+    strcpy(chatidtxt, id_toa(announce_plain + 1));
+    
+    LOGGER_DEBUG("handle_send_gc_ann_nodes_r: %s at %s:%d sent %u announced nodes of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, num_nodes, chatidtxt);
 
     uint32_t i;
     for (i = 0; i<num_nodes; i++) {
+        add_announced_nodes(dht->announce, plain_nodes[i].client_id, announce_plain + 1, plain_nodes[i].ip_port, 1);
+        // Debugging
         char client_id_txt[CLIENT_ID_SIZE*2+1];
         strcpy(client_id_txt, id_toa(plain_nodes[i].client_id));
-        printf("\tClient_ID: %s\n", client_id_txt);
+        LOGGER_DEBUG("\tAnnounced Client_ID: %s\n", client_id_txt);
     }
-    //TODO need to store or pass plain_nodes somewhere
-
-    printf("\tPassed!!!\n");
     
     return 0;
 }
@@ -462,26 +441,32 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, uint8_t *pa
  * return -1 on failure.
  * return 0 on success.
  */
-int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port)
+int add_announced_nodes(ANNOUNCE *announce, const uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port, int inner)
 {
     if (!ip_isset(&ip_port.ip))
-    return -1;
+        return -1;
+
+    Announced_node_format *announced_nodes;
+    if (!inner)
+        announced_nodes = announce->announced_nodes;
+    else
+        announced_nodes = announce->my_announced_nodes;
 
     uint32_t i;
 
     for (i = 0; i < MAX_ANNOUNCED_NODES; i++) {
-        if (!ip_isset(&announce->announced_nodes[i].ip_port.ip)) {
-            memcpy(announce->announced_nodes[i].client_id, client_id, CLIENT_ID_SIZE);
-            memcpy(announce->announced_nodes[i].chat_id, chat_id, CLIENT_ID_SIZE);
-            ipport_copy(&announce->announced_nodes[i].ip_port, &ip_port);
+        if (!ip_isset(&announced_nodes[i].ip_port.ip)) {
+            memcpy(announced_nodes[i].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(announced_nodes[i].chat_id, chat_id, CLIENT_ID_SIZE);
+            ipport_copy(&announced_nodes[i].ip_port, &ip_port);
             return 0;
         }
 
-        if (memcmp(announce->announced_nodes[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
+        if (memcmp(announced_nodes[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
             return -1;
         }
 
-        if (memcmp(announce->announced_nodes[i].chat_id, chat_id, CLIENT_ID_SIZE) == 0) {
+        if (memcmp(announced_nodes[i].chat_id, chat_id, CLIENT_ID_SIZE) == 0) {
             return -1;
         }
     }
@@ -489,10 +474,10 @@ int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id
     uint32_t r = rand();
 
     for (i = 0; i < MAX_ANNOUNCED_NODES; i++) {
-        if (id_closest(announce->dht->self_public_key, announce->announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].client_id, client_id) == 2) {
-            memcpy(announce->announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].client_id, client_id, CLIENT_ID_SIZE);
-            memcpy(announce->announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].chat_id, chat_id, CLIENT_ID_SIZE);
-            ipport_copy(&announce->announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].ip_port, &ip_port);
+        if (id_closest(announce->dht->self_public_key, announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].client_id, client_id) == 2) {
+            memcpy(announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].chat_id, chat_id, CLIENT_ID_SIZE);
+            ipport_copy(&announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].ip_port, &ip_port);
             return 0;
         }
     }
@@ -505,22 +490,31 @@ int add_announced_nodes(ANNOUNCE *announce, uint8_t *client_id, uint8_t *chat_id
  *  return num_nodes if found.
  *  return -1 if not found.
  */
-int get_announced_nodes(ANNOUNCE *announce, uint8_t *chat_id, Node_format *nodes_list)
+int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format *nodes_list, int inner)
 {
-    uint32_t num_nodes = -1;
+    uint32_t num_nodes = 0;
     uint32_t i;
 
+    Announced_node_format *announced_nodes;
+    if (!inner)
+        announced_nodes = announce->announced_nodes;
+    else 
+        announced_nodes = announce->my_announced_nodes;
+
     for (i = 0; i < MAX_ANNOUNCED_NODES; i++) {
-        if (ip_isset(&announce->announced_nodes[i].ip_port.ip)) {
-            if (id_equal(chat_id, announce->announced_nodes[i].chat_id)) {
+        if (ip_isset(&announced_nodes[i].ip_port.ip)) {
+            if (id_equal(chat_id, announced_nodes[i].chat_id)) {
+                memcpy(nodes_list[num_nodes].client_id, announced_nodes[i].client_id, CLIENT_ID_SIZE);
+                ipport_copy(&nodes_list[num_nodes].ip_port, &announced_nodes[i].ip_port);
                 num_nodes++;
-                memcpy(nodes_list[num_nodes].client_id, announce->announced_nodes[i].client_id, CLIENT_ID_SIZE);
-                ipport_copy(&nodes_list[num_nodes].ip_port, &announce->announced_nodes[i].ip_port);
             }
         }
     }
 
-    return num_nodes+1;
+    if (num_nodes==0) 
+        return -1;
+    else
+        return num_nodes;
 }
 
 ANNOUNCE *new_announce(DHT *dht)
