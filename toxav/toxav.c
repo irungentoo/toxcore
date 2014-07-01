@@ -304,14 +304,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
     CallSpecific *call = &av->calls[call_index];
 
     call->crtps[audio_index] =
-        rtp_init_session(
-            type_audio,
-            av->messenger,
-            av->msi_session->calls[call_index]->peers[0],
-            av->msi_session->calls[call_index]->key_peer,
-            av->msi_session->calls[call_index]->key_local,
-            av->msi_session->calls[call_index]->nonce_peer,
-            av->msi_session->calls[call_index]->nonce_local);
+        rtp_init_session(type_audio, av->messenger, av->msi_session->calls[call_index]->peers[0]);
 
 
     if ( !call->crtps[audio_index] ) {
@@ -322,14 +315,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
 
     if ( support_video ) {
         call->crtps[video_index] =
-            rtp_init_session (
-                type_video,
-                av->messenger,
-                av->msi_session->calls[call_index]->peers[0],
-                av->msi_session->calls[call_index]->key_peer,
-                av->msi_session->calls[call_index]->key_local,
-                av->msi_session->calls[call_index]->nonce_peer,
-                av->msi_session->calls[call_index]->nonce_local);
+            rtp_init_session(type_video, av->messenger, av->msi_session->calls[call_index]->peers[0]);
 
 
         if ( !call->crtps[video_index] ) {
@@ -436,7 +422,7 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
             /* number of pieces - 1*/
             uint8_t numparts = (length - 1) / VIDEOFRAME_PIECE_SIZE;
 
-            uint8_t load[3 + VIDEOFRAME_PIECE_SIZE];
+            uint8_t load[2 + VIDEOFRAME_PIECE_SIZE];
             load[0] = av->calls[call_index].frame_outid++;
             load[1] = 0;
 
@@ -556,11 +542,11 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
             call->frame_limit = 0;
 
             if (rc != VPX_CODEC_OK) {
-                LOGGER_ERROR("Error decoding video: %s\n", vpx_codec_err_to_string(rc));
-                return ErrorInternal;
+                LOGGER_ERROR("Error decoding video: %u %s\n", i, vpx_codec_err_to_string(rc));
             }
         } else {
             /* old packet, dont read */
+            LOGGER_DEBUG("Old packet: %u\n", i);
             continue;
         }
 
@@ -570,12 +556,14 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
             continue;
         }
 
+        LOGGER_DEBUG("Video Packet: %u %u\n", packet[0], packet[1]);
         memcpy(call->frame_buf + packet[1] * VIDEOFRAME_PIECE_SIZE, packet + VIDEOFRAME_HEADER_SIZE,
                recved_size - VIDEOFRAME_HEADER_SIZE);
         uint32_t limit = packet[1] * VIDEOFRAME_PIECE_SIZE + recved_size - VIDEOFRAME_HEADER_SIZE;
 
         if (limit > call->frame_limit) {
             call->frame_limit = limit;
+            LOGGER_DEBUG("Limit: %u\n", call->frame_limit);
         }
     }
 

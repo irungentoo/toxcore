@@ -157,6 +157,8 @@ typedef struct {
     Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
     uint16_t num_tcp_relays;
 
+    uint8_t maximum_speed_reached;
+
     pthread_mutex_t mutex;
 } Crypto_Connection;
 
