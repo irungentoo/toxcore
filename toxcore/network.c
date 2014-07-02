@@ -778,9 +778,18 @@ void ipport_unpack(IP_Port *target, const uint8_t *data)
  *   uses a static buffer, so mustn't used multiple times in the same output
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
-static char addresstext[96];
+#ifndef STATIC_BUFFER_COPIES
+    #define STATIC_BUFFER_COPIES 1
+#endif
+static char addressbuffers[96*STATIC_BUFFER_COPIES];
+static unsigned currentaddressbuffer=0;
+
 const char *ip_ntoa(const IP *ip)
 {
+    char *addresstext=&addressbuffers[96*(currentaddressbuffer++)];
+    if (currentaddressbuffer>=STATIC_BUFFER_COPIES)
+        currentaddressbuffer=0;
+    
     if (ip) {
         if (ip->family == AF_INET) {
             /* returns standard quad-dotted notation */

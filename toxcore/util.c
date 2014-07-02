@@ -70,10 +70,18 @@ uint32_t id_copy(uint8_t *dest, const uint8_t *src)
     return CLIENT_ID_SIZE;
 }
 
+#ifndef STATIC_BUFFER_COPIES
+    #define STATIC_BUFFER_COPIES 1
+#endif
+static char idtoabuffers[CLIENT_ID_SIZE*2+1];
+static unsigned currentidtoabuffer=0;
+
 char *id_toa(uint8_t *id)
 {
-    static char str[CLIENT_ID_SIZE*2+1];
     int i;
+    char *str=&idtoabuffers[96*(currentidtoabuffer++)];
+    if (currentidtoabuffer>=STATIC_BUFFER_COPIES)
+        currentidtoabuffer=0;
     
     str[CLIENT_ID_SIZE*2]=0;
     for (i=0;i<CLIENT_ID_SIZE;i++)

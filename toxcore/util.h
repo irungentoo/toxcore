@@ -28,6 +28,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* Enlarges static buffers returned by id_toa and ip_ntoa so that
+ * they can be used multiple times in same output
+ */
+#define STATIC_BUFFER_COPIES    10
+
 #define inline__ inline __attribute__((always_inline))
 
 void unix_time_update();
@@ -38,7 +43,7 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
-char* id_toa(uint8_t* id);  /* WARNING: returns static buffer */
+char* id_toa(uint8_t* id);  /* WARNING: returns one of STATIC_BUFFER_COPIES static buffers */
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)

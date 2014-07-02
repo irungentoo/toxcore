@@ -201,6 +201,8 @@ IP_Port;
 /* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
+ *   specifying STATIC_BUFFER_COPIES in util.h allows to have multiple buffers
+ *   and thus issue up to STATIC_BUFFER_COPIES calls in the same output
  */
 const char *ip_ntoa(const IP *ip);
 
