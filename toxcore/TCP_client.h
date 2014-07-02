@@ -64,23 +64,23 @@ typedef struct  {
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];
         uint32_t number;
     } connections[NUM_CLIENT_CONNECTIONS];
-    int (*response_callback)(void *object, uint8_t connection_id, uint8_t *public_key);
+    int (*response_callback)(void *object, uint8_t connection_id, const uint8_t *public_key);
     void *response_callback_object;
     int (*status_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t status);
     void *status_callback_object;
-    int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t *data, uint16_t length);
+    int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length);
     void *data_callback_object;
-    int (*oob_data_callback)(void *object, uint8_t *public_key, uint8_t *data, uint16_t length);
+    int (*oob_data_callback)(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length);
     void *oob_data_callback_object;
 
-    int (*onion_callback)(void *object, uint8_t *data, uint16_t length);
+    int (*onion_callback)(void *object, const uint8_t *data, uint16_t length);
     void *onion_callback_object;
 } TCP_Client_Connection;
 
 /* Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, uint8_t *self_public_key,
-        uint8_t *self_secret_key);
+TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
+        const uint8_t *self_secret_key);
 
 /* Run the TCP connection
  */
@@ -94,8 +94,8 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection);
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length);
-void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, uint8_t *data,
+int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length);
+void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
                             uint16_t length), void *object);
 
 /* return 1 on success.
@@ -104,7 +104,7 @@ void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(vo
  */
 int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key);
 void routing_response_handler(TCP_Client_Connection *con, int (*response_callback)(void *object, uint8_t connection_id,
-                              uint8_t *public_key), void *object);
+                              const uint8_t *public_key), void *object);
 void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint32_t number,
                             uint8_t connection_id, uint8_t status), void *object);
 
@@ -127,17 +127,17 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_t length);
+int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length);
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
-                          uint8_t connection_id, uint8_t *data, uint16_t length), void *object);
+                          uint8_t connection_id, const uint8_t *data, uint16_t length), void *object);
 
 /* return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_oob_packet(TCP_Client_Connection *con, uint8_t *public_key, uint8_t *data, uint16_t length);
-void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, uint8_t *public_key,
-                      uint8_t *data, uint16_t length), void *object);
+int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data, uint16_t length);
+void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, const uint8_t *public_key,
+                      const uint8_t *data, uint16_t length), void *object);
 
 
 #endif

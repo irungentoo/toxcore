@@ -97,7 +97,7 @@ typedef struct {
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
     uint8_t last_pinged_index;
 
-    int (*tcp_relay_node_callback)(void *object, uint32_t number, IP_Port ip_port, uint8_t *public_key);
+    int (*tcp_relay_node_callback)(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key);
     void *tcp_relay_node_callback_object;
     uint32_t tcp_relay_node_callback_number;
 } Onion_Friend;
@@ -171,7 +171,7 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
  *  return  1, ip if client_id refers to a friend and we found him
  *
  */
-int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
+int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
 
 /* Set the function for this friend that will be callbacked with object and number
  * when that friends gives us one of the TCP relays he is connected to.
@@ -182,7 +182,7 @@ int onion_getfriendip(Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
  * return 0 on success.
  */
 int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
-                           uint32_t number, IP_Port ip_port, uint8_t *public_key), void *object, uint32_t number);
+                           uint32_t number, IP_Port ip_port, const uint8_t *public_key), void *object, uint32_t number);
 
 /* Set a friends DHT public key.
  * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
@@ -198,7 +198,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
  * return 0 on failure (no key copied).
  * return timestamp on success (key copied).
  */
-uint64_t onion_getfriend_DHT_pubkey(Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
+uint64_t onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
 
 #define ONION_DATA_IN_RESPONSE_MIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
 #define ONION_CLIENT_MAX_DATA_SIZE (MAX_DATA_REQUEST_SIZE - ONION_DATA_IN_RESPONSE_MIN_SIZE)

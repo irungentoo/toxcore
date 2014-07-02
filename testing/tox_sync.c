@@ -130,7 +130,7 @@ int not_sending()
 
 static char path[1024];
 
-void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
                          uint16_t filename_length, void *userdata)
 {
     char fullpath[1024];
@@ -169,7 +169,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
 }
 
 void file_print_control(Tox *m, int friendnumber, uint8_t recieve_send, uint8_t filenumber, uint8_t control_type,
-                        uint8_t *data,
+                        const uint8_t *data,
                         uint16_t length, void *userdata)
 {
     if (recieve_send == 1 && (control_type == TOX_FILECONTROL_KILL || control_type == TOX_FILECONTROL_FINISHED)) {
@@ -185,7 +185,7 @@ void file_print_control(Tox *m, int friendnumber, uint8_t recieve_send, uint8_t 
     }
 }
 
-void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (file_recv[filenumber].file != 0)
         if (fwrite(data, length, 1, file_recv[filenumber].file) != 1)
