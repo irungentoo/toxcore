@@ -1240,7 +1240,7 @@ int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
  *
  *
  */
-void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16_t length, void *object )
+void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, uint16_t length, void *object )
 {
     LOGGER_DEBUG("Got msi message");
     /* Unused */

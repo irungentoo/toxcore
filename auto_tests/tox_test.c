@@ -30,7 +30,7 @@ void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *dat
 }
 uint32_t messages_received;
 
-void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_message(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -44,7 +44,7 @@ void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, v
 
 uint32_t name_changes;
 
-void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_nickchange(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -69,7 +69,7 @@ void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
-void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
                          uint16_t filename_length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
@@ -85,7 +85,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
 uint32_t file_sent;
 uint32_t sendf_ok;
 void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
-                        uint8_t *data, uint16_t length, void *userdata)
+                        const uint8_t *data, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -100,7 +100,7 @@ void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t 
 
 uint64_t size_recv;
 uint8_t num;
-void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
