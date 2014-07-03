@@ -2213,7 +2213,7 @@ static int random_node_fromlist(Client_data *list, uint16_t list_size, Node_form
  *
  * TODO: remove the LAN stuff from this.
  */
-uint16_t random_nodes_path(DHT *dht, Node_format *nodes, uint16_t max_num)
+uint16_t random_nodes_path(const DHT *dht, Node_format *nodes, uint16_t max_num)
 {
     if (max_num == 0)
         return 0;

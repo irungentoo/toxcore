@@ -386,7 +386,7 @@ RTPMessage *msg_parse ( const uint8_t *data, int length )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
+int rtp_handle_packet ( void *object, const uint8_t *data, uint32_t length )
 {
     RTPSession *_session = object;
     RTPMessage *_msg;

@@ -54,7 +54,7 @@ static void change_symmetric_key(Onion *onion)
  * return -1 on failure.
  * return 0 on success.
  */
-int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
+int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *nodes)
 {
     if (!new_path || !nodes)
         return -1;
@@ -93,8 +93,8 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
  * return -1 on failure.
  * return length of created packet on success.
  */
-int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest, uint8_t *data,
-                        uint32_t length)
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
+                        const uint8_t *data, uint32_t length)
 {
     if (1 + length + SEND_1 > max_packet_length || length == 0)
         return -1;
@@ -149,7 +149,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path 
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
+int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data, uint32_t length)
 {
     uint8_t packet[ONION_MAX_PACKET_SIZE];
     int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
@@ -209,7 +209,7 @@ static int handle_send_initial(void *object, IP_Port source, const uint8_t *pack
     return onion_send_1(onion, plain, len, source, packet + 1);
 }
 
-int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce)
+int onion_send_1(const Onion *onion, const uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce)
 {
     IP_Port send_to;
     ipport_unpack(&send_to, plain);

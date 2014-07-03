@@ -24,8 +24,8 @@ Lossless UDP:
     [DONE] Call initiation
     [DONE] Encryption
     [IN PROGRESS] Auditing.
-    [NOT STARTED] Video packet splitting.
-    [NOT STARTED] Prevent audio skew.
+    [NEEDS TESTING] Video packet splitting.
+    [IN PROGRESS] Prevent audio skew (seems to be easily solvable client side.)
     [IN PROGRESS] Group chats.
 
 Friend_requests.c:
