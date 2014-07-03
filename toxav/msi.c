@@ -28,8 +28,6 @@
 #include "../toxcore/util.h"
 
 #include "msi.h"
-#include "event.h"
-
 
 #include <unistd.h>
 #include <string.h>
