@@ -4,9 +4,7 @@ lib_LTLIBRARIES += libtoxav.la
 libtoxav_la_include_HEADERS = ../toxav/toxav.h
 libtoxav_la_includedir = $(includedir)/tox
 
-libtoxav_la_SOURCES = ../toxav/event.h \
-                      ../toxav/event.c \
-                      ../toxav/rtp.h \
+libtoxav_la_SOURCES = ../toxav/rtp.h \
                       ../toxav/rtp.c \
                       ../toxav/msi.h \
                       ../toxav/msi.c \

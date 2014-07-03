@@ -1,4 +1,4 @@
-/**  media.c
+/**  codec.c
  *
  *   Audio and video codec intitialization, encoding/decoding and playback
  *
@@ -212,7 +212,7 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     vpx_codec_enc_cfg_t  cfg;
     int rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
-    if (rc) {
+    if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
@@ -234,6 +234,12 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     }
 
     rc = vpx_codec_control(&cs->v_encoder, VP8E_SET_CPUUSED, 7);
+    
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        return -1;
+    }
+    
     return 0;
 }
 

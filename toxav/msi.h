@@ -105,6 +105,8 @@ typedef struct _MSISession {
     uint32_t call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
 
     pthread_mutex_t mutex;
+    
+    void* timer_handler;
 } MSISession;
 
 

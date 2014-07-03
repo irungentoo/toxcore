@@ -115,7 +115,6 @@ static struct _Callbacks {
 
 inline__ void invoke_callback(int32_t call_index, MSICallbackID id)
 {
-    /*if ( callbacks[id].function ) event.rise ( callbacks[id].function, callbacks[id].data );*/
     if ( callbacks[id].function ) {
         LOGGER_DEBUG("Invoking callback function: %d", id);
         callbacks[id].function ( call_index, callbacks[id].data );
@@ -220,7 +219,7 @@ if ( *iterator != value_byte || size_con <= type_size_const) { return -1; } size
 iterator ++; if(size_con <= 3) {return -1;} size_con -= 3; \
 uint16_t _value_size; memcpy(&_value_size, iterator, sizeof(_value_size)); _value_size = ntohs(_value_size);\
 if(size_con < _value_size) { return -1; } size_con -= _value_size; \
-if ( !(header.header_value = calloc(sizeof(uint8_t), _value_size)) ); \
+if ( !(header.header_value = calloc(sizeof(uint8_t), _value_size)) ) \
 LOGGER_ERROR("Allocation failed! Program might misbehave!"); \
 header.size = _value_size; \
 memcpy(header.header_value, iterator + 2, _value_size);\
@@ -538,6 +537,222 @@ GENERIC_SETTER_DEFINITION ( info )
 GENERIC_SETTER_DEFINITION ( callid )
 
 
+
+
+typedef struct _Timer {
+    void *(*func)(void *);
+    void *func_args;
+    uint64_t timeout;
+    size_t idx;
+    
+} Timer;
+
+typedef struct _TimerHandler {
+    Timer **timers;
+    pthread_mutex_t mutex;
+    
+    size_t max_capacity;
+    size_t size;
+    uint64_t resolution;
+    
+    _Bool running;
+    
+} TimerHandler;
+
+
+/**
+ * @brief Allocate timer in array
+ * 
+ * @param timers_container Handler
+ * @param func Function to be executed
+ * @param arg Its args
+ * @param timeout Timeout in ms
+ * @return int
+ */
+int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg, unsigned timeout)
+{
+    pthread_mutex_lock(&timers_container->mutex);
+    
+    int i = 0;
+    for (; i < timers_container->max_capacity && timers_container->timers[i]; i ++);
+    
+    if (i == timers_container->max_capacity) { 
+        LOGGER_WARNING("Maximum capacity reached!");
+        pthread_mutex_unlock(&timers_container->mutex);
+        return -1;
+    }
+    
+    Timer* timer = timers_container->timers[i] = calloc(sizeof(Timer), 1);
+    
+    if (timer == NULL) {
+        LOGGER_ERROR("Failed to allocate timer!");
+        pthread_mutex_unlock(&timers_container->mutex);
+        return -1;
+    }
+    
+    timers_container->size ++;
+    
+    timer->func = func;
+    timer->func_args = arg;
+    timer->timeout = timeout + current_time_monotonic(); /* In ms */
+    timer->idx = i;
+    
+    /* reorder */
+    if (i) {
+        int j = i - 1;
+        for (; j >= 0 && timeout < timers_container->timers[j]->timeout; j--) {
+            Timer* tmp = timers_container->timers[j];
+            timers_container->timers[j] = timer;
+            timers_container->timers[j+1] = tmp;            
+        }
+    }
+    
+    pthread_mutex_unlock(&timers_container->mutex);
+    
+    LOGGER_DEBUG("Allocated timer index: %d timeout: %d, current size: %d", i, timeout, timers_container->size);
+    return i;
+}
+
+/**
+ * @brief Remove timer from array
+ * 
+ * @param timers_container handler
+ * @param idx index
+ * @return int
+ */
+int timer_release ( TimerHandler *timers_container, int idx )
+{
+    int rc = pthread_mutex_trylock(&timers_container->mutex);
+    
+    Timer **timed_events = timers_container->timers;
+    
+    if (!timed_events[idx]) {
+        LOGGER_WARNING("No event under index: %d", idx);
+        if ( rc != EBUSY ) pthread_mutex_unlock(&timers_container->mutex);
+        return -1;
+    }
+    
+    free(timed_events[idx]);
+    
+    timed_events[idx] = NULL;
+    
+    int i = idx + 1;
+    for (; i < timers_container->max_capacity && timed_events[i]; i ++) {
+        timed_events[i-1] = timed_events[i];
+        timed_events[i] = NULL;
+    }
+    
+    timers_container->size--;
+    
+    LOGGER_DEBUG("Popped index: %d, current size: %d ", idx, timers_container->size);
+    
+    if ( rc != EBUSY ) pthread_mutex_unlock(&timers_container->mutex);
+    return 0;
+}
+
+/**
+ * @brief Main poll for timer execution
+ * 
+ * @param arg ...
+ * @return void*
+ */
+void *timer_poll( void *arg )
+{
+    TimerHandler *handler = arg;
+    
+    while ( handler->running ) {
+        
+        pthread_mutex_lock(&handler->mutex);
+        
+        if ( handler->running ) {
+            
+            uint64_t time = current_time_monotonic();
+            
+            while ( handler->timers[0] && handler->timers[0]->timeout < time ) {
+                
+                pthread_t _tid;
+                if ( 0 != pthread_create(&_tid, NULL, handler->timers[0]->func, handler->timers[0]->func_args) || 
+                    0 != pthread_detach(_tid) )
+                    LOGGER_ERROR("Failed to execute timer at: %d!", handler->timers[0]->timeout);
+                
+                else LOGGER_DEBUG("Exectued timer assigned at: %d", handler->timers[0]->timeout);
+                
+                timer_release(handler, 0);
+            }
+            
+        }
+        
+        pthread_mutex_unlock(&handler->mutex);
+        
+        usleep(handler->resolution);
+    }
+    
+    pthread_exit(NULL);
+}
+
+/**
+ * @brief Start timer poll and return handler
+ * 
+ * @param max_capacity capacity
+ * @param resolution ...
+ * @return TimerHandler*
+ */
+TimerHandler* timer_init_session (int max_capacity, int resolution)
+{
+    TimerHandler* handler = calloc(1, sizeof(TimerHandler));
+    if (handler == NULL) {
+        LOGGER_ERROR("Failed to allocate memory, program might misbehave!");
+        return NULL;
+    }
+    
+    handler->timers = calloc(max_capacity, sizeof(Timer*));
+    if (handler->timers == NULL) {
+        LOGGER_ERROR("Failed to allocate %d timed events!", max_capacity);
+        free(handler);
+        return NULL;
+    }
+    
+    handler->max_capacity = max_capacity;
+    handler->running = 1;
+    handler->resolution = resolution;
+    
+    pthread_mutex_init(&handler->mutex, NULL);
+    
+    
+    pthread_t _tid;
+    if ( 0 != pthread_create(&_tid, NULL, timer_poll, handler) || 0 != pthread_detach(_tid) ){
+        LOGGER_ERROR("Failed to start timer poll thread!");
+        free(handler->timers);
+        free(handler);
+        return NULL;
+    }
+    
+    return handler;
+}
+
+/**
+ * @brief Terminate timer session
+ * 
+ * @param handler The timer handler
+ * @return void
+ */
+void timer_terminate_session(TimerHandler* handler)
+{    
+    pthread_mutex_lock(&handler->mutex);
+    
+    handler->running = 0;
+    
+    pthread_mutex_unlock(&handler->mutex);
+    
+    int i = 0;
+    for (; i < handler->max_capacity; i ++)
+        free(handler->timers[i]);
+    
+    free(handler->timers);
+    
+    pthread_mutex_destroy( &handler->mutex );
+}
+
 /**
  * @brief Generate _random_ alphanumerical string.
  *
@@ -731,7 +946,11 @@ MSICall *find_call ( MSISession *session, uint8_t *call_id )
 
     for (; i < session->max_calls; i ++ )
         if ( session->calls[i] && memcmp(session->calls[i]->id, call_id, CALL_ID_LEN) == 0 ) {
-            LOGGER_DEBUG("Found call id: %s", session->calls[i]->id);
+            LOGGER_SCOPE( 
+                char tmp[CALL_ID_LEN+1] = {'\0'}; 
+                memcpy(tmp, session->calls[i]->id, CALL_ID_LEN);
+                LOGGER_DEBUG("Found call id: %s", tmp);
+            );
             return session->calls[i];
         }
 
@@ -883,8 +1102,8 @@ int terminate_call ( MSISession *session, MSICall *call )
      * NOTE: This has to be done before possibly
      * locking the mutex the second time
      */
-    event.timer_release ( call->request_timer_id );
-    event.timer_release ( call->ringing_timer_id );
+    timer_release ( session->timer_handler, call->request_timer_id );
+    timer_release ( session->timer_handler, call->ringing_timer_id );
 
     /* Get a handle */
     pthread_mutex_lock ( &call->mutex );
@@ -1055,10 +1274,6 @@ int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
     pthread_mutex_unlock(&session->mutex);
 
     invoke_callback(call->call_idx, MSI_OnReject);
-    /*
-    event.timer_release ( session->call->request_timer_id );
-    session->call->request_timer_id = event.timer_alloc ( handle_timeout, session, m_deftout );
-    */
 
     terminate_call(session, call);
     return 1;
@@ -1123,7 +1338,7 @@ int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
 
-    call->ringing_timer_id = event.timer_alloc ( handle_timeout, call, call->ringing_tout_ms );
+    call->ringing_timer_id = timer_alloc ( session->timer_handler, handle_timeout, call, call->ringing_tout_ms );
 
     pthread_mutex_unlock(&session->mutex);
 
@@ -1150,7 +1365,7 @@ int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
     flush_peer_type ( call, msg, 0 );
 
 
-    event.timer_release ( call->ringing_timer_id );
+    timer_release ( session->timer_handler, call->ringing_timer_id );
     pthread_mutex_unlock(&session->mutex);
 
     invoke_callback(call->call_idx, MSI_OnStarting);
@@ -1168,7 +1383,7 @@ int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
     LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
 
     /* Stop timer */
-    event.timer_release ( call->request_timer_id );
+    timer_release ( session->timer_handler, call->request_timer_id );
 
     pthread_mutex_unlock(&session->mutex);
 
@@ -1246,89 +1461,88 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
     /* Unused */
     (void)messenger;
 
-    MSISession *_session = object;
-    MSIMessage *_msg;
+    MSISession *session = object;
+    MSIMessage *msg;
 
     if ( !length ) {
         LOGGER_WARNING("Lenght param negative");
         return;
     }
 
-    _msg = parse_message ( data, length );
+    msg = parse_message ( data, length );
 
-    if ( !_msg ) {
+    if ( !msg ) {
         LOGGER_WARNING("Error parsing message");
         return;
     } else {
         LOGGER_DEBUG("Successfully parsed message");
     }
 
-    _msg->friend_id = source;
+    msg->friend_id = source;
 
 
     /* Find what call */
-    MSICall *_call = _msg->callid.header_value ? find_call(_session, _msg->callid.header_value ) : NULL;
+    MSICall *call = msg->callid.header_value ? find_call(session, msg->callid.header_value ) : NULL;
 
     /* Now handle message */
 
-    if ( _msg->request.header_value ) { /* Handle request */
+    if ( msg->request.header_value ) { /* Handle request */
 
-        if ( _msg->response.size > 32 ) {
+        if ( msg->response.size > 32 ) {
             LOGGER_WARNING("Header size too big");
             goto free_end;
         }
 
         uint8_t _request_value[32];
 
-        memcpy(_request_value, _msg->request.header_value, _msg->request.size);
-        _request_value[_msg->request.size] = '\0';
+        memcpy(_request_value, msg->request.header_value, msg->request.size);
+        _request_value[msg->request.size] = '\0';
 
         if ( same ( _request_value, stringify_request ( invite ) ) ) {
-            handle_recv_invite ( _session, _call, _msg );
+            handle_recv_invite ( session, call, msg );
 
         } else if ( same ( _request_value, stringify_request ( start ) ) ) {
-            handle_recv_start ( _session, _call, _msg );
+            handle_recv_start ( session, call, msg );
 
         } else if ( same ( _request_value, stringify_request ( cancel ) ) ) {
-            handle_recv_cancel ( _session, _call, _msg );
+            handle_recv_cancel ( session, call, msg );
 
         } else if ( same ( _request_value, stringify_request ( reject ) ) ) {
-            handle_recv_reject ( _session, _call, _msg );
+            handle_recv_reject ( session, call, msg );
 
         } else if ( same ( _request_value, stringify_request ( end ) ) ) {
-            handle_recv_end ( _session, _call, _msg );
+            handle_recv_end ( session, call, msg );
         } else {
             LOGGER_WARNING("Uknown request");
             goto free_end;
         }
 
-    } else if ( _msg->response.header_value ) { /* Handle response */
+    } else if ( msg->response.header_value ) { /* Handle response */
 
-        if ( _msg->response.size > 32 ) {
+        if ( msg->response.size > 32 ) {
             LOGGER_WARNING("Header size too big");
             goto free_end;
         }
 
         /* Got response so cancel timer */
-        if ( _call )
-            event.timer_release ( _call->request_timer_id );
+        if ( call ) timer_release ( session->timer_handler, call->request_timer_id );
 
         uint8_t _response_value[32];
 
-        memcpy(_response_value, _msg->response.header_value, _msg->response.size);
-        _response_value[_msg->response.size] = '\0';
+        memcpy(_response_value, msg->response.header_value, msg->response.size);
+        _response_value[msg->response.size] = '\0';
 
         if ( same ( _response_value, stringify_response ( ringing ) ) ) {
-            handle_recv_ringing ( _session, _call, _msg );
+            handle_recv_ringing ( session, call, msg );
 
         } else if ( same ( _response_value, stringify_response ( starting ) ) ) {
-            handle_recv_starting ( _session, _call, _msg );
+            handle_recv_starting ( session, call, msg );
 
         } else if ( same ( _response_value, stringify_response ( ending ) ) ) {
-            handle_recv_ending ( _session, _call, _msg );
+            handle_recv_ending ( session, call, msg );
 
         } else if ( same ( _response_value, stringify_response ( error ) ) ) {
-            handle_recv_error ( _session, _call, _msg );
+            handle_recv_error ( session, call, msg );
 
         } else {
             LOGGER_WARNING("Uknown response");
@@ -1340,7 +1554,7 @@ void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16
     }
 
 free_end:
-    free_message ( _msg );
+    free_message ( msg );
 }
 
 
@@ -1373,7 +1587,12 @@ MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls )
         return NULL;
     }
 
-    if ( !max_calls) return NULL;
+    TimerHandler* handler = timer_init_session(max_calls * 10, 10000);
+    
+    if ( !max_calls || !handler ) {
+        LOGGER_WARNING("Invalid max call treshold or timer handler initialization failed!");
+        return NULL;
+    }
 
     MSISession *_retu = calloc ( sizeof ( MSISession ), 1 );
 
@@ -1384,6 +1603,7 @@ MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls )
 
     _retu->messenger_handle = messenger;
     _retu->agent_handler = NULL;
+    _retu->timer_handler = handler;
     
     if (!(_retu->calls = calloc( sizeof (MSICall *), max_calls ))) {
         LOGGER_ERROR("Allocation failed! Program might misbehave!");
@@ -1440,9 +1660,12 @@ int msi_terminate_session ( MSISession *session )
             msi_cancel ( session, idx, session->calls[idx]->peers [_it], "MSI session terminated!" );
         }
 
-
+    timer_terminate_session(session->timer_handler);
+    
     pthread_mutex_destroy(&session->mutex);
 
+//     timer_terminate_session();
+    
     LOGGER_DEBUG("Terminated session: %p", session);
     free ( session );
     return _status;
@@ -1495,7 +1718,7 @@ int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type
 
     _call->state = call_inviting;
 
-    _call->request_timer_id = event.timer_alloc ( handle_timeout, _call, m_deftout );
+    _call->request_timer_id = timer_alloc ( session->timer_handler, handle_timeout, _call, m_deftout );
 
     LOGGER_DEBUG("Invite sent");
 
@@ -1543,8 +1766,8 @@ int msi_hangup ( MSISession *session, int32_t call_index )
 
     free_message ( _msg_end );
 
-    session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index],
-            m_deftout );
+    session->calls[call_index]->request_timer_id = 
+        timer_alloc ( session->timer_handler, handle_timeout, session->calls[call_index], m_deftout );
 
     pthread_mutex_unlock(&session->mutex);
     return 0;
@@ -1620,7 +1843,7 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
     free_message ( _msg_cancel );
 
     /*session->calls[call_index]->state = call_hanged_up;
-      session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );*/
+      session->calls[call_index]->request_timer_id = timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );*/
     terminate_call ( session, session->calls[call_index] );
     pthread_mutex_unlock(&session->mutex);
 
@@ -1656,8 +1879,8 @@ int msi_reject ( MSISession *session, int32_t call_index, const uint8_t *reason 
 
     session->calls[call_index]->state = call_hanged_up;
 
-    session->calls[call_index]->request_timer_id = event.timer_alloc ( handle_timeout, session->calls[call_index],
-            m_deftout );
+    session->calls[call_index]->request_timer_id = 
+        timer_alloc ( session->timer_handler, handle_timeout, session->calls[call_index], m_deftout );
 
     pthread_mutex_unlock(&session->mutex);
     return 0;
