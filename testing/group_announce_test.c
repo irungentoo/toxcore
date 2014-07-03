@@ -17,6 +17,11 @@
 #include <randombytes.h>
 #endif
 
+/* You can change those but be mindful */
+#define PEERCOUNT       10
+#define CHATCOUNT       3
+#define PEERSPERCHAT    (PEERCOUNT/CHATCOUNT)
+
 void idle_cylce(DHT**peers, int peercount)
 {
     int j;
@@ -70,7 +75,7 @@ void basicannouncetest()
      * we have 10 tox instances, they form 3 chats of 3 members
      * the 10ths then proceeds to query the list of chat's participants */
     IP localhost;
-    DHT *peers[10];
+    DHT *peers[PEERCOUNT];
     int i,j;
     
     /* Set ip to IPv6 loopback. TODO: IPv4 fallback? */
@@ -79,34 +84,28 @@ void basicannouncetest()
     
     /* Init the nodes */
     printf("Nodes generated:\n");
-    uint8_t clientids[(CLIENT_ID_SIZE+6)*10];
-    for (i=0; i<10; i++)
+    for (i=0; i<PEERCOUNT; i++)
     {
         peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
-        printf("%s localhost6:%d%s", id_toa(peers[i]->self_public_key), peers[i]->net->port, (i%3==2)?"\n---\n":"\n");
+        printf("%s localhost6:%d%s", id_toa(peers[i]->self_public_key), peers[i]->net->port, (i%PEERSPERCHAT==2)?"\n---\n":"\n");
     }
     printf("\n");
     
     /* For simplicity sake, one big array */
-    uint8_t chatids[CLIENT_ID_SIZE*3];
+    uint8_t chatids[CLIENT_ID_SIZE*CHATCOUNT];
     
-    randombytes_buf((void*)chatids, CLIENT_ID_SIZE*3);
-    
-    /* NOTE: UNIX only by now */
-    FILE *fp=fopen("/dev/urandom","r");
-    fread(chatids, sizeof(uint8_t), CLIENT_ID_SIZE*3, fp);
-    fclose(fp);
+    randombytes_buf((void*)chatids, CLIENT_ID_SIZE*CHATCOUNT);
     
     printf("Chats generated:\n");
-    for (i=0;i<3;i++)
+    for (i=0; i<CHATCOUNT; i++)
         printf("%s\n",id_toa(&chatids[CLIENT_ID_SIZE*i]));
     printf("\n");
     
     /* Bootstrapping DHTs*/
     printf("Bootstrapping everybody from eachother\n");
-    for (i=0; i<10; i++)
+    for (i=0; i<PEERCOUNT; i++)
     {
-        DHT* target = peers[ i>=9? 0 : i+1 ];
+        DHT* target = peers[ i>=(PEERCOUNT-1)? 0 : i+1 ];
         IP_Port ip_port;
         ip_copy(&ip_port.ip, &localhost);
         ip_port.port = target->net->port;
@@ -120,12 +119,12 @@ void basicannouncetest()
     for (;;)
     {
         /* TODO: work out a situation when node count > LCLIENT_LIST */
-        idle_cylce(peers, 10);
+        idle_cylce(peers, PEERCOUNT);
         
         int numconnected=0;
-        for (i=0;i<10;i++)
+        for (i=0;i<PEERCOUNT;i++)
             numconnected+=DHT_connectiondegree(peers[i]);
-        if (numconnected==9*10)
+        if (numconnected==PEERCOUNT*(PEERCOUNT-1))
             break;
         /* TODO: busy wait might be slightly more efficient here */
         usleep(50000);
@@ -134,9 +133,9 @@ void basicannouncetest()
     {
         /* TODO: some of this code might be fit for adaptation in DHT.c */    
         Node_format clnode;
-        get_closest_known_node(peers[i], &chatids[CLIENT_ID_SIZE*(i/3)], &clnode);
+        get_closest_known_node(peers[i], &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)], &clnode);
         
-        if (send_gc_announce_request(peers[i]->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/3)])<0)
+        if (send_gc_announce_request(peers[i]->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
             printf("Announcing failure");
@@ -145,10 +144,10 @@ void basicannouncetest()
     }
     
     printf("Waiting 5 seconds before sending requests\n");
-    idle_n_secs(10, peers, 10);
+    idle_n_secs(5, peers, PEERCOUNT);
     
     /* Requesting chat lists */
-    for (i=0; i<3; i++)
+    for (i=0; i<CHATCOUNT; i++)
     {
         /* The last node gets to ask everybody */
         Node_format clnode;
@@ -163,10 +162,10 @@ void basicannouncetest()
     }
 
     printf("Waiting 5 seconds before checking\n");
-    idle_n_secs(10, peers, 10);
+    idle_n_secs(5, peers, PEERCOUNT);
     
     /* Inspecting the catch */
-    for (i=0; i<3; i++)
+    for (i=0; i<CHATCOUNT; i++)
     {
         Node_format nodes[MAX_ANNOUNCED_NODES]; 
         int nodes_found=get_announced_nodes(peers[9]->announce, &chatids[CLIENT_ID_SIZE*i], nodes, 1);
@@ -177,7 +176,7 @@ void basicannouncetest()
     
     cleanup:
     /* Deinit the nodes */
-    for (i=0; i<10; i++)
+    for (i=0; i<PEERCOUNT; i++)
         kill_DHT(peers[i]);
 }
 
