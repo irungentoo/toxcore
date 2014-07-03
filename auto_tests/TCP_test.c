@@ -294,7 +294,7 @@ END_TEST
 static int response_callback_good;
 static uint8_t response_callback_connection_id;
 static uint8_t response_callback_public_key[crypto_box_PUBLICKEYBYTES];
-static int response_callback(void *object, uint8_t connection_id, uint8_t *public_key)
+static int response_callback(void *object, uint8_t connection_id, const uint8_t *public_key)
 {
     if (set_tcp_connection_number(object - 2, connection_id, 7) != 0)
         return 1;
@@ -321,7 +321,7 @@ static int status_callback(void *object, uint32_t number, uint8_t connection_id,
     return 0;
 }
 static int data_callback_good;
-static int data_callback(void *object, uint32_t number, uint8_t connection_id, uint8_t *data, uint16_t length)
+static int data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length)
 {
     if (object != (void *)3)
         return 1;
@@ -342,7 +342,7 @@ static int data_callback(void *object, uint32_t number, uint8_t connection_id, u
 
 static int oob_data_callback_good;
 static uint8_t oob_pubkey[crypto_box_PUBLICKEYBYTES];
-static int oob_data_callback(void *object, uint8_t *public_key, uint8_t *data, uint16_t length)
+static int oob_data_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length)
 {
     if (object != (void *)4)
         return 1;

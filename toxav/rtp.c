@@ -105,16 +105,16 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
     }
 
     RTPHeader *_retu = calloc(1, sizeof (RTPHeader));
-    
+
     if ( !_retu ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
         return NULL;
     }
-    
+
     bytes_to_U16(&_retu->sequnum, payload);
 
     const uint8_t *_it = payload + 2;
-    
+
     _retu->flags = *_it;
     ++_it;
 
@@ -178,7 +178,7 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
     const uint8_t *_it = payload;
 
     RTPExtHeader *_retu = calloc(1, sizeof (RTPExtHeader));
-    
+
     if ( !_retu ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
         return NULL;
@@ -290,7 +290,7 @@ uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
 RTPHeader *build_header ( RTPSession *session )
 {
     RTPHeader *_retu = calloc ( 1, sizeof (RTPHeader) );
-    
+
     if ( !_retu ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
         return NULL;
@@ -386,7 +386,7 @@ RTPMessage *msg_parse ( const uint8_t *data, int length )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_handle_packet ( void *object, uint8_t *data, uint32_t length )
+int rtp_handle_packet ( void *object, const uint8_t *data, uint32_t length )
 {
     RTPSession *_session = object;
     RTPMessage *_msg;
@@ -451,7 +451,7 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
 
     uint8_t *_from_pos;
     RTPMessage *_retu = calloc(1, sizeof (RTPMessage));
-    
+
     if ( !_retu ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
         return NULL;
@@ -465,7 +465,7 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
     uint32_t _total_length = length + _retu->header->length + 1;
 
     _retu->data[0] = session->prefix;
-    
+
     if ( _retu->ext_header ) {
         _total_length += ( 4 /* Minimum ext header len */ + _retu->ext_header->length * size_32 );
 
@@ -617,10 +617,10 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     }
 
 
-    /* Set sequ number */    
+    /* Set sequ number */
     session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
     rtp_free_msg ( session, msg );
-    
+
     return 0;
 }
 
@@ -665,7 +665,7 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
 RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int friend_num )
 {
     RTPSession *_retu = calloc(1, sizeof(RTPSession));
-    
+
     if ( !_retu ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
         return NULL;

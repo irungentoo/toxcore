@@ -97,7 +97,7 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
 /* return index corresponding to connection with peer on success
  * return -1 on failure.
  */
-static int get_TCP_connection_index(TCP_Server *TCP_server, uint8_t *public_key)
+static int get_TCP_connection_index(const TCP_Server *TCP_server, const uint8_t *public_key)
 {
     return bs_list_find(&TCP_server->accepted_key_list, public_key);
 }
@@ -110,7 +110,7 @@ static int kill_accepted(TCP_Server *TCP_server, int index);
  * return index on success
  * return -1 on failure
  */
-static int add_accepted(TCP_Server *TCP_server, TCP_Secure_Connection *con)
+static int add_accepted(TCP_Server *TCP_server, const TCP_Secure_Connection *con)
 {
     int index = get_TCP_connection_index(TCP_server, con->public_key);
 
@@ -249,7 +249,7 @@ int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
-int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, uint8_t *shared_key,
+int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, const uint8_t *shared_key,
                                       uint8_t *recv_nonce, uint8_t *data, uint16_t max_len)
 {
     if (*next_packet_length == 0) {
@@ -318,7 +318,7 @@ static int send_pending_data(TCP_Secure_Connection *con)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const uint8_t *data, uint16_t length)
 {
     if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE)
         return -1;
@@ -389,7 +389,8 @@ static int kill_accepted(TCP_Server *TCP_server, int index)
 /* return 1 if everything went well.
  * return -1 if the connection must be killed.
  */
-static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint16_t length, uint8_t *self_secret_key)
+static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data, uint16_t length,
+                                const uint8_t *self_secret_key)
 {
     if (length != TCP_CLIENT_HANDSHAKE_SIZE)
         return -1;
@@ -435,7 +436,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, uint8_t *data, uint1
  * return 0 if we didn't get it yet.
  * return -1 if the connection must be killed.
  */
-static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_secret_key)
+static int read_connection_handshake(TCP_Secure_Connection *con, const uint8_t *self_secret_key)
 {
     uint8_t data[TCP_CLIENT_HANDSHAKE_SIZE];
     int len = 0;
@@ -451,7 +452,7 @@ static int read_connection_handshake(TCP_Secure_Connection *con, uint8_t *self_s
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int send_routing_response(TCP_Secure_Connection *con, uint8_t rpid, uint8_t *public_key)
+static int send_routing_response(TCP_Secure_Connection *con, uint8_t rpid, const uint8_t *public_key)
 {
     uint8_t data[1 + 1 + crypto_box_PUBLICKEYBYTES];
     data[0] = TCP_PACKET_ROUTING_RESPONSE;
@@ -484,7 +485,7 @@ static int send_disconnect_notification(TCP_Secure_Connection *con, uint8_t id)
 /* return 0 on success.
  * return -1 on failure (connection must be killed).
  */
-static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, uint8_t *public_key)
+static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const uint8_t *public_key)
 {
     uint32_t i;
     uint32_t index = ~0;
@@ -562,7 +563,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, uint8
 /* return 0 on success.
  * return -1 on failure (connection must be killed).
  */
-static int handle_TCP_oob_send(TCP_Server *TCP_server, uint32_t con_id, uint8_t *public_key, uint8_t *data,
+static int handle_TCP_oob_send(TCP_Server *TCP_server, uint32_t con_id, const uint8_t *public_key, const uint8_t *data,
                                uint16_t length)
 {
     if (length == 0 || length > TCP_MAX_OOB_DATA_LENGTH)
@@ -645,7 +646,7 @@ static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, 
 /* return 0 on success
  * return -1 on failure
  */
-static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *data, uint16_t length)
+static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint8_t *data, uint16_t length)
 {
     if (length == 0)
         return -1;
@@ -764,7 +765,8 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, uint8_t *d
 }
 
 
-static int confirm_TCP_connection(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t *data, uint16_t length)
+static int confirm_TCP_connection(TCP_Server *TCP_server, TCP_Secure_Connection *con, const uint8_t *data,
+                                  uint16_t length)
 {
     int index = add_accepted(TCP_server, con);
 
@@ -838,8 +840,8 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
     return sock;
 }
 
-TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports, uint8_t *public_key,
-                           uint8_t *secret_key, Onion *onion)
+TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *public_key,
+                           const uint8_t *secret_key, Onion *onion)
 {
     if (num_sockets == 0 || ports == NULL)
         return NULL;

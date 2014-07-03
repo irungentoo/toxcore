@@ -65,7 +65,8 @@ static int connect_sock_to(sock_t sock, IP_Port ip_port)
 /* return 0 on success.
  * return -1 on failure.
  */
-static int generate_handshake(TCP_Client_Connection *TCP_conn, uint8_t *self_public_key, uint8_t *self_secret_key)
+static int generate_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *self_public_key,
+                              const uint8_t *self_secret_key)
 {
     uint8_t plain[crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES];
     crypto_box_keypair(plain, TCP_conn->temp_secret_key);
@@ -90,7 +91,7 @@ static int generate_handshake(TCP_Client_Connection *TCP_conn, uint8_t *self_pub
  * return 0 on success.
  * return -1 on failure.
  */
-static int handle_handshake(TCP_Client_Connection *TCP_conn, uint8_t *data)
+static int handle_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *data)
 {
     uint8_t plain[crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES];
     int len = decrypt_data_symmetric(TCP_conn->shared_key, data, data + crypto_box_NONCEBYTES,
@@ -137,7 +138,7 @@ static int send_pending_data(TCP_Client_Connection *con)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
+static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
 {
     if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE)
         return -1;
@@ -183,7 +184,7 @@ int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key)
 }
 
 void routing_response_handler(TCP_Client_Connection *con, int (*response_callback)(void *object, uint8_t connection_id,
-                              uint8_t *public_key), void *object)
+                              const uint8_t *public_key), void *object)
 {
     con->response_callback = response_callback;
     con->response_callback_object = object;
@@ -200,7 +201,7 @@ void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(v
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_t length)
+int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length)
 {
     if (con_id >= NUM_CLIENT_CONNECTIONS)
         return -1;
@@ -218,7 +219,7 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, uint8_t *data, uint16_
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_oob_packet(TCP_Client_Connection *con, uint8_t *public_key, uint8_t *data, uint16_t length)
+int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data, uint16_t length)
 {
     if (length == 0 || length > TCP_MAX_OOB_DATA_LENGTH)
         return -1;
@@ -251,14 +252,14 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
 }
 
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
-                          uint8_t connection_id, uint8_t *data, uint16_t length), void *object)
+                          uint8_t connection_id, const uint8_t *data, uint16_t length), void *object)
 {
     con->data_callback = data_callback;
     con->data_callback_object = object;
 }
 
-void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, uint8_t *public_key,
-                      uint8_t *data, uint16_t length), void *object)
+void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, const uint8_t *public_key,
+                      const uint8_t *data, uint16_t length), void *object)
 {
     con->oob_data_callback = oob_data_callback;
     con->oob_data_callback_object = object;
@@ -318,7 +319,7 @@ int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t length)
+int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
 {
     uint8_t packet[1 + length];
     packet[0] = TCP_PACKET_ONION_REQUEST;
@@ -326,7 +327,7 @@ int send_onion_request(TCP_Client_Connection *con, uint8_t *data, uint16_t lengt
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
 }
 
-void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, uint8_t *data,
+void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
                             uint16_t length), void *object)
 {
     con->onion_callback = onion_callback;
@@ -335,8 +336,8 @@ void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(vo
 
 /* Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, uint8_t *self_public_key,
-        uint8_t *self_secret_key)
+TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
+        const uint8_t *self_secret_key)
 {
     if (networking_at_startup() != 0) {
         return NULL;
@@ -388,7 +389,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, uint8_t *public_key, 
 /* return 0 on success
  * return -1 on failure
  */
-static int handle_TCP_packet(TCP_Client_Connection *conn, uint8_t *data, uint16_t length)
+static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
 {
     if (length <= 1)
         return -1;

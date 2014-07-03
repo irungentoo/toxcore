@@ -56,7 +56,7 @@
 
 #endif
 
-void print_message(Messenger *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_message(Messenger *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     printf("Message with length %u received from %u: %s \n", length, friendnumber, string);
     m_sendmessage(m, friendnumber, (uint8_t *)"Test1", 6);

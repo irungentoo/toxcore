@@ -49,9 +49,9 @@
  * return -1 on failure.
  * return packet length on success.
  */
-int create_announce_request(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, Node_format dest,
-                            uint8_t *public_key, uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key,
-                            uint64_t sendback_data)
+int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, Node_format dest,
+                            const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *ping_id, const uint8_t *client_id,
+                            const uint8_t *data_public_key, uint64_t sendback_data)
 {
     uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES +
                   ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
@@ -89,8 +89,9 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, Onion_P
  * return -1 on failure.
  * return 0 on success.
  */
-int create_data_request(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest,
-                        uint8_t *public_key, uint8_t *encrypt_public_key, uint8_t *nonce, uint8_t *data, uint16_t length)
+int create_data_request(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
+                        const uint8_t *public_key, const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data,
+                        uint16_t length)
 {
     if ((unsigned int)DATA_REQUEST_MIN_SIZE + length > ONION_MAX_DATA_SIZE)
         return -1;
@@ -129,8 +130,9 @@ int create_data_request(uint8_t *packet, uint16_t max_packet_length, Onion_Path 
  * return -1 on failure.
  * return 0 on success.
  */
-int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format dest, uint8_t *public_key,
-                          uint8_t *secret_key, uint8_t *ping_id, uint8_t *client_id, uint8_t *data_public_key, uint64_t sendback_data)
+int send_announce_request(Networking_Core *net, const Onion_Path *path, Node_format dest, const uint8_t *public_key,
+                          const uint8_t *secret_key, const uint8_t *ping_id, const uint8_t *client_id, const uint8_t *data_public_key,
+                          uint64_t sendback_data)
 {
     uint8_t packet[ONION_MAX_PACKET_SIZE];
     int len = create_announce_request(packet, sizeof(packet), path, dest, public_key, secret_key, ping_id, client_id,
@@ -159,8 +161,8 @@ int send_announce_request(Networking_Core *net, Onion_Path *path, Node_format de
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *public_key,
-                      uint8_t *encrypt_public_key, uint8_t *nonce, uint8_t *data, uint16_t length)
+int send_data_request(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *public_key,
+                      const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length)
 {
     uint8_t packet[ONION_MAX_PACKET_SIZE];
     int len = create_data_request(packet, sizeof(packet), path, dest, public_key, encrypt_public_key, nonce, data, length);
@@ -175,8 +177,8 @@ int send_data_request(Networking_Core *net, Onion_Path *path, IP_Port dest, uint
 }
 
 /* Generate a ping_id and put it in ping_id */
-static void generate_ping_id(Onion_Announce *onion_a, uint64_t time, const uint8_t *public_key, IP_Port ret_ip_port,
-                             uint8_t *ping_id)
+static void generate_ping_id(const Onion_Announce *onion_a, uint64_t time, const uint8_t *public_key,
+                             IP_Port ret_ip_port, uint8_t *ping_id)
 {
     time /= PING_ID_TIMEOUT;
     uint8_t data[crypto_box_KEYBYTES + sizeof(time) + crypto_box_PUBLICKEYBYTES + sizeof(ret_ip_port)];

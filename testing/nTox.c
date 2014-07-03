@@ -876,14 +876,16 @@ void print_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint1
     do_refresh();
 }
 
-void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_message(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     /* ensure null termination */
-    string[length - 1] = 0;
-    print_formatted_message(m, (char *)string, friendnumber, 0);
+    uint8_t null_string[length + 1];
+    memcpy(null_string, string, length);
+    null_string[length] = 0;
+    print_formatted_message(m, (char *)null_string, friendnumber, 0);
 }
 
-void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_nickchange(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     char name[TOX_MAX_NAME_LENGTH + 1];
 
@@ -899,7 +901,7 @@ void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length
     }
 }
 
-void print_statuschange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_statuschange(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     char name[TOX_MAX_NAME_LENGTH + 1];
 
@@ -999,7 +1001,7 @@ void print_help(char *prog_name)
     puts("  -f keyfile      [Optional] Specify a keyfile to read from and write to.");
 }
 
-void print_invite(Tox *m, int friendnumber, uint8_t *group_public_key, void *userdata)
+void print_invite(Tox *m, int friendnumber, const uint8_t *group_public_key, void *userdata)
 {
     char msg[256];
     sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
@@ -1055,7 +1057,8 @@ void print_groupchatpeers(Tox *m, int groupnumber)
     new_lines_mark(msg, 1);
 }
 
-void print_groupmessage(Tox *m, int groupnumber, int peernumber, uint8_t *message, uint16_t length, void *userdata)
+void print_groupmessage(Tox *m, int groupnumber, int peernumber, const uint8_t *message, uint16_t length,
+                        void *userdata)
 {
     char msg[256 + length];
     uint8_t name[TOX_MAX_NAME_LENGTH] = {0};
@@ -1116,7 +1119,7 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
         print_groupchatpeers(m, groupnumber);
     }
 }
-void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
                          uint16_t filename_length, void *userdata)
 {
     char msg[512];
@@ -1131,8 +1134,7 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
 }
 
 void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
-                        uint8_t *data,
-                        uint16_t length, void *userdata)
+                        const uint8_t *data, uint16_t length, void *userdata)
 {
     char msg[512] = {0};
 
@@ -1146,7 +1148,7 @@ void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t 
     new_lines(msg);
 }
 
-void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length, void *userdata)
 {
     char filename[256];
     sprintf(filename, "%u.%u.bin", friendnumber, filenumber);

@@ -1002,18 +1002,18 @@ int send_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_
  */
 void add_peer( MSICall *call, int peer_id )
 {
-    uint32_t* peers = !call->peers ? peers = calloc(sizeof(uint32_t), 1) :
-    realloc( call->peers, sizeof(uint32_t) * call->peer_count);
-        
+    uint32_t *peers = !call->peers ? peers = calloc(sizeof(uint32_t), 1) :
+                      realloc( call->peers, sizeof(uint32_t) * call->peer_count);
+
     if (!peers) {
         LOGGER_WARNING("Allocation failed! Program might misbehave!");
         return;
     }
-    
+
     call->peer_count ++;
     call->peers = peers;
     call->peers[call->peer_count - 1] = peer_id;
-    
+
     LOGGER_DEBUG("Added peer: %d", peer_id);
 }
 
@@ -1038,12 +1038,12 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
 
     for (; _call_idx < session->max_calls; _call_idx ++) {
         if ( !session->calls[_call_idx] ) {
-            
+
             if (!(session->calls[_call_idx] = calloc ( sizeof ( MSICall ), 1 ))) {
                 LOGGER_WARNING("Allocation failed! Program might misbehave!");
                 return NULL;
             }
-            
+
             break;
         }
     }
@@ -1455,7 +1455,7 @@ int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
  *
  *
  */
-void msi_handle_packet ( Messenger *messenger, int source, uint8_t *data, uint16_t length, void *object )
+void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, uint16_t length, void *object )
 {
     LOGGER_DEBUG("Got msi message");
     /* Unused */
@@ -1610,7 +1610,7 @@ MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls )
         free(_retu);
         return NULL;
     }
-    
+
     _retu->max_calls = max_calls;
 
     _retu->frequ = 10000; /* default value? */
@@ -1663,8 +1663,6 @@ int msi_terminate_session ( MSISession *session )
     timer_terminate_session(session->timer_handler);
     
     pthread_mutex_destroy(&session->mutex);
-
-//     timer_terminate_session();
     
     LOGGER_DEBUG("Terminated session: %p", session);
     free ( session );
