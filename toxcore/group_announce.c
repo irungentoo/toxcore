@@ -153,12 +153,7 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
     //Save (client_id, chat_id) in our ANNOUNCE structure
     add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp, 0);
     
-    char originatortxt[CLIENT_ID_SIZE*2+1];
-    char chatidtxt[CLIENT_ID_SIZE*2+1];
-    strcpy(originatortxt, id_toa(packet + 1));
-    strcpy(chatidtxt, id_toa(announce_plain + 1));
-    
-    LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, chatidtxt);
+    LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
     
     // TODO: repeat the message to the nodes closest to chat id if there is any closer node than we are
 
@@ -296,7 +291,7 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, const uint8_t *clien
     size_t Node_format_size = sizeof(Node_format);
     
     // Get announced nodes from ANNOUNCE list by chat_id
-    Node_format * nodes_list[MAX_SENT_NODES];
+    Node_format nodes_list[MAX_SENT_NODES]; // WARNING: what if MAX_SENT_NODES < MAX_ANNOUNCED_NODES ?
     uint32_t num_nodes = get_announced_nodes(dht->announce, chat_id, nodes_list, 0);
     //LOGGER_DEBUG("Inside send nodes response, num_nodes: %u", num_nodes);
     if (num_nodes == -1)

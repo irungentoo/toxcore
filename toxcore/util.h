@@ -43,7 +43,7 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
-char* id_toa(uint8_t* id);  /* WARNING: returns one of STATIC_BUFFER_COPIES static buffers */
+char* id_toa(const uint8_t* id);  /* WARNING: returns one of STATIC_BUFFER_COPIES static buffers */
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)

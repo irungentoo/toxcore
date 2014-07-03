@@ -76,7 +76,7 @@ uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 static char idtoabuffers[CLIENT_ID_SIZE*2+1];
 static unsigned currentidtoabuffer=0;
 
-char *id_toa(uint8_t *id)
+char *id_toa(const uint8_t *id)
 {
     int i;
     char *str=&idtoabuffers[96*(currentidtoabuffer++)];

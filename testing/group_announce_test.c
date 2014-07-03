@@ -172,7 +172,7 @@ void basicannouncetest()
         int nodes_found=get_announced_nodes(peers[9]->announce, &chatids[CLIENT_ID_SIZE*i], nodes, 1);
         printf("Chat %s, found %d nodes:\n", id_toa(&chatids[CLIENT_ID_SIZE*i]), nodes_found);
         for (j=0; j<nodes_found; j++)
-            printf("\t Node %s at %s:%d\n", nodes[i].client_id, ip_ntoa(&nodes[i].ip_port.ip), nodes[i].ip_port.port);
+            printf("\t Node %s at %s:%d\n", id_toa(nodes[i].client_id), ip_ntoa(&nodes[i].ip_port.ip), nodes[i].ip_port.port);
     }
     
     cleanup:
