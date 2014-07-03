@@ -7,7 +7,6 @@
 #include "../toxcore/ping.h"
 #include "../toxcore/util.h"
 #include "../toxcore/group_announce.h"
-#include "../toxcore/Messenger.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,15 +17,19 @@
 #include <randombytes.h>
 #endif
 
-void idle_cylce(Tox**peers, int peercount)
+void idle_cylce(DHT**peers, int peercount)
 {
     int j;
     for (j=0; j<peercount; j++)
-        tox_do(peers[j]);
+    {
+        networking_poll(peers[j]->net);
+        do_DHT(peers[j]);
+        // TODO: do we need do_net_crypto?
+    }
  
 }
 
-void idle_n_secs(int n, Tox** peers, int peercount)
+void idle_n_secs(int n, DHT** peers, int peercount)
 {
     int i,j;
     for (i=0; i<n*1000; i+=50) /* msecs */
@@ -66,19 +69,21 @@ void basicannouncetest()
     /* The design is the following:
      * we have 10 tox instances, they form 3 chats of 3 members
      * the 10ths then proceeds to query the list of chat's participants */
-    Tox *peers[10];
+    IP localhost;
+    DHT *peers[10];
     int i,j;
+    
+    /* Set ip to IPv6 loopback. TODO: IPv4 fallback? */
+    ip_init(&localhost, 1);
+    localhost.ip6.uint8[15]=1;
     
     /* Init the nodes */
     printf("Nodes generated:\n");
     uint8_t clientids[(CLIENT_ID_SIZE+6)*10];
     for (i=0; i<10; i++)
     {
-        peers[i]=tox_new(TOX_ENABLE_IPV6_DEFAULT);
-        
-        tox_get_address(peers[i],&clientids[(CLIENT_ID_SIZE+6)*i]);
-        printf("%s :%d",id_toa(&clientids[CLIENT_ID_SIZE*i]),((Messenger*)peers[i])->net->port);
-        printf((i%3==2)?"\n---\n":"\n");
+        peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
+        printf("%s localhost6:%d%s", id_toa(peers[i]->self_public_key), peers[i]->net->port, (i%3==2)?"\n---\n":"\n");
     }
     printf("\n");
     
@@ -97,32 +102,41 @@ void basicannouncetest()
         printf("%s\n",id_toa(&chatids[CLIENT_ID_SIZE*i]));
     printf("\n");
     
-    /* Announcing chat presence */
-    printf("Waiting until everybody connects to DHT\n");
-    for (;;)
+    /* Bootstrapping DHTs*/
+    printf("Bootstrapping everybody from eachother\n");
+    for (i=0; i<10; i++)
     {
-        idle_cylce(peers, 10);
-            
-        int numconnected=0;
-        for (i=0;i<10;i++)
-            numconnected+=tox_isconnected(peers[i]);
-        if (numconnected==10)
-            break;
-        usleep(50000);
+        DHT* target = peers[ i>=9? 0 : i+1 ];
+        IP_Port ip_port;
+        ip_copy(&ip_port.ip, &localhost);
+        ip_port.port = target->net->port;
+        uint8_t *key = target->self_public_key;
+        
+        DHT_bootstrap(peers[i], ip_port, key);
     }
     
-    printf("And 5 more seconds to connect to each other\n");
-    idle_n_secs(5, peers, 10);
-    
+    /* Announcing chat presence */
+    printf("Waiting until every DHT gets a full close client list\n");
+    for (;;)
+    {
+        /* TODO: work out a situation when node count > LCLIENT_LIST */
+        idle_cylce(peers, 10);
+        
+        int numconnected=0;
+        for (i=0;i<10;i++)
+            numconnected+=DHT_connectiondegree(peers[i]);
+        if (numconnected==9*10)
+            break;
+        /* TODO: busy wait might be slightly more efficient here */
+        usleep(50000);
+    }
     for (i=0;i<9;i++)
     {
-        /* TODO: some of this code might be fit for adaptation in DHT.c */
-        DHT *dht=((Messenger*)peers[i])->dht;
-        
+        /* TODO: some of this code might be fit for adaptation in DHT.c */    
         Node_format clnode;
-        get_closest_known_node(dht, &chatids[CLIENT_ID_SIZE*(i/3)], &clnode);
+        get_closest_known_node(peers[i], &chatids[CLIENT_ID_SIZE*(i/3)], &clnode);
         
-        if (send_gc_announce_request(dht->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/3)])<0)
+        if (send_gc_announce_request(peers[i]->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/3)])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
             printf("Announcing failure");
@@ -130,34 +144,41 @@ void basicannouncetest()
         }
     }
     
-    
-    printf("Waiting 10 seconds before sending requests\n");
+    printf("Waiting 5 seconds before sending requests\n");
     idle_n_secs(10, peers, 10);
     
     /* Requesting chat lists */
-    for (i=0;i<3;i++)
+    for (i=0; i<3; i++)
     {
         /* The last node gets to ask everybody */
-        DHT *dht=((Messenger*)peers[9])->dht;
-        
         Node_format clnode;
-        get_closest_known_node(dht, &chatids[CLIENT_ID_SIZE*i], &clnode);
+        get_closest_known_node(peers[9], &chatids[CLIENT_ID_SIZE*i], &clnode);
         
-        if (get_gc_announced_nodes_request(dht, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*i])<0)
+        if (get_gc_announced_nodes_request(peers[9], clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*i])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
             printf("Requesting nodes failure");
             goto cleanup;
         }
     }
+
+    printf("Waiting 5 seconds before checking\n");
+    idle_n_secs(10, peers, 10);
     
-    printf("Waiting 20 seconds\n");
-    idle_n_secs(20, peers, 10);
+    /* Inspecting the catch */
+    for (i=0; i<3; i++)
+    {
+        Node_format nodes[MAX_ANNOUNCED_NODES]; 
+        int nodes_found=get_announced_nodes(peers[9]->announce, &chatids[CLIENT_ID_SIZE*i], nodes, 1);
+        printf("Chat %s, found %d nodes:\n", id_toa(&chatids[CLIENT_ID_SIZE*i]), nodes_found);
+        for (j=0; j<nodes_found; j++)
+            printf("\t Node %s at %s:%d\n", nodes[i].client_id, ip_ntoa(&nodes[i].ip_port.ip), nodes[i].ip_port.port);
+    }
     
     cleanup:
     /* Deinit the nodes */
     for (i=0; i<10; i++)
-        tox_kill(peers[i]);
+        kill_DHT(peers[i]);
 }
 
 int main()

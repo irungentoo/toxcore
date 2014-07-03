@@ -2571,12 +2571,9 @@ int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
 
     return -1;
 }
-/*  return 0 if we are not connected to the DHT.
- *  return 1 if we are.
- */
-int DHT_isconnected(const DHT *dht)
+static uint32_t DHT_isconnected_common(const DHT *dht, int needamount)
 {
-    uint32_t i;
+    uint32_t i, res=0;
     unix_time_update();
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
@@ -2584,8 +2581,27 @@ int DHT_isconnected(const DHT *dht)
 
         if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
                 !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
-            return 1;
+            if (needamount)
+                res++;
+            else
+                return 1;
     }
+    
+    return needamount? res : 0;
+}
 
-    return 0;
+/*  return 0 if we are not connected to the DHT.
+ *  return 1 if we are.
+ */
+int DHT_isconnected(const DHT *dht)
+{
+    return (int)DHT_isconnected_common(dht, 0);
+}
+
+/*  return 0 if we are not connected to the DHT.
+ *  return the amount of live connections in close client list otherwise.
+ */
+uint32_t DHT_connectiondegree(const DHT *dht)
+{
+    return DHT_isconnected_common(dht, 1);
 }

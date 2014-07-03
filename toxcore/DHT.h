@@ -396,6 +396,11 @@ void kill_DHT(DHT *dht);
  */
 int DHT_isconnected(const DHT *dht);
 
+/*  return 0 if we are not connected to the DHT.
+ *  return the amount of live connections in close client list otherwise.
+ */
+uint32_t DHT_connectiondegree(const DHT *dht);
+
 int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id);
 
 #endif
