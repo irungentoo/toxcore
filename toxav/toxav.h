@@ -74,6 +74,15 @@ typedef enum {
 } ToxAvCallType;
 
 
+typedef enum {
+    av_CallNonExistant = -1,
+    av_CallInviting, /* when sending call invite */
+    av_CallStarting, /* when getting call invite */
+    av_CallActive,
+    av_CallHold,
+    av_CallHanged_up
+} ToxAvCallState;
+
 /**
  * @brief Error indicators.
  */
@@ -342,6 +351,15 @@ int toxav_get_peer_transmission_type ( ToxAv *av, int32_t call_index, int peer )
  */
 int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer );
 
+/**
+ * @brief Get current call state
+ *
+ * @param av Handler
+ * @param call_index What call
+ * @return int
+ * @retval ToxAvCallState State id
+ */
+ToxAvCallState toxav_get_call_state ( ToxAv *av, int32_t call_index );
 /**
  * @brief Is certain capability supported
  *

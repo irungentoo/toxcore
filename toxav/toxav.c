@@ -795,13 +795,28 @@ int toxav_get_peer_transmission_type ( ToxAv *av, int32_t call_index, int peer )
  */
 int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer )
 {
-    assert(av->msi_session);
-
     if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index]
             || av->msi_session->calls[call_index]->peer_count <= peer )
         return ErrorInternal;
 
     return av->msi_session->calls[call_index]->peers[peer];
+}
+
+/**
+ * @brief Get id of peer participating in conversation
+ *
+ * @param av Handler
+ * @param peer peer index
+ * @return int
+ * @retval ToxAvError No peer id
+ */
+ToxAvCallState toxav_get_call_state(ToxAv *av, int32_t call_index)
+{
+    if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] )
+        return av_CallNonExistant;
+
+    return av->msi_session->calls[call_index]->state;
+
 }
 
 /**
