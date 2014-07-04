@@ -640,6 +640,7 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
 
 
     CallSpecific *call = &av->calls[call_index];
+    reconfigure_video_encoder_resolution(call->cs, input->d_w, input->d_h);
 
     int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 
