@@ -234,12 +234,12 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     }
 
     rc = vpx_codec_control(&cs->v_encoder, VP8E_SET_CPUUSED, 7);
-    
+
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
-    
+
     return 0;
 }
 
