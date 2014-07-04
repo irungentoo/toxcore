@@ -161,8 +161,8 @@ void basicannouncetest()
         }
     }
 
-    printf("Waiting 5 seconds before checking\n");
-    idle_n_secs(5, peers, PEERCOUNT);
+    printf("Waiting 10 seconds before checking\n");
+    idle_n_secs(10, peers, PEERCOUNT);
     
     /* Inspecting the catch */
     for (i=0; i<CHATCOUNT; i++)
@@ -171,7 +171,7 @@ void basicannouncetest()
         int nodes_found=get_announced_nodes(peers[9]->announce, &chatids[CLIENT_ID_SIZE*i], nodes, 1);
         printf("Chat %s, found %d nodes:\n", id_toa(&chatids[CLIENT_ID_SIZE*i]), nodes_found);
         for (j=0; j<nodes_found; j++)
-            printf("\t Node %s at %s:%d\n", id_toa(nodes[i].client_id), ip_ntoa(&nodes[i].ip_port.ip), nodes[i].ip_port.port);
+            printf("\t Node %s at %s:%d\n", id_toa(nodes[j].client_id), ip_ntoa(&nodes[j].ip_port.ip), nodes[j].ip_port.port);
     }
     
     cleanup:

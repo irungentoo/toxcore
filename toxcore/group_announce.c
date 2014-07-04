@@ -451,27 +451,35 @@ int add_announced_nodes(ANNOUNCE *announce, const uint8_t *client_id, uint8_t *c
 
     for (i = 0; i < MAX_ANNOUNCED_NODES; i++) {
         if (!ip_isset(&announced_nodes[i].ip_port.ip)) {
-            memcpy(announced_nodes[i].client_id, client_id, CLIENT_ID_SIZE);
-            memcpy(announced_nodes[i].chat_id, chat_id, CLIENT_ID_SIZE);
+            id_copy(announced_nodes[i].client_id, client_id);
+            id_copy(announced_nodes[i].chat_id, chat_id);
             ipport_copy(&announced_nodes[i].ip_port, &ip_port);
             return 0;
         }
 
+        /*  1. We don't really need this to be an error
+            2. Should check both clauses with AND operator, one chat may contain multiple
+            people and one person may be listed in multiple chats
+            
         if (memcmp(announced_nodes[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
             return -1;
         }
 
         if (memcmp(announced_nodes[i].chat_id, chat_id, CLIENT_ID_SIZE) == 0) {
             return -1;
-        }
+        } */
+        
+        /* We've seen that node before in our list */
+        if (id_equal(announced_nodes[i].client_id, client_id) && id_equal(announced_nodes[i].chat_id, chat_id))
+            return 0;
     }
 
     uint32_t r = rand();
 
     for (i = 0; i < MAX_ANNOUNCED_NODES; i++) {
         if (id_closest(announce->dht->self_public_key, announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].client_id, client_id) == 2) {
-            memcpy(announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].client_id, client_id, CLIENT_ID_SIZE);
-            memcpy(announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].chat_id, chat_id, CLIENT_ID_SIZE);
+            id_copy(announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].client_id, client_id);
+            id_copy(announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].chat_id, chat_id);
             ipport_copy(&announced_nodes[(i + r) % MAX_ANNOUNCED_NODES].ip_port, &ip_port);
             return 0;
         }
