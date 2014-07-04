@@ -1,0 +1,20 @@
+Source: tox
+Section: unknown
+Priority: optional
+Maintainer: James Michael DuPont <mdupont@laptop.private.thefr33.com>
+Build-Depends: debhelper (>= 9), autotools-dev, libsodium (>= 0.4.5-1)
+Standards-Version: 3.9.5
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: git://anonscm.debian.org/collab-maint/tox.git
+#Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/tox.git;a=summary
+
+Package: tox
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
+
+Package: tox-doc
+Architecture: all
+Description: documentation for tox
+ <insert long description, indented with spaces>
