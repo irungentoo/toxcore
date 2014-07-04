@@ -34,7 +34,7 @@
 #define STATIC_BUFFER_COPIES    10
 #define STATIC_BUFFER_DEFINE(name,len)  static char stat_buffer_##name[len*STATIC_BUFFER_COPIES]; \
                                         static unsigned stat_buffer_counter_##name=0;
-#define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[len*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
+#define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[(len)*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
 
 #define inline__ inline __attribute__((always_inline))
 
