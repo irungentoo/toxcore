@@ -157,7 +157,7 @@ Grab the following packages:
 
 You must install yasm before installing libvpx, otherwise libvpx will fail to make correctly.
 
-pkg-config is important for enabling a/v support in tox core, failure to install pkg-config will prevent tox core form finding the required libopus/libvpx libraries.
+pkg-config is important for enabling a/v support in tox core, failure to install pkg-config will prevent tox core form finding the required libopus/libvpx libraries. (pkg-config may not configure properly, if you get an error about GLIB, run configure with the following parameter, --with-internal-glib).
 
 Uncompress and install them all. Make sure to follow the README as the instructions change, but they all follow the same pattern below:
 
@@ -167,7 +167,7 @@ make
 sudo make install
 ```
 
-Change to your local Tox repository and:
+Compiling and installing Tox Core
 
 ```bash
 cd ProjectTox-Core
