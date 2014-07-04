@@ -1,4 +1,4 @@
-/**  media.h
+/**  codec.h
  *
  *   Audio and video codec intitialization, encoding/decoding and playback
  *
