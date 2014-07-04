@@ -1,20 +1,18 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: tox
-Source: <url://example.com>
+Source: https://tox.im
+
 
 Files: *
 Copyright: <years> <put author's name and email here>
            <years> <likewise for another author>
-License: <special license>
- <Put the license of the package here indented by 1 space>
- <This follows the format of Description: lines in control file>
- .
- <Including paragraphs>
+License: GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
+ See the COPYING FILE
 
 # If you want to use GPL v2 or later for the /debian/* files use 
 # the following clauses, or change it to suit. Delete these two lines
 Files: debian/*
-Copyright: 2014 James Michael DuPont <mdupont@laptop.private.thefr33.com>
+Copyright: 2014 James Michael DuPont <mdupont@thefr33.com>
 License: GPL-2+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by

@@ -1,2 +1,2 @@
-?package(tox):needs="X11|text|vc|wm" section="Applications/see-menu-manual"\
+?package(tox):needs="X11" section="Applications/Network/Communication"\
   title="tox" command="/usr/bin/tox"
