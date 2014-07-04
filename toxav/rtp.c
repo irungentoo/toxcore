@@ -29,10 +29,6 @@
 #include "rtp.h"
 #include <stdlib.h>
 
-
-#define PAYLOAD_ID_VALUE_OPUS 1
-#define PAYLOAD_ID_VALUE_VP8  2
-
 #define size_32 4
 
 #define ADD_FLAG_VERSION(_h, _v) do { ( _h->flags ) &= 0x3F; ( _h->flags ) |= ( ( ( _v ) << 6 ) & 0xC0 ); } while(0)
@@ -67,26 +63,6 @@ inline__ int check_late_message (RTPSession *session, RTPMessage *msg)
      */
     return ( msg->header->sequnum < session->rsequnum && msg->header->timestamp < session->timestamp ) ? 0 : -1;
 }
-
-/**
- * @brief Speaks for it self.
- *
- */
-static const uint32_t payload_table[] = {
-    8000, 8000, 8000, 8000, 8000, 8000, 16000, 8000, 8000, 8000,        /*    0-9    */
-    44100, 44100, 0, 0, 90000, 8000, 11025, 22050, 0, 0,                /*   10-19   */
-    0, 0, 0, 0, 0, 90000, 90000, 0, 90000, 0,                           /*   20-29   */
-    0, 90000, 90000, 90000, 90000, 0, 0, 0, 0, 0,                       /*   30-39   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                       /*   40-49   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                       /*   50-59   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                       /*   60-69   */
-    PAYLOAD_ID_VALUE_OPUS, PAYLOAD_ID_VALUE_VP8, 0, 0, 0, 0, 0, 0, 0, 0,/*   70-79   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                       /*   80-89   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                       /*   90-99   */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                       /*  100-109  */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                                       /*  110-119  */
-    0, 0, 0, 0, 0, 0, 0, 0                                              /*  120-127  */
-};
 
 
 /**
@@ -686,7 +662,7 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
     _retu->csrc      = NULL;        /* Container */
     _retu->ssrc      = random_int();
     _retu->marker    = 0;
-    _retu->payload_type = payload_table[payload_type];
+    _retu->payload_type = payload_type % 128;
 
     _retu->dest = friend_num;
 
