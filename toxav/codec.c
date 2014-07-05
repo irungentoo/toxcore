@@ -343,7 +343,8 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
         /*video_width = 320;
         video_height = 240; */
     } else {
-        retu->capabilities |= ( 0 == init_video_encoder(retu, max_video_width, max_video_height, video_bitrate) ) ? v_encoding : 0;
+        retu->capabilities |= ( 0 == init_video_encoder(retu, max_video_width, max_video_height,
+                                video_bitrate) ) ? v_encoding : 0;
         retu->capabilities |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
     }
 
