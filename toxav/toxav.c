@@ -68,6 +68,7 @@ typedef struct _CallSpecific {
     void *frame_buf; /* buffer for split video payloads */
 
     _Bool call_active;
+    pthread_mutex_t mutex[1];
 } CallSpecific;
 
 
@@ -299,7 +300,7 @@ int toxav_stop_call ( ToxAv *av, int32_t call_index )
 int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettings *codec_settings, int support_video )
 {
     if ( !av->msi_session || cii(call_index, av->msi_session) ||
-            !av->msi_session->calls[call_index] || av->calls[call_index].call_active) {
+         !av->msi_session->calls[call_index] || av->calls[call_index].call_active) {
         LOGGER_ERROR("Error while starting RTP session: invalid call!\n");
         return ErrorInternal;
     }
@@ -312,7 +313,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
 
     if ( !call->crtps[audio_index] ) {
         LOGGER_ERROR("Error while starting audio RTP session!\n");
-        return ErrorStartingAudioRtp;
+        return ErrorInternal;
     }
 
 
@@ -323,9 +324,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
 
         if ( !call->crtps[video_index] ) {
             LOGGER_ERROR("Error while starting video RTP session!\n");
-
-            rtp_terminate_session(call->crtps[audio_index], av->messenger);
-            return ErrorStartingVideoRtp;
+            goto error;
         }
 
         call->frame_limit = 0;
@@ -335,20 +334,15 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
         call->frame_buf = calloc(MAX_VIDEOFRAME_SIZE, 1);
 
         if (!call->frame_buf) {
-            rtp_terminate_session(call->crtps[audio_index], av->messenger);
-            rtp_terminate_session(call->crtps[video_index], av->messenger);
             LOGGER_WARNING("Frame buffer allocation failed!");
-            return ErrorInternal;
+            goto error;
         }
 
     }
 
     if ( !(call->j_buf = create_queue(codec_settings->jbuf_capacity)) ) {
-        rtp_terminate_session(call->crtps[audio_index], av->messenger);
-        rtp_terminate_session(call->crtps[video_index], av->messenger);
-        free(call->frame_buf);
         LOGGER_WARNING("Jitter buffer creaton failed!");
-        return ErrorInternal;
+        goto error;
     }
 
     if ( (call->cs = codec_init_session(codec_settings->audio_bitrate,
@@ -359,14 +353,20 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
                                         codec_settings->video_width,
                                         codec_settings->video_height,
                                         codec_settings->video_bitrate) )) {
+        
+        if ( pthread_mutex_init(call->mutex, NULL) != 0 ) goto error;        
+        
         call->call_active = 1;
+        
         return ErrorNone;
     }
-
+    
+error:
     rtp_terminate_session(call->crtps[audio_index], av->messenger);
     rtp_terminate_session(call->crtps[video_index], av->messenger);
     free(call->frame_buf);
     terminate_queue(call->j_buf);
+    codec_terminate_session(call->cs);
 
     return ErrorInternal;
 }
@@ -387,31 +387,18 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     }
 
     CallSpecific *call = &av->calls[call_index];
-
+    
+    pthread_mutex_lock(call->mutex);
+    
     call->call_active = 0;
 
-    if ( call->crtps[audio_index] && -1 == rtp_terminate_session(call->crtps[audio_index], av->messenger) ) {
-        LOGGER_ERROR("Error while terminating audio RTP session!\n");
-        /*return ErrorTerminatingAudioRtp;*/
-    } else call->crtps[audio_index] = NULL;
-
-    if ( call->crtps[video_index] && -1 == rtp_terminate_session(call->crtps[video_index], av->messenger) ) {
-        LOGGER_ERROR("Error while terminating video RTP session!\n");
-        /*return ErrorTerminatingVideoRtp;*/
-    } else call->crtps[video_index] = NULL;
-
-    if ( call->j_buf ) {
-        terminate_queue(call->j_buf);
-        call->j_buf = NULL;
-        LOGGER_DEBUG("Terminated j queue");
-    } else LOGGER_DEBUG("No j queue");
-
-    if ( call->cs ) {
-        codec_terminate_session(call->cs);
-        call->cs = NULL;
-        LOGGER_DEBUG("Terminated codec session");
-    } else LOGGER_DEBUG("No codec session");
-
+    rtp_terminate_session(call->crtps[audio_index], av->messenger); call->crtps[audio_index] = NULL;
+    rtp_terminate_session(call->crtps[video_index], av->messenger); call->crtps[video_index] = NULL;
+    terminate_queue(call->j_buf); call->j_buf = NULL;
+    codec_terminate_session(call->cs); call->cs = NULL;
+    
+    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_destroy(call->mutex);
 
     return ErrorNone;
 }
@@ -431,22 +418,22 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallType type, const uint8_t *payload,
                                       unsigned int length )
 {
-#define send(data, len) rtp_send_msg(av->calls[call_index].crtps[type - TypeAudio], av->msi_session->messenger_handle, data, len)
-
-    if (av->calls[call_index].crtps[type - TypeAudio]) {
+    CallSpecific* call = &av->calls[call_index];
+    if (call->crtps[type - TypeAudio]) {
+        
         if (type == TypeAudio) {
-            return send(payload, length);
+            return rtp_send_msg(call->crtps[type - TypeAudio], av->messenger, payload, length);
         } else {
             if (length == 0 || length > MAX_VIDEOFRAME_SIZE) {
                 LOGGER_ERROR("Invalid video frame size: %u\n", length);
-                return -1;
+                return ErrorInternal;
             }
 
             /* number of pieces - 1*/
             uint8_t numparts = (length - 1) / VIDEOFRAME_PIECE_SIZE;
 
             uint8_t load[2 + VIDEOFRAME_PIECE_SIZE];
-            load[0] = av->calls[call_index].frame_outid++;
+            load[0] = call->frame_outid++;
             load[1] = 0;
 
             int i;
@@ -454,9 +441,11 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
             for (i = 0; i < numparts; i++) {
                 memcpy(load + VIDEOFRAME_HEADER_SIZE, payload, VIDEOFRAME_PIECE_SIZE);
                 payload += VIDEOFRAME_PIECE_SIZE;
-
-                if (send(load, VIDEOFRAME_HEADER_SIZE + VIDEOFRAME_PIECE_SIZE) != 0) {
-                    return -1;
+                
+                if (rtp_send_msg(call->crtps[type - TypeAudio], av->messenger, 
+                                 load, VIDEOFRAME_HEADER_SIZE + VIDEOFRAME_PIECE_SIZE) != 0) {
+                    
+                    return ErrorInternal;
                 }
 
                 load[1]++;
@@ -465,13 +454,12 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
             /* remainder = length % VIDEOFRAME_PIECE_SIZE, VIDEOFRAME_PIECE_SIZE if = 0 */
             length = ((length - 1) % VIDEOFRAME_PIECE_SIZE) + 1;
             memcpy(load + VIDEOFRAME_HEADER_SIZE, payload, length);
-            return send(load, VIDEOFRAME_HEADER_SIZE + length);
+            
+            return rtp_send_msg(call->crtps[type - TypeAudio], av->messenger, load, VIDEOFRAME_HEADER_SIZE + length);
         }
     } else {
-        return -1;
+        return ErrorNoRtpSession;
     }
-
-#undef send
 }
 
 /**
@@ -489,9 +477,9 @@ inline__ int toxav_recv_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
     if ( !dest ) return ErrorInternal;
 
     CallSpecific *call = &av->calls[call_index];
-
+    
     if ( !call->crtps[type - TypeAudio] ) return ErrorNoRtpSession;
-
+    
     RTPMessage *message;
 
     if ( type == TypeAudio ) {
@@ -545,9 +533,10 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
     }
 
 
+    CallSpecific *call = &av->calls[call_index];    
+    pthread_mutex_lock(call->mutex);
+    
     uint8_t packet [RTP_PAYLOAD_SIZE];
-    CallSpecific *call = &av->calls[call_index];
-
     int recved_size;
 
     while ((recved_size = toxav_recv_rtp_payload(av, call_index, TypeVideo, packet)) > 0) {
@@ -597,7 +586,9 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
     img = vpx_codec_get_frame(&call->cs->v_decoder, &iter);
 
     *output = img;
-    return 0;
+    
+    pthread_mutex_unlock(call->mutex);
+    return ErrorNone;
 }
 
 /**
@@ -616,8 +607,12 @@ inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *fr
         return ErrorNoCall;
     }
 
-
-    return toxav_send_rtp_payload(av, call_index, TypeVideo, frame, frame_size);
+    
+    pthread_mutex_lock(av->calls[call_index].mutex);
+    int rc = toxav_send_rtp_payload(av, call_index, TypeVideo, frame, frame_size);
+    pthread_mutex_unlock(av->calls[call_index].mutex);
+    
+    return rc;
 }
 
 /**
@@ -640,11 +635,13 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
 
 
     CallSpecific *call = &av->calls[call_index];
+    pthread_mutex_lock(call->mutex);
 
     int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Could not encode video frame: %s\n", vpx_codec_err_to_string(rc));
+        pthread_mutex_unlock(call->mutex);
         return ErrorInternal;
     }
 
@@ -656,13 +653,17 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
 
     while ( (pkt = vpx_codec_get_cx_data(&call->cs->v_encoder, &iter)) ) {
         if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
-            if ( copied + pkt->data.frame.sz > dest_max ) return ErrorPacketTooLarge;
+            if ( copied + pkt->data.frame.sz > dest_max ) { 
+                pthread_mutex_unlock(call->mutex);
+                return ErrorPacketTooLarge;
+            }
 
             memcpy(dest + copied, pkt->data.frame.buf, pkt->data.frame.sz);
             copied += pkt->data.frame.sz;
         }
     }
 
+    pthread_mutex_unlock(call->mutex);
     return copied;
 }
 
@@ -689,6 +690,7 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
 
 
     CallSpecific *call = &av->calls[call_index];
+    pthread_mutex_lock(call->mutex);
 
     uint8_t packet [RTP_PAYLOAD_SIZE];
 
@@ -696,7 +698,9 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
 
     if ( recved_size == ErrorAudioPacketLost ) {
         int dec_size = opus_decode(call->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
-
+        
+        pthread_mutex_unlock(call->mutex);
+        
         if ( dec_size < 0 ) {
             LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
             return ErrorInternal;
@@ -704,12 +708,15 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
 
     } else if ( recved_size ) {
         int dec_size = opus_decode(call->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
-
+        
+        pthread_mutex_unlock(call->mutex);
+        
         if ( dec_size < 0 ) {
             LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
             return ErrorInternal;
         } else return dec_size;
     } else {
+        pthread_mutex_unlock(call->mutex);
         return 0; /* Nothing received */
     }
 }
@@ -732,8 +739,12 @@ inline__ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *fr
         return ErrorNoCall;
     }
 
-
-    return toxav_send_rtp_payload(av, call_index, TypeAudio, frame, frame_size);
+    
+    pthread_mutex_lock(av->calls[call_index].mutex);
+    int rc = toxav_send_rtp_payload(av, call_index, TypeAudio, frame, frame_size);
+    pthread_mutex_unlock(av->calls[call_index].mutex);
+    
+    return rc;
 }
 
 /**
@@ -756,8 +767,12 @@ inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t 
         return ErrorNoCall;
     }
 
-
+    
+    pthread_mutex_lock(av->calls[call_index].mutex);
+    
     int32_t rc = opus_encode(av->calls[call_index].cs->audio_encoder, frame, frame_size, dest, dest_max);
+
+    pthread_mutex_unlock(av->calls[call_index].mutex);
 
     if (rc < 0) {
         LOGGER_ERROR("Failed to encode payload: %s\n", opus_strerror(rc));
