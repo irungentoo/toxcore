@@ -68,7 +68,7 @@ typedef struct _CallSpecific {
     void *frame_buf; /* buffer for split video payloads */
 
     _Bool call_active;
-    pthread_mutex_t mutex[1];
+    pthread_mutex_t mutex;
 } CallSpecific;
 
 
@@ -354,7 +354,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
                                         codec_settings->video_height,
                                         codec_settings->video_bitrate) )) {
         
-        if ( pthread_mutex_init(call->mutex, NULL) != 0 ) goto error;        
+        if ( pthread_mutex_init(&call->mutex, NULL) != 0 ) goto error;        
         
         call->call_active = 1;
         
@@ -388,7 +388,7 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
     CallSpecific *call = &av->calls[call_index];
     
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(&call->mutex);
     
     call->call_active = 0;
 
@@ -397,8 +397,8 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     terminate_queue(call->j_buf); call->j_buf = NULL;
     codec_terminate_session(call->cs); call->cs = NULL;
     
-    pthread_mutex_unlock(call->mutex);
-    pthread_mutex_destroy(call->mutex);
+    pthread_mutex_unlock(&call->mutex);
+    pthread_mutex_destroy(&call->mutex);
 
     return ErrorNone;
 }
@@ -534,7 +534,7 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
 
 
     CallSpecific *call = &av->calls[call_index];    
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(&call->mutex);
     
     uint8_t packet [RTP_PAYLOAD_SIZE];
     int recved_size;
@@ -587,7 +587,7 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
 
     *output = img;
     
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(&call->mutex);
     return ErrorNone;
 }
 
@@ -608,9 +608,9 @@ inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *fr
     }
 
     
-    pthread_mutex_lock(av->calls[call_index].mutex);
+    pthread_mutex_lock(&av->calls[call_index].mutex);
     int rc = toxav_send_rtp_payload(av, call_index, TypeVideo, frame, frame_size);
-    pthread_mutex_unlock(av->calls[call_index].mutex);
+    pthread_mutex_unlock(&av->calls[call_index].mutex);
     
     return rc;
 }
@@ -635,7 +635,7 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
 
 
     CallSpecific *call = &av->calls[call_index];
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(&call->mutex);
     
     reconfigure_video_encoder_resolution(call->cs, input->d_w, input->d_h);
 
@@ -643,7 +643,7 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Could not encode video frame: %s\n", vpx_codec_err_to_string(rc));
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(&call->mutex);
         return ErrorInternal;
     }
 
@@ -656,7 +656,7 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
     while ( (pkt = vpx_codec_get_cx_data(&call->cs->v_encoder, &iter)) ) {
         if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
             if ( copied + pkt->data.frame.sz > dest_max ) { 
-                pthread_mutex_unlock(call->mutex);
+                pthread_mutex_unlock(&call->mutex);
                 return ErrorPacketTooLarge;
             }
 
@@ -665,7 +665,7 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
         }
     }
 
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(&call->mutex);
     return copied;
 }
 
@@ -692,7 +692,7 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
 
 
     CallSpecific *call = &av->calls[call_index];
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(&call->mutex);
 
     uint8_t packet [RTP_PAYLOAD_SIZE];
 
@@ -701,7 +701,7 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
     if ( recved_size == ErrorAudioPacketLost ) {
         int dec_size = opus_decode(call->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
         
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(&call->mutex);
         
         if ( dec_size < 0 ) {
             LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
@@ -711,14 +711,14 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
     } else if ( recved_size ) {
         int dec_size = opus_decode(call->cs->audio_decoder, packet, recved_size, dest, frame_size, 0);
         
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(&call->mutex);
         
         if ( dec_size < 0 ) {
             LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
             return ErrorInternal;
         } else return dec_size;
     } else {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(&call->mutex);
         return 0; /* Nothing received */
     }
 }
@@ -742,9 +742,9 @@ inline__ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *fr
     }
 
     
-    pthread_mutex_lock(av->calls[call_index].mutex);
+    pthread_mutex_lock(&av->calls[call_index].mutex);
     int rc = toxav_send_rtp_payload(av, call_index, TypeAudio, frame, frame_size);
-    pthread_mutex_unlock(av->calls[call_index].mutex);
+    pthread_mutex_unlock(&av->calls[call_index].mutex);
     
     return rc;
 }
@@ -770,11 +770,11 @@ inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t 
     }
 
     
-    pthread_mutex_lock(av->calls[call_index].mutex);
+    pthread_mutex_lock(&av->calls[call_index].mutex);
     
     int32_t rc = opus_encode(av->calls[call_index].cs->audio_encoder, frame, frame_size, dest, dest_max);
 
-    pthread_mutex_unlock(av->calls[call_index].mutex);
+    pthread_mutex_unlock(&av->calls[call_index].mutex);
 
     if (rc < 0) {
         LOGGER_ERROR("Failed to encode payload: %s\n", opus_strerror(rc));
