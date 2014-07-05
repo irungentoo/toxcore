@@ -135,7 +135,7 @@ void basicannouncetest()
         Node_format clnode;
         get_closest_known_node(peers[i], &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)], &clnode);
         
-        if (send_gc_announce_request(peers[i]->announce, clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
+        if (send_gc_announce_request(peers[i], clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
             printf("Announcing failure");

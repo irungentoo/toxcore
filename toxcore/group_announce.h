@@ -34,7 +34,7 @@ int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format 
 ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
-int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id);
+int send_gc_announce_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id);
 int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id);
 
 #endif /* __GROUP_ANNOUNCE_H__ */

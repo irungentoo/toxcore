@@ -88,7 +88,7 @@ START_TEST(test_basic)
     printf("Chat_ID: ");
     print_client_id(chat_public_key);
 
-    int result = send_gc_announce_request(announce1, n2.ip_port, n2.client_id, chat_public_key);
+    int result = send_gc_announce_request(announce1->dht, n2.ip_port, n2.client_id, chat_public_key);
     ck_assert_msg(result == 0, "Failed to create/send group announce request packet.");
 
     uint32_t i;

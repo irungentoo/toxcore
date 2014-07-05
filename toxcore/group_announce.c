@@ -57,18 +57,18 @@ struct ANNOUNCE {
  * return -1 on failure
  * return 0 on success
  */
-int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id)
+int send_gc_announce_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id)
 {
     LOGGER_DEBUG("Inside group announce request");
     // Check if packet is going to be sent to ourself
-    if (id_equal(client_id, announce->dht->self_public_key))
+    if (id_equal(client_id, dht->self_public_key))
         return -1;
 
     // Generate random ping_id.
     uint8_t data[PING_DATA_SIZE];
     id_copy(data, client_id);
     memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
-    uint64_t ping_id = ping_array_add(&announce->ping_array, data, sizeof(data));
+    uint64_t ping_id = ping_array_add(&dht->announce->ping_array, data, sizeof(data));
 
     if (ping_id == 0)
         return -1;
@@ -81,7 +81,7 @@ int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, const uint8_t *cli
 
     // Generate shared_key to encrypt announce_plane
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    DHT_get_shared_key_sent(announce->dht, shared_key, client_id);
+    DHT_get_shared_key_sent(dht, shared_key, client_id);
 
     // Generate new nonce
     uint8_t nonce[crypto_box_NONCEBYTES];
@@ -100,11 +100,11 @@ int send_gc_announce_request(ANNOUNCE *announce, IP_Port ipp, const uint8_t *cli
     // Generate DHT packet == NET_PACKET_ANNOUNCE_REQUEST + client_id + nonce + announce_plain + crypto_box_MACBYTES
     uint8_t   pk[DHT_ANNOUNCE_SIZE];
     pk[0] = NET_PACKET_ANNOUNCE_REQUEST;
-    memcpy(pk + 1, announce->dht->self_public_key, CLIENT_ID_SIZE);
+    memcpy(pk + 1, dht->self_public_key, CLIENT_ID_SIZE);
     memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
     memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
 
-    if ((uint32_t)sendpacket(announce->dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
+    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
         return -1;
 
     return 0;    
