@@ -1,4 +1,4 @@
-tox for Debian
+libtoxcore for Debian
 --------------
 
 This is a first attempt at packaging tox for debian

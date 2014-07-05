@@ -1,4 +1,4 @@
-Source: tox
+Source: libtoxcore
 Section: unknown
 Priority: optional
 Maintainer: James Michael DuPont <mdupont@thefr33.com>
@@ -8,14 +8,9 @@ Homepage: https://github.com/h4ck3rm1k3/toxcore
 #Vcs-Git: git://anonscm.debian.org/collab-maint/tox.git
 #Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/tox.git;a=summary
 
-Package: tox
+Package: libtoxcore
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: the tox.im communications client
  The future of online communications. https://tox.im
 
-
-Package: tox-doc
-Architecture: all
-Description: documentation for tox
- Docs are mostly on the wiki

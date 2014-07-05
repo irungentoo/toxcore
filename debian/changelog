@@ -1,4 +1,4 @@
-tox (0.001-1) unstable; urgency=low
+libtoxcore (0.001-1) unstable; urgency=low
 
   * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
 
