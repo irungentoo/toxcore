@@ -507,17 +507,14 @@ int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format 
     for (i = 0; i < MAX_ANNOUNCED_NODES; i++) {
         if (ip_isset(&announced_nodes[i].ip_port.ip)) {
             if (id_equal(chat_id, announced_nodes[i].chat_id)) {
-                memcpy(nodes_list[num_nodes].client_id, announced_nodes[i].client_id, CLIENT_ID_SIZE);
+                id_copy(nodes_list[num_nodes].client_id, announced_nodes[i].client_id);
                 ipport_copy(&nodes_list[num_nodes].ip_port, &announced_nodes[i].ip_port);
                 num_nodes++;
             }
         }
     }
 
-    if (num_nodes==0) 
-        return -1;
-    else
-        return num_nodes;
+    return num_nodes;
 }
 
 ANNOUNCE *new_announce(DHT *dht)
