@@ -206,6 +206,44 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
     return 0;
 }
 
+int reconfigure_video_encoder_resolution(CodecState *cs, uint16_t width, uint16_t height)
+{
+    vpx_codec_enc_cfg_t cfg = *cs->v_encoder.config.enc;
+
+    if (cfg.g_w == width && cfg.g_h == height)
+        return 0;
+
+    LOGGER_DEBUG("New video resolution: %u %u", width, height);
+    cfg.g_w = width;
+    cfg.g_h = height;
+    int rc = vpx_codec_enc_config_set(&cs->v_encoder, &cfg);
+
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        return -1;
+    }
+
+    return 0;
+}
+
+int reconfigure_video_encoder_bitrate(CodecState *cs, uint32_t video_bitrate)
+{
+    vpx_codec_enc_cfg_t cfg = *cs->v_encoder.config.enc;
+
+    if (cfg.rc_target_bitrate == video_bitrate)
+        return 0;
+
+    LOGGER_DEBUG("New video bitrate: %u", video_bitrate);
+    cfg.rc_target_bitrate = video_bitrate;
+    int rc = vpx_codec_enc_config_set(&cs->v_encoder, &cfg);
+
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        return -1;
+    }
+
+    return 0;
+}
 
 int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t video_bitrate)
 {
@@ -218,8 +256,8 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     }
 
     cfg.rc_target_bitrate = video_bitrate;
-    cfg.g_w = width;
-    cfg.g_h = height;
+    cfg.g_w = 8192;
+    cfg.g_h = 8192;
     cfg.g_pass = VPX_RC_ONE_PASS;
     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
     cfg.g_lag_in_frames = 0;
@@ -239,6 +277,9 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
+
+    if (reconfigure_video_encoder_resolution(cs, width, height) != 0)
+        return -1;
 
     return 0;
 }
