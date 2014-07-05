@@ -81,8 +81,8 @@ struct _ToxAv {
 
 const ToxAvCodecSettings av_DefaultSettings = {
     500,
-    800,
-    600,
+    1280,
+    720,
 
     64000,
     20,
@@ -350,8 +350,8 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
                                         codec_settings->audio_sample_rate,
                                         codec_settings->audio_channels,
                                         codec_settings->audio_VAD_tolerance,
-                                        codec_settings->video_width,
-                                        codec_settings->video_height,
+                                        codec_settings->max_video_width,
+                                        codec_settings->max_video_height,
                                         codec_settings->video_bitrate) )) {
 
         if ( pthread_mutex_init(&call->mutex, NULL) != 0 ) goto error;
@@ -642,7 +642,8 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
     CallSpecific *call = &av->calls[call_index];
     pthread_mutex_lock(&call->mutex);
 
-    reconfigure_video_encoder_resolution(call->cs, input->d_w, input->d_h);
+    if (reconfigure_video_encoder_resolution(call->cs, input->d_w, input->d_h) != 0)
+        return ErrorInternal;
 
     int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 

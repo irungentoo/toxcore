@@ -199,7 +199,7 @@ START_TEST(test_AV_flows)
     printf("All set after %llu seconds! Starting call...\n", time(NULL) - cur_time);
 
     muhcaps = av_DefaultSettings;
-    muhcaps.video_height = muhcaps.video_width = 128;
+    muhcaps.max_video_height = muhcaps.max_video_width = 128;
 
     Status status_control = {
         {none, toxav_new(Alice, 1), NULL, -1},

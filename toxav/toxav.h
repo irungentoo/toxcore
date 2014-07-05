@@ -120,8 +120,8 @@ typedef enum {
  */
 typedef struct _ToxAvCodecSettings {
     uint32_t video_bitrate; /* In kbits/s */
-    uint16_t video_width; /* In px */
-    uint16_t video_height; /* In px */
+    uint16_t max_video_width; /* In px */
+    uint16_t max_video_height; /* In px */
 
     uint32_t audio_bitrate; /* In bits/s */
     uint16_t audio_frame_duration; /* In ms */
