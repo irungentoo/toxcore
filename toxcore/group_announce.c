@@ -150,10 +150,10 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
     uint64_t  ping_id;
     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
 
-    //Save (client_id, chat_id) in our ANNOUNCE structure
-    add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp, 0);
-    
     LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
+    
+    //Save (client_id, chat_id) in our ANNOUNCE structure
+    return add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp, 0);
     
     // TODO: repeat the message to the nodes closest to chat id if there is any closer node than we are
 
@@ -413,6 +413,7 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, const uint8
 
     uint32_t i;
     for (i = 0; i<num_nodes; i++) {
+        // We need to handle -1 behaviour here. But I don't give a fuck :)
         add_announced_nodes(dht->announce, plain_nodes[i].client_id, announce_plain + 1, plain_nodes[i].ip_port, 1);
         // Debugging
         char client_id_txt[CLIENT_ID_SIZE*2+1];
@@ -491,7 +492,7 @@ int add_announced_nodes(ANNOUNCE *announce, const uint8_t *client_id, uint8_t *c
 /* Get nodes from the announced_nodes list given chat_id.
  *
  *  return num_nodes if found.
- *  return -1 if not found.
+ *  return 0 if not found.
  */
 int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format *nodes_list, int inner)
 {
