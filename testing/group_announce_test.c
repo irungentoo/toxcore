@@ -136,13 +136,14 @@ void basicannouncetest()
         /* TODO: some of this code might be fit for adaptation in DHT.c */    
         Node_format clnode;
         get_closest_known_node(peers[i], &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)], &clnode);
-        
+        printf("Closest node first iteration: %s\n", id_toa(clnode.client_id));
         if (send_gc_announce_request(peers[i], clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
             printf("Announcing failure");
             goto cleanup;
         }
+        idle_n_secs(5, peers, PEERCOUNT);
     }
     
     printf("Waiting 5 seconds before sending requests\n");
@@ -154,7 +155,7 @@ void basicannouncetest()
         /* The last node gets to ask everybody */
         Node_format clnode;
         get_closest_known_node(peers[9], &chatids[CLIENT_ID_SIZE*i], &clnode);
-        
+        printf("Closest node second iteration: %s\n", id_toa(clnode.client_id));
         if (get_gc_announced_nodes_request(peers[9], clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*i])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
