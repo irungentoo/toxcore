@@ -381,14 +381,20 @@ error:
  */
 int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 {
-    if (cii(call_index, av->msi_session) || !av->calls[call_index].call_active) {
-        LOGGER_WARNING("Action on inactive call: %d", call_index);
+    if (cii(call_index, av->msi_session)) {
+        LOGGER_WARNING("Invalid call index: %d", call_index);
         return ErrorNoCall;
     }
 
     CallSpecific *call = &av->calls[call_index];
     
     pthread_mutex_lock(&call->mutex);
+    
+    if (!call->call_active){ 
+        pthread_mutex_unlock(&call->mutex);
+        LOGGER_WARNING("Action on inactive call: %d", call_index);
+        return ErrorNoCall;
+    }
     
     call->call_active = 0;
 
@@ -527,14 +533,20 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
 {
     if ( !output ) return ErrorInternal;
 
-    if (cii(call_index, av->msi_session) || !av->calls[call_index].call_active) {
+    if (cii(call_index, av->msi_session)) {
+        LOGGER_WARNING("Invalid call index: %d", call_index);
+        return ErrorNoCall;
+    }
+
+    CallSpecific *call = &av->calls[call_index];    
+    pthread_mutex_lock(&call->mutex);
+    
+    if (!call->call_active){ 
+        pthread_mutex_unlock(&call->mutex);
         LOGGER_WARNING("Action on inactive call: %d", call_index);
         return ErrorNoCall;
     }
 
-
-    CallSpecific *call = &av->calls[call_index];    
-    pthread_mutex_lock(&call->mutex);
     
     uint8_t packet [RTP_PAYLOAD_SIZE];
     int recved_size;
@@ -602,15 +614,23 @@ inline__ int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **out
  */
 inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, int frame_size)
 {
-    if (cii(call_index, av->msi_session) || !av->calls[call_index].call_active) {
-        LOGGER_WARNING("Action on inactive call: %d", call_index);
+    if (cii(call_index, av->msi_session)) {
+        LOGGER_WARNING("Invalid call index: %d", call_index);
         return ErrorNoCall;
     }
 
+    CallSpecific* call = &av->calls[call_index];
+    pthread_mutex_lock(&call->mutex);
     
-    pthread_mutex_lock(&av->calls[call_index].mutex);
+    
+    if (!call->call_active){ 
+        pthread_mutex_unlock(&call->mutex);
+        LOGGER_WARNING("Action on inactive call: %d", call_index);
+        return ErrorNoCall;
+    }
+    
     int rc = toxav_send_rtp_payload(av, call_index, TypeVideo, frame, frame_size);
-    pthread_mutex_unlock(&av->calls[call_index].mutex);
+    pthread_mutex_unlock(&call->mutex);
     
     return rc;
 }
@@ -628,14 +648,20 @@ inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *fr
  */
 inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, vpx_image_t *input)
 {
-    if (cii(call_index, av->msi_session) || !av->calls[call_index].call_active) {
-        LOGGER_WARNING("Action on inactive call: %d", call_index);
+    if (cii(call_index, av->msi_session)) {
+        LOGGER_WARNING("Invalid call index: %d", call_index);
         return ErrorNoCall;
     }
 
 
     CallSpecific *call = &av->calls[call_index];
     pthread_mutex_lock(&call->mutex);
+    
+    if (!call->call_active){ 
+        pthread_mutex_unlock(&call->mutex);
+        LOGGER_WARNING("Action on inactive call: %d", call_index);
+        return ErrorNoCall;
+    }
     
     reconfigure_video_encoder_resolution(call->cs, input->d_w, input->d_h);
 
@@ -685,14 +711,21 @@ inline__ int toxav_recv_audio ( ToxAv *av, int32_t call_index, int frame_size, i
 {
     if ( !dest ) return ErrorInternal;
 
-    if (cii(call_index, av->msi_session) || !av->calls[call_index].call_active) {
-        LOGGER_WARNING("Action on inactive call: %d", call_index);
+    if (cii(call_index, av->msi_session)) {
+        LOGGER_WARNING("Invalid call index: %d", call_index);
         return ErrorNoCall;
     }
 
 
     CallSpecific *call = &av->calls[call_index];
     pthread_mutex_lock(&call->mutex);
+    
+    
+    if (!call->call_active){ 
+        pthread_mutex_unlock(&call->mutex);
+        LOGGER_WARNING("Action on inactive call: %d", call_index);
+        return ErrorNoCall;
+    }
 
     uint8_t packet [RTP_PAYLOAD_SIZE];
 
@@ -741,10 +774,18 @@ inline__ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *fr
         return ErrorNoCall;
     }
 
+    CallSpecific* call = &av->calls[call_index];
+    pthread_mutex_lock(&call->mutex);
     
-    pthread_mutex_lock(&av->calls[call_index].mutex);
+    
+    if (!call->call_active){ 
+        pthread_mutex_unlock(&call->mutex);
+        LOGGER_WARNING("Action on inactive call: %d", call_index);
+        return ErrorNoCall;
+    }
+    
     int rc = toxav_send_rtp_payload(av, call_index, TypeAudio, frame, frame_size);
-    pthread_mutex_unlock(&av->calls[call_index].mutex);
+    pthread_mutex_unlock(&call->mutex);
     
     return rc;
 }
@@ -769,12 +810,19 @@ inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t 
         return ErrorNoCall;
     }
 
+    CallSpecific* call = &av->calls[call_index];
+    pthread_mutex_lock(&call->mutex);
     
-    pthread_mutex_lock(&av->calls[call_index].mutex);
     
-    int32_t rc = opus_encode(av->calls[call_index].cs->audio_encoder, frame, frame_size, dest, dest_max);
+    if (!call->call_active){ 
+        pthread_mutex_unlock(&call->mutex);
+        LOGGER_WARNING("Action on inactive call: %d", call_index);
+        return ErrorNoCall;
+    }
+    
+    int32_t rc = opus_encode(call->cs->audio_encoder, frame, frame_size, dest, dest_max);
+    pthread_mutex_unlock(&call->mutex);    
 
-    pthread_mutex_unlock(&av->calls[call_index].mutex);
 
     if (rc < 0) {
         LOGGER_ERROR("Failed to encode payload: %s\n", opus_strerror(rc));
