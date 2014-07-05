@@ -636,6 +636,8 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
 
     CallSpecific *call = &av->calls[call_index];
     pthread_mutex_lock(call->mutex);
+    
+    reconfigure_video_encoder_resolution(call->cs, input->d_w, input->d_h);
 
     int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 
@@ -825,11 +827,11 @@ int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer )
  * @return int
  * @retval ToxAvError No peer id
  */
-ToxAvCallState toxav_get_call_state(ToxAv* av, int32_t call_index)
-{    
+ToxAvCallState toxav_get_call_state(ToxAv *av, int32_t call_index)
+{
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] )
         return av_CallNonExistant;
-    
+
     return av->msi_session->calls[call_index]->state;
 
 }

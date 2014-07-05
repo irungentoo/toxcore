@@ -102,6 +102,11 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
 
 void codec_terminate_session(CodecState *cs);
 
+/* Reconfigure video encoder
+   return 0 on success.
+   return -1 on failure. */
+int reconfigure_video_encoder_resolution(CodecState *cs, uint16_t width, uint16_t height);
+int reconfigure_video_encoder_bitrate(CodecState *cs, uint32_t video_bitrate);
 
 /* Calculate energy and return 1 if has voice, 0 if not */
 int energy_VAD(CodecState *cs, int16_t *PCM, uint16_t frame_size, float energy);
