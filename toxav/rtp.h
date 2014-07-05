@@ -195,7 +195,7 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_terminate_session ( RTPSession *session, Messenger *messenger );
+void rtp_terminate_session ( RTPSession *session, Messenger *messenger );
 
 
 

@@ -1043,12 +1043,12 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
         return NULL;
     }
 
-    int32_t _call_idx = 0;
+    int32_t call_idx = 0;
 
-    for (; _call_idx < session->max_calls; _call_idx ++) {
-        if ( !session->calls[_call_idx] ) {
+    for (; call_idx < session->max_calls; call_idx ++) {
+        if ( !session->calls[call_idx] ) {
 
-            if (!(session->calls[_call_idx] = calloc ( sizeof ( MSICall ), 1 ))) {
+            if (!(session->calls[call_idx] = calloc ( sizeof ( MSICall ), 1 ))) {
                 LOGGER_WARNING("Allocation failed! Program might misbehave!");
                 return NULL;
             }
@@ -1057,35 +1057,35 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
         }
     }
 
-    if ( _call_idx == session->max_calls ) {
+    if ( call_idx == session->max_calls ) {
         LOGGER_WARNING("Reached maximum amount of calls!");
         return NULL;
     }
 
 
-    MSICall *_call = session->calls[_call_idx];
+    MSICall *call = session->calls[call_idx];
 
-    _call->call_idx = _call_idx;
+    call->call_idx = call_idx;
 
-    if ( !(_call->type_peer = calloc ( sizeof ( MSICallType ), peers )) ) {
+    if ( !(call->type_peer = calloc ( sizeof ( MSICallType ), peers )) ) {
         LOGGER_WARNING("Allocation failed! Program might misbehave!");
-        free(_call);
+        free(call);
         return NULL;
     }
 
-    _call->session = session;
+    call->session = session;
 
     /*_call->_participant_count = _peers;*/
 
-    _call->request_timer_id = 0;
-    _call->ringing_timer_id = 0;
+    call->request_timer_id = 0;
+    call->ringing_timer_id = 0;
 
-    _call->ringing_tout_ms = ringing_timeout;
+    call->ringing_tout_ms = ringing_timeout;
 
-    pthread_mutex_init ( &_call->mutex, NULL );
+    pthread_mutex_init ( &call->mutex, NULL );
 
-    LOGGER_DEBUG("Started new call with index: %u", _call_idx);
-    return _call;
+    LOGGER_DEBUG("Started new call with index: %u", call_idx);
+    return call;
 }
 
 
@@ -1603,38 +1603,38 @@ MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls )
         return NULL;
     }
 
-    MSISession *_retu = calloc ( sizeof ( MSISession ), 1 );
+    MSISession *retu = calloc ( sizeof ( MSISession ), 1 );
 
-    if (_retu == NULL) {
+    if (retu == NULL) {
         LOGGER_ERROR("Allocation failed! Program might misbehave!");
         return NULL;
     }
 
-    _retu->messenger_handle = messenger;
-    _retu->agent_handler = NULL;
-    _retu->timer_handler = handler;
+    retu->messenger_handle = messenger;
+    retu->agent_handler = NULL;
+    retu->timer_handler = handler;
 
-    if (!(_retu->calls = calloc( sizeof (MSICall *), max_calls ))) {
+    if (!(retu->calls = calloc( sizeof (MSICall *), max_calls ))) {
         LOGGER_ERROR("Allocation failed! Program might misbehave!");
-        free(_retu);
+        free(retu);
         return NULL;
     }
 
-    _retu->max_calls = max_calls;
+    retu->max_calls = max_calls;
 
-    _retu->frequ = 10000; /* default value? */
-    _retu->call_timeout = 30000; /* default value? */
+    retu->frequ = 10000; /* default value? */
+    retu->call_timeout = 30000; /* default value? */
 
 
-    m_callback_msi_packet(messenger, msi_handle_packet, _retu );
+    m_callback_msi_packet(messenger, msi_handle_packet, retu );
 
     /* This is called when remote terminates session */
-    m_callback_connectionstatus_internal_av(messenger, handle_remote_connection_change, _retu);
+    m_callback_connectionstatus_internal_av(messenger, handle_remote_connection_change, retu);
 
-    pthread_mutex_init(&_retu->mutex, NULL);
+    pthread_mutex_init(&retu->mutex, NULL);
 
-    LOGGER_DEBUG("New msi session: %p max calls: %u", _retu, max_calls);
-    return _retu;
+    LOGGER_DEBUG("New msi session: %p max calls: %u", retu, max_calls);
+    return retu;
 }
 
 

@@ -703,12 +703,9 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
+void rtp_terminate_session ( RTPSession *session, Messenger *messenger )
 {
-    if ( !session ) {
-        LOGGER_WARNING("No session!");
-        return -1;
-    }
+    if ( !session ) return;
 
     custom_lossy_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
 
@@ -723,8 +720,9 @@ int rtp_terminate_session ( RTPSession *session, Messenger *messenger )
 
     pthread_mutex_destroy(&session->mutex);
 
+    LOGGER_DEBUG("Terminated RTP session: %p", session);
+
     /* And finally free session */
     free ( session );
 
-    return 0;
 }

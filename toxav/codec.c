@@ -80,8 +80,12 @@ JitterBuffer *create_queue(int capacity)
 
 void terminate_queue(JitterBuffer *q)
 {
+    if (!q) return;
+
     empty_queue(q);
     free(q->queue);
+
+    LOGGER_DEBUG("Terminated jitter buffer: %p", q);
     free(q);
 }
 
@@ -355,6 +359,8 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
 
 void codec_terminate_session ( CodecState *cs )
 {
+    if (!cs) return;
+
     if ( cs->audio_encoder )
         opus_encoder_destroy(cs->audio_encoder);
 
@@ -366,6 +372,9 @@ void codec_terminate_session ( CodecState *cs )
 
     if ( cs->capabilities & v_encoding )
         vpx_codec_destroy(&cs->v_encoder);
+
+    LOGGER_DEBUG("Terminated codec state: %p", cs);
+    free(cs);
 }
 
 inline float calculate_sum_sq (int16_t *n, uint16_t k)
