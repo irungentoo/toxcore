@@ -150,8 +150,14 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
     uint64_t  ping_id;
     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
 
+//     printf("Adding node:\n\tDHT: %s\n\tUSR: %s\n\tCHT: %s\n", id_toa(dht->self_public_key), id_toa(packet + 1), id_toa(announce_plain + 1));
     //Save (client_id, chat_id) in our ANNOUNCE structure
-    add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp, 0);
+    if (add_announced_nodes(dht->announce, packet + 1, announce_plain + 1, ipp, 0)==-1)
+        return -1;
+    
+//     Node_format nodes[MAX_ANNOUNCED_NODES];
+//     int num_nodes = get_announced_nodes(dht->announce, announce_plain + 1, nodes, 0);
+//     printf("NUMNODES: %u\n", num_nodes);
     
     LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
     

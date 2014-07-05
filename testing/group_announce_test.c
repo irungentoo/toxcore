@@ -53,19 +53,21 @@ void get_closest_known_node(DHT* dht, uint8_t *client_id, Node_format *out)
     int nclosest, j;
     nclosest=get_close_nodes(dht, client_id, nodes, 0, 1, 1);
     
+    printf("Finding a match for %s\n", id_toa(client_id));
+    
     /* WARNING: keep in mind that DHT nodes have separate temporary ids */
     for (j=0; j<nclosest; j++)
     {
-        /* printf("Found node: %s %s:%d\n",id_toa(nodes[j].client_id),ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port); */
+        printf("Found node: %s %s:%d\n",id_toa(nodes[j].client_id),ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port);
         if (closest_node==NULL || (id_closest(client_id, closest_node->client_id, nodes[j].client_id)==2))
             closest_node=&nodes[j];
     }
     
-    /* printf("Closest node: %s\n", id_toa(closest_node->client_id)); */
+    printf("Closest node: %s\n", id_toa(closest_node->client_id)); 
     
     /* Copy over to the result */
     id_copy(out->client_id, closest_node->client_id);
-    memcpy(&out->ip_port, &closest_node->ip_port, sizeof(IP_Port));
+    ipport_copy(&out->ip_port, &closest_node->ip_port);
 }
 
 /* TODO: this looks ugly by now */
