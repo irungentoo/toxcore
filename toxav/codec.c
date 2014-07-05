@@ -256,8 +256,8 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     }
 
     cfg.rc_target_bitrate = video_bitrate;
-    cfg.g_w = width;
-    cfg.g_h = height;
+    cfg.g_w = 8192;
+    cfg.g_h = 8192;
     cfg.g_pass = VPX_RC_ONE_PASS;
     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
     cfg.g_lag_in_frames = 0;
@@ -277,6 +277,9 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
+
+    if (reconfigure_video_encoder_resolution(cs, width, height) != 0)
+        return -1;
 
     return 0;
 }
