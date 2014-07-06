@@ -183,6 +183,12 @@ If after running ./configure you get an error about core being unable to find li
 
 Ensure you set the locations correctly depending on where you installed libsodium on your computer.
 
+If there is a problem with opus (for A/V) and you don't get a libtoxav, then try to set the pkg-config environment variable beforehand:
+
+```
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+```
+
 <a name="windows" />
 ###Windows:
 
