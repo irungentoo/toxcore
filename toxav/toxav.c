@@ -133,8 +133,6 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
  */
 void toxav_kill ( ToxAv *av )
 {
-    msi_terminate_session(av->msi_session);
-
     int i = 0;
 
     for (; i < av->max_calls; i ++) {
@@ -151,6 +149,8 @@ void toxav_kill ( ToxAv *av )
 
         if ( av->calls[i].cs ) codec_terminate_session(av->calls[i].cs);
     }
+
+    msi_terminate_session(av->msi_session);
 
     free(av->calls);
     free(av);
