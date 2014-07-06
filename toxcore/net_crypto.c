@@ -2274,10 +2274,10 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 //calculate the "real" send rate (send rate - drop rate)
                 double r = conn->packet_send_rate;
-                double realrate = (r - (dropped - drop_ignore_new) * 1000.0);
+                double realrate = r;
 
-                if (dropped < drop_ignore_new) {
-                    realrate = r;
+                if (dropped > drop_ignore_new) {
+                    realrate = (r - (dropped - drop_ignore_new) * 1000.0);
                 }
 
                 //calculate exponential increase in rate, triggered when drop rate is below 5% for 5 seconds
