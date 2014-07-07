@@ -124,6 +124,14 @@ void callback_requ_timeout ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "No answer!");
 }
+
+static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length)
+{
+}
+
+static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img)
+{
+}
 /*************************************************************************************************/
 
 
@@ -141,6 +149,11 @@ void *in_thread_call (void *arg)
     randombytes((uint8_t *)sample_payload, sizeof(int16_t) * frame_size);
 
     uint8_t prepared_payload[RTP_PAYLOAD_SIZE];
+
+    toxav_register_audio_recv_callback(this_call->Caller.av, callback_audio);
+    toxav_register_video_recv_callback(this_call->Caller.av, callback_video);
+    toxav_register_audio_recv_callback(this_call->Callee.av, callback_audio);
+    toxav_register_video_recv_callback(this_call->Callee.av, callback_video);
 
 
     /* NOTE: CALLEE WILL ALWAHYS NEED CALL_IDX == 0 */
@@ -192,18 +205,18 @@ void *in_thread_call (void *arg)
                         int recved;
 
                         /* Payload from CALLER */
-                        recved = toxav_recv_audio(this_call->Callee.av, 0, frame_size, storage);
+                        /*recved = toxav_recv_audio(this_call->Callee.av, 0, frame_size, storage);
 
                         if ( recved ) {
-                            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLER is invalid");*/
-                        }
+                            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLER is invalid");
+                        }*/
 
                         /* Payload from CALLEE */
-                        recved = toxav_recv_audio(this_call->Caller.av, call_idx, frame_size, storage);
+                        /*recved = toxav_recv_audio(this_call->Caller.av, call_idx, frame_size, storage);
 
                         if ( recved ) {
-                            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLEE is invalid");*/
-                        }
+                            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLEE is invalid");
+                        }*/
 
                         c_sleep(20);
                     }
@@ -333,7 +346,6 @@ START_TEST(test_AV_three_calls)
 
     toxav_register_callstate_callback(callback_recv_error, av_OnError, &status_control);
     toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout, &status_control);
-
 
 
     for ( i = 0; i < 3; i++ )
