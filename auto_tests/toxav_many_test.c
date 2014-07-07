@@ -24,6 +24,7 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+pthread_mutex_t muhmutex;
 
 typedef enum _CallStatus {
     none,
@@ -223,8 +224,10 @@ void *in_thread_call (void *arg)
 
                     step++; /* This terminates the loop */
 
+                    pthread_mutex_lock(&muhmutex);
                     toxav_kill_transmission(this_call->Callee.av, 0);
                     toxav_kill_transmission(this_call->Caller.av, call_idx);
+                    pthread_mutex_unlock(&muhmutex);
 
                     /* Call over CALLER hangs up */
                     toxav_hangup(this_call->Caller.av, call_idx);
@@ -348,6 +351,9 @@ START_TEST(test_AV_three_calls)
     toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout, &status_control);
 
 
+    pthread_mutex_init(&muhmutex, NULL);
+
+
     for ( i = 0; i < 3; i++ )
         pthread_create(&status_control.calls[i].tid, NULL, in_thread_call, &status_control.calls[i]);
 
@@ -362,11 +368,15 @@ START_TEST(test_AV_three_calls)
         status_control.calls[1].Callee.status != Ended && status_control.calls[1].Caller.status != Ended &&
         status_control.calls[2].Callee.status != Ended && status_control.calls[2].Caller.status != Ended
     ) {
+        pthread_mutex_lock(&muhmutex);
+
         tox_do(bootstrap_node);
         tox_do(caller);
         tox_do(callees[0]);
         tox_do(callees[1]);
         tox_do(callees[2]);
+
+        pthread_mutex_unlock(&muhmutex);
         c_sleep(20);
     }
 
