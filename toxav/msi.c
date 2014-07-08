@@ -538,7 +538,7 @@ GENERIC_SETTER_DEFINITION ( callid )
 
 
 typedef struct _Timer {
-    void *(*func)(void *, int);
+    void *(*func)(void *);
     void *func_arg1;
     int func_arg2;
     uint64_t timeout;
@@ -558,6 +558,10 @@ typedef struct _TimerHandler {
 
 } TimerHandler;
 
+struct timer_function_args {
+    void *arg1;
+    int  arg2;
+};
 
 /**
  * @brief Allocate timer in array
@@ -568,8 +572,9 @@ typedef struct _TimerHandler {
  * @param timeout Timeout in ms
  * @return int
  */
-int timer_alloc ( TimerHandler *timers_container, void *(func)(void *, int), void *arg1, int arg2, unsigned timeout)
+int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg1, int arg2, unsigned timeout)
 {
+    static int timer_id;
     pthread_mutex_lock(&timers_container->mutex);
 
     int i = 0;
@@ -596,7 +601,8 @@ int timer_alloc ( TimerHandler *timers_container, void *(func)(void *, int), voi
     timer->func_arg1 = arg1;
     timer->func_arg2 = arg2;
     timer->timeout = timeout + current_time_monotonic(); /* In ms */
-    timer->idx = i;
+    ++timer_id;
+    timer->idx = timer_id;
 
     /* reorder */
     if (i) {
@@ -612,15 +618,15 @@ int timer_alloc ( TimerHandler *timers_container, void *(func)(void *, int), voi
     pthread_mutex_unlock(&timers_container->mutex);
 
     LOGGER_DEBUG("Allocated timer index: %d timeout: %d, current size: %d", i, timeout, timers_container->size);
-    return i;
+    return timer->idx;
 }
 
 /**
  * @brief Remove timer from array
  *
  * @param timers_container handler
- * @param idx index
- * @param idx lock_mutex (does the mutex need to be locked)
+ * @param idx timer id
+ * @param lock_mutex (does the mutex need to be locked)
  * @return int
  */
 int timer_release ( TimerHandler *timers_container, int idx , int lock_mutex)
@@ -630,19 +636,28 @@ int timer_release ( TimerHandler *timers_container, int idx , int lock_mutex)
 
     Timer **timed_events = timers_container->timers;
 
-    if (!timed_events[idx]) {
-        LOGGER_WARNING("No event under index: %d", idx);
+    int i, res = -1;
+
+    for (i = 0; i < timers_container->max_capacity; ++i) {
+        if (timed_events[i] && timed_events[i]->idx == idx) {
+            res = i;
+            break;
+        }
+    }
+
+    if (res == -1) {
+        LOGGER_WARNING("No event with id: %d", idx);
 
         if (lock_mutex) pthread_mutex_unlock(&timers_container->mutex);
 
         return -1;
     }
 
-    free(timed_events[idx]);
+    free(timed_events[res]);
 
-    timed_events[idx] = NULL;
+    timed_events[res] = NULL;
 
-    int i = idx + 1;
+    i = res + 1;
 
     for (; i < timers_container->max_capacity && timed_events[i]; i ++) {
         timed_events[i - 1] = timed_events[i];
@@ -677,10 +692,21 @@ void *timer_poll( void *arg )
             uint64_t time = current_time_monotonic();
 
             if ( handler->timers[0] && handler->timers[0]->timeout < time ) {
-                handler->timers[0]->func(handler->timers[0]->func_arg1, handler->timers[0]->func_arg2);
-                LOGGER_DEBUG("Exectued timer assigned at: %d", handler->timers[0]->timeout);
+                pthread_t _tid;
 
-                timer_release(handler, 0, 0);
+                struct timer_function_args *args = malloc(sizeof(struct timer_function_args));
+                args->arg1 = handler->timers[0]->func_arg1;
+                args->arg2 = handler->timers[0]->func_arg2;
+
+                if ( 0 != pthread_create(&_tid, NULL, handler->timers[0]->func, args) ||
+                        0 != pthread_detach(_tid) ) {
+                    LOGGER_ERROR("Failed to execute timer at: %d!", handler->timers[0]->timeout);
+                    free(args);
+                } else {
+                    LOGGER_DEBUG("Exectued timer assigned at: %d", handler->timers[0]->timeout);
+                }
+
+                timer_release(handler, handler->timers[0]->idx, 0);
             }
 
         }
@@ -1140,14 +1166,15 @@ int terminate_call ( MSISession *session, MSICall *call )
  * @param arg Control session
  * @return void*
  */
-void *handle_timeout ( void *arg1, int arg2 )
+void *handle_timeout ( void *arg )
 {
     /* TODO: Cancel might not arrive there; set up
      * timers on these cancels and terminate call on
      * their timeout
      */
-    int call_index = arg2;
-    MSISession *session = arg1;
+    struct timer_function_args *args = arg;
+    int call_index = args->arg2;
+    MSISession *session = args->arg1;
     MSICall *_call = session->calls[call_index];
 
     if (_call) {
@@ -1164,6 +1191,9 @@ void *handle_timeout ( void *arg1, int arg2 )
         msi_cancel ( _call->session, _call->call_idx, _call->peers [0], "Request timed out" );
         /*terminate_call(_call->session, _call);*/
     }
+
+    free(arg);
+    pthread_exit(NULL);
 }
 
 
