@@ -30,6 +30,11 @@
 
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
+#define GC_ANNOUNCE_MESSAGE_SIZE   (sizeof(uint64_t)+CLIENT_ID_SIZE)
+/* TODO: key reuse for singature, kurrwa */
+#if 0 
+#define GC_ANNOUNCE_SIGNATURE_SIZE  (GC_ANNOUNCE_MESSAGE_SIZE+64)
+#endif
 
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -146,9 +151,13 @@ typedef struct __attribute__ ((__packed__))
 {
     uint8_t client_id[CLIENT_ID_SIZE];
     uint8_t chat_id[CLIENT_ID_SIZE];
-    IP_Port ip_port;
+    uint64_t timestamp;
+    /* TODO: key reuse for singature, kurrwa */
+#if 0 
+    uint8_t signature[GC_ANNOUNCE_SIGNATURE_SIZE]; /* That should be constant */
+#endif
 }
-Announced_node_format;
+Groupchat_announcement_format;
 
 /* Pack number of nodes into data of maxlength length.
  *
@@ -303,6 +312,17 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2);
 int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
                     uint8_t is_LAN, uint8_t want_good);
 
+/* Get one most close node to the one given.
+ * 
+ * Parameters match the previous function. TODO: consider removing this 
+ * and forcing get_close_nodes to sort the nodes.
+ * 
+ * returns 0 if success
+ * returns -1 if the current node is in fact the closest one
+ * 
+ */
+int get_closest_node(const DHT* dht, const uint8_t *client_id, Node_format *node, sa_family_t sa_family,
+                     uint8_t is_LAN, uint8_t want_good);
 
 /* Put up to max_num nodes in nodes from the closelist.
  *

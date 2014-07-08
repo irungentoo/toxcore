@@ -44,32 +44,6 @@ void idle_n_secs(int n, DHT** peers, int peercount)
     }
 }
 
-/* TODO: probably include that to DHT.c */
-void get_closest_known_node(DHT* dht, uint8_t *client_id, Node_format *out)
-{   
-    /* Finding the closest peer to the chat id */
-    static Node_format nodes[MAX_SENT_NODES];
-    Node_format *closest_node=NULL;
-    int nclosest, j;
-    nclosest=get_close_nodes(dht, client_id, nodes, 0, 1, 1);
-    
-    printf("Finding a match for %s\n", id_toa(client_id));
-    
-    /* WARNING: keep in mind that DHT nodes have separate temporary ids */
-    for (j=0; j<nclosest; j++)
-    {
-        printf("Found node: %s %s:%d\n",id_toa(nodes[j].client_id),ip_ntoa(&nodes[j].ip_port.ip),nodes[j].ip_port.port);
-        if (closest_node==NULL || (id_closest(client_id, closest_node->client_id, nodes[j].client_id)==2))
-            closest_node=&nodes[j];
-    }
-    
-    printf("Closest node: %s\n", id_toa(closest_node->client_id)); 
-    
-    /* Copy over to the result */
-    id_copy(out->client_id, closest_node->client_id);
-    ipport_copy(&out->ip_port, &closest_node->ip_port);
-}
-
 /* TODO: this looks ugly by now */
 void basicannouncetest()
 {
@@ -132,29 +106,22 @@ void basicannouncetest()
         usleep(50000);
     }
     for (i=0;i<9;i++)
-    {
-        /* TODO: some of this code might be fit for adaptation in DHT.c */    
-        Node_format clnode;
-        get_closest_known_node(peers[i], &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)], &clnode);
-        printf("Closest node first iteration: %s\n", id_toa(clnode.client_id));
-        if (send_gc_announce_request(peers[i], clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
+        if (initiate_gc_announce_request(peers[i], peers[i]->self_secret_key, peers[i]->self_public_key, &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
             printf("Announcing failure");
             goto cleanup;
         }
-        idle_n_secs(5, peers, PEERCOUNT);
-    }
     
     printf("Waiting 5 seconds before sending requests\n");
     idle_n_secs(5, peers, PEERCOUNT);
-    
+#if 0
     /* Requesting chat lists */
     for (i=0; i<CHATCOUNT; i++)
     {
         /* The last node gets to ask everybody */
         Node_format clnode;
-        get_closest_known_node(peers[9], &chatids[CLIENT_ID_SIZE*i], &clnode);
+        get_closest_known_node(peers[9], &chatids[CLIENT_ID_SIZE*i], &clnode, 0, 1, 1);
         printf("Closest node second iteration: %s\n", id_toa(clnode.client_id));
         if (get_gc_announced_nodes_request(peers[9], clnode.ip_port, clnode.client_id, &chatids[CLIENT_ID_SIZE*i])<0)
         {
@@ -176,7 +143,7 @@ void basicannouncetest()
         for (j=0; j<nodes_found; j++)
             printf("\t Node %s at %s:%d\n", id_toa(nodes[j].client_id), ip_ntoa(&nodes[j].ip_port.ip), nodes[j].ip_port.port);
     }
-    
+#endif
     cleanup:
     /* Deinit the nodes */
     for (i=0; i<PEERCOUNT; i++)

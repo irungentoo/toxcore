@@ -630,6 +630,32 @@ int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes
 #endif
 }
 
+int get_closest_node(const DHT* dht, const uint8_t *client_id, Node_format *node, sa_family_t sa_family,
+                     uint8_t is_LAN, uint8_t want_good)
+{
+    /* Finding the closest peer to the chat id */
+    static Node_format nodes[MAX_SENT_NODES];
+    Node_format *closest_node=NULL;
+    int nclosest, j;
+    nclosest=get_close_nodes(dht, client_id, nodes, sa_family, is_LAN, want_good);
+
+    for (j=0; j<nclosest; j++)
+    {
+        if (closest_node==NULL || (id_closest(client_id, closest_node->client_id, nodes[j].client_id)==2))
+            closest_node=&nodes[j];
+    }
+    
+    /* Check if the DHT in question isn't any closer itself */
+    if (id_closest(client_id, closest_node->client_id, dht->self_public_key)==2)
+        return -1;
+     
+    /* Copy over to the result */
+    id_copy(node->client_id, closest_node->client_id);
+    ipport_copy(&node->ip_port, &closest_node->ip_port);
+    
+    return 0;
+}
+
 /* Replace first bad (or empty) node with this one.
  *
  *  return 0 if successful.

@@ -28,13 +28,32 @@ typedef struct ANNOUNCE ANNOUNCE;
 /* Maximum newly announced online (in terms of group chats) nodes */
 #define MAX_ANNOUNCED_NODES 30
 
-int add_announced_nodes(ANNOUNCE *announce, const uint8_t *client_id, uint8_t *chat_id, IP_Port ip_port, int inner);
+int add_announced_nodes(ANNOUNCE *announce, const Groupchat_announcement_format *announcement, int inner);
 int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format *nodes_list, int inner);
 
 ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
-int send_gc_announce_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id);
+/* Initiate the process of the announcement, claiming a node is part of a group chat.
+ *
+ * dht = DHT object we're operating on
+ * node_public_key = public key of node announcing it's chat presence
+ * node_private_key = private key of the same node for signatuer
+ * chat_id = id of chat we're announcing to
+ * 
+ * return -1 in case of error
+ * return 0 otherwise
+ */
+int initiate_gc_announce_request(DHT *dht, const uint8_t *node_public_key, const uint8_t *node_private_key, const uint8_t *chat_id);
+
+/* Dispatches an announce request either saving it or passing further depending whether 
+ * the current node is the closest node it knows to the chat_id or not */
+int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* announcement);
+
+/* Sends an actual announcement packet to the node specified as client_id on ipp */
+int send_gc_announce_request(DHT * dht, const uint8_t *client_id, IP_Port ipp, const Groupchat_announcement_format* announcement);
+
 int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id);
+
 
 #endif /* __GROUP_ANNOUNCE_H__ */
