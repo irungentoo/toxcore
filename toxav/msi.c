@@ -620,18 +620,20 @@ int timer_alloc ( TimerHandler *timers_container, void *(func)(void *, int), voi
  *
  * @param timers_container handler
  * @param idx index
+ * @param idx lock_mutex (does the mutex need to be locked)
  * @return int
  */
-int timer_release ( TimerHandler *timers_container, int idx )
+int timer_release ( TimerHandler *timers_container, int idx , int lock_mutex)
 {
-    int rc = pthread_mutex_trylock(&timers_container->mutex);
+    if (lock_mutex)
+        pthread_mutex_lock(&timers_container->mutex);
 
     Timer **timed_events = timers_container->timers;
 
     if (!timed_events[idx]) {
         LOGGER_WARNING("No event under index: %d", idx);
 
-        if ( rc != EBUSY ) pthread_mutex_unlock(&timers_container->mutex);
+        if (lock_mutex) pthread_mutex_unlock(&timers_container->mutex);
 
         return -1;
     }
@@ -651,7 +653,7 @@ int timer_release ( TimerHandler *timers_container, int idx )
 
     LOGGER_DEBUG("Popped index: %d, current size: %d ", idx, timers_container->size);
 
-    if ( rc != EBUSY ) pthread_mutex_unlock(&timers_container->mutex);
+    if (lock_mutex) pthread_mutex_unlock(&timers_container->mutex);
 
     return 0;
 }
@@ -678,7 +680,7 @@ void *timer_poll( void *arg )
                 handler->timers[0]->func(handler->timers[0]->func_arg1, handler->timers[0]->func_arg2);
                 LOGGER_DEBUG("Exectued timer assigned at: %d", handler->timers[0]->timeout);
 
-                timer_release(handler, 0);
+                timer_release(handler, 0, 0);
             }
 
         }
@@ -1107,8 +1109,8 @@ int terminate_call ( MSISession *session, MSICall *call )
      * NOTE: This has to be done before possibly
      * locking the mutex the second time
      */
-    timer_release ( session->timer_handler, call->request_timer_id );
-    timer_release ( session->timer_handler, call->ringing_timer_id );
+    timer_release ( session->timer_handler, call->request_timer_id, 1);
+    timer_release ( session->timer_handler, call->ringing_timer_id, 1);
 
     /* Get a handle */
     pthread_mutex_lock ( &call->mutex );
@@ -1371,7 +1373,7 @@ int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
     flush_peer_type ( call, msg, 0 );
 
 
-    timer_release ( session->timer_handler, call->ringing_timer_id );
+    timer_release ( session->timer_handler, call->ringing_timer_id, 1 );
     pthread_mutex_unlock(&session->mutex);
 
     invoke_callback(call->call_idx, MSI_OnStarting);
@@ -1389,7 +1391,7 @@ int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
     LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
 
     /* Stop timer */
-    timer_release ( session->timer_handler, call->request_timer_id );
+    timer_release ( session->timer_handler, call->request_timer_id, 1 );
 
     pthread_mutex_unlock(&session->mutex);
 
@@ -1531,7 +1533,7 @@ void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, 
         }
 
         /* Got response so cancel timer */
-        if ( call ) timer_release ( session->timer_handler, call->request_timer_id );
+        if ( call ) timer_release ( session->timer_handler, call->request_timer_id, 1 );
 
         uint8_t _response_value[32];
 
