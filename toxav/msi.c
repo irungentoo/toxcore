@@ -538,8 +538,9 @@ GENERIC_SETTER_DEFINITION ( callid )
 
 
 typedef struct _Timer {
-    void *(*func)(void *);
-    void *func_args;
+    void *(*func)(void *, int);
+    void *func_arg1;
+    int func_arg2;
     uint64_t timeout;
     size_t idx;
 
@@ -567,7 +568,7 @@ typedef struct _TimerHandler {
  * @param timeout Timeout in ms
  * @return int
  */
-int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg, unsigned timeout)
+int timer_alloc ( TimerHandler *timers_container, void *(func)(void *, int), void *arg1, int arg2, unsigned timeout)
 {
     pthread_mutex_lock(&timers_container->mutex);
 
@@ -592,7 +593,8 @@ int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *ar
     timers_container->size ++;
 
     timer->func = func;
-    timer->func_args = arg;
+    timer->func_arg1 = arg1;
+    timer->func_arg2 = arg2;
     timer->timeout = timeout + current_time_monotonic(); /* In ms */
     timer->idx = i;
 
@@ -672,15 +674,9 @@ void *timer_poll( void *arg )
 
             uint64_t time = current_time_monotonic();
 
-            while ( handler->timers[0] && handler->timers[0]->timeout < time ) {
-
-                pthread_t _tid;
-
-                if ( 0 != pthread_create(&_tid, NULL, handler->timers[0]->func, handler->timers[0]->func_args) ||
-                        0 != pthread_detach(_tid) )
-                    LOGGER_ERROR("Failed to execute timer at: %d!", handler->timers[0]->timeout);
-
-                else LOGGER_DEBUG("Exectued timer assigned at: %d", handler->timers[0]->timeout);
+            if ( handler->timers[0] && handler->timers[0]->timeout < time ) {
+                handler->timers[0]->func(handler->timers[0]->func_arg1, handler->timers[0]->func_arg2);
+                LOGGER_DEBUG("Exectued timer assigned at: %d", handler->timers[0]->timeout);
 
                 timer_release(handler, 0);
             }
@@ -1142,18 +1138,20 @@ int terminate_call ( MSISession *session, MSICall *call )
  * @param arg Control session
  * @return void*
  */
-void *handle_timeout ( void *arg )
+void *handle_timeout ( void *arg1, int arg2 )
 {
     /* TODO: Cancel might not arrive there; set up
      * timers on these cancels and terminate call on
      * their timeout
      */
-    MSICall *_call = arg;
+    int call_index = arg2;
+    MSISession *session = arg1;
+    MSICall *_call = session->calls[call_index];
 
     if (_call) {
         LOGGER_DEBUG("[Call: %s] Request timed out!", _call->id);
 
-        invoke_callback(_call->call_idx, MSI_OnRequestTimeout);
+        invoke_callback(call_index, MSI_OnRequestTimeout);
     }
 
     if ( _call && _call->session ) {
@@ -1347,7 +1345,8 @@ int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 
     LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
 
-    call->ringing_timer_id = timer_alloc ( session->timer_handler, handle_timeout, call, call->ringing_tout_ms );
+    call->ringing_timer_id = timer_alloc ( session->timer_handler, handle_timeout, session, call->call_idx,
+                                           call->ringing_tout_ms );
 
     pthread_mutex_unlock(&session->mutex);
 
@@ -1725,7 +1724,7 @@ int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type
 
     _call->state = call_inviting;
 
-    _call->request_timer_id = timer_alloc ( session->timer_handler, handle_timeout, _call, m_deftout );
+    _call->request_timer_id = timer_alloc ( session->timer_handler, handle_timeout, session, _call->call_idx, m_deftout );
 
     LOGGER_DEBUG("Invite sent");
 
@@ -1774,7 +1773,7 @@ int msi_hangup ( MSISession *session, int32_t call_index )
     free_message ( _msg_end );
 
     session->calls[call_index]->request_timer_id =
-        timer_alloc ( session->timer_handler, handle_timeout, session->calls[call_index], m_deftout );
+        timer_alloc ( session->timer_handler, handle_timeout, session, call_index, m_deftout );
 
     pthread_mutex_unlock(&session->mutex);
     return 0;
@@ -1850,7 +1849,7 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
     free_message ( _msg_cancel );
 
     /*session->calls[call_index]->state = call_hanged_up;
-      session->calls[call_index]->request_timer_id = timer_alloc ( handle_timeout, session->calls[call_index], m_deftout );*/
+      session->calls[call_index]->request_timer_id = timer_alloc ( handle_timeout, session, call_index, m_deftout );*/
     terminate_call ( session, session->calls[call_index] );
     pthread_mutex_unlock(&session->mutex);
 
@@ -1887,7 +1886,7 @@ int msi_reject ( MSISession *session, int32_t call_index, const uint8_t *reason 
     session->calls[call_index]->state = call_hanged_up;
 
     session->calls[call_index]->request_timer_id =
-        timer_alloc ( session->timer_handler, handle_timeout, session->calls[call_index], m_deftout );
+        timer_alloc ( session->timer_handler, handle_timeout, session, call_index, m_deftout );
 
     pthread_mutex_unlock(&session->mutex);
     return 0;
