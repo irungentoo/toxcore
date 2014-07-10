@@ -197,6 +197,8 @@ void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(v
     con->status_callback_object = object;
 }
 
+static int send_ping_response(TCP_Client_Connection *con);
+
 /* return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
@@ -208,6 +210,9 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, u
 
     if (con->connections[con_id].status != 2)
         return -1;
+
+    if (send_ping_response(con) == 0)
+        return 0;
 
     uint8_t packet[1 + length];
     packet[0] = con_id + NUM_RESERVED_PORTS;
@@ -293,12 +298,21 @@ static int send_ping_request(TCP_Client_Connection *con, uint64_t ping_id)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int send_ping_response(TCP_Client_Connection *con, uint64_t ping_id)
+static int send_ping_response(TCP_Client_Connection *con)
 {
+    if (!con->ping_response_id)
+        return 1;
+
     uint8_t packet[1 + sizeof(uint64_t)];
     packet[0] = TCP_PACKET_PONG;
-    memcpy(packet + 1, &ping_id, sizeof(uint64_t));
-    return write_packet_TCP_secure_connection(con, packet, sizeof(packet));
+    memcpy(packet + 1, &con->ping_response_id, sizeof(uint64_t));
+    int ret;
+
+    if ((ret = write_packet_TCP_secure_connection(con, packet, sizeof(packet))) == 1) {
+        con->ping_response_id = 0;
+    }
+
+    return ret;
 }
 
 /* return 1 on success.
@@ -468,7 +482,8 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
 
             uint64_t ping_id;
             memcpy(&ping_id, data + 1, sizeof(uint64_t));
-            send_ping_response(conn, ping_id);
+            conn->ping_response_id = ping_id;
+            send_ping_response(conn);
             return 0;
         }
 
@@ -523,6 +538,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
 static int do_confirmed_TCP(TCP_Client_Connection *conn)
 {
     send_pending_data(conn);
+    send_ping_response(conn);
     uint8_t packet[MAX_PACKET_SIZE];
     int len;
 
