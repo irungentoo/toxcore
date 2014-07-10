@@ -959,6 +959,7 @@ void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8
                 for ( ; i < session->calls[j]->peer_count; i ++ )
                     if ( session->calls[j]->peers[i] == friend_num ) {
                         invoke_callback(j, MSI_OnPeerTimeout);
+                        terminate_call(session, session->calls[j]);
                         LOGGER_DEBUG("Remote: %d timed out!", friend_num);
                         return; /* TODO: On group calls change behaviour */
                     }
