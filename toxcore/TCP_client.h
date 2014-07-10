@@ -57,6 +57,7 @@ typedef struct  {
     uint64_t last_pinged;
     uint64_t ping_id;
 
+    uint64_t ping_response_id;
     void *net_crypto_pointer;
     uint32_t net_crypto_location;
     struct {
