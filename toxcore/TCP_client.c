@@ -451,7 +451,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
             uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
 
             if (conn->connections[con_id].status != 1)
-                return -1;
+                return 0;
 
             conn->connections[con_id].status = 2;
 
@@ -475,7 +475,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
                 return 0;
 
             if (conn->connections[con_id].status != 2)
-                return -1;
+                return 0;
 
             conn->connections[con_id].status = 1;
 
