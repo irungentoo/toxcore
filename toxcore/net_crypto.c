@@ -2252,19 +2252,9 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 /* additional step: adjust the send rate based on the size change of the send queue */
                 uint32_t queue_size = num_packets_array(&conn->send_array);
-                if(queue_size > conn->last_queue_size + 100) {
-                    double v1 = (double)(conn->packets_sent) / (double)(queue_size);
-                    double v2 = (double)(conn->last_packets_sent) / (double)(conn->last_queue_size == 0 ? 1 : conn->last_queue_size);
-                    if(v1 < v2) {
-                        conn->packets_resent = conn->packets_sent;
-                        conn->rate_increase = 0;
-                    }
-
-                    conn->last_queue_size = queue_size;
-                    conn->last_packets_sent = conn->packets_sent;
-                } else if(queue_size < conn->last_queue_size) {
-                    conn->last_queue_size = queue_size;
-                    conn->last_packets_sent = conn->packets_sent;
+                if(queue_size > conn->packet_send_rate && queue_size > conn->last_queue_size) {
+                    conn->rate_increase = 0;
+                    conn->packets_resent = conn->packets_sent;
                 }
 
 
@@ -2326,6 +2316,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->dropped = dropped;
                 conn->drop_ignore = drop_ignore_new;
                 conn->packets_resent = 0;
+                conn->last_queue_size = queue_size;
 
                 if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending || !conn->packets_sent) {
                     conn->rate_increase = 0;
