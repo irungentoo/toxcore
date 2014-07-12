@@ -1206,8 +1206,10 @@ int join_groupchat(Messenger *m, int32_t friendnumber, const uint8_t *friend_gro
 
     IP_Port friend_ip = get_friend_ipport(m, friendnumber);
 
-    if (friend_ip.ip.family == 0)
+    if (friend_ip.ip.family == 0) {
+        del_groupchat(m, groupnum);
         return -1;
+    }
 
     id_copy(data, friend_group_public_key);
     id_copy(data + crypto_box_PUBLICKEYBYTES, m->chats[groupnum]->self_public_key);
@@ -1218,6 +1220,7 @@ int join_groupchat(Messenger *m, int32_t friendnumber, const uint8_t *friend_gro
         return groupnum;
     }
 
+    del_groupchat(m, groupnum);
     return -1;
 }
 
@@ -2598,6 +2601,10 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
 
         if (temp.status >= 3) {
             int fnum = m_addfriend_norequest(m, temp.client_id);
+
+            if (fnum < 0)
+                continue;
+
             setfriendname(m, fnum, temp.name, ntohs(temp.name_length));
             set_friend_statusmessage(m, fnum, temp.statusmessage, ntohs(temp.statusmessage_length));
             set_friend_userstatus(m, fnum, temp.userstatus);

@@ -831,7 +831,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     uint32_t i;
 
     for (i = onion_c->num_friends; i != 0; --i) {
-        if (onion_c->friends_list[i].status != 0)
+        if (onion_c->friends_list[i - 1].status != 0)
             break;
     }
 
