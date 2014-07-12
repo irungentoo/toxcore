@@ -67,11 +67,11 @@ int prepare_gc_announce_request(Groupchat_announcement_format* announcement, con
 
 int verify_gc_announce_request(const Groupchat_announcement_format* announcement)
 {
-    uint8_t messagebuf[GC_ANNOUNCE_MESSAGE_SIZE];
+    uint8_t messagebuf[GC_ANNOUNCE_SIGNED_SIZE];
     unsigned long long mlen;
-    
+
     if (crypto_sign_open(messagebuf, &mlen, announcement->signature, 
-        GC_ANNOUNCE_SIGNED_SIZE, announcement->signature + CLIENT_ID_SIZE) < 0 ||
+        GC_ANNOUNCE_SIGNED_SIZE, announcement->client_id + CLIENT_ID_SIZE) < 0 ||
             mlen != GC_ANNOUNCE_MESSAGE_SIZE)
         return -1;
     
@@ -88,7 +88,7 @@ int initiate_gc_announce_request(DHT *dht, const uint8_t *node_public_key, const
     id_copy2(announcement.client_id, node_public_key, 0);
     id_copy(announcement.chat_id, chat_id);
     announcement.timestamp = unix_time();
-    
+        
     /* Signing */
     if (prepare_gc_announce_request(&announcement, node_private_key) < 0)
         return -1;
@@ -198,11 +198,10 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
     // Try to decrypt signature
     Groupchat_announcement_format announcement;
     memcpy(announcement.signature, announce_plain + 1, GC_ANNOUNCE_SIGNED_SIZE);
-    id_copy2(announcement.client_id, announcement.signature, 0);
-    bytes_to_U64(&announcement.timestamp, announcement.signature + CLIENT_ID_EXT_SIZE);
-    id_copy(announcement.chat_id, announcement.signature + sizeof(uint64_t) + CLIENT_ID_EXT_SIZE);
+    id_copy2(announcement.client_id, announcement.signature + SIGNATURE_SIZE, 0);
+    bytes_to_U64(&announcement.timestamp, announcement.signature + SIGNATURE_SIZE + CLIENT_ID_EXT_SIZE);
+    id_copy(announcement.chat_id, announcement.signature + SIGNATURE_SIZE + sizeof(uint64_t) + CLIENT_ID_EXT_SIZE);
     
-    announcement.signature[5]=54;
     if (verify_gc_announce_request(&announcement) < 0)
     {
         LOGGER_WARNING("handle_gc_ann_req: got a forged signature from %s\n", id_toa(packet + 1));

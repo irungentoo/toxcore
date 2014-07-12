@@ -98,12 +98,12 @@ static unsigned keylen[] = {
 
 bool id_equal2(const uint8_t *dest, const uint8_t *src, const enum id_key_t keytype)
 {
-    return memcmp(dest + keypos[keytype], src, keylen[keytype]) == 0;
+    return memcmp(dest + keypos[keytype], src + keypos[keytype], keylen[keytype]) == 0;
 }
 
 uint32_t id_copy2(uint8_t *dest, const uint8_t *src, const enum id_key_t keytype)
 {
-    memcpy(dest + keypos[keytype], src, keylen[keytype]);
+    memcpy(dest + keypos[keytype], src + keypos[keytype], keylen[keytype]);
     return keylen[keytype];
 }
 

@@ -112,7 +112,8 @@ void basicannouncetest()
     {
         uint8_t extkey[CLIENT_ID_EXT_SIZE];
         id_copy2(extkey, peers[i]->self_public_key, 1);
-        id_copy2(extkey, &pubkeys[i*crypto_sign_PUBLICKEYBYTES-CLIENT_ID_SIZE], 2);
+        id_copy2(extkey, &pubkeys[i*crypto_sign_PUBLICKEYBYTES]-CLIENT_ID_SIZE, 2);
+        
         if (initiate_gc_announce_request(peers[i], extkey, &seckeys[i*crypto_sign_SECRETKEYBYTES], &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
