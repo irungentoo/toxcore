@@ -52,6 +52,8 @@ void basicannouncetest()
      * the 10ths then proceeds to query the list of chat's participants */
     IP localhost;
     DHT *peers[PEERCOUNT];
+    uint8_t pubkeys[PEERCOUNT*crypto_sign_PUBLICKEYBYTES];
+    uint8_t seckeys[PEERCOUNT*crypto_sign_SECRETKEYBYTES];
     int i,j;
     
     /* Set ip to IPv6 loopback. TODO: IPv4 fallback? */
@@ -63,6 +65,7 @@ void basicannouncetest()
     for (i=0; i<PEERCOUNT; i++)
     {
         peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
+        crypto_sign_keypair(&pubkeys[i*crypto_sign_PUBLICKEYBYTES], &seckeys[i*crypto_sign_SECRETKEYBYTES]);
         printf("%s localhost6:%d%s", id_toa(peers[i]->self_public_key), peers[i]->net->port, (i%PEERSPERCHAT==2)?"\n---\n":"\n");
     }
     printf("\n");
@@ -106,12 +109,17 @@ void basicannouncetest()
         usleep(50000);
     }
     for (i=0;i<9;i++)
-        if (initiate_gc_announce_request(peers[i], peers[i]->self_secret_key, peers[i]->self_public_key, &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
+    {
+        uint8_t extkey[CLIENT_ID_EXT_SIZE];
+        id_copy2(extkey, peers[i]->self_public_key, 1);
+        id_copy2(extkey, &pubkeys[i*crypto_sign_PUBLICKEYBYTES-CLIENT_ID_SIZE], 2);
+        if (initiate_gc_announce_request(peers[i], extkey, &seckeys[i*crypto_sign_SECRETKEYBYTES], &chatids[CLIENT_ID_SIZE*(i/PEERSPERCHAT)])<0)
         {
             /* TODO: change to check's wrappers when moving into auto_tests */
             printf("Announcing failure");
             goto cleanup;
         }
+    }
     
     printf("Waiting 5 seconds before sending requests\n");
     idle_n_secs(5, peers, PEERCOUNT);

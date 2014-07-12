@@ -30,11 +30,15 @@
 
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
-#define GC_ANNOUNCE_MESSAGE_SIZE   (sizeof(uint64_t)+CLIENT_ID_SIZE)
-/* TODO: key reuse for singature, kurrwa */
-#if 0 
-#define GC_ANNOUNCE_SIGNATURE_SIZE  (GC_ANNOUNCE_MESSAGE_SIZE+64)
-#endif
+#define CLIENT_ID_SIGN_SIZE crypto_sign_PUBLICKEYBYTES
+#define CLIENT_ID_EXT_SIZE (CLIENT_ID_SIZE + CLIENT_ID_SIGN_SIZE)
+
+/* Use asserts wisely, since real siganture size might vary if libsodium changes it */
+#define SIGNATURE_SIZE  64
+
+/* TODO chat id is 32bit by now */
+#define GC_ANNOUNCE_MESSAGE_SIZE   (CLIENT_ID_EXT_SIZE + sizeof(uint64_t) + CLIENT_ID_SIZE)
+#define GC_ANNOUNCE_SIGNED_SIZE  (GC_ANNOUNCE_MESSAGE_SIZE + SIGNATURE_SIZE)
 
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -149,13 +153,10 @@ Node_format;
 
 typedef struct __attribute__ ((__packed__))
 {
-    uint8_t client_id[CLIENT_ID_SIZE];
+    uint8_t client_id[CLIENT_ID_EXT_SIZE];
     uint8_t chat_id[CLIENT_ID_SIZE];
     uint64_t timestamp;
-    /* TODO: key reuse for singature, kurrwa */
-#if 0 
-    uint8_t signature[GC_ANNOUNCE_SIGNATURE_SIZE]; /* That should be constant */
-#endif
+    uint8_t signature[GC_ANNOUNCE_SIGNED_SIZE]; /* Containst network representation and a signature in last 64 bytes */
 }
 Groupchat_announcement_format;
 

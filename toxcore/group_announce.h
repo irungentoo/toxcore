@@ -34,11 +34,17 @@ int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format 
 ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
+/* Verify that the signed message corresponts to the data in the structure */
+int verify_gc_announce_request(const Groupchat_announcement_format* announcement);
+
+/* Signs the fields of the announcement */
+int prepare_gc_announce_request(Groupchat_announcement_format* announcement, const uint8_t *node_private_key);
+
 /* Initiate the process of the announcement, claiming a node is part of a group chat.
  *
  * dht = DHT object we're operating on
- * node_public_key = public key of node announcing it's chat presence
- * node_private_key = private key of the same node for signatuer
+ * node_public_key = extended (encryption+signature) public key of the node announcing its presence
+ * node_private_key = signing private key of the same node
  * chat_id = id of chat we're announcing to
  * 
  * return -1 in case of error

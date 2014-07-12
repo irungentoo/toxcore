@@ -38,63 +38,60 @@
 
 #define PING_NUM_MAX 512
 
-#if 0
-// CLIENT_ID_SIZE for chat_id in ANNOUNCE_PLAIN_SIZE
-#define ANNOUNCE_PLAIN_SIZE (1 + CLIENT_ID_SIZE + sizeof(uint64_t))
+
+#define ANNOUNCE_PLAIN_SIZE (1 + GC_ANNOUNCE_SIGNED_SIZE)
 #define DHT_ANNOUNCE_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
 #define SEND_ANNOUNCED_NODES_PLAIN_SIZE (1 + sizeof(Node_format) * MAX_SENT_NODES + sizeof(uint64_t))
 #define DHT_SEND_ANNOUNCED_NODES_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES)
-#else
-/* TODO: key reuse for singature, kurrwa */
-#if 0 
-#define ANNOUNCE_PLAIN_SIZE (1 + CLIENT_ID_SIZE + GC_ANNOUNCE_SIGNATURE_SIZE)
-#else
-#define ANNOUNCE_PLAIN_SIZE (1 + CLIENT_ID_SIZE + GC_ANNOUNCE_MESSAGE_SIZE)
-#endif
-#define DHT_ANNOUNCE_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
-#define SEND_ANNOUNCED_NODES_PLAIN_SIZE (1 + sizeof(Node_format) * MAX_SENT_NODES + sizeof(uint64_t))
-#define DHT_SEND_ANNOUNCED_NODES_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES)
-#endif 
 
 struct ANNOUNCE {
     DHT *dht;
-#if 0
-    Announced_node_format announced_nodes[MAX_ANNOUNCED_NODES]; // The nodes, which you store for others
-    Announced_node_format my_announced_nodes[MAX_ANNOUNCED_NODES]; // The nodes you found to join particular chat. Must be cleaned up after use.
-#else
     Groupchat_announcement_format announced_nodes[MAX_ANNOUNCED_NODES];    /* TODO: Add something like do_announce which cleans up expired */
     Groupchat_announcement_format my_announced_nodes[MAX_ANNOUNCED_NODES]; /* I do not really like this */
-#endif
-    Ping_Array  ping_array;
-    uint64_t    last_to_ping;
 };
+
+int prepare_gc_announce_request(Groupchat_announcement_format* announcement, const uint8_t *node_private_key)
+{
+    unsigned long long slen;
+    uint8_t messagebuf[GC_ANNOUNCE_MESSAGE_SIZE];
+    id_copy2(messagebuf, announcement->client_id, 0);    
+    U64_to_bytes(messagebuf + CLIENT_ID_EXT_SIZE, announcement->timestamp);
+    id_copy(messagebuf + CLIENT_ID_EXT_SIZE + sizeof(uint64_t), announcement->chat_id);
+    
+    if (crypto_sign(announcement->signature, &slen, messagebuf, GC_ANNOUNCE_MESSAGE_SIZE, node_private_key) != 0 ||
+            slen != GC_ANNOUNCE_SIGNED_SIZE) /* Safe to compare, sequence point after || */
+            return -1;
+    
+    return 0;
+}
+
+int verify_gc_announce_request(const Groupchat_announcement_format* announcement)
+{
+    uint8_t messagebuf[GC_ANNOUNCE_MESSAGE_SIZE];
+    unsigned long long mlen;
+    
+    if (crypto_sign_open(messagebuf, &mlen, announcement->signature, 
+        GC_ANNOUNCE_SIGNED_SIZE, announcement->signature + CLIENT_ID_SIZE) < 0 ||
+            mlen != GC_ANNOUNCE_MESSAGE_SIZE)
+        return -1;
+    
+    return 0;
+}
 
 int initiate_gc_announce_request(DHT *dht, const uint8_t *node_public_key, const uint8_t *node_private_key, const uint8_t *chat_id)
 {
     /* TODO: check if private corresponds public */
-/* TODO: key reuse for singature, kurrwa */
-#if 0 
-    assert(crypto_sign_SECRETKEYBYTES == crypto_box_SECRETKEYBYTES);
-#endif
+    /* probably undoable at the moment */
     
-    /* Generating a signature */
+    /* Generating an announcement */
     Groupchat_announcement_format announcement;
-    id_copy(announcement.client_id, node_public_key);
+    id_copy2(announcement.client_id, node_public_key, 0);
     id_copy(announcement.chat_id, chat_id);
     announcement.timestamp = unix_time();
     
-/* TODO: key reuse for singature, kurrwa */
-#if 0 
-    unsigned long long slen;
-    uint8_t messagebuf[GC_ANNOUNCE_MESSAGE_SIZE];
-    /* TODO: ensure byte order! */
-    memcpy(messagebuf, &announcement.timestamp, sizeof(uint64_t));
-    id_copy(&messagebuf[sizeof(uint64_t)], chat_id);
-    
-    if (crypto_sign(announcement.signature, &slen, messagebuf, GC_ANNOUNCE_MESSAGE_SIZE, node_private_key) != 0)
-        return -1; // TODO error message
-    assert(slen == GC_ANNOUNCE_SIGNATURE_SIZE); /* This *should* be true */
-#endif
+    /* Signing */
+    if (prepare_gc_announce_request(&announcement, node_private_key) < 0)
+        return -1;
     
     /* Dispatching the request */
     return dispatch_gc_announce_request(dht, &announcement);
@@ -126,28 +123,10 @@ int send_gc_announce_request(DHT * dht, const uint8_t *client_id, IP_Port ipp, c
     if (id_equal(client_id, dht->self_public_key))
         return -1;
 
-    // Generate random ping_id.
-        /* Do we really need ping ids? */
-    /* uint8_t data[PING_DATA_SIZE];
-    id_copy(data, client_id);
-    memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
-    uint64_t ping_id = ping_array_add(&dht->announce->ping_array, data, sizeof(data));
-
-    if (ping_id == 0)
-        return -1; */ 
-
     // Generate announce_plain == NET_PACKET_ANNOUNCE_REQUEST + originator client_id + signature (contains chatid at tstamp)
     uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
     announce_plain[0] = NET_PACKET_ANNOUNCE_REQUEST;
-    id_copy(announce_plain + 1, announcement->client_id);
-    /* TODO: key reuse for singature, kurrwa */
-#if 0 
-    memcpy(announce_plain + 1 + CLIENT_ID_SIZE, announcement->signature, GC_ANNOUNCE_SIGNATURE_SIZE);
-#else
-    /* TODO: ensure byte order! */
-    memcpy(announce_plain + 1 + CLIENT_ID_SIZE, &announcement->timestamp, sizeof(uint64_t));
-    id_copy(announce_plain + 1 + CLIENT_ID_SIZE + sizeof(uint64_t), announcement->chat_id);
-#endif
+    memcpy(announce_plain + 1, announcement->signature, GC_ANNOUNCE_SIGNED_SIZE);
     
     // Generate shared_key to encrypt announce_plane
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -218,26 +197,18 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
 
     // Try to decrypt signature
     Groupchat_announcement_format announcement;
-    id_copy(announcement.client_id, announce_plain + 1);
-/* TODO: key reuse for singature, kurrwa */
-#if 0 
-    memcpy(announcement.signature, announce_plain + 1 + CLIENT_ID_SIZE, GC_ANNOUNCE_SIGNATURE_SIZE);
-    uint8_t messagebuf[GC_ANNOUNCE_MESSAGE_SIZE];
-    unsigned long long mlen;
+    memcpy(announcement.signature, announce_plain + 1, GC_ANNOUNCE_SIGNED_SIZE);
+    id_copy2(announcement.client_id, announcement.signature, 0);
+    bytes_to_U64(&announcement.timestamp, announcement.signature + CLIENT_ID_EXT_SIZE);
+    id_copy(announcement.chat_id, announcement.signature + sizeof(uint64_t) + CLIENT_ID_EXT_SIZE);
     
-    if (crypto_sign_open(messagebuf, &mlen, announcement.signature, GC_ANNOUNCE_SIGNATURE_SIZE, announcement.client_id) == -1)
+    announcement.signature[5]=54;
+    if (verify_gc_announce_request(&announcement) < 0)
+    {
+        LOGGER_WARNING("handle_gc_ann_req: got a forged signature from %s\n", id_toa(packet + 1));
         return -1;
-    announcement.timestamp=*(uint64_t*)messagebuf;
-    id_copy(announcement.chat_id, &messagebuf[sizeof(uint64_t)]);
-#else
-    announcement.timestamp=*(uint64_t*)(announce_plain + 1 + CLIENT_ID_SIZE);
-    id_copy(announcement.chat_id, announce_plain + 1 + CLIENT_ID_SIZE + sizeof(uint64_t));
-#endif
-    
-    // Get ping_id
-//     uint64_t  ping_id;
-//     memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
-
+    }
+     
 //     LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
     
     //Save (client_id, chat_id) in our ANNOUNCE structure, or pass along
@@ -520,10 +491,7 @@ static void insert_announced_node(Groupchat_announcement_format* where, const Gr
     id_copy(where->client_id, what->client_id);
     id_copy(where->chat_id, what->chat_id);
     where->timestamp = what->timestamp;
-/* TODO: key reuse for singature, kurrwa */
-#if 0 
-    memcpy(where->signature, what->signature, GC_ANNOUNCE_SIGNATURE_SIZE);
-#endif
+    memcpy(where->signature, what->signature, GC_ANNOUNCE_SIGNED_SIZE);
 }
 
 
@@ -628,11 +596,6 @@ ANNOUNCE *new_announce(DHT *dht)
     if (announce == NULL)
         return NULL;
 
-    if (ping_array_init(&announce->ping_array, PING_NUM_MAX, PING_TIMEOUT) != 0) {
-        free(announce);
-        return NULL;
-    }
-
     announce->dht = dht;
     networking_registerhandler(announce->dht->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_gc_announce_request, dht);
     networking_registerhandler(announce->dht->net, NET_PACKET_GET_ANNOUNCED_NODES, &handle_get_gc_announced_nodes_request, dht);
@@ -645,7 +608,6 @@ void kill_announce(ANNOUNCE *announce)
 	networking_registerhandler(announce->dht->net, NET_PACKET_ANNOUNCE_REQUEST, NULL, NULL);
     networking_registerhandler(announce->dht->net, NET_PACKET_GET_ANNOUNCED_NODES, NULL, NULL);
     networking_registerhandler(announce->dht->net, NET_PACKET_SEND_ANNOUNCED_NODES, NULL, NULL);    
-    ping_array_free_all(&announce->ping_array);
 
     free(announce);
 }

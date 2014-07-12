@@ -43,10 +43,17 @@ uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 
-/* id functions */
+enum id_key_t { ID_ALL_KEYS=0, ID_ENCRYPTION_KEY, ID_SIGNATURE_KEY };
+
+/* conventional id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 char* id_toa(const uint8_t* id);  /* WARNING: returns one of STATIC_BUFFER_COPIES static buffers */
+
+/* extended id functions */
+bool id_equal2(const uint8_t *dest, const uint8_t *src, const enum id_key_t keytype);
+uint32_t id_copy2(uint8_t *dest, const uint8_t *src, const enum id_key_t keytype);
+char* id_toa2(const uint8_t* id, const enum id_key_t keytype);
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
@@ -56,11 +63,17 @@ typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32
 int load_state(load_state_callback_func load_state_callback, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
+/* Converts 8 bytes to uint64_t */
+void bytes_to_U64(uint64_t *dest, const uint8_t *bytes);
+
 /* Converts 4 bytes to uint32_t */
 void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);
 
 /* Converts 2 bytes to uint16_t */
 void bytes_to_U16(uint16_t *dest, const uint8_t *bytes);
+
+/* Converts uint64_t to byte string of size 8 */
+void U64_to_bytes(uint8_t *dest, uint64_t value);
 
 /* Convert uint32_t to byte string of size 4 */
 void U32_to_bytes(uint8_t *dest, uint32_t value);
