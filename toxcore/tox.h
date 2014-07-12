@@ -90,7 +90,7 @@ void tox_get_address(const Tox *tox, uint8_t *address);
  * data is the data and length is the length.
  *
  *  return the friend number if success.
- *  return TOX_FA_TOOLONG if message length is too long.
+ *  return TOX_FAERR_TOOLONG if message length is too long.
  *  return TOX_FAERR_NOMESSAGE if no message (message length must be >= 1 byte).
  *  return TOX_FAERR_OWNKEY if user's own key.
  *  return TOX_FAERR_ALREADYSENT if friend request already sent or already a friend.

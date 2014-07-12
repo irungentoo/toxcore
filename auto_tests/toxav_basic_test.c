@@ -138,6 +138,15 @@ void callback_requ_timeout ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "No answer!");
 }
+
+static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length)
+{
+}
+
+static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img)
+{
+}
+
 /*************************************************************************************************/
 
 /* Alice calls bob and the call starts.
@@ -199,7 +208,7 @@ START_TEST(test_AV_flows)
     printf("All set after %llu seconds! Starting call...\n", time(NULL) - cur_time);
 
     muhcaps = av_DefaultSettings;
-    muhcaps.video_height = muhcaps.video_width = 128;
+    muhcaps.max_video_height = muhcaps.max_video_width = 128;
 
     Status status_control = {
         {none, toxav_new(Alice, 1), NULL, -1},
@@ -222,6 +231,10 @@ START_TEST(test_AV_flows)
     toxav_register_callstate_callback(callback_recv_error, av_OnError, &status_control);
     toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout, &status_control);
 
+    toxav_register_audio_recv_callback(status_control.Alice.av, callback_audio);
+    toxav_register_video_recv_callback(status_control.Alice.av, callback_video);
+    toxav_register_audio_recv_callback(status_control.Bob.av, callback_audio);
+    toxav_register_video_recv_callback(status_control.Bob.av, callback_video);
 
     const int frame_size = (av_DefaultSettings.audio_sample_rate * av_DefaultSettings.audio_frame_duration / 1000);
     int16_t sample_payload[frame_size];
@@ -267,21 +280,22 @@ START_TEST(test_AV_flows)
         toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
 
         /* Both receive */
-        int16_t storage[frame_size];
+        /*int16_t storage[frame_size];
         int recved;
 
         /* Payload from Bob */
-        recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
+
+        /*recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
 
         if ( recved ) {
-            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");*/
+            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");
         }
 
         recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
 
         if ( recved ) {
-            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");*/
-        }
+            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");
+        }*/
 
         if (time(NULL) - cur_time > 10) { /* Transmit for 10 seconds */
             step++; /* This terminates the loop */
@@ -326,11 +340,11 @@ START_TEST(test_AV_flows)
         int recved;
 
         /* Payload from Bob */
-        recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
+        /*recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
 
         if ( recved ) {
-            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");*/
-        }
+            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");
+        }*/
 
         /* Video payload */
 //         toxav_recv_video(status_control.Alice.av, status_control.Alice.call_index, &video_storage);
@@ -346,11 +360,11 @@ START_TEST(test_AV_flows)
 
 
         /* Payload from Alice */
-        recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
+        /*recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
 
         if ( recved ) {
-            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");*/
-        }
+            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");
+        }*/
 
         if (time(NULL) - cur_time > 10) { /* Transmit for 10 seconds */
             step++; /* This terminates the loop */
@@ -397,11 +411,11 @@ START_TEST(test_AV_flows)
         int recved;
 
         /* Payload from Bob */
-        recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
+        /*recved = toxav_recv_audio(status_control.Alice.av, status_control.Alice.call_index, frame_size, storage);
 
         if ( recved ) {
-            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");*/
-        }
+            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Bob is invalid");
+        }*/
 
         /* Video payload */
 //         toxav_recv_video(status_control.Alice.av, status_control.Alice.call_index, &video_storage);
@@ -417,11 +431,11 @@ START_TEST(test_AV_flows)
 
 
         /* Payload from Alice */
-        recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
+        /*recved = toxav_recv_audio(status_control.Bob.av, status_control.Bob.call_index, frame_size, storage);
 
         if ( recved ) {
-            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");*/
-        }
+            ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from Alice is invalid");
+        }*/
 
         /* Video payload */
 //         toxav_recv_video(status_control.Bob.av, status_control.Bob.call_index, &video_storage);

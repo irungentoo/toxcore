@@ -56,6 +56,9 @@ typedef struct _CodecState {
 
     /* video decoding */
     vpx_codec_ctx_t  v_decoder;
+    int bitrate;
+    int max_width;
+    int max_height;
 
     /* audio encoding */
     OpusEncoder *audio_encoder;

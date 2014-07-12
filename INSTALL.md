@@ -150,6 +150,14 @@ Grab the following packages:
   * https://gnu.org/software/automake/
   * https://github.com/jedisct1/libsodium
   * http://check.sourceforge.net/
+  * http://yasm.tortall.net/Download.html
+  * https://code.google.com/p/webm/downloads/list
+  * http://www.opus-codec.org/downloads/
+  * http://www.freedesktop.org/wiki/Software/pkg-config/
+
+You must install yasm before installing libvpx, otherwise libvpx will fail to make correctly.
+
+pkg-config is important for enabling a/v support in tox core, failure to install pkg-config will prevent tox core form finding the required libopus/libvpx libraries. (pkg-config may not configure properly, if you get an error about GLIB, run configure with the following parameter, --with-internal-glib).
 
 Uncompress and install them all. Make sure to follow the README as the instructions change, but they all follow the same pattern below:
 
@@ -159,9 +167,8 @@ make
 sudo make install
 ```
 
-In your local TOX repository:
+Compiling and installing Tox Core
 
-Then generate makefile, build and install tox:
 ```bash
 cd ProjectTox-Core
 autoreconf -i
@@ -170,12 +177,17 @@ make
 make install
 ```
 
-Do not install them from macports (or any dependencies for that matter) as they get shoved in the wrong directory
-(or the wrong version gets installed) and make your life more annoying.
+If after running ./configure you get an error about core being unable to find libsodium (and you have installed it) run the following in place of ./configure;
 
-Another thing: you may want to install is the latest gcc. This caused me a few problems as XCode from 4.3
-no longer includes gcc and instead uses LLVM-GCC, a nice install guide can be found at
-http://caiustheory.com/install-gcc-421-apple-build-56663-with-xcode-42
+./configure --with-libsodium-headers=/usr/local/include/ --with-libsodium-libs=/usr/local/lib
+
+Ensure you set the locations correctly depending on where you installed libsodium on your computer.
+
+If there is a problem with opus (for A/V) and you don't get a libtoxav, then try to set the pkg-config environment variable beforehand:
+
+```
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+```
 
 <a name="windows" />
 ###Windows:

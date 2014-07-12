@@ -24,6 +24,7 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+pthread_mutex_t muhmutex;
 
 typedef enum _CallStatus {
     none,
@@ -124,6 +125,14 @@ void callback_requ_timeout ( int32_t call_index, void *_arg )
 {
     ck_assert_msg(0, "No answer!");
 }
+
+static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length)
+{
+}
+
+static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img)
+{
+}
 /*************************************************************************************************/
 
 
@@ -141,6 +150,11 @@ void *in_thread_call (void *arg)
     randombytes((uint8_t *)sample_payload, sizeof(int16_t) * frame_size);
 
     uint8_t prepared_payload[RTP_PAYLOAD_SIZE];
+
+    toxav_register_audio_recv_callback(this_call->Caller.av, callback_audio);
+    toxav_register_video_recv_callback(this_call->Caller.av, callback_video);
+    toxav_register_audio_recv_callback(this_call->Callee.av, callback_audio);
+    toxav_register_video_recv_callback(this_call->Callee.av, callback_video);
 
 
     /* NOTE: CALLEE WILL ALWAHYS NEED CALL_IDX == 0 */
@@ -192,26 +206,28 @@ void *in_thread_call (void *arg)
                         int recved;
 
                         /* Payload from CALLER */
-                        recved = toxav_recv_audio(this_call->Callee.av, 0, frame_size, storage);
+                        /*recved = toxav_recv_audio(this_call->Callee.av, 0, frame_size, storage);
 
                         if ( recved ) {
-                            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLER is invalid");*/
-                        }
+                            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLER is invalid");
+                        }*/
 
                         /* Payload from CALLEE */
-                        recved = toxav_recv_audio(this_call->Caller.av, call_idx, frame_size, storage);
+                        /*recved = toxav_recv_audio(this_call->Caller.av, call_idx, frame_size, storage);
 
                         if ( recved ) {
-                            /*ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLEE is invalid");*/
-                        }
+                            //ck_assert_msg(recved == 10 && memcmp(storage, sample_payload, 10) == 0, "Payload from CALLEE is invalid");
+                        }*/
 
                         c_sleep(20);
                     }
 
                     step++; /* This terminates the loop */
 
+                    pthread_mutex_lock(&muhmutex);
                     toxav_kill_transmission(this_call->Callee.av, 0);
                     toxav_kill_transmission(this_call->Caller.av, call_idx);
+                    pthread_mutex_unlock(&muhmutex);
 
                     /* Call over CALLER hangs up */
                     toxav_hangup(this_call->Caller.av, call_idx);
@@ -335,6 +351,8 @@ START_TEST(test_AV_three_calls)
     toxav_register_callstate_callback(callback_requ_timeout, av_OnRequestTimeout, &status_control);
 
 
+    pthread_mutex_init(&muhmutex, NULL);
+
 
     for ( i = 0; i < 3; i++ )
         pthread_create(&status_control.calls[i].tid, NULL, in_thread_call, &status_control.calls[i]);
@@ -350,11 +368,15 @@ START_TEST(test_AV_three_calls)
         status_control.calls[1].Callee.status != Ended && status_control.calls[1].Caller.status != Ended &&
         status_control.calls[2].Callee.status != Ended && status_control.calls[2].Caller.status != Ended
     ) {
+        pthread_mutex_lock(&muhmutex);
+
         tox_do(bootstrap_node);
         tox_do(caller);
         tox_do(callees[0]);
         tox_do(callees[1]);
         tox_do(callees[2]);
+
+        pthread_mutex_unlock(&muhmutex);
         c_sleep(20);
     }
 

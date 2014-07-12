@@ -135,7 +135,7 @@ int ping_array_init(Ping_Array *empty_array, uint32_t size, uint32_t timeout)
     if (size == 0 || timeout == 0 || empty_array == NULL)
         return -1;
 
-    empty_array->entries = calloc(size * sizeof(Ping_Array_Entry), 1);
+    empty_array->entries = calloc(size, sizeof(Ping_Array_Entry));
 
     if (empty_array->entries == NULL)
         return -1;
