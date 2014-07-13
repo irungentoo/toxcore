@@ -2250,6 +2250,14 @@ static void send_crypto_packets(Net_Crypto *c)
                     notes: needs improvement but seems to work fine for packet loss <1%
                  */
 
+                /* additional step: adjust the send rate based on the size change of the send queue */
+                uint32_t queue_size = num_packets_array(&conn->send_array);
+                if(queue_size > conn->packet_send_rate && queue_size > conn->last_queue_size) {
+                    conn->rate_increase = 0;
+                    conn->packets_resent = conn->packets_sent;
+                }
+
+
                 //hack to prevent 1 packet lost from affecting calculations at low send rates
                 if (conn->packets_resent == 1) {
                     conn->packets_resent = 0;
@@ -2300,17 +2308,22 @@ static void send_crypto_packets(Net_Crypto *c)
                 double linear_increase = realrate * 0.0025 + 1.0;
 
                 //final send rate: average of "real" and previous send rates + increases
-                conn->packet_send_rate = (realrate + conn->packet_send_rate) / 2.0 + conn->rate_increase + linear_increase;
+                double newrate = (realrate + conn->packet_send_rate) / 2.0 + conn->rate_increase + linear_increase;
+                conn->last_send_rate = conn->packet_send_rate;
+                conn->packet_send_rate = newrate;
 
 
                 conn->dropped = dropped;
                 conn->drop_ignore = drop_ignore_new;
                 conn->packets_resent = 0;
+                conn->last_queue_size = queue_size;
 
-                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending) {
+                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending || !conn->packets_sent) {
                     conn->rate_increase = 0;
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
                 }
+
+                conn->packets_sent = 0;
 
                 if (conn->sending != 0 && num_packets_array(&conn->send_array) < CRYPTO_MIN_QUEUE_LENGTH / 2) {
                     --conn->sending;
@@ -2342,6 +2355,7 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 conn->packets_resent += ret;
                 conn->packets_left -= ret;
+                conn->packets_sent += ret;
             }
 
             if (conn->packet_send_rate > CRYPTO_PACKET_MIN_RATE * 1.5) {
@@ -2421,6 +2435,7 @@ int64_t write_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const ui
         return -1;
 
     --conn->packets_left;
+    conn->packets_sent++;
     conn->sending = CONN_SENDING_VALUE;
     return ret;
 }
