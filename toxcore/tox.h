@@ -294,13 +294,13 @@ void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, const uint
                                  void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
- *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * message, uint32_t length, void *userdata)
+ *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void tox_callback_friend_message(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                                  void *userdata);
 
 /* Set the function that will be executed when an action from a friend is received.
- *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * action, uint32_t length, void *userdata)
+ *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * action, uint16_t length, void *userdata)
  */
 void tox_callback_friend_action(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                                 void *userdata);
