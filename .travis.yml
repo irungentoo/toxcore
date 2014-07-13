@@ -13,6 +13,12 @@ before_script:
   - make check -j3 > /dev/null
   - sudo make install >/dev/null
   - cd ..
+  #installing libminiupnpc, needed for Core
+  - git clone https://github.com/miniupnp/miniupnp.git > /dev/null
+  - cd miniupnp/miniupnpc
+  - make -j3 > /dev/null
+  - sudo make install > /dev/null
+  - cd ../..
   #installing yasm, needed for compiling vpx
   - sudo apt-get install yasm > /dev/null
   #installing libconfig, needed for DHT_bootstrap_daemon
