@@ -97,7 +97,6 @@ int initiate_gc_announce_request(DHT *dht, const uint8_t *node_public_key, const
     return dispatch_gc_announce_request(dht, &announcement);
 }
 
-
 /* TODO: doc */
 int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* announcement)
 {
@@ -105,7 +104,13 @@ int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* 
     Node_format closest_node;
     
     if (get_closest_node(dht, announcement->chat_id, &closest_node, 0, 1, 1 /* TODO: dehardcode last 3 params */) == -1)
+    {
+//         uint8_t col[3];
+//         id_tocolor(announcement->chat_id, col);
+        printf("%s, %s, 5\n", id_toa(dht->self_public_key), id_toa(dht->self_public_key));
+        
         return add_announced_nodes(dht->announce, announcement, 0);
+    }
     else
         return send_gc_announce_request(dht, closest_node.client_id, closest_node.ip_port, announcement);
 }
@@ -207,6 +212,8 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
         LOGGER_WARNING("handle_gc_ann_req: got a forged signature from %s\n", id_toa(packet + 1));
         return -1;
     }
+    
+    printf("%s, %s, 5\n", id_toa(packet+1), id_toa(dht->self_public_key));
      
 //     LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
     
@@ -486,7 +493,7 @@ int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, const uint8
 
 static void insert_announced_node(Groupchat_announcement_format* where, const Groupchat_announcement_format *what)
 {
-    printf("Inserting node %s to chat %s\n", id_toa(what->client_id), id_toa(what->chat_id));
+//     printf("Inserting node %s to chat %s\n", id_toa(what->client_id), id_toa(what->chat_id));
     id_copy(where->client_id, what->client_id);
     id_copy(where->chat_id, what->chat_id);
     where->timestamp = what->timestamp;
@@ -509,7 +516,7 @@ static void insert_announced_node(Groupchat_announcement_format* where, const Gr
  */
 int add_announced_nodes(ANNOUNCE *announce, const Groupchat_announcement_format *announcement, int inner)
 {
-    printf("This is node %s\n", id_toa(announce->dht->self_public_key));
+//     printf("This is node %s\n", id_toa(announce->dht->self_public_key));
     Groupchat_announcement_format *announced_nodes;
     if (!inner)
         announced_nodes = announce->announced_nodes;

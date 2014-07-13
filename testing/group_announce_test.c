@@ -17,9 +17,11 @@
 #include <randombytes.h>
 #endif
 
+#define min(a,b) ((a)>(b)?(b):(a))
+
 /* You can change those but be mindful */
-#define PEERCOUNT       10
-#define CHATCOUNT       3
+#define PEERCOUNT       100
+#define CHATCOUNT       4 /* Set to 3 for example */
 #define PEERSPERCHAT    (PEERCOUNT/CHATCOUNT)
 
 void idle_cylce(DHT**peers, int peercount)
@@ -61,27 +63,30 @@ void basicannouncetest()
     localhost.ip6.uint8[15]=1;
     
     /* Init the nodes */
-    printf("Nodes generated:\n");
+    printf("nodedef> name, label\n");
+//     printf("Nodes generated:\n");
     for (i=0; i<PEERCOUNT; i++)
     {
         peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
         crypto_sign_keypair(&pubkeys[i*crypto_sign_PUBLICKEYBYTES], &seckeys[i*crypto_sign_SECRETKEYBYTES]);
-        printf("%s localhost6:%d%s", id_toa(peers[i]->self_public_key), peers[i]->net->port, (i%PEERSPERCHAT==2)?"\n---\n":"\n");
+        printf("%s, %d\n", id_toa(peers[i]->self_public_key), i);
+//         printf("%s localhost6:%d%s", id_toa(peers[i]->self_public_key), peers[i]->net->port, (i%PEERSPERCHAT==(PEERSPERCHAT-1))?"\n---\n":"\n");
     }
-    printf("\n");
+    printf("edgedef> node1, node2, weight\n");
+//     printf("\n");
     
     /* For simplicity sake, one big array */
     uint8_t chatids[CLIENT_ID_SIZE*CHATCOUNT];
     
     randombytes_buf((void*)chatids, CLIENT_ID_SIZE*CHATCOUNT);
     
-    printf("Chats generated:\n");
-    for (i=0; i<CHATCOUNT; i++)
-        printf("%s\n",id_toa(&chatids[CLIENT_ID_SIZE*i]));
-    printf("\n");
+//     printf("Chats generated:\n");
+//     for (i=0; i<CHATCOUNT; i++)
+//         printf("%s\n",id_toa(&chatids[CLIENT_ID_SIZE*i]));
+//     printf("\n");
     
     /* Bootstrapping DHTs*/
-    printf("Bootstrapping everybody from eachother\n");
+//     printf("Bootstrapping everybody from eachother\n");
     for (i=0; i<PEERCOUNT; i++)
     {
         DHT* target = peers[ i>=(PEERCOUNT-1)? 0 : i+1 ];
@@ -94,21 +99,20 @@ void basicannouncetest()
     }
     
     /* Announcing chat presence */
-    printf("Waiting until every DHT gets a full close client list\n");
+//     printf("Waiting until every DHT gets a full close client list\n");
     for (;;)
     {
-        /* TODO: work out a situation when node count > LCLIENT_LIST */
         idle_cylce(peers, PEERCOUNT);
         
         int numconnected=0;
         for (i=0;i<PEERCOUNT;i++)
             numconnected+=DHT_connectiondegree(peers[i]);
-        if (numconnected==PEERCOUNT*(PEERCOUNT-1))
+        if (numconnected==PEERCOUNT*min(PEERCOUNT-1,LCLIENT_LIST))
             break;
         /* TODO: busy wait might be slightly more efficient here */
         usleep(50000);
     }
-    for (i=0;i<9;i++)
+    for (i=0;i<PEERCOUNT-1;i++)
     {
         uint8_t extkey[CLIENT_ID_EXT_SIZE];
         id_copy2(extkey, peers[i]->self_public_key, 1);
@@ -122,8 +126,8 @@ void basicannouncetest()
         }
     }
     
-    printf("Waiting 5 seconds before sending requests\n");
-    idle_n_secs(5, peers, PEERCOUNT);
+//     printf("Waiting 50 seconds before sending requests\n");
+    idle_n_secs(50, peers, PEERCOUNT);
 #if 0
     /* Requesting chat lists */
     for (i=0; i<CHATCOUNT; i++)

@@ -55,6 +55,8 @@ bool id_equal2(const uint8_t *dest, const uint8_t *src, const enum id_key_t keyt
 uint32_t id_copy2(uint8_t *dest, const uint8_t *src, const enum id_key_t keytype);
 char* id_toa2(const uint8_t* id, const enum id_key_t keytype);
 
+void id_tocolor(const uint8_t* id, uint8_t color[3]); /* Non-extended version so far */
+
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
 

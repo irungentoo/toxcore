@@ -121,6 +121,19 @@ char *id_toa2(const uint8_t *id, const enum id_key_t keytype)
     return str;
 }
 
+void id_tocolor(const uint8_t* id, uint8_t color[3])
+{
+    int i,j;
+    for (i=0; i<3; i++)
+    {
+        /* TODO: more sophisticated formula */
+        uint32_t res=0;
+        for (j=i*CLIENT_ID_SIZE/3; j<(i+1)*CLIENT_ID_SIZE/3; j++)
+            res+=id[j];
+        color[i]=255*((double)res/(255.0*CLIENT_ID_SIZE/3.0));
+    }
+}
+
 void host_to_net(uint8_t *num, uint16_t numbytes)
 {
 #ifndef WORDS_BIGENDIAN
