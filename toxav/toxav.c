@@ -37,8 +37,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Assume 60 fps*/
+/* Assume 24 fps*/
 #define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
+#define MAX_DECODE_TIME_US MAX_ENCODE_TIME_US
 
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
 #define VIDEOFRAME_PIECE_SIZE 0x500 /* 1.25 KiB*/
@@ -794,7 +795,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
             /* piece of current frame */
         } else if (i > 0 && i < 128) {
             /* recieved a piece of a frame ahead, flush current frame and start reading this new frame */
-            int rc = vpx_codec_decode(&call->cs->v_decoder, call->frame_buf, call->frame_limit, NULL, 0);
+            int rc = vpx_codec_decode(&call->cs->v_decoder, call->frame_buf, call->frame_limit, NULL, MAX_DECODE_TIME_US);
             call->frame_id = packet[0];
             memset(call->frame_buf, 0, call->frame_limit);
             call->frame_limit = 0;
