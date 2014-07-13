@@ -25,4 +25,5 @@ libtoxdns_la_LDFLAGS =  $(TOXCORE_LT_LDFLAGS) \
 libtoxdns_la_LIBADD =   $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NAC_LIBS) \
-                        $(PTHREAD_LIBS)
+                        $(PTHREAD_LIBS) \
+                        libtoxcore.la
