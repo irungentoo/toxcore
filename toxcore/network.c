@@ -140,29 +140,31 @@ static void upnp_map_port(uint16_t port)
 
     error = UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr));
     freeUPNPDevlist(devlist);
-    if (error == 1) {
-        LOGGER_INFO("A valid IGD has been found.");
+    if (error) {
+        if (error == 1) {
+            LOGGER_INFO("A valid IGD has been found.");
 
-        char portstr[10];
-        snprintf(portstr, sizeof(portstr), "%d", port);
+            char portstr[10];
+            snprintf(portstr, sizeof(portstr), "%d", port);
 
-        error = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, portstr, portstr, lanaddr, "Tox", "UDP", 0, "0");
-        if (error) {
-            LOGGER_WARNING("UPnP port mapping failed (error = %d)", error);
+            error = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, portstr, portstr, lanaddr, "Tox", "UDP", 0, "0");
+            if (error) {
+                LOGGER_WARNING("UPnP port mapping failed (error = %d)", error);
+            } else {
+                LOGGER_INFO("UPnP mapped port %d", port);
+            }
+        }  else if (error == 2) {
+            LOGGER_WARNING("IGD was found but reported as not connected.");
+        } else if (error == 3) {
+            LOGGER_WARNING("UPnP device was found but not recoginzed as IGD.");
         } else {
-            LOGGER_INFO("UPnP mapped port %d", port);
+            LOGGER_WARNING("Unknown error finding IGD: %d", error);
         }
-    } else if (error == 0) {
-        LOGGER_WARNING("No IGD was found.");
-    } else if (error == 2) {
-        LOGGER_WARNING("IGD was found but reported as not connected.");
-    } else if (error == 3) {
-        LOGGER_WARNING("UPnP device was found but not recoginzed as IGD.");
-    } else {
-        LOGGER_WARNING("Unknown error finding IGD: %d", error);
-    }
 
-    FreeUPNPUrls(&urls);
+        FreeUPNPUrls(&urls);
+    } else {
+        LOGGER_WARNING("No IGD was found.");
+    }   
 }
 #endif
 
