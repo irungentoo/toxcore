@@ -74,9 +74,9 @@ AC_ARG_ENABLE([miniupnp],
     [AC_HELP_STRING([--disable-miniupnp], [upnp port forwarding (default: enabled)]) ],
     [
         if test "x$enableval" = "xyes"; then
-            MINIUPNP="no"
-        elif test "x$enableval" = "xno"; then
             MINIUPNP="yes"
+        elif test "x$enableval" = "xno"; then
+            MINIUPNP="no"
         fi
     ]   
 )
@@ -217,7 +217,7 @@ LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
 NACL_SEARCH_HEADERS=
 NACL_SEARCH_LIBS=
-MINIUPNP_SEARCH_HEADERS="/usr/include/miniupnpc"
+MINIUPNP_SEARCH_HEADERS=
 MINIUPNP_SEARCH_LIBS=
 
 AC_ARG_WITH(dependency-search,
@@ -432,7 +432,6 @@ if test "x$MINIUPNP" = "xyes"; then
     LDFLAGS="$LDFLAGS_SAVE"
     AC_SUBST(MINIUPNP_LIBS)
     AC_SUBST(MINIUPNP_LDFLAGS)
-    AC_DEFINE([USE_UPNP], [], [if miniupnp enabled])
 fi
 
 # Checks for header files.
@@ -501,16 +500,16 @@ if test "x$MINIUPNP" = "xyes"; then
     if test -n "$MINIUPNP_SEARCH_HEADERS"; then
         CFLAGS="-I$MINIUPNP_SEARCH_HEADERS $CFLAGS"
         CPPFLAGS="-I$MINIUPNP_SEARCH_HEADERS $CPPFLAGS"
-        AC_CHECK_HEADER(miniupnpc.h,
+        AC_CHECK_HEADERS([miniupnpc/miniupnpc.h miniupnpc/miniwget.h miniupnpc/upnpcommands.h miniupnpc/upnperrors.h],
             [
-                LIBSODIUM_CFLAGS="-I$MINIUPNP_SEARCH_HEADERS"
+                MINIUPNP_CFLAGS="-I$MINIUPNP_SEARCH_HEADERS"
             ],
             [
                 AC_MSG_ERROR([header files for required library libminiupnpc were not found in requested location $MINIUPNP_SEARCH_HEADERS])
             ]
         )
     else
-        AC_CHECK_HEADER(miniupnpc.h,
+        AC_CHECK_HEADERS([miniupnpc/miniupnpc.h miniupnpc/miniwget.h miniupnpc/upnpcommands.h miniupnpc/upnperrors.h],
             [],
             [
                 AC_MSG_ERROR([header files for required library libminiupnpc was not found on your system, please check http://miniupnp.free.fr/])

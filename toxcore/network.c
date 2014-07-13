@@ -43,7 +43,7 @@
 #include "network.h"
 #include "util.h"
 
-#ifdef USE_UPNP
+#ifdef HAVE_LIBMINIUPNPC
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/miniwget.h>
 #include <miniupnpc/upnpcommands.h>
@@ -118,7 +118,7 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
 
 #endif
 
-#ifdef USE_UPNP
+#ifdef HAVE_LIBMINIUPNPC
 /* Setup port forwarding using UPnP */
 static void upnp_map_port(uint16_t port)
 {
@@ -667,7 +667,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
             if (tries > 0)
                 errno = 0;
 
-#ifdef USE_UPNP
+#ifdef HAVE_LIBMINIUPNPC
             upnp_map_port(ntohs(temp->port));
 #endif
 
