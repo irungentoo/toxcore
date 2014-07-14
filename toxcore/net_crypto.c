@@ -1149,11 +1149,11 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
     }
 
     if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
-        if (conn->connection_status_callback)
-            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
-
         clear_temp_packet(c, crypt_connection_id);
         conn->status = CRYPTO_CONN_ESTABLISHED;
+
+        if (conn->connection_status_callback)
+            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
     }
 
     return 0;
@@ -2252,7 +2252,8 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 /* additional step: adjust the send rate based on the size change of the send queue */
                 uint32_t queue_size = num_packets_array(&conn->send_array);
-                if(queue_size > conn->packet_send_rate && queue_size > conn->last_queue_size) {
+
+                if (queue_size > conn->packet_send_rate && queue_size > conn->last_queue_size) {
                     conn->rate_increase = 0;
                     conn->packets_resent = conn->packets_sent;
                 }
