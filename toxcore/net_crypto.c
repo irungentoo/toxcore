@@ -2318,8 +2318,12 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->packets_resent = 0;
                 conn->last_queue_size = queue_size;
 
-                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending || !conn->packets_sent) {
+                if (!conn->sending || !conn->packets_sent) {
                     conn->rate_increase = 0;
+                    conn->packet_send_rate /= 2;
+                }
+
+                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE) {
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
                 }
 
