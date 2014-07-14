@@ -1106,6 +1106,14 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
             return -1;
     }
 
+    if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
+        clear_temp_packet(c, crypt_connection_id);
+        conn->status = CRYPTO_CONN_ESTABLISHED;
+
+        if (conn->connection_status_callback)
+            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
+    }
+
     if (real_data[0] == PACKET_ID_REQUEST) {
         int requested = handle_request_packet(&conn->send_array, real_data, real_length);
 
@@ -1146,14 +1154,6 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
         set_buffer_end(&conn->recv_array, num);
     } else {
         return -1;
-    }
-
-    if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
-        clear_temp_packet(c, crypt_connection_id);
-        conn->status = CRYPTO_CONN_ESTABLISHED;
-
-        if (conn->connection_status_callback)
-            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
     }
 
     return 0;
