@@ -1485,6 +1485,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
     /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
     set_connection_dht_public_key(c, crypt_connection_id, n_c->dht_public_key, current_time_monotonic());
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
+    conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
     crypto_connection_add_source(c, crypt_connection_id, n_c->source);
     return crypt_connection_id;
 }
@@ -1517,6 +1518,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key)
     crypto_box_keypair(conn->sessionpublic_key, conn->sessionsecret_key);
     conn->status = CRYPTO_CONN_COOKIE_REQUESTING;
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
+    conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
     return crypt_connection_id;
 }
 
