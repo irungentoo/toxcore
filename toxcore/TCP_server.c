@@ -288,7 +288,7 @@ int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length,
 /* return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
-static int send_pending_data(TCP_Secure_Connection *con)
+static int send_pending_data_nonpriority(TCP_Secure_Connection *con)
 {
     if (con->last_packet_length == 0) {
         return 0;
@@ -314,8 +314,13 @@ static int send_pending_data(TCP_Secure_Connection *con)
 /* return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
-static int send_pending_data_priority(TCP_Secure_Connection *con)
+static int send_pending_data(TCP_Secure_Connection *con)
 {
+    /* finish sending current non-priority packet */
+    if(send_pending_data_nonpriority(con) == -1) {
+        return -1;
+    }
+
     TCP_Priority_List *p = con->priority_queue_start;
 
     while(p) {
@@ -346,16 +351,8 @@ static int send_pending_data_priority(TCP_Secure_Connection *con)
 /* return 0 on failure (only if malloc fails)
  * return 1 on success
  */
-static _Bool add_priority(TCP_Secure_Connection *con, const uint8_t *packet, uint16_t size, int sent)
+static _Bool add_priority(TCP_Secure_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
 {
-    if(sent == size) {
-        return 1;
-    }
-
-    if(sent <= 0) {
-        sent = 0;
-    }
-
     TCP_Priority_List *p = con->priority_queue_end, *new;
     new = malloc(sizeof(TCP_Priority_List) + size);
     if(!new) {
@@ -387,7 +384,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
         return -1;
 
     _Bool sendpriority = 1;
-    if (send_pending_data_priority(con) == -1) {
+    if (send_pending_data(con) == -1) {
         if (priority) {
             sendpriority = 0;
         } else {
@@ -401,15 +398,23 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
-    if (priority) {
-        return add_priority(con, packet, sizeof(packet), sendpriority ? send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL) : 0);
-    }
-
-    if (send_pending_data(con) == -1)
-        return 0;
-
     if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t)))
         return -1;
+
+    if (priority) {
+        len = sendpriority ? send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL) : 0;
+        if(len <= 0) {
+            len = 0;
+        } else {
+            increment_nonce(con->sent_nonce);
+        }
+
+        if(len == sizeof(packet)) {
+            return 1;
+        }
+
+        return add_priority(con, packet, sizeof(packet), len);
+    }
 
     len = send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL);
 
@@ -1152,10 +1157,7 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
             continue;
         }
 
-        /* try sending queued priority packets first */
-        if(send_pending_data_priority(conn) == 0) {
-            send_pending_data(conn);
-        }
+        send_pending_data(conn);
 
 #ifndef TCP_SERVER_USE_EPOLL
 
