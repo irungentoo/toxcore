@@ -345,7 +345,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
     if ((unsigned int)len == sizeof(packet))
         return 1;
 
-    memcpy(con->last_packet, packet, length);
+    memcpy(con->last_packet, packet, sizeof(packet));
     con->last_packet_length = sizeof(packet);
     con->last_packet_sent = len;
     return 1;
