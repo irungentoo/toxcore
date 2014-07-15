@@ -155,15 +155,15 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
     if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t)))
         return -1;
 
-    increment_nonce(con->sent_nonce);
-
     len = send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL);
-
-    if ((unsigned int)len == sizeof(packet))
-        return 1;
 
     if (len <= 0)
         return 0;
+
+    increment_nonce(con->sent_nonce);
+
+    if ((unsigned int)len == sizeof(packet))
+        return 1;
 
     memcpy(con->last_packet, packet, length);
     con->last_packet_length = sizeof(packet);
