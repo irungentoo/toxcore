@@ -80,6 +80,14 @@ enum {
     TCP_STATUS_CONFIRMED,
 };
 
+typedef struct TCP_Priority_List TCP_Priority_List;
+
+struct TCP_Priority_List {
+    TCP_Priority_List *next;
+    uint16_t size, sent;
+    uint8_t data[0];
+};
+
 typedef struct TCP_Secure_Connection {
     uint8_t status;
     sock_t  sock;
@@ -97,6 +105,8 @@ typedef struct TCP_Secure_Connection {
     uint8_t last_packet[2 + MAX_PACKET_SIZE];
     uint16_t last_packet_length;
     uint16_t last_packet_sent;
+
+    TCP_Priority_List *priority_queue_start, *priority_queue_end;
 
     uint64_t identifier;
 
