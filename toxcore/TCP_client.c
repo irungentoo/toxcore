@@ -231,9 +231,9 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
 
         if (len <= 0) {
             len = 0;
-        } else {
-            increment_nonce(con->sent_nonce);
         }
+
+        increment_nonce(con->sent_nonce);
 
         if (len == sizeof(packet)) {
             return 1;
