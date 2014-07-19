@@ -426,19 +426,22 @@ static int send_packet_to(const Net_Crypto *c, int crypt_connection_id, const ui
 
     }
 
-    //TODO: spread packets over many relays, detect and kill bad relays.
+    //TODO: detect and kill bad relays.
     uint32_t i;
 
+    unsigned int r = rand();
+
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
-        if (conn->status_tcp[i] == STATUS_TCP_ONLINE) {/* friend is connected to this relay. */
-            if (send_data(c->tcp_connections[i], conn->con_number_tcp[i], data, length) == 1)
+        if (conn->status_tcp[(i + r) % MAX_TCP_CONNECTIONS] == STATUS_TCP_ONLINE) {/* friend is connected to this relay. */
+            if (send_data(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], conn->con_number_tcp[(i + r) % MAX_TCP_CONNECTIONS],
+                          data, length) == 1)
                 return 0;
         }
     }
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
-        if (conn->status_tcp[i] == STATUS_TCP_INVISIBLE) {
-            if (send_oob_packet(c->tcp_connections[i], conn->dht_public_key, data, length) == 1)
+        if (conn->status_tcp[(i + r) % MAX_TCP_CONNECTIONS] == STATUS_TCP_INVISIBLE) {
+            if (send_oob_packet(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], conn->dht_public_key, data, length) == 1)
                 return 0;
         }
     }
