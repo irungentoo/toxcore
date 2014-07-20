@@ -37,21 +37,6 @@ static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_conn
     return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
 }
 
-/* return 0 if connection is dead.
- * return 1 if connection is alive.
- */
-static int is_alive(uint8_t status)
-{
-    if (status == CRYPTO_CONN_COOKIE_REQUESTING ||
-            status == CRYPTO_CONN_HANDSHAKE_SENT ||
-            status == CRYPTO_CONN_NOT_CONFIRMED ||
-            status == CRYPTO_CONN_ESTABLISHED) {
-        return 1;
-    }
-
-    return 0;
-}
-
 /* cookie timeout in seconds */
 #define COOKIE_TIMEOUT 10
 #define COOKIE_DATA_LENGTH (crypto_box_PUBLICKEYBYTES * 2)
