@@ -383,7 +383,7 @@ void codec_terminate_session ( CodecState *cs )
     free(cs);
 }
 
-inline float calculate_sum_sq (int16_t *n, uint16_t k)
+static inline float calculate_sum_sq (int16_t *n, uint16_t k)
 {
     float result = 0;
     uint16_t i = 0;
