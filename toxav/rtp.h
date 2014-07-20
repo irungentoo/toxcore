@@ -1,4 +1,4 @@
-/**  toxrtp.h
+/**  rtp.h
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -105,17 +105,12 @@ typedef struct _RTPSession {
      */
     RTPExtHeader   *ext_header;
 
-    RTPMessage     *oldest_msg;
-    RTPMessage     *last_msg; /* tail */
-
-    uint64_t        queue_limit;/* Default 100; modify per thy liking */
-    uint64_t        queue_size; /* currently holding << messages */
-
     /* Msg prefix for core to know when recving */
     uint8_t         prefix;
 
-    pthread_mutex_t mutex;
     int             dest;
+    int32_t         call_index;
+    struct _ToxAv *av;
 
 } RTPSession;
 
@@ -171,7 +166,6 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
  * @return void
  */
 void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
-
 
 /**
  * @brief Must be called before calling any other rtp function. It's used

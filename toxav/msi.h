@@ -1,4 +1,4 @@
-/**  toxmsi.h
+/**  msi.h
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -27,11 +27,9 @@
 
 #include "../toxcore/Messenger.h"
 
-/* define size for call_id */
-#define CALL_ID_LEN 12
-
-
-typedef void ( *MSICallback ) ( int32_t, void *arg );
+typedef uint8_t MSICallIDType[12];
+typedef uint8_t MSIReasonStrType[255];
+typedef void ( *MSICallbackType ) ( void* agent, int32_t call_idx, void *arg );
 
 
 /**
@@ -58,6 +56,36 @@ typedef enum {
 
 
 /**
+ * @brief Callbacks ids that handle the states
+ */
+typedef enum {
+    /* Requests */
+    MSI_OnInvite,
+    MSI_OnStart,
+    MSI_OnCancel,
+    MSI_OnReject,
+    MSI_OnEnd,
+    
+    /* Responses */
+    MSI_OnRinging,
+    MSI_OnStarting,
+    MSI_OnEnding,
+    
+    /* Protocol */
+    MSI_OnRequestTimeout,
+    MSI_OnPeerTimeout,
+    MSI_OnMediaChange
+} MSICallbackID;
+
+/**
+ * @brief Callbacks container
+ */
+typedef struct _MSICallbackCont {
+    MSICallbackType function;
+    void *data;
+} MSICallbackCont;
+
+/**
  * @brief The call struct.
  *
  */
@@ -69,7 +97,7 @@ typedef struct _MSICall {                  /* Call info structure */
     MSICallType         type_local;        /* Type of payload user is ending */
     MSICallType        *type_peer;         /* Type of payload others are sending */
 
-    uint8_t             id[CALL_ID_LEN];   /* Random value identifying the call */
+    MSICallIDType       id;                /* Random value identifying the call */
 
     int                 ringing_tout_ms;   /* Ringing timeout in ms */
 
@@ -92,56 +120,30 @@ typedef struct _MSICall {                  /* Call info structure */
 typedef struct _MSISession {
 
     /* Call handlers */
-    struct _MSICall **calls;
-    int32_t max_calls;
+    MSICall       **calls;
+    int32_t         max_calls;
 
-    int            last_error_id; /* Determine the last error */
-    const uint8_t *last_error_str;
+    void           *agent_handler;          
+    Messenger      *messenger_handle;
 
-    void *agent_handler; /* Pointer to an object that is handling msi */
-    Messenger  *messenger_handle;
-
-    uint32_t frequ;
-    uint32_t call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
+    uint32_t        frequ;
+    uint32_t        call_timeout; /* Time of the timeout for some action to end; 0 if infinite */
 
     pthread_mutex_t mutex;
 
-    void *timer_handler;
+    void           *timer_handler;
+    MSICallbackCont callbacks[11];     /* Callbacks used by this session */
 } MSISession;
-
-
-/**
- * @brief Callbacks ids that handle the states
- */
-typedef enum {
-    /* Requests */
-    MSI_OnInvite,
-    MSI_OnStart,
-    MSI_OnCancel,
-    MSI_OnReject,
-    MSI_OnEnd,
-
-    /* Responses */
-    MSI_OnRinging,
-    MSI_OnStarting,
-    MSI_OnEnding,
-
-    /* Protocol */
-    MSI_OnError,
-    MSI_OnRequestTimeout,
-    MSI_OnPeerTimeout
-
-} MSICallbackID;
-
 
 /**
  * @brief Callback setter.
  *
+ * @param session The container.
  * @param callback The callback.
  * @param id The id.
  * @return void
  */
-void msi_register_callback(MSICallback callback, MSICallbackID id, void *userdata);
+void msi_register_callback(MSISession *session, MSICallbackType callback, MSICallbackID id, void *userdata);
 
 
 /**
@@ -220,7 +222,20 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
  * @param reason Set optional reason header. Pass NULL if none.
  * @return int
  */
-int msi_reject ( MSISession *session, int32_t call_index, const uint8_t *reason );
+int msi_reject ( MSISession *session, int32_t call_index, const char *reason );
+
+
+/**
+ * @brief Send invite request to friend_id.
+ *
+ * @param session Control session.
+ * @param call_index Call index.
+ * @param call_type Type of the call. Audio or Video(both audio and video)
+ * @param rngsec Ringing timeout.
+ * @param friend_id The friend.
+ * @return int
+ */
+int msi_change_type ( MSISession *session, int32_t call_index, MSICallType call_type );
 
 
 /**

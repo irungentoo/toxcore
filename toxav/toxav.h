@@ -31,7 +31,7 @@ extern "C" {
 /* vpx_image_t */
 #include <vpx/vpx_image.h>
 
-typedef void ( *ToxAVCallback ) ( int32_t, void *arg );
+typedef void ( *ToxAVCallback ) ( void* agent, int32_t call_idx, void *arg );
 typedef struct _ToxAv ToxAv;
 
 #ifndef __TOX_DEFINED__
@@ -59,9 +59,9 @@ typedef enum {
     av_OnEnding,
 
     /* Protocol */
-    av_OnError,
     av_OnRequestTimeout,
-    av_OnPeerTimeout
+    av_OnPeerTimeout,
+    av_OnMediaChange
 } ToxAvCallbackID;
 
 
@@ -120,8 +120,8 @@ typedef enum {
  */
 typedef struct _ToxAvCodecSettings {
     uint32_t video_bitrate; /* In kbits/s */
-    uint16_t video_width; /* In px */
-    uint16_t video_height; /* In px */
+    uint16_t max_video_width; /* In px */
+    uint16_t max_video_height; /* In px */
 
     uint32_t audio_bitrate; /* In bits/s */
     uint16_t audio_frame_duration; /* In ms */
@@ -158,11 +158,30 @@ void toxav_kill(ToxAv *av);
 /**
  * @brief Register callback for call state.
  *
+ * @param av Handler.
  * @param callback The callback
  * @param id One of the ToxAvCallbackID values
  * @return void
  */
-void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID id, void *userdata);
+void toxav_register_callstate_callback (ToxAv *av, ToxAVCallback callback, ToxAvCallbackID id, void *userdata);
+
+/**
+ * @brief Register callback for recieving audio data
+ *
+ * @param av Handler.
+ * @param callback The callback
+ * @return void
+ */
+void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int));
+
+/**
+ * @brief Register callback for recieving video data
+ *
+ * @param av Handler.
+ * @param callback The callback
+ * @return void
+ */
+void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *));
 
 /**
  * @brief Call user. Use its friend_id.
@@ -222,6 +241,16 @@ int toxav_reject(ToxAv *av, int32_t call_index, const char *reason);
 int toxav_cancel(ToxAv *av, int32_t call_index, int peer_id, const char *reason);
 
 /**
+ * @brief Notify peer that we are changing call type
+ *
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
+int toxav_change_type(ToxAv *av, int32_t call_index, ToxAvCallType call_type);
+
+/**
  * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
  *
  * @param av Handler.
@@ -251,31 +280,6 @@ int toxav_prepare_transmission(ToxAv *av, int32_t call_index, ToxAvCodecSettings
  * @retval ToxAvError On error.
  */
 int toxav_kill_transmission(ToxAv *av, int32_t call_index);
-
-/**
- * @brief Receive decoded video packet.
- *
- * @param av Handler.
- * @param output Storage.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On Error.
- */
-int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **output);
-
-/**
- * @brief Receive decoded audio frame.
- *
- * @param av Handler.
- * @param frame_size The size of dest in frames/samples (one frame/sample is 16 bits or 2 bytes
- *                   and corresponds to one sample of audio.)
- * @param dest Destination of the raw audio (16 bit signed pcm with AUDIO_CHANNELS channels).
- *             Make sure it has enough space for frame_size frames/samples.
- * @return int
- * @retval >=0 Size of received data in frames/samples.
- * @retval ToxAvError On error.
- */
-int toxav_recv_audio( ToxAv *av, int32_t call_index, int frame_size, int16_t *dest );
 
 /**
  * @brief Encode and send video packet.

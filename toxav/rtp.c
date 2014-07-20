@@ -1,4 +1,4 @@
-/**  toxrtp.c
+/**  rtp.c
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -372,11 +372,6 @@ int rtp_handle_packet ( void *object, const uint8_t *data, uint32_t length )
         return -1;
     }
 
-    if ( _session->queue_limit <= _session->queue_size ) {
-        LOGGER_WARNING("Queue limit reached!");
-        return -1;
-    }
-
     _msg = msg_parse ( data + 1, length - 1 );
 
     if ( !_msg ) {
@@ -390,18 +385,7 @@ int rtp_handle_packet ( void *object, const uint8_t *data, uint32_t length )
         _session->timestamp = _msg->header->timestamp;
     }
 
-    pthread_mutex_lock(&_session->mutex);
-
-    if ( _session->last_msg ) {
-        _session->last_msg->next = _msg;
-        _session->last_msg = _msg;
-    } else {
-        _session->last_msg = _session->oldest_msg = _msg;
-    }
-
-    _session->queue_size++;
-
-    pthread_mutex_unlock(&_session->mutex);
+    toxav_handle_packet(_session, _msg);
 
     return 0;
 }
@@ -462,105 +446,6 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
     _retu->length = _total_length;
 
     _retu->next = NULL;
-
-    return _retu;
-}
-
-
-
-/**
- * @brief Release all messages held by session.
- *
- * @param session The session.
- * @return int
- * @retval -1 Error occurred.
- * @retval 0 Success.
- */
-int rtp_release_session_recv ( RTPSession *session )
-{
-    if ( !session ) {
-        LOGGER_WARNING("No session!");
-        return -1;
-    }
-
-    RTPMessage *_tmp, * _it;
-
-    pthread_mutex_lock(&session->mutex);
-
-    for ( _it = session->oldest_msg; _it; _it = _tmp ) {
-        _tmp = _it->next;
-        rtp_free_msg( session, _it);
-    }
-
-    session->last_msg = session->oldest_msg = NULL;
-    session->queue_size = 0;
-
-    pthread_mutex_unlock(&session->mutex);
-
-    return 0;
-}
-
-
-/**
- * @brief Call this to change queue limit
- *
- * @param session The session
- * @param limit new limit
- * @return void
- */
-void rtp_queue_adjust_limit(RTPSession *session, uint64_t limit)
-{
-    pthread_mutex_lock(&session->mutex);
-
-    RTPMessage *_tmp, * _it = session->oldest_msg;
-
-    for ( ; session->queue_size > limit; _it = _tmp ) {
-        _tmp = _it->next;
-        rtp_free_msg( session, _it);
-        session->queue_size --;
-    }
-
-    session->oldest_msg = _it;
-    session->queue_limit = limit;
-
-    pthread_mutex_unlock(&session->mutex);
-}
-
-
-/**
- * @brief Gets oldest message in the list.
- *
- * @param session Where the list is.
- * @return RTPMessage* The message. You _must_ call rtp_msg_free() to free it.
- * @retval NULL No messages in the list, or no list.
- */
-RTPMessage *rtp_recv_msg ( RTPSession *session )
-{
-    if ( !session ) {
-        LOGGER_WARNING("No session!");
-        return NULL;
-    }
-
-    pthread_mutex_lock(&session->mutex);
-
-    if ( session->queue_size == 0 ) {
-        pthread_mutex_unlock(&session->mutex);
-        return NULL;
-    }
-
-
-    RTPMessage *_retu = session->oldest_msg;
-
-    /*if (_retu)*/
-    session->oldest_msg = _retu->next;
-
-    if ( !session->oldest_msg )
-        session->last_msg = NULL;
-
-    session->queue_size --;
-
-    pthread_mutex_unlock(&session->mutex);
-
 
     return _retu;
 }
@@ -627,7 +512,6 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
     free ( msg );
 }
 
-
 /**
  * @brief Must be called before calling any other rtp function. It's used
  *        to initialize RTP control session.
@@ -682,11 +566,6 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
     /* Also set payload type as prefix */
     _retu->prefix = payload_type;
 
-    _retu->oldest_msg = _retu->last_msg = NULL;
-    _retu->queue_limit = 100; /* Default */
-    _retu->queue_size = 0;
-
-    pthread_mutex_init(&_retu->mutex, NULL);
     /*
      *
      */
@@ -705,24 +584,16 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
  */
 void rtp_terminate_session ( RTPSession *session, Messenger *messenger )
 {
-    if ( !session ) return;    
+    if ( !session ) return;
 
     custom_lossy_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
-
-    rtp_release_session_recv(session);
-
-    pthread_mutex_lock(&session->mutex);
 
     free ( session->ext_header );
     free ( session->csrc );
 
-    pthread_mutex_unlock(&session->mutex);
-
-    pthread_mutex_destroy(&session->mutex);
-
     LOGGER_DEBUG("Terminated RTP session: %p", session);
-    
+
     /* And finally free session */
     free ( session );
-    
+
 }

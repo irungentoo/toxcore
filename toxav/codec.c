@@ -81,10 +81,10 @@ JitterBuffer *create_queue(int capacity)
 void terminate_queue(JitterBuffer *q)
 {
     if (!q) return;
-    
+
     empty_queue(q);
     free(q->queue);
-    
+
     LOGGER_DEBUG("Terminated jitter buffer: %p", q);
     free(q);
 }
@@ -217,6 +217,9 @@ int reconfigure_video_encoder_resolution(CodecState *cs, uint16_t width, uint16_
     if (cfg.g_w == width && cfg.g_h == height)
         return 0;
 
+    if (width * height > cs->max_width * cs->max_height)
+        return -1;
+
     LOGGER_DEBUG("New video resolution: %u %u", width, height);
     cfg.g_w = width;
     cfg.g_h = height;
@@ -249,7 +252,7 @@ int reconfigure_video_encoder_bitrate(CodecState *cs, uint32_t video_bitrate)
     return 0;
 }
 
-int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t video_bitrate)
+int init_video_encoder(CodecState *cs, uint16_t max_width, uint16_t max_height, uint32_t video_bitrate)
 {
     vpx_codec_enc_cfg_t  cfg;
     int rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
@@ -260,13 +263,18 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
     }
 
     cfg.rc_target_bitrate = video_bitrate;
-    cfg.g_w = 8192;
-    cfg.g_h = 8192;
+    cfg.g_w = max_width;
+    cfg.g_h = max_height;
     cfg.g_pass = VPX_RC_ONE_PASS;
     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
     cfg.g_lag_in_frames = 0;
     cfg.kf_min_dist = 0;
     cfg.kf_max_dist = 300;
+    cfg.kf_mode = VPX_KF_AUTO;
+
+    cs->max_width = max_width;
+    cs->max_height = max_height;
+    cs->bitrate = video_bitrate;
 
     rc = vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, VPX_ENCODER_ABI_VERSION);
 
@@ -281,9 +289,6 @@ int init_video_encoder(CodecState *cs, uint16_t width, uint16_t height, uint32_t
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
-
-    if (reconfigure_video_encoder_resolution(cs, width, height) != 0)
-        return -1;
 
     return 0;
 }
@@ -322,8 +327,8 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint32_t audio_sample_rate,
                                  uint32_t audio_channels,
                                  uint32_t audio_VAD_tolerance_ms,
-                                 uint16_t video_width,
-                                 uint16_t video_height,
+                                 uint16_t max_video_width,
+                                 uint16_t max_video_height,
                                  uint32_t video_bitrate )
 {
     CodecState *retu = calloc(sizeof(CodecState), 1);
@@ -334,11 +339,12 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
     retu->audio_sample_rate = audio_sample_rate;
 
     /* Encoders */
-    if (!video_width || !video_height) { /* Disable video */
+    if (!max_video_width || !max_video_height) { /* Disable video */
         /*video_width = 320;
         video_height = 240; */
     } else {
-        retu->capabilities |= ( 0 == init_video_encoder(retu, video_width, video_height, video_bitrate) ) ? v_encoding : 0;
+        retu->capabilities |= ( 0 == init_video_encoder(retu, max_video_width, max_video_height,
+                                video_bitrate) ) ? v_encoding : 0;
         retu->capabilities |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
     }
 
@@ -360,7 +366,7 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
 void codec_terminate_session ( CodecState *cs )
 {
     if (!cs) return;
-    
+
     if ( cs->audio_encoder )
         opus_encoder_destroy(cs->audio_encoder);
 
@@ -372,7 +378,7 @@ void codec_terminate_session ( CodecState *cs )
 
     if ( cs->capabilities & v_encoding )
         vpx_codec_destroy(&cs->v_encoder);
-    
+
     LOGGER_DEBUG("Terminated codec state: %p", cs);
     free(cs);
 }
