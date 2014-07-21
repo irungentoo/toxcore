@@ -171,6 +171,8 @@ void register_callbacks(ToxAv* av, void* data)
     toxav_register_audio_recv_callback(av, callback_audio);
     toxav_register_video_recv_callback(av, callback_video);
 }
+
+
 /*************************************************************************************************/
 
 /* Alice calls bob and the call starts.

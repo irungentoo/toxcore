@@ -127,7 +127,6 @@ static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int len
 static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img)
 {
 }
-
 void register_callbacks(ToxAv* av, void* data)
 {
     toxav_register_callstate_callback(av, callback_call_started, av_OnStart, data);

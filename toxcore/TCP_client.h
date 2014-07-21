@@ -52,10 +52,15 @@ typedef struct  {
     uint16_t last_packet_length;
     uint16_t last_packet_sent;
 
+    TCP_Priority_List *priority_queue_start, *priority_queue_end;
+
     uint64_t kill_at;
 
     uint64_t last_pinged;
     uint64_t ping_id;
+
+    uint64_t ping_response_id;
+    uint64_t ping_request_id;
 
     void *net_crypto_pointer;
     uint32_t net_crypto_location;

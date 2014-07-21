@@ -184,6 +184,22 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
 void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *));
 
 /**
+ * @brief Register callback for recieving audio data
+ *
+ * @param callback The callback
+ * @return void
+ */
+void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int));
+
+/**
+ * @brief Register callback for recieving video data
+ *
+ * @param callback The callback
+ * @return void
+ */
+void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *));
+
+/**
  * @brief Call user. Use its friend_id.
  *
  * @param av Handler.
@@ -272,6 +288,7 @@ int toxav_stop_call(ToxAv *av, int32_t call_index);
 int toxav_prepare_transmission(ToxAv *av, int32_t call_index, ToxAvCodecSettings *codec_settings, int support_video);
 
 /**
+<<<<<<< HEAD
  * @brief Call this at the end of the transmission.
  *
  * @param av Handler.
@@ -282,6 +299,8 @@ int toxav_prepare_transmission(ToxAv *av, int32_t call_index, ToxAvCodecSettings
 int toxav_kill_transmission(ToxAv *av, int32_t call_index);
 
 /**
+=======
+>>>>>>> upstream/master
  * @brief Encode and send video packet.
  *
  * @param av Handler.

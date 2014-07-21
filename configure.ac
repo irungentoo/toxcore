@@ -200,6 +200,25 @@ AC_ARG_ENABLE([testing],
     ]
 )
 
+AC_ARG_ENABLE([[epoll]],
+  [AS_HELP_STRING([[--enable-epoll[=ARG]]], [enable epoll support (yes, no, auto) [auto]])],
+    [enable_epoll=${enableval}],
+    [enable_epoll='auto']
+  )
+
+if test "$enable_epoll" != "no"; then
+  AX_HAVE_EPOLL
+  if test "${ax_cv_have_epoll}" = "yes"; then
+    AC_DEFINE([TCP_SERVER_USE_EPOLL],[1],[define to 1 to enable epoll support])
+    enable_epoll='yes'
+  else
+    if test "$enable_epoll" = "yes"; then
+      AC_MSG_ERROR([[Support for epoll was explicitly requested but cannot be enabled on this platform.]])
+    fi
+    enable_epoll='no'
+  fi
+fi
+
 DEPSEARCH=
 LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
@@ -643,7 +662,7 @@ fi
 if test "x$WIN32" = "xyes"; then
     AC_CHECK_LIB(ws2_32, main,
         [
-            WINSOCK2_LIBS="-lws2_32"
+            WINSOCK2_LIBS="-liphlpapi -lws2_32"
             AC_SUBST(WINSOCK2_LIBS)
         ],
         [

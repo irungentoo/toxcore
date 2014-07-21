@@ -28,6 +28,7 @@
 
 #include "rtp.h"
 #include <stdlib.h>
+void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg);
 
 #define size_32 4
 

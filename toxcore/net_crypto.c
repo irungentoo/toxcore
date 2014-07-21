@@ -37,21 +37,6 @@ static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_conn
     return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
 }
 
-/* return 0 if connection is dead.
- * return 1 if connection is alive.
- */
-static int is_alive(uint8_t status)
-{
-    if (status == CRYPTO_CONN_COOKIE_REQUESTING ||
-            status == CRYPTO_CONN_HANDSHAKE_SENT ||
-            status == CRYPTO_CONN_NOT_CONFIRMED ||
-            status == CRYPTO_CONN_ESTABLISHED) {
-        return 1;
-    }
-
-    return 0;
-}
-
 /* cookie timeout in seconds */
 #define COOKIE_TIMEOUT 10
 #define COOKIE_DATA_LENGTH (crypto_box_PUBLICKEYBYTES * 2)
@@ -426,19 +411,22 @@ static int send_packet_to(const Net_Crypto *c, int crypt_connection_id, const ui
 
     }
 
-    //TODO: spread packets over many relays, detect and kill bad relays.
+    //TODO: detect and kill bad relays.
     uint32_t i;
 
+    unsigned int r = rand();
+
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
-        if (conn->status_tcp[i] == STATUS_TCP_ONLINE) {/* friend is connected to this relay. */
-            if (send_data(c->tcp_connections[i], conn->con_number_tcp[i], data, length) == 1)
+        if (conn->status_tcp[(i + r) % MAX_TCP_CONNECTIONS] == STATUS_TCP_ONLINE) {/* friend is connected to this relay. */
+            if (send_data(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], conn->con_number_tcp[(i + r) % MAX_TCP_CONNECTIONS],
+                          data, length) == 1)
                 return 0;
         }
     }
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
-        if (conn->status_tcp[i] == STATUS_TCP_INVISIBLE) {
-            if (send_oob_packet(c->tcp_connections[i], conn->dht_public_key, data, length) == 1)
+        if (conn->status_tcp[(i + r) % MAX_TCP_CONNECTIONS] == STATUS_TCP_INVISIBLE) {
+            if (send_oob_packet(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], conn->dht_public_key, data, length) == 1)
                 return 0;
         }
     }
@@ -1106,6 +1094,14 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
             return -1;
     }
 
+    if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
+        clear_temp_packet(c, crypt_connection_id);
+        conn->status = CRYPTO_CONN_ESTABLISHED;
+
+        if (conn->connection_status_callback)
+            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
+    }
+
     if (real_data[0] == PACKET_ID_REQUEST) {
         int requested = handle_request_packet(&conn->send_array, real_data, real_length);
 
@@ -1146,14 +1142,6 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
         set_buffer_end(&conn->recv_array, num);
     } else {
         return -1;
-    }
-
-    if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
-        if (conn->connection_status_callback)
-            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1);
-
-        clear_temp_packet(c, crypt_connection_id);
-        conn->status = CRYPTO_CONN_ESTABLISHED;
     }
 
     return 0;
@@ -1485,6 +1473,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
     /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
     set_connection_dht_public_key(c, crypt_connection_id, n_c->dht_public_key, current_time_monotonic());
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
+    conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
     crypto_connection_add_source(c, crypt_connection_id, n_c->source);
     return crypt_connection_id;
 }
@@ -1517,6 +1506,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key)
     crypto_box_keypair(conn->sessionpublic_key, conn->sessionsecret_key);
     conn->status = CRYPTO_CONN_COOKIE_REQUESTING;
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
+    conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
     return crypt_connection_id;
 }
 
@@ -2250,6 +2240,15 @@ static void send_crypto_packets(Net_Crypto *c)
                     notes: needs improvement but seems to work fine for packet loss <1%
                  */
 
+                /* additional step: adjust the send rate based on the size change of the send queue */
+                uint32_t queue_size = num_packets_array(&conn->send_array);
+
+                if (queue_size > conn->packet_send_rate && queue_size > conn->last_queue_size) {
+                    conn->rate_increase = 0;
+                    conn->packets_resent = conn->packets_sent;
+                }
+
+
                 //hack to prevent 1 packet lost from affecting calculations at low send rates
                 if (conn->packets_resent == 1) {
                     conn->packets_resent = 0;
@@ -2300,17 +2299,26 @@ static void send_crypto_packets(Net_Crypto *c)
                 double linear_increase = realrate * 0.0025 + 1.0;
 
                 //final send rate: average of "real" and previous send rates + increases
-                conn->packet_send_rate = (realrate + conn->packet_send_rate) / 2.0 + conn->rate_increase + linear_increase;
+                double newrate = (realrate + conn->packet_send_rate) / 2.0 + conn->rate_increase + linear_increase;
+                conn->last_send_rate = conn->packet_send_rate;
+                conn->packet_send_rate = newrate;
 
 
                 conn->dropped = dropped;
                 conn->drop_ignore = drop_ignore_new;
                 conn->packets_resent = 0;
+                conn->last_queue_size = queue_size;
 
-                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE || !conn->sending) {
+                if (!conn->sending || !conn->packets_sent) {
                     conn->rate_increase = 0;
+                    conn->packet_send_rate /= 2;
+                }
+
+                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE) {
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
                 }
+
+                conn->packets_sent = 0;
 
                 if (conn->sending != 0 && num_packets_array(&conn->send_array) < CRYPTO_MIN_QUEUE_LENGTH / 2) {
                     --conn->sending;
@@ -2342,6 +2350,7 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 conn->packets_resent += ret;
                 conn->packets_left -= ret;
+                conn->packets_sent += ret;
             }
 
             if (conn->packet_send_rate > CRYPTO_PACKET_MIN_RATE * 1.5) {
@@ -2421,6 +2430,7 @@ int64_t write_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const ui
         return -1;
 
     --conn->packets_left;
+    conn->packets_sent++;
     conn->sending = CONN_SENDING_VALUE;
     return ret;
 }
