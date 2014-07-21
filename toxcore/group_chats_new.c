@@ -31,3 +31,28 @@
 #include "group_chats_new.h"
 #include "LAN_discovery.h"
 #include "util.h"
+
+Group_Chat *new_groupchat(Networking_Core *net)
+{
+   	if (net == 0)
+        return -1;
+
+    unix_time_update();
+
+    Group_Chat *chat = calloc(1, sizeof(Group_Chat));
+    chat->net = net;
+
+    // TODO: Need to handle the situation when we load this from locally stored data
+    crypto_box_keypair(chat->self_public_key, chat->self_secret_key);
+
+    return chat;
+}
+
+void kill_groupchat(Group_Chat *chat)
+{
+	// Send quit action
+    // send_data(chat, 0, 0, GROUP_CHAT_QUIT);
+    
+    free(chat->group);
+    free(chat);
+}

@@ -57,6 +57,7 @@ typedef struct {
 } Group_Peer;
 
 typedef struct {
+    // Maybe create separate struct
     uint8_t     client_id[CLIENT_ID_EXT_SIZE];
     IP_Port     ip_port;
 } Group_Close;
@@ -65,7 +66,7 @@ typedef struct Group_Chat {
     Networking_Core *net;
 
     uint8_t     self_public_key[CLIENT_ID_EXT_SIZE];
-    uint8_t     self_secret_key[CLIENT_ID_EXT_SIZE];
+    uint8_t     self_secret_key[CLIENT_ID_EXT_SIZE]; //could be longer...
     uint8_t     self_certificate[CERTIFICATE_SIZE];
 
     Group_Peer  *group;
@@ -93,5 +94,57 @@ typedef struct Group_Credentials {
 
     Group_OPs   *ops;
 } Group_Credentials;
+
+
+/* Send a message to the group.
+ * returns the number of peers it has sent it to.
+ */
+//uint32_t group_sendmessage(Group_Chat *chat, const uint8_t *message, uint32_t length);
+
+/* Send an action to the group.
+ * returns the number of peers it has sent it to.
+ */
+//uint32_t group_sendaction(Group_Chat *chat, const uint8_t *action, uint32_t length);
+
+/* Set our nick for this group.
+ * returns -1 on failure, 0 on success.
+ */
+//int set_nick(Group_Chat *chat, const uint8_t *nick, uint16_t nick_len);
+
+/* Tell everyone about a new peer (a person we are inviting for example.)
+ */
+//uint32_t group_newpeer(Group_Chat *chat, const uint8_t *client_id);
+
+/* Return the number of peers in the group chat.
+ */
+//uint32_t group_numpeers(const Group_Chat *chat);
+
+/* List all the peers in the group chat.
+ * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
+ * returns the number of peers.
+ */
+//uint32_t group_client_names(const Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[], uint16_t length);
+
+/* If we receive a group chat packet we call this function so it can be handled.
+ * return 0 if packet is handled correctly.
+ * return 1 if it didn't handle the packet or if the packet was shit.
+*/
+//int handle_groupchatpacket(Group_Chat *chat, IP_Port source, const uint8_t *packet, uint32_t length);
+
+/* Create a new group chat.
+ * Returns a new group chat instance if success.
+ * Returns a NULL pointer if fail.
+ */
+Group_Chat *new_groupchat(Networking_Core *net);
+
+/* Kill a group chat
+ * Frees the memory and everything.
+ */
+void kill_groupchat(Group_Chat *chat);
+
+/* This is the main loop.
+ */
+//void do_groupchat(Group_Chat *chat);
+
 
 #endif

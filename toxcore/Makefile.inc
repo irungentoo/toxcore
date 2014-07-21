@@ -27,8 +27,6 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/tox.c \
                         ../toxcore/util.h \
                         ../toxcore/util.c \
-                        ../toxcore/group_chats.h \
-                        ../toxcore/group_chats.c \
                         ../toxcore/group_chats_new.h \
                         ../toxcore/group_chats_new.c \
                         ../toxcore/assoc.h \
