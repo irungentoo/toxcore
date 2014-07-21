@@ -1094,6 +1094,11 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
             return -1;
     }
 
+    if (real_data[0] == PACKET_ID_KILL) {
+        conn->killed = 1;
+        return 0;
+    }
+
     if (conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
         clear_temp_packet(c, crypt_connection_id);
         conn->status = CRYPTO_CONN_ESTABLISHED;
@@ -1112,9 +1117,6 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
         }
 
         set_buffer_end(&conn->recv_array, num);
-    } else if (real_data[0] == PACKET_ID_KILL) {
-        conn->killed = 1;
-        return 0;
     } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
         Packet_Data dt;
         dt.time = current_time_monotonic();
