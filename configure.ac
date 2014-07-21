@@ -662,7 +662,7 @@ fi
 if test "x$WIN32" = "xyes"; then
     AC_CHECK_LIB(ws2_32, main,
         [
-            WINSOCK2_LIBS="-lws2_32"
+            WINSOCK2_LIBS="-liphlpapi -lws2_32"
             AC_SUBST(WINSOCK2_LIBS)
         ],
         [
