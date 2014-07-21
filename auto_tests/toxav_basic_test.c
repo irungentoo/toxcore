@@ -140,7 +140,7 @@ void callback_call_type_change ( void *av, int32_t call_index, void *_arg )
 void callback_requ_timeout ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
-    printf("Call timed-out!");
+    printf("Call timed-out!\n");
     cast->Alice.status = TimedOut;
 }
 

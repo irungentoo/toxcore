@@ -288,7 +288,6 @@ int toxav_stop_call(ToxAv *av, int32_t call_index);
 int toxav_prepare_transmission(ToxAv *av, int32_t call_index, ToxAvCodecSettings *codec_settings, int support_video);
 
 /**
-<<<<<<< HEAD
  * @brief Call this at the end of the transmission.
  *
  * @param av Handler.
@@ -299,8 +298,6 @@ int toxav_prepare_transmission(ToxAv *av, int32_t call_index, ToxAvCodecSettings
 int toxav_kill_transmission(ToxAv *av, int32_t call_index);
 
 /**
-=======
->>>>>>> upstream/master
  * @brief Encode and send video packet.
  *
  * @param av Handler.

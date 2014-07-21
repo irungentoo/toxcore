@@ -1645,9 +1645,11 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
 
     MSIMessage *msg_cancel = msi_new_message ( TypeRequest, cancel );
 
-#if 0
+    /* FIXME */
+#if 0 
     if ( reason && strlen(reason) < sizeof(MSIReasonStrType) ) {
-        MSIReasonStrType reason_cast = {0};
+        MSIReasonStrType reason_cast;
+        memset(reason_cast, '\0', sizeof(MSIReasonStrType));
         memcpy(reason_cast, reason, strlen(reason));
         msi_msg_set_reason(msg_cancel, reason_cast);
     }
@@ -1656,8 +1658,6 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
     send_message ( session, session->calls[call_index], msg_cancel, peer );
     free ( msg_cancel );
 
-    /*session->calls[call_index]->state = call_hanged_up;
-      session->calls[call_index]->request_timer_id = timer_alloc ( handle_timeout, session, call_index, m_deftout );*/
     terminate_call ( session, session->calls[call_index] );
     pthread_mutex_unlock(&session->mutex);
 
@@ -1675,7 +1675,7 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
 int msi_reject ( MSISession *session, int32_t call_index, const char *reason )
 {
     pthread_mutex_lock(&session->mutex);
-    LOGGER_DEBUG("Session: %p Rejecting call: %u; reason:", session, call_index, reason ? (char *)reason : "Unknown");
+    LOGGER_DEBUG("Session: %p Rejecting call: %u; reason: %s", session, call_index, reason ? reason : "Unknown");
 
     if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ) {
         LOGGER_ERROR("Invalid call index!");
@@ -1685,11 +1685,15 @@ int msi_reject ( MSISession *session, int32_t call_index, const char *reason )
 
     MSIMessage *msg_reject = msi_new_message ( TypeRequest, reject );
 
-    if ( reason ) {
-        MSIReasonStrType reason_cast = {0};
+    /* FIXME */
+#if 0
+    if ( reason && strlen(reason) < sizeof(MSIReasonStrType) ) {
+        MSIReasonStrType reason_cast;
+        memset(reason_cast, '\0', sizeof(MSIReasonStrType));
         memcpy(reason_cast, reason, strlen(reason));
         msi_msg_set_reason(msg_reject, reason_cast);
     }
+#endif
 
     send_message ( session, session->calls[call_index], msg_reject,
                    session->calls[call_index]->peers[session->calls[call_index]->peer_count - 1] );
