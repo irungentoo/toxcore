@@ -1186,7 +1186,8 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
         }
 
         case NET_PACKET_CRYPTO_HS: {
-            if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING || conn->status == CRYPTO_CONN_HANDSHAKE_SENT) {
+            if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING || conn->status == CRYPTO_CONN_HANDSHAKE_SENT
+                    || conn->status == CRYPTO_CONN_NOT_CONFIRMED) {
                 uint8_t peer_real_pk[crypto_box_PUBLICKEYBYTES];
                 uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
                 uint8_t cookie[COOKIE_LENGTH];
