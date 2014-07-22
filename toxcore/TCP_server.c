@@ -950,7 +950,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     }
 
 #ifdef TCP_SERVER_USE_EPOLL
-    temp->efd = epoll_create1(0);
+    temp->efd = epoll_create(8);
 
     if (temp->efd == -1) {
         free(temp);
