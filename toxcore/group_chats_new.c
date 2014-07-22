@@ -32,6 +32,18 @@
 #include "LAN_discovery.h"
 #include "util.h"
 
+#define TIME_STAMP (sizeof(uint64_t))
+#define GC_INVITE_REQUEST_PLAIN_SIZE (1 + (CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) )
+#define GC_INVITE_REQUEST_DHT_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + GC_INVITE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
+
+#define GC_INVITE_RESPONSE_PLAIN_SIZE (1 + ((CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) + TIME_STAMP + CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) )
+#define GC_INVITE_RESPONSE_DHT_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
+
+int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length)
+{
+
+}
+
 Group_Credentials *new_groupcredentials()
 {
     Group_Credentials *credentials = calloc(1, sizeof(Group_Credentials));
@@ -52,7 +64,14 @@ Group_Chat *new_groupchat(Networking_Core *net)
     //unix_time_update();
 
     Group_Chat *chat = calloc(1, sizeof(Group_Chat));
+    if (chat == NULL)
+        return NULL;
+
+    if (net == NULL)
+        return NULL;
+
     chat->net = net;
+    networking_registerhandler(chat->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, chat);
 
     // TODO: Need to handle the situation when we load this from locally stored data
     create_long_keypair(chat->self_public_key, chat->self_secret_key);

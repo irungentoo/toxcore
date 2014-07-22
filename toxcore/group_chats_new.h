@@ -127,9 +127,9 @@ typedef struct Group_Credentials {
 
 /* If we receive a group chat packet we call this function so it can be handled.
  * return 0 if packet is handled correctly.
- * return 1 if it didn't handle the packet or if the packet was shit.
+ * return -1 if it didn't handle the packet or if the packet was shit.
 */
-//int handle_groupchatpacket(Group_Chat *chat, IP_Port source, const uint8_t *packet, uint32_t length);
+int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length);
 
 /* Create new group credentials with pk ans sk.
  * Returns a new group credentials instance if success.
