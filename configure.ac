@@ -206,8 +206,8 @@ AC_ARG_ENABLE([[epoll]],
     [enable_epoll='auto']
   )
 
+AX_HAVE_EPOLL
 if test "$enable_epoll" != "no"; then
-  AX_HAVE_EPOLL
   if test "${ax_cv_have_epoll}" = "yes"; then
     AC_DEFINE([TCP_SERVER_USE_EPOLL],[1],[define to 1 to enable epoll support])
     enable_epoll='yes'
