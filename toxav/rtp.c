@@ -1,4 +1,4 @@
-/**  toxrtp.c
+/**  rtp.c
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *

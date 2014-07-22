@@ -31,7 +31,7 @@ extern "C" {
 /* vpx_image_t */
 #include <vpx/vpx_image.h>
 
-typedef void ( *ToxAVCallback ) ( int32_t, void *arg );
+typedef void ( *ToxAVCallback ) ( void *agent, int32_t call_idx, void *arg );
 typedef struct _ToxAv ToxAv;
 
 #ifndef __TOX_DEFINED__
@@ -59,9 +59,9 @@ typedef enum {
     av_OnEnding,
 
     /* Protocol */
-    av_OnError,
     av_OnRequestTimeout,
-    av_OnPeerTimeout
+    av_OnPeerTimeout,
+    av_OnMediaChange
 } ToxAvCallbackID;
 
 
@@ -158,11 +158,30 @@ void toxav_kill(ToxAv *av);
 /**
  * @brief Register callback for call state.
  *
+ * @param av Handler.
  * @param callback The callback
  * @param id One of the ToxAvCallbackID values
  * @return void
  */
-void toxav_register_callstate_callback (ToxAVCallback callback, ToxAvCallbackID id, void *userdata);
+void toxav_register_callstate_callback (ToxAv *av, ToxAVCallback callback, ToxAvCallbackID id, void *userdata);
+
+/**
+ * @brief Register callback for recieving audio data
+ *
+ * @param av Handler.
+ * @param callback The callback
+ * @return void
+ */
+void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int));
+
+/**
+ * @brief Register callback for recieving video data
+ *
+ * @param av Handler.
+ * @param callback The callback
+ * @return void
+ */
+void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *));
 
 /**
  * @brief Register callback for recieving audio data
@@ -236,6 +255,16 @@ int toxav_reject(ToxAv *av, int32_t call_index, const char *reason);
  * @retval ToxAvError On error.
  */
 int toxav_cancel(ToxAv *av, int32_t call_index, int peer_id, const char *reason);
+
+/**
+ * @brief Notify peer that we are changing call type
+ *
+ * @param av Handler.
+ * @return int
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
+int toxav_change_type(ToxAv *av, int32_t call_index, ToxAvCallType call_type);
 
 /**
  * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.

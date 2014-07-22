@@ -1,4 +1,4 @@
-/**  toxrtp.h
+/**  rtp.h
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
