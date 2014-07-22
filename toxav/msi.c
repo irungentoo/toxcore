@@ -725,8 +725,9 @@ static int send_message ( MSISession *session, MSICall *call, MSIMessage *msg, u
 inline__ int send_reponse ( MSISession *session, MSICall *call, MSIResponse response, uint32_t to )
 {
     MSIMessage *msg = msi_new_message ( TypeResponse, response );
-    send_message ( session, call, msg, to );
+    int ret = send_message ( session, call, msg, to );
     free ( msg );
+    return ret;
 }
 
 /**
