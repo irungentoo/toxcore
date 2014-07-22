@@ -28,7 +28,16 @@
 #endif
 
 #include "crypto_core.h"
+#include "DHT.h"
 
+// Long keypair: curve + ed. Currently for group chats and announcement purposes.
+int create_long_keypair(uint8_t *pk, uint8_t *sk)
+{
+    crypto_box_keypair(pk, sk);
+    crypto_sign_keypair(pk + CLIENT_ID_SIZE, sk + CLIENT_ID_SIZE);
+    // TODO: maybe add some verification
+    return 0;
+}
 
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,

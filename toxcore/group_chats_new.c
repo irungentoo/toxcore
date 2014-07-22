@@ -32,18 +32,30 @@
 #include "LAN_discovery.h"
 #include "util.h"
 
+Group_Credentials *new_groupcredentials()
+{
+    Group_Credentials *credentials = calloc(1, sizeof(Group_Credentials));
+    create_long_keypair(credentials->chat_public_key, credentials->chat_secret_key);
+    unix_time_update();
+    credentials->creation_time = unix_time();
+
+    return credentials;
+}
+
+
 Group_Chat *new_groupchat(Networking_Core *net)
 {
    	if (net == 0)
         return -1;
 
-    unix_time_update();
+    // Why do we even need this?
+    //unix_time_update();
 
     Group_Chat *chat = calloc(1, sizeof(Group_Chat));
     chat->net = net;
 
     // TODO: Need to handle the situation when we load this from locally stored data
-    crypto_box_keypair(chat->self_public_key, chat->self_secret_key);
+    create_long_keypair(chat->self_public_key, chat->self_secret_key);
 
     return chat;
 }

@@ -131,6 +131,12 @@ typedef struct Group_Credentials {
 */
 //int handle_groupchatpacket(Group_Chat *chat, IP_Port source, const uint8_t *packet, uint32_t length);
 
+/* Create new group credentials with pk ans sk.
+ * Returns a new group credentials instance if success.
+ * Returns a NULL pointer if fail.
+ */
+Group_Credentials *new_groupcredentials();
+
 /* Create a new group chat.
  * Returns a new group chat instance if success.
  * Returns a NULL pointer if fail.
