@@ -184,22 +184,6 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
 void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *));
 
 /**
- * @brief Register callback for recieving audio data
- *
- * @param callback The callback
- * @return void
- */
-void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int));
-
-/**
- * @brief Register callback for recieving video data
- *
- * @param callback The callback
- * @return void
- */
-void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *));
-
-/**
  * @brief Call user. Use its friend_id.
  *
  * @param av Handler.
