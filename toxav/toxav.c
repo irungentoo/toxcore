@@ -272,7 +272,7 @@ int toxav_reject ( ToxAv *av, int32_t call_index, const char *reason )
         return ErrorInvalidState;
     }
 
-    return msi_reject(av->msi_session, call_index, (const uint8_t *) reason);
+    return msi_reject(av->msi_session, call_index, reason);
 }
 
 /**
