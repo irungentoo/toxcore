@@ -1411,7 +1411,6 @@ static void msi_handle_packet ( Messenger *messenger, int source, const uint8_t 
         LOGGER_WARNING("Invalid message: no resp nor requ headers");
     }
 
-free_end:
     free ( msg );
 }
 
