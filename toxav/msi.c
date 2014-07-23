@@ -1658,7 +1658,8 @@ int msi_answer ( MSISession *session, int32_t call_index, MSICallType call_type 
     session->calls[call_index]->type_local = call_type;
 
     msi_msg_set_calltype(msg_starting, call_type);
-    send_message ( session, session->calls[call_index], msg_starting, 0 );
+
+    send_message ( session, session->calls[call_index], msg_starting, session->calls[call_index]->peers[0] );
     free ( msg_starting );
 
     session->calls[call_index]->state = call_active;
