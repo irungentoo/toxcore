@@ -61,8 +61,10 @@ JitterBuffer *create_queue(unsigned int capacity)
 static void clear_queue(JitterBuffer *q)
 {
     for (; q->bottom != q->top; ++q->bottom) {
-        if (q->queue[q->bottom % q->size])
+        if (q->queue[q->bottom % q->size]) {
             rtp_free_msg(NULL, q->queue[q->bottom % q->size]);
+            q->queue[q->bottom % q->size] = NULL;
+        }
     }
 }
 
