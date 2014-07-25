@@ -95,7 +95,7 @@ const ToxAvCodecSettings av_DefaultSettings = {
     1,
     600,
 
-    2
+    3
 };
 
 

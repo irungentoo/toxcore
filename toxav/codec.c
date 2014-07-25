@@ -40,7 +40,7 @@ JitterBuffer *create_queue(unsigned int capacity)
 {
     unsigned int size = 1;
 
-    while (size <= (capacity + 1) * 2) {
+    while (size <= (capacity + 4) * 2) {
         size *= 2;
     }
 
@@ -58,15 +58,19 @@ JitterBuffer *create_queue(unsigned int capacity)
     return q;
 }
 
+static void clear_queue(JitterBuffer *q)
+{
+    for (; q->bottom != q->top; ++q->bottom) {
+        if (q->queue[q->bottom % q->size])
+            rtp_free_msg(NULL, q->queue[q->bottom % q->size]);
+    }
+}
+
 void terminate_queue(JitterBuffer *q)
 {
     if (!q) return;
 
-    for (; q->bottom != q->top; ++q->bottom) {
-        if (!q->queue[q->bottom % q->size])
-            rtp_free_msg(NULL, q->queue[q->bottom % q->size]);
-    }
-
+    clear_queue(q);
     free(q->queue);
     free(q);
 }
@@ -75,10 +79,15 @@ void queue(JitterBuffer *q, RTPMessage *pk)
 {
     uint16_t sequnum = pk->header->sequnum;
 
-    if (sequnum - q->bottom > q->size)
-        return;
-
     unsigned int num = sequnum % q->size;
+
+    if (sequnum - q->bottom > q->size) {
+        clear_queue(q);
+        q->bottom = sequnum;
+        q->queue[num] = pk;
+        q->top = sequnum + 1;
+        return;
+    }
 
     if (q->queue[num])
         return;
