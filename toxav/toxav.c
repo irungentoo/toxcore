@@ -37,8 +37,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Assume 60 fps*/
+/* Assume 24 fps*/
 #define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
+#define MAX_DECODE_TIME_US MAX_ENCODE_TIME_US
 
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
 #define VIDEOFRAME_PIECE_SIZE 0x500 /* 1.25 KiB*/
@@ -119,10 +120,8 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
     }
 
     av->messenger = (Messenger *)messenger;
-
     av->msi_session = msi_init_session(av->messenger, max_calls);
     av->msi_session->agent_handler = av;
-
     av->calls = calloc(sizeof(CallSpecific), max_calls);
     av->max_calls = max_calls;
 
@@ -163,13 +162,14 @@ void toxav_kill ( ToxAv *av )
 /**
  * @brief Register callback for call state.
  *
+ * @param av Handler.
  * @param callback The callback
  * @param id One of the ToxAvCallbackID values
  * @return void
  */
-void toxav_register_callstate_callback ( ToxAVCallback callback, ToxAvCallbackID id, void *userdata )
+void toxav_register_callstate_callback ( ToxAv *av, ToxAVCallback callback, ToxAvCallbackID id, void *userdata )
 {
-    msi_register_callback((MSICallback)callback, (MSICallbackID) id, userdata);
+    msi_register_callback(av->msi_session, (MSICallbackType)callback, (MSICallbackID) id, userdata);
 }
 
 /**
@@ -272,7 +272,7 @@ int toxav_reject ( ToxAv *av, int32_t call_index, const char *reason )
         return ErrorInvalidState;
     }
 
-    return msi_reject(av->msi_session, call_index, (const uint8_t *) reason);
+    return msi_reject(av->msi_session, call_index, reason);
 }
 
 /**
@@ -296,6 +296,24 @@ int toxav_cancel ( ToxAv *av, int32_t call_index, int peer_id, const char *reaso
     }
 
     return msi_cancel(av->msi_session, call_index, peer_id, reason);
+}
+
+/**
+ * @brief Notify peer that we are changing call type
+ *
+ * @param av Handler.
+ * @return int
+ * @param call_type Change to...
+ * @retval 0 Success.
+ * @retval ToxAvError On error.
+ */
+int toxav_change_type(ToxAv *av, int32_t call_index, ToxAvCallType call_type)
+{
+    if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
+        return ErrorNoCall;
+    }
+
+    return msi_change_type(av->msi_session, call_index, call_type);
 }
 
 /**
@@ -758,6 +776,8 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
     int32_t call_index = _session->call_index;
     CallSpecific *call = &av->calls[call_index];
 
+    if (!call->call_active) return;
+
     if (_session->payload_type == type_audio % 128) {
         queue(call->j_buf, _msg);
 
@@ -778,7 +798,10 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
                 continue;
             }
 
-            av->audio_callback(av, call_index, dest, frame_size);
+            if ( av->audio_callback )
+                av->audio_callback(av, call_index, dest, frame_size);
+            else
+                LOGGER_WARNING("Audio packet dropped due to missing callback!");
         }
     } else {
         uint8_t *packet = _msg->data;
@@ -794,7 +817,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
             /* piece of current frame */
         } else if (i > 0 && i < 128) {
             /* recieved a piece of a frame ahead, flush current frame and start reading this new frame */
-            int rc = vpx_codec_decode(&call->cs->v_decoder, call->frame_buf, call->frame_limit, NULL, 0);
+            int rc = vpx_codec_decode(&call->cs->v_decoder, call->frame_buf, call->frame_limit, NULL, MAX_DECODE_TIME_US);
             call->frame_id = packet[0];
             memset(call->frame_buf, 0, call->frame_limit);
             call->frame_limit = 0;
@@ -830,9 +853,10 @@ end:
         vpx_image_t *img;
         img = vpx_codec_get_frame(&call->cs->v_decoder, &iter);
 
-        if (img) {
+        if (img && av->video_callback) {
             av->video_callback(av, call_index, img);
-        }
+        } else
+            LOGGER_WARNING("Video packet dropped due to missing callback or no image!");
 
         rtp_free_msg(NULL, _msg);
     }

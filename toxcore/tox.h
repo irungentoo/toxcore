@@ -294,13 +294,13 @@ void tox_callback_friend_request(Tox *tox, void (*function)(Tox *tox, const uint
                                  void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
- *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * message, uint32_t length, void *userdata)
+ *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void tox_callback_friend_message(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                                  void *userdata);
 
 /* Set the function that will be executed when an action from a friend is received.
- *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * action, uint32_t length, void *userdata)
+ *  Function format is: function(Tox *tox, int32_t friendnumber, uint8_t * action, uint16_t length, void *userdata)
  */
 void tox_callback_friend_action(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
                                 void *userdata);
@@ -495,20 +495,20 @@ uint32_t tox_get_chatlist(const Tox *tox, int *out_list, uint32_t list_size);
  * tox_file_data_remaining(...) can be used to know how many bytes are left to send/receive.
  *
  * If the connection breaks during file sending (The other person goes offline without pausing the sending and then comes back)
- * the receiver must send a control packet with receive_send == 0 message_id = TOX_FILECONTROL_RESUME_BROKEN and the data being
+ * the receiver must send a control packet with send_receive == 1 message_id = TOX_FILECONTROL_RESUME_BROKEN and the data being
  * a uint64_t (in host byte order) containing the number of bytes received.
  *
- * If the sender receives this packet, he must send a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT
+ * If the sender receives this packet, he must send a control packet with send_receive == 0 and control_type == TOX_FILECONTROL_ACCEPT
  * then he must start sending file data from the position (data , uint64_t in host byte order) received in the TOX_FILECONTROL_RESUME_BROKEN packet.
  *
  * To pause a file transfer send a control packet with control_type == TOX_FILECONTROL_PAUSE.
  * To unpause a file transfer send a control packet with control_type == TOX_FILECONTROL_ACCEPT.
  *
  * If you receive a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_PAUSE, you must stop sending filenumber until the other
- * person sends a control packet with receive_send == 1 and control_type == TOX_FILECONTROL_ACCEPT with the filenumber being a paused filenumber.
+ * person sends a control packet with send_receive == 0 and control_type == TOX_FILECONTROL_ACCEPT with the filenumber being a paused filenumber.
  *
  * If you receive a control packet with receive_send == 0 and control_type == TOX_FILECONTROL_PAUSE, it means the sender of filenumber has paused the
- * transfer and will resume it later with a control packet with receive_send == 0 and control_type == TOX_FILECONTROL_ACCEPT for that file number.
+ * transfer and will resume it later with a control packet with send_receive == 1 and control_type == TOX_FILECONTROL_ACCEPT for that file number.
  *
  * More to come...
  */

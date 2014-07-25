@@ -106,9 +106,6 @@ typedef int sock_t;
 #define NET_PACKET_SEND_ANNOUNCED_NODES 8 /* Get announced nodes request packet ID */
 
 
-#define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
-#define NET_PACKET_SYNC            17  /* SYNC packet ID. */
-#define NET_PACKET_DATA            18  /* Data packet ID. */
 #define NET_PACKET_COOKIE_REQUEST  24  /* Cookie request packet */
 #define NET_PACKET_COOKIE_RESPONSE 25  /* Cookie response packet */
 #define NET_PACKET_CRYPTO_HS       26  /* Crypto handshake packet */
@@ -205,6 +202,21 @@ IP_Port;
  *   and thus issue up to STATIC_BUFFER_COPIES calls in the same output
  */
 const char *ip_ntoa(const IP *ip);
+
+/*
+ * addr_parse_ip
+ *  directly parses the input into an IP structure
+ *  tries IPv4 first, then IPv6
+ *
+ * input
+ *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
+ *
+ * output
+ *  IP: family and the value is set on success
+ *
+ * returns 1 on success, 0 on failure
+ */
+int addr_parse_ip(const char *address, IP *to);
 
 /* ip_equal
  *  compares two IPAny structures
