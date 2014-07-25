@@ -1,4 +1,4 @@
-/**  toxmsi.c
+/**  msi.c
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -34,19 +34,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define same(x, y) strcmp((const char*) x, (const char*) y) == 0
-
-#define MSI_MAXMSG_SIZE 1024
-
-#define TYPE_REQUEST 1
-#define TYPE_RESPONSE 2
-
-unsigned char *VERSION_STRING = (unsigned char *)"0.3.1";
-#define VERSION_STRLEN 5
-
-#define CT_AUDIO_HEADER_VALUE "AUDIO"
-#define CT_VIDEO_HEADER_VALUE "VIDEO"
-
+#define MSI_MAXMSG_SIZE 256
 
 /* Define default timeout for a request.
  * There is no behavior specified by the msi on what will
@@ -57,85 +45,24 @@ unsigned char *VERSION_STRING = (unsigned char *)"0.3.1";
 /**
  * Protocol:
  *
- * | desc. ( 1 byte ) | length ( 2 bytes ) | value ( length bytes ) |
- *
- * ie.
- *
- * | 0x1 | 0x0 0x7 | "version"
- *
- * Means: it's field value with length of 7 bytes and value of "version"
- * It's similar to amp protocol
+ * |id [1 byte]| |size [1 byte]| |data [$size bytes]| |...{repeat}| |0 {end byte}|
  */
 
 
-#define GENERIC_HEADER(header) \
-typedef struct _MSIHeader##header { \
-uint8_t* header_value; \
-uint16_t size; \
-} MSIHeader##header;
+typedef enum {
+    IDRequest = 1,
+    IDResponse,
+    IDReason,
+    IDCallType,
+    IDCallId,
 
+} MSIHeaderID;
 
-GENERIC_HEADER ( Version )
-GENERIC_HEADER ( Request )
-GENERIC_HEADER ( Response )
-GENERIC_HEADER ( CallType )
-GENERIC_HEADER ( CallId )
-GENERIC_HEADER ( Info )
-GENERIC_HEADER ( Reason )
+typedef enum {
+    TypeRequest,
+    TypeResponse,
 
-
-/**
- * @brief This is the message structure. It contains all of the headers and
- *        destination/source of the message stored in friend_id.
- *
- */
-typedef struct _MSIMessage {
-
-    MSIHeaderVersion   version;
-    MSIHeaderRequest   request;
-    MSIHeaderResponse  response;
-    MSIHeaderCallType  calltype;
-    MSIHeaderInfo      info;
-    MSIHeaderReason    reason;
-    MSIHeaderCallId    callid;
-
-    struct _MSIMessage *next;
-
-    int friend_id;
-
-} MSIMessage;
-
-
-static struct _Callbacks {
-    MSICallback function;
-    void *data;
-} callbacks[11] = {{0}};
-
-inline__ void invoke_callback(int32_t call_index, MSICallbackID id)
-{
-    if ( callbacks[id].function ) {
-        LOGGER_DEBUG("Invoking callback function: %d", id);
-        callbacks[id].function ( call_index, callbacks[id].data );
-    }
-}
-
-/*static MSICallback callbacks[10] = {0};*/
-
-
-/* define strings for the identifiers */
-#define VERSION_FIELD      "Version"
-#define REQUEST_FIELD      "Request"
-#define RESPONSE_FIELD     "Response"
-#define INFO_FIELD         "INFO"
-#define REASON_FIELD       "Reason"
-#define CALLTYPE_FIELD     "Call-type"
-#define CALLID_FIELD       "Call-id"
-
-/* protocol descriptors */
-#define end_byte    0x0
-#define field_byte  0x1
-#define value_byte  0x2
-
+} MSIMessageType;
 
 typedef enum {
     invite,
@@ -146,27 +73,6 @@ typedef enum {
 
 } MSIRequest;
 
-
-/**
- * @brief Get string value for request.
- *
- * @param request The request.
- * @return const uint8_t* The string
- */
-static inline__ const uint8_t *stringify_request ( MSIRequest request )
-{
-    static const uint8_t *strings[] = {
-        ( uint8_t *) "INVITE",
-        ( uint8_t *) "START",
-        ( uint8_t *) "CANCEL",
-        ( uint8_t *) "REJECT",
-        ( uint8_t *) "END"
-    };
-
-    return strings[request];
-}
-
-
 typedef enum {
     ringing,
     starting,
@@ -176,25 +82,45 @@ typedef enum {
 } MSIResponse;
 
 
+#define GENERIC_HEADER(header, val_type) \
+typedef struct _MSIHeader##header { \
+val_type value; \
+_Bool exists; \
+} MSIHeader##header;
+
+
+GENERIC_HEADER ( Request, MSIRequest )
+GENERIC_HEADER ( Response, MSIResponse )
+GENERIC_HEADER ( CallType, MSICallType )
+GENERIC_HEADER ( CallId, MSICallIDType )
+GENERIC_HEADER ( Reason, MSIReasonStrType )
+
+
 /**
- * @brief Get string value for response.
+ * @brief This is the message structure. It contains all of the headers and
+ *        destination/source of the message stored in friend_id.
  *
- * @param response The response.
- * @return const uint8_t* The string
  */
-static inline__ const uint8_t *stringify_response ( MSIResponse response )
+typedef struct _MSIMessage {
+
+    MSIHeaderRequest   request;
+    MSIHeaderResponse  response;
+    MSIHeaderCallType  calltype;
+    MSIHeaderReason    reason;
+    MSIHeaderCallId    callid;
+
+    int friend_id;
+
+} MSIMessage;
+
+
+inline__ void invoke_callback(MSISession *session, int32_t call_index, MSICallbackID id)
 {
-    static const uint8_t *strings[] = {
-        ( uint8_t *) "ringing",
-        ( uint8_t *) "starting",
-        ( uint8_t *) "ending",
-        ( uint8_t *) "error"
-    };
-
-    return strings[response];
+    if ( session->callbacks[id].function ) {
+        LOGGER_DEBUG("Invoking callback function: %d", id);
+        session->callbacks[id].function ( session->agent_handler, call_index, session->callbacks[id].data );
+    }
 }
-
-
 
 /**
  * @brief Parse raw 'data' received from socket into MSIMessage struct.
@@ -207,125 +133,80 @@ static inline__ const uint8_t *stringify_response ( MSIResponse response )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
+static int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
 {
 
-#define ON_HEADER(iterator, size_con, header, descriptor, type_size_const) \
-( memcmp(iterator, descriptor, type_size_const) == 0){ /* Okay */ \
-iterator += type_size_const; /* Set iterator at begining of value part */ \
-if ( *iterator != value_byte || size_con <= type_size_const) { return -1; } size_con -= type_size_const; \
-iterator ++; if(size_con <= 3) {return -1;} size_con -= 3; \
-uint16_t _value_size; memcpy(&_value_size, iterator, sizeof(_value_size)); _value_size = ntohs(_value_size);\
-if(size_con < _value_size) { return -1; } size_con -= _value_size; \
-if ( !(header.header_value = calloc(sizeof(uint8_t), _value_size)) ) \
-LOGGER_ERROR("Allocation failed! Program might misbehave!"); \
-header.size = _value_size; \
-memcpy(header.header_value, iterator + 2, _value_size);\
-iterator = iterator + 2 + _value_size; /* set iterator at new header or end_byte */ }
+#define FAIL_CONSTRAINT(constraint, wanted) if ((constraint -= wanted) < 1) { LOGGER_ERROR("Read over length!"); return -1; }
+#define FAIL_SIZE(byte, valid) if ( byte != valid ) { LOGGER_ERROR("Invalid data size!"); return -1; }
+#define FAIL_LIMITS(byte, low, high) if ( byte < low || byte > high ) { LOGGER_ERROR("Invalid data!"); return -1; }
 
     if ( msg == NULL ) {
         LOGGER_ERROR("Could not parse message: no storage!");
         return -1;
     }
 
-    if ( data[length - 1] ) /* End byte must have value 0 */
+    if ( data[length - 1] ) { /* End byte must have value 0 */
+        LOGGER_ERROR("Invalid end byte");
         return -1;
+    }
 
-    const uint8_t *_it = data;
-    uint16_t size_max = length;
+    const uint8_t *it = data;
+    int size_constraint = length;
 
-    while ( *_it ) {/* until end_byte is hit */
-
-        uint16_t itedlen = (_it - data) + 2;
-
-        if ( *_it == field_byte && itedlen < length ) {
-
-            uint16_t _size;
-            memcpy(&_size, _it + 1, sizeof(_size));
-            _size = ntohs(_size);
-
-            if ( itedlen + _size > length ) return -1;
-
-            _it += 3; /* place it at the field value beginning */
-            size_max -= 3;
-
-            switch ( _size ) { /* Compare the size of the hardcoded values ( very convenient ) */
-
-                case 4: { /* INFO header */
-                    if ON_HEADER ( _it, size_max, msg->info, INFO_FIELD, 4 )
-                    }
+    while ( *it ) {/* until end byte is hit */
+        switch (*it) {
+            case IDRequest:
+                FAIL_CONSTRAINT(size_constraint, 3);
+                FAIL_SIZE(it[1], 1);
+                FAIL_LIMITS(it[2], invite, end);
+                msg->request.value = it[2];
+                it += 3;
+                msg->request.exists = 1;
                 break;
 
-                case 6: { /* Reason header */
-                    if ON_HEADER ( _it, size_max, msg->reason, REASON_FIELD, 6 )
-                    }
+            case IDResponse:
+                FAIL_CONSTRAINT(size_constraint, 3);
+                FAIL_SIZE(it[1], 1);
+                FAIL_LIMITS(it[2], ringing, error);
+                msg->response.value = it[2];
+                it += 3;
+                msg->response.exists = 1;
                 break;
 
-                case 7: { /* Version, Request, Call-id headers */
-                    if ON_HEADER ( _it, size_max, msg->version, VERSION_FIELD, 7 )
-                        else if ON_HEADER ( _it, size_max, msg->request, REQUEST_FIELD, 7 )
-                            else if ON_HEADER ( _it, size_max, msg->callid, CALLID_FIELD, 7 )
-                            }
+            case IDCallType:
+                FAIL_CONSTRAINT(size_constraint, 3);
+                FAIL_SIZE(it[1], 1);
+                FAIL_LIMITS(it[2], type_audio, type_video);
+                msg->calltype.value = it[2];
+                it += 3;
+                msg->calltype.exists = 1;
                 break;
 
-                case 8: { /* Response header */
-                    if ON_HEADER ( _it, size_max, msg->response, RESPONSE_FIELD, 8 )
-                    }
+            case IDCallId:
+                FAIL_CONSTRAINT(size_constraint, sizeof(MSICallIDType) + 2);
+                FAIL_SIZE(it[1], sizeof(MSICallIDType));
+                memcpy(msg->callid.value, it + 2, sizeof(MSICallIDType));
+                it += sizeof(MSICallIDType) + 2;
+                msg->callid.exists = 1;
                 break;
 
-                case 9: { /* Call-type header */
-                    if ON_HEADER ( _it, size_max, msg->calltype, CALLTYPE_FIELD, 9 )
-                    }
+            case IDReason:
+                FAIL_CONSTRAINT(size_constraint, sizeof(MSIReasonStrType) + 2);
+                FAIL_SIZE(it[1], sizeof(MSIReasonStrType));
+                memcpy(msg->reason.value, it + 2, sizeof(MSIReasonStrType));
+                it += sizeof(MSIReasonStrType) + 2;
+                msg->reason.exists = 1;
                 break;
 
-                default:
-                    LOGGER_ERROR("Unkown field value");
-                    return -1;
-            }
-        } else {
-            LOGGER_ERROR("Invalid field byte or field size too large");
-            return -1;
+            default:
+                LOGGER_ERROR("Invalid id byte");
+                return -1;
+                break;
         }
-
-        /* If it's anything else return failure as the message is invalid */
-
     }
 
     return 0;
 }
-
-
-#define ALLOCATE_HEADER( var, mheader_value, t_size) \
-if (!(var.header_value = calloc(sizeof *mheader_value, t_size))) \
-{ LOGGER_WARNING("Header allocation failed! Program might misbehave!"); } \
-else { memcpy(var.header_value, mheader_value, t_size); \
-var.size = t_size; }
-
-
-/**
- * @brief Speaks for it self.
- *
- * @param msg The message.
- * @return void
- */
-void free_message ( MSIMessage *msg )
-{
-    if ( msg == NULL ) {
-        LOGGER_WARNING("Tried to free empty message");
-        return;
-    }
-
-    free ( msg->calltype.header_value );
-    free ( msg->request.header_value );
-    free ( msg->response.header_value );
-    free ( msg->version.header_value );
-    free ( msg->info.header_value );
-    free ( msg->reason.header_value );
-    free ( msg->callid.header_value );
-
-    free ( msg );
-}
-
 
 /**
  * @brief Create the message.
@@ -335,29 +216,25 @@ void free_message ( MSIMessage *msg )
  * @return MSIMessage* Created message.
  * @retval NULL Error occurred.
  */
-MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
+MSIMessage *msi_new_message ( MSIMessageType type, const uint8_t type_value )
 {
-    MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
+    MSIMessage *retu = calloc ( sizeof ( MSIMessage ), 1 );
 
-    if ( _retu == NULL ) {
+    if ( retu == NULL ) {
         LOGGER_WARNING("Allocation failed! Program might misbehave!");
         return NULL;
     }
 
-    if ( type == TYPE_REQUEST ) {
-        ALLOCATE_HEADER ( _retu->request, type_id, strlen ( (const char *)type_id ) )
-
-    } else if ( type == TYPE_RESPONSE ) {
-        ALLOCATE_HEADER ( _retu->response, type_id, strlen ( (const char *)type_id ) )
+    if ( type == TypeRequest ) {
+        retu->request.exists = 1;
+        retu->request.value = type_value;
 
     } else {
-        free_message ( _retu );
-        return NULL;
+        retu->response.exists = 1;
+        retu->response.value = type_value;
     }
 
-    ALLOCATE_HEADER ( _retu->version, VERSION_STRING, strlen ( (const char *)VERSION_STRING ) )
-
-    return _retu;
+    return retu;
 }
 
 
@@ -368,36 +245,27 @@ MSIMessage *msi_new_message ( uint8_t type, const uint8_t *type_id )
  * @return MSIMessage* Parsed message.
  * @retval NULL Error occurred.
  */
-MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
+MSIMessage *parse_recv ( const uint8_t *data, uint16_t length )
 {
     if ( data == NULL ) {
         LOGGER_WARNING("Tried to parse empty message!");
         return NULL;
     }
 
-    MSIMessage *_retu = calloc ( sizeof ( MSIMessage ), 1 );
+    MSIMessage *retu = calloc ( sizeof ( MSIMessage ), 1 );
 
-    if ( _retu == NULL ) {
+    if ( retu == NULL ) {
         LOGGER_WARNING("Allocation failed! Program might misbehave!");
         return NULL;
     }
 
-    memset ( _retu, 0, sizeof ( MSIMessage ) );
+    if ( parse_raw_data ( retu, data, length ) == -1 ) {
 
-    if ( parse_raw_data ( _retu, data, length ) == -1 ) {
-
-        free_message ( _retu );
+        free ( retu );
         return NULL;
     }
 
-    if ( !_retu->version.header_value || VERSION_STRLEN != _retu->version.size ||
-            memcmp ( _retu->version.header_value, VERSION_STRING, VERSION_STRLEN ) != 0 ) {
-
-        free_message ( _retu );
-        return NULL;
-    }
-
-    return _retu;
+    return retu;
 }
 
 
@@ -411,130 +279,106 @@ MSIMessage *parse_message ( const uint8_t *data, uint16_t length )
  * @param length Pointer to container length.
  * @return uint8_t* Iterated container.
  */
-uint8_t *append_header_to_string (
-    uint8_t *dest,
-    const uint8_t *header_field,
-    const uint8_t *header_value,
-    uint16_t value_len,
-    uint16_t *length )
+uint8_t *format_output ( uint8_t *dest, MSIHeaderID id, const void *value, uint8_t value_len, uint16_t *length )
 {
     if ( dest == NULL ) {
         LOGGER_ERROR("No destination space!");
         return NULL;
     }
 
-    if (header_value == NULL) {
+    if (value == NULL || value_len == 0) {
         LOGGER_ERROR("Empty header value");
         return NULL;
     }
 
-    if ( header_field == NULL ) {
-        LOGGER_ERROR("Empty header field");
-        return NULL;
-    }
+    *dest = id;
+    dest ++;
+    *dest = value_len;
+    dest ++;
 
+    memcpy(dest, value, value_len);
 
-    const uint8_t *_hvit = header_value;
-    uint16_t _total = 6 + value_len; /* 6 is known plus header value len + field len*/
+    *length += (2 + value_len);
 
-    *dest = field_byte; /* Set the first byte */
-
-    uint8_t *_getback_byte = dest + 1; /* remember the byte we were on */
-    dest += 3; /* swith to 4th byte where field value starts */
-
-    /* Now set the field value and calculate it's length */
-    uint16_t _i = 0;
-
-    for ( ; header_field[_i]; ++_i ) {
-        *dest = header_field[_i];
-        ++dest;
-    };
-
-    _total += _i;
-
-    /* Now set the length of the field byte */
-    uint16_t _convert;
-
-
-    _convert = htons(_i);
-
-    memcpy(_getback_byte, &_convert, sizeof(_convert));
-
-    /* for value part do it regulary */
-    *dest = value_byte;
-
-    dest++;
-
-
-    _convert = htons(value_len);
-
-    memcpy(dest, &_convert, sizeof(_convert));
-
-    dest += 2;
-
-    for ( _i = value_len; _i; --_i ) {
-        *dest = *_hvit;
-        ++_hvit;
-        ++dest;
-    }
-
-    *length += _total;
-    return dest;
+    return dest + value_len; /* Set to next position ready to be written */
 }
 
 
 /**
- * @brief Convert MSIMessage struct to _sendable_ string.
+ * @brief Parse MSIMessage to send.
  *
  * @param msg The message.
  * @param dest Destination.
- * @return uint16_t It's final size.
+ * @return uint16_t Its final size.
  */
-uint16_t message_to_send ( MSIMessage *msg, uint8_t *dest )
+uint16_t parse_send ( MSIMessage *msg, uint8_t *dest )
 {
-#define CLEAN_ASSIGN(added, var, field, header)\
-    if ( header.header_value ) { var = append_header_to_string(var, (const uint8_t*)field, header.header_value, header.size, &added); }
-
     if (msg == NULL) {
-        LOGGER_ERROR("Empty message!");
+        LOGGER_ERROR("No message!");
         return 0;
     }
 
     if (dest == NULL ) {
-        LOGGER_ERROR("Empty destination!");
+        LOGGER_ERROR("No destination!");
         return 0;
     }
 
-    uint8_t *_iterated = dest;
-    uint16_t _size = 0;
+    uint8_t *it = dest;
+    uint16_t size = 0;
 
-    CLEAN_ASSIGN ( _size, _iterated, VERSION_FIELD, msg->version );
-    CLEAN_ASSIGN ( _size, _iterated, REQUEST_FIELD, msg->request );
-    CLEAN_ASSIGN ( _size, _iterated, RESPONSE_FIELD, msg->response );
-    CLEAN_ASSIGN ( _size, _iterated, CALLTYPE_FIELD, msg->calltype );
-    CLEAN_ASSIGN ( _size, _iterated, INFO_FIELD, msg->info );
-    CLEAN_ASSIGN ( _size, _iterated, CALLID_FIELD, msg->callid );
-    CLEAN_ASSIGN ( _size, _iterated, REASON_FIELD, msg->reason );
+    if (msg->request.exists) {
+        uint8_t cast = msg->request.value;
+        it = format_output(it, IDRequest, &cast, 1, &size);
+    }
 
-    *_iterated = end_byte;
-    _size ++;
+    if (msg->response.exists) {
+        uint8_t cast = msg->response.value;
+        it = format_output(it, IDResponse, &cast, 1, &size);
+    }
 
-    return _size;
+    if (msg->calltype.exists) {
+        uint8_t cast = msg->calltype.value;
+        it = format_output(it, IDCallType, &cast, 1, &size);
+    }
+
+    if (msg->callid.exists) {
+        it = format_output(it, IDCallId, &msg->callid.value, sizeof(msg->callid.value), &size);
+    }
+
+    if (msg->reason.exists) {
+        it = format_output(it, IDReason, &msg->reason.value, sizeof(msg->reason.value), &size);
+    }
+
+    *it = 0;
+    size ++;
+
+    return size;
 }
 
 
-#define GENERIC_SETTER_DEFINITION(header) \
-void msi_msg_set_##header ( MSIMessage* _msg, const uint8_t* header_value, uint16_t _size ) \
-{ if ( !_msg || !header_value) { LOGGER_WARNING("No setter values!"); return; } \
-  free(_msg->header.header_value); \
-  ALLOCATE_HEADER( _msg->header, header_value, _size )}
+void msi_msg_set_calltype ( MSIMessage *msg, const MSICallType value )
+{
+    if ( !msg ) return;
 
-GENERIC_SETTER_DEFINITION ( calltype )
-GENERIC_SETTER_DEFINITION ( reason )
-GENERIC_SETTER_DEFINITION ( info )
-GENERIC_SETTER_DEFINITION ( callid )
+    msg->calltype.exists = 1;
+    msg->calltype.value = value;
+}
 
+void msi_msg_set_reason ( MSIMessage *msg, const MSIReasonStrType value )
+{
+    if ( !msg ) return;
 
+    msg->reason.exists = 1;
+    memcpy(msg->reason.value, value, sizeof(MSIReasonStrType));
+}
+
+void msi_msg_set_callid ( MSIMessage *msg, const MSICallIDType value )
+{
+    if ( !msg ) return;
+
+    msg->callid.exists = 1;
+    memcpy(msg->callid.value, value, sizeof(MSICallIDType));
+}
 
 
 typedef struct _Timer {
@@ -572,7 +416,7 @@ struct timer_function_args {
  * @param timeout Timeout in ms
  * @return int
  */
-int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg1, int arg2, unsigned timeout)
+static int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg1, int arg2, unsigned timeout)
 {
     static int timer_id;
     pthread_mutex_lock(&timers_container->mutex);
@@ -629,7 +473,7 @@ int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *ar
  * @param lock_mutex (does the mutex need to be locked)
  * @return int
  */
-int timer_release ( TimerHandler *timers_container, int idx , int lock_mutex)
+static int timer_release ( TimerHandler *timers_container, int idx , int lock_mutex)
 {
     if (lock_mutex)
         pthread_mutex_lock(&timers_container->mutex);
@@ -666,7 +510,7 @@ int timer_release ( TimerHandler *timers_container, int idx , int lock_mutex)
 
     timers_container->size--;
 
-    LOGGER_DEBUG("Popped index: %d, current size: %d ", idx, timers_container->size);
+    LOGGER_DEBUG("Popped id: %d, current size: %d ", idx, timers_container->size);
 
     if (lock_mutex) pthread_mutex_unlock(&timers_container->mutex);
 
@@ -679,7 +523,7 @@ int timer_release ( TimerHandler *timers_container, int idx , int lock_mutex)
  * @param arg ...
  * @return void*
  */
-void *timer_poll( void *arg )
+static void *timer_poll( void *arg )
 {
     TimerHandler *handler = arg;
 
@@ -691,15 +535,15 @@ void *timer_poll( void *arg )
 
             uint64_t time = current_time_monotonic();
 
-            if ( handler->timers[0] && handler->timers[0]->timeout < time ) {
-                pthread_t _tid;
+            while ( handler->timers[0] && handler->timers[0]->timeout < time ) {
+                pthread_t tid;
 
                 struct timer_function_args *args = malloc(sizeof(struct timer_function_args));
                 args->arg1 = handler->timers[0]->func_arg1;
                 args->arg2 = handler->timers[0]->func_arg2;
 
-                if ( 0 != pthread_create(&_tid, NULL, handler->timers[0]->func, args) ||
-                        0 != pthread_detach(_tid) ) {
+                if ( 0 != pthread_create(&tid, NULL, handler->timers[0]->func, args) ||
+                        0 != pthread_detach(tid) ) {
                     LOGGER_ERROR("Failed to execute timer at: %d!", handler->timers[0]->timeout);
                     free(args);
                 } else {
@@ -726,7 +570,7 @@ void *timer_poll( void *arg )
  * @param resolution ...
  * @return TimerHandler*
  */
-TimerHandler *timer_init_session (int max_capacity, int resolution)
+static TimerHandler *timer_init_session (int max_capacity, int resolution)
 {
     TimerHandler *handler = calloc(1, sizeof(TimerHandler));
 
@@ -768,7 +612,7 @@ TimerHandler *timer_init_session (int max_capacity, int resolution)
  * @param handler The timer handler
  * @return void
  */
-void timer_terminate_session(TimerHandler *handler)
+static void timer_terminate_session(TimerHandler *handler)
 {
     pthread_mutex_lock(&handler->mutex);
 
@@ -793,7 +637,7 @@ void timer_terminate_session(TimerHandler *handler)
  * @param size Size of string.
  * @return void
  */
-void t_randomstr ( uint8_t *str, uint32_t size )
+static void t_randomstr ( uint8_t *str, uint32_t size )
 {
     if (str == NULL) {
         LOGGER_DEBUG("Empty destination!");
@@ -848,29 +692,6 @@ static inline__ const uint8_t *stringify_error ( MSICallError error_code )
     return strings[error_code];
 }
 
-
-/**
- * @brief Convert error_code into string.
- *
- * @param error_code The code.
- * @return const uint8_t* The string.
- */
-static inline__ const uint8_t *stringify_error_code ( MSICallError error_code )
-{
-    static const uint8_t *strings[] = {
-        ( uint8_t *) "",
-        ( uint8_t *) "1",
-        ( uint8_t *) "2",
-        ( uint8_t *) "3",
-        ( uint8_t *) "4",
-        ( uint8_t *) "5",
-        ( uint8_t *) "6"
-    };
-
-    return strings[error_code];
-}
-
-
 /**
  * @brief Speaks for it self.
  *
@@ -881,19 +702,19 @@ static inline__ const uint8_t *stringify_error_code ( MSICallError error_code )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int send_message ( MSISession *session, MSICall *call, MSIMessage *msg, uint32_t to )
+static int send_message ( MSISession *session, MSICall *call, MSIMessage *msg, uint32_t to )
 {
-    msi_msg_set_callid ( msg, call->id, CALL_ID_LEN );
+    msi_msg_set_callid ( msg, call->id );
 
-    uint8_t _msg_string_final [MSI_MAXMSG_SIZE];
-    uint16_t _length = message_to_send ( msg, _msg_string_final );
+    uint8_t msg_string_final [MSI_MAXMSG_SIZE];
+    uint16_t length = parse_send ( msg, msg_string_final );
 
-    if (!_length) {
+    if (!length) {
         LOGGER_WARNING("Parsing message failed; nothing sent!");
         return -1;
     }
 
-    if ( m_msi_packet(session->messenger_handle, to, _msg_string_final, _length) ) {
+    if ( m_msi_packet(session->messenger_handle, to, msg_string_final, length) ) {
         LOGGER_DEBUG("Sent message");
         return 0;
     }
@@ -901,6 +722,13 @@ int send_message ( MSISession *session, MSICall *call, MSIMessage *msg, uint32_t
     return -1;
 }
 
+inline__ int send_reponse ( MSISession *session, MSICall *call, MSIResponse response, uint32_t to )
+{
+    MSIMessage *msg = msi_new_message ( TypeResponse, response );
+    int ret = send_message ( session, call, msg, to );
+    free ( msg );
+    return ret;
+}
 
 /**
  * @brief Determine 'bigger' call id
@@ -911,9 +739,9 @@ int send_message ( MSISession *session, MSICall *call, MSIMessage *msg, uint32_t
  * @retval 0 it's first
  * @retval 1 it's second
  */
-int call_id_bigger( const uint8_t *first, const uint8_t *second)
+static int call_id_bigger( const uint8_t *first, const uint8_t *second)
 {
-    return (memcmp(first, second, CALL_ID_LEN) < 0);
+    return (memcmp(first, second, sizeof(MSICallIDType)) < 0);
 }
 
 
@@ -923,26 +751,22 @@ int call_id_bigger( const uint8_t *first, const uint8_t *second)
  * @param session Control session.
  * @param msg The message.
  * @param peer_id The peer.
- * @return void
+ * @return -1, 0
  */
-void flush_peer_type ( MSICall *call, MSIMessage *msg, int peer_id )
+static int flush_peer_type ( MSICall *call, MSIMessage *msg, int peer_id )
 {
-    if ( msg->calltype.header_value ) {
-        uint8_t hdrval [MSI_MAXMSG_SIZE]; /* Make sure no overflow */
+    if ( msg->calltype.exists ) {
+        call->type_peer[peer_id] = msg->calltype.value;
+        return 0;
+    }
 
-        memcpy(hdrval, msg->calltype.header_value, msg->calltype.size);
-        hdrval[msg->calltype.size] = '\0';
-
-        if ( strcmp ( ( const char *) hdrval, CT_AUDIO_HEADER_VALUE ) == 0 ) {
-            call->type_peer[peer_id] = type_audio;
-
-        } else if ( strcmp ( ( const char *) hdrval, CT_VIDEO_HEADER_VALUE ) == 0 ) {
-            call->type_peer[peer_id] = type_video;
-        } else {} /* Error */
-    } else {} /* Error */
+    LOGGER_WARNING("No call type header!");
+    return -1;
 }
 
-void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8_t status, void *session_p)
+static int terminate_call ( MSISession *session, MSICall *call );
+
+static void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8_t status, void *session_p)
 {
     MSISession *session = session_p;
 
@@ -958,7 +782,7 @@ void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8
 
                 for ( ; i < session->calls[j]->peer_count; i ++ )
                     if ( session->calls[j]->peers[i] == friend_num ) {
-                        invoke_callback(j, MSI_OnPeerTimeout);
+                        invoke_callback(session, j, MSI_OnPeerTimeout);
                         terminate_call(session, session->calls[j]);
                         LOGGER_DEBUG("Remote: %d timed out!", friend_num);
                         return; /* TODO: On group calls change behaviour */
@@ -972,19 +796,14 @@ void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8
     }
 }
 
-MSICall *find_call ( MSISession *session, uint8_t *call_id )
+static MSICall *find_call ( MSISession *session, uint8_t *call_id )
 {
     if ( call_id == NULL ) return NULL;
 
     uint32_t i = 0;
 
     for (; i < session->max_calls; i ++ )
-        if ( session->calls[i] && memcmp(session->calls[i]->id, call_id, CALL_ID_LEN) == 0 ) {
-            LOGGER_SCOPE(
-                char tmp[CALL_ID_LEN + 1] = {'\0'};
-                memcpy(tmp, session->calls[i]->id, CALL_ID_LEN);
-                LOGGER_DEBUG("Found call id: %s", tmp);
-            );
+        if ( session->calls[i] && memcmp(session->calls[i]->id, call_id, sizeof(session->calls[i]->id)) == 0 ) {
             return session->calls[i];
         }
 
@@ -1000,7 +819,7 @@ MSICall *find_call ( MSISession *session, uint8_t *call_id )
  * @return int
  * @retval -1/0 It's usually always success.
  */
-int send_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_t to )
+static int send_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_t to )
 {
     if (!call) {
         LOGGER_WARNING("Cannot handle error on 'null' call");
@@ -1009,18 +828,11 @@ int send_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_
 
     LOGGER_DEBUG("Sending error: %d on call: %s", errid, call->id);
 
-    MSIMessage *_msg_error = msi_new_message ( TYPE_RESPONSE, stringify_response ( error ) );
+    MSIMessage *msg_error = msi_new_message ( TypeResponse, error );
 
-    const uint8_t *_error_code_str = stringify_error_code ( errid );
-
-    msi_msg_set_reason ( _msg_error, _error_code_str, strlen ( ( const char *) _error_code_str ) );
-    send_message ( session, call, _msg_error, to );
-    free_message ( _msg_error );
-
-    session->last_error_id = errid;
-    session->last_error_str = stringify_error ( errid );
-
-    /* invoke_callback(call->call_idx, MSI_OnError); */
+    msi_msg_set_reason ( msg_error, stringify_error(errid) );
+    send_message ( session, call, msg_error, to );
+    free ( msg_error );
 
     return 0;
 }
@@ -1034,7 +846,7 @@ int send_error ( MSISession *session, MSICall *call, MSICallError errid, uint32_
  * @param peer_id Its id.
  * @return void
  */
-void add_peer( MSICall *call, int peer_id )
+static void add_peer( MSICall *call, int peer_id )
 {
     uint32_t *peers = !call->peers ? peers = calloc(sizeof(uint32_t), 1) :
                       realloc( call->peers, sizeof(uint32_t) * call->peer_count);
@@ -1060,7 +872,7 @@ void add_peer( MSICall *call, int peer_id )
  * @param ringing_timeout Ringing timeout.
  * @return MSICall* The created call.
  */
-MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
+static MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
 {
 
     if (peers == 0) {
@@ -1122,14 +934,12 @@ MSICall *init_call ( MSISession *session, int peers, int ringing_timeout )
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int terminate_call ( MSISession *session, MSICall *call )
+static int terminate_call ( MSISession *session, MSICall *call )
 {
     if ( !call ) {
         LOGGER_WARNING("Tried to terminate non-existing call!");
         return -1;
     }
-
-    int rc = pthread_mutex_trylock(&session->mutex); /* Lock if not locked */
 
     LOGGER_DEBUG("Terminated call id: %d", call->call_idx);
     /* Check event loop and cancel timed events if there are any
@@ -1154,9 +964,6 @@ int terminate_call ( MSISession *session, MSICall *call )
 
     free ( call );
 
-    if ( rc != EBUSY ) /* Unlock if locked by this call */
-        pthread_mutex_unlock(&session->mutex);
-
     return 0;
 }
 
@@ -1167,7 +974,7 @@ int terminate_call ( MSISession *session, MSICall *call )
  * @param arg Control session
  * @return void*
  */
-void *handle_timeout ( void *arg )
+static void *handle_timeout ( void *arg )
 {
     /* TODO: Cancel might not arrive there; set up
      * timers on these cancels and terminate call on
@@ -1176,21 +983,21 @@ void *handle_timeout ( void *arg )
     struct timer_function_args *args = arg;
     int call_index = args->arg2;
     MSISession *session = args->arg1;
-    MSICall *_call = session->calls[call_index];
+    MSICall *call = session->calls[call_index];
 
-    if (_call) {
-        LOGGER_DEBUG("[Call: %s] Request timed out!", _call->id);
+    if (call) {
+        LOGGER_DEBUG("[Call: %d] Request timed out!", call->call_idx);
 
-        invoke_callback(call_index, MSI_OnRequestTimeout);
+        invoke_callback(session, call_index, MSI_OnRequestTimeout);
     }
 
-    if ( _call && _call->session ) {
+    if ( call && call->session ) {
 
         /* TODO: Cancel all? */
         /* uint16_t _it = 0;
          *       for ( ; _it < _session->call->peer_count; _it++ ) */
-        msi_cancel ( _call->session, _call->call_idx, _call->peers [0], "Request timed out" );
-        /*terminate_call(_call->session, _call);*/
+        msi_cancel ( call->session, call->call_idx, call->peers [0], "Request timed out" );
+        /*terminate_call(call->session, call);*/
     }
 
     free(arg);
@@ -1199,40 +1006,62 @@ void *handle_timeout ( void *arg )
 
 
 /********** Request handlers **********/
-int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
+static int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
-    LOGGER_DEBUG("Session: %p Handling 'invite' on call: %s", session, call ? (char *)call->id : "making new");
+    LOGGER_DEBUG("Session: %p Handling 'invite' on call: %d", session, call ? call->call_idx : -1);
 
     pthread_mutex_lock(&session->mutex);
 
+    if (!msg->calltype.exists) {/**/
+        LOGGER_WARNING("Peer sent invalid call type!");
+        send_error ( session, call, error_no_callid, msg->friend_id );
+        pthread_mutex_unlock(&session->mutex);
+        return 0;
+    }
 
     if ( call ) {
         if ( call->peers[0] == msg->friend_id ) {
-            /* The glare case. A calls B when at the same time
-             * B calls A. Who has advantage is set bey calculating
-             * 'bigger' Call id and then that call id is being used in
-             * future. User with 'bigger' Call id has the advantage
-             * as in he will wait the response from the other.
-             */
+            if (call->state == call_inviting) {
+                /* The glare case. A calls B when at the same time
+                 * B calls A. Who has advantage is set bey calculating
+                 * 'bigger' Call id and then that call id is being used in
+                 * future. User with 'bigger' Call id has the advantage
+                 * as in he will wait the response from the other.
+                 */
+                LOGGER_DEBUG("Glare case; Peer: %d", call->peers[0]);
 
-            if ( call_id_bigger (call->id, msg->callid.header_value) == 1 ) { /* Peer has advantage */
+                if ( call_id_bigger (call->id, msg->callid.value) == 1 ) { /* Peer has advantage */
 
-                /* Terminate call; peer will timeout(call) if call initialization (magically) fails */
-                terminate_call(session, call);
+                    /* Terminate call; peer will timeout(call) if call initialization fails */
+                    terminate_call(session, call);
 
-                call = init_call ( session, 1, 0 );
+                    call = init_call ( session, 1, 0 );
 
-                if ( !call ) {
+                    if ( !call ) {
+                        pthread_mutex_unlock(&session->mutex);
+                        LOGGER_ERROR("Starting call");
+                        return 0;
+                    }
+
+                } else {
                     pthread_mutex_unlock(&session->mutex);
-                    LOGGER_ERROR("Starting call");
+                    return 0; /* Wait for ringing from peer */
+                }
+            } else if (call->state == call_active) {
+                /* Request for media change; call callback and send starting response */
+                if (flush_peer_type(call, msg, 0) != 0) { /**/
+                    LOGGER_WARNING("Peer sent invalid call type!");
+                    send_error ( session, call, error_no_callid, msg->friend_id );
+                    pthread_mutex_unlock(&session->mutex);
                     return 0;
                 }
 
-            } else {
+                LOGGER_DEBUG("Set new call type: %s", call->type_peer[0] == type_audio ? "audio" : "video");
+                send_reponse(session, call, starting, msg->friend_id);
                 pthread_mutex_unlock(&session->mutex);
-                return 0; /* Wait for ringing from peer */
+                invoke_callback(session, call->call_idx, MSI_OnMediaChange);
+                return 1;
             }
-
         } else {
             send_error ( session, call, error_busy, msg->friend_id ); /* TODO: Ugh*/
             terminate_call(session, call);
@@ -1249,117 +1078,112 @@ int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *msg )
         }
     }
 
-    if ( !msg->callid.header_value ) {
+    if ( !msg->callid.exists ) {
         send_error ( session, call, error_no_callid, msg->friend_id );
         terminate_call(session, call);
         pthread_mutex_unlock(&session->mutex);
         return 0;
     }
 
-    memcpy ( call->id, msg->callid.header_value, CALL_ID_LEN );
+    memcpy ( call->id, msg->callid.value, sizeof(msg->callid.value) );
     call->state = call_starting;
 
     add_peer( call, msg->friend_id);
 
     flush_peer_type ( call, msg, 0 );
 
-    MSIMessage *_msg_ringing = msi_new_message ( TYPE_RESPONSE, stringify_response ( ringing ) );
-    send_message ( session, call, _msg_ringing, msg->friend_id );
-    free_message ( _msg_ringing );
+    send_reponse(session, call, ringing, msg->friend_id);
 
     pthread_mutex_unlock(&session->mutex);
 
-    invoke_callback(call->call_idx, MSI_OnInvite);
+    invoke_callback(session, call->call_idx, MSI_OnInvite);
 
     return 1;
 }
-int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
+
+static int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     if ( !call ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'start' on call: %s, friend id: %d", session, call->id, msg->friend_id );
+    LOGGER_DEBUG("Session: %p Handling 'start' on call: %d, friend id: %d", session, call->call_idx, msg->friend_id );
 
     pthread_mutex_lock(&session->mutex);
 
     call->state = call_active;
 
-    flush_peer_type ( call, msg, 0 );
-
     pthread_mutex_unlock(&session->mutex);
 
-    invoke_callback(call->call_idx, MSI_OnStart);
+    invoke_callback(session, call->call_idx, MSI_OnStart);
     return 1;
 }
-int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
+
+static int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     if ( !call ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'reject' on call: %s", session, call->id);
+    LOGGER_DEBUG("Session: %p Handling 'reject' on call: %s", session, call->call_idx);
+
+    invoke_callback(session, call->call_idx, MSI_OnReject);
 
     pthread_mutex_lock(&session->mutex);
 
-    MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
-    send_message ( session, call, _msg_ending, msg->friend_id );
-    free_message ( _msg_ending );
-
-
-    pthread_mutex_unlock(&session->mutex);
-
-    invoke_callback(call->call_idx, MSI_OnReject);
-
+    send_reponse(session, call, ending, msg->friend_id);
     terminate_call(session, call);
+
+    pthread_mutex_unlock(&session->mutex);
+
     return 1;
 }
-int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *msg )
+
+static int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     if ( !call ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %s", session, call->id );
+    LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %s", session, call->call_idx);
+
+    invoke_callback(session, call->call_idx, MSI_OnCancel);
 
     pthread_mutex_lock(&session->mutex);
 
-    /* Act as end message */
+    terminate_call ( session, call );
 
     pthread_mutex_unlock(&session->mutex);
-    invoke_callback(call->call_idx, MSI_OnCancel);
 
-    terminate_call ( session, call );
     return 1;
 }
-int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
+
+static int handle_recv_end ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     if ( !call ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'end' on call: %s", session, call->id );
+    LOGGER_DEBUG("Session: %p Handling 'end' on call: %d", session, call->call_idx);
 
+    invoke_callback(session, call->call_idx, MSI_OnEnd);
     pthread_mutex_lock(&session->mutex);
 
-    MSIMessage *_msg_ending = msi_new_message ( TYPE_RESPONSE, stringify_response ( ending ) );
-    send_message ( session, call, _msg_ending, msg->friend_id );
-    free_message ( _msg_ending );
+    send_reponse(session, call, ending, msg->friend_id);
+    terminate_call ( session, call );
 
     pthread_mutex_unlock(&session->mutex);
 
-    invoke_callback(call->call_idx, MSI_OnEnd);
 
-    terminate_call ( session, call );
     return 1;
 }
 
 /********** Response handlers **********/
-int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
+static int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     if ( !call ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
@@ -1374,68 +1198,79 @@ int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage *msg )
         return 0;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %s", session, call->id );
+    LOGGER_DEBUG("Session: %p Handling 'ringing' on call: %d", session, call->call_idx );
 
     call->ringing_timer_id = timer_alloc ( session->timer_handler, handle_timeout, session, call->call_idx,
                                            call->ringing_tout_ms );
 
     pthread_mutex_unlock(&session->mutex);
 
-    invoke_callback(call->call_idx, MSI_OnRinging);
+    invoke_callback(session, call->call_idx, MSI_OnRinging);
     return 1;
 }
-int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
+static int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage *msg )
+{
+    if ( !call ) {
+        LOGGER_WARNING("Session: %p Handling 'starting' on non-existing call");
+        return 0;
+    }
+
+    pthread_mutex_lock(&session->mutex);
+
+    if ( call->state == call_active ) { /* Change media */
+
+        LOGGER_DEBUG("Session: %p Changing media on call: %d", session, call->call_idx );
+        pthread_mutex_unlock(&session->mutex);
+
+        invoke_callback(session, call->call_idx, MSI_OnMediaChange);
+
+    } else if ( call->state == call_inviting ) {
+        LOGGER_DEBUG("Session: %p Handling 'starting' on call: %d", session, call->call_idx );
+
+        call->state = call_active;
+
+        MSIMessage *msg_start = msi_new_message ( TypeRequest, start );
+        send_message ( session, call, msg_start, msg->friend_id );
+        free ( msg_start );
+
+
+        flush_peer_type ( call, msg, 0 );
+
+        /* This is here in case of glare */
+        timer_release ( session->timer_handler, call->ringing_timer_id, 1 );
+
+        pthread_mutex_unlock(&session->mutex);
+
+        invoke_callback(session, call->call_idx, MSI_OnStarting);
+    } else {
+        LOGGER_ERROR("Invalid call state");
+        terminate_call(session, call );
+        pthread_mutex_unlock(&session->mutex);
+        return 0;
+    }
+
+    return 1;
+}
+static int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
     if ( !call ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
 
-    pthread_mutex_lock(&session->mutex);
+    LOGGER_DEBUG("Session: %p Handling 'ending' on call: %d", session, call->call_idx );
 
-    LOGGER_DEBUG("Session: %p Handling 'starting' on call: %s", session, call->id );
-
-    call->state = call_active;
-
-    MSIMessage *_msg_start = msi_new_message ( TYPE_REQUEST, stringify_request ( start ) );
-    send_message ( session, call, _msg_start, msg->friend_id );
-    free_message ( _msg_start );
-
-    flush_peer_type ( call, msg, 0 );
-
-
-    timer_release ( session->timer_handler, call->ringing_timer_id, 1 );
-    pthread_mutex_unlock(&session->mutex);
-
-    invoke_callback(call->call_idx, MSI_OnStarting);
-    return 1;
-}
-int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *msg )
-{
-    if ( !call ) {
-        LOGGER_WARNING("Session: %p Handling 'start' on no call");
-        return 0;
-    }
-
-    pthread_mutex_lock(&session->mutex);
-
-    LOGGER_DEBUG("Session: %p Handling 'ending' on call: %s", session, call->id );
-
-    /* Stop timer */
-    timer_release ( session->timer_handler, call->request_timer_id, 1 );
-
-    pthread_mutex_unlock(&session->mutex);
-
-    invoke_callback(call->call_idx, MSI_OnEnding);
+    invoke_callback(session, call->call_idx, MSI_OnEnding);
 
     /* Terminate call */
+    pthread_mutex_lock(&session->mutex);
     terminate_call ( session, call );
+    pthread_mutex_unlock(&session->mutex);
 
     return 1;
 }
-int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
+static int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
 {
-    pthread_mutex_lock(&session->mutex);
 
     if ( !call ) {
         LOGGER_WARNING("Handling 'error' on non-existing call!");
@@ -1443,20 +1278,20 @@ int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
         return -1;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'error' on call: %s", session, call->id );
+    LOGGER_DEBUG("Session: %p Handling 'error' on call: %d", session, call->call_idx );
+
+    invoke_callback(session, call->call_idx, MSI_OnEnding);
+
+    pthread_mutex_lock(&session->mutex);
 
     /* Handle error accordingly */
-    if ( msg->reason.header_value ) {
-        session->last_error_id = atoi ( ( const char *) msg->reason.header_value );
-        session->last_error_str = stringify_error ( session->last_error_id );
-        LOGGER_DEBUG("Error reason: %s", session->last_error_str);
+    if ( msg->reason.exists ) {
+        /* TODO */
     }
 
-    pthread_mutex_unlock(&session->mutex);
-
-    invoke_callback(call->call_idx, MSI_OnEnding);
-
     terminate_call ( session, call );
+
+    pthread_mutex_unlock(&session->mutex);
 
     return 1;
 }
@@ -1494,7 +1329,7 @@ int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *msg )
  *
  *
  */
-void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, uint16_t length, void *object )
+static void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, uint16_t length, void *object )
 {
     LOGGER_DEBUG("Got msi message");
     /* Unused */
@@ -1508,7 +1343,7 @@ void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, 
         return;
     }
 
-    msg = parse_message ( data, length );
+    msg = parse_recv ( data, length );
 
     if ( !msg ) {
         LOGGER_WARNING("Error parsing message");
@@ -1521,79 +1356,62 @@ void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, 
 
 
     /* Find what call */
-    MSICall *call = msg->callid.header_value ? find_call(session, msg->callid.header_value ) : NULL;
+    MSICall *call = msg->callid.exists ? find_call(session, msg->callid.value ) : NULL;
 
     /* Now handle message */
 
-    if ( msg->request.header_value ) { /* Handle request */
+    if ( msg->request.exists ) { /* Handle request */
 
-        if ( msg->response.size > 32 ) {
-            LOGGER_WARNING("Header size too big");
-            goto free_end;
+        switch (msg->request.value) {
+            case invite:
+                handle_recv_invite ( session, call, msg );
+                break;
+
+            case start:
+                handle_recv_start ( session, call, msg );
+                break;
+
+            case cancel:
+                handle_recv_cancel ( session, call, msg );
+                break;
+
+            case reject:
+                handle_recv_reject ( session, call, msg );
+                break;
+
+            case end:
+                handle_recv_end ( session, call, msg );
+                break;
         }
 
-        uint8_t _request_value[32];
-
-        memcpy(_request_value, msg->request.header_value, msg->request.size);
-        _request_value[msg->request.size] = '\0';
-
-        if ( same ( _request_value, stringify_request ( invite ) ) ) {
-            handle_recv_invite ( session, call, msg );
-
-        } else if ( same ( _request_value, stringify_request ( start ) ) ) {
-            handle_recv_start ( session, call, msg );
-
-        } else if ( same ( _request_value, stringify_request ( cancel ) ) ) {
-            handle_recv_cancel ( session, call, msg );
-
-        } else if ( same ( _request_value, stringify_request ( reject ) ) ) {
-            handle_recv_reject ( session, call, msg );
-
-        } else if ( same ( _request_value, stringify_request ( end ) ) ) {
-            handle_recv_end ( session, call, msg );
-        } else {
-            LOGGER_WARNING("Uknown request");
-            goto free_end;
-        }
-
-    } else if ( msg->response.header_value ) { /* Handle response */
-
-        if ( msg->response.size > 32 ) {
-            LOGGER_WARNING("Header size too big");
-            goto free_end;
-        }
+    } else if ( msg->response.exists ) { /* Handle response */
 
         /* Got response so cancel timer */
         if ( call ) timer_release ( session->timer_handler, call->request_timer_id, 1 );
 
-        uint8_t _response_value[32];
+        switch (msg->response.value) {
+            case ringing:
+                handle_recv_ringing ( session, call, msg );
+                break;
 
-        memcpy(_response_value, msg->response.header_value, msg->response.size);
-        _response_value[msg->response.size] = '\0';
+            case starting:
+                handle_recv_starting ( session, call, msg );
+                break;
 
-        if ( same ( _response_value, stringify_response ( ringing ) ) ) {
-            handle_recv_ringing ( session, call, msg );
+            case ending:
+                handle_recv_ending ( session, call, msg );
+                break;
 
-        } else if ( same ( _response_value, stringify_response ( starting ) ) ) {
-            handle_recv_starting ( session, call, msg );
-
-        } else if ( same ( _response_value, stringify_response ( ending ) ) ) {
-            handle_recv_ending ( session, call, msg );
-
-        } else if ( same ( _response_value, stringify_response ( error ) ) ) {
-            handle_recv_error ( session, call, msg );
-
-        } else {
-            LOGGER_WARNING("Uknown response");
-            goto free_end;
+            case error:
+                handle_recv_error ( session, call, msg );
+                break;
         }
 
     } else {
         LOGGER_WARNING("Invalid message: no resp nor requ headers");
     }
 
-free_end:
-    free_message ( msg );
+    free ( msg );
 }
 
 
@@ -1604,10 +1422,10 @@ free_end:
  * @param id The id.
  * @return void
  */
-void msi_register_callback ( MSICallback callback, MSICallbackID id, void *userdata )
+void msi_register_callback ( MSISession *session, MSICallbackType callback, MSICallbackID id, void *userdata )
 {
-    callbacks[id].function = callback;
-    callbacks[id].data = userdata;
+    session->callbacks[id].function = callback;
+    session->callbacks[id].data = userdata;
 }
 
 
@@ -1725,37 +1543,41 @@ int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type
     LOGGER_DEBUG("Session: %p Inviting friend: %u", session, friend_id);
 
 
-    MSICall *_call = init_call ( session, 1, rngsec ); /* Just one peer for now */
+    int i = 0;
 
-    if ( !_call ) {
+    for (; i < session->max_calls; i ++)
+        if (session->calls[i] && session->calls[i]->peers[0] == friend_id) {
+            LOGGER_ERROR("Already in a call with friend %d", friend_id);
+            pthread_mutex_unlock(&session->mutex);
+            return -1;
+        }
+
+
+    MSICall *call = init_call ( session, 1, rngsec ); /* Just one peer for now */
+
+    if ( !call ) {
         pthread_mutex_unlock(&session->mutex);
         LOGGER_ERROR("Cannot handle more calls");
         return -1;
     }
 
-    *call_index = _call->call_idx;
+    *call_index = call->call_idx;
 
-    t_randomstr ( _call->id, CALL_ID_LEN );
+    t_randomstr ( call->id, sizeof(call->id) );
 
-    add_peer(_call, friend_id );
+    add_peer ( call, friend_id );
 
-    _call->type_local = call_type;
+    call->type_local = call_type;
 
-    MSIMessage *_msg_invite = msi_new_message ( TYPE_REQUEST, stringify_request ( invite ) );
+    MSIMessage *msg_invite = msi_new_message ( TypeRequest, invite );
 
-    /* Do whatever with message */
-    if ( call_type == type_audio ) {
-        msi_msg_set_calltype ( _msg_invite, ( const uint8_t *) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
-    } else {
-        msi_msg_set_calltype ( _msg_invite, ( const uint8_t *) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
-    }
+    msi_msg_set_calltype(msg_invite, call_type);
+    send_message ( session, call, msg_invite, friend_id );
+    free( msg_invite );
 
-    send_message ( session, _call, _msg_invite, friend_id );
-    free_message ( _msg_invite );
+    call->state = call_inviting;
 
-    _call->state = call_inviting;
-
-    _call->request_timer_id = timer_alloc ( session->timer_handler, handle_timeout, session, _call->call_idx, m_deftout );
+    call->request_timer_id = timer_alloc ( session->timer_handler, handle_timeout, session, call->call_idx, m_deftout );
 
     LOGGER_DEBUG("Invite sent");
 
@@ -1785,23 +1607,23 @@ int msi_hangup ( MSISession *session, int32_t call_index )
         return -1;
     }
 
-    if ( !session->calls[call_index] || session->calls[call_index]->state != call_active ) {
+    if ( session->calls[call_index]->state != call_active ) {
         LOGGER_ERROR("No call with such index or call is not active!");
         pthread_mutex_unlock(&session->mutex);
         return -1;
     }
 
-    MSIMessage *_msg_end = msi_new_message ( TYPE_REQUEST, stringify_request ( end ) );
+    MSIMessage *msg_end = msi_new_message ( TypeRequest, end );
 
     /* hangup for each peer */
-    int _it = 0;
+    int it = 0;
 
-    for ( ; _it < session->calls[call_index]->peer_count; _it ++ )
-        send_message ( session, session->calls[call_index], _msg_end, session->calls[call_index]->peers[_it] );
+    for ( ; it < session->calls[call_index]->peer_count; it ++ )
+        send_message ( session, session->calls[call_index], msg_end, session->calls[call_index]->peers[it] );
 
     session->calls[call_index]->state = call_hanged_up;
 
-    free_message ( _msg_end );
+    free ( msg_end );
 
     session->calls[call_index]->request_timer_id =
         timer_alloc ( session->timer_handler, handle_timeout, session, call_index, m_deftout );
@@ -1830,21 +1652,14 @@ int msi_answer ( MSISession *session, int32_t call_index, MSICallType call_type 
         return -1;
     }
 
-    MSIMessage *_msg_starting = msi_new_message ( TYPE_RESPONSE, stringify_response ( starting ) );
+    MSIMessage *msg_starting = msi_new_message ( TypeResponse, starting );
 
     session->calls[call_index]->type_local = call_type;
 
-    if ( call_type == type_audio ) {
-        msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t *) CT_AUDIO_HEADER_VALUE, strlen ( CT_AUDIO_HEADER_VALUE ) );
-    } else {
-        msi_msg_set_calltype
-        ( _msg_starting, ( const uint8_t *) CT_VIDEO_HEADER_VALUE, strlen ( CT_VIDEO_HEADER_VALUE ) );
-    }
+    msi_msg_set_calltype(msg_starting, call_type);
 
-    send_message ( session, session->calls[call_index], _msg_starting,
-                   session->calls[call_index]->peers[session->calls[call_index]->peer_count - 1] );
-    free_message ( _msg_starting );
+    send_message ( session, session->calls[call_index], msg_starting, session->calls[call_index]->peers[0] );
+    free ( msg_starting );
 
     session->calls[call_index]->state = call_active;
 
@@ -1864,7 +1679,7 @@ int msi_answer ( MSISession *session, int32_t call_index, MSICallType call_type 
 int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const char *reason )
 {
     pthread_mutex_lock(&session->mutex);
-    LOGGER_DEBUG("Session: %p Canceling call: %u; reason:", session, call_index, reason ? reason : "Unknown");
+    LOGGER_DEBUG("Session: %p Canceling call: %u; reason: %s", session, call_index, reason ? reason : "Unknown");
 
     if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ) {
         LOGGER_ERROR("Invalid call index!");
@@ -1872,15 +1687,23 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
         return -1;
     }
 
-    MSIMessage *_msg_cancel = msi_new_message ( TYPE_REQUEST, stringify_request ( cancel ) );
+    MSIMessage *msg_cancel = msi_new_message ( TypeRequest, cancel );
 
-    if ( reason ) msi_msg_set_reason(_msg_cancel, (const uint8_t *)reason, strlen(reason));
+    /* FIXME */
+#if 0
 
-    send_message ( session, session->calls[call_index], _msg_cancel, peer );
-    free_message ( _msg_cancel );
+    if ( reason && strlen(reason) < sizeof(MSIReasonStrType) ) {
+        MSIReasonStrType reason_cast;
+        memset(reason_cast, '\0', sizeof(MSIReasonStrType));
+        memcpy(reason_cast, reason, strlen(reason));
+        msi_msg_set_reason(msg_cancel, reason_cast);
+    }
 
-    /*session->calls[call_index]->state = call_hanged_up;
-      session->calls[call_index]->request_timer_id = timer_alloc ( handle_timeout, session, call_index, m_deftout );*/
+#endif
+
+    send_message ( session, session->calls[call_index], msg_cancel, peer );
+    free ( msg_cancel );
+
     terminate_call ( session, session->calls[call_index] );
     pthread_mutex_unlock(&session->mutex);
 
@@ -1895,10 +1718,10 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
  * @param call_id To which call is this action handled.
  * @return int
  */
-int msi_reject ( MSISession *session, int32_t call_index, const uint8_t *reason )
+int msi_reject ( MSISession *session, int32_t call_index, const char *reason )
 {
     pthread_mutex_lock(&session->mutex);
-    LOGGER_DEBUG("Session: %p Rejecting call: %u; reason:", session, call_index, reason ? (char *)reason : "Unknown");
+    LOGGER_DEBUG("Session: %p Rejecting call: %u; reason: %s", session, call_index, reason ? reason : "Unknown");
 
     if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ) {
         LOGGER_ERROR("Invalid call index!");
@@ -1906,20 +1729,81 @@ int msi_reject ( MSISession *session, int32_t call_index, const uint8_t *reason 
         return -1;
     }
 
-    MSIMessage *_msg_reject = msi_new_message ( TYPE_REQUEST, stringify_request ( reject ) );
+    MSIMessage *msg_reject = msi_new_message ( TypeRequest, reject );
 
-    if ( reason ) msi_msg_set_reason(_msg_reject, reason, strlen((const char *)reason) + 1);
+    /* FIXME */
+#if 0
 
-    send_message ( session, session->calls[call_index], _msg_reject,
+    if ( reason && strlen(reason) < sizeof(MSIReasonStrType) ) {
+        MSIReasonStrType reason_cast;
+        memset(reason_cast, '\0', sizeof(MSIReasonStrType));
+        memcpy(reason_cast, reason, strlen(reason));
+        msi_msg_set_reason(msg_reject, reason_cast);
+    }
+
+#endif
+
+    send_message ( session, session->calls[call_index], msg_reject,
                    session->calls[call_index]->peers[session->calls[call_index]->peer_count - 1] );
-    free_message ( _msg_reject );
+    free ( msg_reject );
 
     session->calls[call_index]->state = call_hanged_up;
-
     session->calls[call_index]->request_timer_id =
         timer_alloc ( session->timer_handler, handle_timeout, session, call_index, m_deftout );
 
     pthread_mutex_unlock(&session->mutex);
+    return 0;
+}
+
+
+/**
+ * @brief Send invite request to friend_id.
+ *
+ * @param session Control session.
+ * @param call_index Call index.
+ * @param call_type Type of the call. Audio or Video(both audio and video)
+ * @param rngsec Ringing timeout.
+ * @param friend_id The friend.
+ * @return int
+ */
+int msi_change_type(MSISession *session, int32_t call_index, MSICallType call_type)
+{
+    pthread_mutex_lock(&session->mutex);
+
+    LOGGER_DEBUG("Changing media on call: %d", call_index);
+
+    if ( call_index < 0 || call_index >= session->max_calls || !session->calls[call_index] ) {
+        LOGGER_ERROR("Invalid call index!");
+        pthread_mutex_unlock(&session->mutex);
+        return -1;
+    }
+
+    MSICall *call = session->calls[call_index];
+
+    if ( call->state != call_active ) {
+        LOGGER_ERROR("Call is not active!");
+        pthread_mutex_unlock(&session->mutex);
+        return -1;
+    }
+
+    if ( call->type_local == call_type ) {
+        LOGGER_ERROR("Call is already set to the requested type!");
+        pthread_mutex_unlock(&session->mutex);
+        return -1;
+    }
+
+    call->type_local = call_type;
+
+    MSIMessage *msg_invite = msi_new_message ( TypeRequest, invite );
+
+    msi_msg_set_calltype ( msg_invite, call_type );
+    send_message ( session, call, msg_invite, call->peers[0] );
+    free ( msg_invite );
+
+    LOGGER_DEBUG("Request for media change sent");
+
+    pthread_mutex_unlock(&session->mutex);
+
     return 0;
 }
 

@@ -820,6 +820,7 @@ void do_groupchat(Group_Chat *chat)
 void kill_groupchat(Group_Chat *chat)
 {
     send_data(chat, 0, 0, GROUP_CHAT_QUIT);
+    kill_Assoc(chat->assoc);
     free(chat->group);
     free(chat);
 }

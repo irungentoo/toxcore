@@ -143,9 +143,9 @@ typedef struct {
     uint32_t packets_left;
     uint64_t last_packets_left_set;
 
-    double dropped, drop_ignore, rate_increase;
+    double dropped, drop_ignore, rate_increase, last_send_rate;
     uint64_t drop_ignore_start, rate_increase_stop_start;
-    uint32_t packets_resent;
+    uint32_t packets_resent, last_queue_size, packets_sent, last_packets_sent;
 
     uint8_t sending; /* indicates if data is being sent or not. */
 

@@ -52,6 +52,8 @@ typedef struct  {
     uint16_t last_packet_length;
     uint16_t last_packet_sent;
 
+    TCP_Priority_List *priority_queue_start, *priority_queue_end;
+
     uint64_t kill_at;
 
     uint64_t last_pinged;

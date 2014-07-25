@@ -94,25 +94,42 @@ int initiate_gc_announce_request(DHT *dht, const uint8_t *node_public_key, const
         return -1;
     
     /* Dispatching the request */
-    return dispatch_gc_announce_request(dht, &announcement);
+    /*return*/ dispatch_gc_announce_request(dht, &announcement);
+    return 0;
 }
 
 /* TODO: doc */
 int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* announcement)
 {
-    /* Check who is the closest node to the chat id */
-    Node_format closest_node;
+    static Node_format nodes[MAX_SENT_NODES];
+    Node_format *closest_node=NULL;
+    int nclosest, j, i, addedToSelf=0;
+    nclosest=get_close_nodes(dht, announcement->chat_id, nodes, 0, 1, 1); /* TODO: dehardcode last 3 params */
     
-    if (get_closest_node(dht, announcement->chat_id, &closest_node, 0, 1, 1 /* TODO: dehardcode last 3 params */) == -1)
+    if (nclosest <= 0)
+        return -1;
+    
+    for (j=0, i=0; j<nclosest; j++, i++)
     {
-//         uint8_t col[3];
-//         id_tocolor(announcement->chat_id, col);
-        printf("%s, %s, 5\n", id_toa(dht->self_public_key), id_toa(dht->self_public_key));
-        
-        return add_announced_nodes(dht->announce, announcement, 0);
+        /* If our own id is closer to nodes[i], insert ourselves to the queue at this pos */
+        if (!addedToSelf || id_closest(announcement->chat_id, nodes[i].client_id, dht->self_public_key)==2)
+        {
+            printf("%s, %s, 1\n", id_toa(dht->self_public_key), id_toa(dht->self_public_key));
+            
+            if (add_announced_nodes(dht->announce, announcement, 0) < 0)
+            return -1;
+            
+            addedToSelf++;
+        }
+        else
+        {
+            if (send_gc_announce_request(dht, nodes[i].client_id, nodes[i].ip_port, announcement) < 0)
+                return -1;
+            
+            /* Advance the list only if not added to self */
+            i++;
+        }
     }
-    else
-        return send_gc_announce_request(dht, closest_node.client_id, closest_node.ip_port, announcement);
 }
 
 /* Send announce request
@@ -213,7 +230,7 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
         return -1;
     }
     
-    printf("%s, %s, 5\n", id_toa(packet+1), id_toa(dht->self_public_key));
+    printf("%s, %s, 1\n", id_toa(packet+1), id_toa(dht->self_public_key));
      
 //     LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
     

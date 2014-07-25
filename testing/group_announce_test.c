@@ -20,7 +20,7 @@
 #define min(a,b) ((a)>(b)?(b):(a))
 
 /* You can change those but be mindful */
-#define PEERCOUNT       100
+#define PEERCOUNT       500
 #define CHATCOUNT       4 /* Set to 3 for example */
 #define PEERSPERCHAT    (PEERCOUNT/CHATCOUNT)
 
@@ -72,7 +72,7 @@ void basicannouncetest()
         printf("%s, %d\n", id_toa(peers[i]->self_public_key), i);
 //         printf("%s localhost6:%d%s", id_toa(peers[i]->self_public_key), peers[i]->net->port, (i%PEERSPERCHAT==(PEERSPERCHAT-1))?"\n---\n":"\n");
     }
-    printf("edgedef> node1, node2, weight\n");
+    printf("edgedef> node1, node2, weight DOUBLE\n");
 //     printf("\n");
     
     /* For simplicity sake, one big array */
@@ -112,6 +112,11 @@ void basicannouncetest()
         /* TODO: busy wait might be slightly more efficient here */
         usleep(50000);
     }
+//     for (i=0; i<PEERCOUNT; i++)
+//     {
+//         for (j=0; j<LCLIENT_LIST; j++)
+//             printf("%s, %s, 1\n", id_toa(peers[i]->self_public_key), id_toa(peers[i]->close_clientlist[j].client_id));
+//     }
     for (i=0;i<PEERCOUNT-1;i++)
     {
         uint8_t extkey[CLIENT_ID_EXT_SIZE];
@@ -124,10 +129,11 @@ void basicannouncetest()
             printf("Announcing failure");
             goto cleanup;
         }
+        idle_n_secs(1, peers, PEERCOUNT);
     }
     
 //     printf("Waiting 50 seconds before sending requests\n");
-    idle_n_secs(50, peers, PEERCOUNT);
+    idle_n_secs(100, peers, PEERCOUNT);
 #if 0
     /* Requesting chat lists */
     for (i=0; i<CHATCOUNT; i++)
