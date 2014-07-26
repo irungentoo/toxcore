@@ -174,7 +174,7 @@ void *in_thread_call (void *arg)
 
         switch ( step ) {
             case 0: /* CALLER */
-                toxav_call(this_call->Caller.av, &call_idx, this_call->Callee.id, TypeVideo, 10);
+                toxav_call(this_call->Caller.av, &call_idx, this_call->Callee.id, &av_DefaultSettings, 10);
                 call_print(call_idx, "Calling ...");
                 step++;
                 break;
@@ -182,7 +182,7 @@ void *in_thread_call (void *arg)
             case 1: /* CALLEE */
                 if (this_call->Caller.status == Ringing) {
                     call_print(call_idx, "Callee answers ...");
-                    toxav_answer(this_call->Callee.av, 0, TypeVideo);
+                    toxav_answer(this_call->Callee.av, 0, &av_DefaultSettings);
                     step++;
                     start = time(NULL);
                 }
@@ -193,11 +193,9 @@ void *in_thread_call (void *arg)
                 if (this_call->Caller.status == InCall) { /* I think this is okay */
                     call_print(call_idx, "Sending rtp ...");
 
-                    ToxAvCodecSettings cast = av_DefaultSettings;
-
                     c_sleep(1000); /* We have race condition here */
-                    toxav_prepare_transmission(this_call->Callee.av, 0, &cast, 1);
-                    toxav_prepare_transmission(this_call->Caller.av, call_idx, &cast, 1);
+                    toxav_prepare_transmission(this_call->Callee.av, 0, 3, 0, 1);
+                    toxav_prepare_transmission(this_call->Caller.av, call_idx, 3, 0, 1);
 
                     int payload_size = toxav_prepare_audio_frame(this_call->Caller.av, call_idx, prepared_payload, RTP_PAYLOAD_SIZE,
                                        sample_payload, frame_size);

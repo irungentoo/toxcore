@@ -551,7 +551,7 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
 
     _retu->dest = friend_num;
 
-    _retu->rsequnum = _retu->sequnum = 1;
+    _retu->rsequnum = _retu->sequnum = 0;
 
     _retu->ext_header = NULL; /* When needed allocate */
 

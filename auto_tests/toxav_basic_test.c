@@ -49,7 +49,7 @@ typedef struct _Status {
 } Status;
 
 /* My default settings */
-static ToxAvCodecSettings muhcaps;
+static ToxAvCSettings muhcaps;
 
 void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -82,7 +82,7 @@ void callback_recv_starting ( void *av, int32_t call_index, void *_arg )
     /* Alice always sends invite */
     printf("Call started on Alice side...\n");
     cast->Alice.status = InCall;
-    toxav_prepare_transmission(av, call_index, 3, 0, 1);
+    toxav_prepare_transmission(av, call_index, av_jbufdc, av_VADd, 1);
 }
 void callback_recv_ending ( void *av, int32_t call_index, void *_arg )
 {
@@ -105,7 +105,7 @@ void callback_call_started ( void *av, int32_t call_index, void *_arg )
     /* Alice always sends invite */
     printf("Call started on Bob side...\n");
     cast->Bob.status = InCall;
-    toxav_prepare_transmission(av, call_index, 3, 0, 1);
+    toxav_prepare_transmission(av, call_index, av_jbufdc, av_VADd, 1);
 }
 void callback_call_canceled ( void *av, int32_t call_index, void *_arg )
 {
@@ -133,7 +133,7 @@ void callback_call_ended ( void *av, int32_t call_index, void *_arg )
 
 void callback_call_type_change ( void *av, int32_t call_index, void *_arg )
 {
-    ToxAvCodecSettings csettings;
+    ToxAvCSettings csettings;
     toxav_get_peer_csettings(av, call_index, 0, &csettings);
     
     printf("New settings: \n"
@@ -312,7 +312,7 @@ START_TEST(test_AV_flows)
             step++; /* This terminates the loop */
             toxav_kill_transmission(status_control.Alice.av, status_control.Alice.call_index);
             toxav_kill_transmission(status_control.Bob.av, status_control.Bob.call_index);
-
+            
             /* Call over Alice hangs up */
             toxav_hangup(status_control.Alice.av, status_control.Alice.call_index);
         }

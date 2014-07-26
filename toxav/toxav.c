@@ -51,6 +51,24 @@
 /* call index invalid: true if invalid */
 #define cii(c_idx, session) (c_idx < 0 || c_idx >= session->max_calls)
 
+
+const ToxAvCSettings av_DefaultSettings = {
+    TypeAudio,
+    
+    500,
+    1280,
+    720,
+    
+    64000,
+    20,
+    48000,
+    1
+};
+
+const uint32_t av_jbufdc = 3;
+const uint32_t av_VADd = 40;
+
+
 static const uint8_t audio_index = 0, video_index = 1;
 
 typedef struct _CallSpecific {
@@ -84,20 +102,7 @@ struct _ToxAv {
     uint32_t max_calls;
 };
 
-const ToxAvCodecSettings av_DefaultSettings = {
-    TypeAudio,
-    
-    500,
-    1280,
-    720,
-
-    64000,
-    20,
-    48000,
-    1
-};
-
-static MSICSettings msicsettings_cast (const ToxAvCodecSettings* from)
+static MSICSettings msicsettings_cast (const ToxAvCSettings* from)
 {
     MSICSettings csettings;
     csettings.call_type = from->call_type;
@@ -114,9 +119,9 @@ static MSICSettings msicsettings_cast (const ToxAvCodecSettings* from)
     return csettings;
 }
 
-static ToxAvCodecSettings toxavcsettings_cast (const MSICSettings* from)
+static ToxAvCSettings toxavcsettings_cast (const MSICSettings* from)
 {
-    ToxAvCodecSettings csettings;
+    ToxAvCSettings csettings;
     csettings.call_type = from->call_type;
     
     csettings.video_bitrate = from->video_bitrate;
@@ -237,7 +242,7 @@ void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_call (ToxAv* av, int32_t* call_index, int user, const ToxAvCodecSettings* csettings, int ringing_seconds )
+int toxav_call (ToxAv* av, int32_t* call_index, int user, const ToxAvCSettings* csettings, int ringing_seconds )
 {    
     return msi_invite(av->msi_session, call_index, msicsettings_cast(csettings), ringing_seconds * 1000, user);
 }
@@ -272,7 +277,7 @@ int toxav_hangup ( ToxAv *av, int32_t call_index )
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_answer ( ToxAv* av, int32_t call_index, const ToxAvCodecSettings* csettings )
+int toxav_answer ( ToxAv* av, int32_t call_index, const ToxAvCSettings* csettings )
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
         return ErrorNoCall;
@@ -339,7 +344,7 @@ int toxav_cancel ( ToxAv *av, int32_t call_index, int peer_id, const char *reaso
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_change_settings(ToxAv* av, int32_t call_index, const ToxAvCodecSettings* csettings)
+int toxav_change_settings(ToxAv* av, int32_t call_index, const ToxAvCSettings* csettings)
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
         return ErrorNoCall;
@@ -426,7 +431,7 @@ int toxav_prepare_transmission ( ToxAv* av, int32_t call_index, uint32_t jbuf_ca
         goto error;
     }
 
-    ToxAvCodecSettings csettings = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[0]);
+    ToxAvCSettings csettings = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[0]);
     LOGGER_DEBUG(
     "Type: %u \n"
     "Video bitrate: %u \n"
@@ -754,7 +759,7 @@ inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t 
  * @retval ToxAvCallType On success.
  * @retval ToxAvError On error.
  */
-int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCodecSettings* dest )
+int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCSettings* dest )
 {
     if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index]
          || av->msi_session->calls[call_index]->peer_count <= peer )

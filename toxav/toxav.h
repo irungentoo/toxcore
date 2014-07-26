@@ -129,9 +129,11 @@ typedef struct _ToxAvCodecSettings {
     uint16_t audio_frame_duration; /* In ms */
     uint32_t audio_sample_rate; /* In Hz */
     uint32_t audio_channels;
-} ToxAvCodecSettings;
+} ToxAvCSettings;
 
-extern const ToxAvCodecSettings av_DefaultSettings;
+extern const ToxAvCSettings av_DefaultSettings;
+extern const uint32_t av_jbufdc; /* Jitter buffer default capacity */
+extern const uint32_t av_VADd; /* VAD default treshold */
 
 /**
  * @brief Start new A/V session. There can only be one session at the time. If you register more
@@ -193,7 +195,7 @@ void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_call(ToxAv* av, int32_t* call_index, int user, const ToxAvCodecSettings* csettings, int ringing_seconds);
+int toxav_call(ToxAv* av, int32_t* call_index, int user, const ToxAvCSettings* csettings, int ringing_seconds);
 
 /**
  * @brief Hangup active call.
@@ -214,7 +216,7 @@ int toxav_hangup(ToxAv *av, int32_t call_index);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_answer(ToxAv *av, int32_t call_index, const ToxAvCodecSettings* csettings );
+int toxav_answer(ToxAv *av, int32_t call_index, const ToxAvCSettings* csettings );
 
 /**
  * @brief Reject incomming call.
@@ -240,14 +242,14 @@ int toxav_reject(ToxAv *av, int32_t call_index, const char *reason);
 int toxav_cancel(ToxAv *av, int32_t call_index, int peer_id, const char *reason);
 
 /**
- * @brief Notify peer that we are changing call type
+ * @brief Notify peer that we are changing call settings
  *
  * @param av Handler.
  * @return int
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_change_settings(ToxAv *av, int32_t call_index, const ToxAvCodecSettings* csettings);
+int toxav_change_settings(ToxAv *av, int32_t call_index, const ToxAvCSettings* csettings);
 
 /**
  * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
@@ -342,7 +344,7 @@ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
  * @retval ToxAvCallType On success.
  * @retval ToxAvError On error.
  */
-int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCodecSettings* dest );
+int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCSettings* dest );
 
 /**
  * @brief Get id of peer participating in conversation
