@@ -54,6 +54,22 @@ typedef enum {
 } MSICallState;
 
 
+/**
+ * @brief Encoding settings.
+ */
+typedef struct _MSICodecSettings {
+    MSICallType call_type;
+    
+    uint32_t video_bitrate; /* In kbits/s */
+    uint16_t max_video_width; /* In px */
+    uint16_t max_video_height; /* In px */
+    
+    uint32_t audio_bitrate; /* In bits/s */
+    uint16_t audio_frame_duration; /* In ms */
+    uint32_t audio_sample_rate; /* In Hz */
+    uint32_t audio_channels;
+} MSICSettings;
+
 
 /**
  * @brief Callbacks ids that handle the states
@@ -94,9 +110,9 @@ typedef struct _MSICall {                  /* Call info structure */
 
     MSICallState        state;
 
-    MSICallType         type_local;        /* Type of payload user is ending */
-    MSICallType        *type_peer;         /* Type of payload others are sending */
-
+    MSICSettings    csettings_local;   /* Local call settings */
+    MSICSettings   *csettings_peer;    /* Peers call settings */
+    
     MSICallIDType       id;                /* Random value identifying the call */
 
     int                 ringing_tout_ms;   /* Ringing timeout in ms */
@@ -176,7 +192,7 @@ int msi_terminate_session ( MSISession *session );
  * @param friend_id The friend.
  * @return int
  */
-int msi_invite ( MSISession *session, int32_t *call_index, MSICallType call_type, uint32_t rngsec, uint32_t friend_id );
+int msi_invite ( MSISession* session, int32_t* call_index, MSICSettings csettings, uint32_t rngsec, uint32_t friend_id );
 
 
 /**
@@ -199,7 +215,7 @@ int msi_hangup ( MSISession *session, int32_t call_index );
  * @param call_type Answer with Audio or Video(both).
  * @return int
  */
-int msi_answer ( MSISession *session, int32_t call_index, MSICallType call_type );
+int msi_answer ( MSISession* session, int32_t call_index, MSICSettings csettings );
 
 
 /**
@@ -235,7 +251,7 @@ int msi_reject ( MSISession *session, int32_t call_index, const char *reason );
  * @param friend_id The friend.
  * @return int
  */
-int msi_change_type ( MSISession *session, int32_t call_index, MSICallType call_type );
+int msi_change_csettings ( MSISession *session, int32_t call_index, MSICSettings csettings );
 
 
 /**
