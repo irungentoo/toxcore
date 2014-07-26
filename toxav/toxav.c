@@ -841,7 +841,11 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
         queue(call->j_buf, _msg);
 
         int success = 0, dec_size;
-        int frame_size = 960;
+        
+        ToxAvCSettings csettings;
+        toxav_get_peer_csettings(av, call_index, 0, &csettings);
+        
+        int frame_size = 10000; /* FIXME: not static?  */
         int16_t dest[frame_size];
 
         while ((_msg = dequeue(call->j_buf, &success)) || success == 2) {
@@ -858,10 +862,11 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
             }
 
             if ( av->audio_callback )
-                av->audio_callback(av, call_index, dest, frame_size);
+                av->audio_callback(av, call_index, dest, dec_size);
             else
                 LOGGER_WARNING("Audio packet dropped due to missing callback!");
         }
+        
     } else {
         uint8_t *packet = _msg->data;
         int recved_size = _msg->length;
