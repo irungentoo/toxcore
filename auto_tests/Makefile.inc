@@ -32,7 +32,7 @@ messenger_autotest_CFLAGS = $(AUTOTEST_CFLAGS)
 messenger_autotest_LDADD = $(AUTOTEST_LDADD)
 
 
-crypto_test_SOURCES =   ../auto_tests/crypto_test.c
+crypto_test_SOURCES = ../auto_tests/crypto_test.c
 
 crypto_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
@@ -92,5 +92,4 @@ endif
 
 endif
 
-EXTRA_DIST +=           $(top_srcdir)/auto_tests/friends_test.c
-
+EXTRA_DIST += $(top_srcdir)/auto_tests/friends_test.c

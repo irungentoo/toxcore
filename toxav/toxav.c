@@ -51,6 +51,24 @@
 /* call index invalid: true if invalid */
 #define cii(c_idx, session) (c_idx < 0 || c_idx >= session->max_calls)
 
+
+const ToxAvCSettings av_DefaultSettings = {
+    TypeAudio,
+
+    500,
+    1280,
+    720,
+
+    64000,
+    20,
+    48000,
+    1
+};
+
+const uint32_t av_jbufdc = 3;
+const uint32_t av_VADd = 40;
+
+
 static const uint8_t audio_index = 0, video_index = 1;
 
 typedef struct _CallSpecific {
@@ -84,20 +102,39 @@ struct _ToxAv {
     uint32_t max_calls;
 };
 
-const ToxAvCodecSettings av_DefaultSettings = {
-    500,
-    1280,
-    720,
+static MSICSettings msicsettings_cast (const ToxAvCSettings *from)
+{
+    MSICSettings csettings;
+    csettings.call_type = from->call_type;
 
-    64000,
-    20,
-    48000,
-    1,
-    600,
+    csettings.video_bitrate = from->video_bitrate;
+    csettings.max_video_width = from->max_video_width;
+    csettings.max_video_height = from->max_video_height;
 
-    3
-};
+    csettings.audio_bitrate = from->audio_bitrate;
+    csettings.audio_frame_duration = from->audio_frame_duration;
+    csettings.audio_sample_rate = from->audio_sample_rate;
+    csettings.audio_channels = from->audio_channels;
 
+    return csettings;
+}
+
+static ToxAvCSettings toxavcsettings_cast (const MSICSettings *from)
+{
+    ToxAvCSettings csettings;
+    csettings.call_type = from->call_type;
+
+    csettings.video_bitrate = from->video_bitrate;
+    csettings.max_video_width = from->max_video_width;
+    csettings.max_video_height = from->max_video_height;
+
+    csettings.audio_bitrate = from->audio_bitrate;
+    csettings.audio_frame_duration = from->audio_frame_duration;
+    csettings.audio_sample_rate = from->audio_sample_rate;
+    csettings.audio_channels = from->audio_channels;
+
+    return csettings;
+}
 
 /**
  * @brief Start new A/V session. There can only be one session at the time. If you register more
@@ -205,9 +242,9 @@ void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_call (ToxAv *av, int32_t *call_index, int user, ToxAvCallType call_type, int ringing_seconds )
+int toxav_call (ToxAv *av, int32_t *call_index, int user, const ToxAvCSettings *csettings, int ringing_seconds )
 {
-    return msi_invite(av->msi_session, call_index, call_type, ringing_seconds * 1000, user);
+    return msi_invite(av->msi_session, call_index, msicsettings_cast(csettings), ringing_seconds * 1000, user);
 }
 
 /**
@@ -240,7 +277,7 @@ int toxav_hangup ( ToxAv *av, int32_t call_index )
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_answer ( ToxAv *av, int32_t call_index, ToxAvCallType call_type )
+int toxav_answer ( ToxAv *av, int32_t call_index, const ToxAvCSettings *csettings )
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
         return ErrorNoCall;
@@ -250,7 +287,7 @@ int toxav_answer ( ToxAv *av, int32_t call_index, ToxAvCallType call_type )
         return ErrorInvalidState;
     }
 
-    return msi_answer(av->msi_session, call_index, call_type);
+    return msi_answer(av->msi_session, call_index, msicsettings_cast(csettings));
 }
 
 /**
@@ -307,13 +344,13 @@ int toxav_cancel ( ToxAv *av, int32_t call_index, int peer_id, const char *reaso
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_change_type(ToxAv *av, int32_t call_index, ToxAvCallType call_type)
+int toxav_change_settings(ToxAv *av, int32_t call_index, const ToxAvCSettings *csettings)
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
         return ErrorNoCall;
     }
 
-    return msi_change_type(av->msi_session, call_index, call_type);
+    return msi_change_csettings(av->msi_session, call_index, msicsettings_cast(csettings));
 }
 
 /**
@@ -341,10 +378,12 @@ int toxav_stop_call ( ToxAv *av, int32_t call_index )
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettings *codec_settings, int support_video )
+int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, uint32_t jbuf_capacity, uint32_t VAD_treshold,
+                                 int support_video )
 {
     if ( !av->msi_session || cii(call_index, av->msi_session) ||
-            !av->msi_session->calls[call_index] || av->calls[call_index].call_active) {
+            !av->msi_session->calls[call_index] || !av->msi_session->calls[call_index]->csettings_peer ||
+            av->calls[call_index].call_active) {
         LOGGER_ERROR("Error while starting RTP session: invalid call!\n");
         return ErrorInternal;
     }
@@ -388,22 +427,42 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, ToxAvCodecSettin
 
     }
 
-    if ( !(call->j_buf = create_queue(codec_settings->jbuf_capacity)) ) {
+    if ( !(call->j_buf = create_queue(jbuf_capacity)) ) {
         LOGGER_WARNING("Jitter buffer creaton failed!");
         goto error;
     }
 
-    if ( (call->cs = codec_init_session(codec_settings->audio_bitrate,
-                                        codec_settings->audio_frame_duration,
-                                        codec_settings->audio_sample_rate,
-                                        codec_settings->audio_channels,
-                                        codec_settings->audio_VAD_tolerance,
-                                        codec_settings->max_video_width,
-                                        codec_settings->max_video_height,
-                                        codec_settings->video_bitrate) )) {
+    ToxAvCSettings csettings = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[0]);
+    LOGGER_DEBUG(
+        "Type: %u \n"
+        "Video bitrate: %u \n"
+        "Video height: %u \n"
+        "Video width: %u \n"
+        "Audio bitrate: %u \n"
+        "Audio framedur: %u \n"
+        "Audio sample rate: %u \n"
+        "Audio channels: %u \n",
+        csettings.call_type,
+        csettings.video_bitrate,
+        csettings.max_video_height,
+        csettings.max_video_width,
+        csettings.audio_bitrate,
+        csettings.audio_frame_duration,
+        csettings.audio_sample_rate,
+        csettings.audio_channels );
+
+    if ( (call->cs = codec_init_session(csettings.audio_bitrate,
+                                        csettings.audio_frame_duration,
+                                        csettings.audio_sample_rate,
+                                        csettings.audio_channels,
+                                        VAD_treshold,
+                                        csettings.max_video_width,
+                                        csettings.max_video_height,
+                                        csettings.video_bitrate) )) {
 
         if ( pthread_mutex_init(&call->mutex, NULL) != 0 ) goto error;
 
+        LOGGER_WARNING("Got here");
         call->call_active = 1;
 
         return ErrorNone;
@@ -701,13 +760,14 @@ inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t 
  * @retval ToxAvCallType On success.
  * @retval ToxAvError On error.
  */
-int toxav_get_peer_transmission_type ( ToxAv *av, int32_t call_index, int peer )
+int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCSettings *dest )
 {
     if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index]
             || av->msi_session->calls[call_index]->peer_count <= peer )
         return ErrorInternal;
 
-    return av->msi_session->calls[call_index]->type_peer[peer];
+    *dest = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[peer]);
+    return ErrorNone;
 }
 
 /**
@@ -782,7 +842,11 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
         queue(call->j_buf, _msg);
 
         int success = 0, dec_size;
-        int frame_size = 960;
+
+        ToxAvCSettings csettings;
+        toxav_get_peer_csettings(av, call_index, 0, &csettings);
+
+        int frame_size = 10000; /* FIXME: not static?  */
         int16_t dest[frame_size];
 
         while ((_msg = dequeue(call->j_buf, &success)) || success == 2) {
@@ -799,10 +863,11 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
             }
 
             if ( av->audio_callback )
-                av->audio_callback(av, call_index, dest, frame_size);
+                av->audio_callback(av, call_index, dest, dec_size);
             else
                 LOGGER_WARNING("Audio packet dropped due to missing callback!");
         }
+
     } else {
         uint8_t *packet = _msg->data;
         int recved_size = _msg->length;
