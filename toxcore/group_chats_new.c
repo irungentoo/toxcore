@@ -53,21 +53,25 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
     id_copy2(public_key, packet + 1, ID_ALL_KEYS);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
+    memcpy(nonce, packet + 1 + CLIENT_ID_EXT_SIZE, crypto_box_NONCEBYTES);
 
-    memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
-    int len1 = decrypt_data(public_key, self_secret_key, nonce,
-                            packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
-                            length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
+    uint8_t pk[CLIENT_ID_SIZE];
+    uint8_t ssk[CLIENT_ID_SIZE];
+    id_copy2(pk, public_key, ID_ENCRYPTION_KEY);
+    id_copy2(ssk, send_secret_key, ID_ENCRYPTION_KEY);
 
-    if (len1 == -1 || len1 == 0)
+    uint8_t plain[MAX_CRYPTO_REQUEST_SIZE];
+    int len = decrypt_data(pk, ssk, nonce,
+                            packet + 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES,
+                            length - (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES), plain);
+
+    if (len == -1 || len == 0)
         return -1;
 
-    request_id[0] = temp[0];
-    --len1;
-    memcpy(data, temp + 1, len1);
-    return len1;
-
+    packet_type = plain[0];
+    --len;
+    memcpy(data, plain + 1, len);
+    return len;
 }
 
 int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret_key, const uint8_t *recv_public_key,
@@ -76,9 +80,9 @@ int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret
     if (MAX_CRYPTO_REQUEST_SIZE < length + MIN_PACKET_SIZE)
         return -1;
     
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
-    temp[0] = packet_type;
-    memcpy(temp + 1, data, length);
+    uint8_t plain[MAX_CRYPTO_REQUEST_SIZE];
+    plain[0] = packet_type;
+    memcpy(plain + 1, data, length);
     
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
@@ -89,7 +93,7 @@ int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret
     id_copy2(ssk, send_secret_key, ID_ENCRYPTION_KEY);
 
     uint8_t encrypt[1 + length + crypto_box_MACBYTES];
-    int len = encrypt_data(rpk, ssk, nonce, temp, length + 1, encrypt);
+    int len = encrypt_data(rpk, ssk, nonce, plain, length + 1, encrypt);
     if (len != sizeof(encrypt))
         return -1;
 
