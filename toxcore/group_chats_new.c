@@ -39,9 +39,107 @@
 #define GC_INVITE_RESPONSE_PLAIN_SIZE (1 + ((CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) + TIME_STAMP + CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) )
 #define GC_INVITE_RESPONSE_DHT_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
+#define MIN_PACKET_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
+
+int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *packet_type, const uint8_t *packet, uint16_t length)
+{
+    if (length < MIN_PACKET_SIZE && length >= MAX_CRYPTO_REQUEST_SIZE) 
+        return -1;
+    
+    if id_equal2(packet + 1, self_public_key, ID_ALL_KEYS)
+        return -1;
+
+    id_copy2(public_key, packet + 1, ID_ALL_KEYS);
+
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
+
+    memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
+    int len1 = decrypt_data(public_key, self_secret_key, nonce,
+                            packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
+                            length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
+
+    if (len1 == -1 || len1 == 0)
+        return -1;
+
+    request_id[0] = temp[0];
+    --len1;
+    memcpy(data, temp + 1, len1);
+    return len1;
+
+}
+
+int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret_key, const uint8_t *recv_public_key,
+                        uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type)
+{
+    if (MAX_CRYPTO_REQUEST_SIZE < length + MIN_PACKET_SIZE)
+        return -1;
+    
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
+    temp[0] = packet_type;
+    memcpy(temp + 1, data, length);
+    
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    new_nonce(nonce);
+
+    uint8_t rpk[CLIENT_ID_SIZE];
+    uint8_t ssk[CLIENT_ID_SIZE];
+    id_copy2(rpk, recv_public_key, ID_ENCRYPTION_KEY);
+    id_copy2(ssk, send_secret_key, ID_ENCRYPTION_KEY);
+
+    uint8_t encrypt[1 + length + crypto_box_MACBYTES];
+    int len = encrypt_data(rpk, ssk, nonce, temp, length + 1, encrypt);
+    if (len != sizeof(encrypt))
+        return -1;
+
+    packet[0] = NET_PACKET_GROUP_CHATS;
+    memcpy(packet + 1, send_public_key, CLIENT_ID_EXT_SIZE);
+    memcpy(packet + 1 + CLIENT_ID_EXT_SIZE, nonce, crypto_box_NONCEBYTES);
+    memcpy(packet + 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+
+    return 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + len;
+}
+
 int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length)
 {
 
+/*    Group_Chat *chat = _chat;
+
+    if (length > MAX_CRYPTO_REQUEST_SIZE)
+        return 1;
+
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t number;
+    int len = handle_request(chat->self_public_key, chat->self_secret_key, public_key, data, &number, packet, length);
+
+    if (len <= 0)
+        return 1;
+
+    if (id_equal(chat->self_public_key, public_key))
+        return 1;
+
+    int peernum = peer_in_chat(chat, public_key);
+
+    if (peernum == -1)
+        return 1;
+
+    switch (number) {
+        case CRYPTO_PACKET_GROUP_CHAT_GET_NODES:
+            return handle_getnodes(chat, source, peernum, data, len);
+
+        case CRYPTO_PACKET_GROUP_CHAT_SEND_NODES:
+            return handle_sendnodes(chat, source, peernum, data, len);
+
+        case CRYPTO_PACKET_GROUP_CHAT_BROADCAST:
+            return handle_data(chat, data, len);
+
+        default:
+            return 1;
+    }
+
+    return 1;*/
 }
 
 Group_Credentials *new_groupcredentials()

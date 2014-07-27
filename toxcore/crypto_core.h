@@ -40,6 +40,9 @@
 
 #define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
 
+// Long keypair: curve + ed. Currently for group chats and announcement purposes
+int create_long_keypair(uint8_t *pk, uint8_t *sk);
+
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
