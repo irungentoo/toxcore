@@ -151,6 +151,7 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
         return -1;
     }
 
+    cs->audio_decoder_channels = audio_channels;
     return 0;
 }
 
@@ -261,7 +262,7 @@ int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
         return -1;
     }
 
-
+    cs->audio_encoder_channels = audio_channels;
     return 0;
 }
 
@@ -269,7 +270,8 @@ int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
 CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint16_t audio_frame_duration,
                                  uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
+                                 uint32_t encoder_audio_channels,
+                                 uint32_t decoder_audio_channels,
                                  uint32_t audio_VAD_tolerance_ms,
                                  uint16_t max_video_width,
                                  uint16_t max_video_height,
@@ -292,8 +294,8 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
         retu->capabilities |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
     }
 
-    retu->capabilities |= ( 0 == init_audio_encoder(retu, audio_channels) ) ? a_encoding : 0;
-    retu->capabilities |= ( 0 == init_audio_decoder(retu, audio_channels) ) ? a_decoding : 0;
+    retu->capabilities |= ( 0 == init_audio_encoder(retu, encoder_audio_channels) ) ? a_encoding : 0;
+    retu->capabilities |= ( 0 == init_audio_decoder(retu, decoder_audio_channels) ) ? a_decoding : 0;
 
     if ( retu->capabilities == 0  ) { /* everything failed */
         free (retu);

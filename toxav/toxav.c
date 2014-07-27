@@ -432,7 +432,8 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, uint32_t jbuf_ca
         goto error;
     }
 
-    ToxAvCSettings csettings = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[0]);
+    ToxAvCSettings csettings_peer = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[0]);
+    ToxAvCSettings csettings_local = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_local);
     LOGGER_DEBUG(
         "Type: %u \n"
         "Video bitrate: %u \n"
@@ -442,23 +443,24 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, uint32_t jbuf_ca
         "Audio framedur: %u \n"
         "Audio sample rate: %u \n"
         "Audio channels: %u \n",
-        csettings.call_type,
-        csettings.video_bitrate,
-        csettings.max_video_height,
-        csettings.max_video_width,
-        csettings.audio_bitrate,
-        csettings.audio_frame_duration,
-        csettings.audio_sample_rate,
-        csettings.audio_channels );
+        csettings_peer.call_type,
+        csettings_peer.video_bitrate,
+        csettings_peer.max_video_height,
+        csettings_peer.max_video_width,
+        csettings_peer.audio_bitrate,
+        csettings_peer.audio_frame_duration,
+        csettings_peer.audio_sample_rate,
+        csettings_peer.audio_channels );
 
-    if ( (call->cs = codec_init_session(csettings.audio_bitrate,
-                                        csettings.audio_frame_duration,
-                                        csettings.audio_sample_rate,
-                                        csettings.audio_channels,
+    if ( (call->cs = codec_init_session(csettings_local.audio_bitrate,
+                                        csettings_local.audio_frame_duration,
+                                        csettings_local.audio_sample_rate,
+                                        csettings_local.audio_channels,
+                                        csettings_peer.audio_channels,
                                         VAD_treshold,
-                                        csettings.max_video_width,
-                                        csettings.max_video_height,
-                                        csettings.video_bitrate) )) {
+                                        csettings_local.max_video_width,
+                                        csettings_local.max_video_height,
+                                        csettings_local.video_bitrate) )) {
 
         if ( pthread_mutex_init(&call->mutex, NULL) != 0 ) goto error;
 

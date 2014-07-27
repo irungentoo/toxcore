@@ -64,9 +64,11 @@ typedef struct _CodecState {
     OpusEncoder *audio_encoder;
     int audio_bitrate;
     int audio_sample_rate;
+    int audio_encoder_channels;
 
     /* audio decoding */
     OpusDecoder *audio_decoder;
+    int audio_decoder_channels;
 
     uint64_t capabilities; /* supports*/
 
@@ -93,11 +95,12 @@ RTPMessage *dequeue(JitterBuffer *q, int *success);
 CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint16_t audio_frame_duration,
                                  uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
+                                 uint32_t encoder_audio_channels,
+                                 uint32_t decoder_audio_channels,
                                  uint32_t audio_VAD_tolerance_ms,
-                                 uint16_t video_width,
-                                 uint16_t video_height,
-                                 uint32_t video_bitrate);
+                                 uint16_t max_video_width,
+                                 uint16_t max_video_height,
+                                 uint32_t video_bitrate );
 
 void codec_terminate_session(CodecState *cs);
 
