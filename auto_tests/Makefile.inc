@@ -7,7 +7,7 @@ AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
                          $(NACL_CFLAGS) \
                          $(CHECK_CFLAGS)
- 
+
 AUTOTEST_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
@@ -80,7 +80,7 @@ toxav_basic_test_SOURCES = ../auto_tests/toxav_basic_test.c
 
 toxav_basic_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
-toxav_basic_test_LDADD = $(AUTOTEST_LDADD)
+toxav_basic_test_LDADD = $(AUTOTEST_LDADD) $(AV_LIBS)
 
 
 toxav_many_test_SOURCES = ../auto_tests/toxav_many_test.c
