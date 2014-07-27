@@ -2475,7 +2475,9 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
     if (conn == 0)
         return -1;
 
-    send_kill_packet(c, crypt_connection_id);
+    if (conn->status == CRYPTO_CONN_ESTABLISHED)
+        send_kill_packet(c, crypt_connection_id);
+
     disconnect_peer_tcp(c, crypt_connection_id);
     bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
     return wipe_crypto_connection(c, crypt_connection_id);
