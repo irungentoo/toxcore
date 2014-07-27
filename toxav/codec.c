@@ -40,7 +40,7 @@ JitterBuffer *create_queue(unsigned int capacity)
 {
     unsigned int size = 1;
 
-    while (size <= (capacity + 4) * 2) {
+    while (size <= capacity) {
         size *= 2;
     }
 
