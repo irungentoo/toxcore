@@ -1212,7 +1212,7 @@ static int handle_recv_reject ( MSISession *session, MSICall *call, MSIMessage *
         return 0;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'reject' on call: %s", session, call->call_idx);
+    LOGGER_DEBUG("Session: %p Handling 'reject' on call: %u", session, call->call_idx);
 
     invoke_callback(session, call->call_idx, MSI_OnReject);
 
@@ -1233,7 +1233,7 @@ static int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *
         return 0;
     }
 
-    LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %s", session, call->call_idx);
+    LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %u", session, call->call_idx);
 
     invoke_callback(session, call->call_idx, MSI_OnCancel);
 
