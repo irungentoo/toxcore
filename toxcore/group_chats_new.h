@@ -29,8 +29,17 @@
 #define GROUP_CLOSE_CONNECTIONS 6
 #define SIGNATURE_SIZE  64
 
-// Invitee_ID + Inviter_ID + timestamp + Invitee_Signature + Inviter_Signature
-#define CERTIFICATE_SIZE (CLIENT_ID_EXT_SIZE + CLIENT_ID_EXT_SIZE + sizeof(uint64_t) + SIGNATURE_SIZE + SIGNATURE_SIZE)
+// CERT_TYPE + INVITEE + TIME_STAMP + INVITEE_SIGNATURE + INVITER + TIME_STAMP + INVITER_SIGNATURE
+#define INVITE_CERTIFICATE_SIGNED_SIZE (1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE)
+// CERT_TYPE + TARGET + SOURCE + TIME_STAMP + SOURCE_SIGNATURE 
+#define COMMON_CERTIFICATE_SIGNED_SIZE (1 + CLIENT_ID_EXT_SIZE + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE)
+
+#define MAX_CERTIFICATES_NUM 5
+
+// Certificates types
+#define CERT_INVITE 0
+#define CERT_BAN 1
+#define CERT_OP_CREDENTIALS 2
 
 // Roles
 #define FOUNDER_ROLE 0
@@ -42,7 +51,8 @@
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_EXT_SIZE];
-    uint8_t     certificate[CERTIFICATE_SIZE];
+    uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
+    uint8_t     common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
 
     IP_Port     ip_port;
 
@@ -51,6 +61,8 @@ typedef struct {
 
     uint8_t     banned;
     uint64_t    banned_time;
+
+    uint8_t     verified; // is peer verified, e.g. was invited by verified peer. Recursuion. Problems?
 
     uint8_t     role;
 } Group_Peer;
@@ -66,7 +78,8 @@ typedef struct Group_Chat {
 
     uint8_t     self_public_key[CLIENT_ID_EXT_SIZE];
     uint8_t     self_secret_key[CLIENT_ID_EXT_SIZE]; //could be longer...
-    uint8_t     self_certificate[CERTIFICATE_SIZE];
+    uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
+    uint8_t     self_common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
 
     Group_Peer  *group;
     Group_Close close[GROUP_CLOSE_CONNECTIONS];
