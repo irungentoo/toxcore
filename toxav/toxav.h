@@ -293,20 +293,19 @@ int toxav_kill_transmission(ToxAv *av, int32_t call_index);
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, int frame_size);
+int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int frame_size);
 
 /**
  * @brief Send audio frame.
  *
  * @param av Handler.
- * @param frame The frame (raw 16 bit signed pcm with AUDIO_CHANNELS channels audio.)
- * @param frame_size Its size in number of frames/samples (one frame/sample is 16 bits or 2 bytes)
- *                   frame size should be AUDIO_FRAME_SIZE.
+ * @param data The audio data encoded with toxav_prepare_audio_frame().
+ * @param size Its size in number of bytes.
  * @return int
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *frame, int frame_size);
+int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int size);
 
 /**
  * @brief Encode video frame

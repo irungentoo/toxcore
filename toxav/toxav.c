@@ -535,8 +535,8 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
  * @retval 0 Success.
  * @retval -1 Failure.
  */
-inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallType type, const uint8_t *payload,
-                                      unsigned int length )
+static int toxav_send_rtp_payload(ToxAv *av, int32_t call_index, ToxAvCallType type, const uint8_t *payload,
+                                  unsigned int length)
 {
     CallSpecific *call = &av->calls[call_index];
 
@@ -592,8 +592,9 @@ inline__ int toxav_send_rtp_payload ( ToxAv *av, int32_t call_index, ToxAvCallTy
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, int frame_size)
+int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int frame_size)
 {
+
     if (cii(call_index, av->msi_session)) {
         LOGGER_WARNING("Invalid call index: %d", call_index);
         return ErrorNoCall;
@@ -626,7 +627,7 @@ inline__ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *fr
  * @retval ToxAvError On error.
  * @retval >0 On success
  */
-inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, vpx_image_t *input)
+int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, vpx_image_t *input)
 {
     if (cii(call_index, av->msi_session)) {
         LOGGER_WARNING("Invalid call index: %d", call_index);
@@ -682,15 +683,17 @@ inline__ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *d
  * @brief Send audio frame.
  *
  * @param av Handler.
- * @param frame The frame (raw 16 bit signed pcm with AUDIO_CHANNELS channels audio.)
- * @param frame_size Its size in number of frames/samples (one frame/sample is 16 bits or 2 bytes)
- *                   frame size should be AUDIO_FRAME_SIZE.
+ * @param data The audio data encoded with toxav_prepare_audio_frame().
+ * @param size Its size in number of bytes.
  * @return int
  * @retval 0 Success.
  * @retval ToxAvError On error.
  */
-inline__ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *frame, int frame_size)
+int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *data, unsigned int size)
 {
+    if (size > MAX_CRYPTO_DATA_SIZE)
+        return ErrorInternal;
+
     if (cii(call_index, av->msi_session) || !av->calls[call_index].call_active) {
         LOGGER_WARNING("Action on inactive call: %d", call_index);
         return ErrorNoCall;
@@ -706,7 +709,7 @@ inline__ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *fr
         return ErrorNoCall;
     }
 
-    int rc = toxav_send_rtp_payload(av, call_index, TypeAudio, frame, frame_size);
+    int rc = toxav_send_rtp_payload(av, call_index, TypeAudio, data, size);
     pthread_mutex_unlock(&call->mutex);
 
     return rc;
@@ -724,8 +727,8 @@ inline__ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *fr
  * @retval ToxAvError On error.
  * @retval >0 On success
  */
-inline__ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max,
-        const int16_t *frame, int frame_size)
+int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, const int16_t *frame,
+                                int frame_size)
 {
     if (cii(call_index, av->msi_session) || !av->calls[call_index].call_active) {
         LOGGER_WARNING("Action on inactive call: %d", call_index);
