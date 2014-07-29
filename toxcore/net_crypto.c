@@ -414,7 +414,7 @@ static int send_packet_to(const Net_Crypto *c, int crypt_connection_id, const ui
     //TODO: detect and kill bad relays.
     uint32_t i;
 
-    unsigned int r = rand();
+    unsigned int r = crypt_connection_id;
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (conn->status_tcp[(i + r) % MAX_TCP_CONNECTIONS] == STATUS_TCP_ONLINE) {/* friend is connected to this relay. */
