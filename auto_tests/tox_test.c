@@ -294,11 +294,11 @@ START_TEST(test_many_clients)
     long long unsigned int cur_time = time(NULL);
     Tox *toxes[NUM_TOXES];
     uint32_t i, j;
+    uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES; ++i) {
         toxes[i] = tox_new(TOX_ENABLE_IPV6_DEFAULT);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
-        uint32_t to_comp = 974536;
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
     }
 
