@@ -361,6 +361,10 @@ void tox_callback_connection_status(Tox *tox, void (*function)(Tox *tox, int32_t
 uint32_t tox_get_nospam(const Tox *tox);
 void tox_set_nospam(Tox *tox, uint32_t nospam);
 
+/* Copy the public and secret key from the Tox object.
+   public_key and secret_key must be 32 bytes big.
+   if the pointer is NULL, no data will be copied to it.*/
+void tox_get_keys(Tox *tox, uint8_t *public_key, uint8_t *secret_key);
 
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 
