@@ -179,6 +179,9 @@ typedef struct {
     TCP_Client_Connection *tcp_connections_new[MAX_TCP_CONNECTIONS];
     TCP_Client_Connection *tcp_connections[MAX_TCP_CONNECTIONS];
 
+    pthread_mutex_t connections_mutex;
+    unsigned int connection_use_counter;
+
     uint32_t crypto_connections_length; /* Length of connections array. */
 
     /* Our public and secret keys. */
@@ -302,7 +305,7 @@ int64_t write_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const ui
  *
  * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
  */
-int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
 
 /* Add a tcp relay, associating it to a crypt_connection_id.
  *

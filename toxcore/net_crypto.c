@@ -2443,7 +2443,7 @@ int64_t write_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const ui
  *
  * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
  */
-int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
@@ -2454,13 +2454,24 @@ int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const u
     if (data[0] >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
         return -1;
 
+    pthread_mutex_lock(&c->connections_mutex);
+    ++c->connection_use_counter;
+    pthread_mutex_unlock(&c->connections_mutex);
+
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
-    if (conn == 0)
-        return -1;
+    int ret = -1;
 
-    return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data,
-                                   length);
+    if (conn) {
+        ret = send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data,
+                                      length);
+    }
+
+    pthread_mutex_lock(&c->connections_mutex);
+    --c->connection_use_counter;
+    pthread_mutex_unlock(&c->connections_mutex);
+
+    return ret;
 }
 
 /* Kill a crypto connection.
@@ -2470,17 +2481,32 @@ int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const u
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
+    while (1) { /* TODO: is this really the best way to do this? */
+        pthread_mutex_lock(&c->connections_mutex);
+
+        if (!c->connection_use_counter) {
+            break;
+        }
+
+        pthread_mutex_unlock(&c->connections_mutex);
+    }
+
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
-    if (conn == 0)
-        return -1;
+    int ret = -1;
 
-    if (conn->status == CRYPTO_CONN_ESTABLISHED)
-        send_kill_packet(c, crypt_connection_id);
+    if (conn) {
+        if (conn->status == CRYPTO_CONN_ESTABLISHED)
+            send_kill_packet(c, crypt_connection_id);
 
-    disconnect_peer_tcp(c, crypt_connection_id);
-    bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
-    return wipe_crypto_connection(c, crypt_connection_id);
+        disconnect_peer_tcp(c, crypt_connection_id);
+        bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        ret = wipe_crypto_connection(c, crypt_connection_id);
+    }
+
+    pthread_mutex_unlock(&c->connections_mutex);
+
+    return ret;
 }
 
 /* return one of CRYPTO_CONN_* values indicating the state of the connection.
@@ -2553,6 +2579,8 @@ Net_Crypto *new_net_crypto(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_DATA, &udp_handle_packet, temp);
 
     bs_list_init(&temp->ip_port_list, sizeof(IP_Port), 8);
+
+    pthread_mutex_init(&temp->connections_mutex, NULL);
     return temp;
 }
 
@@ -2625,6 +2653,8 @@ void kill_net_crypto(Net_Crypto *c)
         kill_TCP_connection(c->tcp_connections_new[i]);
         kill_TCP_connection(c->tcp_connections[i]);
     }
+
+    pthread_mutex_destroy(&c->connections_mutex);
 
     bs_list_free(&c->ip_port_list);
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_REQUEST, NULL, NULL);
