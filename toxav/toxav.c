@@ -90,6 +90,11 @@ typedef struct _CallSpecific {
     pthread_mutex_t mutex;
 } CallSpecific;
 
+typedef struct {
+    int32_t call_index;
+    uint32_t size;
+    uint8_t data[0];
+} DECODE_PACKET;
 
 struct _ToxAv {
     Messenger *messenger;
@@ -99,8 +104,15 @@ struct _ToxAv {
     void (*audio_callback)(ToxAv *, int32_t, int16_t *, int);
     void (*video_callback)(ToxAv *, int32_t, vpx_image_t *);
 
+    volatile _Bool exit, decoding;
+    pthread_mutex_t decode_cond_mutex;
+    pthread_cond_t decode_cond;
+    DECODE_PACKET* volatile video_packet, audio_packet;
+
     uint32_t max_calls;
 };
+
+static void* toxav_decoding(void *arg);
 
 static MSICSettings msicsettings_cast (const ToxAvCSettings *from)
 {
@@ -162,6 +174,12 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
     av->calls = calloc(sizeof(CallSpecific), max_calls);
     av->max_calls = max_calls;
 
+    pthread_t temp;
+    pthread_create(&temp, NULL, toxav_decoding, av);
+
+    pthread_mutex_init(&av->decode_cond_mutex, NULL);
+    pthread_cond_init(&av->decode_cond, NULL);
+
     return av;
 }
 
@@ -174,6 +192,21 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
 void toxav_kill ( ToxAv *av )
 {
     int i = 0;
+
+    av->exit = 1;
+    pthread_mutex_lock(&av->decode_cond_mutex);
+    pthread_cond_signal(&av->decode_cond);
+    if(av->exit) {
+        pthread_cond_wait(&av->decode_cond, &av->decode_cond_mutex);
+    }
+    pthread_mutex_unlock(&av->decode_cond_mutex);
+
+    pthread_mutex_destroy(&av->decode_cond_mutex);
+    pthread_cond_destroy(&av->decode_cond);
+
+    if(av->video_packet) {
+        free(av->video_packet);
+    }
 
     for (; i < av->max_calls; i ++) {
         if ( av->calls[i].crtps[audio_index] )
@@ -514,8 +547,20 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     call->crtps[video_index] = NULL;
     terminate_queue(call->j_buf);
     call->j_buf = NULL;
+
+
+    pthread_mutex_lock(&av->decode_cond_mutex);
+    if(av->video_packet && av->video_packet->call_index == call_index) {
+        free(av->video_packet);
+        av->video_packet = NULL;
+    }
+
+    while(av->decoding) {} //use a pthread condition?
+
     codec_terminate_session(call->cs);
     call->cs = NULL;
+
+    pthread_mutex_unlock(&av->decode_cond_mutex);
 
     pthread_mutex_unlock(&call->mutex);
     pthread_mutex_destroy(&call->mutex);
@@ -835,6 +880,59 @@ int toxav_has_activity(ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t fra
     return energy_VAD(av->calls[call_index].cs, PCM, frame_size, ref_energy);
 }
 
+
+static void decode_video(ToxAv *av, DECODE_PACKET *p)
+{
+    CallSpecific *call = &av->calls[p->call_index];
+
+    int rc = vpx_codec_decode(&call->cs->v_decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
+    if (rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Error decoding video: %u %s\n", i, vpx_codec_err_to_string(rc));
+    }
+
+    vpx_codec_iter_t iter = NULL;
+    vpx_image_t *img;
+    img = vpx_codec_get_frame(&call->cs->v_decoder, &iter);
+
+    if (img && av->video_callback) {
+        av->video_callback(av, p->call_index, img);
+    } else {
+        LOGGER_WARNING("Video packet dropped due to missing callback or no image!");
+    }
+
+    free(p);
+}
+
+static void* toxav_decoding(void *arg)
+{
+    ToxAv *av = arg;
+
+    while(!av->exit) {
+        DECODE_PACKET *p;
+        av->decoding = 0;
+        pthread_mutex_lock(&av->decode_cond_mutex);
+        p = av->video_packet;
+        if(!p) {
+            pthread_cond_wait(&av->decode_cond, &av->decode_cond_mutex);
+            p = av->video_packet;
+        }
+        av->video_packet = NULL;
+        av->decoding = 1;
+        pthread_mutex_unlock(&av->decode_cond_mutex);
+
+        if(p) {
+            decode_video(av, p);
+        }
+    }
+
+    pthread_mutex_lock(&av->decode_cond_mutex);
+    av->exit = 0;
+    pthread_cond_signal(&av->decode_cond);
+    pthread_mutex_unlock(&av->decode_cond_mutex);
+
+    return NULL;
+}
+
 void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
 {
     ToxAv *av = _session->av;
@@ -887,14 +985,27 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
             /* piece of current frame */
         } else if (i > 0 && i < 128) {
             /* recieved a piece of a frame ahead, flush current frame and start reading this new frame */
-            int rc = vpx_codec_decode(&call->cs->v_decoder, call->frame_buf, call->frame_limit, NULL, MAX_DECODE_TIME_US);
+            DECODE_PACKET *p = malloc(sizeof(DECODE_PACKET) + call->frame_limit);
+            p->call_index = call_index;
+            p->size = call->frame_limit;
+            memcpy(p->data, call->frame_buf, call->frame_limit);
+
+            /* do the decoding on another thread */
+            pthread_mutex_lock(&av->decode_cond_mutex);
+
+            if(!av->video_packet) {
+                av->video_packet = p;
+                pthread_cond_signal(&av->decode_cond);
+            } else {
+                printf("dropped video frame\n");
+                free(p);
+            }
+
+            pthread_mutex_unlock(&av->decode_cond_mutex);
+
             call->frame_id = packet[0];
             memset(call->frame_buf, 0, call->frame_limit);
             call->frame_limit = 0;
-
-            if (rc != VPX_CODEC_OK) {
-                LOGGER_ERROR("Error decoding video: %u %s\n", i, vpx_codec_err_to_string(rc));
-            }
         } else {
             /* old packet, dont read */
             LOGGER_DEBUG("Old packet: %u\n", i);
@@ -919,15 +1030,6 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
 
 end:
         ;
-        vpx_codec_iter_t iter = NULL;
-        vpx_image_t *img;
-        img = vpx_codec_get_frame(&call->cs->v_decoder, &iter);
-
-        if (img && av->video_callback) {
-            av->video_callback(av, call_index, img);
-        } else
-            LOGGER_WARNING("Video packet dropped due to missing callback or no image!");
-
         rtp_free_msg(NULL, _msg);
     }
 }
