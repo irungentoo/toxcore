@@ -174,11 +174,11 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
     av->calls = calloc(sizeof(CallSpecific), max_calls);
     av->max_calls = max_calls;
 
-    pthread_t temp;
-    pthread_create(&temp, NULL, toxav_decoding, av);
-
     pthread_mutex_init(&av->decode_cond_mutex, NULL);
     pthread_cond_init(&av->decode_cond, NULL);
+
+    pthread_t temp;
+    pthread_create(&temp, NULL, toxav_decoding, av);
 
     return av;
 }
