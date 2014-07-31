@@ -1268,13 +1268,26 @@ static int create_crypto_connection(Net_Crypto *c)
             return i;
     }
 
-    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1)
-        return -1;
+    while (1) { /* TODO: is this really the best way to do this? */
+        pthread_mutex_lock(&c->connections_mutex);
 
-    memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
-    int id = c->crypto_connections_length;
-    pthread_mutex_init(&c->crypto_connections[id].mutex, NULL);
-    ++c->crypto_connections_length;
+        if (!c->connection_use_counter) {
+            break;
+        }
+
+        pthread_mutex_unlock(&c->connections_mutex);
+    }
+
+    int id = -1;
+
+    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == 0) {
+        memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
+        id = c->crypto_connections_length;
+        pthread_mutex_init(&c->crypto_connections[id].mutex, NULL);
+        ++c->crypto_connections_length;
+    }
+
+    pthread_mutex_unlock(&c->connections_mutex);
     return id;
 }
 
