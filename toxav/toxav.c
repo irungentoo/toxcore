@@ -96,6 +96,9 @@ typedef struct {
     uint8_t data[0];
 } DECODE_PACKET;
 
+#define VIDEO_DECODE_QUEUE_SIZE 2
+#define AUDIO_DECODE_QUEUE_SIZE 8
+
 struct _ToxAv {
     Messenger *messenger;
     MSISession *msi_session; /** Main msi session */
@@ -104,12 +107,15 @@ struct _ToxAv {
     void (*audio_callback)(ToxAv *, int32_t, int16_t *, int);
     void (*video_callback)(ToxAv *, int32_t, vpx_image_t *);
 
+    uint32_t max_calls;
+
+    /* used in the "decode on another thread" system */
     volatile _Bool exit, decoding;
+    uint8_t video_decode_read, video_decode_write, audio_decode_read, audio_decode_write;
     pthread_mutex_t decode_cond_mutex;
     pthread_cond_t decode_cond;
-    DECODE_PACKET* volatile video_packet, audio_packet;
-
-    uint32_t max_calls;
+    DECODE_PACKET *volatile video_decode_queue[VIDEO_DECODE_QUEUE_SIZE];
+    DECODE_PACKET *volatile audio_decode_queue[AUDIO_DECODE_QUEUE_SIZE];
 };
 
 static void* toxav_decoding(void *arg);
@@ -191,7 +197,8 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
  */
 void toxav_kill ( ToxAv *av )
 {
-    int i = 0;
+    int i;
+    DECODE_PACKET *p;
 
     av->exit = 1;
     pthread_mutex_lock(&av->decode_cond_mutex);
@@ -204,11 +211,21 @@ void toxav_kill ( ToxAv *av )
     pthread_mutex_destroy(&av->decode_cond_mutex);
     pthread_cond_destroy(&av->decode_cond);
 
-    if(av->video_packet) {
-        free(av->video_packet);
+    for(i = 0; i != VIDEO_DECODE_QUEUE_SIZE; i++) {
+        p = av->video_decode_queue[i];
+        if(p) {
+            free(p);
+        }
     }
 
-    for (; i < av->max_calls; i ++) {
+    for(i = 0; i != AUDIO_DECODE_QUEUE_SIZE; i++) {
+        p = av->audio_decode_queue[i];
+        if(p) {
+            free(p);
+        }
+    }
+
+    for (i = 0; i < av->max_calls; i ++) {
         if ( av->calls[i].crtps[audio_index] )
             rtp_terminate_session(av->calls[i].crtps[audio_index], av->msi_session->messenger_handle);
 
@@ -550,9 +567,23 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
 
     pthread_mutex_lock(&av->decode_cond_mutex);
-    if(av->video_packet && av->video_packet->call_index == call_index) {
-        free(av->video_packet);
-        av->video_packet = NULL;
+    int i;
+    DECODE_PACKET *p;
+
+    for(i = 0; i != VIDEO_DECODE_QUEUE_SIZE; i++) {
+        p = av->video_decode_queue[i];
+        if(p && p->call_index == call_index) {
+            free(p);
+            av->video_decode_queue[i] = NULL;
+        }
+    }
+
+    for(i = 0; i != AUDIO_DECODE_QUEUE_SIZE; i++) {
+        p = av->audio_decode_queue[i];
+        if(p && p->call_index == call_index) {
+            free(p);
+            av->audio_decode_queue[i] = NULL;
+        }
     }
 
     while(av->decoding) {} //use a pthread condition?
@@ -903,25 +934,81 @@ static void decode_video(ToxAv *av, DECODE_PACKET *p)
     free(p);
 }
 
+static void decode_audio(ToxAv *av, DECODE_PACKET *p)
+{
+    int32_t call_index = p->call_index;
+    CallSpecific *call = &av->calls[call_index];
+
+   // ToxAvCSettings csettings;
+   // toxav_get_peer_csettings(av, call_index, 0, &csettings);
+
+    int frame_size = 10000; /* FIXME: not static?  */
+    int16_t dest[frame_size];
+
+    int dec_size = opus_decode(call->cs->audio_decoder, p->data, p->size, dest, frame_size, (p->size == 0));
+    free(p);
+    if (dec_size < 0) {
+        LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
+        return;
+    }
+
+    if ( av->audio_callback )
+        av->audio_callback(av, call_index, dest, dec_size);
+    else
+        LOGGER_WARNING("Audio packet dropped due to missing callback!");
+}
+
 static void* toxav_decoding(void *arg)
 {
     ToxAv *av = arg;
 
     while(!av->exit) {
         DECODE_PACKET *p;
+        _Bool video = 0;
+
         av->decoding = 0;
         pthread_mutex_lock(&av->decode_cond_mutex);
-        p = av->video_packet;
+        uint8_t r;
+
+        /* first check for available packets, otherwise wait for condition*/
+        r = av->audio_decode_read;
+        p = av->audio_decode_queue[r];
         if(!p) {
-            pthread_cond_wait(&av->decode_cond, &av->decode_cond_mutex);
-            p = av->video_packet;
+            r = av->video_decode_read;
+            p = av->video_decode_queue[r];
+            if(!p) {
+                pthread_cond_wait(&av->decode_cond, &av->decode_cond_mutex);
+                r = av->audio_decode_read;
+                p = av->audio_decode_queue[r];
+                if(!p) {
+                    r = av->video_decode_read;
+                    p = av->video_decode_queue[r];
+                    video = 1;
+                }
+            } else {
+                video = 1;
+            }
         }
-        av->video_packet = NULL;
+
+        if(video) {
+            if(p) {
+                av->video_decode_queue[r] = NULL;
+                av->video_decode_read = (r + 1) % VIDEO_DECODE_QUEUE_SIZE;
+            }
+        } else {
+            av->audio_decode_queue[r] = NULL;
+            av->audio_decode_read = (r + 1) % AUDIO_DECODE_QUEUE_SIZE;
+        }
+
         av->decoding = 1;
         pthread_mutex_unlock(&av->decode_cond_mutex);
 
         if(p) {
-            decode_video(av, p);
+            if(video) {
+                decode_video(av, p);
+            } else {
+                decode_audio(av, p);
+            }
         }
     }
 
@@ -944,31 +1031,44 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
     if (_session->payload_type == type_audio % 128) {
         queue(call->j_buf, _msg);
 
-        int success = 0, dec_size;
-
-        ToxAvCSettings csettings;
-        toxav_get_peer_csettings(av, call_index, 0, &csettings);
-
-        int frame_size = 10000; /* FIXME: not static?  */
-        int16_t dest[frame_size];
+        int success = 0;
 
         while ((_msg = dequeue(call->j_buf, &success)) || success == 2) {
+            DECODE_PACKET *p;
             if (success == 2) {
-                dec_size = opus_decode(call->cs->audio_decoder, NULL, 0, dest, frame_size, 1);
+                p = malloc(sizeof(DECODE_PACKET));
+                if(p) {
+                    p->call_index = call_index;
+                    p->size = 0;
+                }
             } else {
-                dec_size = opus_decode(call->cs->audio_decoder, _msg->data, _msg->length, dest, frame_size, 0);
+                p = malloc(sizeof(DECODE_PACKET) + _msg->length);
+                if(p) {
+                    p->call_index = call_index;
+                    p->size = _msg->length;
+                    memcpy(p->data, _msg->data, _msg->length);
+                }
                 rtp_free_msg(NULL, _msg);
             }
 
-            if (dec_size < 0) {
-                LOGGER_WARNING("Decoding error: %s", opus_strerror(dec_size));
-                continue;
-            }
+            if(p) {
+                /* do the decoding on another thread */
+                pthread_mutex_lock(&av->decode_cond_mutex);
+                uint8_t w = av->audio_decode_write;
 
-            if ( av->audio_callback )
-                av->audio_callback(av, call_index, dest, dec_size);
-            else
-                LOGGER_WARNING("Audio packet dropped due to missing callback!");
+                if(av->audio_decode_queue[w] == NULL) {
+                    av->audio_decode_queue[w] = p;
+                    av->audio_decode_write = (w + 1) % AUDIO_DECODE_QUEUE_SIZE;
+                    pthread_cond_signal(&av->decode_cond);
+                } else {
+                    printf("dropped audio frame\n");
+                    free(p);
+                }
+
+                pthread_mutex_unlock(&av->decode_cond_mutex);
+            } else {
+                //malloc failed
+            }
         }
 
     } else {
@@ -986,22 +1086,28 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
         } else if (i > 0 && i < 128) {
             /* recieved a piece of a frame ahead, flush current frame and start reading this new frame */
             DECODE_PACKET *p = malloc(sizeof(DECODE_PACKET) + call->frame_limit);
-            p->call_index = call_index;
-            p->size = call->frame_limit;
-            memcpy(p->data, call->frame_buf, call->frame_limit);
+            if(p) {
+                p->call_index = call_index;
+                p->size = call->frame_limit;
+                memcpy(p->data, call->frame_buf, call->frame_limit);
 
-            /* do the decoding on another thread */
-            pthread_mutex_lock(&av->decode_cond_mutex);
+                /* do the decoding on another thread */
+                pthread_mutex_lock(&av->decode_cond_mutex);
+                uint8_t w = av->video_decode_write;
 
-            if(!av->video_packet) {
-                av->video_packet = p;
-                pthread_cond_signal(&av->decode_cond);
+                if(av->video_decode_queue[w] == NULL) {
+                    av->video_decode_queue[w] = p;
+                    av->video_decode_write = (w + 1) % VIDEO_DECODE_QUEUE_SIZE;
+                    pthread_cond_signal(&av->decode_cond);
+                } else {
+                    printf("dropped video frame\n");
+                    free(p);
+                }
+
+                pthread_mutex_unlock(&av->decode_cond_mutex);
             } else {
-                printf("dropped video frame\n");
-                free(p);
+                //malloc failed
             }
-
-            pthread_mutex_unlock(&av->decode_cond_mutex);
 
             call->frame_id = packet[0];
             memset(call->frame_buf, 0, call->frame_limit);
