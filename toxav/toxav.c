@@ -39,7 +39,7 @@
 
 /* Assume 24 fps*/
 #define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
-#define MAX_DECODE_TIME_US MAX_ENCODE_TIME_US
+#define MAX_DECODE_TIME_US 0
 
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
 #define VIDEOFRAME_PIECE_SIZE 0x500 /* 1.25 KiB*/
@@ -925,7 +925,7 @@ static void decode_video(ToxAv *av, DECODE_PACKET *p)
     int rc = vpx_codec_decode(&call->cs->v_decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
 
     if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Error decoding video: %u %s\n", i, vpx_codec_err_to_string(rc));
+        LOGGER_ERROR("Error decoding video: %s\n", vpx_codec_err_to_string(rc));
     }
 
     vpx_codec_iter_t iter = NULL;
