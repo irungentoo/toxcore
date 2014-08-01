@@ -173,7 +173,7 @@ void toxav_register_callstate_callback (ToxAv *av, ToxAVCallback callback, ToxAv
  * @param callback The callback
  * @return void
  */
-void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int));
+void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int, void*), void* user_data);
 
 /**
  * @brief Register callback for recieving video data
@@ -182,7 +182,7 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
  * @param callback The callback
  * @return void
  */
-void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *));
+void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *, void*), void* user_data);
 
 /**
  * @brief Call user. Use its friend_id.
