@@ -160,6 +160,12 @@ Group_Chat *new_groupchat(Networking_Core *net);
  */
 void kill_groupchat(Group_Chat *chat);
 
+/* Kill a group chat credentials
+ * Frees the memory and everything.
+ */
+void kill_groupcredentials(Group_Credentials *credentials);
+
+
 /* This is the main loop.
  */
 //void do_groupchat(Group_Chat *chat);

@@ -41,13 +41,30 @@
 
 #define MIN_PACKET_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
+/* Check if peer with client_id is in peer array.
+ * return peer number if peer is in chat.
+ * return -1 if peer is not in chat.
+ * TODO: make this more efficient.
+ */
+static int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < chat->numpeers; ++i)
+        if (id_equal2(chat->group[i].client_id, client_id, ID_ALL_KEYS))
+            return i;
+
+    return -1;
+}
+
+
 int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
     if (length < MIN_PACKET_SIZE && length > MAX_CRYPTO_REQUEST_SIZE) 
         return -1;
     
-    if id_equal2(packet + 1, self_public_key, ID_ALL_KEYS)
+    if (id_equal2(packet + 1, self_public_key, ID_ALL_KEYS))
         return -1;
 
     id_copy2(public_key, packet + 1, ID_ALL_KEYS);
@@ -114,7 +131,7 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
     uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
     uint8_t packet_type;
 
-    int len = handle_request(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
+    int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
 
     if (len == -1)
         return -1;
@@ -151,47 +168,76 @@ int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *privat
     return 0;
 }
 
-int verify_certificate(const uint8_t *certificate)
+// Return -1 if certificate is corrupted
+// Return 0 if certificate is consistent
+int verify_cert_integrity(const uint8_t *certificate)
 {
     uint8_t buf[INVITE_CERTIFICATE_SIGNED_SIZE];
     unsigned long long mlen;
 
-    switch (certificate[0]) {
-        case INVITE_CERTIFICATE_SIGNED_SIZE: {
-            uint8_t invitee_pk[CLIENT_ID_SIGN_SIZE];
-            uint8_t inviter_pk[CLIENT_ID_SIGN_SIZE];
-            id_copy2(invitee_pk, certificate + 1, ID_SIGNATURE_KEY);
-            id_copy2(inviter_pk, certificate + 1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE, ID_SIGNATURE_KEY);
+    if (certificate[0] == CERT_INVITE) {
+        uint8_t invitee_pk[CLIENT_ID_SIGN_SIZE];
+        uint8_t inviter_pk[CLIENT_ID_SIGN_SIZE];
+        id_copy2(invitee_pk, certificate + 1, ID_SIGNATURE_KEY);
+        id_copy2(inviter_pk, certificate + 1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE, ID_SIGNATURE_KEY);
 
-            if (crypto_sign_open(buf, &mlen, certificate, INVITE_CERTIFICATE_SIGNED_SIZE, inviter_pk) < 0 ||
-                    mlen != (INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE))
-                return -1;
-
-            if (crypto_sign_open(buf, &mlen, certificate, 1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE, invitee_pk) < 0 ||
-                    mlen != (1 + CLIENT_ID_EXT_SIZE + TIME_STAMP))
-                return -1;
-
-            // TODO verify if we know inviter pk
-
-        }
-
-        case COMMON_CERTIFICATE_SIGNED_SIZE: {
-            uint8_t target_pk[CLIENT_ID_SIGN_SIZE];
-            id_copy2(target_pk, certificate + 1 + CLIENT_ID_EXT_SIZE, ID_SIGNATURE_KEY);
-            if (crypto_sign_open(buf, &mlen, certificate, COMMON_CERTIFICATE_SIGNED_SIZE, target_pk) < 0 ||
-                mlen != (COMMON_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE))
+        if (crypto_sign_open(buf, &mlen, certificate, INVITE_CERTIFICATE_SIGNED_SIZE, inviter_pk) < 0 ||
+                mlen != (INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE))
             return -1;
 
-            // TODO verify if we know target pk and if tarfet is op or founder
-        }
-
-        default:
+        if (crypto_sign_open(buf, &mlen, certificate, 1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE, invitee_pk) < 0 ||
+                mlen != (1 + CLIENT_ID_EXT_SIZE + TIME_STAMP))
             return -1;
+
+        return 0;
     }
-    
-    return 0;    
+
+    if (certificate[0] > CERT_INVITE && certificate[0] < 255) {
+        uint8_t source_pk[CLIENT_ID_SIGN_SIZE];
+        id_copy2(source_pk, certificate + 1 + CLIENT_ID_EXT_SIZE, ID_SIGNATURE_KEY);
+        if (crypto_sign_open(buf, &mlen, certificate, COMMON_CERTIFICATE_SIGNED_SIZE, source_pk) < 0 ||
+            mlen != (COMMON_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE))
+            return -1;
+
+        return 0;
+    }
+
+    return -1;
 }
 
+// Return -1 if we don't know who signed the certificate
+// Return -2 if cert is signed by chat pk, e.g. in case it is the cert founder created for himself
+// Return peer number in other cases
+int verify_inviter(const Group_Chat *chat, const uint8_t *certificate)
+{
+    if (certificate[0] != CERT_INVITE)
+        return -1;
+
+    uint8_t inviter_pk[CLIENT_ID_EXT_SIZE];
+    id_copy2(inviter_pk, certificate + 1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE, ID_ALL_KEYS);
+
+    if (id_equal2(chat->chat_public_key, inviter_pk, ID_ALL_KEYS))
+        return -2;
+
+    uint32_t i = peer_in_chat(chat, inviter_pk);
+
+    return i;
+}
+
+// Return -1 if cert isn't issued by ops
+// Return peer number in other cases
+int verify_issuer(const Group_Chat *chat, const uint8_t *certificate)
+{
+    if (certificate[0] > CERT_INVITE && certificate[0] < 255) {
+        uint8_t source_pk[CLIENT_ID_EXT_SIZE];
+        id_copy2(source_pk, certificate + 1 + CLIENT_ID_EXT_SIZE, ID_ALL_KEYS);
+        uint32_t i = peer_in_chat(chat, source_pk);
+        if (chat->group[i]->role == OP_ROLE || chat->group[i]->role == FOUNDER_ROLE)
+            return i;
+    }
+
+    return -1;
+}
 
 Group_Credentials *new_groupcredentials()
 {
@@ -208,9 +254,6 @@ Group_Chat *new_groupchat(Networking_Core *net)
 {
    	if (net == 0)
         return -1;
-
-    // Why do we even need this?
-    //unix_time_update();
 
     Group_Chat *chat = calloc(1, sizeof(Group_Chat));
     if (chat == NULL)
@@ -230,9 +273,12 @@ Group_Chat *new_groupchat(Networking_Core *net)
 
 void kill_groupchat(Group_Chat *chat)
 {
-	// Send quit action
-    // send_data(chat, 0, 0, GROUP_CHAT_QUIT);
-    
     free(chat->group);
     free(chat);
+}
+
+void kill_groupcredentials(Group_Credentials *credentials)
+{
+    free(credentials->ops);
+    free(credentials);
 }
