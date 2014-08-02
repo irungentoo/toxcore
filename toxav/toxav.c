@@ -104,8 +104,11 @@ struct _ToxAv {
     MSISession *msi_session; /** Main msi session */
     CallSpecific *calls; /** Per-call params */
 
-    void (*audio_callback)(ToxAv *, int32_t, int16_t *, int);
-    void (*video_callback)(ToxAv *, int32_t, vpx_image_t *);
+    void (*audio_callback)(ToxAv *, int32_t, int16_t *, int, void *);
+    void (*video_callback)(ToxAv *, int32_t, vpx_image_t *, void *);
+
+    void *audio_callback_userdata;
+    void *video_callback_userdata;
 
     uint32_t max_calls;
 
@@ -269,9 +272,11 @@ void toxav_register_callstate_callback ( ToxAv *av, ToxAVCallback callback, ToxA
  * @param callback The callback
  * @return void
  */
-void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int))
+void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int, void *),
+        void *user_data)
 {
     av->audio_callback = callback;
+    av->audio_callback_userdata = user_data;
 }
 
 /**
@@ -280,9 +285,11 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
  * @param callback The callback
  * @return void
  */
-void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *))
+void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *, void *),
+        void *user_data)
 {
     av->video_callback = callback;
+    av->video_callback_userdata = user_data;
 }
 
 /**
@@ -933,7 +940,7 @@ static void decode_video(ToxAv *av, DECODE_PACKET *p)
     img = vpx_codec_get_frame(&call->cs->v_decoder, &iter);
 
     if (img && av->video_callback) {
-        av->video_callback(av, p->call_index, img);
+        av->video_callback(av, p->call_index, img, av->video_callback_userdata);
     } else {
         LOGGER_WARNING("Video packet dropped due to missing callback or no image!");
     }
@@ -961,7 +968,7 @@ static void decode_audio(ToxAv *av, DECODE_PACKET *p)
     }
 
     if ( av->audio_callback )
-        av->audio_callback(av, call_index, dest, dec_size);
+        av->audio_callback(av, call_index, dest, dec_size, av->audio_callback_userdata);
     else
         LOGGER_WARNING("Audio packet dropped due to missing callback!");
 }
