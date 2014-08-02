@@ -32,7 +32,6 @@
 #include "LAN_discovery.h"
 #include "util.h"
 
-#define TIME_STAMP (sizeof(uint64_t))
 #define GC_INVITE_REQUEST_PLAIN_SIZE (1 + (CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) )
 #define GC_INVITE_REQUEST_DHT_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + GC_INVITE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
@@ -75,7 +74,7 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
     uint8_t pk[CLIENT_ID_SIZE];
     uint8_t ssk[CLIENT_ID_SIZE];
     id_copy2(pk, public_key, ID_ENCRYPTION_KEY);
-    id_copy2(ssk, send_secret_key, ID_ENCRYPTION_KEY);
+    id_copy2(ssk, self_secret_key, ID_ENCRYPTION_KEY);
 
     uint8_t plain[MAX_CRYPTO_REQUEST_SIZE];
     int len = decrypt_data(pk, ssk, nonce,
@@ -152,20 +151,45 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
     return -1;
 }
 
+int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *packet, uint32_t length)
+{
+
+}
+
+int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *packet, uint32_t length)
+{
+
+}
+
 int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate)
 {
     unsigned long long clen;
     uint8_t buf[MAX_CRYPTO_REQUEST_SIZE];
     memcpy(buf, data, length);
-    id_copy2(buf + length, public_key, ID_ALL_KEYS);   
+    id_copy2(buf + length, public_key, ID_ALL_KEYS);
     unix_time_update(); 
     U64_to_bytes(buf + length + CLIENT_ID_EXT_SIZE, unix_time());
     uint32_t len = length + CLIENT_ID_EXT_SIZE + sizeof(uint64_t) + SIGNATURE_SIZE;
 
-    if (crypto_sign(certificate, &clen, buf, len - SIGNATURE_SIZE, private_key) != 0 || slen != len)
+    if (crypto_sign(certificate, &clen, buf, len - SIGNATURE_SIZE, private_key) != 0 || clen != len)
         return -1;
     
     return 0;
+}
+
+int make_invite_cert(const uint8_t *private_key, const uint8_t *public_key, uint8_t *half_certificate)
+{
+    uint8_t buf[COMMON_CERTIFICATE_SIGNED_SIZE];
+    buf[0] = CERT_INVITE;
+    return sign_certificate(buf, 1, private_key, public_key, half_certificate);
+}
+
+int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, const uint8_t *target_pub_key, uint8_t *certificate, const uint8_t cert_type)
+{
+    uint8_t buf[COMMON_CERTIFICATE_SIGNED_SIZE];
+    buf[0] = cert_type;
+    id_copy2(buf+1, target_pub_key, ID_ALL_KEYS);
+    return sign_certificate(buf, 1+CLIENT_ID_EXT_SIZE, private_key, public_key, certificate);
 }
 
 // Return -1 if certificate is corrupted
@@ -232,7 +256,7 @@ int verify_issuer(const Group_Chat *chat, const uint8_t *certificate)
         uint8_t source_pk[CLIENT_ID_EXT_SIZE];
         id_copy2(source_pk, certificate + 1 + CLIENT_ID_EXT_SIZE, ID_ALL_KEYS);
         uint32_t i = peer_in_chat(chat, source_pk);
-        if (chat->group[i]->role == OP_ROLE || chat->group[i]->role == FOUNDER_ROLE)
+        if (chat->group[i].role == OP_ROLE || chat->group[i].role == FOUNDER_ROLE)
             return i;
     }
 
