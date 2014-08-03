@@ -38,10 +38,12 @@
 
 #define inline__ inline __attribute__((always_inline))
 
+#define ENC_KEY(key) (key)
+#define SIG_KEY(key) (key+ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
+
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
-
 
 enum id_key_t { ID_ALL_KEYS=0, ID_ENCRYPTION_KEY, ID_SIGNATURE_KEY };
 

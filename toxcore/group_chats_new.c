@@ -32,13 +32,13 @@
 #include "LAN_discovery.h"
 #include "util.h"
 
-#define GC_INVITE_REQUEST_PLAIN_SIZE (1 + (CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) )
-#define GC_INVITE_REQUEST_DHT_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + GC_INVITE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
+#define GC_INVITE_REQUEST_PLAIN_SIZE SEMI_INVITE_CERTIFICATE_SIGNED_SIZE
+#define GC_INVITE_REQUEST_DHT_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_INVITE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
-#define GC_INVITE_RESPONSE_PLAIN_SIZE (1 + ((CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) + TIME_STAMP + CLIENT_ID_EXT_SIZE + SIGNATURE_SIZE) )
-#define GC_INVITE_RESPONSE_DHT_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
+#define GC_INVITE_RESPONSE_PLAIN_SIZE INVITE_CERTIFICATE_SIGNED_SIZE
+#define GC_INVITE_RESPONSE_DHT_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
-#define MIN_PACKET_SIZE (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
+#define MIN_PACKET_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
 /* Check if peer with client_id is in peer array.
  * return peer number if peer is in chat.
@@ -69,17 +69,12 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
     id_copy2(public_key, packet + 1, ID_ALL_KEYS);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    memcpy(nonce, packet + 1 + CLIENT_ID_EXT_SIZE, crypto_box_NONCEBYTES);
-
-    uint8_t pk[CLIENT_ID_SIZE];
-    uint8_t ssk[CLIENT_ID_SIZE];
-    id_copy2(pk, public_key, ID_ENCRYPTION_KEY);
-    id_copy2(ssk, self_secret_key, ID_ENCRYPTION_KEY);
+    memcpy(nonce, packet + 1 + EXT_PUBLIC_KEY, crypto_box_NONCEBYTES);
 
     uint8_t plain[MAX_CRYPTO_REQUEST_SIZE];
-    int len = decrypt_data(pk, ssk, nonce,
-                            packet + 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES,
-                            length - (1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES), plain);
+    int len = decrypt_data(ENC_KEY(public_key), ENC_KEY(self_secret_key), nonce,
+                            packet + 1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES,
+                            length - (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES), plain);
 
     if (len == -1 || len == 0)
         return -1;
@@ -103,20 +98,15 @@ int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    uint8_t rpk[CLIENT_ID_SIZE];
-    uint8_t ssk[CLIENT_ID_SIZE];
-    id_copy2(rpk, recv_public_key, ID_ENCRYPTION_KEY);
-    id_copy2(ssk, send_secret_key, ID_ENCRYPTION_KEY);
-
     uint8_t encrypt[1 + length + crypto_box_MACBYTES];
-    int len = encrypt_data(rpk, ssk, nonce, plain, length + 1, encrypt);
+    int len = encrypt_data(ENC_KEY(recv_public_key), ENC_KEY(send_secret_key), nonce, plain, length + 1, encrypt);
     if (len != sizeof(encrypt))
         return -1;
 
     packet[0] = NET_PACKET_GROUP_CHATS;
-    memcpy(packet + 1, send_public_key, CLIENT_ID_EXT_SIZE);
-    memcpy(packet + 1 + CLIENT_ID_EXT_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(packet + 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES, encrypt, len);
+    memcpy(packet + 1, send_public_key, EXT_PUBLIC_KEY);
+    memcpy(packet + 1 + EXT_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
+    memcpy(packet + 1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES, encrypt, len);
 
     return 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + len;
 }
@@ -126,7 +116,7 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
 
     Group_Chat *chat = _chat;
 
-    uint8_t public_key[CLIENT_ID_EXT_SIZE];
+    uint8_t public_key[EXT_PUBLIC_KEY];
     uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
     uint8_t packet_type;
 
@@ -163,15 +153,13 @@ int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *pack
 
 int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate)
 {
-    unsigned long long clen;
-    uint8_t buf[MAX_CRYPTO_REQUEST_SIZE];
-    memcpy(buf, data, length);
-    id_copy2(buf + length, public_key, ID_ALL_KEYS);
+    memcpy(certificate, data, length);
+    id_copy2(certificate + length, public_key, ID_ALL_KEYS);
     unix_time_update(); 
-    U64_to_bytes(buf + length + CLIENT_ID_EXT_SIZE, unix_time());
-    uint32_t len = length + CLIENT_ID_EXT_SIZE + sizeof(uint64_t) + SIGNATURE_SIZE;
+    U64_to_bytes(certificate + length + EXT_PUBLIC_KEY, unix_time());
+    uint32_t mlen = length + EXT_PUBLIC_KEY + TIME_STAMP;
 
-    if (crypto_sign(certificate, &clen, buf, len - SIGNATURE_SIZE, private_key) != 0 || clen != len)
+    if (crypto_sign_detached(certificate+mlen, NULL, certificate, mlen, SIG_KEY(private_key)) != 0)
         return -1;
     
     return 0;
@@ -188,40 +176,43 @@ int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, cons
 {
     uint8_t buf[COMMON_CERTIFICATE_SIGNED_SIZE];
     buf[0] = cert_type;
-    id_copy2(buf+1, target_pub_key, ID_ALL_KEYS);
-    return sign_certificate(buf, 1+CLIENT_ID_EXT_SIZE, private_key, public_key, certificate);
+    id_copy2(buf + 1, target_pub_key, ID_ALL_KEYS);
+    return sign_certificate(buf, 1 + EXT_PUBLIC_KEY, private_key, public_key, certificate);
 }
 
 // Return -1 if certificate is corrupted
 // Return 0 if certificate is consistent
 int verify_cert_integrity(const uint8_t *certificate)
 {
-    uint8_t buf[INVITE_CERTIFICATE_SIGNED_SIZE];
-    unsigned long long mlen;
-
+    printf("Certificate type: %i\n", certificate[0]);
     if (certificate[0] == CERT_INVITE) {
-        uint8_t invitee_pk[CLIENT_ID_SIGN_SIZE];
-        uint8_t inviter_pk[CLIENT_ID_SIGN_SIZE];
+        uint8_t invitee_pk[SIG_PUBLIC_KEY];
+        uint8_t inviter_pk[SIG_PUBLIC_KEY];
         id_copy2(invitee_pk, certificate + 1, ID_SIGNATURE_KEY);
-        id_copy2(inviter_pk, certificate + 1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE, ID_SIGNATURE_KEY);
+        //id_copy2(inviter_pk, certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, ID_SIGNATURE_KEY);
+        
+        printf("Inviter key:\t%s\n", id_toa2(certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, ID_ALL_KEYS));
+        printf("Invitee key:\t%s\n", id_toa2(certificate + 1, ID_ALL_KEYS));
 
-        if (crypto_sign_open(buf, &mlen, certificate, INVITE_CERTIFICATE_SIGNED_SIZE, inviter_pk) < 0 ||
-                mlen != (INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE))
+        if (crypto_sign_verify_detached(certificate+INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
+                     certificate, INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, inviter_pk) != 0)
             return -1;
 
-        if (crypto_sign_open(buf, &mlen, certificate, 1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE, invitee_pk) < 0 ||
-                mlen != (1 + CLIENT_ID_EXT_SIZE + TIME_STAMP))
+        printf("Debug invite\n");
+ 
+        if (crypto_sign_verify_detached(certificate+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
+                     certificate, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, invitee_pk) != 0)
             return -1;
 
         return 0;
     }
 
     if (certificate[0] > CERT_INVITE && certificate[0] < 255) {
+        printf("Debug common\n");
         uint8_t source_pk[CLIENT_ID_SIGN_SIZE];
         id_copy2(source_pk, certificate + 1 + CLIENT_ID_EXT_SIZE, ID_SIGNATURE_KEY);
-        if (crypto_sign_open(buf, &mlen, certificate, COMMON_CERTIFICATE_SIGNED_SIZE, source_pk) < 0 ||
-            mlen != (COMMON_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE))
-            return -1;
+        if (crypto_sign_verify_detached(certificate+COMMON_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
+                     certificate, COMMON_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, source_pk) != 0)
 
         return 0;
     }

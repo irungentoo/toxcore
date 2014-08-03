@@ -27,14 +27,13 @@
 
 #define MAX_NICK_BYTES 128
 #define GROUP_CLOSE_CONNECTIONS 6
-#define SIGNATURE_SIZE  64
 #define TIME_STAMP (sizeof(uint64_t))
 
 // CERT_TYPE + INVITEE + TIME_STAMP + INVITEE_SIGNATURE + INVITER + TIME_STAMP + INVITER_SIGNATURE
-#define INVITE_CERTIFICATE_SIGNED_SIZE (1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE)
-#define SEMI_INVITE_CERTIFICATE_SIGNED_SIZE (1 + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE)
+#define INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
+#define SEMI_INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
 // CERT_TYPE + TARGET + SOURCE + TIME_STAMP + SOURCE_SIGNATURE 
-#define COMMON_CERTIFICATE_SIGNED_SIZE (1 + CLIENT_ID_EXT_SIZE + CLIENT_ID_EXT_SIZE + TIME_STAMP + SIGNATURE_SIZE)
+#define COMMON_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
 
 #define MAX_CERTIFICATES_NUM 5
 
@@ -52,7 +51,7 @@
 #define DWARF_ROLE 5
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_EXT_SIZE];
+    uint8_t     client_id[EXT_PUBLIC_KEY];
     uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
 
@@ -71,15 +70,15 @@ typedef struct {
 
 typedef struct {
     // Maybe create separate struct
-    uint8_t     client_id[CLIENT_ID_EXT_SIZE];
+    uint8_t     client_id[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
 } Group_Close;
 
 typedef struct Group_Chat {
     Networking_Core *net;
 
-    uint8_t     self_public_key[CLIENT_ID_EXT_SIZE];
-    uint8_t     self_secret_key[CLIENT_ID_EXT_SIZE]; //could be longer...
+    uint8_t     self_public_key[EXT_PUBLIC_KEY];
+    uint8_t     self_secret_key[EXT_SECRET_KEY]; //could be longer...
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     self_common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
 
@@ -91,19 +90,19 @@ typedef struct Group_Chat {
     uint16_t    self_nick_len;
     uint8_t     self_role;
 
-    uint8_t     chat_public_key[CLIENT_ID_EXT_SIZE];
-    uint8_t     founder_public_key[CLIENT_ID_EXT_SIZE]; // not sure about it, invitee somehow needs to check it
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
+    uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
 } Group_Chat;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_EXT_SIZE];
+    uint8_t     client_id[EXT_PUBLIC_KEY];
     uint8_t     role;    
 } Group_OPs;
 
 // For founder needs
 typedef struct Group_Credentials {
-    uint8_t     chat_public_key[CLIENT_ID_EXT_SIZE];
-    uint8_t     chat_secret_key[CLIENT_ID_EXT_SIZE];
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
+    uint8_t     chat_secret_key[EXT_SECRET_KEY];
     uint64_t    creation_time;
 
     Group_OPs   *ops;

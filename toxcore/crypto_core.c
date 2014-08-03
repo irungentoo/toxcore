@@ -34,7 +34,7 @@
 int create_long_keypair(uint8_t *pk, uint8_t *sk)
 {
     crypto_box_keypair(pk, sk);
-    crypto_sign_keypair(pk + CLIENT_ID_SIZE, sk + CLIENT_ID_SIZE);
+    crypto_sign_keypair(pk + ENC_SECRET_KEY, sk + ENC_PUBLIC_KEY);
     // TODO: maybe add some verification
     return 0;
 }

@@ -30,6 +30,9 @@ int certificates_test()
         peers_gc[i] = new_groupchat(peers[i]->net);
     }
 
+    printf("Inviter key:\t%s\n", id_toa2(peers_gc[1]->self_public_key, ID_ALL_KEYS));
+    printf("Invitee key:\t%s\n", id_toa2(peers_gc[0]->self_public_key, ID_ALL_KEYS));
+
     uint8_t  invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t  common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE];
 
@@ -41,11 +44,10 @@ int certificates_test()
     if (res==-1)
         printf("Sign invite cert failed!\n");
 
-    //res = verify_cert_integrity(invite_certificate); - core dumped!!!
-/*    if (res==-1)
+    res = verify_cert_integrity(invite_certificate);
+    if (res==-1)
         printf("Invite cert is corrupted!\n");
 
-*/
     printf("Cert test is finished\n");
     return 0;
 }
