@@ -30,6 +30,17 @@
 
 #define inline__ inline __attribute__((always_inline))
 
+
+typedef unsigned long long  uint64;
+typedef          long long  int64;
+typedef unsigned int        u32int;
+typedef          int        s32int;
+typedef unsigned short      u16int;
+typedef          short      s16int;
+typedef unsigned char       u8int;
+typedef          char       s8int;
+
+
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
