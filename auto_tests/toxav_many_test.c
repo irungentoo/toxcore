@@ -120,11 +120,11 @@ void callback_requ_timeout ( void *av, int32_t call_index, void *_arg )
     //ck_assert_msg(0, "No answer!");
 }
 
-static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length)
+static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length, void *userdata)
 {
 }
 
-static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img)
+static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img, void *userdata)
 {
 }
 
@@ -143,8 +143,8 @@ void register_callbacks(ToxAv *av, void *data)
     toxav_register_callstate_callback(av, callback_requ_timeout, av_OnRequestTimeout, data);
 
 
-    toxav_register_audio_recv_callback(av, callback_audio);
-    toxav_register_video_recv_callback(av, callback_video);
+    toxav_register_audio_recv_callback(av, callback_audio, NULL);
+    toxav_register_video_recv_callback(av, callback_video, NULL);
 }
 /*************************************************************************************************/
 
