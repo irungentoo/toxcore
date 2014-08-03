@@ -209,8 +209,7 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
 
     int32_t friend_id = getfriend_id(m, client_id);
 
-    if (friend_id != -1) 
-    {
+    if (friend_id != -1) {
         if (m->friendlist[friend_id].status >= FRIEND_CONFIRMED)
             return FAERR_ALREADYSENT;
 
@@ -237,10 +236,8 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
 
     uint32_t i;
 
-    for (i = 0; i <= m->numfriends; ++i)  
-    {
-        if (m->friendlist[i].status == NOFRIEND) 
-        {
+    for (i = 0; i <= m->numfriends; ++i) {
+        if (m->friendlist[i].status == NOFRIEND) {
             m->friendlist[i].onion_friendnum = onion_friendnum;
             m->friendlist[i].status = FRIEND_ADDED;
             m->friendlist[i].crypt_connection_id = -1;
@@ -742,11 +739,11 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno)
 
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t); */
 /* Set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, 
-                              void (*function)(Messenger *m, const uint8_t*, const uint8_t*, uint16_t, void*), 
+void m_callback_friendrequest(Messenger *m,
+                              void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t, void *),
                               void *userdata)
 {
-    void (*handle_friendrequest)(void*, const uint8_t*, const uint8_t*, uint16_t, void*) = (void*)function;
+    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, uint16_t, void *) = (void *)function;
     callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
 }
 
@@ -1597,6 +1594,7 @@ static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t 
 
         switch (message_id) {
             case FILECONTROL_ACCEPT:
+
                 if (m->friendlist[friendnumber].file_receiving[filenumber].status != FILESTATUS_PAUSED_BY_US) {
                     m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_TRANSFERRING;
                     return 0;
@@ -1605,6 +1603,7 @@ static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t 
                 return -1;
 
             case FILECONTROL_PAUSE:
+
                 if (m->friendlist[friendnumber].file_receiving[filenumber].status != FILESTATUS_PAUSED_BY_US) {
                     m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
                     return 0;
@@ -1628,6 +1627,7 @@ static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t 
 
         switch (message_id) {
             case FILECONTROL_ACCEPT:
+
                 if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_PAUSED_BY_US) {
                     m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_TRANSFERRING;
                     return 0;
@@ -1636,6 +1636,7 @@ static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t 
                 return -1;
 
             case FILECONTROL_PAUSE:
+
                 if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_PAUSED_BY_US) {
                     m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
                 }
@@ -2256,28 +2257,23 @@ void do_friends(Messenger *m)
     uint32_t i;
     uint64_t temp_time = unix_time();
 
-    for (i = 0; i < m->numfriends; ++i) 
-    {
-        if (m->friendlist[i].status == FRIEND_ADDED) 
-        {
-            int fr = send_friendrequest(m, m->onion_c, m->friendlist[i].client_id, 
-                                        m->friendlist[i].friendrequest_nospam, 
+    for (i = 0; i < m->numfriends; ++i) {
+        if (m->friendlist[i].status == FRIEND_ADDED) {
+            int fr = send_friendrequest(m, m->onion_c, m->friendlist[i].client_id,
+                                        m->friendlist[i].friendrequest_nospam,
                                         m->friendlist[i].info, m->friendlist[i].info_size);
 
-            if (fr >= 0) 
-            {
+            if (fr >= 0) {
                 set_friend_status(m, i, FRIEND_REQUESTED);
                 m->friendlist[i].friendrequest_lastsent = temp_time;
             }
         }
 
         if (m->friendlist[i].status == FRIEND_REQUESTED
-            || m->friendlist[i].status == FRIEND_CONFIRMED) /* friend is not online. */
-        {
-            if (m->friendlist[i].status == FRIEND_REQUESTED) 
-            {
-                /* If we didn't connect to friend after successfully sending him a friend 
-                 * request the request is deemed unsuccessful so we set the status back 
+                || m->friendlist[i].status == FRIEND_CONFIRMED) { /* friend is not online. */
+            if (m->friendlist[i].status == FRIEND_REQUESTED) {
+                /* If we didn't connect to friend after successfully sending him a friend
+                 * request the request is deemed unsuccessful so we set the status back
                  * to FRIEND_ADDED and try again.
                  */
                 check_friend_request_timed_out(m, i, temp_time);
@@ -2286,37 +2282,33 @@ void do_friends(Messenger *m)
             friend_new_connection(m, i, m->friendlist[i].client_id);
         }
 
-        if (m->friendlist[i].crypt_connection_id != -1) 
-        {
+        if (m->friendlist[i].crypt_connection_id != -1) {
             uint8_t dht_public_key1[crypto_box_PUBLICKEYBYTES];
-            uint64_t timestamp1 = onion_getfriend_DHT_pubkey(m->onion_c, 
-                                                             m->friendlist[i].onion_friendnum, 
-                                                             dht_public_key1);
+            uint64_t timestamp1 = onion_getfriend_DHT_pubkey(m->onion_c,
+                                  m->friendlist[i].onion_friendnum,
+                                  dht_public_key1);
             uint8_t dht_public_key2[crypto_box_PUBLICKEYBYTES];
-            uint64_t timestamp2 = get_connection_dht_key(m->net_crypto, 
-                                                         m->friendlist[i].crypt_connection_id,
-                                                         dht_public_key2);
+            uint64_t timestamp2 = get_connection_dht_key(m->net_crypto,
+                                  m->friendlist[i].crypt_connection_id,
+                                  dht_public_key2);
 
-            if (timestamp1 > timestamp2) 
-            {
-                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, 
+            if (timestamp1 > timestamp2) {
+                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id,
                                               dht_public_key1, timestamp1);
             } else if (timestamp1 < timestamp2) {
-                onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, 
+                onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum,
                                             dht_public_key2, timestamp2);
             }
 
             uint8_t direct_connected;
-            unsigned int status = crypto_connection_status(m->net_crypto, 
-                                                           m->friendlist[i].crypt_connection_id,
-                                                           &direct_connected);
+            unsigned int status = crypto_connection_status(m->net_crypto,
+                                  m->friendlist[i].crypt_connection_id,
+                                  &direct_connected);
 
-            if (direct_connected == 0 || status == CRYPTO_CONN_COOKIE_REQUESTING) 
-            {
+            if (direct_connected == 0 || status == CRYPTO_CONN_COOKIE_REQUESTING) {
                 IP_Port friendip;
 
-                if (onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip) == 1) 
-                {
+                if (onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip) == 1) {
                     set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, friendip);
                 }
             }
@@ -2547,8 +2539,7 @@ void do_messenger(Messenger *m)
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
 #define NUM_SAVED_TCP_RELAYS 8
-struct SAVED_FRIEND 
-{
+struct SAVED_FRIEND {
     uint8_t status;
     uint8_t client_id[CLIENT_ID_SIZE];
     uint8_t info[SAVED_FRIEND_REQUEST_SIZE]; // the data that is sent during the friend requests we do.
@@ -2741,6 +2732,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
 
     switch (type) {
         case MESSENGER_STATE_TYPE_NOSPAMKEYS:
+
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
@@ -2764,6 +2756,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_NAME:
+
             if ((length > 0) && (length < MAX_NAME_LENGTH)) {
                 setname(m, data, length);
             }
@@ -2771,6 +2764,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_STATUSMESSAGE:
+
             if ((length > 0) && (length < MAX_STATUSMESSAGE_LENGTH)) {
                 m_set_statusmessage(m, data, length);
             }
@@ -2778,6 +2772,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_STATUS:
+
             if (length == 1) {
                 m_set_userstatus(m, *data);
             }
