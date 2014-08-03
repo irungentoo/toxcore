@@ -97,16 +97,16 @@ typedef struct {
 } DECODE_PACKET;
 
 #define VIDEO_DECODE_QUEUE_SIZE 2
-#define AUDIO_DECODE_QUEUE_SIZE 8
+#define AUDIO_DECODE_QUEUE_SIZE 16
 
 struct _ToxAv {
     Messenger *messenger;
     MSISession *msi_session; /** Main msi session */
     CallSpecific *calls; /** Per-call params */
 
-    void (*audio_callback)(ToxAv *, int32_t, int16_t *, int, void*);
-    void (*video_callback)(ToxAv *, int32_t, vpx_image_t *, void*);
-    
+    void (*audio_callback)(ToxAv *, int32_t, int16_t *, int, void *);
+    void (*video_callback)(ToxAv *, int32_t, vpx_image_t *, void *);
+
     void *audio_callback_userdata;
     void *video_callback_userdata;
 
@@ -272,7 +272,8 @@ void toxav_register_callstate_callback ( ToxAv *av, ToxAVCallback callback, ToxA
  * @param callback The callback
  * @return void
  */
-void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int, void*), void* user_data)
+void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int, void *),
+        void *user_data)
 {
     av->audio_callback = callback;
     av->audio_callback_userdata = user_data;
@@ -284,7 +285,8 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
  * @param callback The callback
  * @return void
  */
-void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *, void*), void* user_data)
+void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *, void *),
+        void *user_data)
 {
     av->video_callback = callback;
     av->video_callback_userdata = user_data;
@@ -1081,7 +1083,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
                     av->audio_decode_write = (w + 1) % AUDIO_DECODE_QUEUE_SIZE;
                     pthread_cond_signal(&av->decode_cond);
                 } else {
-                    printf("dropped audio frame\n");
+                    LOGGER_DEBUG("Dropped audio frame\n");
                     free(p);
                 }
 
@@ -1121,7 +1123,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
                     av->video_decode_write = (w + 1) % VIDEO_DECODE_QUEUE_SIZE;
                     pthread_cond_signal(&av->decode_cond);
                 } else {
-                    printf("dropped video frame\n");
+                    LOGGER_DEBUG("Dropped video frame\n");
                     free(p);
                 }
 

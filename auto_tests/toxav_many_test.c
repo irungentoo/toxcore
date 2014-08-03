@@ -120,11 +120,11 @@ void callback_requ_timeout ( void *av, int32_t call_index, void *_arg )
     //ck_assert_msg(0, "No answer!");
 }
 
-static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length, void* userdata)
+static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length, void *userdata)
 {
 }
 
-static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img, void* userdata)
+static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img, void *userdata)
 {
 }
 
