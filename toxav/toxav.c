@@ -1083,7 +1083,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
                     av->audio_decode_write = (w + 1) % AUDIO_DECODE_QUEUE_SIZE;
                     pthread_cond_signal(&av->decode_cond);
                 } else {
-                    printf("dropped audio frame\n");
+                    LOGGER_DEBUG("Dropped audio frame\n");
                     free(p);
                 }
 
@@ -1123,7 +1123,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
                     av->video_decode_write = (w + 1) % VIDEO_DECODE_QUEUE_SIZE;
                     pthread_cond_signal(&av->decode_cond);
                 } else {
-                    printf("dropped video frame\n");
+                    LOGGER_DEBUG("Dropped video frame\n");
                     free(p);
                 }
 

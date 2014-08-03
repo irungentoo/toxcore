@@ -460,7 +460,6 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     sock_t sock = socket(ip_port.ip.family, SOCK_STREAM, IPPROTO_TCP);
 
     if (!sock_valid(sock)) {
-        printf("fail1 %u\n", sock);
         return NULL;
     }
 
