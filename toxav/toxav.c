@@ -97,7 +97,7 @@ typedef struct {
 } DECODE_PACKET;
 
 #define VIDEO_DECODE_QUEUE_SIZE 2
-#define AUDIO_DECODE_QUEUE_SIZE 8
+#define AUDIO_DECODE_QUEUE_SIZE 16
 
 struct _ToxAv {
     Messenger *messenger;
