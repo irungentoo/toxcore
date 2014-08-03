@@ -28,10 +28,19 @@
 #include "network.h"
 #include "ping_array.h"
 
+#define ENC_PUBLIC_KEY crypto_box_PUBLICKEYBYTES
+#define ENC_SECRET_KEY crypto_box_SECRETKEYBYTES
+#define SIG_PUBLIC_KEY crypto_sign_PUBLICKEYBYTES
+#define SIG_SECRET_KEY crypto_sign_SECRETKEYBYTES
+
+#define EXT_SECRET_KEY (ENC_SECRET_KEY + SIG_SECRET_KEY)
+#define EXT_PUBLIC_KEY (ENC_PUBLIC_KEY + SIG_PUBLIC_KEY)
+
+#define CLIENT_ID_EXT_SIZE EXT_PUBLIC_KEY // to kill later
+#define CLIENT_ID_SIGN_SIZE SIG_PUBLIC_KEY //to kill later
+
 /* Size of the client_id in bytes. */
-#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
-#define CLIENT_ID_SIGN_SIZE crypto_sign_PUBLICKEYBYTES
-#define CLIENT_ID_EXT_SIZE (CLIENT_ID_SIZE + CLIENT_ID_SIGN_SIZE)
+#define CLIENT_ID_SIZE ENC_PUBLIC_KEY // For consistency
 
 /* Use asserts wisely, since real siganture size might vary if libsodium changes it */
 #define SIGNATURE_SIZE  64
