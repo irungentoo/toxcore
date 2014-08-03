@@ -43,7 +43,7 @@
 #define CLIENT_ID_SIZE ENC_PUBLIC_KEY // For consistency
 
 /* Use asserts wisely, since real siganture size might vary if libsodium changes it */
-#define SIGNATURE_SIZE  64
+#define SIGNATURE_SIZE crypto_sign_BYTES
 
 /* TODO chat id is 32bit by now */
 #define GC_ANNOUNCE_MESSAGE_SIZE   (CLIENT_ID_EXT_SIZE + sizeof(uint64_t) + CLIENT_ID_SIZE)

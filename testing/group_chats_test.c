@@ -30,23 +30,38 @@ int certificates_test()
         peers_gc[i] = new_groupchat(peers[i]->net);
     }
 
-    printf("Inviter key:\t%s\n", id_toa2(peers_gc[1]->self_public_key, ID_ALL_KEYS));
-    printf("Invitee key:\t%s\n", id_toa2(peers_gc[0]->self_public_key, ID_ALL_KEYS));
-
     uint8_t  invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t  common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE];
 
     int res = make_invite_cert(peers_gc[0]->self_secret_key, peers_gc[0]->self_public_key, invite_certificate);
     if (res==-1)
         printf("Make invite cert failed!\n");
+    else
+        printf("Make invite cert successful!\n");
 
     res = sign_certificate(invite_certificate, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, peers_gc[1]->self_secret_key, peers_gc[1]->self_public_key, invite_certificate);
     if (res==-1)
         printf("Sign invite cert failed!\n");
+    else
+        printf("Sign invite cert successful!\n");
 
     res = verify_cert_integrity(invite_certificate);
     if (res==-1)
         printf("Invite cert is corrupted!\n");
+    else
+        printf("Invite cert is consistent!\n");
+
+    res = make_common_cert(peers_gc[0]->self_secret_key, peers_gc[0]->self_public_key, peers_gc[1]->self_public_key, common_certificate, CERT_BAN);
+    if (res==-1)
+        printf("Make common cert failed!\n");
+    else
+        printf("Make common cert successful!\n");
+
+    res = verify_cert_integrity(common_certificate);
+    if (res==-1)
+        printf("Common cert is corrupted!\n");
+    else
+        printf("Common cert is consistent!\n");
 
     printf("Cert test is finished\n");
     return 0;
