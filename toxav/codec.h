@@ -80,8 +80,8 @@ typedef struct _CodecState {
 
 typedef struct _JitterBuffer {
     RTPMessage **queue;
-    unsigned int size;
-    unsigned int capacity;
+    uint32_t size;
+    uint32_t capacity;
     uint16_t bottom;
     uint16_t top;
 } JitterBuffer;

@@ -139,7 +139,7 @@ static int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t lengt
 
 #define FAIL_CONSTRAINT(constraint, wanted) if ((constraint -= wanted) < 1) { LOGGER_ERROR("Read over length!"); return -1; }
 #define FAIL_SIZE(byte, valid) if ( byte != valid ) { LOGGER_ERROR("Invalid data size!"); return -1; }
-#define FAIL_LIMITS(byte, low, high) if ( byte < low || byte > high ) { LOGGER_ERROR("Invalid data!"); return -1; }
+#define FAIL_LIMITS(byte, high) if ( byte > high ) { LOGGER_ERROR("Failed limit!"); return -1; }
 
     if ( msg == NULL ) {
         LOGGER_ERROR("Could not parse message: no storage!");
@@ -159,7 +159,8 @@ static int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t lengt
             case IDRequest:
                 FAIL_CONSTRAINT(size_constraint, 3);
                 FAIL_SIZE(it[1], 1);
-                FAIL_LIMITS(it[2], invite, end);
+//                 FAIL_LIMITS(it[2], invite, end);
+                FAIL_LIMITS(it[2], end);
                 msg->request.value = it[2];
                 it += 3;
                 msg->request.exists = 1;
@@ -168,7 +169,8 @@ static int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t lengt
             case IDResponse:
                 FAIL_CONSTRAINT(size_constraint, 3);
                 FAIL_SIZE(it[1], 1);
-                FAIL_LIMITS(it[2], ringing, error);
+//                 FAIL_LIMITS(it[2], ringing, error);
+                FAIL_LIMITS(it[2], error);
                 msg->response.value = it[2];
                 it += 3;
                 msg->response.exists = 1;
@@ -454,7 +456,7 @@ typedef struct _Timer {
     void *func_arg1;
     int func_arg2;
     uint64_t timeout;
-    size_t idx;
+    int idx;
 
 } Timer;
 
@@ -462,8 +464,8 @@ typedef struct _TimerHandler {
     Timer **timers;
     pthread_mutex_t mutex;
 
-    size_t max_capacity;
-    size_t size;
+    uint32_t max_capacity;
+    uint32_t size;
     uint64_t resolution;
 
     _Bool running;
@@ -484,12 +486,12 @@ struct timer_function_args {
  * @param timeout Timeout in ms
  * @return int
  */
-static int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg1, int arg2, unsigned timeout)
+static int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg1, int arg2, uint32_t timeout)
 {
     static int timer_id;
     pthread_mutex_lock(&timers_container->mutex);
 
-    int i = 0;
+    uint32_t i = 0;
 
     for (; i < timers_container->max_capacity && timers_container->timers[i]; i ++);
 
@@ -518,7 +520,7 @@ static int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), v
 
     /* reorder */
     if (i) {
-        int j = i - 1;
+        int64_t j = i - 1;
 
         for (; j >= 0 && timeout < timers_container->timers[j]->timeout; j--) {
             Timer *tmp = timers_container->timers[j];
@@ -529,7 +531,7 @@ static int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), v
 
     pthread_mutex_unlock(&timers_container->mutex);
 
-    LOGGER_DEBUG("Allocated timer index: %d timeout: %d, current size: %d", i, timeout, timers_container->size);
+    LOGGER_DEBUG("Allocated timer index: %ull timeout: %ull, current size: %ull", i, timeout, timers_container->size);
     return timer->idx;
 }
 
@@ -548,16 +550,17 @@ static int timer_release ( TimerHandler *timers_container, int idx , int lock_mu
 
     Timer **timed_events = timers_container->timers;
 
-    int i, res = -1;
+    size_t i;
+    int rc = -1;
 
     for (i = 0; i < timers_container->max_capacity; ++i) {
         if (timed_events[i] && timed_events[i]->idx == idx) {
-            res = i;
+            rc = i;
             break;
         }
     }
 
-    if (res == -1) {
+    if (rc == -1) {
         LOGGER_WARNING("No event with id: %d", idx);
 
         if (lock_mutex) pthread_mutex_unlock(&timers_container->mutex);
@@ -565,11 +568,11 @@ static int timer_release ( TimerHandler *timers_container, int idx , int lock_mu
         return -1;
     }
 
-    free(timed_events[res]);
+    free(timed_events[rc]);
 
-    timed_events[res] = NULL;
+    timed_events[rc] = NULL;
 
-    i = res + 1;
+    i = rc + 1;
 
     for (; i < timers_container->max_capacity && timed_events[i]; i ++) {
         timed_events[i - 1] = timed_events[i];
@@ -578,7 +581,7 @@ static int timer_release ( TimerHandler *timers_container, int idx , int lock_mu
 
     timers_container->size--;
 
-    LOGGER_DEBUG("Popped id: %d, current size: %d ", idx, timers_container->size);
+    LOGGER_DEBUG("Popped id: %d, current size: %ull ", idx, timers_container->size);
 
     if (lock_mutex) pthread_mutex_unlock(&timers_container->mutex);
 
@@ -688,7 +691,7 @@ static void timer_terminate_session(TimerHandler *handler)
 
     pthread_mutex_unlock(&handler->mutex);
 
-    int i = 0;
+    size_t i = 0;
 
     for (; i < handler->max_capacity; i ++)
         free(handler->timers[i]);
@@ -855,20 +858,21 @@ static int terminate_call ( MSISession *session, MSICall *call );
 
 static void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8_t status, void *session_p)
 {
+    (void)messenger;
     MSISession *session = session_p;
 
     switch ( status ) {
         case 0: { /* Went offline */
-            uint32_t j = 0;
+            int32_t j = 0;
 
             for ( ; j < session->max_calls; j ++ ) {
 
                 if ( !session->calls[j] ) continue;
 
-                int i = 0;
+                uint16_t i = 0;
 
                 for ( ; i < session->calls[j]->peer_count; i ++ )
-                    if ( session->calls[j]->peers[i] == friend_num ) {
+                    if ( session->calls[j]->peers[i] == (uint32_t)friend_num ) {
                         invoke_callback(session, j, MSI_OnPeerTimeout);
                         terminate_call(session, session->calls[j]);
                         LOGGER_DEBUG("Remote: %d timed out!", friend_num);
@@ -887,7 +891,7 @@ static MSICall *find_call ( MSISession *session, uint8_t *call_id )
 {
     if ( call_id == NULL ) return NULL;
 
-    uint32_t i = 0;
+    int32_t i = 0;
 
     for (; i < session->max_calls; i ++ )
         if ( session->calls[i] && memcmp(session->calls[i]->id, call_id, sizeof(session->calls[i]->id)) == 0 ) {
@@ -1105,7 +1109,7 @@ static int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *
     }
 
     if ( call ) {
-        if ( call->peers[0] == msg->friend_id ) {
+        if ( call->peers[0] == (uint32_t)msg->friend_id ) {
             if (call->state == call_inviting) {
                 /* The glare case. A calls B when at the same time
                  * B calls A. Who has advantage is set bey calculating
@@ -1193,6 +1197,8 @@ static int handle_recv_start ( MSISession *session, MSICall *call, MSIMessage *m
         return 0;
     }
 
+    (void)msg;
+    
     LOGGER_DEBUG("Session: %p Handling 'start' on call: %d, friend id: %d", session, call->call_idx, msg->friend_id );
 
     pthread_mutex_lock(&session->mutex);
@@ -1232,7 +1238,9 @@ static int handle_recv_cancel ( MSISession *session, MSICall *call, MSIMessage *
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
-
+    
+    (void)msg;
+    
     LOGGER_DEBUG("Session: %p Handling 'cancel' on call: %u", session, call->call_idx);
 
     invoke_callback(session, call->call_idx, MSI_OnCancel);
@@ -1274,7 +1282,9 @@ static int handle_recv_ringing ( MSISession *session, MSICall *call, MSIMessage 
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
-
+    
+    (void)msg;
+    
     pthread_mutex_lock(&session->mutex);
 
     if ( call->ringing_timer_id ) {
@@ -1342,7 +1352,9 @@ static int handle_recv_ending ( MSISession *session, MSICall *call, MSIMessage *
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
         return 0;
     }
-
+    
+    (void)msg;
+    
     LOGGER_DEBUG("Session: %p Handling 'ending' on call: %d", session, call->call_idx );
 
     invoke_callback(session, call->call_idx, MSI_OnEnding);
@@ -1591,7 +1603,7 @@ int msi_terminate_session ( MSISession *session )
     int _status = 0;
 
     /* If have calls, cancel them */
-    uint32_t idx = 0;
+    int32_t idx = 0;
 
     for (; idx < session->max_calls; idx ++) if ( session->calls[idx] ) {
             /* Cancel all? */
@@ -1783,6 +1795,8 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
         memcpy(reason_cast, reason, strlen(reason));
         msi_msg_set_reason(msg_cancel, reason_cast);
     }
+#else
+    (void)reason;
 
 #endif
 
@@ -1825,6 +1839,8 @@ int msi_reject ( MSISession *session, int32_t call_index, const char *reason )
         memcpy(reason_cast, reason, strlen(reason));
         msi_msg_set_reason(msg_reject, reason_cast);
     }
+#else
+    (void)reason;
 
 #endif
 

@@ -200,7 +200,7 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
  */
 void toxav_kill ( ToxAv *av )
 {
-    int i;
+    uint32_t i;
     DECODE_PACKET *p;
 
     av->exit = 1;

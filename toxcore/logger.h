@@ -68,13 +68,13 @@ char *logger_timestr (char *dest, size_t max_size);
 #else
 
 
-#define LOGGER_INIT(name, level)
-#define LOGGER_INFO(format, ...)
-#define LOGGER_DEBUG(format, ...)
-#define LOGGER_WARNING(format, ...)
-#define LOGGER_ERROR(format, ...)
+#define LOGGER_INIT(name, level) do {} while(0)
+#define LOGGER_INFO(format, ...) do {} while(0)
+#define LOGGER_DEBUG(format, ...) do {} while(0)
+#define LOGGER_WARNING(format, ...) do {} while(0)
+#define LOGGER_ERROR(format, ...) do {} while(0)
 
-#define LOGGER_SCOPE(__SCOPE_DO__)
+#define LOGGER_SCOPE(__SCOPE_DO__) do {} while(0)
 
 #endif /* LOGGING */
 
