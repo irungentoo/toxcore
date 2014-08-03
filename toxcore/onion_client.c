@@ -804,13 +804,14 @@ int onion_addfriend(Onion_Client *onion_c, const uint8_t *client_id)
             return -1;
 
         index = onion_c->num_friends;
-        memset(&(onion_c->friends_list[onion_c->num_friends]), 0, sizeof(Onion_Friend));
+        memset(&(onion_c->friends_list[onion_c->num_friends]), 0x00, sizeof(Onion_Friend));
         ++onion_c->num_friends;
     }
 
     onion_c->friends_list[index].status = 1;
     memcpy(onion_c->friends_list[index].real_client_id, client_id, crypto_box_PUBLICKEYBYTES);
-    crypto_box_keypair(onion_c->friends_list[index].temp_public_key, onion_c->friends_list[index].temp_secret_key);
+    crypto_box_keypair(onion_c->friends_list[index].temp_public_key, 
+                       onion_c->friends_list[index].temp_secret_key);
     return index;
 }
 

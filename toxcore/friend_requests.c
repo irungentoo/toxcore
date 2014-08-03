@@ -29,6 +29,15 @@
 #include "Messenger.h"
 #include "util.h"
 
+//The hashdata will include our pubkey ++ the receiver's pubkey ++ the receiver's nospam_num ++ nNonce
+struct __attribute__((__packed__)) hashcash_s
+{
+    u8int sender_pubkey[crypto_box_PUBLICKEYBYTES];
+    u8int receiver_pubkey[crypto_box_PUBLICKEYBYTES];
+    u32int receiver_nospam_num;
+    uint64 nNonce;
+}; 
+
 inline bool hash_meets_target(u8int hash[static crypto_hash_sha256_BYTES])
 {
     return hash[0] == 0x00 && hash[1] == 0x00 && hash[2] <= 0x17;
@@ -41,10 +50,10 @@ inline bool hash_meets_target(u8int hash[static crypto_hash_sha256_BYTES])
  *  return  0 if it sent the friend request directly to the friend.
  *  return the number of peers it was routed through if it did not send it directly.
  */
-int send_friendrequest(const Messenger *m, const Onion_Client *onion_c, const uint8_t *public_key, 
+int send_friendrequest(const Messenger *messenger, const Onion_Client *onion_c, const uint8_t *public_key, 
                        uint32_t nospam_num, const uint8_t *data, uint32_t length)
 {
-    if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
+    if (length > MAX_FRIEND_REQUEST_DATA_SIZE || length == 0)
         return -1;
 
     int friend_num = onion_friend_num(onion_c, public_key);
@@ -52,20 +61,16 @@ int send_friendrequest(const Messenger *m, const Onion_Client *onion_c, const ui
     if (friend_num == -1)
         return -1;
 
-    //The hashdata will include our pubkey ++ the receiver's pubkey ++ the receiver's nospam_num ++ nNonce
-    struct hashcash_s
-    {
-        u8int data[crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + sizeof(u32int)];
-        uint64 nNonce;
-    } hashdata;
+    //The data to be hashed
+    struct hashcash_s hashdata;
 
-    //copy over the constant data and set the nNonce to 0
-    hashdata.nNonce = 0;
+    //set the nonce to the last recorded and copy over the constant data
+    // 0 if the friend is new
+    hashdata.nNonce = onion_c->friends_list[friend_num].last_nNonce;
 
-    id_copy(hashdata.data, m->net_crypto->self_public_key);
-    id_copy(hashdata.data + crypto_box_PUBLICKEYBYTES, public_key);
-    memcpy(hashdata.data + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES, 
-           &nospam_num, sizeof(nospam_num));
+    id_copy(hashdata.sender_pubkey, messenger->net_crypto->self_public_key);
+    id_copy(hashdata.receiver_pubkey, public_key);
+    hashdata.receiver_nospam_num = nospam_num;
 
     //scan for a good hash
     u8int outhash[crypto_hash_sha256_BYTES];
@@ -79,31 +84,17 @@ int send_friendrequest(const Messenger *m, const Onion_Client *onion_c, const ui
             break;
 
         //increment the nNonce if did not meet the target
-        hashdata.nNonce++;        
+        hashdata.nNonce++;
     }
 
-    //
-    //TODO: copy the nonce to the sent data, do the recieving checking, the target seems OK, but
-    // when asking for a friend request, this function gets called multiple times, make it so that it records
-    // the nonce once and does not bother with any hashing at all for this node
-    //
+    //Once a good hash has been found, record the god nNonce in the friend entry
+    onion_c->friends_list[friend_num].last_nNonce = hashdata.nNonce;
 
-    //ADDED
-
-    //print
-    u32int i;
-    for(i = 0; i < crypto_hash_sha256_BYTES; i++)
-    {
-        printf("%x%x ", outhash[i] >> 4, outhash[i] & 0x0f);
-    }
-    printf("\nNONCE %lld\n", hashdata.nNonce);
-
-    //ADDED
-
-    uint8_t temp[1 + sizeof(nospam_num) + length];
+    uint8_t temp[1 + sizeof(nospam_num) + sizeof(hashdata.nNonce) + length];
     temp[0] = CRYPTO_PACKET_FRIEND_REQ;
     memcpy(temp + 1, &nospam_num, sizeof(nospam_num));
-    memcpy(temp + 1 + sizeof(nospam_num), data, length);
+    memcpy(temp + 1 + sizeof(nospam_num), &hashdata.nNonce, sizeof(hashdata.nNonce));
+    memcpy(temp + 1 + sizeof(nospam_num) + sizeof(hashdata.nNonce), data, length);
 
     int num = send_onion_data(onion_c, friend_num, temp, sizeof(temp));
 
@@ -188,15 +179,16 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *client_id)
     return -1;
 }
 
-
 static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, 
                                   const uint8_t *packet, uint32_t length)
 {
-    Friend_Requests *fr = object;
+    Messenger *messenger = object;
+    Friend_Requests *fr = &(messenger->fr);
 
     if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE)
         return 1;
 
+    //increment packet and decrement the length since the identifying byte in packet is no longer needed
     ++packet;
     --length;
 
@@ -209,13 +201,36 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey,
     if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0)
         return 1;
 
+    //increment packet and decrement the length as the nospam in packet is no longer needed
+    packet += sizeof(fr->nospam);
+    length -= sizeof(fr->nospam);
+
     if (fr->filter_function)
         if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0)
             return 1;
 
+    //Build the hash data
+    struct hashcash_s hashdata;
+
+    id_copy(hashdata.sender_pubkey, source_pubkey);
+    id_copy(hashdata.receiver_pubkey, messenger->net_crypto->self_public_key);
+    hashdata.receiver_nospam_num = fr->nospam;
+    memcpy(&hashdata.nNonce, packet, sizeof(hashdata.nNonce));
+
+    //increment packet and decrement the length as the hashdata.nNonce in packet is no longer needed
+    packet += sizeof(hashdata.nNonce);
+    length -= sizeof(hashdata.nNonce);
+
+    //Hash and check if it meets the target
+    u8int outhash[crypto_hash_sha256_BYTES];
+    crypto_hash_sha256(outhash, (const u8int*)&hashdata, sizeof(struct hashcash_s));
+
+    if(!hash_meets_target(outhash))
+        return 1;
+
     addto_receivedlist(fr, source_pubkey);
 
-    uint32_t message_len = length - sizeof(fr->nospam);
+    uint32_t message_len = length;
     uint8_t message[message_len + 1];
     memcpy(message, packet + sizeof(fr->nospam), message_len);
     message[sizeof(message) - 1] = 0; /* Be sure the message is null terminated. */
@@ -225,7 +240,7 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey,
     return 0;
 }
 
-void friendreq_init(Friend_Requests *fr, Onion_Client *onion_c)
+void friendreq_init(Messenger *messenger, Onion_Client *onion_c)
 {
-    oniondata_registerhandler(onion_c, CRYPTO_PACKET_FRIEND_REQ, &friendreq_handlepacket, fr);    
+    oniondata_registerhandler(onion_c, CRYPTO_PACKET_FRIEND_REQ, &friendreq_handlepacket, messenger);    
 }

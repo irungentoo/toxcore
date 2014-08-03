@@ -1878,7 +1878,7 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
-    friendreq_init(&(m->fr), m->onion_c);
+    friendreq_init(m, m->onion_c);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
