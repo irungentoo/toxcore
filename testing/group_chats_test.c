@@ -56,7 +56,7 @@ int certificates_test()
     memcpy(user2->founder_public_key, founder->self_public_key, EXT_PUBLIC_KEY);
 
     uint8_t  invite_certificate[PEERCOUNT][INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t  common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE];
+    uint8_t  common_certificate[PEERCOUNT][COMMON_CERTIFICATE_SIGNED_SIZE];
 
     // Testing
     int res[PEERCOUNT];
@@ -102,19 +102,25 @@ int certificates_test()
 
     printf("-----------------------------------------------------\n");    
     printf("Making common certificate\n");
-    res[0] = make_common_cert(op->self_secret_key, op->self_public_key, user1->self_public_key, common_certificate, CERT_BAN);
-    if (res[0]==-1)
-        printf("Fail\n");
-    else
-        printf("Success\n");
+    res[0] = make_common_cert(op->self_secret_key, op->self_public_key, user1->self_public_key, common_certificate[0], CERT_BAN);
+    res[1] = make_common_cert(user1->self_secret_key, user1->self_public_key, user2->self_public_key, common_certificate[1], CERT_BAN);
+
+    for (i=0; i<PEERCOUNT-2; i++)
+        if (res[i]==-1)
+            printf("Fail\n");
+        else
+            printf("Success\n");
 
     printf("-----------------------------------------------------\n");    
     printf("Verifying common certificate integrity\n");
-    res[0] = verify_cert_integrity(common_certificate);
-    if (res[0]==-1)
-        printf("Fail\n");
-    else
-        printf("Success\n");
+    res[0] = verify_cert_integrity(common_certificate[0]);
+    res[1] = verify_cert_integrity(common_certificate[1]);
+
+    for (i=0; i<PEERCOUNT-2; i++)
+        if (res[i]==-1)
+            printf("Fail\n");
+        else
+            printf("Success\n");
 
     // Adding peers to each others peer list
     Group_Peer *peer = calloc(1, sizeof(Group_Peer) * 4);
@@ -134,62 +140,53 @@ int certificates_test()
     memcpy(peer[3].invite_certificate, user2->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
     peer[3].role = USER_ROLE;
 
-/*   add_peer(founder, peer[1]);
-    add_peer(founder, peer[2]);
-    add_peer(founder, peer[3]);
+    add_peer(founder, &peer[1]);
+    add_peer(founder, &peer[2]);
+    add_peer(founder, &peer[3]);
 
-    add_peer(op, peer[0]);
-    add_peer(op, peer[2]);
-    add_peer(op, peer[3]);
+    add_peer(op, &peer[0]);
+    add_peer(op, &peer[2]);
+    add_peer(op, &peer[3]);
 
-    add_peer(user1, peer[1]);
-    add_peer(user1, peer[0]);
-    add_peer(user1, peer[3]);
-*/
+    add_peer(user1, &peer[1]);
+    add_peer(user1, &peer[0]);
+    add_peer(user1, &peer[3]);
+
     add_peer(user2, &peer[0]);
     add_peer(user2, &peer[1]);
-    //add_peer(user2, peer[0]);
+    add_peer(user2, &peer[2]);
 
 
     printf("-----------------------------------------------------\n");    
     printf("Processing invite certificates\n");
     printf("User2 peer list before processing:\n");
     printf("Founder verified status: %i\n", user2->group[0].verified);
-    printf("User1 verified status: %i\n", user2->group[1].verified);
-    printf("Op verified status: %i\n", user2->group[2].verified);
+    printf("Op verified status: %i\n", user2->group[1].verified);
+    printf("User1 verified status: %i\n", user2->group[2].verified);
     printf("User2 peer list after processing:\n");
-    //res[0] = process_invite_cert(user2, user2->group[0].invite_certificate);
-    //res[1] = process_invite_cert(user2, user2->group[1].invite_certificate);
-    //res[2] = process_invite_cert(user2, user2->group[2].invite_certificate);
+    res[0] = process_invite_cert(user2, user2->group[0].invite_certificate);
+    res[1] = process_invite_cert(user2, user2->group[1].invite_certificate);
+    res[2] = process_invite_cert(user2, user2->group[2].invite_certificate);
 
-/*    for (i=0; i<PEERCOUNT-1; i++)
-        if (res[i]==-1)
-            printf("Fail\n");
-        else
-            printf("Success\n");
-*/
-    //printf("Founder verified status: %i\n", user2->group[0].verified);
-    //printf("User1 verified status: %i\n", user2->group[1].verified);
-    //printf("Op verified status: %i\n", user2->group[2].verified);
+    printf("Founder verified status: %i\n", user2->group[0].verified);
+    printf("Op verified status: %i\n", user2->group[1].verified);
+    printf("User1 verified status: %i\n", user2->group[2].verified);
   
-/*    printf("-----------------------------------------------------\n");    
-    printf("Processing common certificate: verifying the issuer (source) and changing target details\n");
-    res = process_common_cert(peers_gc[1], common_certificate);
-    if (res==-1)
-        printf("Common cert issuer is unverified!\n");
-    else
-        printf("Common cert issuer is verified! Target ban status: \n");
-
-    //peers_gc[0]->group[0].role=USER_ROLE;
-
     printf("-----------------------------------------------------\n");    
-    printf("Processing common certificate: the issuer is non op now\n");
-    res = process_common_cert(peers_gc[1], common_certificate);
-    if (res==-1)
-        printf("Common cert issuer is unverified!\n");
-    else
-        printf("Common cert issuer is verified!\n");
-*/
+    printf("Processing common certificates\n");
+    printf("Founder peer list before processing:\n");
+    printf("Op ban status: %i\n", founder->group[0].banned);
+    printf("User1 ban status: %i\n", founder->group[1].banned);
+    printf("User2 ban status: %i\n", founder->group[2].banned);
+    printf("Founder peer list after processing:\n");
+    res[0] = process_common_cert(founder, common_certificate[0]);
+    res[1] = process_common_cert(founder, common_certificate[1]);
+    printf("Founder peer list before processing:\n");
+    printf("Op ban status: %i\n", founder->group[0].banned);
+    printf("User1 ban status: %i\n", founder->group[1].banned);
+    printf("User2 ban status: %i\n", founder->group[2].banned);
+
+
     printf("-----------------------------------------------------\n");    
     printf("Cert test is finished\n");
     return 0;

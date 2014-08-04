@@ -244,16 +244,18 @@ int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
         if (chat->group[i].role == OP_ROLE || chat->group[i].role == FOUNDER_ROLE) {
             if (certificate[0] == CERT_BAN) {
                 uint32_t j = peer_in_chat(chat, target_pk);
-                chat->group[i].banned = 1;
+                chat->group[j].banned = 1;
                 bytes_to_U64(&chat->group[i].banned_time, certificate + 1 + EXT_PUBLIC_KEY * 2);
             }
             if (certificate[0] == CERT_OP_CREDENTIALS) {
                 uint32_t j = peer_in_chat(chat, target_pk);
-                chat->group[i].role = OP_ROLE;
+                chat->group[j].role = OP_ROLE;
             }
 
             return i;
         }
+
+        // TODO: process the situation when op is trying to ban op or founder
 
     }
 
@@ -268,13 +270,9 @@ int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
 int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id)
 {
     uint32_t i;
-    for (i = 0; i < chat->numpeers; ++i) {
-        if (id_long_equal(chat->group[i].client_id, client_id)) {
-            printf("client_id: %s\n", id_toa(client_id));
-            printf("peer: %s\n", id_toa(chat->group[i].client_id));
+    for (i = 0; i < chat->numpeers; ++i)
+        if (id_long_equal(chat->group[i].client_id, client_id))
             return i;
-        }
-    }
 
     return -1;
 }

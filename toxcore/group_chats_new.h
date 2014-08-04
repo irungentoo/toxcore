@@ -109,6 +109,13 @@ typedef struct Group_Credentials {
 } Group_Credentials;
 
 
+int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate);
+int make_invite_cert(const uint8_t *private_key, const uint8_t *public_key, uint8_t *half_certificate);
+int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, const uint8_t *target_pub_key, uint8_t *certificate, const uint8_t cert_type);
+int verify_cert_integrity(const uint8_t *certificate);
+int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate);
+int process_common_cert(const Group_Chat *chat, const uint8_t *certificate);
+
 /* Send a message to the group.
  * returns the number of peers it has sent it to.
  */
