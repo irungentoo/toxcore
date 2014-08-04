@@ -569,6 +569,7 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
     for (i = 0; i != VIDEO_DECODE_QUEUE_SIZE; i++) {
         p = call->video_decode_queue[i];
+        call->video_decode_queue[i] = NULL;
 
         if (p) {
             free(p);
@@ -577,6 +578,7 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
     for (i = 0; i != AUDIO_DECODE_QUEUE_SIZE; i++) {
         p = call->audio_decode_queue[i];
+        call->audio_decode_queue[i] = NULL;
 
         if (p) {
             free(p);
