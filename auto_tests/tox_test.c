@@ -84,16 +84,19 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
 
 uint32_t file_sent;
 uint32_t sendf_ok;
-void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
+void file_print_control(Tox *m, int friendnumber, uint8_t receive_send, uint8_t filenumber, uint8_t control_type,
                         const uint8_t *data, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (send_recieve == 0 && control_type == TOX_FILECONTROL_FINISHED)
+    if (receive_send == 0 && control_type == TOX_FILECONTROL_FINISHED)
+        tox_file_send_control(m, friendnumber, 1, filenumber, TOX_FILECONTROL_FINISHED, NULL, 0);
+
+    if (receive_send == 1 && control_type == TOX_FILECONTROL_FINISHED)
         file_sent = 1;
 
-    if (send_recieve == 1 && control_type == TOX_FILECONTROL_ACCEPT)
+    if (receive_send == 1 && control_type == TOX_FILECONTROL_ACCEPT)
         sendf_ok = 1;
 
 }

@@ -1486,8 +1486,10 @@ int file_control(const Messenger *m, int32_t friendnumber, uint8_t send_receive,
                     break;
 
                 case FILECONTROL_KILL:
-                case FILECONTROL_FINISHED:
                     m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
+                    break;
+
+                case FILECONTROL_FINISHED:
                     break;
             }
 
@@ -1609,8 +1611,9 @@ static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t 
                 return -1;
 
             case FILECONTROL_KILL:
-            case FILECONTROL_FINISHED:
                 m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
+
+            case FILECONTROL_FINISHED:
                 return 0;
         }
     } else {
