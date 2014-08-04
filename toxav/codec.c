@@ -83,7 +83,7 @@ void queue(JitterBuffer *q, RTPMessage *pk)
 
     unsigned int num = sequnum % q->size;
 
-    if (sequnum - q->bottom > q->size) {
+    if ((uint32_t)(sequnum - q->bottom) > q->size) {
         clear_queue(q);
         q->bottom = sequnum;
         q->queue[num] = pk;
@@ -118,7 +118,7 @@ RTPMessage *dequeue(JitterBuffer *q, int *success)
         return ret;
     }
 
-    if (q->top - q->bottom > q->capacity) {
+    if ((uint32_t)(q->top - q->bottom) > q->capacity) {
         ++q->bottom;
         *success = 2;
         return NULL;

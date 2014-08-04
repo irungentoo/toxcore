@@ -193,7 +193,7 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
  */
 void toxav_kill ( ToxAv *av )
 {
-    int i;
+    uint32_t i;
 
     for (i = 0; i < av->max_calls; i ++) {
         if ( av->calls[i].crtps[audio_index] )
