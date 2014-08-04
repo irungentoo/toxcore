@@ -959,7 +959,7 @@ static void *toxav_decoding(void *arg)
     CallSpecific *call = pp[1];
     free(pp);
 
-    while (!call->exit) {
+    while (1) {
         DECODE_PACKET *p;
         _Bool video = 0;
 
