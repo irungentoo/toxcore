@@ -40,30 +40,13 @@
 
 #define MIN_PACKET_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
-/* Check if peer with client_id is in peer array.
- * return peer number if peer is in chat.
- * return -1 if peer is not in chat.
- * TODO: make this more efficient.
- */
-static int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id)
-{
-    uint32_t i;
-
-    for (i = 0; i < chat->numpeers; ++i)
-        if (id_long_equal(chat->group[i].client_id, client_id))
-            return i;
-
-    return -1;
-}
-
-
 int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
     if (length < MIN_PACKET_SIZE && length > MAX_CRYPTO_REQUEST_SIZE) 
         return -1;
     
-    if (id_long_equal(packet + 1, self_public_key))
+    if (id_long_equal(packet + 1, self_public_key)==1)
         return -1;
 
     memcpy(public_key, packet + 1, EXT_PUBLIC_KEY);
@@ -79,7 +62,7 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
     if (len == -1 || len == 0)
         return -1;
 
-    packet_type = plain[0];
+    packet_type[0] = plain[0];
     --len;
     memcpy(data, plain + 1, len);
     return len;
@@ -205,7 +188,7 @@ int verify_cert_integrity(const uint8_t *certificate)
 
     if (certificate[0] > CERT_INVITE && certificate[0] < 255) {
         uint8_t source_pk[CLIENT_ID_SIGN_SIZE];
-        memcpy(source_pk, SIG_KEY(certificate + 1 + CLIENT_ID_EXT_SIZE), SIG_PUBLIC_KEY);
+        memcpy(source_pk, SIG_KEY(certificate + 1 + EXT_PUBLIC_KEY), SIG_PUBLIC_KEY);
         if (crypto_sign_verify_detached(certificate+COMMON_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
                      certificate, COMMON_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, source_pk) != 0)
             return -1;
@@ -219,36 +202,106 @@ int verify_cert_integrity(const uint8_t *certificate)
 // Return -1 if we don't know who signed the certificate
 // Return -2 if cert is signed by chat pk, e.g. in case it is the cert founder created for himself
 // Return peer number in other cases
-int verify_inviter(const Group_Chat *chat, const uint8_t *certificate)
+int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate)
 {
     if (certificate[0] != CERT_INVITE)
         return -1;
 
     uint8_t inviter_pk[EXT_PUBLIC_KEY];
+    uint8_t invitee_pk[EXT_PUBLIC_KEY];
     memcpy(inviter_pk, certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, EXT_PUBLIC_KEY);
+    memcpy(invitee_pk, certificate + 1, EXT_PUBLIC_KEY);
+    uint32_t j = peer_in_chat(chat, invitee_pk);
 
-    if (id_long_equal(chat->chat_public_key, inviter_pk))
+    if (id_long_equal(chat->chat_public_key, inviter_pk)) {
+        chat->group[j].verified = 1;
         return -2;
+    }
 
     uint32_t i = peer_in_chat(chat, inviter_pk);
+    if (i != -1){
+        chat->group[j].verified = 1;
+        return i;
+    }
 
+    chat->group[j].verified = 0;
     return i;
 }
 
 // Return -1 if cert isn't issued by ops
-// Return peer number in other cases
-int verify_issuer(const Group_Chat *chat, const uint8_t *certificate)
+// Return issuer peer number in other cases
+int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
 {
     if (certificate[0] > CERT_INVITE && certificate[0] < 255) {
         uint8_t source_pk[EXT_PUBLIC_KEY];
-        memcpy(source_pk, certificate + 1 + CLIENT_ID_EXT_SIZE, EXT_PUBLIC_KEY);
+        uint8_t target_pk[EXT_PUBLIC_KEY];
+        memcpy(source_pk, certificate + 1 + EXT_PUBLIC_KEY, EXT_PUBLIC_KEY);
+        memcpy(target_pk, certificate + 1, EXT_PUBLIC_KEY);
 
         uint32_t i = peer_in_chat(chat, source_pk);
-        if (chat->group[i].role == OP_ROLE || chat->group[i].role == FOUNDER_ROLE)
+        if (i==-1)
             return i;
+        if (chat->group[i].role == OP_ROLE || chat->group[i].role == FOUNDER_ROLE) {
+            if (certificate[0] == CERT_BAN) {
+                uint32_t j = peer_in_chat(chat, target_pk);
+                chat->group[i].banned = 1;
+                bytes_to_U64(&chat->group[i].banned_time, certificate + 1 + EXT_PUBLIC_KEY * 2);
+            }
+            if (certificate[0] == CERT_OP_CREDENTIALS) {
+                uint32_t j = peer_in_chat(chat, target_pk);
+                chat->group[i].role = OP_ROLE;
+            }
+
+            return i;
+        }
+
     }
 
     return -1;
+}
+
+/* Check if peer with client_id is in peer array.
+ * return peer number if peer is in chat.
+ * return -1 if peer is not in chat.
+ * TODO: make this more efficient.
+ */
+int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id)
+{
+    uint32_t i;
+    for (i = 0; i < chat->numpeers; ++i) {
+        if (id_long_equal(chat->group[i].client_id, client_id)) {
+            printf("client_id: %s\n", id_toa(client_id));
+            printf("peer: %s\n", id_toa(chat->group[i].client_id));
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// Return peernum if success or peer already in chat.
+// Return -1 if fail
+int add_peer(Group_Chat *chat, const Group_Peer *peer)
+{
+    int peernum = peer_in_chat(chat, peer->client_id);
+
+    if (peernum != -1)
+        return peernum;
+
+    Group_Peer *temp;
+    temp = realloc(chat->group, sizeof(Group_Peer) * (chat->numpeers + 1));
+
+    if (temp == NULL)
+        return -1;
+
+    memcpy(&(temp[chat->numpeers]), peer, sizeof(Group_Peer));
+    chat->group = temp;
+
+    ++chat->numpeers;
+
+    //printf("Inside num %i\n", chat->numpeers); 
+
+    return (chat->numpeers - 1);
 }
 
 Group_Credentials *new_groupcredentials()
@@ -265,7 +318,7 @@ Group_Credentials *new_groupcredentials()
 Group_Chat *new_groupchat(Networking_Core *net)
 {
    	if (net == 0)
-        return -1;
+        return NULL;
 
     Group_Chat *chat = calloc(1, sizeof(Group_Chat));
     if (chat == NULL)
@@ -275,6 +328,7 @@ Group_Chat *new_groupchat(Networking_Core *net)
         return NULL;
 
     chat->net = net;
+    chat->numpeers = 0;
     networking_registerhandler(chat->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, chat);
 
     // TODO: Need to handle the situation when we load this from locally stored data

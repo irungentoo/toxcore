@@ -63,9 +63,9 @@ typedef struct {
     uint8_t     banned;
     uint64_t    banned_time;
 
-    uint8_t     verified; // is peer verified, e.g. was invited by verified peer. Recursuion. Problems?
+    uint8_t     verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
 
-    uint8_t     role;
+    uint8_t     role; // actually, user could have several roles, so, it's better to reimplement it as array
 } Group_Peer;
 
 typedef struct {
@@ -78,9 +78,9 @@ typedef struct Group_Chat {
     Networking_Core *net;
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
-    uint8_t     self_secret_key[EXT_SECRET_KEY]; //could be longer...
+    uint8_t     self_secret_key[EXT_SECRET_KEY];
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t     self_common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
+    uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
 
     Group_Peer  *group;
     Group_Close close[GROUP_CLOSE_CONNECTIONS];
