@@ -46,9 +46,9 @@
 #define FOUNDER_ROLE 0
 #define OP_ROLE 1
 #define USER_ROLE 2
-#define HUMAN_ROLE 3
-#define ELF_ROLE 4
-#define DWARF_ROLE 5
+#define HUMAN_ROLE 4
+#define ELF_ROLE 8
+#define DWARF_ROLE 16
 
 // Statuses
 #define ONLINE_STATUS 0
@@ -66,14 +66,14 @@ typedef struct {
     uint8_t     nick[MAX_NICK_BYTES];
     uint16_t    nick_len;
 
-    uint8_t     banned;
+    uint8_t     banned; // TODO: bool
     uint64_t    banned_time;
 
-    uint8_t     status; // online, offline, dead etc.
+    uint8_t     status; // TODO: enum. online, offline, dead etc.
 
-    uint8_t     verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
+    uint8_t     verified; // TODO: bool. is peer verified, e.g. was invited by verified peer. Recursion. Problems?
 
-    uint8_t     role; // actually, user could have several roles, so, it's better to reimplement it as array
+    uint64_t    role; // битовая маска. actually, user could have several roles, so, it's better to reimplement it as array
 } Group_Peer;
 
 typedef struct {
@@ -96,15 +96,17 @@ typedef struct Group_Chat {
 
     uint8_t     self_nick[MAX_NICK_BYTES];
     uint16_t    self_nick_len;
-    uint8_t     self_role;
+    uint64_t    self_role;
 
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
+
+    uint64_t    last_synced_time;
 } Group_Chat;
 
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
-    uint8_t     role;    
+    uint64_t    role;    
 } Group_OPs;
 
 // For founder needs

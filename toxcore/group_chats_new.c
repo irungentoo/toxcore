@@ -174,7 +174,7 @@ int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *publi
     Group_Peer *peer = calloc(1, sizeof(Group_Peer));
     memcpy(peer->client_id, public_key, EXT_PUBLIC_KEY);
     memcpy(peer->invite_certificate, invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
-    peer->role = USER_ROLE;
+    peer->role |= USER_ROLE;
     peer->verified = 1;
     add_peer(chat, peer);
 
@@ -314,7 +314,7 @@ int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
         uint32_t i = peer_in_chat(chat, source_pk);
         if (i==-1)
             return i;
-        if (chat->group[i].role == OP_ROLE || chat->group[i].role == FOUNDER_ROLE) {
+        if (chat->group[i].role&OP_ROLE || chat->group[i].role&FOUNDER_ROLE) {
             if (certificate[0] == CERT_BAN) {
                 uint32_t j = peer_in_chat(chat, target_pk);
                 chat->group[j].banned = 1;
@@ -322,7 +322,7 @@ int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
             }
             if (certificate[0] == CERT_OP_CREDENTIALS) {
                 uint32_t j = peer_in_chat(chat, target_pk);
-                chat->group[j].role = OP_ROLE;
+                chat->group[j].role |= OP_ROLE;
             }
 
             return i;
@@ -398,6 +398,7 @@ Group_Chat *new_groupchat(Networking_Core *net)
 
     chat->net = net;
     chat->numpeers = 0;
+    chat->self_role = 0;
     networking_registerhandler(chat->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, chat);
 
     // TODO: Need to handle the situation when we load this from locally stored data
