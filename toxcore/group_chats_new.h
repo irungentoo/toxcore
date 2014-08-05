@@ -50,6 +50,12 @@
 #define ELF_ROLE 4
 #define DWARF_ROLE 5
 
+// Statuses
+#define ONLINE_STATUS 0
+#define ONFFLINE_STATUS 1
+#define AWAY_STATUS 2
+#define BUSY_STATUS 3
+
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
     uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
@@ -62,6 +68,8 @@ typedef struct {
 
     uint8_t     banned;
     uint64_t    banned_time;
+
+    uint8_t     status; // online, offline, dead etc.
 
     uint8_t     verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
 
@@ -115,35 +123,11 @@ int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, cons
 int verify_cert_integrity(const uint8_t *certificate);
 int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate);
 int process_common_cert(const Group_Chat *chat, const uint8_t *certificate);
+int send_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int send_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+                         const uint8_t *data, uint32_t length);
 
-/* Send a message to the group.
- * returns the number of peers it has sent it to.
- */
-//uint32_t group_sendmessage(Group_Chat *chat, const uint8_t *message, uint32_t length);
 
-/* Send an action to the group.
- * returns the number of peers it has sent it to.
- */
-//uint32_t group_sendaction(Group_Chat *chat, const uint8_t *action, uint32_t length);
-
-/* Set our nick for this group.
- * returns -1 on failure, 0 on success.
- */
-//int set_nick(Group_Chat *chat, const uint8_t *nick, uint16_t nick_len);
-
-/* Tell everyone about a new peer (a person we are inviting for example.)
- */
-//uint32_t group_newpeer(Group_Chat *chat, const uint8_t *client_id);
-
-/* Return the number of peers in the group chat.
- */
-//uint32_t group_numpeers(const Group_Chat *chat);
-
-/* List all the peers in the group chat.
- * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
- * returns the number of peers.
- */
-//uint32_t group_client_names(const Group_Chat *chat, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[], uint16_t length);
 
 /* If we receive a group chat packet we call this function so it can be handled.
  * return 0 if packet is handled correctly.
@@ -172,11 +156,5 @@ void kill_groupchat(Group_Chat *chat);
  * Frees the memory and everything.
  */
 void kill_groupcredentials(Group_Credentials *credentials);
-
-
-/* This is the main loop.
- */
-//void do_groupchat(Group_Chat *chat);
-
 
 #endif

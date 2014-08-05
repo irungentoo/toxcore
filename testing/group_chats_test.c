@@ -37,12 +37,12 @@ int certificates_test()
     user2 = new_groupchat(peers[3]->net);
     credentials = new_groupcredentials();
 
-    printf("Founder: %s\n", id_toa(founder->self_public_key));
-    printf("Op: %s\n", id_toa(op->self_public_key));
-    printf("User1: %s\n", id_toa(user1->self_public_key));
-    printf("User2: %s\n", id_toa(user2->self_public_key));
+    printf("Founder: %s\n", id_toa2(founder->self_public_key, ID_ALL_KEYS));
+    printf("Op: %s\n", id_toa2(op->self_public_key, ID_ALL_KEYS));
+    printf("User1: %s\n", id_toa2(user1->self_public_key, ID_ALL_KEYS));
+    printf("User2: %s\n", id_toa2(user2->self_public_key, ID_ALL_KEYS));
 
-    printf("Chat: %s\n", id_toa(credentials->chat_public_key));
+    printf("Chat: %s\n", id_toa2(credentials->chat_public_key, ID_ALL_KEYS));
     printf("-----------------------------------------------------\n");    
 
     memcpy(founder->chat_public_key, credentials->chat_public_key, EXT_PUBLIC_KEY);
@@ -189,8 +189,89 @@ int certificates_test()
 
     printf("-----------------------------------------------------\n");    
     printf("Cert test is finished\n");
+
+    kill_groupchat(founder);
+    kill_groupchat(op);
+    kill_groupchat(user1);
+    kill_groupchat(user2);
+    for (i=0; i<PEERCOUNT; i++)
+    {
+        kill_DHT(peers[i]);
+    }
+
     return 0;
 }
+
+void do_gc(DHT *dht)
+{
+    networking_poll(dht->net);
+    do_DHT(dht);
+}
+
+int invites_test()
+{
+    IP localhost;
+    DHT *peers[PEERCOUNT];
+    Group_Chat *user1;
+    Group_Chat *user2;
+
+    // Initialization
+    ip_init(&localhost, 1);
+    localhost.ip6.uint8[15]=1;
+    
+    int i;
+    for (i=0; i<PEERCOUNT-2; i++)
+        peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
+
+    user1 = new_groupchat(peers[0]->net);
+    user2 = new_groupchat(peers[1]->net);
+
+    printf("User1: %s\n", id_toa2(user1->self_public_key, ID_ALL_KEYS));
+    printf("User2: %s\n", id_toa2(user2->self_public_key, ID_ALL_KEYS));
+    printf("-----------------------------------------------------\n");    
+    printf("Sending invite request\n");
+
+    IP_Port on1 = {localhost, user1->net->port};
+    IP_Port on2 = {localhost, user2->net->port};
+
+    int res = send_invite_request(user1, on2, user2->self_public_key);
+    if (res==-1)
+        printf("Fail sending request\n");
+    else
+        printf("Success sending request\n");
+
+    for (i=0; i<20*1000; i+=50)
+    {
+        do_gc(peers[0]);
+        do_gc(peers[1]);
+    }   
+
+    printf("-----------------------------------------------------\n");    
+    printf("Verifying certificate integrity:\n");
+    res = verify_cert_integrity(user1->self_invite_certificate);
+    if (res==-1)
+        printf("Fail\n");
+    else
+        printf("Success\n");
+
+    printf("-----------------------------------------------------\n");    
+    printf("Printing certificate details:\n");
+    printf("Certificate type: %i\n", user1->self_invite_certificate[0]);
+    printf("Inviter pk: %s\n", id_toa2(user1->self_invite_certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, ID_ALL_KEYS));
+    printf("Invitee pk: %s\n", id_toa2(user1->self_invite_certificate + 1, ID_ALL_KEYS));
+
+
+    kill_groupchat(user1);
+    kill_groupchat(user2);
+    for (i=0; i<PEERCOUNT-2; i++)
+    {
+        kill_DHT(peers[i]);
+    }
+
+    return 0;
+
+}
+
 
 int basic_group_chat_test()
 {
@@ -230,6 +311,7 @@ int basic_group_chat_test()
 
 int main()
 {
-    certificates_test();
+    //certificates_test();
+    invites_test();
     //basic_group_chat_test();
 }

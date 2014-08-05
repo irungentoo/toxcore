@@ -46,7 +46,7 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
     if (length < MIN_PACKET_SIZE && length > MAX_CRYPTO_REQUEST_SIZE) 
         return -1;
     
-    if (id_long_equal(packet + 1, self_public_key)==1)
+    if (id_long_equal(packet + 1, self_public_key))
         return -1;
 
     memcpy(public_key, packet + 1, EXT_PUBLIC_KEY);
@@ -94,9 +94,25 @@ int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret
     return 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + len;
 }
 
+int send_groupchatpacket(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+                         const uint8_t *data, uint32_t length, uint8_t packet_type)
+{
+    if (id_long_equal(chat->self_public_key, public_key))
+        return -1;
+
+    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
+    int len = wrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, packet, data, length, packet_type);
+    if (len == -1)
+        return -1;
+
+    if (sendpacket(chat->net, ip_port, packet, len) == len)
+        return 0;
+
+    return -1;
+}
+
 int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
-
     Group_Chat *chat = _chat;
 
     uint8_t public_key[EXT_PUBLIC_KEY];
@@ -124,14 +140,70 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
     return -1;
 }
 
-int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *packet, uint32_t length)
+int send_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
 {
+    uint8_t  invite_certificate[SEMI_INVITE_CERTIFICATE_SIGNED_SIZE];
 
+    if (make_invite_cert(chat->self_secret_key, chat->self_public_key, invite_certificate)==-1)
+        return -1;
+
+    return send_groupchatpacket(chat, ip_port, public_key, invite_certificate,
+         SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, CRYPTO_PACKET_GROUP_CHAT_INVITE_REQUEST);
 }
 
-int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *packet, uint32_t length)
-{
 
+int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
+{
+    uint8_t  invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
+
+    if (!id_long_equal(public_key, data+1))
+        return -1;
+
+    if (data[0]!=CERT_INVITE)
+        return -1;
+
+    if (crypto_sign_verify_detached(data+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
+                data, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, SIG_KEY(public_key)) != 0)
+        return -1;
+
+    if (sign_certificate(data, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE,
+            chat->self_secret_key, chat->self_public_key, invite_certificate) == -1)
+        return -1;
+
+    // Adding peer we just invited into the peer group list
+    Group_Peer *peer = calloc(1, sizeof(Group_Peer));
+    memcpy(peer->client_id, public_key, EXT_PUBLIC_KEY);
+    memcpy(peer->invite_certificate, invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
+    peer->role = USER_ROLE;
+    peer->verified = 1;
+    add_peer(chat, peer);
+
+    return send_invite_response(chat, ipp, public_key, invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
+}
+
+int send_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+                         const uint8_t *data, uint32_t length)
+{
+    return send_groupchatpacket(chat, ip_port, public_key, data,
+        length, CRYPTO_PACKET_GROUP_CHAT_INVITE_RESPONSE);
+}
+
+int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
+{
+    if (!id_long_equal(public_key, data+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE))
+        return -1;
+
+    if (data[0]!=CERT_INVITE)
+        return -1;
+
+    if (crypto_sign_verify_detached(data+INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
+                 data, INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, SIG_KEY(public_key)) != 0)
+        return -1;
+
+    memcpy(chat->self_invite_certificate, data, INVITE_CERTIFICATE_SIGNED_SIZE);
+
+    // send_sync_request();
+    return 0;
 }
 
 int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate)
@@ -219,10 +291,11 @@ int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate)
     }
 
     uint32_t i = peer_in_chat(chat, inviter_pk);
-    if (i != -1){
-        chat->group[j].verified = 1;
-        return i;
-    }
+    if (i != -1) 
+        if (chat->group[i].verified == 1 ) {
+            chat->group[j].verified = 1;
+            return i;
+        }
 
     chat->group[j].verified = 0;
     return i;
@@ -296,8 +369,6 @@ int add_peer(Group_Chat *chat, const Group_Peer *peer)
     chat->group = temp;
 
     ++chat->numpeers;
-
-    //printf("Inside num %i\n", chat->numpeers); 
 
     return (chat->numpeers - 1);
 }
