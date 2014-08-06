@@ -40,6 +40,7 @@
 
 #define MIN_PACKET_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
+// Handle all decrypt procedures
 int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
@@ -68,6 +69,7 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
     return len;
 }
 
+// Handle all encrypt procedures
 int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret_key, const uint8_t *recv_public_key,
                         uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type)
 {
@@ -94,6 +96,7 @@ int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret
     return 1 + CLIENT_ID_EXT_SIZE + crypto_box_NONCEBYTES + len;
 }
 
+// General function for packet sending
 int send_groupchatpacket(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length, uint8_t packet_type)
 {
@@ -111,6 +114,7 @@ int send_groupchatpacket(const Group_Chat *chat, IP_Port ip_port, const uint8_t 
     return -1;
 }
 
+// General function for packet handling
 int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
     Group_Chat *chat = _chat;
@@ -133,6 +137,12 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
         case CRYPTO_PACKET_GROUP_CHAT_INVITE_RESPONSE:
             return handle_gc_invite_response(chat, ipp, public_key, data, len);
 
+        case CRYPTO_PACKET_GROUP_CHAT_SYNC_REQUEST:
+            return handle_gc_sync_request(chat, ipp, public_key, data, len);
+
+        case CRYPTO_PACKET_GROUP_CHAT_SYNC_RESPONSE:
+            return handle_gc_sync_response(chat, ipp, public_key, data, len);
+
         default:
             return -1;
     }
@@ -140,6 +150,10 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
     return -1;
 }
 
+
+/* Return -1 if fail
+ * Return packet length if success
+ */
 int send_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
 {
     uint8_t  invite_certificate[SEMI_INVITE_CERTIFICATE_SIGNED_SIZE];
@@ -152,6 +166,9 @@ int send_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *
 }
 
 
+/* Return -1 if fail
+ * Return packet length if success
+ */
 int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
 {
     uint8_t  invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
@@ -181,6 +198,9 @@ int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *publi
     return send_invite_response(chat, ipp, public_key, invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
 }
 
+/* Return -1 if fail
+ * Return packet length if success
+ */
 int send_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length)
 {
@@ -188,6 +208,9 @@ int send_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t 
         length, CRYPTO_PACKET_GROUP_CHAT_INVITE_RESPONSE);
 }
 
+/* Return -1 if fail
+ * Return 0 if success
+ */
 int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
 {
     if (!id_long_equal(public_key, data+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE))
@@ -206,6 +229,33 @@ int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *publ
     return 0;
 }
 
+int send_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
+{
+
+}
+
+int handle_gc_sync_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key,
+                         const uint8_t *data, uint32_t length)
+{
+
+}
+
+int send_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+                         const uint8_t *data, uint32_t length)
+{
+
+}
+
+int handle_gc_sync_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key,
+                             const uint8_t *data, uint32_t length)
+{
+
+}
+
+/* Sign input data
+ * Add signer public key, time stamp and signature in the end of the data
+ * Return -1 if fail, 0 if success
+ */
 int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate)
 {
     memcpy(certificate, data, length);
@@ -221,6 +271,10 @@ int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *privat
     return 0;
 }
 
+/* Make invite certificate
+ * This cert is only half-done, cause it needs to be signed by inviter also
+ * Return -1 if fail, 0 if success
+ */
 int make_invite_cert(const uint8_t *private_key, const uint8_t *public_key, uint8_t *half_certificate)
 {
     uint8_t buf[COMMON_CERTIFICATE_SIGNED_SIZE];
@@ -228,6 +282,9 @@ int make_invite_cert(const uint8_t *private_key, const uint8_t *public_key, uint
     return sign_certificate(buf, 1, private_key, public_key, half_certificate);
 }
 
+/* Make common certificate
+ * Return -1 if fail, 0 if success
+ */
 int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, const uint8_t *target_pub_key, uint8_t *certificate, const uint8_t cert_type)
 {
     uint8_t buf[COMMON_CERTIFICATE_SIGNED_SIZE];

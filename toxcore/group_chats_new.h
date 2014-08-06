@@ -25,6 +25,8 @@
 #ifndef GROUP_CHATS_H
 #define GROUP_CHATS_H
 
+#include <stdbool.h>
+ 
 #define MAX_NICK_BYTES 128
 #define GROUP_CLOSE_CONNECTIONS 6
 #define TIME_STAMP (sizeof(uint64_t))
@@ -52,9 +54,18 @@
 
 // Statuses
 #define ONLINE_STATUS 0
-#define ONFFLINE_STATUS 1
+#define OFFLINE_STATUS 1
 #define AWAY_STATUS 2
 #define BUSY_STATUS 3
+
+// Messages
+#define GROUP_CHAT_PING 0
+#define GROUP_CHAT_STATUS 1
+#define GROUP_CHAT_NEW_PEER 2
+#define GROUP_CHAT_CHANGE_NICK 3
+#define GROUP_CHAT_CHANGE_TOPIC 4
+#define GROUP_CHAT_MESSAGE 5
+#define GROUP_CHAT_ACTION 6
 
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
@@ -66,18 +77,17 @@ typedef struct {
     uint8_t     nick[MAX_NICK_BYTES];
     uint16_t    nick_len;
 
-    uint8_t     banned; // TODO: bool
+    bool        banned;
     uint64_t    banned_time;
 
-    uint8_t     status; // TODO: enum. online, offline, dead etc.
+    uint8_t     status; // TODO: enum
 
-    uint8_t     verified; // TODO: bool. is peer verified, e.g. was invited by verified peer. Recursion. Problems?
+    bool        verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
 
-    uint64_t    role; // битовая маска. actually, user could have several roles, so, it's better to reimplement it as array
+    uint64_t    role;
 } Group_Peer;
 
 typedef struct {
-    // Maybe create separate struct
     uint8_t     client_id[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
 } Group_Close;
@@ -97,6 +107,7 @@ typedef struct Group_Chat {
     uint8_t     self_nick[MAX_NICK_BYTES];
     uint16_t    self_nick_len;
     uint64_t    self_role;
+    uint8_t     self_status; // TODO: enum
 
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
@@ -118,23 +129,56 @@ typedef struct Group_Credentials {
     Group_OPs   *ops;
 } Group_Credentials;
 
-
+/* Sign input data
+ * Add signer public key, time stamp and signature in the end of the data
+ * Return -1 if fail, 0 if success
+ */
 int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate);
+
+/* Make invite certificate
+ * This cert is only half-done, cause it needs to be signed by inviter also
+ * Return -1 if fail, 0 if success
+ */
 int make_invite_cert(const uint8_t *private_key, const uint8_t *public_key, uint8_t *half_certificate);
+
+/* Make common certificate
+ * Return -1 if fail, 0 if success
+ */
 int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, const uint8_t *target_pub_key, uint8_t *certificate, const uint8_t cert_type);
+
+/* Return -1 if certificate is corrupted
+ * Return 0 if certificate is consistent
+ * Works for invite and common certificates
+ */
 int verify_cert_integrity(const uint8_t *certificate);
+
+/* Return -1 if we don't know who signed the certificate
+ * Return -2 if cert is signed by chat pk, e.g. in case it is the cert founder created for himself
+ * Return peer number in other cases
+ * If inviter is verified peer, than invitee becomes verified also
+ */ 
 int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate);
+
+/* Return -1 if cert isn't issued by ops
+ * Return issuer peer number in other cases
+ */
 int process_common_cert(const Group_Chat *chat, const uint8_t *certificate);
+
+/* Return -1 if fail
+ * Return packet length if success
+ */
 int send_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+
+/* Return -1 if fail
+ * Return packet length if success
+ */
 int send_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length);
-
-
 
 /* If we receive a group chat packet we call this function so it can be handled.
  * return 0 if packet is handled correctly.
  * return -1 if it didn't handle the packet or if the packet was shit.
-*/
+ */
 int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length);
 
 /* Create new group credentials with pk ans sk.
