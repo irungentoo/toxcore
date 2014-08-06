@@ -26,7 +26,7 @@
 #define GROUP_CHATS_H
 
 #include <stdbool.h>
- 
+
 #define MAX_NICK_BYTES 128
 #define GROUP_CLOSE_CONNECTIONS 6
 #define TIME_STAMP (sizeof(uint64_t))
@@ -85,6 +85,8 @@ typedef struct {
     bool        verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
 
     uint64_t    role;
+
+    uint64_t    last_update_time; // updates when nick, role, verified change or banned
 } Group_Peer;
 
 typedef struct {

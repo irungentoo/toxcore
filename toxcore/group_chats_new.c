@@ -231,25 +231,81 @@ int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *publ
 
 int send_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
 {
+    uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
+
+    memcpy(data, chat->self_public_key, EXT_PUBLIC_KEY);
+    memcpy(data + EXT_PUBLIC_KEY, &chat->last_synced_time, TIME_STAMP);
+
+    return send_groupchatpacket(chat, ip_port, public_key, data,
+         EXT_PUBLIC_KEY+TIME_STAMP, CRYPTO_PACKET_GROUP_CHAT_SYNC_REQUEST);
 
 }
 
 int handle_gc_sync_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length)
 {
+    if (!id_long_equal(public_key, data))
+        return -1;
 
+    // TODO: Check if we know the peer
+
+    uint8_t response[MAX_CRYPTO_REQUEST_SIZE];
+    memcpy(response, chat->self_public_key, EXT_PUBLIC_KEY);
+
+    uint64_t last_synced_time;
+    bytes_to_U64(&last_synced_time, data + EXT_PUBLIC_KEY);
+
+    uint32_t len;
+    if (last_synced_time < chat->last_synced_time) {
+        // TODO: probably we should initiate sync request ourself, cause requester has more fresh info
+        len = EXT_PUBLIC_KEY + sizeof(uint32_t);
+        uint32_t num = 0;
+        U32_to_bytes(response + EXT_PUBLIC_KEY, num);
+    } else {
+        uint32_t i;
+        uint32_t num = 0;
+        Group_Peer *peers = calloc(1, sizeof(Group_Peer) * chat->numpeers);;
+        for (i=0; i<chat->numpeers; i++) 
+            if (chat->group[i].last_update_time > last_synced_time) {
+                memcpy(&peers[num], &chat->group[i], sizeof(Group_Peer));
+                ++num;
+            }
+
+        ++num;
+        len = EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP + sizeof(Group_Peer) * num;
+        U32_to_bytes(response + EXT_PUBLIC_KEY, num);
+        U64_to_bytes(response + EXT_PUBLIC_KEY + sizeof(uint32_t), chat->last_synced_time);
+        memcpy(response + EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP, peers, sizeof(Group_Peer) * num);
+    }
+
+    return send_sync_response(chat, ipp, public_key, response, len);
 }
 
 int send_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length)
 {
-
+    return send_groupchatpacket(chat, ip_port, public_key, data,
+        length, CRYPTO_PACKET_GROUP_CHAT_SYNC_RESPONSE);
 }
 
 int handle_gc_sync_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key,
                              const uint8_t *data, uint32_t length)
 {
+    if (!id_long_equal(public_key, data))
+        return -1;
 
+    uint32_t num = 0;
+
+    bytes_to_U32(&num, data + EXT_PUBLIC_KEY);
+    if (num==0)
+        return -1;
+
+    bytes_to_U64(&chat->last_synced_time, data + EXT_PUBLIC_KEY + sizeof(uint32_t));
+    uint32_t i;
+    for (i=0;i<num;i++){
+        // TODO: here we need some kind of clever sync, not just replace everything
+        //update_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum)
+    }
 }
 
 /* Sign input data
@@ -428,6 +484,11 @@ int add_peer(Group_Chat *chat, const Group_Peer *peer)
     ++chat->numpeers;
 
     return (chat->numpeers - 1);
+}
+
+int update_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum)
+{
+
 }
 
 Group_Credentials *new_groupcredentials()
