@@ -591,6 +591,7 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     pthread_mutex_unlock(&call->mutex);
     pthread_mutex_destroy(&call->mutex);
 
+    memset(call, 0, sizeof(CallSpecific));
     return ErrorNone;
 }
 
