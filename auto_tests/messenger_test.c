@@ -21,6 +21,8 @@
 #include <string.h>
 #include <check.h>
 
+#include "helpers.h"
+
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
 #define STRINGS_EQUAL(X, Y) (strcmp(X, Y) == 0)
 
@@ -297,11 +299,6 @@ START_TEST(test_messenger_state_saveloadsave)
     ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "Messenger state changed by store/load/store cycle");
 }
 END_TEST
-
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
 
 Suite *messenger_suite(void)
 {

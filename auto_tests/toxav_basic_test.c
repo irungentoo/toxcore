@@ -16,6 +16,8 @@
 #include "../toxcore/crypto_core.h"
 #include "../toxav/toxav.h"
 
+#include "helpers.h"
+
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -214,7 +216,6 @@ case 3: /* Wait for Both to have status ended */\
 if (status_control.Alice.status == Ended && status_control.Bob.status == Ended) running = 0; break; } c_sleep(20); } } printf("\n");
 
 START_TEST(test_AV_flows)
-// int test_AV_flows()
 {
     long long unsigned int cur_time = time(NULL);
     Tox *bootstrap_node = tox_new(0);
@@ -574,10 +575,7 @@ Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
 
-    TCase *tc_av_flows = tcase_create("AV_flows");
-    tcase_add_test(tc_av_flows, test_AV_flows);
-    tcase_set_timeout(tc_av_flows, 200);
-    suite_add_tcase(s, tc_av_flows);
+    DEFTESTCASE_SLOW(AV_flows, 200);
 
     return s;
 }

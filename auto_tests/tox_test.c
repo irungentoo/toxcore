@@ -12,6 +12,8 @@
 
 #include "../toxcore/tox.h"
 
+#include "helpers.h"
+
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -360,14 +362,6 @@ loop_top:
 }
 END_TEST
 
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
-
-#define DEFTESTCASE_SLOW(NAME, TIMEOUT) \
-    DEFTESTCASE(NAME) \
-    tcase_set_timeout(tc_##NAME, TIMEOUT);
 Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox");

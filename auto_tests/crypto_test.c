@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "helpers.h"
+
 void rand_bytes(uint8_t *b, size_t blen)
 {
     size_t i;
@@ -269,16 +271,6 @@ START_TEST(test_large_data_symmetric)
     ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
 }
 END_TEST
-
-
-#define DEFTESTCASE(NAME) \
-    TCase *NAME = tcase_create(#NAME); \
-    tcase_add_test(NAME, test_##NAME); \
-    suite_add_tcase(s, NAME);
-
-#define DEFTESTCASE_SLOW(NAME, TIMEOUT) \
-    DEFTESTCASE(NAME) \
-    tcase_set_timeout(NAME, TIMEOUT);
 
 Suite *crypto_suite(void)
 {
