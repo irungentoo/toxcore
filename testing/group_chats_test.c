@@ -10,6 +10,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #define PEERCOUNT       4
 
@@ -272,7 +274,7 @@ int invites_test()
 
 }
 
-int sync_test()
+int sync_ping_test()
 {
     IP localhost;
     DHT *peers[PEERCOUNT];
@@ -371,6 +373,35 @@ int sync_test()
 
     // TODO: make test where we need to update info on some peers, not just add new ones
 
+    printf("-----------------------------------------------------\n");    
+    printf("Before ping\n");
+    for (i=1; i<PEERCOUNT; i++) {
+        int j = peer_in_chat(peers_gc[i], peers_gc[0]->self_public_key);
+        printf("Peer Chat %i:\n", i);
+        printf("Last received ping from Peer Chat 0 : %" PRIu64 "\n", peers_gc[i]->group[j].last_rcvd_ping);
+    }
+
+
+    for (i=0; i<5*1000; i+=50) {
+        do_groupchat(peers_gc[0]);
+        usleep(50000); /* usecs */
+    }
+
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT; j++) {
+            do_gc(peers[j]);
+        }
+    }   
+
+    printf("After ping\n");
+    for (i=1; i<PEERCOUNT; i++) {
+        int j = peer_in_chat(peers_gc[i], peers_gc[0]->self_public_key);
+        printf("Peer Chat %i:\n", i);
+        printf("Last received ping from Peer Chat 0 : %" PRIu64 "\n", peers_gc[i]->group[j].last_rcvd_ping);
+    }
+
+
     // Finalization
     for (i=0; i<PEERCOUNT; i++)
     {
@@ -422,6 +453,6 @@ int main()
 {
     //certificates_test();
     //invites_test();
-    sync_test();
+    sync_ping_test();
     //basic_group_chat_test();
 }

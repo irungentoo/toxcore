@@ -29,6 +29,9 @@
 
 #define MAX_NICK_BYTES 128
 #define GROUP_CLOSE_CONNECTIONS 6
+#define GROUP_PING_INTERVAL 5
+#define BAD_GROUPNODE_TIMEOUT 60
+
 #define TIME_STAMP (sizeof(uint64_t))
 
 // CERT_TYPE + INVITEE + TIME_STAMP + INVITEE_SIGNATURE + INVITER + TIME_STAMP + INVITER_SIGNATURE
@@ -69,10 +72,10 @@
 
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
+    IP_Port     ip_port;
+
     uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
-
-    IP_Port     ip_port;
 
     uint8_t     nick[MAX_NICK_BYTES];
     uint16_t    nick_len;
@@ -86,7 +89,8 @@ typedef struct {
 
     uint64_t    role;
 
-    uint64_t    last_update_time; // updates when nick, role, verified change or banned
+    uint64_t    last_update_time; // updates when nick, role, verified, ip_port change or banned
+    uint64_t    last_rcvd_ping;
 } Group_Peer;
 
 typedef struct {
@@ -115,6 +119,8 @@ typedef struct Group_Chat {
     uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
 
     uint64_t    last_synced_time;
+    uint64_t    last_sent_ping_time;
+
 } Group_Chat;
 
 typedef struct {
@@ -177,11 +183,35 @@ int send_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *
 int send_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length);
 
+/* Return -1 if fail
+ * Return packet length if success
+ */
+int send_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+
+/* Return -1 if fail
+ * Return packet length if success
+ */
+int send_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+                         const uint8_t *data, uint32_t length);
+
+int send_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+
 /* If we receive a group chat packet we call this function so it can be handled.
  * return 0 if packet is handled correctly.
  * return -1 if it didn't handle the packet or if the packet was shit.
  */
 int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length);
+
+/* Check if peer with client_id is in peer array.
+ * return peer number if peer is in chat.
+ * return -1 if peer is not in chat.
+ * TODO: make this more efficient.
+ */
+int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id);
+
+/* This is the main loop.
+ */
+void do_groupchat(Group_Chat *chat);
 
 /* Create new group credentials with pk ans sk.
  * Returns a new group credentials instance if success.

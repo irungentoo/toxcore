@@ -145,6 +145,9 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
         case CRYPTO_PACKET_GROUP_CHAT_SYNC_RESPONSE:
             return handle_gc_sync_response(chat, ipp, public_key, data, len);
 
+        case CRYPTO_PACKET_GROUP_CHAT_BROADCAST:
+            return handle_gc_broadcast(chat, ipp, public_key, data, len);
+
         default:
             return -1;
     }
@@ -197,6 +200,7 @@ int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *publi
     peer->verified = 1;
     unix_time_update(); 
     peer->last_update_time = unix_time();
+    peer->ip_port = ipp;
     add_peer(chat, peer);
 
     return send_invite_response(chat, ipp, public_key, invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
@@ -325,6 +329,74 @@ int handle_gc_sync_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public
 
     // The last one is always the sender
     chat->group[num-1].ip_port = ipp;
+
+    return 0;
+}
+
+int send_broadcast_packet(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+                         const uint8_t *data, uint32_t length)
+{
+    uint8_t dt[length+EXT_PUBLIC_KEY];
+    memcpy(dt, chat->self_public_key, EXT_PUBLIC_KEY);
+    memcpy(dt + EXT_PUBLIC_KEY, data,length);
+
+    // TODO: send to all peers... Or rather we should make efficient sophisticated routing :)
+    // Currently ping_group() and others think that we send only one packet. Change ping_group() in case
+    // of this function changing
+    return send_groupchatpacket(chat, ip_port, public_key, dt,
+        EXT_PUBLIC_KEY + length, CRYPTO_PACKET_GROUP_CHAT_BROADCAST);
+}
+
+int handle_gc_broadcast(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
+{
+    if (!id_long_equal(public_key, data))
+        return -1;
+
+    uint32_t len = length - 1 - EXT_PUBLIC_KEY;
+    uint8_t dt[len];
+    memcpy(dt, data + 1 + EXT_PUBLIC_KEY, len);
+    // TODO: Check if we know the peer and if peer is verified
+    uint32_t peernum = peer_in_chat(chat, public_key);
+    if (peernum==-1)
+        return -1;
+
+    switch (data[EXT_PUBLIC_KEY]) {
+        case GROUP_CHAT_PING:
+            return handle_ping(chat, ipp, public_key, dt, len, peernum);
+/*        case GROUP_CHAT_STATUS:
+            return handle_status(chat, ipp, public_key, dt, len, peernum);
+        case GROUP_CHAT_NEW_PEER:
+            return handle_new_peer(chat, ipp, public_key, dt, len, peernum);
+        case GROUP_CHAT_CHANGE_NICK:
+            return handle_change_nick(chat, ipp, public_key, dt, len, peernum);
+        case GROUP_CHAT_CHANGE_TOPIC:
+            return handle_change_topic(chat, ipp, public_key, dt, len, peernum);
+        case GROUP_CHAT_MESSAGE:
+            return handle_message(chat, ipp, public_key, dt, len, peernum);
+        case GROUP_CHAT_ACTION:
+            return handle_action(chat, ipp, public_key, dt, len, peernum);
+*/        default:
+            return -1;
+    }
+
+}
+
+int send_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
+{
+    uint8_t data[MAX_GC_PACKET_SIZE];
+    uint32_t length;
+
+    data[0] = GROUP_CHAT_PING;
+    length = 1;
+
+    return send_broadcast_packet(chat, ip_port, public_key, data, length);
+}
+
+int handle_ping(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
+{
+    chat->group[peernum].ip_port = ipp;
+    unix_time_update();
+    chat->group[peernum].last_rcvd_ping = unix_time();
 
     return 0;
 }
@@ -527,6 +599,24 @@ int gc_to_peer(const Group_Chat *chat, Group_Peer *peer)
 
     return 0;
 }
+
+void ping_group(Group_Chat *chat)
+{
+    if (is_timeout(chat->last_sent_ping_time, GROUP_PING_INTERVAL)) {
+        int i;
+        for (i=0;i<chat->numpeers;i++)
+            send_ping(chat, chat->group[i].ip_port, chat->group[i].client_id);
+        // TODO: add validation to send_ping
+        unix_time_update();    
+        chat->last_sent_ping_time = unix_time();
+    }
+}
+
+void do_groupchat(Group_Chat *chat)
+{
+    ping_group(chat);
+}
+
 
 Group_Credentials *new_groupcredentials()
 {
