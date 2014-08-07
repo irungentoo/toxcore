@@ -966,7 +966,8 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
 }
 
 
-#define ANNOUNCE_FRIEND ONION_NODE_PING_INTERVAL
+#define ANNOUNCE_FRIEND (ONION_NODE_PING_INTERVAL * 3)
+#define FRIEND_ONION_NODE_TIMEOUT (ONION_NODE_TIMEOUT * 3)
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
@@ -981,7 +982,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 
     if (!onion_c->friends_list[friendnum].is_online) {
         for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
-            if (is_timeout(list_nodes[i].timestamp, ONION_NODE_TIMEOUT))
+            if (is_timeout(list_nodes[i].timestamp, FRIEND_ONION_NODE_TIMEOUT))
                 continue;
 
             ++count;
