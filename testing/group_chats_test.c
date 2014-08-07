@@ -272,6 +272,115 @@ int invites_test()
 
 }
 
+int sync_test()
+{
+    IP localhost;
+    DHT *peers[PEERCOUNT];
+    Group_Chat *peers_gc[PEERCOUNT];
+
+    // Initialization
+    ip_init(&localhost, 1);
+    localhost.ip6.uint8[15]=1;
+    
+    int i;
+    int j;
+    for (i=0; i<PEERCOUNT; i++)
+    {
+        peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
+        peers_gc[i] = new_groupchat(peers[i]->net);
+        printf("Peer Chat %u:\n", i);
+        printf("Encryption key:\t%s\n", id_toa2(peers_gc[i]->self_public_key, ID_ENCRYPTION_KEY));
+        printf("Signature key:\t%s\n", id_toa2(peers_gc[i]->self_public_key, ID_SIGNATURE_KEY));
+    }
+
+    // Testing
+    printf("-----------------------------------------------------\n");    
+    printf("Sending invite requests to Peer Chat 0:\n");
+    IP_Port ipp0 = {localhost, peers_gc[0]->net->port};
+    for (i=1; i<PEERCOUNT; i++) {
+        int res = send_invite_request(peers_gc[i], ipp0, peers_gc[0]->self_public_key);
+        if (res==-1)
+            printf("Fail\n");
+        else
+            printf("Success\n");
+    }
+
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT; j++) {
+            do_gc(peers[j]);
+        }
+    }   
+
+    printf("-----------------------------------------------------\n");    
+    printf("Verifying certificate integrity:\n");
+    for (i=1; i<PEERCOUNT; i++) {
+        int res = verify_cert_integrity(peers_gc[i]->self_invite_certificate);
+        if (res==-1)
+            printf("Fail\n");
+        else
+            printf("Success\n");
+    }
+
+    printf("-----------------------------------------------------\n");    
+    printf("Printing Peer Chat 0 peer list:\n");
+    for (i=0; i<peers_gc[0]->numpeers; i++) {
+        printf("Encryption key:\t%s\n", id_toa2(peers_gc[0]->group[i].client_id, ID_ENCRYPTION_KEY));;
+    }
+    
+    printf("-----------------------------------------------------\n");    
+    printf("Printing Peer Chat 1-3 peer list numbers:\n");
+    for (i=1; i<PEERCOUNT; i++) {
+        printf("Peer Chat: %i\n", peers_gc[i]->numpeers);
+    }
+
+    printf("-----------------------------------------------------\n");    
+    printf("Sending sync requests:\n");
+    unix_time_update(); 
+    peers_gc[0]->last_synced_time = unix_time();
+
+    for (i=1; i<PEERCOUNT; i++) {
+        int res = send_sync_request(peers_gc[i], ipp0, peers_gc[0]->self_public_key);
+        if (res==-1)
+            printf("Fail\n");
+        else
+            printf("Success\n");
+    }
+
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT; j++) {
+            do_gc(peers[j]);
+        }
+    }   
+
+    printf("-----------------------------------------------------\n");    
+    printf("Printing Peer Chat 1-3 peer list numbers after sync:\n");
+    for (i=1; i<PEERCOUNT; i++) {
+        printf("Peer Chat: %i\n", peers_gc[i]->numpeers);
+    }
+
+    printf("-----------------------------------------------------\n");    
+    printf("Printing Peer Chat 1-3 peer lists after sync:\n");
+    for (j=1; j<PEERCOUNT; j++) {
+        printf("Peer Chat %i:\n", j);
+        for (i=0; i<peers_gc[j]->numpeers; i++) {
+            printf("Encryption key:\t%s\n", id_toa2(peers_gc[j]->group[i].client_id, ID_ENCRYPTION_KEY));;
+        }
+    }
+
+    // TODO: make test where we need to update info on some peers, not just add new ones
+
+    // Finalization
+    for (i=0; i<PEERCOUNT; i++)
+    {
+        kill_groupchat(peers_gc[i]);
+        kill_DHT(peers[i]);
+    }
+
+    return 0;
+
+}
 
 int basic_group_chat_test()
 {
@@ -312,6 +421,7 @@ int basic_group_chat_test()
 int main()
 {
     //certificates_test();
-    invites_test();
+    //invites_test();
+    sync_test();
     //basic_group_chat_test();
 }

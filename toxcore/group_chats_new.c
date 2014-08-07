@@ -39,12 +39,14 @@
 #define GC_INVITE_RESPONSE_DHT_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
 #define MIN_PACKET_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
+#define MAX_GC_PACKET_SIZE 204800
+
 
 // Handle all decrypt procedures
 int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
-    if (length < MIN_PACKET_SIZE && length > MAX_CRYPTO_REQUEST_SIZE) 
+    if (length < MIN_PACKET_SIZE && length > MAX_GC_PACKET_SIZE) 
         return -1;
     
     if (id_long_equal(packet + 1, self_public_key))
@@ -55,7 +57,7 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
     uint8_t nonce[crypto_box_NONCEBYTES];
     memcpy(nonce, packet + 1 + EXT_PUBLIC_KEY, crypto_box_NONCEBYTES);
 
-    uint8_t plain[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t plain[MAX_GC_PACKET_SIZE];
     int len = decrypt_data(ENC_KEY(public_key), ENC_KEY(self_secret_key), nonce,
                             packet + 1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES,
                             length - (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES), plain);
@@ -73,10 +75,10 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
 int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret_key, const uint8_t *recv_public_key,
                         uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type)
 {
-    if (MAX_CRYPTO_REQUEST_SIZE < length + MIN_PACKET_SIZE)
+    if (MAX_GC_PACKET_SIZE < length + MIN_PACKET_SIZE)
         return -1;
     
-    uint8_t plain[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t plain[MAX_GC_PACKET_SIZE];
     plain[0] = packet_type;
     memcpy(plain + 1, data, length);
     
@@ -103,7 +105,7 @@ int send_groupchatpacket(const Group_Chat *chat, IP_Port ip_port, const uint8_t 
     if (id_long_equal(chat->self_public_key, public_key))
         return -1;
 
-    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t packet[MAX_GC_PACKET_SIZE];
     int len = wrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, packet, data, length, packet_type);
     if (len == -1)
         return -1;
@@ -120,7 +122,7 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
     Group_Chat *chat = _chat;
 
     uint8_t public_key[EXT_PUBLIC_KEY];
-    uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t data[MAX_GC_PACKET_SIZE];
     uint8_t packet_type;
 
     int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
@@ -193,6 +195,8 @@ int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *publi
     memcpy(peer->invite_certificate, invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
     peer->role |= USER_ROLE;
     peer->verified = 1;
+    unix_time_update(); 
+    peer->last_update_time = unix_time();
     add_peer(chat, peer);
 
     return send_invite_response(chat, ipp, public_key, invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
@@ -226,12 +230,13 @@ int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *publ
     memcpy(chat->self_invite_certificate, data, INVITE_CERTIFICATE_SIGNED_SIZE);
 
     // send_sync_request();
+    // add the peer who invited us
     return 0;
 }
 
 int send_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
 {
-    uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t data[MAX_GC_PACKET_SIZE];
 
     memcpy(data, chat->self_public_key, EXT_PUBLIC_KEY);
     memcpy(data + EXT_PUBLIC_KEY, &chat->last_synced_time, TIME_STAMP);
@@ -247,16 +252,16 @@ int handle_gc_sync_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_
     if (!id_long_equal(public_key, data))
         return -1;
 
-    // TODO: Check if we know the peer
+    // TODO: Check if we know the peer and if peer is verified
 
-    uint8_t response[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t response[MAX_GC_PACKET_SIZE];
     memcpy(response, chat->self_public_key, EXT_PUBLIC_KEY);
 
     uint64_t last_synced_time;
     bytes_to_U64(&last_synced_time, data + EXT_PUBLIC_KEY);
 
     uint32_t len;
-    if (last_synced_time < chat->last_synced_time) {
+    if (last_synced_time > chat->last_synced_time) {
         // TODO: probably we should initiate sync request ourself, cause requester has more fresh info
         len = EXT_PUBLIC_KEY + sizeof(uint32_t);
         uint32_t num = 0;
@@ -266,18 +271,22 @@ int handle_gc_sync_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_
         uint32_t num = 0;
         Group_Peer *peers = calloc(1, sizeof(Group_Peer) * chat->numpeers);;
         for (i=0; i<chat->numpeers; i++) 
-            if (chat->group[i].last_update_time > last_synced_time) {
+            if ((chat->group[i].last_update_time > last_synced_time)
+                        && (!id_long_equal(chat->group[i].client_id, public_key))) {
                 memcpy(&peers[num], &chat->group[i], sizeof(Group_Peer));
                 ++num;
             }
-
+            
+            // Add yourself
+        gc_to_peer(chat, &peers[num]);
         ++num;
+
         len = EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP + sizeof(Group_Peer) * num;
         U32_to_bytes(response + EXT_PUBLIC_KEY, num);
         U64_to_bytes(response + EXT_PUBLIC_KEY + sizeof(uint32_t), chat->last_synced_time);
+        // TODO: big packet size...
         memcpy(response + EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP, peers, sizeof(Group_Peer) * num);
     }
-
     return send_sync_response(chat, ipp, public_key, response, len);
 }
 
@@ -301,11 +310,23 @@ int handle_gc_sync_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public
         return -1;
 
     bytes_to_U64(&chat->last_synced_time, data + EXT_PUBLIC_KEY + sizeof(uint32_t));
+
+    Group_Peer *peers = calloc(1, sizeof(Group_Peer) * num);;
+    memcpy(peers, data + EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP, sizeof(Group_Peer) * num);
+
     uint32_t i;
     for (i=0;i<num;i++){
-        // TODO: here we need some kind of clever sync, not just replace everything
-        //update_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum)
+        uint32_t j = peer_in_chat(chat, peers[i].client_id);
+        if (j!=-1)
+            update_peer(chat, &peers[i]);
+        else
+            add_peer(chat, &peers[i]);
     }
+
+    // The last one is always the sender
+    chat->group[num-1].ip_port = ipp;
+
+    return 0;
 }
 
 /* Sign input data
@@ -396,7 +417,7 @@ int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate)
     uint8_t invitee_pk[EXT_PUBLIC_KEY];
     memcpy(inviter_pk, certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, EXT_PUBLIC_KEY);
     memcpy(invitee_pk, certificate + 1, EXT_PUBLIC_KEY);
-    uint32_t j = peer_in_chat(chat, invitee_pk);
+    uint32_t j = peer_in_chat(chat, invitee_pk); // TODO: processing after adding?
 
     if (id_long_equal(chat->chat_public_key, inviter_pk)) {
         chat->group[j].verified = 1;
@@ -424,12 +445,12 @@ int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
         memcpy(source_pk, certificate + 1 + EXT_PUBLIC_KEY, EXT_PUBLIC_KEY);
         memcpy(target_pk, certificate + 1, EXT_PUBLIC_KEY);
 
-        uint32_t i = peer_in_chat(chat, source_pk);
+        uint32_t i = peer_in_chat(chat, source_pk); 
         if (i==-1)
             return i;
         if (chat->group[i].role&OP_ROLE || chat->group[i].role&FOUNDER_ROLE) {
             if (certificate[0] == CERT_BAN) {
-                uint32_t j = peer_in_chat(chat, target_pk);
+                uint32_t j = peer_in_chat(chat, target_pk); // TODO: processing after adding?
                 chat->group[j].banned = 1;
                 bytes_to_U64(&chat->group[i].banned_time, certificate + 1 + EXT_PUBLIC_KEY * 2);
             }
@@ -442,7 +463,7 @@ int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
         }
 
         // TODO: process the situation when op is trying to ban op or founder
-
+        // TODO: add certificate to peer
     }
 
     return -1;
@@ -488,7 +509,23 @@ int add_peer(Group_Chat *chat, const Group_Peer *peer)
 
 int update_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum)
 {
+    memcpy(&(chat->group[peernum]), peer, sizeof(Group_Peer));
+    return 0;
+}
 
+int gc_to_peer(const Group_Chat *chat, Group_Peer *peer)
+{
+    // NB: we cannot add out ip_port
+    memcpy(peer->client_id, chat->self_public_key, EXT_PUBLIC_KEY);
+    memcpy(peer->invite_certificate, chat->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
+    memcpy(peer->common_certificate, chat->self_common_certificate, COMMON_CERTIFICATE_SIGNED_SIZE*MAX_CERTIFICATES_NUM);
+    memcpy(peer->nick, chat->self_nick, chat->self_nick_len);
+    peer->nick_len = chat->self_nick_len;
+    peer->role = chat->self_role;
+    unix_time_update();
+    peer->last_update_time = unix_time();
+
+    return 0;
 }
 
 Group_Credentials *new_groupcredentials()
@@ -504,6 +541,8 @@ Group_Credentials *new_groupcredentials()
 
 Group_Chat *new_groupchat(Networking_Core *net)
 {
+    // TODO: Need to handle the situation when we load info from locally stored data
+
    	if (net == 0)
         return NULL;
 
@@ -516,10 +555,10 @@ Group_Chat *new_groupchat(Networking_Core *net)
 
     chat->net = net;
     chat->numpeers = 0;
-    chat->self_role = 0;
+    chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
+
     networking_registerhandler(chat->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, chat);
 
-    // TODO: Need to handle the situation when we load this from locally stored data
     create_long_keypair(chat->self_public_key, chat->self_secret_key);
 
     return chat;
