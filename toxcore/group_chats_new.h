@@ -206,10 +206,13 @@ int send_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *p
 
 int send_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
-/* If we receive a group chat packet we call this function so it can be handled.
- * return 0 if packet is handled correctly.
- * return -1 if it didn't handle the packet or if the packet was shit.
- */
+int send_status(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, uint8_t status_type);
+
+int send_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+
+int send_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+
+int send_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
                            void *userdata);
@@ -217,6 +220,10 @@ void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, 
 void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
                           void *userdata);
 
+/* If we receive a group chat packet we call this function so it can be handled.
+ * return 0 if packet is handled correctly.
+ * return -1 if it didn't handle the packet or if the packet was shit.
+ */
 int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length);
 
 /* Check if peer with client_id is in peer array.

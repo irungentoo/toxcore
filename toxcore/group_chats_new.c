@@ -415,7 +415,7 @@ int send_status(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_k
 
 int handle_status(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
 {
-    chat->group[peernum].status = data[1];
+    chat->group[peernum].status = data[0];
 
     return 0;
 }
@@ -426,9 +426,10 @@ int send_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public
     uint32_t length;
 
     Group_Peer *peer;
+    peer = calloc(1, sizeof(Group_Peer));
     gc_to_peer(chat, peer);
     data[0] = GROUP_CHAT_NEW_PEER;
-    memcpy(data, peer, sizeof(Group_Peer));
+    memcpy(data+1, peer, sizeof(Group_Peer));
     length = 1 + sizeof(Group_Peer);
 
     return send_broadcast_packet(chat, ip_port, public_key, data, length);
@@ -437,7 +438,8 @@ int send_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public
 int handle_new_peer(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
 {
     Group_Peer *peer;
-    memcpy(peer, data+1, sizeof(Group_Peer));
+    peer = calloc(1, sizeof(Group_Peer));
+    memcpy(peer, data, sizeof(Group_Peer));
     if (verify_cert_integrity(peer->invite_certificate)==-1)
         return -1;
     peer->ip_port = ipp;
@@ -459,8 +461,8 @@ int send_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *pub
 
 int handle_change_nick(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
 {
-    memcpy(chat->group[peernum].nick, data+1, length - 1);
-
+    memcpy(chat->group[peernum].nick, data, length);
+    chat->group[peernum].nick_len = length;
     return 0;
 }
 
@@ -479,7 +481,8 @@ int send_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t *pu
 int handle_change_topic(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
 {
     // NB: peernum could be used to verify who is changing the topic in some cases
-    memcpy(chat->topic, data+1, length - 1);
+    memcpy(chat->topic, data, length);
+    chat->topic_len = length;
 
     return 0;
 }
@@ -499,7 +502,7 @@ int handle_message(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, con
 {
     // Callback
     if (chat->group_message != NULL)
-        (*chat->group_message)(chat, peernum, data+1, length-1, chat->group_message_userdata);
+        (*chat->group_message)(chat, peernum, data, length, chat->group_message_userdata);
     else
         return -1;
 }

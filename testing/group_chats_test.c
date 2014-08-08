@@ -274,11 +274,11 @@ int invites_test()
 
 }
 
-int sync_ping_test()
+int sync_broadcast_test()
 {
     IP localhost;
-    DHT *peers[PEERCOUNT];
-    Group_Chat *peers_gc[PEERCOUNT];
+    DHT *peers[PEERCOUNT+1];
+    Group_Chat *peers_gc[PEERCOUNT+1];
 
     // Initialization
     ip_init(&localhost, 1);
@@ -286,7 +286,7 @@ int sync_ping_test()
     
     int i;
     int j;
-    for (i=0; i<PEERCOUNT; i++)
+    for (i=0; i<PEERCOUNT+1; i++)
     {
         peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
         peers_gc[i] = new_groupchat(peers[i]->net);
@@ -401,6 +401,77 @@ int sync_ping_test()
         printf("Last received ping from Peer Chat 0 : %" PRIu64 "\n", peers_gc[i]->group[j].last_rcvd_ping);
     }
 
+    printf("-----------------------------------------------------\n");    
+    printf("Peer Chat 1 sending away status to Peer Chat 0\n");
+
+    send_status(peers_gc[1], ipp0, peers_gc[0]->self_public_key, AWAY_STATUS);
+    int num = peer_in_chat(peers_gc[0], peers_gc[1]->self_public_key);
+
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT; j++) {
+            do_gc(peers[j]);
+        }
+    }   
+
+    if (peers_gc[0]->group[num].status==AWAY_STATUS) {
+        printf("Status is away\n");
+    } else
+        printf("Fail\n");
+
+    printf("-----------------------------------------------------\n");    
+    printf("Peer Chat 1 sending new nick to Peer Chat 0\n");
+    char nick[] = "Vasya";
+    strncpy(peers_gc[1]->self_nick, nick, 5);
+    peers_gc[1]->self_nick_len = 5;
+    send_change_nick(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT; j++) {
+            do_gc(peers[j]);
+        }
+    }  
+    peers_gc[0]->group[num].nick[peers_gc[0]->group[num].nick_len]=0; 
+    printf("%s\n", peers_gc[0]->group[num].nick);
+
+    printf("-----------------------------------------------------\n");    
+    printf("Peer Chat 1 sending new topic to Peer Chat 0\n");
+    char topic[] = "Skype is trash";
+    strncpy(peers_gc[1]->topic, topic, 14);
+    peers_gc[1]->topic_len = 14;
+    send_change_topic(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT; j++) {
+            do_gc(peers[j]);
+        }
+    }  
+    peers_gc[0]->topic[peers_gc[0]->topic_len]=0; 
+    printf("%s\n", peers_gc[0]->topic);
+
+    printf("-----------------------------------------------------\n");    
+    printf("Peer Chat 4 sending himself to Peer Chat 0 after being invite by Peer Chat 1\n");
+
+    IP_Port ipp1 = {localhost, peers_gc[1]->net->port};
+    int res = send_invite_request(peers_gc[4], ipp1, peers_gc[1]->self_public_key);
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT+1; j++) {
+            do_gc(peers[j]);
+        }
+    }  
+    send_new_peer(peers_gc[4], ipp0, peers_gc[0]->self_public_key);
+    
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT+1; j++) {
+            do_gc(peers[j]);
+        }
+    }  
+
+    num = peer_in_chat(peers_gc[0], peers_gc[4]->self_public_key);
+
+    printf("Peer Chat 4 number in Peer Chat 0 peer list: %i\n", num);
 
     // Finalization
     for (i=0; i<PEERCOUNT; i++)
@@ -453,6 +524,6 @@ int main()
 {
     //certificates_test();
     //invites_test();
-    sync_ping_test();
+    sync_broadcast_test();
     //basic_group_chat_test();
 }
