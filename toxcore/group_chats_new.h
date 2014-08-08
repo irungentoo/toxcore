@@ -28,6 +28,7 @@
 #include <stdbool.h>
 
 #define MAX_NICK_BYTES 128
+#define MAX_TOPIC_BYTES 512
 #define GROUP_CLOSE_CONNECTIONS 6
 #define GROUP_PING_INTERVAL 5
 #define BAD_GROUPNODE_TIMEOUT 60
@@ -117,9 +118,18 @@ typedef struct Group_Chat {
 
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
+    uint8_t     topic[MAX_TOPIC_BYTES];
+    uint16_t    topic_len;
 
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
+
+
+    uint32_t message_number;
+    void (*group_message)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
+    void *group_message_userdata;
+    void (*group_action)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
+    void *group_action_userdata;
 
 } Group_Chat;
 
@@ -200,6 +210,13 @@ int send_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key
  * return 0 if packet is handled correctly.
  * return -1 if it didn't handle the packet or if the packet was shit.
  */
+
+void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
+                           void *userdata);
+
+void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
+                          void *userdata);
+
 int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length);
 
 /* Check if peer with client_id is in peer array.
