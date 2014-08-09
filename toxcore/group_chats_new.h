@@ -184,6 +184,9 @@ int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate);
  */
 int process_common_cert(Group_Chat *chat, const uint8_t *certificate);
 
+// TODO !!!
+int process_chain_trust(Group_Chat *chat);
+
 /* Return -1 if fail
  * Return packet length if success
  */
@@ -238,6 +241,10 @@ int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, 
  * TODO: make this more efficient.
  */
 int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id);
+
+int add_peer(Group_Chat *chat, const Group_Peer *peer);
+int update_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum);
+int gc_to_peer(const Group_Chat *chat, Group_Peer *peer);
 
 /* This is the main loop.
  */

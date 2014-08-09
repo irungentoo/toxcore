@@ -334,7 +334,7 @@ int handle_gc_sync_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public
     for (i=0;i<num;i++){
         uint32_t j = peer_in_chat(chat, peers[i].client_id);
         if (j!=-1)
-            update_peer(chat, &peers[i]);
+            update_peer(chat, &peers[i], j);
         else
             add_peer(chat, &peers[i]);
     }
@@ -711,6 +711,11 @@ int process_common_cert(Group_Chat *chat, const uint8_t *certificate)
         }
     }
     return -1;
+}
+
+int process_chain_trust(Group_Chat *chat)
+{
+    // TODO !!!
 }
 
 /* Check if peer with client_id is in peer array.
