@@ -67,7 +67,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
     if (onion_c->path_nodes_index < 3)
         return random_nodes_path(onion_c->dht, nodes, max_num);
 
-    unsigned int i, num_nodes = onion_c->path_nodes_index < MAX_PATH_NODES ? onion_c->path_nodes_index : MAX_PATH_NODES;
+    unsigned int i, num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
 
     for (i = 0; i < max_num; ++i) {
         nodes[i] = onion_c->path_nodes[rand() % num_nodes];

@@ -1,4 +1,3 @@
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -13,6 +12,8 @@
 #include <string.h>
 
 #include <check.h>
+
+#include "helpers.h"
 
 START_TEST(test_basics)
 {
@@ -131,15 +132,6 @@ START_TEST(test_fillup)
     //printf("good: %u %u %u\n", good, a, ((uint32_t)current_time() - a));
 }
 END_TEST
-
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
-
-#define DEFTESTCASE_SLOW(NAME, TIMEOUT) \
-    DEFTESTCASE(NAME) \
-    tcase_set_timeout(tc_##NAME, TIMEOUT);
 
 Suite *Assoc_suite(void)
 {

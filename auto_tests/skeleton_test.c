@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "helpers.h"
+
 /*
 #include "../<stuff to test>"
 */
@@ -19,12 +21,6 @@ START_TEST(test_creativetestnamegoeshere)
     ck_assert_msg(test == 0, "test: expected result 0, got %u.", test);
 }
 END_TEST
-
-
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
 
 Suite *creativesuitenamegoeshere_suite(void)
 {

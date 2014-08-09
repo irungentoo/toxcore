@@ -1,7 +1,7 @@
 if BUILD_TESTS
 
-TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test
-check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test
+TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
+check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
@@ -73,6 +73,12 @@ tox_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 tox_test_LDADD = $(AUTOTEST_LDADD)
 
+
+dht_autotest_SOURCES = ../auto_tests/dht_test.c
+
+dht_autotest_CFLAGS = $(AUTOTEST_CFLAGS)
+
+dht_autotest_LDADD = $(AUTOTEST_LDADD)
 
 
 if BUILD_AV

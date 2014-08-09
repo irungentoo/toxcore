@@ -11,6 +11,8 @@
 
 #include "../toxcore/network.h"
 
+#include "helpers.h"
+
 START_TEST(test_addr_resolv_localhost)
 {
 #ifdef __CYGWIN__
@@ -140,11 +142,6 @@ START_TEST(test_struct_sizes)
     ck_assert_msg(sizeof(IP_Port) == 19, "sizeof(IP_Port): expected result 19, got %u.", sizeof(IP_Port));
 }
 END_TEST
-
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
 
 Suite *network_suite(void)
 {
