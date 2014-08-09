@@ -49,12 +49,12 @@
 #define CERT_OP_CREDENTIALS 2
 
 // Roles
-#define FOUNDER_ROLE 0
-#define OP_ROLE 1
-#define USER_ROLE 2
-#define HUMAN_ROLE 4
-#define ELF_ROLE 8
-#define DWARF_ROLE 16
+#define FOUNDER_ROLE 1
+#define OP_ROLE 2
+#define USER_ROLE 4
+#define HUMAN_ROLE 8
+#define ELF_ROLE 16
+#define DWARF_ROLE 32
 
 // Statuses
 #define ONLINE_STATUS 0
@@ -77,6 +77,7 @@ typedef struct {
 
     uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
+    uint32_t    common_cert_num;
 
     uint8_t     nick[MAX_NICK_BYTES];
     uint16_t    nick_len;
@@ -106,6 +107,7 @@ typedef struct Group_Chat {
     uint8_t     self_secret_key[EXT_SECRET_KEY];
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
+    uint32_t    self_common_cert_num;
 
     Group_Peer  *group;
     Group_Close close[GROUP_CLOSE_CONNECTIONS];
@@ -180,7 +182,7 @@ int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate);
 /* Return -1 if cert isn't issued by ops
  * Return issuer peer number in other cases
  */
-int process_common_cert(const Group_Chat *chat, const uint8_t *certificate);
+int process_common_cert(Group_Chat *chat, const uint8_t *certificate);
 
 /* Return -1 if fail
  * Return packet length if success
@@ -213,6 +215,10 @@ int send_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *pub
 int send_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
 int send_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+
+int send_action(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *certificate);
+
+int send_message(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *message, uint32_t length);
 
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
                            void *userdata);

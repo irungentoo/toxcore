@@ -128,19 +128,19 @@ int certificates_test()
     Group_Peer *peer = calloc(1, sizeof(Group_Peer) * 4);
     memcpy(peer[0].client_id, founder->self_public_key, EXT_PUBLIC_KEY);
     memcpy(peer[0].invite_certificate, founder->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
-    peer[0].role = FOUNDER_ROLE;
+    peer[0].role |= FOUNDER_ROLE;
 
     memcpy(peer[1].client_id, op->self_public_key, EXT_PUBLIC_KEY);
     memcpy(peer[1].invite_certificate, op->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
-    peer[1].role = OP_ROLE;
+    peer[1].role |= OP_ROLE;
 
     memcpy(peer[2].client_id, user1->self_public_key, EXT_PUBLIC_KEY);
     memcpy(peer[2].invite_certificate, user1->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
-    peer[2].role = USER_ROLE;
+    peer[2].role |= USER_ROLE;
 
     memcpy(peer[3].client_id, user2->self_public_key, EXT_PUBLIC_KEY);
     memcpy(peer[3].invite_certificate, user2->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
-    peer[3].role = USER_ROLE;
+    peer[3].role |= USER_ROLE;
 
     add_peer(founder, &peer[1]);
     add_peer(founder, &peer[2]);
@@ -183,11 +183,17 @@ int certificates_test()
     printf("Founder peer list after processing:\n");
     res[0] = process_common_cert(founder, common_certificate[0]);
     res[1] = process_common_cert(founder, common_certificate[1]);
-    printf("Founder peer list before processing:\n");
     printf("Op ban status: %i\n", founder->group[0].banned);
     printf("User1 ban status: %i\n", founder->group[1].banned);
     printf("User2 ban status: %i\n", founder->group[2].banned);
-
+    printf("-----------------------------------------------------\n");    
+    printf("Op wants to ban founder\n");
+    res[0] = make_common_cert(op->self_secret_key, op->self_public_key, founder->self_public_key, common_certificate[2], CERT_BAN);
+    res[0] = process_common_cert(user1, common_certificate[2]);
+    if (res[0]==-1)
+        printf("Fail\n");
+    else
+        printf("Success\n");
 
     printf("-----------------------------------------------------\n");    
     printf("Cert test is finished\n");
@@ -272,6 +278,27 @@ int invites_test()
 
     return 0;
 
+}
+
+void get_message(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata)
+{
+    char message[length];
+    strncpy(message, data, length);
+    message[length]=0;
+    printf("Peer Chat %s got message from peer %s:\n", id_toa2(chat->self_public_key, ID_ALL_KEYS), id_toa2(chat->group[peernum].client_id, ID_ALL_KEYS));
+    printf("%s\n", message);
+}
+
+void get_action(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata)
+{
+    uint8_t source_pk[EXT_PUBLIC_KEY];
+    uint8_t target_pk[EXT_PUBLIC_KEY];
+    memcpy(source_pk, CERT_SOURCE_KEY(data), EXT_PUBLIC_KEY);
+    memcpy(target_pk, CERT_TARGET_KEY(data), EXT_PUBLIC_KEY);
+
+    printf("Peer Chat %s issued the cert on:\n", id_toa2(source_pk, ID_ALL_KEYS));
+    printf("Peer Chat %s\n", id_toa2(target_pk, ID_ALL_KEYS));
+    printf("The cert type is %i\n", data[0]);
 }
 
 int sync_broadcast_test()
@@ -470,8 +497,35 @@ int sync_broadcast_test()
     }  
 
     num = peer_in_chat(peers_gc[0], peers_gc[4]->self_public_key);
-
     printf("Peer Chat 4 number in Peer Chat 0 peer list: %i\n", num);
+
+    printf("-----------------------------------------------------\n");    
+    printf("Messages testing: Peer Chat 1 sends message to Peer Chat 0\n");
+    callback_groupmessage(peers_gc[0], get_message, NULL);
+    res = send_message(peers_gc[1], ipp0, peers_gc[0]->self_public_key, "Tox is love!", 12);
+
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT+1; j++) {
+            do_gc(peers[j]);
+        }
+    }  
+
+    printf("-----------------------------------------------------\n");    
+    printf("Action testing: Peer Chat 0 sends cert to Peer Chat 1\n");
+    callback_groupaction(peers_gc[1], get_action, NULL);
+    uint8_t common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE];
+    res = make_common_cert(peers_gc[0]->self_secret_key, peers_gc[0]->self_public_key, peers_gc[2]->self_public_key, common_certificate, CERT_BAN);
+    num = peer_in_chat(peers_gc[1], peers_gc[0]->self_public_key);
+    peers_gc[1]->group[num].role = FOUNDER_ROLE;
+    res = send_action(peers_gc[0], ipp1, peers_gc[1]->self_public_key, common_certificate);
+
+    for (i=0; i<20*100000; i+=50)
+    {
+        for (j=0; j<PEERCOUNT+1; j++) {
+            do_gc(peers[j]);
+        }
+    }  
 
     // Finalization
     for (i=0; i<PEERCOUNT; i++)

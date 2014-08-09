@@ -40,6 +40,10 @@
 
 #define ENC_KEY(key) (key)
 #define SIG_KEY(key) (key+ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
+#define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
+#define CERT_TARGET_KEY(cert) (cert + 1)
+#define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE)
+#define CERT_INVITEE_KEY(cert) (cert + 1)
 
 void unix_time_update();
 uint64_t unix_time();

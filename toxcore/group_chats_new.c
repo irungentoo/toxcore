@@ -130,7 +130,12 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
     if (len == -1)
         return -1;
 
-    // TODO need to check if we know the person. However in case of invite we don't need this...
+    // Check if we know the user and if it's banned
+    uint32_t peernum = peer_in_chat(chat, public_key);
+    if (peernum!=-1) {
+        if (chat->group[peernum].banned==1)
+            return -1;
+    }
 
     switch (packet_type) {
         case CRYPTO_PACKET_GROUP_CHAT_INVITE_REQUEST:
@@ -227,6 +232,12 @@ int handle_gc_invite_response(Group_Chat *chat, IP_Port ipp, const uint8_t *publ
     if (data[0]!=CERT_INVITE)
         return -1;
 
+    // Verify our own signature
+    if (crypto_sign_verify_detached(data+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
+                data, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, SIG_KEY(chat->self_public_key)) != 0)
+        return -1;
+
+    // Verify inviter signature
     if (crypto_sign_verify_detached(data+INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
                  data, INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, SIG_KEY(public_key)) != 0)
         return -1;
@@ -281,13 +292,14 @@ int handle_gc_sync_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_
                 ++num;
             }
             
-            // Add yourself
+        // Add yourself
         gc_to_peer(chat, &peers[num]);
         ++num;
 
         len = EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP + sizeof(Group_Peer) * num;
         U32_to_bytes(response + EXT_PUBLIC_KEY, num);
         U64_to_bytes(response + EXT_PUBLIC_KEY + sizeof(uint32_t), chat->last_synced_time);
+        
         // TODO: big packet size...
         memcpy(response + EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP, peers, sizeof(Group_Peer) * num);
     }
@@ -355,7 +367,8 @@ int handle_gc_broadcast(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key
     uint32_t len = length - 1 - EXT_PUBLIC_KEY;
     uint8_t dt[len];
     memcpy(dt, data + 1 + EXT_PUBLIC_KEY, len);
-    // TODO: Check if we know the peer and if peer is verified
+
+    // TODO: Check if peer is verified. Actually we should make it optional
     uint32_t peernum = peer_in_chat(chat, public_key);
     if ((peernum==-1) && (data[EXT_PUBLIC_KEY] != GROUP_CHAT_NEW_PEER))
         return -1;
@@ -440,6 +453,7 @@ int handle_new_peer(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, co
     Group_Peer *peer;
     peer = calloc(1, sizeof(Group_Peer));
     memcpy(peer, data, sizeof(Group_Peer));
+    // TODO: Probably we should make it also optional, but I'm personally against it (c) henotba
     if (verify_cert_integrity(peer->invite_certificate)==-1)
         return -1;
     peer->ip_port = ipp;
@@ -500,7 +514,6 @@ int send_message(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_
 
 int handle_message(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
 {
-    // Callback
     if (chat->group_message != NULL)
         (*chat->group_message)(chat, peernum, data, length, chat->group_message_userdata);
     else
@@ -518,9 +531,11 @@ int send_action(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_k
 }
 
 int handle_action(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
-{
+{   
+    process_common_cert(chat, data);
+
     if (chat->group_action != NULL)
-        (*chat->group_action)(chat, peernum, data+1, length-1, chat->group_action_userdata);
+        (*chat->group_action)(chat, peernum, data, length, chat->group_action_userdata);
     else
         return -1;
 }
@@ -588,8 +603,8 @@ int verify_cert_integrity(const uint8_t *certificate)
     if (certificate[0] == CERT_INVITE) {
         uint8_t invitee_pk[SIG_PUBLIC_KEY];
         uint8_t inviter_pk[SIG_PUBLIC_KEY];
-        memcpy(invitee_pk, SIG_KEY(certificate + 1), SIG_PUBLIC_KEY);
-        memcpy(inviter_pk, SIG_KEY(certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE), SIG_PUBLIC_KEY);
+        memcpy(invitee_pk, SIG_KEY(CERT_INVITEE_KEY(certificate)), SIG_PUBLIC_KEY);
+        memcpy(inviter_pk, SIG_KEY(CERT_INVITER_KEY(certificate)), SIG_PUBLIC_KEY);
 
         if (crypto_sign_verify_detached(certificate+INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
                      certificate, INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, inviter_pk) != 0)
@@ -604,7 +619,7 @@ int verify_cert_integrity(const uint8_t *certificate)
 
     if (certificate[0] > CERT_INVITE && certificate[0] < 255) {
         uint8_t source_pk[CLIENT_ID_SIGN_SIZE];
-        memcpy(source_pk, SIG_KEY(certificate + 1 + EXT_PUBLIC_KEY), SIG_PUBLIC_KEY);
+        memcpy(source_pk, SIG_KEY(CERT_SOURCE_KEY(certificate)), SIG_PUBLIC_KEY);
         if (crypto_sign_verify_detached(certificate+COMMON_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
                      certificate, COMMON_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, source_pk) != 0)
             return -1;
@@ -625,8 +640,8 @@ int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate)
 
     uint8_t inviter_pk[EXT_PUBLIC_KEY];
     uint8_t invitee_pk[EXT_PUBLIC_KEY];
-    memcpy(inviter_pk, certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, EXT_PUBLIC_KEY);
-    memcpy(invitee_pk, certificate + 1, EXT_PUBLIC_KEY);
+    memcpy(inviter_pk, CERT_INVITER_KEY(certificate), EXT_PUBLIC_KEY);
+    memcpy(invitee_pk, CERT_INVITEE_KEY(certificate), EXT_PUBLIC_KEY);
     uint32_t j = peer_in_chat(chat, invitee_pk); // TODO: processing after adding?
 
     if (id_long_equal(chat->chat_public_key, inviter_pk)) {
@@ -645,37 +660,56 @@ int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate)
     return i;
 }
 
-// Return -1 if cert isn't issued by ops
+// Return -1 if cert isn't issued by ops or we don't know the source or op tries to ban op
 // Return issuer peer number in other cases
-int process_common_cert(const Group_Chat *chat, const uint8_t *certificate)
+// Add roles or ban depending on the cert and save the cert in common_cert arrays (works for ourself and peers)
+int process_common_cert(Group_Chat *chat, const uint8_t *certificate)
 {
     if (certificate[0] > CERT_INVITE && certificate[0] < 255) {
         uint8_t source_pk[EXT_PUBLIC_KEY];
         uint8_t target_pk[EXT_PUBLIC_KEY];
-        memcpy(source_pk, certificate + 1 + EXT_PUBLIC_KEY, EXT_PUBLIC_KEY);
-        memcpy(target_pk, certificate + 1, EXT_PUBLIC_KEY);
+        memcpy(source_pk, CERT_SOURCE_KEY(certificate), EXT_PUBLIC_KEY);
+        memcpy(target_pk, CERT_TARGET_KEY(certificate), EXT_PUBLIC_KEY);
 
-        uint32_t i = peer_in_chat(chat, source_pk); 
-        if (i==-1)
-            return i;
-        if (chat->group[i].role&OP_ROLE || chat->group[i].role&FOUNDER_ROLE) {
+        uint32_t src = peer_in_chat(chat, source_pk); 
+        if (src==-1)
+            return src;
+        if (chat->group[src].role&OP_ROLE || chat->group[src].role&FOUNDER_ROLE) {
+
+            if (id_long_equal(target_pk, chat->self_public_key)) {
+                memcpy(chat->self_common_certificate[chat->self_common_cert_num], certificate, COMMON_CERTIFICATE_SIGNED_SIZE);
+                chat->self_common_cert_num++;
+                if (certificate[0] == CERT_OP_CREDENTIALS)
+                    chat->self_role |= OP_ROLE;
+                // In case of ban cert action callback should handle this
+                return src;
+            }
+
+            // In case cert is not for us
+            uint32_t trg = peer_in_chat(chat, target_pk);
+            if (trg==-1)
+                return -1;
+
             if (certificate[0] == CERT_BAN) {
-                uint32_t j = peer_in_chat(chat, target_pk); // TODO: processing after adding?
-                chat->group[j].banned = 1;
-                bytes_to_U64(&chat->group[i].banned_time, certificate + 1 + EXT_PUBLIC_KEY * 2);
+                // Process the situation when op is trying to ban op or founder
+                if  (((chat->group[trg].role&OP_ROLE) || (chat->group[trg].role&FOUNDER_ROLE)) && (chat->group[src].role&OP_ROLE)) {
+                    return -1;
+                }
+                chat->group[trg].banned = 1;
+                bytes_to_U64(&chat->group[trg].banned_time, certificate + 1 + EXT_PUBLIC_KEY * 2);
+                memcpy(chat->group[trg].common_certificate[chat->group[trg].common_cert_num], certificate, COMMON_CERTIFICATE_SIGNED_SIZE);
+                chat->group[trg].common_cert_num++;
             }
+
             if (certificate[0] == CERT_OP_CREDENTIALS) {
-                uint32_t j = peer_in_chat(chat, target_pk);
-                chat->group[j].role |= OP_ROLE;
+                chat->group[trg].role |= OP_ROLE;
+                memcpy(chat->group[trg].common_certificate[chat->group[trg].common_cert_num], certificate, COMMON_CERTIFICATE_SIGNED_SIZE);
+                chat->group[trg].common_cert_num++;
             }
 
-            return i;
+            return src;
         }
-
-        // TODO: process the situation when op is trying to ban op or founder
-        // TODO: add certificate to peer
     }
-
     return -1;
 }
 
