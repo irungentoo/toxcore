@@ -1,0 +1,6 @@
+libtoxcore for Debian
+--------------
+
+This is a first attempt at packaging tox for debian
+
+ -- James Michael DuPont <mdupont@thefr33.com>  Fri, 04 Jul 2014 12:39:41 -0500

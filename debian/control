@@ -1,0 +1,16 @@
+Source: libtoxcore
+Section: unknown
+Priority: optional
+Maintainer: James Michael DuPont <mdupont@thefr33.com>
+Build-Depends: debhelper (>= 9), autotools-dev, libsodium (>= 0.4.5-1)
+Standards-Version: 3.9.5
+Homepage: https://github.com/h4ck3rm1k3/toxcore
+#Vcs-Git: git://anonscm.debian.org/collab-maint/tox.git
+#Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/tox.git;a=summary
+
+Package: libtoxcore
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: the tox.im communications client
+ The future of online communications. https://tox.im
+

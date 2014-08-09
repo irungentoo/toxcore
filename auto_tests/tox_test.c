@@ -360,6 +360,7 @@ loop_top:
 }
 END_TEST
 
+
 #define DEFTESTCASE(NAME) \
     TCase *tc_##NAME = tcase_create(#NAME); \
     tcase_add_test(tc_##NAME, test_##NAME); \
@@ -373,7 +374,7 @@ Suite *tox_suite(void)
     Suite *s = suite_create("Tox");
 
     DEFTESTCASE_SLOW(few_clients, 50);
-    DEFTESTCASE_SLOW(many_clients, 150);
+    //DEFTESTCASE_SLOW(many_clients, 250);
     return s;
 }
 

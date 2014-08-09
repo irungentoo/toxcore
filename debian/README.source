@@ -1,0 +1,9 @@
+libtoxcore for Debian
+--------------
+
+This source was branched off https://github.com/irungentoo/toxcore, autogen.sh was run and then dh_make.
+
+
+
+ -- James Michael DuPont <mdupont@thefr33.com>  Fri, 04 Jul 2014 12:39:41 -0500
+

@@ -54,6 +54,16 @@ pkg install net-im/tox
 Note, if you install from ports select NaCl for performance, and sodium if you want it to be portable.
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
+
+On debian
+```bash
+git clone https://github.com/ulikoehler/deb-buildscripts.git
+cd deb-buildscripts/
+./deb-libsodium.sh 
+sudo dpkg -i libsodium_0.4.5-1_amd64.deb 
+sudo dpkg -i libsodium-dev_0.4.5-1_all.deb 
+```
+
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
