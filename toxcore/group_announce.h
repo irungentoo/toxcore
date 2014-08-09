@@ -22,6 +22,7 @@
 #define __GROUP_ANNOUNCE_H__
 
 #include "DHT.h"
+#include <types.h>
  
 typedef struct ANNOUNCE ANNOUNCE;
 
@@ -58,8 +59,10 @@ int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* 
 
 /* Sends an actual announcement packet to the node specified as client_id on ipp */
 int send_gc_announce_request(DHT * dht, const uint8_t *client_id, IP_Port ipp, const Groupchat_announcement_format* announcement);
-
 int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id);
 
+/* Consider moving to network */
+int send_common_tox_packet(DHT *dht, const uint8_t *destination_id, IP_Port ipp, uint8_t type, uint8_t *payload, size_t length);
+int recv_common_tox_packet(DHT *dht, const uint8_t *packet, uint8_t *cleartext, size_t clearlength);
 
 #endif /* __GROUP_ANNOUNCE_H__ */

@@ -83,5 +83,29 @@ void U32_to_bytes(uint8_t *dest, uint32_t value);
 /* Convert uint16_t to byte string of size 2 */
 void U16_to_bytes(uint8_t *dest, uint16_t value);
 
+/* Easy packet construction utilities */
+#define PAK_DEF(packet) struct __PACKET_##packet
+#define PAK_ITM(name, len) uint8_t name[len]
+ 
+#define PAK_LEN(packet) sizeof(struct __PACKET_##packet)
+#define PAK_POS(packet, member) offsetof(struct __PACKET_##packet, member)
+#define PAK_GET(packet, buf, member) buf[packetpos(packet, member)] // probably unnecessary
+#define PAK(packet, buf) ((struct __PACKET_##packet*)buf)
+
+/* Example:
+ * 
+ * PAK_DEF(testcat)
+ * {
+ *      PAK_ITM(type, 1);
+ *      PAK_ITM(timestamp, sizeof(uint64_t));
+ *      PAK_ITM(public_key, 32);
+ * };
+ * 
+ * PAK_LEN(testcat) == total length of the packet
+ * PAK_POS(testcat, timestamp) == shift of timestamp member in bytes
+ * PAK_GET(testcat, public_key, someobj) == pointer to public key member in a packet referenced by someobj
+ * PAK(testcat, someobj)->type;
+ */
+
 
 #endif /* __UTIL_H__ */

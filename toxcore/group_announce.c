@@ -38,27 +38,126 @@
 
 #define PING_NUM_MAX 512
 
-
 #define ANNOUNCE_PLAIN_SIZE (1 + GC_ANNOUNCE_SIGNED_SIZE)
 #define DHT_ANNOUNCE_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES)
 #define SEND_ANNOUNCED_NODES_PLAIN_SIZE (1 + sizeof(Node_format) * MAX_SENT_NODES + sizeof(uint64_t))
 #define DHT_SEND_ANNOUNCED_NODES_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + SEND_ANNOUNCED_NODES_PLAIN_SIZE + crypto_box_MACBYTES)
 
+#define MAX_CONCURRENT_REQUESTS     10
+
 struct ANNOUNCE {
     DHT *dht;
-    Groupchat_announcement_format announced_nodes[MAX_ANNOUNCED_NODES];    /* TODO: Add something like do_announce which cleans up expired */
-    Groupchat_announcement_format my_announced_nodes[MAX_ANNOUNCED_NODES]; /* I do not really like this */
+    Groupchat_announcement_format announced_nodes[MAX_ANNOUNCED_NODES];     /* TODO: Add something like do_announce which cleans up expired */
+    uint64_t current_req_id;                                                /* TODO: Initialize at random or something */
+    struct 
+    {
+        uint8_t nodes[MAX_SENT_NODES*CLIENT_ID_EXT_SIZE];
+        bool ready;
+    }   requests[MAX_CONCURRENT_REQUESTS];
+    
 };
+
+PAK_DEF(GC_ANNOUNCE)
+{
+    PAK_ITM(signature, SIGNATURE_SIZE);
+    PAK_ITM(announcer_id, CLIENT_ID_EXT_SIZE);
+    PAK_ITM(timestamp, sizeof(uint64_t));
+    PAK_ITM(chat_id, CLIENT_ID_SIZE);
+};
+
+PAK_DEF(GC_ANNOUNCE_GETNODES)
+{
+    PAK_ITM(chat_id, CLIENT_ID_SIZE);
+    PAK_ITM(req_id, sizeof(uint64_t));
+};
+
+
+PAK_DEF(GC_ANNOUNCE_SENDNODES)
+{
+    PAK_ITM(req_id, sizeof(uint64_t));
+    PAK_ITM(nodes_num, sizeof(uint64_t));
+    PAK_ITM(nodes, CLIENT_ID_EXT_SIZE*MAX_SENT_NODES);
+};
+
+PAK_DEF(COMMON)
+{
+    PAK_ITM(packtype, sizeof(uint8_t));
+    PAK_ITM(sender_id, CLIENT_ID_SIZE);
+    PAK_ITM(nonce, crypto_box_NONCEBYTES);
+    PAK_ITM(encrypted, 0);                  /* Actual packets define the size here */
+};
+
+int send_common_tox_packet(DHT *dht, const uint8_t *destination_id, IP_Port ipp, uint8_t type, uint8_t *payload, size_t length)
+{
+    /* Check if packet is going to be sent to ourself */
+    if (id_equal(destination_id, dht->self_public_key))
+        return -1;
+    
+    /* Generate shared_key for encryption */
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    DHT_get_shared_key_sent(dht, shared_key, destination_id);
+
+    /* Filling the common packet fields */
+    /* Note glorious C99 variable size arrays and subsequent sizeof on them */
+    uint8_t pk[PAK_LEN(COMMON)+length+crypto_box_MACBYTES];
+    *PAK(COMMON, pk)->packtype = type;
+    memcpy(PAK(COMMON, pk)->sender_id, dht->self_public_key, CLIENT_ID_SIZE);
+    
+    /* Generate new nonce */
+    new_nonce(PAK(COMMON, pk)->nonce);
+    
+    /* Generate encrypted data */
+    int encrypt_length = encrypt_data_symmetric(shared_key,
+                                        PAK(COMMON, pk)->nonce,
+                                        payload, length,
+                                        PAK(COMMON, pk)->encrypt);
+
+    /* Checking if all went well */
+    if (encrypt_length != length+crypto_box_MACBYTES )
+        return -1;
+
+    /* Actually sending the thing */
+    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
+        return -1;
+
+    return 0;    
+}
+
+int recv_common_tox_packet(DHT *dht, const uint8_t *packet, uint8_t *cleartext, size_t clearlength)
+{
+    /* TODO: check lenght */
+    
+    /* Check if packet has been sent from ourselves */
+    if (id_equal( PAK(COMMON, packet)->sender_id, dht->self_public_key))
+        return -1;
+
+    /* Generate key for decryption */
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    DHT_get_shared_key_recv(dht, shared_key, PAK(COMMON, packet)->sender_id);
+
+    /* Decrypt clear text */   
+    int decrypt_length = decrypt_data_symmetric(shared_key,
+                                        PAK(COMMON, packet)->nonce,
+                                        PAK(COMMON, packet)->encrypt,
+                                        clearlength + crypto_box_MACBYTES,
+                                        cleartext);
+
+    if (decrypt_length != clearlength)
+        return -1;
+
+    return 0;
+}
 
 int prepare_gc_announce_request(Groupchat_announcement_format* announcement, const uint8_t *node_private_key)
 {
+    /* TODO: refactor with PAK_ macros */
     unsigned long long slen;
     uint8_t messagebuf[GC_ANNOUNCE_MESSAGE_SIZE];
     id_copy2(messagebuf, announcement->client_id, 0);    
     U64_to_bytes(messagebuf + CLIENT_ID_EXT_SIZE, announcement->timestamp);
     id_copy(messagebuf + CLIENT_ID_EXT_SIZE + sizeof(uint64_t), announcement->chat_id);
     
-    if (crypto_sign(announcement->signature, &slen, messagebuf, GC_ANNOUNCE_MESSAGE_SIZE, node_private_key) != 0 ||
+    if (crypto_sign(announcement->raw, &slen, messagebuf, GC_ANNOUNCE_MESSAGE_SIZE, node_private_key) != 0 ||
             slen != GC_ANNOUNCE_SIGNED_SIZE) /* Safe to compare, sequence point after || */
             return -1;
     
@@ -67,10 +166,11 @@ int prepare_gc_announce_request(Groupchat_announcement_format* announcement, con
 
 int verify_gc_announce_request(const Groupchat_announcement_format* announcement)
 {
+    /* TODO: refactor with PAK_ macros */
     uint8_t messagebuf[GC_ANNOUNCE_SIGNED_SIZE];
     unsigned long long mlen;
 
-    if (crypto_sign_open(messagebuf, &mlen, announcement->signature, 
+    if (crypto_sign_open(messagebuf, &mlen, announcement->raw, 
         GC_ANNOUNCE_SIGNED_SIZE, announcement->client_id + CLIENT_ID_SIZE) < 0 ||
             mlen != GC_ANNOUNCE_MESSAGE_SIZE)
         return -1;
@@ -113,9 +213,7 @@ int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* 
     {
         /* If our own id is closer to nodes[i], insert ourselves to the queue at this pos */
         if (!addedToSelf || id_closest(announcement->chat_id, nodes[i].client_id, dht->self_public_key)==2)
-        {
-            printf("%s, %s, 1\n", id_toa(dht->self_public_key), id_toa(dht->self_public_key));
-            
+        {           
             if (add_announced_nodes(dht->announce, announcement, 0) < 0)
             return -1;
             
@@ -140,45 +238,7 @@ int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* 
  */
 int send_gc_announce_request(DHT * dht, const uint8_t *client_id, IP_Port ipp, const Groupchat_announcement_format* announcement)
 {
-    LOGGER_DEBUG("Inside group announce request");
-    // Check if packet is going to be sent to ourself
-    if (id_equal(client_id, dht->self_public_key))
-        return -1;
-
-    // Generate announce_plain == NET_PACKET_ANNOUNCE_REQUEST + originator client_id + signature (contains chatid at tstamp)
-    uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
-    announce_plain[0] = NET_PACKET_ANNOUNCE_REQUEST;
-    memcpy(announce_plain + 1, announcement->signature, GC_ANNOUNCE_SIGNED_SIZE);
-    
-    // Generate shared_key to encrypt announce_plane
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    DHT_get_shared_key_sent(dht, shared_key, client_id);
-
-    // Generate new nonce
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
-
-    // Generate encrypted data
-    uint8_t encrypt[ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES];
-    int encrypt_length = encrypt_data_symmetric(shared_key,
-                                        nonce,
-                                        announce_plain, sizeof(announce_plain),
-                                        encrypt);
-
-    if (encrypt_length != sizeof(encrypt))
-        return -1;
-
-    // Generate DHT packet == NET_PACKET_ANNOUNCE_REQUEST + client_id + nonce + announce_plain + crypto_box_MACBYTES
-    uint8_t   pk[DHT_ANNOUNCE_SIZE];
-    pk[0] = NET_PACKET_ANNOUNCE_REQUEST;
-    memcpy(pk + 1, dht->self_public_key, CLIENT_ID_SIZE);
-    memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
-
-    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
-        return -1;
-
-    return 0;    
+    return send_common_tox_packet(dht, client_id, ipp, NET_PACKET_ANNOUNCE_REQUEST, announcement->raw, PAK_LEN(GC_ANNOUNCE));
 }
 
  /*
@@ -187,60 +247,30 @@ int send_gc_announce_request(DHT * dht, const uint8_t *client_id, IP_Port ipp, c
  */
 static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
-    LOGGER_DEBUG("Inside handle group announce request");
-    DHT *dht = _dht;
-
-    // Check if we got packet of expected size
-    if (length != DHT_ANNOUNCE_SIZE)
-        return -1;
-
-    // Check if packet is going to be sent to ourself
-    if (id_equal(packet + 1, dht->self_public_key))
-        return -1;
-
-    // Generate key to decrypt announce_plain
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
-
-    // Decrypt announce_plain
-    uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
-    int announce_length = decrypt_data_symmetric(shared_key,
-                                        packet + 1 + CLIENT_ID_SIZE,
-                                        packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                        ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES,
-                                        announce_plain);
-
-    if (announce_length != sizeof(announce_plain))
-        return -1;
-
-    // Check if we got correct packet type
-    if (announce_plain[0] != NET_PACKET_ANNOUNCE_REQUEST)
-        return -1;
-
-    // Try to decrypt signature
     Groupchat_announcement_format announcement;
-    memcpy(announcement.signature, announce_plain + 1, GC_ANNOUNCE_SIGNED_SIZE);
-    id_copy2(announcement.client_id, announcement.signature + SIGNATURE_SIZE, 0);
-    bytes_to_U64(&announcement.timestamp, announcement.signature + SIGNATURE_SIZE + CLIENT_ID_EXT_SIZE);
-    id_copy(announcement.chat_id, announcement.signature + SIGNATURE_SIZE + sizeof(uint64_t) + CLIENT_ID_EXT_SIZE);
+
+    if (recv_common_tox_packet((DHT* )_dht, packet, announcement.raw, sizeof(announcement.raw)) < 0)
+        return -1;
     
+    /* TODO: do we need packetype duplicated? in encrypted part */
+
+    /* Try to decrypt signature */
+    id_copy2(announcement.client_id, PAK(GC_ANNOUNCE, announcement.raw)->announcer_id, 0);
+    bytes_to_U64(&announcement.timestamp, PAK(GC_ANNOUNCE, announcement.raw)->timestamp);
+    id_copy(announcement.chat_id, PAK(GC_ANNOUNCE, announcement.raw)->chat_id);
+    
+    /* Verify signature */
     if (verify_gc_announce_request(&announcement) < 0)
     {
         LOGGER_WARNING("handle_gc_ann_req: got a forged signature from %s\n", id_toa(packet + 1));
         return -1;
     }
     
-    printf("%s, %s, 1\n", id_toa(packet+1), id_toa(dht->self_public_key));
-     
-//     LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
+   
+    LOGGER_INFO("handle_gc_ann_req: %s at %s:%d claims to be part of chat %s", id_toa(packet + 1), ip_ntoa(&ipp.ip), ipp.port, id_toa(announce_plain + 1));
     
-    //Save (client_id, chat_id) in our ANNOUNCE structure, or pass along
+    /* Save (client_id, chat_id) in our ANNOUNCE structure, or pass along */
     return dispatch_gc_announce_request(dht, &announcement);
-
-    //Not implemented, don't know if it's needed for now
-    //send_announce_response(dht->announce, ipp, packet + 1, ping_id, shared_key);
-
-    return 0;
 }
 
 /* Send a getnodes request.
@@ -250,57 +280,11 @@ static int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t *p
  */
 int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id)
 {
-#if 0
-    LOGGER_DEBUG("Inside get announced nodes request");
-    /* Check if packet is going to be sent to ourself. */
-    if (id_equal(client_id, dht->self_public_key))
-        return -1;
-
-    // Generate random ping_id
-    uint8_t data[PING_DATA_SIZE];
-    id_copy(data, client_id);
-    memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
-    uint64_t ping_id = ping_array_add(&dht->announce->ping_array, data, sizeof(data));
-
-    if (ping_id == 0)
-        return -1;
-
-    // Generate announce_plain == NET_PACKET_GET_ANNOUNCED_NODES + chat_id + ping_id
-    uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
-    announce_plain[0] = NET_PACKET_GET_ANNOUNCED_NODES;
-    id_copy(announce_plain + 1, chat_id);
-    memcpy(announce_plain + 1 + CLIENT_ID_SIZE, &ping_id, sizeof(ping_id));
-
-    // Generate shared_key to encrypt announce_plane
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    DHT_get_shared_key_sent(dht, shared_key, client_id);
-
-    // Generate new nonce
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
-
-    // Generate encrypted data
-    uint8_t encrypt[ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES];
-    int encrypt_length = encrypt_data_symmetric(shared_key,
-                                        nonce,
-                                        announce_plain,
-                                        sizeof(announce_plain),
-                                        encrypt);
-
-    if (encrypt_length != sizeof(encrypt))
-        return -1;
-
-    // Generate DHT packet == NET_PACKET_GET_ANNOUNCED_NODES + client_id + nonce + announce_plain + crypto_box_MACBYTES
-    uint8_t pk[DHT_ANNOUNCE_SIZE];
-    pk[0] = NET_PACKET_GET_ANNOUNCED_NODES;
-    memcpy(pk + 1, dht->self_public_key, CLIENT_ID_SIZE);
-    memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
-
-    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
-        return -1;
-#endif
-    return 0;
+    uint8_t payload[PAK_LEN(GC_ANNOUNCE_GETNODES)];
+    id_copy(PAK(GC_ANNOUNCE_GETNODES, payload)->chat_id, chat_id);
+    /* TODO: fill the request id, stub by now */
+    
+    return send_common_tox_packet(dht, client_id, ipp, NET_PACKET_GET_ANNOUNCED_NODES, payload, PAK_LEN(GC_ANNOUNCE_GETNODES));
 }
 
  /*
@@ -309,116 +293,29 @@ int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, const uint8_t *client
  */
 static int handle_get_gc_announced_nodes_request(void *_dht, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
-#if 0
-    LOGGER_DEBUG("Inside handle get announced nodes request");
-
-    DHT *dht = _dht;
-
-    // Check if we got packet of expected size
-    if (length != DHT_ANNOUNCE_SIZE)
+    DHT *dht=(DHT*)_dht;
+    
+    /* Recieve and decypther packet */
+    uint8_t payload[PAK_LEN(GC_ANNOUNCE_GETNODES)];
+    
+    if (recv_common_tox_packet((DHT*)_dht, packet, payload, sizeof(payload)) < 0))
         return -1;
     
-    // Check if packet is going to be sent to ourself
-    if (id_equal(packet + 1, dht->self_public_key))
-        return -1;
-
-    // Generate key to decrypt announce_plain
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
-
-    // Decrypt announce_plain
-    uint8_t announce_plain[ANNOUNCE_PLAIN_SIZE];
-    int announce_length = decrypt_data_symmetric(shared_key,
-                                        packet + 1 + CLIENT_ID_SIZE,
-                                        packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                        ANNOUNCE_PLAIN_SIZE + crypto_box_MACBYTES,
-                                        announce_plain);
-
-    if (announce_length != sizeof(announce_plain))
-        return -1;
-
-    // Check if we got correct packet type
-    if (announce_plain[0] != NET_PACKET_GET_ANNOUNCED_NODES)
-        return -1;
-
-    // Get ping_id
-    uint64_t  ping_id;
-    memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE, sizeof(ping_id));
-
-    char originatortxt[CLIENT_ID_SIZE*2+1];
-    char chatidtxt[CLIENT_ID_SIZE*2+1];
-    strcpy(originatortxt, id_toa(packet + 1));
-    strcpy(chatidtxt, id_toa(announce_plain + 1));
+    LOGGER_DEBUG("handle_gc_ann_req: %s at %s:%d requests members of chat %s", 
+                 id_toa(PAK(COMMON, packet)->sender_id),
+                 ip_ntoa(&ipp.ip), ipp.port,
+                 id_toa(PAK(GC_ANNOUNCE_GETNODES, payload)->chat_id);
+                 
+    /* Send responce */
+    uint8_t sending_payload[PAK(GC_ANNOUNCE_SENDNODES)];
+    uint64_t nodes_num=get_announced_nodes(dht->announce, 
+                                   PAK(GC_ANNOUNCE_GETNODES, payload)->chat_id, 
+                                   PAK(GC_ANNOUNCE_SENDNODES, sending_payload)->nodes);
+    U64_to_bytes(PAK(GC_ANNOUNCE_GETNODES, sending_payload)->nodes_num, &num_nodes);
+    memcpy(PAK(GC_ANNOUNCE_SENDNODES, sending_payload)->req_id, PAK(GC_ANNOUNCE_GETNODES, payload)->req_id, sizeof(uint64_t));
     
-    LOGGER_DEBUG("handle_gc_ann_req: %s at %s:%d requests members of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, chatidtxt);
-
-    // Send nodes request
-    return send_gc_announced_nodes_response(dht, ipp, packet + 1, announce_plain + 1, ping_id, shared_key);
-#endif 
-    return 0;
-}
-
- /*
- * return -1 on failure.
- * return 0 on success.
- */
-int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id, uint64_t ping_id,
-                                  uint8_t *shared_encryption_key)
-{ 
-#if 0
-    LOGGER_DEBUG("Inside send announced nodes response");
-
-    // Check if packet is going to be sent to ourself.
-    if (id_equal(client_id, dht->self_public_key))
-        return -1;
-
-    size_t Node_format_size = sizeof(Node_format);
-    
-    // Get announced nodes from ANNOUNCE list by chat_id
-    Node_format nodes_list[MAX_SENT_NODES]; // WARNING: what if MAX_SENT_NODES < MAX_ANNOUNCED_NODES ?
-    uint32_t num_nodes = get_announced_nodes(dht->announce, chat_id, nodes_list, 0);
-    //LOGGER_DEBUG("Inside send nodes response, num_nodes: %u", num_nodes);
-    if (num_nodes == -1)
-        return -1;
-
-    // Generate announce_plain == num_nodes + nodes_length + ping_id
-    uint8_t announce_plain[SEND_ANNOUNCED_NODES_PLAIN_SIZE];
-    announce_plain[0] = num_nodes;
-    memcpy(announce_plain + 1, chat_id, CLIENT_ID_SIZE); 
-
-    int nodes_length = pack_nodes(announce_plain + 1 + CLIENT_ID_SIZE, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
-    if (nodes_length <= 0)
-        return -1;
-    
-    memcpy(announce_plain + 1 + CLIENT_ID_SIZE + nodes_length, &ping_id, sizeof(ping_id));
-
-    // Generate new nonce
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
-
-    // Generate encrypted data
-    uint8_t encrypt[sizeof(announce_plain) + crypto_box_MACBYTES];
-    int encrypt_length = encrypt_data_symmetric(shared_encryption_key,
-                                        nonce,
-                                        announce_plain,
-                                        1 + CLIENT_ID_SIZE + nodes_length + sizeof(ping_id),
-                                        encrypt);
-
-    if (encrypt_length != 1 + CLIENT_ID_SIZE + nodes_length + sizeof(ping_id) + crypto_box_MACBYTES)
-        return -1;
-
-    // Generate DHT packet == NET_PACKET_SEND_ANNOUNCED_NODES + client_id + nonce + announce_plain + crypto_box_MACBYTES
-    uint8_t pk[DHT_SEND_ANNOUNCED_NODES_SIZE];
-    pk[0] = NET_PACKET_SEND_ANNOUNCED_NODES;
-    memcpy(pk + 1, dht->self_public_key, CLIENT_ID_SIZE);
-    memcpy(pk + 1 + CLIENT_ID_SIZE, nonce, crypto_box_NONCEBYTES);
-    memcpy(pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES, encrypt, encrypt_length);
-
-    uint32_t new_pk_length = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + encrypt_length;
-    if ((uint32_t)sendpacket(dht->net, ipp, pk, new_pk_length) != sizeof(new_pk_length))
-        return -1;
-#endif
-    return 0;
+    return send_common_tox_packet(dht, PAK(COMMON, packet)->sender_id, ipp, NET_PACKET_SEND_ANNOUNCED_NODES, 
+                                  sending_payload, PAK_POS(GC_ANNOUNCE_GETNODES, nodes) + num_nodes * CLIENT_ID_EXT_SIZE);
 }
 
  /*
@@ -427,94 +324,21 @@ int send_gc_announced_nodes_response(DHT *dht, IP_Port ipp, const uint8_t *clien
  */
 int handle_send_gc_announced_nodes_response(void *_dht, IP_Port ipp, const uint8_t *packet, uint32_t length)
 {
-#if 0
-    LOGGER_DEBUG("Inside handle send announced nodes response");
-
-    DHT *dht = _dht;
+    DHT *dht=(DHT*)_dht;
     
-    // Check packet size  
-    uint32_t cid_size = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + 1 + CLIENT_ID_SIZE + sizeof(uint64_t) + crypto_box_MACBYTES;  
-    if (length <= cid_size) /* too short */
-        return -1;
-
-    uint32_t data_size = length - cid_size;
-    if (data_size == 0)
-        return -1;
-    if (data_size > sizeof(Node_format) * MAX_SENT_NODES) /* invalid length */
-        return -1;
-
-    // Check if packet is going to be sent to ourself
-    if (id_equal(packet + 1, dht->self_public_key))
-        return -1;
-
-    // Check if we got correct packet type
-    if (packet[0] != NET_PACKET_SEND_ANNOUNCED_NODES)
-        return -1;
+    /* Recieve and decypther packet */
+    uint8_t payload[PAK_LEN(GC_ANNOUNCE_SENDNODES)];
     
-    // Generate key to decrypt announce_plain
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
-
-    uint8_t announce_plain[1 + CLIENT_ID_SIZE + data_size + sizeof(uint64_t)];
-    int announce_length = decrypt_data_symmetric(shared_key,
-                                        packet + 1 + CLIENT_ID_SIZE,
-                                        packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                        sizeof(announce_plain) + crypto_box_MACBYTES,
-                                        announce_plain);
-    
-    if (announce_length != sizeof(announce_plain))
-        return -1;
-   
-    if (announce_plain[0] > MAX_SENT_NODES || announce_plain[0] <= 0)
-        return -1;
-
-    // Get ping_id
-    uint64_t ping_id;
-    memcpy(&ping_id, announce_plain + 1 + CLIENT_ID_SIZE + data_size, sizeof(ping_id));
-
-    //Check if we send getnodes request previously
-    uint8_t data[PING_DATA_SIZE];
-    if (ping_array_check(data, sizeof(data), &dht->announce->ping_array, ping_id) != sizeof(data))
-        return -1;
-   
-    //Unpack nodes
-    Node_format plain_nodes[MAX_SENT_NODES];
-    uint16_t length_nodes = 0;
-    uint32_t num_nodes = unpack_nodes(plain_nodes, announce_plain[0], &length_nodes, announce_plain + 1 + CLIENT_ID_SIZE, data_size, 0);
-    
-    if (length_nodes != data_size)
-        return -1;
-
-    if (num_nodes != announce_plain[0])
-        return -1;
-
-    char originatortxt[CLIENT_ID_SIZE*2+1];
-    char chatidtxt[CLIENT_ID_SIZE*2+1];
-    strcpy(originatortxt, id_toa(packet + 1));
-    strcpy(chatidtxt, id_toa(announce_plain + 1));
-    
-    LOGGER_DEBUG("handle_send_gc_ann_nodes_r: %s at %s:%d sent %u announced nodes of chat %s", originatortxt, ip_ntoa(&ipp.ip), ipp.port, num_nodes, chatidtxt);
-
-    uint32_t i;
-    for (i = 0; i<num_nodes; i++) {
-        // We need to handle -1 behaviour here. But I don't give a fuck :)
-        add_announced_nodes(dht->announce, plain_nodes[i].client_id, announce_plain + 1, plain_nodes[i].ip_port, 1);
-        // Debugging
-        char client_id_txt[CLIENT_ID_SIZE*2+1];
-        strcpy(client_id_txt, id_toa(plain_nodes[i].client_id));
-        LOGGER_DEBUG("\tAnnounced Client_ID: %s\n", client_id_txt);
-    }
-#endif
-    return 0;
+    if (recv_common_tox_packet((DHT*)_dht, packet, payload, sizeof(payload)) < 0))
+        return -1;    
 }
 
 static void insert_announced_node(Groupchat_announcement_format* where, const Groupchat_announcement_format *what)
 {
-//     printf("Inserting node %s to chat %s\n", id_toa(what->client_id), id_toa(what->chat_id));
     id_copy(where->client_id, what->client_id);
     id_copy(where->chat_id, what->chat_id);
     where->timestamp = what->timestamp;
-    memcpy(where->signature, what->signature, GC_ANNOUNCE_SIGNED_SIZE);
+    memcpy(where->raw, what->raw, GC_ANNOUNCE_SIGNED_SIZE);
 }
 
 
@@ -533,7 +357,6 @@ static void insert_announced_node(Groupchat_announcement_format* where, const Gr
  */
 int add_announced_nodes(ANNOUNCE *announce, const Groupchat_announcement_format *announcement, int inner)
 {
-//     printf("This is node %s\n", id_toa(announce->dht->self_public_key));
     Groupchat_announcement_format *announced_nodes;
     if (!inner)
         announced_nodes = announce->announced_nodes;
@@ -585,7 +408,7 @@ int add_announced_nodes(ANNOUNCE *announce, const Groupchat_announcement_format 
  *  return num_nodes if found.
  *  return 0 if not found.
  */
-int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format *nodes_list, int inner)
+int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, uint8_t *nodes_list, int inner)
 {
     uint32_t num_nodes = 0;
     uint32_t i;

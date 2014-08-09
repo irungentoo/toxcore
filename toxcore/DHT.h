@@ -156,7 +156,7 @@ typedef struct __attribute__ ((__packed__))
     uint8_t client_id[CLIENT_ID_EXT_SIZE];
     uint8_t chat_id[CLIENT_ID_SIZE];
     uint64_t timestamp;
-    uint8_t signature[GC_ANNOUNCE_SIGNED_SIZE]; /* Containst network representation and a signature in last 64 bytes */
+    uint8_t raw[GC_ANNOUNCE_SIGNED_SIZE]; /* Containst network representation and a signature in last 64 bytes */
 }
 Groupchat_announcement_format;
 
