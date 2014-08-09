@@ -293,8 +293,8 @@ void test_addto_lists(IP ip)
 
     // check "possibly bad" entries
     test_addto_lists_possible_bad(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port, dht->self_public_key);
-    // for (i = 0; i < dht->num_friends; ++i)
-    //    test_addto_lists_possible_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port, dht->friends_list[i].client_id);
+    for (i = 0; i < dht->num_friends; ++i)
+        test_addto_lists_possible_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port, dht->friends_list[i].client_id);
 
     // check "good" entries
     test_addto_lists_good(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port, dht->self_public_key);
