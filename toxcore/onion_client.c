@@ -49,9 +49,31 @@ static int add_path_node(Onion_Client *onion_c, Node_format *node)
 
     onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES] = *node;
 
+    uint16_t last = onion_c->path_nodes_index;
     ++onion_c->path_nodes_index;
 
+    if (onion_c->path_nodes_index < last)
+        onion_c->path_nodes_index = MAX_PATH_NODES + 1;
+
     return 0;
+}
+
+/* Put up to max_num random nodes in nodes.
+ *
+ * return the number of nodes.
+ */
+static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format *nodes, uint16_t max_num)
+{
+    if (onion_c->path_nodes_index < 3)
+        return random_nodes_path(onion_c->dht, nodes, max_num);
+
+    unsigned int i, num_nodes = onion_c->path_nodes_index < MAX_PATH_NODES ? onion_c->path_nodes_index : MAX_PATH_NODES;
+
+    for (i = 0; i < max_num; ++i) {
+        nodes[i] = onion_c->path_nodes[rand() % num_nodes];
+    }
+
+    return num_nodes;
 }
 
 /*
@@ -88,7 +110,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
  * TODO: Make this function better, it currently probably is vulnerable to some attacks that
  * could de anonimize us.
  */
-static int random_path(const DHT *dht, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
+static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
 {
     if (pathnum >= NUMBER_ONION_PATHS)
         pathnum = rand() % NUMBER_ONION_PATHS;
@@ -97,13 +119,13 @@ static int random_path(const DHT *dht, Onion_Client_Paths *onion_paths, uint32_t
             || is_timeout(onion_paths->path_creation_time[pathnum], ONION_PATH_MAX_LIFETIME)) {
         Node_format nodes[3];
 
-        if (random_nodes_path(dht, nodes, 3) != 3)
+        if (random_nodes_path_onion(onion_c, nodes, 3) != 3)
             return -1;
 
         int n = is_path_used(onion_paths, nodes);
 
         if (n == -1) {
-            if (create_onion_path(dht, &onion_paths->paths[pathnum], nodes) == -1)
+            if (create_onion_path(onion_c->dht, &onion_paths->paths[pathnum], nodes) == -1)
                 return -1;
 
             onion_paths->last_path_success[pathnum] = unix_time() + ONION_PATH_FIRST_TIMEOUT - ONION_PATH_TIMEOUT;
@@ -242,7 +264,7 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     memcpy(dest_node.client_id, dest_pubkey, crypto_box_PUBLICKEYBYTES);
 
     if (num == 0) {
-        if (random_path(onion_c->dht, &onion_c->onion_paths, pathnum, &path) == -1)
+        if (random_path(onion_c, &onion_c->onion_paths, pathnum, &path) == -1)
             return -1;
 
         uint8_t packet[ONION_MAX_PACKET_SIZE];
@@ -255,7 +277,7 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
 
         return send_onion_packet_tcp_udp(onion_c, path.ip_port1, packet, len);
     } else {
-        if (random_path(onion_c->dht, &onion_c->friends_list[num - 1].onion_paths, pathnum, &path) == -1)
+        if (random_path(onion_c, &onion_c->friends_list[num - 1].onion_paths, pathnum, &path) == -1)
             return -1;
 
         uint8_t packet[ONION_MAX_PACKET_SIZE];
@@ -345,6 +367,11 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
 
     memcpy(list_nodes[index].client_id, public_key, CLIENT_ID_SIZE);
     list_nodes[index].ip_port = ip_port;
+
+    Node_format add_node; //TODO: remove this and find a better source of nodes to use for paths.
+    memcpy(add_node.client_id, public_key, CLIENT_ID_SIZE);
+    add_node.ip_port = ip_port;
+    add_path_node(onion_c, &add_node);
 
     if (is_stored) {
         memcpy(list_nodes[index].data_public_key, pingid_or_key, crypto_box_PUBLICKEYBYTES);
@@ -615,7 +642,7 @@ int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *
         ++num_nodes;
 
         if (list_nodes[i].is_stored) {
-            if (random_path(onion_c->dht, &onion_c->friends_list[friend_num].onion_paths, ~0, &path[num_good]) == -1)
+            if (random_path(onion_c, &onion_c->friends_list[friend_num].onion_paths, ~0, &path[num_good]) == -1)
                 continue;
 
             good_nodes[num_good] = i;
