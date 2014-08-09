@@ -33,6 +33,26 @@
 #define ANNOUNCE_ARRAY_SIZE 256
 #define ANNOUNCE_TIMEOUT 10
 
+/* Add a node to the path_nodes array.
+ *
+ * return -1 on failure
+ * return 0 on success
+ */
+static int add_path_node(Onion_Client *onion_c, Node_format *node)
+{
+    unsigned int i;
+
+    for (i = 0; i < MAX_PATH_NODES; ++i) {
+        if (memcmp(node->client_id, onion_c->path_nodes[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
+            return -1;
+    }
+
+    onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES] = *node;
+
+    ++onion_c->path_nodes_index;
+
+    return 0;
+}
 
 /*
  * return -1 if nodes are suitable for creating a new path.

@@ -47,6 +47,8 @@
 #define MAX_STORED_PINGED_NODES 9
 #define MIN_NODE_PING_TIME 10
 
+#define MAX_PATH_NODES 32
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -123,6 +125,9 @@ typedef struct {
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
+
+    Node_format path_nodes[MAX_PATH_NODES];
+    uint16_t path_nodes_index;
 
     Ping_Array announce_ping_array;
     uint8_t last_pinged_index;
