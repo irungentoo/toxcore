@@ -44,7 +44,7 @@ void mark_good(IPPTsPng *ipptp)
 
 void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
 {
-    int i;
+    uint32_t i;
     for (i = 0; i < length; ++i) {
         if (ipv6)
             mark_good(&list[i].assoc6);
@@ -57,17 +57,17 @@ void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
    than all client_id's  in the list */
 uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t length, const uint8_t *client_id)
 {
-    int i;
+    uint32_t i;
     for (i = 0; i < length; ++i)
         if (id_closest(comp_client_id, client_id, list[i].client_id) == 1)
             return 0;
     return 1;
 }
 
-int client_in_list(Client_data *list, uint32_t length, uint8_t *client_id)
+int client_in_list(Client_data *list, uint32_t length, const uint8_t *client_id)
 {
     int i;
-    for (i = 0; i < length; ++i)
+    for (i = 0; i < (int)length; ++i)
         if (id_equal(client_id, list[i].client_id))
             return i;
     return -1;
@@ -78,28 +78,38 @@ void test_addto_lists_update(DHT            *dht,
                              uint32_t        length,
                              IP_Port        *ip_port)
 {
-    int used, test = rand() % length, test1 = rand() % (length / 2), test2 = rand() % (length / 2) + length / 2;
-    uint8_t test_id[CLIENT_ID_SIZE];
+    int used, test, test1, test2, found;
     IP_Port test_ipp;
+    uint8_t test_id[CLIENT_ID_SIZE];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
+    // check id update for existing ip_port
+    test = rand() % length;
     ipport_copy(&test_ipp, ipv6 ? &list[test].assoc6.ip_port : &list[test].assoc4.ip_port);
 
-    // check id update for existing ip_port
     randombytes(test_id, sizeof(test_id));
     used = addto_lists(dht, test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
-    ck_assert_msg(client_in_list(list, length, test_id) == test, "Client id is not in the list");
-    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test].assoc6.ip_port : &list[test].assoc4.ip_port), "Client IP_Port is incorrect");
+    // it is possible to have ip_port duplicates in the list, so ip_port @ found not always equal to ip_port @ test
+    found = client_in_list(list, length, test_id);
+    ck_assert_msg(found >= 0, "Client id is not in the list");
+    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[found].assoc6.ip_port : &list[found].assoc4.ip_port), "Client IP_Port is incorrect");
 
     // check ip_port update for existing id
+    test = rand() % length;
     test_ipp.port = rand() % TOX_PORT_DEFAULT;
+    id_copy(test_id, list[test].client_id);
+
     used = addto_lists(dht, test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
+    // it is not possible to have id duplicates in the list, so id @ found must be equal id @ test
     ck_assert_msg(client_in_list(list, length, test_id) == test, "Client id is not in the list");
     ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test].assoc6.ip_port : &list[test].assoc4.ip_port), "Client IP_Port is incorrect");
 
     // check ip_port update for existing id and ip_port (... port ... id ...)
+    test1 = rand() % (length / 2);
+    test2 = rand() % (length / 2) + length / 2;
+
     ipport_copy(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port);
     id_copy(test_id, list[test2].client_id);
     if (ipv6) list[test2].assoc6.ip_port.port = -1; else list[test2].assoc4.ip_port.port = -1;
@@ -109,6 +119,9 @@ void test_addto_lists_update(DHT            *dht,
     ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port), "Client IP_Port is incorrect");
 
     // check ip_port update for existing id and ip_port (... id ... port ...)
+    test1 = rand() % (length / 2);
+    test2 = rand() % (length / 2) + length / 2;
+
     ipport_copy(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port);
     id_copy(test_id, list[test1].client_id);
     if (ipv6) list[test1].assoc6.ip_port.port = -1; else list[test1].assoc4.ip_port.port = -1;
@@ -124,8 +137,8 @@ void test_addto_lists_bad(DHT            *dht,
                           IP_Port        *ip_port)
 {
     // check "bad" clients replacement
+    int used, test1, test2, test3;
     uint8_t client_id[CLIENT_ID_SIZE], test_id1[CLIENT_ID_SIZE], test_id2[CLIENT_ID_SIZE], test_id3[CLIENT_ID_SIZE];
-    int test1, test2, test3;
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     randombytes(client_id, sizeof(client_id));
@@ -152,7 +165,7 @@ void test_addto_lists_bad(DHT            *dht,
     }
 
     ip_port->port += 1;
-    int used = addto_lists(dht, *ip_port, client_id);
+    used = addto_lists(dht, *ip_port, client_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
 
     ck_assert_msg(client_in_list(list, length, client_id) >= 0, "Client id is not in the list");
@@ -168,8 +181,8 @@ void test_addto_lists_possible_bad(DHT            *dht,
                                    const uint8_t  *comp_client_id)
 {
     // check "possibly bad" clients replacement
+    int used, test1, test2, test3;
     uint8_t client_id[CLIENT_ID_SIZE], test_id1[CLIENT_ID_SIZE], test_id2[CLIENT_ID_SIZE], test_id3[CLIENT_ID_SIZE];
-    int test1, test2, test3;
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     randombytes(client_id, sizeof(client_id));
@@ -196,7 +209,7 @@ void test_addto_lists_possible_bad(DHT            *dht,
     }
 
     ip_port->port += 1;
-    int used = addto_lists(dht, *ip_port, client_id);
+    used = addto_lists(dht, *ip_port, client_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
 
     ck_assert_msg(client_in_list(list, length, client_id) >= 0, "Client id is not in the list");
@@ -258,25 +271,25 @@ void test_addto_lists(IP ip)
 
     IP_Port ip_port = { .ip = ip, .port = TOX_PORT_DEFAULT };
     uint8_t client_id[CLIENT_ID_SIZE];
-    int i;
+    int i, used;
 
     // check lists filling
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         randombytes(client_id, sizeof(client_id));
-        int used = addto_lists(dht, ip_port, client_id);
+        used = addto_lists(dht, ip_port, client_id);
         ck_assert_msg(used == dht->num_friends + 1, "Wrong number of added clients with existing ip_port");
     }
 
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         ip_port.port += 1;
-        int used = addto_lists(dht, ip_port, client_id);
+        used = addto_lists(dht, ip_port, client_id);
         ck_assert_msg(used == dht->num_friends + 1, "Wrong number of added clients with existing client_id");
     }
 
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         ip_port.port += 1;
         randombytes(client_id, sizeof(client_id));
-        int used = addto_lists(dht, ip_port, client_id);
+        used = addto_lists(dht, ip_port, client_id);
         ck_assert_msg(used >= 1, "Wrong number of added clients");
     }
 
