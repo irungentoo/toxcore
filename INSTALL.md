@@ -88,7 +88,7 @@ sudo ldconfig
 
 Then clone this repo and generate makefile:
 ```bash
-https://github.com/irungentoo/toxcore
+git clone https://github.com/irungentoo/toxcore
 cd toxcore
 autoreconf -i
 ./configure
