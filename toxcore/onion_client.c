@@ -73,7 +73,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
         nodes[i] = onion_c->path_nodes[rand() % num_nodes];
     }
 
-    return num_nodes;
+    return max_num;
 }
 
 /*
