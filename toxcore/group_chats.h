@@ -190,38 +190,38 @@ int process_chain_trust(Group_Chat *chat);
 /* Return -1 if fail
  * Return packet length if success
  */
-int send_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int send_gc_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
 /* Return -1 if fail
  * Return packet length if success
  */
-int send_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+int send_gc_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length);
 
 /* Return -1 if fail
  * Return packet length if success
  */
-int send_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int send_gc_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
 /* Return -1 if fail
  * Return packet length if success
  */
-int send_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
+int send_gc_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length);
 
-int send_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int send_gc_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
-int send_status(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, uint8_t status_type);
+int send_gc_status(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, uint8_t status_type);
 
-int send_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int send_gc_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
-int send_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int send_gc_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
-int send_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int send_gc_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
-int send_action(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *certificate);
+int send_gc_action(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *certificate);
 
-int send_message(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *message, uint32_t length);
+int send_gc_message(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *message, uint32_t length);
 
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
                            void *userdata);
@@ -242,8 +242,8 @@ int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, 
  */
 int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id);
 
-int add_peer(Group_Chat *chat, const Group_Peer *peer);
-int update_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum);
+int add_gc_peer(Group_Chat *chat, const Group_Peer *peer);
+int update_gc_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum);
 int gc_to_peer(const Group_Chat *chat, Group_Peer *peer);
 
 /* This is the main loop.

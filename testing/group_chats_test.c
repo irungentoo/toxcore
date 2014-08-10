@@ -6,7 +6,7 @@
 #include "../toxcore/DHT.h"
 #include "../toxcore/ping.h"
 #include "../toxcore/util.h"
-#include "../toxcore/group_chats_new.h"
+#include "../toxcore/group_chats.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -142,21 +142,21 @@ int certificates_test()
     memcpy(peer[3].invite_certificate, user2->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
     peer[3].role |= USER_ROLE;
 
-    add_peer(founder, &peer[1]);
-    add_peer(founder, &peer[2]);
-    add_peer(founder, &peer[3]);
+    add_gc_peer(founder, &peer[1]);
+    add_gc_peer(founder, &peer[2]);
+    add_gc_peer(founder, &peer[3]);
 
-    add_peer(op, &peer[0]);
-    add_peer(op, &peer[2]);
-    add_peer(op, &peer[3]);
+    add_gc_peer(op, &peer[0]);
+    add_gc_peer(op, &peer[2]);
+    add_gc_peer(op, &peer[3]);
 
-    add_peer(user1, &peer[1]);
-    add_peer(user1, &peer[0]);
-    add_peer(user1, &peer[3]);
+    add_gc_peer(user1, &peer[1]);
+    add_gc_peer(user1, &peer[0]);
+    add_gc_peer(user1, &peer[3]);
 
-    add_peer(user2, &peer[0]);
-    add_peer(user2, &peer[1]);
-    add_peer(user2, &peer[2]);
+    add_gc_peer(user2, &peer[0]);
+    add_gc_peer(user2, &peer[1]);
+    add_gc_peer(user2, &peer[2]);
 
 
     printf("-----------------------------------------------------\n");    
@@ -242,7 +242,7 @@ int invites_test()
     IP_Port on1 = {localhost, user1->net->port};
     IP_Port on2 = {localhost, user2->net->port};
 
-    int res = send_invite_request(user1, on2, user2->self_public_key);
+    int res = send_gc_invite_request(user1, on2, user2->self_public_key);
     if (res==-1)
         printf("Fail sending request\n");
     else
@@ -327,7 +327,7 @@ int sync_broadcast_test()
     printf("Sending invite requests to Peer Chat 0:\n");
     IP_Port ipp0 = {localhost, peers_gc[0]->net->port};
     for (i=1; i<PEERCOUNT; i++) {
-        int res = send_invite_request(peers_gc[i], ipp0, peers_gc[0]->self_public_key);
+        int res = send_gc_invite_request(peers_gc[i], ipp0, peers_gc[0]->self_public_key);
         if (res==-1)
             printf("Fail\n");
         else
@@ -369,7 +369,7 @@ int sync_broadcast_test()
     peers_gc[0]->last_synced_time = unix_time();
 
     for (i=1; i<PEERCOUNT; i++) {
-        int res = send_sync_request(peers_gc[i], ipp0, peers_gc[0]->self_public_key);
+        int res = send_gc_sync_request(peers_gc[i], ipp0, peers_gc[0]->self_public_key);
         if (res==-1)
             printf("Fail\n");
         else
@@ -431,7 +431,7 @@ int sync_broadcast_test()
     printf("-----------------------------------------------------\n");    
     printf("Peer Chat 1 sending away status to Peer Chat 0\n");
 
-    send_status(peers_gc[1], ipp0, peers_gc[0]->self_public_key, AWAY_STATUS);
+    send_gc_status(peers_gc[1], ipp0, peers_gc[0]->self_public_key, AWAY_STATUS);
     int num = peer_in_chat(peers_gc[0], peers_gc[1]->self_public_key);
 
     for (i=0; i<20*100000; i+=50)
@@ -451,7 +451,7 @@ int sync_broadcast_test()
     char nick[] = "Vasya";
     strncpy(peers_gc[1]->self_nick, nick, 5);
     peers_gc[1]->self_nick_len = 5;
-    send_change_nick(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
+    send_gc_change_nick(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
     for (i=0; i<20*100000; i+=50)
     {
         for (j=0; j<PEERCOUNT; j++) {
@@ -466,7 +466,7 @@ int sync_broadcast_test()
     char topic[] = "Skype is trash";
     strncpy(peers_gc[1]->topic, topic, 14);
     peers_gc[1]->topic_len = 14;
-    send_change_topic(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
+    send_gc_change_topic(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
     for (i=0; i<20*100000; i+=50)
     {
         for (j=0; j<PEERCOUNT; j++) {
@@ -480,14 +480,14 @@ int sync_broadcast_test()
     printf("Peer Chat 4 sending himself to Peer Chat 0 after being invite by Peer Chat 1\n");
 
     IP_Port ipp1 = {localhost, peers_gc[1]->net->port};
-    int res = send_invite_request(peers_gc[4], ipp1, peers_gc[1]->self_public_key);
+    int res = send_gc_invite_request(peers_gc[4], ipp1, peers_gc[1]->self_public_key);
     for (i=0; i<20*100000; i+=50)
     {
         for (j=0; j<PEERCOUNT+1; j++) {
             do_gc(peers[j]);
         }
     }  
-    send_new_peer(peers_gc[4], ipp0, peers_gc[0]->self_public_key);
+    send_gc_new_peer(peers_gc[4], ipp0, peers_gc[0]->self_public_key);
     
     for (i=0; i<20*100000; i+=50)
     {
@@ -502,7 +502,7 @@ int sync_broadcast_test()
     printf("-----------------------------------------------------\n");    
     printf("Messages testing: Peer Chat 1 sends message to Peer Chat 0\n");
     callback_groupmessage(peers_gc[0], get_message, NULL);
-    res = send_message(peers_gc[1], ipp0, peers_gc[0]->self_public_key, "Tox is love!", 12);
+    res = send_gc_message(peers_gc[1], ipp0, peers_gc[0]->self_public_key, "Tox is love!", 12);
 
     for (i=0; i<20*100000; i+=50)
     {
@@ -518,7 +518,7 @@ int sync_broadcast_test()
     res = make_common_cert(peers_gc[0]->self_secret_key, peers_gc[0]->self_public_key, peers_gc[2]->self_public_key, common_certificate, CERT_BAN);
     num = peer_in_chat(peers_gc[1], peers_gc[0]->self_public_key);
     peers_gc[1]->group[num].role = FOUNDER_ROLE;
-    res = send_action(peers_gc[0], ipp1, peers_gc[1]->self_public_key, common_certificate);
+    res = send_gc_action(peers_gc[0], ipp1, peers_gc[1]->self_public_key, common_certificate);
 
     for (i=0; i<20*100000; i+=50)
     {
