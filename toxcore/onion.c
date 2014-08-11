@@ -211,6 +211,12 @@ static int handle_send_initial(void *object, IP_Port source, const uint8_t *pack
 
 int onion_send_1(const Onion *onion, const uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce)
 {
+    if (len > ONION_MAX_PACKET_SIZE + SIZE_IPPORT - (1 + crypto_box_NONCEBYTES + ONION_RETURN_1))
+        return 1;
+
+    if (len <= SIZE_IPPORT + SEND_BASE * 2)
+        return 1;
+
     IP_Port send_to;
     ipport_unpack(&send_to, plain);
     to_host_family(&send_to.ip);
