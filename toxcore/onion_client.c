@@ -172,14 +172,22 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, IP_Port s
  * return -1 on failure.
  * return 0 on success.
  */
-static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, IP_Port ip_port, const uint8_t *data, uint32_t length)
+static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Path *path, IP_Port dest,
+                                     const uint8_t *data, uint32_t length)
 {
-    if (ip_port.ip.family == AF_INET || ip_port.ip.family == AF_INET6) {
-        if ((uint32_t)sendpacket(onion_c->net, ip_port, data, length) != length)
+    if (path->ip_port1.ip.family == AF_INET || path->ip_port1.ip.family == AF_INET6) {
+        uint8_t packet[ONION_MAX_PACKET_SIZE];
+        int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
+
+        if (len == -1)
+            return -1;
+
+        if ((uint32_t)sendpacket(onion_c->net, path->ip_port1, packet, len) != len)
             return -1;
 
         return 0;
     } else {
+
         return -1; //TODO: TCP
     }
 }
@@ -262,35 +270,30 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     Node_format dest_node;
     dest_node.ip_port = dest;
     memcpy(dest_node.client_id, dest_pubkey, crypto_box_PUBLICKEYBYTES);
+    uint8_t request[ONION_ANNOUNCE_REQUEST_SIZE];
+    int len;
 
     if (num == 0) {
         if (random_path(onion_c, &onion_c->onion_paths, pathnum, &path) == -1)
             return -1;
 
-        uint8_t packet[ONION_MAX_PACKET_SIZE];
-        int len = create_announce_request(packet, sizeof(packet), &path, dest_node, onion_c->c->self_public_key,
-                                          onion_c->c->self_secret_key, ping_id, onion_c->c->self_public_key, onion_c->temp_public_key, sendback);
+        len = create_announce_request(request, sizeof(request), dest_pubkey, onion_c->c->self_public_key,
+                                      onion_c->c->self_secret_key, ping_id, onion_c->c->self_public_key, onion_c->temp_public_key, sendback);
 
-        if (len == -1) {
-            return -1;
-        }
-
-        return send_onion_packet_tcp_udp(onion_c, path.ip_port1, packet, len);
     } else {
         if (random_path(onion_c, &onion_c->friends_list[num - 1].onion_paths, pathnum, &path) == -1)
             return -1;
 
-        uint8_t packet[ONION_MAX_PACKET_SIZE];
-        int len = create_announce_request(packet, sizeof(packet), &path, dest_node,
-                                          onion_c->friends_list[num - 1].temp_public_key, onion_c->friends_list[num - 1].temp_secret_key, ping_id,
-                                          onion_c->friends_list[num - 1].real_client_id, zero_ping_id, sendback);
-
-        if (len == -1) {
-            return -1;
-        }
-
-        return send_onion_packet_tcp_udp(onion_c, path.ip_port1, packet, len);
+        len = create_announce_request(request, sizeof(request), dest_pubkey, onion_c->friends_list[num - 1].temp_public_key,
+                                      onion_c->friends_list[num - 1].temp_secret_key, ping_id, onion_c->friends_list[num - 1].real_client_id, zero_ping_id,
+                                      sendback);
     }
+
+    if (len == -1) {
+        return -1;
+    }
+
+    return send_onion_packet_tcp_udp(onion_c, &path, dest, request, len);
 }
 
 static uint8_t cmp_public_key[crypto_box_PUBLICKEYBYTES];
@@ -657,14 +660,13 @@ int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *
 
     for (i = 0; i < num_good; ++i) {
         uint8_t o_packet[ONION_MAX_PACKET_SIZE];
-        len = create_data_request(o_packet, sizeof(o_packet), &path[i], list_nodes[good_nodes[i]].ip_port,
-                                  onion_c->friends_list[friend_num].real_client_id, list_nodes[good_nodes[i]].data_public_key, nonce, packet,
-                                  sizeof(packet));
+        len = create_data_request(o_packet, sizeof(o_packet), onion_c->friends_list[friend_num].real_client_id,
+                                  list_nodes[good_nodes[i]].data_public_key, nonce, packet, sizeof(packet));
 
         if (len == -1)
             continue;
 
-        if (send_onion_packet_tcp_udp(onion_c, path[i].ip_port1, o_packet, len) == 0)
+        if (send_onion_packet_tcp_udp(onion_c, &path[i], list_nodes[good_nodes[i]].ip_port, o_packet, len) == 0)
             ++good;
     }
 
