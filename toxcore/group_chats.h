@@ -98,7 +98,21 @@ typedef struct {
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
-} Group_Close;
+} Peer_Address;
+
+typedef struct {
+    uint8_t     client_id[EXT_PUBLIC_KEY];
+    uint64_t    role;    
+} Group_OPs;
+
+// For founder needs
+typedef struct Group_Credentials {
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
+    uint8_t     chat_secret_key[EXT_SECRET_KEY];
+    uint64_t    creation_time;
+
+    Group_OPs   *ops;
+} Group_Credentials;
 
 typedef struct Group_Chat {
     Networking_Core *net;
@@ -110,7 +124,9 @@ typedef struct Group_Chat {
     uint32_t    self_common_cert_num;
 
     Group_Peer  *group;
-    Group_Close close[GROUP_CLOSE_CONNECTIONS];
+    Peer_Address *group_address_only;
+
+    Peer_Address close[GROUP_CLOSE_CONNECTIONS];
     uint32_t    numpeers;
 
     uint8_t     self_nick[MAX_NICK_BYTES];
@@ -126,6 +142,7 @@ typedef struct Group_Chat {
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
 
+    Group_Credentials *credentials;
 
     uint32_t message_number;
     void (*group_message)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
@@ -134,20 +151,6 @@ typedef struct Group_Chat {
     void *group_action_userdata;
 
 } Group_Chat;
-
-typedef struct {
-    uint8_t     client_id[EXT_PUBLIC_KEY];
-    uint64_t    role;    
-} Group_OPs;
-
-// For founder needs
-typedef struct Group_Credentials {
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
-    uint8_t     chat_secret_key[EXT_SECRET_KEY];
-    uint64_t    creation_time;
-
-    Group_OPs   *ops;
-} Group_Credentials;
 
 /* Sign input data
  * Add signer public key, time stamp and signature in the end of the data
@@ -188,40 +191,61 @@ int process_common_cert(Group_Chat *chat, const uint8_t *certificate);
 int process_chain_trust(Group_Chat *chat);
 
 /* Return -1 if fail
- * Return packet length if success
+ * Return 0 if success
  */
 int send_gc_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
 /* Return -1 if fail
- * Return packet length if success
+ * Return 0 if success
  */
 int send_gc_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length);
 
 /* Return -1 if fail
- * Return packet length if success
+ * Return 0 if success
  */
 int send_gc_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
 
 /* Return -1 if fail
- * Return packet length if success
+ * Return 0 if success
  */
 int send_gc_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length);
 
-int send_gc_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int send_gc_ping(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
 
-int send_gc_status(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, uint8_t status_type);
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int send_gc_status(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, uint8_t status_type);
 
-int send_gc_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int send_gc_change_nick(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
 
-int send_gc_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int send_gc_change_topic(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
 
-int send_gc_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int send_gc_new_peer(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
 
-int send_gc_action(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *certificate);
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int send_gc_action(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *certificate);
 
-int send_gc_message(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *message, uint32_t length);
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int send_gc_message(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *message, uint32_t length);
 
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
                            void *userdata);

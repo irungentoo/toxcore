@@ -282,11 +282,14 @@ int invites_test()
 
 void get_message(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata)
 {
-    char message[length];
-    strncpy(message, data, length);
-    message[length]=0;
+    char message[length-TIME_STAMP+1];
+    strncpy(message, data + TIME_STAMP, length-TIME_STAMP);
+    message[length-TIME_STAMP]=0;
     printf("Peer Chat %s got message from peer %s:\n", id_toa2(chat->self_public_key, ID_ALL_KEYS), id_toa2(chat->group[peernum].client_id, ID_ALL_KEYS));
     printf("%s\n", message);
+    uint64_t timestamp;
+    bytes_to_U64(&timestamp, data);
+    printf("With timestamp: %" PRIu64 "\n", timestamp);
 }
 
 void get_action(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata)
@@ -431,8 +434,13 @@ int sync_broadcast_test()
     printf("-----------------------------------------------------\n");    
     printf("Peer Chat 1 sending away status to Peer Chat 0\n");
 
-    send_gc_status(peers_gc[1], ipp0, peers_gc[0]->self_public_key, AWAY_STATUS);
-    int num = peer_in_chat(peers_gc[0], peers_gc[1]->self_public_key);
+    int num = peer_in_chat(peers_gc[1], peers_gc[0]->self_public_key);
+    int res = send_gc_status(peers_gc[1], &peers_gc[1]->group_address_only[num], 1, AWAY_STATUS);
+
+    if (res==-1)
+        printf("Fail\n");
+    else
+        printf("Success\n");
 
     for (i=0; i<20*100000; i+=50)
     {
@@ -441,6 +449,7 @@ int sync_broadcast_test()
         }
     }   
 
+    num = peer_in_chat(peers_gc[0], peers_gc[1]->self_public_key);
     if (peers_gc[0]->group[num].status==AWAY_STATUS) {
         printf("Status is away\n");
     } else
@@ -451,13 +460,15 @@ int sync_broadcast_test()
     char nick[] = "Vasya";
     strncpy(peers_gc[1]->self_nick, nick, 5);
     peers_gc[1]->self_nick_len = 5;
-    send_gc_change_nick(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
+    num = peer_in_chat(peers_gc[1], peers_gc[0]->self_public_key);
+    send_gc_change_nick(peers_gc[1], &peers_gc[1]->group_address_only[num], 1);
     for (i=0; i<20*100000; i+=50)
     {
         for (j=0; j<PEERCOUNT; j++) {
             do_gc(peers[j]);
         }
     }  
+    num = peer_in_chat(peers_gc[0], peers_gc[1]->self_public_key);
     peers_gc[0]->group[num].nick[peers_gc[0]->group[num].nick_len]=0; 
     printf("%s\n", peers_gc[0]->group[num].nick);
 
@@ -466,7 +477,9 @@ int sync_broadcast_test()
     char topic[] = "Skype is trash";
     strncpy(peers_gc[1]->topic, topic, 14);
     peers_gc[1]->topic_len = 14;
-    send_gc_change_topic(peers_gc[1], ipp0, peers_gc[0]->self_public_key);
+
+    num = peer_in_chat(peers_gc[1], peers_gc[0]->self_public_key);
+    send_gc_change_topic(peers_gc[1], &peers_gc[1]->group_address_only[num], 1);
     for (i=0; i<20*100000; i+=50)
     {
         for (j=0; j<PEERCOUNT; j++) {
@@ -477,17 +490,20 @@ int sync_broadcast_test()
     printf("%s\n", peers_gc[0]->topic);
 
     printf("-----------------------------------------------------\n");    
-    printf("Peer Chat 4 sending himself to Peer Chat 0 after being invite by Peer Chat 1\n");
+    printf("Peer Chat 4 sending himself to Peer Chat 0 after being invited by Peer Chat 1\n");
 
     IP_Port ipp1 = {localhost, peers_gc[1]->net->port};
-    int res = send_gc_invite_request(peers_gc[4], ipp1, peers_gc[1]->self_public_key);
+    res = send_gc_invite_request(peers_gc[4], ipp1, peers_gc[1]->self_public_key);
     for (i=0; i<20*100000; i+=50)
     {
         for (j=0; j<PEERCOUNT+1; j++) {
             do_gc(peers[j]);
         }
     }  
-    send_gc_new_peer(peers_gc[4], ipp0, peers_gc[0]->self_public_key);
+
+    // Just to test structure sending
+    num = peer_in_chat(peers_gc[1], peers_gc[0]->self_public_key);
+    send_gc_new_peer(peers_gc[4], &peers_gc[1]->group_address_only[num], 1);
     
     for (i=0; i<20*100000; i+=50)
     {
@@ -500,9 +516,11 @@ int sync_broadcast_test()
     printf("Peer Chat 4 number in Peer Chat 0 peer list: %i\n", num);
 
     printf("-----------------------------------------------------\n");    
-    printf("Messages testing: Peer Chat 1 sends message to Peer Chat 0\n");
+    printf("Messages testing: Peer Chat 1 sends message to all peers\n");
     callback_groupmessage(peers_gc[0], get_message, NULL);
-    res = send_gc_message(peers_gc[1], ipp0, peers_gc[0]->self_public_key, "Tox is love!", 12);
+    callback_groupmessage(peers_gc[2], get_message, NULL);
+    callback_groupmessage(peers_gc[3], get_message, NULL);
+    res = send_gc_message(peers_gc[1], peers_gc[1]->group_address_only, 3, "Tox is love!", 12);
 
     for (i=0; i<20*100000; i+=50)
     {
@@ -512,13 +530,19 @@ int sync_broadcast_test()
     }  
 
     printf("-----------------------------------------------------\n");    
-    printf("Action testing: Peer Chat 0 sends cert to Peer Chat 1\n");
+    printf("Action testing: Peer Chat 0 sends cert to Peer Chat to all peers\n");
     callback_groupaction(peers_gc[1], get_action, NULL);
+    callback_groupaction(peers_gc[2], get_action, NULL);
+    callback_groupaction(peers_gc[3], get_action, NULL);
     uint8_t common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE];
     res = make_common_cert(peers_gc[0]->self_secret_key, peers_gc[0]->self_public_key, peers_gc[2]->self_public_key, common_certificate, CERT_BAN);
     num = peer_in_chat(peers_gc[1], peers_gc[0]->self_public_key);
     peers_gc[1]->group[num].role = FOUNDER_ROLE;
-    res = send_gc_action(peers_gc[0], ipp1, peers_gc[1]->self_public_key, common_certificate);
+    num = peer_in_chat(peers_gc[2], peers_gc[0]->self_public_key);
+    peers_gc[2]->group[num].role = FOUNDER_ROLE;
+    num = peer_in_chat(peers_gc[3], peers_gc[0]->self_public_key);
+    peers_gc[3]->group[num].role = FOUNDER_ROLE;
+    res = send_gc_action(peers_gc[0], peers_gc[0]->group_address_only, 3, common_certificate);
 
     for (i=0; i<20*100000; i+=50)
     {
@@ -541,34 +565,33 @@ int sync_broadcast_test()
 int basic_group_chat_test()
 {
     IP localhost;
-    DHT *peers[PEERCOUNT];
-    Group_Chat *peers_gc[PEERCOUNT];
+    Tox *tox[PEERCOUNT];
 
-    // Initialization
-    ip_init(&localhost, 1);
-    localhost.ip6.uint8[15]=1;
-    
+   
     int i;
     for (i=0; i<PEERCOUNT; i++)
     {
-        peers[i]=new_DHT(new_networking(localhost, TOX_PORTRANGE_FROM+i));
-        peers_gc[i] = new_groupchat(peers[i]->net);
+        tox[i]=tox_new(TOX_ENABLE_IPV6_DEFAULT);
+        tox_add_groupchat(tox[i]);
+
+        uint8_t pk[EXT_PUBLIC_KEY];
+        tox_get_groupchat_self_pk(tox[i], 0, pk);
         printf("Peer Chat %u:\n", i);
-        printf("Encryption key:\t%s\n", id_toa2(peers_gc[i]->self_public_key, ID_ENCRYPTION_KEY));
-        printf("Signature key:\t%s\n", id_toa2(peers_gc[i]->self_public_key, ID_SIGNATURE_KEY));
+        printf("Encryption key:\t%s\n", id_toa2(pk, ID_ENCRYPTION_KEY));
+        printf("Signature key:\t%s\n", id_toa2(pk, ID_SIGNATURE_KEY));
     }
 
-
-    Group_Credentials *credentials = new_groupcredentials();
-    printf("Chat Credentials:\n");
-    printf("Encryption key:\t%s\n", id_toa2(credentials->chat_public_key, ID_ENCRYPTION_KEY));
-    printf("Signature key:\t%s\n", id_toa2(credentials->chat_public_key, ID_SIGNATURE_KEY));
+    printf("Peer Chat 0 are founder of chat:\n");
+    tox_add_groupchat_credentials(tox[0], 0);
+    uint8_t chat_pk[EXT_PUBLIC_KEY];
+    tox_get_groupchat_pk(tox[0], 0, chat_pk);
+    printf("Encryption key:\t%s\n", id_toa2(chat_pk, ID_ENCRYPTION_KEY));
+    printf("Signature key:\t%s\n", id_toa2(chat_pk, ID_SIGNATURE_KEY));
 
     // Finalization
     for (i=0; i<PEERCOUNT; i++)
     {
-        kill_groupchat(peers_gc[i]);
-        kill_DHT(peers[i]);
+        tox_kill(tox[i]);
     }
 
     return 0;
@@ -578,6 +601,6 @@ int main()
 {
     //certificates_test();
     //invites_test();
-    sync_broadcast_test();
-    //basic_group_chat_test();
+    //sync_broadcast_test();
+    basic_group_chat_test();
 }

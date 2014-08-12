@@ -364,6 +364,17 @@ void tox_set_nospam(Tox *tox, uint32_t nospam);
 
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 
+/* Copies group peer self pk into self_public_key
+ */
+void tox_get_groupchat_self_pk(Tox *tox, int groupnumber, uint8_t *self_public_key);
+
+/* Creates new groupchat credentials instance.
+ * Use in case you want to initiate the chat aka founder
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tox_add_groupchat_credentials(Tox *tox, int groupnumber);
+
 /* Set the callback for group invites.
  *
  *  Function(Tox *tox, int friendnumber, uint8_t *group_public_key, void *userdata)

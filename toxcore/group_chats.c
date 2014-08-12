@@ -162,7 +162,7 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
 
 
 /* Return -1 if fail
- * Return packet length if success
+ * Return 0 if success
  */
 int send_gc_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
 {
@@ -177,7 +177,7 @@ int send_gc_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_
 
 
 /* Return -1 if fail
- * Return packet length if success
+ * Return 0 if success
  */
 int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
 {
@@ -212,7 +212,7 @@ int handle_gc_invite_request(Group_Chat *chat, IP_Port ipp, const uint8_t *publi
 }
 
 /* Return -1 if fail
- * Return packet length if success
+ * Return 0 if succes
  */
 int send_gc_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                          const uint8_t *data, uint32_t length)
@@ -342,6 +342,9 @@ int handle_gc_sync_response(Group_Chat *chat, IP_Port ipp, const uint8_t *public
     // The last one is always the sender
     chat->group[num-1].ip_port = ipp;
 
+    // NB: probably to be deleted
+    chat->group_address_only[num-1].ip_port = ipp;
+
     return 0;
 }
 
@@ -394,7 +397,7 @@ int handle_gc_broadcast(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key
 
 }
 
-int send_gc_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
+int send_gc_ping(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint32_t length;
@@ -402,7 +405,12 @@ int send_gc_ping(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_
     data[0] = GROUP_CHAT_PING;
     length = 1;
 
-    return send_gc_broadcast_packet(chat, ip_port, public_key, data, length);
+    int i;
+    for (i=0;i<numpeers;i++) 
+        if (send_gc_broadcast_packet(chat, rcv_peer[i].ip_port, rcv_peer[i].client_id, data, length) == -1)
+            return -1;
+    
+    return 0;
 }
 
 int handle_gc_ping(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
@@ -414,7 +422,7 @@ int handle_gc_ping(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, con
     return 0;
 }
 
-int send_gc_status(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, uint8_t status_type)
+int send_gc_status(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, uint8_t status_type)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint32_t length;
@@ -423,7 +431,10 @@ int send_gc_status(const Group_Chat *chat, IP_Port ip_port, const uint8_t *publi
     data[1] = status_type;
     length = 2;
 
-    return send_gc_broadcast_packet(chat, ip_port, public_key, data, length);
+    int i;
+    for (i=0;i<numpeers;i++) 
+        if (send_gc_broadcast_packet(chat, rcv_peer[i].ip_port, rcv_peer[i].client_id, data, length) == -1)
+            return -1;
 }
 
 int handle_gc_status(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
@@ -433,7 +444,7 @@ int handle_gc_status(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, c
     return 0;
 }
 
-int send_gc_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
+int send_gc_new_peer(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint32_t length;
@@ -445,7 +456,10 @@ int send_gc_new_peer(const Group_Chat *chat, IP_Port ip_port, const uint8_t *pub
     memcpy(data+1, peer, sizeof(Group_Peer));
     length = 1 + sizeof(Group_Peer);
 
-    return send_gc_broadcast_packet(chat, ip_port, public_key, data, length);
+    int i;
+    for (i=0;i<numpeers;i++) 
+        if (send_gc_broadcast_packet(chat, rcv_peer[i].ip_port, rcv_peer[i].client_id, data, length) == -1)
+            return -1;
 }
 
 int handle_gc_new_peer(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
@@ -461,7 +475,7 @@ int handle_gc_new_peer(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key,
     return 0;
 }
 
-int send_gc_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
+int send_gc_change_nick(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint32_t length;
@@ -470,7 +484,10 @@ int send_gc_change_nick(const Group_Chat *chat, IP_Port ip_port, const uint8_t *
     memcpy(data + 1, chat->self_nick, chat->self_nick_len);
     length = 1 + chat->self_nick_len;
 
-    return send_gc_broadcast_packet(chat, ip_port, public_key, data, length);
+    int i;
+    for (i=0;i<numpeers;i++) 
+        if (send_gc_broadcast_packet(chat, rcv_peer[i].ip_port, rcv_peer[i].client_id, data, length) == -1)
+            return -1;
 }
 
 int handle_gc_change_nick(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
@@ -480,7 +497,7 @@ int handle_gc_change_nick(Group_Chat *chat, IP_Port ipp, const uint8_t *public_k
     return 0;
 }
 
-int send_gc_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key)
+int send_gc_change_topic(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint32_t length;
@@ -489,7 +506,10 @@ int send_gc_change_topic(const Group_Chat *chat, IP_Port ip_port, const uint8_t 
     memcpy(data + 1, chat->topic, chat->topic_len);
     length = 1 + chat->topic_len;
 
-    return send_gc_broadcast_packet(chat, ip_port, public_key, data, length);
+    int i;
+    for (i=0;i<numpeers;i++) 
+        if (send_gc_broadcast_packet(chat, rcv_peer[i].ip_port, rcv_peer[i].client_id, data, length) == -1)
+            return -1;
 }
 
 int handle_gc_change_topic(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
@@ -501,15 +521,20 @@ int handle_gc_change_topic(Group_Chat *chat, IP_Port ipp, const uint8_t *public_
     return 0;
 }
 
-int send_gc_message(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *message, uint32_t length)
+int send_gc_message(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *message, uint32_t length)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
 
     data[0] = GROUP_CHAT_MESSAGE;
-    memcpy(data + 1, message, length);
-    length = 1 + length;
+    unix_time_update();
+    U64_to_bytes(data + 1, unix_time());
+    memcpy(data + 1 + TIME_STAMP, message, length);
+    length = 1 + TIME_STAMP + length;
 
-    return send_gc_broadcast_packet(chat, ip_port, public_key, data, length);
+    int i;
+    for (i=0;i<numpeers;i++) 
+        if (send_gc_broadcast_packet(chat, rcv_peer[i].ip_port, rcv_peer[i].client_id, data, length) == -1)
+            return -1;
 }
 
 int handle_gc_message(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
@@ -520,14 +545,17 @@ int handle_gc_message(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, 
         return -1;
 }
 
-int send_gc_action(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key, const uint8_t *certificate)
+int send_gc_action(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *certificate)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
 
     data[0] = GROUP_CHAT_ACTION;
     memcpy(data + 1, certificate, COMMON_CERTIFICATE_SIGNED_SIZE);
 
-    return send_gc_broadcast_packet(chat, ip_port, public_key, data, COMMON_CERTIFICATE_SIGNED_SIZE+1);
+    int i;
+    for (i=0;i<numpeers;i++) 
+        if (send_gc_broadcast_packet(chat, rcv_peer[i].ip_port, rcv_peer[i].client_id, data, COMMON_CERTIFICATE_SIGNED_SIZE+1) == -1)
+            return -1;
 }
 
 int handle_gc_action(Group_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
@@ -753,6 +781,8 @@ int add_gc_peer(Group_Chat *chat, const Group_Peer *peer)
 
     ++chat->numpeers;
 
+    peers_to_address_format(chat, NULL);
+
     return (chat->numpeers - 1);
 }
 
@@ -777,13 +807,32 @@ int gc_to_peer(const Group_Chat *chat, Group_Peer *peer)
     return 0;
 }
 
+// That's really a stump
+int peers_to_address_format(Group_Chat *chat, Peer_Address *rcv_peer)
+{
+    int i;
+    chat->group_address_only = calloc(1, sizeof(Peer_Address) * chat->numpeers);
+    if (chat->group_address_only == NULL)
+        return -1;
+
+    for (i=0; i<chat->numpeers; i++) {
+        memcpy(chat->group_address_only[i].client_id, chat->group[i].client_id, EXT_PUBLIC_KEY);
+        chat->group_address_only[i].ip_port = chat->group[i].ip_port;
+    }
+
+    //rcv_peer = chat->group_address_only;
+
+    return 0;
+}
+
 void ping_group(Group_Chat *chat)
 {
+    if (chat->group_address_only == NULL)
+        return;
+
     if (is_timeout(chat->last_sent_ping_time, GROUP_PING_INTERVAL)) {
-        int i;
-        for (i=0;i<chat->numpeers;i++)
-            send_gc_ping(chat, chat->group[i].ip_port, chat->group[i].client_id);
         // TODO: add validation to send_ping
+        send_gc_ping(chat, chat->group_address_only, chat->numpeers);
         unix_time_update();    
         chat->last_sent_ping_time = unix_time();
     }
@@ -833,6 +882,8 @@ Group_Chat *new_groupchat(Networking_Core *net)
 
 void kill_groupchat(Group_Chat *chat)
 {
+    if (chat->credentials != NULL)
+        kill_groupcredentials(chat->credentials);
     free(chat->group);
     free(chat);
 }
