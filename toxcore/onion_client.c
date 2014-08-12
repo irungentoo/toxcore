@@ -611,6 +611,24 @@ static int handle_fakeid_announce(void *object, const uint8_t *source_pubkey, co
 
     return 0;
 }
+
+static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length)
+{
+    if (length == 0)
+        return 1;
+
+    IP_Port ip_port = {0};
+    ip_port.ip.family = TCP_FAMILY;
+
+    if (data[0] == NET_PACKET_ANNOUNCE_RESPONSE) {
+        return handle_announce_response(object, ip_port, data, length);
+    } else if (data[0] == NET_PACKET_ONION_DATA_RESPONSE) {
+        return handle_data_response(object, ip_port, data, length);
+    }
+
+    return 1;
+}
+
 /* Send data of length length to friendnum.
  * This data will be received by the friend using the Onion_Data_Handlers callbacks.
  *
@@ -1191,6 +1209,7 @@ Onion_Client *new_onion_client(Net_Crypto *c)
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_data_response, onion_c);
     oniondata_registerhandler(onion_c, FAKEID_DATA_ID, &handle_fakeid_announce, onion_c);
     cryptopacket_registerhandler(onion_c->dht, FAKEID_DATA_ID, &handle_dht_fakeid, onion_c);
+    tcp_onion_response_handler(onion_c->c, &handle_tcp_onion, onion_c);
 
     return onion_c;
 }
@@ -1206,6 +1225,7 @@ void kill_onion_client(Onion_Client *onion_c)
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
     oniondata_registerhandler(onion_c, FAKEID_DATA_ID, NULL, NULL);
     cryptopacket_registerhandler(onion_c->dht, FAKEID_DATA_ID, NULL, NULL);
+    tcp_onion_response_handler(onion_c->c, NULL, NULL);
     memset(onion_c, 0, sizeof(Onion_Client));
     free(onion_c);
 }
