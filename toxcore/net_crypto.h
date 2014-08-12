@@ -198,6 +198,9 @@ typedef struct {
     uint32_t current_sleep_time;
 
     BS_LIST ip_port_list;
+
+    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
+    void *tcp_onion_callback_object;
 } Net_Crypto;
 
 
@@ -320,6 +323,18 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  * return -1 if it wasn't.
  */
 int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
+
+/* Set the function to be called when an onion response packet is recieved by one of the TCP connections.
+ */
+void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
+                                uint16_t length), void *object);
+
+/* Send an onion packet via a random connected TCP relay.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int send_tcp_onion_request(const Net_Crypto *c, const uint8_t *data, uint16_t length);
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.

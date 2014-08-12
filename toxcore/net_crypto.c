@@ -1794,6 +1794,17 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     return 0;
 }
 
+static int tcp_onion_callback(void *object, const uint8_t *data, uint16_t length)
+{
+    Net_Crypto *c = object;
+
+    if (c->tcp_onion_callback)
+        return c->tcp_onion_callback(c->tcp_onion_callback_object, data, length);
+
+    return 1;
+}
+
+
 /* Check if tcp connection to public key can be created.
  *
  * return -1 if it can't.
@@ -1913,6 +1924,34 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
     return -1;
 }
 
+/* Send an onion packet via a random connected TCP relay.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int send_tcp_onion_request(const Net_Crypto *c, const uint8_t *data, uint16_t length)
+{
+    unsigned int i, r = rand();
+
+    for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
+        if (c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS]) {
+            if (send_onion_request(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], data, length) == 1)
+                return 0;
+        }
+    }
+
+    return -1;
+}
+
+/* Set the function to be called when an onion response packet is recieved by one of the TCP connections.
+ */
+void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
+                                uint16_t length), void *object)
+{
+    c->tcp_onion_callback = tcp_onion_callback;
+    c->tcp_onion_callback_object = object;
+}
+
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
  *
@@ -1991,6 +2030,7 @@ static int add_tcp_connected(Net_Crypto *c, TCP_Client_Connection *tcp_con)
     routing_status_handler(tcp_con, tcp_status_callback, tcp_con);
     routing_data_handler(tcp_con, tcp_data_callback, tcp_con);
     oob_data_handler(tcp_con, tcp_oob_callback, tcp_con);
+    onion_response_handler(tcp_con, tcp_onion_callback, c);
     c->tcp_connections[tcp_num] = tcp_con;
     return 0;
 }
