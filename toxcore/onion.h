@@ -65,6 +65,8 @@ typedef struct {
     IP_Port     ip_port1;
     IP_Port     ip_port2;
     IP_Port     ip_port3;
+
+    uint32_t path_num;
 } Onion_Path;
 
 /* Create a new onion path.
