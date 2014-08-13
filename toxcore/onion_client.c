@@ -356,7 +356,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     memcpy(cmp_public_key, reference_id, crypto_box_PUBLICKEYBYTES);
     qsort(list_nodes, MAX_ONION_CLIENTS, sizeof(Onion_Node), cmp_entry);
 
-    int index = -1;
+    int index = -1, stored = 0;
     uint32_t i;
 
     if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
@@ -367,6 +367,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
         if (memcmp(list_nodes[i].client_id, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             index = i;
+            stored = 1;
             break;
         }
     }
@@ -390,7 +391,10 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
 
     list_nodes[index].is_stored = is_stored;
     list_nodes[index].timestamp = unix_time();
-    list_nodes[index].last_pinged = 0;
+
+    if (!stored)
+        list_nodes[index].last_pinged = 0;
+
     list_nodes[index].path_used = set_path_timeouts(onion_c, num, path_num);
     return 0;
 }
