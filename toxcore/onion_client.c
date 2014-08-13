@@ -188,9 +188,16 @@ static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Pa
             return -1;
 
         return 0;
-    } else {
+    } else if (path->ip_port1.ip.family == TCP_FAMILY) {
+        uint8_t packet[ONION_MAX_PACKET_SIZE];
+        int len = create_onion_packet_tcp(packet, sizeof(packet), path, dest, data, length);
 
-        return -1; //TODO: TCP
+        if (len == -1)
+            return -1;
+
+        return send_tcp_onion_request(onion_c->c, packet, len);
+    } else {
+        return -1;
     }
 }
 
