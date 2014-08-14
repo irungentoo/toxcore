@@ -1827,16 +1827,21 @@ static int handle_new_connections(void *object, New_Connection *n_c)
 
 
 /* Run this at startup. */
-Messenger *new_messenger(uint8_t ipv6enabled)
+Messenger *new_messenger(Messenger_Options *options)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
     if ( ! m )
         return NULL;
 
-    IP ip;
-    ip_init(&ip, ipv6enabled);
-    m->net = new_networking(ip, TOX_PORT_DEFAULT);
+    if (options->udp_disabled) {
+        /* this is the easiest way to completely disable UDP without changing too much code. */
+        m->net = calloc(1, sizeof(Networking_Core));
+    } else {
+        IP ip;
+        ip_init(&ip, options->ipv6enabled);
+        m->net = new_networking(ip, TOX_PORT_DEFAULT);
+    }
 
     if (m->net == NULL) {
         free(m);
@@ -1850,7 +1855,12 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         free(m);
         return NULL;
     }
-    m->net_crypto = new_net_crypto(m->dht, 0);
+
+    if (options->proxy_enabled) {
+        m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
+    } else {
+        m->net_crypto = new_net_crypto(m->dht, 0);
+    }
 
     if (m->net_crypto == NULL) {
         kill_networking(m->net);
@@ -1876,6 +1886,7 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
+    m->options = *options;
     friendreq_init(&(m->fr), m->onion_c);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
@@ -2385,9 +2396,11 @@ void do_messenger(Messenger *m)
 {
     unix_time_update();
 
-    networking_poll(m->net);
+    if (!m->options.udp_disabled) {
+        networking_poll(m->net);
+        do_DHT(m->dht);
+    }
 
-    do_DHT(m->dht);
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friends(m);

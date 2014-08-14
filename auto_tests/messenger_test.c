@@ -335,7 +335,9 @@ int main(int argc, char *argv[])
     bad_id    = hex_string_to_bin(bad_id_str);
 
     /* IPv6 status from global define */
-    m = new_messenger(TOX_ENABLE_IPV6_DEFAULT);
+    Messenger_Options options = {0};
+    options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    m = new_messenger(&options);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)

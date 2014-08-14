@@ -818,7 +818,9 @@ uint32_t tox_do_interval(Tox *tox)
 Tox *tox_new(uint8_t ipv6enabled)
 {
     LOGGER_INIT(LOGGER_OUTPUT_FILE, LOGGER_LEVEL);
-    return new_messenger(ipv6enabled);
+    Messenger_Options options = {0};
+    options.ipv6enabled = ipv6enabled;
+    return new_messenger(&options);
 }
 
 /* Run this before closing shop.
