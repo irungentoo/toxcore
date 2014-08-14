@@ -775,6 +775,7 @@ static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled,
     if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
         ip_port_v64.port = port;
         add_tcp_relay(m->net_crypto, ip_port_v64, public_key);
+        onion_add_path_node(m->onion_c, ip_port_v64, public_key); //TODO: move this
         return 1;
     } else {
         return 0;

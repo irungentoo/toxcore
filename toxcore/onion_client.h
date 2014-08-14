@@ -137,6 +137,14 @@ typedef struct {
     } Onion_Data_Handlers[256];
 } Onion_Client;
 
+
+/* Add a node to the path_nodes array.
+ *
+ * return -1 on failure
+ * return 0 on success
+ */
+int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
+
 /* Add a friend who we want to connect to.
  *
  * return -1 on failure.

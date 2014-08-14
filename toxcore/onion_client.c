@@ -38,16 +38,17 @@
  * return -1 on failure
  * return 0 on success
  */
-static int add_path_node(Onion_Client *onion_c, Node_format *node)
+int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id)
 {
     unsigned int i;
 
     for (i = 0; i < MAX_PATH_NODES; ++i) {
-        if (memcmp(node->client_id, onion_c->path_nodes[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
+        if (memcmp(client_id, onion_c->path_nodes[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
             return -1;
     }
 
-    onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES] = *node;
+    onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES].ip_port = ip_port;
+    memcpy(onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES].client_id, client_id, crypto_box_PUBLICKEYBYTES);
 
     uint16_t last = onion_c->path_nodes_index;
     ++onion_c->path_nodes_index;
@@ -402,10 +403,8 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     memcpy(list_nodes[index].client_id, public_key, CLIENT_ID_SIZE);
     list_nodes[index].ip_port = ip_port;
 
-    Node_format add_node; //TODO: remove this and find a better source of nodes to use for paths.
-    memcpy(add_node.client_id, public_key, CLIENT_ID_SIZE);
-    add_node.ip_port = ip_port;
-    add_path_node(onion_c, &add_node);
+    //TODO: remove this and find a better source of nodes to use for paths.
+    onion_add_path_node(onion_c, ip_port, public_key);
 
     if (is_stored) {
         memcpy(list_nodes[index].data_public_key, pingid_or_key, crypto_box_PUBLICKEYBYTES);
@@ -1079,7 +1078,7 @@ static void populate_path_nodes(Onion_Client *onion_c)
         unsigned int i;
 
         for (i = 0; i < num_nodes; ++i) {
-            add_path_node(onion_c, nodes_list + i);
+            onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].client_id);
         }
     }
 }
