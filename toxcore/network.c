@@ -338,12 +338,6 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint3
 
     loglogdata("O=>", data, length, ip_port, res);
 
-
-    if ((res >= 0) && ((uint32_t)res == length))
-        net->send_fail_eagain = 0;
-    else if ((res < 0) && (errno == EWOULDBLOCK))
-        net->send_fail_eagain = current_time_monotonic();
-
     return res;
 }
 
