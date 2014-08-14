@@ -603,19 +603,15 @@ uint64_t tox_file_data_remaining(const Tox *tox, int32_t friendnumber, uint8_t f
  */
 
 /* Resolves address into an IP address. If successful, sends a "get nodes"
- *   request to the given node with ip, port (in network byte order, HINT: use htons())
+ *   request to the given node with ip, port (in host byte order).
  *   and public_key to setup connections
  *
  * address can be a hostname or an IP address (IPv4 or IPv6).
- * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
- * if ipv6enabled is not 0 (zero), the resolving looks for IPv6 addresses first,
- *   then IPv4 addresses.
  *
  *  returns 1 if the address could be converted into an IP address
  *  returns 0 otherwise
  */
-int tox_bootstrap_from_address(Tox *tox, const char *address, uint8_t ipv6enabled,
-                               uint16_t port, const uint8_t *public_key);
+int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.

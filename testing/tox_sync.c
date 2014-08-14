@@ -220,9 +220,9 @@ int main(int argc, char *argv[])
     tox_callback_file_send_request(tox, file_request_accept, NULL);
     tox_callback_connection_status(tox, print_online, NULL);
 
-    uint16_t port = htons(atoi(argv[argvoffset + 2]));
+    uint16_t port = atoi(argv[argvoffset + 2]);
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    int res = tox_bootstrap_from_address(tox, argv[argvoffset + 1], ipv6enabled, port, binary_string);
+    int res = tox_bootstrap_from_address(tox, argv[argvoffset + 1], port, binary_string);
     free(binary_string);
 
     if (!res) {

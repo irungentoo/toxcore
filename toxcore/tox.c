@@ -782,12 +782,11 @@ static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled,
     }
 }
 
-int tox_bootstrap_from_address(Tox *tox, const char *address,
-                               uint8_t ipv6enabled, uint16_t port, const uint8_t *public_key)
+int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    tox_add_tcp_relay(tox, address, ipv6enabled, port, public_key);
-    return DHT_bootstrap_from_address(m->dht, address, ipv6enabled, port, public_key);
+    tox_add_tcp_relay(tox, address, m->options.ipv6enabled, htons(port), public_key);
+    return DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key);
 }
 
 /*  return 0 if we are not connected to the DHT.
