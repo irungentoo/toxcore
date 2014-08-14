@@ -2107,6 +2107,8 @@ static void clear_disconnected_tcp(Net_Crypto *c)
             continue;
 
         c->tcp_connections[i] = NULL;
+        /* Try reconnecting to relay on disconnect. */
+        add_tcp_relay(c, tcp_con->ip_port, tcp_con->public_key);
         kill_TCP_connection(tcp_con);
 
         for (j = 0; j < c->crypto_connections_length; ++j) {
