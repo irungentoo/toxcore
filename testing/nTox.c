@@ -1225,7 +1225,7 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[argc - 2], "-f"))
             filename = argv[argc - 1];
 
-    m = tox_new(ipv6enabled);
+    m = tox_new(0);
 
     if ( !m ) {
         fputs("Failed to allocate Messenger datastructure", stderr);
@@ -1258,7 +1258,6 @@ int main(int argc, char *argv[])
     uint16_t port = htons(atoi(argv[argvoffset + 2]));
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
     int res = tox_bootstrap_from_address(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
-    free(binary_string);
 
     if (!res) {
         printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
@@ -1319,6 +1318,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    free(binary_string);
     tox_kill(m);
     endwin();
     return 0;

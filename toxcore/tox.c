@@ -815,12 +815,32 @@ uint32_t tox_do_interval(Tox *tox)
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
-Tox *tox_new(uint8_t ipv6enabled)
+Tox *tox_new(Tox_Options *options)
 {
     LOGGER_INIT(LOGGER_OUTPUT_FILE, LOGGER_LEVEL);
-    Messenger_Options options = {0};
-    options.ipv6enabled = ipv6enabled;
-    return new_messenger(&options);
+    Messenger_Options m_options = {0};
+
+    if (options == NULL) {
+        m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    } else {
+        m_options.ipv6enabled = options->ipv6enabled;
+        m_options.udp_disabled = options->udp_disabled;
+        m_options.proxy_enabled = options->proxy_enabled;
+
+        if (m_options.proxy_enabled) {
+            ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
+
+            if (m_options.ipv6enabled)
+                m_options.proxy_info.ip_port.ip.family = AF_UNSPEC;
+
+            if (!addr_resolve_or_parse_ip(options->proxy_address, &m_options.proxy_info.ip_port.ip, NULL))
+                return NULL;
+
+            m_options.proxy_info.ip_port.port = htons(options->proxy_port);
+        }
+    }
+
+    return new_messenger(&m_options);
 }
 
 /* Run this before closing shop.

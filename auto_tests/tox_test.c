@@ -124,9 +124,9 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *dat
 START_TEST(test_few_clients)
 {
     long long unsigned int con_time, cur_time = time(NULL);
-    Tox *tox1 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
-    Tox *tox2 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
-    Tox *tox3 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
+    Tox *tox1 = tox_new(0);
+    Tox *tox2 = tox_new(0);
+    Tox *tox3 = tox_new(0);
     ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
     uint32_t to_compare = 974536;
     tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
@@ -302,7 +302,7 @@ START_TEST(test_many_clients)
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES; ++i) {
-        toxes[i] = tox_new(TOX_ENABLE_IPV6_DEFAULT);
+        toxes[i] = tox_new(0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
     }

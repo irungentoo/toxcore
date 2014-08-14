@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    Tox *tox = tox_new(ipv6enabled);
+    Tox *tox = tox_new(0);
     tox_callback_file_data(tox, write_file, NULL);
     tox_callback_file_control(tox, file_print_control, NULL);
     tox_callback_file_send_request(tox, file_request_accept, NULL);

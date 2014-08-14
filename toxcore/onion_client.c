@@ -40,6 +40,9 @@
  */
 int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id)
 {
+    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6)
+        return -1;
+
     unsigned int i;
 
     for (i = 0; i < MAX_PATH_NODES; ++i) {
