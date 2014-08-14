@@ -120,12 +120,13 @@ void new_nonce(uint8_t *nonce);
 
 #define MAX_CRYPTO_REQUEST_SIZE 1024
 
-#define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
-#define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
-#define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
-#define CRYPTO_PACKET_GROUP_CHAT_GET_NODES      48 /* Group chat get Nodes packet */
-#define CRYPTO_PACKET_GROUP_CHAT_SEND_NODES     49 /* Group chat send Nodes packet */
-#define CRYPTO_PACKET_GROUP_CHAT_BROADCAST      50 /* Group chat broadcast packet */
+#define CRYPTO_PACKET_FRIEND_REQ                32  /* Friend request crypto packet ID. */
+#define CRYPTO_PACKET_FRIEND_REQ_HASHDATA       33  /* Friend request for hashcash data */
+#define CRYPTO_PACKET_HARDENING                 48  /* Hardening crypto packet ID. */
+#define CRYPTO_PACKET_NAT_PING                  254 /* NAT ping crypto packet ID. */
+#define CRYPTO_PACKET_GROUP_CHAT_GET_NODES      48  /* Group chat get Nodes packet */
+#define CRYPTO_PACKET_GROUP_CHAT_SEND_NODES     49  /* Group chat send Nodes packet */
+#define CRYPTO_PACKET_GROUP_CHAT_BROADCAST      50  /* Group chat broadcast packet */
 
 /* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.

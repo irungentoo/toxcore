@@ -91,8 +91,8 @@ typedef struct {
     uint64_t last_fakeid_dht_sent;
 
     uint64_t last_noreplay;
-
     uint64_t last_seen;
+    uint64_t last_nNonce; //the nonce for the hashcash in the friend requests once a valid hash is calculated
 
     Onion_Client_Paths onion_paths;
 

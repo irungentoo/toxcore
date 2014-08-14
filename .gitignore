@@ -21,6 +21,9 @@ Makefile.in
 # Testing
 testing/data
 *~
+\#*\#
+my_*
+TAGS
 
 # Vim
 *.swp
@@ -54,6 +57,7 @@ libtool
 .libs
 .dirstamp
 build/
+libsodium
 
 #kdevelop
 .kdev/
