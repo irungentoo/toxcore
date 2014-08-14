@@ -236,4 +236,10 @@ Onion_Client *new_onion_client(Net_Crypto *c);
 
 void kill_onion_client(Onion_Client *onion_c);
 
+
+/*  return 0 if we are not connected to the network.
+ *  return 1 if we are.
+ */
+int onion_isconnected(const Onion_Client *onion_c);
+
 #endif

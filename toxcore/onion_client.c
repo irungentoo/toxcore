@@ -1274,3 +1274,19 @@ void kill_onion_client(Onion_Client *onion_c)
     memset(onion_c, 0, sizeof(Onion_Client));
     free(onion_c);
 }
+
+
+/*  return 0 if we are not connected to the network.
+ *  return 1 if we are.
+ */
+int onion_isconnected(const Onion_Client *onion_c)
+{
+    unsigned int i;
+
+    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+        if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT))
+            return 1;
+    }
+
+    return 0;
+}

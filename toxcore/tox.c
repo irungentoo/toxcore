@@ -796,7 +796,7 @@ int tox_bootstrap_from_address(Tox *tox, const char *address,
 int tox_isconnected(const Tox *tox)
 {
     const Messenger *m = tox;
-    return DHT_isconnected(m->dht);
+    return DHT_isconnected(m->dht) || onion_isconnected(m->onion_c);
 }
 
 /* Return the time in milliseconds before tox_do() should be called again
