@@ -1850,8 +1850,7 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         free(m);
         return NULL;
     }
-
-    m->net_crypto = new_net_crypto(m->dht);
+    m->net_crypto = new_net_crypto(m->dht, 0);
 
     if (m->net_crypto == NULL) {
         kill_networking(m->net);

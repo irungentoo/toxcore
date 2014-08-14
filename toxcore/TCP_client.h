@@ -29,8 +29,14 @@
 
 #define TCP_CONNECTION_TIMEOUT 10
 
+typedef struct  {
+    IP_Port ip_port;
+} TCP_Proxy_Info;
+
 enum {
     TCP_CLIENT_NO_STATUS,
+    TCP_CLIENT_PROXY_CONNECTING,
+    TCP_CLIENT_PROXY_UNCONFIRMED,
     TCP_CLIENT_CONNECTING,
     TCP_CLIENT_UNCONFIRMED,
     TCP_CLIENT_CONFIRMED,
@@ -39,8 +45,10 @@ enum {
 typedef struct  {
     uint8_t status;
     sock_t  sock;
+    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES]; /* our public key */
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* public key of the server */
     IP_Port ip_port; /* The ip and port of the server */
+    TCP_Proxy_Info proxy_info;
     uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
     uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -85,7 +93,7 @@ typedef struct  {
 /* Create new TCP connection to ip_port/public_key
  */
 TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
-        const uint8_t *self_secret_key);
+        const uint8_t *self_secret_key, TCP_Proxy_Info *proxy_info);
 
 /* Run the TCP connection
  */

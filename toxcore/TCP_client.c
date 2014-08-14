@@ -35,8 +35,11 @@
 /* return 1 on success
  * return 0 on failure
  */
-static int connect_sock_to(sock_t sock, IP_Port ip_port)
+static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_info)
 {
+    if (proxy_info)
+        ip_port = proxy_info->ip_port;
+
     struct sockaddr_storage addr = {0};
     size_t addrsize;
 
@@ -62,18 +65,102 @@ static int connect_sock_to(sock_t sock, IP_Port ip_port)
     connect(sock, (struct sockaddr *)&addr, addrsize);
     return 1;
 }
+
+
+static void socks5_generate_handshake(TCP_Client_Connection *TCP_conn)
+{
+    TCP_conn->last_packet[0] = 5; /* SOCKSv5 */
+    TCP_conn->last_packet[1] = 1; /* number of authentication methods supported */
+    TCP_conn->last_packet[2] = 0; /* No authentication */
+
+    TCP_conn->last_packet_length = 3;
+    TCP_conn->last_packet_sent = 0;
+}
+
+/* return 1 on success.
+ * return 0 if no data received.
+ * return -1 on failure (connection refused).
+ */
+static int socks5_read_handshake_response(TCP_Client_Connection *TCP_conn)
+{
+    uint8_t data[2];
+    int ret = read_TCP_packet(TCP_conn->sock, data, sizeof(data));
+
+    if (ret == -1)
+        return 0;
+
+    if (data[0] == 5 && data[1] == 0)
+        return 1;
+
+    return -1;
+}
+
+static void socks5_generate_connection_request(TCP_Client_Connection *TCP_conn)
+{
+    TCP_conn->last_packet[0] = 5; /* SOCKSv5 */
+    TCP_conn->last_packet[1] = 1; /* command code: establish a TCP/IP stream connection */
+    TCP_conn->last_packet[2] = 0; /* reserved, must be 0 */
+    uint16_t length = 3;
+
+    if (TCP_conn->ip_port.ip.family == AF_INET) {
+        TCP_conn->last_packet[3] = 1; /* IPv4 address */
+        ++length;
+        memcpy(TCP_conn->last_packet + length, TCP_conn->ip_port.ip.ip4.uint8, sizeof(IP4));
+        length += sizeof(IP4);
+    } else {
+        TCP_conn->last_packet[3] = 4; /* IPv6 address */
+        ++length;
+        memcpy(TCP_conn->last_packet + length, TCP_conn->ip_port.ip.ip6.uint8, sizeof(IP6));
+        length += sizeof(IP6);
+    }
+
+    memcpy(TCP_conn->last_packet + length, &TCP_conn->ip_port.port, sizeof(uint16_t));
+    length += sizeof(uint16_t);
+
+    TCP_conn->last_packet_length = length;
+    TCP_conn->last_packet_sent = 0;
+}
+
+/* return 1 on success.
+ * return 0 if no data received.
+ * return -1 on failure (connection refused).
+ */
+static int socks5_read_connection_response(TCP_Client_Connection *TCP_conn)
+{
+    if (TCP_conn->ip_port.ip.family == AF_INET) {
+        uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
+        int ret = read_TCP_packet(TCP_conn->sock, data, sizeof(data));
+
+        if (ret == -1)
+            return 0;
+
+        if (data[0] == 5 && data[1] == 0)
+            return 1;
+
+    } else {
+        uint8_t data[4 + sizeof(IP6) + sizeof(uint16_t)];
+        int ret = read_TCP_packet(TCP_conn->sock, data, sizeof(data));
+
+        if (ret == -1)
+            return 0;
+
+        if (data[0] == 5 && data[1] == 0)
+            return 1;
+    }
+
+    return -1;
+}
+
 /* return 0 on success.
  * return -1 on failure.
  */
-static int generate_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *self_public_key,
-                              const uint8_t *self_secret_key)
+static int generate_handshake(TCP_Client_Connection *TCP_conn)
 {
     uint8_t plain[crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES];
     crypto_box_keypair(plain, TCP_conn->temp_secret_key);
-    encrypt_precompute(TCP_conn->public_key, self_secret_key, TCP_conn->shared_key);
     random_nonce(TCP_conn->sent_nonce);
     memcpy(plain + crypto_box_PUBLICKEYBYTES, TCP_conn->sent_nonce, crypto_box_NONCEBYTES);
-    memcpy(TCP_conn->last_packet, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(TCP_conn->last_packet, TCP_conn->self_public_key, crypto_box_PUBLICKEYBYTES);
     new_nonce(TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES);
     int len = encrypt_data_symmetric(TCP_conn->shared_key, TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES, plain,
                                      sizeof(plain), TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
@@ -448,7 +535,7 @@ void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(vo
 /* Create new TCP connection to ip_port/public_key
  */
 TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
-        const uint8_t *self_secret_key)
+        const uint8_t *self_secret_key, TCP_Proxy_Info *proxy_info)
 {
     if (networking_at_startup() != 0) {
         return NULL;
@@ -468,7 +555,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         return 0;
     }
 
-    if (!(set_socket_nonblock(sock) && connect_sock_to(sock, ip_port))) {
+    if (!(set_socket_nonblock(sock) && connect_sock_to(sock, ip_port, proxy_info))) {
         kill_sock(sock);
         return NULL;
     }
@@ -480,15 +567,24 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         return NULL;
     }
 
-    temp->status = TCP_CLIENT_CONNECTING;
     temp->sock = sock;
     memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(temp->self_public_key, self_public_key, crypto_box_PUBLICKEYBYTES);
+    encrypt_precompute(temp->public_key, self_secret_key, temp->shared_key);
     temp->ip_port = ip_port;
 
-    if (generate_handshake(temp, self_public_key, self_secret_key) == -1) {
-        kill_sock(sock);
-        free(temp);
-        return NULL;
+    if (proxy_info) {
+        temp->status = TCP_CLIENT_PROXY_CONNECTING;
+        temp->proxy_info = *proxy_info;
+        socks5_generate_handshake(temp);
+    } else {
+        temp->status = TCP_CLIENT_CONNECTING;
+
+        if (generate_handshake(temp) == -1) {
+            kill_sock(sock);
+            free(temp);
+            return NULL;
+        }
     }
 
     temp->kill_at = unix_time() + TCP_CONNECTION_TIMEOUT;
@@ -680,6 +776,38 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
 
     if (TCP_connection->status == TCP_CLIENT_DISCONNECTED) {
         return;
+    }
+
+    if (TCP_connection->status == TCP_CLIENT_PROXY_CONNECTING) {
+        if (send_pending_data(TCP_connection) == 0) {
+            int ret = socks5_read_handshake_response(TCP_connection);
+
+            if (ret == -1) {
+                TCP_connection->kill_at = 0;
+                TCP_connection->status = TCP_CLIENT_DISCONNECTED;
+            }
+
+            if (ret == 1) {
+                socks5_generate_connection_request(TCP_connection);
+                TCP_connection->status = TCP_CLIENT_PROXY_UNCONFIRMED;
+            }
+        }
+    }
+
+    if (TCP_connection->status == TCP_CLIENT_PROXY_UNCONFIRMED) {
+        if (send_pending_data(TCP_connection) == 0) {
+            int ret = socks5_read_connection_response(TCP_connection);
+
+            if (ret == -1) {
+                TCP_connection->kill_at = 0;
+                TCP_connection->status = TCP_CLIENT_DISCONNECTED;
+            }
+
+            if (ret == 1) {
+                generate_handshake(TCP_connection);
+                TCP_connection->status = TCP_CLIENT_CONNECTING;
+            }
+        }
     }
 
     if (TCP_connection->status == TCP_CLIENT_CONNECTING) {

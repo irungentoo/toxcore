@@ -381,7 +381,7 @@ START_TEST(test_client)
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
-    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key);
+    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn);
     ck_assert_msg(conn->status == TCP_CLIENT_UNCONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_UNCONFIRMED,
@@ -408,7 +408,7 @@ START_TEST(test_client)
     uint8_t f2_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t f2_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(f2_public_key, f2_secret_key);
-    TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key);
+    TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key, 0);
     routing_response_handler(conn, response_callback, ((void *)conn) + 2);
     routing_status_handler(conn, status_callback, (void *)2);
     routing_data_handler(conn, data_callback, (void *)3);
@@ -475,7 +475,7 @@ START_TEST(test_client_invalid)
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
-    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key);
+    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn);
     ck_assert_msg(conn->status == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONNECTING,

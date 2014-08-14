@@ -242,7 +242,7 @@ Onions *new_onions(uint16_t port)
     DHT *dht = new_DHT(new_networking(ip, port));
     on->onion = new_onion(dht);
     on->onion_a = new_onion_announce(dht);
-    on->onion_c = new_onion_client(new_net_crypto(dht));
+    on->onion_c = new_onion_client(new_net_crypto(dht, 0));
 
     if (on->onion && on->onion_a && on->onion_c)
         return on;

@@ -1916,7 +1916,14 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections_new[i] == NULL) {
-            c->tcp_connections_new[i] = new_TCP_connection(ip_port, public_key, c->dht->self_public_key, c->dht->self_secret_key);
+            if (c->proxy_set) {
+                c->tcp_connections_new[i] = new_TCP_connection(ip_port, public_key, c->dht->self_public_key, c->dht->self_secret_key,
+                                            &c->proxy_info);
+            } else {
+                c->tcp_connections_new[i] = new_TCP_connection(ip_port, public_key, c->dht->self_public_key, c->dht->self_secret_key,
+                                            0);
+            }
+
             return 0;
         }
     }
@@ -2607,7 +2614,7 @@ void load_keys(Net_Crypto *c, const uint8_t *keys)
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(DHT *dht)
+Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
 {
     unix_time_update();
 
@@ -2634,6 +2641,12 @@ Net_Crypto *new_net_crypto(DHT *dht)
     bs_list_init(&temp->ip_port_list, sizeof(IP_Port), 8);
 
     pthread_mutex_init(&temp->connections_mutex, NULL);
+
+    if (proxy_info) {
+        temp->proxy_info = *proxy_info;
+        temp->proxy_set = 1;
+    }
+
     return temp;
 }
 

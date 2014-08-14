@@ -201,6 +201,9 @@ typedef struct {
 
     int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
     void *tcp_onion_callback_object;
+
+    uint8_t proxy_set;
+    TCP_Proxy_Info proxy_info;
 } Net_Crypto;
 
 
@@ -377,7 +380,7 @@ void load_keys(Net_Crypto *c, const uint8_t *keys);
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(DHT *dht);
+Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info);
 
 /* return the optimal interval in ms for running do_net_crypto.
  */
