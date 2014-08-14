@@ -59,6 +59,32 @@ int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *c
     return 0;
 }
 
+/* Put up to max_num nodes in nodes.
+ *
+ * return the number of nodes.
+ */
+uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uint16_t max_num)
+{
+    unsigned int i;
+
+    if (!max_num)
+        return 0;
+
+    unsigned int num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
+
+    if (num_nodes == 0)
+        return 0;
+
+    if (num_nodes < max_num)
+        max_num = num_nodes;
+
+    for (i = 0; i < max_num; ++i) {
+        nodes[i] = onion_c->path_nodes[(onion_c->path_nodes_index - (1 + i)) % num_nodes];
+    }
+
+    return max_num;
+}
+
 /* Put up to max_num random nodes in nodes.
  *
  * return the number of nodes.

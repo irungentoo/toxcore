@@ -145,6 +145,12 @@ typedef struct {
  */
 int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
 
+/* Put up to max_num nodes in nodes.
+ *
+ * return the number of nodes.
+ */
+uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uint16_t max_num);
+
 /* Add a friend who we want to connect to.
  *
  * return -1 on failure.
