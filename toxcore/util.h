@@ -38,15 +38,22 @@
 
 #define inline__ inline __attribute__((always_inline))
 
+#define ENC_KEY(key) (key)
+#define SIG_KEY(key) (key+ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
+#define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
+#define CERT_TARGET_KEY(cert) (cert + 1)
+#define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE)
+#define CERT_INVITEE_KEY(cert) (cert + 1)
+
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
-
 
 enum id_key_t { ID_ALL_KEYS=0, ID_ENCRYPTION_KEY, ID_SIGNATURE_KEY };
 
 /* conventional id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
+bool id_long_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 char* id_toa(const uint8_t* id);  /* WARNING: returns one of STATIC_BUFFER_COPIES static buffers */
 

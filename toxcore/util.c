@@ -64,6 +64,11 @@ bool id_equal(const uint8_t *dest, const uint8_t *src)
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
+bool id_long_equal(const uint8_t *dest, const uint8_t *src)
+{
+    return memcmp(dest, src, EXT_PUBLIC_KEY) == 0;
+}
+
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
@@ -88,12 +93,12 @@ char *id_toa(const uint8_t *id)
 static unsigned keypos[] = { 
     0,                  /* ID_ALL_KEYS */
     0,                  /* ID_ENCRYPTION_KEY */
-    CLIENT_ID_SIZE,     /* ID_SIGNATURE_KEY */
+    SIG_PUBLIC_KEY,     /* ID_SIGNATURE_KEY */
 };
 static unsigned keylen[] = {
-    CLIENT_ID_EXT_SIZE, /* ID_ALL_KEYS */
-    CLIENT_ID_SIZE,     /* ID_ENCRYPTION_KEY */
-    CLIENT_ID_SIGN_SIZE,/* ID_SIGNATURE_KEY */
+    EXT_PUBLIC_KEY, /* ID_ALL_KEYS */
+    ENC_PUBLIC_KEY,     /* ID_ENCRYPTION_KEY */
+    SIG_PUBLIC_KEY,/* ID_SIGNATURE_KEY */
 };
 
 bool id_equal2(const uint8_t *dest, const uint8_t *src, const enum id_key_t keytype)

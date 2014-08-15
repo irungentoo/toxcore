@@ -523,6 +523,21 @@ void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Mess
 
 /**********GROUP CHATS************/
 
+/* Copies group peer self pk into self_public_key
+ */
+void get_groupchat_self_pk(const Messenger *m, int groupnumber, uint8_t *self_public_key);
+
+/* Copies group chat pk into chat_public_key
+ */
+void get_groupchat_pk(const Messenger *m, int groupnumber, uint8_t *chat_public_key);
+
+/* Creates new groupchat credentials instance.
+ * Use in case you want to initiate the chat aka founder
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int create_groupchat_credentials(Messenger *m, int groupnumber);
+
 /* Set the callback for group invites.
  *
  *  Function(Messenger *m, int32_t friendnumber, uint8_t *group_public_key, void *userdata)
