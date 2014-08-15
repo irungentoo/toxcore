@@ -544,7 +544,12 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6)
         return NULL;
 
-    sock_t sock = socket(ip_port.ip.family, SOCK_STREAM, IPPROTO_TCP);
+    uint8_t family = ip_port.ip.family;
+
+    if (proxy_info)
+        family = proxy_info->ip_port.ip.family;
+
+    sock_t sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
 
     if (!sock_valid(sock)) {
         return NULL;
