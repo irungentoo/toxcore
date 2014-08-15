@@ -179,6 +179,9 @@ typedef struct {
     TCP_Client_Connection *tcp_connections_new[MAX_TCP_CONNECTIONS];
     TCP_Client_Connection *tcp_connections[MAX_TCP_CONNECTIONS];
 
+    pthread_mutex_t connections_mutex;
+    unsigned int connection_use_counter;
+
     uint32_t crypto_connections_length; /* Length of connections array. */
 
     /* Our public and secret keys. */
@@ -195,6 +198,12 @@ typedef struct {
     uint32_t current_sleep_time;
 
     BS_LIST ip_port_list;
+
+    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
+    void *tcp_onion_callback_object;
+
+    uint8_t proxy_set;
+    TCP_Proxy_Info proxy_info;
 } Net_Crypto;
 
 
@@ -302,7 +311,7 @@ int64_t write_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const ui
  *
  * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
  */
-int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
 
 /* Add a tcp relay, associating it to a crypt_connection_id.
  *
@@ -317,6 +326,18 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  * return -1 if it wasn't.
  */
 int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
+
+/* Set the function to be called when an onion response packet is recieved by one of the TCP connections.
+ */
+void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
+                                uint16_t length), void *object);
+
+/* Send an onion packet via a random connected TCP relay.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int send_tcp_onion_request(const Net_Crypto *c, const uint8_t *data, uint16_t length);
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
@@ -359,7 +380,7 @@ void load_keys(Net_Crypto *c, const uint8_t *keys);
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(DHT *dht);
+Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info);
 
 /* return the optimal interval in ms for running do_net_crypto.
  */

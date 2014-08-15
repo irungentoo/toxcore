@@ -16,6 +16,8 @@
 #include "../toxcore/crypto_core.h"
 #include "../toxav/toxav.h"
 
+#include "helpers.h"
+
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -49,7 +51,7 @@ typedef struct _Status {
 } Status;
 
 /* My default settings */
-static ToxAvCodecSettings muhcaps;
+static ToxAvCSettings muhcaps;
 
 void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -82,7 +84,7 @@ void callback_recv_starting ( void *av, int32_t call_index, void *_arg )
     /* Alice always sends invite */
     printf("Call started on Alice side...\n");
     cast->Alice.status = InCall;
-    toxav_prepare_transmission(av, call_index, &muhcaps, 1);
+    toxav_prepare_transmission(av, call_index, av_jbufdc, av_VADd, 1);
 }
 void callback_recv_ending ( void *av, int32_t call_index, void *_arg )
 {
@@ -105,7 +107,7 @@ void callback_call_started ( void *av, int32_t call_index, void *_arg )
     /* Alice always sends invite */
     printf("Call started on Bob side...\n");
     cast->Bob.status = InCall;
-    toxav_prepare_transmission(av, call_index, &muhcaps, 1);
+    toxav_prepare_transmission(av, call_index, av_jbufdc, av_VADd, 1);
 }
 void callback_call_canceled ( void *av, int32_t call_index, void *_arg )
 {
@@ -133,8 +135,27 @@ void callback_call_ended ( void *av, int32_t call_index, void *_arg )
 
 void callback_call_type_change ( void *av, int32_t call_index, void *_arg )
 {
-    printf("Call type changed; new type: %s!\n", toxav_get_peer_transmission_type
-           (av, call_index, 0) == TypeAudio ? "audio" : "video");
+    ToxAvCSettings csettings;
+    toxav_get_peer_csettings(av, call_index, 0, &csettings);
+
+    printf("New settings: \n"
+           "Type: %u \n"
+           "Video bitrate: %u \n"
+           "Video height: %u \n"
+           "Video width: %u \n"
+           "Audio bitrate: %u \n"
+           "Audio framedur: %u \n"
+           "Audio sample rate: %u \n"
+           "Audio channels: %u \n",
+           csettings.call_type,
+           csettings.video_bitrate,
+           csettings.max_video_height,
+           csettings.max_video_width,
+           csettings.audio_bitrate,
+           csettings.audio_frame_duration,
+           csettings.audio_sample_rate,
+           csettings.audio_channels
+          );
 }
 
 void callback_requ_timeout ( void *av, int32_t call_index, void *_arg )
@@ -144,11 +165,11 @@ void callback_requ_timeout ( void *av, int32_t call_index, void *_arg )
     cast->Alice.status = TimedOut;
 }
 
-static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length)
+static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length, void *userdata)
 {
 }
 
-static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img)
+static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img, void *userdata)
 {
 }
 
@@ -168,8 +189,8 @@ void register_callbacks(ToxAv *av, void *data)
     toxav_register_callstate_callback(av, callback_call_type_change, av_OnMediaChange, data);
 
 
-    toxav_register_audio_recv_callback(av, callback_audio);
-    toxav_register_video_recv_callback(av, callback_video);
+    toxav_register_audio_recv_callback(av, callback_audio, NULL);
+    toxav_register_video_recv_callback(av, callback_video, NULL);
 }
 
 
@@ -183,9 +204,9 @@ void register_callbacks(ToxAv *av, void *data)
     tox_do(bootstrap_node); tox_do(Alice); tox_do(Bob); \
     switch ( step ) {\
         case 0: /* Alice */  printf("Alice is calling...\n");\
-            toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, AliceCallType, 10); step++; break;\
+            toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, &muhcaps, 10); step++; break;\
         case 1: /* Bob */ if (status_control.Bob.status == Ringing) { printf("Bob answers...\n");\
-            cur_time = time(NULL); toxav_answer(status_control.Bob.av, status_control.Bob.call_index, BobCallType); step++; } break; \
+            cur_time = time(NULL); toxav_answer(status_control.Bob.av, status_control.Bob.call_index, &muhcaps); step++; } break; \
         case 2: /* Rtp transmission */ \
             if (status_control.Bob.status == InCall && status_control.Alice.status == InCall)
 
@@ -195,7 +216,6 @@ case 3: /* Wait for Both to have status ended */\
 if (status_control.Alice.status == Ended && status_control.Bob.status == Ended) running = 0; break; } c_sleep(20); } } printf("\n");
 
 START_TEST(test_AV_flows)
-// int test_AV_flows()
 {
     long long unsigned int cur_time = time(NULL);
     Tox *bootstrap_node = tox_new(0);
@@ -223,7 +243,6 @@ START_TEST(test_AV_flows)
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
             off = 0;
         }
-
 
         if (tox_get_friend_connection_status(Alice, 0) == 1 && tox_get_friend_connection_status(Bob, 0) == 1)
             break;
@@ -404,9 +423,8 @@ START_TEST(test_AV_flows)
         /* Wait 2 seconds and change transmission type */
         if (time(NULL) - times_they_are_a_changin > 2) {
             times_they_are_a_changin = time(NULL);
-            toxav_change_type(status_control.Alice.av, status_control.Alice.call_index,
-                              toxav_get_peer_transmission_type(status_control.Bob.av, status_control.Bob.call_index, 0)
-                              == TypeAudio ? TypeVideo : TypeAudio);
+            muhcaps.audio_bitrate ++;
+            toxav_change_settings(status_control.Alice.av, status_control.Alice.call_index, &muhcaps);
         }
 
         if (time(NULL) - cur_time > 10) { /* Transmit for 10 seconds */
@@ -440,7 +458,7 @@ START_TEST(test_AV_flows)
             switch ( step ) {
                 case 0: /* Alice */
                     printf("Alice is calling...\n");
-                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, TypeAudio, 10);
+                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, &muhcaps, 10);
                     step++;
                     break;
 
@@ -481,7 +499,7 @@ START_TEST(test_AV_flows)
             switch ( step ) {
                 case 0: /* Alice */
                     printf("Alice is calling...\n");
-                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, TypeAudio, 10);
+                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, &muhcaps, 10);
                     step++;
                     break;
 
@@ -508,8 +526,8 @@ START_TEST(test_AV_flows)
     }
 
     /*
-        * Timeout
-        */
+     * Timeout
+     */
     {
         int step = 0;
         int running = 1;
@@ -522,7 +540,7 @@ START_TEST(test_AV_flows)
             switch ( step ) {
                 case 0:
                     printf("Alice is calling...\n");
-                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, TypeAudio, 10);
+                    toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, &muhcaps, 10);
                     step++;
                     break;
 
@@ -557,10 +575,7 @@ Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
 
-    TCase *tc_av_flows = tcase_create("AV_flows");
-    tcase_add_test(tc_av_flows, test_AV_flows);
-    tcase_set_timeout(tc_av_flows, 200);
-    suite_add_tcase(s, tc_av_flows);
+    DEFTESTCASE_SLOW(AV_flows, 200);
 
     return s;
 }

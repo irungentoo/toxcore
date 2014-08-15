@@ -46,7 +46,6 @@ static void fetch_broadcast_info(uint16_t port)
     unsigned long ulOutBufLen = sizeof(pAdapterInfo);
 
     if (pAdapterInfo == NULL) {
-        printf("Error allocating memory for pAdapterInfo\n");
         return;
     }
 
@@ -55,7 +54,6 @@ static void fetch_broadcast_info(uint16_t port)
         pAdapterInfo = malloc(ulOutBufLen);
 
         if (pAdapterInfo == NULL) {
-            printf("Error allocating memory needed to call GetAdaptersinfo\n");
             return;
         }
     }
@@ -78,7 +76,6 @@ static void fetch_broadcast_info(uint16_t port)
                     ip_port->ip.ip4.uint32 = htonl(broadcast_ip);
                     ip_port->port = port;
                     broadcast_count++;
-                    printf("broadcast ip: %s\n", ip_ntoa(&ip_port->ip));
 
                     if (broadcast_count >= MAX_INTERFACES) {
                         return;
@@ -88,10 +85,7 @@ static void fetch_broadcast_info(uint16_t port)
 
             pAdapter = pAdapter->Next;
         }
-    } else {
-        printf("Fetching adapter info failed %i\n", ret);
     }
-
 }
 
 #elif defined(__linux__)

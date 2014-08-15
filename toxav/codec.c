@@ -36,152 +36,96 @@
 #include "rtp.h"
 #include "codec.h"
 
-const uint16_t min_jbuf_size = 4;
-const uint16_t min_readiness_idx = 2; /* when is buffer ready to dqq */
-
-int empty_queue(JitterBuffer *q)
+JitterBuffer *create_queue(unsigned int capacity)
 {
-    while (q->size > 0) {
-        rtp_free_msg(NULL, q->queue[q->front]);
-        q->front++;
+    unsigned int size = 1;
 
-        if (q->front == q->capacity)
-            q->front = 0;
-
-        q->size--;
+    while (size <= capacity) {
+        size *= 2;
     }
 
-    q->id_set = 0;
-    q->queue_ready = 0;
-    return 0;
-}
-
-JitterBuffer *create_queue(int capacity)
-{
     JitterBuffer *q;
 
     if ( !(q = calloc(sizeof(JitterBuffer), 1)) ) return NULL;
 
-    if (!(q->queue = calloc(sizeof(RTPMessage *), capacity))) {
+    if (!(q->queue = calloc(sizeof(RTPMessage *), size))) {
         free(q);
         return NULL;
     }
 
-    q->size = 0;
-    q->capacity = capacity >= min_jbuf_size ? capacity : min_jbuf_size;
-    q->front = 0;
-    q->rear = -1;
-    q->queue_ready = 0;
-    q->current_id = 0;
-    q->current_ts = 0;
-    q->id_set = 0;
+    q->size = size;
+    q->capacity = capacity;
     return q;
+}
+
+static void clear_queue(JitterBuffer *q)
+{
+    for (; q->bottom != q->top; ++q->bottom) {
+        if (q->queue[q->bottom % q->size]) {
+            rtp_free_msg(NULL, q->queue[q->bottom % q->size]);
+            q->queue[q->bottom % q->size] = NULL;
+        }
+    }
 }
 
 void terminate_queue(JitterBuffer *q)
 {
     if (!q) return;
 
-    empty_queue(q);
+    clear_queue(q);
     free(q->queue);
-
-    LOGGER_DEBUG("Terminated jitter buffer: %p", q);
     free(q);
 }
 
-#define sequnum_older(sn_a, sn_b, ts_a, ts_b) (sn_a > sn_b || ts_a > ts_b)
+void queue(JitterBuffer *q, RTPMessage *pk)
+{
+    uint16_t sequnum = pk->header->sequnum;
+
+    unsigned int num = sequnum % q->size;
+
+    if ((uint32_t)(sequnum - q->bottom) > q->size) {
+        clear_queue(q);
+        q->bottom = sequnum;
+        q->queue[num] = pk;
+        q->top = sequnum + 1;
+        return;
+    }
+
+    if (q->queue[num])
+        return;
+
+    q->queue[num] = pk;
+
+    if ((sequnum - q->bottom) >= (q->top - q->bottom))
+        q->top = sequnum + 1;
+}
 
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
 RTPMessage *dequeue(JitterBuffer *q, int *success)
 {
-    if (q->size == 0 || q->queue_ready == 0) { /* Empty queue */
-        q->queue_ready = 0;
+    if (q->top == q->bottom) {
         *success = 0;
         return NULL;
     }
 
-    int front = q->front;
+    unsigned int num = q->bottom % q->size;
 
-    if (q->id_set == 0) {
-        q->current_id = q->queue[front]->header->sequnum;
-        q->current_ts = q->queue[front]->header->timestamp;
-        q->id_set = 1;
-    } else {
-        int next_id = q->queue[front]->header->sequnum;
-        int next_ts = q->queue[front]->header->timestamp;
-
-        /* if this packet is indeed the expected packet */
-        if (next_id == (q->current_id + 1) % MAX_SEQU_NUM) {
-            q->current_id = next_id;
-            q->current_ts = next_ts;
-        } else {
-            if (sequnum_older(next_id, q->current_id, next_ts, q->current_ts)) {
-                LOGGER_DEBUG("nextid: %d current: %d\n", next_id, q->current_id);
-                q->current_id = (q->current_id + 1) % MAX_SEQU_NUM;
-                *success = 2; /* tell the decoder the packet is lost */
-                return NULL;
-            } else {
-                LOGGER_DEBUG("Packet too old");
-                *success = 0;
-                return NULL;
-            }
-        }
+    if (q->queue[num]) {
+        RTPMessage *ret = q->queue[num];
+        q->queue[num] = NULL;
+        ++q->bottom;
+        *success = 1;
+        return ret;
     }
 
-    q->size--;
-    q->front++;
-
-    if (q->front == q->capacity)
-        q->front = 0;
-
-    *success = 1;
-    q->current_id = q->queue[front]->header->sequnum;
-    q->current_ts = q->queue[front]->header->timestamp;
-    return q->queue[front];
-}
-
-
-void queue(JitterBuffer *q, RTPMessage *pk)
-{
-    if (q->size == q->capacity) { /* Full, empty queue */
-        LOGGER_DEBUG("Queue full s(%d) c(%d), emptying...", q->size, q->capacity);
-        empty_queue(q);
+    if ((uint32_t)(q->top - q->bottom) > q->capacity) {
+        ++q->bottom;
+        *success = 2;
+        return NULL;
     }
 
-    if (q->size >= min_readiness_idx) q->queue_ready = 1;
-
-    ++q->size;
-    ++q->rear;
-
-    if (q->rear == q->capacity) q->rear = 0;
-
-    q->queue[q->rear] = pk;
-
-    int a;
-    int j;
-    a = q->rear;
-
-    for (j = 0; j < q->size - 1; ++j) {
-        int b = a - 1;
-
-        if (b < 0)
-            b += q->capacity;
-
-        if (sequnum_older(q->queue[b]->header->sequnum, q->queue[a]->header->sequnum,
-                          q->queue[b]->header->timestamp, q->queue[a]->header->timestamp)) {
-            RTPMessage *temp;
-            temp = q->queue[a];
-            q->queue[a] = q->queue[b];
-            q->queue[b] = temp;
-            LOGGER_DEBUG("Had to swap");
-        } else {
-            break;
-        }
-
-        a -= 1;
-
-        if (a < 0) a += q->capacity;
-    }
+    *success = 0;
+    return NULL;
 }
 
 
@@ -207,6 +151,7 @@ int init_audio_decoder(CodecState *cs, uint32_t audio_channels)
         return -1;
     }
 
+    cs->audio_decoder_channels = audio_channels;
     return 0;
 }
 
@@ -317,7 +262,7 @@ int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
         return -1;
     }
 
-
+    cs->audio_encoder_channels = audio_channels;
     return 0;
 }
 
@@ -325,7 +270,8 @@ int init_audio_encoder(CodecState *cs, uint32_t audio_channels)
 CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint16_t audio_frame_duration,
                                  uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
+                                 uint32_t encoder_audio_channels,
+                                 uint32_t decoder_audio_channels,
                                  uint32_t audio_VAD_tolerance_ms,
                                  uint16_t max_video_width,
                                  uint16_t max_video_height,
@@ -348,8 +294,8 @@ CodecState *codec_init_session ( uint32_t audio_bitrate,
         retu->capabilities |= ( 0 == init_video_decoder(retu) ) ? v_decoding : 0;
     }
 
-    retu->capabilities |= ( 0 == init_audio_encoder(retu, audio_channels) ) ? a_encoding : 0;
-    retu->capabilities |= ( 0 == init_audio_decoder(retu, audio_channels) ) ? a_decoding : 0;
+    retu->capabilities |= ( 0 == init_audio_encoder(retu, encoder_audio_channels) ) ? a_encoding : 0;
+    retu->capabilities |= ( 0 == init_audio_decoder(retu, decoder_audio_channels) ) ? a_decoding : 0;
 
     if ( retu->capabilities == 0  ) { /* everything failed */
         free (retu);

@@ -414,7 +414,7 @@ static int send_packet_to(const Net_Crypto *c, int crypt_connection_id, const ui
     //TODO: detect and kill bad relays.
     uint32_t i;
 
-    unsigned int r = rand();
+    unsigned int r = crypt_connection_id;
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (conn->status_tcp[(i + r) % MAX_TCP_CONNECTIONS] == STATUS_TCP_ONLINE) {/* friend is connected to this relay. */
@@ -1268,13 +1268,26 @@ static int create_crypto_connection(Net_Crypto *c)
             return i;
     }
 
-    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == -1)
-        return -1;
+    while (1) { /* TODO: is this really the best way to do this? */
+        pthread_mutex_lock(&c->connections_mutex);
 
-    memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
-    int id = c->crypto_connections_length;
-    pthread_mutex_init(&c->crypto_connections[id].mutex, NULL);
-    ++c->crypto_connections_length;
+        if (!c->connection_use_counter) {
+            break;
+        }
+
+        pthread_mutex_unlock(&c->connections_mutex);
+    }
+
+    int id = -1;
+
+    if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == 0) {
+        memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
+        id = c->crypto_connections_length;
+        pthread_mutex_init(&c->crypto_connections[id].mutex, NULL);
+        ++c->crypto_connections_length;
+    }
+
+    pthread_mutex_unlock(&c->connections_mutex);
     return id;
 }
 
@@ -1781,6 +1794,17 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     return 0;
 }
 
+static int tcp_onion_callback(void *object, const uint8_t *data, uint16_t length)
+{
+    Net_Crypto *c = object;
+
+    if (c->tcp_onion_callback)
+        return c->tcp_onion_callback(c->tcp_onion_callback_object, data, length);
+
+    return 1;
+}
+
+
 /* Check if tcp connection to public key can be created.
  *
  * return -1 if it can't.
@@ -1892,12 +1916,47 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections_new[i] == NULL) {
-            c->tcp_connections_new[i] = new_TCP_connection(ip_port, public_key, c->dht->self_public_key, c->dht->self_secret_key);
+            if (c->proxy_set) {
+                c->tcp_connections_new[i] = new_TCP_connection(ip_port, public_key, c->dht->self_public_key, c->dht->self_secret_key,
+                                            &c->proxy_info);
+            } else {
+                c->tcp_connections_new[i] = new_TCP_connection(ip_port, public_key, c->dht->self_public_key, c->dht->self_secret_key,
+                                            0);
+            }
+
             return 0;
         }
     }
 
     return -1;
+}
+
+/* Send an onion packet via a random connected TCP relay.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int send_tcp_onion_request(const Net_Crypto *c, const uint8_t *data, uint16_t length)
+{
+    unsigned int i, r = rand();
+
+    for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
+        if (c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS]) {
+            if (send_onion_request(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], data, length) == 1)
+                return 0;
+        }
+    }
+
+    return -1;
+}
+
+/* Set the function to be called when an onion response packet is recieved by one of the TCP connections.
+ */
+void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
+                                uint16_t length), void *object)
+{
+    c->tcp_onion_callback = tcp_onion_callback;
+    c->tcp_onion_callback_object = object;
 }
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
@@ -1978,6 +2037,7 @@ static int add_tcp_connected(Net_Crypto *c, TCP_Client_Connection *tcp_con)
     routing_status_handler(tcp_con, tcp_status_callback, tcp_con);
     routing_data_handler(tcp_con, tcp_data_callback, tcp_con);
     oob_data_handler(tcp_con, tcp_oob_callback, tcp_con);
+    onion_response_handler(tcp_con, tcp_onion_callback, c);
     c->tcp_connections[tcp_num] = tcp_con;
     return 0;
 }
@@ -2047,6 +2107,8 @@ static void clear_disconnected_tcp(Net_Crypto *c)
             continue;
 
         c->tcp_connections[i] = NULL;
+        /* Try reconnecting to relay on disconnect. */
+        add_tcp_relay(c, tcp_con->ip_port, tcp_con->public_key);
         kill_TCP_connection(tcp_con);
 
         for (j = 0; j < c->crypto_connections_length; ++j) {
@@ -2443,7 +2505,7 @@ int64_t write_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const ui
  *
  * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
  */
-int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
@@ -2454,13 +2516,24 @@ int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const u
     if (data[0] >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
         return -1;
 
+    pthread_mutex_lock(&c->connections_mutex);
+    ++c->connection_use_counter;
+    pthread_mutex_unlock(&c->connections_mutex);
+
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
-    if (conn == 0)
-        return -1;
+    int ret = -1;
 
-    return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data,
-                                   length);
+    if (conn) {
+        ret = send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end, data,
+                                      length);
+    }
+
+    pthread_mutex_lock(&c->connections_mutex);
+    --c->connection_use_counter;
+    pthread_mutex_unlock(&c->connections_mutex);
+
+    return ret;
 }
 
 /* Kill a crypto connection.
@@ -2470,15 +2543,32 @@ int send_lossy_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const u
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
+    while (1) { /* TODO: is this really the best way to do this? */
+        pthread_mutex_lock(&c->connections_mutex);
+
+        if (!c->connection_use_counter) {
+            break;
+        }
+
+        pthread_mutex_unlock(&c->connections_mutex);
+    }
+
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
-    if (conn == 0)
-        return -1;
+    int ret = -1;
 
-    send_kill_packet(c, crypt_connection_id);
-    disconnect_peer_tcp(c, crypt_connection_id);
-    bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
-    return wipe_crypto_connection(c, crypt_connection_id);
+    if (conn) {
+        if (conn->status == CRYPTO_CONN_ESTABLISHED)
+            send_kill_packet(c, crypt_connection_id);
+
+        disconnect_peer_tcp(c, crypt_connection_id);
+        bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        ret = wipe_crypto_connection(c, crypt_connection_id);
+    }
+
+    pthread_mutex_unlock(&c->connections_mutex);
+
+    return ret;
 }
 
 /* return one of CRYPTO_CONN_* values indicating the state of the connection.
@@ -2526,7 +2616,7 @@ void load_keys(Net_Crypto *c, const uint8_t *keys)
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(DHT *dht)
+Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
 {
     unix_time_update();
 
@@ -2551,6 +2641,14 @@ Net_Crypto *new_net_crypto(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_DATA, &udp_handle_packet, temp);
 
     bs_list_init(&temp->ip_port_list, sizeof(IP_Port), 8);
+
+    pthread_mutex_init(&temp->connections_mutex, NULL);
+
+    if (proxy_info) {
+        temp->proxy_info = *proxy_info;
+        temp->proxy_set = 1;
+    }
+
     return temp;
 }
 
@@ -2623,6 +2721,8 @@ void kill_net_crypto(Net_Crypto *c)
         kill_TCP_connection(c->tcp_connections_new[i]);
         kill_TCP_connection(c->tcp_connections[i]);
     }
+
+    pthread_mutex_destroy(&c->connections_mutex);
 
     bs_list_free(&c->ip_port_list);
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_REQUEST, NULL, NULL);

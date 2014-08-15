@@ -1561,8 +1561,10 @@ int file_control(const Messenger *m, int32_t friendnumber, uint8_t send_receive,
                     break;
 
                 case FILECONTROL_KILL:
-                case FILECONTROL_FINISHED:
                     m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
+                    break;
+
+                case FILECONTROL_FINISHED:
                     break;
             }
 
@@ -1684,8 +1686,9 @@ static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t 
                 return -1;
 
             case FILECONTROL_KILL:
-            case FILECONTROL_FINISHED:
                 m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
+
+            case FILECONTROL_FINISHED:
                 return 0;
         }
     } else {
@@ -1899,16 +1902,21 @@ static int handle_new_connections(void *object, New_Connection *n_c)
 
 
 /* Run this at startup. */
-Messenger *new_messenger(uint8_t ipv6enabled)
+Messenger *new_messenger(Messenger_Options *options)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
     if ( ! m )
         return NULL;
 
-    IP ip;
-    ip_init(&ip, ipv6enabled);
-    m->net = new_networking(ip, TOX_PORT_DEFAULT);
+    if (options->udp_disabled) {
+        /* this is the easiest way to completely disable UDP without changing too much code. */
+        m->net = calloc(1, sizeof(Networking_Core));
+    } else {
+        IP ip;
+        ip_init(&ip, options->ipv6enabled);
+        m->net = new_networking(ip, TOX_PORT_DEFAULT);
+    }
 
     if (m->net == NULL) {
         free(m);
@@ -1923,7 +1931,11 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
-    m->net_crypto = new_net_crypto(m->dht);
+    if (options->proxy_enabled) {
+        m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
+    } else {
+        m->net_crypto = new_net_crypto(m->dht, 0);
+    }
 
     if (m->net_crypto == NULL) {
         kill_networking(m->net);
@@ -1949,6 +1961,7 @@ Messenger *new_messenger(uint8_t ipv6enabled)
         return NULL;
     }
 
+    m->options = *options;
     friendreq_init(&(m->fr), m->onion_c);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
@@ -2460,9 +2473,11 @@ void do_messenger(Messenger *m)
 {
     unix_time_update();
 
-    networking_poll(m->net);
+    if (!m->options.udp_disabled) {
+        networking_poll(m->net);
+        do_DHT(m->dht);
+    }
 
-    do_DHT(m->dht);
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friends(m);
@@ -2599,9 +2614,11 @@ void do_messenger(Messenger *m)
 #define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
 #define MESSENGER_STATE_TYPE_STATUS        6
 #define MESSENGER_STATE_TYPE_TCP_RELAY     10
+#define MESSENGER_STATE_TYPE_PATH_NODE     11
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
 #define NUM_SAVED_TCP_RELAYS 8
+#define NUM_SAVED_PATH_NODES 8
 struct SAVED_FRIEND {
     uint8_t status;
     uint8_t client_id[CLIENT_ID_SIZE];
@@ -2715,6 +2732,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
              + sizesubhead + NUM_SAVED_TCP_RELAYS * sizeof(Node_format) //TCP relays
+             + sizesubhead + NUM_SAVED_PATH_NODES * sizeof(Node_format) //saved path nodes
              ;
 }
 
@@ -2787,6 +2805,15 @@ void messenger_save(const Messenger *m, uint8_t *data)
     memset(relays, 0, len);
     copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
     memcpy(data, relays, len);
+    data += len;
+
+    Node_format nodes[NUM_SAVED_PATH_NODES];
+    len = sizeof(nodes);
+    type = MESSENGER_STATE_TYPE_PATH_NODE;
+    data = z_state_save_subheader(data, len, type);
+    memset(nodes, 0, len);
+    onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
+    memcpy(data, nodes, len);
 }
 
 static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
@@ -2851,8 +2878,27 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
                 add_tcp_relay(m->net_crypto, relays[i].ip_port, relays[i].client_id);
             }
+
+            break;
         }
-        break;
+
+        case MESSENGER_STATE_TYPE_PATH_NODE: {
+            Node_format nodes[NUM_SAVED_PATH_NODES];
+
+            if (length != sizeof(nodes)) {
+                return -1;
+            }
+
+            memcpy(nodes, data, length);
+            uint32_t i;
+
+            for (i = 0; i < NUM_SAVED_PATH_NODES; ++i) {
+                onion_add_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
+            }
+
+            break;
+        }
+
 #ifdef DEBUG
 
         default:

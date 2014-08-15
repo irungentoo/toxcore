@@ -40,7 +40,6 @@
 #endif
 
 #include "ping.h"
-#include "group_announce.h"
 
 #include "network.h"
 #include "LAN_discovery.h"
@@ -630,198 +629,61 @@ int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes
 #endif
 }
 
-int get_closest_node(const DHT* dht, const uint8_t *client_id, Node_format *node, sa_family_t sa_family,
-                     uint8_t is_LAN, uint8_t want_good)
-{
-    /* Finding the closest peer to the chat id */
-    static Node_format nodes[MAX_SENT_NODES];
-    Node_format *closest_node=NULL;
-    int nclosest, j;
-    nclosest=get_close_nodes(dht, client_id, nodes, sa_family, is_LAN, want_good);
-
-    for (j=0; j<nclosest; j++)
-    {
-        if (closest_node==NULL || (id_closest(client_id, closest_node->client_id, nodes[j].client_id)==2))
-            closest_node=&nodes[j];
-    }
-    
-    /* Check if the DHT in question isn't any closer itself */
-    if (id_closest(client_id, closest_node->client_id, dht->self_public_key)==2)
-        return -1;
-     
-    /* Copy over to the result */
-    id_copy(node->client_id, closest_node->client_id);
-    ipport_copy(&node->ip_port, &closest_node->ip_port);
-    
-    return 0;
-}
-
-/* Replace first bad (or empty) node with this one.
+/* Replace a first bad (or empty) node with this one
+ *  or replace a possibly bad node (tests failed or not done yet)
+ *  that is further than any other in the list
+ *  from the comp_client_id
+ *  or replace a good node that is further
+ *  than any other in the list from the comp_client_id
+ *  and further than client_id.
  *
- *  return 0 if successful.
- *  return 1 if not (list contains no bad nodes).
- */
-static int replace_bad(    Client_data    *list,
-                           uint32_t        length,
-                           const uint8_t  *client_id,
-                           IP_Port         ip_port )
+ * Do not replace any node if the list has no bad or possibly bad nodes
+ *  and all nodes in the list are closer to comp_client_id
+ *  than client_id.
+ *
+ *  returns True(1) when the item was stored, False(0) otherwise */
+static int replace_all(   Client_data    *list,
+                          uint32_t        length,
+                          const uint8_t  *client_id,
+                          IP_Port         ip_port,
+                          const uint8_t  *comp_client_id )
 {
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 1;
 
-    uint32_t i;
+    uint32_t i, replace = ~0, bad = ~0, possibly_bad = ~0, good = ~0;
 
     for (i = 0; i < length; ++i) {
-        /* If node is bad */
+
         Client_data *client = &list[i];
 
         if (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) &&
                 is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
-
-            IPPTsPng *ipptp_write = NULL;
-            IPPTsPng *ipptp_clear = NULL;
-
-            if (ip_port.ip.family == AF_INET) {
-                ipptp_write = &client->assoc4;
-                ipptp_clear = &client->assoc6;
-            } else {
-                ipptp_write = &client->assoc6;
-                ipptp_clear = &client->assoc4;
-            }
-
-            memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
-            ipptp_write->ip_port = ip_port;
-            ipptp_write->timestamp = unix_time();
-
-            ip_reset(&ipptp_write->ret_ip_port.ip);
-            ipptp_write->ret_ip_port.port = 0;
-            ipptp_write->ret_timestamp = 0;
-
-            /* zero out other address */
-            memset(ipptp_clear, 0, sizeof(*ipptp_clear));
-
-            return 0;
+            // "bad" node
+            bad = i;
+            break;
+        } else if (hardening_correct(&client->assoc4.hardening) != HARDENING_ALL_OK &&
+                   hardening_correct(&client->assoc6.hardening) != HARDENING_ALL_OK) {
+            // "possibly bad" node
+            if (possibly_bad == ~0 ||
+                    id_closest(comp_client_id, list[possibly_bad].client_id, list[i].client_id) == 1)
+                possibly_bad = i;
+        } else {
+            // "good" node
+            if (good == ~0 ||
+                    id_closest(comp_client_id, list[good].client_id, list[i].client_id) == 1)
+                good = i;
         }
     }
 
-    return 1;
-}
+    if (bad != ~0)
+        replace = bad;
+    else if (possibly_bad != ~0)
+        replace = possibly_bad;
+    else if (good != ~0 && id_closest(comp_client_id, list[good].client_id, client_id) == 2)
+        replace = good;
 
-
-/* Sort the list. It will be sorted from furthest to closest.
- *  Turns list into data that quick sort can use and reverts it back.
- */
-static void sort_list(Client_data *list, uint32_t length, const uint8_t *comp_client_id)
-{
-    Client_data cd;
-    ClientPair pairs[length];
-    uint32_t i;
-
-    memcpy(cd.client_id, comp_client_id, CLIENT_ID_SIZE);
-
-    for (i = 0; i < length; ++i) {
-        pairs[i].c1 = cd;
-        pairs[i].c2 = list[i];
-    }
-
-    ClientPair_quick_sort(pairs, length, client_id_cmp);
-
-    for (i = 0; i < length; ++i)
-        list[i] = pairs[i].c2;
-}
-
-/* Replace first node that is possibly bad (tests failed or not done yet.) with this one.
- *
- *  return 0 if successful.
- *  return 1 if not (list contains no bad nodes).
- */
-static int replace_possible_bad(    Client_data    *list,
-                                    uint32_t        length,
-                                    const uint8_t  *client_id,
-                                    IP_Port         ip_port,
-                                    const uint8_t  *comp_client_id )
-{
-    if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
-        return 1;
-
-    sort_list(list, length, comp_client_id);
-
-    /* TODO: decide if the following lines should stay commented or not.
-    if (id_closest(comp_client_id, list[0].client_id, client_id) == 1)
-        return 0;*/
-
-    uint32_t i;
-
-    for (i = 0; i < length; ++i) {
-        /* If node is bad */
-        Client_data *client = &list[i];
-
-        if (hardening_correct(&client->assoc4.hardening) != HARDENING_ALL_OK &&
-                hardening_correct(&client->assoc6.hardening) != HARDENING_ALL_OK) {
-
-            IPPTsPng *ipptp_write = NULL;
-            IPPTsPng *ipptp_clear = NULL;
-
-            if (ip_port.ip.family == AF_INET) {
-                ipptp_write = &client->assoc4;
-                ipptp_clear = &client->assoc6;
-            } else {
-                ipptp_write = &client->assoc6;
-                ipptp_clear = &client->assoc4;
-            }
-
-            memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
-            ipptp_write->ip_port = ip_port;
-            ipptp_write->timestamp = unix_time();
-
-            ip_reset(&ipptp_write->ret_ip_port.ip);
-            ipptp_write->ret_ip_port.port = 0;
-            ipptp_write->ret_timestamp = 0;
-
-            /* zero out other address */
-            memset(ipptp_clear, 0, sizeof(*ipptp_clear));
-
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-/* Replace the first good node that is further to the comp_client_id than that of the client_id in the list
- *
- *  returns 0 when the item was stored, 1 otherwise */
-static int replace_good(   Client_data    *list,
-                           uint32_t        length,
-                           const uint8_t  *client_id,
-                           IP_Port         ip_port,
-                           const uint8_t  *comp_client_id )
-{
-    if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
-        return 1;
-
-    /* TODO: eventually remove this.*/
-    if (length != LCLIENT_LIST)
-        sort_list(list, length, comp_client_id);
-
-    int8_t replace = -1;
-
-    /* Because the list is sorted, we can simply check the client_id at the
-     * border, either it is closer, then every other one is as well, or it is
-     * further, then it gets pushed out in favor of the new address, which
-     * will with the next sort() move to its "rightful" position
-     *
-     * CAVEAT: weirdly enough, the list is sorted DESCENDING in distance
-     * so the furthest element is the first, NOT the last (at least that's
-     * what the comment above sort_list() claims)
-     */
-    if (id_closest(comp_client_id, list[0].client_id, client_id) == 2)
-        replace = 0;
-
-    if (replace != -1) {
-#ifdef DEBUG
-        assert(replace >= 0 && replace < length);
-#endif
+    if (replace != ~0) {
         Client_data *client = &list[replace];
         IPPTsPng *ipptp_write = NULL;
         IPPTsPng *ipptp_clear = NULL;
@@ -834,7 +696,7 @@ static int replace_good(   Client_data    *list,
             ipptp_clear = &client->assoc4;
         }
 
-        memcpy(client->client_id, client_id, CLIENT_ID_SIZE);
+        id_copy(client->client_id, client_id);
         ipptp_write->ip_port = ip_port;
         ipptp_write->timestamp = unix_time();
 
@@ -845,10 +707,10 @@ static int replace_good(   Client_data    *list,
         /* zero out other address */
         memset(ipptp_clear, 0, sizeof(*ipptp_clear));
 
-        return 0;
+        return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 /* Attempt to add client with ip_port and client_id to the friends client list
@@ -870,16 +732,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id)
      * to replace the first ip by the second.
      */
     if (!client_or_ip_port_in_list(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
-        if (replace_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port)) {
-            if (replace_possible_bad(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
-                                     dht->self_public_key)) {
-                /* If we can't replace bad nodes we try replacing good ones. */
-                if (!replace_good(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port,
-                                  dht->self_public_key))
-                    used++;
-            } else
-                used++;
-        } else
+        if (replace_all(dht->close_clientlist, LCLIENT_LIST, client_id, ip_port, dht->self_public_key))
             used++;
     } else
         used++;
@@ -887,19 +740,8 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id)
     for (i = 0; i < dht->num_friends; ++i) {
         if (!client_or_ip_port_in_list(dht->friends_list[i].client_list,
                                        MAX_FRIEND_CLIENTS, client_id, ip_port)) {
-
-            if (replace_bad(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                            client_id, ip_port)) {
-                /*if (replace_possible_bad(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                                client_id, ip_port, dht->friends_list[i].client_id)) {*/
-                /* If we can't replace bad nodes we try replacing good ones. */
-                if (!replace_good(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                                  client_id, ip_port, dht->friends_list[i].client_id))
-                    used++;
-
-                /*} else
-                    used++;*/
-            } else
+            if (replace_all(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                            client_id, ip_port, dht->friends_list[i].client_id))
                 used++;
         } else
             used++;
@@ -2378,9 +2220,8 @@ DHT *new_DHT(Networking_Core *net)
 
     dht->net = net;
     dht->ping = new_ping(dht);
-    dht->announce = new_announce(dht);
 
-    if (dht->ping == NULL || dht->announce == NULL) {
+    if (dht->ping == NULL) {
         kill_DHT(dht);
         return NULL;
     }
@@ -2422,7 +2263,6 @@ void do_DHT(DHT *dht)
     do_DHT_friends(dht);
     do_NAT(dht);
     do_to_ping(dht->ping);
-    do_announce(dht->announce);
     do_hardening(dht);
 #ifdef ENABLE_ASSOC_DHT
 
@@ -2445,7 +2285,6 @@ void kill_DHT(DHT *dht)
     ping_array_free_all(&dht->dht_ping_array);
     ping_array_free_all(&dht->dht_harden_ping_array);
     kill_ping(dht->ping);
-    kill_announce(dht->announce);
     free(dht->friends_list);
     free(dht);
 }
@@ -2598,9 +2437,12 @@ int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
 
     return -1;
 }
-static uint32_t DHT_isconnected_common(const DHT *dht, int needamount)
+/*  return 0 if we are not connected to the DHT.
+ *  return 1 if we are.
+ */
+int DHT_isconnected(const DHT *dht)
 {
-    uint32_t i, res=0;
+    uint32_t i;
     unix_time_update();
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
@@ -2608,27 +2450,8 @@ static uint32_t DHT_isconnected_common(const DHT *dht, int needamount)
 
         if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
                 !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
-            if (needamount)
-                res++;
-            else
-                return 1;
+            return 1;
     }
-    
-    return needamount? res : 0;
-}
 
-/*  return 0 if we are not connected to the DHT.
- *  return 1 if we are.
- */
-int DHT_isconnected(const DHT *dht)
-{
-    return (int)DHT_isconnected_common(dht, 0);
-}
-
-/*  return 0 if we are not connected to the DHT.
- *  return the amount of live connections in close client list otherwise.
- */
-uint32_t DHT_connectiondegree(const DHT *dht)
-{
-    return DHT_isconnected_common(dht, 1);
+    return 0;
 }

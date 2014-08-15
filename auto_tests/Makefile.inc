@@ -80,13 +80,18 @@ group_announce_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 group_announce_test_LDADD = $(AUTOTEST_LDADD)
 
+dht_autotest_SOURCES = ../auto_tests/dht_test.c
+
+dht_autotest_CFLAGS = $(AUTOTEST_CFLAGS)
+
+dht_autotest_LDADD = $(AUTOTEST_LDADD)
 
 if BUILD_AV
 toxav_basic_test_SOURCES = ../auto_tests/toxav_basic_test.c
 
 toxav_basic_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
-toxav_basic_test_LDADD = $(AUTOTEST_LDADD)
+toxav_basic_test_LDADD = $(AUTOTEST_LDADD) $(AV_LIBS)
 
 
 toxav_many_test_SOURCES = ../auto_tests/toxav_many_test.c
@@ -98,5 +103,4 @@ endif
 
 endif
 
-EXTRA_DIST +=           $(top_srcdir)/auto_tests/friends_test.c
-
+EXTRA_DIST += $(top_srcdir)/auto_tests/friends_test.c

@@ -21,6 +21,8 @@
 #include <string.h>
 #include <check.h>
 
+#include "helpers.h"
+
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
 #define STRINGS_EQUAL(X, Y) (strcmp(X, Y) == 0)
 
@@ -298,11 +300,6 @@ START_TEST(test_messenger_state_saveloadsave)
 }
 END_TEST
 
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
-
 Suite *messenger_suite(void)
 {
     Suite *s = suite_create("Messenger");
@@ -338,7 +335,9 @@ int main(int argc, char *argv[])
     bad_id    = hex_string_to_bin(bad_id_str);
 
     /* IPv6 status from global define */
-    m = new_messenger(TOX_ENABLE_IPV6_DEFAULT);
+    Messenger_Options options = {0};
+    options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    m = new_messenger(&options);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)

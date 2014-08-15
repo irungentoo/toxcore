@@ -67,6 +67,13 @@
 #define PACKET_ID_LOSSLESS_RANGE_START 160
 #define PACKET_ID_LOSSLESS_RANGE_SIZE 32
 
+typedef struct {
+    uint8_t ipv6enabled;
+    uint8_t udp_disabled;
+    uint8_t proxy_enabled;
+    TCP_Proxy_Info proxy_info;
+} Messenger_Options;
+
 /* Status definitions. */
 enum {
     NOFRIEND,
@@ -252,6 +259,7 @@ typedef struct Messenger {
     void (*msi_packet)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
 
+    Messenger_Options options;
 } Messenger;
 
 /* Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
@@ -755,12 +763,12 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
  */
-Messenger *new_messenger(uint8_t ipv6enabled);
+Messenger *new_messenger(Messenger_Options *options);
 
 /* Run this before closing shop
  * Free all datastructures.
  */
-void kill_messenger(Messenger *M);
+void kill_messenger(Messenger *m);
 
 /* The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m);

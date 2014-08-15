@@ -311,7 +311,6 @@ typedef struct {
     uint16_t port;
     /* Our UDP socket. */
     sock_t sock;
-    uint64_t send_fail_eagain;
 } Networking_Core;
 
 /* Easy packet construction utilities */

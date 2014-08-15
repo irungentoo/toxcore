@@ -283,6 +283,9 @@ uint64_t current_time_monotonic(void)
  */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length)
 {
+    if (net->family == 0) /* Socket not initialized */
+        return -1;
+
     /* socket AF_INET, but target IP NOT: can't send */
     if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
         return -1;
@@ -337,12 +340,6 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint3
     int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 
     loglogdata("O=>", data, length, ip_port, res);
-
-
-    if ((res >= 0) && ((uint32_t)res == length))
-        net->send_fail_eagain = 0;
-    else if ((res < 0) && (errno == EWOULDBLOCK))
-        net->send_fail_eagain = current_time_monotonic();
 
     return res;
 }
@@ -485,6 +482,9 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 
 void networking_poll(Networking_Core *net)
 {
+    if (net->family == 0) /* Socket not initialized */
+        return;
+
     unix_time_update();
 
     IP_Port ip_port;
@@ -713,7 +713,9 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 /* Function to cleanup networking stuff. */
 void kill_networking(Networking_Core *net)
 {
-    kill_sock(net->sock);
+    if (net->family != 0) /* Socket not initialized */
+        kill_sock(net->sock);
+
     free(net);
     return;
 }

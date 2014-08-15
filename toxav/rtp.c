@@ -112,7 +112,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
      * I don't need to parse the other stuff if it's bad
      */
     uint8_t _cc = GET_FLAG_CSRCC ( _retu );
-    uint32_t _length = 12 /* Minimum header len */ + ( _cc * 4 );
+    int _length = 12 /* Minimum header len */ + ( _cc * 4 );
 
     if ( length < _length ) {
         /* Deallocate */
@@ -551,7 +551,7 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
 
     _retu->dest = friend_num;
 
-    _retu->rsequnum = _retu->sequnum = 1;
+    _retu->rsequnum = _retu->sequnum = 0;
 
     _retu->ext_header = NULL; /* When needed allocate */
 

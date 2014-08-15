@@ -47,6 +47,8 @@
 #define MAX_STORED_PINGED_NODES 9
 #define MIN_NODE_PING_TIME 10
 
+#define MAX_PATH_NODES 32
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -124,6 +126,9 @@ typedef struct {
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
 
+    Node_format path_nodes[MAX_PATH_NODES];
+    uint16_t path_nodes_index;
+
     Ping_Array announce_ping_array;
     uint8_t last_pinged_index;
     struct {
@@ -131,6 +136,20 @@ typedef struct {
         void *object;
     } Onion_Data_Handlers[256];
 } Onion_Client;
+
+
+/* Add a node to the path_nodes array.
+ *
+ * return -1 on failure
+ * return 0 on success
+ */
+int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
+
+/* Put up to max_num nodes in nodes.
+ *
+ * return the number of nodes.
+ */
+uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uint16_t max_num);
 
 /* Add a friend who we want to connect to.
  *
@@ -222,5 +241,11 @@ void do_onion_client(Onion_Client *onion_c);
 Onion_Client *new_onion_client(Net_Crypto *c);
 
 void kill_onion_client(Onion_Client *onion_c);
+
+
+/*  return 0 if we are not connected to the network.
+ *  return 1 if we are.
+ */
+int onion_isconnected(const Onion_Client *onion_c);
 
 #endif

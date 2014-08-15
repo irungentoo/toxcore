@@ -1225,7 +1225,7 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[argc - 2], "-f"))
             filename = argv[argc - 1];
 
-    m = tox_new(ipv6enabled);
+    m = tox_new(0);
 
     if ( !m ) {
         fputs("Failed to allocate Messenger datastructure", stderr);
@@ -1255,10 +1255,9 @@ int main(int argc, char *argv[])
     new_lines(idstring);
     strcpy(input_line, "");
 
-    uint16_t port = htons(atoi(argv[argvoffset + 2]));
+    uint16_t port = atoi(argv[argvoffset + 2]);
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    int res = tox_bootstrap_from_address(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
-    free(binary_string);
+    int res = tox_bootstrap_from_address(m, argv[argvoffset + 1], port, binary_string);
 
     if (!res) {
         printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
@@ -1291,7 +1290,7 @@ int main(int argc, char *argv[])
 
                 if (timestamp0 + 10 < timestamp1) {
                     timestamp0 = timestamp1;
-                    tox_bootstrap_from_address(m, argv[argvoffset + 1], ipv6enabled, port, binary_string);
+                    tox_bootstrap_from_address(m, argv[argvoffset + 1], port, binary_string);
                 }
             }
         }
@@ -1319,6 +1318,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    free(binary_string);
     tox_kill(m);
     endwin();
     return 0;

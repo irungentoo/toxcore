@@ -29,16 +29,14 @@
 
 #define PING_ID_TIMEOUT 20
 
-#define ANNOUNCE_REQUEST_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_MACBYTES)
-#define ANNOUNCE_REQUEST_SIZE_RECV (ANNOUNCE_REQUEST_SIZE + ONION_RETURN_3)
+#define ANNOUNCE_REQUEST_SIZE_RECV (ONION_ANNOUNCE_REQUEST_SIZE + ONION_RETURN_3)
 
 #define DATA_REQUEST_MIN_SIZE ONION_DATA_REQUEST_MIN_SIZE
 #define DATA_REQUEST_MIN_SIZE_RECV (DATA_REQUEST_MIN_SIZE + ONION_RETURN_3)
 
-/* Create an onion announce request packet in packet of max_packet_length (recommended size ONION_MAX_PACKET_SIZE).
+/* Create an onion announce request packet in packet of max_packet_length (recommended size ONION_ANNOUNCE_REQUEST_SIZE).
  *
- * path is the path the request will take before it is sent to dest.
- *
+ * dest_client_id is the public key of the node the packet will be sent to.
  * public_key and secret_key is the kepair which will be used to encrypt the request.
  * ping_id is the ping id that will be sent in the request.
  * client_id is the client id of the node we are searching for.
@@ -49,10 +47,13 @@
  * return -1 on failure.
  * return packet length on success.
  */
-int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, Node_format dest,
+int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const uint8_t *dest_client_id,
                             const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *ping_id, const uint8_t *client_id,
                             const uint8_t *data_public_key, uint64_t sendback_data)
 {
+    if (max_packet_length < ONION_ANNOUNCE_REQUEST_SIZE)
+        return -1;
+
     uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES +
                   ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
     memcpy(plain, ping_id, ONION_PING_ID_SIZE);
@@ -61,25 +62,24 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const O
     memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES, &sendback_data,
            sizeof(sendback_data));
     uint8_t temp[ANNOUNCE_REQUEST_SIZE];
-    temp[0] = NET_PACKET_ONION_ANNOUNCE_REQUEST;
+    temp[0] = NET_PACKET_ANNOUNCE_REQUEST;
     random_nonce(temp + 1);
 
-    int len = encrypt_data(dest.client_id, secret_key, temp + 1, plain, sizeof(plain),
-                           temp + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
+    packet[0] = NET_PACKET_ONION_ANNOUNCE_REQUEST;
+    random_nonce(packet + 1);
 
-    if ((uint32_t)len + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES != ANNOUNCE_REQUEST_SIZE)
+    int len = encrypt_data(dest_client_id, secret_key, packet + 1, plain, sizeof(plain),
+                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
+
+    if ((uint32_t)len + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES != ONION_ANNOUNCE_REQUEST_SIZE)
         return -1;
 
-    memcpy(temp + 1 + crypto_box_NONCEBYTES, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_NONCEBYTES, public_key, crypto_box_PUBLICKEYBYTES);
 
-    return create_onion_packet(packet, max_packet_length, path, dest.ip_port, temp, sizeof(temp));
+    return ONION_ANNOUNCE_REQUEST_SIZE;
 }
 
 /* Create an onion data request packet in packet of max_packet_length (recommended size ONION_MAX_PACKET_SIZE).
- *
- * path is the path the request will take before it is sent to dest.
- * (if dest knows the person with the public_key they should
- * send the packet to that person in the form of a response)
  *
  * public_key is the real public key of the node which we want to send the data of length length to.
  * encrypt_public_key is the public key used to encrypt the data packet.
@@ -89,31 +89,33 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const O
  * return -1 on failure.
  * return 0 on success.
  */
-int create_data_request(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
-                        const uint8_t *public_key, const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data,
-                        uint16_t length)
+int create_data_request(uint8_t *packet, uint16_t max_packet_length, const uint8_t *public_key,
+                        const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length)
 {
+    if (DATA_REQUEST_MIN_SIZE + length > max_packet_length)
+        return -1;
+
     if ((unsigned int)DATA_REQUEST_MIN_SIZE + length > ONION_MAX_DATA_SIZE)
         return -1;
 
-    uint8_t temp[DATA_REQUEST_MIN_SIZE + length];
-    temp[0] = NET_PACKET_ONION_DATA_REQUEST;
-    memcpy(temp + 1, public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(temp + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
+    packet[0] = NET_PACKET_ONION_DATA_REQUEST;
+    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
 
     uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(random_public_key, random_secret_key);
 
-    memcpy(temp + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, random_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, random_public_key, crypto_box_PUBLICKEYBYTES);
 
-    int len = encrypt_data(encrypt_public_key, random_secret_key, temp + 1 + crypto_box_PUBLICKEYBYTES,
-                           data, length, temp + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
+    int len = encrypt_data(encrypt_public_key, random_secret_key, packet + 1 + crypto_box_PUBLICKEYBYTES, data, length,
+                           packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
 
-    if (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + (uint32_t)len != sizeof(temp))
+    if (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES +
+            (uint32_t)len != DATA_REQUEST_MIN_SIZE + length)
         return -1;
 
-    return create_onion_packet(packet, max_packet_length, path, dest, temp, sizeof(temp));
+    return DATA_REQUEST_MIN_SIZE + length;
 }
 
 /* Create and send an onion announce request packet.
@@ -134,9 +136,15 @@ int send_announce_request(Networking_Core *net, const Onion_Path *path, Node_for
                           const uint8_t *secret_key, const uint8_t *ping_id, const uint8_t *client_id, const uint8_t *data_public_key,
                           uint64_t sendback_data)
 {
-    uint8_t packet[ONION_MAX_PACKET_SIZE];
-    int len = create_announce_request(packet, sizeof(packet), path, dest, public_key, secret_key, ping_id, client_id,
+    uint8_t request[ONION_ANNOUNCE_REQUEST_SIZE];
+    int len = create_announce_request(request, sizeof(request), dest.client_id, public_key, secret_key, ping_id, client_id,
                                       data_public_key, sendback_data);
+
+    if (len != sizeof(request))
+        return -1;
+
+    uint8_t packet[ONION_MAX_PACKET_SIZE];
+    len = create_onion_packet(packet, sizeof(packet), path, dest.ip_port, request, sizeof(request));
 
     if (len == -1)
         return -1;
@@ -164,11 +172,14 @@ int send_announce_request(Networking_Core *net, const Onion_Path *path, Node_for
 int send_data_request(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *public_key,
                       const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length)
 {
-    uint8_t packet[ONION_MAX_PACKET_SIZE];
-    int len = create_data_request(packet, sizeof(packet), path, dest, public_key, encrypt_public_key, nonce, data, length);
+    uint8_t request[ONION_MAX_DATA_SIZE];
+    int len = create_data_request(request, sizeof(request), public_key, encrypt_public_key, nonce, data, length);
 
     if (len == -1)
         return -1;
+
+    uint8_t packet[ONION_MAX_PACKET_SIZE];
+    len = create_onion_packet(packet, sizeof(packet), path, dest, request, len);
 
     if (sendpacket(net, path->ip_port1, packet, len) != len)
         return -1;
@@ -351,7 +362,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     if (len != 1 + ONION_PING_ID_SIZE + nodes_length + crypto_box_MACBYTES)
         return 1;
 
-    data[0] = NET_PACKET_ONION_ANNOUNCE_RESPONSE;
+    data[0] = NET_PACKET_ANNOUNCE_RESPONSE;
     memcpy(data + 1, plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES,
            ONION_ANNOUNCE_SENDBACK_DATA_LENGTH);
     memcpy(data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH, nonce, crypto_box_NONCEBYTES);
@@ -404,7 +415,7 @@ Onion_Announce *new_onion_announce(DHT *dht)
     onion_a->net = dht->net;
     new_symmetric_key(onion_a->secret_bytes);
 
-    networking_registerhandler(onion_a->net, NET_PACKET_ONION_ANNOUNCE_REQUEST, &handle_announce_request, onion_a);
+    networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_announce_request, onion_a);
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, &handle_data_request, onion_a);
 
     return onion_a;
@@ -415,7 +426,7 @@ void kill_onion_announce(Onion_Announce *onion_a)
     if (onion_a == NULL)
         return;
 
-    networking_registerhandler(onion_a->net, NET_PACKET_ONION_ANNOUNCE_REQUEST, NULL, NULL);
+    networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, NULL, NULL);
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, NULL, NULL);
     free(onion_a);
 }

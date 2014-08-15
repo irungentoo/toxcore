@@ -110,7 +110,9 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    m = new_messenger(ipv6enabled);
+    Messenger_Options options = {0};
+    options.ipv6enabled = ipv6enabled;
+    m = new_messenger(&options);
 
     if ( !m ) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
