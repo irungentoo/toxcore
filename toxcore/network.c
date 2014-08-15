@@ -398,6 +398,85 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     return 0;
 }
 
+int send_common_tox_packet(DHT *dht, const uint8_t *destination_id, IP_Port ipp, uint8_t type, uint8_t *payload, size_t length)
+{
+    /* Check if packet is going to be sent to ourself */
+    if (id_equal(destination_id, dht->self_public_key))
+        return -1;
+    
+    /* Generate shared_key for encryption */
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    DHT_get_shared_key_sent(dht, shared_key, destination_id);
+
+    /* Filling the common packet fields */
+    /* Note glorious C99 variable size arrays and subsequent sizeof on them */
+    uint8_t pk[PAK_LEN(COMMON)+length+crypto_box_MACBYTES];
+    *PAK(COMMON, pk)->packtype = type;
+    memcpy(PAK(COMMON, pk)->sender_id, dht->self_public_key, CLIENT_ID_SIZE);
+    
+    /* Generate new nonce */
+    new_nonce(PAK(COMMON, pk)->nonce);
+    
+    /* Generate encrypted data */
+    int encrypt_length = encrypt_data_symmetric(shared_key,
+                                        PAK(COMMON, pk)->nonce,
+                                        payload, length,
+                                        PAK(COMMON, pk)->encrypt);
+
+    /* Checking if all went well */
+    if (encrypt_length != length+crypto_box_MACBYTES )
+        return -1;
+
+    /* Actually sending the thing */
+    if ((uint32_t)sendpacket(dht->net, ipp, pk, sizeof(pk)) != sizeof(pk))
+        return -1;
+
+    return 0;    
+}
+
+int recv_common_tox_packet(DHT *dht, const uint8_t *packet, uint8_t *cleartext, size_t clearlength)
+{
+    /* TODO: check lenght */
+    
+    /* Check if packet has been sent from ourselves */
+    if (id_equal( PAK(COMMON, packet)->sender_id, dht->self_public_key))
+        return -1;
+
+    /* Generate key for decryption */
+    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    DHT_get_shared_key_recv(dht, shared_key, PAK(COMMON, packet)->sender_id);
+
+    /* Decrypt clear text */   
+    int decrypt_length = decrypt_data_symmetric(shared_key,
+                                        PAK(COMMON, packet)->nonce,
+                                        PAK(COMMON, packet)->encrypt,
+                                        clearlength + crypto_box_MACBYTES,
+                                        cleartext);
+
+    if (decrypt_length != clearlength)
+        return -1;
+
+    return 0;
+}
+
+int sign_packet(uint8_t packet[], size_t length, const uint8_t node_private_key[])
+{
+    /* WARNING: buffers overlap, check if its ok */
+    unsigned long long slen;
+
+    return (crypto_sign(packet, &slen, packet + SIGNATURE_SIZE, length - SIGNATURE_SIZE, node_private_key) < 0 ||
+            slen != length) ?  0 : -1; /* Safe to compare, sequence point after || */
+}
+
+int verify_signed_packet(uint8_t packet[], size_t length, const uint8_t node_public_key[])
+{
+    /* WARNING: buffers overlap, check if its ok */
+    unsigned long long mlen;
+
+    return (crypto_sign_open(packet + SIGNATURE_SIZE, &mlen, packet, length, node_public_key) < 0 ||
+        mlen != length-SIGNATURE_SIZE) ? 0 : -1;
+}
+
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object)
 {
     net->packethandlers[byte].function = cb;

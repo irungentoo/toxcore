@@ -26,20 +26,11 @@
  
 typedef struct ANNOUNCE ANNOUNCE;
 
-/* Maximum newly announced online (in terms of group chats) nodes */
-#define MAX_ANNOUNCED_NODES 30
-
-int add_announced_nodes(ANNOUNCE *announce, const Groupchat_announcement_format *announcement, int inner);
-int get_announced_nodes(ANNOUNCE *announce, const uint8_t *chat_id, Node_format *nodes_list, int inner);
-
 ANNOUNCE *new_announce(DHT *dht);
 void kill_announce(ANNOUNCE *announce);
 
-/* Verify that the signed message corresponts to the data in the structure */
-int verify_gc_announce_request(const Groupchat_announcement_format* announcement);
-
-/* Signs the fields of the announcement */
-int prepare_gc_announce_request(Groupchat_announcement_format* announcement, const uint8_t *node_private_key);
+/* Do some periodic work, currently removes expired announcements */
+int do_announce(ANNOUNCE *announce);
 
 /* Initiate the process of the announcement, claiming a node is part of a group chat.
  *
@@ -51,18 +42,12 @@ int prepare_gc_announce_request(Groupchat_announcement_format* announcement, con
  * return -1 in case of error
  * return 0 otherwise
  */
-int initiate_gc_announce_request(DHT *dht, const uint8_t *node_public_key, const uint8_t *node_private_key, const uint8_t *chat_id);
-
-/* Dispatches an announce request either saving it or passing further depending whether 
- * the current node is the closest node it knows to the chat_id or not */
-int dispatch_gc_announce_request(DHT *dht, const Groupchat_announcement_format* announcement);
+int initiate_gc_announce_request(DHT *dht, const uint8_t node_public_key[], const uint8_t node_private_key[], const uint8_t chat_id[]);
 
 /* Sends an actual announcement packet to the node specified as client_id on ipp */
-int send_gc_announce_request(DHT * dht, const uint8_t *client_id, IP_Port ipp, const Groupchat_announcement_format* announcement);
-int get_gc_announced_nodes_request(DHT * dht, IP_Port ipp, const uint8_t *client_id, uint8_t *chat_id);
+int initiate_gc_getnodes_request(DHT *dht, const uint8_t chat_id[], uint64_t *req_id);
 
-/* Consider moving to network */
-int send_common_tox_packet(DHT *dht, const uint8_t *destination_id, IP_Port ipp, uint8_t type, uint8_t *payload, size_t length);
-int recv_common_tox_packet(DHT *dht, const uint8_t *packet, uint8_t *cleartext, size_t clearlength);
+/* Retrieve nodes by request id, returns 0 if no nodes found or request in progress, number of nodes otherwise */
+uint32_t retrieve_gc_nodes(DHT* dht, uint64_t req_id, uint8_t *nodes);
 
 #endif /* __GROUP_ANNOUNCE_H__ */

@@ -2422,6 +2422,7 @@ void do_DHT(DHT *dht)
     do_DHT_friends(dht);
     do_NAT(dht);
     do_to_ping(dht->ping);
+    do_announce(dht->announce);
     do_hardening(dht);
 #ifdef ENABLE_ASSOC_DHT
 

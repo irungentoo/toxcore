@@ -314,6 +314,39 @@ typedef struct {
     uint64_t send_fail_eagain;
 } Networking_Core;
 
+/* Easy packet construction utilities */
+#define PAK_DEF(packet) struct __PACKET_##packet
+#define PAK_ITM(name, len) uint8_t name[len]
+ 
+#define PAK_LEN(packet) sizeof(struct __PACKET_##packet)
+#define PAK_POS(packet, member) offsetof(struct __PACKET_##packet, member)
+#define PAK_GET(packet, buf, member) buf[packetpos(packet, member)] // probably unnecessary
+#define PAK(packet, buf) ((struct __PACKET_##packet*)buf)
+
+/* Example:
+ * 
+ * PAK_DEF(testcat)
+ * {
+ *      PAK_ITM(type, 1);
+ *      PAK_ITM(timestamp, sizeof(uint64_t));
+ *      PAK_ITM(public_key, 32);
+ * };
+ * 
+ * PAK_LEN(testcat) == total length of the packet
+ * PAK_POS(testcat, timestamp) == shift of timestamp member in bytes
+ * PAK_GET(testcat, public_key, someobj) == pointer to public key member in a packet referenced by someobj
+ * PAK(testcat, someobj)->type;
+ */
+
+/* Common encrypted payload packet definition */
+PAK_DEF(COMMON)
+{
+    PAK_ITM(packtype, sizeof(uint8_t));
+    PAK_ITM(sender_id, CLIENT_ID_SIZE);
+    PAK_ITM(nonce, crypto_box_NONCEBYTES);
+    PAK_ITM(encrypted, 0);                  /* Actual packets define the size here */
+};
+
 /* Run this before creating sockets.
  *
  * return 0 on success
@@ -360,6 +393,17 @@ uint64_t current_time_monotonic(void);
 
 /* Function to send packet(data) of length length to ip_port. */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length);
+
+/* Send and decode a common encrypted payload packet */
+int send_common_tox_packet(DHT *dht, const uint8_t destination_id[], IP_Port ipp, uint8_t type, uint8_t payload[], size_t length);
+int recv_common_tox_packet(DHT *dht, const uint8_t packet[], uint8_t *cleartext, size_t clearlength);
+
+/* Sign and verify a signed packet. Note: length is the signed length, i.e. PAK_LEN of corresponding packet */
+int sign_packet(uint8_t packet[], size_t length, const uint8_t node_private_key[]);
+int verify_signed_packet(uint8_t packet[], size_t length, const uint8_t node_public_key[]);
+
+/* Use asserts wisely, since real siganture size might vary if libsodium changes it */
+#define SIGNATURE_SIZE  64 /* ← this doesn't belong here actually, move to corresponding header */
 
 /* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
