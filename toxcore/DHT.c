@@ -128,32 +128,33 @@ static int client_id_cmp(const ClientPair p1, const ClientPair p2)
  */
 void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
 {
-    uint32_t i, num = ~0, curr = 0;
+    /* TODO It's not clear what these are used for, use more descriptive names */
+    uint32_t num = ~0, curr = 0;
 
-    for (i = 0; i < MAX_KEYS_PER_SLOT; ++i) {
-        int index = client_id[30] * MAX_KEYS_PER_SLOT + i;
-
-        if (shared_keys[index].stored) {
-            if (memcmp(client_id, shared_keys[index].client_id, CLIENT_ID_SIZE) == 0) {
-                memcpy(shared_key, shared_keys[index].shared_key, crypto_box_BEFORENMBYTES);
-                ++shared_keys[index].times_requested;
-                shared_keys[index].time_last_requested = unix_time();
+    int first = client_id[30] * MAX_KEYS_PER_SLOT;
+    int last = (client_id[30] + 1) * MAX_KEYS_PER_SLOT;
+    for (i = first; i < last; ++i) {
+        if (shared_keys[i].stored) {
+            if (memcmp(client_id, shared_keys[i].client_id, CLIENT_ID_SIZE) == 0) {
+                memcpy(shared_key, shared_keys[i].shared_key, crypto_box_BEFORENMBYTES);
+                ++shared_keys[i].times_requested;
+                shared_keys[i].time_last_requested = unix_time();
                 return;
             }
 
             if (num != 0) {
-                if (is_timeout(shared_keys[index].time_last_requested, KEYS_TIMEOUT)) {
+                if (is_timeout(shared_keys[i].time_last_requested, KEYS_TIMEOUT)) {
                     num = 0;
-                    curr = index;
-                } else if (num > shared_keys[index].times_requested) {
-                    num = shared_keys[index].times_requested;
-                    curr = index;
+                    curr = i;
+                } else if (num > shared_keys[i].times_requested) {
+                    num = shared_keys[i].times_requested;
+                    curr = i;
                 }
             }
         } else {
             if (num != 0) {
                 num = 0;
-                curr = index;
+                curr = i;
             }
         }
     }
