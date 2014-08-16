@@ -131,13 +131,14 @@ void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t 
     /* TODO It's not clear what these are used for, use more descriptive names */
     uint32_t num = ~0, curr = 0;
 
+    /* TODO Remove this magic number, "30", what is this even doing? */
     int first = client_id[30] * MAX_KEYS_PER_SLOT;
     int last = (client_id[30] + 1) * MAX_KEYS_PER_SLOT;
     int i;
     for (i = first; i < last; ++i) {
         if (shared_keys[i].stored) {
-            if (memcmp(client_id, shared_keys[i].client_id, CLIENT_ID_SIZE) == 0) {
-                memcpy(shared_key, shared_keys[i].shared_key, crypto_box_BEFORENMBYTES);
+            if (memcmp(client_id, shared_keys[i].client_id, sizeof(shared_keys[0].client_id)) == 0) {
+                memcpy(shared_key, shared_keys[i].shared_key, sizeof(shared_keys[0].shared_key));
                 ++shared_keys[i].times_requested;
                 shared_keys[i].time_last_requested = unix_time();
                 return;
@@ -161,8 +162,8 @@ void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t 
     if (num != (uint32_t)~0) {
         shared_keys[curr].stored = 1;
         shared_keys[curr].times_requested = 1;
-        memcpy(shared_keys[curr].client_id, client_id, CLIENT_ID_SIZE);
-        memcpy(shared_keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
+        memcpy(shared_keys[curr].client_id, client_id, sizeof(shared_keys[0].client_id));
+        memcpy(shared_keys[curr].shared_key, shared_key, sizeof(shared_keys[0].shared_key));
         shared_keys[curr].time_last_requested = unix_time();
     }
 }
