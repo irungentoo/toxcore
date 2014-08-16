@@ -133,6 +133,7 @@ void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t 
 
     int first = client_id[30] * MAX_KEYS_PER_SLOT;
     int last = (client_id[30] + 1) * MAX_KEYS_PER_SLOT;
+    int i;
     for (i = first; i < last; ++i) {
         if (shared_keys[i].stored) {
             if (memcmp(client_id, shared_keys[i].client_id, CLIENT_ID_SIZE) == 0) {
@@ -143,19 +144,15 @@ void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t 
             }
 
             if (num != 0) {
-                if (is_timeout(shared_keys[i].time_last_requested, KEYS_TIMEOUT)) {
-                    num = 0;
-                    curr = i;
-                } else if (num > shared_keys[i].times_requested) {
-                    num = shared_keys[i].times_requested;
-                    curr = i;
-                }
-            }
-        } else {
-            if (num != 0) {
-                num = 0;
                 curr = i;
+                if (is_timeout(shared_keys[i].time_last_requested, KEYS_TIMEOUT))
+                    num = 0;
+                else if (num > shared_keys[i].times_requested)
+                    num = shared_keys[i].times_requested;
             }
+        } else if (num != 0) {
+            num = 0;
+            curr = i;
         }
     }
 
