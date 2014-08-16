@@ -79,6 +79,9 @@
 
 #define CRYPTO_MAX_PADDING 8 /* All packets will be padded a number of bytes based on this number. */
 
+
+#define CONGESTION_QUEUE_ARRAY_SIZE 8
+
 typedef struct {
     uint64_t time;
     uint16_t length;
@@ -143,11 +146,9 @@ typedef struct {
     uint32_t packets_left;
     uint64_t last_packets_left_set;
 
-    double dropped, drop_ignore, rate_increase, last_send_rate;
-    uint64_t drop_ignore_start, rate_increase_stop_start;
-    uint32_t packets_resent, last_queue_size, packets_sent, last_packets_sent;
-
-    uint8_t sending; /* indicates if data is being sent or not. */
+    uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
+    long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
+    uint32_t packets_sent, packets_resent;
 
     uint8_t killed; /* set to 1 to kill the connection. */
 
