@@ -1,6 +1,6 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          tox_bootstrap_daemon
+# Provides:          tox-bootstrapd
 # Required-Start:    $remote_fs $syslog
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
@@ -12,7 +12,7 @@
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Tox DHT bootstrap daemon"
-NAME=tox_bootstrap_daemon
+NAME=tox-bootstrapd
 # You may want to change USER if you are using it anywhere else
 USER=tom
 CFG=/home/$USER/.$NAME/conf
