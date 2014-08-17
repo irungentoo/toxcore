@@ -46,6 +46,7 @@
 #include "misc_tools.h"
 #include "util.h"
 
+
 /* The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT 300
 
@@ -125,47 +126,41 @@ static int client_id_cmp(const ClientPair p1, const ClientPair p2)
  *
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
+ *
+ * TODO This can be made faster if we use a priority queue, instead of just iterating
+ * through an unsorted list, replacing an open slot if there is one.
  */
 void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
 {
-    /* TODO It's not clear what these are used for, use more descriptive names */
-    uint32_t num = ~0, curr = 0;
+    int outdated_key_i = -1;
 
     /* TODO Remove this magic number, "30", what is this even doing? */
     int first = client_id[30] * MAX_KEYS_PER_SLOT;
     int last = (client_id[30] + 1) * MAX_KEYS_PER_SLOT;
     int i;
-    for (i = first; i < last; ++i) {
-        if (shared_keys[i].stored) {
-            if (memcmp(client_id, shared_keys[i].client_id, sizeof(shared_keys[0].client_id)) == 0) {
-                memcpy(shared_key, shared_keys[i].shared_key, sizeof(shared_keys[0].shared_key));
-                ++shared_keys[i].times_requested;
-                shared_keys[i].time_last_requested = unix_time();
-                return;
-            }
-
-            if (num != 0) {
-                curr = i;
-                if (is_timeout(shared_keys[i].time_last_requested, KEYS_TIMEOUT))
-                    num = 0;
-                else if (num > shared_keys[i].times_requested)
-                    num = shared_keys[i].times_requested;
-            }
-        } else if (num != 0) {
-            num = 0;
-            curr = i;
+    for (i = first; i < last && shared_keys[i].times_requested != 0; ++i) {
+        if (memcmp(client_id, shared_keys[i].client_id, sizeof(shared_keys[0].client_id)) == 0) {
+            memcpy(shared_key, shared_keys[i].shared_key, sizeof(shared_keys[0].shared_key));
+            ++shared_keys[i].times_requested;
+            shared_keys[i].time_last_requested = unix_time();
+            return;
         }
+
+        /* Replace outdated key if we haven't already found one earlier */
+        if (outdated_key_i == -1 && is_timeout(shared_keys[i].time_last_requested, KEYS_TIMEOUT))
+            outdated_key_i = i;
     }
+
+    /* If we didn't find a slot that had timed out, use the last one by default */
+    if (outdated_key_i == -1)
+        outdated_key_i = i;
 
     encrypt_precompute(client_id, secret_key, shared_key);
 
-    if (num != (uint32_t)~0) {
-        shared_keys[curr].stored = 1;
-        shared_keys[curr].times_requested = 1;
-        memcpy(shared_keys[curr].client_id, client_id, sizeof(shared_keys[0].client_id));
-        memcpy(shared_keys[curr].shared_key, shared_key, sizeof(shared_keys[0].shared_key));
-        shared_keys[curr].time_last_requested = unix_time();
-    }
+    memcpy(shared_keys[outdated_key_i].client_id, client_id, sizeof(shared_keys[0].client_id));
+    memcpy(shared_keys[outdated_key_i].shared_key, shared_key, sizeof(shared_keys[0].shared_key));
+    shared_keys[outdated_key_i].times_requested = 1;
+    shared_keys[outdated_key_i].time_last_requested = unix_time();
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key

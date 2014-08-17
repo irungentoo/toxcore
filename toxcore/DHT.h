@@ -165,10 +165,9 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 #define MAX_KEYS_PER_SLOT 4
 #define KEYS_TIMEOUT 600
 typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t  client_id[CLIENT_ID_SIZE];
+    uint8_t  shared_key[crypto_box_BEFORENMBYTES];
     uint32_t times_requested;
-    uint8_t  stored; /* 0 if not, 1 if is */
     uint64_t time_last_requested;
 } Shared_Keys[256 * MAX_KEYS_PER_SLOT];
 
@@ -212,6 +211,12 @@ typedef struct {
     Cryptopacket_Handles cryptopackethandlers[256];
 } DHT;
 /*----------------------------------------------------------------------------------*/
+
+/* A helper function for get_shared_key.
+ * Overwrite an existing or non-existing key at index i.
+ * Note this is unsafe and will not check bounds.
+ */
+void gen_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id, int i);
 
 /* Shared key generations are costly, it is therefor smart to store commonly used
  * ones so that they can re used later without being computed again.
