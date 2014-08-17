@@ -480,7 +480,7 @@ void print_public_key(uint8_t *public_key)
     char buffer[2 * crypto_box_PUBLICKEYBYTES + 1];
     int index = 0;
 
-    int i;
+    size_t i;
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
         index += sprintf(buffer + index, "%02hhX", public_key[i]);
@@ -529,7 +529,7 @@ int main(int argc, char *argv[])
     // Check if the PID file exists
     FILE *pid_file;
 
-    if (pid_file = fopen(pid_file_path, "r")) {
+    if ((pid_file = fopen(pid_file_path, "r"))) {
         syslog(LOG_ERR, "Another instance of the daemon is already running, PID file %s exists.\n", pid_file_path);
         fclose(pid_file);
     }
