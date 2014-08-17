@@ -179,6 +179,7 @@ typedef struct {
     Crypto_Connection *crypto_connections;
     TCP_Client_Connection *tcp_connections_new[MAX_TCP_CONNECTIONS];
     TCP_Client_Connection *tcp_connections[MAX_TCP_CONNECTIONS];
+    pthread_mutex_t tcp_mutex;
 
     pthread_mutex_t connections_mutex;
     unsigned int connection_use_counter;
@@ -246,7 +247,7 @@ uint64_t get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, ui
  * return -1 on failure.
  * return 0 on success.
  */
-int set_connection_dht_public_key(const Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key,
+int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key,
                                   uint64_t timestamp);
 
 /* Set the direct ip of the crypto connection.
@@ -305,7 +306,7 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  *
  * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
  */
-int64_t write_cryptpacket(const Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
 
 /* return -1 on failure.
  * return 0 on success.
@@ -338,7 +339,7 @@ void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *o
  * return 0 on success.
  * return -1 on failure.
  */
-int send_tcp_onion_request(const Net_Crypto *c, const uint8_t *data, uint16_t length);
+int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length);
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
