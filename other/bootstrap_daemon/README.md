@@ -1,62 +1,72 @@
 ##Instructions for Debian
 
-The following commands are to be executed as root:
-
-1. In `tox-bootstrapd.sh` file change:
-  - `CFG` to where your config file (`conf`) will be; read rights required
-  - `DAEMON` to point to the executable
-  - `PIDFILE` to point to a pid file daemon would have rights to create
-
-2. Go over everything in `conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox-bootstrapd.sh`
-
-3. Execute: 
-```
-mv tox-bootstrapd.sh /etc/init.d/tox-bootstrapd
-```
-*(note that we removed `.sh` ending)*
-
-4. Give the right permissions to this file: 
-```
-chmod 755 /etc/init.d/tox-bootstrapd
+For security reasons we run the daemon under its own user.
+Create a new user by executing the following:
+```sh
+sudo useradd --system --shell /sbin/nologin --comment "Account to run Tox's DHT bootstrap daemon" --user-group tox-bootstrapd
 ```
 
-5. Execute: 
-```
-update-rc.d tox-bootstrapd defaults
-```
-
-6. Start the service: 
-```
-service tox-bootstrapd start
+Create a directory where the daemon will store its keys:
+```sh
+sudo mkdir /var/lib/tox-bootstrapd/
 ```
 
-7. Verify that the service is running: 
-```
-service tox-bootstrapd status
-```
-
---
-
-You can see daemon's log with
-```
-grep "tox-bootstrapd" /var/log/syslog
+Restrain other users from accessing the directory:
+```sh
+sudo chown tox-bootstrapd:tox-bootstrapd /var/lib/tox-bootstrapd/
+sudo chmod 700 /var/lib/tox-bootstrapd/
 ```
 
-**Note that system log is where you find your public key**
+Look at the variable declarations in the beginning of `tox-bootstrapd.sh` init script to see if you need to change anything for it to work for you. The default values must be fine for most users and we assume that you use those next.
 
---
+Go over everything in `conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox-bootstrapd.sh`.
+
+Place `conf` file to where `CFGFILE` variable from `tox-bootstrapd` tells. By default it's `/etc/tox-bootstrapd.conf`.
+
+Place `tox-bootstrapd.sh` init file at `/etc/init.d/tox-bootstrapd`.
+
+Set permissions for the init system to run the script:
+```sh
+sudo chmod 755 /etc/init.d/tox-bootstrapd
+```
+
+Make the init system aware of the script:
+```sh
+sudo update-rc.d tox-bootstrapd defaults
+```
+
+Start the daemon:
+```sh
+sudo service tox-bootstrapd start
+```
+
+Verify it's running:
+```sh
+sudo service tox-bootstrapd status
+```
+
+Get your public key and check that the daemon initialized correctly:
+```sh
+sudo grep "tox-bootstrapd" /var/log/syslog
+```
+
 
 ###Troubleshooting:
 
-1. Check the log for errors with 
+- Check daemon's status:
+```sh
+sudo service tox-bootstrapd status
 ```
-grep "tox-bootstrapd" /var/log/syslog
+
+- Check the log for errors: 
+```sh
+sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
-2. Check that paths in the beginning of `/etc/init.d/tox-bootstrapd` are valid
+- Check that variables in the beginning of `/etc/init.d/tox-bootstrapd` are valid.
 
-3. Make sure that `PIDFILE` from `/etc/init.d/tox-bootstrapd` matches with the `pid_file_path` from `conf`
+- Make sure `pid_file_path` in `/etc/tox-bootstrapd.conf` matches `PIDFILE` from  `/etc/init.d/tox-bootstrapd`.
 
-4. Make sure you have write permission to keys and pid files
+- Make sure you have write permission for keys and pid files.
 
-5. Make sure you have read permission for config file
+- Make sure you have read permission for the config file.

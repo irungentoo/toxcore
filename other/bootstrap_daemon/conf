@@ -1,18 +1,17 @@
-// ProjectTox dht bootstrap node daemon configuration file.
+// Tox DHT bootstrap daemon configuration file.
 
 // Listening port.
 port = 33445
 
 // A key file is like a password, so keep it where no one can read it.
+// If there is no key file, a new one will be generated.
 // The daemon should have permission to read/write to it.
-// Remember to replace the provided example with your own path.
-keys_file_path = "/home/tom/.tox-bootstrapd/.tox-bootstrapd.keys"
+keys_file_path = "/var/lib/tox-bootstrapd/keys"
 
 // The PID file written to by daemon.
 // Make sure that the user who runs the daemon has permissions to write to the
 // PID file.
-// Remember to replace the provided example with your own path.
-pid_file_path = "/home/tom/.tox-bootstrapd/.tox-bootstrapd.pid"
+pid_file_path = "/var/run/tox-bootstrapd/tox-bootstrapd.pid"
 
 // Enable IPv6.
 enable_ipv6 = false
@@ -32,16 +31,17 @@ enable_motd = true
 
 motd = "tox-bootstrapd"
 
-// Any number of nodes the daemon will bootstrap itself from.
+// Any number of nodes the daemon will bootstrap itself off.
 // Remember to replace the provided example with your own node list.
-// There is a maintained list of bootstrap nodes on Tox's wiki, if you need it.
+// There is a maintained list of bootstrap nodes on Tox's wiki, if you need it
+// (http://wiki.tox.im/Nodes).
 // You may leave the list empty or remove "bootstrap_nodes" complitely,
 // in both cases this will be interpreted as if you don't want to bootstrap
 // from anyone.
 bootstrap_nodes = (
   { // Node 1
-    // Any ipv4 or ipv6, depending on whether `enable_ipv6` is set or not, and
-    // also any US-ASCII domain name.
+    // Any ipv4 or ipv6, depending on whether `enable_ipv6` is set or not,
+    // and also any US-ASCII domain name.
     address = "198.46.136.167"
     port = 33445
     public_key = "728925473812C7AAC482BE7250BCCAD0B8CB9F737BF3D42ABD34459C1768F854"
