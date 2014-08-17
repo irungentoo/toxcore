@@ -17,13 +17,13 @@ sudo chown tox-bootstrapd:tox-bootstrapd /var/lib/tox-bootstrapd/
 sudo chmod 700 /var/lib/tox-bootstrapd/
 ```
 
-Look at the variable declarations in the beginning of `tox-bootstrapd.sh` init script to see if you need to change anything for it to work for you. The default values must be fine for most users and we assume that you use those next.
+Look at the variable declarations in the beginning of `tox-bootstrapd` init script to see if you need to change anything for it to work for you. The default values must be fine for most users and we assume that you use those next.
 
-Go over everything in `conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox-bootstrapd.sh`.
+Go over everything in `tox-bootstrapd.conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox-bootstrapd`.
 
-Place `conf` file to where `CFGFILE` variable from `tox-bootstrapd` tells. By default it's `/etc/tox-bootstrapd.conf`.
+Place `tox-bootstrapd.conf` file to where `CFGFILE` variable from `tox-bootstrapd` tells. By default it's `/etc/tox-bootstrapd.conf`.
 
-Place `tox-bootstrapd.sh` init file at `/etc/init.d/tox-bootstrapd`.
+Place `tox-bootstrapd` init file at `/etc/init.d/tox-bootstrapd`.
 
 Set permissions for the init system to run the script:
 ```sh

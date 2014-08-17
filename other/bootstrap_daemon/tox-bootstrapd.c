@@ -58,8 +58,8 @@
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
 
-#define DEFAULT_PID_FILE_PATH         ".tox-bootstrapd.pid"
-#define DEFAULT_KEYS_FILE_PATH        ".tox-bootstrapd.keys"
+#define DEFAULT_PID_FILE_PATH         "tox-bootstrapd.pid"
+#define DEFAULT_KEYS_FILE_PATH        "tox-bootstrapd.keys"
 #define DEFAULT_PORT                  33445
 #define DEFAULT_ENABLE_IPV6           0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY  1 // 1 - true, 0 - false

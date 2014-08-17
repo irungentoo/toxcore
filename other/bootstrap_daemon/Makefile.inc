@@ -22,6 +22,6 @@ tox_bootstrapd_LDADD = \
 endif
 
 EXTRA_DIST += \
-    $(top_srcdir)/other/bootstrap_daemon/conf \
-    $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.sh
+    $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.conf \
+    $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd
     
