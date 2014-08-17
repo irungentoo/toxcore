@@ -2333,7 +2333,6 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->packet_counter = 0;
                 conn->packet_counter_set = temp_time;
 
-                double real_send_rate = (double)(conn->packets_sent + conn->packets_resent) / (dt / 1000.0);
                 uint32_t packets_sent = conn->packets_sent;
                 conn->packets_sent = conn->packets_resent = 0;
 
