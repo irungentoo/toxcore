@@ -61,12 +61,9 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME --chuid $USER
+	start-stop-daemon --stop --quiet --retry 5 --pidfile $PIDFILE --name $NAME --chuid $USER
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
-
-	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON --chuid $USER
-	[ "$?" = 2 ] && return 2
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
 	return "$RETVAL"
