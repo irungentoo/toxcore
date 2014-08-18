@@ -212,12 +212,6 @@ typedef struct {
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
-/* A helper function for get_shared_key.
- * Overwrite an existing or non-existing key at index i.
- * Note this is unsafe and will not check bounds.
- */
-void gen_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id, int i);
-
 /* Shared key generations are costly, it is therefor smart to store commonly used
  * ones so that they can re used later without being computed again.
  *
