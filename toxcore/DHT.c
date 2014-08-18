@@ -65,6 +65,17 @@
 /* Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 10
 
+/* Used in the comparison function for sorting lists of Client_data. */
+typedef struct {
+    Client_data c1;
+    Client_data c2;
+} ClientPair;
+
+/* Create the declaration for a quick sort for ClientPair structures. */
+declare_quick_sort(ClientPair);
+/* Create the quicksort function. See misc_tools.h for the definition. */
+make_quick_sort(ClientPair);
+
 Client_data *DHT_get_close_list(DHT *dht)
 {
     return dht->close_clientlist;
@@ -94,6 +105,19 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2)
     }
 
     return 0;
+}
+
+/* Turns the result of id_closest into something quick_sort can use.
+ * Assumes p1->c1 == p2->c1.
+ */
+static int client_id_cmp(const ClientPair p1, const ClientPair p2)
+{
+    int c = id_closest(p1.c1.client_id, p1.c2.client_id, p2.c2.client_id);
+
+    if (c == 2)
+        return -1;
+
+    return c;
 }
 
 /* Shared key generations are costly, it is therefor smart to store commonly used

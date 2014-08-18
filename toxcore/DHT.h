@@ -28,8 +28,27 @@
 #include "network.h"
 #include "ping_array.h"
 
+#define ENC_PUBLIC_KEY crypto_box_PUBLICKEYBYTES
+#define ENC_SECRET_KEY crypto_box_SECRETKEYBYTES
+#define SIG_PUBLIC_KEY crypto_sign_PUBLICKEYBYTES
+#define SIG_SECRET_KEY crypto_sign_SECRETKEYBYTES
+
+#define EXT_SECRET_KEY (ENC_SECRET_KEY + SIG_SECRET_KEY)
+#define EXT_PUBLIC_KEY (ENC_PUBLIC_KEY + SIG_PUBLIC_KEY)
+
+#define CLIENT_ID_EXT_SIZE EXT_PUBLIC_KEY // to kill later
+#define CLIENT_ID_SIGN_SIZE SIG_PUBLIC_KEY //to kill later
+
 /* Size of the client_id in bytes. */
-#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
+/* Size of the client_id in bytes. */
+#define CLIENT_ID_SIZE ENC_PUBLIC_KEY // For consistency
+
+/* Merge notice: this should be removed */
+#define CLIENT_ID_SIGN_SIZE crypto_sign_PUBLICKEYBYTES
+#define CLIENT_ID_EXT_SIZE (CLIENT_ID_SIZE + CLIENT_ID_SIGN_SIZE)
+
+/* Use asserts wisely, since real siganture size might vary if libsodium changes it */
+#define SIGNATURE_SIZE crypto_sign_BYTES
 
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -204,6 +223,8 @@ typedef struct {
     Shared_Keys shared_keys_sent;
 
     struct PING   *ping;
+    struct ANNOUNCE * announce;
+    
     Ping_Array    dht_ping_array;
     Ping_Array    dht_harden_ping_array;
 #ifdef ENABLE_ASSOC_DHT
@@ -293,6 +314,17 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2);
 int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
                     uint8_t is_LAN, uint8_t want_good);
 
+/* Get one most close node to the one given.
+ * 
+ * Parameters match the previous function. TODO: consider removing this 
+ * and forcing get_close_nodes to sort the nodes.
+ * 
+ * returns 0 if success
+ * returns -1 if the current node is in fact the closest one
+ * 
+ */
+int get_closest_node(const DHT* dht, const uint8_t *client_id, Node_format *node, sa_family_t sa_family,
+                     uint8_t is_LAN, uint8_t want_good);
 
 /* Put up to max_num nodes in nodes from the closelist.
  *
@@ -385,6 +417,11 @@ void kill_DHT(DHT *dht);
  *  return 1 if we are.
  */
 int DHT_isconnected(const DHT *dht);
+
+/*  return 0 if we are not connected to the DHT.
+ *  return the amount of live connections in close client list otherwise.
+ */
+uint32_t DHT_connectiondegree(const DHT *dht);
 
 int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id);
 

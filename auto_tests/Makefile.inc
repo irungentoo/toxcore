@@ -1,13 +1,13 @@
 if BUILD_TESTS
 
-TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
-check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
+TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test group_announce_test
+check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test group_announce_test
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
                          $(NACL_CFLAGS) \
                          $(CHECK_CFLAGS)
-
+ 
 AUTOTEST_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
@@ -32,7 +32,7 @@ messenger_autotest_CFLAGS = $(AUTOTEST_CFLAGS)
 messenger_autotest_LDADD = $(AUTOTEST_LDADD)
 
 
-crypto_test_SOURCES = ../auto_tests/crypto_test.c
+crypto_test_SOURCES =   ../auto_tests/crypto_test.c
 
 crypto_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
@@ -74,12 +74,17 @@ tox_test_CFLAGS = $(AUTOTEST_CFLAGS)
 tox_test_LDADD = $(AUTOTEST_LDADD)
 
 
+group_announce_test_SOURCES = ../auto_tests/group_announce_test.c
+
+group_announce_test_CFLAGS = $(AUTOTEST_CFLAGS)
+
+group_announce_test_LDADD = $(AUTOTEST_LDADD)
+
 dht_autotest_SOURCES = ../auto_tests/dht_test.c
 
 dht_autotest_CFLAGS = $(AUTOTEST_CFLAGS)
 
 dht_autotest_LDADD = $(AUTOTEST_LDADD)
-
 
 if BUILD_AV
 toxav_basic_test_SOURCES = ../auto_tests/toxav_basic_test.c

@@ -61,8 +61,11 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const u
     memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES, data_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES, &sendback_data,
            sizeof(sendback_data));
+    uint8_t temp[ANNOUNCE_REQUEST_SIZE];
+    temp[0] = NET_PACKET_ANNOUNCE_REQUEST;
+    random_nonce(temp + 1);
 
-    packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
+    packet[0] = NET_PACKET_ONION_ANNOUNCE_REQUEST;
     random_nonce(packet + 1);
 
     int len = encrypt_data(dest_client_id, secret_key, packet + 1, plain, sizeof(plain),

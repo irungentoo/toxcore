@@ -174,7 +174,7 @@ START_TEST(test_basic)
 
     Onion_Announce *onion1_a = new_onion_announce(onion1->dht);
     Onion_Announce *onion2_a = new_onion_announce(onion2->dht);
-    networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_3, onion1);
+    networking_registerhandler(onion1->net, NET_PACKET_ONION_ANNOUNCE_RESPONSE, &handle_test_3, onion1);
     ck_assert_msg((onion1_a != NULL) && (onion2_a != NULL), "Onion_Announce failed initializing.");
     uint8_t zeroes[64] = {0};
     randombytes(sb_data, sizeof(sb_data));

@@ -99,6 +99,13 @@ typedef int sock_t;
 #define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
 #define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID for IPv4 addresses. */
 #define NET_PACKET_SEND_NODES_IPV6 4   /* Send nodes response packet ID for other addresses. */
+
+#define NET_PACKET_ANNOUNCE_REQUEST 5 /* Announce request packet ID */
+//#define NET_PACKET_ANNOUNCE_RESPONSE 6 /* Get announced nodes request packet ID */
+#define NET_PACKET_GET_ANNOUNCED_NODES 7 /* Get announced nodes request packet ID */
+#define NET_PACKET_SEND_ANNOUNCED_NODES 8 /* Get announced nodes request packet ID */
+
+
 #define NET_PACKET_COOKIE_REQUEST  24  /* Cookie request packet */
 #define NET_PACKET_COOKIE_RESPONSE 25  /* Cookie response packet */
 #define NET_PACKET_CRYPTO_HS       26  /* Crypto handshake packet */
@@ -112,8 +119,8 @@ typedef int sock_t;
 #define NET_PACKET_ONION_SEND_1 129
 #define NET_PACKET_ONION_SEND_2 130
 
-#define NET_PACKET_ANNOUNCE_REQUEST 131
-#define NET_PACKET_ANNOUNCE_RESPONSE 132
+#define NET_PACKET_ONION_ANNOUNCE_REQUEST 131
+#define NET_PACKET_ONION_ANNOUNCE_RESPONSE 132
 #define NET_PACKET_ONION_DATA_REQUEST 133
 #define NET_PACKET_ONION_DATA_RESPONSE 134
 
@@ -124,10 +131,16 @@ typedef int sock_t;
 /* Only used for bootstrap nodes */
 #define BOOTSTRAP_INFO_PACKET_ID 240
 
-
-#define TOX_PORTRANGE_FROM 33445
-#define TOX_PORTRANGE_TO   33545
-#define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
+/* Master port definitions are in tox.h */
+#ifndef TOX_PORTRANGE_FROM
+    #define TOX_PORTRANGE_FROM 33445
+#endif
+#ifndef TOX_PORTRANGE_TO
+    #define TOX_PORTRANGE_TO   33545
+#endif
+#ifndef TOX_PORT_DEFAULT
+    #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
+#endif
 
 /* TCP related */
 #define TCP_ONION_FAMILY (AF_INET6 + 1)
@@ -185,6 +198,8 @@ IP_Port;
 /* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
+ *   specifying STATIC_BUFFER_COPIES in util.h allows to have multiple buffers
+ *   and thus issue up to STATIC_BUFFER_COPIES calls in the same output
  */
 const char *ip_ntoa(const IP *ip);
 
@@ -298,6 +313,39 @@ typedef struct {
     sock_t sock;
 } Networking_Core;
 
+/* Easy packet construction utilities */
+#define PAK_DEF(packet) struct __PACKET_##packet
+#define PAK_ITM(name, len) uint8_t name[len]
+ 
+#define PAK_LEN(packet) sizeof(struct __PACKET_##packet)
+#define PAK_POS(packet, member) offsetof(struct __PACKET_##packet, member)
+#define PAK_GET(packet, buf, member) buf[packetpos(packet, member)] // probably unnecessary
+#define PAK(packet, buf) ((struct __PACKET_##packet*)buf)
+
+/* Example:
+ * 
+ * PAK_DEF(testcat)
+ * {
+ *      PAK_ITM(type, 1);
+ *      PAK_ITM(timestamp, sizeof(uint64_t));
+ *      PAK_ITM(public_key, 32);
+ * };
+ * 
+ * PAK_LEN(testcat) == total length of the packet
+ * PAK_POS(testcat, timestamp) == shift of timestamp member in bytes
+ * PAK_GET(testcat, public_key, someobj) == pointer to public key member in a packet referenced by someobj
+ * PAK(testcat, someobj)->type;
+ */
+
+/* Common encrypted payload packet definition */
+PAK_DEF(COMMON)
+{
+    PAK_ITM(packtype, sizeof(uint8_t));
+    PAK_ITM(sender_id, CLIENT_ID_SIZE);
+    PAK_ITM(nonce, crypto_box_NONCEBYTES);
+    PAK_ITM(encrypted, 0);                  /* Actual packets define the size here */
+};
+
 /* Run this before creating sockets.
  *
  * return 0 on success
@@ -344,6 +392,17 @@ uint64_t current_time_monotonic(void);
 
 /* Function to send packet(data) of length length to ip_port. */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length);
+
+/* Send and decode a common encrypted payload packet */
+int send_common_tox_packet(DHT *dht, const uint8_t destination_id[], IP_Port ipp, uint8_t type, uint8_t payload[], size_t length);
+int recv_common_tox_packet(DHT *dht, const uint8_t packet[], uint8_t *cleartext, size_t clearlength);
+
+/* Sign and verify a signed packet. Note: length is the signed length, i.e. PAK_LEN of corresponding packet */
+int sign_packet(uint8_t packet[], size_t length, const uint8_t node_private_key[]);
+int verify_signed_packet(uint8_t packet[], size_t length, const uint8_t node_public_key[]);
+
+/* Use asserts wisely, since real siganture size might vary if libsodium changes it */
+#define SIGNATURE_SIZE  64 /* ← this doesn't belong here actually, move to corresponding header */
 
 /* Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);

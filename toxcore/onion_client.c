@@ -1279,7 +1279,7 @@ Onion_Client *new_onion_client(Net_Crypto *c)
     onion_c->c = c;
     new_symmetric_key(onion_c->secret_symmetric_key);
     crypto_box_keypair(onion_c->temp_public_key, onion_c->temp_secret_key);
-    networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_announce_response, onion_c);
+    networking_registerhandler(onion_c->net, NET_PACKET_ONION_ANNOUNCE_RESPONSE, &handle_announce_response, onion_c);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_data_response, onion_c);
     oniondata_registerhandler(onion_c, FAKEID_DATA_ID, &handle_fakeid_announce, onion_c);
     cryptopacket_registerhandler(onion_c->dht, FAKEID_DATA_ID, &handle_dht_fakeid, onion_c);
@@ -1295,7 +1295,7 @@ void kill_onion_client(Onion_Client *onion_c)
 
     ping_array_free_all(&onion_c->announce_ping_array);
     realloc_onion_friends(onion_c, 0);
-    networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
+    networking_registerhandler(onion_c->net, NET_PACKET_ONION_ANNOUNCE_RESPONSE, NULL, NULL);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
     oniondata_registerhandler(onion_c, FAKEID_DATA_ID, NULL, NULL);
     cryptopacket_registerhandler(onion_c->dht, FAKEID_DATA_ID, NULL, NULL);

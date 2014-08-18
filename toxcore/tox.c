@@ -495,7 +495,58 @@ void tox_get_keys(Tox *tox, uint8_t *public_key, uint8_t *secret_key)
         memcpy(secret_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
 }
 
-/**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
+/**********GROUP CHAT FUNCTIONS: WARNING Group chats are rewritten so you'd better adjust your clients ************/
+
+/* Creates a new groupchat and puts it in the chats array.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ */
+int tox_add_groupchat(Tox *tox)
+{
+    Messenger *m = tox;
+    return add_groupchat(m);
+}
+
+/* Creates new groupchat credentials instance.
+ * Use in case you want to initiate the chat aka founder
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tox_add_groupchat_credentials(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    return add_groupchat_credentials(m, groupnumber);
+}
+
+/* Delete a groupchat from the chats array.
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+int tox_del_groupchat(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    return del_groupchat(m, groupnumber);
+}
+
+
+/* Copies group peer self pk into self_public_key
+ */
+void tox_get_groupchat_self_pk(Tox *tox, int groupnumber, uint8_t *self_public_key)
+{
+    Messenger *m = tox;
+    get_groupchat_self_pk(m, groupnumber, self_public_key);
+}
+
+/* Copies group peer self pk into self_public_key
+ */
+void tox_get_groupchat_pk(Tox *tox, int groupnumber, uint8_t *chat_public_key)
+{
+    Messenger *m = tox;
+    get_groupchat_pk(m, groupnumber, chat_public_key);
+}
+
 
 /* Set the callback for group invites.
  *
@@ -775,18 +826,18 @@ static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled,
     if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
         ip_port_v64.port = port;
         add_tcp_relay(m->net_crypto, ip_port_v64, public_key);
-        onion_add_path_node(m->onion_c, ip_port_v64, public_key); //TODO: move this
         return 1;
     } else {
         return 0;
     }
 }
 
-int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
+int tox_bootstrap_from_address(Tox *tox, const char *address,
+                               uint8_t ipv6enabled, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    tox_add_tcp_relay(tox, address, m->options.ipv6enabled, htons(port), public_key);
-    return DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key);
+    tox_add_tcp_relay(tox, address, ipv6enabled, port, public_key);
+    return DHT_bootstrap_from_address(m->dht, address, ipv6enabled, port, public_key);
 }
 
 /*  return 0 if we are not connected to the DHT.
@@ -795,7 +846,7 @@ int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, con
 int tox_isconnected(const Tox *tox)
 {
     const Messenger *m = tox;
-    return DHT_isconnected(m->dht) || onion_isconnected(m->onion_c);
+    return DHT_isconnected(m->dht);
 }
 
 /* Return the time in milliseconds before tox_do() should be called again
@@ -814,32 +865,10 @@ uint32_t tox_do_interval(Tox *tox)
  *  return allocated instance of tox on success.
  *  return 0 if there are problems.
  */
-Tox *tox_new(Tox_Options *options)
+Tox *tox_new(uint8_t ipv6enabled)
 {
     LOGGER_INIT(LOGGER_OUTPUT_FILE, LOGGER_LEVEL);
-    Messenger_Options m_options = {0};
-
-    if (options == NULL) {
-        m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
-    } else {
-        m_options.ipv6enabled = options->ipv6enabled;
-        m_options.udp_disabled = options->udp_disabled;
-        m_options.proxy_enabled = options->proxy_enabled;
-
-        if (m_options.proxy_enabled) {
-            ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
-
-            if (m_options.ipv6enabled)
-                m_options.proxy_info.ip_port.ip.family = AF_UNSPEC;
-
-            if (!addr_resolve_or_parse_ip(options->proxy_address, &m_options.proxy_info.ip_port.ip, NULL))
-                return NULL;
-
-            m_options.proxy_info.ip_port.port = htons(options->proxy_port);
-        }
-    }
-
-    return new_messenger(&m_options);
+    return new_messenger(ipv6enabled);
 }
 
 /* Run this before closing shop.

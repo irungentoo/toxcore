@@ -27,6 +27,7 @@
 #endif
 
 #include <time.h>
+#include <stdio.h>
 
 /* for CLIENT_ID_SIZE */
 #include "DHT.h"
@@ -63,10 +64,79 @@ bool id_equal(const uint8_t *dest, const uint8_t *src)
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
+bool id_long_equal(const uint8_t *dest, const uint8_t *src)
+{
+    return memcmp(dest, src, EXT_PUBLIC_KEY) == 0;
+}
+
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
     return CLIENT_ID_SIZE;
+}
+
+STATIC_BUFFER_DEFINE(idtoa, CLIENT_ID_SIZE*2+1);
+
+char *id_toa(const uint8_t *id)
+{
+    int i;
+    char *str=STATIC_BUFFER_GETBUF(idtoa, CLIENT_ID_SIZE*2+1);
+    
+    str[CLIENT_ID_SIZE*2]=0;
+    for (i=0;i<CLIENT_ID_SIZE;i++)
+        sprintf(str+2*i,"%02x",id[i]);
+    
+    return str;
+}
+
+/* extended id functions */
+static unsigned keypos[] = { 
+    0,                  /* ID_ALL_KEYS */
+    0,                  /* ID_ENCRYPTION_KEY */
+    SIG_PUBLIC_KEY,     /* ID_SIGNATURE_KEY */
+};
+static unsigned keylen[] = {
+    EXT_PUBLIC_KEY, /* ID_ALL_KEYS */
+    ENC_PUBLIC_KEY,     /* ID_ENCRYPTION_KEY */
+    SIG_PUBLIC_KEY,/* ID_SIGNATURE_KEY */
+};
+
+bool id_equal2(const uint8_t *dest, const uint8_t *src, const enum id_key_t keytype)
+{
+    return memcmp(dest + keypos[keytype], src + keypos[keytype], keylen[keytype]) == 0;
+}
+
+uint32_t id_copy2(uint8_t *dest, const uint8_t *src, const enum id_key_t keytype)
+{
+    memcpy(dest + keypos[keytype], src + keypos[keytype], keylen[keytype]);
+    return keylen[keytype];
+}
+
+STATIC_BUFFER_DEFINE(idtoa2, CLIENT_ID_EXT_SIZE*2+1);
+
+char *id_toa2(const uint8_t *id, const enum id_key_t keytype)
+{
+    int i;
+    char *str=STATIC_BUFFER_GETBUF(idtoa2, CLIENT_ID_EXT_SIZE*2+1);
+    
+    str[CLIENT_ID_EXT_SIZE*2]=0;
+    for (i=0;i<keylen[keytype];i++)
+        sprintf(str+2*i,"%02x",id[i + keypos[keytype]]);
+    
+    return str;
+}
+
+void id_tocolor(const uint8_t* id, uint8_t color[3])
+{
+    int i,j;
+    for (i=0; i<3; i++)
+    {
+        /* TODO: more sophisticated formula */
+        uint32_t res=0;
+        for (j=i*CLIENT_ID_SIZE/3; j<(i+1)*CLIENT_ID_SIZE/3; j++)
+            res+=id[j];
+        color[i]=255*((double)res/(255.0*CLIENT_ID_SIZE/3.0));
+    }
 }
 
 void host_to_net(uint8_t *num, uint16_t numbytes)
@@ -134,6 +204,31 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     return length == 0 ? 0 : -1;
 };
 
+/* Converts 8 bytes to uint64_t */
+inline__ void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
+{
+    *dest =
+#ifdef WORDS_BIGENDIAN
+        ( ( uint64_t ) *  bytes )              |
+        ( ( uint64_t ) * ( bytes + 1 ) << 8 )  |
+        ( ( uint64_t ) * ( bytes + 2 ) << 16 ) |
+        ( ( uint64_t ) * ( bytes + 3 ) << 24 )  |
+        ( ( uint64_t ) * ( bytes + 4 ) << 32 ) |
+        ( ( uint64_t ) * ( bytes + 5 ) << 40 )  |
+        ( ( uint64_t ) * ( bytes + 6 ) << 48 ) |
+        ( ( uint64_t ) * ( bytes + 7 ) << 56 ) ;
+#else
+        ( ( uint64_t ) *  bytes        << 56 ) |
+        ( ( uint64_t ) * ( bytes + 1 ) << 48 ) |
+        ( ( uint64_t ) * ( bytes + 2 ) << 40 )  |
+        ( ( uint64_t ) * ( bytes + 3 ) << 32 ) |
+        ( ( uint64_t ) * ( bytes + 4 ) << 24 )  |
+        ( ( uint64_t ) * ( bytes + 5 ) << 16 ) |
+        ( ( uint64_t ) * ( bytes + 6 ) << 8 )  |
+        ( ( uint64_t ) * ( bytes + 7 ) ) ;
+#endif
+}
+
 /* Converts 4 bytes to uint32_t */
 inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
 {
@@ -161,6 +256,30 @@ inline__ void bytes_to_U16(uint16_t *dest, const uint8_t *bytes)
 #else
         ( ( uint16_t ) *   bytes << 8 ) |
         ( ( uint16_t ) * ( bytes + 1 ) );
+#endif
+}
+
+/* Convert uint64_t to byte string of size 8 */
+inline__ void U64_to_bytes(uint8_t *dest, uint64_t value)
+{
+#ifdef WORDS_BIGENDIAN
+    *(dest)     = ( value );
+    *(dest + 1) = ( value >> 8 );
+    *(dest + 2) = ( value >> 16 );
+    *(dest + 3) = ( value >> 24 );
+    *(dest + 4) = ( value >> 32 );
+    *(dest + 5) = ( value >> 40 );
+    *(dest + 6) = ( value >> 48 );
+    *(dest + 7) = ( value >> 56 );
+#else
+    *(dest)     = ( value >> 56 );
+    *(dest + 1) = ( value >> 48 );
+    *(dest + 2) = ( value >> 40 );    
+    *(dest + 3) = ( value >> 42 );
+    *(dest + 4) = ( value >> 24 );
+    *(dest + 5) = ( value >> 16 );
+    *(dest + 6) = ( value >> 8 );
+    *(dest + 7) = ( value );
 #endif
 }
 
