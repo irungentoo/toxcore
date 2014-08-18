@@ -386,6 +386,12 @@ void kill_DHT(DHT *dht);
  */
 int DHT_isconnected(const DHT *dht);
 
+/*  return 0 if we are not connected or only connected to lan peers with the DHT.
+ *  return 1 if we are.
+ */
+int DHT_non_lan_connected(const DHT *dht);
+
+
 int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id);
 
 #endif
