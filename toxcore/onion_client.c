@@ -1097,23 +1097,24 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
 
 static void populate_path_nodes(Onion_Client *onion_c)
 {
-    if (onion_c->path_nodes_index < MAX_PATH_NODES) {
-        Node_format nodes_list[MAX_SENT_NODES];
-        uint8_t client_id[crypto_box_PUBLICKEYBYTES];
-        uint32_t random_num = rand();
-        memcpy(client_id, &random_num, sizeof(random_num));
+    Node_format nodes_list[MAX_SENT_NODES];
+    uint8_t client_id[crypto_box_PUBLICKEYBYTES];
+    uint32_t random_num = rand();
+    memcpy(client_id, &random_num, sizeof(random_num));
 
-        uint32_t num_nodes = get_close_nodes(onion_c->dht, client_id, nodes_list, (rand() % 2) ? AF_INET : AF_INET6, 1, 0);
-        unsigned int i;
+    uint32_t num_nodes = get_close_nodes(onion_c->dht, client_id, nodes_list, (rand() % 2) ? AF_INET : AF_INET6, 1, 0);
+    unsigned int i;
 
-        for (i = 0; i < num_nodes; ++i) {
-            onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].client_id);
-        }
+    for (i = 0; i < num_nodes; ++i) {
+        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].client_id);
     }
 }
 
-#define ANNOUNCE_FRIEND (ONION_NODE_PING_INTERVAL * 2)
-#define FRIEND_ONION_NODE_TIMEOUT (ONION_NODE_TIMEOUT * 2)
+#define ANNOUNCE_FRIEND (ONION_NODE_PING_INTERVAL * 3)
+#define ANNOUNCE_FRIEND_BEGINNING 5
+#define FRIEND_ONION_NODE_TIMEOUT (ONION_NODE_TIMEOUT * 3)
+
+#define RUN_COUNT_FRIEND_ANNOUNCE_BEGINNING 15
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
@@ -1123,22 +1124,31 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
     if (onion_c->friends_list[friendnum].status == 0)
         return;
 
+    uint32_t interval = ANNOUNCE_FRIEND;
+
+    if (onion_c->friends_list[friendnum].run_count < RUN_COUNT_FRIEND_ANNOUNCE_BEGINNING)
+        interval = ANNOUNCE_FRIEND_BEGINNING;
+
     uint32_t i, count = 0;
     Onion_Node *list_nodes = onion_c->friends_list[friendnum].clients_list;
 
     if (!onion_c->friends_list[friendnum].is_online) {
+
+        ++onion_c->friends_list[friendnum].run_count;
+
         for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
             if (is_timeout(list_nodes[i].timestamp, FRIEND_ONION_NODE_TIMEOUT))
                 continue;
 
             ++count;
 
+
             if (list_nodes[i].last_pinged == 0) {
                 list_nodes[i].last_pinged = unix_time();
                 continue;
             }
 
-            if (is_timeout(list_nodes[i].last_pinged, ANNOUNCE_FRIEND)) {
+            if (is_timeout(list_nodes[i].last_pinged, interval)) {
                 if (client_send_announce_request(onion_c, friendnum + 1, list_nodes[i].ip_port, list_nodes[i].client_id, 0, ~0) == 0) {
                     list_nodes[i].last_pinged = unix_time();
                 }
@@ -1146,10 +1156,17 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
         }
 
         if (count != MAX_ONION_CLIENTS) {
-            if (count < (uint32_t)rand() % MAX_ONION_CLIENTS) {
-                unsigned int num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
+            unsigned int num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
 
-                if (num_nodes != 0) {
+            unsigned int n = num_nodes;
+
+            if (num_nodes > (MAX_ONION_CLIENTS / 2))
+                n = (MAX_ONION_CLIENTS / 2);
+
+            if (num_nodes != 0) {
+                unsigned int j;
+
+                for (j = 0; j < n; ++j) {
                     unsigned int num = rand() % num_nodes;
                     client_send_announce_request(onion_c, friendnum + 1, onion_c->path_nodes[num].ip_port,
                                                  onion_c->path_nodes[num].client_id, 0, ~0);
@@ -1241,6 +1258,8 @@ static void do_announce(Onion_Client *onion_c)
     }
 }
 
+#define NODE_POPULATE_TIMES 4
+
 void do_onion_client(Onion_Client *onion_c)
 {
     uint32_t i;
@@ -1248,12 +1267,16 @@ void do_onion_client(Onion_Client *onion_c)
     if (onion_c->last_run == unix_time())
         return;
 
-    populate_path_nodes(onion_c);
+    for (i = 0; i < NODE_POPULATE_TIMES; ++i)
+        populate_path_nodes(onion_c);
+
     do_announce(onion_c);
 
-    for (i = 0; i < onion_c->num_friends; ++i) {
-        do_friend(onion_c, i);
-        cleanup_friend(onion_c, i);
+    if (onion_isconnected(onion_c)) {
+        for (i = 0; i < onion_c->num_friends; ++i) {
+            do_friend(onion_c, i);
+            cleanup_friend(onion_c, i);
+        }
     }
 
     onion_c->last_run = unix_time();

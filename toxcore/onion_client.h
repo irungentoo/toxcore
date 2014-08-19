@@ -102,6 +102,8 @@ typedef struct {
     int (*tcp_relay_node_callback)(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key);
     void *tcp_relay_node_callback_object;
     uint32_t tcp_relay_node_callback_number;
+
+    uint32_t run_count;
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data,
