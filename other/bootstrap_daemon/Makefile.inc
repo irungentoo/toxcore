@@ -23,5 +23,5 @@ endif
 
 EXTRA_DIST += \
     $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.conf \
-    $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd
+    $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.sh
     
