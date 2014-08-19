@@ -24,7 +24,9 @@
 #endif /* HAVE_CONFIG_H */
 
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE /* implicit declaration warning */
+#endif
 
 #include "rtp.h"
 #include "codec.h"
