@@ -134,11 +134,8 @@ void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t 
 {
     int outdated_key_i = -1;
 
-    /* TODO Remove this magic number, "30", what is this even doing? */
-    int first = client_id[30] * MAX_KEYS_PER_SLOT;
-    int last = (client_id[30] + 1) * MAX_KEYS_PER_SLOT;
     int i;
-    for (i = first; i < last && shared_keys[i].times_requested != 0; ++i) {
+    for (i = 0; i < SHARED_KEYS_SIZE && shared_keys[i].times_requested != 0; ++i) {
         if (memcmp(client_id, shared_keys[i].client_id, sizeof(shared_keys[0].client_id)) == 0) {
             memcpy(shared_key, shared_keys[i].shared_key, sizeof(shared_keys[0].shared_key));
             ++shared_keys[i].times_requested;

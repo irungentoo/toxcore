@@ -162,14 +162,14 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 
 /*----------------------------------------------------------------------------------*/
 /* struct to store some shared keys so we don't have to regenerate them for each request. */
-#define MAX_KEYS_PER_SLOT 4
+#define SHARED_KEYS_SIZE 1024
 #define KEYS_TIMEOUT 600
 typedef struct {
     uint8_t  client_id[CLIENT_ID_SIZE];
     uint8_t  shared_key[crypto_box_BEFORENMBYTES];
     uint32_t times_requested;
     uint64_t time_last_requested;
-} Shared_Keys[256 * MAX_KEYS_PER_SLOT];
+} Shared_Keys[SHARED_KEYS_SIZE];
 
 /*----------------------------------------------------------------------------------*/
 
