@@ -87,8 +87,24 @@ tox_sync_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
+                        $(NACL_LIBS)
+
+
+noinst_PROGRAMS +=      tox_shell
+
+tox_shell_SOURCES =      ../testing/tox_shell.c
+
+tox_shell_CFLAGS =       $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS)
+
+tox_shell_LDADD =        $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
+                        libtoxcore.la \
+                        $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
-                        $(WINSOCK2_LIBS)
+                        -lutil
+
 endif
 
 EXTRA_DIST += 			$(top_srcdir)/testing/misc_tools.c
