@@ -161,15 +161,16 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 
 
 /*----------------------------------------------------------------------------------*/
-/* struct to store some shared keys so we don't have to regenerate them for each request. */
+
+/* SHARED_KEYS_SIZE < INT_MAX */
 #define SHARED_KEYS_SIZE 1024
 #define KEYS_TIMEOUT 600
+
 typedef struct {
     uint8_t  client_id[CLIENT_ID_SIZE];
     uint8_t  shared_key[crypto_box_BEFORENMBYTES];
-    uint32_t times_requested;
     uint64_t time_last_requested;
-} Shared_Keys[SHARED_KEYS_SIZE];
+} Shared_Keys;
 
 /*----------------------------------------------------------------------------------*/
 
@@ -197,8 +198,8 @@ typedef struct {
     DHT_Friend    *friends_list;
     uint16_t       num_friends;
 
-    Shared_Keys shared_keys_recv;
-    Shared_Keys shared_keys_sent;
+    Shared_Keys shared_keys_recv[SHARED_KEYS_SIZE];
+    Shared_Keys shared_keys_sent[SHARED_KEYS_SIZE];
 
     struct PING   *ping;
     Ping_Array    dht_ping_array;
@@ -212,13 +213,12 @@ typedef struct {
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
-/* Shared key generations are costly, it is therefor smart to store commonly used
- * ones so that they can re used later without being computed again.
- *
- * If shared key is already in shared_keys, copy it to shared_key.
- * else generate it into shared_key and copy it to shared_keys
+/* Writes the shared key between us and client_id to shared_key.
+ * The algorithm first searches through shared_keys for a cached copy, and only later resorts to generating a new key.
+ * This function can be called synchronously if threads do not use the same shared_keys arrays simultaneously.
+ * It may be best to create a unique shared_keys array for each thread.
  */
-void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id);
+void get_shared_key(Shared_Keys shared_keys[SHARED_KEYS_SIZE], uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id);
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
  * for packets that we receive.

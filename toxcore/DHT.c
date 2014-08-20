@@ -121,43 +121,54 @@ static int client_id_cmp(const ClientPair p1, const ClientPair p2)
     return c;
 }
 
-/* Shared key generations are costly, it is therefor smart to store commonly used
- * ones so that they can re used later without being computed again.
- *
- * If shared key is already in shared_keys, copy it to shared_key.
- * else generate it into shared_key and copy it to shared_keys
- *
- * TODO This can be made faster if we use a priority queue, instead of just iterating
- * through an unsorted list, replacing an open slot if there is one.
+/* Writes the shared key between us and client_id to shared_key.
+ * The algorithm first searches through shared_keys for a cached copy, and only later resorts to generating a new key.
+ * This function can be called synchronously if threads do not use the same shared_keys arrays simultaneously.
+ * It may be best to create a unique shared_keys array for each thread.
  */
-void get_shared_key(Shared_Keys shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
+void get_shared_key(Shared_Keys shared_keys[SHARED_KEYS_SIZE], uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
 {
-    int outdated_key_i = -1;
+    int i, hash = 0, early_hash = -1;
+    for (i = 0; i < CLIENT_ID_SIZE; i++) {
+        hash += client_id[i];
+        hash = SHARED_KEYS_SIZE % (client_id[i] + 1);
 
-    int i;
-    for (i = 0; i < SHARED_KEYS_SIZE && shared_keys[i].times_requested != 0; ++i) {
-        if (memcmp(client_id, shared_keys[i].client_id, sizeof(shared_keys[0].client_id)) == 0) {
-            memcpy(shared_key, shared_keys[i].shared_key, sizeof(shared_keys[0].shared_key));
-            ++shared_keys[i].times_requested;
-            shared_keys[i].time_last_requested = unix_time();
+        /* If the remaining bytes in the hash are equal, we've found our key */
+        if (memcmp(client_id + i, shared_keys[hash].client_id + i, sizeof(shared_keys[hash].client_id) - i) == 0) {
+            memcpy(shared_key, shared_keys[hash].shared_key, sizeof(shared_keys[hash].shared_key));
+
+            /* Move the key to early_hash so it'll be faster next time */
+            if (early_hash >= 0) {
+                memcpy(shared_keys[early_hash].client_id, shared_keys[hash].client_id, sizeof(shared_keys[hash].client_id));
+                memcpy(shared_keys[early_hash].shared_key, shared_keys[hash].shared_key, sizeof(shared_keys[hash].shared_key));
+
+                /* Kill the original and perserve it's data, so it can be reclaimed later */
+                shared_keys[hash].time_last_requested = 0;
+
+                hash = early_hash;
+            }
+            shared_keys[hash].time_last_requested = unix_time();
             return;
         }
 
-        /* Replace outdated key if we haven't already found one earlier */
-        if (outdated_key_i == -1 && is_timeout(shared_keys[i].time_last_requested, KEYS_TIMEOUT))
-            outdated_key_i = i;
+        /* If timed out, mark as eligible for overwrite */
+        if (is_timeout(shared_keys[hash].time_last_requested, KEYS_TIMEOUT))
+            shared_keys[hash].time_last_requested = 0;
+
+        /* Set early_hash if we haven't found one earlier */
+        if (shared_keys[hash].time_last_requested == 0 && early_hash == -1)
+            early_hash = hash;
     }
 
-    /* If we didn't find a slot that had timed out, use the last one by default */
-    if (outdated_key_i == -1)
-        outdated_key_i = i;
+    /* Cache-miss. Use early_hash if we can. */
+    if (early_hash < 0)
+        early_hash = i;
 
     encrypt_precompute(client_id, secret_key, shared_key);
 
-    memcpy(shared_keys[outdated_key_i].client_id, client_id, sizeof(shared_keys[0].client_id));
-    memcpy(shared_keys[outdated_key_i].shared_key, shared_key, sizeof(shared_keys[0].shared_key));
-    shared_keys[outdated_key_i].times_requested = 1;
-    shared_keys[outdated_key_i].time_last_requested = unix_time();
+    memcpy(shared_keys[early_hash].client_id, client_id, sizeof(shared_keys[0].client_id));
+    memcpy(shared_keys[early_hash].shared_key, shared_key, sizeof(shared_keys[0].shared_key));
+    shared_keys[early_hash].time_last_requested = unix_time();
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
