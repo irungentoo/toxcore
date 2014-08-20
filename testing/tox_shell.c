@@ -33,7 +33,11 @@
 #include "../toxcore/tox.h"
 #include "misc_tools.c"
 
+#if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+#include <util.h>
+#else
 #include <pty.h>
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 
