@@ -303,7 +303,7 @@ uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
  *
  * NOTE:this is used to pick nodes for paths.
  */
-uint16_t random_nodes_path(DHT *dht, Node_format *nodes, uint16_t max_num);
+uint16_t random_nodes_path(const DHT *dht, Node_format *nodes, uint16_t max_num);
 
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);

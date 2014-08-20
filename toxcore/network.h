@@ -99,9 +99,6 @@ typedef int sock_t;
 #define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
 #define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID for IPv4 addresses. */
 #define NET_PACKET_SEND_NODES_IPV6 4   /* Send nodes response packet ID for other addresses. */
-#define NET_PACKET_HANDSHAKE       16  /* Handshake packet ID. */
-#define NET_PACKET_SYNC            17  /* SYNC packet ID. */
-#define NET_PACKET_DATA            18  /* Data packet ID. */
 #define NET_PACKET_COOKIE_REQUEST  24  /* Cookie request packet */
 #define NET_PACKET_COOKIE_RESPONSE 25  /* Cookie response packet */
 #define NET_PACKET_CRYPTO_HS       26  /* Crypto handshake packet */
@@ -190,6 +187,21 @@ IP_Port;
  *   uses a static buffer, so mustn't used multiple times in the same output
  */
 const char *ip_ntoa(const IP *ip);
+
+/*
+ * addr_parse_ip
+ *  directly parses the input into an IP structure
+ *  tries IPv4 first, then IPv6
+ *
+ * input
+ *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
+ *
+ * output
+ *  IP: family and the value is set on success
+ *
+ * returns 1 on success, 0 on failure
+ */
+int addr_parse_ip(const char *address, IP *to);
 
 /* ip_equal
  *  compares two IPAny structures
@@ -284,7 +296,6 @@ typedef struct {
     uint16_t port;
     /* Our UDP socket. */
     sock_t sock;
-    uint64_t send_fail_eagain;
 } Networking_Core;
 
 /* Run this before creating sockets.

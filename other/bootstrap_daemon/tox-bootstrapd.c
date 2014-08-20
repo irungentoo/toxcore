@@ -1,6 +1,6 @@
-/* tox_bootstrap_daemon.c
+/* tox-bootstrapd.c
  *
- * Tox DHT bootstrap node daemon.
+ * Tox DHT bootstrap daemon.
  *
  *  Copyright (C) 2014 Tox project All Rights Reserved.
  *
@@ -52,14 +52,14 @@
 #include "../../testing/misc_tools.c"
 
 
-#define DAEMON_NAME "tox_bootstrap_daemon"
-#define DAEMON_VERSION_NUMBER 2014051800UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
+#define DAEMON_NAME "tox-bootstrapd"
+#define DAEMON_VERSION_NUMBER 2014081600UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
 
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
 
-#define DEFAULT_PID_FILE_PATH         ".tox_bootstrap_daemon.pid"
-#define DEFAULT_KEYS_FILE_PATH        ".tox_bootstrap_daemon.keys"
+#define DEFAULT_PID_FILE_PATH         "tox-bootstrapd.pid"
+#define DEFAULT_KEYS_FILE_PATH        "tox-bootstrapd.keys"
 #define DEFAULT_PORT                  33445
 #define DEFAULT_ENABLE_IPV6           0 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY  1 // 1 - true, 0 - false
@@ -480,7 +480,7 @@ void print_public_key(uint8_t *public_key)
     char buffer[2 * crypto_box_PUBLICKEYBYTES + 1];
     int index = 0;
 
-    int i;
+    size_t i;
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
         index += sprintf(buffer + index, "%02hhX", public_key[i]);
@@ -529,7 +529,7 @@ int main(int argc, char *argv[])
     // Check if the PID file exists
     FILE *pid_file;
 
-    if (pid_file = fopen(pid_file_path, "r")) {
+    if ((pid_file = fopen(pid_file_path, "r"))) {
         syslog(LOG_ERR, "Another instance of the daemon is already running, PID file %s exists.\n", pid_file_path);
         fclose(pid_file);
     }

@@ -181,13 +181,13 @@ int set_socket_dualstack(sock_t sock)
 {
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
-    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, &optsize);
+    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&ipv6only, &optsize);
 
     if ((res == 0) && (ipv6only == 0))
         return 1;
 
     ipv6only = 0;
-    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only)) == 0);
+    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&ipv6only, sizeof(ipv6only)) == 0);
 }
 
 
@@ -283,6 +283,9 @@ uint64_t current_time_monotonic(void)
  */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length)
 {
+    if (net->family == 0) /* Socket not initialized */
+        return -1;
+
     /* socket AF_INET, but target IP NOT: can't send */
     if ((net->family == AF_INET) && (ip_port.ip.family != AF_INET))
         return -1;
@@ -337,12 +340,6 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint3
     int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 
     loglogdata("O=>", data, length, ip_port, res);
-
-
-    if ((res >= 0) && ((uint32_t)res == length))
-        net->send_fail_eagain = 0;
-    else if ((res < 0) && (errno == EWOULDBLOCK))
-        net->send_fail_eagain = current_time_monotonic();
 
     return res;
 }
@@ -406,6 +403,9 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 
 void networking_poll(Networking_Core *net)
 {
+    if (net->family == 0) /* Socket not initialized */
+        return;
+
     unix_time_update();
 
     IP_Port ip_port;
@@ -634,7 +634,9 @@ Networking_Core *new_networking(IP ip, uint16_t port)
 /* Function to cleanup networking stuff. */
 void kill_networking(Networking_Core *net)
 {
-    kill_sock(net->sock);
+    if (net->family != 0) /* Socket not initialized */
+        kill_sock(net->sock);
+
     free(net);
     return;
 }
@@ -671,7 +673,7 @@ int ip_equal(const IP *a, const IP *b)
     }
 
     return 0;
-};
+}
 
 /* ipport_equal
  *  compares two IPAny_Port structures
@@ -688,7 +690,7 @@ int ipport_equal(const IP_Port *a, const IP_Port *b)
         return 0;
 
     return ip_equal(&a->ip, &b->ip);
-};
+}
 
 /* nulls out ip */
 void ip_reset(IP *ip)
@@ -697,7 +699,7 @@ void ip_reset(IP *ip)
         return;
 
     memset(ip, 0, sizeof(IP));
-};
+}
 
 /* nulls out ip, sets family according to flag */
 void ip_init(IP *ip, uint8_t ipv6enabled)
@@ -707,7 +709,7 @@ void ip_init(IP *ip, uint8_t ipv6enabled)
 
     memset(ip, 0, sizeof(IP));
     ip->family = ipv6enabled ? AF_INET6 : AF_INET;
-};
+}
 
 /* checks if ip is valid */
 int ip_isset(const IP *ip)
@@ -716,7 +718,7 @@ int ip_isset(const IP *ip)
         return 0;
 
     return (ip->family != 0);
-};
+}
 
 /* checks if ip is valid */
 int ipport_isset(const IP_Port *ipport)
@@ -728,7 +730,7 @@ int ipport_isset(const IP_Port *ipport)
         return 0;
 
     return ip_isset(&ipport->ip);
-};
+}
 
 /* copies an ip structure (careful about direction!) */
 void ip_copy(IP *target, const IP *source)
@@ -737,7 +739,7 @@ void ip_copy(IP *target, const IP *source)
         return;
 
     memcpy(target, source, sizeof(IP));
-};
+}
 
 /* copies an ip_port structure (careful about direction!) */
 void ipport_copy(IP_Port *target, const IP_Port *source)
@@ -805,7 +807,7 @@ const char *ip_ntoa(const IP *ip)
     /* brute force protection against lacking termination */
     addresstext[sizeof(addresstext) - 1] = 0;
     return addresstext;
-};
+}
 
 /*
  * addr_parse_ip
@@ -820,7 +822,6 @@ const char *ip_ntoa(const IP *ip)
  *
  * returns 1 on success, 0 on failure
  */
-
 int addr_parse_ip(const char *address, IP *to)
 {
     if (!address || !to)
@@ -832,7 +833,7 @@ int addr_parse_ip(const char *address, IP *to)
         to->family = AF_INET;
         to->ip4.in_addr = addr4;
         return 1;
-    };
+    }
 
     struct in6_addr addr6;
 
@@ -840,10 +841,10 @@ int addr_parse_ip(const char *address, IP *to)
         to->family = AF_INET6;
         to->ip6.in6_addr = addr6;
         return 1;
-    };
+    }
 
     return 0;
-};
+}
 
 /*
  * addr_resolve():
@@ -862,7 +863,6 @@ int addr_parse_ip(const char *address, IP *to)
  * returns in *extra an IPv4 address, if family was AF_UNSPEC and *to is AF_INET6
  * returns 0 on failure
  */
-
 int addr_resolve(const char *address, IP *to, IP *extra)
 {
     if (!address || !to)
@@ -970,4 +970,4 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
             return 0;
 
     return 1;
-};
+}

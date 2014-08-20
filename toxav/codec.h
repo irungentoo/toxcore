@@ -1,4 +1,4 @@
-/**  media.h
+/**  codec.h
  *
  *   Audio and video codec intitialization, encoding/decoding and playback
  *
@@ -56,14 +56,19 @@ typedef struct _CodecState {
 
     /* video decoding */
     vpx_codec_ctx_t  v_decoder;
+    int bitrate;
+    int max_width;
+    int max_height;
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
     int audio_bitrate;
     int audio_sample_rate;
+    int audio_encoder_channels;
 
     /* audio decoding */
     OpusDecoder *audio_decoder;
+    int audio_decoder_channels;
 
     uint64_t capabilities; /* supports*/
 
@@ -75,17 +80,13 @@ typedef struct _CodecState {
 
 typedef struct _JitterBuffer {
     RTPMessage **queue;
-    uint16_t capacity;
-    uint16_t size;
-    uint16_t front;
-    uint16_t rear;
-    uint8_t queue_ready;
-    uint16_t current_id;
-    uint32_t current_ts;
-    uint8_t id_set;
+    uint32_t size;
+    uint32_t capacity;
+    uint16_t bottom;
+    uint16_t top;
 } JitterBuffer;
 
-JitterBuffer *create_queue(int capacity);
+JitterBuffer *create_queue(unsigned int capacity);
 void terminate_queue(JitterBuffer *q);
 void queue(JitterBuffer *q, RTPMessage *pk);
 RTPMessage *dequeue(JitterBuffer *q, int *success);
@@ -94,14 +95,20 @@ RTPMessage *dequeue(JitterBuffer *q, int *success);
 CodecState *codec_init_session ( uint32_t audio_bitrate,
                                  uint16_t audio_frame_duration,
                                  uint32_t audio_sample_rate,
-                                 uint32_t audio_channels,
+                                 uint32_t encoder_audio_channels,
+                                 uint32_t decoder_audio_channels,
                                  uint32_t audio_VAD_tolerance_ms,
-                                 uint16_t video_width,
-                                 uint16_t video_height,
-                                 uint32_t video_bitrate);
+                                 uint16_t max_video_width,
+                                 uint16_t max_video_height,
+                                 uint32_t video_bitrate );
 
 void codec_terminate_session(CodecState *cs);
 
+/* Reconfigure video encoder
+   return 0 on success.
+   return -1 on failure. */
+int reconfigure_video_encoder_resolution(CodecState *cs, uint16_t width, uint16_t height);
+int reconfigure_video_encoder_bitrate(CodecState *cs, uint32_t video_bitrate);
 
 /* Calculate energy and return 1 if has voice, 0 if not */
 int energy_VAD(CodecState *cs, int16_t *PCM, uint16_t frame_size, float energy);

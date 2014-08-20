@@ -12,6 +12,8 @@
 
 #include "../toxcore/tox.h"
 
+#include "helpers.h"
+
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -30,7 +32,7 @@ void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *dat
 }
 uint32_t messages_received;
 
-void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_message(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -44,7 +46,7 @@ void print_message(Tox *m, int friendnumber, uint8_t *string, uint16_t length, v
 
 uint32_t name_changes;
 
-void print_nickchange(Tox *m, int friendnumber, uint8_t *string, uint16_t length, void *userdata)
+void print_nickchange(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -69,7 +71,7 @@ void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
-void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename,
+void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
                          uint16_t filename_length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
@@ -84,23 +86,26 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
 
 uint32_t file_sent;
 uint32_t sendf_ok;
-void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
-                        uint8_t *data, uint16_t length, void *userdata)
+void file_print_control(Tox *m, int friendnumber, uint8_t receive_send, uint8_t filenumber, uint8_t control_type,
+                        const uint8_t *data, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (send_recieve == 0 && control_type == TOX_FILECONTROL_FINISHED)
+    if (receive_send == 0 && control_type == TOX_FILECONTROL_FINISHED)
+        tox_file_send_control(m, friendnumber, 1, filenumber, TOX_FILECONTROL_FINISHED, NULL, 0);
+
+    if (receive_send == 1 && control_type == TOX_FILECONTROL_FINISHED)
         file_sent = 1;
 
-    if (send_recieve == 1 && control_type == TOX_FILECONTROL_ACCEPT)
+    if (receive_send == 1 && control_type == TOX_FILECONTROL_ACCEPT)
         sendf_ok = 1;
 
 }
 
 uint64_t size_recv;
 uint8_t num;
-void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -119,9 +124,9 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, uint8_t *data, uin
 START_TEST(test_few_clients)
 {
     long long unsigned int con_time, cur_time = time(NULL);
-    Tox *tox1 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
-    Tox *tox2 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
-    Tox *tox3 = tox_new(TOX_ENABLE_IPV6_DEFAULT);
+    Tox *tox1 = tox_new(0);
+    Tox *tox2 = tox_new(0);
+    Tox *tox3 = tox_new(0);
     ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
     uint32_t to_compare = 974536;
     tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
@@ -294,11 +299,11 @@ START_TEST(test_many_clients)
     long long unsigned int cur_time = time(NULL);
     Tox *toxes[NUM_TOXES];
     uint32_t i, j;
+    uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES; ++i) {
-        toxes[i] = tox_new(TOX_ENABLE_IPV6_DEFAULT);
+        toxes[i] = tox_new(0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
-        uint32_t to_comp = 974536;
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
     }
 
@@ -357,14 +362,6 @@ loop_top:
 }
 END_TEST
 
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
-
-#define DEFTESTCASE_SLOW(NAME, TIMEOUT) \
-    DEFTESTCASE(NAME) \
-    tcase_set_timeout(tc_##NAME, TIMEOUT);
 Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox");

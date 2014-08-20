@@ -471,16 +471,6 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, const
 
     int ok = add_closepeer(chat, chat->group[peernum].client_id, source);
 
-    if (chat->assoc) {
-        ippts_send.ip_port = chat->group[peernum].ping_via;
-        ippts_send.timestamp = chat->group[peernum].last_pinged;
-
-        IP_Port ipp_recv;
-        ipp_recv = source;
-
-        Assoc_add_entry(chat->assoc, contents.nodes[i].client_id, &ippts_send, &ipp_recv, ok == 0 ? 1 : 0);
-    }
-
     return 0;
 }
 
@@ -830,6 +820,7 @@ void do_groupchat(Group_Chat *chat)
 void kill_groupchat(Group_Chat *chat)
 {
     send_data(chat, 0, 0, GROUP_CHAT_QUIT);
+    kill_Assoc(chat->assoc);
     free(chat->group);
     free(chat);
 }

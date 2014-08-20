@@ -1,17 +1,17 @@
 if BUILD_DHT_BOOTSTRAP_DAEMON
 
-bin_PROGRAMS += tox_bootstrap_daemon
+bin_PROGRAMS += tox-bootstrapd
 
-tox_bootstrap_daemon_SOURCES = \
-                        ../other/bootstrap_daemon/tox_bootstrap_daemon.c
+tox_bootstrapd_SOURCES = \
+                        ../other/bootstrap_daemon/tox-bootstrapd.c
 
-tox_bootstrap_daemon_CFLAGS = \
+tox_bootstrapd_CFLAGS = \
                         -I$(top_srcdir)/other/bootstrap_daemon \
                         $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS) \
                         $(LIBCONFIG_CFLAGS)
 
-tox_bootstrap_daemon_LDADD = \
+tox_bootstrapd_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
@@ -22,6 +22,6 @@ tox_bootstrap_daemon_LDADD = \
 endif
 
 EXTRA_DIST += \
-    $(top_srcdir)/other/bootstrap_daemon/conf \
-    $(top_srcdir)/other/bootstrap_daemon/tox_bootstrap_daemon.sh
+    $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.conf \
+    $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd
     

@@ -24,8 +24,8 @@ Lossless UDP:
     [DONE] Call initiation
     [DONE] Encryption
     [IN PROGRESS] Auditing.
-    [NOT STARTED] Video packet splitting.
-    [NOT STARTED] Prevent audio skew.
+    [NEEDS TESTING] Video packet splitting.
+    [IN PROGRESS] Prevent audio skew (seems to be easily solvable client side.)
     [IN PROGRESS] Group chats.
 
 Friend_requests.c:
@@ -52,7 +52,7 @@ blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 See: (https://github.com/jencka/ProjectTox-libtoxdata)
 
 [IN PROGRESS] GUI (no official one chosen yet, a list of promising ones follows)
-https://github.com/notsecure/wintox
+https://github.com/notsecure/uTox
 https://github.com/naxuroqa/Venom
 https://github.com/Impyy/Toxy
 https://github.com/lehitoskin/blight

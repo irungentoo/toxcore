@@ -54,7 +54,7 @@ static void change_symmetric_key(Onion *onion)
  * return -1 on failure.
  * return 0 on success.
  */
-int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
+int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *nodes)
 {
     if (!new_path || !nodes)
         return -1;
@@ -93,8 +93,8 @@ int create_onion_path(DHT *dht, Onion_Path *new_path, Node_format *nodes)
  * return -1 on failure.
  * return length of created packet on success.
  */
-int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path *path, IP_Port dest, uint8_t *data,
-                        uint32_t length)
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
+                        const uint8_t *data, uint32_t length)
 {
     if (1 + length + SEND_1 > max_packet_length || length == 0)
         return -1;
@@ -141,6 +141,54 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path 
     return 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + len;
 }
 
+/* Create a onion packet to be sent over tcp.
+ *
+ * Use Onion_Path path to create packet for data of length to dest.
+ * Maximum length of data is ONION_MAX_DATA_SIZE.
+ * packet should be at least ONION_MAX_PACKET_SIZE big.
+ *
+ * return -1 on failure.
+ * return length of created packet on success.
+ */
+int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
+                            const uint8_t *data, uint32_t length)
+{
+    if (crypto_box_NONCEBYTES + SIZE_IPPORT + SEND_BASE * 2 + length > max_packet_length || length == 0)
+        return -1;
+
+    to_net_family(&dest.ip);
+    uint8_t step1[SIZE_IPPORT + length];
+
+
+    ipport_pack(step1, &dest);
+    memcpy(step1 + SIZE_IPPORT, data, length);
+
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    random_nonce(nonce);
+
+    uint8_t step2[SIZE_IPPORT + SEND_BASE + length];
+    ipport_pack(step2, &path->ip_port3);
+    memcpy(step2 + SIZE_IPPORT, path->public_key3, crypto_box_PUBLICKEYBYTES);
+
+    int len = encrypt_data_symmetric(path->shared_key3, nonce, step1, sizeof(step1),
+                                     step2 + SIZE_IPPORT + crypto_box_PUBLICKEYBYTES);
+
+    if ((uint32_t)len != SIZE_IPPORT + length + crypto_box_MACBYTES)
+        return -1;
+
+    ipport_pack(packet + crypto_box_NONCEBYTES, &path->ip_port2);
+    memcpy(packet + crypto_box_NONCEBYTES + SIZE_IPPORT, path->public_key2, crypto_box_PUBLICKEYBYTES);
+    len = encrypt_data_symmetric(path->shared_key2, nonce, step2, sizeof(step2),
+                                 packet + crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_PUBLICKEYBYTES);
+
+    if ((uint32_t)len != SIZE_IPPORT + SEND_BASE + length + crypto_box_MACBYTES)
+        return -1;
+
+    memcpy(packet, nonce, crypto_box_NONCEBYTES);
+
+    return crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_PUBLICKEYBYTES + len;
+}
+
 /* Create and send a onion packet.
  *
  * Use Onion_Path path to send data of length to dest.
@@ -149,7 +197,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, Onion_Path 
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(Networking_Core *net, Onion_Path *path, IP_Port dest, uint8_t *data, uint32_t length)
+int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data, uint32_t length)
 {
     uint8_t packet[ONION_MAX_PACKET_SIZE];
     int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
@@ -209,8 +257,14 @@ static int handle_send_initial(void *object, IP_Port source, const uint8_t *pack
     return onion_send_1(onion, plain, len, source, packet + 1);
 }
 
-int onion_send_1(Onion *onion, uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce)
+int onion_send_1(const Onion *onion, const uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce)
 {
+    if (len > ONION_MAX_PACKET_SIZE + SIZE_IPPORT - (1 + crypto_box_NONCEBYTES + ONION_RETURN_1))
+        return 1;
+
+    if (len <= SIZE_IPPORT + SEND_BASE * 2)
+        return 1;
+
     IP_Port send_to;
     ipport_unpack(&send_to, plain);
     to_host_family(&send_to.ip);

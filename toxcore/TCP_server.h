@@ -80,6 +80,14 @@ enum {
     TCP_STATUS_CONFIRMED,
 };
 
+typedef struct TCP_Priority_List TCP_Priority_List;
+
+struct TCP_Priority_List {
+    TCP_Priority_List *next;
+    uint16_t size, sent;
+    uint8_t data[0];
+};
+
 typedef struct TCP_Secure_Connection {
     uint8_t status;
     sock_t  sock;
@@ -97,6 +105,8 @@ typedef struct TCP_Secure_Connection {
     uint8_t last_packet[2 + MAX_PACKET_SIZE];
     uint16_t last_packet_length;
     uint16_t last_packet_sent;
+
+    TCP_Priority_List *priority_queue_start, *priority_queue_end;
 
     uint64_t identifier;
 
@@ -133,8 +143,8 @@ typedef struct {
 
 /* Create new TCP server instance.
  */
-TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, uint16_t *ports, uint8_t *public_key,
-                           uint8_t *secret_key, Onion *onion);
+TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *public_key,
+                           const uint8_t *secret_key, Onion *onion);
 
 /* Run the TCP_server
  */
@@ -164,7 +174,7 @@ int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length);
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
-int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, uint8_t *shared_key,
+int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, const uint8_t *shared_key,
                                       uint8_t *recv_nonce, uint8_t *data, uint16_t max_len);
 
 

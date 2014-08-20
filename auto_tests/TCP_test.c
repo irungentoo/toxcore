@@ -14,6 +14,8 @@
 
 #include "../toxcore/util.h"
 
+#include "helpers.h"
+
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
@@ -294,7 +296,7 @@ END_TEST
 static int response_callback_good;
 static uint8_t response_callback_connection_id;
 static uint8_t response_callback_public_key[crypto_box_PUBLICKEYBYTES];
-static int response_callback(void *object, uint8_t connection_id, uint8_t *public_key)
+static int response_callback(void *object, uint8_t connection_id, const uint8_t *public_key)
 {
     if (set_tcp_connection_number(object - 2, connection_id, 7) != 0)
         return 1;
@@ -321,7 +323,7 @@ static int status_callback(void *object, uint32_t number, uint8_t connection_id,
     return 0;
 }
 static int data_callback_good;
-static int data_callback(void *object, uint32_t number, uint8_t connection_id, uint8_t *data, uint16_t length)
+static int data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length)
 {
     if (object != (void *)3)
         return 1;
@@ -342,7 +344,7 @@ static int data_callback(void *object, uint32_t number, uint8_t connection_id, u
 
 static int oob_data_callback_good;
 static uint8_t oob_pubkey[crypto_box_PUBLICKEYBYTES];
-static int oob_data_callback(void *object, uint8_t *public_key, uint8_t *data, uint16_t length)
+static int oob_data_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length)
 {
     if (object != (void *)4)
         return 1;
@@ -379,7 +381,7 @@ START_TEST(test_client)
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
-    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key);
+    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn);
     ck_assert_msg(conn->status == TCP_CLIENT_UNCONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_UNCONFIRMED,
@@ -406,7 +408,7 @@ START_TEST(test_client)
     uint8_t f2_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t f2_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(f2_public_key, f2_secret_key);
-    TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key);
+    TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key, 0);
     routing_response_handler(conn, response_callback, ((void *)conn) + 2);
     routing_status_handler(conn, status_callback, (void *)2);
     routing_data_handler(conn, data_callback, (void *)3);
@@ -473,7 +475,7 @@ START_TEST(test_client_invalid)
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
-    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key);
+    TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn);
     ck_assert_msg(conn->status == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONNECTING,
@@ -489,14 +491,6 @@ START_TEST(test_client_invalid)
 }
 END_TEST
 
-#define DEFTESTCASE(NAME) \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
-
-#define DEFTESTCASE_SLOW(NAME, TIMEOUT) \
-    DEFTESTCASE(NAME) \
-    tcase_set_timeout(tc_##NAME, TIMEOUT);
 Suite *TCP_suite(void)
 {
     Suite *s = suite_create("TCP");

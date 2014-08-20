@@ -1,4 +1,4 @@
-/**  toxrtp.h
+/**  rtp.h
  *
  *   Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -105,29 +105,12 @@ typedef struct _RTPSession {
      */
     RTPExtHeader   *ext_header;
 
-
-    /* Since these are only references of the
-     * call structure don't allocate or free
-     */
-
-    const uint8_t  *encrypt_key;
-    const uint8_t  *decrypt_key;
-    uint8_t        *encrypt_nonce;
-    uint8_t        *decrypt_nonce;
-
-    uint8_t        *nonce_cycle;
-
-    RTPMessage     *oldest_msg;
-    RTPMessage     *last_msg; /* tail */
-
-    uint64_t        queue_limit;/* Default 100; modify per thy liking */
-    uint64_t        queue_size; /* currently holding << messages */
-
     /* Msg prefix for core to know when recving */
     uint8_t         prefix;
 
-    pthread_mutex_t mutex;
     int             dest;
+    int32_t         call_index;
+    struct _ToxAv *av;
 
 } RTPSession;
 
@@ -184,7 +167,6 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
  */
 void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
 
-
 /**
  * @brief Must be called before calling any other rtp function. It's used
  *        to initialize RTP control session.
@@ -192,20 +174,10 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
  * @param payload_type Type of payload used to send. You can use values in toxmsi.h::MSICallType
  * @param messenger Tox* object.
  * @param friend_num Friend id.
- * @param encrypt_key Speaks for it self.
- * @param decrypt_key Speaks for it self.
- * @param encrypt_nonce Speaks for it self.
- * @param decrypt_nonce Speaks for it self.
  * @return RTPSession* Created control session.
  * @retval NULL Error occurred.
  */
-RTPSession *rtp_init_session ( int            payload_type,
-                               Messenger     *messenger,
-                               int            friend_num,
-                               const uint8_t *encrypt_key,
-                               const uint8_t *decrypt_key,
-                               const uint8_t *encrypt_nonce,
-                               const uint8_t *decrypt_nonce );
+RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int friend_num );
 
 
 /**
@@ -217,7 +189,7 @@ RTPSession *rtp_init_session ( int            payload_type,
  * @retval -1 Error occurred.
  * @retval 0 Success.
  */
-int rtp_terminate_session ( RTPSession *session, Messenger *messenger );
+void rtp_terminate_session ( RTPSession *session, Messenger *messenger );
 
 
 
