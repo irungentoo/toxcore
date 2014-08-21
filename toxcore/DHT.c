@@ -105,46 +105,57 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2)
  */
 void get_shared_key(Shared_Keys shared_keys[SHARED_KEYS_SIZE], uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
 {
-    int i, hash = 0, early_hash = -1;
+    int i, hash = 0, useless_i = -1, empty_i = -1;
+    uint8_t max_useless = 0;
     for (i = 0; i < CLIENT_ID_SIZE; i++) {
         hash = SHARED_KEYS_SIZE % (1 + hash + client_id[i]);
 
-        /* If the remaining bytes in the hash are equal, we've found our key */
+        /* If the bytes in the hash are equal, we've found our key */
         if (memcmp(client_id, shared_keys[hash].client_id, sizeof(shared_keys[hash].client_id)) == 0) {
             memcpy(shared_key, shared_keys[hash].shared_key, sizeof(shared_keys[hash].shared_key));
 
-            /* Move the key to early_hash so it'll be faster next time */
-            if (early_hash >= 0) {
-                memcpy(shared_keys[early_hash].client_id, shared_keys[hash].client_id, sizeof(shared_keys[hash].client_id));
-                memcpy(shared_keys[early_hash].shared_key, shared_keys[hash].shared_key, sizeof(shared_keys[hash].shared_key));
+            /* Swap them to locate the key faster next time */
+            if (useless_i >= 0) {
+                uint8_t **tmp;
 
-                /* Kill the original and perserve it's data, so it can be reclaimed later */
-                shared_keys[hash].time_last_requested = 0;
+                *tmp = *shared_keys[hash].client_id;
+                *shared_keys[hash].client_id = *shared_keys[useless_i].client_id;
+                *shared_keys[useless_i].client_id = *tmp;
 
-                hash = early_hash;
+                *tmp = *shared_keys[hash].shared_key;
+                *shared_keys[hash].shared_key = *shared_keys[useless_i].shared_key;
+                *shared_keys[useless_i].shared_key = *tmp;
+
+                shared_keys[hash].uselessness = shared_keys[useless_i].uselessness;
+                shared_keys[useless_i].uselessness = 1;
+            } else {
+                shared_keys[hash].uselessness = 1;
             }
-            shared_keys[hash].time_last_requested = unix_time();
             return;
         }
 
-        /* If timed out, mark as eligible for overwrite */
-        if (is_timeout(shared_keys[hash].time_last_requested, KEYS_TIMEOUT))
-            shared_keys[hash].time_last_requested = 0;
+        if (shared_keys[hash].uselessness < UINT8_MAX)
+            ++shared_keys[hash].uselessness;
 
-        /* Set early_hash if we haven't found one earlier */
-        if (shared_keys[hash].time_last_requested == 0 && early_hash == -1)
-            early_hash = hash;
+        if (shared_keys[hash].uselessness > max_useless) {
+            useless_i = hash;
+            max_useless = shared_keys[hash].uselessness;
+        } else if (shared_keys[hash].uselessness == 0 && empty_i == -1) {
+            empty_i = hash;
+        }
     }
 
-    /* Cache-miss. Use early_hash if we can. */
-    if (early_hash < 0)
-        early_hash = i;
+    if (useless_i >= 0 && empty_i >= 0) {
+        *shared_keys[empty_i].client_id = *shared_keys[useless_i].client_id;
+        *shared_keys[empty_i].shared_key = *shared_keys[useless_i].shared_key;
+        shared_keys[empty_i].uselessness = shared_keys[useless_i].uselessness;
+    }
 
     encrypt_precompute(client_id, secret_key, shared_key);
 
-    memcpy(shared_keys[early_hash].client_id, client_id, sizeof(shared_keys[0].client_id));
-    memcpy(shared_keys[early_hash].shared_key, shared_key, sizeof(shared_keys[0].shared_key));
-    shared_keys[early_hash].time_last_requested = unix_time();
+    memcpy(shared_keys[hash].client_id, client_id, sizeof(shared_keys[hash].client_id));
+    memcpy(shared_keys[hash].shared_key, shared_key, sizeof(shared_keys[hash].shared_key));
+    shared_keys[hash].uselessness = 1;
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
@@ -152,7 +163,7 @@ void get_shared_key(Shared_Keys shared_keys[SHARED_KEYS_SIZE], uint8_t *shared_k
  */
 void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *client_id)
 {
-    return get_shared_key(dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
+    get_shared_key(dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key

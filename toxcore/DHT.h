@@ -163,13 +163,12 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 /*----------------------------------------------------------------------------------*/
 
 /* SHARED_KEYS_SIZE < INT_MAX */
-#define SHARED_KEYS_SIZE 1024
-#define KEYS_TIMEOUT 600
+#define SHARED_KEYS_SIZE 512
 
 typedef struct {
-    uint8_t  client_id[CLIENT_ID_SIZE];
-    uint8_t  shared_key[crypto_box_BEFORENMBYTES];
-    uint64_t time_last_requested;
+    uint8_t  *client_id[CLIENT_ID_SIZE];
+    uint8_t  *shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t  uselessness;
 } Shared_Keys;
 
 /*----------------------------------------------------------------------------------*/
