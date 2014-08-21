@@ -46,6 +46,7 @@
 #include "misc_tools.h"
 #include "util.h"
 
+
 /* The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT 300
 
@@ -102,47 +103,59 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2)
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
  */
-void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
+void get_shared_key(Shared_Keys shared_keys[SHARED_KEYS_SIZE], uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
 {
-    uint32_t i, num = ~0, curr = 0;
+    int i, hash = 0, useless_i = -1, empty_i = -1;
+    uint8_t max_useless = 0;
+    for (i = 0; i < CLIENT_ID_SIZE; i++) {
+        hash = SHARED_KEYS_SIZE % (1 + hash + client_id[i]);
 
-    for (i = 0; i < MAX_KEYS_PER_SLOT; ++i) {
-        int index = client_id[30] * MAX_KEYS_PER_SLOT + i;
+        /* If the bytes in the hash are equal, we've found our key */
+        if (memcmp(client_id, shared_keys[hash].client_id, sizeof(shared_keys[hash].client_id)) == 0) {
+            memcpy(shared_key, shared_keys[hash].shared_key, sizeof(shared_keys[hash].shared_key));
 
-        if (shared_keys->keys[index].stored) {
-            if (memcmp(client_id, shared_keys->keys[index].client_id, CLIENT_ID_SIZE) == 0) {
-                memcpy(shared_key, shared_keys->keys[index].shared_key, crypto_box_BEFORENMBYTES);
-                ++shared_keys->keys[index].times_requested;
-                shared_keys->keys[index].time_last_requested = unix_time();
-                return;
-            }
+            /* Swap them to locate the key faster next time */
+            if (useless_i >= 0) {
+                uint8_t **tmp;
 
-            if (num != 0) {
-                if (is_timeout(shared_keys->keys[index].time_last_requested, KEYS_TIMEOUT)) {
-                    num = 0;
-                    curr = index;
-                } else if (num > shared_keys->keys[index].times_requested) {
-                    num = shared_keys->keys[index].times_requested;
-                    curr = index;
-                }
+                *tmp = *shared_keys[hash].client_id;
+                *shared_keys[hash].client_id = *shared_keys[useless_i].client_id;
+                *shared_keys[useless_i].client_id = *tmp;
+
+                *tmp = *shared_keys[hash].shared_key;
+                *shared_keys[hash].shared_key = *shared_keys[useless_i].shared_key;
+                *shared_keys[useless_i].shared_key = *tmp;
+
+                shared_keys[hash].uselessness = shared_keys[useless_i].uselessness;
+                shared_keys[useless_i].uselessness = 1;
+            } else {
+                shared_keys[hash].uselessness = 1;
             }
-        } else {
-            if (num != 0) {
-                num = 0;
-                curr = index;
-            }
+            return;
         }
+
+        if (shared_keys[hash].uselessness < UINT8_MAX)
+            ++shared_keys[hash].uselessness;
+
+        if (shared_keys[hash].uselessness > max_useless) {
+            useless_i = hash;
+            max_useless = shared_keys[hash].uselessness;
+        } else if (shared_keys[hash].uselessness == 0 && empty_i == -1) {
+            empty_i = hash;
+        }
+    }
+
+    if (useless_i >= 0 && empty_i >= 0) {
+        *shared_keys[empty_i].client_id = *shared_keys[useless_i].client_id;
+        *shared_keys[empty_i].shared_key = *shared_keys[useless_i].shared_key;
+        shared_keys[empty_i].uselessness = shared_keys[useless_i].uselessness;
     }
 
     encrypt_precompute(client_id, secret_key, shared_key);
 
-    if (num != (uint32_t)~0) {
-        shared_keys->keys[curr].stored = 1;
-        shared_keys->keys[curr].times_requested = 1;
-        memcpy(shared_keys->keys[curr].client_id, client_id, CLIENT_ID_SIZE);
-        memcpy(shared_keys->keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
-        shared_keys->keys[curr].time_last_requested = unix_time();
-    }
+    memcpy(shared_keys[hash].client_id, client_id, sizeof(shared_keys[hash].client_id));
+    memcpy(shared_keys[hash].shared_key, shared_key, sizeof(shared_keys[hash].shared_key));
+    shared_keys[hash].uselessness = 1;
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
@@ -150,7 +163,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
  */
 void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *client_id)
 {
-    return get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
+    get_shared_key(dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
@@ -158,7 +171,7 @@ void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *clien
  */
 void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *client_id)
 {
-    return get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, client_id);
+    return get_shared_key(dht->shared_keys_sent, shared_key, dht->self_secret_key, client_id);
 }
 
 void to_net_family(IP *ip)

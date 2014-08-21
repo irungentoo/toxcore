@@ -292,7 +292,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     const uint8_t *packet_public_key = packet + 1 + crypto_box_NONCEBYTES;
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    get_shared_key(&onion_a->shared_keys_recv, shared_key, onion_a->dht->self_secret_key, packet_public_key);
+    get_shared_key(onion_a->shared_keys_recv, shared_key, onion_a->dht->self_secret_key, packet_public_key);
 
     uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES +
                   ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];

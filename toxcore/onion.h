@@ -31,9 +31,9 @@ typedef struct {
     uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
     uint64_t timestamp;
 
-    Shared_Keys shared_keys_1;
-    Shared_Keys shared_keys_2;
-    Shared_Keys shared_keys_3;
+    Shared_Keys shared_keys_1[SHARED_KEYS_SIZE];
+    Shared_Keys shared_keys_2[SHARED_KEYS_SIZE];
+    Shared_Keys shared_keys_3[SHARED_KEYS_SIZE];
 
     int (*recv_1_function)(void *, IP_Port, const uint8_t *, uint16_t);
     void *callback_object;
