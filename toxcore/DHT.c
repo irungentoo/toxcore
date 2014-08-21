@@ -110,7 +110,7 @@ void get_shared_key(Shared_Keys shared_keys[SHARED_KEYS_SIZE], uint8_t *shared_k
         hash = SHARED_KEYS_SIZE % (1 + hash + client_id[i]);
 
         /* If the remaining bytes in the hash are equal, we've found our key */
-        if (memcmp(client_id + i, shared_keys[hash].client_id + i, sizeof(shared_keys[hash].client_id) - i) == 0) {
+        if (memcmp(client_id, shared_keys[hash].client_id, sizeof(shared_keys[hash].client_id)) == 0) {
             memcpy(shared_key, shared_keys[hash].shared_key, sizeof(shared_keys[hash].shared_key));
 
             /* Move the key to early_hash so it'll be faster next time */
