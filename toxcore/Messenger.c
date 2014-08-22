@@ -388,14 +388,14 @@ uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *messag
 uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message,
                               uint32_t length)
 {
-    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)))
+    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)) || length == 0)
         return 0;
 
-    uint8_t temp[MAX_CRYPTO_DATA_SIZE];
+    uint8_t temp[sizeof(theid) + length];
     theid = htonl(theid);
     memcpy(temp, &theid, sizeof(theid));
     memcpy(temp + sizeof(theid), message, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MESSAGE, temp, length + sizeof(theid));
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MESSAGE, temp, sizeof(temp));
 }
 
 /* Send an action to an online friend.
@@ -423,14 +423,14 @@ uint32_t m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action,
 uint32_t m_sendaction_withid(const Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *action,
                              uint32_t length)
 {
-    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)))
+    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)) || length == 0)
         return 0;
 
-    uint8_t temp[MAX_CRYPTO_DATA_SIZE];
+    uint8_t temp[sizeof(theid) + length];
     theid = htonl(theid);
     memcpy(temp, &theid, sizeof(theid));
     memcpy(temp + sizeof(theid), action, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_ACTION, temp, length + sizeof(theid));
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_ACTION, temp, sizeof(temp));
 }
 
 /* Send a name packet to friendnumber.
