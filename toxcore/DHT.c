@@ -641,25 +641,25 @@ static int replace_all(   Client_data    *list,
         } else if (hardening_correct(&client->assoc4.hardening) != HARDENING_ALL_OK &&
                    hardening_correct(&client->assoc6.hardening) != HARDENING_ALL_OK) {
             // "possibly bad" node
-            if (possibly_bad == ~0 ||
+            if (possibly_bad == (uint32_t)~0 ||
                     id_closest(comp_client_id, list[possibly_bad].client_id, list[i].client_id) == 1)
                 possibly_bad = i;
         } else {
             // "good" node
-            if (good == ~0 ||
+            if (good == (uint32_t)~0 ||
                     id_closest(comp_client_id, list[good].client_id, list[i].client_id) == 1)
                 good = i;
         }
     }
 
-    if (bad != ~0)
+    if (bad != (uint32_t)~0)
         replace = bad;
-    else if (possibly_bad != ~0)
+    else if (possibly_bad != (uint32_t)~0)
         replace = possibly_bad;
-    else if (good != ~0 && id_closest(comp_client_id, list[good].client_id, client_id) == 2)
+    else if (good != (uint32_t)~0 && id_closest(comp_client_id, list[good].client_id, client_id) == 2)
         replace = good;
 
-    if (replace != ~0) {
+    if (replace != (uint32_t)~0) {
         Client_data *client = &list[replace];
         IPPTsPng *ipptp_write = NULL;
         IPPTsPng *ipptp_clear = NULL;
