@@ -267,11 +267,6 @@ int tox_set_user_is_typing(Tox *tox, int32_t friendnumber, uint8_t is_typing);
  */
 uint8_t tox_get_is_typing(const Tox *tox, int32_t friendnumber);
 
-/* Sets whether we send read receipts for friendnumber.
- * This function is not lazy, and it will fail if yesno is not (0 or 1).
- */
-void tox_set_sends_receipts(Tox *tox, int32_t friendnumber, int yesno);
-
 /* Return the number of friends in the instance m.
  * You should use this to determine how much memory to allocate
  * for copy_friendlist. */
