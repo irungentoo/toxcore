@@ -318,7 +318,7 @@ Now we will build sodium crypto library:
 ```bash
 git clone https://github.com/jedisct1/libsodium/
 cd libsodium
-git checkout tags/0.4.5
+git checkout tags/0.6.1
 ./autogen.sh
 ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-shared --enable-static
 make
@@ -345,18 +345,20 @@ cd tmp
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxcore.a
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxav.a
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxdns.a
-$WINDOWS_TOOLCHAIN-gcc -Wl,--export-all-symbols -Wl,--out-implib=libtox.dll.a -shared -o libtox.dll *.o ../lib/*.a /usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a -lws2_32 -static-libgcc
+$WINDOWS_TOOLCHAIN-gcc -Wl,--export-all-symbols -Wl,--out-implib=libtox.dll.a -shared -o libtox.dll *.o ../lib/*.a /usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a -liphlpapi -lws2_32 -static-libgcc
 ```
 
 And we will copy it over to the `toxbuild` directory:
 ```bash
 mkdir -p /media/sf_toxbuild/release/lib
-mv libtox.dll* /media/sf_toxbuild/release/lib
+cp libtox.dll.a /media/sf_toxbuild/release/lib
+mkdir -p /media/sf_toxbuild/release/bin
+cp libtox.dll /media/sf_toxbuild/release/bin
 mkdir -p /media/sf_toxbuild/release/include
-mv ../include/tox /media/sf_toxbuild/release/include
+cp -r ../include/tox /media/sf_toxbuild/release/include
 ```
 
-That's it. Now you should have `release/lib/libtox.dll` and `release/include/tox/<headers>` in your `toxbuild` directory on the Windows system.
+That's it. Now you should have `release/bin/libtox.dll`, `release/bin/libtox.dll.a` and `release/include/tox/<headers>` in your `toxbuild` directory on the Windows system.
 
 <a name="windows-native" />
 ####Native
