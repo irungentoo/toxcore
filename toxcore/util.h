@@ -30,6 +30,22 @@
 
 #define inline__ inline __attribute__((always_inline))
 
+/* Enlarges static buffers returned by id_toa and ip_ntoa so that
+ * they can be used multiple times in same output
+ */
+#define STATIC_BUFFER_COPIES    10
+#define STATIC_BUFFER_DEFINE(name,len)  static char stat_buffer_##name[(len)*STATIC_BUFFER_COPIES]; \
+                                        static unsigned stat_buffer_counter_##name=0;
+#define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[(len)*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
+
+// Macroses for long keys and cert handle
+#define ENC_KEY(key) (key)
+#define SIG_KEY(key) (key+ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
+#define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
+#define CERT_TARGET_KEY(cert) (cert + 1)
+#define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE)
+#define CERT_INVITEE_KEY(cert) (cert + 1)
+
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
@@ -37,7 +53,11 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
+bool id_long_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
+
+// For printing purposes
+char *id_toa(const uint8_t *id);
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)

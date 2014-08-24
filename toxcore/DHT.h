@@ -28,8 +28,21 @@
 #include "network.h"
 #include "ping_array.h"
 
+/* Encryption and signature keys definition */
+#define ENC_PUBLIC_KEY crypto_box_PUBLICKEYBYTES
+#define ENC_SECRET_KEY crypto_box_SECRETKEYBYTES
+#define SIG_PUBLIC_KEY crypto_sign_PUBLICKEYBYTES
+#define SIG_SECRET_KEY crypto_sign_SECRETKEYBYTES
+
+/* Long keys for group chats */
+#define EXT_SECRET_KEY (ENC_SECRET_KEY + SIG_SECRET_KEY)
+#define EXT_PUBLIC_KEY (ENC_PUBLIC_KEY + SIG_PUBLIC_KEY)
+
 /* Size of the client_id in bytes. */
-#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
+#define CLIENT_ID_SIZE ENC_PUBLIC_KEY // For consistency
+
+/* Use asserts wisely, since real siganture size might vary if libsodium changes it */
+#define SIGNATURE_SIZE crypto_sign_BYTES
 
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -142,6 +155,13 @@ typedef struct __attribute__ ((__packed__))
 }
 Node_format;
 
+typedef struct __attribute__ ((__packed__))
+{
+    uint8_t     client_id[EXT_PUBLIC_KEY];
+    IP_Port     ip_port;
+}
+Announced_Node_format;
+
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
@@ -202,6 +222,8 @@ typedef struct {
 
     Shared_Keys shared_keys_recv;
     Shared_Keys shared_keys_sent;
+
+    struct ANNOUNCE *announce;
 
     struct PING   *ping;
     Ping_Array    dht_ping_array;

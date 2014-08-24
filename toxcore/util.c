@@ -63,10 +63,29 @@ bool id_equal(const uint8_t *dest, const uint8_t *src)
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
+bool id_long_equal(const uint8_t *dest, const uint8_t *src)
+{
+    return memcmp(dest, src, EXT_PUBLIC_KEY) == 0;
+}
+
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CLIENT_ID_SIZE);
     return CLIENT_ID_SIZE;
+}
+
+STATIC_BUFFER_DEFINE(idtoa, CLIENT_ID_SIZE*2+1);
+
+char *id_toa(const uint8_t *id)
+{
+    int i;
+    char *str=STATIC_BUFFER_GETBUF(idtoa, CLIENT_ID_SIZE*2+1);
+    
+    str[CLIENT_ID_SIZE*2]=0;
+    for (i=0;i<CLIENT_ID_SIZE;i++)
+        sprintf(str+2*i,"%02x",id[i]);
+    
+    return str;
 }
 
 void host_to_net(uint8_t *num, uint16_t numbytes)
