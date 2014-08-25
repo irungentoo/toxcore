@@ -51,11 +51,7 @@ export LDFLAGS="${LDFLAGS} -L${SYSROOT}/usr/lib"
             --with-sysroot="${SYSROOT}" \
             --with-libsodium-headers="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/include" \
             --with-libsodium-libs="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/lib" \
-            --disable-soname-versions \
             --disable-av \
-            --disable-ntox \
-            --disable-daemon \
-            --disable-phone \
             --prefix="${PREFIX}" && \
 
 make clean && \
