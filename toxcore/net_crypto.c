@@ -2472,6 +2472,30 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     return ret;
 }
 
+/* Check if packet_number was received by the other side.
+ *
+ * packet_number must be a valid packet number of a packet sent on this connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    uint32_t num = conn->send_array.buffer_end - conn->send_array.buffer_start;
+    uint32_t num1 = packet_number - conn->send_array.buffer_start;
+
+    if (num < num1) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 /* return -1 on failure.
  * return 0 on success.
  *

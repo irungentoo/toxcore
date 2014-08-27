@@ -308,6 +308,15 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  */
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
 
+/* Check if packet_number was received by the other side.
+ *
+ * packet_number must be a valid packet number of a packet sent on this connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number);
+
 /* return -1 on failure.
  * return 0 on success.
  *
