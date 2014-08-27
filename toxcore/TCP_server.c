@@ -953,6 +953,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     temp->efd = epoll_create(8);
 
     if (temp->efd == -1) {
+		free(temp->socks_listening);
         free(temp);
         return NULL;
     }
@@ -992,7 +993,8 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     }
 
     if (temp->num_listening_socks == 0) {
-        free(temp);
+        free(temp->socks_listening);
+		free(temp);
         return NULL;
     }
 
