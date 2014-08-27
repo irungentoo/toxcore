@@ -153,12 +153,8 @@ int tox_friend_exists(const Tox *tox, int32_t friendnumber);
  *
  * You will want to retain the return value, it will be passed to your read_receipt callback
  * if one is received.
- * m_sendmessage_withid will send a message with the id of your choosing,
- * however we can generate an id for you by calling plain m_sendmessage.
  */
 uint32_t tox_send_message(Tox *tox, int32_t friendnumber, const uint8_t *message, uint32_t length);
-uint32_t tox_send_message_withid(Tox *tox, int32_t friendnumber, uint32_t theid, const uint8_t *message,
-                                 uint32_t length);
 
 /* Send an action to an online friend.
  *
@@ -171,11 +167,8 @@ uint32_t tox_send_message_withid(Tox *tox, int32_t friendnumber, uint32_t theid,
  *
  *  You will want to retain the return value, it will be passed to your read_receipt callback
  *  if one is received.
- *  m_sendaction_withid will send an action message with the id of your choosing,
- *  however we can generate an id for you by calling plain m_sendaction.
  */
 uint32_t tox_send_action(Tox *tox, int32_t friendnumber, const uint8_t *action, uint32_t length);
-uint32_t tox_send_action_withid(Tox *tox, int32_t friendnumber, uint32_t theid, const uint8_t *action, uint32_t length);
 
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
