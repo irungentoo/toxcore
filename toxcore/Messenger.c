@@ -42,6 +42,7 @@
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length);
+static int clear_receipts(Messenger *m, int32_t friendnumber);
 
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
 static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
@@ -251,7 +252,6 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
             memcpy(m->friendlist[i].info, data, length);
             m->friendlist[i].info_size = length;
             m->friendlist[i].message_id = 0;
-            m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
             recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
 
@@ -301,7 +301,6 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
             m->friendlist[i].userstatus = USERSTATUS_NONE;
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
-            m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
 
             if (m->numfriends == i)
@@ -330,6 +329,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
     crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
     free(m->friendlist[friendnumber].statusmessage);
+    clear_receipts(m, friendnumber);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].client_id);
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
@@ -363,6 +363,106 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
     return m->friendlist[friendnumber].status > NOFRIEND;
 }
 
+static int clear_receipts(Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    struct Receipts *receipts = m->friendlist[friendnumber].receipts_start;
+
+    while (receipts) {
+        struct Receipts *temp_r = receipts->next;
+        free(receipts);
+        receipts = temp_r;
+    }
+
+    m->friendlist[friendnumber].receipts_start = NULL;
+    m->friendlist[friendnumber].receipts_end = NULL;
+    return 0;
+}
+
+static int add_receipt(Messenger *m, int32_t friendnumber, uint32_t packet_num, uint32_t msg_id)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    struct Receipts *new = calloc(1, sizeof(struct Receipts));
+
+    if (!new)
+        return -1;
+
+    new->packet_num = packet_num;
+    new->msg_id = msg_id;
+
+    if (!m->friendlist[friendnumber].receipts_start) {
+        m->friendlist[friendnumber].receipts_start = new;
+    } else {
+        m->friendlist[friendnumber].receipts_end->next = new;
+    }
+
+    m->friendlist[friendnumber].receipts_end = new;
+    new->next = NULL;
+    return 0;
+}
+
+static int do_receipts(Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    struct Receipts *receipts = m->friendlist[friendnumber].receipts_start;
+
+    while (receipts) {
+        struct Receipts *temp_r = receipts->next;
+
+        if (cryptpacket_received(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, receipts->packet_num) == -1)
+            break;
+
+        if (m->read_receipt)
+            (*m->read_receipt)(m, friendnumber, receipts->msg_id, m->read_receipt_userdata);
+
+        free(receipts);
+        m->friendlist[friendnumber].receipts_start = temp_r;
+        receipts = temp_r;
+    }
+
+    if (!m->friendlist[friendnumber].receipts_start)
+        m->friendlist[friendnumber].receipts_end = NULL;
+
+    return 0;
+}
+
+static uint32_t send_message_generic(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length,
+                                     uint8_t packet_id)
+{
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    if (length >= MAX_CRYPTO_DATA_SIZE || m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return 0;
+
+    uint8_t packet[length + 1];
+    packet[0] = packet_id;
+
+    if (length != 0)
+        memcpy(packet + 1, message, length);
+
+    int64_t packet_num = write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet,
+                                           length + 1);
+
+    if (packet_num == -1)
+        return 0;
+
+    uint32_t msg_id = ++m->friendlist[friendnumber].message_id;
+
+    if (msg_id == 0) {
+        msg_id = ++m->friendlist[friendnumber].message_id; // Otherwise, false error
+    }
+
+    add_receipt(m, friendnumber, packet_num, msg_id);
+    return msg_id;
+}
+
 /* Send a text chat message to an online friend.
  *
  *  return the message id if packet was successfully put into the send queue.
@@ -370,32 +470,7 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
  */
 uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length)
 {
-    if (friend_not_valid(m, friendnumber))
-        return 0;
-
-    uint32_t msgid = ++m->friendlist[friendnumber].message_id;
-
-    if (msgid == 0)
-        msgid = 1; // Otherwise, false error
-
-    if (m_sendmessage_withid(m, friendnumber, msgid, message, length)) {
-        return msgid;
-    }
-
-    return 0;
-}
-
-uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message,
-                              uint32_t length)
-{
-    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)) || length == 0)
-        return 0;
-
-    uint8_t temp[sizeof(theid) + length];
-    theid = htonl(theid);
-    memcpy(temp, &theid, sizeof(theid));
-    memcpy(temp + sizeof(theid), message, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MESSAGE, temp, sizeof(temp));
+    return send_message_generic(m, friendnumber, message, length, PACKET_ID_MESSAGE);
 }
 
 /* Send an action to an online friend.
@@ -405,32 +480,7 @@ uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid
  */
 uint32_t m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length)
 {
-    if (friend_not_valid(m, friendnumber))
-        return 0;
-
-    uint32_t msgid = ++m->friendlist[friendnumber].message_id;
-
-    if (msgid == 0)
-        msgid = 1; // Otherwise, false error
-
-    if (m_sendaction_withid(m, friendnumber, msgid, action, length)) {
-        return msgid;
-    }
-
-    return 0;
-}
-
-uint32_t m_sendaction_withid(const Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *action,
-                             uint32_t length)
-{
-    if (length >= (MAX_CRYPTO_DATA_SIZE - sizeof(theid)) || length == 0)
-        return 0;
-
-    uint8_t temp[sizeof(theid) + length];
-    theid = htonl(theid);
-    memcpy(temp, &theid, sizeof(theid));
-    memcpy(temp + sizeof(theid), action, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_ACTION, temp, sizeof(temp));
+    return send_message_generic(m, friendnumber, action, length, PACKET_ID_ACTION);
 }
 
 /* Send a name packet to friendnumber.
@@ -725,18 +775,6 @@ static void set_friend_typing(const Messenger *m, int32_t friendnumber, uint8_t 
     m->friendlist[friendnumber].is_typing = is_typing;
 }
 
-/* Sets whether we send read receipts for friendnumber. */
-void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno)
-{
-    if (yesno != 0 && yesno != 1)
-        return;
-
-    if (friend_not_valid(m, friendnumber))
-        return;
-
-    m->friendlist[friendnumber].receives_read_receipts = yesno;
-}
-
 /* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t); */
 /* Set the function that will be executed when a friend request is received. */
 void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t,
@@ -821,6 +859,7 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
         if (was_online) {
             break_files(m, friendnumber);
             remove_online_friend(m, friendnumber);
+            clear_receipts(m, friendnumber);
         } else {
             add_online_friend(m, friendnumber);
         }
@@ -842,8 +881,8 @@ void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status)
     m->friendlist[friendnumber].status = status;
 }
 
-int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
-                         uint32_t length)
+static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
+                                uint32_t length)
 {
     if (friend_not_valid(m, friendnumber))
         return 0;
@@ -1916,8 +1955,8 @@ void kill_messenger(Messenger *m)
     kill_networking(m->net);
 
     for (i = 0; i < m->numfriends; ++i) {
-        if (m->friendlist[i].statusmessage)
-            free(m->friendlist[i].statusmessage);
+        clear_receipts(m, i);
+        free(m->friendlist[i].statusmessage);
     }
 
     free(m->friendlist);
@@ -2051,23 +2090,16 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_MESSAGE: {
-            const uint8_t *message_id = data;
-            uint8_t message_id_length = 4;
-
-            if (data_length <= message_id_length)
+            if (data_length == 0)
                 break;
 
-            const uint8_t *message = data + message_id_length;
-            uint16_t message_length = data_length - message_id_length;
+            const uint8_t *message = data;
+            uint16_t message_length = data_length;
 
             /* Make sure the NULL terminator is present. */
             uint8_t message_terminated[message_length + 1];
             memcpy(message_terminated, message, message_length);
             message_terminated[message_length] = 0;
-
-            if (m->friendlist[i].receives_read_receipts) {
-                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
-            }
 
             if (m->friend_message)
                 (*m->friend_message)(m, i, message_terminated, message_length, m->friend_message_userdata);
@@ -2076,42 +2108,20 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_ACTION: {
-            const uint8_t *message_id = data;
-            uint8_t message_id_length = 4;
-
-            if (data_length <= message_id_length)
+            if (data_length == 0)
                 break;
 
-            const uint8_t *action = data + message_id_length;
-            uint16_t action_length = data_length - message_id_length;
+            const uint8_t *action = data;
+            uint16_t action_length = data_length;
 
             /* Make sure the NULL terminator is present. */
             uint8_t action_terminated[action_length + 1];
             memcpy(action_terminated, action, action_length);
             action_terminated[action_length] = 0;
 
-            if (m->friendlist[i].receives_read_receipts) {
-                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
-            }
-
             if (m->friend_action)
                 (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
 
-
-            break;
-        }
-
-        case PACKET_ID_RECEIPT: {
-            uint32_t msgid;
-
-            if (data_length < sizeof(msgid))
-                break;
-
-            memcpy(&msgid, data, sizeof(msgid));
-            msgid = ntohl(msgid);
-
-            if (m->read_receipt)
-                (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
 
             break;
         }
@@ -2348,6 +2358,8 @@ void do_friends(Messenger *m)
             if (m->friendlist[i].share_relays_lastsent + FRIEND_SHARE_RELAYS_INTERVAL < temp_time) {
                 send_relays(m, i);
             }
+
+            do_receipts(m, i);
         }
     }
 }

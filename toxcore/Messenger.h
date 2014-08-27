@@ -46,7 +46,6 @@
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_TYPING 51
-#define PACKET_ID_RECEIPT 63
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 65
 #define PACKET_ID_MSI 69
@@ -73,6 +72,13 @@ typedef struct {
     uint8_t proxy_enabled;
     TCP_Proxy_Info proxy_info;
 } Messenger_Options;
+
+
+struct Receipts {
+    uint32_t packet_num;
+    uint32_t msg_id;
+    struct Receipts *next;
+};
 
 /* Status definitions. */
 enum {
@@ -168,7 +174,6 @@ typedef struct {
     uint8_t is_typing;
     uint16_t info_size; // Length of the info.
     uint32_t message_id; // a semi-unique id used in read receipts.
-    uint8_t receives_read_receipts; // shall we send read receipts to this person?
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t ping_lastrecv;
     uint64_t ping_lastsent;
@@ -187,6 +192,9 @@ typedef struct {
         int (*function)(void *object, const uint8_t *data, uint32_t len);
         void *object;
     } lossless_packethandlers[PACKET_ID_LOSSLESS_RANGE_SIZE];
+
+    struct Receipts *receipts_start;
+    struct Receipts *receipts_end;
 } Friend;
 
 
@@ -335,12 +343,8 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber);
  *
  *  You will want to retain the return value, it will be passed to your read_receipt callback
  *  if one is received.
- *  m_sendmessage_withid will send a message with the id of your choosing,
- *  however we can generate an id for you by calling plain m_sendmessage.
  */
 uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length);
-uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *message,
-                              uint32_t length);
 
 /* Send an action to an online friend.
  *
@@ -349,12 +353,8 @@ uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid
  *
  *  You will want to retain the return value, it will be passed to your read_receipt callback
  *  if one is received.
- *  m_sendaction_withid will send an action message with the id of your choosing,
- *  however we can generate an id for you by calling plain m_sendaction.
  */
 uint32_t m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length);
-uint32_t m_sendaction_withid(const Messenger *m, int32_t friendnumber, uint32_t theid, const uint8_t *action,
-                             uint32_t length);
 
 /* Set the name and name_length of a friend.
  * name must be a string of maximum MAX_NAME_LENGTH length.
@@ -452,11 +452,6 @@ int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing);
  * returns 1 if friend is typing.
  */
 uint8_t m_get_istyping(const Messenger *m, int32_t friendnumber);
-
-/* Sets whether we send read receipts for friendnumber.
- * This function is not lazy, and it will fail if yesno is not (0 or 1).
- */
-void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno);
 
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length)

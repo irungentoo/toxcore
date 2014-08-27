@@ -34,7 +34,7 @@ extern "C" {
 #define TOX_MAX_NAME_LENGTH 128
 
 /* Maximum length of single messages after which they should be split. */
-#define TOX_MAX_MESSAGE_LENGTH 1368
+#define TOX_MAX_MESSAGE_LENGTH 1372
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_CLIENT_ID_SIZE 32
 
