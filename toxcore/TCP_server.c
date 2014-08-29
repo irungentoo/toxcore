@@ -415,7 +415,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
 
         increment_nonce(con->sent_nonce);
 
-        if (len == sizeof(packet)) {
+        if ((unsigned int)len == sizeof(packet)) {
             return 1;
         }
 
