@@ -831,7 +831,19 @@ Assoc *new_Assoc(size_t bits, size_t entries, const uint8_t *public_id)
     /* allocation: preferably few blobs */
     size_t bckt, cix;
     Client_entry *clients = malloc(sizeof(*clients) * assoc->candidates_bucket_count * assoc->candidates_bucket_size);
+
+	if (!clients) {
+		free(assoc);
+		return NULL;
+	}
+
     candidates_bucket *lists = malloc(sizeof(*lists) * assoc->candidates_bucket_count);
+
+	if (!lists) {
+		free(assoc);
+		free(clients);
+		return NULL;
+	}
 
     for (bckt = 0; bckt < assoc->candidates_bucket_count; bckt++) {
         candidates_bucket *list = &lists[bckt];
