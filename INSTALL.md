@@ -88,8 +88,8 @@ sudo ldconfig
 
 Then clone this repo and generate makefile:
 ```bash
-git clone git://github.com/irungentoo/ProjectTox-Core.git
-cd ProjectTox-Core
+git clone git://github.com/irungentoo/toxcore.git
+cd toxcore
 autoreconf -i
 ./configure
 make
@@ -118,8 +118,8 @@ brew install libtool automake autoconf libsodium check
 ```
 Then clone this repo and generate makefile:
 ```bash
-git clone git://github.com/irungentoo/ProjectTox-Core.git
-cd ProjectTox-Core
+git clone git://github.com/irungentoo/toxcore.git
+cd toxcore
 autoreconf -i
 ./configure
 make
@@ -170,7 +170,7 @@ sudo make install
 Compiling and installing Tox Core
 
 ```bash
-cd ProjectTox-Core
+cd toxcore
 autoreconf -i
 ./configure
 make
@@ -384,12 +384,12 @@ cd ..
 
 You can also use a precompiled win32 binary of libsodium, however you will have to place the files in places where they can be found, i.e., dll's go to /bin headers to /include and libraries to /lib directories in your MinGW shell.
 
-Next, install ProjectTox-Core library, should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/ProjectTox-Core/archive/master.zip) and extract it somewhere.
+Next, install toxcore library, should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/irungentoo/toxcore/archive/master.zip) and extract it somewhere.
 
-Assuming that you now have the sources in the ProjectTox-Core directory:
+Assuming that you now have the sources in the toxcore directory:
 
 ```cmd
-cd ProjectTox-Core
+cd toxcore
 autoreconf -i
 ./configure
 make
