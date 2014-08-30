@@ -148,7 +148,7 @@ typedef struct {
 
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
     long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
-    uint32_t packets_sent, packets_resent;
+    uint32_t packets_sent;
 
     uint8_t killed; /* set to 1 to kill the connection. */
 

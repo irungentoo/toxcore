@@ -832,8 +832,6 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         return packet_num;
     }
 
-    conn->maximum_speed_reached = 0;
-
     if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) == 0) {
         Packet_Data *dt1 = NULL;
         get_data_pointer(&conn->send_array, &dt1, packet_num);
@@ -2350,7 +2348,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->packet_counter_set = temp_time;
 
                 uint32_t packets_sent = conn->packets_sent;
-                conn->packets_sent = conn->packets_resent = 0;
+                conn->packets_sent = 0;
 
                 /* conjestion control
                     calculate a new value of conn->packet_send_rate based on some data
@@ -2404,7 +2402,6 @@ static void send_crypto_packets(Net_Crypto *c)
 
             if (ret != -1) {
                 conn->packets_left -= ret;
-                conn->packets_resent += ret;
             }
 
             if (conn->packet_send_rate > CRYPTO_PACKET_MIN_RATE * 1.5) {
