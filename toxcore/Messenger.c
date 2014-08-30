@@ -41,7 +41,7 @@
 
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
-                                uint32_t length);
+                                uint32_t length, uint8_t congestion_control);
 
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
 static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
@@ -395,7 +395,7 @@ uint32_t m_sendmessage_withid(Messenger *m, int32_t friendnumber, uint32_t theid
     theid = htonl(theid);
     memcpy(temp, &theid, sizeof(theid));
     memcpy(temp + sizeof(theid), message, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MESSAGE, temp, sizeof(temp));
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MESSAGE, temp, sizeof(temp), 0);
 }
 
 /* Send an action to an online friend.
@@ -430,7 +430,7 @@ uint32_t m_sendaction_withid(const Messenger *m, int32_t friendnumber, uint32_t 
     theid = htonl(theid);
     memcpy(temp, &theid, sizeof(theid));
     memcpy(temp + sizeof(theid), action, length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_ACTION, temp, sizeof(temp));
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_ACTION, temp, sizeof(temp), 0);
 }
 
 /* Send a name packet to friendnumber.
@@ -441,7 +441,7 @@ static int m_sendname(const Messenger *m, int32_t friendnumber, const uint8_t *n
     if (length > MAX_NAME_LENGTH || length == 0)
         return 0;
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_NICKNAME, name, length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_NICKNAME, name, length, 0);
 }
 
 /* Set the name and name_length of a friend.
@@ -659,23 +659,23 @@ uint8_t m_get_istyping(const Messenger *m, int32_t friendnumber)
 
 static int send_statusmessage(const Messenger *m, int32_t friendnumber, const uint8_t *status, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_STATUSMESSAGE, status, length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_STATUSMESSAGE, status, length, 0);
 }
 
 static int send_userstatus(const Messenger *m, int32_t friendnumber, uint8_t status)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &status, sizeof(status));
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &status, sizeof(status), 0);
 }
 
 static int send_user_istyping(const Messenger *m, int32_t friendnumber, uint8_t is_typing)
 {
     uint8_t typing = is_typing;
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing));
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing), 0);
 }
 
 static int send_ping(const Messenger *m, int32_t friendnumber)
 {
-    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_ALIVE, 0, 0);
+    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_ALIVE, 0, 0, 0);
 
     if (ret == 1)
         m->friendlist[friendnumber].ping_lastsent = unix_time();
@@ -692,7 +692,7 @@ static int send_relays(const Messenger *m, int32_t friendnumber)
     n = copy_connected_tcp_relays(m->net_crypto, nodes, MAX_SHARED_RELAYS);
     length = pack_nodes(data, sizeof(data), nodes, n);
 
-    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_SHARE_RELAYS, data, length);
+    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_SHARE_RELAYS, data, length, 0);
 
     if (ret == 1)
         m->friendlist[friendnumber].share_relays_lastsent = unix_time();
@@ -842,8 +842,8 @@ void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status)
     m->friendlist[friendnumber].status = status;
 }
 
-int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
-                         uint32_t length)
+static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
+                                uint32_t length, uint8_t congestion_control)
 {
     if (friend_not_valid(m, friendnumber))
         return 0;
@@ -857,7 +857,8 @@ int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packe
     if (length != 0)
         memcpy(packet + 1, data, length);
 
-    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1) != -1;
+    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1,
+                             congestion_control) != -1;
 }
 
 /**********GROUP CHATS************/
@@ -1181,7 +1182,7 @@ int invite_friend(Messenger *m, int32_t friendnumber, int groupnumber)
     group_store_friendinvite(m, friendnumber, groupnumber);
 
     if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, m->chats[groupnumber]->self_public_key,
-                             crypto_box_PUBLICKEYBYTES) == 0)
+                             crypto_box_PUBLICKEYBYTES, 0) == 0)
         return -1;
 
     return 0;
@@ -1214,7 +1215,7 @@ int join_groupchat(Messenger *m, int32_t friendnumber, const uint8_t *friend_gro
     id_copy(data, friend_group_public_key);
     id_copy(data + crypto_box_PUBLICKEYBYTES, m->chats[groupnum]->self_public_key);
 
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_JOIN_GROUPCHAT, data, sizeof(data))) {
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_JOIN_GROUPCHAT, data, sizeof(data), 0)) {
         chat_bootstrap_nonlazy(m->chats[groupnum], get_friend_ipport(m, friendnumber),
                                friend_group_public_key); //TODO: check if ip returned is zero?
         return groupnum;
@@ -1376,7 +1377,7 @@ int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumbe
     memcpy(packet + 1, &filesize, sizeof(filesize));
     memcpy(packet + 1 + sizeof(filesize), filename, filename_length);
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet,
-                                1 + sizeof(filesize) + filename_length);
+                                1 + sizeof(filesize) + filename_length, 0);
 }
 
 /* Send a file send request.
@@ -1454,7 +1455,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint8_t send_receive,
         memcpy(packet + 3, data, length);
     }
 
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 3)) {
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 3, 0)) {
         if (send_receive == 1)
             switch (message_id) {
                 case FILECONTROL_ACCEPT:
@@ -1524,7 +1525,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint8_t filenumber, cons
     packet[0] = filenumber;
     memcpy(packet + 1, data, length);
 
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_DATA, packet, length + 1)) {
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_DATA, packet, length + 1, 1)) {
         m->friendlist[friendnumber].file_sending[filenumber].transferred += length;
         return 0;
     }
@@ -1681,7 +1682,7 @@ void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, int32_t,
  */
 int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length, 0);
 }
 
 static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length)
@@ -1778,7 +1779,7 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (m->friendlist[friendnumber].crypt_connection_id == -1)
         return -1;
 
-    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length) != -1;
+    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length, 1) != -1;
 }
 
 /* Function to filter out some friend requests*/
@@ -2066,7 +2067,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             message_terminated[message_length] = 0;
 
             if (m->friendlist[i].receives_read_receipts) {
-                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
+                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length, 0);
             }
 
             if (m->friend_message)
@@ -2091,7 +2092,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             action_terminated[action_length] = 0;
 
             if (m->friendlist[i].receives_read_receipts) {
-                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length);
+                write_cryptpacket_id(m, i, PACKET_ID_RECEIPT, message_id, message_id_length, 0);
             }
 
             if (m->friend_action)

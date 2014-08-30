@@ -305,8 +305,11 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  * return positive packet number if data was put into the queue.
  *
  * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
+ *
+ * congestion_control: should congestion control apply to this packet?
  */
-int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length,
+                          uint8_t congestion_control);
 
 /* Check if packet_number was received by the other side.
  *
