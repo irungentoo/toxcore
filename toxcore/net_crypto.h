@@ -148,7 +148,7 @@ typedef struct {
 
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
     long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
-    uint32_t packets_sent, packets_resent;
+    uint32_t packets_sent;
 
     uint8_t killed; /* set to 1 to kill the connection. */
 
@@ -305,8 +305,20 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  * return positive packet number if data was put into the queue.
  *
  * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
+ *
+ * congestion_control: should congestion control apply to this packet?
  */
-int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length);
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length,
+                          uint8_t congestion_control);
+
+/* Check if packet_number was received by the other side.
+ *
+ * packet_number must be a valid packet number of a packet sent on this connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number);
 
 /* return -1 on failure.
  * return 0 on success.

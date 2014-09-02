@@ -777,7 +777,8 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
 /*  return -1 if data could not be put in packet queue.
  *  return positive packet number if data was put into the queue.
  */
-static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
+static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length,
+                                    uint8_t congestion_control)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
@@ -796,20 +797,30 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         uint32_t packet_num = conn->send_array.buffer_end - 1;
         int ret = get_data_pointer(&conn->send_array, &dt, packet_num);
 
+        uint8_t send_failed = 0;
+
         if (ret == 1) {
             if (!dt->time) {
                 if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
                                             dt->length) != 0) {
-                    return -1;
+                    if (congestion_control) {
+                        return -1;
+                    } else {
+                        send_failed = 1;
+                    }
+                } else {
+                    dt->time = temp_time;
                 }
-
-                dt->time = temp_time;
             }
+        }
+
+        if (!send_failed) {
+            conn->maximum_speed_reached = 0;
         }
     }
 
     Packet_Data dt;
-    dt.time = temp_time;
+    dt.time = 0;
     dt.length = length;
     memcpy(dt.data, data, length);
     int64_t packet_num = add_data_end_of_buffer(&conn->send_array, &dt);
@@ -817,12 +828,15 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     if (packet_num == -1)
         return -1;
 
-    conn->maximum_speed_reached = 0;
+    if (!congestion_control && conn->maximum_speed_reached) {
+        return packet_num;
+    }
 
-    if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) != 0) {
+    if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) == 0) {
         Packet_Data *dt1 = NULL;
         get_data_pointer(&conn->send_array, &dt1, packet_num);
-        dt1->time = 0;
+        dt1->time = temp_time;
+    } else {
         conn->maximum_speed_reached = 1;
         fprintf(stderr, "send_data_packet failed\n");
     }
@@ -2334,7 +2348,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->packet_counter_set = temp_time;
 
                 uint32_t packets_sent = conn->packets_sent;
-                conn->packets_sent = conn->packets_resent = 0;
+                conn->packets_sent = 0;
 
                 /* conjestion control
                     calculate a new value of conn->packet_send_rate based on some data
@@ -2375,8 +2389,8 @@ static void send_crypto_packets(Net_Crypto *c)
             } else if (((1000.0 / conn->packet_send_rate) + conn->last_packets_left_set) < temp_time) {
                 uint32_t num_packets = conn->packet_send_rate * ((double)(temp_time - conn->last_packets_left_set) / 1000.0) + 0.5;
 
-                if (conn->packets_left > num_packets * 2 + CRYPTO_MIN_QUEUE_LENGTH) {
-                    conn->packets_left = num_packets * 2 + CRYPTO_MIN_QUEUE_LENGTH;
+                if (conn->packets_left > num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH) {
+                    conn->packets_left = num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH;
                 } else {
                     conn->packets_left += num_packets;
                 }
@@ -2388,7 +2402,6 @@ static void send_crypto_packets(Net_Crypto *c)
 
             if (ret != -1) {
                 conn->packets_left -= ret;
-                conn->packets_resent += ret;
             }
 
             if (conn->packet_send_rate > CRYPTO_PACKET_MIN_RATE * 1.5) {
@@ -2438,9 +2451,10 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  * return -1 if data could not be put in packet queue.
  * return positive packet number if data was put into the queue.
  *
- * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
+ * congestion_control: should congestion control apply to this packet?
  */
-int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length,
+                          uint8_t congestion_control)
 {
     if (length == 0)
         return -1;
@@ -2459,17 +2473,44 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     if (conn->status != CRYPTO_CONN_ESTABLISHED)
         return -1;
 
-    if (conn->packets_left == 0)
+    if (congestion_control && conn->packets_left == 0)
         return -1;
 
-    int64_t ret = send_lossless_packet(c, crypt_connection_id, data, length);
+    int64_t ret = send_lossless_packet(c, crypt_connection_id, data, length, congestion_control);
 
     if (ret == -1)
         return -1;
 
-    --conn->packets_left;
-    conn->packets_sent++;
+    if (congestion_control) {
+        --conn->packets_left;
+        conn->packets_sent++;
+    }
+
     return ret;
+}
+
+/* Check if packet_number was received by the other side.
+ *
+ * packet_number must be a valid packet number of a packet sent on this connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    uint32_t num = conn->send_array.buffer_end - conn->send_array.buffer_start;
+    uint32_t num1 = packet_number - conn->send_array.buffer_start;
+
+    if (num < num1) {
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 /* return -1 on failure.

@@ -108,8 +108,8 @@ int create_data_request(uint8_t *packet, uint16_t max_packet_length, const uint8
     int len = encrypt_data(encrypt_public_key, random_secret_key, packet + 1 + crypto_box_PUBLICKEYBYTES, data, length,
                            packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
 
-    if (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES +
-            (uint32_t)len != DATA_REQUEST_MIN_SIZE + length)
+    if (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + len != DATA_REQUEST_MIN_SIZE +
+            length)
         return -1;
 
     return DATA_REQUEST_MIN_SIZE + length;

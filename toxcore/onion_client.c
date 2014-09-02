@@ -231,7 +231,7 @@ static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Pa
         if (len == -1)
             return -1;
 
-        if ((uint32_t)sendpacket(onion_c->net, path->ip_port1, packet, len) != len)
+        if (sendpacket(onion_c->net, path->ip_port1, packet, len) != len)
             return -1;
 
         return 0;

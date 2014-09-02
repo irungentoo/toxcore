@@ -39,10 +39,10 @@
 #define PING_NUM_MAX 512
 
 /* Maximum newly announced nodes to ping per TIME_TO_PING seconds. */
-#define MAX_TO_PING 8
+#define MAX_TO_PING 16
 
 /* Ping newly announced nodes to ping per TIME_TO_PING seconds*/
-#define TIME_TO_PING 8
+#define TIME_TO_PING 4
 
 
 struct PING {
@@ -299,6 +299,9 @@ int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
 void do_to_ping(PING *ping)
 {
     if (!is_timeout(ping->last_to_ping, TIME_TO_PING))
+        return;
+
+    if (!ip_isset(&ping->to_ping[0].ip_port.ip))
         return;
 
     ping->last_to_ping = unix_time();
