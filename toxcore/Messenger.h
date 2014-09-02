@@ -101,7 +101,7 @@ enum {
 #define FRIENDREQUEST_TIMEOUT 5;
 
 /* Interval between the sending of ping packets. */
-#define FRIEND_PING_INTERVAL 5
+#define FRIEND_PING_INTERVAL 6
 
 /* Interval between the sending of tcp relay information */
 #define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
