@@ -74,7 +74,10 @@ struct ANNOUNCE {
         uint64_t req_id;
         bool ready;
     }   self_requests[MAX_CONCURRENT_REQUESTS];
-    
+
+    // Number of current requests
+    uint64_t req_num;
+   
 };
 
 
@@ -249,17 +252,65 @@ int add_gc_announced_node(ANNOUNCE *announce, const uint8_t chat_id[],
     return j;
 }
 
-
-int get_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
-                            Announced_Node_format *node, uint32_t *nodes_num)
+// Add new self request
+// Returns array index
+int new_announce_self_request(ANNOUNCE *announce, const uint8_t chat_id[], uint64_t req_id)
 {
 
+    uint32_t i;
+    for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++)
+        if (announce->self_requests[i].req_id == 0) {
+            announce->self_requests[i].ready = 0;
+            announce->self_requests[i].req_id = req_id;
+            memcpy(announce->self_requests[i].chat_id, chat_id, EXT_PUBLIC_KEY);
+            ++announce->req_num;
+            return i;
+        }
+    
 }
 
-int add_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
-                         const Announced_Node_format *node, uint64_t req_id, uint32_t nodes_num)
+// Get group chat online members, which you searched for with get announced nodes request
+int get_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
+                            Announced_Node_format *nodes)
 {
+    uint32_t i, j, k;
+    k = 0;
+    Announced_Node_format temp_nodes[MAX_CONCURRENT_REQUESTS*MAX_SENT_NODES];
 
+    for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
+        if (id_long_equal(announce->self_requests[i].chat_id, chat_id)) {
+            for (j = 0; j < MAX_SENT_NODES; j++) 
+                if (ipport_isset(&announce->self_requests[i].nodes[j].ip_port)) {
+                        memcpy(temp_nodes[j].client_id, announce->self_requests[i].nodes[j].client_id, EXT_PUBLIC_KEY);
+                        ipport_copy(&temp_nodes[j].ip_port, &announce->self_requests[i].nodes[j].ip_port);
+                        k++;
+                    }
+            announce->self_requests[i].req_id = 0;
+            --announce->req_num;
+        }
+
+    nodes = calloc(1, sizeof(Announced_Node_format)*k);
+    memcpy(nodes, temp_nodes, sizeof(Announced_Node_format)*k);
+    return k;
+}
+
+// Add requested online chat members
+// Returns index of self_requests array
+int add_requested_gc_nodes(ANNOUNCE *announce, const Announced_Node_format *node,
+                            uint64_t req_id, uint32_t nodes_num)
+{
+    uint32_t i, j;
+    for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
+        if (announce->self_requests[i].req_id == req_id) {
+            for (j = 0; j < nodes_num; j++) 
+                if (ipport_isset(&node[j].ip_port)) {
+                        memcpy(announce->self_requests[i].nodes[j].client_id, node[j].client_id, EXT_PUBLIC_KEY);
+                        ipport_copy(&announce->self_requests[i].nodes[j].ip_port, &node[j].ip_port);
+                    }
+            announce->self_requests[i].ready = 1;
+        }
+  
+    return i;
 }
 
 int do_announce(ANNOUNCE *announce)
