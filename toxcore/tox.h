@@ -601,6 +601,13 @@ uint64_t tox_file_data_remaining(const Tox *tox, int32_t friendnumber, uint8_t f
  */
 int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key);
 
+/* Like tox_bootstrap_from_address but for TCP relays only.
+ *
+ * return 0 on failure.
+ * return 1 on success.
+ */
+int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key);
+
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
  */

@@ -729,17 +729,20 @@ uint64_t tox_file_data_remaining(const Tox *tox, int32_t friendnumber, uint8_t f
 
 /***************END OF FILE SENDING FUNCTIONS******************/
 
-/* TODO: expose this properly. */
-static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled, uint16_t port,
-                             const uint8_t *public_key)
+/* Like tox_bootstrap_from_address but for TCP relays only.
+ *
+ * return 0 on failure.
+ * return 1 on success.
+ */
+int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
     IP_Port ip_port_v64;
     IP *ip_extra = NULL;
     IP_Port ip_port_v4;
-    ip_init(&ip_port_v64.ip, ipv6enabled);
+    ip_init(&ip_port_v64.ip, m->options.ipv6enabled);
 
-    if (ipv6enabled) {
+    if (m->options.ipv6enabled) {
         /* setup for getting BOTH: an IPv6 AND an IPv4 address */
         ip_port_v64.ip.family = AF_UNSPEC;
         ip_reset(&ip_port_v4.ip);
@@ -747,7 +750,7 @@ static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled,
     }
 
     if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
-        ip_port_v64.port = port;
+        ip_port_v64.port = htons(port);
         add_tcp_relay(m->net_crypto, ip_port_v64, public_key);
         onion_add_path_node(m->onion_c, ip_port_v64, public_key); //TODO: move this
         return 1;
@@ -759,7 +762,7 @@ static int tox_add_tcp_relay(Tox *tox, const char *address, uint8_t ipv6enabled,
 int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    tox_add_tcp_relay(tox, address, m->options.ipv6enabled, htons(port), public_key);
+    tox_add_tcp_relay(tox, address, port, public_key);
     return DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key);
 }
 
