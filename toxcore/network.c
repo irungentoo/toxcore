@@ -518,6 +518,12 @@ Networking_Core *new_networking(IP ip, uint16_t port)
     int broadcast = 1;
     setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
 
+    /* iOS UDP sockets are weird and apparently can SIGPIPE */
+    if (!set_socket_nosigpipe(temp->sock)) {
+        kill_networking(temp);
+        return NULL;
+    }
+
     /* Set socket nonblocking. */
     if (!set_socket_nonblock(temp->sock)) {
         kill_networking(temp);
