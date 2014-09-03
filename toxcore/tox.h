@@ -173,7 +173,7 @@ uint32_t tox_send_action(Tox *tox, int32_t friendnumber, const uint8_t *action, 
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
  * length must be at least 1 byte.
- * length is the length of name with the NULL terminator.
+ * length is the length of name.
  *
  *  return 0 if success.
  *  return -1 if failure.
