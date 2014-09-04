@@ -898,7 +898,7 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
     { /* out of memory most likely */
         return -1;
     }
-    randombytes_buf(passphrase, pplength); /* wipe plaintext pw */
+    sodium_memzero(passphrase, pplength); /* wipe plaintext pw */
 
     /* next get plain save data */
     uint32_t temp_size = tox_size(tox);
@@ -958,7 +958,7 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
     { /* out of memory most likely */
         return -1;
     }
-    randombytes_buf(passphrase, pplength); /* wipe plaintext pw */
+    sodium_memzero(passphrase, pplength); /* wipe plaintext pw */
 
     /* decrypt the data */
     uint8_t temp_data[decrypt_length];
