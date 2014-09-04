@@ -53,6 +53,8 @@ pkg install net-im/tox
 ```
 Note, if you install from ports select NaCl for performance, and sodium if you want it to be portable.
 
+**For A/V support, also install the dependences listed in the [libtoxav] (#libtoxav) section.**
+
 You should get and install [libsodium](https://github.com/jedisct1/libsodium):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git

@@ -173,7 +173,7 @@ uint32_t tox_send_action(Tox *tox, int32_t friendnumber, const uint8_t *action, 
 /* Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
  * length must be at least 1 byte.
- * length is the length of name with the NULL terminator.
+ * length is the length of name.
  *
  *  return 0 if success.
  *  return -1 if failure.
@@ -600,6 +600,13 @@ uint64_t tox_file_data_remaining(const Tox *tox, int32_t friendnumber, uint8_t f
  *  returns 0 otherwise
  */
 int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key);
+
+/* Like tox_bootstrap_from_address but for TCP relays only.
+ *
+ * return 0 on failure.
+ * return 1 on success.
+ */
+int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key);
 
 /*  return 0 if we are not connected to the DHT.
  *  return 1 if we are.
