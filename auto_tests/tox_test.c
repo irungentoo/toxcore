@@ -292,7 +292,7 @@ START_TEST(test_few_clients)
 END_TEST
 
 #define NUM_TOXES 66
-#define NUM_FRIENDS 20
+#define NUM_FRIENDS 50
 
 START_TEST(test_many_clients)
 {
