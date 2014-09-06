@@ -1773,6 +1773,15 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (friend_not_valid(m, friendnumber))
         return -1;
 
+    if (length == 0)
+        return -1;
+
+    if (data[0] < PACKET_ID_LOSSLESS_RANGE_START)
+        return -1;
+
+    if (data[0] >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
+        return -1;
+
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -1;
 
