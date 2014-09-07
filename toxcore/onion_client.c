@@ -403,7 +403,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
         }
 
     } else {
-        if (is_stored == 2)
+        if (is_stored >= 2)
             return -1;
 
         list_nodes = onion_c->friends_list[num - 1].clients_list;
