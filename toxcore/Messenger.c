@@ -1788,7 +1788,11 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (m->friendlist[friendnumber].crypt_connection_id == -1)
         return -1;
 
-    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length, 1) != -1;
+    if (write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length, 1) == -1) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 /* Function to filter out some friend requests*/
