@@ -52,7 +52,7 @@ blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 See: (https://github.com/jencka/ProjectTox-libtoxdata)
 
 [IN PROGRESS] GUI (no official one chosen yet, a list of promising ones follows)
-https://github.com/notsecure/uTox
+https://github.com/Reverp/Toxy
 https://github.com/naxuroqa/Venom
 https://github.com/Impyy/Toxy
 https://github.com/lehitoskin/blight
