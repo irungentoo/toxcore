@@ -63,7 +63,7 @@ Cookie sitting outside the encrypted part][Other Cookie (used by the other to
 respond to the handshake packet)]]
 
 The handshake packet is encrypted using the real private key of the sender, the 
-real private key of the receiver and the nonce.
+real public key of the receiver and the nonce.
 
 
 Alice wants to connect to bob.

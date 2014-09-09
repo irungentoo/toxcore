@@ -117,8 +117,9 @@ Data sent to us:
 announce response packet:
 [uint8_t packet id (132)][data to send back in response(fixed size)][nonce]
 encrypted with the DHT private key of Node D, the public key in the request and the nonce:[[uint8_t is_stored]
-[(32 bytes) ping_id if is_stored is 0, public key that must be used to send data packets if is_stored is not 0][Node_Format * (maximum of 8)]]
+[(32 bytes) ping_id if is_stored is 0 or 2, public key that must be used to send data packets if is_stored is 1][Node_Format * (maximum of 8)]]
 (if the is_stored is not 0, it means the information to reach the client id we are searching for is stored on this node)
+is_stored is 2 as a response to a peer trying to announce himself to tell the peer that he is currently annouced successfully.
 
 data to route response packet:
 [uint8_t packet id (134)][nonce][temporary just generated public key]

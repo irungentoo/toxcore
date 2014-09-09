@@ -354,6 +354,53 @@ void tox_set_nospam(Tox *tox, uint32_t nospam);
    if the pointer is NULL, no data will be copied to it.*/
 void tox_get_keys(Tox *tox, uint8_t *public_key, uint8_t *secret_key);
 
+/* Maximum size of custom packets. */
+#define TOX_MAX_CUSTOM_PACKET_SIZE 1373
+
+/* Set handlers for custom lossy packets.
+ * Set the function to be called when friend sends us a lossy packet starting with byte.
+ * byte must be in the 200-254 range.
+ *
+ * NOTE: lossy packets behave like UDP packets meaning they might never reach the other side
+ * or might arrive more than once (if someone is messing with the connection) or might arrive
+ * in the wrong order.
+ *
+ * Unless latency is an issue, it is recommended that you use lossless packets instead.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_lossy_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
+                                     int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object);
+
+/* Function to send custom lossy packets.
+ * First byte of data must be in the range: 200-254.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_send_lossy_packet(const Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length);
+
+/* Set handlers for custom lossless packets.
+ * Set the function to be called when friend sends us a lossless packet starting with byte.
+ * byte must be in the 160-191 range.
+ *
+ * Lossless packets behave kind of like TCP (reliability, arrive in order.) but with packets instead of a stream.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_lossless_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
+                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object);
+
+/* Function to send custom lossless packets.
+ * First byte of data must be in the range: 160-191.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length);
+
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 
 /* Set the callback for group invites.

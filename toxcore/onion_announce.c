@@ -333,10 +333,14 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
         pl[0] = 0;
         memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
     } else {
-        if (memcmp(onion_a->entries[index].public_key, packet_public_key, crypto_box_PUBLICKEYBYTES) == 0
-                && memcmp(onion_a->entries[index].data_public_key, data_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
-            pl[0] = 0;
-            memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
+        if (memcmp(onion_a->entries[index].public_key, packet_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (memcmp(onion_a->entries[index].data_public_key, data_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+                pl[0] = 0;
+                memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
+            } else {
+                pl[0] = 2;
+                memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
+            }
         } else {
             pl[0] = 1;
             memcpy(pl + 1, onion_a->entries[index].data_public_key, crypto_box_PUBLICKEYBYTES);

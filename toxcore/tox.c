@@ -469,6 +469,77 @@ void tox_get_keys(Tox *tox, uint8_t *public_key, uint8_t *secret_key)
         memcpy(secret_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
 }
 
+/* Set handlers for custom lossy packets.
+ * Set the function to be called when friend sends us a lossy packet starting with byte.
+ * byte must be in the 200-254 range.
+ *
+ * NOTE: lossy packets behave like UDP packets meaning they might never reach the other side
+ * or might arrive more than once (if someone is messing with the connection) or might arrive
+ * in the wrong order.
+ *
+ * Unless latency is an issue, it is recommended that you use lossless packets instead.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_lossy_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
+                                     int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+{
+    Messenger *m = tox;
+
+    if (byte < (PACKET_ID_LOSSY_RANGE_START + 8)) /* First 8 reserved for A/V*/
+        return -1;
+
+    return custom_lossy_packet_registerhandler(m, friendnumber, byte, packet_handler_callback, object);
+}
+
+/* Function to send custom lossy packets.
+ * First byte of data must be in the range: 200-254.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_send_lossy_packet(const Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length)
+{
+    const Messenger *m = tox;
+
+    if (length == 0)
+        return -1;
+
+    if (data[0] < (PACKET_ID_LOSSY_RANGE_START + 8)) /* First 8 reserved for A/V*/
+        return -1;
+
+    return send_custom_lossy_packet(m, friendnumber, data, length);
+}
+
+/* Set handlers for custom lossless packets.
+ * Set the function to be called when friend sends us a lossless packet starting with byte.
+ * byte must be in the 160-191 range.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_lossless_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
+                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+{
+    Messenger *m = tox;
+
+    return custom_lossless_packet_registerhandler(m, friendnumber, byte, packet_handler_callback, object);
+}
+
+/* Function to send custom lossless packets.
+ * First byte of data must be in the range: 160-191.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length)
+{
+    const Messenger *m = tox;
+
+    return send_custom_lossless_packet(m, friendnumber, data, length);
+}
+
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 
 /* Set the callback for group invites.

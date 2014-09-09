@@ -68,6 +68,24 @@ void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata
         typing_changes = 2;
 }
 
+uint32_t custom_packet;
+
+int handle_custom_packet(void *object, const uint8_t *data, uint32_t len)
+{
+    uint8_t number = *((uint32_t *)object);
+
+    if (len != TOX_MAX_CUSTOM_PACKET_SIZE)
+        return -1;
+
+    uint8_t f_data[len];
+    memset(f_data, number, len);
+    if (memcmp(f_data, data, len) == 0) {
+        ++custom_packet;
+    } else {
+        printf("Custom packet fail. %u\n",number );
+    }
+}
+
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
@@ -110,7 +128,7 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *dat
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    uint8_t *f_data = malloc(length);
+    uint8_t f_data[length];
     memset(f_data, num, length);
     ++num;
 
@@ -234,6 +252,53 @@ START_TEST(test_few_clients)
 
     ck_assert_msg(tox_get_is_typing(tox2, 0) == 0, "Typing fail");
 
+    uint32_t packet_number = 160;
+    int ret = tox_lossless_packet_registerhandler(tox3, 0, packet_number, handle_custom_packet, &packet_number);
+    ck_assert_msg(ret == 0, "tox_lossless_packet_registerhandler fail %i", ret);
+    uint8_t data_c[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
+    memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
+    ret = tox_send_lossless_packet(tox2, 0, data_c, sizeof(data_c));
+    ck_assert_msg(ret == -1, "tox_send_lossless_packet bigger fail %i", ret);
+    ret = tox_send_lossless_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE);
+    ck_assert_msg(ret == 0, "tox_send_lossless_packet fail %i", ret);
+
+    while (1) {
+        custom_packet = 0;
+        tox_do(tox1);
+        tox_do(tox2);
+        tox_do(tox3);
+
+        if (custom_packet == 1)
+            break;
+        else
+            ck_assert_msg(custom_packet == 0, "Lossless packet fail");
+
+        c_sleep(50);
+    }
+    
+    packet_number = 200;
+    ret = tox_lossy_packet_registerhandler(tox3, 0, packet_number, handle_custom_packet, &packet_number);
+    ck_assert_msg(ret == 0, "tox_lossy_packet_registerhandler fail %i", ret);
+    memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
+    ret = tox_send_lossy_packet(tox2, 0, data_c, sizeof(data_c));
+    ck_assert_msg(ret == -1, "tox_send_lossy_packet bigger fail %i", ret);
+    ret = tox_send_lossy_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE);
+    ck_assert_msg(ret == 0, "tox_send_lossy_packet fail %i", ret);
+
+    while (1) {
+        custom_packet = 0;
+        tox_do(tox1);
+        tox_do(tox2);
+        tox_do(tox3);
+
+        if (custom_packet == 1)
+            break;
+        else
+            ck_assert_msg(custom_packet == 0, "lossy packet fail");
+
+        c_sleep(50);
+    }
+
     filenum = file_accepted = file_size = file_sent = sendf_ok = size_recv = 0;
     long long unsigned int f_time = time(NULL);
     tox_callback_file_data(tox3, write_file, &to_compare);
@@ -244,7 +309,7 @@ START_TEST(test_few_clients)
     int fnum = tox_new_file_sender(tox2, 0, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"));
     ck_assert_msg(fnum != -1, "tox_new_file_sender fail");
     int fpiece_size = tox_file_data_size(tox2, 0);
-    uint8_t *f_data = malloc(fpiece_size);
+    uint8_t f_data[fpiece_size];
     uint8_t num = 0;
     memset(f_data, num, fpiece_size);
 
@@ -292,7 +357,7 @@ START_TEST(test_few_clients)
 END_TEST
 
 #define NUM_TOXES 66
-#define NUM_FRIENDS 20
+#define NUM_FRIENDS 50
 
 START_TEST(test_many_clients)
 {
