@@ -67,11 +67,17 @@ typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32
 int load_state(load_state_callback_func load_state_callback, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
+/* Converts 8 bytes to uint64_t */
+void bytes_to_U64(uint64_t *dest, const uint8_t *bytes);
+
 /* Converts 4 bytes to uint32_t */
 void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);
 
 /* Converts 2 bytes to uint16_t */
 void bytes_to_U16(uint16_t *dest, const uint8_t *bytes);
+
+/* Convert uint64_t to byte string of size 8 */
+void U64_to_bytes(uint8_t *dest, uint64_t value);
 
 /* Convert uint32_t to byte string of size 4 */
 void U32_to_bytes(uint8_t *dest, uint32_t value);

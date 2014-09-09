@@ -153,6 +153,31 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     return length == 0 ? 0 : -1;
 };
 
+/* Converts 8 bytes to uint64_t */
+inline__ void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
+{
+    *dest =
+#ifdef WORDS_BIGENDIAN
+        ( ( uint64_t ) *  bytes )              |
+        ( ( uint64_t ) * ( bytes + 1 ) << 8 )  |
+        ( ( uint64_t ) * ( bytes + 2 ) << 16 ) |
+        ( ( uint64_t ) * ( bytes + 3 ) << 24 )  |
+        ( ( uint64_t ) * ( bytes + 4 ) << 32 ) |
+        ( ( uint64_t ) * ( bytes + 5 ) << 40 )  |
+        ( ( uint64_t ) * ( bytes + 6 ) << 48 ) |
+        ( ( uint64_t ) * ( bytes + 7 ) << 56 ) ;
+#else
+        ( ( uint64_t ) *  bytes        << 56 ) |
+        ( ( uint64_t ) * ( bytes + 1 ) << 48 ) |
+        ( ( uint64_t ) * ( bytes + 2 ) << 40 )  |
+        ( ( uint64_t ) * ( bytes + 3 ) << 32 ) |
+        ( ( uint64_t ) * ( bytes + 4 ) << 24 )  |
+        ( ( uint64_t ) * ( bytes + 5 ) << 16 ) |
+        ( ( uint64_t ) * ( bytes + 6 ) << 8 )  |
+        ( ( uint64_t ) * ( bytes + 7 ) ) ;
+#endif
+}
+
 /* Converts 4 bytes to uint32_t */
 inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
 {
@@ -180,6 +205,30 @@ inline__ void bytes_to_U16(uint16_t *dest, const uint8_t *bytes)
 #else
         ( ( uint16_t ) *   bytes << 8 ) |
         ( ( uint16_t ) * ( bytes + 1 ) );
+#endif
+}
+
+/* Convert uint64_t to byte string of size 8 */
+inline__ void U64_to_bytes(uint8_t *dest, uint64_t value)
+{
+#ifdef WORDS_BIGENDIAN
+    *(dest)     = ( value );
+    *(dest + 1) = ( value >> 8 );
+    *(dest + 2) = ( value >> 16 );
+    *(dest + 3) = ( value >> 24 );
+    *(dest + 4) = ( value >> 32 );
+    *(dest + 5) = ( value >> 40 );
+    *(dest + 6) = ( value >> 48 );
+    *(dest + 7) = ( value >> 56 );
+#else
+    *(dest)     = ( value >> 56 );
+    *(dest + 1) = ( value >> 48 );
+    *(dest + 2) = ( value >> 40 );    
+    *(dest + 3) = ( value >> 42 );
+    *(dest + 4) = ( value >> 24 );
+    *(dest + 5) = ( value >> 16 );
+    *(dest + 6) = ( value >> 8 );
+    *(dest + 7) = ( value );
 #endif
 }
 

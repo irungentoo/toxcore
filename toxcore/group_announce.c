@@ -39,12 +39,12 @@
 #define TIME_STAMP (sizeof(uint64_t))
 #define REQUEST_ID (sizeof(uint64_t))
 
-// Type + Signature + Chat_ID + Client_ID + IP_Port + Timestamp
-#define GC_ANNOUNCE_REQUEST_PLAIN_SIZE (1 + SIGNATURE_SIZE + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + sizeof(IP_Port) + TIME_STAMP)
+// Type + Chat_ID + IP_Port + Client_ID + Timestamp + Signature 
+#define GC_ANNOUNCE_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
 #define GC_ANNOUNCE_REQUEST_DHT_SIZE (1 + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_ANNOUNCE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
-// Type + Signature + Chat_ID + Client_ID + IP_Port + RequestID
-#define GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE (1 + SIGNATURE_SIZE + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + sizeof(IP_Port) + REQUEST_ID)
+// Type + Chat_ID + IP_Port + RequestID + Client_ID + Timestamp + Signature
+#define GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + sizeof(IP_Port) + REQUEST_ID + TIME_STAMP + SIGNATURE_SIZE)
 #define GC_ANNOUNCE_GETNODES_REQUEST_DHT_SIZE (1 + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
 // Type + Nodes + RequestID
@@ -157,8 +157,33 @@ int wrap_gc_announce_packet(const uint8_t *send_public_key, const uint8_t *send_
 
 
 
-int send_gc_announce_request(DHT *dht, const uint8_t node_public_key[],
-                             const uint8_t node_private_key[], const uint8_t chat_id[])
+int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
+                             const uint8_t self_long_sk[], const uint8_t chat_id[])
+{
+    /* Generating an announcement */
+    uint8_t data[GC_ANNOUNCE_REQUEST_PLAIN_SIZE];
+    data[0] = NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST;
+    memcpy(data + 1, chat_id, ENC_PUBLIC_KEY);
+    IP_Port ipp;
+    uint32_t i;
+    for (i=0; i<LCLIENT_LIST; i++) {
+        if (ipport_isset(&dht->close_clientlist[i].assoc4.ret_ip_port)) {
+            ipport_copy(&ipp, &dht->close_clientlist[i].assoc4.ret_ip_port);
+            break;
+        }
+        if (ipport_isset(&dht->close_clientlist[i].assoc6.ret_ip_port)) {
+            ipport_copy(&ipp, &dht->close_clientlist[i].assoc6.ret_ip_port);
+            break;
+        }
+    }
+
+    if (!ipport_isset(&ipp))
+        return -1;
+
+}
+
+int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_id[], 
+    const uint8_t data[], size_t length, uint8_t packet_type)
 {
 
 }
