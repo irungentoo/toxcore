@@ -2862,20 +2862,20 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
 /* Connect after loading messenger from file */
 int messenger_connect(Messenger *m)
 {
-	int i;
+    int i;
 
-	if(m == NULL)
-		return -1;
+    if(m == NULL)
+        return -1;
 
-	DHT *dht = m->dht;
-	if(DHT_connect_after_load(dht) == -1)
-		return -1;
+    DHT *dht = m->dht;
+    if(DHT_connect_after_load(dht) == -1)
+        return -1;
 
-	for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
-		add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].client_id);
-	}
+    for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
+        add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].client_id);
+    }
 
-	return 0;
+    return 0;
 }
 
 /* Return the number of friends in the instance m.

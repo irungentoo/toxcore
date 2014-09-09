@@ -200,12 +200,12 @@ typedef struct {
     DHT_Friend    *friends_list;
     uint16_t       num_friends;
 
-	// Used after loading of file (tox_load), but no longer needed after connect (tox_connect)
-	// Unsure if friends_list and num_friends could just be used instead?
-	DHT_Friend    *loaded_friends_list;
-	uint32_t       loaded_num_friends;
-	Client_data   *loaded_clients_list;
-	uint32_t       loaded_num_clients;
+    // Used after loading of file (tox_load), but no longer needed after connect (tox_connect)
+    // Unsure if friends_list and num_friends could just be used instead?
+    DHT_Friend    *loaded_friends_list;
+    uint32_t       loaded_num_friends;
+    Client_data   *loaded_clients_list;
+    uint32_t       loaded_num_clients;
 
     Shared_Keys shared_keys_recv;
     Shared_Keys shared_keys_sent;

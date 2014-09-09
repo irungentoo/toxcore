@@ -932,6 +932,6 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
 /* Connect after loading the messenger from file */
 int tox_connect(Tox *tox)
 {
-	Messenger *m = tox;
-	return messenger_connect(m);
+    Messenger *m = tox;
+    return messenger_connect(m);
 }

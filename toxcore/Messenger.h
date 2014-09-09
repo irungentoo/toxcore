@@ -219,9 +219,9 @@ typedef struct Messenger {
 
     uint64_t last_LANdiscovery;
 
-	// Relays loaded from config
-	// 8 should be NUM_SAVED_TCP_RELAYS but it is defined in c file
-	Node_format loaded_relays[8];
+    // Relays loaded from config
+    // 8 should be NUM_SAVED_TCP_RELAYS but it is defined in c file
+    Node_format loaded_relays[8];
 
     void (*friend_message)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
     void *friend_message_userdata;
