@@ -723,34 +723,6 @@ void tox_save(const Tox *tox, uint8_t *data);
  */
 int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
 
-#ifndef VANILLA_NACL
-/* Only sodium has the necessary functions for this
- * Clients should consider alerting their users that, unlike plain data, if even one bit
- * becomes corrupted, the data will be entirely unrecoverable.
- * Ditto if they forget their password, there is no way to recover the data.
- */
-
-/*  return size of the messenger data (for encrypted saving). */
-uint32_t tox_encrypted_size(const Tox *tox);
-
-/* Save the messenger data encrypted with the given password.
- * data must be at least tox_encrypted_size().
- *
- * returns 0 on success
- * returns -1 on failure
- */
-int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength);
-
-/* Load the messenger from encrypted data of size length.
- *
- * returns 0 on success
- * returns -1 on failure
- */
-int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength);
-
-#endif /* #ifndef VANILLA_NACL */
-
-
 #ifdef __cplusplus
 }
 #endif
