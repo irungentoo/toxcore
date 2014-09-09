@@ -398,11 +398,14 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
         list_nodes = onion_c->clients_announce_list;
         reference_id = onion_c->c->self_public_key;
 
-        if (is_stored && memcmp(pingid_or_key, onion_c->temp_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+        if (is_stored == 1 && memcmp(pingid_or_key, onion_c->temp_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
             is_stored = 0;
         }
 
     } else {
+        if (is_stored >= 2)
+            return -1;
+
         list_nodes = onion_c->friends_list[num - 1].clients_list;
         reference_id = onion_c->friends_list[num - 1].real_client_id;
     }
@@ -435,7 +438,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     //TODO: remove this and find a better source of nodes to use for paths.
     onion_add_path_node(onion_c, ip_port, public_key);
 
-    if (is_stored) {
+    if (is_stored == 1) {
         memcpy(list_nodes[index].data_public_key, pingid_or_key, crypto_box_PUBLICKEYBYTES);
     } else {
         memcpy(list_nodes[index].ping_id, pingid_or_key, ONION_PING_ID_SIZE);
