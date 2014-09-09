@@ -155,7 +155,11 @@ int wrap_gc_announce_packet(const uint8_t *send_public_key, const uint8_t *send_
 }
 
 
+int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_id[], 
+    const uint8_t data[], size_t length, uint8_t packet_type)
+{
 
+}
 
 int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
                              const uint8_t self_long_sk[], const uint8_t chat_id[])
@@ -163,7 +167,7 @@ int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
     /* Generating an announcement */
     uint8_t data[GC_ANNOUNCE_REQUEST_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST;
-    memcpy(data + 1, chat_id, ENC_PUBLIC_KEY);
+    memcpy(data + 1, chat_id, EXT_PUBLIC_KEY);
     IP_Port ipp;
     uint32_t i;
     for (i=0; i<LCLIENT_LIST; i++) {
@@ -180,12 +184,14 @@ int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
     if (!ipport_isset(&ipp))
         return -1;
 
-}
+    memcpy(data + 1 + EXT_PUBLIC_KEY, &ipp, sizeof(IP_Port));
+    if (sign_data(data, 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), self_long_sk, self_long_pk, data) == -1)
+        return -1;
 
-int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_id[], 
-    const uint8_t data[], size_t length, uint8_t packet_type)
-{
+    dispatch_packet(dht, ENC_KEY(chat_id), dht->self_public_key, data,
+                    GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST);
 
+    return 0;
 }
 
 int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
