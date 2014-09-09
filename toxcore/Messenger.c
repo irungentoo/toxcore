@@ -2803,18 +2803,11 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_TCP_RELAY: {
-            Node_format relays[NUM_SAVED_TCP_RELAYS];
-
-            if (length != sizeof(relays)) {
+            if (length != sizeof(m->loaded_relays)) {
                 return -1;
             }
 
-            memcpy(relays, data, length);
-            uint32_t i;
-
-            for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
-                add_tcp_relay(m->net_crypto, relays[i].ip_port, relays[i].client_id);
-            }
+            memcpy(m->loaded_relays, data, length);
 
             break;
         }
@@ -2864,6 +2857,25 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
                           length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
     else
         return -1;
+}
+
+/* Connect after loading messenger from file */
+int messenger_connect(Messenger *m)
+{
+	int i;
+
+	if(m == NULL)
+		return -1;
+
+	DHT *dht = m->dht;
+	if(DHT_connect_after_load(dht) == -1)
+		return -1;
+
+	for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
+		add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].client_id);
+	}
+
+	return 0;
 }
 
 /* Return the number of friends in the instance m.
