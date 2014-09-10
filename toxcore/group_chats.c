@@ -469,7 +469,7 @@ static int handle_sendnodes(Group_Chat *chat, IP_Port source, int peernum, const
         }
     }
 
-    int ok = add_closepeer(chat, chat->group[peernum].client_id, source);
+    add_closepeer(chat, chat->group[peernum].client_id, source);
 
     return 0;
 }
