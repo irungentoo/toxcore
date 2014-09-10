@@ -24,13 +24,7 @@
 #ifndef TOXENCRYPTSAVE_H
 #define TOXENCRYPTSAVE_H
 
-#ifdef VANILLA_NACL
-#include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
-#include "crypto_pwhash_scryptsalsa208sha256/utils.h" /* sodium_memzero */
-#endif
-
 #include "../toxcore/tox.h"
-#include "../toxcore/crypto_core.h"
 
 #ifdef __cplusplus
 extern "C" {

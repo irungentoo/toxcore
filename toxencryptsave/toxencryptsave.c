@@ -22,6 +22,12 @@
  */
 
 #include "toxencryptsave.h"
+#include "../toxcore/crypto_core.h"
+
+#ifdef VANILLA_NACL
+#include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
+#include "crypto_pwhash_scryptsalsa208sha256/utils.h" /* sodium_memzero */
+#endif
 
 /* This "module" provides functions analogous to tox_load and tox_save in toxcore
  * Clients should consider alerting their users that, unlike plain data, if even one bit
