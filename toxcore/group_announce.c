@@ -155,9 +155,41 @@ int wrap_gc_announce_packet(const uint8_t *send_public_key, const uint8_t *send_
 }
 
 
+// Returns the number of sent packets
 int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_id[], 
-    const uint8_t data[], size_t length, uint8_t packet_type)
+    const uint8_t data[], uint32_t length, uint8_t packet_type)
 {
+    /* The packet is valid, find a closest nodes to send it to */
+    static Node_format nodes[MAX_SENT_NODES];
+    int nclosest, i, j;
+    nclosest = get_close_nodes(dht, target_id, nodes, 0, 1, 1); /* TODO: dehardcode last 3 params */
+    
+    if (nclosest <= 0)
+        return -1;
+
+    uint8_t *packet;
+
+    switch (packet_type) {
+        case NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST: {
+            packet = calloc(1, GC_ANNOUNCE_REQUEST_DHT_SIZE);
+        }
+        case NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES: {
+            packet = calloc(1, GC_ANNOUNCE_GETNODES_REQUEST_DHT_SIZE);
+        }
+        default:
+            return -1;
+    }
+
+    j = 0;
+    for (i=0; i<nclosest; i++)
+        if (id_closest(target_id, nodes[i].client_id, previous_id)==1) {
+            uint32_t packet_length = wrap_gc_announce_packet(dht->self_public_key, dht->self_secret_key,
+                     nodes[i].client_id, packet, data, length, packet_type);
+            if (sendpacket(dht->net, nodes[i].ip_port, packet, packet_length) == 0)
+                ++j;
+        }
+    
+    return j;
 
 }
 
