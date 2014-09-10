@@ -56,7 +56,7 @@
    before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
 
-/* The timeout of no recieved UDP packets before the direct UDP connection is considered dead. */
+/* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
 #define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL * 2)
 
 #define PACKET_ID_PADDING 0
@@ -341,7 +341,7 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  */
 int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
 
-/* Set the function to be called when an onion response packet is recieved by one of the TCP connections.
+/* Set the function to be called when an onion response packet is received by one of the TCP connections.
  */
 void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
                                 uint16_t length), void *object);

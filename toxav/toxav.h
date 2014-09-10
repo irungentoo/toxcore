@@ -167,7 +167,7 @@ void toxav_kill(ToxAv *av);
 void toxav_register_callstate_callback (ToxAv *av, ToxAVCallback callback, ToxAvCallbackID id, void *userdata);
 
 /**
- * @brief Register callback for recieving audio data
+ * @brief Register callback for receiving audio data
  *
  * @param av Handler.
  * @param callback The callback
@@ -177,7 +177,7 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
         void *user_data);
 
 /**
- * @brief Register callback for recieving video data
+ * @brief Register callback for receiving video data
  *
  * @param av Handler.
  * @param callback The callback

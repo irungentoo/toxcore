@@ -27,7 +27,7 @@ Every peer is represented as a [byte string][String] (the public key [Tox ID] of
 We want Tox to be as simple as possible while remaining as secure as possible.
 
 ### Why are you doing this? There are already a bunch of free Skype alternatives.
-The goal of this project is to create a configuration-free P2P Skype replacement. Configuration-free means that the user will simply have to open the program and without any account configuration will be capable of adding people to his or her's friends list and start conversing with them. There are many so-called Skype replacements and all of them are either hard to configure for the normal user or suffer from being way too centralized.
+The goal of this project is to create a configuration-free P2P Skype replacement. “Configuration-free” means that the user will simply have to open the program and will be capable of adding people and communicating with them without having to set up an account. There are many so-called Skype replacements, but all of them are either hard to configure for the normal user or suffer from being way too centralized.
 
 ## TODO:
 - [TODO](/docs/TODO)
