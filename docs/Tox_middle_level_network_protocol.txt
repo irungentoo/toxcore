@@ -43,13 +43,13 @@ cookie request packet:
 bytes)][Encrypted message containing: [Senders real public key (32 
 bytes)][padding (32 bytes)][uint64_t number (must be sent 
 back untouched in cookie response)]]
-Encrypted message is encrypted with sender DHT private key, recievers DHT 
+Encrypted message is encrypted with sender DHT private key, receivers DHT
 public key and the nonce.
 
 cookie response packet:
 [uint8_t 25][Random nonce (24 bytes)][Encrypted message containing: 
 [Cookie][uint64_t number (that was sent in the request)]]
-Encrypted message is encrypted with sender DHT private key, recievers DHT 
+Encrypted message is encrypted with sender DHT private key, receivers DHT
 public key and the nonce.
 
 The Cookie should be basically:
@@ -110,11 +110,11 @@ packet request packet: [uint8_t (1)][uint8_t num][uint8_t num][uint8_t
 num]...[uint8_t num]
 
 the list of nums are a list of packet numbers the other is requesting.
-to get the real packet numbers from this list take the recvbuffers buffer_start 
-from the packet, substract 1 to it and put it in packet_num then start from the 
-beggining of the num list: if num is zero, add 255 to packet_num then do the 
-next num. if num isn't zero, add its value to packet_num, note that the other 
-has requested we send this packet again to them then continue to the next num in 
-the list. 
+to get the real packet numbers from this list take the recvbuffers buffer_start
+from the packet, subtract 1 to it and put it in packet_num then start from the
+beginning of the num list: if num is zero, add 255 to packet_num then do the
+next num. if num isn't zero, add its value to packet_num, note that the other
+has requested we send this packet again to them then continue to the next num in
+the list.
 
 
