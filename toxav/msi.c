@@ -618,7 +618,7 @@ static void *timer_poll( void *arg )
                     LOGGER_ERROR("Failed to execute timer at: %d!", handler->timers[0]->timeout);
                     free(args);
                 } else {
-                    LOGGER_DEBUG("Exectued timer assigned at: %d", handler->timers[0]->timeout);
+                    LOGGER_DEBUG("Executed timer assigned at: %d", handler->timers[0]->timeout);
                 }
 
                 timer_release(handler, handler->timers[0]->idx, 0);
@@ -1436,7 +1436,7 @@ static void msi_handle_packet ( Messenger *messenger, int source, const uint8_t 
     MSIMessage *msg;
 
     if ( !length ) {
-        LOGGER_WARNING("Lenght param negative");
+        LOGGER_WARNING("Length param negative");
         return;
     }
 

@@ -1949,7 +1949,7 @@ static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t)
 
     if (f->friendrequest_lastsent + f->friendrequest_timeout < t) {
         set_friend_status(m, i, FRIEND_ADDED);
-        /* Double the default timeout everytime if friendrequest is assumed
+        /* Double the default timeout every time if friendrequest is assumed
          * to have been sent unsuccessfully.
          */
         f->friendrequest_timeout *= 2;

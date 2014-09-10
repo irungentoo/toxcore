@@ -230,7 +230,7 @@ void toxav_register_callstate_callback ( ToxAv *av, ToxAVCallback callback, ToxA
 }
 
 /**
- * @brief Register callback for recieving audio data
+ * @brief Register callback for receiving audio data
  *
  * @param callback The callback
  * @return void
@@ -243,7 +243,7 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
 }
 
 /**
- * @brief Register callback for recieving video data
+ * @brief Register callback for receiving video data
  *
  * @param callback The callback
  * @return void
@@ -1091,7 +1091,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
         if (i == 0) {
             /* piece of current frame */
         } else if (i > 0 && i < 128) {
-            /* recieved a piece of a frame ahead, flush current frame and start reading this new frame */
+            /* received a piece of a frame ahead, flush current frame and start reading this new frame */
             DECODE_PACKET *p = malloc(sizeof(DECODE_PACKET) + call->frame_limit);
 
             if (p) {

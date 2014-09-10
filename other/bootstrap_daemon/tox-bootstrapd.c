@@ -187,7 +187,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
         config_setting_t *elem = config_setting_get_elem(ports_array, i);
 
         if (elem == NULL) {
-            // it's NULL if `ports_array` is not an array (we have that check ealier) or if `i` is out of range, which should not be
+            // it's NULL if `ports_array` is not an array (we have that check earlier) or if `i` is out of range, which should not be
             syslog(LOG_WARNING, "Port #%d: Something went wrong while parsing the port. Stopping reading ports.\n", i);
             break;
         }
