@@ -657,7 +657,7 @@ static int generate_request_packet(uint8_t *data, uint16_t length, const Packets
 }
 
 /* Handle a request data packet.
- * Remove all the packets the other recieved from the array.
+ * Remove all the packets the other received from the array.
  *
  * return -1 on failure.
  * return number of requested packets on success.
@@ -1084,7 +1084,7 @@ static int send_kill_packet(Net_Crypto *c, int crypt_connection_id)
                                    &kill_packet, sizeof(kill_packet));
 }
 
-/* Handle a recieved data packet.
+/* Handle a received data packet.
  *
  * return -1 on failure.
  * return 0 on success.
@@ -1181,7 +1181,7 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
     return 0;
 }
 
-/* Handle a packet that was recieved for the connection.
+/* Handle a packet that was received for the connection.
  *
  * return -1 on failure.
  * return 0 on success.
@@ -1387,7 +1387,7 @@ static int getcryptconnection_id_dht_pubkey(const Net_Crypto *c, const uint8_t *
 }
 
 /* Add a source to the crypto connection.
- * This is to be used only when we have recieved a packet from that source.
+ * This is to be used only when we have received a packet from that source.
  *
  *  return -1 on failure.
  *  return positive number on success.
@@ -1990,7 +1990,7 @@ int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length)
     return -1;
 }
 
-/* Set the function to be called when an onion response packet is recieved by one of the TCP connections.
+/* Set the function to be called when an onion response packet is received by one of the TCP connections.
  */
 void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
                                 uint16_t length), void *object)
@@ -2290,7 +2290,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
     return 0;
 }
 
-/* The dT for the average packet recieving rate calculations.
+/* The dT for the average packet receiving rate calculations.
    Also used as the */
 #define PACKET_COUNTER_AVERAGE_INTERVAL 100
 
