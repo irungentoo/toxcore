@@ -65,11 +65,6 @@
 /* Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 10
 
-Client_data *DHT_get_close_list(DHT *dht)
-{
-    return dht->close_clientlist;
-}
-
 /* Compares client_id1 and client_id2 with client_id.
  *
  *  return 0 if both are same distance.
