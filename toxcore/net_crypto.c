@@ -31,6 +31,7 @@
 #include "net_crypto.h"
 #include "util.h"
 #include "math.h"
+#include "logger.h"
 
 static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_connection_id)
 {
@@ -838,7 +839,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         dt1->time = temp_time;
     } else {
         conn->maximum_speed_reached = 1;
-        fprintf(stderr, "send_data_packet failed\n");
+        LOGGER_ERROR("send_data_packet failed\n");
     }
 
     return packet_num;
@@ -1814,7 +1815,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
         source.ip.ip6.uint32[0] = location;
 
         if (data[0] != NET_PACKET_CRYPTO_HS) {
-            fprintf(stderr, "tcp snhappen %u\n", data[0]);
+            LOGGER_DEBUG("tcp snhappen %u\n", data[0]);
             return -1;
         }
 
