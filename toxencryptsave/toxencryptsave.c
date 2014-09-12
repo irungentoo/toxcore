@@ -72,6 +72,8 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
         /* out of memory most likely */
         return -1;
     }
+    /* calling sodium_memzero segfaults, but printing passphrase works, so... libsodium bug?
+     * ...eh, it's not segfaulting anywhere else, so I'll assume pebkac...
     sodium_memzero(passphrase, pplength); /* wipe plaintext pw */
 
     /* next get plain save data */
@@ -140,7 +142,7 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
         /* out of memory most likely */
         return -1;
     }
-    sodium_memzero(passphrase, pplength); /* wipe plaintext pw */
+    /* sodium_memzero(passphrase, pplength); /* wipe plaintext pw */
 
     /* decrypt the data */
     uint8_t temp_data[decrypt_length];

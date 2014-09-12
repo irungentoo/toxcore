@@ -80,7 +80,7 @@ Suite * encryptsave_suite(void)
 {
     Suite *s = suite_create("encryptsave");
 
-    DEFTESTCASE_SLOW(known_kdf, 60);
+    DEFTESTCASE_SLOW(known_kdf, 60); /* is 5-10 seconds on my computer, but is directly dependent on CPU */
     DEFTESTCASE(save_friend);
 
     return s;
