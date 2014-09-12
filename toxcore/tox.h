@@ -723,13 +723,6 @@ void tox_save(const Tox *tox, uint8_t *data);
  */
 int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
 
-/* Perform connections after messenger has been loaded from file.
- *
- * returns 0 on success
- * returns -1 on failure
- */
-int tox_connect(Tox *tox);
-
 #ifdef __cplusplus
 }
 #endif

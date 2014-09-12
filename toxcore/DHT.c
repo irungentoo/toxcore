@@ -2229,6 +2229,13 @@ DHT *new_DHT(Networking_Core *net)
 
 void do_DHT(DHT *dht)
 {
+    // Load friends/clients if first call to do_DHT
+    if(dht->has_loaded_friends_clients == 0)
+    {
+        dht->has_loaded_friends_clients = 1;
+        DHT_connect_after_load(dht);
+    }
+
     unix_time_update();
 
     if (dht->last_run == unix_time()) {

@@ -189,7 +189,7 @@ typedef struct {
     } lossless_packethandlers[PACKET_ID_LOSSLESS_RANGE_SIZE];
 } Friend;
 
-
+#define NUM_SAVED_TCP_RELAYS 8
 typedef struct Messenger {
 
     Networking_Core *net;
@@ -219,9 +219,8 @@ typedef struct Messenger {
 
     uint64_t last_LANdiscovery;
 
-    // Relays loaded from config
-    // 8 should be NUM_SAVED_TCP_RELAYS but it is defined in c file
-    Node_format loaded_relays[8];
+    uint8_t has_added_relays; // If the first connection has occurred in do_messenger
+    Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
 
     void (*friend_message)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
     void *friend_message_userdata;
@@ -779,9 +778,6 @@ void messenger_save(const Messenger *m, uint8_t *data);
 
 /* Load the messenger from data of size length. */
 int messenger_load(Messenger *m, const uint8_t *data, uint32_t length);
-
-/* Connect after loading messenger from file */
-int messenger_connect(Messenger *m);
 
 /* Return the number of friends in the instance m.
  * You should use this to determine how much memory to allocate
