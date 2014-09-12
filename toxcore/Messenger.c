@@ -2818,6 +2818,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             }
 
             memcpy(m->loaded_relays, data, length);
+            m->has_added_relays = 0;
 
             break;
         }

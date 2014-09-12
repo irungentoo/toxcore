@@ -2336,6 +2336,9 @@ void DHT_save(DHT *dht, uint8_t *data)
 
 static void DHT_bootstrap_loaded_clients(DHT *dht)
 {
+    if (!dht->loaded_clients_list)
+        return;
+
     uint32_t i;
 
     Client_data *client_list = dht->loaded_clients_list;
@@ -2352,6 +2355,9 @@ static void DHT_bootstrap_loaded_clients(DHT *dht)
 
 static void getnodes_of_loaded_friend_clients(DHT *dht)
 {
+    if (!dht->loaded_friends_list)
+        return;
+
     uint32_t i, j;
 
     DHT_Friend *friend_list = dht->loaded_friends_list;
@@ -2373,7 +2379,7 @@ static void getnodes_of_loaded_friend_clients(DHT *dht)
 /* Start sending packets after DHT loaded_friends_list and loaded_clients_list are set */
 int DHT_connect_after_load(DHT *dht)
 {
-    if (dht == NULL || dht->loaded_friends_list == NULL || dht->loaded_clients_list == NULL)
+    if (dht == NULL)
         return -1;
 
     getnodes_of_loaded_friend_clients(dht);
@@ -2381,7 +2387,12 @@ int DHT_connect_after_load(DHT *dht)
 
     // Loaded lists were allocd, free them
     free(dht->loaded_friends_list);
+    dht->loaded_friends_list = NULL;
+    dht->loaded_num_friends = 0;
+
     free(dht->loaded_clients_list);
+    dht->loaded_clients_list = NULL;
+    dht->loaded_num_clients = 0;
 
     return 0;
 }
@@ -2400,6 +2411,7 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
                 DHT_Friend *friend_list = (DHT_Friend *)data;
                 num = length / sizeof(DHT_Friend);
 
+                free(dht->loaded_friends_list);
                 // Copy to loaded_friends_list
                 dht->loaded_friends_list = calloc(num, sizeof(DHT_Friend));
 
@@ -2408,6 +2420,7 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
 
                 dht->loaded_num_friends = num;
 
+                dht->has_loaded_friends_clients = 1;
             } /* localize declarations */
 
             break;
@@ -2420,6 +2433,7 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
                 num = length / sizeof(Client_data);
                 Client_data *client_list = (Client_data *)data;
 
+                free(dht->loaded_clients_list);
                 // Copy to loaded_clients_list
                 dht->loaded_clients_list = calloc(num, sizeof(Client_data));
 
@@ -2428,6 +2442,7 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
 
                 dht->loaded_num_clients = num;
 
+                dht->has_loaded_friends_clients = 1;
             } /* localize declarations */
 
             break;
