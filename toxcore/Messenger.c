@@ -2408,6 +2408,17 @@ uint32_t messenger_run_interval(Messenger *m)
 /* The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m)
 {
+    // Add the TCP relays, but only if this is the first time calling do_messenger
+    if (m->has_added_relays == 0) {
+        m->has_added_relays = 1;
+
+        int i;
+
+        for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
+            add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].client_id);
+        }
+    }
+
     unix_time_update();
 
     if (!m->options.udp_disabled) {
@@ -2554,7 +2565,6 @@ void do_messenger(Messenger *m)
 #define MESSENGER_STATE_TYPE_PATH_NODE     11
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
-#define NUM_SAVED_TCP_RELAYS 8
 #define NUM_SAVED_PATH_NODES 8
 struct SAVED_FRIEND {
     uint8_t status;
@@ -2803,18 +2813,11 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_TCP_RELAY: {
-            Node_format relays[NUM_SAVED_TCP_RELAYS];
-
-            if (length != sizeof(relays)) {
+            if (length != sizeof(m->loaded_relays)) {
                 return -1;
             }
 
-            memcpy(relays, data, length);
-            uint32_t i;
-
-            for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
-                add_tcp_relay(m->net_crypto, relays[i].ip_port, relays[i].client_id);
-            }
+            memcpy(m->loaded_relays, data, length);
 
             break;
         }

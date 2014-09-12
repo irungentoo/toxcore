@@ -219,6 +219,10 @@ typedef struct Messenger {
 
     uint64_t last_LANdiscovery;
 
+#define NUM_SAVED_TCP_RELAYS 8
+    uint8_t has_added_relays; // If the first connection has occurred in do_messenger
+    Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
+
     void (*friend_message)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
     void *friend_message_userdata;
     void (*friend_action)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
