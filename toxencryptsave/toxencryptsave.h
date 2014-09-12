@@ -54,6 +54,13 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
  */
 int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength);
 
+/* Determines whether or not the given data is encrypted (by checking the magic number)
+ *
+ * returns 1 if it is encrypted
+ * returns 0 otherwise
+ */
+int tox_is_data_encrypted(const uint8_t *data);
+
 #ifdef __cplusplus
 }
 #endif
