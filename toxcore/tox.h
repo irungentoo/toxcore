@@ -42,7 +42,7 @@ extern "C" {
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
-#define TOX_ENC_SAVE_MAGIC_NUMBER "toxesave"
+#define TOX_ENC_SAVE_MAGIC_NUMBER "toxEsave"
 #define TOX_ENC_SAVE_MAGIC_LENGTH 8
 
 /* Errors for m_addfriend
