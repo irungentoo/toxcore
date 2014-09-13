@@ -1552,6 +1552,7 @@ MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls )
 
     if (retu == NULL) {
         LOGGER_ERROR("Allocation failed! Program might misbehave!");
+        timer_terminate_session(handler);
         return NULL;
     }
 
@@ -1561,6 +1562,7 @@ MSISession *msi_init_session ( Messenger *messenger, int32_t max_calls )
 
     if (!(retu->calls = calloc( sizeof (MSICall *), max_calls ))) {
         LOGGER_ERROR("Allocation failed! Program might misbehave!");
+        timer_terminate_session(handler);
         free(retu);
         return NULL;
     }

@@ -220,6 +220,14 @@ typedef struct {
     DHT_Friend    *friends_list;
     uint16_t       num_friends;
 
+    // Used after loading of file (tox_load), but no longer needed after connect (tox_connect)
+    // Unsure if friends_list and num_friends could just be used instead?
+    int has_loaded_friends_clients; // Whether or not we have loaded on the first do_DHT
+    DHT_Friend    *loaded_friends_list;
+    uint32_t       loaded_num_friends;
+    Client_data   *loaded_clients_list;
+    uint32_t       loaded_num_clients;
+
     Shared_Keys shared_keys_recv;
     Shared_Keys shared_keys_sent;
 
@@ -354,6 +362,12 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, const uint8_t *public_key);
 
+/* Start sending packets after DHT loaded_friends_list and loaded_clients_list are set.
+ *
+ * returns 0 if successful
+ * returns -1 otherwise
+ */
+int DHT_connect_after_load(DHT *dht);
 
 /* ROUTING FUNCTIONS */
 
