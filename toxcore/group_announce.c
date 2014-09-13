@@ -82,8 +82,8 @@ struct ANNOUNCE {
 
 
 // Handle all decrypt procedures
-int unwrap_gc_announce_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t packet_type, const uint8_t *packet, uint16_t length)
+int unwrap_gc_announce_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, 
+            uint8_t *public_key, uint8_t *data, uint8_t packet_type, const uint8_t *packet, uint16_t length)
 {
     uint16_t plain_length;
 
@@ -157,15 +157,16 @@ int wrap_gc_announce_packet(const uint8_t *send_public_key, const uint8_t *send_
 
 // Returns the number of sent packets
 int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_id[], 
-    const uint8_t data[], uint32_t length, uint8_t packet_type)
+    const uint8_t data[], uint32_t length, uint8_t packet_type, bool self)
 {
     /* The packet is valid, find a closest nodes to send it to */
     static Node_format nodes[MAX_SENT_NODES];
     int nclosest, i, j;
     nclosest = get_close_nodes(dht, target_id, nodes, 0, 1, 1); /* TODO: dehardcode last 3 params */
     
-    if (nclosest <= 0)
+    if (nclosest <= 0) {
         return -1;
+    }
 
     uint8_t *packet;
 
@@ -188,7 +189,14 @@ int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_
             if (sendpacket(dht->net, nodes[i].ip_port, packet, packet_length) == 0)
                 ++j;
         }
-    
+
+    if ((j==0)&&(!self)&&(packet_type==NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST)) {
+        Announced_Node_format node;
+        memcpy(&node.ip_port, data+1+EXT_PUBLIC_KEY, sizeof(IP_Port));
+        memcpy(node.client_id, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port), EXT_PUBLIC_KEY);
+        add_gc_announced_node(dht->announce, data+1, node, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port)+EXT_PUBLIC_KEY);
+    }
+
     return j;
 
 }
@@ -220,14 +228,30 @@ int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
     if (sign_data(data, 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), self_long_sk, self_long_pk, data) == -1)
         return -1;
 
-    dispatch_packet(dht, ENC_KEY(chat_id), dht->self_public_key, data,
-                    GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST);
+    return dispatch_packet(dht, ENC_KEY(chat_id), dht->self_public_key, data,
+                    GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 1);
 
-    return 0;
 }
 
 int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
 {
+    if (packet[0] != NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST)
+        return -1;
+
+    DHT *dht = _dht;
+
+    uint8_t data[GC_ANNOUNCE_REQUEST_PLAIN_SIZE];
+    uint8_t public_key[ENC_PUBLIC_KEY];
+    unwrap_gc_announce_packet(dht->self_public_key, dht->self_secret_key, public_key, data,
+                   packet[0], packet, length);
+
+    if (crypto_sign_verify_detached(data+GC_ANNOUNCE_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE,
+                 data, GC_ANNOUNCE_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE,
+                 data+GC_ANNOUNCE_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE-TIME_STAMP) != 0)
+        return -1;
+
+    return dispatch_packet(dht, ENC_KEY(data+1), dht->self_public_key, data,
+                    GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 0);    
 
 }
 
