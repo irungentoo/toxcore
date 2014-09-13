@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #ifdef  VANILLA_NACL /* toxcore only uses this when libsodium is unavailable */
 
 #ifndef __SODIUM_RUNTIME_H__

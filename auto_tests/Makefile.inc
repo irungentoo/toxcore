@@ -1,7 +1,7 @@
 if BUILD_TESTS
 
-TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest encryptsave_test
-check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest encryptsave_test
+TESTS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
+check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \

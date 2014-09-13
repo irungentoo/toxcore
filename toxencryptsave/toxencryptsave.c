@@ -63,7 +63,7 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
      * once the pwhash competition (https://password-hashing.net/) is over */
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
     uint8_t key[crypto_box_KEYBYTES];
-    randombytes_buf(salt, sizeof salt);
+    randombytes(salt, sizeof salt);
 
     if (crypto_pwhash_scryptsalsa208sha256(
             key, sizeof(key), passphrase, pplength, salt,

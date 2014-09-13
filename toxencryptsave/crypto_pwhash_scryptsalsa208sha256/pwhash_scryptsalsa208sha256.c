@@ -1,11 +1,14 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #ifdef  VANILLA_NACL /* toxcore only uses this when libsodium is unavailable */
-
 
 #include <errno.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+//#include <stdio.h>
 
 #include "crypto_pwhash_scryptsalsa208sha256.h"
 #include "crypto_scrypt.h"
@@ -102,6 +105,7 @@ crypto_pwhash_scryptsalsa208sha256(unsigned char * const out,
                                     unsigned long long opslimit,
                                     size_t memlimit)
 {
+    //fprintf(stderr, "Doing that dirty thang!!!!\n");
     uint32_t N_log2;
     uint32_t p;
     uint32_t r;
@@ -146,7 +150,7 @@ crypto_pwhash_scryptsalsa208sha256_str(char out[crypto_pwhash_scryptsalsa208sha2
         errno = EINVAL;
         return -1;
     }
-    randombytes_buf(salt, sizeof salt);
+    randombytes(salt, sizeof salt);
     if (escrypt_gensalt_r(N_log2, r, p, salt, sizeof salt,
                           (uint8_t *) setting, sizeof setting) == NULL) {
         errno = EINVAL;
