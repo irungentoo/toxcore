@@ -2484,11 +2484,11 @@ int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
 }
 
 /*  return 0 if we are not connected to the DHT.
- *  return 1 if we are.
+ *  return number of connected nodes if we are.
  */
 int DHT_isconnected(const DHT *dht)
 {
-    uint32_t i;
+    uint32_t i, count=0;
     unix_time_update();
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
@@ -2496,10 +2496,10 @@ int DHT_isconnected(const DHT *dht)
 
         if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
                 !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
-            return 1;
+            count++;
     }
 
-    return 0;
+    return count;
 }
 
 /*  return 0 if we are not connected or only connected to lan peers with the DHT.
