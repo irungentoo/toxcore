@@ -28,15 +28,15 @@ typedef struct ANNOUNCE ANNOUNCE;
 /* Initiate the process of the announcement, claiming a node is part of a group chat.
  *
  * dht = DHT object we're operating on
- * node_public_key = extended (encryption+signature) public key of the node announcing its presence
- * node_private_key = signing private key of the same node
+ * self_long_pk = extended (encryption+signature) public key of the node announcing its presence
+ * self_long_sk = signing private key of the same node
  * chat_id = id of chat we're announcing to
  * 
  * return -1 in case of error
- * return 0 otherwise
+ * return number of send packets otherwise
  */
-int send_gc_announce_request(DHT *dht, const uint8_t node_public_key[],
-							 const uint8_t node_private_key[], const uint8_t chat_id[]);
+int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
+                             const uint8_t self_long_sk[], const uint8_t chat_id[]);
 
 /* Sends an actual announcement packet to the node specified as client_id on ipp */
 int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t chat_id[], uint64_t *req_id);

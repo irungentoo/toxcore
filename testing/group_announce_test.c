@@ -14,7 +14,7 @@
 #define min(a,b) ((a)>(b)?(b):(a))
 
 /* You can change those but be mindful */
-#define PEERCOUNT       20
+#define PEERCOUNT       200
 #define CHATCOUNT       1 
 
 typedef struct Peer
@@ -66,7 +66,7 @@ void basicannouncetest()
         printf("%s, %d\n", id_toa(peers[i].dht->self_public_key), i);
     }
 
-    printf("Bootstrapping everybody from eachother\n");
+    printf("Bootstrapping everybody from each other\n");
     for (i=0; i<PEERCOUNT; i++)
     {
         DHT* target = peers[ i>=(PEERCOUNT-1)? 0 : i+1 ].dht;
@@ -94,6 +94,18 @@ void basicannouncetest()
 
     printf("Network is connested\n");
 
+    uint8_t group_pk[EXT_PUBLIC_KEY];
+    uint8_t group_sk[EXT_SECRET_KEY];
+
+    create_long_keypair(group_pk, group_sk);
+
+    int res;
+    res = send_gc_announce_request(peers[0].dht, peers[0].pk,
+                             peers[0].sk, group_pk);
+
+    printf("Number of sent announce requests %d\n", res);
+
+    idle_n_secs(10, peers, PEERCOUNT);
 
 }
 
