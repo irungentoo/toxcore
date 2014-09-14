@@ -42,6 +42,9 @@ extern "C" {
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
+#define TOX_ENC_SAVE_MAGIC_NUMBER "toxEsave"
+#define TOX_ENC_SAVE_MAGIC_LENGTH 8
+
 /* Errors for m_addfriend
  * FAERR - Friend Add Error
  */
@@ -720,6 +723,7 @@ void tox_save(const Tox *tox, uint8_t *data);
  *
  *  returns 0 on success
  *  returns -1 on failure
+ *  returns +1 on finding encrypted save data
  */
 int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
 

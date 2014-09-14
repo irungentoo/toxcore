@@ -1,7 +1,7 @@
 if BUILD_TESTS
 
-TESTS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
-check_PROGRAMS = messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
+TESTS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
+check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
@@ -12,6 +12,7 @@ AUTOTEST_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
                         libtoxcore.la \
+                        libtoxencryptsave.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
@@ -97,5 +98,13 @@ toxav_many_test_LDADD = $(AUTOTEST_LDADD)
 endif
 
 endif
+
+
+encryptsave_test_SOURCES = ../auto_tests/encryptsave_test.c
+
+encryptsave_test_CFLAGS = $(AUTOTEST_CFLAGS)
+
+encryptsave_test_LDADD = $(AUTOTEST_LDADD)
+
 
 EXTRA_DIST += $(top_srcdir)/auto_tests/friends_test.c
