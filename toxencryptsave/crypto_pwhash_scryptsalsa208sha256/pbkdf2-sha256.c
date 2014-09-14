@@ -35,7 +35,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "crypto_auth_hmacsha256.h"
+#include <crypto_hash_sha256.h>
+#include <crypto_auth_hmacsha256.h>
+
 #include "pbkdf2-sha256.h"
 #include "sysendian.h"
 #include "utils.h"
@@ -49,30 +51,34 @@ void
 PBKDF2_SHA256(const uint8_t * passwd, size_t passwdlen, const uint8_t * salt,
               size_t saltlen, uint64_t c, uint8_t * buf, size_t dkLen)
 {
-        crypto_auth_hmacsha256_state PShctx, hctx;
+        uint8_t         key[32] = {0};
         size_t          i;
-        uint8_t         ivec[4];
+        uint8_t         salt_and_ivec[saltlen + 4];
         uint8_t         U[32];
         uint8_t         T[32];
         uint64_t        j;
         int             k;
         size_t          clen;
 
-    crypto_auth_hmacsha256_init(&PShctx, passwd, passwdlen);
-    crypto_auth_hmacsha256_update(&PShctx, salt, saltlen);
+    if (passwdlen > 32) {
+        /* For some reason libsodium allows 64byte keys meaning keys 
+         * between 32byte and 64bytes are not compatible with libsodium. 
+           toxencryptsave should only give 32byte passwds so this isn't an issue here.*/
+        crypto_hash_sha256(key, passwd, passwdlen);
+    } else {
+        memcpy(key, passwd, passwdlen);
+    }
+
+    memcpy(salt_and_ivec, salt, saltlen);
 
         for (i = 0; i * 32 < dkLen; i++) {
-                be32enc(ivec, (uint32_t)(i + 1));
-                memcpy(&hctx, &PShctx, sizeof(crypto_auth_hmacsha256_state));
-                crypto_auth_hmacsha256_update(&hctx, ivec, 4);
-                crypto_auth_hmacsha256_final(&hctx, U);
+                be32enc(salt_and_ivec + saltlen, (uint32_t)(i + 1));
+                crypto_auth_hmacsha256(U, salt_and_ivec, sizeof(salt_and_ivec), key);
 
                 memcpy(T, U, 32);
 
                 for (j = 2; j <= c; j++) {
-                        crypto_auth_hmacsha256_init(&hctx, passwd, passwdlen);
-                        crypto_auth_hmacsha256_update(&hctx, U, 32);
-                        crypto_auth_hmacsha256_final(&hctx, U);
+                        crypto_auth_hmacsha256(U, U, 32, key);
 
                         for (k = 0; k < 32; k++) {
                                 T[k] ^= U[k];
@@ -85,7 +91,7 @@ PBKDF2_SHA256(const uint8_t * passwd, size_t passwdlen, const uint8_t * salt,
         }
                 memcpy(&buf[i * 32], T, clen);
         }
-    sodium_memzero((void *) &PShctx, sizeof PShctx);
+    sodium_memzero((void *) key, sizeof(key));
 }
 
 #endif

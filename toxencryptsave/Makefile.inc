@@ -20,10 +20,6 @@ libtoxencryptsave_la_SOURCES = ../toxencryptsave/crypto_pwhash_scryptsalsa208sha
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/utils.h \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/nosse/pwhash_scryptsalsa208sha256_nosse.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/sse/pwhash_scryptsalsa208sha256_sse.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/hmac_hmacsha256.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_auth_hmacsha256.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_hash_sha256.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/hash_sha256.c \
                         ../toxencryptsave/toxencryptsave.h \
                         ../toxencryptsave/toxencryptsave.c
                         

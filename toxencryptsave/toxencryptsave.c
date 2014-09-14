@@ -31,6 +31,7 @@
 #ifdef VANILLA_NACL
 #include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
 #include "crypto_pwhash_scryptsalsa208sha256/utils.h" /* sodium_memzero */
+#include <crypto_hash_sha256.h>
 #endif
 
 /* This "module" provides functions analogous to tox_load and tox_save in toxcore
@@ -57,6 +58,8 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
     if (pplength == 0)
         return -1;
 
+    uint8_t passkey[crypto_hash_sha256_BYTES];
+    crypto_hash_sha256(passkey, passphrase, pplength);
     /* First derive a key from the password */
     /* http://doc.libsodium.org/key_derivation/README.html */
     /* note that, according to the documentation, a generic pwhash interface will be created
@@ -66,16 +69,14 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
     randombytes(salt, sizeof salt);
 
     if (crypto_pwhash_scryptsalsa208sha256(
-                key, sizeof(key), passphrase, pplength, salt,
+                key, sizeof(key), passkey, sizeof(passkey), salt,
                 crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 2, /* slightly stronger */
                 crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0) {
         /* out of memory most likely */
         return -1;
     }
 
-    /* calling sodium_memzero segfaults, but printing passphrase works, so... libsodium bug?
-     * ...eh, it's not segfaulting anywhere else, so I'll assume pebkac...
-    sodium_memzero(passphrase, pplength); /* wipe plaintext pw */
+    sodium_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
 
     /* next get plain save data */
     uint32_t temp_size = tox_size(tox);
@@ -131,6 +132,9 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
 
+    uint8_t passkey[crypto_hash_sha256_BYTES];
+    crypto_hash_sha256(passkey, passphrase, pplength);
+
     memcpy(salt, data, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
     data += crypto_pwhash_scryptsalsa208sha256_SALTBYTES;
     memcpy(nonce, data, crypto_box_NONCEBYTES);
@@ -140,14 +144,14 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
     uint8_t key[crypto_box_KEYBYTES];
 
     if (crypto_pwhash_scryptsalsa208sha256(
-                key, sizeof(key), passphrase, pplength, salt,
+                key, sizeof(key), passkey, sizeof(passkey), salt,
                 crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 2, /* slightly stronger */
                 crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0) {
         /* out of memory most likely */
         return -1;
     }
 
-    /* sodium_memzero(passphrase, pplength); /* wipe plaintext pw */
+    sodium_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
 
     /* decrypt the data */
     uint8_t temp_data[decrypt_length];
