@@ -27,6 +27,7 @@
 
 #include "toxencryptsave.h"
 #include "../toxcore/crypto_core.h"
+#include "../toxcore/tox.h"
 
 #ifdef VANILLA_NACL
 #include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
