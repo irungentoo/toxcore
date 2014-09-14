@@ -55,7 +55,7 @@ typedef struct {
 typedef struct Group_Chat {
     Networking_Core *net;
     uint8_t     self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t     self_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t    *self_secret_key;
 
     Group_Peer *group;
     Group_Close  close[GROUP_CLOSE_CONNECTIONS];

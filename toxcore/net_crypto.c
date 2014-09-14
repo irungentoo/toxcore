@@ -24,10 +24,6 @@
  *
  */
 
-#ifdef USE_MLOCK
-#include <sys/mman.h>
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -2641,36 +2637,6 @@ static size_t sizeof_locked_net_crypto(size_t pagesize)
   return sizeof(Net_Crypto) + over;
 }
 
-/* Allocate and mlock a Net_Crypto instance.
- *  The data will be memory-resident and not swapped out.
- *  Note that a locked instance will be aligned at and consume entire pages
- *  (usually blocks of 4k) in order to avoid issues where unlocking one instance
- *  also unlocks neighboring instances.
- */
-static Net_Crypto *allocate_net_crypto()
-{
-#ifdef USE_MLOCK
-  size_t pagesize = getpagesize();
-  size_t size = sizeof_locked_net_crypto(pagesize);
-
-  Net_Crypto *c = NULL;
-  /* posix_memalign should be more widely available than aligned_alloc */
-  posix_memalign((void**)&c, pagesize, size);
-  if (!c)
-    return NULL;
-
-  if (mlock(c, size) != 0) {
-    free(c);
-    return NULL;
-  }
-
-  memset(c, 0, size);
-  return c;
-#else
-  return calloc(1, sizeof(Net_Crypto));
-#endif
-}
-
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
@@ -2681,10 +2647,16 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (dht == NULL)
         return NULL;
 
-    Net_Crypto *temp = allocate_net_crypto();
+    Net_Crypto *temp = calloc(1, sizeof(Net_Crypto));
 
     if (temp == NULL)
         return NULL;
+
+    temp->self_secret_key = locked_alloc(crypto_box_SECRETKEYBYTES);
+    if (!temp->self_secret_key) {
+      free(temp);
+      return NULL;
+    }
 
     temp->dht = dht;
 
@@ -2771,16 +2743,6 @@ void do_net_crypto(Net_Crypto *c)
     send_crypto_packets(c);
 }
 
-/* Calls munlock on the Net_Crypto instance.
- *  Don't do this before zeroing the memory!
- */
-static void unlock_net_crypto(Net_Crypto *c)
-{
-#ifdef USE_MLOCK
-  munlock(c, sizeof_locked_net_crypto(getpagesize()));
-#endif
-}
-
 void kill_net_crypto(Net_Crypto *c)
 {
     uint32_t i;
@@ -2802,7 +2764,8 @@ void kill_net_crypto(Net_Crypto *c)
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_RESPONSE, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_HS, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_DATA, NULL, NULL);
+    memset(c->self_secret_key, 0, crypto_box_SECRETKEYBYTES);
+    locked_free(c->self_secret_key);
     memset(c, 0, sizeof(Net_Crypto));
-    unlock_net_crypto(c);
     free(c);
 }

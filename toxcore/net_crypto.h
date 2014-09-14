@@ -187,8 +187,8 @@ typedef struct {
     uint32_t crypto_connections_length; /* Length of connections array. */
 
     /* Our public and secret keys. */
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t  self_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t *self_secret_key;
 
     /* The secret key used for cookies */
     uint8_t secret_symmetric_key[crypto_box_KEYBYTES];

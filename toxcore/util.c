@@ -33,6 +33,10 @@
 
 #include "util.h"
 
+#ifdef USE_MLOCK
+#include "logger.h"
+#include <sys/mman.h>
+#endif
 
 /* don't call into system billions of times for no reason */
 static uint64_t unix_time_value;
@@ -191,3 +195,237 @@ inline__ void U16_to_bytes(uint8_t *dest, uint16_t value)
     *(dest + 1) = ( value );
 #endif
 }
+
+#ifdef USE_MLOCK
+typedef struct Alloc_List_s {
+  unsigned char       *address;
+  size_t               size;
+  struct Alloc_List_s *next;
+} Alloc_List;
+
+typedef struct Locked_Map_s {
+  unsigned char       *address;
+  unsigned char       *end;
+  Alloc_List          *free;
+  Alloc_List          *used;
+  struct Locked_Map_s *next;
+} Locked_Map;
+
+static size_t      pagesize = 0;
+static Locked_Map *lockedmap  = NULL;
+
+static void delete_lockedmap(Locked_Map **map_)
+{
+  Locked_Map *map = *map_;
+  Alloc_List *nextfree = NULL;
+  Alloc_List *lst;
+  for (lst = map->free; lst; lst = nextfree) {
+    nextfree = lst->next;
+    free(lst);
+  }
+  map->free = NULL;
+
+  if (map->address) {
+    memset(map->address, 0, pagesize);
+    munlock(map->address, pagesize);
+    free(map->address);
+    map->address = NULL;
+    map->end = NULL;
+  }
+
+  *map_ = map->next;
+  map->next = NULL;
+  free(map);
+}
+
+static Locked_Map *new_lockedmap()
+{
+  Locked_Map *map = calloc(1, sizeof(Locked_Map));
+  if (!map)
+    return NULL;
+
+  map->address = calloc(1, pagesize);
+  if (!map->address) {
+    delete_lockedmap(&map);
+    return NULL;
+  }
+  if (mlock(map->address, pagesize) != 0) {
+    delete_lockedmap(&map);
+    return NULL;
+  }
+  map->end = map->address + pagesize;
+
+  map->free = calloc(1, sizeof(Alloc_List));
+  if (!map->free) {
+    delete_lockedmap(&map);
+    return NULL;
+  }
+  map->free->address = map->address;
+  map->free->size    = pagesize;
+  map->free->next    = NULL;
+
+  return map;
+}
+
+int try_locked_alloc(Locked_Map *map, Alloc_List *used) {
+  /* find a slot big enough to hold used->size bytes */
+  Alloc_List **fl = &map->free;
+  while (*fl && (*fl)->size < used->size)
+    fl = &(*fl)->next;
+  if (!*fl)
+    return 0;
+
+  /* remove the used bytes from the free-list */
+  Alloc_List *at = *fl;
+  used->address = at->address;
+  at->size    -= used->size;
+  at->address += used->size;
+
+  /* if the slot is now empty, remove it */
+  if (at->size == 0)
+    *fl = at->next;
+
+  /* find a place to insert the used-list-entry in a sorted fashion */
+  fl = &map->used;
+  while (*fl && (*fl)->address < used->address)
+    fl = &(*fl)->next;
+
+  /* an insert */
+  used->next = *fl;
+  *fl = used;
+  return 1;
+}
+
+void* locked_alloc(size_t bytes)
+{
+  if (!pagesize) {
+    pagesize = getpagesize();
+    if (!pagesize)
+      return NULL;
+    /* pagesize needs to be a power of two */
+    while (pagesize < crypto_box_SECRETKEYBYTES)
+      pagesize <<= 1;
+  }
+
+  /* This is supposed to be used to alloc secret keys, not big chunks of
+   * memory.
+   */
+  if (bytes > pagesize)
+    return NULL;
+
+  if (!lockedmap) {
+    lockedmap = new_lockedmap();
+    if (!lockedmap)
+      return NULL;
+  }
+
+  Alloc_List *used = calloc(1, sizeof(Alloc_List));
+  if (!used)
+    return NULL;
+
+  used->size = bytes;
+
+  Locked_Map **map;
+  for (map = &lockedmap; *map; map = &(*map)->next) {
+    if (try_locked_alloc(*map, used))
+      return used->address;
+  }
+
+  *map = new_lockedmap();
+  if (!*map)
+    return NULL;
+
+  if (!try_locked_alloc(*map, used)) {
+    /* This should not be possible */
+    LOGGER_ERROR("try_locked_alloc failed on newly allocated map!\n");
+    delete_lockedmap(map);
+    return NULL;
+  }
+
+  return used->address;
+}
+
+void locked_free(void *data_)
+{
+  unsigned char *data = data_;
+  Locked_Map **pmap;
+  for (pmap = &lockedmap; *pmap; pmap = &(*pmap)->next) {
+    if (data >= (*pmap)->address && data < (*pmap)->end)
+      break;
+  }
+
+  Locked_Map *map = *pmap;
+  if (!map)
+    goto user_error;
+
+  /* find the 'used' entry */
+  Alloc_List **entry;
+  for (entry = &map->used; *entry; entry = &(*entry)->next) {
+    if ((*entry)->address == data)
+      break;
+  }
+
+  Alloc_List *used = *entry;
+  if (!used)
+    goto user_error;
+
+  /* unlink it */
+  *entry = used->next;
+
+  /* add it back to the free-list (sorted) */
+  unsigned char *end = used->address + used->size;
+  for (entry = &map->free; *entry; entry = &(*entry)->next) {
+    if ((*entry)->address + (*entry)->size == used->address) {
+      /* stretch this entry */
+      (*entry)->size += used->size;
+      free(used);
+      used = *entry;
+      break;
+    }
+    /* otherwise insert at this point */
+    if (used->address < (*entry)->address) {
+      used->next = *entry;
+      *entry = used;
+      break;
+    }
+  }
+
+  if (!*entry) {
+    used->next = NULL;
+    *entry = used;
+  }
+
+  end = used->address + used->size;
+  Alloc_List *next = used->next;
+  while (next && next->address == end) {
+    used->size += next->size;
+    used->next = next->next;
+    free(next);
+    next = used->next;
+  }
+
+  if (map->free && !map->free->next &&
+      map->free->address == map->address &&
+      map->free->address + map->free->size == map->end)
+  {
+    delete_lockedmap(pmap);
+  }
+
+  return;
+
+user_error:
+  /* User error!  */
+  LOGGER_ERROR("locked_free called on non-locked memory!\n");
+  free(data);
+}
+#else
+void* locked_alloc(size_t bytes)
+{
+  return calloc(1, bytes);
+}
+
+void locked_free(void *data)
+{
+  free(data);
+}
+#endif
