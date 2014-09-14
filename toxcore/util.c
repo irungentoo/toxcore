@@ -244,11 +244,12 @@ static Locked_Map *new_lockedmap()
   if (!map)
     return NULL;
 
-  map->address = calloc(1, pagesize);
+  posix_memalign((void**)&map->address, pagesize, pagesize);
   if (!map->address) {
     delete_lockedmap(&map);
     return NULL;
   }
+  memset(map->address, 0, pagesize);
   if (mlock(map->address, pagesize) != 0) {
     delete_lockedmap(&map);
     return NULL;
