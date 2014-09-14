@@ -481,6 +481,13 @@ if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes") && (test "x$DISABLE_R
     )
 fi
 
+LOCK_FUNCS_FOUND="yes"
+AC_CHECK_FUNCS([mlock munlock posix_memalign], [], [LOCK_FUNCS_FOUND="no"; break])
+if test "x$LOCK_FUNCS_FOUND" != "xyes"; then
+  AC_MSG_WARN([not all the functions required to lock memory out of swap were found])
+else
+  AC_DEFINE([USE_MLOCK], [], [lock crypto instances out of swap space])
+fi
 
 AX_PTHREAD(
     [],
