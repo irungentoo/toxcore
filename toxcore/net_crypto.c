@@ -24,6 +24,10 @@
  *
  */
 
+#ifdef USE_MLOCK
+#include <sys/mman.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
