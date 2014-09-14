@@ -925,6 +925,9 @@ void tox_save(const Tox *tox, uint8_t *data)
 /* Load the messenger from data of size length. */
 int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
 {
+    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0)
+        return 1;
+
     Messenger *m = tox;
     return messenger_load(m, data, length);
 }
