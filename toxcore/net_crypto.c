@@ -2627,16 +2627,6 @@ void load_keys(Net_Crypto *c, const uint8_t *keys)
     memcpy(c->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
 }
 
-/* Get the size of Net_Crypto padded to be a multiple of PAGESIZE
- */
-static size_t sizeof_locked_net_crypto(size_t pagesize)
-{
-  size_t over = sizeof(Net_Crypto) % pagesize;
-  if (over)
-    over = pagesize - over;
-  return sizeof(Net_Crypto) + over;
-}
-
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
