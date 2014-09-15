@@ -59,10 +59,10 @@ You should get and install [libsodium](https://github.com/jedisct1/libsodium):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/0.5.0
+git checkout tags/0.7.0
 ./autogen.sh
 ./configure && make check
-sudo checkinstall --install --pkgname libsodium --pkgversion 0.5.0 --nodoc
+sudo checkinstall --install --pkgname libsodium --pkgversion 0.7.0 --nodoc
 sudo ldconfig
 cd ..
 ```
