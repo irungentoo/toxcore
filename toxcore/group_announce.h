@@ -42,7 +42,7 @@ int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
 int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
                             const uint8_t self_long_sk[], const uint8_t chat_id[]);
 
-/* Retrieve nodes by request id, returns 0 if no nodes found or request in progress, number of nodes otherwise */
+/* Retrieve nodes by chat id, returns 0 if no nodes found or request in progress, number of nodes otherwise */
 int get_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
                             Announced_Node_format *nodes);
 
