@@ -258,7 +258,6 @@ int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t packet[],
 
     return dispatch_packet(dht, ENC_KEY(data+1), dht->self_public_key, data,
                     GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 0);    
-
 }
 
 int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
@@ -296,17 +295,45 @@ int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
     new_announce_self_request(dht->announce, chat_id, request_id, timestamp, self_long_pk, self_long_sk);
 
     return dispatch_packet(dht, ENC_KEY(chat_id), dht->self_public_key, data,
-                    GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 1);
-
-// Type + Chat_ID + IP_Port + RequestID + Client_ID + Timestamp + Signature
+                    GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES, 1);
 }
 
 int handle_gc_get_announced_nodes_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
 {
+    DHT *dht = _dht;
+
+    uint8_t data[GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE];
+    uint8_t public_key[ENC_PUBLIC_KEY];
+    int plain_length = unwrap_gc_announce_packet(dht->self_public_key, dht->self_secret_key, public_key,
+                         data, packet[0], packet, length);
+
+    if (plain_length != GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE)
+        return -1;
+
+    if (crypto_sign_verify_detached(data+GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE,
+                 data, GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE,
+                 SIG_KEY(data+GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE-TIME_STAMP-EXT_PUBLIC_KEY)) != 0) 
+        return -1;
+
+    Announced_Node_format nodes[MAX_SENT_ANNOUNCED_NODES];
+    int num_nodes = get_gc_announced_nodes(dht->announce, data+1, nodes);
+    if (num_nodes > 0) {
+        uint64_t request_id;
+        memcpy(&request_id, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port), sizeof(uint64_t));
+        IP_Port ipp;
+        memcpy(&ipp, data+1+EXT_PUBLIC_KEY, sizeof(IP_Port));
+        send_gc_get_announced_nodes_response(dht, data+1, request_id,
+                ENC_KEY(data+GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE-TIME_STAMP-EXT_PUBLIC_KEY),
+                nodes, num_nodes);
+    }
+    else
+        return dispatch_packet(dht, ENC_KEY(data+1), dht->self_public_key, data,
+                    GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 0);    
 
 }
 
-int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t chat_id[], uint64_t *req_id)
+int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t chat_id[], uint64_t req_id,
+                                const uint8_t receiver_pk[], Announced_Node_format *nodes, uint32_t num_nodes)
 {
 
 }
@@ -319,7 +346,7 @@ int handle_gc_get_announced_nodes_response(void * _dht, IP_Port ipp, const uint8
 // Function to get announced nodes, should be used for get_announced_nodes_response
 // Returns announced nodes number, fills up nodes array
 int get_gc_announced_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
-                            Announced_Node_format nodes[MAX_SENT_ANNOUNCED_NODES])
+                            Announced_Node_format *nodes)
 {
     uint32_t i, j;
     j = 0;
