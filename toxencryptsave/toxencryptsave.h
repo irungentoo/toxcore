@@ -24,11 +24,17 @@
 #ifndef TOXENCRYPTSAVE_H
 #define TOXENCRYPTSAVE_H
 
-#include "../toxcore/tox.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdint.h>
+
+#ifndef __TOX_DEFINED__
+#define __TOX_DEFINED__
+typedef struct Tox Tox;
+#endif
+
 
 /* This "module" provides functions analogous to tox_load and tox_save in toxcore
  * Clients should consider alerting their users that, unlike plain data, if even one bit
