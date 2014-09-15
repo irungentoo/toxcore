@@ -36,7 +36,7 @@
 #define MAX_CONCURRENT_REQUESTS     10
 #define GC_ANNOUNCE_EXPIRATION      3600 /* sec */
 #define MAX_GC_ANNOUNCED_NODES      30
-#define MAX_SENT_ANNOUNCED_NODES    2
+#define MAX_SENT_ANNOUNCED_NODES    1
 #define TIME_STAMP (sizeof(uint64_t))
 #define REQUEST_ID (sizeof(uint64_t))
 
@@ -163,10 +163,12 @@ int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_
     const uint8_t data[], uint32_t length, uint8_t packet_type, bool self)
 {
     /* The packet is valid, find a closest nodes to send it to */
-    static Node_format nodes[MAX_SENT_ANNOUNCED_NODES];
+    static Node_format nodes[MAX_SENT_NODES];
     int nclosest, i, j;
     nclosest = get_close_nodes(dht, target_id, nodes, 0, 1, 1); /* TODO: dehardcode last 3 params */
-    
+    if (nclosest > MAX_SENT_ANNOUNCED_NODES)
+        nclosest = MAX_SENT_ANNOUNCED_NODES;
+
     if (nclosest <= 0) {
         return -1;
     }
@@ -200,8 +202,6 @@ int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_
         memcpy(&node.ip_port, data+1+EXT_PUBLIC_KEY, sizeof(IP_Port));
         memcpy(node.client_id, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port), EXT_PUBLIC_KEY);
         add_gc_announced_node(dht->announce, data+1, node, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port)+EXT_PUBLIC_KEY);
-        printf("DEBUG adding announced node\n");
-        printf("%s\n", id_toa(dht->self_public_key));
     }
 
     return j;
@@ -263,6 +263,10 @@ int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t packet[],
 int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
                             const uint8_t self_long_sk[], const uint8_t chat_id[])
 {
+    printf("DEBUG get nodes request\n");
+
+    // TODO: Check if we already have some nodes!!!
+
     uint8_t data[GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES;
     memcpy(data + 1, chat_id, EXT_PUBLIC_KEY);
@@ -300,6 +304,8 @@ int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
 
 int handle_gc_get_announced_nodes_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
 {
+    printf("DEBUG handle get nodes request\n");
+
     DHT *dht = _dht;
 
     uint8_t data[GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE];
@@ -325,11 +331,13 @@ int handle_gc_get_announced_nodes_request(void * _dht, IP_Port ipp, const uint8_
         send_gc_get_announced_nodes_response(dht, data+1, request_id,
                 ENC_KEY(data+GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE-SIGNATURE_SIZE-TIME_STAMP-EXT_PUBLIC_KEY),
                 nodes, num_nodes);
+        printf("DEBUG handle get nodes request: FOUND NODES\n");
     }
-    else
+    else {
+        printf("DEBUG handle get nodes request: DID NOT FOUND NODES: RESENDING\n");
         return dispatch_packet(dht, ENC_KEY(data+1), dht->self_public_key, data,
-                    GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 0);    
-
+                    GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES, 0);    
+    }
 }
 
 int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t chat_id[], uint64_t req_id,

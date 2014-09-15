@@ -14,7 +14,7 @@
 #define min(a,b) ((a)>(b)?(b):(a))
 
 /* You can change those but be mindful */
-#define PEERCOUNT       200
+#define PEERCOUNT       100
 #define CHATCOUNT       1 
 
 typedef struct Peer
@@ -100,11 +100,16 @@ void basicannouncetest()
     create_long_keypair(group_pk, group_sk);
 
     int res;
+    printf("Sending announce requests\n");
     res = send_gc_announce_request(peers[0].dht, peers[0].pk,
                              peers[0].sk, group_pk);
-
     printf("Number of sent announce requests %d\n", res);
+    idle_n_secs(10, peers, PEERCOUNT);
 
+    printf("Sending get announced nodes requests\n");
+    res = send_gc_get_announced_nodes_request(peers[1].dht, peers[1].pk,
+                             peers[1].sk, group_pk);
+    printf("Number of sent get announced nodes requests %d\n", res);
     idle_n_secs(10, peers, PEERCOUNT);
 
 }

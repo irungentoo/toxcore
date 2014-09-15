@@ -36,7 +36,7 @@ typedef struct ANNOUNCE ANNOUNCE;
  * return number of send packets otherwise
  */
 int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
-                             const uint8_t self_long_sk[], const uint8_t chat_id[]);
+                            const uint8_t self_long_sk[], const uint8_t chat_id[]);
 
 /* Sends an actual announcement packet to the node specified as client_id on ipp */
 int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
