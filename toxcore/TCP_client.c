@@ -63,7 +63,7 @@ static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_i
 
     int opt_enable = 1;   
     setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&opt_enable, sizeof(opt_enable)); //disables nagling 
-    #ifdef __linux
+    #ifdef LINUX_TCP_OPTIMIZATIONS
         setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, (void *)&opt_enable, sizeof(opt_enable)); //assumes 2.4+, 
     #endif
 

@@ -60,7 +60,7 @@ static int bind_to_port(sock_t sock, int family, uint16_t port)
 
     int opt_enable = 1; 
     setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&opt_enable, sizeof(opt_enable)); //disables nagling 
-    #ifdef __linux
+    #ifdef LINUX_TCP_OPTIMIZATIONS
         int queue = 6; //TFO queue size 
         setsockopt(sock, SOL_TCP, TCP_FASTOPEN, &queue, sizeof(queue)); //TCP fast open pops a RT off the TCP handshake
     #endif

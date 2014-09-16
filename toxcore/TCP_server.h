@@ -82,6 +82,16 @@ enum {
     TCP_STATUS_CONFIRMED,
 };
 
+#ifdef __linux__
+    #include <sys/utsname.h>
+    struct utsname kernver;
+    uname(&kernver);
+    float ver = strtof(kernver.release, NULL);
+    if (ver >= 3.6) {
+        #define LINUX_TCP_OPTIMIZATIONS
+    }
+#endif
+
 typedef struct TCP_Priority_List TCP_Priority_List;
 
 struct TCP_Priority_List {
