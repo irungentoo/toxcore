@@ -33,10 +33,12 @@
 #include "network.h"
 #include "DHT.h"
 
+#include <inttypes.h>
+
 #define MAX_CONCURRENT_REQUESTS     10
 #define GC_ANNOUNCE_EXPIRATION      3600 /* sec */
 #define MAX_GC_ANNOUNCED_NODES      30
-#define MAX_SENT_ANNOUNCED_NODES    1
+#define MAX_SENT_ANNOUNCED_NODES    2
 #define TIME_STAMP (sizeof(uint64_t))
 #define REQUEST_ID (sizeof(uint64_t))
 
@@ -82,7 +84,7 @@ struct ANNOUNCE {
     }   self_requests[MAX_CONCURRENT_REQUESTS];
 
     // Number of current requests
-    uint64_t req_num;
+    uint32_t req_num;
 };
 
 
@@ -121,8 +123,10 @@ int unwrap_gc_announce_packet(const uint8_t *self_public_key, const uint8_t *sel
     uint8_t plain[plain_length];
 
     int packet_header = 1 + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES;
-    if (packet_type == NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES)
+    if (packet_type == NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES) {
         packet_header = 1 + ENC_PUBLIC_KEY + REQUEST_ID + crypto_box_NONCEBYTES;
+        memcpy(nonce, packet + 1 + ENC_PUBLIC_KEY + REQUEST_ID, crypto_box_NONCEBYTES);
+    }
 
     int len = decrypt_data(public_key, self_secret_key, nonce,
                             packet + packet_header,
@@ -288,14 +292,15 @@ int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
 
     memcpy(data + 1 + EXT_PUBLIC_KEY, &ipp, sizeof(IP_Port));
     uint64_t request_id = random_64b();
-    memcpy(data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), &request_id, REQUEST_ID);
+    U64_to_bytes(data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), request_id);
 
     if (sign_data(data, 1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + REQUEST_ID,
                     self_long_sk, self_long_pk, data) == -1)
         return -1;
 
     uint64_t timestamp;
-    memcpy(&timestamp, data - SIGNATURE_SIZE - TIME_STAMP, TIME_STAMP);
+    bytes_to_U64(&timestamp, data - SIGNATURE_SIZE - TIME_STAMP);
+
     new_announce_self_request(dht->announce, chat_id, request_id, timestamp, self_long_pk, self_long_sk);
 
     return dispatch_packet(dht, ENC_KEY(chat_id), dht->self_public_key, data,
@@ -323,7 +328,7 @@ int handle_gc_get_announced_nodes_request(void * _dht, IP_Port ipp, const uint8_
     int num_nodes = get_gc_announced_nodes(dht->announce, data+1, nodes);
     if (num_nodes > 0) {
         uint64_t request_id;
-        memcpy(&request_id, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port), REQUEST_ID);
+        bytes_to_U64(&request_id, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port));
         IP_Port ipp;
         memcpy(&ipp, data+1+EXT_PUBLIC_KEY, sizeof(IP_Port));
         send_gc_get_announced_nodes_response(dht, data+1, request_id, ipp, 
@@ -340,17 +345,18 @@ int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t chat_id[], uint
 {
     uint8_t data[GC_ANNOUNCE_GETNODES_RESPONSE_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES;
-    memcpy(data + 1, &num_nodes, sizeof(uint32_t));
+    U32_to_bytes(data + 1, num_nodes);
     memcpy(data + 1 + sizeof(uint32_t), nodes, sizeof(Announced_Node_format)*num_nodes);
     uint32_t data_length = 1 + sizeof(uint32_t) + sizeof(Announced_Node_format)*num_nodes + REQUEST_ID;
-    memcpy(data + data_length - REQUEST_ID, &request_id, REQUEST_ID);
+    U64_to_bytes(data + data_length - REQUEST_ID, request_id);
 
     uint8_t packet[GC_ANNOUNCE_GETNODES_RESPONSE_DHT_SIZE];
     uint32_t packet_length = wrap_gc_announce_packet(dht->self_public_key, dht->self_secret_key,
              receiver_pk, packet, data, data_length, NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES);
-    memcpy(packet + 1 + ENC_PUBLIC_KEY+REQUEST_ID, packet + 1 + ENC_PUBLIC_KEY+REQUEST_ID,
-             crypto_box_NONCEBYTES + data_length + crypto_box_MACBYTES);
-    memcpy(packet + 1 + ENC_PUBLIC_KEY, &request_id, REQUEST_ID);
+
+    memcpy(packet+1+ENC_PUBLIC_KEY+REQUEST_ID, packet+1+ENC_PUBLIC_KEY,
+             crypto_box_NONCEBYTES+data_length+crypto_box_MACBYTES);
+    U64_to_bytes(packet + 1 + ENC_PUBLIC_KEY, request_id);
     packet_length += REQUEST_ID;
 
     return sendpacket(dht->net, ipp, packet, packet_length);
@@ -358,31 +364,36 @@ int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t chat_id[], uint
 
 int handle_gc_get_announced_nodes_response(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
 {
+    // NB: most probably we'll get nodes from different peers, so this would be called several times
+    // TODO: different request_ids for the same chat_id... Probably
     DHT *dht = _dht;
-    uint8_t data[GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE];
+    uint8_t data[GC_ANNOUNCE_GETNODES_RESPONSE_PLAIN_SIZE];
     uint8_t public_key[ENC_PUBLIC_KEY];
     uint64_t request_id;
-    memcpy(&request_id, packet+1+ENC_PUBLIC_KEY, REQUEST_ID);
+    bytes_to_U64(&request_id, packet+1+ENC_PUBLIC_KEY);
 
     int plain_length = 0;
     uint32_t i;
-    for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
-        if (dht->announce->self_requests[i].req_id == request_id) {
-            plain_length = unwrap_gc_announce_packet(dht->announce->self_requests[i].long_pk, 
-                    dht->announce->self_requests[i].long_sk, public_key,
+    for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) {
+        if (memcmp(&dht->announce->self_requests[i].req_id, &request_id, REQUEST_ID)==0) {
+            plain_length = unwrap_gc_announce_packet(ENC_KEY(dht->announce->self_requests[i].long_pk), 
+                    ENC_KEY(dht->announce->self_requests[i].long_sk), public_key,
                     data, packet[0], packet, length);
             break;
         }
-    
+    }
+  
     if ((plain_length > GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE) || (plain_length == 0))
         return -1;
 
-    if (memcmp(&request_id, data-REQUEST_ID, REQUEST_ID) != 0)
+    uint64_t request_id_enc;
+    bytes_to_U64(&request_id_enc, data + plain_length - REQUEST_ID);
+    if (memcmp(&request_id, &request_id_enc, REQUEST_ID)!=0)
         return -1;
 
-    Node_format nodes[MAX_SENT_ANNOUNCED_NODES];
+    Announced_Node_format nodes[MAX_SENT_ANNOUNCED_NODES];
     uint32_t num_nodes;
-    memcpy(&num_nodes, data + 1, sizeof(uint32_t));
+    bytes_to_U32(&num_nodes, data + 1);
     memcpy(nodes, data + 1 + sizeof(uint32_t), sizeof(Announced_Node_format)*num_nodes);
 
     if (i == add_requested_gc_nodes(dht->announce, nodes, request_id, num_nodes))
@@ -480,23 +491,21 @@ int get_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
 {
     uint32_t i, j, k;
     k = 0;
-    Announced_Node_format temp_nodes[MAX_CONCURRENT_REQUESTS*MAX_SENT_ANNOUNCED_NODES];
+    //Announced_Node_format nodes[MAX_CONCURRENT_REQUESTS*MAX_SENT_ANNOUNCED_NODES];
 
     for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
         if (id_long_equal(announce->self_requests[i].chat_id, chat_id)&&
             (announce->self_requests[i].ready==1)&&(announce->self_requests[i].req_id != 0)) {
             for (j = 0; j < MAX_SENT_ANNOUNCED_NODES; j++) 
                 if (ipport_isset(&announce->self_requests[i].nodes[j].ip_port)) {
-                        memcpy(temp_nodes[j].client_id, announce->self_requests[i].nodes[j].client_id, EXT_PUBLIC_KEY);
-                        ipport_copy(&temp_nodes[j].ip_port, &announce->self_requests[i].nodes[j].ip_port);
+                        memcpy(nodes[k].client_id, announce->self_requests[i].nodes[j].client_id, EXT_PUBLIC_KEY);
+                        ipport_copy(&nodes[k].ip_port, &announce->self_requests[i].nodes[j].ip_port);
                         k++;
                     }
             announce->self_requests[i].req_id = 0;
             --announce->req_num;
         }
 
-    nodes = calloc(1, sizeof(Announced_Node_format)*k);
-    memcpy(nodes, temp_nodes, sizeof(Announced_Node_format)*k);
     return k;
 }
 
@@ -507,7 +516,7 @@ int add_requested_gc_nodes(ANNOUNCE *announce, const Announced_Node_format *node
 {
     uint32_t i, j;
     for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
-        if (announce->self_requests[i].req_id == req_id) {
+        if (memcmp(&announce->self_requests[i].req_id, &req_id, REQUEST_ID)==0) {
             for (j = 0; j < nodes_num; j++) 
                 if (ipport_isset(&node[j].ip_port)) {
                         memcpy(announce->self_requests[i].nodes[j].client_id, node[j].client_id, EXT_PUBLIC_KEY);
@@ -530,7 +539,8 @@ int do_announce(ANNOUNCE *announce)
             ipport_reset(&announce->announcements[i].node.ip_port);
     
     for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
-        if (announce->self_requests[i].timestamp + GC_ANNOUNCE_EXPIRATION < current_time) {
+        if ((announce->self_requests[i].timestamp + GC_ANNOUNCE_EXPIRATION < current_time)&&
+            (announce->self_requests[i].req_id != 0)) {
             announce->self_requests[i].req_id = 0;
             --announce->req_num;
         }
@@ -545,6 +555,7 @@ ANNOUNCE *new_announce(DHT *dht)
         return NULL;
 
     announce->dht = dht;
+    announce->req_num = 0;
     networking_registerhandler(announce->dht->net, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, &handle_gc_announce_request, dht);
     networking_registerhandler(announce->dht->net, NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES, &handle_gc_get_announced_nodes_request, dht);
     networking_registerhandler(announce->dht->net, NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES, &handle_gc_get_announced_nodes_response, dht);

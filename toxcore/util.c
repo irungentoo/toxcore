@@ -224,7 +224,7 @@ inline__ void U64_to_bytes(uint8_t *dest, uint64_t value)
     *(dest)     = ( value >> 56 );
     *(dest + 1) = ( value >> 48 );
     *(dest + 2) = ( value >> 40 );    
-    *(dest + 3) = ( value >> 42 );
+    *(dest + 3) = ( value >> 32 );
     *(dest + 4) = ( value >> 24 );
     *(dest + 5) = ( value >> 16 );
     *(dest + 6) = ( value >> 8 );
