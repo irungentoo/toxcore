@@ -62,7 +62,7 @@ cd libsodium
 git checkout tags/0.7.0
 ./autogen.sh
 ./configure && make check
-sudo checkinstall --install --pkgname libsodium --pkgversion 0.5.0 --nodoc
+sudo checkinstall --install --pkgname libsodium --pkgversion 0.7.0 --nodoc
 sudo ldconfig
 cd ..
 ```
@@ -137,7 +137,7 @@ brew list libsodium
 
 Configure include and lib folder and build again:
 ```bash
-./configure --with-libsodium-headers=/usr/local/Cellar/libsodium/0.4.5/include/ --with-libsodium-libs=/usr/local/Cellar/libsodium/0.4.5/lib/
+./configure --with-libsodium-headers=/usr/local/Cellar/libsodium/0.7.0/include/ --with-libsodium-libs=/usr/local/Cellar/libsodium/0.7.0/lib/
 make
 make install
 ```
@@ -320,7 +320,7 @@ Now we will build sodium crypto library:
 ```bash
 git clone https://github.com/jedisct1/libsodium/
 cd libsodium
-git checkout tags/0.6.1
+git checkout tags/0.7.0
 ./autogen.sh
 ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-shared --enable-static
 make
@@ -374,10 +374,10 @@ When installing MinGW, make sure to select the MSYS option in the installer.
 MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all operations (i.e., generating/running configure script, compiling, etc.) from the MinGW shell.
 
 First download the source tarball from https://download.libsodium.org/libsodium/releases/ and build it.
-Assuming that you got the libsodium-0.5.0.tar.gz release:
+Assuming that you got the libsodium-0.7.0.tar.gz release:
 ```cmd
-tar -zxvf libsodium-0.5.0.tar.gz
-cd libsodium-0.5.0
+tar -zxvf libsodium-0.7.0.tar.gz
+cd libsodium-0.7.0
 ./configure
 make
 make install
