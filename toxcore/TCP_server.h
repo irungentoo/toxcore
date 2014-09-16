@@ -31,6 +31,8 @@
 #include "sys/epoll.h"
 #endif
 
+#include <netinet/tcp.h> #socket options
+
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
 #define MSG_NOSIGNAL 0
 #endif
