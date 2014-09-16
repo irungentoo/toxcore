@@ -374,12 +374,19 @@ int handle_gc_get_announced_nodes_response(void * _dht, IP_Port ipp, const uint8
             break;
         }
     
-
-    if ((plain_length > GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE) && (plain_length == 0))
+    if ((plain_length > GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE) || (plain_length == 0))
         return -1;
 
+    if (memcmp(&request_id, data-REQUEST_ID, REQUEST_ID) != 0)
+        return -1;
 
+    Node_format nodes[MAX_SENT_ANNOUNCED_NODES];
+    uint32_t num_nodes;
+    memcpy(&num_nodes, data + 1, sizeof(uint32_t));
+    memcpy(nodes, data + 1 + sizeof(uint32_t), sizeof(Announced_Node_format)*num_nodes);
 
+    if (i == add_requested_gc_nodes(dht->announce, nodes, request_id, num_nodes))
+        return 0;
 }
 
 // Function to get announced nodes, should be used for get_announced_nodes_response
@@ -476,7 +483,8 @@ int get_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
     Announced_Node_format temp_nodes[MAX_CONCURRENT_REQUESTS*MAX_SENT_ANNOUNCED_NODES];
 
     for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
-        if (id_long_equal(announce->self_requests[i].chat_id, chat_id)) {
+        if (id_long_equal(announce->self_requests[i].chat_id, chat_id)&&
+            (announce->self_requests[i].ready==1)&&(announce->self_requests[i].req_id != 0)) {
             for (j = 0; j < MAX_SENT_ANNOUNCED_NODES; j++) 
                 if (ipport_isset(&announce->self_requests[i].nodes[j].ip_port)) {
                         memcpy(temp_nodes[j].client_id, announce->self_requests[i].nodes[j].client_id, EXT_PUBLIC_KEY);
