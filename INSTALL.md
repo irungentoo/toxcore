@@ -62,7 +62,7 @@ cd libsodium
 git checkout tags/0.7.0
 ./autogen.sh
 ./configure && make check
-sudo checkinstall --install --pkgname libsodium --pkgversion 0.5.0 --nodoc
+sudo checkinstall --install --pkgname libsodium --pkgversion 0.7.0 --nodoc
 sudo ldconfig
 cd ..
 ```
