@@ -59,7 +59,7 @@ You should get and install [libsodium](https://github.com/jedisct1/libsodium):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/0.5.0
+git checkout tags/0.7.0
 ./autogen.sh
 ./configure && make check
 sudo checkinstall --install --pkgname libsodium --pkgversion 0.5.0 --nodoc
@@ -74,7 +74,7 @@ this will install the libs to /usr/local/lib and the headers to /usr/local/inclu
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/0.5.0
+git checkout tags/0.7.0
 ./autogen.sh
 ./configure
 make check
