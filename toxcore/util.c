@@ -293,7 +293,7 @@ static Locked_Map *new_lockedmap()
     free(map);
     goto showerror;
   }
-  if (mlock_impl(map->address, mapsize) != 0) {
+  if (!mlock_impl(map->address, mapsize)) {
     delete_lockedmap(&map);
     goto showerror;
   }
