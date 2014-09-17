@@ -730,7 +730,7 @@ Group_Chat *new_groupchat(Networking_Core *net)
     Group_Chat *chat = calloc(1, sizeof(Group_Chat));
     if (!chat)
       return NULL;
-    chat->self_secret_key = locked_alloc(crypto_box_SECRETKEYBYTES);
+    chat->self_secret_key = alloc_secret();
     if (!chat->self_secret_key) {
       free(chat);
       return NULL;
@@ -828,8 +828,7 @@ void kill_groupchat(Group_Chat *chat)
 {
     send_data(chat, 0, 0, GROUP_CHAT_QUIT);
     kill_Assoc(chat->assoc);
-    memset(chat->self_secret_key, 0, crypto_box_SECRETKEYBYTES);
-    locked_free(chat->self_secret_key);
+    free_secret(chat->self_secret_key);
     free(chat->group);
     free(chat);
 }

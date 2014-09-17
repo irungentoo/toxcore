@@ -2197,7 +2197,7 @@ DHT *new_DHT(Networking_Core *net)
         return NULL;
     }
 
-    dht->self_secret_key = locked_alloc(crypto_box_SECRETKEYBYTES);
+    dht->self_secret_key = alloc_secret();
     if (!dht->self_secret_key) {
       kill_DHT(dht);
       return NULL;
@@ -2257,10 +2257,8 @@ void do_DHT(DHT *dht)
 }
 void kill_DHT(DHT *dht)
 {
-    if (dht->self_secret_key) {
-      memset(dht->self_secret_key, 0, crypto_box_SECRETKEYBYTES);
-      locked_free(dht->self_secret_key);
-    }
+    if (dht->self_secret_key)
+      free_secret(dht->self_secret_key);
 #ifdef ENABLE_ASSOC_DHT
     kill_Assoc(dht->assoc);
 #endif

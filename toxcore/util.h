@@ -60,10 +60,7 @@ void U32_to_bytes(uint8_t *dest, uint32_t value);
 void U16_to_bytes(uint8_t *dest, uint16_t value);
 
 /* Secret key allocation */
-void* locked_alloc(size_t bytes);
-/* Since this is not guaranteed to be implemented for every system, this does
- *  not take care of zeroing out the memory!
- */
-void  locked_free(void*);
+void* alloc_secret();
+void  free_secret(void*);
 
 #endif /* __UTIL_H__ */

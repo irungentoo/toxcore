@@ -2642,7 +2642,7 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (temp == NULL)
         return NULL;
 
-    temp->self_secret_key = locked_alloc(crypto_box_SECRETKEYBYTES);
+    temp->self_secret_key = alloc_secret();
     if (!temp->self_secret_key) {
       free(temp);
       return NULL;
@@ -2754,8 +2754,7 @@ void kill_net_crypto(Net_Crypto *c)
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_RESPONSE, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_HS, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_DATA, NULL, NULL);
-    memset(c->self_secret_key, 0, crypto_box_SECRETKEYBYTES);
-    locked_free(c->self_secret_key);
+    free_secret(c->self_secret_key);
     memset(c, 0, sizeof(Net_Crypto));
     free(c);
 }
