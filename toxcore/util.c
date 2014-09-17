@@ -33,9 +33,18 @@
 
 #include "util.h"
 
+/* simplify this */
+#if !defined(WIN32) && (defined(_WIN32) || defined(__WIN32__))
+# define WIN32
+#endif
+
 #ifdef USE_MLOCK
-#include "logger.h"
-#include <sys/mman.h>
+# include "logger.h"
+# ifdef WIN32
+#  include <malloc.h>
+# else
+#  include <sys/mman.h>
+# endif
 #endif
 
 /* don't call into system billions of times for no reason */
@@ -198,6 +207,52 @@ inline__ void U16_to_bytes(uint8_t *dest, uint16_t value)
 
 #ifdef USE_MLOCK
 
+#ifdef WIN32
+static size_t getpagesize_impl()
+{
+  SYSTEM_INFO si;
+  GetSystemInfo(&si);
+  return si.dwPageSize;
+}
+
+static void *aligned_alloc_impl(size_t length, size_t alignment)
+{
+  return _aligned_malloc(length, alignment);
+}
+
+static uint8_t mlock_impl(void *addr, size_t length)
+{
+  return VirtualLock(addr, length) != 0;
+}
+
+static uint8_t munlock_impl(void *addr, size_t length)
+{
+  return VirtualUnlock(addr, length) != 0;
+}
+#else
+static size_t getpagesize_impl() {
+  return getpagesize();
+}
+
+static void *aligned_alloc_impl(size_t length, size_t alignment)
+{
+  void *addr = NULL;
+  posix_memalign(&addr, alignment, length);
+  return addr;
+}
+
+static uint8_t mlock_impl(void *addr, size_t length)
+{
+  return mlock(addr, length) == 0;
+}
+
+static uint8_t munlock_impl(void *addr, size_t length)
+{
+  return munlock(addr, length) == 0;
+}
+#endif
+
+
 typedef uint32_t usebits_t;
 
 #define MIN_MAPSIZE (8*sizeof(usebits_t) * crypto_box_SECRETKEYBYTES)
@@ -220,7 +275,7 @@ static void delete_lockedmap(Locked_Map **map_)
     free(map->used);
   if (map->address) {
     memset(map->address, 0, mapsize);
-    munlock(map->address, mapsize);
+    munlock_impl(map->address, mapsize);
     free(map->address);
   }
   *map_ = map->next;
@@ -233,12 +288,12 @@ static Locked_Map *new_lockedmap()
   if (!map)
     goto showerror;
 
-  posix_memalign((void**)&map->address, pagesize, mapsize);
+  map->address = aligned_alloc_impl(mapsize, pagesize);
   if (!map->address) {
     free(map);
     goto showerror;
   }
-  if (mlock(map->address, mapsize) != 0) {
+  if (mlock_impl(map->address, mapsize) != 0) {
     delete_lockedmap(&map);
     goto showerror;
   }
@@ -257,7 +312,7 @@ showerror:
 static uint8_t init_pagedata()
 {
   if (!pagesize) {
-    pagesize = getpagesize();
+    pagesize = getpagesize_impl();
     if (!pagesize) {
       /* Without a page size we're screwed */
       return 0;
