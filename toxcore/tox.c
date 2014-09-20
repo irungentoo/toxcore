@@ -808,33 +808,40 @@ uint64_t tox_file_data_remaining(const Tox *tox, int32_t friendnumber, uint8_t f
 int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    IP_Port ip_port_v64;
-    IP *ip_extra = NULL;
-    IP_Port ip_port_v4;
-    ip_init(&ip_port_v64.ip, m->options.ipv6enabled);
+    IP_Port ip_port, ip_port_v4;
+    if (!addr_parse_ip(address, &ip_port.ip)) {
+        if (m->options.udp_disabled) /* Disable DNS when udp is disabled. */
+            return 0;
 
-    if (m->options.ipv6enabled) {
-        /* setup for getting BOTH: an IPv6 AND an IPv4 address */
-        ip_port_v64.ip.family = AF_UNSPEC;
-        ip_reset(&ip_port_v4.ip);
-        ip_extra = &ip_port_v4.ip;
+        IP *ip_extra = NULL;
+        ip_init(&ip_port.ip, m->options.ipv6enabled);
+
+        if (m->options.ipv6enabled) {
+            /* setup for getting BOTH: an IPv6 AND an IPv4 address */
+            ip_port.ip.family = AF_UNSPEC;
+            ip_reset(&ip_port_v4.ip);
+            ip_extra = &ip_port_v4.ip;
+        }
+
+        if (!addr_resolve(address, &ip_port.ip, ip_extra))
+            return 0;
     }
 
-    if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
-        ip_port_v64.port = htons(port);
-        add_tcp_relay(m->net_crypto, ip_port_v64, public_key);
-        onion_add_path_node(m->onion_c, ip_port_v64, public_key); //TODO: move this
-        return 1;
-    } else {
-        return 0;
-    }
+    ip_port.port = htons(port);
+    add_tcp_relay(m->net_crypto, ip_port, public_key);
+    onion_add_path_node(m->onion_c, ip_port, public_key); //TODO: move this
+    return 1;
 }
 
 int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    tox_add_tcp_relay(tox, address, port, public_key);
-    return DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key);
+    int ret = tox_add_tcp_relay(tox, address, port, public_key);
+    if (m->options.udp_disabled) {
+        return ret;
+    } else { /* DHT only works on UDP. */
+        return DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key);
+    }
 }
 
 /*  return 0 if we are not connected to the DHT.
