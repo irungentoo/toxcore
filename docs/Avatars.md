@@ -88,9 +88,9 @@ in Section "Internal Protocol Description".
 
     This event contain two data fields: (1) the image format and (2) the
     cryptographic hash of the actual image data. Image format may be NONE
-    (for users who have no avatar or removed their avatars), JPEG, PNG, or
-    GIF. The cryptographic hash is intended to be compared with the hash o
-    the currently cached avatar (if any) and check if it stills up to date.
+    (for users who have no avatar or removed their avatars) or PNG. The
+    cryptographic hash is intended to be compared with the hash o the
+    currently cached avatar (if any) and check if it stills up to date.
 
   - **Avatar Information Requests** are very lightweight messages sent by an
     user asking for an **avatar information notification**. They may be sent
@@ -134,9 +134,7 @@ complete API documentation is available in `tox.h`.
 /* Data formats for user avatar images */
 typedef enum {
     TOX_AVATARFORMAT_NONE,
-    TOX_AVATARFORMAT_JPEG,
-    TOX_AVATARFORMAT_PNG,
-    TOX_AVATARFORMAT_GIF
+    TOX_AVATARFORMAT_PNG
 }
 TOX_AVATARFORMAT;
 
@@ -243,18 +241,18 @@ already downloaded by other clients can be reused.
 
 Given the Tox data directory described in STS Draft v0.1.0:
 
-  - The user avatar is stored in a file named "avatar.ext", where "ext" is
-    "jpg", "png", or "gif", according to the image format. Clients should
-    keep just one of these files, with the data of the last avatar set by
-    the user. If the user have no avatar, no such files should be kept in
-    the data directory;
+  - The user avatar is stored in a file named "avatar.png". As more formats
+    may be used in the future, another extensions are reserved and clients
+    should keep just one file named "avatar.*", with the data of the last
+    avatar set by the user. If the user have no avatar, no such files should
+    be kept in the data directory;
 
   - Friends avatars are stored in a directory called "avatars" and named
-    as "xxxxx.ext", where "xxxxx" is the complete client id encoded as an
-    uppercase hexadecimal string and "ext" is "jpg", "png", or "gif",
-    according to the image format. Clients should keep just one of these
-    files per friend, with the data received from the last avatar data
-    notification. No file should be kept for an user who have no avatar.
+    as "xxxxx.png", where "xxxxx" is the complete client id encoded as an
+    uppercase hexadecimal string and "png" is the extension for the PNG
+    avatar. As new image formats may be used in the future, clients should
+    ensure no other file "xxxxx.*" exists. No file should be kept for an user
+    who have no avatar.
 
     **To be discussed:** User keys are usually presented in Tox clients as
     upper case strings, but lower case file names are more usual.
@@ -264,13 +262,13 @@ Example for Linux and other Unix systems, assuming an user called "gildor":
 
     Tox data directory: /home/gildor/.config/tox/
     Tox data file:      /home/gildor/.config/tox/data
-    Gildor's avatar:    /home/gildor/.config/tox/avatar.jpg
+    Gildor's avatar:    /home/gildor/.config/tox/avatar.png
     Avatar data dir:    /home/gildor/.config/tox/avatars/
-    Elrond's avatar:    /home/gildor/.config/tox/avatars/43656C65627269616E20646F6E277420546F782E426164206D656D6F72696573.jpg
-    Elladan's avatar:   /home/gildor/.config/tox/avatars/49486174655768656E48756D616E735468696E6B49416D4D7942726F74686572.gif
-    Elrohir's avatar    /home/gildor/.config/tox/avatars/726568746F7242794D6D41496B6E696854736E616D75486E6568576574614849.jpg
+    Elrond's avatar:    /home/gildor/.config/tox/avatars/43656C65627269616E20646F6E277420546F782E426164206D656D6F72696573.png
+    Elladan's avatar:   /home/gildor/.config/tox/avatars/49486174655768656E48756D616E735468696E6B49416D4D7942726F74686572.png
+    Elrohir's avatar    /home/gildor/.config/tox/avatars/726568746F7242794D6D41496B6E696854736E616D75486E6568576574614849.png
     Arwen's avatar:     /home/gildor/.config/tox/avatars/53686520746F6F6B20476C6F7266696E64656C277320706C6163652068657265.png
-    Lindir's avatar:    /home/gildor/.config/tox/avatars/417070735772697474656E42794D6F7274616C734C6F6F6B54686553616D652E.gif
+    Lindir's avatar:    /home/gildor/.config/tox/avatars/417070735772697474656E42794D6F7274616C734C6F6F6B54686553616D652E.png
 
 This recommendation is partially implemented by "testing/test_avatars.c".
 
@@ -456,9 +454,7 @@ the following structure:
 Where 'format' is the image data format, one of the following:
 
     0 = AVATARFORMAT_NONE  (no avatar set)
-    1 = AVATARFORMAT_JPEG
-    2 = AVATARFORMAT_PNG
-    3 = AVATARFORMAT_GIF
+    1 = AVATARFORMAT_PNG
 
 and 'hash' is the SHA-256 message digest of the avatar data.
 

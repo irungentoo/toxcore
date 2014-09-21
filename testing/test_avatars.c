@@ -17,8 +17,8 @@
  *
  * Data dir MAY have:
  *
- *  - A file named avatar.png, avatar.jpg, or avatar.gif.  If given, the
- *    bot will publish it. Otherwhise, no avatar will be set.
+ *  - A file named avatar.png.  If given, the bot will publish it. Otherwise,
+ *    no avatar will be set.
  *
  *  - A directory named "avatars" with the currently cached avatars.
  *
@@ -87,8 +87,6 @@ typedef struct {
 static const def_avatar_name_t def_avatar_names[] = {
     /* In order of preference */
     { TOX_AVATARFORMAT_PNG,  "png", "avatar.png" },
-    { TOX_AVATARFORMAT_JPEG, "jpg", "avatar.jpg" },
-    { TOX_AVATARFORMAT_GIF,  "gif", "avatar.gif" },
     { TOX_AVATARFORMAT_NONE, NULL, NULL },    /* Must be the last one */
 };
 
