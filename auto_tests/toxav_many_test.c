@@ -159,8 +159,6 @@ void *in_thread_call (void *arg)
     int step = 0;
     int call_idx;
 
-    call_running[this_call->idx] = 1;
-
     const int frame_size = (av_DefaultSettings.audio_sample_rate * av_DefaultSettings.audio_frame_duration / 1000);
     int16_t sample_payload[frame_size];
     randombytes((uint8_t *)sample_payload, sizeof(int16_t) * frame_size);
@@ -333,8 +331,10 @@ void test_AV_three_calls()
 
     pthread_mutex_init(&muhmutex, NULL);
 
-    for ( i = 0; i < 3; i++ )
+    for ( i = 0; i < 3; i++ ) {
+        call_running[i] = 1;
         pthread_create(&status_control.calls[i].tid, NULL, in_thread_call, &status_control.calls[i]);
+    }
 
     /* Now start 3 calls and they'll run for 10 s */
 
