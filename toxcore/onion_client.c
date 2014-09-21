@@ -1340,7 +1340,8 @@ int onion_isconnected(const Onion_Client *onion_c)
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
         if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT))
-            return 1;
+            if (onion_c->clients_announce_list[i].is_stored)
+                return 1;
     }
 
     return 0;

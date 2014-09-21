@@ -809,6 +809,7 @@ int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_
 {
     Messenger *m = tox;
     IP_Port ip_port, ip_port_v4;
+
     if (!addr_parse_ip(address, &ip_port.ip)) {
         if (m->options.udp_disabled) /* Disable DNS when udp is disabled. */
             return 0;
@@ -837,6 +838,7 @@ int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, con
 {
     Messenger *m = tox;
     int ret = tox_add_tcp_relay(tox, address, port, public_key);
+
     if (m->options.udp_disabled) {
         return ret;
     } else { /* DHT only works on UDP. */
