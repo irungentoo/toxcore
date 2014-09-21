@@ -474,19 +474,15 @@ types.
   - Packet `PACKET_ID_AVATAR_DATA_CONTROL` have the format:
 
         PACKET_ID_AVATAR_DATA_CONTROL (54)
-        Packet data size: 5 bytes
-        [1: uint8_t op][1: uint32_t bytes_received]
+        Packet data size: 1 byte
+        [1: uint8_t op]
 
     where 'op' is a code signaling both an operation request or a status
     return, which semantics are explained bellow. The following values are
     defined:
 
         0 = AVATARDATACONTROL_REQ
-        1 = AVATARDATACONTROL_MORE
-        2 = AVATARDATACONTROL_ERROR
-
-    and 'bytes_received' is the number of bytes already received by the
-    client when the operation is `MORE` or zero otherwise.
+        1 = AVATARDATACONTROL_ERROR
 
 
   - Packet `PACKET_ID_AVATAR_DATA_START` have the following format:
@@ -503,7 +499,9 @@ types.
 
 
   - Packet `PACKET_ID_AVATAR_DATA_PUSH` have no format structure, just up
-    to `AVATAR_DATA_MAX_CHUNK_SIZE` (56) bytes of raw avatar image data.
+    to `AVATAR_DATA_MAX_CHUNK_SIZE` bytes of raw avatar image data; this
+    value is defined according to the maximum amount of data a Tox crypted
+    packet can hold.
 
 
 
@@ -513,8 +511,7 @@ from a client "B":
   - "A" must initialize its control structures and mark its data transfer
     as not yet started. Then it requests avatar data from "B" by sending a
     packet `PACKET_ID_AVATAR_DATA_CONTROL` with 'op' set to
-    `AVATARDATACONTROL_REQ`. The field 'bytes_received' must be present, but
-    should be set to zero and is ignored in this step.
+    `AVATARDATACONTROL_REQ`.
 
   - If "B" accepts this transfer, it answers by sending an
     `PACKET_ID_AVATAR_DATA_START` with the fields 'format', 'hash' and
@@ -527,42 +524,21 @@ from a client "B":
     `AVATARDATACONTROL_ERROR` or simply ignore this request. "A" must cope
     with this.
 
+    If "B" have an avatar, it sends a variable number of
+    `PACKET_ID_AVATAR_DATA_PUSH` packets with the avatar data in a single
+    shot.
+
   - Upon receiving a `PACKET_ID_AVATAR_DATA_START`, "A" checks if it
     has sent a data request to "B". If not, just ignores the packet.
 
-    If "A" really sent a request to "B", checks if the request was already
-    started. If true, it is an error and it just ignores the request.
+    If "A" really requested avatar data and the format is `AVATARFORMAT_NONE`,
+    it triggers the avatar data callback, and clears all the temporary data,
+    finishing the process. For other formats, "A" just waits for packets
+    of type `PACKET_ID_AVATAR_DATA_PUSH`.
 
-    Otherwise, "A" decodes the message data and checks if the avatar data
-    length stated in the field 'data_length' is acceptable (ie. less or
-    equal than `TOX_MAX_AVATAR_DATA_LENGTH`). If not, it replies with an
-    `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
-    `AVATARDATACONTROL_ERROR` (or just ignores this, "A" holds no state).
-
-    If the size is acceptable, "A" marks the request as stated, stores the
-    format, hash, and data length in the local state for user "B", sets a
-    counter for the number of bytes received from the peer and replies with
-    a `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
-    `AVATARDATACONTROL_MORE` and 'bytes_received' set to zero (as no data
-    was received yet).
-
-  - Upon receiving a `PACKET_ID_AVATAR_DATA_CONTROL` with op
-    `AVATARDATACONTROL_MORE`, "B" sends an `PACKET_ID_AVATAR_DATA_PUSH`
-    with up to `AVATAR_DATA_MAX_CHUNK_SIZE` bytes of data from the avatar,
-    starting from the offset stated in the field 'bytes_received'.
-
-    If the requested offset is invalid, "B" replies with a
-    `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
-    `AVATARDATACONTROL_ERROR`.
-
-    "B" must have full control of the amount of data it sends to "A" and
-    may, at any time, abort the transfer by sending a
-    `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
-    `AVATARDATACONTROL_ERROR`. This may happens, for example, if some limit
-    was hit or a network data usage throttle enabled. A rationale for this
-    procedures is available in section "Security considerations".
-
-  - Upon receiving a `PACKET_ID_AVATAR_DATA_PUSH`, "A" checks if the total
+  - Upon receiving a `PACKET_ID_AVATAR_DATA_PUSH`, "A" checks if it really
+    sent an avatar data request and if the `PACKET_ID_AVATAR_DATA_START` was
+    already received. If this conditions are valid, it checks if the total
     length of the data already stored in the receiving buffer plus the data
     present in the push packet is still less or equal than
     `TOX_MAX_AVATAR_DATA_LENGTH`. If invalid, it replies with a
@@ -582,21 +558,12 @@ from a client "B":
     triggers the avatar data callback, and clears all the temporary data,
     finishing the process.
 
-    If not all data was received, "A" requests more data by sending a
-    `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
-    `AVATARDATACONTROL_MORE` and 'bytes_received' set to the new offset.
+    If not all data was received, "A" simply waits for more data.
 
     Client "A" is always responsible for controlling the transfer and
     validating the data received. "B" don't need to keep any state for the
     protocol, have full control over the data sent and should implement
     some transfer limit for the data it sends.
-
-    This "chatty" protocol mitigates a potential amplification attack,
-    i.e., a malicious friend sending a very small data packet that causes
-    another user to send a larger amount of data.  The hash validation
-    ensures that the avatar data is correct even if "B" changed its avatar
-    data in the middle of the transfer. A rationale for this procedures is
-    available in section "Security considerations".
 
   - Any peer receiving a `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op'
     set to `AVATARDATACONTROL_ERROR` clears any existing control state and
@@ -624,12 +591,6 @@ The present proposal mitigates this situation by:
   - Providing an alternate, smaller, message to cooperative users refresh
     avatar information when nothing has changed (`PACKET_ID_AVATAR_INFO`);
 
-  - Making the avatar data transfer chatty: The user requesting avatar data
-    can not force a peer to send large amounts of data in a single shot and
-    must request new chunks as needed. The sender will never send more that
-    1 kB of data in a single push and have ultimate control over the amount
-    of data sent in a chunk;
-
   - Having per-friend data transfer limit. As the current protocol still
     allows an user to request an infinite data stream by asking the the
     same offset of the avatar again and again, the implementation limits
@@ -639,10 +600,6 @@ The present proposal mitigates this situation by:
 
   - Making the requester responsible for storing partial data and state
     information;
-
-  - (currently not implemented) Treating avatar data transfers as a low
-    priority operation, handled only if no other packets are being
-    processed.
 
 Another problem present in the avatars is the possibility of a friend send
 a maliciously crafted image intended to exploit vulnerabilities in image

@@ -117,8 +117,8 @@ enum {
 /* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
 
-/* Must be <= MAX_CRYPTO_DATA_SIZE */
-#define AVATAR_DATA_MAX_CHUNK_SIZE 1024
+/* Must be < MAX_CRYPTO_DATA_SIZE */
+#define AVATAR_DATA_MAX_CHUNK_SIZE (MAX_CRYPTO_DATA_SIZE-1)
 
 /* Per-friend data limit for avatar data requests */
 #define AVATAR_DATA_TRANSFER_LIMIT  (10*MAX_AVATAR_DATA_LENGTH)
@@ -151,7 +151,6 @@ AVATARFORMAT;
  */
 typedef enum {
     AVATARDATACONTROL_REQ,
-    AVATARDATACONTROL_MORE,
     AVATARDATACONTROL_ERROR
 }
 AVATARDATACONTROL;
