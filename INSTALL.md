@@ -347,6 +347,7 @@ cd tmp
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxcore.a
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxav.a
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxdns.a
+$WINDOWS_TOOLCHAIN-ar x ../lib/libtoxencryptsave.a
 $WINDOWS_TOOLCHAIN-gcc -Wl,--export-all-symbols -Wl,--out-implib=libtox.dll.a -shared -o libtox.dll *.o ../lib/*.a /usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a -liphlpapi -lws2_32 -static-libgcc
 ```
 
