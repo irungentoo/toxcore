@@ -2197,6 +2197,12 @@ DHT *new_DHT(Networking_Core *net)
         return NULL;
     }
 
+    dht->self_secret_key = alloc_secret();
+    if (!dht->self_secret_key) {
+      kill_DHT(dht);
+      return NULL;
+    }
+
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, &handle_getnodes, dht);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO, &cryptopacket_handle, dht);
@@ -2251,6 +2257,8 @@ void do_DHT(DHT *dht)
 }
 void kill_DHT(DHT *dht)
 {
+    if (dht->self_secret_key)
+      free_secret(dht->self_secret_key);
 #ifdef ENABLE_ASSOC_DHT
     kill_Assoc(dht->assoc);
 #endif

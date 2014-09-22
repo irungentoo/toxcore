@@ -59,5 +59,8 @@ void U32_to_bytes(uint8_t *dest, uint32_t value);
 /* Convert uint16_t to byte string of size 2 */
 void U16_to_bytes(uint8_t *dest, uint16_t value);
 
+/* Secret key allocation */
+void* alloc_secret();
+void  free_secret(void*);
 
 #endif /* __UTIL_H__ */

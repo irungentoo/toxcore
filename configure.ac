@@ -481,6 +481,27 @@ if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes") && (test "x$DISABLE_R
     )
 fi
 
+LOCK_FUNCS_FOUND="yes"
+if test "x$WIN32" = "xyes"; then
+  AC_MSG_CHECKING(GetSystemInfo)
+  AC_TRY_LINK([#include <windows.h>], [SYSTEM_INFO si; GetSystemInfo(&si); return 0;], [AC_MSG_RESULT(yes)], [LOCK_FUNCS_FOUND="no"; AC_MSG_RESULT(no)])
+  AC_MSG_CHECKING(_aligned_malloc)
+  AC_TRY_LINK([#include <windows.h>], [void *addr = _aligned_malloc(1024, 1024); return 0;], [AC_MSG_RESULT(yes)], [LOCK_FUNCS_FOUND="no"; AC_MSG_RESULT(no)])
+  AC_MSG_CHECKING(VirtualLock and VirtualUnlock)
+  AC_TRY_LINK([#include <windows.h>],
+    [
+      VirtualLock((void*)0, 1024);
+      VirtualUnlock((void*)0, 1024);
+      return 0;
+    ], [AC_MSG_RESULT(yes)], [LOCK_FUNCS_FOUND="no"; AC_MSG_RESULT(no)])
+else
+  AC_CHECK_FUNCS([getpagesize posix_memalign mlock munlock], [], [LOCK_FUNCS_FOUND="no"; break])
+fi
+if test "x$LOCK_FUNCS_FOUND" != "xyes"; then
+  AC_MSG_WARN([not all the functions required to lock memory out of swap were found])
+else
+  AC_DEFINE([USE_MLOCK], [], [lock crypto instances out of swap space])
+fi
 
 AX_PTHREAD(
     [],

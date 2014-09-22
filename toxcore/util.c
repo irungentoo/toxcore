@@ -33,6 +33,19 @@
 
 #include "util.h"
 
+/* simplify this */
+#if !defined(WIN32) && (defined(_WIN32) || defined(__WIN32__))
+# define WIN32
+#endif
+
+#ifdef USE_MLOCK
+# include "logger.h"
+# ifdef WIN32
+#  include <malloc.h>
+# else
+#  include <sys/mman.h>
+# endif
+#endif
 
 /* don't call into system billions of times for no reason */
 static uint64_t unix_time_value;
@@ -191,3 +204,237 @@ inline__ void U16_to_bytes(uint8_t *dest, uint16_t value)
     *(dest + 1) = ( value );
 #endif
 }
+
+#ifdef USE_MLOCK
+
+#ifdef WIN32
+static size_t getpagesize_impl()
+{
+  SYSTEM_INFO si;
+  GetSystemInfo(&si);
+  return si.dwPageSize;
+}
+
+static void *aligned_alloc_impl(size_t length, size_t alignment)
+{
+  return _aligned_malloc(length, alignment);
+}
+
+static uint8_t mlock_impl(void *addr, size_t length)
+{
+  return VirtualLock(addr, length) != 0;
+}
+
+static uint8_t munlock_impl(void *addr, size_t length)
+{
+  return VirtualUnlock(addr, length) != 0;
+}
+#else
+static size_t getpagesize_impl() {
+  return getpagesize();
+}
+
+static void *aligned_alloc_impl(size_t length, size_t alignment)
+{
+  void *addr = NULL;
+  posix_memalign(&addr, alignment, length);
+  return addr;
+}
+
+static uint8_t mlock_impl(void *addr, size_t length)
+{
+  return mlock(addr, length) == 0;
+}
+
+static uint8_t munlock_impl(void *addr, size_t length)
+{
+  return munlock(addr, length) == 0;
+}
+#endif
+
+
+typedef uint32_t usebits_t;
+
+#define MIN_MAPSIZE (8*sizeof(usebits_t) * crypto_box_SECRETKEYBYTES)
+
+typedef struct Locked_Map_s {
+  unsigned char       *address;
+  usebits_t           *used;
+  struct Locked_Map_s *next;
+} Locked_Map;
+
+static size_t      pagesize  = 0;
+static size_t      mapsize   = 0;
+static size_t      usedcount = 0;
+static Locked_Map *lockedmap = NULL;
+
+static void delete_lockedmap(Locked_Map **map_)
+{
+  Locked_Map *map = *map_;
+  if (map->used)
+    free(map->used);
+  if (map->address) {
+    memset(map->address, 0, mapsize);
+    munlock_impl(map->address, mapsize);
+    free(map->address);
+  }
+  *map_ = map->next;
+  free(map);
+}
+
+static Locked_Map *new_lockedmap()
+{
+  Locked_Map *map = calloc(1, sizeof(Locked_Map));
+  if (!map)
+    goto showerror;
+
+  map->address = aligned_alloc_impl(mapsize, pagesize);
+  if (!map->address) {
+    free(map);
+    goto showerror;
+  }
+  if (!mlock_impl(map->address, mapsize)) {
+    delete_lockedmap(&map);
+    goto showerror;
+  }
+
+  map->used = calloc(1, sizeof(usebits_t) * usedcount);
+  if (!map->used) {
+    delete_lockedmap(&map);
+    goto showerror;
+  }
+  return map;
+showerror:
+  LOGGER_ERROR("failed to allocate a locked memory page\n");
+  return NULL;
+}
+
+static uint8_t init_pagedata()
+{
+  if (!pagesize) {
+    pagesize = getpagesize_impl();
+    if (!pagesize) {
+      /* Without a page size we're screwed */
+      return 0;
+    }
+    while (pagesize < crypto_box_SECRETKEYBYTES)
+      pagesize <<= 1;
+
+    mapsize = pagesize;
+    if (mapsize < MIN_MAPSIZE)
+      mapsize = MIN_MAPSIZE;
+
+    usedcount = mapsize / (crypto_box_SECRETKEYBYTES * 8*sizeof(usebits_t));
+    if (!usedcount)
+      usedcount = 1;
+  }
+  return 1;
+}
+
+void* alloc_secret()
+{
+  if (!init_pagedata())
+    return NULL;
+
+  if (!lockedmap) {
+    lockedmap = new_lockedmap();
+    if (!lockedmap)
+      return NULL;
+  }
+
+  Locked_Map **map;
+  size_t       useindex = 0;
+  for (map = &lockedmap; *map; map = &(*map)->next) {
+    for (useindex = 0; useindex != usedcount; ++useindex) {
+      if (~(*map)->used[useindex])
+        break;
+    }
+    if (useindex != usedcount)
+      break;
+  }
+
+  if (!*map) {
+    *map = new_lockedmap();
+    if (!*map)
+      return NULL;
+    useindex = 0;
+  }
+
+  usebits_t used = (*map)->used[useindex];
+  usebits_t bit  = 1;
+  size_t    offset = useindex * (8*sizeof(usebits_t)) * crypto_box_SECRETKEYBYTES;
+  while ((used & bit)) {
+    bit <<= 1;
+    offset += crypto_box_SECRETKEYBYTES;
+  }
+
+  (*map)->used[useindex] |= bit;
+
+  return (*map)->address + offset;
+}
+
+void free_secret(void *data_)
+{
+  if (!data_)
+    return;
+
+  memset(data_, 0, crypto_box_SECRETKEYBYTES);
+
+  unsigned char *data = data_;
+
+  /* locate the map we're in */
+  Locked_Map **pmap;
+  for (pmap = &lockedmap; *pmap; pmap = &(*pmap)->next) {
+    if (data >= (*pmap)->address && data < (*pmap)->address + mapsize)
+      break;
+  }
+
+  Locked_Map *map = *pmap;
+  if (!map)
+    goto user_error;
+
+  ptrdiff_t off = data - map->address;
+
+  size_t bit = off / crypto_box_SECRETKEYBYTES;
+  size_t useindex = bit / (8*sizeof(usebits_t));
+  size_t usebit   = bit % (8*sizeof(usebits_t));
+
+  if (useindex >= usedcount)
+    goto user_error;
+
+  if (!(map->used[useindex] & (1<<usebit)))
+    goto double_free;
+
+  map->used[useindex] &= ~(1<<usebit);
+
+  for (useindex = 0; useindex != usedcount; ++useindex) {
+    if (map->used[useindex])
+      return;
+  }
+
+  delete_lockedmap(pmap);
+  return;
+
+user_error:
+  /* User error!  */
+  LOGGER_ERROR("free_secret called on non-locked memory!\n");
+  free(data);
+  return;
+double_free:
+  LOGGER_ERROR("double free_secret corruption!\n");
+}
+
+#else
+void* alloc_secret()
+{
+  return calloc(1, crypto_box_SECRETKEYBYTES);
+}
+
+void free_secret(void *data)
+{
+  if (!data)
+    return;
+  memset(data, 0, crypto_box_SECRETKEYBYTES);
+  free(data);
+}
+#endif
