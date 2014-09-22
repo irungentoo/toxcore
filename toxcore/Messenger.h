@@ -122,7 +122,7 @@ enum {
 
 /* Per-friend data limit for avatar data requests */
 #define AVATAR_DATA_TRANSFER_LIMIT  (10*MAX_AVATAR_DATA_LENGTH)
-#define AVATAR_DATA_TRANSFER_TIMEOUT    (20*60)
+#define AVATAR_DATA_TRANSFER_TIMEOUT    (60) /* 164kB every 60 seconds is not a lot */
 
 
 /* USERSTATUS -

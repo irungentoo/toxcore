@@ -304,6 +304,10 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
             m->friendlist[i].statusmessage = calloc(1, 1);
             m->friendlist[i].statusmessage_length = 1;
             m->friendlist[i].userstatus = USERSTATUS_NONE;
+            m->friendlist[i].avatar_info_sent = 0;
+            m->friendlist[i].avatar_recv_data = NULL;
+            m->friendlist[i].avatar_send_data.bytes_sent = 0;
+            m->friendlist[i].avatar_send_data.last_reset = 0;
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
@@ -643,7 +647,7 @@ int m_request_avatar_info(const Messenger *m, const int32_t friendnumber)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_INFO_REQ, 0, 0, 0) >= 0)
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_INFO_REQ, 0, 0, 0))
         return 0;
     else
         return -1;
@@ -658,9 +662,7 @@ int m_send_avatar_info(const Messenger *m, const int32_t friendnumber)
     data[0] = m->avatar_format;
     memcpy(data + 1, m->avatar_hash, AVATAR_HASH_LENGTH);
 
-    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_INFO, data, sizeof(data), 0);
-
-    if (ret >= 0)
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_INFO, data, sizeof(data), 0))
         return 0;
     else
         return -1;
@@ -674,12 +676,11 @@ int m_request_avatar_data(const Messenger *m, const int32_t friendnumber)
     AVATARRECEIVEDATA *avrd = m->friendlist[friendnumber].avatar_recv_data;
 
     if (avrd == NULL) {
-        avrd = malloc(sizeof(AVATARRECEIVEDATA));
+        avrd = calloc(sizeof(AVATARRECEIVEDATA), 1);
 
         if (avrd == NULL)
             return -1;
 
-        memset(avrd, 0, sizeof(AVATARRECEIVEDATA));
         avrd->started = 0;
         m->friendlist[friendnumber].avatar_recv_data = avrd;
     }
@@ -2081,8 +2082,8 @@ void kill_messenger(Messenger *m)
     kill_networking(m->net);
 
     for (i = 0; i < m->numfriends; ++i) {
-        if (m->friendlist[i].statusmessage)
-            free(m->friendlist[i].statusmessage);
+        free(m->friendlist[i].statusmessage);
+        free(m->friendlist[friendnumber].avatar_recv_data);
     }
 
     free(m->avatar_data);
@@ -2147,7 +2148,7 @@ static int send_avatar_data_control(const Messenger *m, const uint32_t friendnum
                                    &op, sizeof(op), 0);
     LOGGER_DEBUG("friendnumber = %u, op = %u, ret = %d",
                  friendnumber, op, ret);
-    return (ret >= 0) ? 0 : -1;
+    return ret ? 0 : -1;
 }
 
 
@@ -2207,7 +2208,7 @@ static int handle_avatar_data_control(Messenger *m, uint32_t friendnumber,
             int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_DATA_START,
                                            start_data, sizeof(start_data), 0);
 
-            if (ret < 0) {
+            if (!ret) {
                 /* Something went wrong, try to signal the error so the friend
                  * can clear up the state. */
                 send_avatar_data_control(m, friendnumber, AVATARDATACONTROL_ERROR);
@@ -2236,7 +2237,7 @@ static int handle_avatar_data_control(Messenger *m, uint32_t friendnumber,
                                                PACKET_ID_AVATAR_DATA_PUSH,
                                                chunk, chunk_len, 0);
 
-                if (ret < 0) {
+                if (!ret) {
                     LOGGER_DEBUG("write_cryptpacket_id failed. ret = %d, "
                                  "friendnumber = %u, offset = %u",
                                  ret, friendnumber, offset);
