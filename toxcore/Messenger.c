@@ -2083,7 +2083,7 @@ void kill_messenger(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         free(m->friendlist[i].statusmessage);
-        free(m->friendlist[friendnumber].avatar_recv_data);
+        free(m->friendlist[i].avatar_recv_data);
     }
 
     free(m->avatar_data);
