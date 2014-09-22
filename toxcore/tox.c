@@ -275,6 +275,42 @@ uint8_t tox_get_self_user_status(const Tox *tox)
     return m_get_self_userstatus(m);
 }
 
+int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t length)
+{
+    Messenger *m = tox;
+    return m_set_avatar(m, format, data, length);
+}
+
+int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen, uint8_t *hash)
+{
+    const Messenger *m = tox;
+    return m_get_self_avatar(m, format, buf, length, maxlen, hash);
+}
+
+int tox_avatar_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen)
+{
+    return m_avatar_hash(hash, data, datalen);
+}
+
+int tox_request_avatar_info(const Tox *tox, const int32_t friendnumber)
+{
+    const Messenger *m = tox;
+    return m_request_avatar_info(m, friendnumber);
+}
+
+int tox_send_avatar_info(Tox *tox, const int32_t friendnumber)
+{
+    const Messenger *m = tox;
+    return m_send_avatar_info(m, friendnumber);
+}
+
+int tox_request_avatar_data(const Tox *tox, const int32_t friendnumber)
+{
+    const Messenger *m = tox;
+    return m_request_avatar_data(m, friendnumber);
+}
+
+
 /* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
  * returns -1 on error.
  */
@@ -438,6 +474,24 @@ void tox_callback_connection_status(Tox *tox, void (*function)(Messenger *tox, i
     Messenger *m = tox;
     m_callback_connectionstatus(m, function, userdata);
 }
+
+void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, void *), void *userdata)
+{
+    Messenger *m = tox;
+    m_callback_avatar_info(m, function, userdata);
+}
+
+
+void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, uint8_t *, uint32_t,
+                              void *), void *userdata)
+{
+    Messenger *m = tox;
+    m_callback_avatar_data(m, function, userdata);
+}
+
+
+
+
 
 /**********ADVANCED FUNCTIONS (If you don't know what they do you can safely ignore them.)  ************/
 

@@ -36,6 +36,9 @@
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
+#define MAX_AVATAR_DATA_LENGTH 16384
+#define AVATAR_HASH_LENGTH 32
+
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
@@ -46,6 +49,11 @@
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_TYPING 51
+#define PACKET_ID_AVATAR_INFO_REQ 52
+#define PACKET_ID_AVATAR_INFO 53
+#define PACKET_ID_AVATAR_DATA_CONTROL 54
+#define PACKET_ID_AVATAR_DATA_START 55
+#define PACKET_ID_AVATAR_DATA_PUSH 56
 #define PACKET_ID_RECEIPT 63
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 65
@@ -109,6 +117,13 @@ enum {
 /* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
 
+/* Must be < MAX_CRYPTO_DATA_SIZE */
+#define AVATAR_DATA_MAX_CHUNK_SIZE (MAX_CRYPTO_DATA_SIZE-1)
+
+/* Per-friend data limit for avatar data requests */
+#define AVATAR_DATA_TRANSFER_LIMIT  (10*MAX_AVATAR_DATA_LENGTH)
+#define AVATAR_DATA_TRANSFER_TIMEOUT    (20*60)
+
 
 /* USERSTATUS -
  * Represents userstatuses someone can have.
@@ -121,6 +136,42 @@ typedef enum {
     USERSTATUS_INVALID
 }
 USERSTATUS;
+
+/* AVATARFORMAT -
+ * Data formats for user avatar images
+ */
+typedef enum {
+    AVATARFORMAT_NONE,
+    AVATARFORMAT_PNG
+}
+AVATARFORMAT;
+
+/* AVATARDATACONTROL
+ * To control avatar data requests (PACKET_ID_AVATAR_DATA_CONTROL)
+ */
+typedef enum {
+    AVATARDATACONTROL_REQ,
+    AVATARDATACONTROL_ERROR
+}
+AVATARDATACONTROL;
+
+typedef struct {
+    uint8_t started;
+    AVATARFORMAT format;
+    uint8_t hash[AVATAR_HASH_LENGTH];
+    uint32_t total_length;
+    uint32_t bytes_received;
+    uint8_t data[MAX_AVATAR_DATA_LENGTH];
+}
+AVATARRECEIVEDATA;
+
+typedef struct {
+    /* Fields only used to limit the network usage from a given friend */
+    uint32_t bytes_sent;    /* Total bytes send to this user */
+    uint64_t last_reset;    /* Time the data counter was last reset */
+}
+AVATARSENDDATA;
+
 
 struct File_Transfers {
     uint64_t size;
@@ -163,6 +214,7 @@ typedef struct {
     uint8_t statusmessage_sent;
     USERSTATUS userstatus;
     uint8_t userstatus_sent;
+    uint8_t avatar_info_sent;
     uint8_t user_istyping;
     uint8_t user_istyping_sent;
     uint8_t is_typing;
@@ -177,6 +229,9 @@ typedef struct {
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
     int invited_groups[MAX_INVITED_GROUPS];
     uint16_t invited_groups_num;
+
+    AVATARSENDDATA avatar_send_data;
+    AVATARRECEIVEDATA *avatar_recv_data;    // We are receiving avatar data from this friend.
 
     struct {
         int (*function)(void *object, const uint8_t *data, uint32_t len);
@@ -208,6 +263,11 @@ typedef struct Messenger {
     uint16_t statusmessage_length;
 
     USERSTATUS userstatus;
+
+    AVATARFORMAT avatar_format;
+    uint8_t *avatar_data;
+    uint32_t avatar_data_length;
+    uint8_t avatar_hash[AVATAR_HASH_LENGTH];
 
     Friend *friendlist;
     uint32_t numfriends;
@@ -243,6 +303,10 @@ typedef struct Messenger {
     void *friend_connectionstatuschange_userdata;
     void (*friend_connectionstatuschange_internal)(struct Messenger *m, int32_t, uint8_t, void *);
     void *friend_connectionstatuschange_internal_userdata;
+    void *avatar_info_recv_userdata;
+    void (*avatar_info_recv)(struct Messenger *m, int32_t, uint8_t, uint8_t *, void *);
+    void *avatar_data_recv_userdata;
+    void (*avatar_data_recv)(struct Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *, uint32_t, void *);
 
     void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, void *);
     void *group_invite_userdata;
@@ -437,6 +501,94 @@ int m_copy_self_statusmessage(const Messenger *m, uint8_t *buf, uint32_t maxlen)
 uint8_t m_get_userstatus(const Messenger *m, int32_t friendnumber);
 uint8_t m_get_self_userstatus(const Messenger *m);
 
+
+/* Set the user avatar image data.
+ * This should be made before connecting, so we will not announce that the user have no avatar
+ * before setting and announcing a new one, forcing the peers to re-download it.
+ *
+ * Notice that the library treats the image as raw data and does not interpret it by any way.
+ *
+ * Arguments:
+ *  format - Avatar image format or NONE for user with no avatar (see AVATARFORMAT);
+ *  data - pointer to the avatar data (may be NULL it the format is NONE);
+ *  length - length of image data. Must be <= MAX_AVATAR_DATA_LENGTH.
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int m_set_avatar(Messenger *m, uint8_t format, const uint8_t *data, uint32_t length);
+
+/* Get avatar data from the current user.
+ * Copies the current user avatar data to the destination buffer and sets the image format
+ * accordingly.
+ *
+ * If the avatar format is NONE, the buffer 'buf' isleft uninitialized, 'hash' is zeroed, and
+ * 'length' is set to zero.
+ *
+ * If any of the pointers format, buf, length, and hash are NULL, that particular field will be ignored.
+ *
+ * Arguments:
+ *   format - destination pointer to the avatar image format (see AVATARFORMAT);
+ *   buf - destination buffer to the image data. Must have at least 'maxlen' bytes;
+ *   length - destination pointer to the image data length;
+ *   maxlen - length of the destination buffer 'buf';
+ *   hash - destination pointer to the avatar hash (it must be exactly AVATAR_HASH_LENGTH bytes long).
+ *
+ * returns 0 on success;
+ * returns -1 on failure.
+ *
+ */
+int m_get_self_avatar(const Messenger *m, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen,
+                      uint8_t *hash);
+
+/* Generates a cryptographic hash of the given avatar data.
+ * This function is a wrapper to internal message-digest functions and specifically provided
+ * to generate hashes from user avatars that may be memcmp()ed with the values returned by the
+ * other avatar functions. It is specially important to validate cached avatars.
+ *
+ * Arguments:
+ *  hash - destination buffer for the hash data, it must be exactly AVATAR_HASH_LENGTH bytes long.
+ *  data - avatar image data;
+ *  datalen - length of the avatar image data; it must be <= MAX_AVATAR_DATA_LENGTH.
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int m_avatar_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen);
+
+/* Request avatar information from a friend.
+ * Asks a friend to provide their avatar information (image format and hash). The friend may
+ * or may not answer this request and, if answered, the information will be provided through
+ * the callback 'avatar_info'.
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int m_request_avatar_info(const Messenger *m, const int32_t friendnumber);
+
+/* Send an unrequested avatar information to a friend.
+ * Sends our avatar format and hash to a friend; he/she can use this information to validate
+ * an avatar from the cache and may (or not) reply with an avatar data request.
+ *
+ * Notice: it is NOT necessary to send these notification after changing the avatar or
+ * connecting. The library already does this.
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int m_send_avatar_info(const Messenger *m, const int32_t friendnumber);
+
+
+/* Request the avatar data from a friend.
+ * Ask a friend to send their avatar data. The friend may or may not answer this request and,
+ * if answered, the information will be provided in callback 'avatar_data'.
+ *
+ * returns 0 on sucess
+ * returns -1 on failure.
+ */
+int m_request_avatar_data(const Messenger *m, const int32_t friendnumber);
+
+
 /* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
  * returns -1 on error.
  */
@@ -532,6 +684,49 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, in
 /* Same as previous but for internal A/V core usage only */
 void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, void *),
         void *userdata);
+
+
+/* Set the callback function for avatar information.
+ * This callback will be called when avatar information are received from friends. These events
+ * can arrive at anytime, but are usually received uppon connection and in reply of avatar
+ * information requests.
+ *
+ * Function format is:
+ *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, void *userdata)
+ *
+ * where 'format' is the avatar image format (see AVATARFORMAT) and 'hash' is the hash of
+ * the avatar data for caching purposes and it is exactly AVATAR_HASH_LENGTH long. If the
+ * image format is NONE, the hash is zeroed.
+ *
+ */
+void m_callback_avatar_info(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, void *),
+                            void *userdata);
+
+
+/* Set the callback function for avatar data.
+ * This callback will be called when the complete avatar data was correctly received from a
+ * friend. This only happens in reply of a avatar data request (see tox_request_avatar_data);
+ *
+ * Function format is:
+ *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, uint8_t *data, uint32_t datalen, void *userdata)
+ *
+ * where 'format' is the avatar image format (see AVATARFORMAT); 'hash' is the
+ * locally-calculated cryptographic hash of the avatar data and it is exactly
+ * AVATAR_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
+ * of such data.
+ *
+ * If format is NONE, 'data' is NULL, 'datalen' is zero, and the hash is zeroed. The hash is
+ * always validated locally with the function tox_avatar_hash and ensured to match the image
+ * data, so this value can be safely used to compare with cached avatars.
+ *
+ * WARNING: users MUST treat all avatar image data received from another peer as untrusted and
+ * potentially malicious. The library only ensures that the data which arrived is the same the
+ * other user sent, and does not interpret or validate any image data.
+ */
+void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *,
+                            uint32_t, void *), void *userdata);
+
+
 
 /**********GROUP CHATS************/
 
