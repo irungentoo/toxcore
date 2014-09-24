@@ -831,11 +831,6 @@ int tox_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t 
     return m_hash(hash, data, datalen);
 }
 
-int tox_avatar_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen)
-{
-    return m_hash(hash, data, datalen);
-}
-
 int tox_request_avatar_info(const Tox *tox, const int32_t friendnumber)
 {
     const Messenger *m = tox;

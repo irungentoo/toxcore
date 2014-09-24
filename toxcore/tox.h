@@ -38,8 +38,7 @@ extern "C" {
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
-#define TOX_AVATAR_HASH_LENGTH /*crypto_hash_sha256_BYTES*/ 32
-#define TOX_HASH_LENGTH TOX_AVATAR_HASH_LENGTH
+#define TOX_HASH_LENGTH /*crypto_hash_sha256_BYTES*/ 32
 
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
@@ -614,34 +613,19 @@ int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t 
 
 /* Generates a cryptographic hash of the given data.
  * This function may be used by clients for any purpose, but is provided primarily for
- * validating cached avatars.
+ * validating cached avatars. This use is highly recommended to avoid unnecessary avatar
+ * updates.
  * This function is a wrapper to internal message-digest functions.
  *
  * Arguments:
  *  hash - destination buffer for the hash data, it must be exactly TOX_HASH_LENGTH bytes long.
  *  data - data to be hashed;
- *  datalen - length of the data;
+ *  datalen - length of the data; for avatars, should be TOX_AVATAR_MAX_DATA_LENGTH
  *
  * returns 0 on success
  * returns -1 on failure.
  */
-int m_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen);
-
-/* Generates a cryptographic hash of the given avatar data.
- * This function is a wrapper to tox_hash and specifically provided
- * to generate hashes from user avatars that may be memcmp()ed with the values returned by the
- * other avatar functions. It is specially important to validate cached avatars.
- *
- * Arguments:
- *  hash - destination buffer for the hash data, it must be exactly TOX_AVATAR_HASH_LENGTH bytes long.
- *  data - avatar image data;
- *  datalen - length of the avatar image data; it must be <= MAX_AVATAR_DATA_LENGTH.
- *
- * returns 0 on success
- * returns -1 on failure.
- */
-int tox_avatar_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen);
-
+int tox_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen);
 
 /* Request avatar information from a friend.
  * Asks a friend to provide their avatar information (image format and hash). The friend may

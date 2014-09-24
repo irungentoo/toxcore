@@ -222,7 +222,7 @@ static int load_user_avatar(Tox *tox, char *base_dir, int friendnum,
     }
 
     *datalen = ret;
-    tox_avatar_hash(tox, hash, data, *datalen);
+    tox_hash(tox, hash, data, *datalen);
 
     return 0;
 }
@@ -305,7 +305,7 @@ static void friend_avatar_info_cb(Tox *tox, int32_t n, uint8_t format, uint8_t *
     char *base_dir = (char *) ud;
     uint8_t addr[TOX_CLIENT_ID_SIZE];
     char addr_str[2 * TOX_CLIENT_ID_SIZE + 1];
-    char hash_str[2 * TOX_AVATAR_HASH_LENGTH + 1];
+    char hash_str[2 * TOX_HASH_LENGTH + 1];
 
     if (tox_get_client_id(tox, n, addr) == 0) {
         byte_to_hex_str(addr, TOX_CLIENT_ID_SIZE, addr_str);
@@ -315,7 +315,7 @@ static void friend_avatar_info_cb(Tox *tox, int32_t n, uint8_t format, uint8_t *
         printf("Receiving avatar information from friend number %u.\n", n);
     }
 
-    byte_to_hex_str(hash, TOX_AVATAR_HASH_LENGTH, hash_str);
+    byte_to_hex_str(hash, TOX_HASH_LENGTH, hash_str);
     DEBUG("format=%u, hash=%s", format, hash_str);
 
     if (format == TOX_AVATAR_FORMAT_NONE) {
@@ -333,13 +333,13 @@ static void friend_avatar_info_cb(Tox *tox, int32_t n, uint8_t format, uint8_t *
          */
         uint32_t cur_av_len;
         uint8_t cur_av_data[TOX_AVATAR_MAX_DATA_LENGTH];
-        uint8_t cur_av_hash[TOX_AVATAR_HASH_LENGTH];
+        uint8_t cur_av_hash[TOX_HASH_LENGTH];
         int ret;
 
         ret = load_user_avatar(tox, base_dir, n, format, cur_av_hash, cur_av_data, &cur_av_len);
 
         if (ret != 0
-                && memcpy(cur_av_hash, hash, TOX_AVATAR_HASH_LENGTH) != 0) {
+                && memcpy(cur_av_hash, hash, TOX_HASH_LENGTH) != 0) {
             printf(" -> Cached avatar is outdated. Requesting avatar data.\n");
             tox_request_avatar_data(tox, n);
         } else {
@@ -355,7 +355,7 @@ static void friend_avatar_data_cb(Tox *tox, int32_t n, uint8_t format,
     char *base_dir = (char *) ud;
     uint8_t addr[TOX_CLIENT_ID_SIZE];
     char addr_str[2 * TOX_CLIENT_ID_SIZE + 1];
-    char hash_str[2 * TOX_AVATAR_HASH_LENGTH + 1];
+    char hash_str[2 * TOX_HASH_LENGTH + 1];
 
     if (tox_get_client_id(tox, n, addr) == 0) {
         byte_to_hex_str(addr, TOX_CLIENT_ID_SIZE, addr_str);
@@ -365,7 +365,7 @@ static void friend_avatar_data_cb(Tox *tox, int32_t n, uint8_t format,
         printf("Receiving avatar data from friend number %u.\n", n);
     }
 
-    byte_to_hex_str(hash, TOX_AVATAR_HASH_LENGTH, hash_str);
+    byte_to_hex_str(hash, TOX_HASH_LENGTH, hash_str);
     DEBUG("format=%u, datalen=%d, hash=%s\n", format, datalen, hash_str);
 
     delete_user_avatar(tox, base_dir, n);
@@ -505,14 +505,14 @@ static void print_avatar_info(Tox *tox)
 {
     uint8_t format;
     uint8_t data[TOX_AVATAR_MAX_DATA_LENGTH];
-    uint8_t hash[TOX_AVATAR_HASH_LENGTH];
+    uint8_t hash[TOX_HASH_LENGTH];
     uint32_t data_length;
-    char hash_str[2 * TOX_AVATAR_HASH_LENGTH + 1];
+    char hash_str[2 * TOX_HASH_LENGTH + 1];
 
     int ret = tox_get_self_avatar(tox, &format, data, &data_length, sizeof(data), hash);
     DEBUG("tox_get_self_avatar returned %d", ret);
     DEBUG("format: %d, data_length: %d", format, data_length);
-    byte_to_hex_str(hash, TOX_AVATAR_HASH_LENGTH, hash_str);
+    byte_to_hex_str(hash, TOX_HASH_LENGTH, hash_str);
     DEBUG("hash: %s", hash_str);
 }
 
