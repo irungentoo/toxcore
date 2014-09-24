@@ -47,7 +47,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdbool.h>
-#include <linux/limits.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
