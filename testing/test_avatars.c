@@ -47,7 +47,11 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdbool.h>
+#ifdef __linux__
 #include <linux/limits.h>
+#else
+#include <limits.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
