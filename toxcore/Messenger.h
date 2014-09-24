@@ -36,8 +36,8 @@
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
-#define MAX_AVATAR_DATA_LENGTH 16384
-#define AVATAR_HASH_LENGTH 32
+#define AVATAR_MAX_DATA_LENGTH 16384
+#define AVATAR_HASH_LENGTH crypto_hash_sha256_BYTES
 
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
@@ -121,7 +121,7 @@ enum {
 #define AVATAR_DATA_MAX_CHUNK_SIZE (MAX_CRYPTO_DATA_SIZE-1)
 
 /* Per-friend data limit for avatar data requests */
-#define AVATAR_DATA_TRANSFER_LIMIT  (10*MAX_AVATAR_DATA_LENGTH)
+#define AVATAR_DATA_TRANSFER_LIMIT  (10*AVATAR_MAX_DATA_LENGTH)
 #define AVATAR_DATA_TRANSFER_TIMEOUT    (60) /* 164kB every 60 seconds is not a lot */
 
 
@@ -137,40 +137,40 @@ typedef enum {
 }
 USERSTATUS;
 
-/* AVATARFORMAT -
+/* AVATAR_FORMAT -
  * Data formats for user avatar images
  */
 typedef enum {
-    AVATARFORMAT_NONE,
-    AVATARFORMAT_PNG
+    AVATAR_FORMAT_NONE = 0,
+    AVATAR_FORMAT_PNG
 }
-AVATARFORMAT;
+AVATAR_FORMAT;
 
-/* AVATARDATACONTROL
+/* AVATAR_DATACONTROL
  * To control avatar data requests (PACKET_ID_AVATAR_DATA_CONTROL)
  */
 typedef enum {
-    AVATARDATACONTROL_REQ,
-    AVATARDATACONTROL_ERROR
+    AVATAR_DATACONTROL_REQ,
+    AVATAR_DATACONTROL_ERROR
 }
-AVATARDATACONTROL;
+AVATAR_DATACONTROL;
 
 typedef struct {
     uint8_t started;
-    AVATARFORMAT format;
+    AVATAR_FORMAT format;
     uint8_t hash[AVATAR_HASH_LENGTH];
     uint32_t total_length;
     uint32_t bytes_received;
-    uint8_t data[MAX_AVATAR_DATA_LENGTH];
+    uint8_t data[AVATAR_MAX_DATA_LENGTH];
 }
-AVATARRECEIVEDATA;
+AVATAR_RECEIVEDATA;
 
 typedef struct {
     /* Fields only used to limit the network usage from a given friend */
     uint32_t bytes_sent;    /* Total bytes send to this user */
     uint64_t last_reset;    /* Time the data counter was last reset */
 }
-AVATARSENDDATA;
+AVATAR_SENDDATA;
 
 
 struct File_Transfers {
@@ -230,8 +230,8 @@ typedef struct {
     int invited_groups[MAX_INVITED_GROUPS];
     uint16_t invited_groups_num;
 
-    AVATARSENDDATA avatar_send_data;
-    AVATARRECEIVEDATA *avatar_recv_data;    // We are receiving avatar data from this friend.
+    AVATAR_SENDDATA avatar_send_data;
+    AVATAR_RECEIVEDATA *avatar_recv_data;    // We are receiving avatar data from this friend.
 
     struct {
         int (*function)(void *object, const uint8_t *data, uint32_t len);
@@ -264,7 +264,7 @@ typedef struct Messenger {
 
     USERSTATUS userstatus;
 
-    AVATARFORMAT avatar_format;
+    AVATAR_FORMAT avatar_format;
     uint8_t *avatar_data;
     uint32_t avatar_data_length;
     uint8_t avatar_hash[AVATAR_HASH_LENGTH];
@@ -509,7 +509,7 @@ uint8_t m_get_self_userstatus(const Messenger *m);
  * Notice that the library treats the image as raw data and does not interpret it by any way.
  *
  * Arguments:
- *  format - Avatar image format or NONE for user with no avatar (see AVATARFORMAT);
+ *  format - Avatar image format or NONE for user with no avatar (see AVATAR_FORMAT);
  *  data - pointer to the avatar data (may be NULL it the format is NONE);
  *  length - length of image data. Must be <= MAX_AVATAR_DATA_LENGTH.
  *
@@ -528,7 +528,7 @@ int m_set_avatar(Messenger *m, uint8_t format, const uint8_t *data, uint32_t len
  * If any of the pointers format, buf, length, and hash are NULL, that particular field will be ignored.
  *
  * Arguments:
- *   format - destination pointer to the avatar image format (see AVATARFORMAT);
+ *   format - destination pointer to the avatar image format (see AVATAR_FORMAT);
  *   buf - destination buffer to the image data. Must have at least 'maxlen' bytes;
  *   length - destination pointer to the image data length;
  *   maxlen - length of the destination buffer 'buf';
@@ -541,8 +541,23 @@ int m_set_avatar(Messenger *m, uint8_t format, const uint8_t *data, uint32_t len
 int m_get_self_avatar(const Messenger *m, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen,
                       uint8_t *hash);
 
+/* Generates a cryptographic hash of the given data.
+ * This function may be used by clients for any purpose, but is provided primarily for
+ * validating cached avatars.
+ * This function is a wrapper to internal message-digest functions.
+ *
+ * Arguments:
+ *  hash - destination buffer for the hash data, it must be exactly crypto_hash_sha256_BYTES bytes long.
+ *  data - data to be hashed;
+ *  datalen - length of the data;
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int m_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen);
+
 /* Generates a cryptographic hash of the given avatar data.
- * This function is a wrapper to internal message-digest functions and specifically provided
+ * This function is a wrapper to m_hash and specifically provided
  * to generate hashes from user avatars that may be memcmp()ed with the values returned by the
  * other avatar functions. It is specially important to validate cached avatars.
  *
@@ -694,7 +709,7 @@ void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Mess
  * Function format is:
  *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, void *userdata)
  *
- * where 'format' is the avatar image format (see AVATARFORMAT) and 'hash' is the hash of
+ * where 'format' is the avatar image format (see AVATAR_FORMAT) and 'hash' is the hash of
  * the avatar data for caching purposes and it is exactly AVATAR_HASH_LENGTH long. If the
  * image format is NONE, the hash is zeroed.
  *
@@ -710,7 +725,7 @@ void m_callback_avatar_info(Messenger *m, void (*function)(Messenger *m, int32_t
  * Function format is:
  *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, uint8_t *data, uint32_t datalen, void *userdata)
  *
- * where 'format' is the avatar image format (see AVATARFORMAT); 'hash' is the
+ * where 'format' is the avatar image format (see AVATAR_FORMAT); 'hash' is the
  * locally-calculated cryptographic hash of the avatar data and it is exactly
  * AVATAR_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
  * of such data.
