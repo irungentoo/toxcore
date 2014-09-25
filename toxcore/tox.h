@@ -37,8 +37,8 @@ extern "C" {
 #define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_CLIENT_ID_SIZE 32
-#define TOX_MAX_AVATAR_DATA_LENGTH 16384
-#define TOX_AVATAR_HASH_LENGTH 32
+#define TOX_AVATAR_MAX_DATA_LENGTH 16384
+#define TOX_HASH_LENGTH /*crypto_hash_sha256_BYTES*/ 32
 
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
@@ -73,14 +73,14 @@ typedef enum {
 TOX_USERSTATUS;
 
 
-/* AVATARFORMAT -
+/* AVATAR_FORMAT -
  * Data formats for user avatar images
  */
 typedef enum {
-    TOX_AVATARFORMAT_NONE,
-    TOX_AVATARFORMAT_PNG
+    TOX_AVATAR_FORMAT_NONE = 0,
+    TOX_AVATAR_FORMAT_PNG
 }
-TOX_AVATARFORMAT;
+TOX_AVATAR_FORMAT;
 
 #ifndef __TOX_DEFINED__
 #define __TOX_DEFINED__
@@ -538,7 +538,7 @@ uint32_t tox_get_chatlist(const Tox *tox, int *out_list, uint32_t list_size);
  * Function format is:
  *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, void *userdata)
  *
- * where 'format' is the avatar image format (see TOX_AVATARFORMAT) and 'hash' is the hash of
+ * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT) and 'hash' is the hash of
  * the avatar data for caching purposes and it is exactly TOX_AVATAR_HASH_LENGTH long. If the
  * image format is NONE, the hash is zeroed.
  *
@@ -554,7 +554,7 @@ void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint
  * Function format is:
  *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, uint8_t *data, uint32_t datalen, void *userdata)
  *
- * where 'format' is the avatar image format (see TOX_AVATARFORMAT); 'hash' is the
+ * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT); 'hash' is the
  * locally-calculated cryptographic hash of the avatar data and it is exactly
  * TOX_AVATAR_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
  * of such data.
@@ -577,9 +577,9 @@ void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint
  * Notice that the library treats the image as raw data and does not interpret it by any way.
  *
  * Arguments:
- *  format - Avatar image format or NONE for user with no avatar (see TOX_AVATARFORMAT);
+ *  format - Avatar image format or NONE for user with no avatar (see TOX_AVATAR_FORMAT);
  *  data - pointer to the avatar data (may be NULL it the format is NONE);
- *  length - length of image data. Must be <= TOX_MAX_AVATAR_DATA_LENGTH.
+ *  length - length of image data. Must be <= TOX_AVATAR_MAX_DATA_LENGTH.
  *
  * returns 0 on success
  * returns -1 on failure.
@@ -597,7 +597,7 @@ int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t lengt
  * If any of the pointers format, buf, length, and hash are NULL, that particular field will be ignored.
  *
  * Arguments:
- *   format - destination pointer to the avatar image format (see TOX_AVATARFORMAT);
+ *   format - destination pointer to the avatar image format (see TOX_AVATAR_FORMAT);
  *   buf - destination buffer to the image data. Must have at least 'maxlen' bytes;
  *   length - destination pointer to the image data length;
  *   maxlen - length of the destination buffer 'buf';
@@ -611,21 +611,21 @@ int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t 
                         uint8_t *hash);
 
 
-/* Generates a cryptographic hash of the given avatar data.
- * This function is a wrapper to internal message-digest functions and specifically provided
- * to generate hashes from user avatars that may be memcmp()ed with the values returned by the
- * other avatar functions. It is specially important to validate cached avatars.
+/* Generates a cryptographic hash of the given data.
+ * This function may be used by clients for any purpose, but is provided primarily for
+ * validating cached avatars. This use is highly recommended to avoid unnecessary avatar
+ * updates.
+ * This function is a wrapper to internal message-digest functions.
  *
  * Arguments:
- *  hash - destination buffer for the hash data, it must be exactly TOX_AVATAR_HASH_LENGTH bytes long.
- *  data - avatar image data;
- *  datalen - length of the avatar image data; it must be <= TOX_MAX_AVATAR_DATA_LENGTH.
+ *  hash - destination buffer for the hash data, it must be exactly TOX_HASH_LENGTH bytes long.
+ *  data - data to be hashed;
+ *  datalen - length of the data; for avatars, should be TOX_AVATAR_MAX_DATA_LENGTH
  *
  * returns 0 on success
  * returns -1 on failure.
  */
-int tox_avatar_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen);
-
+int tox_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen);
 
 /* Request avatar information from a friend.
  * Asks a friend to provide their avatar information (image format and hash). The friend may

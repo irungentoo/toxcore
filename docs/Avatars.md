@@ -127,16 +127,16 @@ complete API documentation is available in `tox.h`.
 
 
 ```
-#define TOX_MAX_AVATAR_DATA_LENGTH 16384
+#define TOX_AVATAR_MAX_DATA_LENGTH 16384
 #define TOX_AVATAR_HASH_LENGTH 32
 
 
 /* Data formats for user avatar images */
 typedef enum {
-    TOX_AVATARFORMAT_NONE,
-    TOX_AVATARFORMAT_PNG
+    TOX_AVATAR_FORMAT_NONE,
+    TOX_AVATAR_FORMAT_PNG
 }
-TOX_AVATARFORMAT;
+TOX_AVATAR_FORMAT;
 
 
 
@@ -287,11 +287,11 @@ functions. For a complete, working, example, see `testing/test_avatars.c`.
 In this example `load_data_file` is just an hypothetical function that loads
 data from a file into the buffer and sets the length accordingly.
 
-    uint8_t buf[TOX_MAX_AVATAR_DATA_LENGTH];
+    uint8_t buf[TOX_AVATAR_MAX_DATA_LENGTH];
     uint32_t len;
 
     if (load_data_file("avatar.png", buf, &len) == 0)
-        if (tox_set_avatar(tox, TOX_AVATARFORMAT_PNG, buf, len) != 0)
+        if (tox_set_avatar(tox, TOX_AVATAR_FORMAT_PNG, buf, len) != 0)
             fprintf(stderr, "Failed to set avatar.\n");
 
 If the user is connected, this function will also notify all connected
@@ -306,9 +306,9 @@ notifications and unnecessary data transfers.
 
 #### Removing the avatar from the current user
 
-To remove an avatar, an application must set it to `TOX_AVATARFORMAT_NONE`.
+To remove an avatar, an application must set it to `TOX_AVATAR_FORMAT_NONE`.
 
-    tox_set_avatar(tox, TOX_AVATARFORMAT_NONE, NULL, 0);
+    tox_set_avatar(tox, TOX_AVATAR_FORMAT_NONE, NULL, 0);
 
 If the user is connected, this function will also notify all connected
 friends about the avatar change.
@@ -362,7 +362,7 @@ checks the local avatar cache and emits an avatar data request if necessary:
     {
         printf("Receiving avatar information from friend %d. Format = %d\n",
             friendnumber, format);
-        if (format = TOX_AVATARFORMAT_NONE) {
+        if (format = TOX_AVATAR_FORMAT_NONE) {
             /* User have no avatar or removed the avatar */
             delete_avatar_from_cache(tox, friendnumber);
         } else {
@@ -382,7 +382,7 @@ cache:
     static void avatar_data_cb(Tox *tox, int32_t friendnumber, uint8_t format,
         uint8_t *hash, uint8_t *data, uint32_t datalen, void *userdata)
     {
-        if (format = TOX_AVATARFORMAT_NONE) {
+        if (format = TOX_AVATAR_FORMAT_NONE) {
             /* User have no avatar or removed the avatar */
             delete_avatar_from_cache(tox, friendnumber);
         } else {
@@ -453,8 +453,8 @@ the following structure:
 
 Where 'format' is the image data format, one of the following:
 
-    0 = AVATARFORMAT_NONE  (no avatar set)
-    1 = AVATARFORMAT_PNG
+    0 = AVATAR_FORMAT_NONE  (no avatar set)
+    1 = AVATAR_FORMAT_PNG
 
 and 'hash' is the SHA-256 message digest of the avatar data.
 
@@ -481,8 +481,8 @@ types.
     return, which semantics are explained bellow. The following values are
     defined:
 
-        0 = AVATARDATACONTROL_REQ
-        1 = AVATARDATACONTROL_ERROR
+        0 = AVATAR_DATACONTROL_REQ
+        1 = AVATAR_DATACONTROL_ERROR
 
 
   - Packet `PACKET_ID_AVATAR_DATA_START` have the following format:
@@ -511,17 +511,17 @@ from a client "B":
   - "A" must initialize its control structures and mark its data transfer
     as not yet started. Then it requests avatar data from "B" by sending a
     packet `PACKET_ID_AVATAR_DATA_CONTROL` with 'op' set to
-    `AVATARDATACONTROL_REQ`.
+    `AVATAR_DATACONTROL_REQ`.
 
   - If "B" accepts this transfer, it answers by sending an
     `PACKET_ID_AVATAR_DATA_START` with the fields 'format', 'hash' and
     'data_length' set to the respective values from the current avatar.
-    If "B" have no avatar set, 'format' must be `AVATARFORMAT_NONE`, 'hash'
+    If "B" have no avatar set, 'format' must be `AVATAR_FORMAT_NONE`, 'hash'
     must be zeroed and 'data_length' must be zero.
 
     If "B" does not accept sending the avatar, it may send a packet
     `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
-    `AVATARDATACONTROL_ERROR` or simply ignore this request. "A" must cope
+    `AVATAR_DATACONTROL_ERROR` or simply ignore this request. "A" must cope
     with this.
 
     If "B" have an avatar, it sends a variable number of
@@ -531,7 +531,7 @@ from a client "B":
   - Upon receiving a `PACKET_ID_AVATAR_DATA_START`, "A" checks if it
     has sent a data request to "B". If not, just ignores the packet.
 
-    If "A" really requested avatar data and the format is `AVATARFORMAT_NONE`,
+    If "A" really requested avatar data and the format is `AVATAR_FORMAT_NONE`,
     it triggers the avatar data callback, and clears all the temporary data,
     finishing the process. For other formats, "A" just waits for packets
     of type `PACKET_ID_AVATAR_DATA_PUSH`.
@@ -541,9 +541,9 @@ from a client "B":
     already received. If this conditions are valid, it checks if the total
     length of the data already stored in the receiving buffer plus the data
     present in the push packet is still less or equal than
-    `TOX_MAX_AVATAR_DATA_LENGTH`. If invalid, it replies with a
+    `TOX_AVATAR_MAX_DATA_LENGTH`. If invalid, it replies with a
     `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
-    `AVATARDATACONTROL_ERROR`.
+    `AVATAR_DATACONTROL_ERROR`.
 
     If valid, "A" updates the 'bytes_received' counter and concatenates the
     newly arrived data to the buffer.
@@ -566,7 +566,7 @@ from a client "B":
     some transfer limit for the data it sends.
 
   - Any peer receiving a `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op'
-    set to `AVATARDATACONTROL_ERROR` clears any existing control state and
+    set to `AVATAR_DATACONTROL_ERROR` clears any existing control state and
     finishes sending or receiving data.
 
 
@@ -596,7 +596,7 @@ The present proposal mitigates this situation by:
     same offset of the avatar again and again, the implementation limits
     the amount of data a single user can request for some time. For now,
     the library will not allow an user to request more than
-    `10*TOX_MAX_AVATAR_DATA_LENGTH` in less than 20 minutes;
+    `10*TOX_AVATAR_MAX_DATA_LENGTH` in less than 20 minutes;
 
   - Making the requester responsible for storing partial data and state
     information;
