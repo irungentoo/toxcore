@@ -625,7 +625,7 @@ int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t 
  * returns 0 on success
  * returns -1 on failure.
  */
-int tox_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen);
+int tox_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen);
 
 /* Request avatar information from a friend.
  * Asks a friend to provide their avatar information (image format and hash). The friend may

@@ -826,7 +826,7 @@ int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t 
     return m_get_self_avatar(m, format, buf, length, maxlen, hash);
 }
 
-int tox_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen)
+int tox_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen)
 {
     return m_hash(hash, data, datalen);
 }

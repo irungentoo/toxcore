@@ -222,7 +222,7 @@ static int load_user_avatar(Tox *tox, char *base_dir, int friendnum,
     }
 
     *datalen = ret;
-    tox_hash(tox, hash, data, *datalen);
+    tox_hash(hash, data, *datalen);
 
     return 0;
 }
