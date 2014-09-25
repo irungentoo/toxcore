@@ -105,7 +105,6 @@ typedef int sock_t;
 #define NET_PACKET_CRYPTO_DATA     27  /* Crypto data packet */
 #define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
 #define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
-#define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
 
 /* See:  docs/Prevent_Tracking.txt and onion.{c, h} */
 #define NET_PACKET_ONION_SEND_INITIAL 128

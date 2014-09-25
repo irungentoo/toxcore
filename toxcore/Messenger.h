@@ -30,7 +30,6 @@
 #include "DHT.h"
 #include "friend_requests.h"
 #include "LAN_discovery.h"
-#include "group_chats.h"
 #include "onion_client.h"
 
 #define MAX_NAME_LENGTH 128
@@ -61,12 +60,9 @@
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
 #define PACKET_ID_FILE_DATA 82
-#define PACKET_ID_INVITE_GROUPCHAT 144
-#define PACKET_ID_JOIN_GROUPCHAT 145
-#define PACKET_ID_ACCEPT_GROUPCHAT 146
+#define PACKET_ID_INVITE_GROUPCHAT 96
+#define PACKET_ID_MESSAGE_GROUPCHAT 97
 
-/* Max number of groups we can invite someone at the same time to. */
-#define MAX_INVITED_GROUPS 64
 
 /* Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS 16
@@ -227,8 +223,6 @@ typedef struct {
     uint64_t share_relays_lastsent;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
-    int invited_groups[MAX_INVITED_GROUPS];
-    uint16_t invited_groups_num;
 
     AVATAR_SENDDATA avatar_send_data;
     AVATAR_RECEIVEDATA *avatar_recv_data;    // We are receiving avatar data from this friend.
@@ -274,9 +268,6 @@ typedef struct Messenger {
 
     uint32_t numonline_friends;
 
-    Group_Chat **chats;
-    uint32_t numchats;
-
     uint64_t last_LANdiscovery;
 
 #define NUM_SAVED_TCP_RELAYS 8
@@ -308,14 +299,11 @@ typedef struct Messenger {
     void *avatar_data_recv_userdata;
     void (*avatar_data_recv)(struct Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *, uint32_t, void *);
 
-    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, void *);
-    void *group_invite_userdata;
-    void (*group_message)(struct Messenger *m, int, int, const uint8_t *, uint16_t, void *);
-    void *group_message_userdata;
-    void (*group_action)(struct Messenger *m, int, int, const uint8_t *, uint16_t, void *);
-    void *group_action_userdata;
-    void (*group_namelistchange)(struct Messenger *m, int, int, uint8_t, void *);
-    void *group_namelistchange_userdata;
+    void *group_chat_object; /* Set by new_groupchats()*/
+    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t);
+    uint32_t group_invite_number;
+    void (*group_message)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t);
+    uint32_t group_message_number;
 
     void (*file_sendrequest)(struct Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *, uint16_t, void *);
     void *file_sendrequest_userdata;
@@ -747,97 +735,29 @@ void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *group_public_key, void *userdata)
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, uint32_t number)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, void *),
-                             void *userdata);
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t), uint32_t number);
 
 /* Set the callback for group messages.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, uint32_t number)
  */
-void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t, void *),
-                              void *userdata);
+void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t), uint32_t number);
 
-/* Set the callback for group actions.
+/* Send a group invite packet.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  return 1 on success
+ *  return 0 on failure
  */
-void m_callback_group_action(Messenger *m, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t, void *),
-                             void *userdata);
+int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
-/* Set callback function for peer name list changes.
+/* Send a group message packet.
  *
- * It gets called every time the name list changes(new peer/name, deleted peer)
- *  Function(Tox *tox, int groupnumber, void *userdata)
+ *  return 1 on success
+ *  return 0 on failure
  */
-void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *),
-                                     void *userdata);
-
-/* Creates a new groupchat and puts it in the chats array.
- *
- * return group number on success.
- * return -1 on failure.
- */
-int add_groupchat(Messenger *m);
-
-/* Delete a groupchat from the chats array.
- *
- * return 0 on success.
- * return -1 if failure.
- */
-int del_groupchat(Messenger *m, int groupnumber);
-
-/* Copy the name of peernumber who is in groupnumber to name.
- * name must be at least MAX_NICK_BYTES long.
- *
- * return length of name if success
- * return -1 if failure
- */
-int m_group_peername(const Messenger *m, int groupnumber, int peernumber, uint8_t *name);
-
-/* invite friendnumber to groupnumber
- * return 0 on success
- * return -1 on failure
- */
-int invite_friend(Messenger *m, int32_t friendnumber, int groupnumber);
-
-/* Join a group (you need to have been invited first.)
- *
- * returns group number on success
- * returns -1 on failure.
- */
-int join_groupchat(Messenger *m, int32_t friendnumber, const uint8_t *friend_group_public_key);
-
-/* send a group message
- * return 0 on success
- * return -1 on failure
- */
-int group_message_send(const Messenger *m, int groupnumber, const uint8_t *message, uint32_t length);
-
-/* send a group action
- * return 0 on success
- * return -1 on failure
- */
-int group_action_send(const Messenger *m, int groupnumber, const uint8_t *action, uint32_t length);
-
-/* Return the number of peers in the group chat on success.
- * return -1 on failure
- */
-int group_number_peers(const Messenger *m, int groupnumber);
-
-/* List all the peers in the group chat.
- *
- * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
- *
- * Copies the lengths of the names to lengths[length]
- *
- * returns the number of peers on success.
- *
- * return -1 on failure.
- */
-int group_names(const Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[],
-                uint16_t length);
+int send_group_message_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /****************FILE SENDING*****************/
 
@@ -1012,17 +932,5 @@ uint32_t copy_friendlist(const Messenger *m, int32_t *out_list, uint32_t list_si
  * return -1 if failure.
  */
 int get_friendlist(const Messenger *m, int **out_list, uint32_t *out_list_length);
-
-/* Return the number of chats in the instance m.
- * You should use this to determine how much memory to allocate
- * for copy_chatlist. */
-uint32_t count_chatlist(const Messenger *m);
-
-/* Copy a list of valid chat IDs into the array out_list.
- * If out_list is NULL, returns 0.
- * Otherwise, returns the number of elements copied.
- * If the array was too small, the contents
- * of out_list will be truncated to list_size. */
-uint32_t copy_chatlist(const Messenger *m, int *out_list, uint32_t list_size);
 
 #endif

@@ -492,10 +492,6 @@ int setname(Messenger *m, const uint8_t *name, uint16_t length)
     for (i = 0; i < m->numfriends; ++i)
         m->friendlist[i].name_sent = 0;
 
-    for (i = 0; i < m->numchats; i++)
-        if (m->chats[i] != NULL)
-            set_nick(m->chats[i], name, length); /* TODO: remove this (group nicks should not be tied to the global one) */
-
     return 0;
 }
 
@@ -1015,459 +1011,47 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
 
 /**********GROUP CHATS************/
 
-/* return 1 if the groupnumber is not valid.
- * return 0 if the groupnumber is valid.
- */
-static uint8_t groupnumber_not_valid(const Messenger *m, int groupnumber)
-{
-    if ((unsigned int)groupnumber >= m->numchats)
-        return 1;
-
-    if (m->chats == NULL)
-        return 1;
-
-    if (m->chats[groupnumber] == NULL)
-        return 1;
-
-    return 0;
-}
-
-
-/* returns valid ip port of connected friend on success
- * returns zeroed out IP_Port on failure
- */
-static IP_Port get_friend_ipport(const Messenger *m, int32_t friendnumber)
-{
-    IP_Port zero;
-    memset(&zero, 0, sizeof(zero));
-
-    if (friend_not_valid(m, friendnumber))
-        return zero;
-
-    int crypt_id = m->friendlist[friendnumber].crypt_connection_id;
-
-    uint8_t direct_connected;
-
-    if (crypto_connection_status(m->net_crypto, crypt_id, &direct_connected) != CRYPTO_CONN_ESTABLISHED)
-        return zero;
-
-    if (direct_connected == 0)
-        return zero;
-
-    return m->net_crypto->crypto_connections[crypt_id].ip_port;
-}
-
-/* returns the group number of the chat with public key group_public_key.
- * returns -1 on failure.
- */
-static int group_num(const Messenger *m, const uint8_t *group_public_key)
-{
-    uint32_t i;
-
-    for (i = 0; i < m->numchats; ++i) {
-        if (m->chats[i] != NULL)
-            if (id_equal(m->chats[i]->self_public_key, group_public_key))
-                return i;
-    }
-
-    return -1;
-}
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *group_public_key, void *userdata)
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, uint32_t number)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, void *),
-                             void *userdata)
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t), uint32_t number)
 {
     m->group_invite = function;
-    m->group_invite_userdata = userdata;
+    m->group_invite_number = number;
 }
 
 /* Set the callback for group messages.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, uint32_t number)
  */
-void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t, void *),
-                              void *userdata)
+void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t), uint32_t number)
 {
     m->group_message = function;
-    m->group_message_userdata = userdata;
+    m->group_message_number = number;
 }
 
-/* Set the callback for group actions.
+/* Send a group invite packet.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  return 1 on success
+ *  return 0 on failure
  */
-void m_callback_group_action(Messenger *m, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t, void *),
-                             void *userdata)
+int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    m->group_action = function;
-    m->group_action_userdata = userdata;
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0);
 }
 
-/* Set callback function for peer name list changes.
+/* Send a group message packet.
  *
- * It gets called every time the name list changes(new peer/name, deleted peer)
- *  Function(Tox *tox, int groupnumber, void *userdata)
+ *  return 1 on success
+ *  return 0 on failure
  */
-void m_callback_group_namelistchange(Messenger *m, void (*function)(Messenger *m, int, int, uint8_t, void *),
-                                     void *userdata)
+int send_group_message_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    m->group_namelistchange = function;
-    m->group_namelistchange_userdata = userdata;
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MESSAGE_GROUPCHAT, data, length, 0);
 }
 
-static int get_chat_num(const Messenger *m, const Group_Chat *chat)
-{
-    uint32_t i;
-
-    for (i = 0; i < m->numchats; ++i) { //TODO: remove this
-        if (m->chats[i] == chat)
-            return i;
-    }
-
-    return -1;
-}
-
-static void group_message_function(Group_Chat *chat, int peer_number, const uint8_t *message, uint16_t length,
-                                   void *userdata)
-{
-    Messenger *m = userdata;
-    int i = get_chat_num(m, chat);
-
-    if (i == -1)
-        return;
-
-    uint8_t message_terminated[length + 1];
-    memcpy(message_terminated, message, length);
-    message_terminated[length] = 0; /* Force NULL terminator */
-
-    if (m->group_message)
-        (*m->group_message)(m, i, peer_number, message_terminated, length, m->group_message_userdata);
-}
-
-static void group_action_function(Group_Chat *chat, int peer_number, const uint8_t *action, uint16_t length,
-                                  void *userdata)
-{
-    Messenger *m = userdata;
-    int i = get_chat_num(m, chat);
-
-    if (i == -1)
-        return;
-
-    uint8_t action_terminated[length + 1];
-    memcpy(action_terminated, action, length);
-    action_terminated[length] = 0; /* Force NULL terminator */
-
-    if (m->group_action)
-        (*m->group_action)(m, i, peer_number, action_terminated, length, m->group_action_userdata);
-}
-
-static void group_namelistchange_function(Group_Chat *chat, int peer, uint8_t change, void *userdata)
-{
-    Messenger *m = userdata;
-    int i = get_chat_num(m, chat);
-
-    if (i == -1)
-        return;
-
-    if (m->group_namelistchange)
-        (*m->group_namelistchange)(m, i, peer, change, m->group_namelistchange_userdata);
-}
-
-
-/* Creates a new groupchat and puts it in the chats array.
- *
- * return group number on success.
- * return -1 on failure.
- */
-int add_groupchat(Messenger *m)
-{
-    uint32_t i;
-
-    for (i = 0; i < m->numchats; ++i) {
-        if (m->chats[i] == NULL) {
-            Group_Chat *newchat = new_groupchat(m->net);
-
-            if (newchat == NULL)
-                return -1;
-
-            callback_groupmessage(newchat, &group_message_function, m);
-            callback_groupaction(newchat, &group_action_function, m);
-            callback_namelistchange(newchat, &group_namelistchange_function, m);
-            /* TODO: remove this (group nicks should not be tied to the global one) */
-            set_nick(newchat, m->name, m->name_length);
-            m->chats[i] = newchat;
-            return i;
-        }
-    }
-
-    Group_Chat **temp;
-    temp = realloc(m->chats, sizeof(Group_Chat *) * (m->numchats + 1));
-
-    if (temp == NULL)
-        return -1;
-
-    m->chats = temp;
-    temp[m->numchats] = new_groupchat(m->net);
-
-    if (temp[m->numchats] == NULL)
-        return -1;
-
-    callback_groupmessage(temp[m->numchats], &group_message_function, m);
-    callback_groupaction(temp[m->numchats], &group_action_function, m);
-    callback_namelistchange(temp[m->numchats], &group_namelistchange_function, m);
-    /* TODO: remove this (group nicks should not be tied to the global one) */
-    set_nick(temp[m->numchats], m->name, m->name_length);
-    ++m->numchats;
-    return (m->numchats - 1);
-}
-
-/* Delete a groupchat from the chats array.
- *
- * return 0 on success.
- * return -1 if failure.
- */
-int del_groupchat(Messenger *m, int groupnumber)
-{
-    if ((unsigned int)groupnumber >= m->numchats)
-        return -1;
-
-    if (m->chats == NULL)
-        return -1;
-
-    if (m->chats[groupnumber] == NULL)
-        return -1;
-
-    kill_groupchat(m->chats[groupnumber]);
-    m->chats[groupnumber] = NULL;
-
-    uint32_t i;
-
-    for (i = m->numchats; i != 0; --i) {
-        if (m->chats[i - 1] != NULL)
-            break;
-    }
-
-    m->numchats = i;
-
-    if (i == 0) {
-        free(m->chats);
-        m->chats = NULL;
-    } else {
-        Group_Chat **temp = realloc(m->chats, sizeof(Group_Chat *) * i);
-
-        if (temp != NULL)
-            m->chats = temp;
-    }
-
-    return 0;
-}
-
-/* Copy the name of peernumber who is in groupnumber to name.
- * name must be at least MAX_NICK_BYTES long.
- *
- * return length of name if success
- * return -1 if failure
- */
-int m_group_peername(const Messenger *m, int groupnumber, int peernumber, uint8_t *name)
-{
-    if ((unsigned int)groupnumber >= m->numchats)
-        return -1;
-
-    if (m->chats == NULL)
-        return -1;
-
-    if (m->chats[groupnumber] == NULL)
-        return -1;
-
-    return group_peername(m->chats[groupnumber], peernumber, name);
-}
-
-/* Store the fact that we invited a specific friend.
- */
-static void group_store_friendinvite(Messenger *m, int32_t friendnumber, int groupnumber)
-{
-    /* Add 1 to the groupchat number because 0 (default value in invited_groups) is a valid groupchat number */
-    m->friendlist[friendnumber].invited_groups[m->friendlist[friendnumber].invited_groups_num % MAX_INVITED_GROUPS] =
-        groupnumber + 1;
-    ++m->friendlist[friendnumber].invited_groups_num;
-}
-
-/* return 1 if that friend was invited to the group
- * return 0 if the friend was not or error.
- */
-static uint8_t group_invited(const Messenger *m, int32_t friendnumber, int groupnumber)
-{
-
-    uint32_t i;
-    uint16_t num = MAX_INVITED_GROUPS;
-
-    if (MAX_INVITED_GROUPS > m->friendlist[friendnumber].invited_groups_num)
-        num = m->friendlist[friendnumber].invited_groups_num;
-
-    for (i = 0; i < num; ++i) {
-        if (m->friendlist[friendnumber].invited_groups[i] == groupnumber + 1) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-/* invite friendnumber to groupnumber
- * return 0 on success
- * return -1 on failure
- */
-int invite_friend(Messenger *m, int32_t friendnumber, int groupnumber)
-{
-    if (friend_not_valid(m, friendnumber) || (unsigned int)groupnumber >= m->numchats)
-        return -1;
-
-    if (m->chats == NULL)
-        return -1;
-
-    if (m->friendlist[friendnumber].status == NOFRIEND || m->chats[groupnumber] == NULL)
-        return -1;
-
-    group_store_friendinvite(m, friendnumber, groupnumber);
-
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, m->chats[groupnumber]->self_public_key,
-                             crypto_box_PUBLICKEYBYTES, 0) == 0)
-        return -1;
-
-    return 0;
-}
-
-
-/* Join a group (you need to have been invited first.)
- *
- * returns group number on success
- * returns -1 on failure.
- */
-int join_groupchat(Messenger *m, int32_t friendnumber, const uint8_t *friend_group_public_key)
-{
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    uint8_t data[crypto_box_PUBLICKEYBYTES * 2];
-    int groupnum = add_groupchat(m);
-
-    if (groupnum == -1)
-        return -1;
-
-    IP_Port friend_ip = get_friend_ipport(m, friendnumber);
-
-    if (friend_ip.ip.family == 0) {
-        del_groupchat(m, groupnum);
-        return -1;
-    }
-
-    id_copy(data, friend_group_public_key);
-    id_copy(data + crypto_box_PUBLICKEYBYTES, m->chats[groupnum]->self_public_key);
-
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_JOIN_GROUPCHAT, data, sizeof(data), 0)) {
-        chat_bootstrap_nonlazy(m->chats[groupnum], get_friend_ipport(m, friendnumber),
-                               friend_group_public_key); //TODO: check if ip returned is zero?
-        return groupnum;
-    }
-
-    del_groupchat(m, groupnum);
-    return -1;
-}
-
-
-/* send a group message
- * return 0 on success
- * return -1 on failure
- */
-int group_message_send(const Messenger *m, int groupnumber, const uint8_t *message, uint32_t length)
-{
-    if (groupnumber_not_valid(m, groupnumber))
-        return -1;
-
-    if (group_sendmessage(m->chats[groupnumber], message, length) > 0)
-        return 0;
-
-    return -1;
-}
-
-/* send a group action
- * return 0 on success
- * return -1 on failure
- */
-int group_action_send(const Messenger *m, int groupnumber, const uint8_t *action, uint32_t length)
-{
-    if (groupnumber_not_valid(m, groupnumber))
-        return -1;
-
-    if (group_sendaction(m->chats[groupnumber], action, length) > 0)
-        return 0;
-
-    return -1;
-}
-
-/* Return the number of peers in the group chat on success.
- * return -1 on failure
- */
-int group_number_peers(const Messenger *m, int groupnumber)
-{
-    if (groupnumber_not_valid(m, groupnumber))
-        return -1;
-
-    return group_numpeers(m->chats[groupnumber]);
-}
-
-/* List all the peers in the group chat.
- *
- * Copies the names of the peers to the name[length][MAX_NICK_BYTES] array.
- *
- * Copies the lengths of the names to lengths[length]
- *
- * returns the number of peers on success.
- *
- * return -1 on failure.
- */
-int group_names(const Messenger *m, int groupnumber, uint8_t names[][MAX_NICK_BYTES], uint16_t lengths[],
-                uint16_t length)
-{
-    if (groupnumber_not_valid(m, groupnumber))
-        return -1;
-
-    return group_client_names(m->chats[groupnumber], names, lengths, length);
-}
-
-static int handle_group(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
-{
-    Messenger *m = object;
-
-    if (length < crypto_box_PUBLICKEYBYTES + 1) {
-        return 1;
-    }
-
-    uint32_t i;
-
-    for (i = 0; i < m->numchats; ++i) {
-        if (m->chats[i] == NULL)
-            continue;
-
-        if (id_equal(packet + 1, m->chats[i]->self_public_key))
-            return handle_groupchatpacket(m->chats[i], source, packet, length);
-    }
-
-    return 1;
-}
-
-static void do_allgroupchats(Messenger *m)
-{
-    uint32_t i;
-
-    for (i = 0; i < m->numchats; ++i) {
-        if (m->chats[i] != NULL)
-            do_groupchat(m->chats[i]);
-    }
-}
 
 /****************FILE SENDING*****************/
 
@@ -2061,21 +1645,13 @@ Messenger *new_messenger(Messenger_Options *options)
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
 
-    networking_registerhandler(m->net, NET_PACKET_GROUP_CHATS, &handle_group, m);
-
     return m;
 }
 
 /* Run this before closing shop. */
 void kill_messenger(Messenger *m)
 {
-    /* FIXME TODO: ideally cleanupMessenger will mirror initMessenger.
-     * This requires the other modules to expose cleanup functions.
-     */
-    uint32_t i, numchats = m->numchats;
-
-    for (i = 0; i < numchats; ++i)
-        del_groupchat(m, i);
+    uint32_t i;
 
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
@@ -2599,30 +2175,21 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_INVITE_GROUPCHAT: {
-            if (data_length != crypto_box_PUBLICKEYBYTES)
+            if (data_length == 0)
                 break;
 
             if (m->group_invite)
-                (*m->group_invite)(m, i, data, m->group_invite_userdata);
+                (*m->group_invite)(m, i, temp, len, m->group_invite_number);
 
             break;
         }
 
-        case PACKET_ID_JOIN_GROUPCHAT: {
-            if (data_length != crypto_box_PUBLICKEYBYTES * 2)
+        case PACKET_ID_MESSAGE_GROUPCHAT: {
+            if (data_length == 0)
                 break;
 
-            int groupnum = group_num(m, data);
-
-            if (groupnum == -1)
-                break;
-
-            if (!group_invited(m, i, groupnum))
-                break;
-
-            group_newpeer(m->chats[groupnum], data + crypto_box_PUBLICKEYBYTES);
-            /* This is just there to speedup joining. */
-            chat_bootstrap(m->chats[groupnum], get_friend_ipport(m, i), data + crypto_box_PUBLICKEYBYTES);
+            if (m->group_message)
+                (*m->group_message)(m, i, temp, len, m->group_message_number);
             break;
         }
 
@@ -2902,7 +2469,6 @@ void do_messenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friends(m);
-    do_allgroupchats(m);
     LANdiscovery(m);
 
 #ifdef LOGGING
@@ -2912,16 +2478,6 @@ void do_messenger(Messenger *m)
 #ifdef ENABLE_ASSOC_DHT
         Assoc_status(m->dht->assoc);
 #endif
-
-        if (m->numchats > 0) {
-            size_t c;
-
-            for (c = 0; c < m->numchats; c++) {
-                if (m->chats[c])
-                    Assoc_status(m->chats[c]->assoc);
-            }
-        }
-
 
         lastdump = unix_time();
         uint32_t client, last_pinged;
@@ -3428,52 +2984,4 @@ int get_friendlist(const Messenger *m, int32_t **out_list, uint32_t *out_list_le
     }
 
     return 0;
-}
-
-/* Return the number of chats in the instance m.
- * You should use this to determine how much memory to allocate
- * for copy_chatlist. */
-uint32_t count_chatlist(const Messenger *m)
-{
-    uint32_t ret = 0;
-    uint32_t i;
-
-    for (i = 0; i < m->numchats; i++) {
-        if (m->chats[i]) {
-            ret++;
-        }
-    }
-
-    return ret;
-}
-
-/* Copy a list of valid chat IDs into the array out_list.
- * If out_list is NULL, returns 0.
- * Otherwise, returns the number of elements copied.
- * If the array was too small, the contents
- * of out_list will be truncated to list_size. */
-uint32_t copy_chatlist(const Messenger *m, int *out_list, uint32_t list_size)
-{
-    if (!out_list)
-        return 0;
-
-    if (m->numchats == 0) {
-        return 0;
-    }
-
-    uint32_t i;
-    uint32_t ret = 0;
-
-    for (i = 0; i < m->numchats; i++) {
-        if (ret >= list_size) {
-            break; /* Abandon ship */
-        }
-
-        if (m->chats[i]) {
-            out_list[ret] = i;
-            ret++;
-        }
-    }
-
-    return ret;
 }
