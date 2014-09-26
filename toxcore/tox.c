@@ -798,6 +798,57 @@ uint64_t tox_file_data_remaining(const Tox *tox, int32_t friendnumber, uint8_t f
     return file_dataremaining(m, friendnumber, filenumber, send_receive);
 }
 
+
+/****************AVATAR FUNCTIONS*****************/
+
+void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, void *), void *userdata)
+{
+    Messenger *m = tox;
+    m_callback_avatar_info(m, function, userdata);
+}
+
+void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, uint8_t *, uint32_t,
+                              void *), void *userdata)
+{
+    Messenger *m = tox;
+    m_callback_avatar_data(m, function, userdata);
+}
+
+int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t length)
+{
+    Messenger *m = tox;
+    return m_set_avatar(m, format, data, length);
+}
+
+int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen, uint8_t *hash)
+{
+    const Messenger *m = tox;
+    return m_get_self_avatar(m, format, buf, length, maxlen, hash);
+}
+
+int tox_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen)
+{
+    return m_hash(hash, data, datalen);
+}
+
+int tox_request_avatar_info(const Tox *tox, const int32_t friendnumber)
+{
+    const Messenger *m = tox;
+    return m_request_avatar_info(m, friendnumber);
+}
+
+int tox_send_avatar_info(Tox *tox, const int32_t friendnumber)
+{
+    const Messenger *m = tox;
+    return m_send_avatar_info(m, friendnumber);
+}
+
+int tox_request_avatar_data(const Tox *tox, const int32_t friendnumber)
+{
+    const Messenger *m = tox;
+    return m_request_avatar_data(m, friendnumber);
+}
+
 /***************END OF FILE SENDING FUNCTIONS******************/
 
 /* Like tox_bootstrap_from_address but for TCP relays only.
@@ -808,33 +859,42 @@ uint64_t tox_file_data_remaining(const Tox *tox, int32_t friendnumber, uint8_t f
 int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    IP_Port ip_port_v64;
-    IP *ip_extra = NULL;
-    IP_Port ip_port_v4;
-    ip_init(&ip_port_v64.ip, m->options.ipv6enabled);
+    IP_Port ip_port, ip_port_v4;
 
-    if (m->options.ipv6enabled) {
-        /* setup for getting BOTH: an IPv6 AND an IPv4 address */
-        ip_port_v64.ip.family = AF_UNSPEC;
-        ip_reset(&ip_port_v4.ip);
-        ip_extra = &ip_port_v4.ip;
+    if (!addr_parse_ip(address, &ip_port.ip)) {
+        if (m->options.udp_disabled) /* Disable DNS when udp is disabled. */
+            return 0;
+
+        IP *ip_extra = NULL;
+        ip_init(&ip_port.ip, m->options.ipv6enabled);
+
+        if (m->options.ipv6enabled) {
+            /* setup for getting BOTH: an IPv6 AND an IPv4 address */
+            ip_port.ip.family = AF_UNSPEC;
+            ip_reset(&ip_port_v4.ip);
+            ip_extra = &ip_port_v4.ip;
+        }
+
+        if (!addr_resolve(address, &ip_port.ip, ip_extra))
+            return 0;
     }
 
-    if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
-        ip_port_v64.port = htons(port);
-        add_tcp_relay(m->net_crypto, ip_port_v64, public_key);
-        onion_add_path_node(m->onion_c, ip_port_v64, public_key); //TODO: move this
-        return 1;
-    } else {
-        return 0;
-    }
+    ip_port.port = htons(port);
+    add_tcp_relay(m->net_crypto, ip_port, public_key);
+    onion_add_path_node(m->onion_c, ip_port, public_key); //TODO: move this
+    return 1;
 }
 
 int tox_bootstrap_from_address(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    tox_add_tcp_relay(tox, address, port, public_key);
-    return DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key);
+    int ret = tox_add_tcp_relay(tox, address, port, public_key);
+
+    if (m->options.udp_disabled) {
+        return ret;
+    } else { /* DHT only works on UDP. */
+        return DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key);
+    }
 }
 
 /*  return 0 if we are not connected to the DHT.

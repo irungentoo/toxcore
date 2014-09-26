@@ -105,6 +105,21 @@ tox_shell_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LIBS) \
                         -lutil
 
+
+noinst_PROGRAMS +=      test_avatars
+
+test_avatars_SOURCES =   ../testing/test_avatars.c
+
+test_avatars_CFLAGS =    $(LIBSODIUM_CFLAGS) \
+                        $(NACL_CFLAGS)
+
+test_avatars_LDADD =    $(LIBSODIUM_LDFLAGS) \
+                        $(NACL_LDFLAGS) \
+                        libtoxcore.la \
+                        $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
+                        $(NACL_LIBS)
+
 endif
 
 EXTRA_DIST += 			$(top_srcdir)/testing/misc_tools.c

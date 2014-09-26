@@ -92,7 +92,7 @@ typedef int sock_t;
 #endif
 #endif
 
-#define MAX_UDP_PACKET_SIZE 65507
+#define MAX_UDP_PACKET_SIZE 2048
 
 #define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID. */
 #define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID. */

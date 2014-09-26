@@ -1314,10 +1314,12 @@ static int create_crypto_connection(Net_Crypto *c)
     int id = -1;
 
     if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == 0) {
-        memset(&(c->crypto_connections[c->crypto_connections_length]), 0, sizeof(Crypto_Connection));
         id = c->crypto_connections_length;
-        pthread_mutex_init(&c->crypto_connections[id].mutex, NULL);
         ++c->crypto_connections_length;
+        memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
+
+        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0)
+            return -1;
     }
 
     pthread_mutex_unlock(&c->connections_mutex);
@@ -2642,6 +2644,14 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (temp == NULL)
         return NULL;
 
+    pthread_mutexattr_t attr;
+
+    if (pthread_mutexattr_init(&attr) != 0 || pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0
+            || pthread_mutex_init(&temp->tcp_mutex, &attr) != 0 || pthread_mutex_init(&temp->connections_mutex, NULL) != 0) {
+        free(temp);
+        return NULL;
+    }
+
     temp->dht = dht;
 
     new_keys(temp);
@@ -2655,12 +2665,6 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_DATA, &udp_handle_packet, temp);
 
     bs_list_init(&temp->ip_port_list, sizeof(IP_Port), 8);
-
-    pthread_mutexattr_t attr;
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&temp->tcp_mutex, &attr);
-    pthread_mutex_init(&temp->connections_mutex, NULL);
 
     if (proxy_info) {
         temp->proxy_info = *proxy_info;

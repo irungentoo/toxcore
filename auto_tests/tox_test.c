@@ -84,6 +84,8 @@ int handle_custom_packet(void *object, const uint8_t *data, uint32_t len)
     } else {
         printf("Custom packet fail. %u\n",number );
     }
+
+    return 0;
 }
 
 uint8_t filenum;

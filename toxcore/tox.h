@@ -37,6 +37,8 @@ extern "C" {
 #define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_CLIENT_ID_SIZE 32
+#define TOX_AVATAR_MAX_DATA_LENGTH 16384
+#define TOX_HASH_LENGTH /*crypto_hash_sha256_BYTES*/ 32
 
 #define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
@@ -69,6 +71,16 @@ typedef enum {
     TOX_USERSTATUS_INVALID
 }
 TOX_USERSTATUS;
+
+
+/* AVATAR_FORMAT -
+ * Data formats for user avatar images
+ */
+typedef enum {
+    TOX_AVATAR_FORMAT_NONE = 0,
+    TOX_AVATAR_FORMAT_PNG
+}
+TOX_AVATAR_FORMAT;
 
 #ifndef __TOX_DEFINED__
 #define __TOX_DEFINED__
@@ -241,7 +253,6 @@ int tox_get_self_status_message(const Tox *tox, uint8_t *buf, uint32_t maxlen);
  */
 uint8_t tox_get_user_status(const Tox *tox, int32_t friendnumber);
 uint8_t tox_get_self_user_status(const Tox *tox);
-
 
 /* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
  * returns -1 on error.
@@ -517,6 +528,137 @@ uint32_t tox_count_chatlist(const Tox *tox);
  * of out_list will be truncated to list_size. */
 uint32_t tox_get_chatlist(const Tox *tox, int *out_list, uint32_t list_size);
 
+/****************AVATAR FUNCTIONS*****************/
+
+/* Set the callback function for avatar information.
+ * This callback will be called when avatar information are received from friends. These events
+ * can arrive at anytime, but are usually received uppon connection and in reply of avatar
+ * information requests.
+ *
+ * Function format is:
+ *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, void *userdata)
+ *
+ * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT) and 'hash' is the hash of
+ * the avatar data for caching purposes and it is exactly TOX_AVATAR_HASH_LENGTH long. If the
+ * image format is NONE, the hash is zeroed.
+ *
+ */
+void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, void *),
+                              void *userdata);
+
+
+/* Set the callback function for avatar data.
+ * This callback will be called when the complete avatar data was correctly received from a
+ * friend. This only happens in reply of a avatar data request (see tox_request_avatar_data);
+ *
+ * Function format is:
+ *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, uint8_t *data, uint32_t datalen, void *userdata)
+ *
+ * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT); 'hash' is the
+ * locally-calculated cryptographic hash of the avatar data and it is exactly
+ * TOX_AVATAR_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
+ * of such data.
+ *
+ * If format is NONE, 'data' is NULL, 'datalen' is zero, and the hash is zeroed. The hash is
+ * always validated locally with the function tox_avatar_hash and ensured to match the image
+ * data, so this value can be safely used to compare with cached avatars.
+ *
+ * WARNING: users MUST treat all avatar image data received from another peer as untrusted and
+ * potentially malicious. The library only ensures that the data which arrived is the same the
+ * other user sent, and does not interpret or validate any image data.
+ */
+void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, uint8_t *, uint32_t,
+                              void *), void *userdata);
+
+/* Set the user avatar image data.
+ * This should be made before connecting, so we will not announce that the user have no avatar
+ * before setting and announcing a new one, forcing the peers to re-download it.
+ *
+ * Notice that the library treats the image as raw data and does not interpret it by any way.
+ *
+ * Arguments:
+ *  format - Avatar image format or NONE for user with no avatar (see TOX_AVATAR_FORMAT);
+ *  data - pointer to the avatar data (may be NULL it the format is NONE);
+ *  length - length of image data. Must be <= TOX_AVATAR_MAX_DATA_LENGTH.
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t length);
+
+
+/* Get avatar data from the current user.
+ * Copies the current user avatar data to the destination buffer and sets the image format
+ * accordingly.
+ *
+ * If the avatar format is NONE, the buffer 'buf' isleft uninitialized, 'hash' is zeroed, and
+ * 'length' is set to zero.
+ *
+ * If any of the pointers format, buf, length, and hash are NULL, that particular field will be ignored.
+ *
+ * Arguments:
+ *   format - destination pointer to the avatar image format (see TOX_AVATAR_FORMAT);
+ *   buf - destination buffer to the image data. Must have at least 'maxlen' bytes;
+ *   length - destination pointer to the image data length;
+ *   maxlen - length of the destination buffer 'buf';
+ *   hash - destination pointer to the avatar hash (it must be exactly TOX_AVATAR_HASH_LENGTH bytes long).
+ *
+ * returns 0 on success;
+ * returns -1 on failure.
+ *
+ */
+int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen,
+                        uint8_t *hash);
+
+
+/* Generates a cryptographic hash of the given data.
+ * This function may be used by clients for any purpose, but is provided primarily for
+ * validating cached avatars. This use is highly recommended to avoid unnecessary avatar
+ * updates.
+ * This function is a wrapper to internal message-digest functions.
+ *
+ * Arguments:
+ *  hash - destination buffer for the hash data, it must be exactly TOX_HASH_LENGTH bytes long.
+ *  data - data to be hashed;
+ *  datalen - length of the data; for avatars, should be TOX_AVATAR_MAX_DATA_LENGTH
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int tox_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen);
+
+/* Request avatar information from a friend.
+ * Asks a friend to provide their avatar information (image format and hash). The friend may
+ * or may not answer this request and, if answered, the information will be provided through
+ * the callback 'avatar_info'.
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int tox_request_avatar_info(const Tox *tox, const int32_t friendnumber);
+
+
+/* Send an unrequested avatar information to a friend.
+ * Sends our avatar format and hash to a friend; he/she can use this information to validate
+ * an avatar from the cache and may (or not) reply with an avatar data request.
+ *
+ * Notice: it is NOT necessary to send these notification after changing the avatar or
+ * connecting. The library already does this.
+ *
+ * returns 0 on success
+ * returns -1 on failure.
+ */
+int tox_send_avatar_info(Tox *tox, const int32_t friendnumber);
+
+
+/* Request the avatar data from a friend.
+ * Ask a friend to send their avatar data. The friend may or may not answer this request and,
+ * if answered, the information will be provided in callback 'avatar_data'.
+ *
+ * returns 0 on sucess
+ * returns -1 on failure.
+ */
+int tox_request_avatar_data(const Tox *tox, const int32_t friendnumber);
 
 /****************FILE SENDING FUNCTIONS*****************/
 /* NOTE: This how to will be updated.

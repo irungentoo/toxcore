@@ -26,6 +26,9 @@
 
 #include <stdint.h>
 
+/* Clients are encouraged to set this as the maximum length names can have. */
+#define TOXDNS_MAX_RECOMMENDED_NAME_LENGTH 32
+
 /* How to use this api to make secure tox dns3 requests:
  *
  * 1. Get the public key of a server that supports tox dns3.

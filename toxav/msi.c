@@ -1621,6 +1621,7 @@ int msi_terminate_session ( MSISession *session )
     pthread_mutex_destroy(&session->mutex);
 
     LOGGER_DEBUG("Terminated session: %p", session);
+    free ( session->calls );
     free ( session );
     return _status;
 }
