@@ -122,6 +122,8 @@ typedef struct {
     uint64_t    NATping_timestamp;
 } NAT;
 
+#define DHT_FRIEND_MAX_LOCKS 2
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
@@ -135,6 +137,12 @@ typedef struct {
     NAT         nat;
 
     uint16_t lock_count;
+    struct {
+        void (*ip_callback)(void *, int32_t, IP_Port);
+        void *data;
+        int32_t number;
+    } callbacks[DHT_FRIEND_MAX_LOCKS];
+
 } DHT_Friend;
 
 typedef struct {
@@ -247,18 +255,22 @@ void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, con
 /* Add a new friend to the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.
  *
+ * ip_callback is the callback of a function that will be called when the ip address
+ * is found along with arguments data and number.
+ *
  *  return 0 if success.
- *  return 1 if failure (friends list is full).
+ *  return -1 if failure (friends list is full).
  */
-int DHT_addfriend(DHT *dht, const uint8_t *client_id);
+int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *data, int32_t number, IP_Port),
+                  void *data, int32_t number, uint16_t *lock_count);
 
 /* Delete a friend from the friends list.
  * client_id must be CLIENT_ID_SIZE bytes long.
  *
  *  return 0 if success.
- *  return 1 if failure (client_id not in friends list).
+ *  return -1 if failure (client_id not in friends list).
  */
-int DHT_delfriend(DHT *dht, const uint8_t *client_id);
+int DHT_delfriend(DHT *dht, const uint8_t *client_id, uint16_t lock_count);
 
 /* Get ip of friend.
  *  client_id must be CLIENT_ID_SIZE bytes long.

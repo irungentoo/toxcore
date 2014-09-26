@@ -958,7 +958,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
         return -1;
 
     if (onion_c->friends_list[friend_num].is_fake_clientid)
-        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
+        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, 0);
 
     memset(&(onion_c->friends_list[friend_num]), 0, sizeof(Onion_Friend));
     uint32_t i;
@@ -1019,10 +1019,11 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
             return -1;
         }
 
-        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id);
+        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, 0);
+        onion_c->friends_list[friend_num].is_fake_clientid = 0;
     }
 
-    if (DHT_addfriend(onion_c->dht, dht_key) == 1) {
+    if (DHT_addfriend(onion_c->dht, dht_key, 0, 0, 0, 0) == -1) {
         return -1;
     }
 
@@ -1203,7 +1204,7 @@ static void cleanup_friend(Onion_Client *onion_c, uint16_t friendnum)
     if (onion_c->friends_list[friendnum].is_fake_clientid && !onion_c->friends_list[friendnum].is_online
             && is_timeout(onion_c->friends_list[friendnum].last_seen, DEAD_ONION_TIMEOUT)) {
         onion_c->friends_list[friendnum].is_fake_clientid = 0;
-        DHT_delfriend(onion_c->dht, onion_c->friends_list[friendnum].fake_client_id);
+        DHT_delfriend(onion_c->dht, onion_c->friends_list[friendnum].fake_client_id, 0);
     }
 }
 

@@ -712,10 +712,23 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id)
         if (!client_or_ip_port_in_list(dht->friends_list[i].client_list,
                                        MAX_FRIEND_CLIENTS, client_id, ip_port)) {
             if (replace_all(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                            client_id, ip_port, dht->friends_list[i].client_id))
+                            client_id, ip_port, dht->friends_list[i].client_id)) {
+                DHT_Friend *friend = &dht->friends_list[i];
+
+                if (memcmp(client_id, friend->client_id, CLIENT_ID_SIZE) == 0) {
+                    uint32_t j;
+
+                    for (j = 0; j < friend->lock_count; ++j) {
+                        if (friend->callbacks[j].ip_callback)
+                            friend->callbacks[j].ip_callback(friend->callbacks[j].data, friend->callbacks[j].number, ip_port);
+                    }
+                }
+
                 used++;
-        } else
+            }
+        } else {
             used++;
+        }
     }
 
 #ifdef ENABLE_ASSOC_DHT
@@ -1089,12 +1102,28 @@ static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_
     }
 }
 */
-int DHT_addfriend(DHT *dht, const uint8_t *client_id)
+int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *data, int32_t number, IP_Port),
+                  void *data, int32_t number, uint16_t *lock_count)
 {
     int friend_num = friend_number(dht, client_id);
 
+    uint16_t lock_num;
+
     if (friend_num != -1) { /* Is friend already in DHT? */
-        ++dht->friends_list[friend_num].lock_count;
+        DHT_Friend *friend = &dht->friends_list[friend_num];
+
+        if (friend->lock_count == DHT_FRIEND_MAX_LOCKS)
+            return -1;
+
+        lock_num = friend->lock_count;
+        ++friend->lock_count;
+        friend->callbacks[lock_num].ip_callback = ip_callback;
+        friend->callbacks[lock_num].data = data;
+        friend->callbacks[lock_num].number = number;
+
+        if (lock_count)
+            *lock_count = lock_num + 1;
+
         return 0;
     }
 
@@ -1102,14 +1131,25 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id)
     temp = realloc(dht->friends_list, sizeof(DHT_Friend) * (dht->num_friends + 1));
 
     if (temp == NULL)
-        return 1;
+        return -1;
 
     dht->friends_list = temp;
-    memset(&dht->friends_list[dht->num_friends], 0, sizeof(DHT_Friend));
-    memcpy(dht->friends_list[dht->num_friends].client_id, client_id, CLIENT_ID_SIZE);
+    DHT_Friend *friend = &dht->friends_list[dht->num_friends];
+    memset(friend, 0, sizeof(DHT_Friend));
+    memcpy(friend->client_id, client_id, CLIENT_ID_SIZE);
 
-    dht->friends_list[dht->num_friends].nat.NATping_id = random_64b();
+    friend->nat.NATping_id = random_64b();
     ++dht->num_friends;
+
+    lock_num = friend->lock_count;
+    ++friend->lock_count;
+    friend->callbacks[lock_num].ip_callback = ip_callback;
+    friend->callbacks[lock_num].data = data;
+    friend->callbacks[lock_num].number = number;
+
+    if (lock_count)
+        *lock_count = lock_num + 1;
+
 #ifdef ENABLE_ASSOC_DHT
 
     if (dht->assoc) {
@@ -1147,18 +1187,24 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id)
     return 0;
 }
 
-int DHT_delfriend(DHT *dht, const uint8_t *client_id)
+int DHT_delfriend(DHT *dht, const uint8_t *client_id, uint16_t lock_count)
 {
     int friend_num = friend_number(dht, client_id);
 
     if (friend_num == -1) {
-        return 1;
+        return -1;
     }
 
-    --dht->friends_list[friend_num].lock_count;
+    DHT_Friend *friend = &dht->friends_list[friend_num];
+    --friend->lock_count;
 
-    if (dht->friends_list[friend_num].lock_count) /* DHT friend is still in use.*/
+    if (friend->lock_count && lock_count) { /* DHT friend is still in use.*/
+        --lock_count;
+        friend->callbacks[lock_count].ip_callback = NULL;
+        friend->callbacks[lock_count].data = NULL;
+        friend->callbacks[lock_count].number = 0;
         return 0;
+    }
 
     uint32_t i;
     DHT_Friend *temp;
@@ -1180,13 +1226,10 @@ int DHT_delfriend(DHT *dht, const uint8_t *client_id)
     temp = realloc(dht->friends_list, sizeof(DHT_Friend) * (dht->num_friends));
 
     if (temp == NULL)
-        return 1;
+        return -1;
 
     dht->friends_list = temp;
     return 0;
-
-
-    return 1;
 }
 
 /* TODO: Optimize this. */
@@ -2227,7 +2270,7 @@ DHT *new_DHT(Networking_Core *net)
     for (i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
         uint8_t random_key_bytes[CLIENT_ID_SIZE];
         randombytes(random_key_bytes, sizeof(random_key_bytes));
-        DHT_addfriend(dht, random_key_bytes);
+        DHT_addfriend(dht, random_key_bytes, 0, 0, 0, 0);
     }
 
     return dht;
