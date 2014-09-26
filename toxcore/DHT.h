@@ -135,8 +135,7 @@ typedef struct {
     NAT         nat;
 } DHT_Friend;
 
-typedef struct
-{
+typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
 }

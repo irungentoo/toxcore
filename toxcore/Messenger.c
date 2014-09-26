@@ -1014,22 +1014,20 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, uint32_t number)
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t), uint32_t number)
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t))
 {
     m->group_invite = function;
-    m->group_invite_number = number;
 }
 
 /* Set the callback for group messages.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, uint32_t number)
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
  */
-void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, uint32_t), uint32_t number)
+void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t))
 {
     m->group_message = function;
-    m->group_message_number = number;
 }
 
 /* Send a group invite packet.
@@ -2179,7 +2177,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 break;
 
             if (m->group_invite)
-                (*m->group_invite)(m, i, temp, len, m->group_invite_number);
+                (*m->group_invite)(m, i, data, data_length);
 
             break;
         }
@@ -2189,7 +2187,8 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 break;
 
             if (m->group_message)
-                (*m->group_message)(m, i, temp, len, m->group_message_number);
+                (*m->group_message)(m, i, data, data_length);
+
             break;
         }
 

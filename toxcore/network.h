@@ -134,8 +134,7 @@ typedef int sock_t;
 #define TCP_INET6 (AF_INET6 + 3)
 #define TCP_FAMILY (AF_INET6 + 4)
 
-typedef union
-{
+typedef union {
     uint8_t uint8[4];
     uint16_t uint16[2];
     uint32_t uint32;
@@ -143,8 +142,7 @@ typedef union
 }
 IP4;
 
-typedef union
-{
+typedef union {
     uint8_t uint8[16];
     uint16_t uint16[8];
     uint32_t uint32[4];
@@ -153,8 +151,7 @@ typedef union
 }
 IP6;
 
-typedef struct
-{
+typedef struct {
     uint8_t family;
     union {
         IP4 ip4;
@@ -163,8 +160,7 @@ typedef struct
 }
 IP;
 
-typedef struct
-{
+typedef struct {
     IP ip;
     uint16_t port;
 }
