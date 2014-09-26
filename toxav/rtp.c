@@ -88,7 +88,8 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
         return NULL;
     }
 
-    bytes_to_U16(&_retu->sequnum, payload);
+    memcpy(&_retu->sequnum, payload, sizeof(_retu->sequnum));
+    _retu->sequnum = ntohs(_retu->sequnum);
 
     const uint8_t *_it = payload + 2;
 
@@ -128,15 +129,18 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
     _retu->length = _length;
 
 
-    bytes_to_U32(&_retu->timestamp, _it);
+    memcpy(&_retu->timestamp, _it, sizeof(_retu->timestamp));
+    _retu->timestamp = ntohl(_retu->timestamp);
     _it += 4;
-    bytes_to_U32(&_retu->ssrc, _it);
+    memcpy(&_retu->ssrc, _it, sizeof(_retu->ssrc));
+    _retu->ssrc = ntohl(_retu->ssrc);
 
     uint8_t _x;
 
     for ( _x = 0; _x < _cc; _x++ ) {
         _it += 4;
-        bytes_to_U32(&(_retu->csrc[_x]), _it);
+        memcpy(&_retu->csrc[_x], _it, sizeof(_retu->csrc[_x]));
+        _retu->csrc[_x] = ntohl(_retu->csrc[_x]);
     }
 
     return _retu;
@@ -162,7 +166,8 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
     }
 
     uint16_t _ext_length;
-    bytes_to_U16(&_ext_length, _it);
+    memcpy(&_ext_length, _it, sizeof(_ext_length));
+    _ext_length = ntohs(_ext_length);
     _it += 2;
 
 
@@ -173,7 +178,8 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
     }
 
     _retu->length  = _ext_length;
-    bytes_to_U16(&_retu->type, _it);
+    memcpy(&_retu->type, _it, sizeof(_retu->type));
+    _retu->type = ntohs(_retu->type);
     _it += 2;
 
     if ( !(_retu->table = calloc(_ext_length, sizeof (uint32_t))) ) {
@@ -186,7 +192,8 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
 
     for ( _x = 0; _x < _ext_length; _x++ ) {
         _it += 4;
-        bytes_to_U32(&(_retu->table[_x]), _it);
+        memcpy(&(_retu->table[_x]), _it, sizeof(_retu->table[_x]));
+        _retu->table[_x] = ntohl(_retu->table[_x]);
     }
 
     return _retu;
@@ -202,12 +209,16 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
 uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
 {
     uint8_t _cc = GET_FLAG_CSRCC ( header );
-
     uint8_t *_it = payload;
+    uint16_t sequnum;
+    uint32_t timestamp;
+    uint32_t ssrc;
+    uint32_t csrc;
 
 
     /* Add sequence number first */
-    U16_to_bytes(_it, header->sequnum);
+    sequnum = htons(header->sequnum);
+    memcpy(_it, &sequnum, sizeof(sequnum));
     _it += 2;
 
     *_it = header->flags;
@@ -216,15 +227,18 @@ uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
     ++_it;
 
 
-    U32_to_bytes( _it, header->timestamp);
+    timestamp = htonl(header->timestamp);
+    memcpy(_it, &timestamp, sizeof(timestamp));
     _it += 4;
-    U32_to_bytes( _it, header->ssrc);
+    ssrc = htonl(header->ssrc);
+    memcpy(_it, &ssrc, sizeof(ssrc));
 
     uint8_t _x;
 
     for ( _x = 0; _x < _cc; _x++ ) {
         _it += 4;
-        U32_to_bytes( _it, header->csrc[_x]);
+        csrc = htonl(header->csrc[_x]);
+        memcpy(_it, &csrc, sizeof(csrc));
     }
 
     return _it + 4;
@@ -240,10 +254,15 @@ uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
 uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
 {
     uint8_t *_it = payload;
+    uint16_t length;
+    uint16_t type;
+    uint32_t entry;
 
-    U16_to_bytes(_it, header->length);
+    length = htons(header->length);
+    memcpy(_it, &length, sizeof(length));
     _it += 2;
-    U16_to_bytes(_it, header->type);
+    type = htons(header->type);
+    memcpy(_it, &type, sizeof(type));
     _it -= 2; /* Return to 0 position */
 
     if ( header->table ) {
@@ -251,7 +270,8 @@ uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
 
         for ( _x = 0; _x < header->length; _x++ ) {
             _it += 4;
-            U32_to_bytes(_it, header->table[_x]);
+            entry = htonl(header->table[_x]);
+            memcpy(_it, &entry, sizeof(entry));
         }
     }
 
