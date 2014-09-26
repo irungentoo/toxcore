@@ -419,9 +419,12 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
 
 /* Set the callback for group invites.
  *
- *  Function(Tox *tox, int friendnumber, uint8_t *group_public_key, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ * data of length is what needs to be passed to join_groupchat().
  */
-void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, void *), void *userdata);
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
+                               void *userdata);
 
 /* Set the callback for group messages.
  *
@@ -479,24 +482,25 @@ int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t 
  */
 int tox_invite_friend(Tox *tox, int32_t friendnumber, int groupnumber);
 
-/* Join a group (you need to have been invited first.)
+/* Join a group (you need to have been invited first.) using data of length obtained
+ * in the group invite callback.
  *
  * returns group number on success
  * returns -1 on failure.
  */
-int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *friend_group_public_key);
+int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /* send a group message
  * return 0 on success
  * return -1 on failure
  */
-int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, uint32_t length);
+int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
 
 /* send a group action
  * return 0 on success
  * return -1 on failure
  */
-int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint32_t length);
+int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure

@@ -1001,11 +1001,11 @@ void print_help(char *prog_name)
     puts("  -f keyfile      [Optional] Specify a keyfile to read from and write to.");
 }
 
-void print_invite(Tox *m, int friendnumber, const uint8_t *group_public_key, void *userdata)
+void print_invite(Tox *m, int friendnumber, const uint8_t *data, uint16_t length, void *userdata)
 {
     char msg[256];
     sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
-            tox_join_groupchat(m, friendnumber, group_public_key));
+            tox_join_groupchat(m, friendnumber, data, length));
     new_lines(msg);
 }
 

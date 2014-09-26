@@ -41,7 +41,6 @@ typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     uint64_t    pingid;
     uint64_t    last_pinged;
-    IP_Port     ping_via;
 
     uint64_t    last_recv;
     uint64_t    last_recv_msgping;
@@ -52,11 +51,19 @@ typedef struct {
 
     uint8_t     deleted;
     uint64_t    deleted_time;
+
+    uint16_t peer_number;
 } Group_Peer;
 
-
-#define MAX_GROUP_CONNECTIONS 4
+#define DESIRED_CLOSE_CONNECTIONS 3
+#define MAX_GROUP_CONNECTIONS 16
 #define GROUP_IDENTIFIER_LENGTH crypto_box_KEYBYTES /* So we can use new_symmetric_key(...) to fill it */
+
+enum {
+    GROUPCHAT_CLOSE_NONE,
+    GROUPCHAT_CLOSE_FRIEND,
+    GROUPCHAT_CLOSE_GROUPCON
+};
 
 typedef struct {
     uint8_t status;
@@ -65,11 +72,15 @@ typedef struct {
     uint32_t numpeers;
 
     struct {
-        uint8_t type;
+        uint8_t type; /* GROUPCHAT_CLOSE_* */
         uint32_t number;
+        uint16_t group_number;
     } close[MAX_GROUP_CONNECTIONS];
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
+
+    uint32_t message_number;
+    uint16_t peer_number;
 } Group_c;
 
 typedef struct {
@@ -155,19 +166,19 @@ int invite_friend(Group_Chats *g_c, int32_t friendnumber, int groupnumber);
  * returns group number on success
  * returns -1 on failure.
  */
-int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t *data, uint16_t length);
+int join_groupchat(Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /* send a group message
  * return 0 on success
  * return -1 on failure
  */
-int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *message, uint32_t length);
+int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *message, uint16_t length);
 
 /* send a group action
  * return 0 on success
  * return -1 on failure
  */
-int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint32_t length);
+int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
