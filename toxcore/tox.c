@@ -608,8 +608,7 @@ int tox_add_groupchat(Tox *tox)
 int tox_del_groupchat(Tox *tox, int groupnumber)
 {
     Messenger *m = tox;
-    //return del_groupchat(m, groupnumber);
-    return -1;
+    return del_groupchat(m->group_chat_object, groupnumber);
 }
 
 /* Copy the name of peernumber who is in groupnumber to name.

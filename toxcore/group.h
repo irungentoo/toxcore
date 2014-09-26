@@ -85,6 +85,9 @@ typedef struct {
 
 typedef struct {
     uint8_t status;
+
+    uint8_t real_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
 } Group_Connection;
 
 typedef struct {

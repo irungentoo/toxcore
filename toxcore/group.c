@@ -337,21 +337,28 @@ static int add_friend_to_groupchat(Group_Chats *g_c, int32_t friendnumber, int g
     if (!g)
         return -1;
 
-    uint16_t i;
+    uint16_t i, ind = MAX_GROUP_CONNECTIONS;
 
     for (i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
-        if (g->close[i].type != GROUPCHAT_CLOSE_NONE)
+        if (g->close[i].type == GROUPCHAT_CLOSE_NONE) {
+            ind = i;
             continue;
+        }
+
+        if (g->close[i].type == GROUPCHAT_CLOSE_FRIEND && g->close[i].number == (uint32_t)friendnumber) {
+            g->close[i].group_number = other_groupnum; /* update groupnum. */
+            return 0; /* Already in list. */
+        }
 
         break;
     }
 
-    if (i == MAX_GROUP_CONNECTIONS)
+    if (ind == MAX_GROUP_CONNECTIONS)
         return -1;
 
-    g->close[i].type = GROUPCHAT_CLOSE_FRIEND;
-    g->close[i].number = friendnumber;
-    g->close[i].group_number = other_groupnum;
+    g->close[ind].type = GROUPCHAT_CLOSE_FRIEND;
+    g->close[ind].number = friendnumber;
+    g->close[ind].group_number = other_groupnum;
 
     return 0;
 }
@@ -374,6 +381,22 @@ int add_groupchat(Group_Chats *g_c)
     new_symmetric_key(g->identifier);
     g->peer_number = 0; /* Founder is peer 0. */
     return groupnumber;
+}
+
+/* Delete a groupchat from the chats array.
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+int del_groupchat(Group_Chats *g_c, int groupnumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    free(g->group);
+    return wipe_group_chat(g_c, groupnumber);
 }
 
 #define INVITE_PACKET_SIZE (1 + sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
@@ -546,13 +569,10 @@ static int friend_in_close(Group_c *g, int32_t friendnumber)
         if (g->close[i].number != (uint32_t)friendnumber)
             continue;
 
-        break;
+        return i;
     }
 
-    if (i == MAX_GROUP_CONNECTIONS)
-        return -1;
-
-    return i;
+    return -1;
 }
 
 #define MIN_MESSAGE_PACKET_LEN (sizeof(uint16_t) * 2 + sizeof(uint32_t) + 1)
