@@ -417,6 +417,34 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
 
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats undergo major changes right now ************/
 
+/* Creates new groupchat credentials instance.
+* Use in case you want to initiate the chat aka founder
+* return 0 on success.
+* return -1 on failure.
+*/
+int tox_add_groupchat_credentials(Tox *tox, int groupnumber);
+
+/* Copies group peer self pk into self_public_key
+*/
+void tox_get_groupchat_self_pk(Tox *tox, int groupnumber, uint8_t *self_public_key);
+
+/* Copies group peer self pk into self_public_key
+*/
+void tox_get_groupchat_pk(Tox *tox, int groupnumber, uint8_t *chat_public_key);
+
+/* Delete a groupchat from the chats array.
+*
+* return 0 on success.
+* return -1 if failure.
+*/
+int tox_del_groupchat(Tox *tox, int groupnumber);
+
+/* Creates a new groupchat and puts it in the chats array.
+*
+* return group number on success.
+* return -1 on failure.
+*/
+int tox_add_groupchat(Tox *tox);
 
 /****************AVATAR FUNCTIONS*****************/
 

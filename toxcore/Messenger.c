@@ -1011,6 +1011,125 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
 
 /**********GROUP CHATS************/
 
+/* Creates a new groupchat and puts it in the chats array.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ */
+int add_groupchat(Messenger *m)
+{
+    uint32_t i;
+
+    for (i = 0; i < m->numchats; ++i) {
+        if (m->chats[i] == NULL) {
+            Group_Chat *newchat = new_groupchat(m->net);
+
+            if (newchat == NULL)
+                return -1;
+
+            //callback_groupmessage(newchat, &group_message_function, m);
+            //callback_groupaction(newchat, &group_action_function, m);
+
+            m->chats[i] = newchat;
+            return i;
+        }
+    }
+
+    Group_Chat **temp;
+    temp = realloc(m->chats, sizeof(Group_Chat *) * (m->numchats + 1));
+
+    if (temp == NULL)
+        return -1;
+
+    m->chats = temp;
+    temp[m->numchats] = new_groupchat(m->net);
+
+    if (temp[m->numchats] == NULL)
+        return -1;
+
+    //callback_groupmessage(temp[m->numchats], &group_message_function, m);
+    //callback_groupaction(temp[m->numchats], &group_action_function, m);
+
+    ++m->numchats;
+    return (m->numchats - 1);
+}
+
+/* Delete a groupchat from the chats array.
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+int del_groupchat(Messenger *m, int groupnumber)
+{
+    if ((unsigned int)groupnumber >= m->numchats)
+        return -1;
+
+    if (m->chats == NULL)
+        return -1;
+
+    if (m->chats[groupnumber] == NULL)
+        return -1;
+
+    kill_groupchat(m->chats[groupnumber]);
+    m->chats[groupnumber] = NULL;
+
+    uint32_t i;
+
+    for (i = m->numchats; i != 0; --i) {
+        if (m->chats[i - 1] != NULL)
+            break;
+    }
+
+    m->numchats = i;
+
+    if (i == 0) {
+        free(m->chats);
+        m->chats = NULL;
+    } else {
+        Group_Chat **temp = realloc(m->chats, sizeof(Group_Chat *) * i);
+
+        if (temp != NULL)
+            m->chats = temp;
+    }
+
+    return 0;
+}
+
+static void do_allgroupchats(Messenger *m)
+{
+    uint32_t i;
+
+    for (i = 0; i < m->numchats; ++i) {
+        if (m->chats[i] != NULL)
+            do_groupchat(m->chats[i]);
+    }
+}
+
+/* Creates new groupchat credentials instance.
+ * Use in case you want to initiate the chat aka founder
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int add_groupchat_credentials(Messenger *m, int groupnumber)
+{   
+    m->chats[groupnumber]->credentials = new_groupcredentials();
+    memcpy(m->chats[groupnumber]->chat_public_key, m->chats[groupnumber]->credentials->chat_public_key, EXT_PUBLIC_KEY);
+    return 0;
+}
+
+/* Copies group peer self pk into self_public_key
+ */
+void get_groupchat_self_pk(const Messenger *m, int groupnumber, uint8_t *self_public_key)
+{
+    memcpy(self_public_key, m->chats[groupnumber]->self_public_key, EXT_PUBLIC_KEY);
+}
+
+/* Copies group chat pk into chat_public_key
+ */
+void get_groupchat_pk(const Messenger *m, int groupnumber, uint8_t *chat_public_key)
+{
+    memcpy(chat_public_key, m->chats[groupnumber]->chat_public_key, EXT_PUBLIC_KEY);
+}
 
 /****************FILE SENDING*****************/
 
@@ -1614,6 +1733,10 @@ void kill_messenger(Messenger *m)
      * This requires the other modules to expose cleanup functions.
      */
     uint32_t i, numchats = m->numchats;
+
+    for (i = 0; i < numchats; ++i)
+        if (m->chats[i] != NULL)
+            kill_groupchat(m->chats[i]);
 
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
@@ -2422,6 +2545,7 @@ void do_messenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friends(m);
+    do_allgroupchats(m);
     LANdiscovery(m);
 
 #ifdef LOGGING

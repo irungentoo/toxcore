@@ -39,7 +39,7 @@
 #define GC_INVITE_RESPONSE_DHT_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
 #define MIN_PACKET_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
-#define MAX_GC_PACKET_SIZE 204800
+#define MAX_GC_PACKET_SIZE 65507
 
 
 // Handle all decrypt procedures
@@ -110,10 +110,7 @@ int send_groupchatpacket(const Group_Chat *chat, IP_Port ip_port, const uint8_t 
     if (len == -1)
         return -1;
 
-    if (sendpacket(chat->net, ip_port, packet, len) == len)
-        return 0;
-
-    return -1;
+    return sendpacket(chat->net, ip_port, packet, len);
 }
 
 // General function for packet handling
@@ -144,7 +141,7 @@ int handle_groupchatpacket(void * _chat, IP_Port ipp, const uint8_t *packet, uin
         case CRYPTO_PACKET_GROUP_CHAT_INVITE_RESPONSE:
             return handle_gc_invite_response(chat, ipp, public_key, data, len);
 
-        case CRYPTO_PACKET_GROUP_CHAT_SYNC_REQUEST:
+        case CRYPTO_PACKET_GROUP_CHAT_SYNC_REQUEST: 
             return handle_gc_sync_request(chat, ipp, public_key, data, len);
 
         case CRYPTO_PACKET_GROUP_CHAT_SYNC_RESPONSE:
