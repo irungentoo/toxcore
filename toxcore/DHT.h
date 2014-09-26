@@ -133,6 +133,8 @@ typedef struct {
 
     /* Symetric NAT hole punching stuff. */
     NAT         nat;
+
+    uint16_t lock_count;
 } DHT_Friend;
 
 typedef struct {

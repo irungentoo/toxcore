@@ -1091,8 +1091,12 @@ static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_
 */
 int DHT_addfriend(DHT *dht, const uint8_t *client_id)
 {
-    if (friend_number(dht, client_id) != -1) /* Is friend already in DHT? */
-        return 1;
+    int friend_num = friend_number(dht, client_id);
+
+    if (friend_num != -1) { /* Is friend already in DHT? */
+        ++dht->friends_list[friend_num].lock_count;
+        return 0;
+    }
 
     DHT_Friend *temp;
     temp = realloc(dht->friends_list, sizeof(DHT_Friend) * (dht->num_friends + 1));
@@ -1145,35 +1149,42 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id)
 
 int DHT_delfriend(DHT *dht, const uint8_t *client_id)
 {
+    int friend_num = friend_number(dht, client_id);
+
+    if (friend_num == -1) {
+        return 1;
+    }
+
+    --dht->friends_list[friend_num].lock_count;
+
+    if (dht->friends_list[friend_num].lock_count) /* DHT friend is still in use.*/
+        return 0;
+
     uint32_t i;
     DHT_Friend *temp;
 
-    for (i = 0; i < dht->num_friends; ++i) {
-        /* Equal */
-        if (id_equal(dht->friends_list[i].client_id, client_id)) {
-            --dht->num_friends;
+    --dht->num_friends;
 
-            if (dht->num_friends != i) {
-                memcpy( &dht->friends_list[i],
-                        &dht->friends_list[dht->num_friends],
-                        sizeof(DHT_Friend) );
-            }
-
-            if (dht->num_friends == 0) {
-                free(dht->friends_list);
-                dht->friends_list = NULL;
-                return 0;
-            }
-
-            temp = realloc(dht->friends_list, sizeof(DHT_Friend) * (dht->num_friends));
-
-            if (temp == NULL)
-                return 1;
-
-            dht->friends_list = temp;
-            return 0;
-        }
+    if (dht->num_friends != friend_num) {
+        memcpy( &dht->friends_list[friend_num],
+                &dht->friends_list[dht->num_friends],
+                sizeof(DHT_Friend) );
     }
+
+    if (dht->num_friends == 0) {
+        free(dht->friends_list);
+        dht->friends_list = NULL;
+        return 0;
+    }
+
+    temp = realloc(dht->friends_list, sizeof(DHT_Friend) * (dht->num_friends));
+
+    if (temp == NULL)
+        return 1;
+
+    dht->friends_list = temp;
+    return 0;
+
 
     return 1;
 }
