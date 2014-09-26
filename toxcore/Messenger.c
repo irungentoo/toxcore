@@ -492,10 +492,6 @@ int setname(Messenger *m, const uint8_t *name, uint16_t length)
     for (i = 0; i < m->numfriends; ++i)
         m->friendlist[i].name_sent = 0;
 
-    for (i = 0; i < m->numchats; i++)
-        if (m->chats[i] != NULL)
-            set_nick(m->chats[i], name, length); /* TODO: remove this (group nicks should not be tied to the global one) */
-
     return 0;
 }
 
@@ -2435,16 +2431,6 @@ void do_messenger(Messenger *m)
 #ifdef ENABLE_ASSOC_DHT
         Assoc_status(m->dht->assoc);
 #endif
-
-        if (m->numchats > 0) {
-            size_t c;
-
-            for (c = 0; c < m->numchats; c++) {
-                if (m->chats[c])
-                    Assoc_status(m->chats[c]->assoc);
-            }
-        }
-
 
         lastdump = unix_time();
         uint32_t client, last_pinged;
