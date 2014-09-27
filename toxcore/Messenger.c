@@ -193,6 +193,8 @@ static void dht_pk_callback(void *data, int32_t number, const uint8_t *dht_publi
     if (friend_not_valid(m, number))
         return;
 
+    m->friendlist[number].dht_ping_lastrecv = unix_time();
+
     if (memcmp(m->friendlist[number].dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
         return;
 
@@ -1765,6 +1767,8 @@ static int handle_status(void *object, int i, uint8_t status)
     } else { /* Went offline. */
         m->friendlist[i].crypt_connection_id = -1;
 
+        m->friendlist[i].dht_ping_lastrecv = temp_time;
+
         if (m->friendlist[i].status == FRIEND_ONLINE) {
             set_friend_status(m, i, FRIEND_CONFIRMED);
         }
@@ -2400,15 +2404,23 @@ void do_friends(Messenger *m)
                  */
                 check_friend_request_timed_out(m, i, temp_time);
 
-                if (m->friendlist[i].dht_lock)
-                    set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk,
-                                                  current_time_monotonic());
-
-                set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_ip_port);
-
+            } else {
+                if (m->friendlist[i].dht_ping_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
+                    if (m->friendlist[i].dht_lock) {
+                        DHT_delfriend(m->dht, m->friendlist[i].dht_temp_pk, m->friendlist[i].dht_lock);
+                        m->friendlist[i].dht_lock = 0;
+                    }
+                }
             }
 
             friend_new_connection(m, i, m->friendlist[i].client_id);
+
+            if (m->friendlist[i].dht_lock)
+                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk,
+                                              current_time_monotonic());
+
+            set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_ip_port);
+
         }
 
         if (m->friendlist[i].status == FRIEND_ONLINE) { /* friend is online. */

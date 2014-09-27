@@ -1204,23 +1204,6 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
     }
 }
 
-/* Timeout before which a peer is considered dead and removed from the DHT search. */
-#define DEAD_ONION_TIMEOUT (10 * 60)
-
-static void cleanup_friend(Onion_Client *onion_c, uint16_t friendnum)
-{
-    if (friendnum >= onion_c->num_friends)
-        return;
-
-    if (onion_c->friends_list[friendnum].status == 0)
-        return;
-
-    if (onion_c->friends_list[friendnum].is_fake_clientid && !onion_c->friends_list[friendnum].is_online
-            && is_timeout(onion_c->friends_list[friendnum].last_seen, DEAD_ONION_TIMEOUT)) {
-        onion_c->friends_list[friendnum].is_fake_clientid = 0;
-        //DHT_delfriend(onion_c->dht, onion_c->friends_list[friendnum].fake_client_id, 0);
-    }
-}
 
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object)
@@ -1293,7 +1276,6 @@ void do_onion_client(Onion_Client *onion_c)
     if (onion_isconnected(onion_c)) {
         for (i = 0; i < onion_c->num_friends; ++i) {
             do_friend(onion_c, i);
-            cleanup_friend(onion_c, i);
         }
     }
 
