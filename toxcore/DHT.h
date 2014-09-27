@@ -122,7 +122,7 @@ typedef struct {
     uint64_t    NATping_timestamp;
 } NAT;
 
-#define DHT_FRIEND_MAX_LOCKS 2
+#define DHT_FRIEND_MAX_LOCKS 32
 
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];

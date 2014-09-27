@@ -26,11 +26,9 @@
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
-#include "net_crypto.h"
-#include "DHT.h"
 #include "friend_requests.h"
 #include "LAN_discovery.h"
-#include "onion_client.h"
+#include "friend_connection.h"
 
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
@@ -41,8 +39,7 @@
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
-/* NOTE: Packet ids below 16 must never be used. */
-#define PACKET_ID_ALIVE 16
+/* NOTE: Packet ids below 17 must never be used. */
 #define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
@@ -104,14 +101,8 @@ enum {
 /* Default start timeout in seconds between friend requests. */
 #define FRIENDREQUEST_TIMEOUT 5;
 
-/* Interval between the sending of ping packets. */
-#define FRIEND_PING_INTERVAL 6
-
 /* Interval between the sending of tcp relay information */
 #define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
-
-/* If no packets are received from friend in this time interval, kill the connection. */
-#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
 
 /* Must be < MAX_CRYPTO_DATA_SIZE */
 #define AVATAR_DATA_MAX_CHUNK_SIZE (MAX_CRYPTO_DATA_SIZE-1)
@@ -120,7 +111,6 @@ enum {
 #define AVATAR_DATA_TRANSFER_LIMIT  (10*AVATAR_MAX_DATA_LENGTH)
 #define AVATAR_DATA_TRANSFER_TIMEOUT    (60) /* 164kB every 60 seconds is not a lot */
 
-#define FRIEND_DHT_TIMEOUT BAD_NODE_TIMEOUT /* Time before friend is removed from the DHT after last hearing about him. */
 
 /* USERSTATUS -
  * Represents userstatuses someone can have.
@@ -197,14 +187,8 @@ enum {
 
 typedef struct {
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
+    int friendcon_id;
 
-    uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
-    uint16_t dht_lock;
-    IP_Port dht_ip_port;
-    uint64_t dht_ping_lastrecv, dht_ip_port_lastrecv;
-
-    uint32_t onion_friendnum;
-    int crypt_connection_id;
     uint64_t friendrequest_lastsent; // Time at which the last friend request was sent.
     uint32_t friendrequest_timeout; // The timeout between successful friendrequest sending attempts.
     uint8_t status; // 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
@@ -225,8 +209,7 @@ typedef struct {
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint8_t receives_read_receipts; // shall we send read receipts to this person?
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
-    uint64_t ping_lastrecv;
-    uint64_t ping_lastsent;
+    uint64_t ping_lastrecv;//TODO remove
     uint64_t share_relays_lastsent;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
@@ -255,6 +238,8 @@ typedef struct Messenger {
     Onion *onion;
     Onion_Announce *onion_a;
     Onion_Client *onion_c;
+
+    Friend_Connections *fr_c;
 
     Friend_Requests fr;
     uint8_t name[MAX_NAME_LENGTH];

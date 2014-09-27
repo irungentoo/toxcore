@@ -153,73 +153,9 @@ void getaddress(const Messenger *m, uint8_t *address)
     memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(nospam), &checksum, sizeof(checksum));
 }
 
-/* callback for recv TCP relay nodes. */
-static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key)
-{
-    Messenger *m = object;
-
-    if (friend_not_valid(m, number))
-        return -1;
-
-    if (m->friendlist[number].crypt_connection_id != -1) {
-        return add_tcp_relay_peer(m->net_crypto, m->friendlist[number].crypt_connection_id, ip_port, public_key);
-    } else {
-        return add_tcp_relay(m->net_crypto, ip_port, public_key);
-    }
-}
-
-static int friend_new_connection(Messenger *m, int32_t friendnumber, const uint8_t *real_public_key);
-/* Callback for DHT ip_port changes. */
-static void dht_ip_callback(void *data, int32_t number, IP_Port ip_port)
-{
-    Messenger *m = data;
-
-    if (friend_not_valid(m, number))
-        return;
-
-    if (m->friendlist[number].crypt_connection_id == -1) {
-        friend_new_connection(m, number, m->friendlist[number].client_id);
-    }
-
-    set_direct_ip_port(m->net_crypto, m->friendlist[number].crypt_connection_id, ip_port);
-    m->friendlist[number].dht_ip_port = ip_port;
-    m->friendlist[number].dht_ip_port_lastrecv = unix_time();
-}
-
-/* Callback for dht public key changes. */
-static void dht_pk_callback(void *data, int32_t number, const uint8_t *dht_public_key)
-{
-    Messenger *m = data;
-
-    if (friend_not_valid(m, number))
-        return;
-
-    m->friendlist[number].dht_ping_lastrecv = unix_time();
-
-    if (memcmp(m->friendlist[number].dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
-        return;
-
-    if (m->friendlist[number].dht_lock) {
-        if (DHT_delfriend(m->dht, m->friendlist[number].dht_temp_pk, m->friendlist[number].dht_lock) != 0) {
-            printf("a. Could not delete dht peer. Please report this.\n");
-            return;
-        }
-
-        m->friendlist[number].dht_lock = 0;
-    }
-
-    DHT_addfriend(m->dht, dht_public_key, dht_ip_callback, data, number, &m->friendlist[number].dht_lock);
-
-    if (m->friendlist[number].crypt_connection_id == -1) {
-        friend_new_connection(m, number, m->friendlist[number].client_id);
-    }
-
-    set_connection_dht_public_key(m->net_crypto, m->friendlist[number].crypt_connection_id, dht_public_key);
-    onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[number].onion_friendnum, dht_public_key);
-
-    memcpy(m->friendlist[number].dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
-}
-
+static int handle_status(void *object, int i, uint8_t status);
+static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len);
+static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length);
 
 /*
  * Add a friend.
@@ -283,18 +219,17 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
 
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
-    int32_t onion_friendnum = onion_addfriend(m->onion_c, client_id);
+    int friendcon_id = new_friend_connection(m->fr_c, client_id);
 
-    if (onion_friendnum == -1)
-        return FAERR_UNKNOWN;
+    if (friendcon_id == -1)
+        return -1;
 
     uint32_t i;
 
     for (i = 0; i <= m->numfriends; ++i)  {
         if (m->friendlist[i].status == NOFRIEND) {
-            m->friendlist[i].onion_friendnum = onion_friendnum;
             m->friendlist[i].status = FRIEND_ADDED;
-            m->friendlist[i].crypt_connection_id = -1;
+            m->friendlist[i].friendcon_id = friendcon_id;
             m->friendlist[i].friendrequest_lastsent = 0;
             m->friendlist[i].friendrequest_timeout = FRIENDREQUEST_TIMEOUT;
             id_copy(m->friendlist[i].client_id, client_id);
@@ -311,8 +246,9 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
-            recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
-            onion_dht_pk_callback(m->onion_c, onion_friendnum, &dht_pk_callback, m, i);
+            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
+                                        &handle_custom_lossy_packet, m, i);
+
 
             if (m->numfriends == i)
                 ++m->numfriends;
@@ -341,18 +277,17 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
 
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
-    int32_t onion_friendnum = onion_addfriend(m->onion_c, client_id);
+    int friendcon_id = new_friend_connection(m->fr_c, client_id);
 
-    if (onion_friendnum == -1)
+    if (friendcon_id == -1)
         return -1;
 
     uint32_t i;
 
     for (i = 0; i <= m->numfriends; ++i) {
         if (m->friendlist[i].status == NOFRIEND) {
-            m->friendlist[i].onion_friendnum = onion_friendnum;
             m->friendlist[i].status = FRIEND_CONFIRMED;
-            m->friendlist[i].crypt_connection_id = -1;
+            m->friendlist[i].friendcon_id = friendcon_id;
             m->friendlist[i].friendrequest_lastsent = 0;
             id_copy(m->friendlist[i].client_id, client_id);
             m->friendlist[i].statusmessage = calloc(1, 1);
@@ -365,8 +300,8 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
-            recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
-            onion_dht_pk_callback(m->onion_c, onion_friendnum, &dht_pk_callback, m, i);
+            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
+                                        &handle_custom_lossy_packet, m, i);
 
             if (m->numfriends == i)
                 ++m->numfriends;
@@ -391,16 +326,11 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE)
         remove_online_friend(m, friendnumber);
 
-    onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
-
-    if (m->friendlist[friendnumber].dht_lock) {
-        DHT_delfriend(m->dht, m->friendlist[friendnumber].dht_temp_pk, m->friendlist[friendnumber].dht_lock);
-    }
-
-    crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
     free(m->friendlist[friendnumber].statusmessage);
     free(m->friendlist[friendnumber].avatar_recv_data);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].client_id);
+    friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
+    kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
 
@@ -867,16 +797,6 @@ static int send_user_istyping(const Messenger *m, int32_t friendnumber, uint8_t 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing), 0);
 }
 
-static int send_ping(const Messenger *m, int32_t friendnumber)
-{
-    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_ALIVE, 0, 0, 0);
-
-    if (ret == 1)
-        m->friendlist[friendnumber].ping_lastsent = unix_time();
-
-    return ret;
-}
-
 static int send_relays(const Messenger *m, int32_t friendnumber)
 {
     Node_format nodes[MAX_SHARED_RELAYS];
@@ -1023,8 +943,6 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
     const uint8_t was_online = m->friendlist[friendnumber].status == FRIEND_ONLINE;
     const uint8_t is_online = status == FRIEND_ONLINE;
 
-    onion_set_friend_online(m->onion_c, m->friendlist[friendnumber].onion_friendnum, is_online);
-
     if (is_online != was_online) {
         if (was_online) {
             break_files(m, friendnumber);
@@ -1065,8 +983,8 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
     if (length != 0)
         memcpy(packet + 1, data, length);
 
-    return write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, packet, length + 1,
-                             congestion_control) != -1;
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                             m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
 }
 
 /**********GROUP CHATS************/
@@ -1311,8 +1229,8 @@ int file_data(const Messenger *m, int32_t friendnumber, uint8_t filenumber, cons
     if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_TRANSFERRING)
         return -1;
 
-    /* Prevent file sending from filling up the entire buffer preventing messages from being sent. */
-    if (crypto_num_free_sendqueue_slots(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id) < MIN_SLOTS_FREE)
+    /* Prevent file sending from filling up the entire buffer preventing messages from being sent. TODO: remove */
+    if (crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id)) < MIN_SLOTS_FREE)
         return -1;
 
     uint8_t packet[MAX_CRYPTO_DATA_SIZE];
@@ -1518,10 +1436,8 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -1;
 
-    if (m->friendlist[friendnumber].crypt_connection_id == -1)
-        return -1;
-
-    return send_lossy_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length);
+    return send_lossy_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                                  m->friendlist[friendnumber].friendcon_id), data, length);
 }
 
 static int handle_custom_lossless_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length)
@@ -1579,10 +1495,8 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -1;
 
-    if (m->friendlist[friendnumber].crypt_connection_id == -1)
-        return -1;
-
-    if (write_cryptpacket(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id, data, length, 1) == -1) {
+    if (write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                          m->friendlist[friendnumber].friendcon_id), data, length, 1) == -1) {
         return -1;
     } else {
         return 0;
@@ -1608,42 +1522,6 @@ static void LANdiscovery(Messenger *m)
         m->last_LANdiscovery = unix_time();
     }
 }
-
-static int handle_status(void *object, int i, uint8_t status);
-static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len);
-
-static int handle_new_connections(void *object, New_Connection *n_c)
-{
-    Messenger *m = object;
-    int friend_id = getfriend_id(m, n_c->public_key);
-
-    if (friend_id != -1) {
-        if (m->friendlist[friend_id].crypt_connection_id != -1)
-            return -1;
-
-        int id = accept_crypto_connection(m->net_crypto, n_c);
-        connection_status_handler(m->net_crypto, id, &handle_status, m, friend_id);
-        connection_data_handler(m->net_crypto, id, &handle_packet, m, friend_id);
-        connection_lossy_data_handler(m->net_crypto, id, &handle_custom_lossy_packet, m, friend_id);
-        m->friendlist[friend_id].crypt_connection_id = id;
-        set_friend_status(m, friend_id, FRIEND_CONFIRMED);
-
-        if (n_c->source.ip.family != AF_INET && n_c->source.ip.family != AF_INET6) {
-            set_direct_ip_port(m->net_crypto, m->friendlist[friend_id].crypt_connection_id, m->friendlist[friend_id].dht_ip_port);
-        } else {
-            m->friendlist[friend_id].dht_ip_port = n_c->source;
-            m->friendlist[friend_id].dht_ip_port_lastrecv = unix_time();
-        }
-
-        dht_pk_callback(m, friend_id, n_c->dht_public_key);
-
-        nc_dht_pk_callback(m->net_crypto, id, &dht_pk_callback, m, friend_id);
-        return 0;
-    }
-
-    return -1;
-}
-
 
 /* Run this at startup. */
 Messenger *new_messenger(Messenger_Options *options)
@@ -1691,13 +1569,13 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
-    new_connection_handler(m->net_crypto, &handle_new_connections, m);
-
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
     m->onion_c =  new_onion_client(m->net_crypto);
+    m->fr_c = new_friend_connections(m->onion_c);
 
     if (!(m->onion && m->onion_a && m->onion_c)) {
+        kill_friend_connections(m->fr_c);
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
@@ -1722,6 +1600,7 @@ void kill_messenger(Messenger *m)
 {
     uint32_t i;
 
+    kill_friend_connections(m->fr_c);
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
@@ -1769,10 +1648,6 @@ static int handle_status(void *object, int i, uint8_t status)
         m->friendlist[i].statusmessage_sent = 0;
         m->friendlist[i].ping_lastrecv = temp_time;
     } else { /* Went offline. */
-        m->friendlist[i].crypt_connection_id = -1;
-
-        m->friendlist[i].dht_ping_lastrecv = temp_time;
-
         if (m->friendlist[i].status == FRIEND_ONLINE) {
             set_friend_status(m, i, FRIEND_CONFIRMED);
         }
@@ -2072,11 +1947,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         return -1;
 
     switch (packet_id) {
-        case PACKET_ID_ALIVE: {
-            m->friendlist[i].ping_lastrecv = temp_time;
-            break;
-        }
-
         case PACKET_ID_NICKNAME: {
             if (data_length > MAX_NAME_LENGTH || data_length == 0)
                 break;
@@ -2359,29 +2229,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
     return 0;
 }
 
-static int friend_new_connection(Messenger *m, int32_t friendnumber, const uint8_t *real_public_key)
-{
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    if (m->friendlist[friendnumber].crypt_connection_id != -1) {
-        return -1;
-    }
-
-    int id = new_crypto_connection(m->net_crypto, real_public_key);
-
-    if (id == -1)
-        return -1;
-
-    m->friendlist[friendnumber].crypt_connection_id = id;
-    connection_status_handler(m->net_crypto, id, &handle_status, m, friendnumber);
-    connection_data_handler(m->net_crypto, id, &handle_packet, m, friendnumber);
-    connection_lossy_data_handler(m->net_crypto, id, &handle_custom_lossy_packet, m, friendnumber);
-    nc_dht_pk_callback(m->net_crypto, id, &dht_pk_callback, m, friendnumber);
-
-    return 0;
-}
-
 /* TODO: Make this function not suck. */
 void do_friends(Messenger *m)
 {
@@ -2407,27 +2254,7 @@ void do_friends(Messenger *m)
                  * unsuccessful so we set the status back to FRIEND_ADDED and try again.
                  */
                 check_friend_request_timed_out(m, i, temp_time);
-
-            } else {
-                if (m->friendlist[i].dht_ping_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
-                    if (m->friendlist[i].dht_lock) {
-                        DHT_delfriend(m->dht, m->friendlist[i].dht_temp_pk, m->friendlist[i].dht_lock);
-                        m->friendlist[i].dht_lock = 0;
-                    }
-                }
-
-                if (m->friendlist[i].dht_ip_port_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
-                    m->friendlist[i].dht_ip_port.ip.family = 0;
-                }
             }
-
-            if (friend_new_connection(m, i, m->friendlist[i].client_id) == 0) {
-                if (m->friendlist[i].dht_lock)
-                    set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk);
-
-                set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_ip_port);
-            }
-
         }
 
         if (m->friendlist[i].status == FRIEND_ONLINE) { /* friend is online. */
@@ -2454,17 +2281,6 @@ void do_friends(Messenger *m)
             if (m->friendlist[i].user_istyping_sent == 0) {
                 if (send_user_istyping(m, i, m->friendlist[i].user_istyping))
                     m->friendlist[i].user_istyping_sent = 1;
-            }
-
-            if (m->friendlist[i].ping_lastsent + FRIEND_PING_INTERVAL < temp_time) {
-                send_ping(m, i);
-            }
-
-            if (m->friendlist[i].ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
-                /* If we stopped receiving ping packets, kill it. */
-                crypto_kill(m->net_crypto, m->friendlist[i].crypt_connection_id);
-                m->friendlist[i].crypt_connection_id = -1;
-                set_friend_status(m, i, FRIEND_CONFIRMED);
             }
 
             if (m->friendlist[i].share_relays_lastsent + FRIEND_SHARE_RELAYS_INTERVAL < temp_time) {
@@ -2536,6 +2352,7 @@ void do_messenger(Messenger *m)
 
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
+    do_friend_connections(m->fr_c);
     do_friends(m);
     LANdiscovery(m);
 
@@ -2616,8 +2433,8 @@ void do_messenger(Messenger *m)
                 if (ping_lastrecv > 999)
                     ping_lastrecv = 999;
 
-                LOGGER_INFO("F[%2u:%2u] <%s> %02i [%03u] %s",
-                            dht2m[friend], friend, msgfptr->name, msgfptr->crypt_connection_id,
+                LOGGER_INFO("F[%2u:%2u] <%s> [%03u] %s",
+                            dht2m[friend], friend, msgfptr->name,
                             ping_lastrecv, ID2String(msgfptr->client_id));
             } else {
                 LOGGER_INFO("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
