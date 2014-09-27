@@ -36,7 +36,7 @@
 #define ONION_FAKEID_INTERVAL 30
 #define DHT_FAKEID_INTERVAL 20
 
-#define NUMBER_ONION_PATHS 3
+#define NUMBER_ONION_PATHS 6
 
 /* The timeout the first time the path is added and
    then for all the next consecutive times */
