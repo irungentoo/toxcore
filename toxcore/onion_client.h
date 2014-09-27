@@ -79,7 +79,6 @@ typedef struct {
     uint8_t is_online; /* Set by the onion_set_friend_status function. */
 
     uint8_t is_fake_clientid; /* 0 if we don't know the fake client id of the other 1 if we do. */
-    uint64_t fake_client_id_timestamp;
     uint8_t fake_client_id[crypto_box_PUBLICKEYBYTES];
     uint8_t real_client_id[crypto_box_PUBLICKEYBYTES];
 
@@ -218,7 +217,8 @@ int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_rela
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function)(void *data, int32_t number, const uint8_t *dht_public_key), void *object, uint32_t number);
+int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function)(void *data, int32_t number,
+                          const uint8_t *dht_public_key), void *object, uint32_t number);
 
 /* Set a friends DHT public key.
  * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
@@ -227,14 +227,14 @@ int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key, uint64_t timestamp);
+int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key);
 
 /* Copy friends DHT public key into dht_key.
  *
  * return 0 on failure (no key copied).
- * return timestamp on success (key copied).
+ * return 1 on success (key copied).
  */
-uint64_t onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
+unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
 
 #define ONION_DATA_IN_RESPONSE_MIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
 #define ONION_CLIENT_MAX_DATA_SIZE (MAX_DATA_REQUEST_SIZE - ONION_DATA_IN_RESPONSE_MIN_SIZE)

@@ -638,9 +638,12 @@ static int handle_fakeid_announce(void *object, const uint8_t *source_pubkey, co
         return 1;
 
     onion_c->friends_list[friend_num].last_noreplay = no_replay;
+
     if (onion_c->friends_list[friend_num].dht_pk_callback)
-        onion_c->friends_list[friend_num].dht_pk_callback(onion_c->friends_list[friend_num].dht_pk_callback_object, onion_c->friends_list[friend_num].dht_pk_callback_number, data + 1 + sizeof(uint64_t));
-    //onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t), current_time_monotonic());
+        onion_c->friends_list[friend_num].dht_pk_callback(onion_c->friends_list[friend_num].dht_pk_callback_object,
+                onion_c->friends_list[friend_num].dht_pk_callback_number, data + 1 + sizeof(uint64_t));
+
+    onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t));
     onion_c->friends_list[friend_num].last_seen = unix_time();
 
     uint16_t len_nodes = length - FAKEID_DATA_MIN_LENGTH;
@@ -1006,7 +1009,8 @@ int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_rela
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function)(void *data, int32_t number, const uint8_t *dht_public_key), void *object, uint32_t number)
+int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function)(void *data, int32_t number,
+                          const uint8_t *dht_public_key), void *object, uint32_t number)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
@@ -1018,13 +1022,11 @@ int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function
 }
 
 /* Set a friends DHT public key.
- * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
- * the other peer.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key, uint64_t timestamp)
+int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
@@ -1032,25 +1034,16 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
     if (onion_c->friends_list[friend_num].status == 0)
         return -1;
 
-    if (onion_c->friends_list[friend_num].fake_client_id_timestamp >= timestamp)
-        return -1;
-
     if (onion_c->friends_list[friend_num].is_fake_clientid) {
         if (memcmp(dht_key, onion_c->friends_list[friend_num].fake_client_id, crypto_box_PUBLICKEYBYTES) == 0) {
             return -1;
         }
 
-        //DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, 0);
         onion_c->friends_list[friend_num].is_fake_clientid = 0;
     }
 
-    //if (DHT_addfriend(onion_c->dht, dht_key, 0, 0, 0, 0) == -1) {
-    //    return -1;
-    //}
-
     onion_c->friends_list[friend_num].last_seen = unix_time();
     onion_c->friends_list[friend_num].is_fake_clientid = 1;
-    onion_c->friends_list[friend_num].fake_client_id_timestamp = timestamp;
     memcpy(onion_c->friends_list[friend_num].fake_client_id, dht_key, crypto_box_PUBLICKEYBYTES);
 
     return 0;
@@ -1059,9 +1052,9 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
 /* Copy friends DHT public key into dht_key.
  *
  * return 0 on failure (no key copied).
- * return timestamp on success (key copied).
+ * return 1 on success (key copied).
  */
-uint64_t onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
+unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return 0;
@@ -1073,7 +1066,7 @@ uint64_t onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num,
         return 0;
 
     memcpy(dht_key, onion_c->friends_list[friend_num].fake_client_id, crypto_box_PUBLICKEYBYTES);
-    return onion_c->friends_list[friend_num].fake_client_id_timestamp;
+    return 1;
 }
 
 /* Get the ip of friend friendnum and put it in ip_port

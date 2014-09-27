@@ -211,8 +211,9 @@ static void dht_pk_callback(void *data, int32_t number, const uint8_t *dht_publi
         friend_new_connection(m, number, m->friendlist[number].client_id);
     }
 
-    set_connection_dht_public_key(m->net_crypto, m->friendlist[number].crypt_connection_id, dht_public_key, current_time_monotonic());
-    onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[number].onion_friendnum, dht_public_key, current_time_monotonic());
+    set_connection_dht_public_key(m->net_crypto, m->friendlist[number].crypt_connection_id, dht_public_key,
+                                  current_time_monotonic());
+    onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[number].onion_friendnum, dht_public_key);
 
     memcpy(m->friendlist[number].dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
 }
@@ -389,6 +390,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
         remove_online_friend(m, friendnumber);
 
     onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
+
     if (m->friendlist[friendnumber].dht_lock) {
         DHT_delfriend(m->dht, m->friendlist[friendnumber].dht_temp_pk, m->friendlist[friendnumber].dht_lock);
     }
@@ -2399,7 +2401,8 @@ void do_friends(Messenger *m)
                 check_friend_request_timed_out(m, i, temp_time);
 
                 if (m->friendlist[i].dht_lock)
-                    set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk, current_time_monotonic());
+                    set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk,
+                                                  current_time_monotonic());
 
                 set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_ip_port);
 
