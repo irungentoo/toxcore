@@ -1238,7 +1238,7 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
 
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
                 /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-                set_connection_dht_public_key(c, crypt_connection_id, dht_public_key, current_time_monotonic());
+                set_connection_dht_public_key(c, crypt_connection_id, dht_public_key);
 
                 if (conn->dht_pk_callback)
                     conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key);
@@ -1477,7 +1477,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, const 
             if (create_send_handshake(c, crypt_connection_id, n_c.cookie, n_c.dht_public_key) == 0) {
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
                 /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-                set_connection_dht_public_key(c, crypt_connection_id, n_c.dht_public_key, current_time_monotonic());
+                set_connection_dht_public_key(c, crypt_connection_id, n_c.dht_public_key);
 
                 if (conn->dht_pk_callback)
                     conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, n_c.dht_public_key);
@@ -1530,7 +1530,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
 
     conn->status = CRYPTO_CONN_NOT_CONFIRMED;
     /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-    set_connection_dht_public_key(c, crypt_connection_id, n_c->dht_public_key, current_time_monotonic());
+    set_connection_dht_public_key(c, crypt_connection_id, n_c->dht_public_key);
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
     crypto_connection_add_source(c, crypt_connection_id, n_c->source);
@@ -1626,9 +1626,9 @@ static int connect_peer_tcp(Net_Crypto *c, int crypt_connection_id)
 /* Copy friends DHT public key into dht_key.
  *
  * return 0 on failure (no key copied).
- * return timestamp on success (key copied).
+ * return 1 on success (key copied).
  */
-uint64_t get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
+unsigned int get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -1639,26 +1639,20 @@ uint64_t get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, ui
         return 0;
 
     memcpy(dht_public_key, conn->dht_public_key, crypto_box_PUBLICKEYBYTES);
-    return conn->dht_public_key_timestamp;
+    return 1;
 }
 
 
 /* Set the DHT public key of the crypto connection.
- * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
- * the other peer.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key,
-                                  uint64_t timestamp)
+int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == 0)
-        return -1;
-
-    if (timestamp <= conn->dht_public_key_timestamp)
         return -1;
 
     if (conn->dht_public_key_set == 1 && memcmp(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
@@ -1670,7 +1664,6 @@ int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const 
 
     memcpy(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES);
     conn->dht_public_key_set = 1;
-    conn->dht_public_key_timestamp = timestamp;
 
     if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
         conn->cookie_request_number = random_64b();
