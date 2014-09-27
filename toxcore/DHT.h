@@ -258,6 +258,9 @@ void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, con
  * ip_callback is the callback of a function that will be called when the ip address
  * is found along with arguments data and number.
  *
+ * lock_count will be set to a non zero number that must be passed to DHT_delfriend()
+ * to properly remove the callback.
+ *
  *  return 0 if success.
  *  return -1 if failure (friends list is full).
  */

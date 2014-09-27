@@ -195,7 +195,12 @@ enum {
 };
 
 typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
+    uint8_t client_id[crypto_box_PUBLICKEYBYTES];
+
+    uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
+    uint16_t dht_lock;
+    IP_Port dht_ip_port;
+
     uint32_t onion_friendnum;
     int crypt_connection_id;
     uint64_t friendrequest_lastsent; // Time at which the last friend request was sent.

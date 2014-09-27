@@ -103,6 +103,10 @@ typedef struct {
     void *tcp_relay_node_callback_object;
     uint32_t tcp_relay_node_callback_number;
 
+    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key);
+    void *dht_pk_callback_object;
+    uint32_t dht_pk_callback_number;
+
     uint32_t run_count;
 } Onion_Friend;
 
@@ -204,6 +208,17 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
  */
 int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
                            uint32_t number, IP_Port ip_port, const uint8_t *public_key), void *object, uint32_t number);
+
+
+/* Set the function for this friend that will be callbacked with object and number
+ * when that friend gives us his DHT temporary public key.
+ *
+ * object and number will be passed as argument to this function.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function)(void *data, int32_t number, const uint8_t *dht_public_key), void *object, uint32_t number);
 
 /* Set a friends DHT public key.
  * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to

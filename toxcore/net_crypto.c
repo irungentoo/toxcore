@@ -1239,6 +1239,10 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
                 /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
                 set_connection_dht_public_key(c, crypt_connection_id, dht_public_key, current_time_monotonic());
+
+                if (conn->dht_pk_callback)
+                    conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key);
+
             } else {
                 return -1;
             }
@@ -1474,6 +1478,10 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, const 
                 conn->status = CRYPTO_CONN_NOT_CONFIRMED;
                 /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
                 set_connection_dht_public_key(c, crypt_connection_id, n_c.dht_public_key, current_time_monotonic());
+
+                if (conn->dht_pk_callback)
+                    conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, n_c.dht_public_key);
+
                 ret = 0;
             }
         }
@@ -2240,6 +2248,28 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
     conn->connection_lossy_data_callback = connection_lossy_data_callback;
     conn->connection_lossy_data_callback_object = object;
     conn->connection_lossy_data_callback_id = id;
+    return 0;
+}
+
+
+/* Set the function for this friend that will be callbacked with object and number
+ * when that friend gives us his DHT temporary public key.
+ *
+ * object and number will be passed as argument to this function.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(void *data, int32_t number, const uint8_t *dht_public_key), void *object, uint32_t number)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    conn->dht_pk_callback = function;
+    conn->dht_pk_callback_object = object;
+    conn->dht_pk_callback_number = number;
     return 0;
 }
 

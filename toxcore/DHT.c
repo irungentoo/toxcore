@@ -620,7 +620,7 @@ static int replace_all(   Client_data    *list,
                           const uint8_t  *comp_client_id )
 {
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
-        return 1;
+        return 0;
 
     uint32_t i, replace = ~0, bad = ~0, possibly_bad = ~0, good = ~0;
 

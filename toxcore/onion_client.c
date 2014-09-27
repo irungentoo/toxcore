@@ -638,7 +638,9 @@ static int handle_fakeid_announce(void *object, const uint8_t *source_pubkey, co
         return 1;
 
     onion_c->friends_list[friend_num].last_noreplay = no_replay;
-    onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t), current_time_monotonic());
+    if (onion_c->friends_list[friend_num].dht_pk_callback)
+        onion_c->friends_list[friend_num].dht_pk_callback(onion_c->friends_list[friend_num].dht_pk_callback_object, onion_c->friends_list[friend_num].dht_pk_callback_number, data + 1 + sizeof(uint64_t));
+    //onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t), current_time_monotonic());
     onion_c->friends_list[friend_num].last_seen = unix_time();
 
     uint16_t len_nodes = length - FAKEID_DATA_MIN_LENGTH;
@@ -957,8 +959,8 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
 
-    if (onion_c->friends_list[friend_num].is_fake_clientid)
-        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, 0);
+    //if (onion_c->friends_list[friend_num].is_fake_clientid)
+    //    DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, 0);
 
     memset(&(onion_c->friends_list[friend_num]), 0, sizeof(Onion_Friend));
     uint32_t i;
@@ -996,6 +998,25 @@ int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_rela
     return 0;
 }
 
+/* Set the function for this friend that will be callbacked with object and number
+ * when that friend gives us his DHT temporary public key.
+ *
+ * object and number will be passed as argument to this function.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, void (*function)(void *data, int32_t number, const uint8_t *dht_public_key), void *object, uint32_t number)
+{
+    if ((uint32_t)friend_num >= onion_c->num_friends)
+        return -1;
+
+    onion_c->friends_list[friend_num].dht_pk_callback = function;
+    onion_c->friends_list[friend_num].dht_pk_callback_object = object;
+    onion_c->friends_list[friend_num].dht_pk_callback_number = number;
+    return 0;
+}
+
 /* Set a friends DHT public key.
  * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
  * the other peer.
@@ -1019,13 +1040,13 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
             return -1;
         }
 
-        DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, 0);
+        //DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_client_id, 0);
         onion_c->friends_list[friend_num].is_fake_clientid = 0;
     }
 
-    if (DHT_addfriend(onion_c->dht, dht_key, 0, 0, 0, 0) == -1) {
-        return -1;
-    }
+    //if (DHT_addfriend(onion_c->dht, dht_key, 0, 0, 0, 0) == -1) {
+    //    return -1;
+    //}
 
     onion_c->friends_list[friend_num].last_seen = unix_time();
     onion_c->friends_list[friend_num].is_fake_clientid = 1;
@@ -1204,7 +1225,7 @@ static void cleanup_friend(Onion_Client *onion_c, uint16_t friendnum)
     if (onion_c->friends_list[friendnum].is_fake_clientid && !onion_c->friends_list[friendnum].is_online
             && is_timeout(onion_c->friends_list[friendnum].last_seen, DEAD_ONION_TIMEOUT)) {
         onion_c->friends_list[friendnum].is_fake_clientid = 0;
-        DHT_delfriend(onion_c->dht, onion_c->friends_list[friendnum].fake_client_id, 0);
+        //DHT_delfriend(onion_c->dht, onion_c->friends_list[friendnum].fake_client_id, 0);
     }
 }
 

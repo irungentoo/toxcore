@@ -161,6 +161,10 @@ typedef struct {
     uint8_t maximum_speed_reached;
 
     pthread_mutex_t mutex;
+
+    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key);
+    void *dht_pk_callback_object;
+    uint32_t dht_pk_callback_number;
 } Crypto_Connection;
 
 typedef struct {
@@ -293,6 +297,16 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
                                   int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
                                   int id);
+
+/* Set the function for this friend that will be callbacked with object and number
+ * when that friend gives us his DHT temporary public key.
+ *
+ * object and number will be passed as argument to this function.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(void *data, int32_t number, const uint8_t *dht_public_key), void *object, uint32_t number);
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.

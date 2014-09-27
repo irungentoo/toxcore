@@ -168,6 +168,56 @@ static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_por
     }
 }
 
+static int friend_new_connection(Messenger *m, int32_t friendnumber, const uint8_t *real_public_key);
+/* Callback for DHT ip_port changes. */
+static void dht_ip_callback(void *data, int32_t number, IP_Port ip_port)
+{
+    Messenger *m = data;
+
+    if (friend_not_valid(m, number))
+        return;
+
+    if (m->friendlist[number].crypt_connection_id == -1) {
+        friend_new_connection(m, number, m->friendlist[number].client_id);
+    }
+
+    set_direct_ip_port(m->net_crypto, m->friendlist[number].crypt_connection_id, ip_port);
+    m->friendlist[number].dht_ip_port = ip_port;
+}
+
+/* Callback for dht public key changes. */
+static void dht_pk_callback(void *data, int32_t number, const uint8_t *dht_public_key)
+{
+    Messenger *m = data;
+
+    if (friend_not_valid(m, number))
+        return;
+
+    if (memcmp(m->friendlist[number].dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+        return;
+
+    if (m->friendlist[number].dht_lock) {
+        if (DHT_delfriend(m->dht, m->friendlist[number].dht_temp_pk, m->friendlist[number].dht_lock) != 0) {
+            printf("a. Could not delete dht peer. Please report this.\n");
+            return;
+        }
+
+        m->friendlist[number].dht_lock = 0;
+    }
+
+    DHT_addfriend(m->dht, dht_public_key, dht_ip_callback, data, number, &m->friendlist[number].dht_lock);
+
+    if (m->friendlist[number].crypt_connection_id == -1) {
+        friend_new_connection(m, number, m->friendlist[number].client_id);
+    }
+
+    set_connection_dht_public_key(m->net_crypto, m->friendlist[number].crypt_connection_id, dht_public_key, current_time_monotonic());
+    onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[number].onion_friendnum, dht_public_key, current_time_monotonic());
+
+    memcpy(m->friendlist[number].dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
+}
+
+
 /*
  * Add a friend.
  * Set the data that will be sent along with friend request.
@@ -259,6 +309,7 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
             recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
+            onion_dht_pk_callback(m->onion_c, onion_friendnum, &dht_pk_callback, m, i);
 
             if (m->numfriends == i)
                 ++m->numfriends;
@@ -312,6 +363,7 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
             recv_tcp_relay_handler(m->onion_c, onion_friendnum, &tcp_relay_node_callback, m, i);
+            onion_dht_pk_callback(m->onion_c, onion_friendnum, &dht_pk_callback, m, i);
 
             if (m->numfriends == i)
                 ++m->numfriends;
@@ -337,6 +389,10 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
         remove_online_friend(m, friendnumber);
 
     onion_delfriend(m->onion_c, m->friendlist[friendnumber].onion_friendnum);
+    if (m->friendlist[friendnumber].dht_lock) {
+        DHT_delfriend(m->dht, m->friendlist[friendnumber].dht_temp_pk, m->friendlist[friendnumber].dht_lock);
+    }
+
     crypto_kill(m->net_crypto, m->friendlist[friendnumber].crypt_connection_id);
     free(m->friendlist[friendnumber].statusmessage);
     free(m->friendlist[friendnumber].avatar_recv_data);
@@ -1567,6 +1623,13 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         connection_lossy_data_handler(m->net_crypto, id, &handle_custom_lossy_packet, m, friend_id);
         m->friendlist[friend_id].crypt_connection_id = id;
         set_friend_status(m, friend_id, FRIEND_CONFIRMED);
+
+        if (n_c->source.ip.family != AF_INET && n_c->source.ip.family != AF_INET6) {
+            set_direct_ip_port(m->net_crypto, m->friendlist[friend_id].crypt_connection_id, m->friendlist[friend_id].dht_ip_port);
+        }
+
+        dht_pk_callback(m, friend_id, n_c->dht_public_key);
+
         return 0;
     }
 
@@ -2304,6 +2367,8 @@ static int friend_new_connection(Messenger *m, int32_t friendnumber, const uint8
     connection_status_handler(m->net_crypto, id, &handle_status, m, friendnumber);
     connection_data_handler(m->net_crypto, id, &handle_packet, m, friendnumber);
     connection_lossy_data_handler(m->net_crypto, id, &handle_custom_lossy_packet, m, friendnumber);
+    nc_dht_pk_callback(m->net_crypto, id, &dht_pk_callback, m, friendnumber);
+
     return 0;
 }
 
@@ -2332,33 +2397,15 @@ void do_friends(Messenger *m)
                  * unsuccessful so we set the status back to FRIEND_ADDED and try again.
                  */
                 check_friend_request_timed_out(m, i, temp_time);
+
+                if (m->friendlist[i].dht_lock)
+                    set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk, current_time_monotonic());
+
+                set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_ip_port);
+
             }
 
             friend_new_connection(m, i, m->friendlist[i].client_id);
-        }
-
-        if (m->friendlist[i].crypt_connection_id != -1) {
-            uint8_t dht_public_key1[crypto_box_PUBLICKEYBYTES];
-            uint64_t timestamp1 = onion_getfriend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key1);
-            uint8_t dht_public_key2[crypto_box_PUBLICKEYBYTES];
-            uint64_t timestamp2 = get_connection_dht_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key2);
-
-            if (timestamp1 > timestamp2) {
-                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, dht_public_key1, timestamp1);
-            } else if (timestamp1 < timestamp2) {
-                onion_set_friend_DHT_pubkey(m->onion_c, m->friendlist[i].onion_friendnum, dht_public_key2, timestamp2);
-            }
-
-            uint8_t direct_connected;
-            unsigned int status = crypto_connection_status(m->net_crypto, m->friendlist[i].crypt_connection_id, &direct_connected);
-
-            if (direct_connected == 0 || status == CRYPTO_CONN_COOKIE_REQUESTING) {
-                IP_Port friendip;
-
-                if (onion_getfriendip(m->onion_c, m->friendlist[i].onion_friendnum, &friendip) == 1) {
-                    set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, friendip);
-                }
-            }
         }
 
         if (m->friendlist[i].status == FRIEND_ONLINE) { /* friend is online. */
