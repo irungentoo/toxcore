@@ -32,11 +32,6 @@ enum {
     GROUPCHAT_STATUS_VALID
 };
 
-enum {
-    GROUPCON_STATUS_NONE,
-    GROUPCON_STATUS_VALID
-};
-
 typedef struct {
     uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
     uint64_t    pingid;
@@ -84,20 +79,10 @@ typedef struct {
 } Group_c;
 
 typedef struct {
-    uint8_t status;
-
-    uint8_t real_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
-} Group_Connection;
-
-typedef struct {
     Messenger *m;
 
     Group_c *chats;
     uint32_t num_chats;
-
-    Group_Connection *cons;
-    uint32_t num_cons;
 
     void (*invite_callback)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
     void *invite_callback_userdata;

@@ -28,105 +28,6 @@
 #include "group.h"
 #include "util.h"
 
-/* return 1 if the con_number is not valid.
- * return 0 if the con_number is valid.
- */
-static uint8_t con_number_not_valid(const Group_Chats *g_c, int con_number)
-{
-    if ((unsigned int)con_number >= g_c->num_cons)
-        return 1;
-
-    if (g_c->cons == NULL)
-        return 1;
-
-    if (g_c->cons[con_number].status == GROUPCON_STATUS_NONE)
-        return 1;
-
-    return 0;
-}
-
-
-/* Set the size of the groupchat connections list to num.
- *
- *  return -1 if realloc fails.
- *  return 0 if it succeeds.
- */
-static int realloc_groupcons(Group_Chats *g_c, uint32_t num)
-{
-    if (num == 0) {
-        free(g_c->cons);
-        g_c->cons = NULL;
-        return 0;
-    }
-
-    Group_Connection *newgroup_cons = realloc(g_c->cons, num * sizeof(Group_Connection));
-
-    if (newgroup_cons == NULL)
-        return -1;
-
-    g_c->cons = newgroup_cons;
-    return 0;
-}
-
-/* Create a new empty groupchat connection.
- *
- * return -1 on failure.
- * return con_number on success.
- */
-static int create_group_con(Group_Chats *g_c)
-{
-    uint32_t i;
-
-    for (i = 0; i < g_c->num_cons; ++i) {
-        if (g_c->cons[i].status == GROUPCON_STATUS_NONE)
-            return i;
-    }
-
-    int id = -1;
-
-    if (realloc_groupcons(g_c, g_c->num_cons + 1) == 0) {
-        id = g_c->num_cons;
-        ++g_c->num_cons;
-        memset(&(g_c->cons[id]), 0, sizeof(Group_Connection));
-    }
-
-    return id;
-}
-
-/* Wipe a groupchat connection.
- *
- * return -1 on failure.
- * return 0 on success.
- */
-static int wipe_group_con(Group_Chats *g_c, int con_number)
-{
-    if (con_number_not_valid(g_c, con_number))
-        return -1;
-
-    uint32_t i;
-    memset(&(g_c->cons[con_number]), 0 , sizeof(Group_c));
-
-    for (i = g_c->num_cons; i != 0; --i) {
-        if (g_c->cons[i - 1].status != GROUPCON_STATUS_NONE)
-            break;
-    }
-
-    if (g_c->num_cons != i) {
-        g_c->num_cons = i;
-        realloc_groupcons(g_c, g_c->num_cons);
-    }
-
-    return 0;
-}
-
-static Group_Connection *get_con_group(Group_Chats *g_c, int con_number)
-{
-    if (con_number_not_valid(g_c, con_number))
-        return 0;
-
-    return &g_c->cons[con_number];
-}
-
 /* return 1 if the groupnumber is not valid.
  * return 0 if the groupnumber is valid.
  */
@@ -612,6 +513,8 @@ static unsigned int send_message_all_close(const Group_Chats *g_c, int groupnumb
     return sent;
 }
 
+#define MAX_GROUP_MESSAGE_DATA_LEN (MAX_CRYPTO_DATA_SIZE - (1 + MIN_MESSAGE_PACKET_LEN))
+
 /* Send data of len with message_id to groupnumber.
  *
  * return number of peers it was sent to on success.
@@ -620,6 +523,9 @@ static unsigned int send_message_all_close(const Group_Chats *g_c, int groupnumb
 static unsigned int send_message_group(const Group_Chats *g_c, int groupnumber, uint8_t message_id, const uint8_t *data,
                                        uint16_t len)
 {
+    if (len > MAX_GROUP_MESSAGE_DATA_LEN)
+        return 0;
+
     Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g)
