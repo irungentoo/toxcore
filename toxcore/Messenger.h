@@ -120,7 +120,7 @@ enum {
 #define AVATAR_DATA_TRANSFER_LIMIT  (10*AVATAR_MAX_DATA_LENGTH)
 #define AVATAR_DATA_TRANSFER_TIMEOUT    (60) /* 164kB every 60 seconds is not a lot */
 
-#define FRIEND_DHT_TIMEOUT (5 * 60) /* Time before friend is removed from the DHT after last hearing about him. */
+#define FRIEND_DHT_TIMEOUT BAD_NODE_TIMEOUT /* Time before friend is removed from the DHT after last hearing about him. */
 
 /* USERSTATUS -
  * Represents userstatuses someone can have.
@@ -201,7 +201,7 @@ typedef struct {
     uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
     uint16_t dht_lock;
     IP_Port dht_ip_port;
-    uint64_t dht_ping_lastrecv;
+    uint64_t dht_ping_lastrecv, dht_ip_port_lastrecv;
 
     uint32_t onion_friendnum;
     int crypt_connection_id;

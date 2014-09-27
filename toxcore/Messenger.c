@@ -183,6 +183,7 @@ static void dht_ip_callback(void *data, int32_t number, IP_Port ip_port)
 
     set_direct_ip_port(m->net_crypto, m->friendlist[number].crypt_connection_id, ip_port);
     m->friendlist[number].dht_ip_port = ip_port;
+    m->friendlist[number].dht_ip_port_lastrecv = unix_time();
 }
 
 /* Callback for dht public key changes. */
@@ -1629,10 +1630,14 @@ static int handle_new_connections(void *object, New_Connection *n_c)
 
         if (n_c->source.ip.family != AF_INET && n_c->source.ip.family != AF_INET6) {
             set_direct_ip_port(m->net_crypto, m->friendlist[friend_id].crypt_connection_id, m->friendlist[friend_id].dht_ip_port);
+        } else {
+            m->friendlist[friend_id].dht_ip_port = n_c->source;
+            m->friendlist[friend_id].dht_ip_port_lastrecv = unix_time();
         }
 
         dht_pk_callback(m, friend_id, n_c->dht_public_key);
 
+        nc_dht_pk_callback(m->net_crypto, id, &dht_pk_callback, m, friend_id);
         return 0;
     }
 
@@ -2409,6 +2414,10 @@ void do_friends(Messenger *m)
                         DHT_delfriend(m->dht, m->friendlist[i].dht_temp_pk, m->friendlist[i].dht_lock);
                         m->friendlist[i].dht_lock = 0;
                     }
+                }
+
+                if (m->friendlist[i].dht_ip_port_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
+                    m->friendlist[i].dht_ip_port.ip.family = 0;
                 }
             }
 

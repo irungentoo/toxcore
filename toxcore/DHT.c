@@ -708,26 +708,40 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id)
     } else
         used++;
 
+    DHT_Friend *friend_foundip = 0;
+
     for (i = 0; i < dht->num_friends; ++i) {
         if (!client_or_ip_port_in_list(dht->friends_list[i].client_list,
                                        MAX_FRIEND_CLIENTS, client_id, ip_port)) {
             if (replace_all(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
                             client_id, ip_port, dht->friends_list[i].client_id)) {
+
                 DHT_Friend *friend = &dht->friends_list[i];
 
                 if (memcmp(client_id, friend->client_id, CLIENT_ID_SIZE) == 0) {
-                    uint32_t j;
-
-                    for (j = 0; j < friend->lock_count; ++j) {
-                        if (friend->callbacks[j].ip_callback)
-                            friend->callbacks[j].ip_callback(friend->callbacks[j].data, friend->callbacks[j].number, ip_port);
-                    }
+                    friend_foundip = friend;
                 }
 
                 used++;
             }
         } else {
+            DHT_Friend *friend = &dht->friends_list[i];
+
+            if (memcmp(client_id, friend->client_id, CLIENT_ID_SIZE) == 0) {
+                friend_foundip = friend;
+            }
+
             used++;
+        }
+    }
+
+    if (friend_foundip) {
+        uint32_t j;
+
+        for (j = 0; j < friend_foundip->lock_count; ++j) {
+            if (friend_foundip->callbacks[j].ip_callback)
+                friend_foundip->callbacks[j].ip_callback(friend_foundip->callbacks[j].data, friend_foundip->callbacks[j].number,
+                        ip_port);
         }
     }
 
