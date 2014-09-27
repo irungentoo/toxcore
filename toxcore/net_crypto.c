@@ -1700,6 +1700,9 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
     if (conn == 0)
         return -1;
 
+    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6)
+        return -1;
+
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
         if (bs_list_add(&c->ip_port_list, &ip_port, crypt_connection_id)) {
             bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);

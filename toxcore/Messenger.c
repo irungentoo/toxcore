@@ -2413,13 +2413,13 @@ void do_friends(Messenger *m)
                 }
             }
 
-            friend_new_connection(m, i, m->friendlist[i].client_id);
+            if (friend_new_connection(m, i, m->friendlist[i].client_id) == 0) {
+                if (m->friendlist[i].dht_lock)
+                    set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk,
+                                                  current_time_monotonic());
 
-            if (m->friendlist[i].dht_lock)
-                set_connection_dht_public_key(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_temp_pk,
-                                              current_time_monotonic());
-
-            set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_ip_port);
+                set_direct_ip_port(m->net_crypto, m->friendlist[i].crypt_connection_id, m->friendlist[i].dht_ip_port);
+            }
 
         }
 
