@@ -123,6 +123,18 @@ int getclient_id(const Messenger *m, int32_t friendnumber, uint8_t *client_id)
 
     return -1;
 }
+
+/*  return friend connection id on success.
+ *  return -1 if failure.
+ */
+int getfriendcon_id(const Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    return m->friendlist[friendnumber].friendcon_id;
+}
+
 /* TODO: Another checksum algorithm might be better.
  *
  *  return a uint16_t that represents the checksum of address of length len.
