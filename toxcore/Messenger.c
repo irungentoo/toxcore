@@ -999,14 +999,6 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_
     m->group_invite = function;
 }
 
-/* Set the callback for group messages.
- *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
- */
-void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t))
-{
-    m->group_message = function;
-}
 
 /* Send a group invite packet.
  *
@@ -1017,17 +1009,6 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
 {
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0);
 }
-
-/* Send a group message packet.
- *
- *  return 1 on success
- *  return 0 on failure
- */
-int send_group_message_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
-{
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MESSAGE_GROUPCHAT, data, length, 0);
-}
-
 
 /****************FILE SENDING*****************/
 
@@ -1230,7 +1211,8 @@ int file_data(const Messenger *m, int32_t friendnumber, uint8_t filenumber, cons
         return -1;
 
     /* Prevent file sending from filling up the entire buffer preventing messages from being sent. TODO: remove */
-    if (crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id)) < MIN_SLOTS_FREE)
+    if (crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                                        m->friendlist[friendnumber].friendcon_id)) < MIN_SLOTS_FREE)
         return -1;
 
     uint8_t packet[MAX_CRYPTO_DATA_SIZE];
@@ -2121,16 +2103,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             if (m->group_invite)
                 (*m->group_invite)(m, i, data, data_length);
-
-            break;
-        }
-
-        case PACKET_ID_MESSAGE_GROUPCHAT: {
-            if (data_length == 0)
-                break;
-
-            if (m->group_message)
-                (*m->group_message)(m, i, data, data_length);
 
             break;
         }

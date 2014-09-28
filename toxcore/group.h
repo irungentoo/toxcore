@@ -56,8 +56,7 @@ typedef struct {
 
 enum {
     GROUPCHAT_CLOSE_NONE,
-    GROUPCHAT_CLOSE_FRIEND,
-    GROUPCHAT_CLOSE_GROUPCON
+    GROUPCHAT_CLOSE_CONNECTION
 };
 
 typedef struct {

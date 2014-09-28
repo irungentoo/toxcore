@@ -223,6 +223,8 @@ static int addpeer(Group_c *chat, const uint8_t *client_id, uint16_t peer_number
     return (chat->numpeers - 1);
 }
 
+static int handle_packet(void *object, int number, uint8_t *data, uint16_t length);
+
 /* Add friend to group chat.
  *
  * return 0 on success
@@ -246,7 +248,7 @@ static int add_friend_to_groupchat(Group_Chats *g_c, int32_t friendnumber, int g
             continue;
         }
 
-        if (g->close[i].type == GROUPCHAT_CLOSE_FRIEND && g->close[i].number == (uint32_t)friendnumber) {
+        if (g->close[i].type == GROUPCHAT_CLOSE_CONNECTION && g->close[i].number == (uint32_t)friendnumber) {
             g->close[i].group_number = other_groupnum; /* update groupnum. */
             return 0; /* Already in list. */
         }
@@ -257,9 +259,13 @@ static int add_friend_to_groupchat(Group_Chats *g_c, int32_t friendnumber, int g
     if (ind == MAX_GROUP_CONNECTIONS)
         return -1;
 
-    g->close[ind].type = GROUPCHAT_CLOSE_FRIEND;
+    g->close[ind].type = GROUPCHAT_CLOSE_CONNECTION;
     g->close[ind].number = friendnumber;
     g->close[ind].group_number = other_groupnum;
+    int friendcon_id = g_c->m->friendlist[friendnumber].friendcon_id;
+    //TODO
+    friend_connection_callbacks(g_c->m->fr_c, friendcon_id, GROUPCHAT_CALLBACK_INDEX, 0, &handle_packet, 0, g_c->m,
+                                friendnumber);
 
     return 0;
 }
@@ -298,6 +304,23 @@ int del_groupchat(Group_Chats *g_c, int groupnumber)
 
     free(g->group);
     return wipe_group_chat(g_c, groupnumber);
+}
+
+/* Send a group message packet.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+int send_group_message_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
+{
+    if (length >= MAX_CRYPTO_DATA_SIZE)
+        return 0;
+
+    uint8_t packet[1 + length];
+    packet[0] = PACKET_ID_MESSAGE_GROUPCHAT;
+    memcpy(packet + 1, data, length);
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                             m->friendlist[friendnumber].friendcon_id), packet, sizeof(packet), 0) != -1;
 }
 
 #define INVITE_PACKET_SIZE (1 + sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
@@ -464,7 +487,7 @@ static int friend_in_close(Group_c *g, int32_t friendnumber)
     int i;
 
     for (i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
-        if (g->close[i].type != GROUPCHAT_CLOSE_FRIEND)
+        if (g->close[i].type != GROUPCHAT_CLOSE_CONNECTION)
             continue;
 
         if (g->close[i].number != (uint32_t)friendnumber)
@@ -649,6 +672,31 @@ static void handle_friend_message_packet(Messenger *m, int32_t friendnumber, con
     handle_message_packet_group(g_c, groupnumber, data, length, index);
 }
 
+static int handle_packet(void *object, int number, uint8_t *data, uint16_t length)
+{
+    if (length <= 1)
+        return -1;
+
+    switch (data[0]) {
+        case PACKET_ID_INVITE_GROUPCHAT: {
+            handle_friend_invite_packet(object, number, data + 1, length - 1);
+            break;
+        }
+
+        case PACKET_ID_MESSAGE_GROUPCHAT: {
+            handle_friend_message_packet(object, number, data + 1, length - 1);
+            break;
+        }
+
+        default: {
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+
 /* Create new groupchat instance. */
 Group_Chats *new_groupchats(Messenger *m)
 {
@@ -663,7 +711,6 @@ Group_Chats *new_groupchats(Messenger *m)
     temp->m = m;
     m->group_chat_object = temp;
     m_callback_group_invite(m, &handle_friend_invite_packet);
-    m_callback_group_message(m, &handle_friend_message_packet);
 
     return temp;
 }

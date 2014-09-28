@@ -729,25 +729,12 @@ void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t
  */
 void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t));
 
-/* Set the callback for group messages.
- *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
- */
-void m_callback_group_message(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t));
-
 /* Send a group invite packet.
  *
  *  return 1 on success
  *  return 0 on failure
  */
 int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
-
-/* Send a group message packet.
- *
- *  return 1 on success
- *  return 0 on failure
- */
-int send_group_message_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /****************FILE SENDING*****************/
 
