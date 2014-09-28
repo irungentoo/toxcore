@@ -105,7 +105,6 @@ typedef int sock_t;
 #define NET_PACKET_CRYPTO_DATA     27  /* Crypto data packet */
 #define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
 #define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
-#define NET_PACKET_GROUP_CHATS     48  /* Group chats packet ID. */
 
 /* See:  docs/Prevent_Tracking.txt and onion.{c, h} */
 #define NET_PACKET_ONION_SEND_INITIAL 128
@@ -135,8 +134,7 @@ typedef int sock_t;
 #define TCP_INET6 (AF_INET6 + 3)
 #define TCP_FAMILY (AF_INET6 + 4)
 
-typedef union __attribute__ ((__packed__))
-{
+typedef union {
     uint8_t uint8[4];
     uint16_t uint16[2];
     uint32_t uint32;
@@ -144,8 +142,7 @@ typedef union __attribute__ ((__packed__))
 }
 IP4;
 
-typedef union __attribute__ ((__packed__))
-{
+typedef union {
     uint8_t uint8[16];
     uint16_t uint16[8];
     uint32_t uint32[4];
@@ -154,8 +151,7 @@ typedef union __attribute__ ((__packed__))
 }
 IP6;
 
-typedef struct __attribute__ ((__packed__))
-{
+typedef struct {
     uint8_t family;
     union {
         IP4 ip4;
@@ -164,8 +160,7 @@ typedef struct __attribute__ ((__packed__))
 }
 IP;
 
-typedef struct __attribute__ ((__packed__)) __attribute__((gcc_struct))
-{
+typedef struct {
     IP ip;
     uint16_t port;
 }
