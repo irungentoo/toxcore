@@ -543,8 +543,8 @@ uint32_t tox_get_chatlist(const Tox *tox, int *out_list, uint32_t list_size);
  *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, void *userdata)
  *
  * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT) and 'hash' is the hash of
- * the avatar data for caching purposes and it is exactly TOX_AVATAR_HASH_LENGTH long. If the
- * image format is NONE, the hash is zeroed.
+ * the avatar data for caching purposes and it is exactly TOX_HASH_LENGTH long. If the image
+ * format is NONE, the hash is zeroed.
  *
  */
 void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, void *),
@@ -560,12 +560,12 @@ void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint
  *
  * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT); 'hash' is the
  * locally-calculated cryptographic hash of the avatar data and it is exactly
- * TOX_AVATAR_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
+ * TOX_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
  * of such data.
  *
  * If format is NONE, 'data' is NULL, 'datalen' is zero, and the hash is zeroed. The hash is
- * always validated locally with the function tox_avatar_hash and ensured to match the image
- * data, so this value can be safely used to compare with cached avatars.
+ * always validated locally with the function tox_hash and ensured to match the image data,
+ * so this value can be safely used to compare with cached avatars.
  *
  * WARNING: users MUST treat all avatar image data received from another peer as untrusted and
  * potentially malicious. The library only ensures that the data which arrived is the same the
@@ -605,7 +605,7 @@ int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t lengt
  *   buf - destination buffer to the image data. Must have at least 'maxlen' bytes;
  *   length - destination pointer to the image data length;
  *   maxlen - length of the destination buffer 'buf';
- *   hash - destination pointer to the avatar hash (it must be exactly TOX_AVATAR_HASH_LENGTH bytes long).
+ *   hash - destination pointer to the avatar hash (it must be exactly TOX_HASH_LENGTH bytes long).
  *
  * returns 0 on success;
  * returns -1 on failure.
