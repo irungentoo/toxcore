@@ -560,33 +560,48 @@ int m_set_userstatus(Messenger *m, uint8_t status)
     return 0;
 }
 
+int m_unset_avatar(Messenger *m)
+{
+    if (m->avatar_data != NULL)
+        free(m->avatar_data);
+
+    m->avatar_data = NULL;
+    m->avatar_data_length = 0;
+    m->avatar_format = AVATAR_FORMAT_NONE;
+    memset(m->avatar_hash, 0, AVATAR_HASH_LENGTH);
+
+    uint32_t i;
+
+    for (i = 0; i < m->numfriends; ++i)
+        m->friendlist[i].avatar_info_sent = 0;
+
+    return 0;
+}
+
 int m_set_avatar(Messenger *m, uint8_t format, const uint8_t *data, uint32_t length)
 {
-    if (length > AVATAR_MAX_DATA_LENGTH)
+    if (format == AVATAR_FORMAT_NONE) {
+        m_unset_avatar(m);
+        return 0;
+    }
+
+    if (length > AVATAR_MAX_DATA_LENGTH || length == 0)
         return -1;
 
-    if (format == AVATAR_FORMAT_NONE) {
-        free(m->avatar_data);
-        m->avatar_data = NULL;
-        m->avatar_data_length = 0;
-        m->avatar_format = format;
-        memset(m->avatar_hash, 0, AVATAR_HASH_LENGTH);
-    } else {
-        if (length == 0 || data == NULL)
-            return -1;
+    if (data == NULL)
+        return -1;
 
-        uint8_t *tmp = realloc(m->avatar_data, length);
+    uint8_t *tmp = realloc(m->avatar_data, length);
 
-        if (tmp == NULL)
-            return -1;
+    if (tmp == NULL)
+        return -1;
 
-        m->avatar_format = format;
-        m->avatar_data = tmp;
-        m->avatar_data_length = length;
-        memcpy(m->avatar_data, data, length);
+    m->avatar_format = format;
+    m->avatar_data = tmp;
+    m->avatar_data_length = length;
+    memcpy(m->avatar_data, data, length);
 
-        m_avatar_hash(m->avatar_hash, m->avatar_data, m->avatar_data_length);
-    }
+    m_avatar_hash(m->avatar_hash, m->avatar_data, m->avatar_data_length);
 
     uint32_t i;
 

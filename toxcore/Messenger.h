@@ -496,6 +496,11 @@ uint8_t m_get_self_userstatus(const Messenger *m);
  */
 int m_set_avatar(Messenger *m, uint8_t format, const uint8_t *data, uint32_t length);
 
+/* Unsets the user avatar.
+
+   returns 0 on success (currently always returns 0) */
+int m_unset_avatar(Messenger *m);
+
 /* Get avatar data from the current user.
  * Copies the current user avatar data to the destination buffer and sets the image format
  * accordingly.

@@ -590,6 +590,10 @@ void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint
  */
 int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t length);
 
+/* Unsets the user avatar.
+
+   returns 0 on success (currently always returns 0) */
+int tox_unset_avatar(Tox *tox);
 
 /* Get avatar data from the current user.
  * Copies the current user avatar data to the destination buffer and sets the image format

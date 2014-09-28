@@ -833,6 +833,12 @@ int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t lengt
     return m_set_avatar(m, format, data, length);
 }
 
+int tox_unset_avatar(Tox *tox)
+{
+    Messenger *m = tox;
+    return m_unset_avatar(m);
+}
+
 int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen, uint8_t *hash)
 {
     const Messenger *m = tox;
