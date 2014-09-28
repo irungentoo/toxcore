@@ -572,21 +572,44 @@ int basic_group_chat_test()
     for (i=0; i<PEERCOUNT; i++)
     {
         tox[i]=tox_new(0);
-        tox_add_groupchat(tox[i]);
+        tox_groupchat_add(tox[i]);
 
         uint8_t pk[EXT_PUBLIC_KEY];
-        tox_get_groupchat_self_pk(tox[i], 0, pk);
+        tox_groupchat_get_self_pk(tox[i], 0, pk);
         printf("Peer Chat %u:\n", i);
         printf("Encryption key:\t%s\n", id_toa(pk));
         printf("Signature key:\t%s\n", id_toa(SIG_KEY(pk)));
     }
 
     printf("Peer Chat 0 are founder of chat:\n");
-    tox_add_groupchat_credentials(tox[0], 0);
+    tox_groupchat_add_credentials(tox[0], 0);
     uint8_t chat_pk[EXT_PUBLIC_KEY];
-    tox_get_groupchat_pk(tox[0], 0, chat_pk);
+    tox_groupchat_get_chatid(tox[0], 0, chat_pk);
     printf("Encryption key:\t%s\n", id_toa(chat_pk));
     printf("Signature key:\t%s\n", id_toa(SIG_KEY(chat_pk)));
+
+    while (1) {
+        for (i=0;i<PEERCOUNT;i++)
+            tox_do(tox[i]);
+
+        int numconnected=0;
+        for (i=0;i<PEERCOUNT;i++)
+            numconnected+=tox_isconnected(tox[i]);
+        if (numconnected==PEERCOUNT) {
+            printf("Toxes are online \n");
+            break;
+        }
+        /* TODO: busy wait might be slightly more efficient here */
+        usleep(50000);
+    }
+
+    printf("Peer Chat 0 announces himself\n");
+    tox_groupchat_self_announce(tox[0], 0);
+
+    printf("Other peers are trying to find the Chat by ChatID \n");
+    for (i=1;i<PEERCOUNT;i++)
+        ;
+
 
     // Finalization
     for (i=0; i<PEERCOUNT; i++)
@@ -601,6 +624,6 @@ int main()
 {
     //certificates_test();
     //invites_test();
-    sync_broadcast_test();
-    //basic_group_chat_test();
+    //sync_broadcast_test();
+    basic_group_chat_test();
 }

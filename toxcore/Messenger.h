@@ -747,11 +747,18 @@ void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t
 
 /* Copies group peer self pk into self_public_key
 */
-void get_groupchat_self_pk(const Messenger *m, int groupnumber, uint8_t *self_public_key);
+int groupchat_get_self_pk(const Messenger *m, int groupnumber, uint8_t *self_public_key);
 
 /* Copies group chat pk into chat_public_key
 */
-void get_groupchat_pk(const Messenger *m, int groupnumber, uint8_t *chat_public_key);
+int groupchat_get_chatid(const Messenger *m, int groupnumber, uint8_t *chat_public_key);
+
+/* Sets chatid.
+ * Use in case you want to join the chat (not create)
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_set_chatid(Messenger *m, int groupnumber, uint8_t *chat_public_key);
 
 /* Creates new groupchat credentials instance.
 * Use in case you want to initiate the chat aka founder
@@ -759,6 +766,24 @@ void get_groupchat_pk(const Messenger *m, int groupnumber, uint8_t *chat_public_
 * return -1 on failure.
 */
 int create_groupchat_credentials(Messenger *m, int groupnumber);
+
+/* Announce yourself when going online
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_self_announce(Messenger *m, int groupnumber);
+
+/* Use to find online chat members
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_lookup(Messenger *m, int groupnumber);
+
+/* Use to join group chat
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_join(Messenger *m, int groupnumber);
 
 /* Creates a new groupchat and puts it in the chats array.
 *

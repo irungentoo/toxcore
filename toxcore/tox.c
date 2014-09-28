@@ -543,48 +543,89 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats undergo major changes right now ************/
 
 /* Creates new groupchat credentials instance.
-* Use in case you want to initiate the chat aka founder
-* return 0 on success.
-* return -1 on failure.
-*/
-int tox_add_groupchat_credentials(Tox *tox, int groupnumber)
+ * Use in case you want to initiate the chat aka founder
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tox_groupchat_add_credentials(Tox *tox, int groupnumber)
 {
     Messenger *m = tox;
     return add_groupchat_credentials(m, groupnumber);
 }
 
-/* Copies group peer self pk into self_public_key
-*/
-void tox_get_groupchat_self_pk(Tox *tox, int groupnumber, uint8_t *self_public_key)
+/* Sets chatid.
+ * Use in case you want to join the chat (not create)
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tox_groupchat_set_chatid(Tox *tox, int groupnumber, uint8_t *chat_public_key)
 {
     Messenger *m = tox;
-    get_groupchat_self_pk(m, groupnumber, self_public_key);
+    return groupchat_set_chatid(m, groupnumber, chat_public_key);
+}
+
+/* Announce yourself when going online
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tox_groupchat_self_announce(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    return groupchat_self_announce(m, groupnumber);
+}
+
+/* Use to find online chat members
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tox_groupchat_lookup(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    return groupchat_lookup(m, groupnumber);
+}
+
+/* Use to join group chat
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tox_groupchat_join(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    return groupchat_join(m, groupnumber);
+}
+
+/* Copies group peer self pk into self_public_key
+ */
+int tox_groupchat_get_self_pk(Tox *tox, int groupnumber, uint8_t *self_public_key)
+{
+    Messenger *m = tox;
+    return groupchat_get_self_pk(m, groupnumber, self_public_key);
 }
 /* Copies group peer self pk into self_public_key
-*/
-void tox_get_groupchat_pk(Tox *tox, int groupnumber, uint8_t *chat_public_key)
+ */
+int tox_groupchat_get_chatid(Tox *tox, int groupnumber, uint8_t *chat_public_key)
 {
     Messenger *m = tox;
-    get_groupchat_pk(m, groupnumber, chat_public_key);
+    return groupchat_get_chatid(m, groupnumber, chat_public_key);
 }
 
 /* Creates a new groupchat and puts it in the chats array.
-*
-* return group number on success.
-* return -1 on failure.
-*/
-int tox_add_groupchat(Tox *tox)
+ *
+ * return group number on success.
+ * return -1 on failure.
+ */
+int tox_groupchat_add(Tox *tox)
 {
     Messenger *m = tox;
     return add_groupchat(m);
 }
 
 /* Delete a groupchat from the chats array.
-*
-* return 0 on success.
-* return -1 if failure.
-*/
-int tox_del_groupchat(Tox *tox, int groupnumber)
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+int tox_groupchat_del(Tox *tox, int groupnumber)
 {
     Messenger *m = tox;
     return del_groupchat(m, groupnumber);

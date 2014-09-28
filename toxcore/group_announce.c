@@ -502,8 +502,10 @@ int get_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
                         ipport_copy(&nodes[k].ip_port, &announce->self_requests[i].nodes[j].ip_port);
                         k++;
                     }
-            announce->self_requests[i].req_id = 0;
-            --announce->req_num;
+
+            // No need to delete this, they will expire anyway
+            //announce->self_requests[i].req_id = 0;
+            //--announce->req_num;
         }
 
     return k;

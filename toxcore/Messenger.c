@@ -1105,6 +1105,20 @@ static void do_allgroupchats(Messenger *m)
     }
 }
 
+/* return 1 if the groupnumber is not valid.
+* return 0 if the groupnumber is valid.
+*/
+static uint8_t groupnumber_not_valid(const Messenger *m, int groupnumber)
+{
+    if ((unsigned int)groupnumber >= m->numchats)
+        return 1;
+    if (m->chats == NULL)
+        return 1;
+    if (m->chats[groupnumber] == NULL)
+        return 1;
+    return 0;
+}
+
 /* Creates new groupchat credentials instance.
  * Use in case you want to initiate the chat aka founder
  * return 0 on success.
@@ -1112,23 +1126,87 @@ static void do_allgroupchats(Messenger *m)
  */
 int add_groupchat_credentials(Messenger *m, int groupnumber)
 {   
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1;
     m->chats[groupnumber]->credentials = new_groupcredentials();
     memcpy(m->chats[groupnumber]->chat_public_key, m->chats[groupnumber]->credentials->chat_public_key, EXT_PUBLIC_KEY);
     return 0;
 }
 
+/* Announce yourself when going online
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_self_announce(Messenger *m, int groupnumber)
+{
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1;
+    return send_gc_announce_request(m->dht, m->chats[groupnumber]->self_public_key,
+        m->chats[groupnumber]->self_secret_key, m->chats[groupnumber]->chat_public_key);
+}
+
+/* Use to find online chat members
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_lookup(Messenger *m, int groupnumber)
+{
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1; 
+    return send_gc_get_announced_nodes_request(m->dht, m->chats[groupnumber]->self_public_key,
+                            m->chats[groupnumber]->self_public_key, m->chats[groupnumber]->chat_public_key);
+}
+
+/* Use to join group chat
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_join(Messenger *m, int groupnumber)
+{
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1; 
+
+    //Announced_Node_format nodes[MAX_CONCURRENT_REQUESTS*MAX_SENT_ANNOUNCED_NODES];
+    Announced_Node_format nodes[2*10];
+    int num_nodes = get_requested_gc_nodes(m->dht->announce, m->chats[groupnumber]->chat_public_key, nodes);
+    if (num_nodes == 0)
+        return -1;
+
+    return send_gc_invite_request(m->chats[groupnumber],
+                nodes[num_nodes-1].ip_port, nodes[num_nodes-1].client_id);
+}
+
 /* Copies group peer self pk into self_public_key
  */
-void get_groupchat_self_pk(const Messenger *m, int groupnumber, uint8_t *self_public_key)
+int groupchat_get_self_pk(const Messenger *m, int groupnumber, uint8_t *self_public_key)
 {
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1; 
     memcpy(self_public_key, m->chats[groupnumber]->self_public_key, EXT_PUBLIC_KEY);
+    return 0;
+}
+
+/* Sets chatid.
+ * Use in case you want to join the chat (not create)
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_set_chatid(Messenger *m, int groupnumber, uint8_t *chat_public_key)
+{
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1; 
+    memcpy(m->chats[groupnumber]->chat_public_key, chat_public_key, EXT_PUBLIC_KEY);
+    return 0;
 }
 
 /* Copies group chat pk into chat_public_key
  */
-void get_groupchat_pk(const Messenger *m, int groupnumber, uint8_t *chat_public_key)
+int groupchat_get_chatid(const Messenger *m, int groupnumber, uint8_t *chat_public_key)
 {
+    if (groupnumber_not_valid(m, groupnumber))
+        return -1; 
     memcpy(chat_public_key, m->chats[groupnumber]->chat_public_key, EXT_PUBLIC_KEY);
+    return 0;
 }
 
 /****************FILE SENDING*****************/
@@ -2255,16 +2333,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             if (m->read_receipt)
                 (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
-
-            break;
-        }
-
-        case PACKET_ID_INVITE_GROUPCHAT: {
-            if (data_length != crypto_box_PUBLICKEYBYTES)
-                break;
-
-            if (m->group_invite)
-                (*m->group_invite)(m, i, data, m->group_invite_userdata);
 
             break;
         }
