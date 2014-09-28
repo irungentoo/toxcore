@@ -26,12 +26,9 @@
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
-#include "net_crypto.h"
-#include "DHT.h"
 #include "friend_requests.h"
 #include "LAN_discovery.h"
-#include "group_chats.h"
-#include "onion_client.h"
+#include "friend_connection.h"
 
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
@@ -42,8 +39,7 @@
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
-/* NOTE: Packet ids below 16 must never be used. */
-#define PACKET_ID_ALIVE 16
+/* NOTE: Packet ids below 17 must never be used. */
 #define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
@@ -61,12 +57,9 @@
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
 #define PACKET_ID_FILE_DATA 82
-#define PACKET_ID_INVITE_GROUPCHAT 144
-#define PACKET_ID_JOIN_GROUPCHAT 145
-#define PACKET_ID_ACCEPT_GROUPCHAT 146
+#define PACKET_ID_INVITE_GROUPCHAT 96
+#define PACKET_ID_MESSAGE_GROUPCHAT 97
 
-/* Max number of groups we can invite someone at the same time to. */
-#define MAX_INVITED_GROUPS 64
 
 /* Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS 16
@@ -108,14 +101,8 @@ enum {
 /* Default start timeout in seconds between friend requests. */
 #define FRIENDREQUEST_TIMEOUT 5;
 
-/* Interval between the sending of ping packets. */
-#define FRIEND_PING_INTERVAL 6
-
 /* Interval between the sending of tcp relay information */
 #define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
-
-/* If no packets are received from friend in this time interval, kill the connection. */
-#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
 
 /* Must be < MAX_CRYPTO_DATA_SIZE */
 #define AVATAR_DATA_MAX_CHUNK_SIZE (MAX_CRYPTO_DATA_SIZE-1)
@@ -199,9 +186,9 @@ enum {
 };
 
 typedef struct {
-    uint8_t client_id[CLIENT_ID_SIZE];
-    uint32_t onion_friendnum;
-    int crypt_connection_id;
+    uint8_t client_id[crypto_box_PUBLICKEYBYTES];
+    int friendcon_id;
+
     uint64_t friendrequest_lastsent; // Time at which the last friend request was sent.
     uint32_t friendrequest_timeout; // The timeout between successful friendrequest sending attempts.
     uint8_t status; // 0 if no friend, 1 if added, 2 if friend request sent, 3 if confirmed friend, 4 if online.
@@ -222,13 +209,10 @@ typedef struct {
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint8_t receives_read_receipts; // shall we send read receipts to this person?
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
-    uint64_t ping_lastrecv;
-    uint64_t ping_lastsent;
+    uint64_t ping_lastrecv;//TODO remove
     uint64_t share_relays_lastsent;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
-    int invited_groups[MAX_INVITED_GROUPS];
-    uint16_t invited_groups_num;
 
     AVATAR_SENDDATA avatar_send_data;
     AVATAR_RECEIVEDATA *avatar_recv_data;    // We are receiving avatar data from this friend.
@@ -255,6 +239,8 @@ typedef struct Messenger {
     Onion_Announce *onion_a;
     Onion_Client *onion_c;
 
+    Friend_Connections *fr_c;
+
     Friend_Requests fr;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
@@ -273,9 +259,6 @@ typedef struct Messenger {
     uint32_t numfriends;
 
     uint32_t numonline_friends;
-
-    Group_Chat **chats;
-    uint32_t numchats;
 
     uint64_t last_LANdiscovery;
 
@@ -308,14 +291,9 @@ typedef struct Messenger {
     void *avatar_data_recv_userdata;
     void (*avatar_data_recv)(struct Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *, uint32_t, void *);
 
-    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, void *);
-    void *group_invite_userdata;
-    void (*group_message)(struct Messenger *m, int, int, const uint8_t *, uint16_t, void *);
-    void *group_message_userdata;
-    void (*group_action)(struct Messenger *m, int, int, const uint8_t *, uint16_t, void *);
-    void *group_action_userdata;
-    void (*group_namelistchange)(struct Messenger *m, int, int, uint8_t, void *);
-    void *group_namelistchange_userdata;
+    void *group_chat_object; /* Set by new_groupchats()*/
+    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, uint16_t);
+    void (*group_message)(struct Messenger *m, int32_t, const uint8_t *, uint16_t);
 
     void (*file_sendrequest)(struct Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *, uint16_t, void *);
     void *file_sendrequest_userdata;
@@ -517,6 +495,11 @@ uint8_t m_get_self_userstatus(const Messenger *m);
  * returns -1 on failure.
  */
 int m_set_avatar(Messenger *m, uint8_t format, const uint8_t *data, uint32_t length);
+
+/* Unsets the user avatar.
+
+   returns 0 on success (currently always returns 0) */
+int m_unset_avatar(Messenger *m);
 
 /* Get avatar data from the current user.
  * Copies the current user avatar data to the destination buffer and sets the image format
@@ -745,59 +728,18 @@ void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t
 
 /**********GROUP CHATS************/
 
-/* Copies group peer self pk into self_public_key
-*/
-int groupchat_get_self_pk(const Messenger *m, int groupnumber, uint8_t *self_public_key);
-
-/* Copies group chat pk into chat_public_key
-*/
-int groupchat_get_chatid(const Messenger *m, int groupnumber, uint8_t *chat_public_key);
-
-/* Sets chatid.
- * Use in case you want to join the chat (not create)
- * return 0 on success.
- * return -1 on failure.
+/* Set the callback for group invites.
+ *
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
  */
-int groupchat_set_chatid(Messenger *m, int groupnumber, uint8_t *chat_public_key);
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t));
 
-/* Creates new groupchat credentials instance.
-* Use in case you want to initiate the chat aka founder
-* return 0 on success.
-* return -1 on failure.
-*/
-int create_groupchat_credentials(Messenger *m, int groupnumber);
-
-/* Announce yourself when going online
- * return 0 on success.
- * return -1 on failure.
+/* Send a group invite packet.
+ *
+ *  return 1 on success
+ *  return 0 on failure
  */
-int groupchat_self_announce(Messenger *m, int groupnumber);
-
-/* Use to find online chat members
- * return 0 on success.
- * return -1 on failure.
- */
-int groupchat_lookup(Messenger *m, int groupnumber);
-
-/* Use to join group chat
- * return 0 on success.
- * return -1 on failure.
- */
-int groupchat_join(Messenger *m, int groupnumber);
-
-/* Creates a new groupchat and puts it in the chats array.
-*
-* return group number on success.
-* return -1 on failure.
-*/
-int add_groupchat(Messenger *m);
-
-/* Delete a groupchat from the chats array.
-*
-* return 0 on success.
-* return -1 if failure.
-*/
-int del_groupchat(Messenger *m, int groupnumber);
+int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /****************FILE SENDING*****************/
 

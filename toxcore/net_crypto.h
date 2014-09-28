@@ -111,7 +111,6 @@ typedef struct {
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
     uint8_t dht_public_key_set; /* True if the dht public key is set, false if it isn't. */
-    uint64_t dht_public_key_timestamp; /* Timestamp of the last time we confirmed the key was correct. */
 
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
@@ -161,6 +160,10 @@ typedef struct {
     uint8_t maximum_speed_reached;
 
     pthread_mutex_t mutex;
+
+    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key);
+    void *dht_pk_callback_object;
+    uint32_t dht_pk_callback_number;
 } Crypto_Connection;
 
 typedef struct {
@@ -236,19 +239,16 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key);
 /* Copy friends DHT public key into dht_key.
  *
  * return 0 on failure (no key copied).
- * return timestamp on success (key copied).
+ * return 1 on success (key copied).
  */
-uint64_t get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
+unsigned int get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
 
 /* Set the DHT public key of the crypto connection.
- * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
- * the other peer.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key,
-                                  uint64_t timestamp);
+int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key);
 
 /* Set the direct ip of the crypto connection.
  *
@@ -293,6 +293,17 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
                                   int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
                                   int id);
+
+/* Set the function for this friend that will be callbacked with object and number
+ * when that friend gives us his DHT temporary public key.
+ *
+ * object and number will be passed as argument to this function.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(void *data, int32_t number,
+                       const uint8_t *dht_public_key), void *object, uint32_t number);
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.

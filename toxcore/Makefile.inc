@@ -19,6 +19,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/friend_requests.c \
                         ../toxcore/LAN_discovery.h \
                         ../toxcore/LAN_discovery.c \
+                        ../toxcore/friend_connection.h \
+                        ../toxcore/friend_connection.c \
                         ../toxcore/Messenger.h \
                         ../toxcore/Messenger.c \
                         ../toxcore/ping.h \
@@ -31,6 +33,8 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/group_chats.c \
                         ../toxcore/group_announce.h \
                         ../toxcore/group_announce.c \
+                        ../toxcore/group.h \
+                        ../toxcore/group.c \
                         ../toxcore/assoc.h \
                         ../toxcore/assoc.c \
                         ../toxcore/onion.h \

@@ -417,59 +417,120 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
 
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats undergo major changes right now ************/
 
-/* Creates new groupchat credentials instance.
- * Use in case you want to initiate the chat aka founder
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_groupchat_add_credentials(Tox *tox, int groupnumber);
-
-/* Sets chatid.
- * Use in case you want to join the chat (not create)
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_groupchat_set_chatid(Tox *tox, int groupnumber, uint8_t *chat_public_key);
-
-/* Announce yourself when going online
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_groupchat_self_announce(Tox *tox, int groupnumber);
-
-/* Use to find online chat members
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_groupchat_lookup(Tox *tox, int groupnumber);
-
-/* Use to join group chat
- * return 0 on success.
- * return -1 on failure.
- */
-int tox_groupchat_join(Tox *tox, int groupnumber);
-
-/* Copies group peer self pk into self_public_key
- */
-int tox_groupchat_get_self_pk(Tox *tox, int groupnumber, uint8_t *self_public_key);
-
-/* Copies group peer self pk into self_public_key
- */
-int tox_groupchat_get_chatid(Tox *tox, int groupnumber, uint8_t *chat_public_key);
-
-/* Delete a groupchat from the chats array.
+/* Set the callback for group invites.
  *
- * return 0 on success.
- * return -1 if failure.
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *
+ * data of length is what needs to be passed to join_groupchat().
  */
-int tox_groupchat_del(Tox *tox, int groupnumber);
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
+                               void *userdata);
+
+/* Set the callback for group messages.
+ *
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ */
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
+                                void *userdata);
+
+/* Set the callback for group actions.
+ *
+ *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
+ */
+void tox_callback_group_action(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
+                               void *userdata);
+
+/* Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *  Function(Tox *tox, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
+ */
+typedef enum {
+    TOX_CHAT_CHANGE_PEER_ADD,
+    TOX_CHAT_CHANGE_PEER_DEL,
+    TOX_CHAT_CHANGE_PEER_NAME,
+} TOX_CHAT_CHANGE;
+
+void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *),
+                                        void *userdata);
 
 /* Creates a new groupchat and puts it in the chats array.
  *
  * return group number on success.
  * return -1 on failure.
  */
-int tox_groupchat_add(Tox *tox);
+int tox_add_groupchat(Tox *tox);
+
+/* Delete a groupchat from the chats array.
+ *
+ * return 0 on success.
+ * return -1 if failure.
+ */
+int tox_del_groupchat(Tox *tox, int groupnumber);
+
+/* Copy the name of peernumber who is in groupnumber to name.
+ * name must be at least TOX_MAX_NAME_LENGTH long.
+ *
+ * return length of name if success
+ * return -1 if failure
+ */
+int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name);
+
+/* invite friendnumber to groupnumber
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_invite_friend(Tox *tox, int32_t friendnumber, int groupnumber);
+
+/* Join a group (you need to have been invited first.) using data of length obtained
+ * in the group invite callback.
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ */
+int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length);
+
+/* send a group message
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
+
+/* send a group action
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length);
+
+/* Return the number of peers in the group chat on success.
+ * return -1 on failure
+ */
+int tox_group_number_peers(const Tox *tox, int groupnumber);
+
+/* List all the peers in the group chat.
+ *
+ * Copies the names of the peers to the name[length][TOX_MAX_NAME_LENGTH] array.
+ *
+ * Copies the lengths of the names to lengths[length]
+ *
+ * returns the number of peers on success.
+ *
+ * return -1 on failure.
+ */
+int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t names[][TOX_MAX_NAME_LENGTH], uint16_t lengths[],
+                        uint16_t length);
+
+/* Return the number of chats in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_chatlist. */
+uint32_t tox_count_chatlist(const Tox *tox);
+
+/* Copy a list of valid chat IDs into the array out_list.
+ * If out_list is NULL, returns 0.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size. */
+uint32_t tox_get_chatlist(const Tox *tox, int *out_list, uint32_t list_size);
 
 /****************AVATAR FUNCTIONS*****************/
 
@@ -482,8 +543,8 @@ int tox_groupchat_add(Tox *tox);
  *  function(Tox *tox, int32_t friendnumber, uint8_t format, uint8_t *hash, void *userdata)
  *
  * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT) and 'hash' is the hash of
- * the avatar data for caching purposes and it is exactly TOX_AVATAR_HASH_LENGTH long. If the
- * image format is NONE, the hash is zeroed.
+ * the avatar data for caching purposes and it is exactly TOX_HASH_LENGTH long. If the image
+ * format is NONE, the hash is zeroed.
  *
  */
 void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, void *),
@@ -499,12 +560,12 @@ void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint
  *
  * where 'format' is the avatar image format (see TOX_AVATAR_FORMAT); 'hash' is the
  * locally-calculated cryptographic hash of the avatar data and it is exactly
- * TOX_AVATAR_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
+ * TOX_HASH_LENGTH long; 'data' is the avatar image data and 'datalen' is the length
  * of such data.
  *
  * If format is NONE, 'data' is NULL, 'datalen' is zero, and the hash is zeroed. The hash is
- * always validated locally with the function tox_avatar_hash and ensured to match the image
- * data, so this value can be safely used to compare with cached avatars.
+ * always validated locally with the function tox_hash and ensured to match the image data,
+ * so this value can be safely used to compare with cached avatars.
  *
  * WARNING: users MUST treat all avatar image data received from another peer as untrusted and
  * potentially malicious. The library only ensures that the data which arrived is the same the
@@ -529,6 +590,10 @@ void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint
  */
 int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t length);
 
+/* Unsets the user avatar.
+
+   returns 0 on success (currently always returns 0) */
+int tox_unset_avatar(Tox *tox);
 
 /* Get avatar data from the current user.
  * Copies the current user avatar data to the destination buffer and sets the image format
@@ -544,7 +609,7 @@ int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t lengt
  *   buf - destination buffer to the image data. Must have at least 'maxlen' bytes;
  *   length - destination pointer to the image data length;
  *   maxlen - length of the destination buffer 'buf';
- *   hash - destination pointer to the avatar hash (it must be exactly TOX_AVATAR_HASH_LENGTH bytes long).
+ *   hash - destination pointer to the avatar hash (it must be exactly TOX_HASH_LENGTH bytes long).
  *
  * returns 0 on success;
  * returns -1 on failure.

@@ -134,22 +134,12 @@ START_TEST(test_ip_equal)
 }
 END_TEST
 
-START_TEST(test_struct_sizes)
-{
-    ck_assert_msg(sizeof(IP4) == 4, "sizeof(IP4): expected result 4, got %u.", sizeof(IP4));
-    ck_assert_msg(sizeof(IP6) == 16, "sizeof(IP6): expected result 16, got %u.", sizeof(IP6));
-    ck_assert_msg(sizeof(IP) == 17, "sizeof(IP): expected result 17, got %u.", sizeof(IP));
-    ck_assert_msg(sizeof(IP_Port) == 19, "sizeof(IP_Port): expected result 19, got %u.", sizeof(IP_Port));
-}
-END_TEST
-
 Suite *network_suite(void)
 {
     Suite *s = suite_create("Network");
 
     DEFTESTCASE(addr_resolv_localhost);
     DEFTESTCASE(ip_equal);
-    DEFTESTCASE(struct_sizes);
 
     return s;
 }

@@ -128,7 +128,7 @@ complete API documentation is available in `tox.h`.
 
 ```
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
-#define TOX_AVATAR_HASH_LENGTH 32
+#define TOX_HASH_LENGTH 32
 
 
 /* Data formats for user avatar images */
@@ -146,8 +146,8 @@ int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t lengt
 /* Get avatar data from the current user. */
 int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen, uint8_t *hash);
 
-/* Generates a cryptographic hash of the given avatar data. */
-int tox_avatar_hash(const Tox *tox, uint8_t *hash, const uint8_t *data, const uint32_t datalen);
+/* Generates a cryptographic hash of the given data (usually a cached avatar). */
+int tox_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen);
 
 /* Request avatar information from a friend. */
 int tox_request_avatar_info(const Tox *tox, const int32_t friendnumber);
@@ -332,7 +332,7 @@ As in this example:
         printf("Receiving avatar information from friend %d. Format = %d\n",
             friendnumber, format);
         printf("Data hash: ");
-        hex_printf(hash, TOX_AVATAR_HASH_LENGTH);   /* Hypothetical function */
+        hex_printf(hash, TOX_HASH_LENGTH);   /* Hypothetical function */
         printf("\n");
     }
 
@@ -592,11 +592,10 @@ The present proposal mitigates this situation by:
     avatar information when nothing has changed (`PACKET_ID_AVATAR_INFO`);
 
   - Having per-friend data transfer limit. As the current protocol still
-    allows an user to request an infinite data stream by asking the the
-    same offset of the avatar again and again, the implementation limits
-    the amount of data a single user can request for some time. For now,
-    the library will not allow an user to request more than
-    `10*TOX_AVATAR_MAX_DATA_LENGTH` in less than 20 minutes;
+    allows an user to request avatar data again and again, the implementation
+    limits the amount of data a particular user can request for some time. The
+    exact values are defined in constants `AVATAR_DATA_TRANSFER_LIMIT` and
+    `AVATAR_DATA_TRANSFER_TIMEOUT` in file `Messenger.c`.
 
   - Making the requester responsible for storing partial data and state
     information;
