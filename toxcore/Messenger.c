@@ -1607,6 +1607,9 @@ Messenger *new_messenger(Messenger_Options *options)
 /* Run this before closing shop. */
 void kill_messenger(Messenger *m)
 {
+    if (!m)
+        return;
+
     uint32_t i;
 
     kill_friend_connections(m->fr_c);
