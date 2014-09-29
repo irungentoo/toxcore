@@ -251,11 +251,11 @@ Given the Tox data directory described in STS Draft v0.1.0:
   - The client's own avatar is not special and is stored like any other. This
     is partially for simplicity, and partially in anticipation of profiles.
 
-  - The avatar that is stored may be scaled and resized as required by the
-    client; we should develop a common scaling and resizing method.
+  - The avatar should be stored as its recieved, before any modifications by
+    the client for display purposes.
 
-  - The hash, as calculated by toxcore (rather than the hash of the scaled
-    image), should be saved in "avatars/xxxxx.hash" where "xxxxx" means the
+  - The hash, as calculated by toxcore and passed in to the data callback,
+    should be saved in "avatars/xxxxx.hash" where "xxxxx" means the
     same thing as for avatars. (The filename is longer than the file :) )
 
     **To be discussed:** User keys are usually presented in Tox clients as
