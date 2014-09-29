@@ -241,18 +241,22 @@ already downloaded by other clients can be reused.
 
 Given the Tox data directory described in STS Draft v0.1.0:
 
-  - The user avatar is stored in a file named "avatar.png". As more formats
-    may be used in the future, another extensions are reserved and clients
-    should keep just one file named "avatar.*", with the data of the last
-    avatar set by the user. If the user have no avatar, no such files should
-    be kept in the data directory;
+  - Avatars are stored in a directory called "avatars" and named
+    as "xxxxx.png", where "xxxxx" is the complete client id (but not friend
+    address!) encoded as an uppercase hexadecimal string and "png" is the
+    extension for the PNG avatar. As new image formats may be used in the
+    future, clients should ensure no other file "xxxxx.*" exists. No file
+    should be kept for an user who have no avatar.
 
-  - Friends avatars are stored in a directory called "avatars" and named
-    as "xxxxx.png", where "xxxxx" is the complete client id encoded as an
-    uppercase hexadecimal string and "png" is the extension for the PNG
-    avatar. As new image formats may be used in the future, clients should
-    ensure no other file "xxxxx.*" exists. No file should be kept for an user
-    who have no avatar.
+  - The client's own avatar is not special and is stored like any other. This
+    is partially for simplicity, and partially in anticipation of profiles.
+
+  - The avatar should be stored as its recieved, before any modifications by
+    the client for display purposes.
+
+  - The hash, as calculated by toxcore and passed in to the data callback,
+    should be saved in "avatars/xxxxx.hash" where "xxxxx" means the
+    same thing as for avatars. (The filename is longer than the file :) )
 
     **To be discussed:** User keys are usually presented in Tox clients as
     upper case strings, but lower case file names are more usual.
@@ -262,13 +266,14 @@ Example for Linux and other Unix systems, assuming an user called "gildor":
 
     Tox data directory: /home/gildor/.config/tox/
     Tox data file:      /home/gildor/.config/tox/data
-    Gildor's avatar:    /home/gildor/.config/tox/avatar.png
     Avatar data dir:    /home/gildor/.config/tox/avatars/
+    Gildor's avatar:    /home/gildor/.config/tox/avatars/E5809EEF5F11AB29B9BDF543C05B58DDF454AB9CA176C235C7699FDC2757DC33.png
     Elrond's avatar:    /home/gildor/.config/tox/avatars/43656C65627269616E20646F6E277420546F782E426164206D656D6F72696573.png
+    Elrond's hash:      /home/gildor/.config/tox/avatars/43656C65627269616E20646F6E277420546F782E426164206D656D6F72696573.hash
     Elladan's avatar:   /home/gildor/.config/tox/avatars/49486174655768656E48756D616E735468696E6B49416D4D7942726F74686572.png
+    Elladan's hash:     /home/gildor/.config/tox/avatars/49486174655768656E48756D616E735468696E6B49416D4D7942726F74686572.hash
     Elrohir's avatar    /home/gildor/.config/tox/avatars/726568746F7242794D6D41496B6E696854736E616D75486E6568576574614849.png
-    Arwen's avatar:     /home/gildor/.config/tox/avatars/53686520746F6F6B20476C6F7266696E64656C277320706C6163652068657265.png
-    Lindir's avatar:    /home/gildor/.config/tox/avatars/417070735772697474656E42794D6F7274616C734C6F6F6B54686553616D652E.png
+    Elrohir's hash:     /home/gildor/.config/tox/avatars/726568746F7242794D6D41496B6E696854736E616D75486E6568576574614849.hash
 
 This recommendation is partially implemented by "testing/test_avatars.c".
 
