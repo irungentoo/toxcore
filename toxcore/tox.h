@@ -869,7 +869,8 @@ uint32_t tox_size(const Tox *tox);
 /* Save the messenger in data (must be allocated memory of size Messenger_size()). */
 void tox_save(const Tox *tox, uint8_t *data);
 
-/* Load the messenger from data of size length.
+/* Load the messenger from data of size length. Failure does not mean the data
+ * was not loaded. The return value -1 should be ignored for now.
  *
  *  returns 0 on success
  *  returns -1 on failure
