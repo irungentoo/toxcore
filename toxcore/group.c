@@ -267,6 +267,8 @@ static unsigned int pk_in_closest_peers(Group_c *g, uint8_t *real_pk)
     return 0;
 }
 
+static int send_packet_online(Friend_Connections *fr_c, int friendcon_id, uint16_t group_num, uint8_t *identifier);
+
 static int connect_to_closest(Group_Chats *g_c, int groupnumber)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
@@ -313,6 +315,9 @@ static int connect_to_closest(Group_Chats *g_c, int groupnumber)
         }
 
         add_conn_to_groupchat(g_c, friendcon_id, groupnumber, 1);
+        if (friend_con_connected(g_c->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+            send_packet_online(g_c->fr_c, friendcon_id, groupnumber, g->identifier);
+        }
     }
 
     g->changed = 0;
@@ -397,8 +402,6 @@ static int remove_close_conn(Group_Chats *g_c, int groupnumber, int friendcon_id
 
     return -1;
 }
-
-static int send_packet_online(Friend_Connections *fr_c, int friendcon_id, uint16_t group_num, uint8_t *identifier);
 
 static void set_conns_type_close(Group_Chats *g_c, int groupnumber, int friendcon_id, uint8_t type)
 {
