@@ -524,6 +524,16 @@ int del_groupchat(Group_Chats *g_c, int groupnumber)
     if (!g)
         return -1;
 
+    unsigned int i;
+
+    for (i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
+        if (g->close[i].type == GROUPCHAT_CLOSE_NONE)
+            continue;
+
+        g->close[i].type = GROUPCHAT_CLOSE_NONE;
+        kill_friend_connection(g_c->fr_c, g->close[i].number);
+    }
+
     free(g->group);
     return wipe_group_chat(g_c, groupnumber);
 }
@@ -1171,7 +1181,13 @@ void do_groupchats(Group_Chats *g_c)
 /* Free everything related with group chats. */
 void kill_groupchats(Group_Chats *g_c)
 {
-    //TODO
+    unsigned int i;
+
+    for (i = 0; i < g_c->num_chats; ++i) {
+        del_groupchat(g_c, i);
+    }
+
+    m_callback_group_invite(g_c->m, NULL);
     g_c->m->group_chat_object = 0;
     free(g_c);
 }
