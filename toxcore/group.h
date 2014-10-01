@@ -29,11 +29,14 @@
 
 enum {
     GROUPCHAT_STATUS_NONE,
-    GROUPCHAT_STATUS_VALID
+    GROUPCHAT_STATUS_VALID,
+    GROUPCHAT_STATUS_CONNECTED
 };
 
 typedef struct {
-    uint8_t     client_id[crypto_box_PUBLICKEYBYTES];
+    uint8_t     real_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t     temp_pk[crypto_box_PUBLICKEYBYTES];
+
     uint64_t    pingid;
     uint64_t    last_pinged;
 
@@ -50,13 +53,14 @@ typedef struct {
     uint16_t peer_number;
 } Group_Peer;
 
-#define DESIRED_CLOSE_CONNECTIONS 3
+#define DESIRED_CLOSE_CONNECTIONS 4
 #define MAX_GROUP_CONNECTIONS 16
 #define GROUP_IDENTIFIER_LENGTH crypto_box_KEYBYTES /* So we can use new_symmetric_key(...) to fill it */
 
 enum {
     GROUPCHAT_CLOSE_NONE,
-    GROUPCHAT_CLOSE_CONNECTION
+    GROUPCHAT_CLOSE_CONNECTION,
+    GROUPCHAT_CLOSE_ONLINE
 };
 
 typedef struct {
@@ -67,9 +71,18 @@ typedef struct {
 
     struct {
         uint8_t type; /* GROUPCHAT_CLOSE_* */
+        uint8_t closest;
         uint32_t number;
         uint16_t group_number;
     } close[MAX_GROUP_CONNECTIONS];
+
+    uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
+    struct {
+        uint8_t entry;
+        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
+        uint8_t temp_pk[crypto_box_PUBLICKEYBYTES];
+    } closest_peers[DESIRED_CLOSE_CONNECTIONS];
+    uint8_t changed;
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
 
@@ -79,6 +92,7 @@ typedef struct {
 
 typedef struct {
     Messenger *m;
+    Friend_Connections *fr_c;
 
     Group_c *chats;
     uint32_t num_chats;

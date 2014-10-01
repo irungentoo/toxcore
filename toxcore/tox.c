@@ -991,6 +991,7 @@ void tox_do(Tox *tox)
 {
     Messenger *m = tox;
     do_messenger(m);
+    do_groupchats(m->group_chat_object);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */

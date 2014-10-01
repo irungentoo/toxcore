@@ -444,6 +444,7 @@ static void set_avatar(Tox *tox, const char *base_dir)
     tox_get_address(tox, addr);
 
     int i;
+
     for (i = 0; ; i++) {
         if (avatar_formats[i].format == TOX_AVATAR_FORMAT_NONE) {
             tox_set_avatar(tox, TOX_AVATAR_FORMAT_NONE, NULL, 0);
@@ -452,12 +453,14 @@ static void set_avatar(Tox *tox, const char *base_dir)
         } else {
             int ret = make_avatar_file_name(path, sizeof(path),  base_dir,
                                             avatar_formats[i].format, addr);
+
             if (ret < 0) {
                 printf("Failed to generate avatar file name.\n");
                 return;
             }
 
             int len = load_avatar_data(path, buf);
+
             if (len < 0) {
                 printf("Failed to load avatar data from file: %s\n", path);
                 continue;
@@ -471,10 +474,12 @@ static void set_avatar(Tox *tox, const char *base_dir)
 
             ret = tox_set_avatar(tox, avatar_formats[i].format, buf, len);
             DEBUG("tox_set_avatar returned=%d", ret);
+
             if (ret == 0)
                 printf("Setting avatar from %s (%d bytes).\n", path, len);
             else
                 printf("Error setting avatar from %s.\n", path);
+
             return;
         }
     }
