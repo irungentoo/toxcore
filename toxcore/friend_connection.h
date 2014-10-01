@@ -95,6 +95,35 @@ typedef struct {
 
 } Friend_Connections;
 
+/* return friendcon_id corresponding to the real public key on success.
+ * return -1 on failure.
+ */
+int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk);
+
+/* Increases lock_count for the connection with friendcon_id by 1.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id);
+
+/* return FRIENDCONN_STATUS_CONNECTED if the friend is connected.
+ * return FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
+ * return FRIENDCONN_STATUS_NONE on failure.
+ */
+unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id);
+
+/* Copy public keys associated to friendcon_id.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Connections *fr_c, int friendcon_id);
+
+/* Set temp dht key for connection.
+ */
+void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, uint8_t *dht_temp_pk);
+
 /* Set the callbacks for the friend connection.
  * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
  *
