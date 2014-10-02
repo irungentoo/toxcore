@@ -88,6 +88,8 @@ typedef struct {
 
     uint32_t message_number;
     uint16_t peer_number;
+
+    uint64_t last_sent_ping;
 } Group_c;
 
 typedef struct {

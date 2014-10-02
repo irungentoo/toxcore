@@ -620,8 +620,7 @@ int tox_del_groupchat(Tox *tox, int groupnumber)
 int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name)
 {
     const Messenger *m = tox;
-    //return m_group_peername(m, groupnumber, peernumber, name);
-    return -1;
+    return group_peername(m->group_chat_object, groupnumber, peernumber, name);
 }
 
 /* invite friendnumber to groupnumber
@@ -673,8 +672,7 @@ int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint
 int tox_group_number_peers(const Tox *tox, int groupnumber)
 {
     const Messenger *m = tox;
-    //return group_number_peers(m, groupnumber);
-    return -1;
+    return group_number_peers(m->group_chat_object, groupnumber);
 }
 
 /* List all the peers in the group chat.
