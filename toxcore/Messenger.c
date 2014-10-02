@@ -165,6 +165,23 @@ void getaddress(const Messenger *m, uint8_t *address)
     memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(nospam), &checksum, sizeof(checksum));
 }
 
+static int send_online_packet(Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    uint8_t packet = PACKET_ID_ONLINE;
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                             m->friendlist[friendnumber].friendcon_id), &packet, sizeof(packet), 0) != -1;
+}
+
+static int send_offine_packet(Messenger *m, int friendcon_id)
+{
+    uint8_t packet = PACKET_ID_OFFLINE;
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
+                             sizeof(packet), 0) != -1;
+}
+
 static int handle_status(void *object, int i, uint8_t status);
 static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len);
 static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length);
@@ -261,9 +278,12 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
             friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
                                         &handle_custom_lossy_packet, m, i);
 
-
             if (m->numfriends == i)
                 ++m->numfriends;
+
+            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+                send_online_packet(m, i);
+            }
 
             return i;
         }
@@ -318,6 +338,10 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
             if (m->numfriends == i)
                 ++m->numfriends;
 
+            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+                send_online_packet(m, i);
+            }
+
             return i;
         }
     }
@@ -343,6 +367,11 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     remove_request_received(&(m->fr), m->friendlist[friendnumber].client_id);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
     kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
+
+    if (friend_con_connected(m->fr_c, m->friendlist[friendnumber].friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+        send_offine_packet(m, m->friendlist[friendnumber].friendcon_id);
+    }
+
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
 
@@ -1654,7 +1683,7 @@ static int handle_status(void *object, int i, uint8_t status)
     Messenger *m = object;
 
     if (status) { /* Went online. */
-        set_friend_status(m, i, FRIEND_ONLINE);
+        send_online_packet(m, i);
         m->friendlist[i].name_sent = 0;
         m->friendlist[i].userstatus_sent = 0;
         m->friendlist[i].statusmessage_sent = 0;
@@ -1955,10 +1984,28 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
     uint8_t *data = temp + 1;
     uint32_t data_length = len - 1;
 
-    if (m->friendlist[i].status != FRIEND_ONLINE)
-        return -1;
+    if (m->friendlist[i].status != FRIEND_ONLINE) {
+        if (packet_id == PACKET_ID_ONLINE && len == 1) {
+            set_friend_status(m, i, FRIEND_ONLINE);
+            send_online_packet(m, i);
+        } else if (packet_id == PACKET_ID_NICKNAME || packet_id == PACKET_ID_STATUSMESSAGE
+                   || packet_id == PACKET_ID_USERSTATUS) {
+            /* Some backward compatibility, TODO: remove. */
+            set_friend_status(m, i, FRIEND_ONLINE);
+            send_online_packet(m, i);
+        } else {
+            return -1;
+        }
+    }
 
     switch (packet_id) {
+        case PACKET_ID_OFFLINE: {
+            if (data_length != 0)
+                break;
+
+            set_friend_status(m, i, FRIEND_CONFIRMED);
+        }
+
         case PACKET_ID_NICKNAME: {
             if (data_length > MAX_NAME_LENGTH || data_length == 0)
                 break;

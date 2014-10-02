@@ -41,6 +41,8 @@
 
 /* NOTE: Packet ids below 17 must never be used. */
 #define PACKET_ID_SHARE_RELAYS 17
+#define PACKET_ID_ONLINE 24
+#define PACKET_ID_OFFLINE 25
 #define PACKET_ID_NICKNAME 48
 #define PACKET_ID_STATUSMESSAGE 49
 #define PACKET_ID_USERSTATUS 50
