@@ -2839,36 +2839,3 @@ uint32_t copy_friendlist(Messenger const *m, int32_t *out_list, uint32_t list_si
 
     return ret;
 }
-
-/* Allocate and return a list of valid friend id's. List must be freed by the
- * caller.
- *
- * retun 0 if success.
- * return -1 if failure.
- */
-int get_friendlist(const Messenger *m, int32_t **out_list, uint32_t *out_list_length)
-{
-    uint32_t i;
-
-    *out_list_length = 0;
-
-    if (m->numfriends == 0) {
-        *out_list = NULL;
-        return 0;
-    }
-
-    *out_list = malloc(m->numfriends * sizeof(int32_t));
-
-    if (*out_list == NULL) {
-        return -1;
-    }
-
-    for (i = 0; i < m->numfriends; i++) {
-        if (m->friendlist[i].status > 0) {
-            (*out_list)[i] = i;
-            (*out_list_length)++;
-        }
-    }
-
-    return 0;
-}

@@ -914,12 +914,4 @@ uint32_t get_num_online_friends(const Messenger *m);
  * of out_list will be truncated to list_size. */
 uint32_t copy_friendlist(const Messenger *m, int32_t *out_list, uint32_t list_size);
 
-/* Allocate and return a list of valid friend id's. List must be freed by the
- * caller.
- *
- * retun 0 if success.
- * return -1 if failure.
- */
-int get_friendlist(const Messenger *m, int **out_list, uint32_t *out_list_length);
-
 #endif
