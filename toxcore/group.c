@@ -398,8 +398,10 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
     ++g->numpeers;
 
     add_to_closest(g_c, groupnumber, real_pk, temp_pk);
-    //if (g->peer_namelistchange != NULL)
-    //    (*g->peer_namelistchange)(g, g->numpeers - 1, CHAT_CHANGE_PEER_ADD, g->group_namelistchange_userdata);
+
+    if (g_c->peer_namelistchange)
+        g_c->peer_namelistchange(g_c->m, groupnumber, g->numpeers - 1, CHAT_CHANGE_PEER_ADD,
+                                 g_c->group_namelistchange_userdata);
 
     return (g->numpeers - 1);
 }
@@ -445,11 +447,10 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
         return -1;
 
     g->group = temp;
-    /*
-        if (g->peer_namelistchange != NULL) {
-            (*g->peer_namelistchange)(g, peer_index, CHAT_CHANGE_PEER_DEL, g->group_namelistchange_userdata);
-        }
-    */
+
+    if (g_c->peer_namelistchange)
+        g_c->peer_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, g_c->group_namelistchange_userdata);
+
     return 0;
 }
 
@@ -779,6 +780,18 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, i
 {
     g_c->message_callback = function;
     g_c->message_callback_userdata = userdata;
+}
+
+/* Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ *  Function(Group_Chats *g_c, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
+ */
+void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, int, int, uint8_t, void *),
+                                     void *userdata)
+{
+    g_c->peer_namelistchange = function;
+    g_c->group_namelistchange_userdata = userdata;
 }
 
 static unsigned int send_message_group(const Group_Chats *g_c, int groupnumber, uint8_t message_id, const uint8_t *data,

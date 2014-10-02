@@ -586,7 +586,7 @@ void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, i
 void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *), void *userdata)
 {
     Messenger *m = tox;
-    //m_callback_group_namelistchange(m, function, userdata);
+    g_callback_group_namelistchange(m->group_chat_object, function, userdata);
 }
 
 /* Creates a new groupchat and puts it in the chats array.

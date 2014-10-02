@@ -103,6 +103,8 @@ typedef struct {
     void *invite_callback_userdata;
     void (*message_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
     void *message_callback_userdata;
+    void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
+    void *group_namelistchange_userdata;
 } Group_Chats;
 
 /* Set the callback for group invites.
@@ -131,8 +133,13 @@ void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, in
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
- *  Function(Group_Chats *g_c, int groupnumber, void *userdata)
+ *  Function(Group_Chats *g_c, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
  */
+enum {
+    CHAT_CHANGE_PEER_ADD,
+    CHAT_CHANGE_PEER_DEL,
+    CHAT_CHANGE_PEER_NAME,
+};
 void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, int, int, uint8_t, void *),
                                      void *userdata);
 
