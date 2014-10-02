@@ -870,6 +870,9 @@ uint32_t tox_size(const Tox *tox);
 void tox_save(const Tox *tox, uint8_t *data);
 
 /* Load the messenger from data of size length.
+ * NOTE: The Tox save format isn't stable yet meaning this function sometimes
+ * returns -1 when loading older saves. This however does not mean nothing was
+ * loaded from the save.
  *
  *  returns 0 on success
  *  returns -1 on failure
