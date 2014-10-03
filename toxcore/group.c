@@ -1267,10 +1267,13 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
         case PACKET_ID_MESSAGE: {
             if (msg_data_len == 0)
                 return;
+            uint8_t newmsg[msg_data_len+1];
+            memcpy(newmsg, msg_data, msg_data_len);
+            newmsg[msg_data_len] = 0;
 
             //TODO
             if (g_c->message_callback)
-                g_c->message_callback(g_c->m, groupnumber, index, msg_data, msg_data_len, g_c->message_callback_userdata);
+                g_c->message_callback(g_c->m, groupnumber, index, newmsg, msg_data_len, g_c->message_callback_userdata);
 
             break;
         }
