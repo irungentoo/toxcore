@@ -90,6 +90,8 @@ typedef struct {
     uint16_t peer_number;
 
     uint64_t last_sent_ping;
+
+    int number_joined; /* friendcon_id of person that invited us to the chat. (-1 means none) */
 } Group_c;
 
 typedef struct {
