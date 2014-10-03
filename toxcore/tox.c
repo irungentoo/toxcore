@@ -168,7 +168,13 @@ uint32_t tox_send_action(Tox *tox, int32_t friendnumber, const uint8_t *action, 
 int tox_set_name(Tox *tox, const uint8_t *name, uint16_t length)
 {
     Messenger *m = tox;
-    return setname(m, name, length);
+
+    if (setname(m, name, length) == 0) {
+        send_name_all_groups(m->group_chat_object);
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 /* Get your nickname.
