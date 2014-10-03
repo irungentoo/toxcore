@@ -397,7 +397,6 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
     g->group[g->numpeers].peer_number = peer_number;
 
     g->group[g->numpeers].last_recv = unix_time();
-    g->group[g->numpeers].last_recv_msgping = unix_time();
     ++g->numpeers;
 
     add_to_closest(g_c, groupnumber, real_pk, temp_pk);

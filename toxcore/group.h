@@ -37,18 +37,11 @@ typedef struct {
     uint8_t     real_pk[crypto_box_PUBLICKEYBYTES];
     uint8_t     temp_pk[crypto_box_PUBLICKEYBYTES];
 
-    uint64_t    pingid;
-    uint64_t    last_pinged;
-
     uint64_t    last_recv;
-    uint64_t    last_recv_msgping;
     uint32_t    last_message_number;
 
     uint8_t     nick[MAX_NAME_LENGTH];
-    uint16_t    nick_len;
-
-    uint8_t     deleted;
-    uint64_t    deleted_time;
+    uint8_t     nick_len;
 
     uint16_t peer_number;
 } Group_Peer;
