@@ -978,6 +978,18 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
             if (memcmp(data + 1 + sizeof(uint16_t) * 2, g->identifier, GROUP_IDENTIFIER_LENGTH) != 0)
                 return;
 
+            uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
+                                          are given the same peer_number by different nodes? */
+            unsigned int tries = 0;
+
+            while (get_peer_index(g, peer_number) != -1) {
+                peer_number = rand();
+                ++tries;
+
+                if (tries > 32)
+                    return;
+            }
+
             memcpy(&other_groupnum, data + 1, sizeof(uint16_t));
             other_groupnum = ntohs(other_groupnum);
 
@@ -985,7 +997,6 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
             uint8_t real_pk[crypto_box_PUBLICKEYBYTES], temp_pk[crypto_box_PUBLICKEYBYTES];
             get_friendcon_public_keys(real_pk, temp_pk, g_c->fr_c, friendcon_id);
 
-            uint16_t peer_number = rand(); /* TODO: make it not random. */
             addpeer(g_c, groupnum, real_pk, temp_pk, peer_number);
             int close_index = add_conn_to_groupchat(g_c, friendcon_id, groupnum, 0, 1);
 
