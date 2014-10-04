@@ -253,6 +253,13 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
+    if (data[0] == PACKET_ID_FRIEND_REQUESTS) {
+        if (fr_c->fr_request_callback)
+            fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length);
+
+        return 0;
+    }
+
     if (!friend_con)
         return -1;
 
@@ -537,6 +544,53 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
     return wipe_friend_conn(fr_c, friendcon_id);
 }
 
+
+/* Set friend request callback.
+ *
+ * This function will be called every time a friend request packet is received.
+ */
+void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
+                                 const uint8_t *, uint32_t), void *object)
+{
+    fr_c->fr_request_callback = fr_request_callback;
+    fr_c->fr_request_object = object;
+    oniondata_registerhandler(fr_c->onion_c, CRYPTO_PACKET_FRIEND_REQ, fr_request_callback, object);
+}
+
+/* Send a Friend request packet.
+ *
+ *  return -1 if failure.
+ *  return  0 if it sent the friend request directly to the friend.
+ *  return the number of peers it was routed through if it did not send it directly.
+ */
+int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
+                               uint16_t length)
+{
+    if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
+        return -1;
+
+    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+
+    if (!friend_con)
+        return -1;
+
+    uint8_t packet[1 + sizeof(nospam_num) + length];
+    memcpy(packet + 1, &nospam_num, sizeof(nospam_num));
+    memcpy(packet + 1 + sizeof(nospam_num), data, length);
+
+    if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
+        packet[0] = PACKET_ID_FRIEND_REQUESTS;
+        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, sizeof(packet), 0) != -1;
+    } else {
+        packet[0] = CRYPTO_PACKET_FRIEND_REQ;
+        int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
+
+        if (num <= 0)
+            return -1;
+
+        return num;
+    }
+}
 
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c)

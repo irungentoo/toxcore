@@ -36,6 +36,7 @@
 #define GROUPCHAT_CALLBACK_INDEX 1
 
 #define PACKET_ID_ALIVE 16
+#define PACKET_ID_FRIEND_REQUESTS 18
 
 /* Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 6
@@ -93,6 +94,8 @@ typedef struct {
     Friend_Conn *conns;
     uint32_t num_cons;
 
+    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint32_t len);
+    void *fr_request_object;
 } Friend_Connections;
 
 /* return friendcon_id corresponding to the real public key on success.
@@ -156,6 +159,22 @@ int new_friend_connection(Friend_Connections *fr_c, const uint8_t *real_public_k
  * return 0 on success.
  */
 int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id);
+
+/* Send a Friend request packet.
+ *
+ *  return -1 if failure.
+ *  return  0 if it sent the friend request directly to the friend.
+ *  return the number of peers it was routed through if it did not send it directly.
+ */
+int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
+                               uint16_t length);
+
+/* Set friend request callback.
+ *
+ * This function will be called every time a friend request is received.
+ */
+void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
+                                 const uint8_t *, uint32_t), void *object);
 
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c);

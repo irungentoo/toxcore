@@ -1625,7 +1625,7 @@ Messenger *new_messenger(Messenger_Options *options)
     }
 
     m->options = *options;
-    friendreq_init(&(m->fr), m->onion_c);
+    friendreq_init(&(m->fr), m->fr_c);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
@@ -2286,9 +2286,9 @@ void do_friends(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr = send_friendrequest(m->onion_c, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam,
-                                        m->friendlist[i].info,
-                                        m->friendlist[i].info_size);
+            int fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
+                                                m->friendlist[i].info,
+                                                m->friendlist[i].info_size);
 
             if (fr >= 0) {
                 set_friend_status(m, i, FRIEND_REQUESTED);

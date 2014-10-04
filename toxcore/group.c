@@ -979,7 +979,7 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
                 return;
 
             uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
-                                          are given the same peer_number by different nodes? */
+                                      are given the same peer_number by different nodes? */
             unsigned int tries = 0;
 
             while (get_peer_index(g, peer_number) != -1) {
