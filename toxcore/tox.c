@@ -695,8 +695,7 @@ int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t names[][TOX_MAX
                         uint16_t length)
 {
     const Messenger *m = tox;
-    //return group_names(m, groupnumber, names, lengths, length);
-    return -1;
+    return group_names(m->group_chat_object, groupnumber, names, lengths, length);
 }
 
 /* Return the number of chats in the instance m.

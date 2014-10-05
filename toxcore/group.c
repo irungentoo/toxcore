@@ -704,6 +704,33 @@ int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint
     return g->group[peernumber].nick_len;
 }
 
+/* List all the peers in the group chat.
+ *
+ * Copies the names of the peers to the name[length][MAX_NAME_LENGTH] array.
+ *
+ * Copies the lengths of the names to lengths[length]
+ *
+ * returns the number of peers on success.
+ *
+ * return -1 on failure.
+ */
+int group_names(const Group_Chats *g_c, int groupnumber, uint8_t names[][MAX_NAME_LENGTH], uint16_t lengths[],
+                uint16_t length)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    int i;
+
+    for (i = 0; i < g->numpeers && i < length; ++i) {
+        lengths[i] = group_peername(g_c, groupnumber, i, names[i]);
+    }
+
+    return i;
+}
+
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
  */
