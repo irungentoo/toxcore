@@ -22,7 +22,7 @@ Every peer is represented as a [byte string][String] (the public key [Tox ID] of
 
 ## Q&A:
 
-### What are your goals of Tox?
+### What are your goals with Tox?
 
 We want Tox to be as simple as possible while remaining as secure as possible.
 
