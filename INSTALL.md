@@ -158,9 +158,12 @@ Grab the following packages:
   * http://www.freedesktop.org/wiki/Software/pkg-config/
 
 Macports: (https://www.macports.org/)
-All toxcore dependencies can be installed from MacPorts. This is often easier on PowerPC Macs, and any version of OS X prior to 10.6, since Homebrew is supported on 10.6 and up, but not much (or at all) on older systems. A few have slightly different package names from the corresponding package in Debian.
+All toxcore dependencies can be installed from MacPorts. This is often easier on PowerPC Macs,
+and any version of OS X prior to 10.6, since Homebrew is supported on 10.6 and up, but not much
+(or at all) on older systems. A few packages have slightly different names from the corresponding
+package in Debian.
 
-Same: libtool autoconf automake libsodium check yasm 
+Same: libtool autoconf automake libsodium check yasm
 Different: libvpx (webm) libopus pkgconfig gettext
 
 (the libintl, from gettext, built into OS X 10.5 is missing libintl_setlocale, but the Macports build has it)
