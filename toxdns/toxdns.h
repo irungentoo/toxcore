@@ -24,6 +24,10 @@
 #ifndef TOXDNS_H
 #define TOXDNS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* Clients are encouraged to set this as the maximum length names can have. */
@@ -84,5 +88,9 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
  */
 int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record, uint32_t id_record_len,
                          uint32_t request_id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
