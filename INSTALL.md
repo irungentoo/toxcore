@@ -152,12 +152,34 @@ Grab the following packages:
   * https://gnu.org/software/automake/
   * https://github.com/jedisct1/libsodium
   * http://check.sourceforge.net/
-  * http://yasm.tortall.net/Download.html
+  * http://yasm.tortall.net/Download.html (install before libvpx)
   * https://code.google.com/p/webm/downloads/list
   * http://www.opus-codec.org/downloads/
   * http://www.freedesktop.org/wiki/Software/pkg-config/
 
-You must install yasm before installing libvpx, otherwise libvpx will fail to make correctly.
+Macports: (https://www.macports.org/)
+All toxcore dependencies can be installed from MacPorts. This is often easier on PowerPC Macs,
+and any version of OS X prior to 10.6, since Homebrew is supported on 10.6 and up, but not much
+(or at all) on older systems. A few packages have slightly different names from the corresponding
+package in Debian.
+
+Same: libtool autoconf automake libsodium check yasm
+Different: libvpx (webm) libopus pkgconfig gettext
+
+(the libintl, from gettext, built into OS X 10.5 is missing libintl_setlocale, but the Macports build has it)
+
+Verify where libintl is on your system: (MacPorts puts it in /opt/local)
+$ for d in /usr/local/lib /opt/local/lib /usr/lib /lib; do ls -l $d/libintl.*; done
+
+Check if that copy has libintl_setlocale:
+nm /opt/local/lib/libintl.8.dylib | grep _libintl_setlocale
+
+Certain other tools may not be installed, or outdated, and should also be installed from MacPorts for simplicity: git cmake
+
+If libsodium was installed with MacPorts, you may want to symlink the copy in /opt/local/lib to /usr/local/lib. That way you don't need special configure switches for toxcore to find libsodium, and every time MacPorts updates libsodium, the new version will be linked to toxcore every time you build:
+ln -s /opt/local/lib/libsodium.dylib /usr/local/lib/libsodium.dylib
+
+Much of the build can then be done as for other platforms: git clone, and so on. Differences will be noted with (OS X 10.5 specific)
 
 pkg-config is important for enabling a/v support in tox core, failure to install pkg-config will prevent tox core form finding the required libopus/libvpx libraries. (pkg-config may not configure properly, if you get an error about GLIB, run configure with the following parameter, --with-internal-glib).
 
@@ -174,9 +196,21 @@ Compiling and installing Tox Core
 ```bash
 cd toxcore
 autoreconf -i
-./configure
+./configure (OS X 10.5 specific)
+./configure CC="gcc -arch ppc -arch i386" CXX="g++ -arch ppc -arch i386" CPP="gcc -E" CXXCPP="g++ -E"
 make
-make install
+make install (OS X 10.5 specific)
+should be: sudo make install
+If it worked, you should have all the toxcore dylibs in /usr/local/lib: (besides the four below, the rest are symlinks to these)
+$ ls -la /usr/local/lib/libtox*.dylib
+libtoxav.0.dylib
+libtoxcore.0.dylib
+libtoxdns.0.dylib
+libtoxencryptsave.0.dylib
+to check what CPU architecture they're compiled for:
+$ lipo -i /usr/local/lib/libtoxencryptsave.0.dylib
+You should now be able to move on to compiling Toxic/Venom or some other client application
+There is also a shell script called "osx_build_script_toxcore.txt" which automates everything from "git pull" to "sudo make install", once the dependencies are already taken care of by MacPorts.
 ```
 
 If after running ./configure you get an error about core being unable to find libsodium (and you have installed it) run the following in place of ./configure;
