@@ -35,6 +35,8 @@ extern "C" {
 typedef struct Tox Tox;
 #endif
 
+#define TOX_PASS_ENCRYPTION_EXTRA_LENGTH (crypto_box_MACBYTES + crypto_box_NONCEBYTES \
+           + crypto_pwhash_scryptsalsa208sha256_SALTBYTES)
 
 /* This "module" provides functions analogous to tox_load and tox_save in toxcore
  * Clients should consider alerting their users that, unlike plain data, if even one bit
@@ -45,6 +47,16 @@ typedef struct Tox Tox;
 /*  return size of the messenger data (for encrypted saving). */
 uint32_t tox_encrypted_size(const Tox *tox);
 
+/* Encrypts the given data with the given passphrase. The output array must be
+ * at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
+ *
+ * tox_encrypted_save() is a good example of how to use this function.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_pass_encrypt(uint8_t* data, uint32_t data_len, uint8_t* passphrase, uint32_t pplength, uint8_t* out);
+
 /* Save the messenger data encrypted with the given password.
  * data must be at least tox_encrypted_size().
  *
@@ -52,6 +64,16 @@ uint32_t tox_encrypted_size(const Tox *tox);
  * returns -1 on failure
  */
 int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength);
+
+/* Decrypts the given data with the given passphrase. The output array must be
+ * at least data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
+ *
+ * tox_encrypted_load() is a good example of how to use this function.
+ *
+ * returns the length of the output data (== data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH) on success
+ * returns -1 on failure
+ */
+int tox_pass_decrypt(const uint8_t* data, uint32_t length, uint8_t* passphrase, uint32_t pplength, uint8_t* out);
 
 /* Load the messenger from encrypted data of size length.
  *
@@ -65,7 +87,7 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
  * returns 1 if it is encrypted
  * returns 0 otherwise
  */
-int tox_is_data_encrypted(const uint8_t *data);
+int tox_is_save_encrypted(const uint8_t *data);
 
 #ifdef __cplusplus
 }

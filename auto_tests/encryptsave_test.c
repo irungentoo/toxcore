@@ -65,7 +65,7 @@ START_TEST(test_save_friend)
     uint8_t data[size];
     test = tox_encrypted_save(tox1, data, "correcthorsebatterystaple", 25);
     ck_assert_msg(test == 0, "failed to encrypted save");
-    ck_assert_msg(tox_is_data_encrypted(data) == 1, "magic number missing");
+    ck_assert_msg(tox_is_save_encrypted(data) == 1, "magic number missing");
     Tox *tox3 = tox_new(0);
     test = tox_encrypted_load(tox3, data, size, "correcthorsebatterystaple", 25);
     ck_assert_msg(test == 0, "failed to encrypted load");

@@ -44,17 +44,16 @@
 /*  return size of the messenger data (for encrypted saving). */
 uint32_t tox_encrypted_size(const Tox *tox)
 {
-    return tox_size(tox) + crypto_box_MACBYTES + crypto_box_NONCEBYTES
-           + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH;
+    return tox_size(tox) + TOX_PASS_ENCRYPTION_EXTRA_LENGTH + TOX_ENC_SAVE_MAGIC_LENGTH;
 }
 
-/* Save the messenger data encrypted with the given password.
- * data must be at least tox_encrypted_size().
+/* Encrypts the given data with the given passphrase. The output array must be
+ * at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
  *
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength)
+int tox_pass_encrypt(uint8_t* data, uint32_t data_len, uint8_t* passphrase, uint32_t pplength, uint8_t* out)
 {
     if (pplength == 0)
         return -1;
@@ -79,15 +78,10 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
 
     sodium_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
 
-    /* next get plain save data */
-    uint32_t temp_size = tox_size(tox);
-    uint8_t temp_data[temp_size];
-    tox_save(tox, temp_data);
-
     /* the output data consists of, in order:
-     * magic number, salt, nonce, mac, enc_data
+     * salt, nonce, mac, enc_data
      * where the mac is automatically prepended by the encrypt()
-     * the magic+salt+nonce is called the prefix
+     * the salt+nonce is called the prefix
      * I'm not sure what else I'm supposed to do with the salt and nonce, since we
      * need them to decrypt the data
      */
@@ -96,40 +90,56 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
 
-    memcpy(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH);
-    data += TOX_ENC_SAVE_MAGIC_LENGTH;
-    memcpy(data, salt, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
-    data += crypto_pwhash_scryptsalsa208sha256_SALTBYTES;
-    memcpy(data, nonce, crypto_box_NONCEBYTES);
-    data += crypto_box_NONCEBYTES;
+    memcpy(out, salt, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
+    out += crypto_pwhash_scryptsalsa208sha256_SALTBYTES;
+    memcpy(out, nonce, crypto_box_NONCEBYTES);
+    out += crypto_box_NONCEBYTES;
 
     /* now encrypt */
-    if (encrypt_data_symmetric(key, nonce, temp_data, temp_size, data)
-            != temp_size + crypto_box_MACBYTES) {
+    if (encrypt_data_symmetric(key, nonce, data, data_len, out)
+            != data_len + crypto_box_MACBYTES) {
         return -1;
     }
 
     return 0;
 }
 
-/* Load the messenger from encrypted data of size length.
+/* Save the messenger data encrypted with the given password.
+ * data must be at least tox_encrypted_size().
  *
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength)
+int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength)
 {
-    if (length <= crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES +
-            TOX_ENC_SAVE_MAGIC_LENGTH)
-        return -1;
+    /* first get plain save data */
+    uint32_t temp_size = tox_size(tox);
+    uint8_t temp_data[temp_size];
+    tox_save(tox, temp_data);
 
-    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0)
-        return -1;
-
+    /* the output data consists of, in order: magic number, enc_data */
+    /* first add the magic number */
+    memcpy(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH);
     data += TOX_ENC_SAVE_MAGIC_LENGTH;
 
-    uint32_t decrypt_length = length - crypto_box_MACBYTES - crypto_box_NONCEBYTES
-                              - crypto_pwhash_scryptsalsa208sha256_SALTBYTES - TOX_ENC_SAVE_MAGIC_LENGTH;
+
+    /* now encrypt */
+    return tox_pass_encrypt(temp_data, temp_size, passphrase, pplength, data);
+}
+
+
+/* Decrypts the given data with the given passphrase. The output array must be
+ * at least data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
+ *
+ * returns the length of the output data (== data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH) on success
+ * returns -1 on failure
+ */
+int tox_pass_decrypt(const uint8_t* data, uint32_t length, uint8_t* passphrase, uint32_t pplength, uint8_t* out)
+{
+    if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH)
+        return -1;
+
+    uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
 
@@ -155,12 +165,31 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
     sodium_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
 
     /* decrypt the data */
-    uint8_t temp_data[decrypt_length];
-
-    if (decrypt_data_symmetric(key, nonce, data, decrypt_length + crypto_box_MACBYTES, temp_data)
+    if (decrypt_data_symmetric(key, nonce, data, decrypt_length + crypto_box_MACBYTES, out)
             != decrypt_length) {
         return -1;
     }
+
+    return decrypt_length;
+}
+
+/* Load the messenger from encrypted data of size length.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength)
+{
+    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0)
+        return -1;
+    data += TOX_ENC_SAVE_MAGIC_LENGTH; length -= TOX_ENC_SAVE_MAGIC_LENGTH;
+
+    uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+    uint8_t temp_data[decrypt_length];
+
+    if (tox_pass_decrypt(data, length, passphrase, pplength, temp_data)
+        != decrypt_length)
+        return -1;
 
     return tox_load(tox, temp_data, decrypt_length);
 }
@@ -170,7 +199,7 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
  * returns 1 if it is encrypted
  * returns 0 otherwise
  */
-int tox_is_data_encrypted(const uint8_t *data)
+int tox_is_save_encrypted(const uint8_t *data)
 {
     if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0)
         return 1;
