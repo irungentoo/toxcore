@@ -53,7 +53,7 @@
 
 
 #define DAEMON_NAME "tox-bootstrapd"
-#define DAEMON_VERSION_NUMBER 2014081600UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
+#define DAEMON_VERSION_NUMBER 2014101000UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
 
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
@@ -61,7 +61,7 @@
 #define DEFAULT_PID_FILE_PATH         "tox-bootstrapd.pid"
 #define DEFAULT_KEYS_FILE_PATH        "tox-bootstrapd.keys"
 #define DEFAULT_PORT                  33445
-#define DEFAULT_ENABLE_IPV6           0 // 1 - true, 0 - false
+#define DEFAULT_ENABLE_IPV6           1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY  1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_TCP_RELAY      1 // 1 - true, 0 - false
 #define DEFAULT_TCP_RELAY_PORTS       443, 3389, 33445 // comma-separated list of ports. make sure to adjust DEFAULT_TCP_RELAY_PORTS_COUNT accordingly
@@ -616,7 +616,7 @@ int main(int argc, char *argv[])
     pid_t pid = fork();
 
     if (pid > 0) {
-        fprintf(pidf, "%d ", pid);
+        fprintf(pidf,"%d", pid);
         fclose(pidf);
         syslog(LOG_DEBUG, "Forked successfully: PID: %d.\n", pid);
         return 0;
