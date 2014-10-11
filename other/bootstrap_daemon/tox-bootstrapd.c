@@ -618,7 +618,7 @@ int main(int argc, char *argv[])
     pid_t pid = fork();
 
     if (pid > 0) {
-        fprintf(pidf, "%d", pid);
+        fprintf(pidf, "%d\n", pid);
         fclose(pidf);
         syslog(LOG_DEBUG, "Forked successfully: PID: %d.\n", pid);
         return 0;
