@@ -35,10 +35,11 @@ extern "C" {
 typedef struct Tox Tox;
 #endif
 
-#define TOX_PASS_ENCRYPTION_EXTRA_LENGTH (crypto_box_MACBYTES + crypto_box_NONCEBYTES \
-           + crypto_pwhash_scryptsalsa208sha256_SALTBYTES)
+// these two functions provide access to these defines in toxencryptsave.c, which
+//otherwise aren't actually available in clients...
+int tox_pass_encryption_extra_length();
 
-#define TOX_PASS_KEY_LENGTH (crypto_box_KEYBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES)
+int tox_pass_key_length();
 
 /* This "module" provides functions analogous to tox_load and tox_save in toxcore
  * Clients should consider alerting their users that, unlike plain data, if even one bit
@@ -50,7 +51,7 @@ typedef struct Tox Tox;
 uint32_t tox_encrypted_size(const Tox *tox);
 
 /* Generates a secret symmetric key from the given passphrase. out_key must be at least
- * TOX_PASS_KEY_LENGTH bytes long.
+ * tox_pass_key_length() bytes long.
  * Be sure to not compromise the key! Only keep it in memory, do not write to disk.
  * This function is fairly cheap, but irungentoo insists that you be allowed to
  * cache the result if you want, to minimize computation for repeated encryptions.
@@ -64,8 +65,8 @@ uint32_t tox_encrypted_size(const Tox *tox);
 int tox_derive_key_from_pass(uint8_t *passphrase, uint32_t pplength, uint8_t *out_key);
 
 /* Encrypt arbitrary with a key produced by tox_derive_key_from_pass. The output
- * array must be at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
- * key must be TOX_PASS_KEY_LENGTH bytes.
+ * array must be at least data_len + tox_pass_encryption_extra_length() bytes long.
+ * key must be tox_pass_key_length() bytes.
  * If you already have a symmetric key from somewhere besides this module, simply
  * call encrypt_data_symmetric in toxcore/crypto_core directly.
  *
@@ -73,10 +74,10 @@ int tox_derive_key_from_pass(uint8_t *passphrase, uint32_t pplength, uint8_t *ou
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_key_encrypt(uint8_t *data, uint32_t data_len, const uint8_t *key, uint8_t *out);
+int tox_pass_key_encrypt(const uint8_t *data, uint32_t data_len, const uint8_t *key, uint8_t *out);
 
 /* Encrypts the given data with the given passphrase. The output array must be
- * at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long. This delegates
+ * at least data_len + tox_pass_encryption_extra_length() bytes long. This delegates
  * to tox_derive_key_from_pass and tox_pass_key_encrypt.
  *
  * tox_encrypted_save() is a good example of how to use this function.
@@ -84,7 +85,7 @@ int tox_pass_key_encrypt(uint8_t *data, uint32_t data_len, const uint8_t *key, u
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_encrypt(uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
+int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
 
 /* Save the messenger data encrypted with the given password.
  * data must be at least tox_encrypted_size().
@@ -94,12 +95,21 @@ int tox_pass_encrypt(uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint
  */
 int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength);
 
+/* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
+ * tox_derive_key_from_pass.
+ *
+ * returns the length of the output data (== data_len - tox_pass_encryption_extra_length()) on success
+ * returns -1 on failure
+ */
+int tox_pass_key_decrypt(const uint8_t* data, uint32_t length, const uint8_t* key, uint8_t* out);
+
 /* Decrypts the given data with the given passphrase. The output array must be
- * at least data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
+ * at least data_len - tox_pass_encryption_extra_length() bytes long. This delegates
+ * to tox_pass_key_decrypt.
  *
  * tox_encrypted_load() is a good example of how to use this function.
  *
- * returns the length of the output data (== data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH) on success
+ * returns the length of the output data (== data_len - tox_pass_encryption_extra_length()) on success
  * returns -1 on failure
  */
 int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
