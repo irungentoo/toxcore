@@ -35,6 +35,15 @@
 #include <crypto_hash_sha256.h>
 #endif
 
+#define TOX_PASS_ENCRYPTION_EXTRA_LENGTH (crypto_box_MACBYTES + crypto_box_NONCEBYTES \
+           + crypto_pwhash_scryptsalsa208sha256_SALTBYTES)
+
+#define TOX_PASS_KEY_LENGTH (crypto_box_KEYBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES)
+
+int tox_pass_encryption_extra_length() {return TOX_PASS_ENCRYPTION_EXTRA_LENGTH;}
+
+int tox_pass_key_length() {return TOX_PASS_KEY_LENGTH;}
+
 /* This "module" provides functions analogous to tox_load and tox_save in toxcore
  * Clients should consider alerting their users that, unlike plain data, if even one bit
  * becomes corrupted, the data will be entirely unrecoverable.
@@ -98,7 +107,7 @@ int tox_derive_key_from_pass(uint8_t *passphrase, uint32_t pplength, uint8_t *ou
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_key_encrypt(uint8_t *data, uint32_t data_len, const uint8_t *key, uint8_t *out)
+int tox_pass_key_encrypt(const uint8_t *data, uint32_t data_len, const uint8_t *key, uint8_t *out)
 {
     /* the output data consists of, in order:
      * salt, nonce, mac, enc_data
@@ -134,7 +143,7 @@ int tox_pass_key_encrypt(uint8_t *data, uint32_t data_len, const uint8_t *key, u
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_encrypt(uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint32_t pplength, uint8_t *out)
+int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint32_t pplength, uint8_t *out)
 {
     uint8_t key[TOX_PASS_KEY_LENGTH];
 
