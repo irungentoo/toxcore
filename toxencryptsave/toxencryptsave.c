@@ -59,7 +59,7 @@ uint32_t tox_encrypted_size(const Tox *tox)
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_derive_key_from_pass(uint8_t* passphrase, uint32_t pplength, uint8_t* out_key)
+int tox_derive_key_from_pass(uint8_t *passphrase, uint32_t pplength, uint8_t *out_key)
 {
     if (pplength == 0)
         return -1;
@@ -98,7 +98,7 @@ int tox_derive_key_from_pass(uint8_t* passphrase, uint32_t pplength, uint8_t* ou
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_key_encrypt(uint8_t* data, uint32_t data_len, const uint8_t* key, uint8_t* out)
+int tox_pass_key_encrypt(uint8_t *data, uint32_t data_len, const uint8_t *key, uint8_t *out)
 {
     /* the output data consists of, in order:
      * salt, nonce, mac, enc_data
@@ -110,7 +110,7 @@ int tox_pass_key_encrypt(uint8_t* data, uint32_t data_len, const uint8_t* key, u
 
     /* first add the prefix */
     uint8_t nonce[crypto_box_NONCEBYTES];
-    random_nonce(nonce);    
+    random_nonce(nonce);
 
     memcpy(out, key, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
     key += crypto_pwhash_scryptsalsa208sha256_SALTBYTES;
@@ -134,9 +134,10 @@ int tox_pass_key_encrypt(uint8_t* data, uint32_t data_len, const uint8_t* key, u
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_encrypt(uint8_t* data, uint32_t data_len, uint8_t* passphrase, uint32_t pplength, uint8_t* out)
+int tox_pass_encrypt(uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint32_t pplength, uint8_t *out)
 {
     uint8_t key[TOX_PASS_KEY_LENGTH];
+
     if (tox_derive_key_from_pass(passphrase, pplength, key) == -1)
         return -1;
 
@@ -171,7 +172,7 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
  * returns the length of the output data (== data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH) on success
  * returns -1 on failure
  */
-int tox_pass_key_decrypt(const uint8_t* data, uint32_t length, const uint8_t* key, uint8_t* out)
+int tox_pass_key_decrypt(const uint8_t *data, uint32_t length, const uint8_t *key, uint8_t *out)
 {
     if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH)
         return -1;
@@ -201,14 +202,14 @@ int tox_pass_key_decrypt(const uint8_t* data, uint32_t length, const uint8_t* ke
  * returns the length of the output data (== data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH) on success
  * returns -1 on failure
  */
-int tox_pass_decrypt(const uint8_t* data, uint32_t length, uint8_t* passphrase, uint32_t pplength, uint8_t* out)
+int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength, uint8_t *out)
 {
-    
+
     uint8_t passkey[crypto_hash_sha256_BYTES];
     crypto_hash_sha256(passkey, passphrase, pplength);
 
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
-    memcpy(salt, data, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);    
+    memcpy(salt, data, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
 
     /* derive the key */
     uint8_t key[crypto_box_KEYBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
@@ -236,13 +237,15 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
 {
     if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0)
         return -1;
-    data += TOX_ENC_SAVE_MAGIC_LENGTH; length -= TOX_ENC_SAVE_MAGIC_LENGTH;
+
+    data += TOX_ENC_SAVE_MAGIC_LENGTH;
+    length -= TOX_ENC_SAVE_MAGIC_LENGTH;
 
     uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t temp_data[decrypt_length];
 
     if (tox_pass_decrypt(data, length, passphrase, pplength, temp_data)
-        != decrypt_length)
+            != decrypt_length)
         return -1;
 
     return tox_load(tox, temp_data, decrypt_length);

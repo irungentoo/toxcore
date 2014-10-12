@@ -1437,12 +1437,9 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
             if (peer_number == kill_peer_number) {
                 delpeer(g_c, groupnumber, index);
-                return;
             } else {
                 //TODO
             }
-
-            return;
         }
         break;
 

@@ -61,7 +61,7 @@ uint32_t tox_encrypted_size(const Tox *tox);
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_derive_key_from_pass(uint8_t* passphrase, uint32_t pplength, uint8_t* out_key);
+int tox_derive_key_from_pass(uint8_t *passphrase, uint32_t pplength, uint8_t *out_key);
 
 /* Encrypt arbitrary with a key produced by tox_derive_key_from_pass. The output
  * array must be at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
@@ -73,7 +73,7 @@ int tox_derive_key_from_pass(uint8_t* passphrase, uint32_t pplength, uint8_t* ou
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_key_encrypt(uint8_t* data, uint32_t data_len, const uint8_t* key, uint8_t* out);
+int tox_pass_key_encrypt(uint8_t *data, uint32_t data_len, const uint8_t *key, uint8_t *out);
 
 /* Encrypts the given data with the given passphrase. The output array must be
  * at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long. This delegates
@@ -84,7 +84,7 @@ int tox_pass_key_encrypt(uint8_t* data, uint32_t data_len, const uint8_t* key, u
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_pass_encrypt(uint8_t* data, uint32_t data_len, uint8_t* passphrase, uint32_t pplength, uint8_t* out);
+int tox_pass_encrypt(uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
 
 /* Save the messenger data encrypted with the given password.
  * data must be at least tox_encrypted_size().
@@ -111,7 +111,7 @@ int tox_pass_key_decrypt(const uint8_t* data, uint32_t length, const uint8_t* ke
  * returns the length of the output data (== data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH) on success
  * returns -1 on failure
  */
-int tox_pass_decrypt(const uint8_t* data, uint32_t length, uint8_t* passphrase, uint32_t pplength, uint8_t* out);
+int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
 
 /* Load the messenger from encrypted data of size length.
  *
