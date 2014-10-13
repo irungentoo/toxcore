@@ -89,7 +89,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
     keys_file = fopen(keys_file_path, "r");
 
     if (keys_file != NULL) {
-        size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
+        const size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (read_size != KEYS_SIZE) {
             fclose(keys_file);
@@ -105,7 +105,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
 
         keys_file = fopen(keys_file_path, "w");
 
-        size_t write_size = fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
+        const size_t write_size = fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (write_size != KEYS_SIZE) {
             fclose(keys_file);
@@ -233,7 +233,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 // returns 1 on success
 //         0 on failure, doesn't modify any data pointed by arguments
 
-int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
+int get_general_config(const char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
                        int *enable_ipv4_fallback, int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports,
                        int *tcp_relay_port_count, int *enable_motd, char **motd)
 {
@@ -390,7 +390,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
 // returns 1 on success, some or no bootstrap nodes were added
 //         0 on failure, a error accured while parsing config file
 
-int bootstrap_from_config(char *cfg_file_path, DHT *dht, int enable_ipv6)
+int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
 {
     const char *NAME_BOOTSTRAP_NODES = "bootstrap_nodes";
 
@@ -495,7 +495,7 @@ next:
 
 // Prints public key
 
-void print_public_key(uint8_t *public_key)
+void print_public_key(const uint8_t *public_key)
 {
     char buffer[2 * crypto_box_PUBLICKEYBYTES + 1];
     int index = 0;
@@ -522,7 +522,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    char *cfg_file_path = argv[1];
+    const char *cfg_file_path = argv[1];
     char *pid_file_path, *keys_file_path;
     int port;
     int enable_ipv6;
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
     free(keys_file_path);
 
     // Fork off from the parent process
-    pid_t pid = fork();
+    const pid_t pid = fork();
 
     if (pid > 0) {
         fprintf(pidf, "%d", pid);
@@ -690,7 +690,7 @@ int main(int argc, char *argv[])
     close(STDERR_FILENO);
 
     uint64_t last_LANdiscovery = 0;
-    uint16_t htons_port = htons(port);
+    const uint16_t htons_port = htons(port);
 
     int waiting_for_dht_connection = 1;
 
