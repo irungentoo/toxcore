@@ -53,7 +53,7 @@
 
 
 #define DAEMON_NAME "tox-bootstrapd"
-#define DAEMON_VERSION_NUMBER 2014101000UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
+#define DAEMON_VERSION_NUMBER 2014101200UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
 
 #define SLEEP_TIME_MILLISECONDS 30
 #define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
@@ -62,6 +62,7 @@
 #define DEFAULT_KEYS_FILE_PATH        "tox-bootstrapd.keys"
 #define DEFAULT_PORT                  33445
 #define DEFAULT_ENABLE_IPV6           1 // 1 - true, 0 - false
+#define DEFAULT_ENABLE_IPV4_FALLBACK  1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY  1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_TCP_RELAY      1 // 1 - true, 0 - false
 #define DEFAULT_TCP_RELAY_PORTS       443, 3389, 33445 // comma-separated list of ports. make sure to adjust DEFAULT_TCP_RELAY_PORTS_COUNT accordingly
@@ -233,8 +234,8 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 //         0 on failure, doesn't modify any data pointed by arguments
 
 int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
-                       int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports, int *tcp_relay_port_count,
-                       int *enable_motd, char **motd)
+                       int *enable_ipv4_fallback, int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports,
+                       int *tcp_relay_port_count, int *enable_motd, char **motd)
 {
     config_t cfg;
 
@@ -242,6 +243,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     const char *NAME_PID_FILE_PATH        = "pid_file_path";
     const char *NAME_KEYS_FILE_PATH       = "keys_file_path";
     const char *NAME_ENABLE_IPV6          = "enable_ipv6";
+    const char *NAME_ENABLE_IPV4_FALLBACK = "enable_ipv4_fallback";
     const char *NAME_ENABLE_LAN_DISCOVERY = "enable_lan_discovery";
     const char *NAME_ENABLE_TCP_RELAY     = "enable_tcp_relay";
     const char *NAME_ENABLE_MOTD          = "enable_motd";
@@ -292,6 +294,13 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
         syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_IPV6);
         syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_ENABLE_IPV6, DEFAULT_ENABLE_IPV6 ? "true" : "false");
         *enable_ipv6 = DEFAULT_ENABLE_IPV6;
+    }
+
+    // Get IPv4 fallback option
+    if (config_lookup_bool(&cfg, NAME_ENABLE_IPV4_FALLBACK, enable_ipv4_fallback) == CONFIG_FALSE) {
+        syslog(LOG_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_IPV4_FALLBACK);
+        syslog(LOG_WARNING, "Using default '%s': %s\n", NAME_ENABLE_IPV4_FALLBACK, DEFAULT_ENABLE_IPV4_FALLBACK ? "true" : "false");
+        *enable_ipv4_fallback = DEFAULT_ENABLE_IPV4_FALLBACK;
     }
 
     // Get LAN discovery option
@@ -348,6 +357,7 @@ int get_general_config(char *cfg_file_path, char **pid_file_path, char **keys_fi
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_KEYS_FILE_PATH,       *keys_file_path);
     syslog(LOG_DEBUG, "'%s': %d\n", NAME_PORT,                 *port);
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_IPV6,          *enable_ipv6          ? "true" : "false");
+    syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_IPV4_FALLBACK, *enable_ipv4_fallback ? "true" : "false");
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_LAN_DISCOVERY, *enable_lan_discovery ? "true" : "false");
 
     syslog(LOG_DEBUG, "'%s': %s\n", NAME_ENABLE_TCP_RELAY,     *enable_tcp_relay     ? "true" : "false");
@@ -516,6 +526,7 @@ int main(int argc, char *argv[])
     char *pid_file_path, *keys_file_path;
     int port;
     int enable_ipv6;
+    int enable_ipv4_fallback;
     int enable_lan_discovery;
     int enable_tcp_relay;
     uint16_t *tcp_relay_ports;
@@ -523,8 +534,8 @@ int main(int argc, char *argv[])
     int enable_motd;
     char *motd;
 
-    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_lan_discovery,
-                           &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count, &enable_motd, &motd)) {
+    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_ipv4_fallback,
+                           &enable_lan_discovery, &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count, &enable_motd, &motd)) {
         syslog(LOG_DEBUG, "General config read successfully\n");
     } else {
         syslog(LOG_ERR, "Couldn't read config file: %s. Exiting.\n", cfg_file_path);
@@ -547,7 +558,26 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, enable_ipv6);
 
-    DHT *dht = new_DHT(new_networking(ip, port));
+    Networking_Core *net = new_networking(ip, port);
+
+    if (net == NULL) {
+        if (enable_ipv6 && enable_ipv4_fallback) {
+            syslog(LOG_DEBUG, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
+            enable_ipv6 = 0;
+            ip_init(&ip, enable_ipv6);
+            net = new_networking(ip, port);
+            if (net == NULL) {
+                syslog(LOG_DEBUG, "Couldn't fallback to IPv4. Exiting.\n");
+                return 1;
+            }
+        } else {
+            syslog(LOG_DEBUG, "Couldn't initialize networking. Exiting.\n");
+            return 1;
+        }
+    }
+
+
+    DHT *dht = new_DHT(net);
 
     if (dht == NULL) {
         syslog(LOG_ERR, "Couldn't initialize Tox DHT instance. Exiting.\n");
