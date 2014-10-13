@@ -165,8 +165,8 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
         if ((*tcp_relay_port_count) > 0) {
             *tcp_relay_ports = realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
         } else {
-            free(*tcp_relay_port);
-            *tcp_relay_port = NULL;
+            free(*tcp_relay_ports);
+            *tcp_relay_ports = NULL;
         }
 
         return;
@@ -219,8 +219,8 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
     if ((*tcp_relay_port_count) > 0) {
         *tcp_relay_ports = realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
     } else {
-        free(*tcp_relay_port);
-        *tcp_relay_port = NULL;
+        free(*tcp_relay_ports);
+        *tcp_relay_ports = NULL;
     }
 }
 
