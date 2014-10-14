@@ -190,6 +190,11 @@ int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *ac
  */
 int group_number_peers(const Group_Chats *g_c, int groupnumber);
 
+/* return 1 if the peernumber corresponds to ours.
+ * return 0 on failure.
+ */
+unsigned int group_peernumber_is_ours(const Group_Chats *g_c, int groupnumber, int peernumber);
+
 /* List all the peers in the group chat.
  *
  * Copies the names of the peers to the name[length][MAX_NAME_LENGTH] array.

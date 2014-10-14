@@ -744,6 +744,25 @@ int group_number_peers(const Group_Chats *g_c, int groupnumber)
     return g->numpeers;
 }
 
+/* return 1 if the peernumber corresponds to ours.
+ * return 0 on failure.
+ */
+unsigned int group_peernumber_is_ours(const Group_Chats *g_c, int groupnumber, int peernumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return 0;
+
+    if (g->status != GROUPCHAT_STATUS_CONNECTED)
+        return 0;
+
+    if ((uint32_t)peernumber >= g->numpeers)
+        return 0;
+
+    return g->peer_number == g->group[peernumber].peer_number;
+}
+
 /* Send a group packet to friendcon_id.
  *
  *  return 1 on success

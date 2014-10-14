@@ -428,14 +428,14 @@ void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, con
 
 /* Set the callback for group messages.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int peernumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
                                 void *userdata);
 
 /* Set the callback for group actions.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int peernumber, uint8_t * action, uint16_t length, void *userdata)
  */
 void tox_callback_group_action(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
                                void *userdata);
@@ -501,6 +501,13 @@ int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, ui
  * return -1 on failure
  */
 int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length);
+
+/* Check if the current peernumber corresponds to ours.
+ *
+ * return 1 if the peernumber corresponds to ours.
+ * return 0 on failure.
+ */
+unsigned int tox_group_peernumber_is_ours(const Tox *tox, int groupnumber, int peernumber);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
