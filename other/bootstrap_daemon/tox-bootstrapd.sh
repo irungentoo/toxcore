@@ -23,7 +23,7 @@ USER=tox-bootstrapd
 GROUP=tox-bootstrapd
 
 # Exit if the package is not installed
-[ -x "$DAEMON" ] || exit 5
+[ -x "$DAEMON" ] || exit 0
 
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
