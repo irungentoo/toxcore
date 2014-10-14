@@ -203,6 +203,12 @@ int group_number_peers(const Group_Chats *g_c, int groupnumber);
 int group_names(const Group_Chats *g_c, int groupnumber, uint8_t names[][MAX_NAME_LENGTH], uint16_t lengths[],
                 uint16_t length);
 
+/* Return the number of chats in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_chatlist.
+ */
+uint32_t count_chatlist(Group_Chats *g_c);
+
 /* Send current name (set in messenger) to all online groups.
  */
 void send_name_all_groups(Group_Chats *g_c);

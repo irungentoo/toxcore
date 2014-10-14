@@ -1630,21 +1630,21 @@ void kill_groupchats(Group_Chats *g_c)
 
 /* Return the number of chats in the instance m.
  * You should use this to determine how much memory to allocate
- * for copy_chatlist. */
-/*
-uint32_t count_chatlist(const Messenger *m)
+ * for copy_chatlist.
+ */
+uint32_t count_chatlist(Group_Chats *g_c)
 {
     uint32_t ret = 0;
     uint32_t i;
 
-    for (i = 0; i < m->numchats; i++) {
-        if (m->chats[i]) {
+    for (i = 0; i < g_c->num_chats; i++) {
+        if (g_c->chats[i].status != GROUPCHAT_STATUS_NONE) {
             ret++;
         }
     }
 
     return ret;
-}*/
+}
 
 /* Copy a list of valid chat IDs into the array out_list.
  * If out_list is NULL, returns 0.

@@ -704,8 +704,7 @@ int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t names[][TOX_MAX
 uint32_t tox_count_chatlist(const Tox *tox)
 {
     const Messenger *m = tox;
-    //return count_chatlist(m);
-    return 0;
+    return count_chatlist(m->group_chat_object);
 }
 
 /* Copy a list of valid chat IDs into the array out_list.
