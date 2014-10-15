@@ -696,8 +696,8 @@ int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint
         return -1;
 
     if (g->group[peernumber].nick_len == 0) {
-        memcpy(name, "Tox User", 8);
-        return 8;
+        memcpy(name, "NSA Agent", 9);
+        return 9;
     }
 
     memcpy(name, g->group[peernumber].nick, g->group[peernumber].nick_len);
