@@ -132,6 +132,9 @@ static void copy_groupmessage(Tox *tox, int groupnumber, int friendgroupnumber, 
     for (i = 0; i < send_len; ++i) {
         if (sendbuf[i] == '\n')
             sendbuf[i] = '|';
+
+        if (sendbuf[i] == 0)
+            sendbuf[i] = ' ';
     }
 
     sendbuf[send_len] = '\n';
