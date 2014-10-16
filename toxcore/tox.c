@@ -723,11 +723,10 @@ uint32_t tox_count_chatlist(const Tox *tox)
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-uint32_t tox_get_chatlist(const Tox *tox, int *out_list, uint32_t list_size)
+uint32_t tox_get_chatlist(const Tox *tox, int32_t *out_list, uint32_t list_size)
 {
     const Messenger *m = tox;
-    //return copy_chatlist(m, out_list, list_size);
-    return 0;
+    return copy_chatlist(m->group_chat_object, out_list, list_size);
 }
 
 

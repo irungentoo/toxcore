@@ -1025,7 +1025,7 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
                 return;
 
             uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
-                                      are given the same peer_number by different nodes? */
+                                  are given the same peer_number by different nodes? */
             unsigned int tries = 0;
 
             while (get_peer_index(g, peer_number) != -1) {
@@ -1670,25 +1670,24 @@ uint32_t count_chatlist(Group_Chats *g_c)
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-/*
-uint32_t copy_chatlist(const Messenger *m, int *out_list, uint32_t list_size)
+uint32_t copy_chatlist(Group_Chats *g_c, int32_t *out_list, uint32_t list_size)
 {
-    if (!out_list)
-        return 0;
-
-    if (m->numchats == 0) {
+    if (!out_list) {
         return 0;
     }
 
-    uint32_t i;
-    uint32_t ret = 0;
+    if (g_c->num_chats == 0) {
+        return 0;
+    }
 
-    for (i = 0; i < m->numchats; i++) {
+    uint32_t i, ret = 0;
+
+    for (i = 0; i < g_c->num_chats; ++i) {
         if (ret >= list_size) {
-            break; *//* Abandon ship *//*
+            break;  /* Abandon ship */
         }
 
-        if (m->chats[i]) {
+        if (g_c->chats[i].status > GROUPCHAT_STATUS_NONE) {
             out_list[ret] = i;
             ret++;
         }
@@ -1696,4 +1695,3 @@ uint32_t copy_chatlist(const Messenger *m, int *out_list, uint32_t list_size)
 
     return ret;
 }
-*/
