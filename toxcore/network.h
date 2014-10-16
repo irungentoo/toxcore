@@ -351,8 +351,8 @@ void networking_poll(Networking_Core *net);
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
  *
- *  return 0 if no problems.
- *  return -1 if there were problems.
+ * return Networking_Core object if no problems
+ * return NULL if there are problems.
  */
 Networking_Core *new_networking(IP ip, uint16_t port);
 

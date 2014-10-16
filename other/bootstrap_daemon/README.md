@@ -21,7 +21,7 @@ Look at the variable declarations in the beginning of `tox-bootstrapd.sh` init s
 
 Go over everything in `tox-bootstrapd.conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox-bootstrapd.sh`.
 
-Place `tox-bootstrapd.conf` file to where `CFGFILE` variable from `tox-bootstrapd` tells. By default it's `/etc/tox-bootstrapd.conf`.
+Place `tox-bootstrapd.conf` file to where `CFGFILE` variable from `tox-bootstrapd.sh` tells. By default it's `/etc/tox-bootstrapd.conf`.
 
 Place `tox-bootstrapd.sh` init file at `/etc/init.d/tox-bootstrapd` (note the disappearance of ".sh" ending).
 
