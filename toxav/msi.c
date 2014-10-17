@@ -699,6 +699,8 @@ static void timer_terminate_session(TimerHandler *handler)
     free(handler->timers);
 
     pthread_mutex_destroy( &handler->mutex );
+
+    free(handler);
 }
 
 /**
