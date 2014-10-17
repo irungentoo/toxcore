@@ -86,6 +86,10 @@ static void fetch_broadcast_info(uint16_t port)
             pAdapter = pAdapter->Next;
         }
     }
+
+    if (pAdapterInfo) {
+        free(pAdapterInfo);
+    }
 }
 
 #elif defined(__linux__)

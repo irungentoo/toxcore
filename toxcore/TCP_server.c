@@ -805,6 +805,7 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint
                     return -1;
 
                 IP_Port source;
+                source.port = 0;  // dummy initialise
                 source.ip.family = TCP_ONION_FAMILY;
                 source.ip.ip6.uint32[0] = con_id;
                 source.ip.ip6.uint64[1] = con->identifier;
