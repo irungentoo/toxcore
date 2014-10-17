@@ -18,6 +18,10 @@
 
 #include <sys/ioctl.h>
 
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
+#define MSG_NOSIGNAL 0
+#endif
+
 //IRC name and channel.
 #define IRC_NAME "Tox_syncbot"
 #define IRC_CHANNEL "#tox-real-ontopic"
