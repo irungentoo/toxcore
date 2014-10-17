@@ -301,7 +301,7 @@ int tox_encrypted_key_load(Tox *tox, const uint8_t *data, uint32_t length, uint8
     if (tox_pass_key_decrypt(data, length, key, temp_data)
             != decrypt_length)
         return -1;
-    printf("tox key load: decryption passed\n");
+
     return tox_load(tox, temp_data, decrypt_length);
 }
 

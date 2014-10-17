@@ -116,12 +116,45 @@ START_TEST(test_save_friend)
 }
 END_TEST
 
+START_TEST(test_keys)
+{
+    uint8_t key[tox_pass_key_length()];
+    tox_derive_key_from_pass("123qweasdzxc", 12, key);
+    uint8_t* string = "No Patrick, mayonnaise is not an instrument."; // 44
+
+    uint8_t encrypted[44+tox_pass_encryption_extra_length()];
+    int sz = tox_pass_key_encrypt(string, 44, key, encrypted);
+
+    uint8_t encrypted2[44+tox_pass_encryption_extra_length()];
+    int sz2 = tox_pass_encrypt(string, 44, "123qweasdzxc", 12, encrypted2);
+
+    ck_assert_msg(sz == sz2, "an encryption failed");
+
+    uint8_t out1[44+tox_pass_encryption_extra_length()];
+    uint8_t out2[44+tox_pass_encryption_extra_length()];
+
+    sz = tox_pass_key_decrypt(encrypted, 44+tox_pass_encryption_extra_length(), key, out1);
+    ck_assert_msg(sz == 44, "sz isn't right");
+    ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 1 failed");
+
+    sz2 = tox_pass_decrypt(encrypted2, 44+tox_pass_encryption_extra_length(), "123qweasdzxc", 12, out2);
+    ck_assert_msg(sz2 == 44, "sz2 isn't right");
+    ck_assert_msg(memcmp(out2, string, 44) == 0, "decryption 2 failed");
+
+    // test that pass_decrypt can decrypt things from pass_key_encrypt
+    sz = tox_pass_decrypt(encrypted, 44+tox_pass_encryption_extra_length(), "123qweasdzxc", 12, out1);
+    ck_assert_msg(sz == 44, "sz isn't right");
+    ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 3 failed");
+}
+END_TEST
+
 Suite * encryptsave_suite(void)
 {
     Suite *s = suite_create("encryptsave");
 
     DEFTESTCASE_SLOW(known_kdf, 60); /* is 5-10 seconds on my computer, but is directly dependent on CPU */
     DEFTESTCASE(save_friend);
+    DEFTESTCASE(keys);
 
     return s;
 }
