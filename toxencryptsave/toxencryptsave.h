@@ -101,7 +101,7 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
  * returns the length of the output data (== data_len - tox_pass_encryption_extra_length()) on success
  * returns -1 on failure
  */
-int tox_pass_key_decrypt(const uint8_t* data, uint32_t length, const uint8_t* key, uint8_t* out);
+int tox_pass_key_decrypt(const uint8_t *data, uint32_t length, const uint8_t *key, uint8_t *out);
 
 /* Decrypts the given data with the given passphrase. The output array must be
  * at least data_len - tox_pass_encryption_extra_length() bytes long. This delegates

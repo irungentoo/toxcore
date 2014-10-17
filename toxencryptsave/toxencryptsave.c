@@ -40,9 +40,15 @@
 
 #define TOX_PASS_KEY_LENGTH (crypto_box_KEYBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES)
 
-int tox_pass_encryption_extra_length() {return TOX_PASS_ENCRYPTION_EXTRA_LENGTH;}
+int tox_pass_encryption_extra_length()
+{
+    return TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+}
 
-int tox_pass_key_length() {return TOX_PASS_KEY_LENGTH;}
+int tox_pass_key_length()
+{
+    return TOX_PASS_KEY_LENGTH;
+}
 
 /* This "module" provides functions analogous to tox_load and tox_save in toxcore
  * Clients should consider alerting their users that, unlike plain data, if even one bit
