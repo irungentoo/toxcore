@@ -95,6 +95,14 @@ int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase
  */
 int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength);
 
+/* Save the messenger data encrypted with the given key from tox_derive_key.
+ * data must be at least tox_encrypted_size().
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint8_t *key);
+
 /* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
  * tox_derive_key_from_pass.
  *
@@ -120,6 +128,13 @@ int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, 
  * returns -1 on failure
  */
 int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength);
+
+/* Load the messenger from encrypted data of size length, with key from tox_derive_key.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_encrypted_key_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *key);
 
 /* Determines whether or not the given data is encrypted (by checking the magic number)
  *
