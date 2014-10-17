@@ -175,6 +175,28 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
     return tox_pass_encrypt(temp_data, temp_size, passphrase, pplength, data);
 }
 
+/* Save the messenger data encrypted with the given key from tox_derive_key.
+ * data must be at least tox_encrypted_size().
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_encrypted_key_save(const Tox* tox, uint8_t* data, uint8_t* key)
+{
+    /* first get plain save data */
+    uint32_t temp_size = tox_size(tox);
+    uint8_t temp_data[temp_size];
+    tox_save(tox, temp_data);
+
+    /* the output data consists of, in order: magic number, enc_data */
+    /* first add the magic number */
+    memcpy(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH);
+    data += TOX_ENC_SAVE_MAGIC_LENGTH;
+
+    /* encrypt */
+    return tox_pass_key_encrypt(temp_data, temp_size, key, data);
+}
+
 /* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
  * tox_derive_key_from_pass.
  *
@@ -257,6 +279,29 @@ int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *
             != decrypt_length)
         return -1;
 
+    return tox_load(tox, temp_data, decrypt_length);
+}
+
+/* Load the messenger from encrypted data of size length, with key from tox_derive_key.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_encrypted_key_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t* key)
+{
+    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0)
+        return -1;
+
+    data += TOX_ENC_SAVE_MAGIC_LENGTH;
+    length -= TOX_ENC_SAVE_MAGIC_LENGTH;
+
+    uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+    uint8_t temp_data[decrypt_length];
+
+    if (tox_pass_key_decrypt(data, length, key, temp_data)
+            != decrypt_length)
+        return -1;
+    printf("tox key load: decryption passed\n");
     return tox_load(tox, temp_data, decrypt_length);
 }
 
