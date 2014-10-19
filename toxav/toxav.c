@@ -71,10 +71,10 @@ const uint32_t av_VADd = 40;
 
 static const uint8_t audio_index = 0, video_index = 1;
 
-typedef struct {
+typedef struct _DecodePacket{
     uint32_t size;
     uint8_t data[0];
-} DECODE_PACKET;
+} DecodePacket;
 
 #define VIDEO_DECODE_QUEUE_SIZE 2
 #define AUDIO_DECODE_QUEUE_SIZE 16
@@ -102,8 +102,8 @@ typedef struct _CallSpecific {
     uint8_t video_decode_read, video_decode_write, audio_decode_read, audio_decode_write;
     pthread_mutex_t decode_cond_mutex;
     pthread_cond_t decode_cond;
-    DECODE_PACKET *volatile video_decode_queue[VIDEO_DECODE_QUEUE_SIZE];
-    DECODE_PACKET *volatile audio_decode_queue[AUDIO_DECODE_QUEUE_SIZE];
+    DecodePacket *volatile video_decode_queue[VIDEO_DECODE_QUEUE_SIZE];
+    DecodePacket *volatile audio_decode_queue[AUDIO_DECODE_QUEUE_SIZE];
 } CallSpecific;
 
 struct _ToxAv {
@@ -122,51 +122,19 @@ struct _ToxAv {
 
 static void *toxav_decoding(void *arg);
 
-static MSICSettings msicsettings_cast (const ToxAvCSettings *from)
+static const MSICSettings *msicsettings_cast (const ToxAvCSettings *from)
 {
-    MSICSettings csettings;
-    csettings.call_type = from->call_type;
-
-    csettings.video_bitrate = from->video_bitrate;
-    csettings.max_video_width = from->max_video_width;
-    csettings.max_video_height = from->max_video_height;
-
-    csettings.audio_bitrate = from->audio_bitrate;
-    csettings.audio_frame_duration = from->audio_frame_duration;
-    csettings.audio_sample_rate = from->audio_sample_rate;
-    csettings.audio_channels = from->audio_channels;
-
-    return csettings;
+    assert(sizeof(MSICSettings) == sizeof(ToxAvCSettings));
+    return (const MSICSettings *) from;
 }
 
-static ToxAvCSettings toxavcsettings_cast (const MSICSettings *from)
-{
-    ToxAvCSettings csettings;
-    csettings.call_type = from->call_type;
-
-    csettings.video_bitrate = from->video_bitrate;
-    csettings.max_video_width = from->max_video_width;
-    csettings.max_video_height = from->max_video_height;
-
-    csettings.audio_bitrate = from->audio_bitrate;
-    csettings.audio_frame_duration = from->audio_frame_duration;
-    csettings.audio_sample_rate = from->audio_sample_rate;
-    csettings.audio_channels = from->audio_channels;
-
-    return csettings;
+static const ToxAvCSettings* toxavcsettings_cast (const MSICSettings *from)
+{    
+    assert(sizeof(MSICSettings) == sizeof(ToxAvCSettings));
+    return (const ToxAvCSettings *) from;
+    
 }
 
-/**
- * @brief Start new A/V session. There can only be one session at the time. If you register more
- *        it will result in undefined behaviour.
- *
- * @param messenger The messenger handle.
- * @param userdata The agent handling A/V session (i.e. phone).
- * @param video_width Width of video frame.
- * @param video_height Height of video frame.
- * @return ToxAv*
- * @retval NULL On error.
- */
 ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
 {
     ToxAv *av = calloc ( sizeof(ToxAv), 1);
@@ -185,12 +153,6 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
     return av;
 }
 
-/**
- * @brief Remove A/V session.
- *
- * @param av Handler.
- * @return void
- */
 void toxav_kill ( ToxAv *av )
 {
     uint32_t i;
@@ -216,25 +178,16 @@ void toxav_kill ( ToxAv *av )
     free(av);
 }
 
-/**
- * @brief Register callback for call state.
- *
- * @param av Handler.
- * @param callback The callback
- * @param id One of the ToxAvCallbackID values
- * @return void
- */
+void toxav_do(ToxAv* av)
+{
+    msi_do(av->msi_session);
+}
+
 void toxav_register_callstate_callback ( ToxAv *av, ToxAVCallback callback, ToxAvCallbackID id, void *userdata )
 {
     msi_register_callback(av->msi_session, (MSICallbackType)callback, (MSICallbackID) id, userdata);
 }
 
-/**
- * @brief Register callback for receiving audio data
- *
- * @param callback The callback
- * @return void
- */
 void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int, void *),
         void *user_data)
 {
@@ -242,12 +195,6 @@ void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
     av->audio_callback_userdata = user_data;
 }
 
-/**
- * @brief Register callback for receiving video data
- *
- * @param callback The callback
- * @return void
- */
 void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *, void *),
         void *user_data)
 {
@@ -255,30 +202,11 @@ void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, in
     av->video_callback_userdata = user_data;
 }
 
-/**
- * @brief Call user. Use its friend_id.
- *
- * @param av Handler.
- * @param user The user.
- * @param call_type Call type.
- * @param ringing_seconds Ringing timeout.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_call (ToxAv *av, int32_t *call_index, int user, const ToxAvCSettings *csettings, int ringing_seconds )
 {
     return msi_invite(av->msi_session, call_index, msicsettings_cast(csettings), ringing_seconds * 1000, user);
 }
 
-/**
- * @brief Hangup active call.
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_hangup ( ToxAv *av, int32_t call_index )
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
@@ -292,15 +220,6 @@ int toxav_hangup ( ToxAv *av, int32_t call_index )
     return msi_hangup(av->msi_session, call_index);
 }
 
-/**
- * @brief Answer incomming call.
- *
- * @param av Handler.
- * @param call_type Answer with...
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_answer ( ToxAv *av, int32_t call_index, const ToxAvCSettings *csettings )
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
@@ -314,15 +233,6 @@ int toxav_answer ( ToxAv *av, int32_t call_index, const ToxAvCSettings *csetting
     return msi_answer(av->msi_session, call_index, msicsettings_cast(csettings));
 }
 
-/**
- * @brief Reject incomming call.
- *
- * @param av Handler.
- * @param reason Optional reason. Set NULL if none.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_reject ( ToxAv *av, int32_t call_index, const char *reason )
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
@@ -336,16 +246,6 @@ int toxav_reject ( ToxAv *av, int32_t call_index, const char *reason )
     return msi_reject(av->msi_session, call_index, reason);
 }
 
-/**
- * @brief Cancel outgoing request.
- *
- * @param av Handler.
- * @param reason Optional reason.
- * @param peer_id peer friend_id
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_cancel ( ToxAv *av, int32_t call_index, int peer_id, const char *reason )
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
@@ -359,15 +259,6 @@ int toxav_cancel ( ToxAv *av, int32_t call_index, int peer_id, const char *reaso
     return msi_cancel(av->msi_session, call_index, peer_id, reason);
 }
 
-/**
- * @brief Notify peer that we are changing call type
- *
- * @param av Handler.
- * @return int
- * @param call_type Change to...
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_change_settings(ToxAv *av, int32_t call_index, const ToxAvCSettings *csettings)
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
@@ -377,14 +268,6 @@ int toxav_change_settings(ToxAv *av, int32_t call_index, const ToxAvCSettings *c
     return msi_change_csettings(av->msi_session, call_index, msicsettings_cast(csettings));
 }
 
-/**
- * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_stop_call ( ToxAv *av, int32_t call_index )
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] ) {
@@ -394,14 +277,6 @@ int toxav_stop_call ( ToxAv *av, int32_t call_index )
     return msi_stopcall(av->msi_session, call_index);
 }
 
-/**
- * @brief Must be call before any RTP transmission occurs.
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, uint32_t jbuf_capacity, uint32_t VAD_treshold,
                                  int support_video )
 {
@@ -456,8 +331,11 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, uint32_t jbuf_ca
         goto error;
     }
 
-    ToxAvCSettings csettings_peer = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[0]);
-    ToxAvCSettings csettings_local = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_local);
+    const ToxAvCSettings* csettings_peer = toxavcsettings_cast
+        (&av->msi_session->calls[call_index]->csettings_peer[0]);
+    const ToxAvCSettings* csettings_local = toxavcsettings_cast
+        (&av->msi_session->calls[call_index]->csettings_local);
+
     LOGGER_DEBUG(
         "Type: %u \n"
         "Video bitrate: %u \n"
@@ -467,24 +345,24 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, uint32_t jbuf_ca
         "Audio framedur: %u \n"
         "Audio sample rate: %u \n"
         "Audio channels: %u \n",
-        csettings_peer.call_type,
-        csettings_peer.video_bitrate,
-        csettings_peer.max_video_height,
-        csettings_peer.max_video_width,
-        csettings_peer.audio_bitrate,
-        csettings_peer.audio_frame_duration,
-        csettings_peer.audio_sample_rate,
-        csettings_peer.audio_channels );
+        csettings_peer->call_type,
+        csettings_peer->video_bitrate,
+        csettings_peer->max_video_height,
+        csettings_peer->max_video_width,
+        csettings_peer->audio_bitrate,
+        csettings_peer->audio_frame_duration,
+        csettings_peer->audio_sample_rate,
+        csettings_peer->audio_channels );
 
-    if ( (call->cs = codec_init_session(csettings_local.audio_bitrate,
-                                        csettings_local.audio_frame_duration,
-                                        csettings_local.audio_sample_rate,
-                                        csettings_local.audio_channels,
-                                        csettings_peer.audio_channels,
+    if ( (call->cs = codec_init_session(csettings_local->audio_bitrate,
+                                        csettings_local->audio_frame_duration,
+                                        csettings_local->audio_sample_rate,
+                                        csettings_local->audio_channels,
+                                        csettings_peer->audio_channels,
                                         VAD_treshold,
-                                        csettings_local.max_video_width,
-                                        csettings_local.max_video_height,
-                                        csettings_local.video_bitrate) )) {
+                                        csettings_local->max_video_width,
+                                        csettings_local->max_video_height,
+                                        csettings_local->video_bitrate) )) {
 
         if ( pthread_mutex_init(&call->mutex, NULL) != 0 ) goto error;
 
@@ -521,14 +399,6 @@ error:
     return ErrorInternal;
 }
 
-/**
- * @brief Call this at the end of the transmission.
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 {
     if (cii(call_index, av->msi_session)) {
@@ -557,7 +427,7 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     call->j_buf = NULL;
 
     int i;
-    DECODE_PACKET *p;
+    DecodePacket *p;
 
     call->exit = 1;
     pthread_mutex_lock(&call->decode_cond_mutex);
@@ -595,18 +465,6 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     return ErrorNone;
 }
 
-
-/**
- * @brief Send RTP payload.
- *
- * @param av Handler.
- * @param type Type of payload.
- * @param payload The payload.
- * @param length Size of it.
- * @return int
- * @retval 0 Success.
- * @retval -1 Failure.
- */
 static int toxav_send_rtp_payload(ToxAv *av, int32_t call_index, ToxAvCallType type, const uint8_t *payload,
                                   unsigned int length)
 {
@@ -655,15 +513,6 @@ static int toxav_send_rtp_payload(ToxAv *av, int32_t call_index, ToxAvCallType t
     }
 }
 
-/**
- * @brief Encode and send video packet.
- *
- * @param av Handler.
- * @param input The packet.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int frame_size)
 {
 
@@ -688,17 +537,6 @@ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsi
     return rc;
 }
 
-/**
- * @brief Encode video frame
- *
- * @param av Handler
- * @param dest Where to
- * @param dest_max Max size
- * @param input What to encode
- * @return int
- * @retval ToxAvError On error.
- * @retval >0 On success
- */
 int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, vpx_image_t *input)
 {
     if (cii(call_index, av->msi_session)) {
@@ -751,16 +589,6 @@ int toxav_prepare_video_frame(ToxAv *av, int32_t call_index, uint8_t *dest, int 
     return copied;
 }
 
-/**
- * @brief Send audio frame.
- *
- * @param av Handler.
- * @param data The audio data encoded with toxav_prepare_audio_frame().
- * @param size Its size in number of bytes.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
 int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *data, unsigned int size)
 {
     if (size > MAX_CRYPTO_DATA_SIZE)
@@ -787,18 +615,6 @@ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *data, unsig
     return rc;
 }
 
-/**
- * @brief Encode audio frame
- *
- * @param av Handler
- * @param dest dest
- * @param dest_max Max dest size
- * @param frame The frame
- * @param frame_size The frame size
- * @return int
- * @retval ToxAvError On error.
- * @retval >0 On success
- */
 int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, const int16_t *frame,
                                 int frame_size)
 {
@@ -828,33 +644,16 @@ int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
     return rc;
 }
 
-/**
- * @brief Get peer transmission type. It can either be audio or video.
- *
- * @param av Handler.
- * @param peer The peer
- * @return int
- * @retval ToxAvCallType On success.
- * @retval ToxAvError On error.
- */
 int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCSettings *dest )
 {
     if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index]
             || av->msi_session->calls[call_index]->peer_count <= peer )
         return ErrorInternal;
 
-    *dest = toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[peer]);
+    *dest = *toxavcsettings_cast(&av->msi_session->calls[call_index]->csettings_peer[peer]);
     return ErrorNone;
 }
 
-/**
- * @brief Get id of peer participating in conversation
- *
- * @param av Handler
- * @param peer peer index
- * @return int
- * @retval ToxAvError No peer id
- */
 int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer )
 {
     if ( peer < 0 || cii(call_index, av->msi_session) || !av->msi_session->calls[call_index]
@@ -864,14 +663,6 @@ int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer )
     return av->msi_session->calls[call_index]->peers[peer];
 }
 
-/**
- * @brief Get id of peer participating in conversation
- *
- * @param av Handler
- * @param peer peer index
- * @return int
- * @retval ToxAvError No peer id
- */
 ToxAvCallState toxav_get_call_state(ToxAv *av, int32_t call_index)
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] )
@@ -881,14 +672,6 @@ ToxAvCallState toxav_get_call_state(ToxAv *av, int32_t call_index)
 
 }
 
-/**
- * @brief Is certain capability supported
- *
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
- */
 inline__ int toxav_capability_supported ( ToxAv *av, int32_t call_index, ToxAvCapabilities capability )
 {
     return av->calls[call_index].cs ? av->calls[call_index].cs->capabilities & (Capabilities) capability : 0;
@@ -908,7 +691,7 @@ int toxav_has_activity(ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t fra
 }
 
 
-static void decode_video(ToxAv *av, CallSpecific *call, DECODE_PACKET *p)
+static void decode_video(ToxAv *av, CallSpecific *call, DecodePacket *p)
 {
     int32_t call_index = call - av->calls;
 
@@ -931,7 +714,7 @@ static void decode_video(ToxAv *av, CallSpecific *call, DECODE_PACKET *p)
     free(p);
 }
 
-static void decode_audio(ToxAv *av, CallSpecific *call, DECODE_PACKET *p)
+static void decode_audio(ToxAv *av, CallSpecific *call, DecodePacket *p)
 {
     int32_t call_index = call - av->calls;
 
@@ -963,7 +746,7 @@ static void *toxav_decoding(void *arg)
     free(pp);
 
     while (1) {
-        DECODE_PACKET *p;
+        DecodePacket *p;
         _Bool video = 0;
 
         pthread_mutex_lock(&call->decode_cond_mutex);
@@ -1039,16 +822,16 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
         int success = 0;
 
         while ((_msg = dequeue(call->j_buf, &success)) || success == 2) {
-            DECODE_PACKET *p;
+            DecodePacket *p;
 
             if (success == 2) {
-                p = malloc(sizeof(DECODE_PACKET));
+                p = malloc(sizeof(DecodePacket));
 
                 if (p) {
                     p->size = 0;
                 }
             } else {
-                p = malloc(sizeof(DECODE_PACKET) + _msg->length);
+                p = malloc(sizeof(DecodePacket) + _msg->length);
 
                 if (p) {
                     p->size = _msg->length;
@@ -1092,7 +875,7 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg)
             /* piece of current frame */
         } else if (i > 0 && i < 128) {
             /* received a piece of a frame ahead, flush current frame and start reading this new frame */
-            DECODE_PACKET *p = malloc(sizeof(DECODE_PACKET) + call->frame_limit);
+            DecodePacket *p = malloc(sizeof(DecodePacket) + call->frame_limit);
 
             if (p) {
                 p->size = call->frame_limit;

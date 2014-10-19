@@ -157,6 +157,14 @@ ToxAv *toxav_new(Tox *messenger, int32_t max_calls);
 void toxav_kill(ToxAv *av);
 
 /**
+ * @brief Main loop for the session. Best called right after tox_do();
+ *
+ * @param av Handler.
+ * @return void
+ */
+void toxav_do(ToxAv *av);
+
+/**
  * @brief Register callback for call state.
  *
  * @param av Handler.

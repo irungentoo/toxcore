@@ -202,6 +202,7 @@ void register_callbacks(ToxAv *av, void *data)
 #define CALL_AND_START_LOOP(AliceCallType, BobCallType) \
 { int step = 0, running = 1; while (running) {\
     tox_do(bootstrap_node); tox_do(Alice); tox_do(Bob); \
+    toxav_do(status_control.Bob.av); toxav_do(status_control.Alice.av); \
     switch ( step ) {\
         case 0: /* Alice */  printf("Alice is calling...\n");\
             toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, &muhcaps, 10); step++; break;\
@@ -216,6 +217,7 @@ case 3: /* Wait for Both to have status ended */\
 if (status_control.Alice.status == Ended && status_control.Bob.status == Ended) running = 0; break; } c_sleep(20); } } printf("\n");
 
 START_TEST(test_AV_flows)
+// int test_AV_flows ()
 {
     long long unsigned int cur_time = time(NULL);
     Tox *bootstrap_node = tox_new(0);
@@ -454,7 +456,10 @@ START_TEST(test_AV_flows)
             tox_do(bootstrap_node);
             tox_do(Alice);
             tox_do(Bob);
-
+            
+            toxav_do(status_control.Alice.av);
+            toxav_do(status_control.Bob.av);
+            
             switch ( step ) {
                 case 0: /* Alice */
                     printf("Alice is calling...\n");
@@ -495,7 +500,11 @@ START_TEST(test_AV_flows)
             tox_do(bootstrap_node);
             tox_do(Alice);
             tox_do(Bob);
-
+            
+            toxav_do(status_control.Alice.av);
+            toxav_do(status_control.Bob.av);
+            
+            
             switch ( step ) {
                 case 0: /* Alice */
                     printf("Alice is calling...\n");
@@ -536,7 +545,10 @@ START_TEST(test_AV_flows)
             tox_do(bootstrap_node);
             tox_do(Alice);
             tox_do(Bob);
-
+            
+            toxav_do(status_control.Alice.av);
+            toxav_do(status_control.Bob.av);
+            
             switch ( step ) {
                 case 0:
                     printf("Alice is calling...\n");
