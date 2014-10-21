@@ -39,7 +39,7 @@
 #define PACKET_ID_FRIEND_REQUESTS 18
 
 /* Interval between the sending of ping packets. */
-#define FRIEND_PING_INTERVAL 6
+#define FRIEND_PING_INTERVAL 7
 
 /* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
