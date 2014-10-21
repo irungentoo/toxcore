@@ -2648,13 +2648,13 @@ uint32_t messenger_size(const Messenger *m)
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
-    uint32_t *data32 = (uint32_t *)data;
-    data32[0] = len;
-    data32[1] = (MESSENGER_STATE_COOKIE_TYPE << 16) | type;
-    data += sizeof(uint32_t) * 2;
+    memcpy(data, &len, sizeof(uint32_t));
+    data += sizeof(uint32_t);
+    uint32_t temp = (MESSENGER_STATE_COOKIE_TYPE << 16) | type;
+    memcpy(data, &temp, sizeof(uint32_t));
+    data += sizeof(uint32_t);
     return data;
 }
-
 
 /* Save the messenger in data of size Messenger_size(). */
 void messenger_save(const Messenger *m, uint8_t *data)
