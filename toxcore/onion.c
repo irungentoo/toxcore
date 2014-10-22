@@ -99,6 +99,8 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
     if (1 + length + SEND_1 > max_packet_length || length == 0)
         return -1;
 
+    memset(packet, 0, max_packet_length);
+    
     to_net_family(&dest.ip);
     uint8_t step1[SIZE_IPPORT + length];
 
