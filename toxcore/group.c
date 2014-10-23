@@ -1281,6 +1281,7 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
                 kill_friend_connection(g_c->fr_c, g->close[close_index].number);
             }
         }
+        break;
 
         case PEER_QUERY_ID: {
             Group_c *g = get_group_c(g_c, groupnumber);
@@ -1290,13 +1291,11 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
 
             send_peers(g_c, groupnumber, g->close[close_index].number, g->close[close_index].group_number);
         }
-
         break;
 
         case PEER_RESPONSE_ID: {
             handle_send_peers(g_c, groupnumber, data + 1, length - 1);
         }
-
         break;
 
     }
