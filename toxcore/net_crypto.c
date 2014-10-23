@@ -1918,7 +1918,7 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
     }
 
     if (conn->num_tcp_relays == MAX_TCP_RELAYS_PEER) {
-        uint16_t index = rand() % MAX_TCP_RELAYS_PEER;
+        uint16_t index = random_int() % MAX_TCP_RELAYS_PEER;
         conn->tcp_relays[index].ip_port = ip_port;
         memcpy(conn->tcp_relays[index].client_id, public_key, crypto_box_PUBLICKEYBYTES);
     } else {
@@ -1985,7 +1985,7 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
  */
 int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length)
 {
-    unsigned int i, r = rand();
+    unsigned int i, r = random_int();
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS]) {

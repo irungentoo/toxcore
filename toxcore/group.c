@@ -1024,12 +1024,12 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
             if (memcmp(data + 1 + sizeof(uint16_t) * 2, g->identifier, GROUP_IDENTIFIER_LENGTH) != 0)
                 return;
 
-            uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
+            uint16_t peer_number = random_int(); /* TODO: what if two people enter the group at the same time and
                                   are given the same peer_number by different nodes? */
             unsigned int tries = 0;
 
             while (get_peer_index(g, peer_number) != -1) {
-                peer_number = rand();
+                peer_number = random_int();
                 ++tries;
 
                 if (tries > 32)

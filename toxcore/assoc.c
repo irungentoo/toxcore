@@ -890,7 +890,7 @@ void do_Assoc(Assoc *assoc, DHT *dht)
     if (is_timeout(assoc->getnodes, ASSOC_BUCKET_REFRESH)) {
         assoc->getnodes = unix_time();
 
-        size_t candidate = (rand() % assoc->candidates_bucket_count) + assoc->candidates_bucket_count;
+        size_t candidate = (random_int() % assoc->candidates_bucket_count) + assoc->candidates_bucket_count;
 
         /* in that bucket or the buckets closest to it:
          * find the best heard candidate
