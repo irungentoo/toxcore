@@ -1821,6 +1821,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
         IP_Port source;
         source.ip.family = TCP_FAMILY;
         source.ip.ip6.uint32[0] = location;
+        source.port = 0;
 
         if (data[0] != NET_PACKET_CRYPTO_HS) {
             LOGGER_DEBUG("tcp snhappen %u\n", data[0]);
