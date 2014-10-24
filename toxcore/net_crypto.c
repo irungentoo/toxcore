@@ -835,8 +835,8 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
 
     if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) == 0) {
         Packet_Data *dt1 = NULL;
-        get_data_pointer(&conn->send_array, &dt1, packet_num);
-        dt1->time = temp_time;
+        if (get_data_pointer(&conn->send_array, &dt1, packet_num) == 1)
+            dt1->time = temp_time;
     } else {
         conn->maximum_speed_reached = 1;
         LOGGER_ERROR("send_data_packet failed\n");
