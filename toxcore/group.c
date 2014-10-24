@@ -1282,6 +1282,8 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
             }
         }
 
+        break;
+
         case PEER_QUERY_ID: {
             Group_c *g = get_group_c(g_c, groupnumber);
 
