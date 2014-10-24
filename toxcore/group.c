@@ -190,7 +190,7 @@ static int get_peer_index(Group_c *g, uint16_t peer_number)
 
 static uint16_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
 {
-    uint8_t cmp1, cmp2;
+    uint8_t cmp1, cmp2=0;
 
     for (cmp1 = crypto_box_PUBLICKEYBYTES; cmp1 != 0; --cmp1) {
         uint8_t index = crypto_box_PUBLICKEYBYTES - cmp1;

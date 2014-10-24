@@ -1817,6 +1817,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
 
     if (crypt_connection_id == -1) {
         IP_Port source;
+        source.port = 0;
         source.ip.family = TCP_FAMILY;
         source.ip.ip6.uint32[0] = location;
 
