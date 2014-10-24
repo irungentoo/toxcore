@@ -99,8 +99,8 @@ START_TEST(test_save_friend)
     // now test compaitibilty with tox_encrypted_load, first manually...
     uint8_t out1[size], out2[size];
     printf("Trying to decrypt from pw:\n");
-    uint32_t sz1 = tox_pass_decrypt(data2+TOX_ENC_SAVE_MAGIC_LENGTH, size-TOX_ENC_SAVE_MAGIC_LENGTH, pw, pwlen, out1);
-    uint32_t sz2 = tox_pass_key_decrypt(data2+TOX_ENC_SAVE_MAGIC_LENGTH, size-TOX_ENC_SAVE_MAGIC_LENGTH, key, out2);
+    uint32_t sz1 = tox_pass_decrypt(data2, size, pw, pwlen, out1);
+    uint32_t sz2 = tox_pass_key_decrypt(data2, size, key, out2);
     ck_assert_msg(sz1 == sz2, "differing output sizes");
     ck_assert_msg(memcmp(out1, out2, sz1) == 0, "differing output data");
 
@@ -145,6 +145,12 @@ START_TEST(test_keys)
     sz = tox_pass_decrypt(encrypted, 44+tox_pass_encryption_extra_length(), "123qweasdzxc", 12, out1);
     ck_assert_msg(sz == 44, "sz isn't right");
     ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 3 failed");
+
+    uint8_t salt[tox_pass_salt_length()];
+    ck_assert_msg(0 == tox_get_salt(encrypted, salt), "couldn't get salt");
+    uint8_t key2[tox_pass_key_length()];
+    tox_derive_key_with_salt("123qweasdzxc", 12, salt, key2);
+    ck_assert_msg(0 == memcmp(key, key2, tox_pass_key_length()), "salt comparison failed");
 }
 END_TEST
 
