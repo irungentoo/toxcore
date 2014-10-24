@@ -1322,8 +1322,10 @@ static int create_crypto_connection(Net_Crypto *c)
         ++c->crypto_connections_length;
         memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
 
-        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0)
+        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0) {
+            pthread_mutex_unlock(&c->connections_mutex);
             return -1;
+        }
     }
 
     pthread_mutex_unlock(&c->connections_mutex);
