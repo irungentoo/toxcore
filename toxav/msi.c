@@ -631,6 +631,7 @@ static void *timer_poll( void *arg )
         usleep(handler->resolution);
     }
 
+    free(handler);
     pthread_exit(NULL);
 }
 
@@ -699,8 +700,6 @@ static void timer_terminate_session(TimerHandler *handler)
     free(handler->timers);
 
     pthread_mutex_destroy( &handler->mutex );
-
-    free(handler);
 }
 
 /**
