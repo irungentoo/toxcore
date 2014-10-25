@@ -48,17 +48,46 @@ typedef enum _Capabilities {
 
 extern const uint16_t min_jbuf_size;
 
+#define VIDEO_DECODE_BUFFER_SIZE 4
+#define AUDIO_DECODE_BUFFER_SIZE 16
+
 typedef struct _CodecState {
 
+/* VIDEO 
+    * 
+    * 
+    */
+    
     /* video encoding */
     vpx_codec_ctx_t  v_encoder;
     uint32_t frame_counter;
 
     /* video decoding */
     vpx_codec_ctx_t  v_decoder;
-    int bitrate;
     int max_width;
     int max_height;
+
+    
+    /* Data handling */    
+    uint8_t *frame_buf; /* buffer for split video payloads */
+    uint32_t frame_size; /* largest address written to in frame_buf for current input frame*/
+    uint8_t  frameid_in, frameid_out; /* id of input and output video frame */
+    
+    /* Limits */
+    uint32_t video_frame_piece_size;
+    uint32_t max_video_frame_size;
+    
+    /* Reassembling */
+    uint8_t *split_video_frame;
+    const uint8_t *processing_video_frame;
+    uint16_t processing_video_frame_size;
+
+    
+    
+/* AUDIO 
+    * 
+    * 
+    */
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
@@ -70,37 +99,48 @@ typedef struct _CodecState {
     OpusDecoder *audio_decoder;
     int audio_decoder_channels;
 
-    uint64_t capabilities; /* supports*/
+    JitterBuffer* j_buf;
+    
 
     /* Voice activity detection */
     uint32_t EVAD_tolerance; /* In frames */
     uint32_t EVAD_tolerance_cr;
+    
+    
+    
+/* MISC
+    * 
+    * 
+    */
+    
+    uint64_t capabilities; /* supports*/
+    
+    /* Buffering */
+    void* abuf, *vbuf;
+    pthread_mutex_t abuf_mutex[1], vbuf_mutex[1];
+    pthread_cond_t abuf_cond[1], vbuf_cond[1];
+    _Bool active;
+    
 } CodecState;
 
 
-typedef struct _JitterBuffer {
-    RTPMessage **queue;
-    uint32_t size;
-    uint32_t capacity;
-    uint16_t bottom;
-    uint16_t top;
-} JitterBuffer;
+int split_video_payload(CodecState* cs, uint8_t* payload, uint16_t length);
+/* Warning: Not thread safe! */
+const uint8_t* get_split_video_frame(CodecState* cs, uint16_t* size);
 
-JitterBuffer *create_queue(unsigned int capacity);
-void terminate_queue(JitterBuffer *q);
-void queue(JitterBuffer *q, RTPMessage *pk);
-RTPMessage *dequeue(JitterBuffer *q, int *success);
+/**
+ * Set wait = 0 to poll; -1 forevaaa; otherwise time to wait in ms.
+ */
+int recv_decoded_video(CodecState* cs, vpx_image_t** dest, uint16_t max_images, int32_t wait);
+int recv_decoded_audio(CodecState* cs, int16_t* dest, uint16_t max_size, int32_t wait);
 
+/* Internal. Called from rtp_handle_message */
+void queue_message(struct _RTPSession *session, struct _RTPMessage *msg);
 
-CodecState *codec_init_session ( uint32_t audio_bitrate,
-                                 uint16_t audio_frame_duration,
-                                 uint32_t audio_sample_rate,
-                                 uint32_t encoder_audio_channels,
-                                 uint32_t decoder_audio_channels,
-                                 uint32_t audio_VAD_tolerance_ms,
-                                 uint16_t max_video_width,
-                                 uint16_t max_video_height,
-                                 uint32_t video_bitrate );
+CodecState *codec_init_session ( const struct _ToxAvCSettings *cs_self,
+                                 const struct _ToxAvCSettings *cs_peer,
+                                 uint32_t jbuf_size,
+                                 uint32_t audio_VAD_tolerance_ms );
 
 void codec_terminate_session(CodecState *cs);
 
