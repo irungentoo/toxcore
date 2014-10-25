@@ -93,6 +93,15 @@ uint16_t lendian_to_host16(uint16_t lendian)
 #endif
 }
 
+void host_to_lendian32(uint8_t *dest,  uint32_t num)
+{
+#ifdef WORDS_BIGENDIAN
+    num = ((num << 8) & 0xFF00FF00 ) | ((num >> 8) & 0xFF00FF );
+    num = (num << 16) | (num >> 16);
+#endif
+    memcpy(dest, &num, sizeof(uint32_t));
+}
+
 void lendian_to_host32(uint32_t *dest, const uint8_t *lendian)
 {
     uint32_t d;
