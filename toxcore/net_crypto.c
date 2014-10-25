@@ -835,8 +835,9 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
 
     if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) == 0) {
         Packet_Data *dt1 = NULL;
-        get_data_pointer(&conn->send_array, &dt1, packet_num);
-        dt1->time = temp_time;
+
+        if (get_data_pointer(&conn->send_array, &dt1, packet_num) == 1)
+            dt1->time = temp_time;
     } else {
         conn->maximum_speed_reached = 1;
         LOGGER_ERROR("send_data_packet failed\n");
@@ -1322,8 +1323,10 @@ static int create_crypto_connection(Net_Crypto *c)
         ++c->crypto_connections_length;
         memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
 
-        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0)
+        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0) {
+            pthread_mutex_unlock(&c->connections_mutex);
             return -1;
+        }
     }
 
     pthread_mutex_unlock(&c->connections_mutex);
@@ -1817,6 +1820,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
 
     if (crypt_connection_id == -1) {
         IP_Port source;
+        source.port = 0;
         source.ip.family = TCP_FAMILY;
         source.ip.ip6.uint32[0] = location;
 

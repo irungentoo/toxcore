@@ -190,7 +190,7 @@ static int get_peer_index(Group_c *g, uint16_t peer_number)
 
 static uint16_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
 {
-    uint8_t cmp1, cmp2;
+    uint8_t cmp1, cmp2 = 0;
 
     for (cmp1 = crypto_box_PUBLICKEYBYTES; cmp1 != 0; --cmp1) {
         uint8_t index = crypto_box_PUBLICKEYBYTES - cmp1;
@@ -1025,7 +1025,7 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
                 return;
 
             uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
-                                  are given the same peer_number by different nodes? */
+                              are given the same peer_number by different nodes? */
             unsigned int tries = 0;
 
             while (get_peer_index(g, peer_number) != -1) {
@@ -1281,6 +1281,8 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
                 kill_friend_connection(g_c->fr_c, g->close[close_index].number);
             }
         }
+
+        break;
 
         case PEER_QUERY_ID: {
             Group_c *g = get_group_c(g_c, groupnumber);
