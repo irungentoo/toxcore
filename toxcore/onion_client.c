@@ -107,7 +107,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
             return random_nodes_path(onion_c->dht, nodes, max_num);
 
         for (i = 0; i < max_num; ++i) {
-            nodes[i] = onion_c->path_nodes[rand() % num_nodes];
+            nodes[i] = onion_c->path_nodes[random_int() % num_nodes];
         }
     } else {
         if (num_nodes == 0)
@@ -116,7 +116,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
         nodes[0].ip_port.ip.family = TCP_FAMILY;
 
         for (i = 1; i < max_num; ++i) {
-            nodes[i] = onion_c->path_nodes[rand() % num_nodes];
+            nodes[i] = onion_c->path_nodes[random_int() % num_nodes];
         }
     }
 
@@ -160,7 +160,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
 static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
 {
     if (pathnum >= NUMBER_ONION_PATHS)
-        pathnum = rand() % NUMBER_ONION_PATHS;
+        pathnum = random_int() % NUMBER_ONION_PATHS;
 
     if (is_timeout(onion_paths->last_path_success[pathnum], ONION_PATH_TIMEOUT)
             || is_timeout(onion_paths->path_creation_time[pathnum], ONION_PATH_MAX_LIFETIME)) {
@@ -177,7 +177,7 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
 
             onion_paths->last_path_success[pathnum] = unix_time() + ONION_PATH_FIRST_TIMEOUT - ONION_PATH_TIMEOUT;
             onion_paths->path_creation_time[pathnum] = unix_time();
-            uint32_t path_num = rand();
+            uint32_t path_num = random_int();
             path_num /= NUMBER_ONION_PATHS;
             path_num *= NUMBER_ONION_PATHS;
             path_num += pathnum;
@@ -1114,10 +1114,10 @@ static void populate_path_nodes(Onion_Client *onion_c)
 {
     Node_format nodes_list[MAX_SENT_NODES];
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
-    uint32_t random_num = rand();
+    uint32_t random_num = random_int();
     memcpy(client_id, &random_num, sizeof(random_num));
 
-    uint32_t num_nodes = get_close_nodes(onion_c->dht, client_id, nodes_list, (rand() % 2) ? AF_INET : AF_INET6, 1, 0);
+    uint32_t num_nodes = get_close_nodes(onion_c->dht, client_id, nodes_list, (random_int() % 2) ? AF_INET : AF_INET6, 1, 0);
     unsigned int i;
 
     for (i = 0; i < num_nodes; ++i) {
@@ -1182,7 +1182,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
                 unsigned int j;
 
                 for (j = 0; j < n; ++j) {
-                    unsigned int num = rand() % num_nodes;
+                    unsigned int num = random_int() % num_nodes;
                     client_send_announce_request(onion_c, friendnum + 1, onion_c->path_nodes[num].ip_port,
                                                  onion_c->path_nodes[num].client_id, 0, ~0);
                 }
@@ -1244,12 +1244,12 @@ static void do_announce(Onion_Client *onion_c)
     }
 
     if (count != MAX_ONION_CLIENTS) {
-        if (count < (uint32_t)rand() % MAX_ONION_CLIENTS) {
+        if (count < (uint32_t)random_int() % MAX_ONION_CLIENTS) {
 
             unsigned int num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
 
             if (num_nodes != 0) {
-                unsigned int num = rand() % num_nodes;
+                unsigned int num = random_int() % num_nodes;
                 client_send_announce_request(onion_c, 0, onion_c->path_nodes[num].ip_port, onion_c->path_nodes[num].client_id, 0, ~0);
             }
         }

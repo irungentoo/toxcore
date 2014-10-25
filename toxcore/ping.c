@@ -279,7 +279,7 @@ int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
         }
     }
 
-    uint32_t r = rand();
+    uint32_t r = random_int();
 
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].client_id, client_id) == 2) {

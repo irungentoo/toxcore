@@ -1316,7 +1316,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     }
 
     if ((num_nodes != 0) && (is_timeout(*lastgetnode, GET_NODE_INTERVAL) || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
-        uint32_t rand_node = rand() % num_nodes;
+        uint32_t rand_node = random_int() % num_nodes;
         getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->client_id,
                  client_id, NULL);
         *lastgetnode = temp_time;
@@ -1607,7 +1607,7 @@ static int routeone_tofriend(DHT *dht, const uint8_t *friend_id, const uint8_t *
     if (n < 1)
         return 0;
 
-    int retval = sendpacket(dht->net, ip_list[rand() % n], packet, length);
+    int retval = sendpacket(dht->net, ip_list[random_int() % n], packet, length);
 
     if ((unsigned int)retval == length)
         return 1;
@@ -2020,7 +2020,7 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
     uint32_t i;
 
     for (i = 0; i < CLIENT_ID_SIZE / 4; ++i) { /* populate the id with pseudorandom bytes.*/
-        uint32_t t = rand();
+        uint32_t t = random_int();
         memcpy(id + i * sizeof(t), &t, sizeof(t));
     }
 
@@ -2031,7 +2031,7 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
     if (num_nodes == 0)
         return nodes_list[0];
     else
-        return nodes_list[rand() % num_nodes];
+        return nodes_list[random_int() % num_nodes];
 }
 
 /* Put up to max_num nodes in nodes from the closelist.
@@ -2057,7 +2057,7 @@ uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
         if (!is_timeout(list[i - 1].assoc6.timestamp, BAD_NODE_TIMEOUT)) {
             if (assoc == NULL)
                 assoc = &list[i - 1].assoc6;
-            else if (rand() % 2)
+            else if (random_int() % 2)
                 assoc = &list[i - 1].assoc6;
         }
 
@@ -2106,7 +2106,7 @@ static int random_node_fromlist(Client_data *list, uint16_t list_size, Node_form
     if (num_nodes == 0)
         return -1;
 
-    uint32_t rand_node = rand() % num_nodes;
+    uint32_t rand_node = random_int() % num_nodes;
     node->ip_port = assoc_list[rand_node]->ip_port;
     memcpy(node->client_id, client_list[rand_node]->client_id, CLIENT_ID_SIZE);
     return 0;
@@ -2134,7 +2134,7 @@ uint16_t random_nodes_path(const DHT *dht, Node_format *nodes, uint16_t max_num)
 
     for (i = 0; i < max_num; ++i) {
         Client_data *list = NULL;
-        uint16_t rand_num = rand() % (dht->num_friends);
+        uint16_t rand_num = random_int() % (dht->num_friends);
         list = dht->friends_list[rand_num].client_list;
         list_size = MAX_FRIEND_CLIENTS;
 

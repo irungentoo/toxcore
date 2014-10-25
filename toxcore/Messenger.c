@@ -2561,13 +2561,9 @@ static uint32_t friends_list_save(const Messenger *m, uint8_t *data)
             memcpy(temp.client_id, m->friendlist[i].client_id, CLIENT_ID_SIZE);
 
             if (temp.status < 3) {
-                if (m->friendlist[i].info_size > SAVED_FRIEND_REQUEST_SIZE) {
-                    memcpy(temp.info, m->friendlist[i].info, SAVED_FRIEND_REQUEST_SIZE);
-                } else {
-                    memcpy(temp.info, m->friendlist[i].info, m->friendlist[i].info_size);
-                }
-
-                temp.info_size = htons(m->friendlist[i].info_size);
+                int info_len = MIN(m->friendlist[i].info_size, MIN(SAVED_FRIEND_REQUEST_SIZE, MAX_FRIEND_REQUEST_DATA_SIZE));
+                memcpy(temp.info, m->friendlist[i].info, info_len);
+                temp.info_size = htons(info_len);
                 temp.friendrequest_nospam = m->friendlist[i].friendrequest_nospam;
             } else {
                 memcpy(temp.name, m->friendlist[i].name, m->friendlist[i].name_length);

@@ -54,9 +54,7 @@ int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, uint32_t length)
  */
 uint32_t random_int(void)
 {
-    uint32_t randnum;
-    randombytes((uint8_t *)&randnum , sizeof(randnum));
-    return randnum;
+    return randombytes_random();
 }
 
 uint64_t random_64b(void)

@@ -836,7 +836,9 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) == 0) {
         Packet_Data *dt1 = NULL;
         get_data_pointer(&conn->send_array, &dt1, packet_num);
-        dt1->time = temp_time;
+        
+        if (dt1 != NULL)
+            dt1->time = temp_time;
     } else {
         conn->maximum_speed_reached = 1;
         LOGGER_ERROR("send_data_packet failed\n");
@@ -1322,8 +1324,10 @@ static int create_crypto_connection(Net_Crypto *c)
         ++c->crypto_connections_length;
         memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
 
-        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0)
+        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0) {
+            pthread_mutex_unlock(&c->connections_mutex);
             return -1;
+        }
     }
 
     pthread_mutex_unlock(&c->connections_mutex);
@@ -1819,6 +1823,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
         IP_Port source;
         source.ip.family = TCP_FAMILY;
         source.ip.ip6.uint32[0] = location;
+        source.port = 0;
 
         if (data[0] != NET_PACKET_CRYPTO_HS) {
             LOGGER_DEBUG("tcp snhappen %u\n", data[0]);
@@ -1914,7 +1919,7 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
     }
 
     if (conn->num_tcp_relays == MAX_TCP_RELAYS_PEER) {
-        uint16_t index = rand() % MAX_TCP_RELAYS_PEER;
+        uint16_t index = random_int() % MAX_TCP_RELAYS_PEER;
         conn->tcp_relays[index].ip_port = ip_port;
         memcpy(conn->tcp_relays[index].client_id, public_key, crypto_box_PUBLICKEYBYTES);
     } else {
@@ -1981,7 +1986,7 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
  */
 int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length)
 {
-    unsigned int i, r = rand();
+    unsigned int i, r = random_int();
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS]) {

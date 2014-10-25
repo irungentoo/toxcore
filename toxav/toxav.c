@@ -587,6 +587,10 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
     codec_terminate_session(call->cs);
     call->cs = NULL;
+    
+    if (call->frame_buf)
+        free(call->frame_buf);
+
 
     pthread_mutex_unlock(&call->mutex);
     pthread_mutex_destroy(&call->mutex);
