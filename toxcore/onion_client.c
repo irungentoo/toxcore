@@ -1126,10 +1126,10 @@ static void populate_path_nodes(Onion_Client *onion_c)
 }
 
 #define ANNOUNCE_FRIEND (ONION_NODE_PING_INTERVAL * 3)
-#define ANNOUNCE_FRIEND_BEGINNING 5
+#define ANNOUNCE_FRIEND_BEGINNING 3
 #define FRIEND_ONION_NODE_TIMEOUT (ONION_NODE_TIMEOUT * 3)
 
-#define RUN_COUNT_FRIEND_ANNOUNCE_BEGINNING 15
+#define RUN_COUNT_FRIEND_ANNOUNCE_BEGINNING 17
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
