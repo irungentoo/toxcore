@@ -36,39 +36,39 @@ Send a get nodes request every 20 seconds to a random good node in the client li
 
 When a client receives any request from another
 -----------------------------------------------
--Respond to the request
-    -Ping request is replied to with with a ping response containing the same encrypted data
-    -Get nodes request is replied with a send nodes reply containing the same encrypted data and the good nodes from the client list and/or the "friends" list that are closest to the requested_node_id
+- Respond to the request
+    - Ping request is replied to with with a ping response containing the same encrypted data
+    - Get nodes request is replied with a send nodes reply containing the same encrypted data and the good nodes from the client list and/or the "friends" list that are closest to the requested_node_id
 
--If the requesting client is not in the client list:
-    -If there are no bad clients in the list and the list is full:
-        -If the id of the other client is closer (mathematically see bittorrent doc) than at least one of the clients in the list or our "friends" list:
-            -Send a ping request to the client.
-        -if not forget about the client.
+- If the requesting client is not in the client list:
+    - If there are no bad clients in the list and the list is full:
+        - If the id of the other client is closer (mathematically see bittorrent doc) than at least one of the clients in the list or our "friends" list:
+            - Send a ping request to the client.
+        - if not forget about the client.
 
-    -If there are bad clients and/or the list isn't full:
-        -Send a ping request to the client 
+    - If there are bad clients and/or the list isn't full:
+        - Send a ping request to the client 
 
 When a client receives a response
 ---------------------------------
--Ping response
-    -If the node was previously pinged with a matching ping_id (check in the corresponding pinged list.)
-        -If the node is in the client list the matching client's timestamp is set to current time.
-        -If the node is in the "friends" list the matching client's timestamp is set to current time for every occurrence.
-        -If the node is not in the client list:
-            -If the list isn't full, add it to the list.
-            -If the list is full, the furthest away (mathematically see bittorrent doc) bad client is replaced by the new one.
-            -If the list is filled with good nodes replace the furthest client with it only if it is closer than the replaced node.
-        -for each friend in the "friends" list:
-            -If that friend's client list isn't full, add that client to it
-            -If that friend's client list contains bad clients, replace the furthest one with that client.
-            -If that friend's client list contains only good clients
-                -If the client is closer to the friend than one of the other clients, it replaces the farthest one
-                -If not, nothing happens.
+- Ping response
+    - If the node was previously pinged with a matching ping_id (check in the corresponding pinged list.)
+        - If the node is in the client list the matching client's timestamp is set to current time.
+        - If the node is in the "friends" list the matching client's timestamp is set to current time for every occurrence.
+        - If the node is not in the client list:
+            - If the list isn't full, add it to the list.
+            - If the list is full, the furthest away (mathematically see bittorrent doc) bad client is replaced by the new one.
+            - If the list is filled with good nodes replace the furthest client with it only if it is closer than the replaced node.
+        - for each friend in the "friends" list:
+            - If that friend's client list isn't full, add that client to it
+            - If that friend's client list contains bad clients, replace the furthest one with that client.
+            - If that friend's client list contains only good clients
+                - If the client is closer to the friend than one of the other clients, it replaces the farthest one
+                - If not, nothing happens.
 
-    -Send nodes
-        -If the ping_id matches what we sent previously (check in the corresponding pinged list.):
-            -Each node in the response is pinged.
+    - Send nodes
+        - If the ping_id matches what we sent previously (check in the corresponding pinged list.):
+            - Each node in the response is pinged.
 
 
 
