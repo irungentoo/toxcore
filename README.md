@@ -4,7 +4,7 @@
 With the rise of governmental monitoring programs, Tox, a FOSS initiative, aims to be an easy to use, all-in-one communication platform that ensures their users full privacy and secure message delivery.<br /> <br />
 
 [**Website**](https://tox.im) **|** [**Download**](https://wiki.tox.im/Binaries) **|** [**Wiki**](https://wiki.tox.im/) **|** [**Blog**](https://blog.libtoxcore.so/) **|** [**FAQ**](https://wiki.tox.im/FAQ) **|** [**Binaries**](https://wiki.tox.im/Binaries) **|** [**Clients**](https://wiki.tox.im/Client) **|** [**Compiling**](/INSTALL.md) **|** 
-[**API**](https://libtoxcore.so/)  **|** 
+[**API**](https://libtoxcore.so/)  **|** [**bugs**](http://tox.lighthouseapp.com/projects/123754-tox/tickets) **|** [**help and suggestions**](http://support.libtoxcore.so) **|**
 **IRC:** #tox@freenode
 
 
