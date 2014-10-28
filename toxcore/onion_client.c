@@ -149,7 +149,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
 }
 
 /* Create a new path or use an old suitable one (if pathnum is valid)
- * or a rondom one from onion_paths.
+ * or a random one from onion_paths.
  *
  * return -1 on failure
  * return 0 on success

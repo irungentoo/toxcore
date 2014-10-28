@@ -2331,6 +2331,8 @@ void kill_DHT(DHT *dht)
     ping_array_free_all(&dht->dht_harden_ping_array);
     kill_ping(dht->ping);
     free(dht->friends_list);
+    free(dht->loaded_friends_list);
+    free(dht->loaded_clients_list);
     free(dht);
 }
 
