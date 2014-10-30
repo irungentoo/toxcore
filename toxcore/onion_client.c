@@ -1330,12 +1330,23 @@ void kill_onion_client(Onion_Client *onion_c)
  */
 int onion_isconnected(const Onion_Client *onion_c)
 {
-    unsigned int i;
+    unsigned int i, num = 0, announced = 0;
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
-        if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT))
-            if (onion_c->clients_announce_list[i].is_stored)
-                return 1;
+        if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT)) {
+            ++num;
+
+            if (onion_c->clients_announce_list[i].is_stored) {
+                ++announced;
+            }
+        }
+    }
+
+    /* Consider ourselves online if we are announced to half or more nodes
+      we are connected to */
+    if (num && announced) {
+        if ((num / 2) <= announced)
+            return 1;
     }
 
     return 0;
