@@ -893,6 +893,17 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, i
     g_c->message_callback_userdata = userdata;
 }
 
+/* Set the callback for group actions.
+ *
+ *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ */
+void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
+                             void *), void *userdata)
+{
+    g_c->action_callback = function;
+    g_c->action_callback_userdata = userdata;
+}
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
@@ -1390,6 +1401,19 @@ int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *m
     }
 }
 
+/* send a group action
+ * return 0 on success
+ * return -1 on failure
+ */
+int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length)
+{
+    if (send_message_group(g_c, groupnumber, PACKET_ID_ACTION, action, length)) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length,
                                         int close_index)
 {
@@ -1481,6 +1505,21 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             //TODO
             if (g_c->message_callback)
                 g_c->message_callback(g_c->m, groupnumber, index, newmsg, msg_data_len, g_c->message_callback_userdata);
+
+            break;
+        }
+
+        case PACKET_ID_ACTION: {
+            if (msg_data_len == 0)
+                return;
+
+            uint8_t newmsg[msg_data_len + 1];
+            memcpy(newmsg, msg_data, msg_data_len);
+            newmsg[msg_data_len] = 0;
+
+            //TODO
+            if (g_c->action_callback)
+                g_c->action_callback(g_c->m, groupnumber, index, newmsg, msg_data_len, g_c->action_callback_userdata);
 
             break;
         }

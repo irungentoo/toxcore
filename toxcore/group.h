@@ -98,6 +98,8 @@ typedef struct {
     void *invite_callback_userdata;
     void (*message_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
     void *message_callback_userdata;
+    void (*action_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
+    void *action_callback_userdata;
     void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
 } Group_Chats;
