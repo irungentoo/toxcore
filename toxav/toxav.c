@@ -526,8 +526,6 @@ int toxav_recv_audio(ToxAv* av, int32_t call_index, int16_t* dest, uint16_t max_
         return ErrorNoCall;
     }
     
-    
-    
     /* If CodecSession gets terminated while waiting this function returns -1 */
     return cs_recv_decoded_audio(av->calls[call_index].cs, dest, max_size, wait);
 }
