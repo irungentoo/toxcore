@@ -153,24 +153,10 @@ void toxav_do(ToxAv *av);
 /**
  * Register callback for call state.
  */
-static void toxav_register_callstate_callback (ToxAv *av, 
-                                               ToxAVCallback callback, 
-                                               ToxAvCallbackID id, 
-                                               void *userdata);
-
-/**
- * Register callback for receiving audio data.
- */
-static void toxav_register_audio_recv_callback (ToxAv *av, 
-                                                void (*callback)(ToxAv *, int32_t, int16_t *, int, void *),
-                                                void *user_data);
-
-/**
- * Register callback for receiving video data.
- */
-static void toxav_register_video_recv_callback (ToxAv *av, 
-                                                void (*callback)(ToxAv *, int32_t, vpx_image_t *, void *),
-                                                void *user_data);
+void toxav_register_callstate_callback (ToxAv *av, 
+                                        ToxAVCallback callback, 
+                                        ToxAvCallbackID id, 
+                                        void *userdata);
 
 /**
  * Call user. Use its friend_id.
@@ -238,7 +224,13 @@ int toxav_prepare_video_frame ( ToxAv *av,
 /**
  * Send encoded video packet.
  */
-int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int frame_size);
+int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, uint32_t frame_size);
+
+/**
+ * Recv video payload. You can either poll (wait == 0), wait some time 
+ * (wait == -1 forever or wait == x for x ms) . Returns -1 on error else amount of images recved.
+ */
+int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **output, uint16_t max_images, int32_t wait);
 
 /**
  * Encode audio frame.
@@ -256,41 +248,47 @@ int toxav_prepare_audio_frame ( ToxAv *av,
 int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int size);
 
 /**
+ * Recv audio payload. You can either poll (wait == 0), wait some time 
+ * (wait == -1 forever or wait == x for x ms). Returns: -1 on error, else size recved.
+ */
+int toxav_recv_audio ( ToxAv *av, int32_t call_index, int16_t* dest, uint16_t max_size, int32_t wait);
+
+/**
  * Get codec settings from the peer. These were exchanged during call initialization
  * or when peer send us new csettings.
  */
-static int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCSettings *dest );
+int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCSettings *dest );
 
 /**
  * Get friend id of peer participating in conversation.
  */
-static int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer );
+int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer );
 
 /**
  * Get current call state.
  */
-static ToxAvCallState toxav_get_call_state ( ToxAv *av, int32_t call_index );
+ToxAvCallState toxav_get_call_state ( ToxAv *av, int32_t call_index );
 
 /**
  * Is certain capability supported. Used to determine if encoding/decoding is ready.
  */
-static int toxav_capability_supported ( ToxAv *av, int32_t call_index, ToxAvCapabilities capability );
+int toxav_capability_supported ( ToxAv *av, int32_t call_index, ToxAvCapabilities capability );
 
 /**
  * Returns tox reference.
  */
-static Tox *toxav_get_tox(ToxAv *av);
+Tox *toxav_get_tox (ToxAv *av);
 
 /**
  * Check if there is activity in the PCM data.
  * Activity is present if the calculated PCM energy is > ref_energy.
  * Returns bool.
  */
-static int toxav_has_activity ( ToxAv *av,
-                                int32_t call_index,
-                                int16_t *PCM,
-                                uint16_t frame_size,
-                                float ref_energy );
+int toxav_has_activity ( ToxAv *av, 
+                         int32_t call_index, 
+                         int16_t *PCM, 
+                         uint16_t frame_size, 
+                         float ref_energy );
 
 #ifdef __cplusplus
 }

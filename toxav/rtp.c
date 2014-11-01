@@ -425,13 +425,10 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
 {
     RTPMessage *msg = rtp_new_message (session, data, length);
 
-    if ( !msg ) {
-        LOGGER_WARNING("No session!");
-        return -1;
-    }
-
+    if ( !msg ) return -1;
+    
     if ( -1 == send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length) ) {
-        LOGGER_WARNING("Failed to send full packet! std error: %s", strerror(errno));
+        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
         rtp_free_msg ( session, msg );
         return -1;
     }

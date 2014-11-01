@@ -545,7 +545,7 @@ static void t_randomstr ( uint8_t *str, uint32_t size )
     }
 }
 
-/* TODO: id would be nice to actually have some sane error codes */
+/* TODO: it would be nice to actually have some sane error codes */
 typedef enum {
     error_none,
     error_deadcall,      /* has call id but it's from old call */

@@ -103,8 +103,7 @@ typedef struct _RTPSession {
     uint8_t         prefix;
 
     int             dest;
-    int32_t         call_index;
-//     struct _ToxAv *av;
+
     struct _CodecState *cs;
     
 } RTPSession;

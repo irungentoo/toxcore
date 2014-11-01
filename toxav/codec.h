@@ -24,6 +24,9 @@
 #ifndef _CODEC_H_
 #define _CODEC_H_
 
+#include "toxav.h"
+#include "rtp.h"
+
 #include <stdio.h>
 #include <math.h>
 #include <pthread.h>
@@ -38,13 +41,13 @@
 /* Audio encoding/decoding */
 #include <opus.h>
 
-typedef enum _Capabilities {
+typedef enum _CsCapabilities {
     none,
     a_encoding = 1 << 0,
     a_decoding = 1 << 1,
     v_encoding = 1 << 2,
     v_decoding = 1 << 3
-} Capabilities;
+} CsCapabilities;
 
 extern const uint16_t min_jbuf_size;
 
@@ -57,6 +60,7 @@ typedef struct _CodecState {
     * 
     * 
     */
+    int support_video;
     
     /* video encoding */
     vpx_codec_ctx_t  v_encoder;
@@ -99,7 +103,7 @@ typedef struct _CodecState {
     OpusDecoder *audio_decoder;
     int audio_decoder_channels;
 
-    JitterBuffer* j_buf;
+    struct _JitterBuffer* j_buf;
     
 
     /* Voice activity detection */
@@ -124,33 +128,36 @@ typedef struct _CodecState {
 } CodecState;
 
 
-int split_video_payload(CodecState* cs, uint8_t* payload, uint16_t length);
+int cs_split_video_payload(CodecState* cs, const uint8_t* payload, uint16_t length);
 /* Warning: Not thread safe! */
-const uint8_t* get_split_video_frame(CodecState* cs, uint16_t* size);
+const uint8_t* cs_get_split_video_frame(CodecState* cs, uint16_t* size);
 
 /**
  * Set wait = 0 to poll; -1 forevaaa; otherwise time to wait in ms.
  */
-int recv_decoded_video(CodecState* cs, vpx_image_t** dest, uint16_t max_images, int32_t wait);
-int recv_decoded_audio(CodecState* cs, int16_t* dest, uint16_t max_size, int32_t wait);
+int cs_recv_decoded_video(CodecState* cs, vpx_image_t** dest, uint16_t max_images, int32_t wait);
+int cs_recv_decoded_audio(CodecState* cs, int16_t* dest, uint16_t max_size, int32_t wait);
 
-/* Internal. Called from rtp_handle_message */
-void queue_message(struct _RTPSession *session, struct _RTPMessage *msg);
-
-CodecState *codec_init_session ( const struct _ToxAvCSettings *cs_self,
-                                 const struct _ToxAvCSettings *cs_peer,
+CodecState *cs_init_session ( const ToxAvCSettings *cs_self,
+                                 const ToxAvCSettings *cs_peer,
                                  uint32_t jbuf_size,
-                                 uint32_t audio_VAD_tolerance_ms );
+                                 uint32_t audio_VAD_tolerance_ms, 
+                                 int support_video);
 
-void codec_terminate_session(CodecState *cs);
+void cs_terminate_session (CodecState *cs);
 
 /* Reconfigure video encoder
    return 0 on success.
    return -1 on failure. */
-int reconfigure_video_encoder_resolution(CodecState *cs, uint16_t width, uint16_t height);
-int reconfigure_video_encoder_bitrate(CodecState *cs, uint32_t video_bitrate);
+int cs_reconfigure_video_encoder_resolution(CodecState *cs, uint16_t width, uint16_t height);
+int cs_reconfigure_video_encoder_bitrate(CodecState *cs, uint32_t video_bitrate);
 
 /* Calculate energy and return 1 if has voice, 0 if not */
-int energy_VAD(CodecState *cs, int16_t *PCM, uint16_t frame_size, float energy);
+int cs_calculate_energy_VAD(CodecState *cs, int16_t *PCM, uint16_t frame_size, float energy);
 
+
+
+
+/* Internal. Called from rtp_handle_message */
+void queue_message(RTPSession *session, RTPMessage *msg);
 #endif /* _CODEC_H_ */
