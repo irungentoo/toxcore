@@ -204,15 +204,15 @@ void register_callbacks(ToxAv *av, void *data)
 case 3: /* Wait for Both to have status ended */\
 if (status_control.Alice.status == Ended && status_control.Bob.status == Ended) running = 0; break; } c_sleep(20); } } printf("\n");
 
-// START_TEST(test_AV_flows)
-int test_AV_flows ()
+START_TEST(test_AV_flows)
+// int test_AV_flows ()
 {
     long long unsigned int cur_time = time(NULL);
     Tox *bootstrap_node = tox_new(0);
     Tox *Alice = tox_new(0);
     Tox *Bob = tox_new(0);
 
-    //ck_assert_msg(bootstrap_node || Alice || Bob, "Failed to create 3 tox instances");
+    ck_assert_msg(bootstrap_node || Alice || Bob, "Failed to create 3 tox instances");
 
     uint32_t to_compare = 974536;
     tox_callback_friend_request(Alice, accept_friend_request, &to_compare);
@@ -220,7 +220,7 @@ int test_AV_flows ()
     tox_get_address(Alice, address);
     int test = tox_add_friend(Bob, address, (uint8_t *)"gentoo", 7);
 
-    //ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
+    ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
 
     uint8_t off = 1;
 
@@ -250,7 +250,7 @@ int test_AV_flows ()
         {none, toxav_new(Bob, 1), NULL, -1},
     };
 
-    //ck_assert_msg(status_control.Alice.av || status_control.Bob.av, "Failed to create 2 toxav instances");
+    ck_assert_msg(status_control.Alice.av || status_control.Bob.av, "Failed to create 2 toxav instances");
 
 
     register_callbacks(status_control.Alice.av, &status_control);
@@ -286,7 +286,7 @@ int test_AV_flows ()
                        1000, sample_payload, frame_size);
 
         if ( payload_size < 0 ) {
-            //ck_assert_msg ( 0, "Failed to encode payload" );
+            ck_assert_msg ( 0, "Failed to encode payload" );
         }
 
         toxav_send_audio(status_control.Alice.av, status_control.Alice.call_index, prepared_payload, payload_size);
@@ -295,7 +295,7 @@ int test_AV_flows ()
                        sample_payload, frame_size);
 
         if ( payload_size < 0 ) {
-            //ck_assert_msg ( 0, "Failed to encode payload" );
+            ck_assert_msg ( 0, "Failed to encode payload" );
         }
 
         toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
@@ -325,7 +325,7 @@ int test_AV_flows ()
                        1000, sample_payload, frame_size);
 
         if ( payload_size < 0 ) {
-            //ck_assert_msg ( 0, "Failed to encode payload" );
+            ck_assert_msg ( 0, "Failed to encode payload" );
         }
 
         toxav_send_audio(status_control.Alice.av, status_control.Alice.call_index, prepared_payload, payload_size);
@@ -334,7 +334,7 @@ int test_AV_flows ()
                        sample_payload, frame_size);
 
         if ( payload_size < 0 ) {
-            //ck_assert_msg ( 0, "Failed to encode payload" );
+            ck_assert_msg ( 0, "Failed to encode payload" );
         }
 
         toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
@@ -369,7 +369,7 @@ int test_AV_flows ()
                        1000, sample_payload, frame_size);
 
         if ( payload_size < 0 ) {
-            //ck_assert_msg ( 0, "Failed to encode payload" );
+            ck_assert_msg ( 0, "Failed to encode payload" );
         }
 
         toxav_send_audio(status_control.Alice.av, status_control.Alice.call_index, prepared_payload, payload_size);
@@ -378,7 +378,7 @@ int test_AV_flows ()
                        sample_payload, frame_size);
 
         if ( payload_size < 0 ) {
-            //ck_assert_msg ( 0, "Failed to encode payload" );
+            ck_assert_msg ( 0, "Failed to encode payload" );
         }
 
         toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
@@ -412,7 +412,7 @@ int test_AV_flows ()
 //                        1000, sample_payload, frame_size);
 // 
 //         if ( payload_size < 0 ) {
-//             //ck_assert_msg ( 0, "Failed to encode payload" );
+//             ck_assert_msg ( 0, "Failed to encode payload" );
 //         }
 // 
 //         toxav_send_audio(status_control.Alice.av, status_control.Alice.call_index, prepared_payload, payload_size);
@@ -421,7 +421,7 @@ int test_AV_flows ()
 //                        sample_payload, frame_size);
 // 
 //         if ( payload_size < 0 ) {
-//             //ck_assert_msg ( 0, "Failed to encode payload" );
+//             ck_assert_msg ( 0, "Failed to encode payload" );
 //         }
 // 
 //         toxav_send_audio(status_control.Bob.av, status_control.Bob.call_index, prepared_payload, payload_size);
@@ -577,7 +577,7 @@ int test_AV_flows ()
 
     printf("Calls ended!\n");
 }
-// END_TEST
+END_TEST
 
 /*************************************************************************************************/
 
@@ -597,17 +597,17 @@ Suite *tox_suite(void)
 }
 int main(int argc, char *argv[])
 {
-//     Suite *tox = tox_suite();
-//     SRunner *test_runner = srunner_create(tox);
-// 
-//     setbuf(stdout, NULL);
-// 
-//     srunner_run_all(test_runner, CK_NORMAL);
-//     int number_failed = srunner_ntests_failed(test_runner);
-// 
-//     srunner_free(test_runner);
-// 
-//     return number_failed;
+    Suite *tox = tox_suite();
+    SRunner *test_runner = srunner_create(tox);
 
-    return test_AV_flows();
+    setbuf(stdout, NULL);
+
+    srunner_run_all(test_runner, CK_NORMAL);
+    int number_failed = srunner_ntests_failed(test_runner);
+
+    srunner_free(test_runner);
+
+    return number_failed;
+
+//     return test_AV_flows();
 }
