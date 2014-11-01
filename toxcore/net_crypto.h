@@ -41,7 +41,7 @@
 #define CRYPTO_PACKET_MIN_RATE 8.0
 
 /* Minimum packet queue max length. */
-#define CRYPTO_MIN_QUEUE_LENGTH 16
+#define CRYPTO_MIN_QUEUE_LENGTH 64
 
 #define MAX_CRYPTO_PACKET_SIZE 1400
 

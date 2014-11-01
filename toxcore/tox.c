@@ -581,7 +581,7 @@ void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, i
                                void *userdata)
 {
     Messenger *m = tox;
-    //m_callback_group_action(m, function, userdata);
+    g_callback_group_action(m->group_chat_object, function, userdata);
 }
 
 /* Set callback function for peer name list changes.
@@ -668,8 +668,7 @@ int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, ui
 int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length)
 {
     Messenger *m = tox;
-    //return group_action_send(m, groupnumber, action, length);
-    return -1;
+    return group_action_send(m->group_chat_object, groupnumber, action, length);
 }
 
 /* Check if the current peernumber corresponds to ours.

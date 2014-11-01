@@ -332,6 +332,7 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     cs_terminate_session(call->cs); call->cs = NULL;
     
     call->call_active = 0;
+
     pthread_mutex_unlock(&call->mutex);
     pthread_mutex_destroy(&call->mutex);
     

@@ -84,6 +84,35 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
     return;
 }
 
+uint16_t lendian_to_host16(uint16_t lendian)
+{
+#ifdef WORDS_BIGENDIAN
+    return  (lendian << 8) | (lendian >> 8 );
+#else
+    return lendian;
+#endif
+}
+
+void host_to_lendian32(uint8_t *dest,  uint32_t num)
+{
+#ifdef WORDS_BIGENDIAN
+    num = ((num << 8) & 0xFF00FF00 ) | ((num >> 8) & 0xFF00FF );
+    num = (num << 16) | (num >> 16);
+#endif
+    memcpy(dest, &num, sizeof(uint32_t));
+}
+
+void lendian_to_host32(uint32_t *dest, const uint8_t *lendian)
+{
+    uint32_t d;
+    memcpy(&d, lendian, sizeof(uint32_t));
+#ifdef WORDS_BIGENDIAN
+    d = ((d << 8) & 0xFF00FF00 ) | ((d >> 8) & 0xFF00FF );
+    d = (d << 16) | (d >> 16);
+#endif
+    *dest = d;
+}
+
 /* state load/save */
 int load_state(load_state_callback_func load_state_callback, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner)
@@ -101,8 +130,8 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     uint32_t size_head = sizeof(uint32_t) * 2;
 
     while (length >= size_head) {
-        memcpy(&length_sub, data, sizeof(length_sub));
-        memcpy(&cookie_type, data + sizeof(length_sub), sizeof(cookie_type));
+        lendian_to_host32(&length_sub, data);
+        lendian_to_host32(&cookie_type, data + sizeof(length_sub));
         data += size_head;
         length -= size_head;
 
@@ -114,7 +143,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
             return -1;
         }
 
-        if ((cookie_type >> 16) != cookie_inner) {
+        if (lendian_to_host16((cookie_type >> 16)) != cookie_inner) {
             /* something is not matching up in a bad way, give up */
 #ifdef DEBUG
             fprintf(stderr, "state file garbeled: %04hx != %04hx\n", (cookie_type >> 16), cookie_inner);
@@ -122,7 +151,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
             return -1;
         }
 
-        type = cookie_type & 0xFFFF;
+        type = lendian_to_host16(cookie_type & 0xFFFF);
 
         if (-1 == load_state_callback(outer, data, length_sub, type))
             return -1;

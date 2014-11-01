@@ -149,7 +149,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
 }
 
 /* Create a new path or use an old suitable one (if pathnum is valid)
- * or a rondom one from onion_paths.
+ * or a random one from onion_paths.
  *
  * return -1 on failure
  * return 0 on success
@@ -333,9 +333,6 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     if (ping_id == NULL)
         ping_id = zero_ping_id;
 
-    Node_format dest_node;
-    dest_node.ip_port = dest;
-    memcpy(dest_node.client_id, dest_pubkey, crypto_box_PUBLICKEYBYTES);
     uint8_t request[ONION_ANNOUNCE_REQUEST_SIZE];
     int len;
 
@@ -1129,10 +1126,10 @@ static void populate_path_nodes(Onion_Client *onion_c)
 }
 
 #define ANNOUNCE_FRIEND (ONION_NODE_PING_INTERVAL * 3)
-#define ANNOUNCE_FRIEND_BEGINNING 5
+#define ANNOUNCE_FRIEND_BEGINNING 3
 #define FRIEND_ONION_NODE_TIMEOUT (ONION_NODE_TIMEOUT * 3)
 
-#define RUN_COUNT_FRIEND_ANNOUNCE_BEGINNING 15
+#define RUN_COUNT_FRIEND_ANNOUNCE_BEGINNING 17
 
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
 {
@@ -1333,12 +1330,23 @@ void kill_onion_client(Onion_Client *onion_c)
  */
 int onion_isconnected(const Onion_Client *onion_c)
 {
-    unsigned int i;
+    unsigned int i, num = 0, announced = 0;
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
-        if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT))
-            if (onion_c->clients_announce_list[i].is_stored)
-                return 1;
+        if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT)) {
+            ++num;
+
+            if (onion_c->clients_announce_list[i].is_stored) {
+                ++announced;
+            }
+        }
+    }
+
+    /* Consider ourselves online if we are announced to half or more nodes
+      we are connected to */
+    if (num && announced) {
+        if ((num / 2) <= announced)
+            return 1;
     }
 
     return 0;
