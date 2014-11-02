@@ -1071,10 +1071,10 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
 
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length, void *userdata)
  */
 void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *,
-                               uint16_t, void *), void *userdata)
+                               uint16_t, const uint8_t *, uint16_t, void *), void *userdata)
 {
     m->file_sendrequest = function;
     m->file_sendrequest_userdata = userdata;
@@ -1105,28 +1105,57 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, int32_t, ui
 }
 
 #define MAX_FILENAME_LENGTH 255
+#define MAX_MIMETYPE_LENGTH 255
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
+ * Maximum mime type length is 255 bytes.
  *  return 1 on success
  *  return 0 on failure
  */
 int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint64_t filesize,
-                     const uint8_t *filename, uint16_t filename_length)
+                     const uint8_t *filename, uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length)
 {
+    LOGGER_DEBUG("friendnumber == %u, filenumber == %u, filesize == %ul, "
+                 "filename == %s, filename_length == %u, "
+                 "mimetype == %s, mimetype_length == %u",
+                 friendnumber, filenumber, filesize,
+                 filename, filename_length,
+                 mimetype, mimetype_length);
+
     if (friend_not_valid(m, friendnumber))
         return 0;
 
     if (filename_length > MAX_FILENAME_LENGTH)
         return 0;
 
-    uint8_t packet[MAX_FILENAME_LENGTH + 1 + sizeof(filesize)];
-    packet[0] = filenumber;
+    if (mimetype_length > MAX_MIMETYPE_LENGTH)
+        return 0;
+
+    if (mimetype == NULL)
+        mimetype_length = 0;
+
+    /* Format: [u8 filenumber; u64 filesize; u8 filename len; u8[] filename; u8 mimtype len; u8[] mimetype] */
+    uint8_t packet[1 + sizeof(filesize) + 1 + MAX_FILENAME_LENGTH + 1 + MAX_MIMETYPE_LENGTH];
+
+    size_t offset = 0;
+    packet[offset++] = filenumber;
+
     host_to_net((uint8_t *)&filesize, sizeof(filesize));
-    memcpy(packet + 1, &filesize, sizeof(filesize));
-    memcpy(packet + 1 + sizeof(filesize), filename, filename_length);
+    memcpy(packet + offset, &filesize, sizeof(filesize));
+    offset += sizeof(filesize);
+
+    packet[offset++] = (uint8_t) filename_length;
+    memcpy(packet + offset, filename, filename_length);
+    offset += filename_length;
+
+    packet[offset++] = (uint8_t) mimetype_length;
+    if (mimetype_length > 0)
+        memcpy(packet + offset, mimetype, mimetype_length);
+    offset += mimetype_length;
+
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet,
-                                1 + sizeof(filesize) + filename_length, 0);
+                                offset, 0);
 }
 
 /* Send a file send request.
@@ -1135,7 +1164,7 @@ int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumbe
  *  return -1 on failure
  */
 int new_filesender(const Messenger *m, int32_t friendnumber, uint64_t filesize, const uint8_t *filename,
-                   uint16_t filename_length)
+                   uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1150,7 +1179,7 @@ int new_filesender(const Messenger *m, int32_t friendnumber, uint64_t filesize, 
     if (i == MAX_CONCURRENT_FILE_PIPES)
         return -1;
 
-    if (file_sendrequest(m, friendnumber, i, filesize, filename, filename_length) == 0)
+    if (file_sendrequest(m, friendnumber, i, filesize, filename, filename_length, mimetype, mimetype_length) == 0)
         return -1;
 
     m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NOT_ACCEPTED;
@@ -2185,25 +2214,57 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_FILE_SENDREQUEST: {
-            if (data_length < 1 + sizeof(uint64_t) + 1)
+            /* Format: [u8 filenumber; u64 filesize; u8 filename len; u8[] filename; u8 mimtype len; u8[] mimetype] */
+
+            /* CAVEAT: Too much pointer arithmetic for a single field. */
+
+            LOGGER_DEBUG("PACKET_ID_FILE_SENDREQUEST, "
+                "friendnumber == %u, data_length == %u", i, data_length);
+
+            /* Validate minimum data length */
+            size_t min_data_length = 1 + sizeof(uint64_t) + 1 + 1;
+            if (data_length < min_data_length)
+                break;
+
+            /* Validate actual data length */
+            uint16_t filename_length = data[1 + sizeof(uint64_t)];
+            if (filename_length > MAX_FILENAME_LENGTH
+            || data_length < min_data_length + filename_length)
+                break;
+
+            uint16_t mimetype_length = data[1 + sizeof(uint64_t) + 1 + filename_length];
+            if (mimetype_length > MAX_MIMETYPE_LENGTH
+            || data_length < min_data_length + filename_length + mimetype_length)
                 break;
 
             uint8_t filenumber = data[0];
             uint64_t filesize;
             memcpy(&filesize, data + 1, sizeof(filesize));
             net_to_host((uint8_t *) &filesize, sizeof(filesize));
+
+            /* Force NULL terminate file name and mime type. */
+            uint8_t filename_terminated[filename_length + 1];
+            memcpy(filename_terminated, data + 1 + sizeof(uint64_t) + 1, filename_length);
+            filename_terminated[filename_length] = 0;
+
+            uint8_t mimetype_terminated[mimetype_length + 1];
+            memcpy(mimetype_terminated, data + 1 + sizeof(uint64_t) + 1 + filename_length + 1, mimetype_length);
+            mimetype_terminated[mimetype_length] = 0;
+
+            LOGGER_DEBUG("filenumber == %u, filesize == %ul, "
+                 "filename == %s, filename_length == %u, "
+                 "mimetype == %s, mimetype_length == %u",
+                 filenumber, filesize,
+                 filename_terminated, filename_length,
+                 mimetype_terminated, mimetype_length);
+
             m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
             m->friendlist[i].file_receiving[filenumber].size = filesize;
             m->friendlist[i].file_receiving[filenumber].transferred = 0;
 
-            /* Force NULL terminate file name. */
-            uint8_t filename_terminated[data_length - 1 - sizeof(uint64_t) + 1];
-            memcpy(filename_terminated, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t));
-            filename_terminated[data_length - 1 - sizeof(uint64_t)] = 0;
-
             if (m->file_sendrequest)
-                (*m->file_sendrequest)(m, i, filenumber, filesize, filename_terminated, data_length - 1 - sizeof(uint64_t),
-                                       m->file_sendrequest_userdata);
+                (*m->file_sendrequest)(m, i, filenumber, filesize, filename_terminated, filename_length,
+                                       mimetype_terminated, mimetype_length, m->file_sendrequest_userdata);
 
             break;
         }
