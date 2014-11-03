@@ -29,7 +29,7 @@
 #include "ping_array.h"
 
 #define MAX_ONION_CLIENTS 8
-#define ONION_NODE_PING_INTERVAL 30
+#define ONION_NODE_PING_INTERVAL 20
 #define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 4)
 
 /* The interval in seconds at which to tell our friends where we are */
