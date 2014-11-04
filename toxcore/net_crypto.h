@@ -31,10 +31,11 @@
 #define CRYPTO_CONN_NO_CONNECTION 0
 #define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets
 #define CRYPTO_CONN_HANDSHAKE_SENT 2 //send handshake packets
-#define CRYPTO_CONN_NOT_CONFIRMED 3 //send handshake packets
+#define CRYPTO_CONN_NOT_CONFIRMED 3 //send handshake packets, we have received one from the other
 #define CRYPTO_CONN_ESTABLISHED 4
 #define CRYPTO_CONN_TIMED_OUT 5
 
+/* Maximum size of receiving and sending packet buffers. */
 #define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
 
 /* Minimum packet rate per second. */
@@ -43,15 +44,17 @@
 /* Minimum packet queue max length. */
 #define CRYPTO_MIN_QUEUE_LENGTH 64
 
+/* Maximum total size of packets that net_crypto sends. */
 #define MAX_CRYPTO_PACKET_SIZE 1400
 
 #define CRYPTO_DATA_PACKET_MIN_SIZE (1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + crypto_box_MACBYTES)
 
-/* Max size of data in packets TODO*/
+/* Max size of data in packets */
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - CRYPTO_DATA_PACKET_MIN_SIZE)
 
 /* Interval in ms between sending cookie request/handshake packets. */
 #define CRYPTO_SEND_PACKET_INTERVAL 500
+
 /* The maximum number of times we try to send the cookie request and handshake
    before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
@@ -59,10 +62,11 @@
 /* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
 #define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL * 2)
 
-#define PACKET_ID_PADDING 0
-#define PACKET_ID_REQUEST 1
-#define PACKET_ID_KILL    2
+#define PACKET_ID_PADDING 0 /* Denotes padding */
+#define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
+#define PACKET_ID_KILL    2 /* Used to kill connection */
 
+/* Packet ids 0 to CRYPTO_RESERVED_PACKETS - 1 are reserved for use by net_crypto. */
 #define CRYPTO_RESERVED_PACKETS 16
 
 #define MAX_TCP_CONNECTIONS 32
@@ -79,7 +83,8 @@
 
 #define CRYPTO_MAX_PADDING 8 /* All packets will be padded a number of bytes based on this number. */
 
-
+/* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
+   at the dT defined in net_crypto.c */
 #define CONGESTION_QUEUE_ARRAY_SIZE 8
 
 typedef struct {
