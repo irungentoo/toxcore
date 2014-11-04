@@ -92,7 +92,7 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1, NULL, 0);
+    int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1, 0);
 
     if (filenum == -1)
         return -1;
@@ -131,8 +131,7 @@ int not_sending()
 static char path[1024];
 
 void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
-                         uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length,
-                         void *userdata)
+                         uint16_t filename_length, uint8_t type, void *userdata)
 {
     char fullpath[1024];
     uint32_t i;

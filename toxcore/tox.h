@@ -722,12 +722,19 @@ enum {
     TOX_FILECONTROL_FINISHED,
     TOX_FILECONTROL_RESUME_BROKEN
 };
+
+enum {
+    TOX_FILETYPE_NONE = 0, // standard file, ask user where to save
+    TOX_FILETYPE_AUDIO_CLIP // maybe we should specify raw audio only or something?
+    // , FILETYPE_STICKER // TODO
+};
+
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename, uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename, uint16_t filename_length, uint8_t type, void *userdata)
  */
 void tox_callback_file_send_request(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t, uint64_t, const uint8_t *,
-                                    uint16_t, const uint8_t *, uint16_t, void *), void *userdata);
+                                    uint16_t, uint8_t, void *), void *userdata);
 
 /* Set the callback for file control requests.
  *
@@ -751,12 +758,11 @@ void tox_callback_file_data(Tox *tox, void (*function)(Tox *m, int32_t, uint8_t,
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
- * Maximum mime type length is 255 bytes.
  *  return file number on success
  *  return -1 on failure
  */
 int tox_new_file_sender(Tox *tox, int32_t friendnumber, uint64_t filesize, const uint8_t *filename,
-                        uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length);
+                        uint16_t filename_length, uint8_t type);
 
 /* Send a file control request.
  *

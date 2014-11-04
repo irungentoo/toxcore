@@ -190,6 +190,12 @@ enum {
     FILECONTROL_RESUME_BROKEN
 };
 
+enum {
+    FILETYPE_NONE = 0,
+    FILETYPE_AUDIO_CLIP // maybe we should specify raw audio only or something?
+    // , FILETYPE_STICKER // TODO
+};
+
 typedef struct {
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
     int friendcon_id;
@@ -300,7 +306,7 @@ typedef struct Messenger {
     void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, uint16_t);
     void (*group_message)(struct Messenger *m, int32_t, const uint8_t *, uint16_t);
 
-    void (*file_sendrequest)(struct Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *, uint16_t, const uint8_t *, uint16_t, void *);
+    void (*file_sendrequest)(struct Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *, uint16_t, uint8_t, void *);
     void *file_sendrequest_userdata;
     void (*file_filecontrol)(struct Messenger *m, int32_t, uint8_t, uint8_t, uint8_t, const uint8_t *, uint16_t, void *);
     void *file_filecontrol_userdata;
@@ -756,10 +762,10 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
 
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, uint8_t type, void *userdata)
  */
 void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *,
-                               uint16_t, const uint8_t *, uint16_t, void *), void *userdata);
+                               uint16_t, uint8_t, void *), void *userdata);
 
 /* Set the callback for file control requests.
  *
@@ -779,21 +785,19 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, int32_t, ui
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
- * Maximum mimetype length is 255 bytes.
  *  return 1 on success
  *  return 0 on failure
  */
 int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint64_t filesize,
-                     const uint8_t *filename, uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length);
+                     const uint8_t *filename, uint16_t filename_length, uint8_t type);
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
- * Maximum mime type length is 255 bytes.
  *  return file number on success
  *  return -1 on failure
  */
 int new_filesender(const Messenger *m, int32_t friendnumber, uint64_t filesize, const uint8_t *filename,
-                   uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length);
+                   uint16_t filename_length, uint8_t type);
 
 /* Send a file control request.
  * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
