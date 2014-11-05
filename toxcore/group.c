@@ -999,6 +999,7 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
 /* Set callback funciton for title changes.
  *
  * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint16_t length, void *userdata)
+ * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
 void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
                              void *), void *userdata)
@@ -1321,6 +1322,8 @@ static int handle_packet_online(Group_Chats *g_c, int friendcon_id, uint8_t *dat
 #define PEER_KILL_ID 1
 #define PEER_QUERY_ID 8
 #define PEER_RESPONSE_ID 9
+#define PEER_TITLE_ID 10
+// we could send title with invite, but then if it changes between sending and accepting inv, joinee won't see it
 
 /* return 1 on success.
  * return 0 on failure
@@ -1389,6 +1392,13 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
             sent = i;
         }
     }
+
+    uint8_t Packet[2 + MAX_NAME_LENGTH];
+    Packet[0] = PEER_TITLE_ID;
+    Packet[1] = g->title_len;
+    memcpy(Packet + 2, g->title, g->title_len);
+    send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, Packet, sizeof(Packet));
+    // doesn't really matter if it makes it or not
 
     return sent;
 }
@@ -1474,6 +1484,11 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
 
         break;
 
+        case PEER_TITLE_ID: {
+            settitle(g_c, groupnumber, -1, data + 2, data[1]);
+        }
+
+        break;
     }
 }
 
