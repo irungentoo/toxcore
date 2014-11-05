@@ -105,7 +105,7 @@ typedef struct {
     void *action_callback_userdata;
     void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
-    void (*title_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
+    void (*title_callback)(Messenger *m, int, int, const uint8_t *, uint8_t, void *);
     void *title_callback_userdata;
 } Group_Chats;
 
