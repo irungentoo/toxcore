@@ -577,6 +577,7 @@ static int handle_status(void *object, int friendcon_id, uint8_t status)
 }
 
 static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t length);
+static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length);
 
 /* Add friend to group chat.
  *
@@ -614,8 +615,8 @@ static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, int groupnu
     g->close[ind].number = friendcon_id;
     g->close[ind].closest = closest;
     //TODO
-    friend_connection_callbacks(g_c->m->fr_c, friendcon_id, GROUPCHAT_CALLBACK_INDEX, &handle_status, &handle_packet, 0,
-                                g_c, friendcon_id);
+    friend_connection_callbacks(g_c->m->fr_c, friendcon_id, GROUPCHAT_CALLBACK_INDEX, &handle_status, &handle_packet,
+                                &handle_lossy, g_c, friendcon_id);
 
     return ind;
 }
@@ -1036,7 +1037,8 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
                 return;
 
             uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
-                              are given the same peer_number by different nodes? */
+  are given the same peer_number by different nodes? */
+
             unsigned int tries = 0;
 
             while (get_peer_index(g, peer_number) != -1) {
@@ -1483,6 +1485,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             if (peer_number == kill_peer_number) {
                 delpeer(g_c, groupnumber, index);
             } else {
+                return;
                 //TODO
             }
         }
@@ -1574,6 +1577,45 @@ static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t
         }
     }
 
+    return 0;
+}
+
+static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length)
+{
+    Group_Chats *g_c = object;
+
+    if (length < 1 + sizeof(uint16_t) + sizeof(uint16_t) + 1)
+        return -1;
+
+    if (data[0] != PACKET_ID_LOSSY_GROUPCHAT)
+        return -1;
+
+    uint16_t groupnumber, peer_number;
+    memcpy(&groupnumber, data + 1, sizeof(uint16_t));
+    memcpy(&peer_number, data + 1 + sizeof(uint16_t), sizeof(uint16_t));
+    groupnumber = ntohs(groupnumber);
+    peer_number = ntohs(peer_number);
+
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    int index = friend_in_close(g, friendcon_id);
+
+    if (index == -1)
+        return -1;
+
+    int peer_index = get_peer_index(g, peer_number);
+
+    if (peer_index == -1)
+        return -1;
+
+    const uint8_t *lossy_data = data + 1 + sizeof(uint16_t) * 2;
+    uint16_t lossy_length = length - (1 + sizeof(uint16_t) * 2);
+    uint8_t message_id = lossy_data[0];
+    ++lossy_data;
+    --lossy_length;
     return 0;
 }
 

@@ -63,7 +63,7 @@
 #define PACKET_ID_ONLINE_PACKET 97
 #define PACKET_ID_DIRECT_GROUPCHAT 98
 #define PACKET_ID_MESSAGE_GROUPCHAT 99
-
+#define PACKET_ID_LOSSY_GROUPCHAT 199
 
 /* Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS 16
