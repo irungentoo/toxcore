@@ -939,7 +939,7 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
     g_c->group_namelistchange_userdata = userdata;
 }
 
-/* Set callback funciton for title changes.
+/* Set callback function for title changes.
  *
  * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
