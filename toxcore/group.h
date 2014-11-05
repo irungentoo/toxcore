@@ -79,6 +79,9 @@ typedef struct {
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
 
+    uint8_t title[MAX_NAME_LENGTH];
+    uint8_t title_len;
+
     uint32_t message_number;
     uint16_t peer_number;
 
@@ -102,6 +105,8 @@ typedef struct {
     void *action_callback_userdata;
     void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
+    void (*title_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
+    void *title_callback_userdata;
 } Group_Chats;
 
 /* Set the callback for group invites.
