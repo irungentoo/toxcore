@@ -155,6 +155,14 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, i
 void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
                              void *), void *userdata);
 
+/* Set callback function for title changes.
+ *
+ * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
+ * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
+ */
+void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint8_t,
+                             void *), void *userdata);
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
@@ -218,6 +226,12 @@ int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *m
  * return -1 on failure
  */
 int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length);
+
+/* set the group's title, limited to MAX_NAME_LENGTH
+ * return 0 on success
+ * return -1 on failure
+ */
+int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *title, uint8_t title_len);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure

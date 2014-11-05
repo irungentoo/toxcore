@@ -589,7 +589,7 @@ void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, i
  * Function(Tox *tox, int groupnumber, int peernumber, uint8_t * title, uint8_t length, void *userdata)
  * if peernumber == -1, then author is unknown (e.g. initial joining the group)
  */
-void tox_callback_group_title(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t,
+void tox_callback_group_title(Tox *tox, void (*function)(Messenger *tox, int, int, const uint8_t *, uint8_t,
                              void *), void *userdata)
 {
     Messenger *m = tox;
