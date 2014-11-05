@@ -513,7 +513,7 @@ static int setnick(Group_Chats *g_c, int groupnumber, int peer_index, const uint
     return 0;
 }
 
-static int settitle(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *title, uint16_t title_len)
+static int settitle(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *title, uint8_t title_len)
 {
     if (title_len > MAX_NAME_LENGTH || title_len == 0)
         return -1;
@@ -998,10 +998,10 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
 
 /* Set callback funciton for title changes.
  *
- * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint16_t length, void *userdata)
+ * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
-void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
+void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint8_t,
                              void *), void *userdata)
 {
     g_c->title_callback = function;
@@ -1143,12 +1143,24 @@ static int group_name_send(const Group_Chats *g_c, int groupnumber, const uint8_
  * return 0 on success
  * return -1 on failure
  */
-int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *title, uint16_t length)
+int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *title, uint8_t title_len)
 {
-    if (length > MAX_NAME_LENGTH)
+    if (title_len > MAX_NAME_LENGTH || title_len == 0)
         return -1;
 
-    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_TITLE_ID, title, length))
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    /* same as already set? */
+    if (g->title_len == title_len && !memcmp(g->title, title, title_len))
+        return 0;
+
+    memcpy(g->title, title, title_len);
+    g->title_len = title_len;
+
+    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_TITLE_ID, title, title_len))
         return 0;
     else
         return -1;
