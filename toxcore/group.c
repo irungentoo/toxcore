@@ -784,6 +784,26 @@ static unsigned int send_packet_group_peer(Friend_Connections *fr_c, int friendc
                              sizeof(packet), 0) != -1;
 }
 
+/* Send a group lossy packet to friendcon_id.
+ *
+ *  return 1 on success
+ *  return 0 on failure
+ */
+static unsigned int send_lossy_group_peer(Friend_Connections *fr_c, int friendcon_id, uint8_t packet_id,
+        uint16_t group_num, const uint8_t *data, uint16_t length)
+{
+    if (1 + sizeof(uint16_t) + length > MAX_CRYPTO_DATA_SIZE)
+        return 0;
+
+    group_num = htons(group_num);
+    uint8_t packet[1 + sizeof(uint16_t) + length];
+    packet[0] = packet_id;
+    memcpy(packet + 1, &group_num, sizeof(uint16_t));
+    memcpy(packet + 1 + sizeof(uint16_t), data, length);
+    return send_lossy_cryptpacket(fr_c->net_crypto, friend_connection_crypt_connection_id(fr_c, friendcon_id), packet,
+                                  sizeof(packet)) != -1;
+}
+
 #define INVITE_PACKET_SIZE (1 + sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
 #define INVITE_ID 0
 
@@ -1349,6 +1369,36 @@ static unsigned int send_message_all_close(const Group_Chats *g_c, int groupnumb
     return sent;
 }
 
+/* Send lossy message to all close except receiver (if receiver isn't -1)
+ * NOTE: this function appends the group chat number to the data passed to it.
+ *
+ * return number of messages sent.
+ */
+static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length,
+        int receiver)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return 0;
+
+    uint16_t i, sent = 0;
+
+    for (i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
+        if (g->close[i].type != GROUPCHAT_CLOSE_ONLINE)
+            continue;
+
+        if ((int)i == receiver)
+            continue;
+
+        if (send_lossy_group_peer(g_c->fr_c, g->close[i].number, PACKET_ID_LOSSY_GROUPCHAT, g->close[i].group_number, data,
+                                  length))
+            ++sent;
+    }
+
+    return sent;
+}
+
 #define MAX_GROUP_MESSAGE_DATA_LEN (MAX_CRYPTO_DATA_SIZE - (1 + MIN_MESSAGE_PACKET_LEN))
 
 /* Send data of len with message_id to groupnumber.
@@ -1580,21 +1630,81 @@ static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t
     return 0;
 }
 
+/* Did we already receive the lossy packet or not.
+ *
+ * return -1 on failure.
+ * return 0 if packet was not received.
+ * return 1 if packet was received.
+ *
+ * TODO: test this
+ */
+static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16_t message_number)
+{
+    if (peer_index == -1)
+        return -1;
+
+    if (g->group[peer_index].bottom_lossy_number == g->group[peer_index].top_lossy_number) {
+        g->group[peer_index].top_lossy_number = message_number;
+        g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
+        g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
+        return 0;
+    }
+
+    if (message_number - g->group[peer_index].bottom_lossy_number <= MAX_LOSSY_COUNT) {
+        if (g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT])
+            return 1;
+
+        g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
+        return 0;
+    }
+
+    if (message_number - g->group[peer_index].bottom_lossy_number > (1 << 15))
+        return -1;
+
+    uint16_t top_distance = message_number - g->group[peer_index].top_lossy_number;
+
+    if (top_distance >= MAX_LOSSY_COUNT) {
+        memset(g->group[peer_index].recv_lossy, 0, sizeof(g->group[peer_index].recv_lossy));
+        g->group[peer_index].top_lossy_number = message_number;
+        g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
+        g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
+        return 0;
+    }
+
+    if (top_distance < MAX_LOSSY_COUNT) {
+        unsigned int i;
+
+        for (i = g->group[peer_index].bottom_lossy_number; i != (g->group[peer_index].bottom_lossy_number + top_distance);
+                ++i) {
+            g->group[peer_index].recv_lossy[i % MAX_LOSSY_COUNT] = 0;
+        }
+
+        g->group[peer_index].top_lossy_number = message_number;
+        g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
+        g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
+        return 0;
+    }
+
+    return -1;
+}
+
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length)
 {
     Group_Chats *g_c = object;
 
-    if (length < 1 + sizeof(uint16_t) + sizeof(uint16_t) + 1)
+    if (length < 1 + sizeof(uint16_t) * 3 + 1)
         return -1;
 
     if (data[0] != PACKET_ID_LOSSY_GROUPCHAT)
         return -1;
 
-    uint16_t groupnumber, peer_number;
+    uint16_t groupnumber, peer_number, message_number;
     memcpy(&groupnumber, data + 1, sizeof(uint16_t));
     memcpy(&peer_number, data + 1 + sizeof(uint16_t), sizeof(uint16_t));
+    memcpy(&message_number, data + 1 + sizeof(uint16_t) * 2, sizeof(uint16_t));
     groupnumber = ntohs(groupnumber);
     peer_number = ntohs(peer_number);
+    message_number = ntohs(message_number);
 
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -1611,11 +1721,22 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
     if (peer_index == -1)
         return -1;
 
-    const uint8_t *lossy_data = data + 1 + sizeof(uint16_t) * 2;
-    uint16_t lossy_length = length - (1 + sizeof(uint16_t) * 2);
+    if (lossy_packet_not_received(g, peer_index, message_number))
+        return -1;
+
+    const uint8_t *lossy_data = data + 1 + sizeof(uint16_t) * 3;
+    uint16_t lossy_length = length - (1 + sizeof(uint16_t) * 3);
     uint8_t message_id = lossy_data[0];
     ++lossy_data;
     --lossy_length;
+
+    switch (message_id) {
+
+
+    }
+
+    send_lossy_all_close(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)),
+                         -1/*TODO close_index*/);
     return 0;
 }
 

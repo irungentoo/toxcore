@@ -33,6 +33,8 @@ enum {
     GROUPCHAT_STATUS_CONNECTED
 };
 
+#define MAX_LOSSY_COUNT 256
+
 typedef struct {
     uint8_t     real_pk[crypto_box_PUBLICKEYBYTES];
     uint8_t     temp_pk[crypto_box_PUBLICKEYBYTES];
@@ -44,6 +46,9 @@ typedef struct {
     uint8_t     nick_len;
 
     uint16_t peer_number;
+
+    uint8_t  recv_lossy[MAX_LOSSY_COUNT];
+    uint16_t bottom_lossy_number, top_lossy_number;
 } Group_Peer;
 
 #define DESIRED_CLOSE_CONNECTIONS 4
@@ -80,6 +85,7 @@ typedef struct {
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
 
     uint32_t message_number;
+    uint16_t lossy_message_number;
     uint16_t peer_number;
 
     uint64_t last_sent_ping;
