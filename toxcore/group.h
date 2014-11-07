@@ -108,6 +108,11 @@ typedef struct {
     void *action_callback_userdata;
     void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
+
+    struct {
+        int (*function)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
+        void *userdata;
+    } lossy_packethandlers[256];
 } Group_Chats;
 
 /* Set the callback for group invites.
@@ -215,6 +220,20 @@ unsigned int group_peernumber_is_ours(const Group_Chats *g_c, int groupnumber, i
  */
 int group_names(const Group_Chats *g_c, int groupnumber, uint8_t names[][MAX_NAME_LENGTH], uint16_t lengths[],
                 uint16_t length);
+
+/* Set handlers for custom lossy packets.
+ *
+ * NOTE: Handler must return 0 if packet is to be relayed, -1 if the packet should not be relayed.
+ */
+void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*function)(Messenger *m, int, int,
+                                        const uint8_t *, uint16_t, void *), void *userdata);
+
+/* High level function to send custom lossy packets.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_group_lossy_packet(const Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length);
 
 /* Return the number of chats in the instance m.
  * You should use this to determine how much memory to allocate

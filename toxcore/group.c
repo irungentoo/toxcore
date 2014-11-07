@@ -925,6 +925,19 @@ void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, in
     g_c->action_callback_userdata = userdata;
 }
 
+/* Set handlers for custom lossy packets.
+ * NOTE: Handler must return 0 if packet is to be relayed, -1 if the packet should not be relayed.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*function)(Messenger *m, int, int,
+                                        const uint8_t *, uint16_t, void *), void *userdata)
+{
+    g_c->lossy_packethandlers[byte].function = function;
+    g_c->lossy_packethandlers[byte].userdata = userdata;
+}
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
@@ -1466,6 +1479,34 @@ int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *ac
     }
 }
 
+/* High level function to send custom lossy packets.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_group_lossy_packet(const Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length)
+{
+    //TODO: length check here?
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    uint8_t packet[sizeof(uint16_t) * 2 + length];
+    uint16_t peer_number = htons(g->peer_number);
+    memcpy(packet, &peer_number, sizeof(uint16_t));
+    uint16_t message_num = htons(g->lossy_message_number);
+    memcpy(packet + sizeof(uint16_t), &message_num, sizeof(uint16_t));
+    memcpy(packet + sizeof(uint16_t) * 2, data, length);
+
+    if (send_lossy_all_close(g_c, groupnumber, packet, sizeof(packet), -1) == 0) {
+        return -1;
+    }
+
+    ++g->lossy_message_number;
+    return 0;
+}
+
 static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length,
                                         int close_index)
 {
@@ -1730,9 +1771,13 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
     ++lossy_data;
     --lossy_length;
 
-    switch (message_id) {
-
-
+    if (g_c->lossy_packethandlers[message_id].function) {
+        if (g_c->lossy_packethandlers[message_id].function(g_c->m, groupnumber, index, lossy_data, lossy_length,
+                g_c->lossy_packethandlers[message_id].userdata) == -1) {
+            return -1;
+        }
+    } else {
+        return -1;
     }
 
     send_lossy_all_close(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)),
