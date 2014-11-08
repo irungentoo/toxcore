@@ -43,7 +43,7 @@ typedef struct Tox Tox;
 
 
 /**
- * @brief Callbacks ids that handle the call states.
+ * Callbacks ids that handle the call states.
  */
 typedef enum {
     /* Requests */
@@ -66,7 +66,7 @@ typedef enum {
 
 
 /**
- * @brief Call type identifier.
+ * Call type identifier.
  */
 typedef enum {
     TypeAudio = 192,
@@ -84,7 +84,7 @@ typedef enum {
 } ToxAvCallState;
 
 /**
- * @brief Error indicators.
+ * Error indicators.
  */
 typedef enum {
     ErrorNone = 0,
@@ -105,7 +105,7 @@ typedef enum {
 
 
 /**
- * @brief Locally supported capabilities.
+ * Locally supported capabilities.
  */
 typedef enum {
     AudioEncoding = 1 << 0,
@@ -116,9 +116,9 @@ typedef enum {
 
 
 /**
- * @brief Encoding settings.
+ * Encoding settings.
  */
-typedef struct _ToxAvCodecSettings {
+typedef struct _ToxAvCSettings {
     ToxAvCallType call_type;
 
     uint32_t video_bitrate; /* In kbits/s */
@@ -136,251 +136,160 @@ extern const uint32_t av_jbufdc; /* Jitter buffer default capacity */
 extern const uint32_t av_VADd; /* VAD default treshold */
 
 /**
- * @brief Start new A/V session. There can only be one session at the time. If you register more
- *        it will result in undefined behaviour.
- *
- * @param messenger The messenger handle.
- * @param userdata The agent handling A/V session (i.e. phone).
- * @param video_width Width of video frame.
- * @param video_height Height of video frame.
- * @return ToxAv*
- * @retval NULL On error.
+ * Start new A/V session. There can only be one session at the time.
  */
 ToxAv *toxav_new(Tox *messenger, int32_t max_calls);
 
 /**
- * @brief Remove A/V session.
- *
- * @param av Handler.
- * @return void
+ * Remove A/V session.
  */
 void toxav_kill(ToxAv *av);
 
 /**
- * @brief Register callback for call state.
- *
- * @param av Handler.
- * @param callback The callback
- * @param id One of the ToxAvCallbackID values
- * @return void
+ * Main loop for the session. Best called right after tox_do();
  */
-void toxav_register_callstate_callback (ToxAv *av, ToxAVCallback callback, ToxAvCallbackID id, void *userdata);
+void toxav_do(ToxAv *av);
 
 /**
- * @brief Register callback for receiving audio data
- *
- * @param av Handler.
- * @param callback The callback
- * @return void
+ * Register callback for call state.
  */
-void toxav_register_audio_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, int16_t *, int, void *),
-        void *user_data);
+void toxav_register_callstate_callback (ToxAv *av, 
+                                        ToxAVCallback callback, 
+                                        ToxAvCallbackID id, 
+                                        void *userdata);
 
 /**
- * @brief Register callback for receiving video data
- *
- * @param av Handler.
- * @param callback The callback
- * @return void
+ * Call user. Use its friend_id.
  */
-void toxav_register_video_recv_callback (ToxAv *av, void (*callback)(ToxAv *, int32_t, vpx_image_t *, void *),
-        void *user_data);
+int toxav_call(ToxAv *av, 
+               int32_t *call_index, 
+               int friend_id,
+               const ToxAvCSettings *csettings, 
+               int ringing_seconds);
 
 /**
- * @brief Call user. Use its friend_id.
- *
- * @param av Handler.
- * @param user The user.
- * @param call_type Call type.
- * @param ringing_seconds Ringing timeout.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
- */
-int toxav_call(ToxAv *av, int32_t *call_index, int user, const ToxAvCSettings *csettings, int ringing_seconds);
-
-/**
- * @brief Hangup active call.
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Hangup active call.
  */
 int toxav_hangup(ToxAv *av, int32_t call_index);
 
 /**
- * @brief Answer incomming call.
- *
- * @param av Handler.
- * @param call_type Answer with...
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Answer incoming call. Pass the csettings that you will use.
  */
 int toxav_answer(ToxAv *av, int32_t call_index, const ToxAvCSettings *csettings );
 
 /**
- * @brief Reject incomming call.
- *
- * @param av Handler.
- * @param reason Optional reason. Set NULL if none.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Reject incoming call.
  */
 int toxav_reject(ToxAv *av, int32_t call_index, const char *reason);
 
 /**
- * @brief Cancel outgoing request.
- *
- * @param av Handler.
- * @param reason Optional reason.
- * @param peer_id peer friend_id
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Cancel outgoing request.
  */
 int toxav_cancel(ToxAv *av, int32_t call_index, int peer_id, const char *reason);
 
 /**
- * @brief Notify peer that we are changing call settings
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Notify peer that we are changing codec settings.
  */
 int toxav_change_settings(ToxAv *av, int32_t call_index, const ToxAvCSettings *csettings);
 
 /**
- * @brief Terminate transmission. Note that transmission will be terminated without informing remote peer.
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Terminate transmission. Note that transmission will be 
+ * terminated without informing remote peer. Usually called when we can't inform peer.
  */
 int toxav_stop_call(ToxAv *av, int32_t call_index);
 
 /**
- * @brief Must be call before any RTP transmission occurs.
- *
- * @param av Handler.
- * @param support_video Is video supported ? 1 : 0
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Allocates transmission data. Must be call before calling toxav_prepare_* and toxav_send_*.
  */
-int toxav_prepare_transmission(ToxAv *av, int32_t call_index, uint32_t jbuf_size, uint32_t VAD_treshold,
+int toxav_prepare_transmission(ToxAv *av, 
+                               int32_t call_index, 
+                               uint32_t jbuf_size, 
+                               uint32_t VAD_treshold,
                                int support_video);
 
 /**
- * @brief Call this at the end of the transmission.
- *
- * @param av Handler.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Clears transmission data. Call this at the end of the transmission.
  */
 int toxav_kill_transmission(ToxAv *av, int32_t call_index);
 
 /**
- * @brief Encode and send video packet.
- *
- * @param av Handler.
- * @param frame The encoded frame.
- * @param frame_size The size of the encoded frame.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Encode video frame.
  */
-int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int frame_size);
+int toxav_prepare_video_frame ( ToxAv *av, 
+                                int32_t call_index, 
+                                uint8_t *dest, 
+                                int dest_max, 
+                                vpx_image_t *input);
 
 /**
- * @brief Send audio frame.
- *
- * @param av Handler.
- * @param data The audio data encoded with toxav_prepare_audio_frame().
- * @param size Its size in number of bytes.
- * @return int
- * @retval 0 Success.
- * @retval ToxAvError On error.
+ * Send encoded video packet.
+ */
+int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, uint32_t frame_size);
+
+/**
+ * Recv video payload. You can either poll (wait == 0), wait some time 
+ * (wait == -1 forever or wait == x for x ms) . Returns -1 on error else amount of images recved.
+ * NOTE: make sure do deallocate 'output' images since they are allocated internally (no need for this on error)
+ */
+int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **output, uint16_t max_images, int32_t wait);
+
+/**
+ * Encode audio frame.
+ */
+int toxav_prepare_audio_frame ( ToxAv *av, 
+                                int32_t call_index, 
+                                uint8_t *dest, 
+                                int dest_max, 
+                                const int16_t *frame,
+                                int frame_size);
+
+/**
+ * Send encoded audio frame.
  */
 int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsigned int size);
 
 /**
- * @brief Encode video frame
- *
- * @param av Handler
- * @param dest Where to
- * @param dest_max Max size
- * @param input What to encode
- * @return int
- * @retval ToxAvError On error.
- * @retval >0 On success
+ * Recv audio payload. You can either poll (wait == 0), wait some time 
+ * (wait == -1 forever or wait == x for x ms). Returns: -1 on error, else size recved.
  */
-int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, vpx_image_t *input );
+int toxav_recv_audio ( ToxAv *av, int32_t call_index, int16_t* dest, uint16_t max_size, int32_t wait);
 
 /**
- * @brief Encode audio frame
- *
- * @param av Handler
- * @param dest dest
- * @param dest_max Max dest size
- * @param frame The frame
- * @param frame_size The frame size
- * @return int
- * @retval ToxAvError On error.
- * @retval >0 On success
- */
-int toxav_prepare_audio_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, int dest_max, const int16_t *frame,
-                                int frame_size);
-
-/**
- * @brief Get peer transmission type. It can either be audio or video.
- *
- * @param av Handler.
- * @param peer The peer
- * @return int
- * @retval ToxAvCallType On success.
- * @retval ToxAvError On error.
+ * Get codec settings from the peer. These were exchanged during call initialization
+ * or when peer send us new csettings.
  */
 int toxav_get_peer_csettings ( ToxAv *av, int32_t call_index, int peer, ToxAvCSettings *dest );
 
 /**
- * @brief Get id of peer participating in conversation
- *
- * @param av Handler
- * @param peer peer index
- * @return int
- * @retval ToxAvError No peer id
+ * Get friend id of peer participating in conversation.
  */
 int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer );
 
 /**
- * @brief Get current call state
- *
- * @param av Handler
- * @param call_index What call
- * @return int
- * @retval ToxAvCallState State id
+ * Get current call state.
  */
 ToxAvCallState toxav_get_call_state ( ToxAv *av, int32_t call_index );
+
 /**
- * @brief Is certain capability supported
- *
- * @param av Handler
- * @return int
- * @retval 1 Yes.
- * @retval 0 No.
+ * Is certain capability supported. Used to determine if encoding/decoding is ready.
  */
 int toxav_capability_supported ( ToxAv *av, int32_t call_index, ToxAvCapabilities capability );
 
+/**
+ * Returns tox reference.
+ */
+Tox *toxav_get_tox (ToxAv *av);
 
-Tox *toxav_get_tox(ToxAv *av);
-
-int toxav_has_activity ( ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t frame_size, float ref_energy );
+/**
+ * Check if there is activity in the PCM data.
+ * Activity is present if the calculated PCM energy is > ref_energy.
+ * Returns bool.
+ */
+int toxav_has_activity ( ToxAv *av, 
+                         int32_t call_index, 
+                         int16_t *PCM, 
+                         uint16_t frame_size, 
+                         float ref_energy );
 
 #ifdef __cplusplus
 }
