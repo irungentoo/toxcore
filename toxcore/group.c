@@ -431,8 +431,8 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
         g_c->peer_namelistchange(g_c->m, groupnumber, g->numpeers - 1, CHAT_CHANGE_PEER_ADD,
                                  g_c->group_namelistchange_userdata);
 
-    if (g_c->peer_on_join)
-        g_c->peer_on_join(g->object, groupnumber, g->numpeers - 1);
+    if (g->peer_on_join)
+        g->peer_on_join(g->object, groupnumber, g->numpeers - 1);
 
     return (g->numpeers - 1);
 }
@@ -483,8 +483,8 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
     if (g_c->peer_namelistchange)
         g_c->peer_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, g_c->group_namelistchange_userdata);
 
-    if (g_c->peer_on_leave)
-        g_c->peer_on_leave(g->object, groupnumber, peer_index, peer_object);
+    if (g->peer_on_leave)
+        g->peer_on_leave(g->object, groupnumber, peer_index, peer_object);
 
     return 0;
 }
@@ -960,19 +960,37 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
 /* Set a function to be called when a new peer joins a group chat.
  *
  * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber)
+ *
+ * return 0 on success.
+ * return -1 on failure.
  */
-void callback_groupchat_peer_new(const Group_Chats *g_c, void (*function)(void *, int, int))
+int callback_groupchat_peer_new(const Group_Chats *g_c, int groupnumber, void (*function)(void *, int, int))
 {
-    g_c->peer_on_join = function;
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    g->peer_on_join = function;
+    return 0;
 }
 
 /* Set a function to be called when a peer leaves a group chat.
  *
  * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber, void *group peer object (set with group_peer_set_object))
+ *
+ * return 0 on success.
+ * return -1 on failure.
  */
-void callback_groupchat_peer_delete(const Group_Chats *g_c, void (*function)(void *, int, int, void *))
+int callback_groupchat_peer_delete(Group_Chats *g_c, int groupnumber, void (*function)(void *, int, int, void *))
 {
-    g_c->peer_on_leave = function;
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    g->peer_on_leave = function;
+    return 0;
 }
 
 static unsigned int send_message_group(const Group_Chats *g_c, int groupnumber, uint8_t message_id, const uint8_t *data,
@@ -1020,7 +1038,6 @@ int group_new_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_n
  */
 int group_kill_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_num)
 {
-
     uint8_t packet[GROUP_MESSAGE_KILL_PEER_LENGTH];
 
     peer_num = htons(peer_num);

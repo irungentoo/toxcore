@@ -95,6 +95,9 @@ typedef struct {
     int number_joined; /* friendcon_id of person that invited us to the chat. (-1 means none) */
 
     void *object;
+
+    void (*peer_on_join)(void *, int, int);
+    void (*peer_on_leave)(void *, int, int, void *);
 } Group_c;
 
 typedef struct {
@@ -113,8 +116,6 @@ typedef struct {
     void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
 
-    void (*peer_on_join)(void *, int, int);
-    void (*peer_on_leave)(void *, int, int, void *);
     struct {
         int (*function)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
         void *userdata;
@@ -289,14 +290,20 @@ void *group_peer_get_object(const Group_Chats *g_c, int groupnumber, int peernum
 /* Set a function to be called when a new peer joins a group chat.
  *
  * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber)
+ *
+ * return 0 on success.
+ * return -1 on failure.
  */
-void callback_groupchat_peer_new(const Group_Chats *g_c, void (*function)(void *, int, int));
+int callback_groupchat_peer_new(const Group_Chats *g_c, int groupnumber, void (*function)(void *, int, int));
 
 /* Set a function to be called when a peer leaves a group chat.
  *
  * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber, void *group peer object (set with group_peer_set_object))
+ *
+ * return 0 on success.
+ * return -1 on failure.
  */
-void callback_groupchat_peer_delete(const Group_Chats *g_c, void (*function)(void *, int, int, void *));
+int callback_groupchat_peer_delete(Group_Chats *g_c, int groupnumber, void (*function)(void *, int, int, void *));
 
 /* Create new groupchat instance. */
 Group_Chats *new_groupchats(Messenger *m);
