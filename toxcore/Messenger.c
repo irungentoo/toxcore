@@ -1979,7 +1979,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         return -1;
 
     Messenger *m = object;
-    uint64_t temp_time = unix_time();
     uint8_t packet_id = temp[0];
     uint8_t *data = temp + 1;
     uint32_t data_length = len - 1;
