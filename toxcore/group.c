@@ -431,6 +431,9 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
         g_c->peer_namelistchange(g_c->m, groupnumber, g->numpeers - 1, CHAT_CHANGE_PEER_ADD,
                                  g_c->group_namelistchange_userdata);
 
+    if (g_c->peer_on_join)
+        g_c->peer_on_join(g->object, groupnumber, g->numpeers - 1);
+
     return (g->numpeers - 1);
 }
 
@@ -460,24 +463,28 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
     Group_Peer *temp;
     --g->numpeers;
 
+    void *peer_object = g->group[peer_index].object;
+
     if (g->numpeers == 0) {
         free(g->group);
         g->group = NULL;
-        return 0;
+    } else {
+        if (g->numpeers != (uint32_t)peer_index)
+            memcpy(&g->group[peer_index], &g->group[g->numpeers], sizeof(Group_Peer));
+
+        temp = realloc(g->group, sizeof(Group_Peer) * (g->numpeers));
+
+        if (temp == NULL)
+            return -1;
+
+        g->group = temp;
     }
-
-    if (g->numpeers != (uint32_t)peer_index)
-        memcpy(&g->group[peer_index], &g->group[g->numpeers], sizeof(Group_Peer));
-
-    temp = realloc(g->group, sizeof(Group_Peer) * (g->numpeers));
-
-    if (temp == NULL)
-        return -1;
-
-    g->group = temp;
 
     if (g_c->peer_namelistchange)
         g_c->peer_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, g_c->group_namelistchange_userdata);
+
+    if (g_c->peer_on_leave)
+        g_c->peer_on_leave(g->object, groupnumber, peer_index, peer_object);
 
     return 0;
 }
@@ -948,6 +955,24 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
 {
     g_c->peer_namelistchange = function;
     g_c->group_namelistchange_userdata = userdata;
+}
+
+/* Set a function to be called when a new peer joins a group chat.
+ *
+ * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber)
+ */
+void callback_groupchat_peer_new(const Group_Chats *g_c, void (*function)(void *, int, int))
+{
+    g_c->peer_on_join = function;
+}
+
+/* Set a function to be called when a peer leaves a group chat.
+ *
+ * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber, void *group peer object (set with group_peer_set_object))
+ */
+void callback_groupchat_peer_delete(const Group_Chats *g_c, void (*function)(void *, int, int, void *))
+{
+    g_c->peer_on_leave = function;
 }
 
 static unsigned int send_message_group(const Group_Chats *g_c, int groupnumber, uint8_t message_id, const uint8_t *data,
@@ -1783,6 +1808,74 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
     send_lossy_all_close(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)),
                          -1/*TODO close_index*/);
     return 0;
+}
+
+/* Set the object that is tied to the group chat.
+ *
+ * return 0 on success.
+ * return -1 on failure
+ */
+int group_set_object(const Group_Chats *g_c, int groupnumber, void *object)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    g->object = object;
+    return 0;
+}
+
+/* Set the object that is tied to the group peer.
+ *
+ * return 0 on success.
+ * return -1 on failure
+ */
+int group_peer_set_object(const Group_Chats *g_c, int groupnumber, int peernumber, void *object)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    if ((uint32_t)peernumber >= g->numpeers)
+        return -1;
+
+    g->group[peernumber].object = object;
+    return 0;
+}
+
+/* Return the object tide to the group chat previously set by group_set_object.
+ *
+ * return NULL on failure.
+ * return object on success.
+ */
+void *group_get_object(const Group_Chats *g_c, int groupnumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return NULL;
+
+    return g->object;
+}
+
+/* Return the object tide to the group chat peer previously set by group_peer_set_object.
+ *
+ * return NULL on failure.
+ * return object on success.
+ */
+void *group_peer_get_object(const Group_Chats *g_c, int groupnumber, int peernumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return NULL;
+
+    if ((uint32_t)peernumber >= g->numpeers)
+        return NULL;
+
+    return g->group[peernumber].object;
 }
 
 /* Interval in seconds to send ping messages */
