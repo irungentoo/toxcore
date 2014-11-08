@@ -355,10 +355,13 @@ static int toxav_send_rtp_payload(ToxAv *av,
         int parts = cs_split_video_payload(call->cs, payload, length);
         if (parts == -1) return ErrorInternal;
         
-        int i; uint16_t part_size;
+        uint16_t part_size; 
+        const uint8_t* iter;
+        
+        int i;
         for (i = 0; i < parts; i++) {
-            if (rtp_send_msg(call->crtps[video_index], av->messenger,
-                cs_get_split_video_frame(call->cs, &part_size), part_size) != 0) 
+            iter = cs_get_split_video_frame(call->cs, &part_size);
+            if (rtp_send_msg(call->crtps[video_index], av->messenger, iter, part_size) != 0) 
                 return ErrorInternal;
         }
         

@@ -59,17 +59,17 @@ typedef struct _PayloadBuffer {
     Payload **packets;
 } PayloadBuffer;
 
-static _Bool buffer_full(const PayloadBuffer* b) 
+static _Bool buffer_full(const PayloadBuffer *b) 
 {
     return (b->end + 1) % b->size == b->start;
 }
 
-static _Bool buffer_empty(const PayloadBuffer* b) 
+static _Bool buffer_empty(const PayloadBuffer *b) 
 {
     return b->end == b->start;
 }
 
-static void buffer_write(PayloadBuffer* b, Payload* p)
+static void buffer_write(PayloadBuffer *b, Payload *p)
 {
     b->packets[b->end] = p;
     b->end = (b->end + 1) % b->size;
@@ -77,10 +77,19 @@ static void buffer_write(PayloadBuffer* b, Payload* p)
         b->start = (b->start + 1) % b->size; /* full, overwrite */
 }
 
-static void buffer_read(PayloadBuffer* b, Payload** p)
+static void buffer_read(PayloadBuffer *b, Payload **p)
 {
     *p = b->packets[b->start];
     b->start = (b->start + 1) % b->size;
+}
+
+static void buffer_clear(PayloadBuffer *b)
+{
+    while (!buffer_empty(b)) {
+        Payload* p;
+        buffer_read(b, &p);
+        free(p);
+    }
 }
 
 static PayloadBuffer* buffer_new(int size) 
@@ -97,16 +106,12 @@ static PayloadBuffer* buffer_new(int size)
     return buf;
 }
 
-static void buffer_free(PayloadBuffer *buf) 
+static void buffer_free(PayloadBuffer *b) 
 {
-    if (buf) {
-        while (!buffer_empty(buf)) {
-            Payload* p;
-            buffer_read(buf, &p);
-            free(p);
-        }
-        free(buf->packets);
-        free(buf);
+    if (b) {
+        buffer_clear(b);
+        free(b->packets);
+        free(b);
     }
 }
 
@@ -220,7 +225,7 @@ static RTPMessage *jbuf_read(JitterBuffer *q, int32_t *success)
 int cs_split_video_payload(CodecState* cs, const uint8_t* payload, uint16_t length)
 {
     if (!cs || !length || length > cs->max_video_frame_size) {
-        LOGGER_ERROR("Invalid  CodecState or video frame size: %u\n", length);
+        LOGGER_ERROR("Invalid  CodecState or video frame size: %u", length);
         return -1;
     }
     
@@ -308,7 +313,7 @@ int cs_recv_decoded_video(CodecState* cs, vpx_image_t** dest, uint16_t max_image
     free(p);
     
     if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Error decoding video: %s\n", vpx_codec_err_to_string(rc));
+        LOGGER_ERROR("Error decoding video: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
     
@@ -320,8 +325,9 @@ int cs_recv_decoded_video(CodecState* cs, vpx_image_t** dest, uint16_t max_image
          dest[rc - 1] = vpx_codec_get_frame(&cs->v_decoder, &iter))
         rc++;
     
-    if (rc == max_images) { /* Don't allow this behavoiur and return error */
-        for (rc = 0; rc < max_images; rc++) vpx_img_free(dest[rc]);
+    rc --;
+    if (rc == max_images - 1) { /* Don't allow this behavoiur and return error */
+        for (rc = 0; rc < max_images - 1; rc++) vpx_img_free(dest[rc]);
         LOGGER_WARNING("Image overflow!");
         return -1;
     }
@@ -761,7 +767,7 @@ void queue_message(RTPSession *session, RTPMessage *msg)
         if (recved_size < VIDEOFRAME_HEADER_SIZE)
             goto end;
         
-        if (packet[0] > cs->frameid_in) {/* New frame */
+        if (packet[0] > cs->frameid_in || (msg->header->timestamp > cs->last_timestamp)) {/* New frame */
             /* Flush last frames' data and get ready for this frame */
             Payload* p = malloc(sizeof(Payload) + cs->frame_size);
             
@@ -770,7 +776,7 @@ void queue_message(RTPSession *session, RTPMessage *msg)
                 pthread_mutex_lock(cs->vbuf_mutex);
                 
                 if (buffer_full(cs->vbuf)) {
-                    LOGGER_DEBUG("Dropped video frame\n");
+                    LOGGER_DEBUG("Dropped video frame");
                     free(p);
                 }
                 else {
@@ -787,17 +793,19 @@ void queue_message(RTPSession *session, RTPMessage *msg)
                 goto end;
             }
             
+            cs->last_timestamp = msg->header->timestamp;
             cs->frameid_in = packet[0];
             memset(cs->frame_buf, 0, cs->frame_size);
             cs->frame_size = 0;
             
-        } else if (packet[0] < cs->frameid_in) { /* Old frame; drop TODO: handle new cycle */
-            LOGGER_DEBUG("Old packet: %u\n", packet[0]);
+        } else if (packet[0] < cs->frameid_in) { /* Old frame; drop */
+            LOGGER_DEBUG("Old packet: %u", packet[0]);
             goto end;
         }
-        /* else it's the same frame so just process */
         
-        LOGGER_DEBUG("Video Packet: %u %u\n", packet[0], packet[1]);
+        /* Otherwise it's the same frame so just process */
+        
+        LOGGER_DEBUG("Video Packet: %u %u", packet[0], packet[1]);
         memcpy(cs->frame_buf + cs->frame_size,
                packet + VIDEOFRAME_HEADER_SIZE,
                recved_size - VIDEOFRAME_HEADER_SIZE);
