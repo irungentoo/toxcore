@@ -1240,7 +1240,6 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
     if (!g)
         return -1;
 
-    unsigned int i;
     const uint8_t *d = data;
 
     while ((length - (d - data)) >= sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES * 2 + 1) {
