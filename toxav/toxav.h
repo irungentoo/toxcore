@@ -229,6 +229,7 @@ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, uint
 /**
  * Recv video payload. You can either poll (wait == 0), wait some time 
  * (wait == -1 forever or wait == x for x ms) . Returns -1 on error else amount of images recved.
+ * NOTE: make sure do deallocate 'output' images since they are allocated internally (no need for this on error)
  */
 int toxav_recv_video ( ToxAv *av, int32_t call_index, vpx_image_t **output, uint16_t max_images, int32_t wait);
 
