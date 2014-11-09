@@ -28,8 +28,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define inline__ inline __attribute__((always_inline))
-
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
