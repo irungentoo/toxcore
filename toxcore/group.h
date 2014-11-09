@@ -117,8 +117,7 @@ typedef struct {
     void *group_namelistchange_userdata;
 
     struct {
-        int (*function)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
-        void *userdata;
+        int (*function)(void *, int, int, void *, const uint8_t *, uint16_t);
     } lossy_packethandlers[256];
 } Group_Chats;
 
@@ -231,9 +230,11 @@ int group_names(const Group_Chats *g_c, int groupnumber, uint8_t names[][MAX_NAM
 /* Set handlers for custom lossy packets.
  *
  * NOTE: Handler must return 0 if packet is to be relayed, -1 if the packet should not be relayed.
+ *
+ * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber, void *group peer object (set with group_peer_set_object), const uint8_t *packet, uint16_t length)
  */
-void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*function)(Messenger *m, int, int,
-                                        const uint8_t *, uint16_t, void *), void *userdata);
+void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*function)(void *, int, int, void *,
+                                        const uint8_t *, uint16_t));
 
 /* High level function to send custom lossy packets.
  *

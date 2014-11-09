@@ -933,16 +933,15 @@ void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, in
 }
 
 /* Set handlers for custom lossy packets.
+ *
  * NOTE: Handler must return 0 if packet is to be relayed, -1 if the packet should not be relayed.
  *
- * return -1 on failure.
- * return 0 on success.
+ * Function(void *group object (set with group_set_object), int groupnumber, int friendgroupnumber, void *group peer object (set with group_peer_set_object), const uint8_t *packet, uint16_t length)
  */
-void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*function)(Messenger *m, int, int,
-                                        const uint8_t *, uint16_t, void *), void *userdata)
+void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*function)(void *, int, int, void *,
+                                        const uint8_t *, uint16_t))
 {
     g_c->lossy_packethandlers[byte].function = function;
-    g_c->lossy_packethandlers[byte].userdata = userdata;
 }
 
 /* Set callback function for peer name list changes.
@@ -1814,8 +1813,8 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
     --lossy_length;
 
     if (g_c->lossy_packethandlers[message_id].function) {
-        if (g_c->lossy_packethandlers[message_id].function(g_c->m, groupnumber, index, lossy_data, lossy_length,
-                g_c->lossy_packethandlers[message_id].userdata) == -1) {
+        if (g_c->lossy_packethandlers[message_id].function(g->object, groupnumber, index, g->group[peer_index].object,
+                lossy_data, lossy_length) == -1) {
             return -1;
         }
     } else {

@@ -189,14 +189,39 @@ static Group_AV *new_group_av(unsigned int audio_channels, unsigned int audio_sa
 
 static void group_av_peer_new(void *object, int groupnumber, int friendgroupnumber)
 {
+    Group_Peer_AV *peer_av = calloc(1, sizeof(Group_Peer_AV));
 
+    if (!peer_av)
+        return;
 
+    peer_av->buffer = create_queue(3); //TODO Use variable instead.
 }
 
 static void group_av_peer_delete(void *object, int groupnumber, int friendgroupnumber, void *peer_object)
 {
+    Group_Peer_AV *peer_av = peer_object;
 
+    if (!peer_av)
+        return;
 
+    if (peer_av->audio_decoder)
+        opus_decoder_destroy(peer_av->audio_decoder);
+
+    terminate_queue(peer_av->buffer);
+    free(peer_object);
+}
+
+static int handle_group_audio_packet(void *object, int groupnumber, int friendgroupnumber, void *peer_object,
+                                     const uint8_t *packet, uint16_t length)
+{
+    if (!peer_object || !object)
+        return -1;
+
+    Group_Peer_AV *peer_av = peer_object;
+
+    //TODO: parse packet into Group_Audio_Packet
+    //queue(peer_av->buffer, Group_Audio_Packet *pk)
+    return 0;
 }
 
 static int groupchat_enable_av(Group_Chats *g_c, int groupnumber)
@@ -214,6 +239,7 @@ static int groupchat_enable_av(Group_Chats *g_c, int groupnumber)
         return -1;
     }
 
+    group_lossy_packet_registerhandler(g_c, GROUP_AUDIO_PACKET_ID, &handle_group_audio_packet);
     return 0;
 }
 

@@ -23,6 +23,8 @@
 
 #include "../toxcore/group.h"
 
+#define GROUP_AUDIO_PACKET_ID 192
+
 /* Create a new toxav group.
  *
  * return group number on success.
