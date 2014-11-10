@@ -135,19 +135,25 @@ static Group_Audio_Packet *dequeue(Group_JitterBuffer *q, int *success)
     return NULL;
 }
 
-
 typedef struct {
+    Group_Chats *g_c;
     OpusEncoder *audio_encoder;
 
     unsigned int audio_channels, audio_sample_rate, audio_bitrate;
 
     uint16_t audio_sequnum;
+
+    void (*audio_data)(Messenger *m, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples,
+                       uint8_t channels, unsigned int sample_rate, void *userdata);
+    void *userdata;
 } Group_AV;
 
 typedef struct {
     Group_JitterBuffer *buffer;
 
     OpusDecoder *audio_decoder;
+    int decoder_channels;
+    unsigned int last_packet_samples;
 } Group_Peer_AV;
 
 static void kill_group_av(Group_AV *group_av)
@@ -156,8 +162,13 @@ static void kill_group_av(Group_AV *group_av)
     free(group_av);
 }
 
-static Group_AV *new_group_av(unsigned int audio_channels, unsigned int audio_sample_rate, unsigned int audio_bitrate)
+static Group_AV *new_group_av(Group_Chats *g_c, unsigned int audio_channels, unsigned int audio_sample_rate,
+                              unsigned int audio_bitrate, void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t,
+                                      unsigned int, void *), void *userdata)
 {
+    if (!g_c)
+        return NULL;
+
     Group_AV *group_av = calloc(1, sizeof(Group_AV));
 
     int rc = OPUS_OK;
@@ -190,6 +201,10 @@ static Group_AV *new_group_av(unsigned int audio_channels, unsigned int audio_sa
     group_av->audio_channels = audio_channels;
     group_av->audio_sample_rate = audio_sample_rate;
     group_av->audio_bitrate = audio_bitrate;
+    group_av->g_c = g_c;
+
+    group_av->audio_data = audio_callback;
+    group_av->userdata = userdata;
     return 0;
 }
 
@@ -215,6 +230,100 @@ static void group_av_peer_delete(void *object, int groupnumber, int friendgroupn
 
     terminate_queue(peer_av->buffer);
     free(peer_object);
+}
+
+static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int groupnumber, int friendgroupnumber)
+{
+    if (!group_av || !peer_av)
+        return -1;
+
+    int success;
+    Group_Audio_Packet *pk = dequeue(peer_av->buffer, &success);
+
+    if (success == 0)
+        return -1;
+
+    int16_t *out_audio = NULL;
+    unsigned int out_audio_samples = 0;
+
+    if (success == 1) {
+        int channels = opus_packet_get_nb_channels(pk->data);
+
+        if (channels == OPUS_INVALID_PACKET) {
+            free(pk);
+            return -1;
+        }
+
+        if (channels != 1 && channels != 2) {
+            free(pk);
+            return -1;
+        }
+
+        if (channels != peer_av->decoder_channels) {
+            if (peer_av->audio_decoder) {
+                opus_decoder_destroy(peer_av->audio_decoder);
+                peer_av->audio_decoder = NULL;
+            }
+
+            int rc;
+            peer_av->audio_decoder = opus_decoder_create(group_av->audio_sample_rate, channels, &rc);
+
+            if ( rc != OPUS_OK ) {
+                LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
+                free(pk);
+                return -1;
+            }
+
+            peer_av->decoder_channels = channels;
+        }
+
+        int num_samples = opus_decoder_get_nb_samples(peer_av->audio_decoder, pk->data, pk->length);
+
+        out_audio = malloc(num_samples * peer_av->decoder_channels * sizeof(int16_t));
+
+        if (!out_audio) {
+            free(pk);
+            return -1;
+        }
+
+        out_audio_samples = opus_decode(peer_av->audio_decoder, pk->data, pk->length, out_audio, num_samples, 0);
+        free(pk);
+
+        if (out_audio_samples <= 0)
+            return -1;
+
+        peer_av->last_packet_samples = out_audio_samples;
+    } else {
+        if (!peer_av->audio_decoder)
+            return -1;
+
+        if (!peer_av->last_packet_samples)
+            return -1;
+
+        out_audio = malloc(peer_av->last_packet_samples * peer_av->decoder_channels * sizeof(int16_t));
+
+        if (!out_audio) {
+            free(pk);
+            return -1;
+        }
+
+        out_audio_samples = opus_decode(peer_av->audio_decoder, NULL, 0, out_audio, peer_av->last_packet_samples, 1);
+
+        if (out_audio_samples <= 0)
+            return -1;
+
+    }
+
+    if (out_audio) {
+        //TODO callback
+        /*
+        if (group_av->audio_data)
+            audio_data(
+        */
+        return 0;
+    }
+
+    return -1;
 }
 
 static int handle_group_audio_packet(void *object, int groupnumber, int friendgroupnumber, void *peer_object,
@@ -244,13 +353,21 @@ static int handle_group_audio_packet(void *object, int groupnumber, int friendgr
     return 0;
 }
 
-static int groupchat_enable_av(Group_Chats *g_c, int groupnumber)
+/* Convert groupchat to an A/V groupchat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+static int groupchat_enable_av(Group_Chats *g_c, int groupnumber, void (*audio_callback)(Messenger *, int, int,
+                               const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata)
 {
-    Group_AV *group_av = new_group_av(1, 48000, 64000); //TODO: Use variables instead.
-
-    if (group_av == NULL) {
+    if (groupnumber == -1)
         return -1;
-    }
+
+    Group_AV *group_av = new_group_av(g_c, 1, 48000, 64000, audio_callback, userdata); //TODO: Use variables instead.
+
+    if (group_av == NULL)
+        return -1;
 
     if (group_set_object(g_c, groupnumber, group_av) == -1
             || callback_groupchat_peer_new(g_c, groupnumber, group_av_peer_new) == -1
@@ -268,15 +385,39 @@ static int groupchat_enable_av(Group_Chats *g_c, int groupnumber)
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(Group_Chats *g_c)
+int add_av_groupchat(Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int,
+                     uint8_t, unsigned int, void *), void *userdata)
 {
-    int groupnumber = add_groupchat(g_c);
+    int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
 
     if (groupnumber == -1) {
         return -1;
     }
 
-    if (groupchat_enable_av(g_c, groupnumber) == -1) {
+    if (groupchat_enable_av(g_c, groupnumber, audio_callback, userdata) == -1) {
+        del_groupchat(g_c, groupnumber);
+        return -1;
+    }
+
+    return groupnumber;
+}
+
+/* Join a AV group (you need to have been invited first.)
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ */
+int join_av_groupchat(Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length,
+                      void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
+                      void *userdata)
+{
+    int groupnumber = join_groupchat(g_c, friendnumber, GROUPCHAT_TYPE_AV, data, length);
+
+    if (groupnumber == -1) {
+        return -1;
+    }
+
+    if (groupchat_enable_av(g_c, groupnumber, audio_callback, userdata) == -1) {
         del_groupchat(g_c, groupnumber);
         return -1;
     }
@@ -307,4 +448,27 @@ static int send_audio_packet(Group_Chats *g_c, int groupnumber, uint8_t *packet,
 
     ++group_av->audio_sequnum;
     return 0;
+}
+
+/* Send audio to the group chat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int group_send_audio(Group_Chats *g_c, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                     unsigned int sample_rate)
+{
+    //TODO use channels and sample_rate arguments.
+    Group_AV *group_av = group_get_object(g_c, groupnumber);
+
+    if (!group_av)
+        return -1;
+
+    uint8_t encoded[1024];
+    int32_t size = opus_encode(group_av->audio_encoder, pcm, samples, encoded, sizeof(encoded));
+
+    if (size <= 0)
+        return -1;
+
+    return send_audio_packet(g_c, groupnumber, encoded, size);
 }

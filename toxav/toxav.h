@@ -382,6 +382,31 @@ Tox *toxav_get_tox(ToxAv *av);
 
 int toxav_has_activity ( ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t frame_size, float ref_energy );
 
+
+/* Create a new toxav group.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ */
+int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(Tox *, int, int, const int16_t *, unsigned int, uint8_t,
+                           unsigned int, void *), void *userdata);
+
+/* Join a AV group (you need to have been invited first.)
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ */
+int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
+                            void (*audio_callback)(Tox *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata);
+
+/* Send audio to the group chat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                           unsigned int sample_rate);
+
 #ifdef __cplusplus
 }
 #endif

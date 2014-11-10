@@ -1001,11 +1001,17 @@ void print_help(char *prog_name)
     puts("  -f keyfile      [Optional] Specify a keyfile to read from and write to.");
 }
 
-void print_invite(Tox *m, int friendnumber, const uint8_t *data, uint16_t length, void *userdata)
+void print_invite(Tox *m, int friendnumber, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
 {
     char msg[256];
-    sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
-            tox_join_groupchat(m, friendnumber, data, length));
+
+    if (type == TOX_GROUPCHAT_TYPE_TEXT) {
+        sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
+                tox_join_groupchat(m, friendnumber, data, length));
+    } else {
+        sprintf(msg, "[i] Group chat invite received of type %u that could not be accepted by ntox.", type);
+    }
+
     new_lines(msg);
 }
 
