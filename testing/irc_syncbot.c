@@ -83,7 +83,7 @@ int reconnect(void)
 
 int current_group = -1;
 
-static void callback_group_invite(Tox *tox, int fid, const uint8_t *data, uint16_t length, void *userdata)
+static void callback_group_invite(Tox *tox, int fid, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (current_group == -1)
         current_group = tox_join_groupchat(tox, fid, data, length);
