@@ -417,14 +417,26 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
 
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 
+/* Group chat types for tox_callback_group_invite function.
+ *
+ * TOX_GROUPCHAT_TYPE_TEXT groupchats must be accepted with the tox_join_groupchat() function.
+ * The function to accept TOX_GROUPCHAT_TYPE_AV is in toxav.
+ */
+enum {
+    TOX_GROUPCHAT_TYPE_TEXT,
+    TOX_GROUPCHAT_TYPE_AV
+};
+
 /* Set the callback for group invites.
  *
- *  Function(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
  *
  * data of length is what needs to be passed to join_groupchat().
+ *
+ * for what type means see the enum right above this comment.
  */
-void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, const uint8_t *, uint16_t, void *),
-                               void *userdata);
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, const uint8_t *, uint16_t,
+                               void *), void *userdata);
 
 /* Set the callback for group messages.
  *

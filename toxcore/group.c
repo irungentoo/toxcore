@@ -630,10 +630,12 @@ static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, int groupnu
 
 /* Creates a new groupchat and puts it in the chats array.
  *
+ * type is one of GROUPCHAT_TYPE_*
+ *
  * return group number on success.
  * return -1 on failure.
  */
-int add_groupchat(Group_Chats *g_c)
+int add_groupchat(Group_Chats *g_c, uint8_t type)
 {
     int groupnumber = create_group_chat(g_c);
 
@@ -644,7 +646,8 @@ int add_groupchat(Group_Chats *g_c)
 
     g->status = GROUPCHAT_STATUS_CONNECTED;
     g->number_joined = -1;
-    new_symmetric_key(g->identifier);
+    new_symmetric_key(g->identifier + 1);
+    g->identifier[0] = type;
     g->peer_number = 0; /* Founder is peer 0. */
     memcpy(g->real_pk, g_c->m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
     int peer_index = addpeer(g_c, groupnumber, g->real_pk, g_c->m->dht->self_public_key, 0);
@@ -846,12 +849,17 @@ static unsigned int send_peer_query(Group_Chats *g_c, int friendcon_id, uint16_t
 
 /* Join a group (you need to have been invited first.)
  *
+ * expected_type is the groupchat type we expect the chat we are joining is.
+ *
  * returns group number on success
  * returns -1 on failure.
  */
-int join_groupchat(Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length)
+int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type, const uint8_t *data, uint16_t length)
 {
     if (length != sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
+        return -1;
+
+    if (data[sizeof(uint16_t)] != expected_type)
         return -1;
 
     int friendcon_id = getfriendcon_id(g_c->m, friendnumber);
@@ -899,12 +907,12 @@ int join_groupchat(Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, 
 
 /* Set the callback for group invites.
  *
- *  Function(Group_Chats *g_c, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Group_Chats *g_c, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
  *
  *  data of length is what needs to be passed to join_groupchat().
  */
-void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t,
-                             void *), void *userdata)
+void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, int32_t, uint8_t, const uint8_t *,
+                             uint16_t, void *), void *userdata)
 {
     g_c->invite_callback = function;
     g_c->invite_callback_userdata = userdata;
@@ -1086,7 +1094,8 @@ static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, cons
 
             if (groupnumber == -1) {
                 if (g_c->invite_callback)
-                    g_c->invite_callback(m, friendnumber, invite_data, invite_length, g_c->invite_callback_userdata);
+                    g_c->invite_callback(m, friendnumber, *(invite_data + sizeof(uint16_t)), invite_data, invite_length,
+                                         g_c->invite_callback_userdata);
 
                 return;
             }
@@ -2002,6 +2011,7 @@ void kill_groupchats(Group_Chats *g_c)
 
     m_callback_group_invite(g_c->m, NULL);
     g_c->m->group_chat_object = 0;
+    free(g_c->av_object);
     free(g_c);
 }
 

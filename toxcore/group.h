@@ -33,6 +33,11 @@ enum {
     GROUPCHAT_STATUS_CONNECTED
 };
 
+enum {
+    GROUPCHAT_TYPE_TEXT,
+    GROUPCHAT_TYPE_AV
+};
+
 #define MAX_LOSSY_COUNT 256
 
 typedef struct {
@@ -55,7 +60,7 @@ typedef struct {
 
 #define DESIRED_CLOSE_CONNECTIONS 4
 #define MAX_GROUP_CONNECTIONS 16
-#define GROUP_IDENTIFIER_LENGTH crypto_box_KEYBYTES /* So we can use new_symmetric_key(...) to fill it */
+#define GROUP_IDENTIFIER_LENGTH (1 + crypto_box_KEYBYTES) /* crypto_box_KEYBYTES so we can use new_symmetric_key(...) to fill it */
 
 enum {
     GROUPCHAT_CLOSE_NONE,
@@ -107,7 +112,7 @@ typedef struct {
     Group_c *chats;
     uint32_t num_chats;
 
-    void (*invite_callback)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
+    void (*invite_callback)(Messenger *m, int32_t, uint8_t, const uint8_t *, uint16_t, void *);
     void *invite_callback_userdata;
     void (*message_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
     void *message_callback_userdata;
@@ -119,16 +124,18 @@ typedef struct {
     struct {
         int (*function)(void *, int, int, void *, const uint8_t *, uint16_t);
     } lossy_packethandlers[256];
+
+    void *av_object;
 } Group_Chats;
 
 /* Set the callback for group invites.
  *
- *  Function(Group_Chats *g_c, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Group_Chats *g_c, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
  *
  *  data of length is what needs to be passed to join_groupchat().
  */
-void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t,
-                             void *), void *userdata);
+void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, int32_t, uint8_t, const uint8_t *,
+                             uint16_t, void *), void *userdata);
 
 /* Set the callback for group messages.
  *
@@ -159,10 +166,12 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
 
 /* Creates a new groupchat and puts it in the chats array.
  *
+ * type is one of GROUPCHAT_TYPE_*
+ *
  * return group number on success.
  * return -1 on failure.
  */
-int add_groupchat(Group_Chats *g_c);
+int add_groupchat(Group_Chats *g_c, uint8_t type);
 
 /* Delete a groupchat from the chats array.
  *
@@ -187,10 +196,12 @@ int invite_friend(Group_Chats *g_c, int32_t friendnumber, int groupnumber);
 
 /* Join a group (you need to have been invited first.)
  *
+ * expected_type is the groupchat type we expect the chat we are joining is.
+ *
  * returns group number on success
  * returns -1 on failure.
  */
-int join_groupchat(Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length);
+int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type, const uint8_t *data, uint16_t length);
 
 /* send a group message
  * return 0 on success

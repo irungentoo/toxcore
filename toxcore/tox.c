@@ -551,12 +551,12 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
 
 /* Set the callback for group invites.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
  *
  * data of length is what needs to be passed to join_groupchat().
  */
-void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_t, const uint8_t *, uint16_t, void *),
-                               void *userdata)
+void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, const uint8_t *, uint16_t,
+                               void *), void *userdata)
 {
     Messenger *m = tox;
     g_callback_group_invite(m->group_chat_object, function, userdata);
@@ -603,7 +603,7 @@ void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int
 int tox_add_groupchat(Tox *tox)
 {
     Messenger *m = tox;
-    return add_groupchat(m->group_chat_object);
+    return add_groupchat(m->group_chat_object, GROUPCHAT_TYPE_TEXT);
 }
 
 /* Delete a groupchat from the chats array.
@@ -648,7 +648,7 @@ int tox_invite_friend(Tox *tox, int32_t friendnumber, int groupnumber)
 int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
     Messenger *m = tox;
-    return join_groupchat(m->group_chat_object, friendnumber, data, length);
+    return join_groupchat(m->group_chat_object, friendnumber, GROUPCHAT_TYPE_TEXT, data, length);
 }
 
 /* send a group message
