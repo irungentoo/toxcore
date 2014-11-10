@@ -727,6 +727,31 @@ int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint
     return g->group[peernumber].nick_len;
 }
 
+/* Get a unique* integer to describe the peer. It is deterministically derived from
+ * the peer's Tox ID public key.
+ * *Unique here means several billion possible numbers per person on Earth. While
+ * "not as unique" as the full Tox ID, it is more convenient for group chat purposes.
+ *
+ * returns 0 on failure
+ */
+uint64_t group_peer_unique_num(const Group_Chats *g_c, int groupnumber, int peernumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return 0;
+
+    if ((uint32_t)peernumber >= g->numpeers)
+        return 0;
+
+    uint64_t out = 0;
+    int i = 0;
+    while (i < 8)
+        out = (out << 8) | g->group[peernumber].real_pk[i++];
+
+    return out;
+}
+
 /* List all the peers in the group chat.
  *
  * Copies the names of the peers to the name[length][MAX_NAME_LENGTH] array.

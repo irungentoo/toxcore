@@ -484,6 +484,15 @@ int tox_del_groupchat(Tox *tox, int groupnumber);
  */
 int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name);
 
+/* Get a unique* integer to describe the peer. It is deterministically derived from
+ * the peer's Tox ID public key.
+ * *Unique here means several billion possible numbers per person on Earth. While
+ * "not as unique" as the full Tox ID, it is more convenient for group chat purposes.
+ *
+ * returns 0 on failure
+ */
+uint64_t tox_group_peer_unique_num(const Tox *tox, int groupnumber, int peernumber);
+
 /* invite friendnumber to groupnumber
  * return 0 on success
  * return -1 on failure
