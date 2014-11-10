@@ -80,7 +80,9 @@ static void terminate_queue(Group_JitterBuffer *q)
     free(q);
 }
 
-static void queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
+/* Return 0 if packet was queued, -1 if it wasn't.
+ */
+static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
 {
     uint16_t sequnum = pk->sequnum;
 
@@ -91,16 +93,18 @@ static void queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
         q->bottom = sequnum;
         q->queue[num] = pk;
         q->top = sequnum + 1;
-        return;
+        return 0;
     }
 
     if (q->queue[num])
-        return;
+        return -1;
 
     q->queue[num] = pk;
 
     if ((sequnum - q->bottom) >= (q->top - q->bottom))
         q->top = sequnum + 1;
+
+    return 0;
 }
 
 /* success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
@@ -136,6 +140,8 @@ typedef struct {
     OpusEncoder *audio_encoder;
 
     unsigned int audio_channels, audio_sample_rate, audio_bitrate;
+
+    uint16_t audio_sequnum;
 } Group_AV;
 
 typedef struct {
@@ -214,13 +220,27 @@ static void group_av_peer_delete(void *object, int groupnumber, int friendgroupn
 static int handle_group_audio_packet(void *object, int groupnumber, int friendgroupnumber, void *peer_object,
                                      const uint8_t *packet, uint16_t length)
 {
-    if (!peer_object || !object)
+    if (!peer_object || !object || length <= sizeof(uint16_t))
         return -1;
 
     Group_Peer_AV *peer_av = peer_object;
 
-    //TODO: parse packet into Group_Audio_Packet
-    //queue(peer_av->buffer, Group_Audio_Packet *pk)
+    Group_Audio_Packet *pk = calloc(1, sizeof(Group_Audio_Packet) + (length - sizeof(uint16_t)));
+
+    if (!pk)
+        return -1;
+
+    uint16_t sequnum;
+    memcpy(&sequnum, packet, sizeof(sequnum));
+    pk->sequnum = ntohs(sequnum);
+    pk->length = length - sizeof(uint16_t);
+    memcpy(pk->data, packet + sizeof(uint16_t), length - sizeof(uint16_t));
+
+    if (queue(peer_av->buffer, pk) == -1) {
+        free(pk);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -264,4 +284,27 @@ int add_av_groupchat(Group_Chats *g_c)
     return groupnumber;
 }
 
+/* Send an encoded audio packet to the group chat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+static int send_audio_packet(Group_Chats *g_c, int groupnumber, uint8_t *packet, uint16_t length)
+{
+    if (!length)
+        return -1;
 
+    Group_AV *group_av = group_get_object(g_c, groupnumber);
+    uint8_t data[1 + sizeof(uint16_t) + length];
+    data[0] = GROUP_AUDIO_PACKET_ID;
+
+    uint16_t sequnum = htons(group_av->audio_sequnum);
+    memcpy(data + 1, &sequnum, sizeof(sequnum));
+    memcpy(data + 1 + sizeof(sequnum), packet, length);
+
+    if (send_group_lossy_packet(g_c, groupnumber, data, sizeof(data)) == -1)
+        return -1;
+
+    ++group_av->audio_sequnum;
+    return 0;
+}
