@@ -79,6 +79,9 @@ typedef struct {
 
     uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
 
+    uint8_t title[MAX_NAME_LENGTH];
+    uint8_t title_len;
+
     uint32_t message_number;
     uint16_t peer_number;
 
@@ -102,6 +105,8 @@ typedef struct {
     void *action_callback_userdata;
     void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
+    void (*title_callback)(Messenger *m, int, int, const uint8_t *, uint8_t, void *);
+    void *title_callback_userdata;
 } Group_Chats;
 
 /* Set the callback for group invites.
@@ -125,6 +130,14 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, i
  *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
+                             void *), void *userdata);
+
+/* Set callback function for title changes.
+ *
+ * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
+ * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
+ */
+void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint8_t,
                              void *), void *userdata);
 
 /* Set callback function for peer name list changes.
@@ -162,6 +175,15 @@ int del_groupchat(Group_Chats *g_c, int groupnumber);
  */
 int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint8_t *name);
 
+/* Get a unique* integer to describe the peer. It is deterministically derived from
+ * the peer's Tox ID public key.
+ * *Unique here means several billion possible numbers per person on Earth. While
+ * "not as unique" as the full Tox ID, it is more convenient for group chat purposes.
+ *
+ * returns 0 on failure
+ */
+uint64_t group_peer_unique_num(const Group_Chats *g_c, int groupnumber, int peernumber);
+
 /* invite friendnumber to groupnumber
  * return 0 on success
  * return -1 on failure
@@ -186,6 +208,12 @@ int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *m
  * return -1 on failure
  */
 int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length);
+
+/* set the group's title, limited to MAX_NAME_LENGTH
+ * return 0 on success
+ * return -1 on failure
+ */
+int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *title, uint8_t title_len);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure

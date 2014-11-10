@@ -506,6 +506,29 @@ static int setnick(Group_Chats *g_c, int groupnumber, int peer_index, const uint
     return 0;
 }
 
+static int settitle(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *title, uint8_t title_len)
+{
+    if (title_len > MAX_NAME_LENGTH || title_len == 0)
+        return -1;
+
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    /* same as already set? */
+    if (g->title_len == title_len && !memcmp(g->title, title, title_len))
+        return 0;
+
+    memcpy(g->title, title, title_len);
+    g->title_len = title_len;
+
+    if (g_c->title_callback)
+        g_c->title_callback(g_c->m, groupnumber, peer_index, title, title_len, g_c->title_callback_userdata);
+
+    return 0;
+}
+
 static int remove_close_conn(Group_Chats *g_c, int groupnumber, int friendcon_id)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
@@ -702,6 +725,31 @@ int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint
 
     memcpy(name, g->group[peernumber].nick, g->group[peernumber].nick_len);
     return g->group[peernumber].nick_len;
+}
+
+/* Get a unique* integer to describe the peer. It is deterministically derived from
+ * the peer's Tox ID public key.
+ * *Unique here means several billion possible numbers per person on Earth. While
+ * "not as unique" as the full Tox ID, it is more convenient for group chat purposes.
+ *
+ * returns 0 on failure
+ */
+uint64_t group_peer_unique_num(const Group_Chats *g_c, int groupnumber, int peernumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return 0;
+
+    if ((uint32_t)peernumber >= g->numpeers)
+        return 0;
+
+    uint64_t out = 0;
+    int i = 0;
+    while (i < 8)
+        out = (out << 8) | g->group[peernumber].real_pk[i++];
+
+    return out;
 }
 
 /* List all the peers in the group chat.
@@ -916,6 +964,18 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
     g_c->group_namelistchange_userdata = userdata;
 }
 
+/* Set callback function for title changes.
+ *
+ * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
+ * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
+ */
+void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint8_t,
+                             void *), void *userdata)
+{
+    g_c->title_callback = function;
+    g_c->title_callback_userdata = userdata;
+}
+
 static unsigned int send_message_group(const Group_Chats *g_c, int groupnumber, uint8_t message_id, const uint8_t *data,
                                        uint16_t len);
 
@@ -990,6 +1050,35 @@ static int group_name_send(const Group_Chats *g_c, int groupnumber, const uint8_
     } else {
         return -1;
     }
+}
+
+#define GROUP_MESSAGE_TITLE_ID 49
+
+/* set the group's title, limited to MAX_NAME_LENGTH
+ * return 0 on success
+ * return -1 on failure
+ */
+int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *title, uint8_t title_len)
+{
+    if (title_len > MAX_NAME_LENGTH || title_len == 0)
+        return -1;
+
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    /* same as already set? */
+    if (g->title_len == title_len && !memcmp(g->title, title, title_len))
+        return 0;
+
+    memcpy(g->title, title, title_len);
+    g->title_len = title_len;
+
+    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_TITLE_ID, title, title_len))
+        return 0;
+    else
+        return -1;
 }
 
 static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
@@ -1158,6 +1247,8 @@ static int handle_packet_online(Group_Chats *g_c, int friendcon_id, uint8_t *dat
 #define PEER_KILL_ID 1
 #define PEER_QUERY_ID 8
 #define PEER_RESPONSE_ID 9
+#define PEER_TITLE_ID 10
+// we could send title with invite, but then if it changes between sending and accepting inv, joinee won't see it
 
 /* return 1 on success.
  * return 0 on failure
@@ -1226,6 +1317,13 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
             sent = i;
         }
     }
+
+    uint8_t Packet[2 + MAX_NAME_LENGTH];
+    Packet[0] = PEER_TITLE_ID;
+    Packet[1] = g->title_len;
+    memcpy(Packet + 2, g->title, g->title_len);
+    send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, Packet, sizeof(Packet));
+    // doesn't really matter if it makes it or not
 
     return sent;
 }
@@ -1312,6 +1410,11 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
 
         break;
 
+        case PEER_TITLE_ID: {
+            settitle(g_c, groupnumber, -1, data + 2, data[1]);
+        }
+
+        break;
     }
 }
 
@@ -1490,6 +1593,12 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
         case GROUP_MESSAGE_NAME_ID: {
             if (setnick(g_c, groupnumber, index, msg_data, msg_data_len) == -1)
+                return;
+        }
+        break;
+
+        case GROUP_MESSAGE_TITLE_ID: {
+            if (settitle(g_c, groupnumber, index, msg_data, msg_data_len) == -1)
                 return;
         }
         break;
