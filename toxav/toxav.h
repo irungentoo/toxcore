@@ -387,6 +387,9 @@ int toxav_has_activity ( ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t f
  *
  * return group number on success.
  * return -1 on failure.
+ *
+ * Audio data callback format:
+ *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
  */
 int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(Tox *, int, int, const int16_t *, unsigned int, uint8_t,
                            unsigned int, void *), void *userdata);
@@ -395,6 +398,9 @@ int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(Tox *, int, int, con
  *
  * returns group number on success
  * returns -1 on failure.
+ *
+ * Audio data callback format (same as the one for toxav_add_av_groupchat()):
+ *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
  */
 int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
                             void (*audio_callback)(Tox *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata);
