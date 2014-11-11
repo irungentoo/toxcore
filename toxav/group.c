@@ -205,17 +205,19 @@ static Group_AV *new_group_av(Group_Chats *g_c, unsigned int audio_channels, uns
 
     group_av->audio_data = audio_callback;
     group_av->userdata = userdata;
-    return 0;
+    return group_av;
 }
 
 static void group_av_peer_new(void *object, int groupnumber, int friendgroupnumber)
 {
+    Group_AV *group_av = object;
     Group_Peer_AV *peer_av = calloc(1, sizeof(Group_Peer_AV));
 
     if (!peer_av)
         return;
 
     peer_av->buffer = create_queue(3); //TODO Use variable instead.
+    group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av);
 }
 
 static void group_av_peer_delete(void *object, int groupnumber, int friendgroupnumber, void *peer_object)
@@ -315,11 +317,12 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
     }
 
     if (out_audio) {
-        //TODO callback
-        /*
+
         if (group_av->audio_data)
-            audio_data(
-        */
+            group_av->audio_data(group_av->g_c->m, groupnumber, friendgroupnumber, out_audio, out_audio_samples,
+                                 peer_av->decoder_channels, group_av->audio_sample_rate, group_av->userdata);
+
+        free(out_audio);
         return 0;
     }
 
@@ -329,15 +332,17 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
 static int handle_group_audio_packet(void *object, int groupnumber, int friendgroupnumber, void *peer_object,
                                      const uint8_t *packet, uint16_t length)
 {
-    if (!peer_object || !object || length <= sizeof(uint16_t))
+    if (!peer_object || !object || length <= sizeof(uint16_t)) {
         return -1;
+    }
 
     Group_Peer_AV *peer_av = peer_object;
 
     Group_Audio_Packet *pk = calloc(1, sizeof(Group_Audio_Packet) + (length - sizeof(uint16_t)));
 
-    if (!pk)
+    if (!pk) {
         return -1;
+    }
 
     uint16_t sequnum;
     memcpy(&sequnum, packet, sizeof(sequnum));
@@ -349,6 +354,8 @@ static int handle_group_audio_packet(void *object, int groupnumber, int friendgr
         free(pk);
         return -1;
     }
+
+    while (decode_audio_packet(object, peer_av, groupnumber, friendgroupnumber) == 0);
 
     return 0;
 }
