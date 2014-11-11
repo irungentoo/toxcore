@@ -1741,8 +1741,8 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
         return 0;
     }
 
-    if (message_number - g->group[peer_index].bottom_lossy_number <= MAX_LOSSY_COUNT) {
         if (g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT])
+    if ((uint16_t)(message_number - g->group[peer_index].bottom_lossy_number) <= MAX_LOSSY_COUNT) {
             return 1;
 
         g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
@@ -1805,6 +1805,9 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
     int index = friend_in_close(g, friendcon_id);
 
     if (index == -1)
+        return -1;
+
+    if (peer_number == g->peer_number)
         return -1;
 
     int peer_index = get_peer_index(g, peer_number);
