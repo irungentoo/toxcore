@@ -28,13 +28,6 @@
 
 #include "DHT.h"
 
-/* Used for get_broadcast(). */
-#ifdef __linux
-#include <sys/ioctl.h>
-#include <arpa/inet.h>
-#include <linux/netdevice.h>
-#endif
-
 /* Interval in seconds between LAN discovery packet sending. */
 #define LAN_DISCOVERY_INTERVAL 10
 

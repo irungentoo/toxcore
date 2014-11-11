@@ -25,6 +25,7 @@
 #define NET_CRYPTO_H
 
 #include "DHT.h"
+#include "LAN_discovery.h"
 #include "TCP_client.h"
 #include <pthread.h>
 

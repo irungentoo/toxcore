@@ -28,6 +28,13 @@
 #include "LAN_discovery.h"
 #include "util.h"
 
+/* Used for get_broadcast(). */
+#ifdef __linux
+#include <sys/ioctl.h>
+#include <arpa/inet.h>
+#include <linux/netdevice.h>
+#endif
+
 #define MAX_INTERFACES 16
 
 

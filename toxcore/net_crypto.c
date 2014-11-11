@@ -1700,6 +1700,11 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
         return -1;
 
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
+        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > current_time_monotonic()) {
+            if (LAN_ip(ip_port.ip) == 0 && LAN_ip(conn->ip_port.ip) == 0 && conn->ip_port.port == ip_port.port)
+                return -1;
+        }
+
         if (bs_list_add(&c->ip_port_list, &ip_port, crypt_connection_id)) {
             bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
             conn->ip_port = ip_port;
