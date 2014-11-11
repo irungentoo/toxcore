@@ -686,7 +686,16 @@ int del_groupchat(Group_Chats *g_c, int groupnumber)
         kill_friend_connection(g_c->fr_c, g->close[i].number);
     }
 
+    for (i = 0; i < g->numpeers; ++i) {
+        if (g->peer_on_leave)
+            g->peer_on_leave(g->object, groupnumber, i, g->group[i].object);
+    }
+
     free(g->group);
+
+    if (g->group_on_delete)
+        g->group_on_delete(g->object, groupnumber);
+
     return wipe_group_chat(g_c, groupnumber);
 }
 
@@ -997,6 +1006,24 @@ int callback_groupchat_peer_delete(Group_Chats *g_c, int groupnumber, void (*fun
         return -1;
 
     g->peer_on_leave = function;
+    return 0;
+}
+
+/* Set a function to be called when the group chat is deleted.
+ *
+ * Function(void *group object (set with group_set_object), int groupnumber)
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int callback_groupchat_delete(Group_Chats *g_c, int groupnumber, void (*function)(void *, int))
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    g->group_on_delete = function;
     return 0;
 }
 
@@ -2014,7 +2041,6 @@ void kill_groupchats(Group_Chats *g_c)
 
     m_callback_group_invite(g_c->m, NULL);
     g_c->m->group_chat_object = 0;
-    free(g_c->av_object);
     free(g_c);
 }
 

@@ -248,6 +248,12 @@ static void group_av_peer_delete(void *object, int groupnumber, int friendgroupn
     free(peer_object);
 }
 
+static void group_av_groupchat_delete(void *object, int groupnumber)
+{
+    if (object)
+        kill_group_av(object);
+}
+
 static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int groupnumber, int friendgroupnumber)
 {
     if (!group_av || !peer_av)
@@ -394,7 +400,8 @@ static int groupchat_enable_av(Group_Chats *g_c, int groupnumber, void (*audio_c
 
     if (group_set_object(g_c, groupnumber, group_av) == -1
             || callback_groupchat_peer_new(g_c, groupnumber, group_av_peer_new) == -1
-            || callback_groupchat_peer_delete(g_c, groupnumber, group_av_peer_delete) == -1) {
+            || callback_groupchat_peer_delete(g_c, groupnumber, group_av_peer_delete) == -1
+            || callback_groupchat_delete(g_c, groupnumber, group_av_groupchat_delete) == -1) {
         kill_group_av(group_av);
         return -1;
     }

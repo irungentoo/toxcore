@@ -103,6 +103,7 @@ typedef struct {
 
     void (*peer_on_join)(void *, int, int);
     void (*peer_on_leave)(void *, int, int, void *);
+    void (*group_on_delete)(void *, int);
 } Group_c;
 
 typedef struct {
@@ -124,8 +125,6 @@ typedef struct {
     struct {
         int (*function)(void *, int, int, void *, const uint8_t *, uint16_t);
     } lossy_packethandlers[256];
-
-    void *av_object;
 } Group_Chats;
 
 /* Set the callback for group invites.
@@ -316,6 +315,15 @@ int callback_groupchat_peer_new(const Group_Chats *g_c, int groupnumber, void (*
  * return -1 on failure.
  */
 int callback_groupchat_peer_delete(Group_Chats *g_c, int groupnumber, void (*function)(void *, int, int, void *));
+
+/* Set a function to be called when the group chat is deleted.
+ *
+ * Function(void *group object (set with group_set_object), int groupnumber)
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int callback_groupchat_delete(Group_Chats *g_c, int groupnumber, void (*function)(void *, int));
 
 /* Create new groupchat instance. */
 Group_Chats *new_groupchats(Messenger *m);
