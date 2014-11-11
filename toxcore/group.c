@@ -1741,9 +1741,10 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
         return 0;
     }
 
-        if (g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT])
     if ((uint16_t)(message_number - g->group[peer_index].bottom_lossy_number) <= MAX_LOSSY_COUNT) {
+        if (g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT]) {
             return 1;
+        }
 
         g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
         return 0;
