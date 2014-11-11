@@ -783,6 +783,21 @@ unsigned int group_peernumber_is_ours(const Group_Chats *g_c, int groupnumber, i
     return g->peer_number == g->group[peernumber].peer_number;
 }
 
+/* return the type of groupchat (GROUPCHAT_TYPE_) that groupnumber is.
+ *
+ * return -1 on failure.
+ * return type on success.
+ */
+int group_get_type(const Group_Chats *g_c, int groupnumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    return g->identifier[0];
+}
+
 /* Send a group packet to friendcon_id.
  *
  *  return 1 on success

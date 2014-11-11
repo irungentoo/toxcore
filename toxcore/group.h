@@ -266,6 +266,13 @@ uint32_t count_chatlist(Group_Chats *g_c);
  * of out_list will be truncated to list_size. */
 uint32_t copy_chatlist(Group_Chats *g_c, int32_t *out_list, uint32_t list_size);
 
+/* return the type of groupchat (GROUPCHAT_TYPE_) that groupnumber is.
+ *
+ * return -1 on failure.
+ * return type on success.
+ */
+int group_get_type(const Group_Chats *g_c, int groupnumber);
+
 /* Send current name (set in messenger) to all online groups.
  */
 void send_name_all_groups(Group_Chats *g_c);

@@ -551,6 +551,13 @@ uint32_t tox_count_chatlist(const Tox *tox);
  * of out_list will be truncated to list_size. */
 uint32_t tox_get_chatlist(const Tox *tox, int32_t *out_list, uint32_t list_size);
 
+/* return the type of groupchat (TOX_GROUPCHAT_TYPE_) that groupnumber is.
+ *
+ * return -1 on failure.
+ * return type on success.
+ */
+int tox_group_get_type(const Tox *tox, int groupnumber);
+
 /****************AVATAR FUNCTIONS*****************/
 
 /* Set the callback function for avatar information.

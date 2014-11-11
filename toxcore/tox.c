@@ -728,6 +728,16 @@ uint32_t tox_get_chatlist(const Tox *tox, int32_t *out_list, uint32_t list_size)
     return copy_chatlist(m->group_chat_object, out_list, list_size);
 }
 
+/* return the type of groupchat (TOX_GROUPCHAT_TYPE_) that groupnumber is.
+ *
+ * return -1 on failure.
+ * return type on success.
+ */
+int tox_group_get_type(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    return group_get_type(m->group_chat_object, groupnumber);
+}
 
 /****************FILE SENDING FUNCTIONS*****************/
 
