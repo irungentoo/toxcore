@@ -158,35 +158,37 @@ typedef struct {
 
 static void kill_group_av(Group_AV *group_av)
 {
-    opus_encoder_destroy(group_av->audio_encoder);
+    if (group_av->audio_encoder) {
+        opus_encoder_destroy(group_av->audio_encoder);
+    }
+
     free(group_av);
 }
 
-static Group_AV *new_group_av(Group_Chats *g_c, unsigned int audio_channels, unsigned int audio_sample_rate,
-                              unsigned int audio_bitrate, void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t,
-                                      unsigned int, void *), void *userdata)
+static int recreate_encoder(Group_AV *group_av)
 {
-    if (!g_c)
-        return NULL;
-
-    Group_AV *group_av = calloc(1, sizeof(Group_AV));
+    if (group_av->audio_encoder) {
+        opus_encoder_destroy(group_av->audio_encoder);
+        group_av->audio_encoder = NULL;
+    }
 
     int rc = OPUS_OK;
-    group_av->audio_encoder = opus_encoder_create(audio_sample_rate, audio_channels, OPUS_APPLICATION_AUDIO, &rc);
+    group_av->audio_encoder = opus_encoder_create(group_av->audio_sample_rate, group_av->audio_channels,
+                              OPUS_APPLICATION_AUDIO, &rc);
 
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
-        free(group_av);
-        return NULL;
+        group_av->audio_encoder = NULL;
+        return -1;
     }
 
-    rc = opus_encoder_ctl(group_av->audio_encoder, OPUS_SET_BITRATE(audio_bitrate));
+    rc = opus_encoder_ctl(group_av->audio_encoder, OPUS_SET_BITRATE(group_av->audio_bitrate));
 
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
         opus_encoder_destroy(group_av->audio_encoder);
-        free(group_av);
-        return NULL;
+        group_av->audio_encoder = NULL;
+        return -1;
     }
 
     rc = opus_encoder_ctl(group_av->audio_encoder, OPUS_SET_COMPLEXITY(10));
@@ -194,17 +196,29 @@ static Group_AV *new_group_av(Group_Chats *g_c, unsigned int audio_channels, uns
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
         opus_encoder_destroy(group_av->audio_encoder);
-        free(group_av);
-        return NULL;
+        group_av->audio_encoder = NULL;
+        return -1;
     }
 
-    group_av->audio_channels = audio_channels;
-    group_av->audio_sample_rate = audio_sample_rate;
-    group_av->audio_bitrate = audio_bitrate;
+    return 0;
+}
+
+static Group_AV *new_group_av(Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int, const int16_t *,
+                              unsigned int, uint8_t, unsigned int, void *), void *userdata)
+{
+    if (!g_c)
+        return NULL;
+
+    Group_AV *group_av = calloc(1, sizeof(Group_AV));
+
+    if (!group_av)
+        return NULL;
+
     group_av->g_c = g_c;
 
     group_av->audio_data = audio_callback;
     group_av->userdata = userdata;
+
     return group_av;
 }
 
@@ -248,6 +262,8 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
     int16_t *out_audio = NULL;
     unsigned int out_audio_samples = 0;
 
+    unsigned int sample_rate = 48000;
+
     if (success == 1) {
         int channels = opus_packet_get_nb_channels(pk->data);
 
@@ -268,7 +284,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
             }
 
             int rc;
-            peer_av->audio_decoder = opus_decoder_create(group_av->audio_sample_rate, channels, &rc);
+            peer_av->audio_decoder = opus_decoder_create(sample_rate, channels, &rc);
 
             if ( rc != OPUS_OK ) {
                 LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
@@ -320,7 +336,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
 
         if (group_av->audio_data)
             group_av->audio_data(group_av->g_c->m, groupnumber, friendgroupnumber, out_audio, out_audio_samples,
-                                 peer_av->decoder_channels, group_av->audio_sample_rate, group_av->userdata);
+                                 peer_av->decoder_channels, sample_rate, group_av->userdata);
 
         free(out_audio);
         return 0;
@@ -371,7 +387,7 @@ static int groupchat_enable_av(Group_Chats *g_c, int groupnumber, void (*audio_c
     if (groupnumber == -1)
         return -1;
 
-    Group_AV *group_av = new_group_av(g_c, 1, 48000, 64000, audio_callback, userdata); //TODO: Use variables instead.
+    Group_AV *group_av = new_group_av(g_c, audio_callback, userdata);
 
     if (group_av == NULL)
         return -1;
@@ -465,11 +481,26 @@ static int send_audio_packet(Group_Chats *g_c, int groupnumber, uint8_t *packet,
 int group_send_audio(Group_Chats *g_c, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                      unsigned int sample_rate)
 {
-    //TODO use channels and sample_rate arguments.
     Group_AV *group_av = group_get_object(g_c, groupnumber);
 
     if (!group_av)
         return -1;
+
+    if (channels != 1 && channels != 2)
+        return -1;
+
+    //TODO: allow different sample rates
+    if (sample_rate != 48000)
+        return -1;
+
+    if (!group_av->audio_encoder || group_av->audio_channels != channels || group_av->audio_sample_rate != sample_rate) {
+        group_av->audio_channels = channels;
+        group_av->audio_sample_rate = sample_rate;
+        group_av->audio_bitrate = 64000; //TODO: add way of adjusting bitrate
+
+        if (recreate_encoder(group_av) == -1)
+            return -1;
+    }
 
     uint8_t encoded[1024];
     int32_t size = opus_encode(group_av->audio_encoder, pcm, samples, encoded, sizeof(encoded));

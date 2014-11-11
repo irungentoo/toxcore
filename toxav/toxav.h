@@ -390,6 +390,8 @@ int toxav_has_activity ( ToxAv *av, int32_t call_index, int16_t *PCM, uint16_t f
  *
  * Audio data callback format:
  *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
 int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(Tox *, int, int, const int16_t *, unsigned int, uint8_t,
                            unsigned int, void *), void *userdata);
@@ -401,6 +403,8 @@ int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(Tox *, int, int, con
  *
  * Audio data callback format (same as the one for toxav_add_av_groupchat()):
  *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
 int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
                             void (*audio_callback)(Tox *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata);
@@ -409,6 +413,16 @@ int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data,
  *
  * return 0 on success.
  * return -1 on failure.
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ *
+ * Valid number of samples are ((sample rate) * (audio length (Valid ones are: 2.5, 5, 10, 20, 40 or 60 ms)) / 1000)
+ * Valid number of channels are 1 or 2.
+ * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
+ *
+ * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
+ *
+ * TODO: currently the only supported sample rate is 48000.
  */
 int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                            unsigned int sample_rate);
