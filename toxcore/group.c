@@ -1220,7 +1220,7 @@ static int friend_in_close(Group_c *g, int friendcon_id)
     return -1;
 }
 
-#define ONLINE_PACKET_DATA_SIZE (sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
+#define ONLINE_PACKET_DATA_SIZE (sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
 
 static int send_packet_online(Friend_Connections *fr_c, int friendcon_id, uint16_t group_num, uint8_t *identifier)
 {
@@ -1228,7 +1228,7 @@ static int send_packet_online(Friend_Connections *fr_c, int friendcon_id, uint16
     group_num = htons(group_num);
     packet[0] = PACKET_ID_ONLINE_PACKET;
     memcpy(packet + 1, &group_num, sizeof(uint16_t));
-    memcpy(packet + 1 + sizeof(uint16_t), identifier, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + sizeof(uint16_t), identifier, GROUP_IDENTIFIER_LENGTH);
     return write_cryptpacket(fr_c->net_crypto, friend_connection_crypt_connection_id(fr_c, friendcon_id), packet,
                              sizeof(packet), 0) != -1;
 }
@@ -1876,8 +1876,7 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
         return -1;
     }
 
-    send_lossy_all_close(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)),
-                         -1/*TODO close_index*/);
+    send_lossy_all_close(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index);
     return 0;
 }
 
