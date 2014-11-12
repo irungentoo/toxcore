@@ -1791,7 +1791,7 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
         return 0;
     }
 
-    if (message_number - g->group[peer_index].bottom_lossy_number > (1 << 15))
+    if ((uint16_t)(message_number - g->group[peer_index].bottom_lossy_number) > (1 << 15))
         return -1;
 
     uint16_t top_distance = message_number - g->group[peer_index].top_lossy_number;
