@@ -556,6 +556,7 @@ void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_call
     fr_c->fr_request_callback = fr_request_callback;
     fr_c->fr_request_object = object;
     oniondata_registerhandler(fr_c->onion_c, CRYPTO_PACKET_FRIEND_REQ, fr_request_callback, object);
+    oniondata_registerhandler(fr_c->onion_c, CRYPTO_PACKET_GROUP_FRIEND_REQ, fr_request_callback, object);
 }
 
 /* Send a Friend request packet.

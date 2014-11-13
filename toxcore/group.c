@@ -138,7 +138,7 @@ Group_c *get_group_c(const Group_Chats *g_c, int groupnumber)
  * TODO: make this more efficient.
  */
 
-static int peer_in_chat(const Group_c *chat, const uint8_t *real_pk)
+int peer_in_chat(const Group_c *chat, const uint8_t *real_pk)
 {
     uint32_t i;
 
@@ -157,7 +157,7 @@ static int peer_in_chat(const Group_c *chat, const uint8_t *real_pk)
  *
  * TODO: make this more efficient and maybe use constant time comparisons?
  */
-static int get_group_num(const Group_Chats *g_c, const uint8_t *identifier)
+int get_group_num(const Group_Chats *g_c, const uint8_t *identifier)
 {
     uint32_t i;
 

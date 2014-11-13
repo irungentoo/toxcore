@@ -70,6 +70,7 @@ enum {
 
 typedef struct {
     uint8_t status;
+    uint8_t ban_frs; // ignore any friend requests from peers in this group
 
     Group_Peer *group;
     uint32_t numpeers;
@@ -369,7 +370,11 @@ void do_groupchats(Group_Chats *g_c);
 /* Free everything related with group chats. */
 void kill_groupchats(Group_Chats *g_c);
 
-/* Internal only function, but it is used outside of group.c */
+/* Internal only functions, but they are used outside of group.c */
 Group_c *get_group_c(const Group_Chats *g_c, int groupnumber);
+
+int get_group_num(const Group_Chats *g_c, const uint8_t *identifier);
+
+int peer_in_chat(const Group_c *chat, const uint8_t *real_pk);
 
 #endif
