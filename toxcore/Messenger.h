@@ -321,7 +321,7 @@ void getaddress(const Messenger *m, uint8_t *address);
 
 /* Add a friend.
  * Set the data that will be sent along with friend request.
- * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
+ * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes.
  * data is the data and length is the length.
  *
  *  return the friend number if success.
@@ -337,6 +337,15 @@ void getaddress(const Messenger *m, uint8_t *address);
  */
 int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, uint16_t length);
 
+/*
+ * Add a groupchat peer as a friend.
+ * Set the data that will be sent along with friend request.
+ * data is the data and length is the length.
+ *
+ *  return the friend number if success.
+ *  returns the same errors as m_addfriend on error
+ */
+int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length);
 
 /* Add a friend without sending a friendrequest.
  *  return the friend number if success.

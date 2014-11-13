@@ -722,6 +722,17 @@ int del_groupchat(Group_Chats *g_c, int groupnumber)
     return wipe_group_chat(g_c, groupnumber);
 }
 
+int group_set_ban_friend_requests(const Group_Chats *g_c, int groupnumber, uint8_t boolean)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    g->ban_frs = boolean;
+    return 0;
+}
+
 /* Copy the name of peernumber who is in groupnumber to name.
  * name must be at least MAX_NAME_LENGTH long.
  *

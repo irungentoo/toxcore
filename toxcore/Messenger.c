@@ -299,7 +299,7 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
  * data is the data and length is the length.
  *
  *  return the friend number if success.
- *  return -1 otherwise
+ *  returns the same errors as m_addfriend on error
  */
 int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length)
 {
@@ -312,24 +312,23 @@ int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, co
     id_copy(client_id, g->group[peerindex].real_pk);
 
     if (!public_key_valid(client_id))
-        return -1;
+        return FAERR_BADCHECKSUM;
 
     if (length < 1)
-        return -1;
+        return FAERR_NOMESSAGE;
 
     if (id_equal(client_id, m->net_crypto->self_public_key))
-        return -1;
+        return FAERR_OWNKEY;
 
     int32_t friend_id = getfriend_id(m, client_id);
 
     if (friend_id != -1) {
-        if (m->friendlist[friend_id].status >= FRIEND_CONFIRMED)
-            return -1;
+        return FAERR_ALREADYSENT;
     }
 
     /* Resize the friend list if necessary. */
     if (realloc_friendlist(m, m->numfriends + 1) != 0)
-        return -1;
+        return FAERR_NOMEM;
 
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
@@ -359,6 +358,7 @@ int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, co
             m->friendlist[i].info_size = length;
             m->friendlist[i].message_id = 0;
             m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
+            m->friendlist[i].friendrequest_nospam = 0;
             m->friendlist[i].groupnumber = groupnumber;
             m->friendlist[i].peerindex = peerindex;
             friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
@@ -375,7 +375,7 @@ int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, co
         }
     }
 
-    return -1;
+    return FAERR_UNKNOWN;
 }
 
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)

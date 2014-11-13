@@ -243,6 +243,14 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
  */
 int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uint32_t max_length);
 
+
+/* 1 to disable, 0 to enable (default) friend requests from peers in this group
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int group_set_ban_friend_requests(const Group_Chats *g_c, int groupnumber, uint8_t boolean);
+
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
  */
