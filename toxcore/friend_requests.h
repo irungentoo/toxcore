@@ -30,6 +30,7 @@
 
 typedef struct {
     uint32_t nospam;
+    void *m; // used for group peer friend request confirmations
     void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, uint16_t, void *);
     uint8_t handle_friendrequest_isset;
     void *handle_friendrequest_object;

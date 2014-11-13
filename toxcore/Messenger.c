@@ -1712,6 +1712,7 @@ Messenger *new_messenger(Messenger_Options *options)
 
     m->options = *options;
     friendreq_init(&(m->fr), m->fr_c);
+    m->fr.m = m;
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);

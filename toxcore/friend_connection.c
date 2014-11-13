@@ -254,15 +254,10 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (data[0] == PACKET_ID_FRIEND_REQUESTS) {
+    if (data[0] == PACKET_ID_FRIEND_REQUESTS || data[0] == PACKET_ID_GROUP_FRIEND_REQUESTS) {
         if (fr_c->fr_request_callback)
             fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length);
 
-        return 0;
-    }
-
-    if (data[0] == PACKET_ID_GROUP_FRIEND_REQUESTS) {
-        
         return 0;
     }
 
