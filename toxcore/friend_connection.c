@@ -26,6 +26,7 @@
 #endif
 
 #include "friend_connection.h"
+#include "group.h"
 #include "util.h"
 
 /* return 1 if the friendcon_id is not valid.
@@ -257,6 +258,11 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
         if (fr_c->fr_request_callback)
             fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length);
 
+        return 0;
+    }
+
+    if (data[0] == PACKET_ID_GROUP_FRIEND_REQUESTS) {
+        
         return 0;
     }
 
@@ -584,6 +590,42 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
     } else {
         packet[0] = CRYPTO_PACKET_FRIEND_REQ;
         int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
+
+        if (num <= 0)
+            return -1;
+
+        return num;
+    }
+}
+
+/* Send a group peer friend request packet.
+ *
+ *  return -1 if failure.
+ *  return  0 if it sent the friend request directly to the friend.
+ *  return the number of peers it was routed through if it did not send it directly.
+ */
+int send_group_peer_friend_request_packet(void *m, int friendcon_id, int groupnumber, int peerindex,
+                                          const uint8_t *data, uint16_t length)
+{
+    if (1 + length + GROUP_IDENTIFIER_LENGTH > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
+        return -1;
+
+    Friend_Conn *friend_con = get_conn(((Messenger*)m)->fr_c, friendcon_id);
+    Group_c *g = get_group_c(((Messenger*)m)->group_chat_object, groupnumber);
+
+    if (!friend_con || !g)
+        return -1;
+
+    uint8_t packet[1 + length + GROUP_IDENTIFIER_LENGTH];
+    memcpy(packet + 1, g->identifier, GROUP_IDENTIFIER_LENGTH);
+    memcpy(packet + 1 + GROUP_IDENTIFIER_LENGTH, data, length);
+
+    if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
+        packet[0] = PACKET_ID_GROUP_FRIEND_REQUESTS;
+        return write_cryptpacket(((Messenger*)m)->fr_c->net_crypto, friend_con->crypt_connection_id, packet, sizeof(packet), 0) != -1;
+    } else {
+        packet[0] = CRYPTO_PACKET_GROUP_FRIEND_REQ; // this shouldn't really be necessary, since we're both in the groupchat
+        int num = send_onion_data(((Messenger*)m)->fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
 
         if (num <= 0)
             return -1;

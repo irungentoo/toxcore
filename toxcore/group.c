@@ -121,7 +121,7 @@ static int wipe_group_chat(Group_Chats *g_c, int groupnumber)
     return 0;
 }
 
-static Group_c *get_group_c(const Group_Chats *g_c, int groupnumber)
+Group_c *get_group_c(const Group_Chats *g_c, int groupnumber)
 {
     if (groupnumber_not_valid(g_c, groupnumber))
         return 0;

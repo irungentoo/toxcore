@@ -213,6 +213,7 @@ typedef struct {
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint8_t receives_read_receipts; // shall we send read receipts to this person?
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
+    int groupnumber; int peerindex; // these can be ignored, except for sending group peer friend request
     uint64_t ping_lastrecv;//TODO remove
     uint64_t share_relays_lastsent;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];

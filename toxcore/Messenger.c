@@ -31,6 +31,7 @@
 
 #include "logger.h"
 #include "Messenger.h"
+#include "group.h"
 #include "assoc.h"
 #include "network.h"
 #include "util.h"
@@ -290,6 +291,91 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
     }
 
     return FAERR_UNKNOWN;
+}
+
+/*
+ * Add a groupchat peer as a friend.
+ * Set the data that will be sent along with friend request.
+ * data is the data and length is the length.
+ *
+ *  return the friend number if success.
+ *  return -1 otherwise
+ */
+int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length)
+{
+    if (length > MAX_FRIEND_REQUEST_DATA_SIZE)
+        return FAERR_TOOLONG;
+
+    Group_c *g = get_group_c(m->group_chat_object, groupnumber);
+
+    uint8_t client_id[crypto_box_PUBLICKEYBYTES];
+    id_copy(client_id, g->group[peerindex].real_pk);
+
+    if (!public_key_valid(client_id))
+        return -1;
+
+    if (length < 1)
+        return -1;
+
+    if (id_equal(client_id, m->net_crypto->self_public_key))
+        return -1;
+
+    int32_t friend_id = getfriend_id(m, client_id);
+
+    if (friend_id != -1) {
+        if (m->friendlist[friend_id].status >= FRIEND_CONFIRMED)
+            return -1;
+    }
+
+    /* Resize the friend list if necessary. */
+    if (realloc_friendlist(m, m->numfriends + 1) != 0)
+        return -1;
+
+    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
+
+    int friendcon_id = new_friend_connection(m->fr_c, client_id);
+
+    if (friendcon_id == -1)
+        return -1;
+
+    uint32_t i;
+
+    for (i = 0; i <= m->numfriends; ++i)  {
+        if (m->friendlist[i].status == NOFRIEND) {
+            m->friendlist[i].status = FRIEND_ADDED;
+            m->friendlist[i].friendcon_id = friendcon_id;
+            m->friendlist[i].friendrequest_lastsent = 0;
+            m->friendlist[i].friendrequest_timeout = FRIENDREQUEST_TIMEOUT;
+            id_copy(m->friendlist[i].client_id, client_id);
+            m->friendlist[i].statusmessage = calloc(1, 1);
+            m->friendlist[i].statusmessage_length = 1;
+            m->friendlist[i].userstatus = USERSTATUS_NONE;
+            m->friendlist[i].avatar_info_sent = 0;
+            m->friendlist[i].avatar_recv_data = NULL;
+            m->friendlist[i].avatar_send_data.bytes_sent = 0;
+            m->friendlist[i].avatar_send_data.last_reset = 0;
+            m->friendlist[i].is_typing = 0;
+            memcpy(m->friendlist[i].info, data, length);
+            m->friendlist[i].info_size = length;
+            m->friendlist[i].message_id = 0;
+            m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
+            m->friendlist[i].groupnumber = groupnumber;
+            m->friendlist[i].peerindex = peerindex;
+            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
+                                        &handle_custom_lossy_packet, m, i);
+
+            if (m->numfriends == i)
+                ++m->numfriends;
+
+            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+                send_online_packet(m, i);
+            }
+
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
@@ -2285,9 +2371,18 @@ void do_friends(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
+            int fr;
+            if (m->friendlist[i].friendrequest_nospam)
+                fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id,
+                                                m->friendlist[i].friendrequest_nospam,
                                                 m->friendlist[i].info,
                                                 m->friendlist[i].info_size);
+            else
+                fr = send_group_peer_friend_request_packet(m, m->friendlist[i].friendcon_id,
+                                                           m->friendlist[i].groupnumber,
+                                                           m->friendlist[i].peerindex,
+                                                           m->friendlist[i].info,
+                                                           m->friendlist[i].info_size);
 
             if (fr >= 0) {
                 set_friend_status(m, i, FRIEND_REQUESTED);
