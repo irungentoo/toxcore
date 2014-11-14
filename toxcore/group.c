@@ -1420,12 +1420,12 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
         }
     }
 
-    uint8_t Packet[2 + MAX_NAME_LENGTH];
-    Packet[0] = PEER_TITLE_ID;
-    Packet[1] = g->title_len;
-    memcpy(Packet + 2, g->title, g->title_len);
-    send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, Packet, sizeof(Packet));
-    // doesn't really matter if it makes it or not
+    if (g->title_len) {
+        uint8_t Packet[1 + g->title_len];
+        Packet[0] = PEER_TITLE_ID;
+        memcpy(Packet + 1, g->title, g->title_len);
+        send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, Packet, sizeof(Packet));
+    }
 
     return sent;
 }
@@ -1512,7 +1512,7 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
         break;
 
         case PEER_TITLE_ID: {
-            settitle(g_c, groupnumber, -1, data + 2, data[1]);
+            settitle(g_c, groupnumber, -1, data + 1, length - 1);
         }
 
         break;
