@@ -396,13 +396,17 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
 
     int direct_send_attempt = 0;
 
+    pthread_mutex_lock(&conn->mutex);
+
     //TODO: on bad networks, direct connections might not last indefinitely.
     if (conn->ip_port.ip.family != 0) {
         uint8_t direct_connected = 0;
         crypto_connection_status(c, crypt_connection_id, &direct_connected);
 
-        if (direct_connected && (uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length)
+        if (direct_connected && (uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length) {
+            pthread_mutex_unlock(&conn->mutex);
             return 0;
+        }
 
         //TODO: a better way of sending packets directly to confirm the others ip.
         if (length < 96 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS) {
@@ -411,6 +415,8 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         }
 
     }
+
+    pthread_mutex_unlock(&conn->mutex);
 
     //TODO: detect and kill bad relays.
     uint32_t i;
@@ -747,9 +753,9 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     }
 
     increment_nonce(conn->sent_nonce);
-    int ret = send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
     pthread_mutex_unlock(&conn->mutex);
-    return ret;
+
+    return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
 }
 
 /* Creates and sends a data packet with buffer_start and num to the peer using the fastest route.
@@ -2682,11 +2688,19 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
 
     pthread_mutexattr_t attr;
 
-    if (pthread_mutexattr_init(&attr) != 0 || pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0
-            || pthread_mutex_init(&temp->tcp_mutex, &attr) != 0 || pthread_mutex_init(&temp->connections_mutex, NULL) != 0) {
+    if (pthread_mutexattr_init(&attr) == 0) {
+        if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0 || pthread_mutex_init(&temp->tcp_mutex, &attr) != 0
+                || pthread_mutex_init(&temp->connections_mutex, NULL) != 0) {
+            pthread_mutexattr_destroy(&attr);
+            free(temp);
+            return NULL;
+        }
+    } else {
         free(temp);
         return NULL;
     }
+
+    pthread_mutexattr_destroy(&attr);
 
     temp->dht = dht;
 
