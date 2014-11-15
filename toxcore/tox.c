@@ -693,6 +693,18 @@ int tox_group_set_title(Tox *tox, int groupnumber, const uint8_t *title, uint8_t
     return group_title_send(m->group_chat_object, groupnumber, title, length);
 }
 
+/* Get group title from groupnumber and put it in title.
+ * title needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
+ *
+ *  return length of title if success.
+ *  return -1 if failure.
+ */
+int tox_group_get_title(Tox *tox, int groupnumber, uint8_t *title)
+{
+    Messenger *m = tox;
+    return group_title_get(m->group_chat_object, groupnumber, title);
+}
+
 /* Check if the current peernumber corresponds to ours.
  *
  * return 1 if the peernumber corresponds to ours.
