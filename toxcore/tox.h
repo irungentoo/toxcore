@@ -529,12 +529,12 @@ int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint
 int tox_group_set_title(Tox *tox, int groupnumber, const uint8_t *title, uint8_t length);
 
 /* Get group title from groupnumber and put it in title.
- * title needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
+ * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
  *
- *  return length of title if success.
+ *  return length of copied title if success.
  *  return -1 if failure.
  */
-int tox_group_get_title(Tox *tox, int groupnumber, uint8_t *title);
+int tox_group_get_title(Tox *tox, int groupnumber, uint8_t *title, uint32_t max_length);
 
 /* Check if the current peernumber corresponds to ours.
  *

@@ -235,12 +235,12 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
 
 
 /* Get group title from groupnumber and put it in title.
- * title needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
+ * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
  *
- *  return length of title if success.
+ *  return length of copied title if success.
  *  return -1 if failure.
  */
-int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title);
+int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uint32_t max_length);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
