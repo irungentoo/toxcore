@@ -1181,6 +1181,26 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
         return -1;
 }
 
+/* Get group title from groupnumber and put it in title.
+ * title needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
+ *
+ *  return length of title if success.
+ *  return -1 if failure.
+ */
+int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g)
+        return -1;
+
+    if (g->title_len == 0 || g->title_len > MAX_NAME_LENGTH)
+        return -1;
+
+    memcpy(title, g->title, g->title_len);
+    return g->title_len;
+}
+
 static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
     Group_Chats *g_c = m->group_chat_object;
