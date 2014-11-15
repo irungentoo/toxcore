@@ -1175,7 +1175,7 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
     memcpy(g->title, title, title_len);
     g->title_len = title_len;
 
-    if (g->status != GROUPCHAT_STATUS_CONNECTED)
+    if (g->numpeers == 1)
         return 0;
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_TITLE_ID, title, title_len))
