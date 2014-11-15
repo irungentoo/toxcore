@@ -230,7 +230,7 @@ static void group_av_peer_new(void *object, int groupnumber, int friendgroupnumb
     if (!peer_av)
         return;
 
-    peer_av->buffer = create_queue(3); //TODO Use variable instead.
+    peer_av->buffer = create_queue(5); //TODO Use variable instead.
     group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av);
 }
 
