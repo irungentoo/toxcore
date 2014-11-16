@@ -396,13 +396,17 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
 
     int direct_send_attempt = 0;
 
+    pthread_mutex_lock(&conn->mutex);
+
     //TODO: on bad networks, direct connections might not last indefinitely.
     if (conn->ip_port.ip.family != 0) {
         uint8_t direct_connected = 0;
         crypto_connection_status(c, crypt_connection_id, &direct_connected);
 
-        if (direct_connected && (uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length)
+        if (direct_connected && (uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length) {
+            pthread_mutex_unlock(&conn->mutex);
             return 0;
+        }
 
         //TODO: a better way of sending packets directly to confirm the others ip.
         if (length < 96 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS) {
@@ -411,6 +415,8 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         }
 
     }
+
+    pthread_mutex_unlock(&conn->mutex);
 
     //TODO: detect and kill bad relays.
     uint32_t i;
@@ -747,9 +753,9 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     }
 
     increment_nonce(conn->sent_nonce);
-    int ret = send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
     pthread_mutex_unlock(&conn->mutex);
-    return ret;
+
+    return send_packet_to(c, crypt_connection_id, packet, sizeof(packet));
 }
 
 /* Creates and sends a data packet with buffer_start and num to the peer using the fastest route.
@@ -835,8 +841,9 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
 
     if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, data, length) == 0) {
         Packet_Data *dt1 = NULL;
-        get_data_pointer(&conn->send_array, &dt1, packet_num);
-        dt1->time = temp_time;
+
+        if (get_data_pointer(&conn->send_array, &dt1, packet_num) == 1)
+            dt1->time = temp_time;
     } else {
         conn->maximum_speed_reached = 1;
         LOGGER_ERROR("send_data_packet failed\n");
@@ -1322,8 +1329,10 @@ static int create_crypto_connection(Net_Crypto *c)
         ++c->crypto_connections_length;
         memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
 
-        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0)
+        if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0) {
+            pthread_mutex_unlock(&c->connections_mutex);
             return -1;
+        }
     }
 
     pthread_mutex_unlock(&c->connections_mutex);
@@ -1697,6 +1706,11 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
         return -1;
 
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
+        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > current_time_monotonic()) {
+            if (LAN_ip(ip_port.ip) == 0 && LAN_ip(conn->ip_port.ip) == 0 && conn->ip_port.port == ip_port.port)
+                return -1;
+        }
+
         if (bs_list_add(&c->ip_port_list, &ip_port, crypt_connection_id)) {
             bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
             conn->ip_port = ip_port;
@@ -1817,6 +1831,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
 
     if (crypt_connection_id == -1) {
         IP_Port source;
+        source.port = 0;
         source.ip.family = TCP_FAMILY;
         source.ip.ip6.uint32[0] = location;
 
@@ -2673,11 +2688,19 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
 
     pthread_mutexattr_t attr;
 
-    if (pthread_mutexattr_init(&attr) != 0 || pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0
-            || pthread_mutex_init(&temp->tcp_mutex, &attr) != 0 || pthread_mutex_init(&temp->connections_mutex, NULL) != 0) {
+    if (pthread_mutexattr_init(&attr) == 0) {
+        if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0 || pthread_mutex_init(&temp->tcp_mutex, &attr) != 0
+                || pthread_mutex_init(&temp->connections_mutex, NULL) != 0) {
+            pthread_mutexattr_destroy(&attr);
+            free(temp);
+            return NULL;
+        }
+    } else {
         free(temp);
         return NULL;
     }
+
+    pthread_mutexattr_destroy(&attr);
 
     temp->dht = dht;
 

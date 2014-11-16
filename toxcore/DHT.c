@@ -2335,6 +2335,8 @@ void kill_DHT(DHT *dht)
     kill_ping(dht->ping);
     kill_announce(dht->announce);
     free(dht->friends_list);
+    free(dht->loaded_friends_list);
+    free(dht->loaded_clients_list);
     free(dht);
 }
 

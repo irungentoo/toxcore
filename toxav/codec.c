@@ -214,7 +214,7 @@ int init_video_encoder(CodecState *cs, uint16_t max_width, uint16_t max_height, 
     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
     cfg.g_lag_in_frames = 0;
     cfg.kf_min_dist = 0;
-    cfg.kf_max_dist = 300;
+    cfg.kf_max_dist = 5;
     cfg.kf_mode = VPX_KF_AUTO;
 
     cs->max_width = max_width;
@@ -228,7 +228,7 @@ int init_video_encoder(CodecState *cs, uint16_t max_width, uint16_t max_height, 
         return -1;
     }
 
-    rc = vpx_codec_control(&cs->v_encoder, VP8E_SET_CPUUSED, 7);
+    rc = vpx_codec_control(&cs->v_encoder, VP8E_SET_CPUUSED, 8);
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));

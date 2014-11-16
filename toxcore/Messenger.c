@@ -123,6 +123,18 @@ int getclient_id(const Messenger *m, int32_t friendnumber, uint8_t *client_id)
 
     return -1;
 }
+
+/*  return friend connection id on success.
+ *  return -1 if failure.
+ */
+int getfriendcon_id(const Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    return m->friendlist[friendnumber].friendcon_id;
+}
+
 /* TODO: Another checksum algorithm might be better.
  *
  *  return a uint16_t that represents the checksum of address of length len.
@@ -151,6 +163,23 @@ void getaddress(const Messenger *m, uint8_t *address)
     memcpy(address + crypto_box_PUBLICKEYBYTES, &nospam, sizeof(nospam));
     uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
     memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(nospam), &checksum, sizeof(checksum));
+}
+
+static int send_online_packet(Messenger *m, int32_t friendnumber)
+{
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
+    uint8_t packet = PACKET_ID_ONLINE;
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                             m->friendlist[friendnumber].friendcon_id), &packet, sizeof(packet), 0) != -1;
+}
+
+static int send_offine_packet(Messenger *m, int friendcon_id)
+{
+    uint8_t packet = PACKET_ID_OFFLINE;
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
+                             sizeof(packet), 0) != -1;
 }
 
 static int handle_status(void *object, int i, uint8_t status);
@@ -249,9 +278,12 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
             friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
                                         &handle_custom_lossy_packet, m, i);
 
-
             if (m->numfriends == i)
                 ++m->numfriends;
+
+            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+                send_online_packet(m, i);
+            }
 
             return i;
         }
@@ -306,6 +338,10 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
             if (m->numfriends == i)
                 ++m->numfriends;
 
+            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+                send_online_packet(m, i);
+            }
+
             return i;
         }
     }
@@ -331,6 +367,11 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     remove_request_received(&(m->fr), m->friendlist[friendnumber].client_id);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
     kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
+
+    if (friend_con_connected(m->fr_c, m->friendlist[friendnumber].friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+        send_offine_packet(m, m->friendlist[friendnumber].friendcon_id);
+    }
+
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
 
@@ -1584,7 +1625,7 @@ Messenger *new_messenger(Messenger_Options *options)
     }
 
     m->options = *options;
-    friendreq_init(&(m->fr), m->onion_c);
+    friendreq_init(&(m->fr), m->fr_c);
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
@@ -1595,6 +1636,9 @@ Messenger *new_messenger(Messenger_Options *options)
 /* Run this before closing shop. */
 void kill_messenger(Messenger *m)
 {
+    if (!m)
+        return;
+
     uint32_t i;
 
     kill_friend_connections(m->fr_c);
@@ -1639,7 +1683,7 @@ static int handle_status(void *object, int i, uint8_t status)
     Messenger *m = object;
 
     if (status) { /* Went online. */
-        set_friend_status(m, i, FRIEND_ONLINE);
+        send_online_packet(m, i);
         m->friendlist[i].name_sent = 0;
         m->friendlist[i].userstatus_sent = 0;
         m->friendlist[i].statusmessage_sent = 0;
@@ -1935,15 +1979,32 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         return -1;
 
     Messenger *m = object;
-    uint64_t temp_time = unix_time();
     uint8_t packet_id = temp[0];
     uint8_t *data = temp + 1;
     uint32_t data_length = len - 1;
 
-    if (m->friendlist[i].status != FRIEND_ONLINE)
-        return -1;
+    if (m->friendlist[i].status != FRIEND_ONLINE) {
+        if (packet_id == PACKET_ID_ONLINE && len == 1) {
+            set_friend_status(m, i, FRIEND_ONLINE);
+            send_online_packet(m, i);
+        } else if (packet_id == PACKET_ID_NICKNAME || packet_id == PACKET_ID_STATUSMESSAGE
+                   || packet_id == PACKET_ID_USERSTATUS) {
+            /* Some backward compatibility, TODO: remove. */
+            set_friend_status(m, i, FRIEND_ONLINE);
+            send_online_packet(m, i);
+        } else {
+            return -1;
+        }
+    }
 
     switch (packet_id) {
+        case PACKET_ID_OFFLINE: {
+            if (data_length != 0)
+                break;
+
+            set_friend_status(m, i, FRIEND_CONFIRMED);
+        }
+
         case PACKET_ID_NICKNAME: {
             if (data_length > MAX_NAME_LENGTH || data_length == 0)
                 break;
@@ -2224,9 +2285,9 @@ void do_friends(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr = send_friendrequest(m->onion_c, m->friendlist[i].client_id, m->friendlist[i].friendrequest_nospam,
-                                        m->friendlist[i].info,
-                                        m->friendlist[i].info_size);
+            int fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
+                                                m->friendlist[i].info,
+                                                m->friendlist[i].info_size);
 
             if (fr >= 0) {
                 set_friend_status(m, i, FRIEND_REQUESTED);
@@ -2586,13 +2647,12 @@ uint32_t messenger_size(const Messenger *m)
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
-    uint32_t *data32 = (uint32_t *)data;
-    data32[0] = len;
-    data32[1] = (MESSENGER_STATE_COOKIE_TYPE << 16) | type;
-    data += sizeof(uint32_t) * 2;
+    host_to_lendian32(data, len);
+    data += sizeof(uint32_t);
+    host_to_lendian32(data, (host_tolendian16(MESSENGER_STATE_COOKIE_TYPE) << 16) | host_tolendian16(type));
+    data += sizeof(uint32_t);
     return data;
 }
-
 
 /* Save the messenger in data of size Messenger_size(). */
 void messenger_save(const Messenger *m, uint8_t *data)
@@ -2823,37 +2883,4 @@ uint32_t copy_friendlist(Messenger const *m, int32_t *out_list, uint32_t list_si
     }
 
     return ret;
-}
-
-/* Allocate and return a list of valid friend id's. List must be freed by the
- * caller.
- *
- * retun 0 if success.
- * return -1 if failure.
- */
-int get_friendlist(const Messenger *m, int32_t **out_list, uint32_t *out_list_length)
-{
-    uint32_t i;
-
-    *out_list_length = 0;
-
-    if (m->numfriends == 0) {
-        *out_list = NULL;
-        return 0;
-    }
-
-    *out_list = malloc(m->numfriends * sizeof(int32_t));
-
-    if (*out_list == NULL) {
-        return -1;
-    }
-
-    for (i = 0; i < m->numfriends; i++) {
-        if (m->friendlist[i].status > 0) {
-            (*out_list)[i] = i;
-            (*out_list_length)++;
-        }
-    }
-
-    return 0;
 }

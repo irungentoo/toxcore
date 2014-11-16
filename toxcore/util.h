@@ -62,6 +62,11 @@ char *id_toa(const uint8_t *id);
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
 
+uint16_t lendian_to_host16(uint16_t lendian);
+#define host_tolendian16(x) lendian_to_host16(x)
+
+void host_to_lendian32(uint8_t *dest,  uint32_t num);
+
 /* state load/save */
 typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
 int load_state(load_state_callback_func load_state_callback, void *outer,
@@ -73,17 +78,10 @@ void bytes_to_U64(uint64_t *dest, const uint8_t *bytes);
 /* Converts 4 bytes to uint32_t */
 void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);
 
-/* Converts 2 bytes to uint16_t */
-void bytes_to_U16(uint16_t *dest, const uint8_t *bytes);
-
 /* Convert uint64_t to byte string of size 8 */
 void U64_to_bytes(uint8_t *dest, uint64_t value);
 
 /* Convert uint32_t to byte string of size 4 */
 void U32_to_bytes(uint8_t *dest, uint32_t value);
-
-/* Convert uint16_t to byte string of size 2 */
-void U16_to_bytes(uint8_t *dest, uint16_t value);
-
 
 #endif /* __UTIL_H__ */

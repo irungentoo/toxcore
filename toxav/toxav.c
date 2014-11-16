@@ -23,6 +23,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#define __TOX_DEFINED__
+typedef struct Messenger Tox;
 
 #define _GNU_SOURCE /* implicit declaration warning */
 
@@ -30,6 +32,7 @@
 #include "codec.h"
 #include "msi.h"
 #include "toxav.h"
+#include "group.h"
 
 #include "../toxcore/logger.h"
 
@@ -587,6 +590,8 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
     codec_terminate_session(call->cs);
     call->cs = NULL;
+
+    free(call->frame_buf);
 
     pthread_mutex_unlock(&call->mutex);
     pthread_mutex_destroy(&call->mutex);
@@ -1146,3 +1151,60 @@ end:
         rtp_free_msg(NULL, _msg);
     }
 }
+
+
+/* Create a new toxav group.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ *
+ * Audio data callback format:
+ *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ */
+int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int,
+                           uint8_t, unsigned int, void *), void *userdata)
+{
+    Messenger *m = tox;
+    return add_av_groupchat(m->group_chat_object, audio_callback, userdata);
+}
+
+/* Join a AV group (you need to have been invited first.)
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ *
+ * Audio data callback format (same as the one for toxav_add_av_groupchat()):
+ *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ */
+int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
+                            void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
+                            void *userdata)
+{
+    Messenger *m = tox;
+    return join_av_groupchat(m->group_chat_object, friendnumber, data, length, audio_callback, userdata);
+}
+
+/* Send audio to the group chat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ *
+ * Valid number of samples are ((sample rate) * (audio length (Valid ones are: 2.5, 5, 10, 20, 40 or 60 ms)) / 1000)
+ * Valid number of channels are 1 or 2.
+ * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
+ *
+ * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
+ */
+int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                           unsigned int sample_rate)
+{
+    Messenger *m = tox;
+    return group_send_audio(m->group_chat_object, groupnumber, pcm, samples, channels, sample_rate);
+}
+

@@ -178,6 +178,9 @@ int send_data_request(Networking_Core *net, const Onion_Path *path, IP_Port dest
     uint8_t packet[ONION_MAX_PACKET_SIZE];
     len = create_onion_packet(packet, sizeof(packet), path, dest, request, len);
 
+    if (len == -1)
+        return -1;
+
     if (sendpacket(net, path->ip_port1, packet, len) != len)
         return -1;
 

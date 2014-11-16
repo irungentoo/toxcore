@@ -486,7 +486,7 @@ struct timer_function_args {
  * @param timeout Timeout in ms
  * @return int
  */
-static int timer_alloc ( TimerHandler *timers_container, void *(func)(void *), void *arg1, int arg2, uint32_t timeout)
+static int timer_alloc ( TimerHandler *timers_container, void * (func)(void *), void *arg1, int arg2, uint32_t timeout)
 {
     static int timer_id;
     pthread_mutex_lock(&timers_container->mutex);
@@ -631,6 +631,16 @@ static void *timer_poll( void *arg )
         usleep(handler->resolution);
     }
 
+    size_t i = 0;
+
+    for (; i < handler->max_capacity; i ++)
+        free(handler->timers[i]);
+
+    free(handler->timers);
+
+    pthread_mutex_destroy( &handler->mutex );
+
+    free(handler);
     pthread_exit(NULL);
 }
 
@@ -690,15 +700,6 @@ static void timer_terminate_session(TimerHandler *handler)
     handler->running = 0;
 
     pthread_mutex_unlock(&handler->mutex);
-
-    size_t i = 0;
-
-    for (; i < handler->max_capacity; i ++)
-        free(handler->timers[i]);
-
-    free(handler->timers);
-
-    pthread_mutex_destroy( &handler->mutex );
 }
 
 /**

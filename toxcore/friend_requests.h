@@ -24,7 +24,7 @@
 #ifndef FRIEND_REQUESTS_H
 #define FRIEND_REQUESTS_H
 
-#include "onion_client.h"
+#include "friend_connection.h"
 
 #define MAX_FRIEND_REQUEST_DATA_SIZE (ONION_CLIENT_MAX_DATA_SIZE - (1 + sizeof(uint32_t)))
 
@@ -47,12 +47,6 @@ typedef struct {
     uint16_t received_requests_index;
 } Friend_Requests;
 
-/* Try to send a friendrequest to peer with public_key.
- * data is the data in the request and length is the length.
- * Maximum length of data is MAX_FRIEND_REQUEST_DATA_SIZE.
- */
-int send_friendrequest(const Onion_Client *onion_c, const uint8_t *public_key, uint32_t nospam_num, const uint8_t *data,
-                       uint32_t length);
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num);
 uint32_t get_nospam(const Friend_Requests *fr);
@@ -77,7 +71,7 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const 
 void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, void *), void *userdata);
 
 /* Sets up friendreq packet handlers. */
-void friendreq_init(Friend_Requests *fr, Onion_Client *onion_c);
+void friendreq_init(Friend_Requests *fr, Friend_Connections *fr_c);
 
 
 #endif

@@ -36,9 +36,10 @@
 #define GROUPCHAT_CALLBACK_INDEX 1
 
 #define PACKET_ID_ALIVE 16
+#define PACKET_ID_FRIEND_REQUESTS 18
 
 /* Interval between the sending of ping packets. */
-#define FRIEND_PING_INTERVAL 6
+#define FRIEND_PING_INTERVAL 7
 
 /* If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
@@ -93,7 +94,38 @@ typedef struct {
     Friend_Conn *conns;
     uint32_t num_cons;
 
+    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint32_t len);
+    void *fr_request_object;
 } Friend_Connections;
+
+/* return friendcon_id corresponding to the real public key on success.
+ * return -1 on failure.
+ */
+int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk);
+
+/* Increases lock_count for the connection with friendcon_id by 1.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id);
+
+/* return FRIENDCONN_STATUS_CONNECTED if the friend is connected.
+ * return FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
+ * return FRIENDCONN_STATUS_NONE on failure.
+ */
+unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id);
+
+/* Copy public keys associated to friendcon_id.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Connections *fr_c, int friendcon_id);
+
+/* Set temp dht key for connection.
+ */
+void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk);
 
 /* Set the callbacks for the friend connection.
  * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
@@ -127,6 +159,22 @@ int new_friend_connection(Friend_Connections *fr_c, const uint8_t *real_public_k
  * return 0 on success.
  */
 int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id);
+
+/* Send a Friend request packet.
+ *
+ *  return -1 if failure.
+ *  return  0 if it sent the friend request directly to the friend.
+ *  return the number of peers it was routed through if it did not send it directly.
+ */
+int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
+                               uint16_t length);
+
+/* Set friend request callback.
+ *
+ * This function will be called every time a friend request is received.
+ */
+void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
+                                 const uint8_t *, uint32_t), void *object);
 
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c);

@@ -17,17 +17,15 @@
  *
  * Data dir MAY have:
  *
- *  - A file named avatar.png.  If given, the bot will publish it. Otherwise,
- *    no avatar will be set.
- *
- *  - A directory named "avatars" with the currently cached avatars.
+ *  - A directory named "avatars" with the user's avatar and cached avatars.
+ *    The user avatar must be named in the format: "<uppercase user id>.png"
  *
  *
  * The bot will answer to these commands:
  *
  *  !debug-on       - Enable extended debug messages
  *  !debug-off      - Disenable extended debug messages
- *  !set-avatar     - Set our avatar to the contents of the file avatar.*
+ *  !set-avatar     - Set our avatar from "avatars/<USERID>.png"
  *  !remove-avatar  - Remove our avatar
  *
  */
@@ -81,13 +79,12 @@ static void debug_printf(const char *fmt, ...)
 typedef struct {
     uint8_t format;
     char *suffix;
-    char *file_name;
-} def_avatar_name_t;
+} avatar_format_data_t;
 
-static const def_avatar_name_t def_avatar_names[] = {
+static const avatar_format_data_t avatar_formats[] = {
     /* In order of preference */
-    { TOX_AVATAR_FORMAT_PNG,  "png", "avatar.png" },
-    { TOX_AVATAR_FORMAT_NONE, NULL, NULL },    /* Must be the last one */
+    { TOX_AVATAR_FORMAT_PNG,  "png" },
+    { TOX_AVATAR_FORMAT_NONE, NULL },    /* Must be the last one */
 };
 
 
@@ -99,9 +96,9 @@ static char *get_avatar_suffix_from_format(uint8_t format)
 {
     int i;
 
-    for (i = 0; def_avatar_names[i].format != TOX_AVATAR_FORMAT_NONE; i++)
-        if (def_avatar_names[i].format == format)
-            return def_avatar_names[i].suffix;
+    for (i = 0; avatar_formats[i].format != TOX_AVATAR_FORMAT_NONE; i++)
+        if (avatar_formats[i].format == format)
+            return avatar_formats[i].suffix;
 
     return NULL;
 }
@@ -169,8 +166,8 @@ static void byte_to_hex_str(const uint8_t *buf, const size_t buflen, char *dst)
 /* Make the cache file name for a avatar of the given format for the given
  * client id.
  */
-static int make_avatar_file_name(char *dst, size_t dst_len,
-                                 char *base_dir, uint8_t format, uint8_t *client_id)
+static int make_avatar_file_name(char *dst, size_t dst_len, const char *base_dir,
+                                 const uint8_t format, uint8_t *client_id)
 {
     char client_id_str[2 * TOX_CLIENT_ID_SIZE + 1];
     byte_to_hex_str(client_id, TOX_CLIENT_ID_SIZE, client_id_str);
@@ -267,13 +264,13 @@ static int delete_user_avatar(Tox *tox, char *base_dir, int friendnum)
     /* This iteration is dumb and inefficient */
     int i;
 
-    for (i = 0; def_avatar_names[i].format != TOX_AVATAR_FORMAT_NONE; i++) {
+    for (i = 0; avatar_formats[i].format != TOX_AVATAR_FORMAT_NONE; i++) {
         int ret = make_avatar_file_name(path, sizeof(path), base_dir,
-                                        def_avatar_names[i].format, addr);
+                                        avatar_formats[i].format, addr);
 
         if (ret != 0) {
             DEBUG("Failed to create avatar path for friend #%d, format %d\n",
-                  friendnum, def_avatar_names[i].format);
+                  friendnum, avatar_formats[i].format);
             continue;
         }
 
@@ -438,66 +435,54 @@ static void friend_request_cb(Tox *tox, const uint8_t *public_key,
 }
 
 
-static int try_avatar_file(Tox *tox, const char *base_dir, const def_avatar_name_t *an)
-{
-    char path[PATH_MAX];
-    int n = snprintf(path, sizeof(path), "%s/%s", base_dir, an->file_name);
-    path[sizeof(path) - 1] = '\0';
-
-    if (n >= sizeof(path)) {
-        DEBUG("error: path %s too big\n", path);
-        return -1;
-    }
-
-    DEBUG("trying file %s: ", path);
-    FILE *fp = fopen(path, "rb");
-
-    if (fp != NULL) {
-        uint8_t buf[2 * TOX_AVATAR_MAX_DATA_LENGTH];
-        int len = fread(buf, 1, sizeof(buf), fp);
-
-        if (len >= 0 && len <= TOX_AVATAR_MAX_DATA_LENGTH) {
-            int r = tox_set_avatar(tox, an->format, buf, len);
-            DEBUG("%d bytes, tox_set_avatar returned=%d", len, r);
-
-            if (r == 0)
-                printf("Setting avatar file %s\n", path);
-            else
-                printf("Error setting avatar file %s\n", path);
-        } else if (len < 0) {
-            DEBUG("read error %d", len);
-        } else {
-            printf("Avatar file %s if too big (more than %d bytes)",
-                   path, TOX_AVATAR_MAX_DATA_LENGTH);
-        }
-
-        fclose(fp);
-        return 0;
-    } else {
-        DEBUG("File %s not found", path);
-    }
-
-    return -1;
-}
-
-
 static void set_avatar(Tox *tox, const char *base_dir)
 {
+    uint8_t addr[TOX_FRIEND_ADDRESS_SIZE];
+    char path[PATH_MAX];
+    uint8_t buf[2 * TOX_AVATAR_MAX_DATA_LENGTH];
+
+    tox_get_address(tox, addr);
+
     int i;
 
-    for (i = 0; i < 4; i++) {
-        if (def_avatar_names[i].format == TOX_AVATAR_FORMAT_NONE) {
+    for (i = 0; ; i++) {
+        if (avatar_formats[i].format == TOX_AVATAR_FORMAT_NONE) {
             tox_set_avatar(tox, TOX_AVATAR_FORMAT_NONE, NULL, 0);
             printf("No avatar file found, setting to NONE.\n");
-            return;
+            break;
         } else {
-            if (try_avatar_file(tox, base_dir, &def_avatar_names[i]) == 0)
+            int ret = make_avatar_file_name(path, sizeof(path),  base_dir,
+                                            avatar_formats[i].format, addr);
+
+            if (ret < 0) {
+                printf("Failed to generate avatar file name.\n");
                 return;
+            }
+
+            int len = load_avatar_data(path, buf);
+
+            if (len < 0) {
+                printf("Failed to load avatar data from file: %s\n", path);
+                continue;
+            }
+
+            if (len > TOX_AVATAR_MAX_DATA_LENGTH) {
+                printf("Avatar file %s is too big (more than %d bytes)",
+                       path, TOX_AVATAR_MAX_DATA_LENGTH);
+                return;
+            }
+
+            ret = tox_set_avatar(tox, avatar_formats[i].format, buf, len);
+            DEBUG("tox_set_avatar returned=%d", ret);
+
+            if (ret == 0)
+                printf("Setting avatar from %s (%d bytes).\n", path, len);
+            else
+                printf("Error setting avatar from %s.\n", path);
+
+            return;
         }
     }
-
-    /* Should be unreachable */
-    printf("UNEXPECTED CODE PATH\n");
 }
 
 

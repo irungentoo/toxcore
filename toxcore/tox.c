@@ -168,7 +168,13 @@ uint32_t tox_send_action(Tox *tox, int32_t friendnumber, const uint8_t *action, 
 int tox_set_name(Tox *tox, const uint8_t *name, uint16_t length)
 {
     Messenger *m = tox;
-    return setname(m, name, length);
+
+    if (setname(m, name, length) == 0) {
+        send_name_all_groups(m->group_chat_object);
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 /* Get your nickname.
@@ -545,12 +551,12 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
 
 /* Set the callback for group invites.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
  *
  * data of length is what needs to be passed to join_groupchat().
  */
-void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_t, const uint8_t *, uint16_t, void *),
-                               void *userdata)
+void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_t, uint8_t, const uint8_t *, uint16_t,
+                               void *), void *userdata)
 {
     Messenger *m = tox;
     g_callback_group_invite(m->group_chat_object, function, userdata);
@@ -558,7 +564,7 @@ void tox_callback_group_invite(Tox *tox, void (*function)(Messenger *tox, int32_
 
 /* Set the callback for group messages.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int peernumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, int, const uint8_t *, uint16_t, void *),
                                 void *userdata)
@@ -569,13 +575,25 @@ void tox_callback_group_message(Tox *tox, void (*function)(Messenger *tox, int, 
 
 /* Set the callback for group actions.
  *
- *  Function(Tox *tox, int groupnumber, int friendgroupnumber, uint8_t * action, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int groupnumber, int peernumber, uint8_t * action, uint16_t length, void *userdata)
  */
 void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, int, const uint8_t *, uint16_t, void *),
                                void *userdata)
 {
     Messenger *m = tox;
-    //m_callback_group_action(m, function, userdata);
+    g_callback_group_action(m->group_chat_object, function, userdata);
+}
+
+/* Set callback function for title changes.
+ *
+ * Function(Tox *tox, int groupnumber, int peernumber, uint8_t * title, uint8_t length, void *userdata)
+ * if peernumber == -1, then author is unknown (e.g. initial joining the group)
+ */
+void tox_callback_group_title(Tox *tox, void (*function)(Messenger *tox, int, int, const uint8_t *, uint8_t,
+                              void *), void *userdata)
+{
+    Messenger *m = tox;
+    g_callback_group_title(m->group_chat_object, function, userdata);
 }
 
 /* Set callback function for peer name list changes.
@@ -586,7 +604,7 @@ void tox_callback_group_action(Tox *tox, void (*function)(Messenger *tox, int, i
 void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *), void *userdata)
 {
     Messenger *m = tox;
-    //m_callback_group_namelistchange(m, function, userdata);
+    g_callback_group_namelistchange(m->group_chat_object, function, userdata);
 }
 
 /* Creates a new groupchat and puts it in the chats array.
@@ -597,7 +615,7 @@ void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int
 int tox_add_groupchat(Tox *tox)
 {
     Messenger *m = tox;
-    return add_groupchat(m->group_chat_object);
+    return add_groupchat(m->group_chat_object, GROUPCHAT_TYPE_TEXT);
 }
 
 /* Delete a groupchat from the chats array.
@@ -620,8 +638,7 @@ int tox_del_groupchat(Tox *tox, int groupnumber)
 int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name)
 {
     const Messenger *m = tox;
-    //return m_group_peername(m, groupnumber, peernumber, name);
-    return -1;
+    return group_peername(m->group_chat_object, groupnumber, peernumber, name);
 }
 
 /* invite friendnumber to groupnumber
@@ -643,7 +660,7 @@ int tox_invite_friend(Tox *tox, int32_t friendnumber, int groupnumber)
 int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
     Messenger *m = tox;
-    return join_groupchat(m->group_chat_object, friendnumber, data, length);
+    return join_groupchat(m->group_chat_object, friendnumber, GROUPCHAT_TYPE_TEXT, data, length);
 }
 
 /* send a group message
@@ -663,8 +680,40 @@ int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, ui
 int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length)
 {
     Messenger *m = tox;
-    //return group_action_send(m, groupnumber, action, length);
-    return -1;
+    return group_action_send(m->group_chat_object, groupnumber, action, length);
+}
+
+/* set the group's title, limited to MAX_NAME_LENGTH
+ * return 0 on success
+ * return -1 on failure
+ */
+int tox_group_set_title(Tox *tox, int groupnumber, const uint8_t *title, uint8_t length)
+{
+    Messenger *m = tox;
+    return group_title_send(m->group_chat_object, groupnumber, title, length);
+}
+
+/* Get group title from groupnumber and put it in title.
+ * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
+ *
+ *  return length of copied title if success.
+ *  return -1 if failure.
+ */
+int tox_group_get_title(Tox *tox, int groupnumber, uint8_t *title, uint32_t max_length)
+{
+    Messenger *m = tox;
+    return group_title_get(m->group_chat_object, groupnumber, title, max_length);
+}
+
+/* Check if the current peernumber corresponds to ours.
+ *
+ * return 1 if the peernumber corresponds to ours.
+ * return 0 on failure.
+ */
+unsigned int tox_group_peernumber_is_ours(const Tox *tox, int groupnumber, int peernumber)
+{
+    const Messenger *m = tox;
+    return group_peernumber_is_ours(m->group_chat_object, groupnumber, peernumber);
 }
 
 /* Return the number of peers in the group chat on success.
@@ -673,8 +722,7 @@ int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint
 int tox_group_number_peers(const Tox *tox, int groupnumber)
 {
     const Messenger *m = tox;
-    //return group_number_peers(m, groupnumber);
-    return -1;
+    return group_number_peers(m->group_chat_object, groupnumber);
 }
 
 /* List all the peers in the group chat.
@@ -691,8 +739,7 @@ int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t names[][TOX_MAX
                         uint16_t length)
 {
     const Messenger *m = tox;
-    //return group_names(m, groupnumber, names, lengths, length);
-    return -1;
+    return group_names(m->group_chat_object, groupnumber, names, lengths, length);
 }
 
 /* Return the number of chats in the instance m.
@@ -701,8 +748,7 @@ int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t names[][TOX_MAX
 uint32_t tox_count_chatlist(const Tox *tox)
 {
     const Messenger *m = tox;
-    //return count_chatlist(m);
-    return 0;
+    return count_chatlist(m->group_chat_object);
 }
 
 /* Copy a list of valid chat IDs into the array out_list.
@@ -710,11 +756,21 @@ uint32_t tox_count_chatlist(const Tox *tox)
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-uint32_t tox_get_chatlist(const Tox *tox, int *out_list, uint32_t list_size)
+uint32_t tox_get_chatlist(const Tox *tox, int32_t *out_list, uint32_t list_size)
 {
     const Messenger *m = tox;
-    //return copy_chatlist(m, out_list, list_size);
-    return 0;
+    return copy_chatlist(m->group_chat_object, out_list, list_size);
+}
+
+/* return the type of groupchat (TOX_GROUPCHAT_TYPE_) that groupnumber is.
+ *
+ * return -1 on failure.
+ * return type on success.
+ */
+int tox_group_get_type(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    return group_get_type(m->group_chat_object, groupnumber);
 }
 
 /****************FILE SENDING FUNCTIONS*****************/
@@ -990,6 +1046,7 @@ void tox_do(Tox *tox)
 {
     Messenger *m = tox;
     do_messenger(m);
+    do_groupchats(m->group_chat_object);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */

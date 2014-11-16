@@ -28,37 +28,6 @@
 #include "friend_requests.h"
 #include "util.h"
 
-/* Try to send a friend request to peer with public_key.
- * data is the data in the request and length is the length.
- *
- *  return -1 if failure.
- *  return  0 if it sent the friend request directly to the friend.
- *  return the number of peers it was routed through if it did not send it directly.
- */
-int send_friendrequest(const Onion_Client *onion_c, const uint8_t *public_key, uint32_t nospam_num, const uint8_t *data,
-                       uint32_t length)
-{
-    if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
-        return -1;
-
-    uint8_t temp[1 + sizeof(nospam_num) + length];
-    temp[0] = CRYPTO_PACKET_FRIEND_REQ;
-    memcpy(temp + 1, &nospam_num, sizeof(nospam_num));
-    memcpy(temp + 1 + sizeof(nospam_num), data, length);
-
-    int friend_num = onion_friend_num(onion_c, public_key);
-
-    if (friend_num == -1)
-        return -1;
-
-    int num = send_onion_data(onion_c, friend_num, temp, sizeof(temp));
-
-    if (num <= 0)
-        return -1;
-
-    return num;
-}
-
 
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num)
@@ -169,7 +138,7 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
     return 0;
 }
 
-void friendreq_init(Friend_Requests *fr, Onion_Client *onion_c)
+void friendreq_init(Friend_Requests *fr, Friend_Connections *fr_c)
 {
-    oniondata_registerhandler(onion_c, CRYPTO_PACKET_FRIEND_REQ, &friendreq_handlepacket, fr);
+    set_friend_request_callback(fr_c, &friendreq_handlepacket, fr);
 }
