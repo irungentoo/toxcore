@@ -1,44 +1,49 @@
-Massive public group chats.
+Group chats.
 
-Note that not all this document has been implemented: only private (invite only) group chats are currently implemented.
+Note: we assume everyone in the chat trusts each other.
 
-Everyone generates a short term public private key pair right before joining 
-the chat.
+These group chats work by temporarily adding the 4 "closest" people defined by a distance function 
+in group.c in order to form a circle of connected peers. These peers then relay messages to each other.
 
-Note that for public group chats it is impossible to protect the chat from 
-being spied on by a very dedicated attacker, encryption is therefor used as a 
-form of spam/access control.
+A friend invites another friend to a group chat by sending them an invite packet. The friend either ignores 
+the invite or responds with a response packet if he wants to join the chat. The friend invite contains the type
+of groupchat (text only, A/V) the friend is being invited to.
 
-## Joining the chats
-
+TODO: write more of this.
 
 ## Protocol
 
+Invite packets:
+Invite packet:
+[uint8_t id 96][uint8_t id 0][uint16_t group chat number][33 bytes group chat identifier[1 byte type][32 bytes id]]
 
-Node format: 
-See DHT, currently uses the IPv6 Node_format.
-
-Get nodes (Request):
-Packet contents: 
-```
-[char with a value of 48][Bob's (The receiver's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the receiver:[char with a value of 48][random 8 byte (ping_id)]
-```
-Valid replies: a send_nodes packet
-
-Send_nodes (response): 
-```
-[char with a value of 48][Bob's (The receiver's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted with the nonce, private key of the sender and public key of the receiver:[char with a value of 49][random 8 byte (ping_id)][Nodes in node format, length=40 * (number of nodes (maximum of 6 nodes)) bytes]]
-```
-
-Broadcast packet:
-```
-[char with a value of 48][Bob's (The receiver's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][nonce][Encrypted with the nonce, private key of the sender and public key of the receiver:[char with a value of 50][Data to send to everyone]]
-```
+Response packet
+[uint8_t id 96][uint8_t id 1][uint16_t group chat number(local)][uint16_t group chat number to join][33 bytes group chat identifier[1 byte type][32 bytes id]]
 
 
-Data to send to everyone:
-TODO: signing and spam control + permissions.
-[client_id of sender][uint32_t message number][char with a value representing id of message][data]
+Peer online packet:
+[uint8_t id 97][uint16_t group chat number][33 bytes group chat identifier[1 byte type][32 bytes id]]
+
+Peer leave packet:
+[uint8_t id 98][uint16_t group chat number][uint8_t id 1]
+
+Peer query packet:
+[uint8_t id 98][uint16_t group chat number][uint8_t id 4]
+
+Peer response packet:
+[uint8_t id 98][uint16_t group chat number][uint8_t id 5][Repeated times number of peers: [uint16_t peer num][uint8_t 32bytes real public key][uint8_t 32bytes temp DHT public key][uint8_t name length][name]] 
+
+
+Message packets:
+[uint8_t id 99][uint16_t group chat number][uint16_t peer number][uint32_t message number][uint8_t with a value representing id of message][data]
+
+Lossy Message packets:
+[uint8_t id 199][uint16_t group chat number][uint16_t peer number][uint16_t message number][uint8_t with a value representing id of message][data]
+
+Group chat types:
+0: text
+1: AV
+
 
 Note: the message number is increased by 1 for each sent message.
 
@@ -49,14 +54,10 @@ No data.
 
 16 - new_peer
 Tell everyone about a new peer in the chat.
-[uint8_t public_key[public_key_len]]
+[uint16_t peer_num][uint8_t 32bytes real public key][uint8_t 32bytes temp DHT public key]
 
-17 - ban_peer
-Ban a peer
-[uint8_t public_key[public_key_len]]
-
-18 - topic change
-[uint8_t topic[topiclen]]
+17 - kill_peer
+[uint16_t peer_num]
 
 48 - name change
 [uint8_t name[namelen]]
@@ -69,3 +70,6 @@ Ban a peer
 
 65 - action (/me)
 [uint8_t message[messagelen]]
+
+
+
