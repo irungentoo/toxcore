@@ -1209,7 +1209,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
     onion_c->Onion_Data_Handlers[byte].object = object;
 }
 
-#define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 5
+#define ANNOUNCE_INTERVAL_NOT_ANNOUNCED 3
 #define ANNOUNCE_INTERVAL_ANNOUNCED ONION_NODE_PING_INTERVAL
 
 static void do_announce(Onion_Client *onion_c)
