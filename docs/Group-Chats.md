@@ -9,6 +9,7 @@ A friend invites another friend to a group chat by sending them an invite packet
 the invite or responds with a response packet if he wants to join the chat. The friend invite contains the type
 of groupchat (text only, A/V) the friend is being invited to.
 
+
 TODO: write more of this.
 
 ## Protocol
@@ -28,11 +29,13 @@ Peer leave packet:
 [uint8_t id 98][uint16_t group chat number][uint8_t id 1]
 
 Peer query packet:
-[uint8_t id 98][uint16_t group chat number][uint8_t id 4]
+[uint8_t id 98][uint16_t group chat number][uint8_t id 8]
 
 Peer response packet:
-[uint8_t id 98][uint16_t group chat number][uint8_t id 5][Repeated times number of peers: [uint16_t peer num][uint8_t 32bytes real public key][uint8_t 32bytes temp DHT public key][uint8_t name length][name]] 
+[uint8_t id 98][uint16_t group chat number][uint8_t id 9][Repeated times number of peers: [uint16_t peer num][uint8_t 32bytes real public key][uint8_t 32bytes temp DHT public key][uint8_t name length][name]] 
 
+Title response packet:
+[uint8_t id 98][uint16_t group chat number][uint8_t id 10][title]
 
 Message packets:
 [uint8_t id 99][uint16_t group chat number][uint16_t peer number][uint32_t message number][uint8_t with a value representing id of message][data]
@@ -62,8 +65,8 @@ Tell everyone about a new peer in the chat.
 48 - name change
 [uint8_t name[namelen]]
 
-49 - status change
-[uint8_t (status id)]
+49 - groupchat title change
+[uint8_t title[titlelen]]
 
 64 - chat message
 [uint8_t message[messagelen]]
