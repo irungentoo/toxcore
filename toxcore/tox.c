@@ -641,8 +641,7 @@ int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t 
     return group_peername(m->group_chat_object, groupnumber, peernumber, name);
 }
 
-/*
- * Add a groupchat peer as a friend.
+/* Add a groupchat peer as a friend.
  * Set the data that will be sent along with friend request.
  * data is the data and length is the length.
  *
@@ -652,7 +651,7 @@ int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t 
 int32_t tox_group_add_peer_friend(Tox *tox, int groupnumber, int peerindex, const uint8_t *data, uint16_t length)
 {
     Messenger *m = tox;
-    return m_add_group_peer_friend(m, groupnumber, peerindex, data, length);
+    return m_group_add_peer_friend(m, groupnumber, peerindex, data, length);
 }
 
 /* invite friendnumber to groupnumber

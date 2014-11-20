@@ -261,7 +261,7 @@ typedef struct Messenger {
     uint8_t avatar_hash[AVATAR_HASH_LENGTH];
 
     Friend *friendlist;
-    uint32_t numfriends;
+    int32_t numfriends;
 
     uint32_t numonline_friends;
 
@@ -319,6 +319,13 @@ typedef struct Messenger {
  */
 void getaddress(const Messenger *m, uint8_t *address);
 
+/* This is used by the various add_friend functions to init the friend obj
+ *
+ * returns friendnum on success
+ * returns -1 or FAERR_NOMEM or FAERR_UNKNOWN, as m_addfriend does/used to do
+ */
+int32_t init_new_friend(Messenger *m, const uint8_t *client_id);
+
 /* Add a friend.
  * Set the data that will be sent along with friend request.
  * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes.
@@ -336,16 +343,6 @@ void getaddress(const Messenger *m, uint8_t *address);
  *  return -8 if increasing the friend list size fails.
  */
 int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, uint16_t length);
-
-/*
- * Add a groupchat peer as a friend.
- * Set the data that will be sent along with friend request.
- * data is the data and length is the length.
- *
- *  return the friend number if success.
- *  returns the same errors as m_addfriend on error
- */
-int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length);
 
 /* Add a friend without sending a friendrequest.
  *  return the friend number if success.

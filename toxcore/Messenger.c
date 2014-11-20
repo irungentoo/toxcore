@@ -31,7 +31,6 @@
 
 #include "logger.h"
 #include "Messenger.h"
-#include "group.h"
 #include "assoc.h"
 #include "network.h"
 #include "util.h"
@@ -187,6 +186,63 @@ static int handle_status(void *object, int i, uint8_t status);
 static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len);
 static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length);
 
+/* This is used by the various add_friend functions to init the friend obj
+ *
+ * returns friendnum on success
+ * returns -1 or FAERR_NOMEM or FAERR_UNKNOWN, as m_addfriend does/used to do
+ */
+int32_t init_new_friend(Messenger *m, const uint8_t *client_id)
+{
+    /* Resize the friend list if necessary. */
+    if (realloc_friendlist(m, m->numfriends + 1) != 0)
+        return FAERR_NOMEM;
+
+    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
+
+    int friendcon_id = new_friend_connection(m->fr_c, client_id);
+
+    if (friendcon_id == -1)
+        return -1;
+
+    int32_t i;
+
+    for (i = 0; i <= m->numfriends; ++i)  {
+        if (m->friendlist[i].status == NOFRIEND) {
+            m->friendlist[i].status = FRIEND_ADDED;
+            m->friendlist[i].friendcon_id = friendcon_id;
+            m->friendlist[i].friendrequest_lastsent = 0;
+            m->friendlist[i].friendrequest_timeout = FRIENDREQUEST_TIMEOUT;
+            id_copy(m->friendlist[i].client_id, client_id);
+            m->friendlist[i].statusmessage = calloc(1, 1);
+            m->friendlist[i].statusmessage_length = 1;
+            m->friendlist[i].userstatus = USERSTATUS_NONE;
+            m->friendlist[i].avatar_info_sent = 0;
+            m->friendlist[i].avatar_recv_data = NULL;
+            m->friendlist[i].avatar_send_data.bytes_sent = 0;
+            m->friendlist[i].avatar_send_data.last_reset = 0;
+            m->friendlist[i].is_typing = 0;
+            m->friendlist[i].message_id = 0;
+            m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
+            m->friendlist[i].friendrequest_nospam = 0;
+            m->friendlist[i].groupnumber = -1;
+            m->friendlist[i].peerindex = -1;
+            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
+                                        &handle_custom_lossy_packet, m, i);
+
+            if (m->numfriends == i)
+                ++m->numfriends;
+
+            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+                send_online_packet(m, i);
+            }
+
+            return i;
+        }
+    }
+
+    return FAERR_UNKNOWN;
+}
+
 /*
  * Add a friend.
  * Set the data that will be sent along with friend request.
@@ -243,139 +299,15 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
         return FAERR_SETNEWNOSPAM;
     }
 
-    /* Resize the friend list if necessary. */
-    if (realloc_friendlist(m, m->numfriends + 1) != 0)
-        return FAERR_NOMEM;
+    int32_t friendnumber = init_new_friend(m, client_id);
 
-    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
-
-    int friendcon_id = new_friend_connection(m->fr_c, client_id);
-
-    if (friendcon_id == -1)
-        return -1;
-
-    uint32_t i;
-
-    for (i = 0; i <= m->numfriends; ++i)  {
-        if (m->friendlist[i].status == NOFRIEND) {
-            m->friendlist[i].status = FRIEND_ADDED;
-            m->friendlist[i].friendcon_id = friendcon_id;
-            m->friendlist[i].friendrequest_lastsent = 0;
-            m->friendlist[i].friendrequest_timeout = FRIENDREQUEST_TIMEOUT;
-            id_copy(m->friendlist[i].client_id, client_id);
-            m->friendlist[i].statusmessage = calloc(1, 1);
-            m->friendlist[i].statusmessage_length = 1;
-            m->friendlist[i].userstatus = USERSTATUS_NONE;
-            m->friendlist[i].avatar_info_sent = 0;
-            m->friendlist[i].avatar_recv_data = NULL;
-            m->friendlist[i].avatar_send_data.bytes_sent = 0;
-            m->friendlist[i].avatar_send_data.last_reset = 0;
-            m->friendlist[i].is_typing = 0;
-            memcpy(m->friendlist[i].info, data, length);
-            m->friendlist[i].info_size = length;
-            m->friendlist[i].message_id = 0;
-            m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
-            memcpy(&(m->friendlist[i].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
-            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
-                                        &handle_custom_lossy_packet, m, i);
-
-            if (m->numfriends == i)
-                ++m->numfriends;
-
-            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
-                send_online_packet(m, i);
-            }
-
-            return i;
-        }
+    if (friendnumber >= 0) {
+        memcpy(&(m->friendlist[friendnumber].friendrequest_nospam), address + crypto_box_PUBLICKEYBYTES, sizeof(uint32_t));
+        memcpy(m->friendlist[friendnumber].info, data, length);
+        m->friendlist[friendnumber].info_size = length;
     }
 
-    return FAERR_UNKNOWN;
-}
-
-/*
- * Add a groupchat peer as a friend.
- * Set the data that will be sent along with friend request.
- * data is the data and length is the length.
- *
- *  return the friend number if success.
- *  returns the same errors as m_addfriend on error
- */
-int32_t m_add_group_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length)
-{
-    if (length > MAX_FRIEND_REQUEST_DATA_SIZE)
-        return FAERR_TOOLONG;
-
-    Group_c *g = get_group_c(m->group_chat_object, groupnumber);
-
-    uint8_t client_id[crypto_box_PUBLICKEYBYTES];
-    id_copy(client_id, g->group[peerindex].real_pk);
-
-    if (!public_key_valid(client_id))
-        return FAERR_BADCHECKSUM;
-
-    if (length < 1)
-        return FAERR_NOMESSAGE;
-
-    if (id_equal(client_id, m->net_crypto->self_public_key))
-        return FAERR_OWNKEY;
-
-    int32_t friend_id = getfriend_id(m, client_id);
-
-    if (friend_id != -1) {
-        return FAERR_ALREADYSENT;
-    }
-
-    /* Resize the friend list if necessary. */
-    if (realloc_friendlist(m, m->numfriends + 1) != 0)
-        return FAERR_NOMEM;
-
-    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
-
-    int friendcon_id = new_friend_connection(m->fr_c, client_id);
-
-    if (friendcon_id == -1)
-        return -1;
-
-    uint32_t i;
-
-    for (i = 0; i <= m->numfriends; ++i)  {
-        if (m->friendlist[i].status == NOFRIEND) {
-            m->friendlist[i].status = FRIEND_ADDED;
-            m->friendlist[i].friendcon_id = friendcon_id;
-            m->friendlist[i].friendrequest_lastsent = 0;
-            m->friendlist[i].friendrequest_timeout = FRIENDREQUEST_TIMEOUT;
-            id_copy(m->friendlist[i].client_id, client_id);
-            m->friendlist[i].statusmessage = calloc(1, 1);
-            m->friendlist[i].statusmessage_length = 1;
-            m->friendlist[i].userstatus = USERSTATUS_NONE;
-            m->friendlist[i].avatar_info_sent = 0;
-            m->friendlist[i].avatar_recv_data = NULL;
-            m->friendlist[i].avatar_send_data.bytes_sent = 0;
-            m->friendlist[i].avatar_send_data.last_reset = 0;
-            m->friendlist[i].is_typing = 0;
-            memcpy(m->friendlist[i].info, data, length);
-            m->friendlist[i].info_size = length;
-            m->friendlist[i].message_id = 0;
-            m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
-            m->friendlist[i].friendrequest_nospam = 0;
-            m->friendlist[i].groupnumber = groupnumber;
-            m->friendlist[i].peerindex = peerindex;
-            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
-                                        &handle_custom_lossy_packet, m, i);
-
-            if (m->numfriends == i)
-                ++m->numfriends;
-
-            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
-                send_online_packet(m, i);
-            }
-
-            return i;
-        }
-    }
-
-    return FAERR_UNKNOWN;
+    return friendnumber;
 }
 
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
@@ -386,53 +318,16 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *client_id)
     if (!public_key_valid(client_id))
         return -1;
 
-    /* Resize the friend list if necessary. */
-    if (realloc_friendlist(m, m->numfriends + 1) != 0)
-        return -1;
-
     if (id_equal(client_id, m->net_crypto->self_public_key))
         return -1;
 
-    memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
+    int32_t friendnum = init_new_friend(m, client_id);
 
-    int friendcon_id = new_friend_connection(m->fr_c, client_id);
-
-    if (friendcon_id == -1)
-        return -1;
-
-    uint32_t i;
-
-    for (i = 0; i <= m->numfriends; ++i) {
-        if (m->friendlist[i].status == NOFRIEND) {
-            m->friendlist[i].status = FRIEND_CONFIRMED;
-            m->friendlist[i].friendcon_id = friendcon_id;
-            m->friendlist[i].friendrequest_lastsent = 0;
-            id_copy(m->friendlist[i].client_id, client_id);
-            m->friendlist[i].statusmessage = calloc(1, 1);
-            m->friendlist[i].statusmessage_length = 1;
-            m->friendlist[i].userstatus = USERSTATUS_NONE;
-            m->friendlist[i].avatar_info_sent = 0;
-            m->friendlist[i].avatar_recv_data = NULL;
-            m->friendlist[i].avatar_send_data.bytes_sent = 0;
-            m->friendlist[i].avatar_send_data.last_reset = 0;
-            m->friendlist[i].is_typing = 0;
-            m->friendlist[i].message_id = 0;
-            m->friendlist[i].receives_read_receipts = 1; /* Default: YES. */
-            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
-                                        &handle_custom_lossy_packet, m, i);
-
-            if (m->numfriends == i)
-                ++m->numfriends;
-
-            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
-                send_online_packet(m, i);
-            }
-
-            return i;
-        }
-    }
-
-    return -1;
+    if (friendnum >= 0) {
+        m->friendlist[friendnum].status = FRIEND_CONFIRMED;
+        return friendnum;
+    } else
+        return -1; // maintain compat
 }
 
 /* Remove a friend.

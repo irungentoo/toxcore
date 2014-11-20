@@ -496,8 +496,7 @@ int tox_del_groupchat(Tox *tox, int groupnumber);
  */
 int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name);
 
-/*
- * Add a groupchat peer as a friend.
+/* Add a groupchat peer as a friend.
  * Set the data that will be sent along with friend request.
  * data is the data and length is the length.
  *

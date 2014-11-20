@@ -758,6 +758,50 @@ int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint
     return g->group[peernumber].nick_len;
 }
 
+/* Add a groupchat peer as a friend.
+ * Set the data that will be sent along with friend request.
+ * data is the data and length is the length.
+ *
+ *  return the friend number if success.
+ *  returns the same errors as m_addfriend on error
+ */
+int32_t m_group_add_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length)
+{
+    if (length > MAX_FRIEND_REQUEST_DATA_SIZE)
+        return FAERR_TOOLONG;
+
+    Group_c *g = get_group_c(m->group_chat_object, groupnumber);
+
+    uint8_t client_id[crypto_box_PUBLICKEYBYTES];
+    id_copy(client_id, g->group[peerindex].real_pk);
+
+    if (!public_key_valid(client_id))
+        return FAERR_BADCHECKSUM;
+
+    if (length < 1)
+        return FAERR_NOMESSAGE;
+
+    if (id_equal(client_id, m->net_crypto->self_public_key))
+        return FAERR_OWNKEY;
+
+    int32_t friend_id = getfriend_id(m, client_id);
+
+    if (friend_id != -1) {
+        return FAERR_ALREADYSENT;
+    }
+
+    int32_t friendnum = init_new_friend(m, client_id);
+
+    if (friendnum >= 0) {
+        m->friendlist[friendnum].groupnumber = groupnumber;
+        m->friendlist[friendnum].peerindex = peerindex;
+        memcpy(m->friendlist[friendnum].info, data, length);
+        m->friendlist[friendnum].info_size = length;
+    }
+
+    return friendnum;
+}
+
 /* List all the peers in the group chat.
  *
  * Copies the names of the peers to the name[length][MAX_NAME_LENGTH] array.

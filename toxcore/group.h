@@ -251,6 +251,15 @@ int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uin
  */
 int group_set_ban_friend_requests(const Group_Chats *g_c, int groupnumber, uint8_t boolean);
 
+/* Add a groupchat peer as a friend.
+ * Set the data that will be sent along with friend request.
+ * data is the data and length is the length.
+ *
+ *  return the friend number if success.
+ *  returns the same errors as m_addfriend on error
+ */
+int32_t m_group_add_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length);
+
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
  */
