@@ -90,7 +90,7 @@ static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
 
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
         clear_queue(q);
-        q->bottom = sequnum;
+        q->bottom = sequnum - q->capacity;
         q->queue[num] = pk;
         q->top = sequnum + 1;
         return 0;
