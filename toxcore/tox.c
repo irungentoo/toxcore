@@ -641,6 +641,18 @@ int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t 
     return group_peername(m->group_chat_object, groupnumber, peernumber, name);
 }
 
+/* Copy the public key of peernumber who is in groupnumber to pk.
+ * pk must be TOX_CLIENT_ID_SIZE long.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_group_peer_pubkey(const Tox *tox, int groupnumber, int peernumber, uint8_t *pk)
+{
+    const Messenger *m = tox;
+    return group_peer_pubkey(m->group_chat_object, groupnumber, peernumber, pk);
+}
+
 /* invite friendnumber to groupnumber
  * return 0 on success
  * return -1 on failure

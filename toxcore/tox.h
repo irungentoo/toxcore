@@ -496,6 +496,14 @@ int tox_del_groupchat(Tox *tox, int groupnumber);
  */
 int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name);
 
+/* Copy the public key of peernumber who is in groupnumber to pk.
+ * pk must be TOX_CLIENT_ID_SIZE long.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_group_peer_pubkey(const Tox *tox, int groupnumber, int peernumber, uint8_t *pk);
+
 /* invite friendnumber to groupnumber
  * return 0 on success
  * return -1 on failure
