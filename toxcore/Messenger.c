@@ -2267,13 +2267,13 @@ void do_friends(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr;
+            int fr = -1;
             if (m->friendlist[i].friendrequest_nospam)
                 fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id,
                                                 m->friendlist[i].friendrequest_nospam,
                                                 m->friendlist[i].info,
                                                 m->friendlist[i].info_size);
-            else
+            else if (m->friendlist[i].groupnumber >= 0 && m->friendlist[i].peerindex >= 0)
                 fr = send_group_peer_friend_request_packet(m, m->friendlist[i].friendcon_id,
                                                            m->friendlist[i].groupnumber,
                                                            m->friendlist[i].peerindex,
