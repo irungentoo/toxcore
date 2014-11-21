@@ -31,7 +31,7 @@ Note: package fetching commands may vary by OS.
 On Ubuntu:
 
 ```bash
-sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
+sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git-core yasm
 ```
 
 On Fedora:
