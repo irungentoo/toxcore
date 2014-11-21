@@ -49,6 +49,11 @@
 
 #define MAX_PATH_NODES 32
 
+/* If no packets are received within that interval tox will
+ * be considered offline.
+ */
+#define ONION_OFFLINE_TIMEOUT (ONION_NODE_PING_INTERVAL * 1.25)
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
@@ -140,6 +145,8 @@ typedef struct {
         oniondata_handler_callback function;
         void *object;
     } Onion_Data_Handlers[256];
+
+    uint64_t last_packet_recv;
 } Onion_Client;
 
 

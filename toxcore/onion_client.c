@@ -572,6 +572,8 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
             return 1;
     }
 
+    //TODO: LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
+    onion_c->last_packet_recv = unix_time();
     return 0;
 }
 
@@ -1104,8 +1106,10 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
     onion_c->friends_list[friend_num].is_online = is_online;
 
     /* This should prevent some clock related issues */
-    if (!is_online)
+    if (!is_online) {
         onion_c->friends_list[friend_num].last_noreplay = 0;
+        onion_c->friends_list[friend_num].run_count = 0;
+    }
 
     return 0;
 }
@@ -1331,6 +1335,9 @@ void kill_onion_client(Onion_Client *onion_c)
 int onion_isconnected(const Onion_Client *onion_c)
 {
     unsigned int i, num = 0, announced = 0;
+
+    if (is_timeout(onion_c->last_packet_recv, ONION_OFFLINE_TIMEOUT))
+        return 0;
 
     for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
         if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT)) {
