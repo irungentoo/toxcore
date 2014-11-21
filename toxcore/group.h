@@ -192,6 +192,14 @@ int add_groupchat(Group_Chats *g_c, uint8_t type);
  */
 int del_groupchat(Group_Chats *g_c, int groupnumber);
 
+/* Copy the public key of peernumber who is in groupnumber to pk.
+ * pk must be crypto_box_PUBLICKEYBYTES long.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peernumber, uint8_t *pk);
+
 /* Copy the name of peernumber who is in groupnumber to name.
  * name must be at least MAX_NAME_LENGTH long.
  *
