@@ -496,6 +496,15 @@ int tox_del_groupchat(Tox *tox, int groupnumber);
  */
 int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name);
 
+/* Add a groupchat peer as a friend.
+ * Set the data that will be sent along with friend request.
+ * data is the data and length is the length.
+ *
+ *  return the friend number if success.
+ *  returns the same errors as tox_add_friend on error
+ */
+int32_t tox_group_add_peer_friend(Tox *tox, int groupnumber, int peernumber, const uint8_t *data, uint16_t length);
+
 /* invite friendnumber to groupnumber
  * return 0 on success
  * return -1 on failure
@@ -514,13 +523,20 @@ int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint
  * return 0 on success
  * return -1 on failure
  */
-int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
+int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
 
 /* send a group action
  * return 0 on success
  * return -1 on failure
  */
-int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length);
+int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *action, uint16_t length);
+
+/* 1 to disable, 0 to enable (default) friend requests from peers in this group
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_group_set_ban_friend_requests(const Tox *tox, int groupnumber, uint8_t boolean);
 
 /* set the group's title, limited to MAX_NAME_LENGTH
  * return 0 on success

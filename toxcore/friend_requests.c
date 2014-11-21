@@ -26,6 +26,7 @@
 #endif
 
 #include "friend_requests.h"
+#include "group.h"
 #include "util.h"
 
 
@@ -105,33 +106,74 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *client_id)
 
 static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint32_t length)
 {
-    Friend_Requests *fr = object;
+    Messenger *m = object;
+    Friend_Requests *fr = &(m->fr);
+    uint32_t message_len;
 
-    if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE)
-        return 1;
+    if (packet[0] == PACKET_ID_FRIEND_REQUESTS || packet[0] == CRYPTO_PACKET_FRIEND_REQ) {
 
-    ++packet;
-    --length;
-
-    if (fr->handle_friendrequest_isset == 0)
-        return 1;
-
-    if (request_received(fr, source_pubkey))
-        return 1;
-
-    if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0)
-        return 1;
-
-    if (fr->filter_function)
-        if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0)
+        if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE)
             return 1;
 
-    addto_receivedlist(fr, source_pubkey);
+        ++packet;
+        --length;
 
-    uint32_t message_len = length - sizeof(fr->nospam);
+        if (fr->handle_friendrequest_isset == 0)
+            return 1;
+
+        if (request_received(fr, source_pubkey))
+            return 1;
+
+        if (fr->filter_function)
+            if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0)
+                return 1;
+
+        if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0)
+            return 1;
+
+        message_len = length - sizeof(fr->nospam);
+        packet += sizeof(fr->nospam);
+
+    } else if (packet[0] == PACKET_ID_GROUP_FRIEND_REQUESTS || packet[0] == CRYPTO_PACKET_GROUP_FRIEND_REQ) {
+
+        if (length <= 1 + GROUP_IDENTIFIER_LENGTH || length > ONION_CLIENT_MAX_DATA_SIZE)
+            return 1;
+
+        ++packet;
+        --length;
+
+        if (fr->handle_friendrequest_isset == 0)
+            return 1;
+
+        if (request_received(fr, source_pubkey))
+            return 1;
+
+        if (fr->filter_function)
+            if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0)
+                return 1;
+
+        Group_Chats *g_c = m->group_chat_object;
+        int groupnumber = get_group_num(g_c, packet);
+        Group_c *g = get_group_c(g_c, groupnumber);
+        if (!g) // also catches groupnumber == -1
+            return 1;
+
+        if (g->ban_frs)
+            return 1;
+
+        if (peer_in_chat(g, source_pubkey) == -1)
+            return 1;
+
+        message_len = length - GROUP_IDENTIFIER_LENGTH;
+        packet += GROUP_IDENTIFIER_LENGTH;
+
+    }
+
     uint8_t message[message_len + 1];
-    memcpy(message, packet + sizeof(fr->nospam), message_len);
+    memcpy(message, packet, message_len);
     message[sizeof(message) - 1] = 0; /* Be sure the message is null terminated. */
+
+    addto_receivedlist(fr, source_pubkey);
 
     (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, message_len,
                                 fr->handle_friendrequest_userdata);

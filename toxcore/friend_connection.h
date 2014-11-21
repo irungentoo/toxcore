@@ -37,6 +37,7 @@
 
 #define PACKET_ID_ALIVE 16
 #define PACKET_ID_FRIEND_REQUESTS 18
+#define PACKET_ID_GROUP_FRIEND_REQUESTS 19
 
 /* Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 7
@@ -168,6 +169,15 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id);
  */
 int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
                                uint16_t length);
+
+/* Send a group peer friend request packet.
+ *
+ *  return -1 if failure.
+ *  return  0 if it sent the friend request directly to the friend.
+ *  return the number of peers it was routed through if it did not send it directly.
+ */
+int send_group_peer_friend_request_packet(void *m, int friendcon_id, int groupnumber, int peerindex,
+                                          const uint8_t *data, uint16_t length);
 
 /* Set friend request callback.
  *

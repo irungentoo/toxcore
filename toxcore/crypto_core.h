@@ -121,6 +121,7 @@ void new_nonce(uint8_t *nonce);
 #define MAX_CRYPTO_REQUEST_SIZE 1024
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
+#define CRYPTO_PACKET_GROUP_FRIEND_REQ 33 /* Group peer friend request crypto packet ID */
 #define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
 #define CRYPTO_PACKET_GROUP_CHAT_GET_NODES      48 /* Group chat get Nodes packet */

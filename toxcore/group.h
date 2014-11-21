@@ -70,6 +70,7 @@ enum {
 
 typedef struct {
     uint8_t status;
+    uint8_t ban_frs; // ignore any friend requests from peers in this group
 
     Group_Peer *group;
     uint32_t numpeers;
@@ -242,6 +243,23 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
  */
 int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uint32_t max_length);
 
+
+/* 1 to disable, 0 to enable (default) friend requests from peers in this group
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int group_set_ban_friend_requests(const Group_Chats *g_c, int groupnumber, uint8_t boolean);
+
+/* Add a groupchat peer as a friend.
+ * Set the data that will be sent along with friend request.
+ * data is the data and length is the length.
+ *
+ *  return the friend number if success.
+ *  returns the same errors as m_addfriend on error
+ */
+int32_t m_group_add_peer_friend(Messenger *m, int groupnumber, int peerindex, const uint8_t *data, uint16_t length);
+
 /* Return the number of peers in the group chat on success.
  * return -1 on failure
  */
@@ -368,5 +386,12 @@ void do_groupchats(Group_Chats *g_c);
 
 /* Free everything related with group chats. */
 void kill_groupchats(Group_Chats *g_c);
+
+/* Internal only functions, but they are used outside of group.c */
+Group_c *get_group_c(const Group_Chats *g_c, int groupnumber);
+
+int get_group_num(const Group_Chats *g_c, const uint8_t *identifier);
+
+int peer_in_chat(const Group_c *chat, const uint8_t *real_pk);
 
 #endif

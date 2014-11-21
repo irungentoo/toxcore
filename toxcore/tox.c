@@ -641,6 +641,19 @@ int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t 
     return group_peername(m->group_chat_object, groupnumber, peernumber, name);
 }
 
+/* Add a groupchat peer as a friend.
+ * Set the data that will be sent along with friend request.
+ * data is the data and length is the length.
+ *
+ *  return the friend number if success.
+ *  returns the same errors as tox_add_friend on error
+ */
+int32_t tox_group_add_peer_friend(Tox *tox, int groupnumber, int peerindex, const uint8_t *data, uint16_t length)
+{
+    Messenger *m = tox;
+    return m_group_add_peer_friend(m, groupnumber, peerindex, data, length);
+}
+
 /* invite friendnumber to groupnumber
  * return 0 on success
  * return -1 on failure
@@ -667,9 +680,9 @@ int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint
  * return 0 on success
  * return -1 on failure
  */
-int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, uint16_t length)
+int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length)
 {
-    Messenger *m = tox;
+    const Messenger *m = tox;
     return group_message_send(m->group_chat_object, groupnumber, message, length);
 }
 
@@ -677,9 +690,9 @@ int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, ui
  * return 0 on success
  * return -1 on failure
  */
-int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length)
+int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *action, uint16_t length)
 {
-    Messenger *m = tox;
+    const Messenger *m = tox;
     return group_action_send(m->group_chat_object, groupnumber, action, length);
 }
 
@@ -703,6 +716,17 @@ int tox_group_get_title(Tox *tox, int groupnumber, uint8_t *title, uint32_t max_
 {
     Messenger *m = tox;
     return group_title_get(m->group_chat_object, groupnumber, title, max_length);
+}
+
+/* 1 to disable, 0 to enable (default) friend requests from peers in this group
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+int tox_group_set_ban_friend_requests(const Tox *tox, int groupnumber, uint8_t boolean)
+{
+    const Messenger *m = tox;
+    return group_set_ban_friend_requests(m->group_chat_object, groupnumber, boolean);
 }
 
 /* Check if the current peernumber corresponds to ours.
