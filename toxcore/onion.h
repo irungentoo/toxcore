@@ -90,7 +90,7 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
  * return length of created packet on success.
  */
 int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
-                        const uint8_t *data, uint32_t length);
+                        const uint8_t *data, uint16_t length);
 
 
 /* Create a onion packet to be sent over tcp.
@@ -103,7 +103,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
  * return length of created packet on success.
  */
 int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
-                            const uint8_t *data, uint32_t length);
+                            const uint8_t *data, uint16_t length);
 
 /* Create and send a onion packet.
  *
@@ -113,7 +113,7 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data, uint32_t length);
+int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data, uint16_t length);
 
 /* Create and send a onion response sent initially to dest with.
  * Maximum length of data is ONION_RESPONSE_MAX_DATA_SIZE.
@@ -121,7 +121,7 @@ int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data, uint32_t length, const uint8_t *ret);
+int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data, uint16_t length, const uint8_t *ret);
 
 /* Function to handle/send received decrypted versions of the packet sent with send_onion_packet.
  *
@@ -133,11 +133,11 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
  * Source family must be set to something else than AF_INET6 or AF_INET so that the callback gets called
  * when the response is received.
  */
-int onion_send_1(const Onion *onion, const uint8_t *plain, uint32_t len, IP_Port source, const uint8_t *nonce);
+int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port source, const uint8_t *nonce);
 
 /* Set the callback to be called when the dest ip_port doesn't have AF_INET6 or AF_INET as the family.
  *
- * Format: function(void *object, IP_Port dest, uint8_t *data, uint32_t length)
+ * Format: function(void *object, IP_Port dest, uint8_t *data, uint16_t length)
  */
 void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, const uint8_t *, uint16_t),
                                 void *object);

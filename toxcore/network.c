@@ -281,7 +281,7 @@ uint64_t current_time_monotonic(void)
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
  */
-int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint32_t length)
+int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
 {
     if (net->family == 0) /* Socket not initialized */
         return -1;

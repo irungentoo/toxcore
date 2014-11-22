@@ -186,7 +186,7 @@ typedef struct {
 /*----------------------------------------------------------------------------------*/
 
 typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
-        const uint8_t *data, uint32_t len);
+        const uint8_t *data, uint16_t len);
 
 typedef struct {
     cryptopacket_handler_callback function;
@@ -369,13 +369,13 @@ int DHT_connect_after_load(DHT *dht);
  *
  *  return -1 if failure.
  */
-int route_packet(const DHT *dht, const uint8_t *client_id, const uint8_t *packet, uint32_t length);
+int route_packet(const DHT *dht, const uint8_t *client_id, const uint8_t *packet, uint16_t length);
 
 /* Send the following packet to everyone who tells us they are connected to friend_id.
  *
  *  return number of nodes it sent the packet to.
  */
-int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *packet, uint32_t length);
+int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *packet, uint16_t length);
 
 /* Function to handle crypto packets.
  */

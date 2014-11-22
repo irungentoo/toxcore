@@ -183,7 +183,7 @@ static int handle_cookie_request(const Net_Crypto *c, uint8_t *request_plain, ui
 
 /* Handle the cookie request packet (for raw UDP)
  */
-static int udp_handle_cookie_request(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
+static int udp_handle_cookie_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
     Net_Crypto *c = object;
     uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
@@ -207,7 +207,7 @@ static int udp_handle_cookie_request(void *object, IP_Port source, const uint8_t
 /* Handle the cookie request packet (for TCP)
  */
 static int tcp_handle_cookie_request(const Net_Crypto *c, TCP_Client_Connection *TCP_con, uint8_t conn_id,
-                                     const uint8_t *packet, uint32_t length)
+                                     const uint8_t *packet, uint16_t length)
 {
     uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -230,7 +230,7 @@ static int tcp_handle_cookie_request(const Net_Crypto *c, TCP_Client_Connection 
 /* Handle the cookie request packet (for TCP oob packets)
  */
 static int tcp_oob_handle_cookie_request(const Net_Crypto *c, TCP_Client_Connection *TCP_con,
-        const uint8_t *dht_public_key, const uint8_t *packet, uint32_t length)
+        const uint8_t *dht_public_key, const uint8_t *packet, uint16_t length)
 {
     uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
@@ -261,7 +261,7 @@ static int tcp_oob_handle_cookie_request(const Net_Crypto *c, TCP_Client_Connect
  * return -1 on failure.
  * return COOKIE_LENGTH on success.
  */
-static int handle_cookie_response(uint8_t *cookie, uint64_t *number, const uint8_t *packet, uint32_t length,
+static int handle_cookie_response(uint8_t *cookie, uint64_t *number, const uint8_t *packet, uint16_t length,
                                   const uint8_t *shared_key)
 {
     if (length != COOKIE_RESPONSE_LENGTH)
@@ -335,7 +335,7 @@ static int create_crypto_handshake(const Net_Crypto *c, uint8_t *packet, const u
  * return 0 on success.
  */
 static int handle_crypto_handshake(const Net_Crypto *c, uint8_t *nonce, uint8_t *session_pk, uint8_t *peer_real_pk,
-                                   uint8_t *dht_public_key, uint8_t *cookie, const uint8_t *packet, uint32_t length, const uint8_t *expected_real_pk)
+                                   uint8_t *dht_public_key, uint8_t *cookie, const uint8_t *packet, uint16_t length, const uint8_t *expected_real_pk)
 {
     if (length != HANDSHAKE_PACKET_LENGTH)
         return -1;
@@ -764,7 +764,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
  * return 0 on success.
  */
 static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint32_t buffer_start, uint32_t num,
-                                   const uint8_t *data, uint32_t length)
+                                   const uint8_t *data, uint16_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
@@ -784,7 +784,7 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
 /*  return -1 if data could not be put in packet queue.
  *  return positive packet number if data was put into the queue.
  */
-static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length,
+static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length,
                                     uint8_t congestion_control)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
@@ -2305,7 +2305,7 @@ static int crypto_id_ip_port(const Net_Crypto *c, IP_Port ip_port)
  * Crypto data packets.
  *
  */
-static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
+static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
     if (length <= CRYPTO_MIN_PACKET_SIZE || length > MAX_CRYPTO_PACKET_SIZE)
         return 1;
@@ -2498,7 +2498,7 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  *
  * congestion_control: should congestion control apply to this packet?
  */
-int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length,
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length,
                           uint8_t congestion_control)
 {
     if (length == 0)
@@ -2563,7 +2563,7 @@ int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet
  *
  * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
  */
-int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint32_t length)
+int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;

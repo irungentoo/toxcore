@@ -207,7 +207,7 @@ static void generate_ping_id(const Onion_Announce *onion_a, uint64_t time, const
  */
 static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 {
-    uint32_t i;
+    unsigned int i;
 
     for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
         if (!is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
@@ -258,7 +258,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
 
     int pos = in_entries(onion_a, public_key);
 
-    uint32_t i;
+    unsigned int i;
 
     if (pos == -1) {
         for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
@@ -286,7 +286,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
     return in_entries(onion_a, public_key);
 }
 
-static int handle_announce_request(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
+static int handle_announce_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
     Onion_Announce *onion_a = object;
 
@@ -325,8 +325,8 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     /*Respond with a announce response packet*/
     Node_format nodes_list[MAX_SENT_NODES];
-    uint32_t num_nodes = get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, 0, LAN_ip(source.ip) == 0,
-                                         1);
+    unsigned int num_nodes = get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, 0,
+                             LAN_ip(source.ip) == 0, 1);
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
 
@@ -379,7 +379,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     return 0;
 }
 
-static int handle_data_request(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
+static int handle_data_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
     Onion_Announce *onion_a = object;
 

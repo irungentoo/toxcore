@@ -115,7 +115,7 @@ typedef struct {
 } Onion_Friend;
 
 typedef int (*oniondata_handler_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data,
-        uint32_t len);
+        uint16_t len);
 
 typedef struct {
     DHT     *dht;
@@ -255,7 +255,7 @@ unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint32_t length);
+int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint16_t length);
 
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object);
