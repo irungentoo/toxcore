@@ -496,8 +496,7 @@ int group_send_audio(Group_Chats *g_c, int groupnumber, const int16_t *pcm, unsi
     if (channels != 1 && channels != 2)
         return -1;
 
-    //TODO: allow different sample rates
-    if (sample_rate != 48000)
+    if (sample_rate != 8000 && sample_rate != 12000 && sample_rate != 16000 && sample_rate != 24000 && sample_rate != 48000)
         return -1;
 
     if (!group_av->audio_encoder || group_av->audio_channels != channels || group_av->audio_sample_rate != sample_rate) {

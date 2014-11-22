@@ -421,8 +421,6 @@ int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data,
  * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
  *
  * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
- *
- * TODO: currently the only supported sample rate is 48000.
  */
 int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                            unsigned int sample_rate);
