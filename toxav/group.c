@@ -266,7 +266,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
         return -1;
 
     int16_t *out_audio = NULL;
-    unsigned int out_audio_samples = 0;
+    int out_audio_samples = 0;
 
     unsigned int sample_rate = 48000;
 
