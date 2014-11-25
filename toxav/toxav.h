@@ -69,12 +69,12 @@ typedef enum {
 
 
 typedef enum {
-    av_CallNonExistant = -1,
+    av_CallNonExistent = -1,
     av_CallInviting, /* when sending call invite */
     av_CallStarting, /* when getting call invite */
     av_CallActive,
     av_CallHold,
-    av_CallHanged_up
+    av_CallHungUp
 } ToxAvCallState;
 
 /**
