@@ -1807,7 +1807,11 @@ static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_i
     if (conn == 0)
         return -1;
 
-    if (handle_packet_connection(c, number, data, length) != 0)
+    pthread_mutex_unlock(&c->tcp_mutex);
+    int ret = handle_packet_connection(c, number, data, length);
+    pthread_mutex_lock(&c->tcp_mutex);
+
+    if (ret != 0)
         return -1;
 
     //TODO detect and kill bad TCP connections.
@@ -1846,7 +1850,11 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
         return 0;
     }
 
-    if (handle_packet_connection(c, crypt_connection_id, data, length) != 0)
+    pthread_mutex_unlock(&c->tcp_mutex);
+    int ret = handle_packet_connection(c, crypt_connection_id, data, length);
+    pthread_mutex_lock(&c->tcp_mutex);
+
+    if (ret != 0)
         return -1;
 
     return 0;
@@ -2112,7 +2120,9 @@ static void do_tcp(Net_Crypto *c)
         if (c->tcp_connections_new[i] == NULL)
             continue;
 
+        pthread_mutex_lock(&c->tcp_mutex);
         do_TCP_connection(c->tcp_connections_new[i]);
+        pthread_mutex_unlock(&c->tcp_mutex);
 
         if (c->tcp_connections_new[i]->status == TCP_CLIENT_CONFIRMED) {
             pthread_mutex_lock(&c->tcp_mutex);
