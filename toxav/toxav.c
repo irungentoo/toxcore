@@ -580,7 +580,7 @@ int toxav_get_peer_id ( ToxAv *av, int32_t call_index, int peer )
 ToxAvCallState toxav_get_call_state(ToxAv *av, int32_t call_index)
 {
     if ( cii(call_index, av->msi_session) || !av->msi_session->calls[call_index] )
-        return av_CallNonExistant;
+        return av_CallNonExistent;
 
     return av->msi_session->calls[call_index]->state;
 
