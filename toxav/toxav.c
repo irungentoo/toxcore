@@ -151,7 +151,7 @@ uint32_t toxav_do_interval(ToxAv* av)
         rc = MIN(av->calls[i].cs->audio_decoder_frame_duration, rc);
     }
     
-    return rc - av->avgdectms;
+    return av->avgdectms <= rc ? rc - av->avgdectms : 0; /* Avoid DEATH */
 }
 
 void toxav_do(ToxAv* av)
