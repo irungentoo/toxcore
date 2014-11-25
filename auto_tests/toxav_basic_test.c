@@ -11,6 +11,8 @@
 #include <time.h>
 #include <assert.h>
 
+#include <vpx/vpx_image.h>
+
 #include "../toxcore/tox.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/crypto_core.h"
@@ -33,7 +35,7 @@ typedef enum _CallStatus {
     Ringing,
     Ended,
     Rejected,
-    Cancel,
+    Canceled,
     TimedOut
 
 } CallStatus;
@@ -66,36 +68,23 @@ void callback_recv_invite ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
-    /* Bob always receives invite */
-    cast->Bob.status = Ringing;
-    cast->Bob.call_index = call_index;
+    if (cast->Alice.av == av) {
+        // ...
+    } else if (cast->Bob.av == av) {
+        /* Bob always receives invite */
+        cast->Bob.status = Ringing;
+        cast->Bob.call_index = call_index;
+    }
 }
 void callback_recv_ringing ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
-    /* Alice always sends invite */
-    cast->Alice.status = Ringing;
-}
-void callback_recv_starting ( void *av, int32_t call_index, void *_arg )
-{
-    Status *cast = _arg;
-
-    /* Alice always sends invite */
-    printf("Call started on Alice side...\n");
-    cast->Alice.status = InCall;
-    toxav_prepare_transmission(av, call_index, av_jbufdc, av_VADd, 1);
-}
-void callback_recv_ending ( void *av, int32_t call_index, void *_arg )
-{
-    Status *cast = _arg;
-
-    if ( cast->Alice.status == Rejected) {
-        printf ( "Call ended for Bob!\n" );
-        cast->Bob.status = Ended;
-    } else {
-        printf ( "Call ended for Alice!\n" );
-        cast->Alice.status = Ended;
+    if (cast->Alice.av == av) {
+        /* Alice always sends invite */
+        cast->Alice.status = Ringing;
+    } else if (cast->Bob.av == av) {
+        // ...
     }
 }
 
@@ -104,17 +93,26 @@ void callback_call_started ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
-    /* Alice always sends invite */
-    printf("Call started on Bob side...\n");
-    cast->Bob.status = InCall;
-    toxav_prepare_transmission(av, call_index, av_jbufdc, av_VADd, 1);
+    if (cast->Alice.av == av) {
+        printf("Call started on Alices side...\n");
+        cast->Alice.status = InCall;
+        toxav_prepare_transmission(av, call_index, 1);
+    } else if (cast->Bob.av == av) {
+        printf("Call started on Bob side...\n");
+        cast->Bob.status = InCall;
+        toxav_prepare_transmission(av, call_index, 1);
+    }
 }
 void callback_call_canceled ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
-    printf ( "Call Canceled for Bob!\n" );
-    cast->Bob.status = Cancel;
+    if (cast->Alice.av == av) {
+        // ...
+    } else if (cast->Bob.av == av) {
+        printf ( "Call Canceled for Bob!\n" );
+        cast->Bob.status = Canceled;
+    }
 }
 void callback_call_rejected ( void *av, int32_t call_index, void *_arg )
 {
@@ -122,23 +120,58 @@ void callback_call_rejected ( void *av, int32_t call_index, void *_arg )
 
     printf ( "Call rejected by Bob!\n"
              "Call ended for Alice!\n" );
+
     /* If Bob rejects, call is ended for alice and she sends ending */
-    cast->Alice.status = Rejected;
+    if (cast->Alice.av == av) {
+        cast->Alice.status = Rejected;
+    } else if (cast->Bob.av == av) {
+        //... ignor
+    }
 }
 void callback_call_ended ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
 
-    printf ( "Call ended for Bob!\n" );
-    cast->Bob.status = Ended;
+    if (cast->Alice.av == av) {
+        printf ( "Call ended for Alice!\n" );
+        cast->Alice.status = Ended;
+    } else if (cast->Bob.av == av) {
+        printf ( "Call ended for Bob!\n" );
+        cast->Bob.status = Ended;
+    }
 }
 
-void callback_call_type_change ( void *av, int32_t call_index, void *_arg )
+void callback_peer_cs_change ( void *av, int32_t call_index, void *_arg )
 {
     ToxAvCSettings csettings;
     toxav_get_peer_csettings(av, call_index, 0, &csettings);
 
-    printf("New settings: \n"
+    printf("Peer changing settings to: \n"
+           "Type: %u \n"
+           "Video bitrate: %u \n"
+           "Video height: %u \n"
+           "Video width: %u \n"
+           "Audio bitrate: %u \n"
+           "Audio framedur: %u \n"
+           "Audio sample rate: %u \n"
+           "Audio channels: %u \n",
+           csettings.call_type,
+           csettings.video_bitrate,
+           csettings.max_video_height,
+           csettings.max_video_width,
+           csettings.audio_bitrate,
+           csettings.audio_frame_duration,
+           csettings.audio_sample_rate,
+           csettings.audio_channels
+          );
+}
+
+void callback_self_cs_change ( void *av, int32_t call_index, void *_arg )
+{
+    ToxAvCSettings csettings;
+    toxav_get_peer_csettings(av, call_index, 0, &csettings);
+
+    printf("Changed settings to: \n"
            "Type: %u \n"
            "Video bitrate: %u \n"
            "Video height: %u \n"
@@ -162,16 +195,19 @@ void callback_requ_timeout ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
     printf("Call timed-out!\n");
-    cast->Alice.status = TimedOut;
+
+    if (cast->Alice.av == av) {
+        cast->Alice.status = TimedOut;
+    } else if (cast->Bob.av == av) {
+        cast->Bob.status = TimedOut;
+    }
 }
 
-static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length, void *userdata)
-{
-}
+void callback_audio (void *agent, int32_t call_idx, const int16_t *PCM, uint16_t size, void *data)
+{}
 
-static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img, void *userdata)
-{
-}
+void callback_video (void *agent, int32_t call_idx, const vpx_image_t *img, void *data)
+{}
 
 void register_callbacks(ToxAv *av, void *data)
 {
@@ -180,17 +216,12 @@ void register_callbacks(ToxAv *av, void *data)
     toxav_register_callstate_callback(av, callback_call_rejected, av_OnReject, data);
     toxav_register_callstate_callback(av, callback_call_ended, av_OnEnd, data);
     toxav_register_callstate_callback(av, callback_recv_invite, av_OnInvite, data);
-
     toxav_register_callstate_callback(av, callback_recv_ringing, av_OnRinging, data);
-    toxav_register_callstate_callback(av, callback_recv_starting, av_OnStarting, data);
-    toxav_register_callstate_callback(av, callback_recv_ending, av_OnEnding, data);
-
     toxav_register_callstate_callback(av, callback_requ_timeout, av_OnRequestTimeout, data);
-    toxav_register_callstate_callback(av, callback_call_type_change, av_OnMediaChange, data);
-
-
-    toxav_register_audio_recv_callback(av, callback_audio, NULL);
-    toxav_register_video_recv_callback(av, callback_video, NULL);
+    toxav_register_callstate_callback(av, callback_peer_cs_change, av_OnPeerCSChange, data);
+    toxav_register_callstate_callback(av, callback_self_cs_change, av_OnSelfCSChange, data);
+    toxav_register_audio_callback(callback_audio, NULL);
+    toxav_register_video_callback(callback_video, NULL);
 }
 
 
@@ -202,6 +233,7 @@ void register_callbacks(ToxAv *av, void *data)
 #define CALL_AND_START_LOOP(AliceCallType, BobCallType) \
 { int step = 0, running = 1; while (running) {\
     tox_do(bootstrap_node); tox_do(Alice); tox_do(Bob); \
+    toxav_do(status_control.Bob.av); toxav_do(status_control.Alice.av); \
     switch ( step ) {\
         case 0: /* Alice */  printf("Alice is calling...\n");\
             toxav_call(status_control.Alice.av, &status_control.Alice.call_index, 0, &muhcaps, 10); step++; break;\
@@ -496,6 +528,10 @@ START_TEST(test_AV_flows)
             tox_do(Alice);
             tox_do(Bob);
 
+            toxav_do(status_control.Alice.av);
+            toxav_do(status_control.Bob.av);
+
+
             switch ( step ) {
                 case 0: /* Alice */
                     printf("Alice is calling...\n");
@@ -514,7 +550,7 @@ START_TEST(test_AV_flows)
                     break;
 
                 case 2:  /* Wait for Both to have status ended */
-                    if (status_control.Bob.status == Cancel) running = 0;
+                    if (status_control.Bob.status == Canceled) running = 0;
 
                     break;
             }
@@ -536,6 +572,9 @@ START_TEST(test_AV_flows)
             tox_do(bootstrap_node);
             tox_do(Alice);
             tox_do(Bob);
+
+            toxav_do(status_control.Alice.av);
+            toxav_do(status_control.Bob.av);
 
             switch ( step ) {
                 case 0:

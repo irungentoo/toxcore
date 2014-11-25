@@ -80,7 +80,7 @@ const char *logger_stringify_level(LoggerLevel level)
     static const char *strings [] = {
         "INFO",
         "DEBUG",
-        "WARNING",
+        "WARN",
         "ERROR"
     };
 
@@ -143,11 +143,26 @@ void logger_write (LoggerLevel level, const char *format, ...)
 
 char *logger_timestr(char *dest, size_t max_size)
 {
-    uint64_t diff = (current_time_monotonic() - logger.start_time); /* ms */
-    snprintf(dest, max_size, "%"PRIu64"", diff);
+    time_t timer;
+    struct tm *tm_info;
+
+    time(&timer);
+    tm_info = localtime(&timer);
+
+    strftime(dest, max_size, "%m:%d %H:%M:%S", tm_info);
 
     return dest;
+
+    /*uint64_t diff = (current_time_monotonic() - logger.start_time); /* ms * /
+    snprintf(dest, max_size, "%"PRIu64"", diff);
+
+    return dest; */
 }
 
+char *logger_posstr (char *dest, size_t max_size, const char *file, int line)
+{
+    snprintf(dest, max_size, "%s:%d", file, line);
+    return dest;
+}
 
 #endif /* LOGGING */

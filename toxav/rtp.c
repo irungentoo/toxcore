@@ -28,7 +28,7 @@
 
 #include "rtp.h"
 #include <stdlib.h>
-void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg);
+void queue_message(RTPSession *_session, RTPMessage *_msg);
 
 #define size_32 4
 
@@ -47,15 +47,9 @@ void toxav_handle_packet(RTPSession *_session, RTPMessage *_msg);
 #define GET_SETTING_PAYLOAD(_h) ((_h->marker_payloadt) & 0x7f)
 
 /**
- * @brief Checks if message came in late.
- *
- * @param session Control session.
- * @param msg The message.
- * @return int
- * @retval -1 The message came in order.
- * @retval 0 The message came late.
+ * Checks if message came in late.
  */
-inline__ int check_late_message (RTPSession *session, RTPMessage *msg)
+static int check_late_message (RTPSession *session, RTPMessage *msg)
 {
     /*
      * Check Sequence number. If this new msg has lesser number then the session->rsequnum
@@ -67,12 +61,7 @@ inline__ int check_late_message (RTPSession *session, RTPMessage *msg)
 
 
 /**
- * @brief Extracts header from payload.
- *
- * @param payload The payload.
- * @param length The size of payload.
- * @return RTPHeader* Extracted header.
- * @retval NULL Error occurred while extracting header.
+ * Extracts header from payload.
  */
 RTPHeader *extract_header ( const uint8_t *payload, int length )
 {
@@ -147,12 +136,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
 }
 
 /**
- * @brief Extracts external header from payload. Must be called AFTER extract_header()!
- *
- * @param payload The ITERATED payload.
- * @param length The size of payload.
- * @return RTPExtHeader* Extracted extension header.
- * @retval NULL Error occurred while extracting extension header.
+ * Extracts external header from payload. Must be called AFTER extract_header()!
  */
 RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
 {
@@ -200,11 +184,7 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
 }
 
 /**
- * @brief Adds header to payload. Make sure _payload_ has enough space.
- *
- * @param header The header.
- * @param payload The payload.
- * @return uint8_t* Iterated position.
+ * Adds header to payload. Make sure _payload_ has enough space.
  */
 uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
 {
@@ -245,11 +225,7 @@ uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
 }
 
 /**
- * @brief Adds extension header to payload. Make sure _payload_ has enough space.
- *
- * @param header The header.
- * @param payload The payload.
- * @return uint8_t* Iterated position.
+ * Adds extension header to payload. Make sure _payload_ has enough space.
  */
 uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
 {
@@ -279,10 +255,7 @@ uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
 }
 
 /**
- * @brief Builds header from control session values.
- *
- * @param session Control session.
- * @return RTPHeader* Created header.
+ * Builds header from control session values.
  */
 RTPHeader *build_header ( RTPSession *session )
 {
@@ -316,16 +289,8 @@ RTPHeader *build_header ( RTPSession *session )
 
 
 /**
- * @brief Parses data into RTPMessage struct. Stores headers separately from the payload data
- *        and so the length variable is set accordingly. _sequnum_ argument is
- *        passed by the handle_packet() since it's parsed already.
- *
- * @param session Control session.
- * @param sequnum Sequence number that's parsed from payload in handle_packet()
- * @param data Payload data.
- * @param length Payload size.
- * @return RTPMessage*
- * @retval NULL Error occurred.
+ * Parses data into RTPMessage struct. Stores headers separately from the payload data
+ * and so the length variable is set accordingly.
  */
 RTPMessage *msg_parse ( const uint8_t *data, int length )
 {
@@ -373,15 +338,7 @@ RTPMessage *msg_parse ( const uint8_t *data, int length )
 }
 
 /**
- * @brief Callback for networking core.
- *
- * @param object RTPSession object.
- * @param ip_port Where the message comes from.
- * @param data Message data.
- * @param length Message length.
- * @return int
- * @retval -1 Error occurred.
- * @retval 0 Success.
+ * Callback for networking core.
  */
 int rtp_handle_packet ( void *object, const uint8_t *data, uint32_t length )
 {
@@ -406,22 +363,13 @@ int rtp_handle_packet ( void *object, const uint8_t *data, uint32_t length )
         _session->timestamp = _msg->header->timestamp;
     }
 
-    toxav_handle_packet(_session, _msg);
+    queue_message(_session, _msg);
 
     return 0;
 }
 
-
-
 /**
- * @brief Stores headers and payload data in one container ( data )
- *        and the length is set accordingly. Returned message is used for sending _only_.
- *
- * @param session The control session.
- * @param data Payload data to send ( This is what you pass ).
- * @param length Size of the payload data.
- * @return RTPMessage* Created message.
- * @retval NULL Error occurred.
+ * Allocate message and store data there
  */
 RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t length )
 {
@@ -472,28 +420,15 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
 }
 
 
-/**
- * @brief Sends data to _RTPSession::dest
- *
- * @param session The session.
- * @param messenger Tox* object.
- * @param data The payload.
- * @param length Size of the payload.
- * @return int
- * @retval -1 On error.
- * @retval 0 On success.
- */
+
 int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length )
 {
     RTPMessage *msg = rtp_new_message (session, data, length);
 
-    if ( !msg ) {
-        LOGGER_WARNING("No session!");
-        return -1;
-    }
+    if ( !msg ) return -1;
 
     if ( -1 == send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length) ) {
-        LOGGER_WARNING("Failed to send full packet! std error: %s", strerror(errno));
+        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
         rtp_free_msg ( session, msg );
         return -1;
     }
@@ -506,15 +441,6 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
     return 0;
 }
 
-
-/**
- * @brief Speaks for it self.
- *
- * @param session The control session msg belongs to. You set it as NULL when freeing recved messages.
- *                Otherwise set it to session the message was created from.
- * @param msg The message.
- * @return void
- */
 void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
 {
     if ( !session ) {
@@ -533,17 +459,7 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
     free ( msg );
 }
 
-/**
- * @brief Must be called before calling any other rtp function. It's used
- *        to initialize RTP control session.
- *
- * @param payload_type Type of payload used to send. You can use values in toxmsi.h::MSICallType
- * @param messenger Tox* object.
- * @param friend_num Friend id.
- * @return RTPSession* Created control session.
- * @retval NULL Error occurred.
- */
-RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int friend_num )
+RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
 {
     RTPSession *_retu = calloc(1, sizeof(RTPSession));
 
@@ -593,17 +509,7 @@ RTPSession *rtp_init_session ( int payload_type, Messenger *messenger, int frien
     return _retu;
 }
 
-
-/**
- * @brief Terminate the session.
- *
- * @param session The session.
- * @param messenger The messenger who owns the session
- * @return int
- * @retval -1 Error occurred.
- * @retval 0 Success.
- */
-void rtp_terminate_session ( RTPSession *session, Messenger *messenger )
+void rtp_kill ( RTPSession *session, Messenger *messenger )
 {
     if ( !session ) return;
 

@@ -24,6 +24,9 @@
 #ifndef _CODEC_H_
 #define _CODEC_H_
 
+#include "toxav.h"
+#include "rtp.h"
+
 #include <stdio.h>
 #include <math.h>
 #include <pthread.h>
@@ -32,23 +35,30 @@
 #include <vpx/vpx_encoder.h>
 #include <vpx/vp8dx.h>
 #include <vpx/vp8cx.h>
+#include <vpx/vpx_image.h>
 #define VIDEO_CODEC_DECODER_INTERFACE (vpx_codec_vp8_dx())
 #define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
 
 /* Audio encoding/decoding */
 #include <opus.h>
 
-typedef enum _Capabilities {
-    none,
+typedef void (*CSAudioCallback) (void *agent, int32_t call_idx, const int16_t *PCM, uint16_t size, void *data);
+typedef void (*CSVideoCallback) (void *agent, int32_t call_idx, const vpx_image_t *img, void *data);
+
+typedef enum _CsCapabilities {
     a_encoding = 1 << 0,
     a_decoding = 1 << 1,
     v_encoding = 1 << 2,
     v_decoding = 1 << 3
-} Capabilities;
+} CsCapabilities;
 
-extern const uint16_t min_jbuf_size;
+typedef struct _CSSession {
 
-typedef struct _CodecState {
+    /* VIDEO
+        *
+        *
+        */
+    int support_video;
 
     /* video encoding */
     vpx_codec_ctx_t  v_encoder;
@@ -56,61 +66,95 @@ typedef struct _CodecState {
 
     /* video decoding */
     vpx_codec_ctx_t  v_decoder;
-    int bitrate;
     int max_width;
     int max_height;
 
+
+    /* Data handling */
+    uint8_t *frame_buf; /* buffer for split video payloads */
+    uint32_t frame_size; /* largest address written to in frame_buf for current input frame*/
+    uint8_t  frameid_in, frameid_out; /* id of input and output video frame */
+    uint32_t last_timestamp; /* calculating cycles */
+
+    /* Limits */
+    uint32_t video_frame_piece_size;
+    uint32_t max_video_frame_size;
+
+    /* Reassembling */
+    uint8_t *split_video_frame;
+    const uint8_t *processing_video_frame;
+    uint16_t processing_video_frame_size;
+
+
+
+    /* AUDIO
+        *
+        *
+        */
+
     /* audio encoding */
     OpusEncoder *audio_encoder;
-    int audio_bitrate;
-    int audio_sample_rate;
+    int audio_encoder_bitrate;
+    int audio_encoder_sample_rate;
+    int audio_encoder_frame_duration;
     int audio_encoder_channels;
 
     /* audio decoding */
     OpusDecoder *audio_decoder;
+    int audio_decoder_bitrate;
+    int audio_decoder_sample_rate;
+    int audio_decoder_frame_duration;
     int audio_decoder_channels;
 
-    uint64_t capabilities; /* supports*/
+    struct _JitterBuffer *j_buf;
+
 
     /* Voice activity detection */
     uint32_t EVAD_tolerance; /* In frames */
     uint32_t EVAD_tolerance_cr;
-} CodecState;
 
 
-typedef struct _JitterBuffer {
-    RTPMessage **queue;
-    uint32_t size;
-    uint32_t capacity;
-    uint16_t bottom;
-    uint16_t top;
-} JitterBuffer;
 
-JitterBuffer *create_queue(unsigned int capacity);
-void terminate_queue(JitterBuffer *q);
-void queue(JitterBuffer *q, RTPMessage *pk);
-RTPMessage *dequeue(JitterBuffer *q, int *success);
+    /* OTHER
+        *
+        *
+        */
 
+    uint64_t capabilities; /* supports*/
 
-CodecState *codec_init_session ( uint32_t audio_bitrate,
-                                 uint16_t audio_frame_duration,
-                                 uint32_t audio_sample_rate,
-                                 uint32_t encoder_audio_channels,
-                                 uint32_t decoder_audio_channels,
-                                 uint32_t audio_VAD_tolerance_ms,
-                                 uint16_t max_video_width,
-                                 uint16_t max_video_height,
-                                 uint32_t video_bitrate );
+    /* Buffering */
+    void *abuf_raw, *vbuf_raw; /* Un-decoded data */
+    _Bool active;
+    pthread_mutex_t queue_mutex[1];
 
-void codec_terminate_session(CodecState *cs);
+    void *agent; /* Pointer to ToxAv */
+    int32_t call_idx;
+} CSSession;
 
-/* Reconfigure video encoder
-   return 0 on success.
-   return -1 on failure. */
-int reconfigure_video_encoder_resolution(CodecState *cs, uint16_t width, uint16_t height);
-int reconfigure_video_encoder_bitrate(CodecState *cs, uint32_t video_bitrate);
+CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, uint32_t jbuf_size, int has_video);
+void cs_kill(CSSession *cs);
+
+int cs_split_video_payload(CSSession *cs, const uint8_t *payload, uint16_t length);
+const uint8_t *cs_get_split_video_frame(CSSession *cs, uint16_t *size);
+
+/**
+ * Call playback callbacks
+ */
+void cs_do(CSSession *cs);
+
+void cs_register_audio_callback(CSAudioCallback cb, void *data);
+void cs_register_video_callback(CSVideoCallback cb, void *data);
+
+/* Reconfigure video encoder; return 0 on success or -1 on failure. */
+int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t height);
+int cs_set_video_encoder_bitrate(CSSession *cs, uint32_t video_bitrate);
+
 
 /* Calculate energy and return 1 if has voice, 0 if not */
-int energy_VAD(CodecState *cs, int16_t *PCM, uint16_t frame_size, float energy);
+int cs_calculate_vad(CSSession *cs, int16_t *PCM, uint16_t frame_size, float energy);
+void cs_set_vad_treshold(CSSession *cs, uint32_t treshold, uint16_t frame_duration);
 
+
+/* Internal. Called from rtp_handle_message */
+void queue_message(RTPSession *session, RTPMessage *msg);
 #endif /* _CODEC_H_ */
