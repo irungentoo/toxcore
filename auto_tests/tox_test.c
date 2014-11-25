@@ -79,10 +79,11 @@ int handle_custom_packet(void *object, const uint8_t *data, uint32_t len)
 
     uint8_t f_data[len];
     memset(f_data, number, len);
+
     if (memcmp(f_data, data, len) == 0) {
         ++custom_packet;
     } else {
-        printf("Custom packet fail. %u\n",number );
+        printf("Custom packet fail. %u\n", number );
     }
 
     return 0;
@@ -277,7 +278,7 @@ START_TEST(test_few_clients)
 
         c_sleep(50);
     }
-    
+
     packet_number = 200;
     ret = tox_lossy_packet_registerhandler(tox3, 0, packet_number, handle_custom_packet, &packet_number);
     ck_assert_msg(ret == 0, "tox_lossy_packet_registerhandler fail %i", ret);

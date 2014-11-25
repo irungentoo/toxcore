@@ -45,6 +45,7 @@ void mark_good(IPPTsPng *ipptp)
 void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
 {
     uint32_t i;
+
     for (i = 0; i < length; ++i) {
         if (ipv6)
             mark_good(&list[i].assoc6);
@@ -58,18 +59,22 @@ void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
 uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t length, const uint8_t *client_id)
 {
     uint32_t i;
+
     for (i = 0; i < length; ++i)
         if (id_closest(comp_client_id, client_id, list[i].client_id) == 1)
             return 0;
+
     return 1;
 }
 
 int client_in_list(Client_data *list, uint32_t length, const uint8_t *client_id)
 {
     int i;
+
     for (i = 0; i < (int)length; ++i)
         if (id_equal(client_id, list[i].client_id))
             return i;
+
     return -1;
 }
 
@@ -93,7 +98,8 @@ void test_addto_lists_update(DHT            *dht,
     // it is possible to have ip_port duplicates in the list, so ip_port @ found not always equal to ip_port @ test
     found = client_in_list(list, length, test_id);
     ck_assert_msg(found >= 0, "Client id is not in the list");
-    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[found].assoc6.ip_port : &list[found].assoc4.ip_port), "Client IP_Port is incorrect");
+    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[found].assoc6.ip_port : &list[found].assoc4.ip_port),
+                  "Client IP_Port is incorrect");
 
     // check ip_port update for existing id
     test = rand() % length;
@@ -104,7 +110,8 @@ void test_addto_lists_update(DHT            *dht,
     ck_assert_msg(used >= 1, "Wrong number of added clients");
     // it is not possible to have id duplicates in the list, so id @ found must be equal id @ test
     ck_assert_msg(client_in_list(list, length, test_id) == test, "Client id is not in the list");
-    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test].assoc6.ip_port : &list[test].assoc4.ip_port), "Client IP_Port is incorrect");
+    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test].assoc6.ip_port : &list[test].assoc4.ip_port),
+                  "Client IP_Port is incorrect");
 
     // check ip_port update for existing id and ip_port (... port ... id ...)
     test1 = rand() % (length / 2);
@@ -112,11 +119,15 @@ void test_addto_lists_update(DHT            *dht,
 
     ipport_copy(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port);
     id_copy(test_id, list[test2].client_id);
-    if (ipv6) list[test2].assoc6.ip_port.port = -1; else list[test2].assoc4.ip_port.port = -1;
+
+    if (ipv6) list[test2].assoc6.ip_port.port = -1;
+    else list[test2].assoc4.ip_port.port = -1;
+
     used = addto_lists(dht, test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
     ck_assert_msg(client_in_list(list, length, test_id) == test2, "Client id is not in the list");
-    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port), "Client IP_Port is incorrect");
+    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port),
+                  "Client IP_Port is incorrect");
 
     // check ip_port update for existing id and ip_port (... id ... port ...)
     test1 = rand() % (length / 2);
@@ -124,11 +135,15 @@ void test_addto_lists_update(DHT            *dht,
 
     ipport_copy(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port);
     id_copy(test_id, list[test1].client_id);
-    if (ipv6) list[test1].assoc6.ip_port.port = -1; else list[test1].assoc4.ip_port.port = -1;
+
+    if (ipv6) list[test1].assoc6.ip_port.port = -1;
+    else list[test1].assoc4.ip_port.port = -1;
+
     used = addto_lists(dht, test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
     ck_assert_msg(client_in_list(list, length, test_id) == test1, "Client id is not in the list");
-    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port), "Client IP_Port is incorrect");
+    ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port),
+                  "Client IP_Port is incorrect");
 }
 
 void test_addto_lists_bad(DHT            *dht,
@@ -149,9 +164,9 @@ void test_addto_lists_bad(DHT            *dht,
     test3 = rand() % (length / 3) + 2 * length / 3;
     ck_assert_msg(!(test1 == test2 || test1 == test3 || test2 == test3), "Wrong test indices are chosen");
 
-    id_copy((uint8_t*)&test_id1, list[test1].client_id);
-    id_copy((uint8_t*)&test_id2, list[test2].client_id);
-    id_copy((uint8_t*)&test_id3, list[test3].client_id);
+    id_copy((uint8_t *)&test_id1, list[test1].client_id);
+    id_copy((uint8_t *)&test_id2, list[test2].client_id);
+    id_copy((uint8_t *)&test_id3, list[test3].client_id);
 
     // mark nodes as "bad"
     if (ipv6) {
@@ -193,9 +208,9 @@ void test_addto_lists_possible_bad(DHT            *dht,
     test3 = rand() % (length / 3) + 2 * length / 3;
     ck_assert_msg(!(test1 == test2 || test1 == test3 || test2 == test3), "Wrong test indices are chosen");
 
-    id_copy((uint8_t*)&test_id1, list[test1].client_id);
-    id_copy((uint8_t*)&test_id2, list[test2].client_id);
-    id_copy((uint8_t*)&test_id3, list[test3].client_id);
+    id_copy((uint8_t *)&test_id1, list[test1].client_id);
+    id_copy((uint8_t *)&test_id2, list[test2].client_id);
+    id_copy((uint8_t *)&test_id3, list[test3].client_id);
 
     // mark nodes as "possibly bad"
     if (ipv6) {
@@ -221,14 +236,20 @@ void test_addto_lists_possible_bad(DHT            *dht,
     ck_assert_msg(inlist_id1 + inlist_id2 + inlist_id3 == 2, "Wrong client removed");
 
     if (!inlist_id1) {
-        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id1) == 1, "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id1) == 1, "Id has been removed but is closer to than another one");
+        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id1) == 1,
+                      "Id has been removed but is closer to than another one");
+        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id1) == 1,
+                      "Id has been removed but is closer to than another one");
     } else if (!inlist_id2) {
-        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id2) == 1, "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id2) == 1, "Id has been removed but is closer to than another one");
+        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id2) == 1,
+                      "Id has been removed but is closer to than another one");
+        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id2) == 1,
+                      "Id has been removed but is closer to than another one");
     } else if (!inlist_id3) {
-        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id3) == 1, "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id3) == 1, "Id has been removed but is closer to than another one");
+        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id3) == 1,
+                      "Id has been removed but is closer to than another one");
+        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id3) == 1,
+                      "Id has been removed but is closer to than another one");
     }
 }
 
@@ -247,6 +268,7 @@ void test_addto_lists_good(DHT            *dht,
     do {
         randombytes(client_id, sizeof(client_id));
     } while (is_furthest(comp_client_id, list, length, client_id));
+
     ip_port->port += 1;
     addto_lists(dht, *ip_port, client_id);
     ck_assert_msg(client_in_list(list, length, client_id) >= 0, "Good client id is not in the list");
@@ -263,10 +285,10 @@ void test_addto_lists_good(DHT            *dht,
 
 void test_addto_lists(IP ip)
 {
-    Networking_Core* net = new_networking(ip, TOX_PORT_DEFAULT);
+    Networking_Core *net = new_networking(ip, TOX_PORT_DEFAULT);
     ck_assert_msg(net != 0, "Failed to create Networking_Core");
 
-    DHT* dht = new_DHT(net);
+    DHT *dht = new_DHT(net);
     ck_assert_msg(dht != 0, "Failed to create DHT");
 
     IP_Port ip_port = { .ip = ip, .port = TOX_PORT_DEFAULT };
@@ -296,23 +318,29 @@ void test_addto_lists(IP ip)
     /*check: Current behavior if there are two clients with the same id is
      * to replace the first ip by the second. */
     test_addto_lists_update(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port);
+
     for (i = 0; i < dht->num_friends; ++i)
         test_addto_lists_update(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port);
 
     // check "bad" entries
     test_addto_lists_bad(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port);
+
     for (i = 0; i < dht->num_friends; ++i)
         test_addto_lists_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port);
 
     // check "possibly bad" entries
     test_addto_lists_possible_bad(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port, dht->self_public_key);
+
     for (i = 0; i < dht->num_friends; ++i)
-        test_addto_lists_possible_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port, dht->friends_list[i].client_id);
+        test_addto_lists_possible_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port,
+                                      dht->friends_list[i].client_id);
 
     // check "good" entries
     test_addto_lists_good(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port, dht->self_public_key);
+
     for (i = 0; i < dht->num_friends; ++i)
-        test_addto_lists_good(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port, dht->friends_list[i].client_id);
+        test_addto_lists_good(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port,
+                              dht->friends_list[i].client_id);
 
     kill_DHT(dht);
     kill_networking(net);
