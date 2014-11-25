@@ -28,7 +28,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define inline__ inline __attribute__((always_inline))
+#define MIN(a,b) (((a)<(b))?(a):(b))
 
 void unix_time_update();
 uint64_t unix_time();

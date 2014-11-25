@@ -36,9 +36,6 @@
 #include "util.h"
 
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
-
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
