@@ -46,6 +46,6 @@ blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 [IN PROGRESS] GUI (no official one chosen yet, a list of promising ones follows)
 https://github.com/notsecure/uTox
 https://github.com/tux3/qTox
-https://github.com/Impyy/Toxy
+https://github.com/Reverp/Toxy
 
 [NOT STARTED] Security audit from professionals
