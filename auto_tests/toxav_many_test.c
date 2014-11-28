@@ -152,7 +152,11 @@ void *in_thread_call (void *arg)
     register_callbacks(this_call->Callee.av, arg);
 
     /* NOTE: CALLEE WILL ALWAHYS NEED CALL_IDX == 0 */
+    pthread_mutex_lock(&muhmutex);
+
     while (call_running[this_call->idx]) {
+
+        pthread_mutex_unlock(&muhmutex);
 
         switch ( step ) {
             case 0: /* CALLER */
@@ -162,18 +166,26 @@ void *in_thread_call (void *arg)
                 break;
 
             case 1: /* CALLEE */
+                pthread_mutex_lock(&muhmutex);
+
                 if (this_call->Caller.status == Ringing) {
                     call_print(call_idx, "Callee answers ...");
+                    pthread_mutex_unlock(&muhmutex);
                     toxav_answer(this_call->Callee.av, 0, &av_DefaultSettings);
                     step++;
                     start = time(NULL);
+                    pthread_mutex_lock(&muhmutex);
                 }
 
+                pthread_mutex_unlock(&muhmutex);
                 break;
 
             case 2: /* Rtp transmission */
+                pthread_mutex_lock(&muhmutex);
+
                 if (this_call->Caller.status == InCall) { /* I think this is okay */
                     call_print(call_idx, "Sending rtp ...");
+                    pthread_mutex_unlock(&muhmutex);
 
                     c_sleep(1000); /* We have race condition here */
                     toxav_prepare_transmission(this_call->Callee.av, 0, 1);
@@ -210,24 +222,36 @@ void *in_thread_call (void *arg)
                     /* Call over CALLER hangs up */
                     toxav_hangup(this_call->Caller.av, call_idx);
                     call_print(call_idx, "Hanging up ...");
+
+                    pthread_mutex_lock(&muhmutex);
                 }
 
+                pthread_mutex_unlock(&muhmutex);
                 break;
 
             case 3: /* Wait for Both to have status ended */
+                pthread_mutex_lock(&muhmutex);
+
                 if (this_call->Caller.status == Ended) {
+                    pthread_mutex_unlock(&muhmutex);
                     c_sleep(1000); /* race condition */
+                    pthread_mutex_lock(&muhmutex);
                     this_call->Callee.status = Ended;
                     call_running[this_call->idx] = 0;
                 }
+
+                pthread_mutex_unlock(&muhmutex);
 
                 break;
 
         }
 
         c_sleep(20);
+
+        pthread_mutex_lock(&muhmutex);
     }
 
+    pthread_mutex_unlock(&muhmutex);
     call_print(call_idx, "Call ended successfully!");
     pthread_exit(NULL);
 }
