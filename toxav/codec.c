@@ -378,12 +378,13 @@ void cs_do(CSSession *cs)
     if (!cs) return;
 
     pthread_mutex_lock(cs->queue_mutex);
-    /*
+
     if (!cs->active) {
         pthread_mutex_unlock(cs->queue_mutex);
         return;
     }
 
+    /*
     /* Iterate over whole buffers and call playback callback * /
     if (cs->abuf_ready) while (!DecodedAudioBuffer_empty(cs->abuf_ready)) {
         DecodedAudio* p;
@@ -612,8 +613,6 @@ void cs_kill(CSSession *cs)
     cs->active = 0;
 
     /* Wait threads to close */
-    pthread_mutex_unlock(cs->queue_mutex);
-    pthread_mutex_lock(cs->queue_mutex);
     pthread_mutex_unlock(cs->queue_mutex);
 
     pthread_mutex_destroy(cs->queue_mutex);

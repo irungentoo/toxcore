@@ -117,6 +117,19 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
     av->calls = calloc(sizeof(CallSpecific), max_calls);
     av->max_calls = max_calls;
 
+    unsigned int i;
+
+    for (i = 0; i < max_calls; ++i) {
+        if (pthread_mutex_init(&av->calls[i].mutex, NULL) != 0 ) {
+            LOGGER_WARNING("Failed to init call mutex!");
+            msi_kill(av->msi_session);
+
+            free(av->calls);
+            free(av);
+            return NULL;
+        }
+    }
+
     return av;
 }
 
@@ -133,6 +146,8 @@ void toxav_kill ( ToxAv *av )
             rtp_kill(av->calls[i].crtps[video_index], av->msi_session->messenger_handle);
 
         if ( av->calls[i].cs ) cs_kill(av->calls[i].cs);
+
+        pthread_mutex_destroy(&av->calls[i].mutex);
     }
 
     msi_kill(av->msi_session);
@@ -166,8 +181,13 @@ void toxav_do(ToxAv *av)
 
     uint32_t i = 0;
 
-    for (; i < av->max_calls; i ++)
+    for (; i < av->max_calls; i ++) {
+        pthread_mutex_lock(&av->calls[i].mutex);
+
         if (av->calls[i].call_active) cs_do(av->calls[i].cs);
+
+        pthread_mutex_unlock(&av->calls[i].mutex);
+    }
 
     uint64_t end = current_time_monotonic();
 
@@ -286,11 +306,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
 
     CallSpecific *call = &av->calls[call_index];
 
-    if ( pthread_mutex_init(&call->mutex, NULL) != 0 ) {
-        LOGGER_WARNING("Failed to init call mutex!");
-        return av_ErrorInternal;
-    }
-
+    pthread_mutex_lock(&call->mutex);
     const ToxAvCSettings *c_peer = toxavcsettings_cast
                                    (&av->msi_session->calls[call_index]->csettings_peer[0]);
     const ToxAvCSettings *c_self = toxavcsettings_cast
@@ -315,8 +331,8 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
         c_self->audio_channels,         c_peer->audio_channels );
 
     if ( !(call->cs = cs_new(c_self, c_peer, jbuf_capacity, support_video)) ) {
-        pthread_mutex_destroy(&call->mutex);
         LOGGER_ERROR("Error while starting Codec State!\n");
+        pthread_mutex_unlock(&call->mutex);
         return av_ErrorInternal;
     }
 
@@ -328,6 +344,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
 
     if ( !call->crtps[audio_index] ) {
         LOGGER_ERROR("Error while starting audio RTP session!\n");
+        pthread_mutex_unlock(&call->mutex);
         return av_ErrorInternal;
     }
 
@@ -346,14 +363,15 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
     }
 
     call->call_active = 1;
+    pthread_mutex_unlock(&call->mutex);
     return av_ErrorNone;
 error:
     rtp_kill(call->crtps[audio_index], av->messenger);
     rtp_kill(call->crtps[video_index], av->messenger);
     cs_kill(call->cs);
-    pthread_mutex_destroy(&call->mutex);
     memset(call, 0, sizeof(CallSpecific));
 
+    pthread_mutex_unlock(&call->mutex);
     return av_ErrorInternal;
 }
 
@@ -384,7 +402,6 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     call->call_active = 0;
 
     pthread_mutex_unlock(&call->mutex);
-    pthread_mutex_destroy(&call->mutex);
 
     return av_ErrorNone;
 }
