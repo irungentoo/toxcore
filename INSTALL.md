@@ -477,7 +477,7 @@ There are 2 dependencies required for libtoxav: libopus and libvpx. If they are 
 
 Install on fedora:
 ```bash
-yum install libopus-devel libvpx-devel
+yum install opus-devel libvpx-devel
 ```
 
 Install on ubuntu:
