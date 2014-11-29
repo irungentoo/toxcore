@@ -372,11 +372,6 @@ static int toxav_send_rtp_payload(ToxAv *av,
                                   const uint8_t *payload,
                                   unsigned int length)
 {
-    if (length > MAX_CRYPTO_DATA_SIZE) {
-        LOGGER_WARNING("Size exceeds limit: %d", length);
-        return av_ErrorUnknown;
-    }
-
     if (call->crtps[type - av_TypeAudio]) {
 
         /* Audio */
