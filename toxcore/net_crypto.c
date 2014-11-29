@@ -2696,22 +2696,12 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (temp == NULL)
         return NULL;
 
-    pthread_mutexattr_t attr;
-
-    if (pthread_mutexattr_init(&attr) == 0) {
-        if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0 || pthread_mutex_init(&temp->tcp_mutex, &attr) != 0
-                || pthread_mutex_init(&temp->connections_mutex, NULL) != 0) {
-            pthread_mutexattr_destroy(&attr);
+    if (create_recursive_mutex(&temp->tcp_mutex) != 0 ||
+        pthread_mutex_init(&temp->connections_mutex, NULL) != 0) {
             free(temp);
             return NULL;
-        }
-    } else {
-        free(temp);
-        return NULL;
     }
-
-    pthread_mutexattr_destroy(&attr);
-
+    
     temp->dht = dht;
 
     new_keys(temp);

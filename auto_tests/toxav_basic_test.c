@@ -220,8 +220,8 @@ void register_callbacks(ToxAv *av, void *data)
     toxav_register_callstate_callback(av, callback_requ_timeout, av_OnRequestTimeout, data);
     toxav_register_callstate_callback(av, callback_peer_cs_change, av_OnPeerCSChange, data);
     toxav_register_callstate_callback(av, callback_self_cs_change, av_OnSelfCSChange, data);
-    toxav_register_audio_callback(callback_audio, NULL);
-    toxav_register_video_callback(callback_video, NULL);
+    toxav_register_audio_callback(av, callback_audio, NULL);
+    toxav_register_video_callback(av, callback_video, NULL);
 }
 
 
