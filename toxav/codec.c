@@ -178,7 +178,7 @@ static void jbuf_write(JitterBuffer *q, RTPMessage *m)
 
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
         jbuf_clear(q);
-        q->bottom = sequnum;
+        q->bottom = sequnum - q->capacity;
         q->queue[num] = m;
         q->top = sequnum + 1;
         return;
@@ -191,6 +191,7 @@ static void jbuf_write(JitterBuffer *q, RTPMessage *m)
 
     if ((sequnum - q->bottom) >= (q->top - q->bottom))
         q->top = sequnum + 1;
+
 }
 
 /* Success is 0 when there is nothing to dequeue,
