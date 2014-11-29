@@ -31,10 +31,12 @@
 #define MAX_SEQU_NUM 65535
 #define MAX_RTP_SIZE 65535
 
+typedef enum {
+    rtp_ErrorSending = -40
+} RTPError;
 /**
  * Standard rtp header
  */
-
 typedef struct _RTPHeader {
     uint8_t  flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
     uint8_t  marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
@@ -46,7 +48,6 @@ typedef struct _RTPHeader {
 
 } RTPHeader;
 
-
 /**
  * Standard rtp extension header.
  */
@@ -56,7 +57,6 @@ typedef struct _RTPExtHeader {
     uint32_t *table;         /* Extension's table */
 
 } RTPExtHeader;
-
 
 /**
  * Standard rtp message.
@@ -71,14 +71,8 @@ typedef struct _RTPMessage {
     struct _RTPMessage   *next;
 } RTPMessage;
 
-
 /**
- * Our main session descriptor.
- * It measures the session variables and controls
- * the entire session. There are functions for manipulating
- * the session so tend to use those instead of directly modifying
- * session parameters.
- *
+ * RTP control session.
  */
 typedef struct _RTPSession {
     uint8_t         version;

@@ -25,6 +25,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 
+#include "codec.h"
 #include "../toxcore/Messenger.h"
 
 typedef uint8_t MSICallIDType[12];
@@ -35,8 +36,8 @@ typedef void ( *MSICallbackType ) ( void *agent, int32_t call_idx, void *arg );
  * Call type identifier. Also used as rtp callback prefix.
  */
 typedef enum {
-    type_audio = 192,
-    type_video
+    msi_TypeAudio = 192,
+    msi_TypeVideo
 } MSICallType;
 
 
@@ -44,11 +45,11 @@ typedef enum {
  * Call state identifiers.
  */
 typedef enum {
-    call_inviting, /* when sending call invite */
-    call_starting, /* when getting call invite */
-    call_active,
-    call_hold,
-    call_hanged_up
+    msi_CallInviting, /* when sending call invite */
+    msi_CallStarting, /* when getting call invite */
+    msi_CallActive,
+    msi_CallHold,
+    msi_CallOver
 
 } MSICallState;
 
@@ -74,26 +75,27 @@ typedef struct _MSICodecSettings {
  * Callbacks ids that handle the states
  */
 typedef enum {
-    MSI_OnInvite, /* Incoming call */
-    MSI_OnRinging, /* When peer is ready to accept/reject the call */
-    MSI_OnStart, /* Call (RTP transmission) started */
-    MSI_OnCancel, /* The side that initiated call canceled invite */
-    MSI_OnReject, /* The side that was invited rejected the call */
-    MSI_OnEnd, /* Call that was active ended */
-    MSI_OnRequestTimeout, /* When the requested action didn't get response in specified time */
-    MSI_OnPeerTimeout, /* Peer timed out; stop the call */
-    MSI_OnPeerCSChange, /* Peer requested Csettings change */
-    MSI_OnSelfCSChange /* Csettings change confirmation */
+    msi_OnInvite, /* Incoming call */
+    msi_OnRinging, /* When peer is ready to accept/reject the call */
+    msi_OnStart, /* Call (RTP transmission) started */
+    msi_OnCancel, /* The side that initiated call canceled invite */
+    msi_OnReject, /* The side that was invited rejected the call */
+    msi_OnEnd, /* Call that was active ended */
+    msi_OnRequestTimeout, /* When the requested action didn't get response in specified time */
+    msi_OnPeerTimeout, /* Peer timed out; stop the call */
+    msi_OnPeerCSChange, /* Peer requested Csettings change */
+    msi_OnSelfCSChange /* Csettings change confirmation */
 } MSICallbackID;
 
-
 /**
- * Callbacks container
+ * Errors
  */
-typedef struct _MSICallbackCont {
-    MSICallbackType function;
-    void *data;
-} MSICallbackCont;
+typedef enum {
+    msi_ErrorNoCall = -20, /* Trying to perform call action while not in a call */
+    msi_ErrorInvalidState = -21, /* Trying to perform call action while in invalid state*/
+    msi_ErrorAlreadyInCallWithPeer = -22, /* Trying to call peer when already in a call with peer */
+    msi_ErrorReachedCallLimit = -23, /* Cannot handle more calls */
+} MSIError;
 
 /**
  * The call struct.
@@ -135,10 +137,10 @@ typedef struct _MSISession {
     uint32_t        frequ;
     uint32_t        call_timeout;  /* Time of the timeout for some action to end; 0 if infinite */
 
-    pthread_mutex_t mutex;
+    pthread_mutex_t mutex[1];
 
     void           *timer_handler;
-    MSICallbackCont callbacks[10]; /* Callbacks used by this session */
+    PAIR(MSICallbackType, void *) callbacks[10];
 } MSISession;
 
 /**

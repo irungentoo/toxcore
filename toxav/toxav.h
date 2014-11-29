@@ -81,17 +81,26 @@ typedef enum {
 } ToxAvCallState;
 
 /**
- * Error indicators.
+ * Error indicators. Values under -20 are reserved for toxcore.
  */
 typedef enum {
     av_ErrorNone = 0,
-    av_ErrorInternal = -1, /* Internal error */
-    av_ErrorAlreadyInCall = -2, /* Already has an active call */
-    av_ErrorNoCall = -3, /* Trying to perform call action while not in a call */
-    av_ErrorInvalidState = -4, /* Trying to perform call action while in invalid state*/
-    av_ErrorNoRtpSession = -5, /* Trying to perform rtp action on invalid session */
-    av_ErrorInvalidCodecState = -6, /* Codec state not initialized */
-    av_ErrorPacketTooLarge = -7, /* Split packet exceeds it's limit */
+    av_ErrorUnknown = -1, /* Unknown error */
+    av_ErrorNoCall = -20, /* Trying to perform call action while not in a call */
+    av_ErrorInvalidState = -21, /* Trying to perform call action while in invalid state*/
+    av_ErrorAlreadyInCallWithPeer = -22, /* Trying to call peer when already in a call with peer */
+    av_ErrorReachedCallLimit = -23, /* Cannot handle more calls */
+    av_ErrorInitializingCodecs = -30, /* Failed creating CSSession */
+    av_ErrorSettingVideoResolution = -31, /* Error setting resolution */
+    av_ErrorSettingVideoBitrate = -32, /* Error setting bitrate */
+    av_ErrorSplittingVideoPayload = -33, /* Error splitting video payload */
+    av_ErrorEncodingVideo = -34, /* vpx_codec_encode failed */
+    av_ErrorEncodingAudio = -35, /* opus_encode failed */
+    av_ErrorSendingPayload = -40, /* Sending lossy packet failed */
+    av_ErrorCreatingRtpSessions = -41, /* One of the rtp sessions failed to initialize */
+    av_ErrorNoRtpSession = -50, /* Trying to perform rtp action on invalid session */
+    av_ErrorInvalidCodecState = -51, /* Codec state not initialized */
+    av_ErrorPacketTooLarge = -52, /* Split packet exceeds it's limit */
 } ToxAvError;
 
 
@@ -153,12 +162,12 @@ void toxav_register_callstate_callback (ToxAv *av, ToxAVCallback cb, ToxAvCallba
 /**
  * Register callback for audio data.
  */
-void toxav_register_audio_callback (ToxAvAudioCallback cb, void *userdata);
+void toxav_register_audio_callback (ToxAv *av, ToxAvAudioCallback cb, void *userdata);
 
 /**
  * Register callback for video data.
  */
-void toxav_register_video_callback (ToxAvVideoCallback cb, void *userdata);
+void toxav_register_video_callback (ToxAv *av, ToxAvVideoCallback cb, void *userdata);
 
 /**
  * Call user. Use its friend_id.
@@ -265,18 +274,6 @@ int toxav_capability_supported ( ToxAv *av, int32_t call_index, ToxAvCapabilitie
  * Returns tox reference.
  */
 Tox *toxav_get_tox (ToxAv *av);
-
-/**
- * Set VAD activity treshold for calculating VAD. 40 is some middle value for treshold
- */
-int toxav_set_vad_treshold (ToxAv *av, int32_t call_index, uint32_t treshold);
-
-/**
- * Check if there is activity in the PCM data.
- * Activity is present if the calculated PCM energy is > ref_energy.
- * Returns bool.
- */
-int toxav_has_activity ( ToxAv *av, int32_t call_index, int16_t *PCM,  uint16_t frame_size, float ref);
 
 /**
  * Returns number of active calls or -1 on error.

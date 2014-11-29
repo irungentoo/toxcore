@@ -42,16 +42,33 @@
 /* Audio encoding/decoding */
 #include <opus.h>
 
+#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
+
 typedef void (*CSAudioCallback) (void *agent, int32_t call_idx, const int16_t *PCM, uint16_t size, void *data);
 typedef void (*CSVideoCallback) (void *agent, int32_t call_idx, const vpx_image_t *img, void *data);
 
-typedef enum _CsCapabilities {
-    a_encoding = 1 << 0,
-    a_decoding = 1 << 1,
-    v_encoding = 1 << 2,
-    v_decoding = 1 << 3
-} CsCapabilities;
+/**
+ * Codec capabilities
+ */
+typedef enum {
+    cs_AudioEncoding = 1 << 0,
+    cs_AudioDecoding = 1 << 1,
+    cs_VideoEncoding = 1 << 2,
+    cs_VideoDecoding = 1 << 3
+} CSCapabilities;
 
+/**
+ * Codec errors.
+ */
+typedef enum {
+    cs_ErrorSettingVideoResolution = -30,
+    cs_ErrorSettingVideoBitrate = -31,
+    cs_ErrorSplittingVideoPayload = -32,
+} CSError;
+
+/**
+ * Codec session - controling codec
+ */
 typedef struct _CSSession {
 
     /* VIDEO
@@ -122,16 +139,21 @@ typedef struct _CSSession {
 
     uint64_t capabilities; /* supports*/
 
+    /* Callbacks */
+    PAIR(CSAudioCallback, void *) acb;
+    PAIR(CSVideoCallback, void *) vcb;
+
     /* Buffering */
     void *abuf_raw, *vbuf_raw; /* Un-decoded data */
-    _Bool active;
     pthread_mutex_t queue_mutex[1];
 
     void *agent; /* Pointer to ToxAv */
     int32_t call_idx;
 } CSSession;
 
+/* Make sure to be called BEFORE corresponding rtp_new */
 CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, uint32_t jbuf_size, int has_video);
+/* Make sure to be called AFTER corresponding rtp_kill */
 void cs_kill(CSSession *cs);
 
 int cs_split_video_payload(CSSession *cs, const uint8_t *payload, uint16_t length);
@@ -142,17 +164,10 @@ const uint8_t *cs_get_split_video_frame(CSSession *cs, uint16_t *size);
  */
 void cs_do(CSSession *cs);
 
-void cs_register_audio_callback(CSAudioCallback cb, void *data);
-void cs_register_video_callback(CSVideoCallback cb, void *data);
 
 /* Reconfigure video encoder; return 0 on success or -1 on failure. */
 int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t height);
 int cs_set_video_encoder_bitrate(CSSession *cs, uint32_t video_bitrate);
-
-
-/* Calculate energy and return 1 if has voice, 0 if not */
-int cs_calculate_vad(CSSession *cs, int16_t *PCM, uint16_t frame_size, float energy);
-void cs_set_vad_treshold(CSSession *cs, uint32_t treshold, uint16_t frame_duration);
 
 
 /* Internal. Called from rtp_handle_message */

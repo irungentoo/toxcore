@@ -27,6 +27,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../toxcore/logger.h"
+#include "../toxcore/util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,13 +51,9 @@
 /* FIXME: Might not be enough */
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
-#define ARRAY(TYPE__) struct { uint16_t size; TYPE__  data[]; }
-#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
+#define ARRAY(TYPE__) struct { uint16_t size; TYPE__ data[]; }
 
 typedef ARRAY(uint8_t) Payload;
-
-static PAIR(CSVideoCallback, void *) vpcallback;
-static PAIR(CSAudioCallback, void *) apcallback;
 
 typedef struct {
     uint16_t size; /* Max size */
@@ -319,24 +316,12 @@ static int init_audio_encoder(CSSession *cs)
     return 0;
 }
 
-static float calculate_sum_sq (int16_t *n, uint16_t k)
-{
-    float result = 0;
-    uint16_t i = 0;
-
-    for ( ; i < k; i ++) result += (float) (n[i] * n[i]);
-
-    return result;
-}
-
-
-
 /* PUBLIC */
 int cs_split_video_payload(CSSession *cs, const uint8_t *payload, uint16_t length)
 {
     if (!cs || !length || length > cs->max_video_frame_size) {
         LOGGER_ERROR("Invalid  CodecState or video frame size: %u", length);
-        return -1;
+        return cs_ErrorSplittingVideoPayload;
     }
 
     cs->split_video_frame[0] = cs->frameid_out++;
@@ -375,42 +360,23 @@ const uint8_t *cs_get_split_video_frame(CSSession *cs, uint16_t *size)
 
 void cs_do(CSSession *cs)
 {
+    /* Codec session should always be protected by call mutex so no need to check for cs validity
+     */
+
     if (!cs) return;
-
-    pthread_mutex_lock(cs->queue_mutex);
-
-    if (!cs->active) {
-        pthread_mutex_unlock(cs->queue_mutex);
-        return;
-    }
-
-    /*
-    /* Iterate over whole buffers and call playback callback * /
-    if (cs->abuf_ready) while (!DecodedAudioBuffer_empty(cs->abuf_ready)) {
-        DecodedAudio* p;
-        DecodedAudioBuffer_read(cs->abuf_ready, &p);
-        if (apcallback.first)
-            apcallback.first(cs->agent, cs->call_idx, p->data, p->size, apcallback.second);
-
-        free(p);
-    }
-
-    if (cs->vbuf_ready) while (!DecodedVideoBuffer_empty(cs->vbuf_ready)) {
-        vpx_image_t* p;
-        DecodedVideoBuffer_read(cs->vbuf_ready, &p);
-        if (vpcallback.first)
-            vpcallback.first(cs->agent, cs->call_idx, p, vpcallback.second);
-
-        vpx_img_free(p);
-    }
-    */
 
     Payload *p;
     int rc;
 
+    pthread_mutex_lock(cs->queue_mutex);
+
     if (cs->abuf_raw && !buffer_empty(cs->abuf_raw)) {
         /* Decode audio */
         buffer_read(cs->abuf_raw, &p);
+
+        /* Leave space for (possibly) other thread to queue more data after we read it here */
+        pthread_mutex_unlock(cs->queue_mutex);
+
 
         uint16_t fsize = (cs->audio_decoder_channels *
                           (cs->audio_decoder_sample_rate * cs->audio_decoder_frame_duration) / 1000);
@@ -421,14 +387,19 @@ void cs_do(CSSession *cs)
 
         if (rc < 0)
             LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
-        else
+        else if (cs->acb.first)
             /* Play */
-            apcallback.first(cs->agent, cs->call_idx, tmp, rc, apcallback.second);
+            cs->acb.first(cs->agent, cs->call_idx, tmp, rc, cs->acb.second);
+
+        pthread_mutex_lock(cs->queue_mutex);
     }
 
     if (cs->vbuf_raw && !buffer_empty(cs->vbuf_raw)) {
         /* Decode video */
         buffer_read(cs->vbuf_raw, &p);
+
+        /* Leave space for (possibly) other thread to queue more data after we read it here */
+        pthread_mutex_unlock(cs->queue_mutex);
 
         rc = vpx_codec_decode(&cs->v_decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
         free(p);
@@ -441,25 +412,17 @@ void cs_do(CSSession *cs)
 
             /* Play decoded images */
             for (; dest; dest = vpx_codec_get_frame(&cs->v_decoder, &iter)) {
-                vpcallback.first(cs->agent, cs->call_idx, dest, vpcallback.second);
+                if (cs->vcb.first)
+                    cs->vcb.first(cs->agent, cs->call_idx, dest, cs->vcb.second);
+
                 vpx_img_free(dest);
             }
         }
+
+        return;
     }
 
     pthread_mutex_unlock(cs->queue_mutex);
-}
-
-void cs_register_audio_callback(CSAudioCallback cb, void *data)
-{
-    apcallback.first = cb;
-    apcallback.second = data;
-}
-
-void cs_register_video_callback(CSVideoCallback cb, void *data)
-{
-    vpcallback.first = cb;
-    vpcallback.second = data;
 }
 
 int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t height)
@@ -470,7 +433,7 @@ int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t heig
         return 0;
 
     if (width * height > cs->max_width * cs->max_height)
-        return -1;
+        return cs_ErrorSettingVideoResolution;
 
     LOGGER_DEBUG("New video resolution: %u %u", width, height);
     cfg.g_w = width;
@@ -479,7 +442,7 @@ int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t heig
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
-        return -1;
+        return cs_ErrorSettingVideoResolution;
     }
 
     return 0;
@@ -498,7 +461,7 @@ int cs_set_video_encoder_bitrate(CSSession *cs, uint32_t video_bitrate)
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
-        return -1;
+        return cs_ErrorSettingVideoBitrate;
     }
 
     return 0;
@@ -510,6 +473,11 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
 
     if (!cs) {
         LOGGER_WARNING("Allocation failed! Application might misbehave!");
+        return NULL;
+    }
+
+    if (create_recursive_mutex(cs->queue_mutex) != 0) {
+        LOGGER_WARNING("Failed to create recursive mutex!");
         return NULL;
     }
 
@@ -529,38 +497,22 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
     cs->audio_decoder_frame_duration = cs_peer->audio_frame_duration;
 
 
-    cs->capabilities |= ( 0 == init_audio_encoder(cs) ) ? a_encoding : 0;
-    cs->capabilities |= ( 0 == init_audio_decoder(cs) ) ? a_decoding : 0;
+    cs->capabilities |= ( 0 == init_audio_encoder(cs) ) ? cs_AudioEncoding : 0;
+    cs->capabilities |= ( 0 == init_audio_decoder(cs) ) ? cs_AudioDecoding : 0;
 
-    if ( !(cs->capabilities & a_encoding) || !(cs->capabilities & a_decoding) ) goto error;
+    if ( !(cs->capabilities & cs_AudioEncoding) || !(cs->capabilities & cs_AudioDecoding) ) goto error;
 
     if ( !(cs->abuf_raw = buffer_new(jbuf_size)) ) goto error;
-
-    pthread_mutexattr_t attr;
-
-    if (pthread_mutexattr_init(&attr) != 0) goto error;
-
-    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
-        if (pthread_mutexattr_destroy(&attr) != 0)
-            LOGGER_WARNING("Failed to destroy mutex attribute!");
-
-        goto error;
-    }
-
-    if (pthread_mutex_init(cs->queue_mutex, &attr) != 0) {
-        pthread_mutexattr_destroy(&attr);
-        goto error;
-    }
 
     if ((cs->support_video = has_video)) {
         cs->max_video_frame_size = MAX_VIDEOFRAME_SIZE;
         cs->video_frame_piece_size = VIDEOFRAME_PIECE_SIZE;
 
         cs->capabilities |= ( 0 == init_video_encoder(cs, cs_self->max_video_width,
-                              cs_self->max_video_height, cs_self->video_bitrate) ) ? v_encoding : 0;
-        cs->capabilities |= ( 0 == init_video_decoder(cs) ) ? v_decoding : 0;
+                              cs_self->max_video_height, cs_self->video_bitrate) ) ? cs_VideoEncoding : 0;
+        cs->capabilities |= ( 0 == init_video_decoder(cs) ) ? cs_VideoDecoding : 0;
 
-        if ( !(cs->capabilities & v_encoding) || !(cs->capabilities & v_decoding) ) goto error;
+        if ( !(cs->capabilities & cs_VideoEncoding) || !(cs->capabilities & cs_VideoDecoding) ) goto error;
 
         if ( !(cs->frame_buf = calloc(cs->max_video_frame_size, 1)) ) goto error;
 
@@ -570,15 +522,12 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
         if ( !(cs->vbuf_raw = buffer_new(VIDEO_DECODE_BUFFER_SIZE)) ) goto error;
     }
 
-    if (pthread_mutexattr_destroy(&attr) != 0)
-        LOGGER_WARNING("Failed to destroy mutex attribute!");
-
-
-    cs->active = 1;
     return cs;
 
 error:
     LOGGER_WARNING("Error initializing codec session! Application might misbehave!");
+
+    pthread_mutex_destroy(cs->queue_mutex);
 
     buffer_free(cs->abuf_raw);
 
@@ -588,9 +537,9 @@ error:
 
 
     if (has_video) {
-        if ( cs->capabilities & v_decoding ) vpx_codec_destroy(&cs->v_decoder);
+        if ( cs->capabilities & cs_VideoDecoding ) vpx_codec_destroy(&cs->v_decoder);
 
-        if ( cs->capabilities & v_encoding ) vpx_codec_destroy(&cs->v_encoder);
+        if ( cs->capabilities & cs_VideoEncoding ) vpx_codec_destroy(&cs->v_encoder);
 
         buffer_free(cs->vbuf_raw);
 
@@ -608,13 +557,7 @@ void cs_kill(CSSession *cs)
 {
     if (!cs) return;
 
-    /* Lock running mutex and signal that cs is no longer active */
-    pthread_mutex_lock(cs->queue_mutex);
-    cs->active = 0;
-
-    /* Wait threads to close */
-    pthread_mutex_unlock(cs->queue_mutex);
-
+    /* queue_message will not be called since it's unregistered before cs_kill is called */
     pthread_mutex_destroy(cs->queue_mutex);
 
 
@@ -624,10 +567,10 @@ void cs_kill(CSSession *cs)
     if ( cs->audio_decoder )
         opus_decoder_destroy(cs->audio_decoder);
 
-    if ( cs->capabilities & v_decoding )
+    if ( cs->capabilities & cs_VideoDecoding )
         vpx_codec_destroy(&cs->v_decoder);
 
-    if ( cs->capabilities & v_encoding )
+    if ( cs->capabilities & cs_VideoEncoding )
         vpx_codec_destroy(&cs->v_encoder);
 
     jbuf_free(cs->j_buf);
@@ -639,43 +582,23 @@ void cs_kill(CSSession *cs)
     free(cs);
 }
 
-void cs_set_vad_treshold(CSSession *cs, uint32_t treshold, uint16_t frame_duration)
-{
-    cs->EVAD_tolerance = treshold > frame_duration ? treshold / frame_duration : frame_duration;
-}
-
-int cs_calculate_vad(CSSession *cs, int16_t *PCM, uint16_t frame_size, float energy)
-{
-    float frame_energy = sqrt(calculate_sum_sq(PCM, frame_size)) / frame_size;
-
-    if ( frame_energy > energy) {
-        cs->EVAD_tolerance_cr = cs->EVAD_tolerance; /* Reset counter */
-        return 1;
-    }
-
-    if ( cs->EVAD_tolerance_cr ) {
-        cs->EVAD_tolerance_cr --;
-        return 1;
-    }
-
-    return 0;
-}
-
 
 
 
 /* Called from RTP */
 void queue_message(RTPSession *session, RTPMessage *msg)
 {
+    /* This function is unregistered during call termination befor destroing
+     * Codec session so no need to check for validity of cs
+     */
     CSSession *cs = session->cs;
 
-    if (!cs || !cs->active) return;
+    if (!cs) return;
 
     /* Audio */
-    if (session->payload_type == type_audio % 128) {
+    if (session->payload_type == msi_TypeAudio % 128) {
         jbuf_write(cs->j_buf, msg);
 
-        pthread_mutex_lock(cs->queue_mutex);
         int success = 0;
 
         while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
@@ -698,13 +621,13 @@ void queue_message(RTPSession *session, RTPMessage *msg)
             }
 
             if (p) {
+                pthread_mutex_lock(cs->queue_mutex);
                 buffer_write(cs->abuf_raw, p);
+                pthread_mutex_unlock(cs->queue_mutex);
             } else {
                 LOGGER_WARNING("Allocation failed! Program might misbehave!");
             }
         }
-
-        pthread_mutex_unlock(cs->queue_mutex);
     }
     /* Video */
     else {
