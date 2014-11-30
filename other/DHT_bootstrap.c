@@ -83,6 +83,11 @@ void manage_keys(DHT *dht)
         memcpy(keys + crypto_box_PUBLICKEYBYTES, dht->self_secret_key, crypto_box_SECRETKEYBYTES);
         keys_file = fopen("key", "w");
 
+        if (keys_file == NULL) {
+            printf("Error opening key file in write mode.\nKeys will not be saved.\n");
+            return;
+        }
+
         if (fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file) != KEYS_SIZE) {
             printf("Error while writing the key file.\nExiting.\n");
             exit(1);

@@ -20,12 +20,12 @@
 #include "../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/utils.h" /* sodium_memzero */
 #endif
 
-unsigned char salt[32] = {0xB1,0xC2,0x09,0xEE,0x50,0x6C,0xF0,0x20,0xC4,0xD6,0xEB,0xC0,0x44,0x51,0x3B,0x60,0x4B,0x39,0x4A,0xCF,0x09,0x53,0x4F,0xEA,0x08,0x41,0xFA,0xCA,0x66,0xD2,0x68,0x7F};
+unsigned char salt[32] = {0xB1, 0xC2, 0x09, 0xEE, 0x50, 0x6C, 0xF0, 0x20, 0xC4, 0xD6, 0xEB, 0xC0, 0x44, 0x51, 0x3B, 0x60, 0x4B, 0x39, 0x4A, 0xCF, 0x09, 0x53, 0x4F, 0xEA, 0x08, 0x41, 0xFA, 0xCA, 0x66, 0xD2, 0x68, 0x7F};
 unsigned char known_key[crypto_box_BEFORENMBYTES] = {0x29, 0x36, 0x1c, 0x9e, 0x65, 0xbb, 0x46, 0x8b, 0xde, 0xa1, 0xac, 0xf, 0xd5, 0x11, 0x81, 0xc8, 0x29, 0x28, 0x17, 0x23, 0xa6, 0xc3, 0x6b, 0x77, 0x2e, 0xd7, 0xd3, 0x10, 0xeb, 0xd2, 0xf7, 0xc8};
-char* pw = "hunter2";
+char *pw = "hunter2";
 unsigned int pwlen = 7;
 
-unsigned char known_key2[crypto_box_BEFORENMBYTES] = {0x7a, 0xfa, 0x95, 0x45, 0x36, 0x8a, 0xa2, 0x5c, 0x40, 0xfd, 0xc0, 0xe2, 0x35, 0x8, 0x7, 0x88, 0xfa, 0xf9, 0x37, 0x86, 0xeb, 0xff, 0x50, 0x4f, 0x3, 0xe2, 0xf6, 0xd9, 0xef, 0x9, 0x17, 0x1}; 
+unsigned char known_key2[crypto_box_BEFORENMBYTES] = {0x7a, 0xfa, 0x95, 0x45, 0x36, 0x8a, 0xa2, 0x5c, 0x40, 0xfd, 0xc0, 0xe2, 0x35, 0x8, 0x7, 0x88, 0xfa, 0xf9, 0x37, 0x86, 0xeb, 0xff, 0x50, 0x4f, 0x3, 0xe2, 0xf6, 0xd9, 0xef, 0x9, 0x17, 0x1};
 // same as above, except standard opslimit instead of extra ops limit for test_known_kdf, and hash pw before kdf for compat
 
 /* cause I'm shameless */
@@ -49,7 +49,7 @@ START_TEST(test_known_kdf)
                                        salt,
                                        crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 8,
                                        crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE);
-     ck_assert_msg(memcmp(out, known_key, crypto_box_BEFORENMBYTES) == 0, "derived key is wrong");
+    ck_assert_msg(memcmp(out, known_key, crypto_box_BEFORENMBYTES) == 0, "derived key is wrong");
 }
 END_TEST
 
@@ -82,13 +82,14 @@ START_TEST(test_save_friend)
     size = tox_encrypted_size(tox3);
     uint8_t data2[size];
     uint8_t key[32 + crypto_box_BEFORENMBYTES];
-    memcpy(key, salt, 32); memcpy(key+32, known_key2, crypto_box_BEFORENMBYTES);
+    memcpy(key, salt, 32);
+    memcpy(key + 32, known_key2, crypto_box_BEFORENMBYTES);
     test = tox_encrypted_key_save(tox3, data2, key);
     ck_assert_msg(test == 0, "failed to encrypted save the second");
     ck_assert_msg(tox_is_save_encrypted(data2) == 1, "magic number the second missing");
 
     // first test tox_encrypted_key_load
-    Tox* tox4 = tox_new(0);
+    Tox *tox4 = tox_new(0);
     test = tox_encrypted_key_load(tox4, data2, size, key);
     ck_assert_msg(test == 0, "failed to encrypted load the second");
     uint8_t address4[TOX_CLIENT_ID_SIZE];
@@ -106,7 +107,7 @@ START_TEST(test_save_friend)
 
     // and now with the code in use (I only bothered with manually to debug this, and it seems a waste
     // to remove the manual check now that it's there)
-    Tox* tox5 = tox_new(0);
+    Tox *tox5 = tox_new(0);
     test = tox_encrypted_load(tox5, data2, size, pw, pwlen);
     ck_assert_msg(test == 0, "failed to encrypted load the third");
     uint8_t address5[TOX_CLIENT_ID_SIZE];
@@ -120,29 +121,29 @@ START_TEST(test_keys)
 {
     uint8_t key[tox_pass_key_length()];
     tox_derive_key_from_pass("123qweasdzxc", 12, key);
-    uint8_t* string = "No Patrick, mayonnaise is not an instrument."; // 44
+    uint8_t *string = "No Patrick, mayonnaise is not an instrument."; // 44
 
-    uint8_t encrypted[44+tox_pass_encryption_extra_length()];
+    uint8_t encrypted[44 + tox_pass_encryption_extra_length()];
     int sz = tox_pass_key_encrypt(string, 44, key, encrypted);
 
-    uint8_t encrypted2[44+tox_pass_encryption_extra_length()];
+    uint8_t encrypted2[44 + tox_pass_encryption_extra_length()];
     int sz2 = tox_pass_encrypt(string, 44, "123qweasdzxc", 12, encrypted2);
 
     ck_assert_msg(sz == sz2, "an encryption failed");
 
-    uint8_t out1[44+tox_pass_encryption_extra_length()];
-    uint8_t out2[44+tox_pass_encryption_extra_length()];
+    uint8_t out1[44 + tox_pass_encryption_extra_length()];
+    uint8_t out2[44 + tox_pass_encryption_extra_length()];
 
-    sz = tox_pass_key_decrypt(encrypted, 44+tox_pass_encryption_extra_length(), key, out1);
+    sz = tox_pass_key_decrypt(encrypted, 44 + tox_pass_encryption_extra_length(), key, out1);
     ck_assert_msg(sz == 44, "sz isn't right");
     ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 1 failed");
 
-    sz2 = tox_pass_decrypt(encrypted2, 44+tox_pass_encryption_extra_length(), "123qweasdzxc", 12, out2);
+    sz2 = tox_pass_decrypt(encrypted2, 44 + tox_pass_encryption_extra_length(), "123qweasdzxc", 12, out2);
     ck_assert_msg(sz2 == 44, "sz2 isn't right");
     ck_assert_msg(memcmp(out2, string, 44) == 0, "decryption 2 failed");
 
     // test that pass_decrypt can decrypt things from pass_key_encrypt
-    sz = tox_pass_decrypt(encrypted, 44+tox_pass_encryption_extra_length(), "123qweasdzxc", 12, out1);
+    sz = tox_pass_decrypt(encrypted, 44 + tox_pass_encryption_extra_length(), "123qweasdzxc", 12, out1);
     ck_assert_msg(sz == 44, "sz isn't right");
     ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 3 failed");
 
@@ -154,7 +155,7 @@ START_TEST(test_keys)
 }
 END_TEST
 
-Suite * encryptsave_suite(void)
+Suite *encryptsave_suite(void)
 {
     Suite *s = suite_create("encryptsave");
 
@@ -169,7 +170,7 @@ int main(int argc, char *argv[])
 {
     srand((unsigned int) time(NULL));
 
-    Suite * encryptsave =  encryptsave_suite();
+    Suite *encryptsave =  encryptsave_suite();
     SRunner *test_runner = srunner_create(encryptsave);
 
     int number_failed = 0;

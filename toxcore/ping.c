@@ -129,7 +129,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *client_id,
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet, uint32_t length)
+static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length)
 {
     DHT       *dht = _dht;
     int        rc;
@@ -168,7 +168,7 @@ static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet
     return 0;
 }
 
-static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packet, uint32_t length)
+static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length)
 {
     DHT      *dht = _dht;
     int       rc;
@@ -225,7 +225,7 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
  * return 1 if it is.
  * return 0 if it isn't.
  */
-static int in_list(const Client_data *list, uint32_t length, const uint8_t *client_id, IP_Port ip_port)
+static int in_list(const Client_data *list, uint16_t length, const uint8_t *client_id, IP_Port ip_port)
 {
     uint32_t i;
 

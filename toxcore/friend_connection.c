@@ -550,7 +550,7 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
  * This function will be called every time a friend request packet is received.
  */
 void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint32_t), void *object)
+                                 const uint8_t *, uint16_t), void *object)
 {
     fr_c->fr_request_callback = fr_request_callback;
     fr_c->fr_request_object = object;

@@ -264,3 +264,25 @@ inline__ void U32_to_bytes(uint8_t *dest, uint32_t value)
 #endif
 }
 
+int create_recursive_mutex(pthread_mutex_t *mutex)
+{
+    pthread_mutexattr_t attr;
+
+    if (pthread_mutexattr_init(&attr) != 0)
+        return -1;
+
+    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
+        pthread_mutexattr_destroy(&attr);
+        return -1;
+    }
+
+    /* Create queue mutex */
+    if (pthread_mutex_init(mutex, &attr) != 0) {
+        pthread_mutexattr_destroy(&attr);
+        return -1;
+    }
+
+    pthread_mutexattr_destroy(&attr);
+
+    return 0;
+}

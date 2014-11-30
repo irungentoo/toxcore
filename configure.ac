@@ -371,20 +371,20 @@ else
     LDFLAGS_SAVE="$LDFLAGS"
     if test -n "$LIBSODIUM_SEARCH_LIBS"; then
         LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS $LDFLAGS"
-        AC_CHECK_LIB(sodium, randombytes_random,
+        AC_CHECK_LIB(sodium, crypto_pwhash_scryptsalsa208sha256,
             [
                 LIBSODIUM_LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS"
                 LIBSODIUM_LIBS="-lsodium"
             ],
             [
-                AC_MSG_ERROR([required library libsodium was not found in requested location $LIBSODIUM_SEARCH_LIBS])
+                AC_MSG_ERROR([required library libsodium was not found in requested location $LIBSODIUM_SEARCH_LIBS or library version is too old])
             ]
         )
     else
-        AC_CHECK_LIB(sodium, randombytes_random,
+        AC_CHECK_LIB(sodium, crypto_pwhash_scryptsalsa208sha256,
             [],
             [
-                AC_MSG_ERROR([required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/])
+                AC_MSG_ERROR([required library libsodium was not found on your system, please check http://download.libsodium.org/libsodium/releases/ or library version is too old])
             ]
         )
     fi

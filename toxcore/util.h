@@ -27,8 +27,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <pthread.h>
 
-#define inline__ inline __attribute__((always_inline))
+#define MIN(a,b) (((a)<(b))?(a):(b))
 
 /* Enlarges static buffers returned by id_toa and ip_ntoa so that
  * they can be used multiple times in same output
@@ -83,5 +84,7 @@ void U64_to_bytes(uint8_t *dest, uint64_t value);
 
 /* Convert uint32_t to byte string of size 4 */
 void U32_to_bytes(uint8_t *dest, uint32_t value);
+
+int create_recursive_mutex(pthread_mutex_t *mutex);
 
 #endif /* __UTIL_H__ */

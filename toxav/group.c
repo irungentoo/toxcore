@@ -90,7 +90,7 @@ static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
 
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
         clear_queue(q);
-        q->bottom = sequnum;
+        q->bottom = sequnum - q->capacity;
         q->queue[num] = pk;
         q->top = sequnum + 1;
         return 0;
@@ -266,7 +266,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
         return -1;
 
     int16_t *out_audio = NULL;
-    unsigned int out_audio_samples = 0;
+    int out_audio_samples = 0;
 
     unsigned int sample_rate = 48000;
 
@@ -496,14 +496,18 @@ int group_send_audio(Group_Chats *g_c, int groupnumber, const int16_t *pcm, unsi
     if (channels != 1 && channels != 2)
         return -1;
 
-    //TODO: allow different sample rates
-    if (sample_rate != 48000)
+    if (sample_rate != 8000 && sample_rate != 12000 && sample_rate != 16000 && sample_rate != 24000 && sample_rate != 48000)
         return -1;
 
     if (!group_av->audio_encoder || group_av->audio_channels != channels || group_av->audio_sample_rate != sample_rate) {
         group_av->audio_channels = channels;
         group_av->audio_sample_rate = sample_rate;
-        group_av->audio_bitrate = 64000; //TODO: add way of adjusting bitrate
+
+        if (channels == 1) {
+            group_av->audio_bitrate = 32000; //TODO: add way of adjusting bitrate
+        } else {
+            group_av->audio_bitrate = 64000; //TODO: add way of adjusting bitrate
+        }
 
         if (recreate_encoder(group_av) == -1)
             return -1;

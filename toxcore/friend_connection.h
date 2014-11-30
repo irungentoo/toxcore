@@ -94,7 +94,7 @@ typedef struct {
     Friend_Conn *conns;
     uint32_t num_cons;
 
-    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint32_t len);
+    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len);
     void *fr_request_object;
 } Friend_Connections;
 
@@ -174,7 +174,7 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
  * This function will be called every time a friend request is received.
  */
 void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint32_t), void *object);
+                                 const uint8_t *, uint16_t), void *object);
 
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c);

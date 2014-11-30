@@ -3,7 +3,7 @@ TODO list.
 [IN PROGRESS] Add what is left to do to the TODO list.
 
 Networking:
-    [NOT STARTED] UPnP port forwarding.
+    [NEEDS TESTING] UPnP port forwarding. (https://github.com/irungentoo/toxcore/pull/969)
     [NOT STARTED] NAT-PMP port forwarding.
 
 DHT:
@@ -11,13 +11,9 @@ DHT:
     [IN PROGRESS] Hardening against attacks.
     [IN PROGRESS] Optimizing the code.
 
-Lossless UDP:
-    [DONE] Increase data send/receive rates.
-
-[IN PROGRESS] Massive IRC like group chats (text only)
-    [DONE] Networking base.
-    [NOT STARTED] Syncing chat state between clients (nicknames, list of who is in chat, etc...)
-    [NOT STARTED] Make clients sign their messages so that peers can't modify them.
+[IN PROGRESS] Friend only group chats
+    [IN PROGRESS] Networking base.
+    [IN PROGRESS] Syncing chat state between clients (nicknames, list of who is in chat, etc...)
 
 [IN PROGRESS] Audio/Video
     [DONE] encoding/streaming/decoding
@@ -35,11 +31,7 @@ Friend_requests.c:
 [DONE] File transfers
 [NOT STARTED] Offline messaging
 [NOT STARTED] Friends list syncing
-[IN PROGRESS] IPV6 support
-    [DONE] Networking
-    [DONE] DHT + Messenger
-    [NOT STARTED] Group chats (They work with IPv6 but some things need to be tested.)
-
+[DONE] IPV6 support
 
 [IN PROGRESS] Make toxcore thread safe.
 
@@ -48,16 +40,12 @@ Friend_requests.c:
 [MOSTLY DONE] A way for people to connect to people on Tox if they are behind a bad NAT that 
 blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
 
-[NEEDS TESTING] Make the save made with tox_save_encrypted(...) harder to brute force.
-See: (https://github.com/jencka/ProjectTox-libtoxdata)
+[DONE] Encrypted Saves. (see: toxencryptsave)
+
 
 [IN PROGRESS] GUI (no official one chosen yet, a list of promising ones follows)
 https://github.com/notsecure/uTox
 https://github.com/tux3/qTox
-https://github.com/naxuroqa/Venom
-https://github.com/Impyy/Toxy
-https://github.com/lehitoskin/blight
-https://github.com/nurupo/ProjectTox-Qt-GUI
-https://github.com/Astonex/Antox
+https://github.com/Reverp/Toxy
 
 [NOT STARTED] Security audit from professionals

@@ -103,7 +103,7 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *client_id)
 }
 
 
-static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint32_t length)
+static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length)
 {
     Friend_Requests *fr = object;
 

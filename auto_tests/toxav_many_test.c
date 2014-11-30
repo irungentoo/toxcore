@@ -11,6 +11,8 @@
 #include <time.h>
 #include <assert.h>
 
+#include <vpx/vpx_image.h>
+
 #include "../toxcore/tox.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/crypto_core.h"
@@ -32,7 +34,7 @@ typedef enum _CallStatus {
     Ringing,
     Ended,
     Rejected,
-    Cancel
+    Canceled
 
 } CallStatus;
 
@@ -67,66 +69,51 @@ void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *dat
 /******************************************************************************/
 void callback_recv_invite ( void *av, int32_t call_index, void *_arg )
 {
-    /*
-       Status *cast = _arg;
-
-       cast->calls[call_index].Callee.status = Ringing;*/
+    Status *cast = _arg;
+    cast->calls[call_index].Callee.status = Ringing;
 }
 void callback_recv_ringing ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
     cast->calls[call_index].Caller.status = Ringing;
 }
-void callback_recv_starting ( void *av, int32_t call_index, void *_arg )
+void callback_call_ended ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
-    cast->calls[call_index].Caller.status = InCall;
-}
-void callback_recv_ending ( void *av, int32_t call_index, void *_arg )
-{
-    Status *cast = _arg;
-    cast->calls[call_index].Caller.status = Ended;
-}
 
+    if (av == cast->calls[call_index].Caller.av)
+        cast->calls[call_index].Caller.status = Ended;
+    else
+        cast->calls[call_index].Callee.status = Ended;
+}
 void callback_call_started ( void *av, int32_t call_index, void *_arg )
 {
-    /*
-       Status *cast = _arg;
+    Status *cast = _arg;
 
-       cast->calls[call_index].Callee.status = InCall;*/
+    if (av == cast->calls[call_index].Caller.av)
+        cast->calls[call_index].Caller.status = InCall;
+    else
+        cast->calls[call_index].Callee.status = InCall;
 }
 void callback_call_canceled ( void *av, int32_t call_index, void *_arg )
 {
-    /*
-       Status *cast = _arg;
-
-       cast->calls[call_index].Callee.status = Cancel;*/
 }
 void callback_call_rejected ( void *av, int32_t call_index, void *_arg )
 {
     Status *cast = _arg;
     cast->calls[call_index].Caller.status = Rejected;
 }
-void callback_call_ended ( void *av, int32_t call_index, void *_arg )
-{
-    /*
-       Status *cast = _arg;
-
-       cast->calls[call_index].Callee.status = Ended;*/
-}
 
 void callback_requ_timeout ( void *av, int32_t call_index, void *_arg )
 {
-    //ck_assert_msg(0, "No answer!");
+    ck_assert_msg(0, "No answer!");
 }
 
-static void callback_audio(ToxAv *av, int32_t call_index, int16_t *data, int length, void *userdata)
-{
-}
+void callback_audio (void *agent, int32_t call_idx, const int16_t *PCM, uint16_t size, void *data)
+{}
 
-static void callback_video(ToxAv *av, int32_t call_index, vpx_image_t *img, void *userdata)
-{
-}
+void callback_video (void *agent, int32_t call_idx, const vpx_image_t *img, void *data)
+{}
 
 void register_callbacks(ToxAv *av, void *data)
 {
@@ -135,16 +122,12 @@ void register_callbacks(ToxAv *av, void *data)
     toxav_register_callstate_callback(av, callback_call_rejected, av_OnReject, data);
     toxav_register_callstate_callback(av, callback_call_ended, av_OnEnd, data);
     toxav_register_callstate_callback(av, callback_recv_invite, av_OnInvite, data);
-
     toxav_register_callstate_callback(av, callback_recv_ringing, av_OnRinging, data);
-    toxav_register_callstate_callback(av, callback_recv_starting, av_OnStarting, data);
-    toxav_register_callstate_callback(av, callback_recv_ending, av_OnEnding, data);
-
     toxav_register_callstate_callback(av, callback_requ_timeout, av_OnRequestTimeout, data);
 
 
-    toxav_register_audio_recv_callback(av, callback_audio, NULL);
-    toxav_register_video_recv_callback(av, callback_video, NULL);
+    toxav_register_audio_callback(av, callback_audio, NULL);
+    toxav_register_video_callback(av, callback_video, NULL);
 }
 /*************************************************************************************************/
 
@@ -169,7 +152,11 @@ void *in_thread_call (void *arg)
     register_callbacks(this_call->Callee.av, arg);
 
     /* NOTE: CALLEE WILL ALWAHYS NEED CALL_IDX == 0 */
+    pthread_mutex_lock(&muhmutex);
+
     while (call_running[this_call->idx]) {
+
+        pthread_mutex_unlock(&muhmutex);
 
         switch ( step ) {
             case 0: /* CALLER */
@@ -179,28 +166,36 @@ void *in_thread_call (void *arg)
                 break;
 
             case 1: /* CALLEE */
+                pthread_mutex_lock(&muhmutex);
+
                 if (this_call->Caller.status == Ringing) {
                     call_print(call_idx, "Callee answers ...");
+                    pthread_mutex_unlock(&muhmutex);
                     toxav_answer(this_call->Callee.av, 0, &av_DefaultSettings);
                     step++;
                     start = time(NULL);
+                    pthread_mutex_lock(&muhmutex);
                 }
 
+                pthread_mutex_unlock(&muhmutex);
                 break;
 
             case 2: /* Rtp transmission */
+                pthread_mutex_lock(&muhmutex);
+
                 if (this_call->Caller.status == InCall) { /* I think this is okay */
                     call_print(call_idx, "Sending rtp ...");
+                    pthread_mutex_unlock(&muhmutex);
 
                     c_sleep(1000); /* We have race condition here */
-                    toxav_prepare_transmission(this_call->Callee.av, 0, 3, 0, 1);
-                    toxav_prepare_transmission(this_call->Caller.av, call_idx, 3, 0, 1);
+                    toxav_prepare_transmission(this_call->Callee.av, 0, 1);
+                    toxav_prepare_transmission(this_call->Caller.av, call_idx, 1);
 
                     int payload_size = toxav_prepare_audio_frame(this_call->Caller.av, call_idx, prepared_payload, RTP_PAYLOAD_SIZE,
                                        sample_payload, frame_size);
 
                     if ( payload_size < 0 ) {
-                        //ck_assert_msg ( 0, "Failed to encode payload" );
+                        ck_assert_msg ( 0, "Failed to encode payload" );
                     }
 
 
@@ -227,24 +222,36 @@ void *in_thread_call (void *arg)
                     /* Call over CALLER hangs up */
                     toxav_hangup(this_call->Caller.av, call_idx);
                     call_print(call_idx, "Hanging up ...");
+
+                    pthread_mutex_lock(&muhmutex);
                 }
 
+                pthread_mutex_unlock(&muhmutex);
                 break;
 
             case 3: /* Wait for Both to have status ended */
+                pthread_mutex_lock(&muhmutex);
+
                 if (this_call->Caller.status == Ended) {
+                    pthread_mutex_unlock(&muhmutex);
                     c_sleep(1000); /* race condition */
+                    pthread_mutex_lock(&muhmutex);
                     this_call->Callee.status = Ended;
                     call_running[this_call->idx] = 0;
                 }
+
+                pthread_mutex_unlock(&muhmutex);
 
                 break;
 
         }
 
         c_sleep(20);
+
+        pthread_mutex_lock(&muhmutex);
     }
 
+    pthread_mutex_unlock(&muhmutex);
     call_print(call_idx, "Call ended successfully!");
     pthread_exit(NULL);
 }
@@ -253,8 +260,8 @@ void *in_thread_call (void *arg)
 
 
 
-// START_TEST(test_AV_three_calls)
-void test_AV_three_calls()
+START_TEST(test_AV_three_calls)
+// void test_AV_three_calls()
 {
     long long unsigned int cur_time = time(NULL);
     Tox *bootstrap_node = tox_new(0);
@@ -266,12 +273,12 @@ void test_AV_three_calls()
     };
 
 
-    //ck_assert_msg(bootstrap_node != NULL, "Failed to create bootstrap node");
+    ck_assert_msg(bootstrap_node != NULL, "Failed to create bootstrap node");
 
     int i = 0;
 
     for (; i < 3; i ++) {
-        //ck_assert_msg(callees[i] != NULL, "Failed to create 3 tox instances");
+        ck_assert_msg(callees[i] != NULL, "Failed to create 3 tox instances");
     }
 
     for ( i = 0; i < 3; i ++ ) {
@@ -281,7 +288,7 @@ void test_AV_three_calls()
         tox_get_address(callees[i], address);
 
         int test = tox_add_friend(caller, address, (uint8_t *)"gentoo", 7);
-        //ck_assert_msg( test == i, "Failed to add friend error code: %i", test);
+        ck_assert_msg( test == i, "Failed to add friend error code: %i", test);
     }
 
     uint8_t off = 1;
@@ -350,6 +357,13 @@ void test_AV_three_calls()
         tox_do(callees[1]);
         tox_do(callees[2]);
 
+        for ( i = 0; i < 3; i++ )
+            toxav_do(status_control.calls[0].Caller.av);
+
+        toxav_do(status_control.calls[0].Callee.av);
+        toxav_do(status_control.calls[1].Callee.av);
+        toxav_do(status_control.calls[2].Callee.av);
+
         pthread_mutex_unlock(&muhmutex);
         c_sleep(20);
     }
@@ -366,7 +380,7 @@ void test_AV_three_calls()
         tox_kill(callees[i]);
 
 }
-// END_TEST
+END_TEST
 
 
 
@@ -382,21 +396,22 @@ Suite *tox_suite(void)
 
     return s;
 }
+
 int main(int argc, char *argv[])
 {
-//     Suite *tox = tox_suite();
-//     SRunner *test_runner = srunner_create(tox);
-//
-//     setbuf(stdout, NULL);
-//
-//     srunner_run_all(test_runner, CK_NORMAL);
-//     int number_failed = srunner_ntests_failed(test_runner);
-//
-//     srunner_free(test_runner);
-//
-//     return number_failed;
+    Suite *tox = tox_suite();
+    SRunner *test_runner = srunner_create(tox);
 
-    test_AV_three_calls();
+    setbuf(stdout, NULL);
 
-    return 0;
+    srunner_run_all(test_runner, CK_NORMAL);
+    int number_failed = srunner_ntests_failed(test_runner);
+
+    srunner_free(test_runner);
+
+    return number_failed;
+
+//     test_AV_three_calls();
+
+//     return 0;
 }
