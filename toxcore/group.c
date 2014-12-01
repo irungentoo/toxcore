@@ -1750,8 +1750,12 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
     int index = get_peer_index(g, peer_number);
 
-    if (index == -1)
+    if (index == -1) {
+        /* We don't know the peer this packet came from so we query the list of peers from that peer.
+          (They would not have relayed it if they didn't know the peer.) */
+        send_peer_query(g_c, g->close[close_index].number, g->close[close_index].group_number);
         return;
+    }
 
     uint32_t message_number;
     memcpy(&message_number, data + sizeof(uint16_t), sizeof(message_number));
@@ -2089,7 +2093,7 @@ void *group_peer_get_object(const Group_Chats *g_c, int groupnumber, int peernum
 }
 
 /* Interval in seconds to send ping messages */
-#define GROUP_PING_INTERVAL 30
+#define GROUP_PING_INTERVAL 20
 
 static int ping_groupchat(Group_Chats *g_c, int groupnumber)
 {
@@ -2116,7 +2120,7 @@ static int groupchat_clear_timedout(Group_Chats *g_c, int groupnumber)
     uint32_t i;
 
     for (i = 0; i < g->numpeers; ++i) {
-        if (g->peer_number != g->group[i].peer_number && is_timeout(g->group[i].last_recv, GROUP_PING_INTERVAL * 2)) {
+        if (g->peer_number != g->group[i].peer_number && is_timeout(g->group[i].last_recv, GROUP_PING_INTERVAL * 3)) {
             delpeer(g_c, groupnumber, i);
         }
 
