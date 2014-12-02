@@ -1388,9 +1388,6 @@ static int handle_packet_online(Group_Chats *g_c, int friendcon_id, uint8_t *dat
 
     if (g->number_joined != -1 && count_close_connected(g) >= DESIRED_CLOSE_CONNECTIONS) {
         int fr_close_index = friend_in_close(g, g->number_joined);
-        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
-        uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
-        get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->number_joined);
 
         if (fr_close_index == -1)
             return -1;
