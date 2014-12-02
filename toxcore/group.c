@@ -1383,6 +1383,10 @@ static int handle_packet_online(Group_Chats *g_c, int friendcon_id, uint8_t *dat
     if (index == -1)
         return -1;
 
+    if (count_close_connected(g) == 0) {
+        send_peer_query(g_c, friendcon_id, other_groupnum);
+    }
+
     g->close[index].group_number = other_groupnum;
     g->close[index].type = GROUPCHAT_CLOSE_ONLINE;
 
