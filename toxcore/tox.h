@@ -429,7 +429,7 @@ enum {
 
 /* Set the callback for group invites.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
  *
  * data of length is what needs to be passed to join_groupchat().
  *
