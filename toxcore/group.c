@@ -934,6 +934,9 @@ int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type
     if (friendcon_id == -1)
         return -1;
 
+    if (get_group_num(g_c, data + sizeof(uint16_t)) != -1)
+        return -1;
+
     int groupnumber = create_group_chat(g_c);
 
     if (groupnumber == -1)
