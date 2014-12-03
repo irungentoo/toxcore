@@ -258,8 +258,7 @@ int toxav_stop_call ( ToxAv *av, int32_t call_index )
 int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_video )
 {
     if ( !av->msi_session || CALL_INVALID_INDEX(call_index, av->msi_session->max_calls) ||
-            !av->msi_session->calls[call_index] || !av->msi_session->calls[call_index]->csettings_peer ||
-            av->calls[call_index].active) {
+            !av->msi_session->calls[call_index] || !av->msi_session->calls[call_index]->csettings_peer) {
         LOGGER_ERROR("Error while starting RTP session: invalid call!\n");
         return av_ErrorNoCall;
     }
@@ -267,6 +266,13 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
     ToxAvCall *call = &av->calls[call_index];
 
     pthread_mutex_lock(call->mutex);
+
+    if (call->active) {
+        pthread_mutex_unlock(call->mutex);
+        LOGGER_ERROR("Error while starting RTP session: call already active!\n");
+        return av_ErrorNoCall;
+    }
+
     const ToxAvCSettings *c_peer = toxavcsettings_cast
                                    (&av->msi_session->calls[call_index]->csettings_peer[0]);
     const ToxAvCSettings *c_self = toxavcsettings_cast
@@ -489,14 +495,13 @@ int toxav_prepare_audio_frame ( ToxAv *av,
                                 const int16_t *frame,
                                 int frame_size)
 {
-    if (CALL_INVALID_INDEX(call_index, av->msi_session->max_calls) || !av->calls[call_index].active) {
-        LOGGER_WARNING("Action on inactive call: %d", call_index);
+    if (CALL_INVALID_INDEX(call_index, av->msi_session->max_calls)) {
+        LOGGER_WARNING("Action on nonexisting call: %d", call_index);
         return av_ErrorNoCall;
     }
 
     ToxAvCall *call = &av->calls[call_index];
     pthread_mutex_lock(call->mutex);
-
 
     if (!call->active) {
         pthread_mutex_unlock(call->mutex);
@@ -517,8 +522,8 @@ int toxav_prepare_audio_frame ( ToxAv *av,
 
 int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *data, unsigned int size)
 {
-    if (CALL_INVALID_INDEX(call_index, av->msi_session->max_calls) || !av->calls[call_index].active) {
-        LOGGER_WARNING("Action on inactive call: %d", call_index);
+    if (CALL_INVALID_INDEX(call_index, av->msi_session->max_calls)) {
+        LOGGER_WARNING("Action on nonexisting call: %d", call_index);
         return av_ErrorNoCall;
     }
 
@@ -583,7 +588,13 @@ int toxav_get_active_count(ToxAv *av)
 
     int rc = 0, i = 0;
 
-    for (; i < av->max_calls; i ++) if (av->calls[i].active) rc++;
+    for (; i < av->max_calls; i++) {
+        pthread_mutex_lock(av->calls[i].mutex);
+
+        if (av->calls[i].active) rc++;
+
+        pthread_mutex_unlock(av->calls[i].mutex);
+    }
 
     return rc;
 }
