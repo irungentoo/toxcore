@@ -419,8 +419,12 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Con
     if (!friend_con)
         return -1;
 
-    memcpy(real_pk, friend_con->real_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(dht_temp_pk, friend_con->dht_temp_pk, crypto_box_PUBLICKEYBYTES);
+    if (real_pk)
+        memcpy(real_pk, friend_con->real_public_key, crypto_box_PUBLICKEYBYTES);
+
+    if (dht_temp_pk)
+        memcpy(dht_temp_pk, friend_con->dht_temp_pk, crypto_box_PUBLICKEYBYTES);
+
     return 0;
 }
 
