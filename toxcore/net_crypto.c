@@ -1168,7 +1168,15 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
         if (add_data_to_buffer(&conn->recv_array, num, &dt) != 0)
             return -1;
 
-        while (read_data_beg_buffer(&conn->recv_array, &dt) != -1) {
+
+        while (1) {
+            pthread_mutex_lock(&conn->mutex);
+            int ret = read_data_beg_buffer(&conn->recv_array, &dt);
+            pthread_mutex_unlock(&conn->mutex);
+
+            if (ret == -1)
+                break;
+
             if (conn->connection_data_callback)
                 conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, dt.data,
                                                dt.length);
