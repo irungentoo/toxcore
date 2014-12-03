@@ -23,7 +23,7 @@ Response packet
 
 
 Peer online packet:
-[uint8_t id 97][uint16_t group chat number][33 bytes group chat identifier[1 byte type][32 bytes id]]
+[uint8_t id 97][uint16_t group chat number (local)][33 bytes group chat identifier[1 byte type][32 bytes id]]
 
 Peer leave packet:
 [uint8_t id 98][uint16_t group chat number][uint8_t id 1]
