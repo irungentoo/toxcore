@@ -156,10 +156,16 @@ uint32_t toxav_do_interval(ToxAv *av)
     int i = 0;
     uint32_t rc = 200 + av->avgdectms; /* Return 200 if no call is active */
 
-    for (; i < av->max_calls; i ++) if (av->calls[i].active) {
+    for (; i < av->max_calls; i ++) {
+        pthread_mutex_lock(av->calls[i].mutex);
+
+        if (av->calls[i].active) {
             /* This should work. Video payload will always come in greater intervals */
             rc = MIN(av->calls[i].cs->audio_decoder_frame_duration, rc);
         }
+
+        pthread_mutex_unlock(av->calls[i].mutex);
+    }
 
     return rc < av->avgdectms ? 0 : rc - av->avgdectms;
 }
