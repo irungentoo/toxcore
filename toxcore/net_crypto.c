@@ -2343,7 +2343,9 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
     if (conn == 0)
         return -1;
 
+    pthread_mutex_lock(&conn->mutex);
     conn->direct_lastrecv_time = current_time_monotonic();
+    pthread_mutex_unlock(&conn->mutex);
     return 0;
 }
 
