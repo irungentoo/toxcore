@@ -246,7 +246,7 @@ Given the Tox data directory described in STS Draft v0.1.0:
     address!) encoded as an uppercase hexadecimal string and "png" is the
     extension for the PNG avatar. As new image formats may be used in the
     future, clients should ensure no other file "xxxxx.*" exists. No file
-    should be kept for an user who have no avatar.
+    should be kept for a user who has no avatar.
 
   - The client's own avatar is not special and is stored like any other. This
     is partially for simplicity, and partially in anticipation of profiles.
@@ -368,7 +368,7 @@ checks the local avatar cache and emits an avatar data request if necessary:
         printf("Receiving avatar information from friend %d. Format = %d\n",
             friendnumber, format);
         if (format = TOX_AVATAR_FORMAT_NONE) {
-            /* User have no avatar or removed the avatar */
+            /* User has no avatar or removed the avatar */
             delete_avatar_from_cache(tox, friendnumber);
         } else {
             /* Use the received hash to check if the cached avatar is
@@ -388,7 +388,7 @@ cache:
         uint8_t *hash, uint8_t *data, uint32_t datalen, void *userdata)
     {
         if (format = TOX_AVATAR_FORMAT_NONE) {
-            /* User have no avatar or removed the avatar */
+            /* User has no avatar or removed the avatar */
             delete_avatar_from_cache(tox, friendnumber);
         } else {
             save_avatar_data_to_cache(tox, friendnumber, format, hash,
@@ -439,7 +439,7 @@ The avatar transfer protocol adds the following new packet types and ids:
 ### Requesting avatar information
 
 To request avatar information, an user must send a packet of type
-`PACKET_ID_AVATAR_INFO_REQ`. This packet have no data fields. Upon
+`PACKET_ID_AVATAR_INFO_REQ`. This packet has no data fields. Upon
 receiving this packet, a client which supports avatars should answer with
 a `PACKET_ID_AVATAR_INFO`. The sender must accept that the friend may
 not answer at all.
@@ -503,7 +503,7 @@ types.
     is the total number of bytes the raw avatar data.
 
 
-  - Packet `PACKET_ID_AVATAR_DATA_PUSH` have no format structure, just up
+  - Packet `PACKET_ID_AVATAR_DATA_PUSH` has no format structure, just up
     to `AVATAR_DATA_MAX_CHUNK_SIZE` bytes of raw avatar image data; this
     value is defined according to the maximum amount of data a Tox crypted
     packet can hold.
@@ -521,7 +521,7 @@ from a client "B":
   - If "B" accepts this transfer, it answers by sending an
     `PACKET_ID_AVATAR_DATA_START` with the fields 'format', 'hash' and
     'data_length' set to the respective values from the current avatar.
-    If "B" have no avatar set, 'format' must be `AVATAR_FORMAT_NONE`, 'hash'
+    If "B" has no avatar set, 'format' must be `AVATAR_FORMAT_NONE`, 'hash'
     must be zeroed and 'data_length' must be zero.
 
     If "B" does not accept sending the avatar, it may send a packet
