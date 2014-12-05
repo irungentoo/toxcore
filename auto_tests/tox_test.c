@@ -422,11 +422,109 @@ loop_top:
         c_sleep(50);
     }
 
-    printf("test_many_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
-
     for (i = 0; i < NUM_TOXES; ++i) {
         tox_kill(toxes[i]);
     }
+
+    printf("test_many_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
+}
+END_TEST
+
+#define NUM_GROUP_TOX 6
+
+void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 234212)
+        return;
+
+    if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
+        tox_add_friend_norequest(m, public_key);
+    }
+}
+
+void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, const uint8_t *data, uint16_t length,
+                                 void *userdata)
+{
+    if (*((uint32_t *)userdata) != 234212)
+        return;
+
+    int g_num;
+
+    if ((g_num = tox_join_groupchat(tox, friendnumber, data, length)) == -1)
+        return;
+
+    ck_assert_msg(g_num == 0, "Group number was not 0");
+    ck_assert_msg(tox_join_groupchat(tox, friendnumber, data, length) == -1,
+                  "Joining groupchat twice should be impossible.");
+
+    if (tox_invite_friend(tox, 0, g_num) == -1)
+        return;
+}
+
+START_TEST(test_many_group)
+{
+    long long unsigned int cur_time = time(NULL);
+    Tox *toxes[NUM_GROUP_TOX];
+    unsigned int i;
+
+    uint32_t to_comp = 234212;
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        toxes[i] = tox_new(0);
+        ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
+        tox_callback_friend_request(toxes[i], &g_accept_friend_request, &to_comp);
+        tox_callback_group_invite(toxes[i], &print_group_invite_callback, &to_comp);
+    }
+
+    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
+    tox_get_address(toxes[NUM_GROUP_TOX - 1], address);
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        ck_assert_msg(tox_add_friend(toxes[i], address, (uint8_t *)"Gentoo", 7) == 0, "Failed to add friend");
+
+        tox_get_address(toxes[i], address);
+    }
+
+    while (1) {
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            if (tox_get_friend_connection_status(toxes[i], 0) != 1) {
+                break;
+            }
+        }
+
+        if (i == NUM_GROUP_TOX)
+            break;
+
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_do(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    printf("friends connected, took %llu seconds\n", time(NULL) - cur_time);
+
+    ck_assert_msg(tox_add_groupchat(toxes[0]) != -1, "Failed to create group");
+    ck_assert_msg(tox_invite_friend(toxes[0], 0, 0) == 0, "Failed to invite friend");
+
+    while (1) {
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            if (tox_group_number_peers(toxes[i], 0) != NUM_GROUP_TOX) {
+                break;
+            }
+        }
+
+        if (i == NUM_GROUP_TOX)
+            break;
+
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_do(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    printf("test_many_group succeeded, took %llu seconds\n", time(NULL) - cur_time);
 }
 END_TEST
 
@@ -436,6 +534,7 @@ Suite *tox_suite(void)
 
     DEFTESTCASE_SLOW(few_clients, 50);
     DEFTESTCASE_SLOW(many_clients, 150);
+    DEFTESTCASE_SLOW(many_group, 100);
     return s;
 }
 
