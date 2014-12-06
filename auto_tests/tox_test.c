@@ -461,11 +461,26 @@ void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, c
         return;
 }
 
+static unsigned int num_recv;
+
+void print_group_message(Tox *tox, int groupnumber, int peernumber, const uint8_t *message, uint16_t length,
+                         void *userdata)
+{
+    if (*((uint32_t *)userdata) != 234212)
+        return;
+
+    if (length != length)
+        if (memcmp(message, "Install Gentoo", sizeof("Install Gentoo") - 1) != 0)
+            return;
+
+    ++num_recv;
+}
+
 START_TEST(test_many_group)
 {
     long long unsigned int cur_time = time(NULL);
     Tox *toxes[NUM_GROUP_TOX];
-    unsigned int i;
+    unsigned int i, j;
 
     uint32_t to_comp = 234212;
 
@@ -524,6 +539,25 @@ START_TEST(test_many_group)
         c_sleep(50);
     }
 
+    printf("group connected\n");
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        tox_callback_group_message(toxes[i], &print_group_message, &to_comp);
+    }
+
+    ck_assert_msg(tox_group_message_send(toxes[rand() % NUM_GROUP_TOX], 0, "Install Gentoo",
+                                         sizeof("Install Gentoo") - 1) == 0, "Failed to send group message.");
+    num_recv = 0;
+
+    for (j = 0; j < 20; ++j) {
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_do(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
     printf("test_many_group succeeded, took %llu seconds\n", time(NULL) - cur_time);
 }
 END_TEST
