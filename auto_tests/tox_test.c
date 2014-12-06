@@ -430,7 +430,7 @@ loop_top:
 }
 END_TEST
 
-#define NUM_GROUP_TOX 6
+#define NUM_GROUP_TOX 32
 
 void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -441,6 +441,9 @@ void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *d
         tox_add_friend_norequest(m, public_key);
     }
 }
+
+static Tox *invite_tox;
+static unsigned int invite_counter;
 
 void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, const uint8_t *data, uint16_t length,
                                  void *userdata)
@@ -457,8 +460,8 @@ void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, c
     ck_assert_msg(tox_join_groupchat(tox, friendnumber, data, length) == -1,
                   "Joining groupchat twice should be impossible.");
 
-    if (tox_invite_friend(tox, 0, g_num) == -1)
-        return;
+    invite_tox = tox;
+    invite_counter = 4;
 }
 
 static unsigned int num_recv;
@@ -521,22 +524,30 @@ START_TEST(test_many_group)
 
     ck_assert_msg(tox_add_groupchat(toxes[0]) != -1, "Failed to create group");
     ck_assert_msg(tox_invite_friend(toxes[0], 0, 0) == 0, "Failed to invite friend");
+    invite_counter = ~0;
+
+    unsigned int done = ~0;
+    done -= 5;
 
     while (1) {
-        for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            if (tox_group_number_peers(toxes[i], 0) != NUM_GROUP_TOX) {
-                break;
-            }
-        }
-
-        if (i == NUM_GROUP_TOX)
-            break;
-
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
             tox_do(toxes[i]);
         }
 
+        if (!invite_counter) {
+            ck_assert_msg(tox_invite_friend(invite_tox, 0, 0) == 0, "Failed to invite friend");
+        }
+
+        if (done == invite_counter) {
+            break;
+        }
+
+        --invite_counter;
         c_sleep(50);
+    }
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        ck_assert_msg(tox_group_number_peers(toxes[i], 0) == NUM_GROUP_TOX, "Bad number of group peers.");
     }
 
     printf("group connected\n");
