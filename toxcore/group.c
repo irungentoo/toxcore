@@ -188,21 +188,18 @@ static int get_peer_index(Group_c *g, uint16_t peer_number)
 }
 
 
-static uint16_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
+static uint64_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
 {
-    uint8_t cmp1, cmp2 = 0;
+    uint64_t cmp1 = 0, cmp2 = 0;
 
-    for (cmp1 = crypto_box_PUBLICKEYBYTES; cmp1 != 0; --cmp1) {
-        uint8_t index = crypto_box_PUBLICKEYBYTES - cmp1;
+    unsigned int i;
 
-        if (pk1[index] == pk2[index])
-            continue;
-
-        cmp2 = pk1[index] - pk2[index];
-        break;
+    for (i = sizeof(uint64_t); i != 0; --i) {
+        cmp1 = (cmp1 << 8) + (uint64_t)pk1[i - 1];
+        cmp2 = (cmp2 << 8) + (uint64_t)pk2[i - 1];
     }
 
-    return (cmp1 << 8) + cmp2;
+    return (cmp1 - cmp2);
 }
 
 enum {
@@ -241,11 +238,11 @@ static int add_to_closest(Group_Chats *g_c, int groupnumber, const uint8_t *real
     }
 
     if (index == DESIRED_CLOSE_CONNECTIONS) {
-        uint16_t comp_val = calculate_comp_value(g->real_pk, real_pk);
-        uint16_t comp_d = 0;
+        uint64_t comp_val = calculate_comp_value(g->real_pk, real_pk);
+        uint64_t comp_d = 0;
 
         for (i = 0; i < (DESIRED_CLOSE_CONNECTIONS / 2); ++i) {
-            uint16_t comp;
+            uint64_t comp;
             comp = calculate_comp_value(g->real_pk, g->closest_peers[i].real_pk);
 
             if (comp > comp_val && comp > comp_d) {
@@ -257,7 +254,7 @@ static int add_to_closest(Group_Chats *g_c, int groupnumber, const uint8_t *real
         comp_val = calculate_comp_value(real_pk, g->real_pk);
 
         for (i = (DESIRED_CLOSE_CONNECTIONS / 2); i < DESIRED_CLOSE_CONNECTIONS; ++i) {
-            uint16_t comp = calculate_comp_value(g->closest_peers[i].real_pk, g->real_pk);
+            uint64_t comp = calculate_comp_value(g->closest_peers[i].real_pk, g->real_pk);
 
             if (comp > comp_val && comp > comp_d) {
                 index = i;
