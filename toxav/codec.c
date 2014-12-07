@@ -379,9 +379,8 @@ void cs_do(CSSession *cs)
         pthread_mutex_unlock(cs->queue_mutex);
 
 
-        uint16_t fsize = (cs->audio_decoder_channels *
-                          (cs->audio_decoder_sample_rate * cs->audio_decoder_frame_duration) / 1000);
-        int16_t tmp[fsize];
+        uint16_t fsize = ((cs->audio_decoder_sample_rate * cs->audio_decoder_frame_duration) / 1000);
+        int16_t tmp[fsize * cs->audio_decoder_channels];
 
         rc = opus_decode(cs->audio_decoder, p->data, p->size, tmp, fsize, (p->size == 0));
         free(p);
