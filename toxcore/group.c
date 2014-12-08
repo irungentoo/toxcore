@@ -194,9 +194,9 @@ static uint64_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
 
     unsigned int i;
 
-    for (i = sizeof(uint64_t); i != 0; --i) {
-        cmp1 = (cmp1 << 8) + (uint64_t)pk1[i - 1];
-        cmp2 = (cmp2 << 8) + (uint64_t)pk2[i - 1];
+    for (i = 0; i < sizeof(uint64_t); ++i) {
+        cmp1 = (cmp1 << 8) + (uint64_t)pk1[i];
+        cmp2 = (cmp2 << 8) + (uint64_t)pk2[i];
     }
 
     return (cmp1 - cmp2);
