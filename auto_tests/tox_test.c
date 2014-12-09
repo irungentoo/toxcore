@@ -70,8 +70,7 @@ void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata
 
 uint32_t custom_packet;
 
-int handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data,
-                         uint32_t len, void *object)
+int handle_custom_packet(Tox *m, int32_t friend_num, const uint8_t *data, uint32_t len, void *object)
 {
     uint8_t number = *((uint32_t *)object);
 
@@ -257,7 +256,7 @@ START_TEST(test_few_clients)
     ck_assert_msg(tox_get_is_typing(tox2, 0) == 0, "Typing fail");
 
     uint32_t packet_number = 160;
-    int ret = tox_lossless_packet_registerhandler(tox3, 0, packet_number, handle_custom_packet, &packet_number);
+    int ret = tox_lossless_packet_registerhandler(tox3, 0, packet_number, &handle_custom_packet, &packet_number);
     ck_assert_msg(ret == 0, "tox_lossless_packet_registerhandler fail %i", ret);
     uint8_t data_c[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
@@ -281,7 +280,7 @@ START_TEST(test_few_clients)
     }
 
     packet_number = 200;
-    ret = tox_lossy_packet_registerhandler(tox3, 0, packet_number, handle_custom_packet, &packet_number);
+    ret = tox_lossy_packet_registerhandler(tox3, 0, packet_number, &handle_custom_packet, &packet_number);
     ck_assert_msg(ret == 0, "tox_lossy_packet_registerhandler fail %i", ret);
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
     ret = tox_send_lossy_packet(tox2, 0, data_c, sizeof(data_c));
@@ -473,11 +472,9 @@ void print_group_message(Tox *tox, int groupnumber, int peernumber, const uint8_
     if (*((uint32_t *)userdata) != 234212)
         return;
 
-    if (length != length)
-        if (memcmp(message, "Install Gentoo", sizeof("Install Gentoo") - 1) != 0)
-            return;
-
-    ++num_recv;
+    if (length == (sizeof("Install Gentoo") - 1) && memcmp(message, "Install Gentoo", sizeof("Install Gentoo") - 1) == 0) {
+        ++num_recv;
+    }
 }
 
 START_TEST(test_many_group)
@@ -557,7 +554,7 @@ START_TEST(test_many_group)
         tox_callback_group_message(toxes[i], &print_group_message, &to_comp);
     }
 
-    ck_assert_msg(tox_group_message_send(toxes[rand() % NUM_GROUP_TOX], 0, "Install Gentoo",
+    ck_assert_msg(tox_group_message_send(toxes[rand() % NUM_GROUP_TOX], 0, (uint8_t *)"Install Gentoo",
                                          sizeof("Install Gentoo") - 1) == 0, "Failed to send group message.");
     num_recv = 0;
 
