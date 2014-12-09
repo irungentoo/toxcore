@@ -341,7 +341,7 @@ RTPMessage *msg_parse ( const uint8_t *data, int length )
 /**
  * Callback for networking core.
  */
-int rtp_handle_packet ( void *object, const uint8_t *data, uint32_t length )
+int rtp_handle_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
 {
     RTPSession *session = object;
     RTPMessage *msg;

@@ -490,7 +490,8 @@ void tox_get_keys(Tox *tox, uint8_t *public_key, uint8_t *secret_key)
  * return 0 on success.
  */
 int tox_lossy_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
-                                     int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+                                     int (*packet_handler_callback)(Messenger *tox, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                     void *object)
 {
     Messenger *m = tox;
 
@@ -527,7 +528,8 @@ int tox_send_lossy_packet(const Tox *tox, int32_t friendnumber, const uint8_t *d
  * return 0 on success.
  */
 int tox_lossless_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+                                        int (*packet_handler_callback)(Messenger *tox, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                        void *object)
 {
     Messenger *m = tox;
 

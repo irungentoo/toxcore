@@ -70,7 +70,8 @@ void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata
 
 uint32_t custom_packet;
 
-int handle_custom_packet(void *object, const uint8_t *data, uint32_t len)
+int handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data,
+                         uint32_t len, void *object)
 {
     uint8_t number = *((uint32_t *)object);
 

@@ -189,6 +189,8 @@ enum {
     FILECONTROL_RESUME_BROKEN
 };
 
+typedef struct Messenger Messenger;
+
 typedef struct {
     uint8_t client_id[crypto_box_PUBLICKEYBYTES];
     int friendcon_id;
@@ -222,18 +224,18 @@ typedef struct {
     AVATAR_RECEIVEDATA *avatar_recv_data;    // We are receiving avatar data from this friend.
 
     struct {
-        int (*function)(void *object, const uint8_t *data, uint32_t len);
+        int (*function)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object);
         void *object;
     } lossy_packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
 
     struct {
-        int (*function)(void *object, const uint8_t *data, uint32_t len);
+        int (*function)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object);
         void *object;
     } lossless_packethandlers[PACKET_ID_LOSSLESS_RANGE_SIZE];
 } Friend;
 
 
-typedef struct Messenger {
+struct Messenger {
 
     Networking_Core *net;
     Net_Crypto *net_crypto;
@@ -310,7 +312,7 @@ typedef struct Messenger {
     void *msi_packet_userdata;
 
     Messenger_Options options;
-} Messenger;
+};
 
 /* Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  *
@@ -841,7 +843,8 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
  * return 0 on success.
  */
 int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object);
+                                        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                        void *object);
 
 /* High level function to send custom lossy packets.
  *
@@ -859,7 +862,8 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
  * return 0 on success.
  */
 int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object);
+        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+        void *object);
 
 /* High level function to send custom lossless packets.
  *

@@ -1441,13 +1441,15 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
 
     if (m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function)
         return m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function(
-                   m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].object, packet, length);
+                   m, friend_num, packet, length, m->friendlist[friend_num].lossy_packethandlers[packet[0] %
+                           PACKET_ID_LOSSY_RANGE_SIZE].object);
 
     return 1;
 }
 
 int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+                                        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                        void *object)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1490,13 +1492,15 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
 
     if (m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function)
         return m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function(
-                   m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].object, packet, length);
+                   m, friend_num, packet, length, m->friendlist[friend_num].lossless_packethandlers[packet[0] %
+                           PACKET_ID_LOSSLESS_RANGE_SIZE].object);
 
     return 1;
 }
 
 int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+        void *object)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
