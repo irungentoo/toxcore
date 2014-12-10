@@ -142,6 +142,35 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *dat
     }
 }
 
+START_TEST(test_one)
+{
+    Tox *tox1 = tox_new(0);
+    Tox *tox2 = tox_new(0);
+
+    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
+    tox_get_address(tox1, address);
+    ck_assert_msg(tox_add_friend(tox1, address, (uint8_t *)"m", 1) == TOX_FAERR_OWNKEY, "Adding own address worked.");
+
+    tox_get_address(tox2, address);
+    uint8_t message[TOX_MAX_FRIENDREQUEST_LENGTH + 1];
+    ck_assert_msg(tox_add_friend(tox1, address, NULL, 0) == TOX_FAERR_NOMESSAGE, "Sending request with no message worked.");
+    ck_assert_msg(tox_add_friend(tox1, address, message, sizeof(message)) == TOX_FAERR_TOOLONG,
+                  "TOX_MAX_FRIENDREQUEST_LENGTH is too big.");
+
+    address[0]++;
+    ck_assert_msg(tox_add_friend(tox1, address, (uint8_t *)"m", 1) == TOX_FAERR_BADCHECKSUM,
+                  "Adding address with bad checksum worked.");
+
+    tox_get_address(tox2, address);
+    ck_assert_msg(tox_add_friend(tox1, address, message, TOX_MAX_FRIENDREQUEST_LENGTH) == 0, "Failed to add friend.");
+    ck_assert_msg(tox_add_friend(tox1, address, message, TOX_MAX_FRIENDREQUEST_LENGTH) == TOX_FAERR_ALREADYSENT,
+                  "Adding friend twice worked.");
+
+    tox_kill(tox1);
+    tox_kill(tox2);
+}
+END_TEST
+
 START_TEST(test_few_clients)
 {
     long long unsigned int con_time, cur_time = time(NULL);
@@ -575,6 +604,7 @@ Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox");
 
+    DEFTESTCASE(one);
     DEFTESTCASE_SLOW(few_clients, 50);
     DEFTESTCASE_SLOW(many_clients, 150);
     DEFTESTCASE_SLOW(many_group, 100);
