@@ -36,6 +36,8 @@ extern "C" {
 /* Maximum length of single messages after which they should be split. */
 #define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
+#define TOX_MAX_FRIENDREQUEST_LENGTH 1016
+
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
 #define TOX_HASH_LENGTH /*crypto_hash_sha256_BYTES*/ 32
@@ -102,7 +104,7 @@ void tox_get_address(const Tox *tox, uint8_t *address);
 /* Add a friend.
  * Set the data that will be sent along with friend request.
  * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be TOX_FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
- * data is the data and length is the length.
+ * data is the data and length is the length (maximum length of data is TOX_MAX_FRIENDREQUEST_LENGTH).
  *
  *  return the friend number if success.
  *  return TOX_FAERR_TOOLONG if message length is too long.
