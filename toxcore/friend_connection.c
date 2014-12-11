@@ -274,6 +274,11 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
         if (friend_con->callbacks[i].data_callback)
             friend_con->callbacks[i].data_callback(friend_con->callbacks[i].data_callback_object,
                                                    friend_con->callbacks[i].data_callback_id, data, length);
+
+        friend_con = get_conn(fr_c, number);
+
+        if (!friend_con)
+            return -1;
     }
 
     return 0;
@@ -296,6 +301,11 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
         if (friend_con->callbacks[i].lossy_data_callback)
             friend_con->callbacks[i].lossy_data_callback(friend_con->callbacks[i].lossy_data_callback_object,
                     friend_con->callbacks[i].lossy_data_callback_id, data, length);
+
+        friend_con = get_conn(fr_c, number);
+
+        if (!friend_con)
+            return -1;
     }
 
     return 0;

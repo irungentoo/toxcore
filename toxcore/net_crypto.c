@@ -1180,6 +1180,12 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
             if (conn->connection_data_callback)
                 conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, dt.data,
                                                dt.length);
+
+            /* conn might get killed in callback. */
+            conn = get_crypto_connection(c, crypt_connection_id);
+
+            if (conn == 0)
+                return -1;
         }
 
         /* Packet counter. */
@@ -1187,11 +1193,12 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
     } else if (real_data[0] >= PACKET_ID_LOSSY_RANGE_START &&
                real_data[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE)) {
 
+        set_buffer_end(&conn->recv_array, num);
+
         if (conn->connection_lossy_data_callback)
             conn->connection_lossy_data_callback(conn->connection_lossy_data_callback_object,
                                                  conn->connection_lossy_data_callback_id, real_data, real_length);
 
-        set_buffer_end(&conn->recv_array, num);
     } else {
         return -1;
     }
