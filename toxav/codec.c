@@ -637,47 +637,63 @@ void queue_message(RTPSession *session, RTPMessage *msg)
         if (packet_size < VIDEOFRAME_HEADER_SIZE)
             goto end;
 
-        if (packet[0] > cs->frameid_in || (msg->header->timestamp > cs->last_timestamp)) { /* New frame */
-            /* Flush last frames' data and get ready for this frame */
-            Payload *p = malloc(sizeof(Payload) + cs->frame_size);
+        uint8_t diff = packet[0] - cs->frameid_in;
 
-            if (p) {
-                pthread_mutex_lock(cs->queue_mutex);
+        if (diff != 0) {
+            if (diff < 225) { /* New frame */
+                /* Flush last frames' data and get ready for this frame */
+                Payload *p = malloc(sizeof(Payload) + cs->frame_size);
 
-                if (buffer_full(cs->vbuf_raw)) {
-                    LOGGER_DEBUG("Dropped video frame");
-                    Payload *tp;
-                    buffer_read(cs->vbuf_raw, &tp);
-                    free(tp);
+                if (p) {
+                    pthread_mutex_lock(cs->queue_mutex);
+
+                    if (buffer_full(cs->vbuf_raw)) {
+                        LOGGER_DEBUG("Dropped video frame");
+                        Payload *tp;
+                        buffer_read(cs->vbuf_raw, &tp);
+                        free(tp);
+                    } else {
+                        p->size = cs->frame_size;
+                        memcpy(p->data, cs->frame_buf, cs->frame_size);
+                    }
+
+                    buffer_write(cs->vbuf_raw, p);
+                    pthread_mutex_unlock(cs->queue_mutex);
                 } else {
-                    p->size = cs->frame_size;
-                    memcpy(p->data, cs->frame_buf, cs->frame_size);
+                    LOGGER_WARNING("Allocation failed! Program might misbehave!");
+                    goto end;
                 }
 
-                buffer_write(cs->vbuf_raw, p);
-                pthread_mutex_unlock(cs->queue_mutex);
-            } else {
-                LOGGER_WARNING("Allocation failed! Program might misbehave!");
+                cs->last_timestamp = msg->header->timestamp;
+                cs->frameid_in = packet[0];
+                memset(cs->frame_buf, 0, cs->frame_size);
+                cs->frame_size = 0;
+
+            } else { /* Old frame; drop */
+                LOGGER_DEBUG("Old packet: %u", packet[0]);
                 goto end;
             }
+        }
 
-            cs->last_timestamp = msg->header->timestamp;
-            cs->frameid_in = packet[0];
-            memset(cs->frame_buf, 0, cs->frame_size);
-            cs->frame_size = 0;
+        uint8_t piece_number = packet[1];
 
-        } else if (packet[0] < cs->frameid_in) { /* Old frame; drop */
-            LOGGER_DEBUG("Old packet: %u", packet[0]);
+        uint32_t length_before_piece = ((piece_number - 1) * cs->video_frame_piece_size);
+        uint32_t framebuf_new_length = length_before_piece + (packet_size - VIDEOFRAME_HEADER_SIZE);
+
+        if (framebuf_new_length > cs->max_video_frame_size) {
             goto end;
         }
 
         /* Otherwise it's part of the frame so just process */
         /* LOGGER_DEBUG("Video Packet: %u %u", packet[0], packet[1]); */
-        memcpy(cs->frame_buf + cs->frame_size,
+
+        memcpy(cs->frame_buf + length_before_piece,
                packet + VIDEOFRAME_HEADER_SIZE,
                packet_size - VIDEOFRAME_HEADER_SIZE);
 
-        cs->frame_size += packet_size - VIDEOFRAME_HEADER_SIZE;
+        if (framebuf_new_length > cs->frame_size) {
+            cs->frame_size = framebuf_new_length;
+        }
 
 end:
         rtp_free_msg(NULL, msg);
