@@ -480,6 +480,9 @@ void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, c
     if (*((uint32_t *)userdata) != 234212)
         return;
 
+    if (type != TOX_GROUPCHAT_TYPE_TEXT)
+        return;
+
     int g_num;
 
     if ((g_num = tox_join_groupchat(tox, friendnumber, data, length)) == -1)
@@ -596,6 +599,24 @@ START_TEST(test_many_group)
     }
 
     ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
+    tox_del_groupchat(toxes[NUM_GROUP_TOX - 1], 0);
+
+    for (j = 0; j < 10; ++j) {
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_do(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    for (i = 0; i < (NUM_GROUP_TOX - 1); ++i) {
+        ck_assert_msg(tox_group_number_peers(toxes[i], 0) == (NUM_GROUP_TOX - 1), "Bad number of group peers.");
+    }
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        tox_kill(toxes[i]);
+    }
+
     printf("test_many_group succeeded, took %llu seconds\n", time(NULL) - cur_time);
 }
 END_TEST
