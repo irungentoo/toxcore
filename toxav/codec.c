@@ -133,7 +133,7 @@ static JitterBuffer *jbuf_new(uint32_t capacity)
 {
     unsigned int size = 1;
 
-    while (size <= capacity) {
+    while (size <= (capacity * 4)) {
         size *= 2;
     }
 
