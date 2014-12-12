@@ -144,7 +144,7 @@ typedef struct _CSSession {
     PAIR(CSVideoCallback, void *) vcb;
 
     /* Buffering */
-    void *abuf_raw, *vbuf_raw; /* Un-decoded data */
+    void *vbuf_raw; /* Un-decoded data */
     pthread_mutex_t queue_mutex[1];
 
     void *agent; /* Pointer to ToxAv */

@@ -369,27 +369,29 @@ void cs_do(CSSession *cs)
     Payload *p;
     int rc;
 
+    int success = 0;
+
     pthread_mutex_lock(cs->queue_mutex);
+    RTPMessage *msg;
 
-    if (cs->abuf_raw && !buffer_empty(cs->abuf_raw)) {
-        /* Decode audio */
-        buffer_read(cs->abuf_raw, &p);
-
-        /* Leave space for (possibly) other thread to queue more data after we read it here */
+    while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
         pthread_mutex_unlock(cs->queue_mutex);
-
 
         uint16_t fsize = ((cs->audio_decoder_sample_rate * cs->audio_decoder_frame_duration) / 1000);
         int16_t tmp[fsize * cs->audio_decoder_channels];
 
-        rc = opus_decode(cs->audio_decoder, p->data, p->size, tmp, fsize, (p->size == 0));
-        free(p);
+        if (success == 2) {
+            rc = opus_decode(cs->audio_decoder, 0, 0, tmp, fsize, 1);
+        } else {
+            rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
+        }
 
-        if (rc < 0)
+        if (rc < 0) {
             LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
-        else if (cs->acb.first)
+        } else if (cs->acb.first) {
             /* Play */
             cs->acb.first(cs->agent, cs->call_idx, tmp, rc, cs->acb.second);
+        }
 
         pthread_mutex_lock(cs->queue_mutex);
     }
@@ -502,8 +504,6 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
 
     if ( !(cs->capabilities & cs_AudioEncoding) || !(cs->capabilities & cs_AudioDecoding) ) goto error;
 
-    if ( !(cs->abuf_raw = buffer_new(jbuf_size)) ) goto error;
-
     if ((cs->support_video = has_video)) {
         cs->max_video_frame_size = MAX_VIDEOFRAME_SIZE;
         cs->video_frame_piece_size = VIDEOFRAME_PIECE_SIZE;
@@ -528,8 +528,6 @@ error:
     LOGGER_WARNING("Error initializing codec session! Application might misbehave!");
 
     pthread_mutex_destroy(cs->queue_mutex);
-
-    buffer_free(cs->abuf_raw);
 
     if ( cs->audio_encoder ) opus_encoder_destroy(cs->audio_encoder);
 
@@ -574,7 +572,6 @@ void cs_kill(CSSession *cs)
         vpx_codec_destroy(&cs->v_encoder);
 
     jbuf_free(cs->j_buf);
-    buffer_free(cs->abuf_raw);
     buffer_free(cs->vbuf_raw);
     free(cs->frame_buf);
 
@@ -597,37 +594,9 @@ void queue_message(RTPSession *session, RTPMessage *msg)
 
     /* Audio */
     if (session->payload_type == msi_TypeAudio % 128) {
+        pthread_mutex_lock(cs->queue_mutex);
         jbuf_write(cs->j_buf, msg);
-
-        int success = 0;
-
-        while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
-            Payload *p;
-
-            if (success == 2) {
-                p = malloc(sizeof(Payload));
-
-                if (p) p->size = 0;
-
-            } else {
-                p = malloc(sizeof(Payload) + msg->length);
-
-                if (p) {
-                    p->size = msg->length;
-                    memcpy(p->data, msg->data, msg->length);
-                }
-
-                rtp_free_msg(NULL, msg);
-            }
-
-            if (p) {
-                pthread_mutex_lock(cs->queue_mutex);
-                buffer_write(cs->abuf_raw, p);
-                pthread_mutex_unlock(cs->queue_mutex);
-            } else {
-                LOGGER_WARNING("Allocation failed! Program might misbehave!");
-            }
-        }
+        pthread_mutex_unlock(cs->queue_mutex);
     }
     /* Video */
     else {
