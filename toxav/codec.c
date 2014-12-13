@@ -482,6 +482,7 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
 
     if (create_recursive_mutex(cs->queue_mutex) != 0) {
         LOGGER_WARNING("Failed to create recursive mutex!");
+        free(cs);
         return NULL;
     }
 
