@@ -39,8 +39,8 @@
 #include "rtp.h"
 #include "codec.h"
 
-/* Assume 24 fps*/
-#define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
+/* Good quality encode. */
+#define MAX_ENCODE_TIME_US VPX_DL_GOOD_QUALITY
 #define MAX_DECODE_TIME_US 0
 
 // TODO this has to be exchanged in msi
@@ -266,7 +266,7 @@ static int init_video_encoder(CSSession *cs, uint16_t max_width, uint16_t max_he
     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
     cfg.g_lag_in_frames = 0;
     cfg.kf_min_dist = 0;
-    cfg.kf_max_dist = 5;
+    cfg.kf_max_dist = 48;
     cfg.kf_mode = VPX_KF_AUTO;
 
     cs->max_width = max_width;
