@@ -170,7 +170,7 @@ static void jbuf_free(JitterBuffer *q)
     free(q);
 }
 
-static void jbuf_write(JitterBuffer *q, RTPMessage *m)
+static int jbuf_write(JitterBuffer *q, RTPMessage *m)
 {
     uint16_t sequnum = m->header->sequnum;
 
@@ -181,17 +181,18 @@ static void jbuf_write(JitterBuffer *q, RTPMessage *m)
         q->bottom = sequnum - q->capacity;
         q->queue[num] = m;
         q->top = sequnum + 1;
-        return;
+        return 0;
     }
 
     if (q->queue[num])
-        return;
+        return -1;
 
     q->queue[num] = m;
 
     if ((sequnum - q->bottom) >= (q->top - q->bottom))
         q->top = sequnum + 1;
 
+    return 0;
 }
 
 /* Success is 0 when there is nothing to dequeue,
@@ -384,6 +385,7 @@ void cs_do(CSSession *cs)
             rc = opus_decode(cs->audio_decoder, 0, 0, tmp, fsize, 1);
         } else {
             rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
+            rtp_free_msg(NULL, msg);
         }
 
         if (rc < 0) {
@@ -595,8 +597,12 @@ void queue_message(RTPSession *session, RTPMessage *msg)
     /* Audio */
     if (session->payload_type == msi_TypeAudio % 128) {
         pthread_mutex_lock(cs->queue_mutex);
-        jbuf_write(cs->j_buf, msg);
+        int ret = jbuf_write(cs->j_buf, msg);
         pthread_mutex_unlock(cs->queue_mutex);
+
+        if (ret == -1) {
+            rtp_free_msg(NULL, msg);
+        }
     }
     /* Video */
     else {
