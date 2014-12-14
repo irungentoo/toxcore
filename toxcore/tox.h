@@ -419,7 +419,7 @@ int tox_lossless_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t 
  */
 int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length);
 
-/**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
+/**********GROUP CHAT FUNCTIONS: WARNING Group chats undergo major changes right now ************/
 
 /* Group chat types for tox_callback_group_invite function.
  *

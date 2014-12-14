@@ -40,6 +40,15 @@
 
 #define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
 
+// Long keypair: curve + ed. Currently for group chats and announcement purposes.
+void create_long_keypair(uint8_t *pk, uint8_t *sk);
+
+/* Sign input data
+ * Add signer long public key, time stamp and signature in the end of the data
+ * Return -1 if fail, 0 if success
+ */
+int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key, const uint8_t *ext_public_key, uint8_t *output);
+
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
@@ -126,6 +135,10 @@ void new_nonce(uint8_t *nonce);
 #define CRYPTO_PACKET_GROUP_CHAT_GET_NODES      48 /* Group chat get Nodes packet */
 #define CRYPTO_PACKET_GROUP_CHAT_SEND_NODES     49 /* Group chat send Nodes packet */
 #define CRYPTO_PACKET_GROUP_CHAT_BROADCAST      50 /* Group chat broadcast packet */
+#define CRYPTO_PACKET_GROUP_CHAT_INVITE_REQUEST 51
+#define CRYPTO_PACKET_GROUP_CHAT_INVITE_RESPONSE 52
+#define CRYPTO_PACKET_GROUP_CHAT_SYNC_REQUEST 53
+#define CRYPTO_PACKET_GROUP_CHAT_SYNC_RESPONSE 54 
 
 /* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.

@@ -40,6 +40,7 @@
 #endif
 
 #include "ping.h"
+#include "group_announce.h"
 
 #include "network.h"
 #include "LAN_discovery.h"
@@ -2259,8 +2260,9 @@ DHT *new_DHT(Networking_Core *net)
 
     dht->net = net;
     dht->ping = new_ping(dht);
+    dht->announce = new_announce(dht);
 
-    if (dht->ping == NULL) {
+    if (dht->ping == NULL || dht->announce == NULL) {
         kill_DHT(dht);
         return NULL;
     }
@@ -2308,6 +2310,7 @@ void do_DHT(DHT *dht)
     do_DHT_friends(dht);
     do_NAT(dht);
     do_to_ping(dht->ping);
+    do_announce(dht->announce);
     do_hardening(dht);
 #ifdef ENABLE_ASSOC_DHT
 
@@ -2330,6 +2333,7 @@ void kill_DHT(DHT *dht)
     ping_array_free_all(&dht->dht_ping_array);
     ping_array_free_all(&dht->dht_harden_ping_array);
     kill_ping(dht->ping);
+    kill_announce(dht->announce);
     free(dht->friends_list);
     free(dht->loaded_friends_list);
     free(dht->loaded_clients_list);
@@ -2550,11 +2554,11 @@ int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
 }
 
 /*  return 0 if we are not connected to the DHT.
- *  return 1 if we are.
+ *  return number of connected nodes if we are.
  */
 int DHT_isconnected(const DHT *dht)
 {
-    uint32_t i;
+    uint32_t i, count=0;
     unix_time_update();
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
@@ -2562,10 +2566,10 @@ int DHT_isconnected(const DHT *dht)
 
         if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
                 !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
-            return 1;
+            count++;
     }
 
-    return 0;
+    return count;
 }
 
 /*  return 0 if we are not connected or only connected to lan peers with the DHT.

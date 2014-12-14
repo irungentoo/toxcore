@@ -92,13 +92,20 @@ typedef int sock_t;
 #endif
 #endif
 
-#define MAX_UDP_PACKET_SIZE 2048
+#define MAX_UDP_PACKET_SIZE 65507
 
 #define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID. */
 #define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID. */
 #define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
 #define NET_PACKET_SEND_NODES      3   /* Send nodes response packet ID for IPv4 addresses. */
 #define NET_PACKET_SEND_NODES_IPV6 4   /* Send nodes response packet ID for other addresses. */
+
+#define NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST 5 /* Announce request packet ID */
+//#define NET_PACKET_ANNOUNCE_RESPONSE 6 /* Announce response packet ID */ //Not needed for now
+#define NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES 7 /* Get announced nodes request packet ID */
+#define NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES 8 /* Send announced nodes request packet ID */
+#define NET_PACKET_GROUP_CHATS 9 /* WARNING. Temporary measure. */
+
 #define NET_PACKET_COOKIE_REQUEST  24  /* Cookie request packet */
 #define NET_PACKET_COOKIE_RESPONSE 25  /* Cookie response packet */
 #define NET_PACKET_CRYPTO_HS       26  /* Crypto handshake packet */
@@ -216,6 +223,8 @@ int ipport_equal(const IP_Port *a, const IP_Port *b);
 
 /* nulls out ip */
 void ip_reset(IP *ip);
+/* nulls out ip_port */
+void ipport_reset(IP_Port *ipport);
 /* nulls out ip, sets family according to flag */
 void ip_init(IP *ip, uint8_t ipv6enabled);
 /* checks if ip is valid */

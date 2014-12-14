@@ -31,6 +31,22 @@
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
+/* Enlarges static buffers returned by id_toa and ip_ntoa so that
+ * they can be used multiple times in same output
+ */
+#define STATIC_BUFFER_COPIES    10
+#define STATIC_BUFFER_DEFINE(name,len)  static char stat_buffer_##name[(len)*STATIC_BUFFER_COPIES]; \
+                                        static unsigned stat_buffer_counter_##name=0;
+#define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[(len)*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
+
+// Macroses for long keys and cert handle
+#define ENC_KEY(key) (key)
+#define SIG_KEY(key) (key+ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
+#define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
+#define CERT_TARGET_KEY(cert) (cert + 1)
+#define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE)
+#define CERT_INVITEE_KEY(cert) (cert + 1)
+
 void unix_time_update();
 uint64_t unix_time();
 int is_timeout(uint64_t timestamp, uint64_t timeout);
@@ -38,7 +54,11 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
+bool id_long_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
+
+// For printing purposes
+char *id_toa(const uint8_t *id);
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
@@ -52,6 +72,18 @@ void host_to_lendian32(uint8_t *dest,  uint32_t num);
 typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
 int load_state(load_state_callback_func load_state_callback, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner);
+
+/* Converts 8 bytes to uint64_t */
+void bytes_to_U64(uint64_t *dest, const uint8_t *bytes);
+
+/* Converts 4 bytes to uint32_t */
+void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);
+
+/* Convert uint64_t to byte string of size 8 */
+void U64_to_bytes(uint8_t *dest, uint64_t value);
+
+/* Convert uint32_t to byte string of size 4 */
+void U32_to_bytes(uint8_t *dest, uint32_t value);
 
 int create_recursive_mutex(pthread_mutex_t *mutex);
 

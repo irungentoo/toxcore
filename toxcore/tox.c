@@ -549,7 +549,7 @@ int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t
     return send_custom_lossless_packet(m, friendnumber, data, length);
 }
 
-/**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
+/**********GROUP CHAT FUNCTIONS: WARNING Group chats undergo major changes right now ************/
 
 /* Set the callback for group invites.
  *
