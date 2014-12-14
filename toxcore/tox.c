@@ -1021,6 +1021,7 @@ Tox *tox_new(Tox_Options *options)
         m_options.ipv6enabled = options->ipv6enabled;
         m_options.udp_disabled = options->udp_disabled;
         m_options.proxy_enabled = options->proxy_enabled;
+        m_options.proxy_info.is_http = options->proxy_is_http;
 
         if (m_options.proxy_enabled) {
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);

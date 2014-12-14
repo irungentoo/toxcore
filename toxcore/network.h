@@ -180,8 +180,28 @@ IP_Port;
 /* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
+ *
+ *   IPv6 addresses are enclosed into square brackets, i.e. "[IPv6]"
+ *   writes error message into the buffer on error
  */
 const char *ip_ntoa(const IP *ip);
+
+/*
+ * ip_parse_addr
+ *  parses IP structure into an address string
+ *
+ * input
+ *  ip: ip of AF_INET or AF_INET6 families
+ *  length: length of the address buffer
+ *          Must be at least INET_ADDRSTRLEN for AF_INET
+ *          and INET6_ADDRSTRLEN for AF_INET6
+ *
+ * output
+ *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
+ *
+ * returns 1 on success, 0 on failure
+ */
+int ip_parse_addr(const IP *ip, char *address, size_t length);
 
 /*
  * addr_parse_ip

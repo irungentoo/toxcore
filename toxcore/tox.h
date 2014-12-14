@@ -892,6 +892,7 @@ typedef struct {
     uint8_t proxy_enabled;
     char proxy_address[256]; /* Proxy ip or domain in NULL terminated string format. */
     uint16_t proxy_port; /* Proxy port: in host byte order. */
+    uint8_t proxy_is_http; /*1: HTTP proxy, 0: SOCKS5 proxy*/
 } Tox_Options;
 
 /*

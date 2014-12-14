@@ -66,8 +66,67 @@ static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_i
     return 1;
 }
 
+/* return 1 on success.
+ * return 0 on failure.
+ */
+static int proxy_http_generate_connection_request(TCP_Client_Connection *TCP_conn)
+{
+    char one[] = "CONNECT ";
+    char two[] = " HTTP/1.1\nHost: ";
+    char three[] = "\r\n\r\n";
 
-static void socks5_generate_handshake(TCP_Client_Connection *TCP_conn)
+    char ip[INET6_ADDRSTRLEN];
+    if (!ip_parse_addr(&TCP_conn->ip_port.ip, ip, sizeof(ip))) {
+        return 0;
+    }
+    const uint16_t port = ntohs(TCP_conn->ip_port.port);
+    const int written = sprintf(TCP_conn->last_packet, "%s%s:%hu%s%s:%hu%s", one, ip, port, two, ip, port, three);
+    if (written < 0) {
+        return 0;
+    }
+
+    TCP_conn->last_packet_length = written;
+    TCP_conn->last_packet_sent = 0;
+
+    return 1;
+}
+
+/* return 1 on success.
+ * return 0 if no data received.
+ * return -1 on failure (connection refused).
+ */
+static int proxy_http_read_connection_response(TCP_Client_Connection *TCP_conn)
+{
+    char success[] = "200";
+    uint8_t data[16]; // draining works the best if the length is a power of 2
+
+    int ret = read_TCP_packet(TCP_conn->sock, data, sizeof(data) - 1);
+
+    if (ret == -1) {
+        return 0;
+    }
+
+    data[sizeof(data) - 1] = '\0';
+
+    if (strstr(data, success)) {
+        // drain all data
+        // instead of drainining it byte by byte do it in bigger chunks
+        // decrementing to 1
+        size_t step = sizeof(data);
+        do {
+            if (ret <= 0) {
+                step = step % 2 == 0 ? step/2 : 1;
+            }
+            ret = read_TCP_packet(TCP_conn->sock, data, step);
+        } while (ret > 0 || step != 1);
+
+        return 1;
+    }
+
+    return -1;
+}
+
+static void proxy_socks5_generate_handshake(TCP_Client_Connection *TCP_conn)
 {
     TCP_conn->last_packet[0] = 5; /* SOCKSv5 */
     TCP_conn->last_packet[1] = 1; /* number of authentication methods supported */
@@ -95,7 +154,7 @@ static int socks5_read_handshake_response(TCP_Client_Connection *TCP_conn)
     return -1;
 }
 
-static void socks5_generate_connection_request(TCP_Client_Connection *TCP_conn)
+static void proxy_socks5_generate_connection_request(TCP_Client_Connection *TCP_conn)
 {
     TCP_conn->last_packet[0] = 5; /* SOCKSv5 */
     TCP_conn->last_packet[1] = 1; /* command code: establish a TCP/IP stream connection */
@@ -125,7 +184,7 @@ static void socks5_generate_connection_request(TCP_Client_Connection *TCP_conn)
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
-static int socks5_read_connection_response(TCP_Client_Connection *TCP_conn)
+static int proxy_socks5_read_connection_response(TCP_Client_Connection *TCP_conn)
 {
     if (TCP_conn->ip_port.ip.family == AF_INET) {
         uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
@@ -578,10 +637,14 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     encrypt_precompute(temp->public_key, self_secret_key, temp->shared_key);
     temp->ip_port = ip_port;
 
-    if (proxy_info) {
-        temp->status = TCP_CLIENT_PROXY_CONNECTING;
+    if (proxy_info && proxy_info->is_http) {
+        temp->status = TCP_CLIENT_PROXY_HTTP_CONNECTING;
         temp->proxy_info = *proxy_info;
-        socks5_generate_handshake(temp);
+        proxy_http_generate_connection_request(temp);
+    } else if (proxy_info && !proxy_info->is_http) {
+        temp->status = TCP_CLIENT_PROXY_SOCKS5_CONNECTING;
+        temp->proxy_info = *proxy_info;
+        proxy_socks5_generate_handshake(temp);
     } else {
         temp->status = TCP_CLIENT_CONNECTING;
 
@@ -783,7 +846,23 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
         return;
     }
 
-    if (TCP_connection->status == TCP_CLIENT_PROXY_CONNECTING) {
+    if (TCP_connection->status == TCP_CLIENT_PROXY_HTTP_CONNECTING) {
+        if (send_pending_data(TCP_connection) == 0) {
+            int ret = proxy_http_read_connection_response(TCP_connection);
+
+            if (ret == -1) {
+                TCP_connection->kill_at = 0;
+                TCP_connection->status = TCP_CLIENT_DISCONNECTED;
+            }
+
+            if (ret == 1) {
+                generate_handshake(TCP_connection);
+                TCP_connection->status = TCP_CLIENT_CONNECTING;
+            }
+        }
+    }
+
+    if (TCP_connection->status == TCP_CLIENT_PROXY_SOCKS5_CONNECTING) {
         if (send_pending_data(TCP_connection) == 0) {
             int ret = socks5_read_handshake_response(TCP_connection);
 
@@ -793,15 +872,15 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
             }
 
             if (ret == 1) {
-                socks5_generate_connection_request(TCP_connection);
-                TCP_connection->status = TCP_CLIENT_PROXY_UNCONFIRMED;
+                proxy_socks5_generate_connection_request(TCP_connection);
+                TCP_connection->status = TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED;
             }
         }
     }
 
-    if (TCP_connection->status == TCP_CLIENT_PROXY_UNCONFIRMED) {
+    if (TCP_connection->status == TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED) {
         if (send_pending_data(TCP_connection) == 0) {
-            int ret = socks5_read_connection_response(TCP_connection);
+            int ret = proxy_socks5_read_connection_response(TCP_connection);
 
             if (ret == -1) {
                 TCP_connection->kill_at = 0;
