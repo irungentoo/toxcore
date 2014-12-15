@@ -851,14 +851,95 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
     return messenger_load(m, data, length);
 }
 
-/**** GROUPCHAT CODE *****/
+/**************** GROUPCHAT FUNCTIONS *****************/
 
-/* Adds a new groupchat to messenger
- * Return 0 on success
- * Return -1 on failure
+/* Adds a new groupchat to group chats array.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure.
  */
-int tox_groupchat_add(Tox *tox)
+int tox_add_groupchat(Tox *tox)
 {
-    Messenger *m = tox;
+    const Messenger *m = tox;
     return groupchat_add(m);
+}
+
+/* Sends a groupchat message to groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_message_send(Tox *tox, uint32_t groupnumber, const uint8_t *message, uint32_t length)
+{
+    const Messenger *m = tox;
+    const Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return send_gc_message(chat, message, length);
+}
+
+/* Sends a groupchat operator action to groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_op_action_send(Tox *tox, uint32_t groupnumber, const uint8_t *certificate)
+{
+    const Messenger *m = tox;
+    const Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return send_gc_op_action(chat, certificate);
+}
+
+/* Sets your nick for groupnumber.
+ * 
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_set_nick(Tox *tox, uint32_t groupnumber, const uint8_t *nick, uint32_t length)
+{
+    const Messenger *m = tox;
+    Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_set_self_nick(chat, nick, length);
+}
+
+/* Changes groupnumber's topic.
+ * 
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_set_topic(Tox *tox, uint32_t groupnumber, const uint8_t *topic, uint32_t length)
+{
+    const Messenger *m = tox;
+    Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_set_topic(chat, topic, length);
+}
+
+/* Sets your status for groupnumber.
+ * 
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_set_status(Tox *tox, uint32_t groupnumber, uint8_t status_type)
+{
+    const Messenger *m = tox;
+    Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_set_self_status(chat, status_type);
 }

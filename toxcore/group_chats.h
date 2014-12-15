@@ -65,7 +65,8 @@ enum {
     ONLINE_STATUS,
     OFFLINE_STATUS,
     AWAY_STATUS,
-    BUSY_STATUS
+    BUSY_STATUS,
+    INVALID_STATUS
 } GROUP_STATUSES;
 
 enum {
@@ -151,6 +152,7 @@ typedef struct Group_Chat {
 
     Group_Credentials *credentials;
 
+    uint32_t groupnumber;
     uint32_t message_number;
 
     void (*group_message)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
@@ -232,32 +234,32 @@ int send_gc_ping(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpe
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_status(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, uint8_t status_type);
-
-/* Return -1 if fail
- * Return 0 if success
- */
-int send_gc_change_nick(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
-
-/* Return -1 if fail
- * Return 0 if success
- */
-int send_gc_change_topic(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
-
-/* Return -1 if fail
- * Return 0 if success
- */
 int send_gc_new_peer(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_action(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *certificate);
+int send_gc_op_action(const Group_Chat *chat, const uint8_t *certificate);
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_message(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *message, uint32_t length);
+int send_gc_message(const Group_Chat *chat, const uint8_t *message, uint32_t length);
+
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int gc_set_topic(Group_Chat *chat, const uint8_t *topic, uint32_t length);
+
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int gc_set_self_nick(Group_Chat *chat, const uint8_t *nick, uint32_t length);
+
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int gc_set_self_status(Group_Chat *chat, uint8_t status_type);
 
 void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
                            void *userdata);
@@ -292,15 +294,15 @@ void do_groupchats(Gr_Chats *g_c);
  */
 Group_Credentials *new_groupcredentials();
 
-/* Create a new Gr_Chats object and puts it in messenger.
+/* Creates a new Gr_Chats object and puts it in messenger.
  * Returns Gr_Chats object on success.
  * Returns NULL on failure.
 */
 Gr_Chats *init_groupchats(Messenger *m);
 
-/* Create a new group chat instance.
- * Returns 0 if success.
- * Returns -1 if fail.
+/* Adds a new group chat
+ * Return groupnumber on success
+ * Return -1 on failure
  */
 int groupchat_add(Messenger *m);
 
@@ -316,5 +318,10 @@ void kill_groupchats(Messenger *m);
  * Frees the memory and everything.
  */
 void kill_groupcredentials(Group_Credentials *credentials);
+
+/* Return groupnumber's Group_Chat object on success
+ * Return NULL on failure
+ */
+Group_Chat *gc_get_group(Gr_Chats *g_c, int groupnumber);
 
 #endif
