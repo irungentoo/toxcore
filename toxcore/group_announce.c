@@ -245,7 +245,7 @@ int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
 
 }
 
-int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
+int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint16_t length)
 {
     DHT *dht = _dht;
 
@@ -307,7 +307,7 @@ int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
                     GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES, 1);
 }
 
-int handle_gc_get_announced_nodes_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
+int handle_gc_get_announced_nodes_request(void * _dht, IP_Port ipp, const uint8_t packet[], uint16_t length)
 {
     DHT *dht = _dht;
 
@@ -362,7 +362,7 @@ int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t chat_id[], uint
     return sendpacket(dht->net, ipp, packet, packet_length);
 }
 
-int handle_gc_get_announced_nodes_response(void * _dht, IP_Port ipp, const uint8_t packet[], uint32_t length)
+int handle_gc_get_announced_nodes_response(void * _dht, IP_Port ipp, const uint8_t packet[], uint16_t length)
 {
     // NB: most probably we'll get nodes from different peers, so this would be called several times
     // TODO: different request_ids for the same chat_id... Probably

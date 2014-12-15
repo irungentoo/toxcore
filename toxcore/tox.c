@@ -822,7 +822,7 @@ void tox_do(Tox *tox)
 {
     Messenger *m = tox;
     do_messenger(m);
-    do_groupchats(m->group_chat_object);
+    do_gc(m->group_chat_object);
 }
 
 /* SAVING AND LOADING FUNCTIONS: */
@@ -860,7 +860,7 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
  */
 int tox_add_groupchat(Tox *tox)
 {
-    const Messenger *m = tox;
+    Messenger *m = tox;
     return groupchat_add(m);
 }
 
@@ -872,12 +872,12 @@ int tox_add_groupchat(Tox *tox)
 int tox_group_message_send(Tox *tox, uint32_t groupnumber, const uint8_t *message, uint32_t length)
 {
     const Messenger *m = tox;
-    const Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+    const GC_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
 
     if (chat == NULL)
         return -1;
 
-    return send_gc_message(chat, message, length);
+    return gc_send_plain_message(chat, message, length);
 }
 
 /* Sends a groupchat operator action to groupnumber.
@@ -888,12 +888,12 @@ int tox_group_message_send(Tox *tox, uint32_t groupnumber, const uint8_t *messag
 int tox_group_op_action_send(Tox *tox, uint32_t groupnumber, const uint8_t *certificate)
 {
     const Messenger *m = tox;
-    const Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+    const GC_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
 
     if (chat == NULL)
         return -1;
 
-    return send_gc_op_action(chat, certificate);
+    return gc_send_op_action(chat, certificate);
 }
 
 /* Sets your nick for groupnumber.
@@ -904,7 +904,7 @@ int tox_group_op_action_send(Tox *tox, uint32_t groupnumber, const uint8_t *cert
 int tox_group_set_nick(Tox *tox, uint32_t groupnumber, const uint8_t *nick, uint32_t length)
 {
     const Messenger *m = tox;
-    Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+    GC_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
 
     if (chat == NULL)
         return -1;
@@ -920,7 +920,7 @@ int tox_group_set_nick(Tox *tox, uint32_t groupnumber, const uint8_t *nick, uint
 int tox_group_set_topic(Tox *tox, uint32_t groupnumber, const uint8_t *topic, uint32_t length)
 {
     const Messenger *m = tox;
-    Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+    GC_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
 
     if (chat == NULL)
         return -1;
@@ -936,7 +936,7 @@ int tox_group_set_topic(Tox *tox, uint32_t groupnumber, const uint8_t *topic, ui
 int tox_group_set_status(Tox *tox, uint32_t groupnumber, uint8_t status_type)
 {
     const Messenger *m = tox;
-    Group_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
+    GC_Chat *chat = gc_get_group(m->group_chat_object, groupnumber);
 
     if (chat == NULL)
         return -1;
