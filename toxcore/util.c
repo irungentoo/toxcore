@@ -183,7 +183,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 };
 
 /* Converts 8 bytes to uint64_t */
-inline__ void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
+inline void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
@@ -208,7 +208,7 @@ inline__ void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
 }
 
 /* Converts 4 bytes to uint32_t */
-inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
+inline void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
@@ -225,7 +225,7 @@ inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
 }
 
 /* Convert uint64_t to byte string of size 8 */
-inline__ void U64_to_bytes(uint8_t *dest, uint64_t value)
+inline void U64_to_bytes(uint8_t *dest, uint64_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
@@ -249,7 +249,7 @@ inline__ void U64_to_bytes(uint8_t *dest, uint64_t value)
 }
 
 /* Convert uint32_t to byte string of size 4 */
-inline__ void U32_to_bytes(uint8_t *dest, uint32_t value)
+inline void U32_to_bytes(uint8_t *dest, uint32_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );

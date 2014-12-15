@@ -835,11 +835,18 @@ void ping_group(Group_Chat *chat)
     }
 }
 
-void do_groupchat(Group_Chat *chat)
+void do_groupchats(Gr_Chats *g_c)
 {
-    ping_group(chat);
-}
+    if (!g_c)
+        return;
 
+    uint32_t i;
+
+    for (i = 0; i < g_c->num_chats; ++i) {
+        if (g_c->chats[i].self_status != NO_STATUS)
+            ping_group(&g_c->chats[i]);
+    }
+}
 
 Group_Credentials *new_groupcredentials()
 {
@@ -851,42 +858,133 @@ Group_Credentials *new_groupcredentials()
     return credentials;
 }
 
+/* Set the size of the groupchat list to n.
+ *
+ *  return -1 on failure.
+ *  return 0 success.
+ */
+static int realloc_groupchats(Gr_Chats *g_c, uint32_t n)
+{
+    if (n == 0) {
+        free(g_c->chats);
+        g_c->chats = NULL;
+        return 0;
+    }
 
-Group_Chat *new_groupchat(Networking_Core *net)
+    Group_Chat *temp = realloc(g_c->chats, n * sizeof(Group_Chat));
+
+    if (temp == NULL)
+        return -1;
+
+    g_c->chats = temp;
+    return 0;
+}
+
+static int create_new_group(Gr_Chats *g_c)
+{
+    uint32_t i;
+
+    for (i = 0; i < g_c->num_chats; ++i) {
+        if (g_c->chats[i].self_status == NO_STATUS)
+            return i;
+    }
+
+    if (realloc_groupchats(g_c, g_c->num_chats + 1) != 0)
+        return -1;
+
+    ++g_c->num_chats;
+    return g_c->num_chats - 1;
+}
+
+/* Adds a new group chat
+ * Return 0 on success
+ * Return -1 on failure
+ */
+int groupchat_add(Messenger *m)
 {
     // TODO: Need to handle the situation when we load info from locally stored data
 
-    if (net == 0)
-        return NULL;
+    Gr_Chats *g_c = m->group_chat_object;
 
-    Group_Chat *chat = calloc(1, sizeof(Group_Chat));
-    if (chat == NULL)
-        return NULL;
+    if (g_c == NULL)
+        return -1;
 
-    if (net == NULL)
-        return NULL;
+    int new_index = create_new_group(g_c);
 
-    chat->net = net;
+    if (new_index == -1)
+        return -1;
+
+    Group_Chat *chat = &g_c->chats[new_index];
+
+    chat->net = m->net;
+    chat->self_status = ONLINE_STATUS;
     chat->numpeers = 0;
     chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
 
     networking_registerhandler(chat->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, chat);
-
     create_long_keypair(chat->self_public_key, chat->self_secret_key);
 
-    return chat;
+    return 0;
 }
 
-void kill_groupchat(Group_Chat *chat)
+Gr_Chats *init_groupchats(Messenger *m)
 {
-    if (chat->credentials != NULL)
-        kill_groupcredentials(chat->credentials);
-    free(chat->group);
-    free(chat);
+    Gr_Chats *temp = calloc(1, sizeof(Gr_Chats));
+
+    if (temp == NULL)
+        return NULL;
+
+    temp->num_chats = 0;
+    m->group_chat_object = temp;
+
+    return temp;
 }
 
 void kill_groupcredentials(Group_Credentials *credentials)
 {
     free(credentials->ops);
     free(credentials);
+}
+
+int delete_groupchat(Gr_Chats *g_c, Group_Chat *chat)
+{
+    if (!g_c || !chat)
+        return -1;
+
+    if (chat->credentials != NULL) {
+        kill_groupcredentials(chat->credentials);
+    }
+
+    free(chat->group);
+    memset(chat, 0, sizeof(Group_Chat));
+
+    uint32_t i;
+
+    for (i = 0; i < g_c->num_chats; ++i) {
+        if (g_c->chats[i-1].self_status != NO_STATUS)
+            break;
+    }
+
+    if (g_c->num_chats != i) {
+        g_c->num_chats = i;
+        realloc_groupchats(g_c, g_c->num_chats);
+    }
+
+    return 0;
+}
+
+void kill_groupchats(Messenger *m)
+{
+    Gr_Chats *g_c = m->group_chat_object;
+
+    if (!g_c)
+        return;
+
+    uint32_t i;
+
+    for (i = 0; i < g_c->num_chats; ++i)
+        delete_groupchat(g_c, &g_c->chats[i]);
+
+    m->group_chat_object = NULL;
+    free(g_c);
 }

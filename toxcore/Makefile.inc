@@ -33,8 +33,6 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/group_chats.c \
                         ../toxcore/group_announce.h \
                         ../toxcore/group_announce.c \
-                        ../toxcore/group.h \
-                        ../toxcore/group.c \
                         ../toxcore/assoc.h \
                         ../toxcore/assoc.c \
                         ../toxcore/onion.h \

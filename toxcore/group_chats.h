@@ -27,6 +27,8 @@
 
 #include <stdbool.h>
 
+#include "Messenger.h"
+
 #define MAX_NICK_BYTES 128
 #define MAX_TOPIC_BYTES 512
 #define GROUP_CLOSE_CONNECTIONS 6
@@ -43,33 +45,38 @@
 
 #define MAX_CERTIFICATES_NUM 5
 
-// Certificates types
-#define CERT_INVITE 0
-#define CERT_BAN 1
-#define CERT_OP_CREDENTIALS 2
+enum {
+    CERT_INVITE,
+    CERT_BAN,
+    CERT_OP_CREDENTIALS
+} CERTIFICATE_TYPES;
 
-// Roles
-#define FOUNDER_ROLE 1
-#define OP_ROLE 2
-#define USER_ROLE 4
-#define HUMAN_ROLE 8
-#define ELF_ROLE 16
-#define DWARF_ROLE 32
+enum {
+    FOUNDER_ROLE = 1,
+    OP_ROLE = 2,
+    USER_ROLE = 4,
+    HUMAN_ROLE = 8,
+    ELF_ROLE = 16,
+    DWARF_ROLE = 32
+} GROUP_ROLES;
 
-// Statuses
-#define ONLINE_STATUS 0
-#define OFFLINE_STATUS 1
-#define AWAY_STATUS 2
-#define BUSY_STATUS 3
+enum {
+    NO_STATUS,
+    ONLINE_STATUS,
+    OFFLINE_STATUS,
+    AWAY_STATUS,
+    BUSY_STATUS
+} GROUP_STATUSES;
 
-// Messages
-#define GROUP_CHAT_PING 0
-#define GROUP_CHAT_STATUS 1
-#define GROUP_CHAT_NEW_PEER 2
-#define GROUP_CHAT_CHANGE_NICK 3
-#define GROUP_CHAT_CHANGE_TOPIC 4
-#define GROUP_CHAT_MESSAGE 5
-#define GROUP_CHAT_ACTION 6
+enum {
+    GROUP_CHAT_PING,
+    GROUP_CHAT_STATUS,
+    GROUP_CHAT_NEW_PEER,
+    GROUP_CHAT_CHANGE_NICK,
+    GROUP_CHAT_CHANGE_TOPIC,
+    GROUP_CHAT_MESSAGE,
+    GROUP_CHAT_ACTION
+} GROUP_MESSAGE_TYPE;
 
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
@@ -145,12 +152,17 @@ typedef struct Group_Chat {
     Group_Credentials *credentials;
 
     uint32_t message_number;
+
     void (*group_message)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
     void *group_message_userdata;
     void (*group_action)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
     void *group_action_userdata;
-
 } Group_Chat;
+
+typedef struct Gr_Chats {
+    Group_Chat *chats;
+    uint32_t num_chats;
+} Gr_Chats;
 
 /* Sign input data
  * Add signer public key, time stamp and signature in the end of the data
@@ -272,7 +284,7 @@ int gc_to_peer(const Group_Chat *chat, Group_Peer *peer);
 
 /* This is the main loop.
  */
-void do_groupchat(Group_Chat *chat);
+void do_groupchats(Gr_Chats *g_c);
 
 /* Create new group credentials with pk ans sk.
  * Returns a new group credentials instance if success.
@@ -280,16 +292,25 @@ void do_groupchat(Group_Chat *chat);
  */
 Group_Credentials *new_groupcredentials();
 
-/* Create a new group chat.
- * Returns a new group chat instance if success.
- * Returns a NULL pointer if fail.
- */
-Group_Chat *new_groupchat(Networking_Core *net);
+/* Create a new Gr_Chats object and puts it in messenger.
+ * Returns Gr_Chats object on success.
+ * Returns NULL on failure.
+*/
+Gr_Chats *init_groupchats(Messenger *m);
 
-/* Kill a group chat
+/* Create a new group chat instance.
+ * Returns 0 if success.
+ * Returns -1 if fail.
+ */
+int groupchat_add(Messenger *m);
+
+/* Deletes a group chat
  * Frees the memory and everything.
  */
-void kill_groupchat(Group_Chat *chat);
+int delete_groupchat(Gr_Chats *g_c, Group_Chat *chat);
+
+/* Calls delete_groupchat() for every group chat */
+void kill_groupchats(Messenger *m);
 
 /* Kill a group chat credentials
  * Frees the memory and everything.

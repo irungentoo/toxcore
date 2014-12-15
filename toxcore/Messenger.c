@@ -1040,29 +1040,6 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
                              m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
 }
 
-/**********GROUP CHATS************/
-
-
-/* Set the callback for group invites.
- *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
- */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t))
-{
-    m->group_invite = function;
-}
-
-
-/* Send a group invite packet.
- *
- *  return 1 on success
- *  return 0 on failure
- */
-int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
-{
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0);
-}
-
 /****************FILE SENDING*****************/
 
 
@@ -2170,16 +2147,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             if (m->read_receipt)
                 (*m->read_receipt)(m, i, msgid, m->read_receipt_userdata);
-
-            break;
-        }
-
-        case PACKET_ID_INVITE_GROUPCHAT: {
-            if (data_length == 0)
-                break;
-
-            if (m->group_invite)
-                (*m->group_invite)(m, i, data, data_length);
 
             break;
         }

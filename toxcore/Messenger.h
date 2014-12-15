@@ -268,6 +268,8 @@ struct Messenger {
 
     uint64_t last_LANdiscovery;
 
+    void *group_chat_object; /* Set by init_groupchats()*/
+
 #define NUM_SAVED_TCP_RELAYS 8
     uint8_t has_added_relays; // If the first connection has occurred in do_messenger
     Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
@@ -296,10 +298,6 @@ struct Messenger {
     void (*avatar_info_recv)(struct Messenger *m, int32_t, uint8_t, uint8_t *, void *);
     void *avatar_data_recv_userdata;
     void (*avatar_data_recv)(struct Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *, uint32_t, void *);
-
-    void *group_chat_object; /* Set by new_groupchats()*/
-    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, uint16_t);
-    void (*group_message)(struct Messenger *m, int32_t, const uint8_t *, uint16_t);
 
     void (*file_sendrequest)(struct Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *, uint16_t, void *);
     void *file_sendrequest_userdata;
@@ -734,23 +732,6 @@ void m_callback_avatar_info(Messenger *m, void (*function)(Messenger *m, int32_t
  */
 void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *,
                             uint32_t, void *), void *userdata);
-
-
-
-/**********GROUP CHATS************/
-
-/* Set the callback for group invites.
- *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
- */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t));
-
-/* Send a group invite packet.
- *
- *  return 1 on success
- *  return 0 on failure
- */
-int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /****************FILE SENDING*****************/
 
