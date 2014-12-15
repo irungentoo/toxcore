@@ -578,7 +578,8 @@ START_TEST(test_many_group)
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
         int num_peers = tox_group_number_peers(toxes[i], 0);
-        ck_assert_msg(num_peers == NUM_GROUP_TOX, "Bad number of group peers. expected: %u got: %i, tox %u", NUM_GROUP_TOX, num_peers, i);
+        ck_assert_msg(num_peers == NUM_GROUP_TOX, "Bad number of group peers. expected: %u got: %i, tox %u", NUM_GROUP_TOX,
+                      num_peers, i);
     }
 
     printf("group connected\n");
@@ -600,7 +601,7 @@ START_TEST(test_many_group)
     }
 
     ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
-    
+
     for (k = NUM_GROUP_TOX; k != 0 ; --k) {
         tox_del_groupchat(toxes[k - 1], 0);
 

@@ -828,8 +828,6 @@ end:
     return 0;
 }
 
-#define NODES_ENCRYPTED_MESSAGE_LENGTH (crypto_box_NONCEBYTES + sizeof(uint64_t) + sizeof(Node_format) + sizeof(Node_format) + crypto_box_MACBYTES)
-
 /* Send a getnodes request.
    sendback_node is the node that it will send back the response to (set to NULL to disable this) */
 static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id,
@@ -896,7 +894,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     if (id_equal(public_key, dht->self_public_key))
         return -1;
 
-    if (length > NODES_ENCRYPTED_MESSAGE_LENGTH || length == 0)
+    if (length != sizeof(uint64_t))
         return -1;
 
     size_t Node_format_size = sizeof(Node_format);
@@ -940,15 +938,8 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
 
 static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
-    uint32_t cmp_len = 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + crypto_box_MACBYTES;
-
-    if (length <= cmp_len)
+    if (length != (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + CLIENT_ID_SIZE + sizeof(uint64_t) + crypto_box_MACBYTES))
         return 1;
-
-    if (length > cmp_len + NODES_ENCRYPTED_MESSAGE_LENGTH)
-        return 1;
-
-    uint16_t sendback_data_length = length - cmp_len;
 
     DHT *dht = object;
 
@@ -956,20 +947,20 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
     if (id_equal(packet + 1, dht->self_public_key))
         return 1;
 
-    uint8_t plain[CLIENT_ID_SIZE + sendback_data_length];
+    uint8_t plain[CLIENT_ID_SIZE + sizeof(uint64_t)];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric( shared_key,
                                       packet + 1 + CLIENT_ID_SIZE,
                                       packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
-                                      CLIENT_ID_SIZE + sendback_data_length + crypto_box_MACBYTES,
+                                      CLIENT_ID_SIZE + sizeof(uint64_t) + crypto_box_MACBYTES,
                                       plain );
 
-    if (len != CLIENT_ID_SIZE + sendback_data_length)
+    if (len != CLIENT_ID_SIZE + sizeof(uint64_t))
         return 1;
 
-    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE, sendback_data_length, shared_key);
+    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CLIENT_ID_SIZE, sizeof(uint64_t), shared_key);
 
     add_to_ping(dht->ping, packet + 1, source);
 
