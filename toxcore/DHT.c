@@ -600,6 +600,48 @@ int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes
 #endif
 }
 
+static uint8_t cmp_public_key[crypto_box_PUBLICKEYBYTES];
+static int cmp_dht_entry(const void *a, const void *b)
+{
+    Client_data entry1, entry2;
+    memcpy(&entry1, a, sizeof(Client_data));
+    memcpy(&entry2, b, sizeof(Client_data));
+    int t1 = is_timeout(entry1.assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(entry1.assoc6.timestamp, BAD_NODE_TIMEOUT);
+    int t2 = is_timeout(entry2.assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(entry2.assoc6.timestamp, BAD_NODE_TIMEOUT);
+
+    if (t1 && t2)
+        return 0;
+
+    if (t1)
+        return -1;
+
+    if (t2)
+        return 1;
+
+    t1 = hardening_correct(&entry1.assoc4.hardening) != HARDENING_ALL_OK
+         && hardening_correct(&entry1.assoc6.hardening) != HARDENING_ALL_OK;
+    t2 = hardening_correct(&entry2.assoc4.hardening) != HARDENING_ALL_OK
+         && hardening_correct(&entry2.assoc6.hardening) != HARDENING_ALL_OK;
+
+    if (t1 != t2) {
+        if (t1)
+            return -1;
+
+        if (t2)
+            return 1;
+    }
+
+    int close = id_closest(cmp_public_key, entry1.client_id, entry2.client_id);
+
+    if (close == 1)
+        return 1;
+
+    if (close == 2)
+        return -1;
+
+    return 0;
+}
+
 /* Replace a first bad (or empty) node with this one
  *  or replace a possibly bad node (tests failed or not done yet)
  *  that is further than any other in the list
@@ -622,40 +664,15 @@ static int replace_all(   Client_data    *list,
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 0;
 
-    uint32_t i, replace = ~0, bad = ~0, possibly_bad = ~0, good = ~0;
+    _Bool replace = 0;
 
-    for (i = 0; i < length; ++i) {
+    memcpy(cmp_public_key, comp_client_id, crypto_box_PUBLICKEYBYTES);
+    qsort(list, length, sizeof(Client_data), cmp_dht_entry);
 
-        Client_data *client = &list[i];
+    Client_data *client = &list[0];
 
-        if (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) &&
-                is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
-            // "bad" node
-            bad = i;
-            break;
-        } else if (hardening_correct(&client->assoc4.hardening) != HARDENING_ALL_OK &&
-                   hardening_correct(&client->assoc6.hardening) != HARDENING_ALL_OK) {
-            // "possibly bad" node
-            if (possibly_bad == (uint32_t)~0 ||
-                    id_closest(comp_client_id, list[possibly_bad].client_id, list[i].client_id) == 1)
-                possibly_bad = i;
-        } else {
-            // "good" node
-            if (good == (uint32_t)~0 ||
-                    id_closest(comp_client_id, list[good].client_id, list[i].client_id) == 1)
-                good = i;
-        }
-    }
-
-    if (bad != (uint32_t)~0)
-        replace = bad;
-    else if (possibly_bad != (uint32_t)~0)
-        replace = possibly_bad;
-    else if (good != (uint32_t)~0 && id_closest(comp_client_id, list[good].client_id, client_id) == 2)
-        replace = good;
-
-    if (replace != (uint32_t)~0) {
-        Client_data *client = &list[replace];
+    if ((is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
+            || (id_closest(comp_client_id, client->client_id, client_id) == 2)) {
         IPPTsPng *ipptp_write = NULL;
         IPPTsPng *ipptp_clear = NULL;
 
