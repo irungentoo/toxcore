@@ -159,6 +159,8 @@ typedef struct {
 
     uint8_t status_tcp[MAX_TCP_CONNECTIONS]; /* set to one of STATUS_TCP_* */
     uint8_t con_number_tcp[MAX_TCP_CONNECTIONS];
+    unsigned int last_relay_sentto;
+    unsigned int num_tcp_online;
 
     Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
     uint16_t num_tcp_relays;
