@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 
+typedef struct GC_Chat GC_Chat;
 
 #ifdef __cplusplus
 extern "C" {
@@ -768,6 +769,18 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
 
 /**************** GROUPCHAT FUNCTIONS *****************/
 
+/* Set the callback for group messages.
+ *
+ *  function(GC_Chat *chat, uint32_t peernum, const uint8_t *message, uint32_t length, void *userdata)
+ */
+void tox_callback_group_message(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
+                                const uint8_t *, uint32_t, void *), void *userdata);
+/* Set the callback for group operator actions.
+ *
+ *  function(GC_Chat *chat, uint32_t peernum, const uint8_t *certificate, uint32_t length, void *userdata)
+ */
+void tox_callback_group_op_action(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
+                                  const uint8_t *, uint32_t, void *), void *userdata);
 /* Adds a new groupchat to group chats array.
  *
  * Return groupnumber on success.
@@ -780,35 +793,35 @@ int tox_add_groupchat(Tox *tox);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_message_send(Tox *tox, uint32_t groupnumber, const uint8_t *message, uint32_t length);
+int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint32_t length);
 
 /* Sends a groupchat operator action to groupnumber.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_op_action_send(Tox *tox, uint32_t groupnumber, const uint8_t *certificate);
+int tox_group_op_action_send(const Tox *tox, int groupnumber, const uint8_t *certificate);
 
 /* Sets your nick for groupnumber.
  * 
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_set_nick(Tox *tox, uint32_t groupnumber, const uint8_t *nick, uint32_t length);
+int tox_group_set_nick(Tox *tox, int groupnumber, const uint8_t *nick, uint32_t length);
 
 /* Changes groupnumber's topic.
  * 
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_set_topic(Tox *tox, uint32_t groupnumber, const uint8_t *topic, uint32_t length);
+int tox_group_set_topic(Tox *tox, int groupnumber, const uint8_t *topic, uint32_t length);
 
 /* Sets your status for groupnumber.
  * 
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_set_status(Tox *tox, uint32_t groupnumber, uint8_t status_type);
+int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type);
 
 #ifdef __cplusplus
 }

@@ -27,7 +27,7 @@
 
 #include <stdbool.h>
 
-#include "Messenger.h"
+typedef struct Messenger Messenger;
 
 #define MAX_NICK_BYTES 128
 #define MAX_TOPIC_BYTES 512
@@ -115,7 +115,7 @@ typedef struct {
 } GC_ChatOps;
 
 // For founder needs
-typedef struct GC_ChatCredentials {
+typedef struct {
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     chat_secret_key[EXT_SECRET_KEY];
     uint64_t    creation_time;
@@ -123,7 +123,9 @@ typedef struct GC_ChatCredentials {
     GC_ChatOps   *ops;
 } GC_ChatCredentials;
 
-typedef struct GC_Chat {
+typedef struct GC_Chat GC_Chat;
+
+struct GC_Chat {
     Networking_Core *net;
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
@@ -153,19 +155,14 @@ typedef struct GC_Chat {
 
     GC_ChatCredentials *credentials;
 
-    uint32_t groupnumber;
+    int groupnumber;
     uint32_t message_number;
 
-    void (*group_message)(struct GC_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
+    void (*group_message)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *userdata);
     void *group_message_userdata;
-    void (*group_action)(struct GC_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
-    void *group_action_userdata;
-} GC_Chat;
-
-typedef struct GC_Session {
-    GC_Chat *chats;
-    uint32_t num_chats;
-} GC_Session;
+    void (*group_op_action)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *userdata);
+    void *group_op_action_userdata;
+};
 
 /* TODO remove these cert stuff from the header; it's not used anywhere but the test 
  */
@@ -266,11 +263,11 @@ int gc_set_self_nick(GC_Chat *chat, const uint8_t *nick, uint32_t length);
  */
 int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 
-void gc_callback_groupmessage(GC_Chat *chat, void (*function)(GC_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
-                           void *userdata);
+void gc_callback_groupmessage(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                              uint32_t, void *), void *userdata);
 
-void gc_callback_groupaction(GC_Chat *chat, void (*function)(GC_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
-                          void *userdata);
+void gc_callback_group_op_action(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                                 uint32_t, void *),  void *userdata);
 
 /* Check if peer with client_id is in peer array.
  * return peer number if peer is in chat.
@@ -286,7 +283,7 @@ int gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer);
 /* TODO maybe clean more? */
 /* This is the main loop.
  */
-void do_gc(GC_Session *gc);
+void do_gc(Messenger *m);
 
 /* Create new group credentials with pk ans sk.
  * Returns a new group credentials instance if success.
@@ -298,12 +295,6 @@ GC_ChatCredentials *new_groupcredentials();
  * Frees the memory and everything.
  */
 void kill_groupcredentials(GC_ChatCredentials *credentials);
-
-/* Creates a new Gr_Chats object and puts it in messenger.
- * Returns Gr_Chats object on success.
- * Returns NULL on failure.
-*/
-GC_Session *init_groupchats(Messenger *m);
 
 /* Calls delete_groupchat() for every group chat */
 void kill_groupchats(Messenger *m);
@@ -317,13 +308,11 @@ int groupchat_add(Messenger *m);
 /* Deletes a group chat
  * Frees the memory and everything.
  */
-int delete_groupchat(GC_Session *g_c, GC_Chat *chat);
-
-
+int delete_groupchat(Messenger *m, GC_Chat *chat);
 
 /* Return groupnumber's Group_Chat object on success
  * Return NULL on failure
  */
-GC_Chat *gc_get_group(GC_Session *g_c, int groupnumber);
+GC_Chat *gc_get_group(const Messenger *m, int groupnumber);
 
 #endif

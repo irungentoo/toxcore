@@ -29,6 +29,7 @@
 #include "friend_requests.h"
 #include "LAN_discovery.h"
 #include "friend_connection.h"
+#include "group_chats.h"
 
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
@@ -268,7 +269,8 @@ struct Messenger {
 
     uint64_t last_LANdiscovery;
 
-    void *group_chat_object; /* Set by init_groupchats()*/
+    GC_Chat *chats;
+    uint32_t num_chats;
 
 #define NUM_SAVED_TCP_RELAYS 8
     uint8_t has_added_relays; // If the first connection has occurred in do_messenger

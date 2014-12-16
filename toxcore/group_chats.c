@@ -31,6 +31,7 @@
 #include "group_chats.h"
 #include "LAN_discovery.h"
 #include "util.h"
+#include "Messenger.h"
 
 #define GC_INVITE_REQUEST_PLAIN_SIZE SEMI_INVITE_CERTIFICATE_SIGNED_SIZE
 #define GC_INVITE_REQUEST_DHT_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_INVITE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
@@ -390,7 +391,7 @@ int handle_gc_broadcast(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key, c
         case GM_PLAIN:
             return handle_gc_message(chat, ipp, public_key, dt, len, peernum);
         case GM_ACTION:
-            return handle_gc_action(chat, ipp, public_key, dt, len, peernum);
+            return handle_gc_op_action(chat, ipp, public_key, dt, len, peernum);
         default:
             return -1;
     }
@@ -598,10 +599,12 @@ int gc_send_plain_message(const GC_Chat *chat, const uint8_t *message, uint32_t 
 
 int handle_gc_message(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
 {
-    if (chat->group_message != NULL)
+    if (chat->group_message) {
         (*chat->group_message)(chat, peernum, data, length, chat->group_message_userdata);
-    else
-        return -1;
+        return 0;
+    }
+
+    return -1;
 }
 
 int gc_send_op_action(const GC_Chat *chat, const uint8_t *certificate)
@@ -623,28 +626,31 @@ int gc_send_op_action(const GC_Chat *chat, const uint8_t *certificate)
     return 0;
 }
 
-int handle_gc_action(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
+int handle_gc_op_action(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length, uint32_t peernum)
 {   
-    process_common_cert(chat, data);
-
-    if (chat->group_action != NULL)
-        (*chat->group_action)(chat, peernum, data, length, chat->group_action_userdata);
-    else
+    if (process_common_cert(chat, data) == -1)
         return -1;
+
+    if (chat->group_op_action) {
+        (*chat->group_op_action)(chat, peernum, data, length, chat->group_op_action_userdata);
+        return 0;
+    }
+
+    return -1;
 }
 
-void gc_callback_groupmessage(GC_Chat *chat, void (*function)(GC_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
-                           void *userdata)
+void gc_callback_groupmessage(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                              uint32_t, void *), void *userdata)
 {
     chat->group_message = function;
     chat->group_message_userdata = userdata;
 }
 
-void gc_callback_groupaction(GC_Chat *chat, void (*function)(GC_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
-                          void *userdata)
+void gc_callback_group_op_action(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                                 uint32_t, void *),  void *userdata)
 {
-    chat->group_action = function;
-    chat->group_action_userdata = userdata;
+    chat->group_op_action = function;
+    chat->group_op_action_userdata = userdata;
 }
 
 /* Sign input data
@@ -903,16 +909,13 @@ void ping_group(GC_Chat *chat)
     }
 }
 
-void do_gc(GC_Session *gc)
+void do_gc(Messenger *m)
 {
-    if (!gc)
-        return;
-
     uint32_t i;
 
-    for (i = 0; i < gc->num_chats; ++i) {
-        if (gc->chats[i].self_status != GS_NONE)
-            ping_group(&gc->chats[i]);
+    for (i = 0; i < m->num_chats; ++i) {
+        if (m->chats[i].self_status != GS_NONE)
+            ping_group(&m->chats[i]);
     }
 }
 
@@ -931,37 +934,37 @@ GC_ChatCredentials *new_groupcredentials()
  *  return -1 on failure.
  *  return 0 success.
  */
-static int realloc_groupchats(GC_Session *g_c, uint32_t n)
+static int realloc_groupchats(Messenger *m, uint32_t n)
 {
     if (n == 0) {
-        free(g_c->chats);
-        g_c->chats = NULL;
+        free(m->chats);
+        m->chats = NULL;
         return 0;
     }
 
-    GC_Chat *temp = realloc(g_c->chats, n * sizeof(GC_Chat));
+    GC_Chat *temp = realloc(m->chats, n * sizeof(GC_Chat));
 
     if (temp == NULL)
         return -1;
 
-    g_c->chats = temp;
+    m->chats = temp;
     return 0;
 }
 
-static int create_new_group(GC_Session *g_c)
+static int create_new_group(Messenger *m)
 {
     uint32_t i;
 
-    for (i = 0; i < g_c->num_chats; ++i) {
-        if (g_c->chats[i].self_status == GS_NONE)
+    for (i = 0; i < m->num_chats; ++i) {
+        if (m->chats[i].self_status == GS_NONE)
             return i;
     }
 
-    if (realloc_groupchats(g_c, g_c->num_chats + 1) != 0)
+    if (realloc_groupchats(m, m->num_chats + 1) != 0)
         return -1;
 
-    ++g_c->num_chats;
-    return g_c->num_chats - 1;
+    ++m->num_chats;
+    return m->num_chats - 1;
 }
 
 /* Adds a new group chat
@@ -971,18 +974,12 @@ static int create_new_group(GC_Session *g_c)
 int groupchat_add(Messenger *m)
 {
     // TODO: Need to handle the situation when we load info from locally stored data
-
-    GC_Session *g_c = m->group_chat_object;
-
-    if (g_c == NULL)
-        return -1;
-
-    int new_index = create_new_group(g_c);
+    int32_t new_index = create_new_group(m);
 
     if (new_index == -1)
         return -1;
 
-    GC_Chat *chat = &g_c->chats[new_index];
+    GC_Chat *chat = &m->chats[new_index];
 
     chat->groupnumber = new_index;
     chat->net = m->net;
@@ -996,28 +993,15 @@ int groupchat_add(Messenger *m)
     return new_index;
 }
 
-GC_Session *init_groupchats(Messenger *m)
-{
-    GC_Session *temp = calloc(1, sizeof(GC_Session));
-
-    if (temp == NULL)
-        return NULL;
-
-    temp->num_chats = 0;
-    m->group_chat_object = temp;
-
-    return temp;
-}
-
 void kill_groupcredentials(GC_ChatCredentials *credentials)
 {
     free(credentials->ops);
     free(credentials);
 }
 
-int delete_groupchat(GC_Session *g_c, GC_Chat *chat)
+int delete_groupchat(Messenger *m, GC_Chat *chat)
 {
-    if (g_c == NULL)
+    if (m == NULL)
         return -1;
 
     if (chat->credentials != NULL) {
@@ -1033,14 +1017,14 @@ int delete_groupchat(GC_Session *g_c, GC_Chat *chat)
 
     uint32_t i;
 
-    for (i = 0; i < g_c->num_chats; ++i) {
-        if (g_c->chats[i-1].self_status != GS_NONE)
+    for (i = 0; i < m->num_chats; ++i) {
+        if (m->chats[i-1].self_status != GS_NONE)
             break;
     }
 
-    if (g_c->num_chats != i) {
-        g_c->num_chats = i;
-        realloc_groupchats(g_c, g_c->num_chats);
+    if (m->num_chats != i) {
+        m->num_chats = i;
+        realloc_groupchats(m, m->num_chats);
     }
 
     return 0;
@@ -1048,44 +1032,35 @@ int delete_groupchat(GC_Session *g_c, GC_Chat *chat)
 
 void kill_groupchats(Messenger *m)
 {
-    GC_Session *g_c = m->group_chat_object;
-
-    if (!g_c)
-        return;
-
     uint32_t i;
 
-    for (i = 0; i < g_c->num_chats; ++i)
-        delete_groupchat(g_c, &g_c->chats[i]);
-
-    m->group_chat_object = NULL;
-    free(g_c);
+    for (i = 0; i < m->num_chats; ++i) {
+        if (m->chats[i].self_status != GS_NONE)
+            delete_groupchat(m, &m->chats[i]);
+    }
 }
 
 /* Return 1 if groupnumber is a valid group chat index
  * Return 0 otherwise
  */
-static int gc_groupnumber_is_valid(GC_Session *g_c, int groupnumber)
+static int gc_groupnumber_is_valid(const Messenger *m, int groupnumber)
 {
-    if (groupnumber >= g_c->num_chats)
+    if (groupnumber < 0 || groupnumber >= m->num_chats)
         return 0;
 
-    if (g_c->chats == NULL)
+    if (m->chats == NULL)
         return 0;
 
-    return g_c->chats[groupnumber].self_status != GS_NONE;
+    return m->chats[groupnumber].self_status != GS_NONE;
 }
 
-/* Return groupnumber's Group_Chat object on success
+/* Return groupnumber's GC_Chat object on success
  * Return NULL on failure
  */
-GC_Chat *gc_get_group(GC_Session *g_c, int groupnumber)
+GC_Chat *gc_get_group(const Messenger *m, int groupnumber)
 {
-    if (g_c == NULL)
+    if (!gc_groupnumber_is_valid(m, groupnumber))
         return NULL;
 
-    if (!gc_groupnumber_is_valid(g_c, groupnumber))
-        return NULL;
-
-    return &g_c->chats[groupnumber];
+    return &m->chats[groupnumber];
 }
