@@ -43,6 +43,23 @@
 #define MAX_GC_PACKET_SIZE 65507
 
 
+
+#define NET_PACKET_GROUP_CHATS 9 /* WARNING. Temporary measure. */
+
+
+
+enum
+{
+    GP_GET_NODES,
+    GP_SEND_NODES,
+    GP_BROADCAST,
+    GP_INVITE_REQUEST,
+    GP_INVITE_RESPONSE,
+    GP_SYNC_REQUEST,
+    GP_SYNC_RESPONSE
+} GROUP_PACKET;
+
+
 // Handle all decrypt procedures
 int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *packet_type, const uint8_t *packet, uint16_t length)
@@ -120,39 +137,60 @@ int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint8_t *pu
  */
 int handle_groupchatpacket(void * object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
-    GC_Chat *chat = object;
+    // TODO object must point to Tox*
+    GC_Session* chats = object;
 
-    uint8_t public_key[EXT_PUBLIC_KEY];
-    uint8_t data[MAX_GC_PACKET_SIZE];
-    uint8_t packet_type;
+    switch (packet[2]) { // TODO - all crypto must remain in net_crypto
+                         // - handle all group packets as lossless crypto packets
+        case GP_INVITE_REQUEST: {
+            
+//             uint8_t public_key[EXT_PUBLIC_KEY];
+//             uint8_t data[MAX_GC_PACKET_SIZE];
+//             uint8_t packet_type;
+//             
+//             int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
+//             
+//             if (len == -1)
+//                 return -1;
+//             
+//             // Check if we know the user and if it's banned
+//             uint32_t peernum = gc_peer_in_chat(chat, public_key);
+//             if (peernum!=-1) {
+//                 if (chat->group[peernum].banned==1)
+//                     return -1;
+//             }
+//             
+//             int new_chat = groupchat_add(object);
+//             
+//             uint8_t public_key[EXT_PUBLIC_KEY];
+//             uint8_t data[MAX_GC_PACKET_SIZE];
+//             uint8_t packet_type;
+//             
+//             int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
+//             
+//             if (len == -1)
+//                 return -1;
+//             
+//             // Check if we know the user and if it's banned
+//             uint32_t peernum = gc_peer_in_chat(chat, public_key);
+//             if (peernum!=-1) {
+//                 if (chat->group[peernum].banned==1)
+//                     return -1;
+//             }
+            
+//             return handle_gc_invite_request(chat, source, public_key, data, len);
+        }
+        case GP_INVITE_RESPONSE:
+//             return handle_gc_invite_response(chat, source, public_key, data, len);
 
-    int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
+        case GP_SYNC_REQUEST: 
+//             return handle_gc_sync_request(chat, source, public_key, data, len);
 
-    if (len == -1)
-        return -1;
+        case GP_SYNC_RESPONSE:
+//             return handle_gc_sync_response(chat, source, public_key, data, len);
 
-    // Check if we know the user and if it's banned
-    uint32_t peernum = gc_peer_in_chat(chat, public_key);
-    if (peernum!=-1) {
-        if (chat->group[peernum].banned==1)
-            return -1;
-    }
-
-    switch (packet_type) {
-        case CRYPTO_PACKET_GROUP_CHAT_INVITE_REQUEST:
-            return handle_gc_invite_request(chat, source, public_key, data, len);
-
-        case CRYPTO_PACKET_GROUP_CHAT_INVITE_RESPONSE:
-            return handle_gc_invite_response(chat, source, public_key, data, len);
-
-        case CRYPTO_PACKET_GROUP_CHAT_SYNC_REQUEST: 
-            return handle_gc_sync_request(chat, source, public_key, data, len);
-
-        case CRYPTO_PACKET_GROUP_CHAT_SYNC_RESPONSE:
-            return handle_gc_sync_response(chat, source, public_key, data, len);
-
-        case CRYPTO_PACKET_GROUP_CHAT_BROADCAST:
-            return handle_gc_broadcast(chat, source, public_key, data, len);
+        case GP_BROADCAST:
+//             return handle_gc_broadcast(chat, source, public_key, data, len);
 
         default:
             return -1;
@@ -173,7 +211,7 @@ int gc_send_invite_request(const GC_Chat *chat, IP_Port ip_port, const uint8_t *
         return -1;
 
     return send_groupchatpacket(chat, ip_port, public_key, invite_certificate,
-         SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, CRYPTO_PACKET_GROUP_CHAT_INVITE_REQUEST);
+         SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, GP_INVITE_REQUEST);
 }
 
 
@@ -219,7 +257,7 @@ int gc_send_invite_response(const GC_Chat *chat, IP_Port ip_port, const uint8_t 
                          const uint8_t *data, uint32_t length)
 {
     return send_groupchatpacket(chat, ip_port, public_key, data,
-        length, CRYPTO_PACKET_GROUP_CHAT_INVITE_RESPONSE);
+        length, GP_INVITE_RESPONSE);
 }
 
 /* Return -1 if fail
@@ -258,7 +296,7 @@ int gc_send_sync_request(const GC_Chat *chat, IP_Port ip_port, const uint8_t *pu
     memcpy(data + EXT_PUBLIC_KEY, &chat->last_synced_time, TIME_STAMP);
 
     return send_groupchatpacket(chat, ip_port, public_key, data,
-         EXT_PUBLIC_KEY+TIME_STAMP, CRYPTO_PACKET_GROUP_CHAT_SYNC_REQUEST);
+         EXT_PUBLIC_KEY+TIME_STAMP, GP_SYNC_REQUEST);
 
 }
 
@@ -311,7 +349,7 @@ int gc_send_sync_response(const GC_Chat *chat, IP_Port ip_port, const uint8_t *p
                          const uint8_t *data, uint32_t length)
 {
     return send_groupchatpacket(chat, ip_port, public_key, data,
-        length, CRYPTO_PACKET_GROUP_CHAT_SYNC_RESPONSE);
+        length, GP_SYNC_RESPONSE);
 }
 
 int handle_gc_sync_response(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key,
@@ -360,7 +398,7 @@ int send_gc_broadcast_packet(const GC_Chat *chat, IP_Port ip_port, const uint8_t
     // Currently ping_group() and others think that we send only one packet. Change ping_group() in case
     // of this function changing
     return send_groupchatpacket(chat, ip_port, public_key, dt,
-        EXT_PUBLIC_KEY + length, CRYPTO_PACKET_GROUP_CHAT_BROADCAST);
+        EXT_PUBLIC_KEY + length, GP_BROADCAST);
 }
 
 int handle_gc_broadcast(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data, uint32_t length)
@@ -909,13 +947,13 @@ void ping_group(GC_Chat *chat)
     }
 }
 
-void do_gc(Messenger *m)
+void do_gc(GC_Session *c)
 {
     uint32_t i;
-
-    for (i = 0; i < m->num_chats; ++i) {
-        if (m->chats[i].self_status != GS_NONE)
-            ping_group(&m->chats[i]);
+    
+    for (i = 0; i < c->num_chats; ++i) {
+        if (c->chats[i].self_status != GS_NONE)
+            ping_group(&c->chats[i]);
     }
 }
 
@@ -934,63 +972,37 @@ GC_ChatCredentials *new_groupcredentials()
  *  return -1 on failure.
  *  return 0 success.
  */
-static int realloc_groupchats(Messenger *m, uint32_t n)
+static int realloc_groupchats(GC_Session *c, uint32_t n)
 {
     if (n == 0) {
-        free(m->chats);
-        m->chats = NULL;
+        free(c->chats);
+        c->chats = NULL;
         return 0;
     }
 
-    GC_Chat *temp = realloc(m->chats, n * sizeof(GC_Chat));
+    GC_Chat *temp = realloc(c->chats, n * sizeof(GC_Chat));
 
     if (temp == NULL)
         return -1;
 
-    m->chats = temp;
+    c->chats = temp;
     return 0;
 }
 
-static int create_new_group(Messenger *m)
+static int create_new_group(GC_Session *c)
 {
     uint32_t i;
 
-    for (i = 0; i < m->num_chats; ++i) {
-        if (m->chats[i].self_status == GS_NONE)
+    for (i = 0; i < c->num_chats; ++i) {
+        if (c->chats[i].self_status == GS_NONE)
             return i;
     }
 
-    if (realloc_groupchats(m, m->num_chats + 1) != 0)
+    if (realloc_groupchats(c, c->num_chats + 1) != 0)
         return -1;
 
-    ++m->num_chats;
-    return m->num_chats - 1;
-}
-
-/* Adds a new group chat
- * Return groupnumber on success
- * Return -1 on failure
- */
-int groupchat_add(Messenger *m)
-{
-    // TODO: Need to handle the situation when we load info from locally stored data
-    int32_t new_index = create_new_group(m);
-
-    if (new_index == -1)
-        return -1;
-
-    GC_Chat *chat = &m->chats[new_index];
-
-    chat->groupnumber = new_index;
-    chat->net = m->net;
-    chat->self_status = GS_ONLINE;
-    chat->numpeers = 0;
-    chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
-
-    networking_registerhandler(chat->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, chat);
-    create_long_keypair(chat->self_public_key, chat->self_secret_key);
-
-    return new_index;
+    ++c->num_chats;
+    return c->num_chats - 1;
 }
 
 void kill_groupcredentials(GC_ChatCredentials *credentials)
@@ -999,9 +1011,34 @@ void kill_groupcredentials(GC_ChatCredentials *credentials)
     free(credentials);
 }
 
-int delete_groupchat(Messenger *m, GC_Chat *chat)
+/* Adds a new group chat
+ * Return groupnumber on success
+ * Return -1 on failure
+ */
+int groupchat_add(GC_Session* c)
 {
-    if (m == NULL)
+    // TODO: Need to handle the situation when we load info from locally stored data
+    int32_t new_index = create_new_group(c);
+
+    if (new_index == -1)
+        return -1;
+
+    GC_Chat *chat = &c->chats[new_index];
+
+    chat->groupnumber = new_index;
+    chat->net = c->net;
+    chat->self_status = GS_ONLINE;
+    chat->numpeers = 0;
+    chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
+    
+    create_long_keypair(chat->self_public_key, chat->self_secret_key);
+
+    return new_index;
+}
+
+int delete_groupchat(GC_Session* c, GC_Chat *chat)
+{
+    if (c == NULL)
         return -1;
 
     if (chat->credentials != NULL) {
@@ -1017,50 +1054,59 @@ int delete_groupchat(Messenger *m, GC_Chat *chat)
 
     uint32_t i;
 
-    for (i = 0; i < m->num_chats; ++i) {
-        if (m->chats[i-1].self_status != GS_NONE)
+    for (i = 0; i < c->num_chats; ++i) {
+        if (c->chats[i-1].self_status != GS_NONE)
             break;
     }
 
-    if (m->num_chats != i) {
-        m->num_chats = i;
-        realloc_groupchats(m, m->num_chats);
+    if (c->num_chats != i) {
+        c->num_chats = i;
+        realloc_groupchats(c, c->num_chats);
     }
 
     return 0;
 }
 
-void kill_groupchats(Messenger *m)
+GC_Session* new_groupchats(Messenger* m)
+{
+    GC_Session* retu = calloc(sizeof(GC_Session), 1);
+    retu->messenger = m;
+    
+    networking_registerhandler(m->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, m->group_handler);
+    return retu;
+}
+
+void kill_groupchats(GC_Session* c)
 {
     uint32_t i;
 
-    for (i = 0; i < m->num_chats; ++i) {
-        if (m->chats[i].self_status != GS_NONE)
-            delete_groupchat(m, &m->chats[i]);
+    for (i = 0; i < c->num_chats; ++i) {
+        if (c->chats[i].self_status != GS_NONE)
+            delete_groupchat(c, &c->chats[i]);
     }
 }
 
 /* Return 1 if groupnumber is a valid group chat index
  * Return 0 otherwise
  */
-static int gc_groupnumber_is_valid(const Messenger *m, int groupnumber)
+static int gc_groupnumber_is_valid(const GC_Session* c, int groupnumber)
 {
-    if (groupnumber < 0 || groupnumber >= m->num_chats)
+    if (groupnumber < 0 || groupnumber >= c->num_chats)
         return 0;
 
-    if (m->chats == NULL)
+    if (c->chats == NULL)
         return 0;
 
-    return m->chats[groupnumber].self_status != GS_NONE;
+    return c->chats[groupnumber].self_status != GS_NONE;
 }
 
 /* Return groupnumber's GC_Chat object on success
  * Return NULL on failure
  */
-GC_Chat *gc_get_group(const Messenger *m, int groupnumber)
+GC_Chat *gc_get_group(const GC_Session* c, int groupnumber)
 {
-    if (!gc_groupnumber_is_valid(m, groupnumber))
+    if (!gc_groupnumber_is_valid(c, groupnumber))
         return NULL;
 
-    return &m->chats[groupnumber];
+    return &c->chats[groupnumber];
 }

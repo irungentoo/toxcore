@@ -35,6 +35,11 @@
 
 #include <inttypes.h>
 
+#define NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST 5 /* Announce request packet ID */
+//#define NET_PACKET_ANNOUNCE_RESPONSE 6 /* Announce response packet ID */ //Not needed for now
+#define NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES 7 /* Get announced nodes request packet ID */
+#define NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES 8 /* Send announced nodes request packet ID */
+
 #define MAX_CONCURRENT_REQUESTS     10
 #define GC_ANNOUNCE_EXPIRATION      3600 /* sec */
 #define MAX_GC_ANNOUNCED_NODES      30

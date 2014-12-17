@@ -1564,9 +1564,17 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
+    m->group_handler = new_groupchats(m);
+    if (m->group_handler == NULL) {
+        kill_networking(m->net);
+        free(m);
+        return NULL;
+    }
+    
     m->dht = new_DHT(m->net);
 
     if (m->dht == NULL) {
+        kill_groupchats(m->group_handler);
         kill_networking(m->net);
         free(m);
         return NULL;
@@ -2369,6 +2377,7 @@ void do_messenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
+    do_gc(m->group_handler);
     do_friends(m);
     LANdiscovery(m);
 

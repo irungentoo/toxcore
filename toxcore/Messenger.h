@@ -269,9 +269,7 @@ struct Messenger {
 
     uint64_t last_LANdiscovery;
 
-    GC_Chat *chats;
-    uint32_t num_chats;
-
+    GC_Session* group_handler;
 #define NUM_SAVED_TCP_RELAYS 8
     uint8_t has_added_relays; // If the first connection has occurred in do_messenger
     Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config

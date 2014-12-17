@@ -164,6 +164,13 @@ struct GC_Chat {
     void *group_op_action_userdata;
 };
 
+typedef struct GC_Session {
+    GC_Chat *chats;
+    uint32_t num_chats;
+    Messenger* messenger;
+    Networking_Core* net;
+} GC_Session;
+
 /* TODO remove these cert stuff from the header; it's not used anywhere but the test 
  */
 
@@ -283,36 +290,40 @@ int gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer);
 /* TODO maybe clean more? */
 /* This is the main loop.
  */
-void do_gc(Messenger *m);
+void do_gc(GC_Session *c);
 
 /* Create new group credentials with pk ans sk.
  * Returns a new group credentials instance if success.
  * Returns a NULL pointer if fail.
  */
-GC_ChatCredentials *new_groupcredentials();
+// GC_ChatCredentials *new_groupcredentials();
 
 /* Kill a group chat credentials
  * Frees the memory and everything.
  */
-void kill_groupcredentials(GC_ChatCredentials *credentials);
+// void kill_groupcredentials(GC_ChatCredentials *credentials);
+
+/* Returns a NULL pointer if fail.
+ */
+GC_Session* new_groupchats(Messenger* m);
 
 /* Calls delete_groupchat() for every group chat */
-void kill_groupchats(Messenger *m);
+void kill_groupchats(GC_Session* c);
 
 /* Adds a new group chat
  * Return groupnumber on success
  * Return -1 on failure
  */
-int groupchat_add(Messenger *m);
+int groupchat_add(GC_Session* c);
 
 /* Deletes a group chat
  * Frees the memory and everything.
  */
-int delete_groupchat(Messenger *m, GC_Chat *chat);
+int delete_groupchat(GC_Session* c, GC_Chat *chat);
 
 /* Return groupnumber's Group_Chat object on success
  * Return NULL on failure
  */
-GC_Chat *gc_get_group(const Messenger *m, int groupnumber);
+GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
 
 #endif
