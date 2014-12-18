@@ -63,6 +63,9 @@ static const uint8_t audio_index = 0, video_index = 1;
 
 typedef struct _ToxAvCall {
     pthread_mutex_t mutex[1];
+    pthread_mutex_t mutex_encoding_audio[1];
+    pthread_mutex_t mutex_encoding_video[1];
+    pthread_mutex_t mutex_do[1];
     RTPSession *crtps[2]; /** Audio is first and video is second */
     CSSession *cs;
     _Bool active;
@@ -181,10 +184,14 @@ void toxav_do(ToxAv *av)
     for (; i < av->max_calls; i ++) {
         pthread_mutex_lock(av->calls[i].mutex);
 
-        if (av->calls[i].active)
+        if (av->calls[i].active) {
+            pthread_mutex_lock(av->calls[i].mutex_do);
+            pthread_mutex_unlock(av->calls[i].mutex);
             cs_do(av->calls[i].cs);
-
-        pthread_mutex_unlock(av->calls[i].mutex);
+            pthread_mutex_unlock(av->calls[i].mutex_do);
+        } else {
+            pthread_mutex_unlock(av->calls[i].mutex);
+        }
     }
 
     uint64_t end = current_time_monotonic();
@@ -273,6 +280,13 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
         return av_ErrorNoCall;
     }
 
+    if (pthread_mutex_init(call->mutex_encoding_audio, NULL) != 0
+            || pthread_mutex_init(call->mutex_encoding_video, NULL) != 0 || pthread_mutex_init(call->mutex_do, NULL) != 0) {
+        pthread_mutex_unlock(call->mutex);
+        LOGGER_ERROR("Error while starting RTP session: mutex initializing failed!\n");
+        return av_ErrorUnknown;
+    }
+
     const ToxAvCSettings *c_peer = toxavcsettings_cast
                                    (&av->msi_session->calls[call_index]->csettings_peer[0]);
     const ToxAvCSettings *c_self = toxavcsettings_cast
@@ -339,9 +353,15 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
     return av_ErrorNone;
 error:
     rtp_kill(call->crtps[audio_index], av->messenger);
+    call->crtps[audio_index] = NULL;
     rtp_kill(call->crtps[video_index], av->messenger);
+    call->crtps[video_index] = NULL;
     cs_kill(call->cs);
-    memset(call, 0, sizeof(ToxAvCall));
+    call->cs = NULL;
+    call->active = 0;
+    pthread_mutex_destroy(call->mutex_encoding_audio);
+    pthread_mutex_destroy(call->mutex_encoding_video);
+    pthread_mutex_destroy(call->mutex_do);
 
     pthread_mutex_unlock(call->mutex);
     return av_ErrorCreatingRtpSessions;
@@ -366,12 +386,23 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
     call->active = 0;
 
+    pthread_mutex_lock(call->mutex_encoding_audio);
+    pthread_mutex_unlock(call->mutex_encoding_audio);
+    pthread_mutex_lock(call->mutex_encoding_video);
+    pthread_mutex_unlock(call->mutex_encoding_video);
+    pthread_mutex_lock(call->mutex_do);
+    pthread_mutex_unlock(call->mutex_do);
+
     rtp_kill(call->crtps[audio_index], av->messenger);
     call->crtps[audio_index] = NULL;
     rtp_kill(call->crtps[video_index], av->messenger);
     call->crtps[video_index] = NULL;
     cs_kill(call->cs);
     call->cs = NULL;
+
+    pthread_mutex_destroy(call->mutex_encoding_audio);
+    pthread_mutex_destroy(call->mutex_encoding_video);
+    pthread_mutex_destroy(call->mutex_do);
 
     pthread_mutex_unlock(call->mutex);
 
@@ -434,11 +465,14 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
         return av_ErrorSettingVideoResolution;
     }
 
+    pthread_mutex_lock(call->mutex_encoding_video);
+    pthread_mutex_unlock(call->mutex);
+
     int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Could not encode video frame: %s\n", vpx_codec_err_to_string(rc));
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_encoding_video);
         return av_ErrorEncodingVideo;
     }
 
@@ -451,7 +485,7 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
     while ( (pkt = vpx_codec_get_cx_data(&call->cs->v_encoder, &iter)) ) {
         if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
             if ( copied + pkt->data.frame.sz > dest_max ) {
-                pthread_mutex_unlock(call->mutex);
+                pthread_mutex_unlock(call->mutex_encoding_video);
                 return av_ErrorPacketTooLarge;
             }
 
@@ -460,7 +494,7 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
         }
     }
 
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_encoding_video);
     return copied;
 }
 
@@ -509,8 +543,10 @@ int toxav_prepare_audio_frame ( ToxAv *av,
         return av_ErrorInvalidState;
     }
 
-    int32_t rc = opus_encode(call->cs->audio_encoder, frame, frame_size, dest, dest_max);
+    pthread_mutex_lock(call->mutex_encoding_audio);
     pthread_mutex_unlock(call->mutex);
+    int32_t rc = opus_encode(call->cs->audio_encoder, frame, frame_size, dest, dest_max);
+    pthread_mutex_unlock(call->mutex_encoding_audio);
 
     if (rc < 0) {
         LOGGER_ERROR("Failed to encode payload: %s\n", opus_strerror(rc));
@@ -539,7 +575,6 @@ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *data, unsig
 
     int rc = toxav_send_rtp_payload(av, call, av_TypeAudio, data, size);
     pthread_mutex_unlock(call->mutex);
-
     return rc;
 }
 

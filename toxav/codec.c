@@ -270,9 +270,6 @@ static int init_video_encoder(CSSession *cs, uint16_t max_width, uint16_t max_he
     cfg.kf_max_dist = 48;
     cfg.kf_mode = VPX_KF_AUTO;
 
-    cs->max_width = max_width;
-    cs->max_height = max_height;
-
     rc = vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, VPX_ENCODER_ABI_VERSION);
 
     if ( rc != VPX_CODEC_OK) {
@@ -286,6 +283,10 @@ static int init_video_encoder(CSSession *cs, uint16_t max_width, uint16_t max_he
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
+
+    cs->max_width = max_width;
+    cs->max_height = max_height;
+    cs->video_bitrate = video_bitrate;
 
     return 0;
 }
@@ -436,8 +437,17 @@ int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t heig
     if (cfg.g_w == width && cfg.g_h == height)
         return 0;
 
-    if (width * height > cs->max_width * cs->max_height)
-        return cs_ErrorSettingVideoResolution;
+    if (width * height > cs->max_width * cs->max_height) {
+        vpx_codec_ctx_t v_encoder = cs->v_encoder;
+
+        if (init_video_encoder(cs, width, height, cs->video_bitrate) == -1) {
+            cs->v_encoder = v_encoder;
+            return cs_ErrorSettingVideoResolution;
+        }
+
+        vpx_codec_destroy(&v_encoder);
+        return 0;
+    }
 
     LOGGER_DEBUG("New video resolution: %u %u", width, height);
     cfg.g_w = width;
@@ -468,6 +478,7 @@ int cs_set_video_encoder_bitrate(CSSession *cs, uint32_t video_bitrate)
         return cs_ErrorSettingVideoBitrate;
     }
 
+    cs->video_bitrate = video_bitrate;
     return 0;
 }
 
