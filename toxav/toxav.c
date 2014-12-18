@@ -52,7 +52,7 @@ const ToxAvCSettings av_DefaultSettings = {
     1280,
     720,
 
-    64000,
+    32000,
     20,
     48000,
     1
