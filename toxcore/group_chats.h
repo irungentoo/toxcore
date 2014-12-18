@@ -93,7 +93,7 @@ typedef struct {
     bool        banned;
     uint64_t    banned_time;
 
-    uint8_t     status; // TODO: enum
+    uint8_t     status;
 
     bool        verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
 
@@ -158,10 +158,17 @@ struct GC_Chat {
     int groupnumber;
     uint32_t message_number;
 
+    // TODO: Move these to GC_Session if possible?
     void (*group_message)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *userdata);
     void *group_message_userdata;
     void (*group_op_action)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *userdata);
     void *group_op_action_userdata;
+    void (*group_nick_change)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *userdata);
+    void *group_nick_change_userdata;
+    void (*group_peer_join)(GC_Chat *chat, uint32_t, void *userdata);
+    void *group_peer_join_userdata;
+    void (*group_peer_exit)(GC_Chat *chat, uint32_t, void *userdata);
+    void *group_peer_exit_userdata;
 };
 
 typedef struct GC_Session {
@@ -260,21 +267,39 @@ int gc_send_plain_message(const GC_Chat *chat, const uint8_t *message, uint32_t 
  */
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint32_t length);
 
+ /* Return topic length. */
+int gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
+
 /* Return -1 if fail
  * Return 0 if success
  */
 int gc_set_self_nick(GC_Chat *chat, const uint8_t *nick, uint32_t length);
+
+/* Return -1 on error.
+ * Return nick length if success
+ */
+int gc_get_nick(const GC_Chat *chat, uint32_t peernum, uint8_t *namebuffer);
 
 /* Return -1 if fail
  * Return 0 if success
  */
 int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 
+/* Return's peernum's status (GS_INVALID on failure) */
+uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernum);
+
 void gc_callback_groupmessage(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
                               uint32_t, void *), void *userdata);
 
 void gc_callback_group_op_action(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                 uint32_t, void *),  void *userdata);
+                                 uint32_t, void *), void *userdata);
+
+void gc_callback_group_nick_change(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                                   uint32_t, void *), void *userdata);
+
+void gc_callback_group_peer_exit(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata);
+
+void gc_callback_group_peer_join(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata);
 
 /* Check if peer with client_id is in peer array.
  * return peer number if peer is in chat.

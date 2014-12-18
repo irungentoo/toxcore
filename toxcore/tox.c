@@ -844,14 +844,15 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
 
 /**************** GROUPCHAT FUNCTIONS *****************/
 
+
 /* Set the callback for group messages.
  *
- *  function(GC_Chat *chat, uint32_t peernum, const uint8_t *message, uint32_t length, void *userdata)
+ *  function(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
  */
 void tox_callback_group_message(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
                                 const uint8_t *, uint32_t, void *), void *userdata)
 {
-    const Messenger *m = tox;
+    Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
@@ -862,18 +863,64 @@ void tox_callback_group_message(Tox *tox, int groupnumber, void (*function)(GC_C
 
 /* Set the callback for group operator actions.
  *
- *  function(GC_Chat *chat, uint32_t peernum, const uint8_t *certificate, uint32_t length, void *userdata)
+ *  function(GC_Chat *chat, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
  */
 void tox_callback_group_op_action(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
                                   const uint8_t *, uint32_t, void *), void *userdata)
 {
-    const Messenger *m = tox;
+    Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return;
 
     gc_callback_group_op_action(chat, function, userdata);
+}
+
+/* Set the callback for group name changes.
+ *
+ * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
+ */
+void tox_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, const uint8_t *,
+                                    uint32_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return;
+
+    gc_callback_group_nick_change(chat, function, userdata);
+}
+
+/* Set the callback for group peer join.
+ *
+ * function(GC_Chat *chat, uint32_t peernumber, void *userdata)
+ */
+void tox_callback_group_peer_join(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return;
+
+    gc_callback_group_peer_join(chat, function, userdata);
+}
+
+/* Set the callback for group peer exit.
+ *
+ * function(GC_Chat *chat, uint32_t peernumber, void *userdata)
+ */
+void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return;
+
+    gc_callback_group_peer_exit(chat, function, userdata);
 }
 
 /* Adds a new groupchat to group chats array.
@@ -919,36 +966,69 @@ int tox_group_op_action_send(const Tox *tox, int groupnumber, const uint8_t *cer
     return gc_send_op_action(chat, certificate);
 }
 
-/* Sets your nick for groupnumber.
+/* Sets your name for groupnumber.
  * 
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_set_nick(Tox *tox, int groupnumber, const uint8_t *nick, uint32_t length)
+int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint32_t length)
 {
-    const Messenger *m = tox;
+    Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return -1;
 
-    return gc_set_self_nick(chat, nick, length);
+    return gc_set_self_nick(chat, name, length);
 }
 
-/* Changes groupnumber's topic.
+/* Get peernumber's name in groupnumber's group chat.
+ * namebuffer must be at least TOX_MAX_GROUP_NAME_LENGTH bytes
+ *
+ * Return length of name on success.
+ * Reutrn -1 on failure.
+ */
+int tox_group_get_name(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t *namebuffer)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_nick(chat, peernumber, namebuffer);
+}
+
+/* Sets groupnumber's topic.
  * 
  * Return 0 on success.
  * Return -1 on failure.
  */
 int tox_group_set_topic(Tox *tox, int groupnumber, const uint8_t *topic, uint32_t length)
 {
-    const Messenger *m = tox;
+    Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return -1;
 
     return gc_set_topic(chat, topic, length);
+}
+
+/* Gets groupnumber's topic. topicbuffer must be at least TOX_MAX_GROUP_TOPIC_LENGTH bytes
+ *
+ * Return topic length on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topicbuffer)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_topic(chat, topicbuffer);
 }
 
 /* Sets your status for groupnumber.
@@ -958,11 +1038,26 @@ int tox_group_set_topic(Tox *tox, int groupnumber, const uint8_t *topic, uint32_
  */
 int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type)
 {
-    const Messenger *m = tox;
+    Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return -1;
 
     return gc_set_self_status(chat, status_type);
+}
+
+/* Get peernumber's status in groupnumber's group chat.
+ *
+ * Return a TOX_GROUP_STATUS on success (TOX_GS_INVALID on failure).
+ */
+uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_status(chat, peernumber);
 }
