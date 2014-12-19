@@ -60,6 +60,23 @@ enum {
 } GROUP_PACKET;
 
 
+/* Shamelessly taken from wikipedia's Jenkins hash function page
+ */
+uint32_t calculate_hash(const uint8_t *key, size_t len)
+{
+    uint32_t hash, i;
+    for(hash = i = 0; i < len; ++i)
+    {
+        hash += key[i];
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+    return hash;
+}
+
 // Handle all decrypt procedures
 int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *packet_type, const uint8_t *packet, uint16_t length)
@@ -132,66 +149,65 @@ int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint8_t *pu
     return sendpacket(chat->net, ip_port, packet, len);
 }
 
+/* Expects extpubkey being the size of EXT_PUBLIC_KEY bytes
+ */
+static GC_Chat* get_chat_by_public_key (GC_Session* gc, const uint8_t* extpubkey)
+{
+    uint32_t hh = calculate_hash(extpubkey, EXT_PUBLIC_KEY);
+    
+    uint32_t i = 0;
+    for (; i < gc->num_chats; i ++) {
+        if (gc->chats[i].hash_id == hh)
+            return &gc->chats[i];
+    }
+    
+    return NULL;
+}
+
 /* If we receive a group chat packet we call this function so it can be handled.
  * return 0 if packet is handled correctly.
  * return -1 if it didn't handle the packet or if the packet was shit.
  */
 int handle_groupchatpacket(void * object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
-    // TODO object must point to Tox*
-    GC_Session* chats = object;
-
-    switch (packet[2]) { // TODO - all crypto must remain in net_crypto
-                         // - handle all group packets as lossless crypto packets
+    /* TODO check packet size */
+    GC_Session* gc = object;
+    GC_Chat* chat = get_chat_by_public_key(gc, packet + 1);
+    
+    if (!chat)
+        return -1;
+    
+    uint8_t public_key[EXT_PUBLIC_KEY];
+    uint8_t data[MAX_GC_PACKET_SIZE];
+    uint8_t packet_type;
+    
+    int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
+    
+    if (len == -1)
+        return -1;
+    
+    // Check if we know the user and if it's banned
+    uint32_t peernum = gc_peer_in_chat(chat, public_key);
+    if (peernum!=-1) {
+        if (chat->group[peernum].banned==1)
+            return -1;
+    }
+    
+    switch (packet[2]) {
         case GP_INVITE_REQUEST: {
-            
-//             uint8_t public_key[EXT_PUBLIC_KEY];
-//             uint8_t data[MAX_GC_PACKET_SIZE];
-//             uint8_t packet_type;
-//             
-//             int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
-//             
-//             if (len == -1)
-//                 return -1;
-//             
-//             // Check if we know the user and if it's banned
-//             uint32_t peernum = gc_peer_in_chat(chat, public_key);
-//             if (peernum!=-1) {
-//                 if (chat->group[peernum].banned==1)
-//                     return -1;
-//             }
-//             
-//             int new_chat = groupchat_add(object);
-//             
-//             uint8_t public_key[EXT_PUBLIC_KEY];
-//             uint8_t data[MAX_GC_PACKET_SIZE];
-//             uint8_t packet_type;
-//             
-//             int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
-//             
-//             if (len == -1)
-//                 return -1;
-//             
-//             // Check if we know the user and if it's banned
-//             uint32_t peernum = gc_peer_in_chat(chat, public_key);
-//             if (peernum!=-1) {
-//                 if (chat->group[peernum].banned==1)
-//                     return -1;
-//             }
-            
-//             return handle_gc_invite_request(chat, source, public_key, data, len);
+            return handle_gc_invite_request(chat, source, public_key, data, len);
         }
         case GP_INVITE_RESPONSE:
-//             return handle_gc_invite_response(chat, source, public_key, data, len);
+            return handle_gc_invite_response(chat, source, public_key, data, len);
 
-        case GP_SYNC_REQUEST: 
-//             return handle_gc_sync_request(chat, source, public_key, data, len);
+        case GP_SYNC_REQUEST:
+            return handle_gc_sync_request(chat, source, public_key, data, len);
 
         case GP_SYNC_RESPONSE:
-//             return handle_gc_sync_response(chat, source, public_key, data, len);
+            return handle_gc_sync_response(chat, source, public_key, data, len);
 
         case GP_BROADCAST:
-//             return handle_gc_broadcast(chat, source, public_key, data, len);
+            return handle_gc_broadcast(chat, source, public_key, data, len);
 
         default:
             return -1;
@@ -1199,13 +1215,14 @@ int gc_group_add(GC_Session* c)
 
     GC_Chat *chat = &c->chats[new_index];
 
-    chat->net = c->net;
     chat->self_status = GS_ONLINE;
     chat->numpeers = 0;
     chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
     
     create_long_keypair(chat->self_public_key, chat->self_secret_key);
-
+    
+    chat->hash_id = calculate_hash(chat->self_public_key, EXT_PUBLIC_KEY);
+    
     return new_index;
 }
 
@@ -1273,6 +1290,9 @@ void gc_kill_groupchats(GC_Session* c)
         if (c->chats[i].self_status != GS_NONE)
             gc_group_delete(c, &c->chats[i], (const uint8_t *) "Quit", 4);
     }
+    
+    networking_registerhandler(c->messenger->net, NET_PACKET_GROUP_CHATS, NULL, NULL);
+    free(c);
 }
 
 /* Return 1 if groupnumber is a valid group chat index
