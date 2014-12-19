@@ -881,7 +881,7 @@ void tox_callback_group_op_action(Tox *tox, int groupnumber, void (*function)(GC
  *
  * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
  */
-void tox_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, const uint8_t *,
+void tox_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
                                     uint32_t, void *), void *userdata)
 {
     Messenger *m = tox;
@@ -891,6 +891,22 @@ void tox_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(
         return;
 
     gc_callback_group_nick_change(chat, function, userdata);
+}
+
+/* Set the callback for group title changes.
+ *
+ * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *title, uint32_t length, void *userdata)
+ */
+void tox_callback_group_title_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                                    uint32_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return;
+
+    gc_callback_group_title_change(chat, function, userdata);
 }
 
 /* Set the callback for group peer join.
@@ -910,9 +926,10 @@ void tox_callback_group_peer_join(Tox *tox, int groupnumber, void (*function)(GC
 
 /* Set the callback for group peer exit.
  *
- * function(GC_Chat *chat, uint32_t peernumber, void *userdata)
+ * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *partmessage, uint32_t length, void *userdata)
  */
-void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata)
+void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
+                                  const uint8_t *, uint32_t, void *), void *userdata)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -931,7 +948,24 @@ void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC
 int tox_add_groupchat(Tox *tox)
 {
     Messenger *m = tox;
-    return groupchat_add(m->group_handler);
+    return gc_group_add(m->group_handler);
+}
+
+/* Deletes groupnumber's group chat and sends an optional parting message to group peers
+ * The maximum parting message length is TOX_MAX_GROUP_PART_LENGTH.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_del_groupchat(Tox *tox, int groupnumber, const uint8_t *partmessage, uint32_t length)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_group_delete(m->group_handler, chat, partmessage, length);
 }
 
 /* Sends a groupchat message to groupnumber.
@@ -983,7 +1017,7 @@ int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint32_t 
 }
 
 /* Get peernumber's name in groupnumber's group chat.
- * namebuffer must be at least TOX_MAX_GROUP_NAME_LENGTH bytes
+ * namebuffer must be at least TOX_MAX_NAME_LENGTH bytes
  *
  * Return length of name on success.
  * Reutrn -1 on failure.

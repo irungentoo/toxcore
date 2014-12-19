@@ -32,14 +32,15 @@ typedef struct GC_Chat GC_Chat;
 extern "C" {
 #endif
 
-#define TOX_MAX_NAME_LENGTH 128         /* should be the same as MAX_NAME_LENGTH in Messenger.h */
-#define TOX_MAX_GROUP_NAME_LENGTH 128   /* should be the same as MAX_NICK_BYTES in group_chats.h */
-#define TOX_MAX_GROUP_TOPIC_LENGTH 512  /* should be the same as MAX_TOPIC_BYTES in group_chats.h */
+#define TOX_MAX_NAME_LENGTH 128
 
 /* Maximum length of single messages after which they should be split. */
 #define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_MAX_FRIENDREQUEST_LENGTH 1016
+
+#define TOX_MAX_GROUP_TOPIC_LENGTH 512
+#define TOX_MAX_GROUP_PART_LENGTH 128
 
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
@@ -796,8 +797,15 @@ void tox_callback_group_op_action(Tox *tox, int groupnumber, void (*function)(GC
  *
  * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
  */
-void gc_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, const uint8_t *,
-                                   uint32_t, void *), void *userdata);
+void tox_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                                    uint32_t, void *), void *userdata);
+
+/* Set the callback for group title changes.
+ *
+ * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *title, uint32_t length, void *userdata)
+ */
+void tox_callback_group_title_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+                                     uint32_t, void *), void *userdata);
 
 /* Set the callback for group peer join.
  *
@@ -807,9 +815,10 @@ void tox_callback_group_peer_join(Tox *tox, int groupnumber, void (*function)(GC
 
 /* Set the callback for group peer exit.
  *
- * function(GC_Chat *chat, uint32_t peernumber, void *userdata)
+ * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *partmessage, uint32_t length, void *userdata)
  */
-void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata);
+void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
+                                  const uint8_t *, uint32_t, void *), void *userdata);
 
 /* Adds a new groupchat to group chats array.
  *
@@ -818,7 +827,15 @@ void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC
  */
 int tox_add_groupchat(Tox *tox);
 
-/* Sends a groupchat message to groupnumber.
+/* Deletes groupnumber's group chat and sends an optional parting message to group peers
+ * The maximum parting message length is TOX_MAX_GROUP_PART_LENGTH.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_del_groupchat(Tox *tox, int groupnumber, const uint8_t *partmessage, uint32_t length);
+
+/* Sends a groupchat message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
  *
  * Return 0 on success.
  * Return -1 on failure.
@@ -840,7 +857,7 @@ int tox_group_op_action_send(const Tox *tox, int groupnumber, const uint8_t *cer
 int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint32_t length);
 
 /* Get peernumber's name in groupnumber's group chat.
- * namebuffer must be at least TOX_MAX_GROUP_NAME_LENGTH bytes
+ * namebuffer must be at least TOX_MAX_NAME_LENGTH bytes
  *
  * Return length of name on success.
  * Reutrn -1 on failure.
