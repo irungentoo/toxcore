@@ -1574,7 +1574,7 @@ Messenger *new_messenger(Messenger_Options *options)
     m->dht = new_DHT(m->net);
 
     if (m->dht == NULL) {
-        kill_groupchats(m->group_handler);
+        gc_kill_groupchats(m->group_handler);
         kill_networking(m->net);
         free(m);
         return NULL;

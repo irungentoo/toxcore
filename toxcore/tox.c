@@ -805,7 +805,7 @@ Tox *tox_new(Tox_Options *options)
 void tox_kill(Tox *tox)
 {
     Messenger *m = tox;
-    kill_groupchats(m->group_handler);
+    gc_kill_groupchats(m->group_handler);
     kill_messenger(m);
 }
 

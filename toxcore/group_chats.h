@@ -341,23 +341,24 @@ void do_gc(GC_Session *c);
  */
 GC_Session* new_groupchats(Messenger* m);
 
-/* Calls delete_groupchat() for every group chat */
-void kill_groupchats(GC_Session* c);
+/* Calls gc_group_delete() for every group chat */
+void gc_kill_groupchats(GC_Session* c);
 
 /* Adds a new group chat
+ *
  * Return groupnumber on success
  * Return -1 on failure
  */
 int gc_group_add(GC_Session* c);
 
-/* Deletes chat from group chat array.
+/* Deletes chat from group chat array and cleans up.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
 int gc_group_delete(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint32_t length);
 
-/* Deletes chat from group chat array and cleans up.
+/* Return groupnumber's GC_Chat pointer on success
  * Return NULL on failure
  */
 GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
