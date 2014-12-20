@@ -131,7 +131,8 @@ typedef struct GC_Chat GC_Chat;
 
 struct GC_Chat {
     Networking_Core *net;
-
+    uint32_t hash_id;
+    
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
