@@ -349,7 +349,14 @@ void gc_kill_groupchats(GC_Session* c);
  * Return groupnumber on success
  * Return -1 on failure
  */
-int gc_group_add(GC_Session* c);
+int gc_group_add(GC_Session *c);
+
+/* Creates a group chat and sends an invite request using invite_key
+ *
+ * Return groupnumber on success.
+ * Reutrn -1 on failure.
+ */
+int gc_group_join(GC_Session *c, const uint8_t *invite_key);
 
 /* Deletes chat from group chat array and cleans up.
  *
