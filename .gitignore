@@ -68,3 +68,6 @@ nbproject
 # Android buildscript
 android-toolchain-*
 toxcore-android-*
+
+# cscope files list
+cscope.files
