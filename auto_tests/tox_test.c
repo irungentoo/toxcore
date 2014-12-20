@@ -485,7 +485,7 @@ void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, c
 
     int g_num;
 
-    if ((g_num = tox_join_groupchat(tox, friendnumber, data, length)) == -1)
+    if ((g_num = tox_group_new_join(tox, friendnumber, data, length)) == -1)
         return;
 
     ck_assert_msg(g_num == 0, "Group number was not 0");
@@ -603,7 +603,7 @@ START_TEST(test_many_group)
     ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
 
     for (k = NUM_GROUP_TOX; k != 0 ; --k) {
-        tox_del_groupchat(toxes[k - 1], 0);
+        tox_group_delete(toxes[k - 1], 0);
 
         for (j = 0; j < 10; ++j) {
             for (i = 0; i < NUM_GROUP_TOX; ++i) {

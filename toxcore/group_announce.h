@@ -22,7 +22,14 @@
 #define __GROUP_ANNOUNCE_H__
 
 #include "DHT.h"
- 
+
+typedef struct __attribute__ ((__packed__))
+{
+    uint8_t     client_id[EXT_PUBLIC_KEY];
+    IP_Port     ip_port;
+}
+Announced_Node_format;
+
 typedef struct ANNOUNCE ANNOUNCE;
 
 /* Initiate the process of the announcement, claiming a node is part of a group chat.
@@ -35,11 +42,11 @@ typedef struct ANNOUNCE ANNOUNCE;
  * return -1 in case of error
  * return number of send packets otherwise
  */
-int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
+int send_gc_announce_request(ANNOUNCE *announce, const uint8_t self_long_pk[],
                             const uint8_t self_long_sk[], const uint8_t chat_id[]);
 
 /* Sends an actual announcement packet to the node specified as client_id on ipp */
-int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
+int send_gc_get_announced_nodes_request(ANNOUNCE *announce, const uint8_t self_long_pk[],
                             const uint8_t self_long_sk[], const uint8_t chat_id[]);
 
 /* Retrieve nodes by chat id, returns 0 if no nodes found or request in progress, number of nodes otherwise */

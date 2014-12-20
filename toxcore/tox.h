@@ -820,19 +820,20 @@ void tox_callback_group_peer_join(Tox *tox, int groupnumber, void (*function)(GC
 void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
                                   const uint8_t *, uint32_t, void *), void *userdata);
 
-/* Adds a new groupchat to group chats array.
+/* Creates a new groupchat and adds to group chats array.
  *
- * Return groupnumber on success.
+ * Return groupnumber (index in group chats array) on success.
  * Return -1 on failure.
  */
-int tox_add_groupchat(Tox *tox);
+int tox_group_new(Tox *tox);
 
-/* Joins a groupchat using the supplied public key.
+/* Creates and joins a groupchat using the supplied public key.
+ * Newly created groupchat is added to the group chats array.
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_join_groupchat(Tox *tox, const uint8_t *invite_key);
+int tox_group_new_join(Tox *tox, const uint8_t *invite_key);
 
 /* Deletes groupnumber's group chat and sends an optional parting message to group peers
  * The maximum parting message length is TOX_MAX_GROUP_PART_LENGTH.
@@ -840,7 +841,7 @@ int tox_join_groupchat(Tox *tox, const uint8_t *invite_key);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_del_groupchat(Tox *tox, int groupnumber, const uint8_t *partmessage, uint32_t length);
+int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint32_t length);
 
 /* Sends a groupchat message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
  *
@@ -898,6 +899,13 @@ int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type);
  */
 uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber);
 
+/* Get invite key for the groupchat from the group number.
+ * The result is stored in 'dest' which must have space for 64 bytes.
+ * 
+ * Returns 0 on success
+ * Retruns -1 on failure
+ */
+int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t* dest);
 #ifdef __cplusplus
 }
 #endif

@@ -218,9 +218,9 @@ int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_
     return j;
 }
 
-int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[],
-                             const uint8_t self_long_sk[], const uint8_t chat_id[])
+int send_gc_announce_request(ANNOUNCE* announce, const uint8_t self_long_pk[], const uint8_t self_long_sk[], const uint8_t chat_id[])
 {
+    DHT *dht = announce->dht;
     /* Generating an announcement */
     uint8_t data[GC_ANNOUNCE_REQUEST_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST;
@@ -271,10 +271,10 @@ int handle_gc_announce_request(void * _dht, IP_Port ipp, const uint8_t packet[],
                     GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 0);    
 }
 
-int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
-                            const uint8_t self_long_sk[], const uint8_t chat_id[])
+int send_gc_get_announced_nodes_request(ANNOUNCE* announce, const uint8_t self_long_pk[], const uint8_t self_long_sk[], const uint8_t chat_id[])
 {
     // TODO: Check if we already have some nodes!!!
+    DHT *dht = announce->dht;
 
     uint8_t data[GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES;

@@ -86,13 +86,13 @@ int current_group = -1;
 static void callback_group_invite(Tox *tox, int fid, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (current_group == -1)
-        current_group = tox_join_groupchat(tox, fid, data, length);
+        current_group = tox_group_new_join(tox, fid, data, length);
 }
 
 void callback_friend_message(Tox *tox, int fid, const uint8_t *message, uint16_t length, void *userdata)
 {
     if (length == 1 && *message == 'c') {
-        if (tox_del_groupchat(tox, current_group) == 0)
+        if (tox_group_delete(tox, current_group) == 0)
             current_group = -1;
     }
 
