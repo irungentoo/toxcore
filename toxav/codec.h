@@ -85,6 +85,7 @@ typedef struct _CSSession {
     vpx_codec_ctx_t  v_decoder;
     int max_width;
     int max_height;
+    unsigned int video_bitrate;
 
 
     /* Data handling */

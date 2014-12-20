@@ -90,36 +90,25 @@ const char *logger_stringify_level(LoggerLevel level)
 
 int logger_init(const char *file_name, LoggerLevel level)
 {
-    char *final_l = calloc(sizeof(char), strlen(file_name) + 32);
-    sprintf(final_l, "%s"/*.%u"*/, file_name/*, logger_get_pid()*/);
-
-    if ( logger.log_file ) {
-        fprintf(stderr, "Error opening logger name: %s with level %d: file already opened!\n", final_l, level);
-        free (final_l);
+    if (logger.log_file) {
+        fprintf(stderr, "Error opening logger name: %s with level %d: file already opened!\n",
+                file_name, level);
         return -1;
     }
 
-    logger.log_file = fopen(final_l, "ab");
+    logger.log_file = fopen(file_name, "ab");
 
-    if ( logger.log_file == NULL ) {
-        fprintf(stderr, "Error opening logger file: %s; info: %s\n", final_l, strerror(errno));
-
-        free (final_l);
+    if (logger.log_file == NULL) {
+        fprintf(stderr, "Error opening logger file: %s; info: %s\n", file_name, strerror(errno));
         return -1;
     }
-
 
     logger.level = level;
     logger.start_time = current_time_monotonic();
 
-
     time_t tim = time(NULL);
     logger_write(ERROR, "\n============== Starting logger [%u] ==============\n"
                  "Time: %s", logger_get_pid(), asctime(localtime(&tim)));
-
-
-
-    free (final_l);
     return 0;
 }
 

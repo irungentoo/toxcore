@@ -489,6 +489,13 @@ AX_PTHREAD(
     ]
 )
 
+AC_CHECK_LIB([pthread], [pthread_self],
+    [
+        PTHREAD_LDFLAGS="-lpthread"
+        AC_SUBST(PTHREAD_LDFLAGS)
+    ]
+)
+
 if test "x$BUILD_AV" = "xyes"; then
     PKG_CHECK_MODULES([OPUS], [opus],
         [],
@@ -512,8 +519,7 @@ fi
 if test "x$BUILD_AV" = "xyes"; then
     # toxcore lib needs an global?
     # So far this works okay
-    ## What about pthread?
-    AV_LIBS="$OPUS_LIBS $VPX_LIBS -pthread"
+    AV_LIBS="$OPUS_LIBS $VPX_LIBS"
     AC_SUBST(AV_LIBS)
 
     AV_CFLAGS="$OPUS_CFLAGS $VPX_CFLAGS"
