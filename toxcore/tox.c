@@ -951,6 +951,17 @@ int tox_add_groupchat(Tox *tox)
     return gc_group_add(m->group_handler);
 }
 
+/* Joins a groupchat using the supplied public key.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure.
+ */
+int tox_join_groupchat(Tox *tox, const uint8_t *invite_key)
+{
+    Messenger *m = tox;
+    return gc_group_join(m->group_handler, invite_key);
+}
+
 /* Deletes groupnumber's group chat and sends an optional parting message to group peers
  * The maximum parting message length is TOX_MAX_GROUP_PART_LENGTH.
  *

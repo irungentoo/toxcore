@@ -1162,8 +1162,11 @@ static int realloc_groupchats(GC_Session *c, uint32_t n)
     return 0;
 }
 
-static int create_new_group(GC_Session *c)
+static int get_new_group_index(GC_Session *c)
 {
+    if (c == NULL)
+        return -1;
+
     uint32_t i;
 
     for (i = 0; i < c->num_chats; ++i) {
@@ -1178,10 +1181,25 @@ static int create_new_group(GC_Session *c)
     return c->num_chats - 1;
 }
 
-void kill_groupcredentials(GC_ChatCredentials *credentials)
+static int create_new_group(GC_Session *c)
 {
-    free(credentials->ops);
-    free(credentials);
+    // TODO: Need to handle the situation when we load info from locally stored data
+    int new_index = get_new_group_index(c);
+
+    if (new_index == -1)
+        return -1;
+
+
+    GC_Chat *chat = &c->chats[new_index];
+
+    chat->net = c->messenger->net;
+    chat->self_status = GS_ONLINE;
+    chat->numpeers = 0;
+    chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
+
+    create_long_keypair(chat->self_public_key, chat->self_secret_key);
+
+    return new_index;
 }
 
 /* Adds a new group chat
@@ -1189,24 +1207,40 @@ void kill_groupcredentials(GC_ChatCredentials *credentials)
  * Return groupnumber on success
  * Return -1 on failure
  */
-int gc_group_add(GC_Session* c)
+int gc_group_add(GC_Session *c)
 {
-    // TODO: Need to handle the situation when we load info from locally stored data
-    int32_t new_index = create_new_group(c);
+    return create_new_group(c);
+}
 
-    if (new_index == -1)
+/* Creates a group chat and sends an invite request using invite_key
+ *
+ * Return groupnumber on success.
+ * Reutrn -1 on failure.
+ */
+int gc_group_join(GC_Session *c, const uint8_t *invite_key)
+{
+    int groupnumber = create_new_group(c);
+
+    if (groupnumber == -1)
         return -1;
 
-    GC_Chat *chat = &c->chats[new_index];
+    GC_Chat *chat = gc_get_group(c, groupnumber);
 
-    chat->net = c->net;
-    chat->self_status = GS_ONLINE;
-    chat->numpeers = 0;
-    chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
-    
-    create_long_keypair(chat->self_public_key, chat->self_secret_key);
+    if (chat == NULL)
+        return -1;
 
-    return new_index;
+    IP_Port port;  // TODO: fill me out
+
+    if (gc_send_invite_request(chat, port, invite_key) == -1)
+        return -1;
+
+    return groupnumber;
+}
+
+void kill_groupcredentials(GC_ChatCredentials *credentials)
+{
+    free(credentials->ops);
+    free(credentials);
 }
 
 /* Deletes chat from group chat array and cleans up.
