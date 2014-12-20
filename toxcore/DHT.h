@@ -240,7 +240,7 @@ typedef struct {
     Shared_Keys shared_keys_recv;
     Shared_Keys shared_keys_sent;
 
-    struct ANNOUNCE *announce;
+    struct GC_Announce *announce;
 
     struct PING   *ping;
     Ping_Array    dht_ping_array;
