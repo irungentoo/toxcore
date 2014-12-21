@@ -554,6 +554,7 @@ START_TEST(test_many_group)
 
     ck_assert_msg(tox_add_groupchat(toxes[0]) != -1, "Failed to create group");
     ck_assert_msg(tox_invite_friend(toxes[0], 0, 0) == 0, "Failed to invite friend");
+    ck_assert_msg(tox_group_set_title(toxes[0], 0, "Gentoo", sizeof("Gentoo") - 1) == 0, "Failed to set group title");
     invite_counter = ~0;
 
     unsigned int done = ~0;
@@ -580,6 +581,11 @@ START_TEST(test_many_group)
         int num_peers = tox_group_number_peers(toxes[i], 0);
         ck_assert_msg(num_peers == NUM_GROUP_TOX, "Bad number of group peers. expected: %u got: %i, tox %u", NUM_GROUP_TOX,
                       num_peers, i);
+
+        uint8_t title[2048];
+        int ret = tox_group_get_title(toxes[i], 0, title, sizeof(title));
+        ck_assert_msg(ret == sizeof("Gentoo") - 1, "Wrong title length");
+        ck_assert_msg(memcmp("Gentoo", title, ret) == 0, "Wrong title");
     }
 
     printf("group connected\n");
