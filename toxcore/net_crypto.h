@@ -70,7 +70,7 @@
 /* Packet ids 0 to CRYPTO_RESERVED_PACKETS - 1 are reserved for use by net_crypto. */
 #define CRYPTO_RESERVED_PACKETS 16
 
-#define MAX_TCP_CONNECTIONS 32
+#define MAX_TCP_CONNECTIONS 64
 #define MAX_TCP_RELAYS_PEER 4
 
 #define STATUS_TCP_NULL      0
@@ -159,6 +159,8 @@ typedef struct {
 
     uint8_t status_tcp[MAX_TCP_CONNECTIONS]; /* set to one of STATUS_TCP_* */
     uint8_t con_number_tcp[MAX_TCP_CONNECTIONS];
+    unsigned int last_relay_sentto;
+    unsigned int num_tcp_online;
 
     Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
     uint16_t num_tcp_relays;

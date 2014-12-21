@@ -65,12 +65,13 @@ enum {
 uint32_t calculate_hash(const uint8_t *key, size_t len)
 {
     uint32_t hash, i;
-    for(hash = i = 0; i < len; ++i)
-    {
+
+    for (hash = i = 0; i < len; ++i) {
         hash += key[i];
         hash += (hash << 10);
         hash ^= (hash >> 6);
     }
+
     hash += (hash << 3);
     hash ^= (hash >> 11);
     hash += (hash << 15);
@@ -108,7 +109,7 @@ int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secr
 
 // Handle all encrypt procedures
 int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret_key, const uint8_t *recv_public_key,
-                        uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type)
+                      uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type)
 {
     if (MAX_GC_PACKET_SIZE < length + MIN_PACKET_SIZE)
         return -1;
@@ -151,7 +152,7 @@ int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint8_t *pu
 
 /* Expects extpubkey being the size of EXT_PUBLIC_KEY bytes
  */
-static GC_Chat* get_chat_by_public_key (GC_Session* gc, const uint8_t* extpubkey)
+static GC_Chat* get_chat_by_public_key(GC_Session* gc, const uint8_t* extpubkey)
 {
     uint32_t hh = calculate_hash(extpubkey, EXT_PUBLIC_KEY);
     
@@ -173,26 +174,26 @@ int handle_groupchatpacket(void * object, IP_Port source, const uint8_t *packet,
     /* TODO check packet size */
     GC_Session* gc = object;
     GC_Chat* chat = get_chat_by_public_key(gc, packet + 1);
-    
+
     if (!chat)
         return -1;
-    
+
     uint8_t public_key[EXT_PUBLIC_KEY];
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint8_t packet_type;
-    
+
     int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type, packet, length);
-    
+
     if (len == -1)
         return -1;
-    
+
     // Check if we know the user and if it's banned
     uint32_t peernum = gc_peer_in_chat(chat, public_key);
     if (peernum!=-1) {
         if (chat->group[peernum].banned==1)
             return -1;
     }
-    
+
     switch (packet[2]) {
         case GP_INVITE_REQUEST: {
             return handle_gc_invite_request(chat, source, public_key, data, len);
@@ -242,15 +243,16 @@ int handle_gc_invite_request(GC_Chat *chat, IP_Port ipp, const uint8_t *public_k
     if (!id_long_equal(public_key, data+1))
         return -1;
 
-    if (data[0]!=GC_INVITE)
+    if (data[0] != GC_INVITE)
         return -1;
 
-    if (crypto_sign_verify_detached(data+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
-                data, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, SIG_KEY(public_key)) != 0)
+    if (crypto_sign_verify_detached(data + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE, data,
+                                    SEMI_INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE,
+                                    SIG_KEY(public_key)) != 0)
         return -1;
 
-    if (sign_certificate(data, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE,
-            chat->self_secret_key, chat->self_public_key, invite_certificate) == -1)
+    if (sign_certificate(data, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE, chat->self_secret_key, chat->self_public_key,
+                         invite_certificate) == -1)
         return -1;
 
     // Adding peer we just invited into the peer group list
@@ -291,13 +293,15 @@ int handle_gc_invite_response(GC_Chat *chat, IP_Port ipp, const uint8_t *public_
         return -1;
 
     // Verify our own signature
-    if (crypto_sign_verify_detached(data+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
-                data, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, SIG_KEY(chat->self_public_key)) != 0)
+    if (crypto_sign_verify_detached(data + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, data,
+                                    SEMI_INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE,
+                                    SIG_KEY(chat->self_public_key)) != 0)
         return -1;
 
     // Verify inviter signature
-    if (crypto_sign_verify_detached(data+INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
-                 data, INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, SIG_KEY(public_key)) != 0)
+    if (crypto_sign_verify_detached(data + INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE, data,
+                                    INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE,
+                                    SIG_KEY(public_key)) != 0)
         return -1;
 
     memcpy(chat->self_invite_certificate, data, INVITE_CERTIFICATE_SIGNED_SIZE);
@@ -332,7 +336,8 @@ int handle_gc_sync_request(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key
     uint64_t last_synced_time;
     bytes_to_U64(&last_synced_time, data + EXT_PUBLIC_KEY);
 
-    uint32_t len;
+    uint32_t len = 0;
+
     if (last_synced_time > chat->last_synced_time) {
         // TODO: probably we should initiate sync request ourself, cause requester has more fresh info
         len = EXT_PUBLIC_KEY + sizeof(uint32_t);
@@ -344,8 +349,7 @@ int handle_gc_sync_request(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key
         if (peers == NULL)
             return -1;
 
-        uint32_t i;
-        uint32_t num = 0;
+        uint32_t i, num = 0;
 
         for (i = 0; i < chat->numpeers; i++) 
             if ((chat->group[i].last_update_time > last_synced_time)
@@ -396,8 +400,10 @@ int handle_gc_sync_response(GC_Chat *chat, IP_Port ipp, const uint8_t *public_ke
     memcpy(peers, data + EXT_PUBLIC_KEY + sizeof(uint32_t) + TIME_STAMP, sizeof(GC_GroupPeer) * num);
 
     uint32_t i;
+
     for (i = 0; i < num; i++){
         uint32_t j = gc_peer_in_chat(chat, peers[i].client_id);
+
         if (j != -1)
             gc_peer_update(chat, &peers[i], j);
         else

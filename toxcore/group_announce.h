@@ -30,7 +30,7 @@ typedef struct __attribute__ ((__packed__))
 }
 Announced_Node_format;
 
-typedef struct ANNOUNCE ANNOUNCE;
+typedef struct GC_Announce GC_Announce;
 
 /* Initiate the process of the announcement, claiming a node is part of a group chat.
  *
@@ -42,22 +42,21 @@ typedef struct ANNOUNCE ANNOUNCE;
  * return -1 in case of error
  * return number of send packets otherwise
  */
-int send_gc_announce_request(ANNOUNCE *announce, const uint8_t self_long_pk[],
+int send_gc_announce_request(GC_Announce *announce, const uint8_t self_long_pk[],
                             const uint8_t self_long_sk[], const uint8_t chat_id[]);
 
 /* Sends an actual announcement packet to the node specified as client_id on ipp */
-int send_gc_get_announced_nodes_request(ANNOUNCE *announce, const uint8_t self_long_pk[],
+int send_gc_get_announced_nodes_request(GC_Announce *announce, const uint8_t self_long_pk[],
                             const uint8_t self_long_sk[], const uint8_t chat_id[]);
 
 /* Retrieve nodes by chat id, returns 0 if no nodes found or request in progress, number of nodes otherwise */
-int get_requested_gc_nodes(ANNOUNCE *announce, const uint8_t chat_id[],
-                            Announced_Node_format *nodes);
+int get_requested_gc_nodes(GC_Announce *announce, const uint8_t chat_id[], Announced_Node_format *nodes);
 
 /* Do some periodic work, currently removes expired announcements */
-int do_announce(ANNOUNCE *announce);
+int do_announce(GC_Announce *announce);
 
-ANNOUNCE *new_announce(DHT *dht);
-void kill_announce(ANNOUNCE *announce);
+GC_Announce *new_announce(DHT *dht);
+void kill_announce(GC_Announce *announce);
 
 
 #endif /* __GROUP_ANNOUNCE_H__ */
