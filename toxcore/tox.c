@@ -945,7 +945,7 @@ void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_add_groupchat(Tox *tox)
+int tox_group_new(Tox *tox)
 {
     Messenger *m = tox;
     return gc_group_add(m->group_handler);
@@ -956,7 +956,7 @@ int tox_add_groupchat(Tox *tox)
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_join_groupchat(Tox *tox, const uint8_t *invite_key)
+int tox_group_new_join(Tox *tox, const uint8_t *invite_key)
 {
     Messenger *m = tox;
     return gc_group_join(m->group_handler, invite_key);
@@ -968,7 +968,7 @@ int tox_join_groupchat(Tox *tox, const uint8_t *invite_key)
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_del_groupchat(Tox *tox, int groupnumber, const uint8_t *partmessage, uint32_t length)
+int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint32_t length)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1105,4 +1105,19 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
         return -1;
 
     return gc_get_status(chat, peernumber);
+}
+
+int tox_group_get_invite_key(const Tox* tox, int groupnumber, uint8_t* dest)
+{
+    if (!tox)
+        return -1;
+    
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    
+    if (chat == NULL)
+        return -1;
+    
+    memcpy(dest, chat->self_public_key, EXT_PUBLIC_KEY);
+    return 0;
 }

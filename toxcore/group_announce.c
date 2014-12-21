@@ -56,6 +56,39 @@
 #define GC_ANNOUNCE_GETNODES_RESPONSE_PLAIN_SIZE (1 + sizeof(uint32_t) + sizeof(Announced_Node_format) * MAX_SENT_ANNOUNCED_NODES + REQUEST_ID)
 #define GC_ANNOUNCE_GETNODES_RESPONSE_DHT_SIZE (1 + ENC_PUBLIC_KEY + REQUEST_ID + crypto_box_NONCEBYTES + GC_ANNOUNCE_GETNODES_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
+#define MAX_CONCURRENT_REQUESTS     10
+#define MAX_GC_ANNOUNCED_NODES      30
+#define MAX_SENT_ANNOUNCED_NODES    2
+
+struct GC_Announce {
+    DHT *dht;
+    
+    /* This structure is for announcing requests that we get from
+     *     online chat members. Timestamp is used for expiration purposes */
+    struct GC_AnnouncedNode {
+        uint8_t chat_id[EXT_PUBLIC_KEY];
+        Announced_Node_format node;
+        uint64_t timestamp;
+    } announcements[MAX_GC_ANNOUNCED_NODES];
+    
+    /* This structure is for our own requests, when we want to
+     *     find online chat members */
+    struct GC_AnnounceRequest {
+        uint8_t chat_id[EXT_PUBLIC_KEY];
+        Announced_Node_format nodes[MAX_SENT_ANNOUNCED_NODES];
+        uint32_t nodes_num;
+        uint64_t req_id;
+        _Bool ready;
+        uint64_t timestamp;
+        
+        /* This is kinda dubbing, what we have in group chats, but it's the most easiest way... */
+        uint8_t long_pk[EXT_PUBLIC_KEY];
+        uint8_t long_sk[EXT_SECRET_KEY];
+    } self_requests[MAX_CONCURRENT_REQUESTS];
+    
+    /* Number of current requests */
+    uint32_t req_num;
+};
 
 // Handle all decrypt procedures
 int unwrap_gc_announce_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, 
@@ -192,8 +225,9 @@ int dispatch_packet(DHT* dht, const uint8_t target_id[], const uint8_t previous_
     return j;
 }
 
-int send_gc_announce_request(DHT *dht, const uint8_t self_long_pk[], const uint8_t self_long_sk[], const uint8_t chat_id[])
+int send_gc_announce_request(GC_Announce* announce, const uint8_t self_long_pk[], const uint8_t self_long_sk[], const uint8_t chat_id[])
 {
+    DHT *dht = announce->dht;
     /* Generating an announcement */
     uint8_t data[GC_ANNOUNCE_REQUEST_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST;
@@ -249,10 +283,10 @@ int handle_gc_announce_request(void * dht_obj, IP_Port ipp, const uint8_t packet
                     GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 0);    
 }
 
-int send_gc_get_announced_nodes_request(DHT *dht, const uint8_t self_long_pk[],
-                            const uint8_t self_long_sk[], const uint8_t chat_id[])
+int send_gc_get_announced_nodes_request(GC_Announce* announce, const uint8_t self_long_pk[], const uint8_t self_long_sk[], const uint8_t chat_id[])
 {
     // TODO: Check if we already have some nodes!!!
+    DHT *dht = announce->dht;
 
     uint8_t data[GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES;

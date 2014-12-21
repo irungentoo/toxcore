@@ -572,7 +572,7 @@ int basic_group_chat_test()
     for (i=0; i<PEERCOUNT; i++)
     {
         tox[i]=tox_new(0);
-        tox_groupchat_add(tox[i]);
+        tox_group_new(tox[i]);
 
         uint8_t pk[EXT_PUBLIC_KEY];
         tox_groupchat_get_self_pk(tox[i], 0, pk);
