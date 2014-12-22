@@ -166,6 +166,31 @@ START_TEST(test_one)
     ck_assert_msg(tox_add_friend(tox1, address, message, TOX_MAX_FRIENDREQUEST_LENGTH) == TOX_FAERR_ALREADYSENT,
                   "Adding friend twice worked.");
 
+    uint8_t name[TOX_MAX_NAME_LENGTH];
+    int i;
+
+    for (i = 0; i < TOX_MAX_NAME_LENGTH; ++i) {
+        name[i] = rand();
+    }
+
+    tox_set_name(tox1, name, sizeof(name));
+    ck_assert_msg(tox_get_self_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
+
+    size_t save_size = tox_size(tox1);
+    uint8_t data[save_size];
+    tox_save(tox1, data);
+
+    tox_kill(tox2);
+    tox2 = tox_new(0);
+    ck_assert_msg(tox_load(tox2, data, save_size) == 0, "Load failed");
+
+    size_t length = tox_get_self_name_size(tox2);
+    ck_assert_msg(tox_get_self_name_size(tox2) == sizeof name, "Wrong name size.");
+
+    uint8_t new_name[TOX_MAX_NAME_LENGTH] = { 0 };
+    ck_assert_msg(tox_get_self_name(tox2, new_name) == TOX_MAX_NAME_LENGTH, "Wrong name length");
+    ck_assert_msg(memcmp(name, new_name, TOX_MAX_NAME_LENGTH) == 0, "Wrong name");
+
     tox_kill(tox1);
     tox_kill(tox2);
 }

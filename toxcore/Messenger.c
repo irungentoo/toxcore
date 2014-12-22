@@ -2754,7 +2754,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_NAME:
-            if ((length > 0) && (length < MAX_NAME_LENGTH)) {
+            if ((length > 0) && (length <= MAX_NAME_LENGTH)) {
                 setname(m, data, length);
             }
 
