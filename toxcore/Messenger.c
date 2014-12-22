@@ -1595,11 +1595,7 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
-    if (options->proxy_enabled) {
-        m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
-    } else {
-        m->net_crypto = new_net_crypto(m->dht, 0);
-    }
+    m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
 
     if (m->net_crypto == NULL) {
         kill_networking(m->net);

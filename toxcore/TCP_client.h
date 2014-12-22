@@ -29,9 +29,25 @@
 
 #define TCP_CONNECTION_TIMEOUT 10
 
-typedef struct  {
+typedef enum {
+    TCP_PROXY_NONE,
+    TCP_PROXY_HTTP,
+    TCP_PROXY_SOCKS5
+} TCP_PROXY_TYPE;
+
+typedef struct {
     IP_Port ip_port;
-    int is_http; /* HTTP proxy on true, SOCKS5 on false */
+} TCP_Proxy_HTTP;
+
+typedef struct {
+    IP_Port ip_port;
+} TCP_Proxy_SOCKS5;
+
+
+
+typedef struct {
+    uint8_t proxy_type; // a value from TCP_PROXY_TYPE
+    void* proxy; // pointer to the corresponding proxy type struct
 } TCP_Proxy_Info;
 
 enum {

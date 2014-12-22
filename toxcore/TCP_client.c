@@ -37,8 +37,16 @@
  */
 static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_info)
 {
-    if (proxy_info)
-        ip_port = proxy_info->ip_port;
+    switch (proxy_info->proxy_type) {
+        case TCP_PROXY_HTTP:
+            ip_port = ((TCP_Proxy_HTTP*)proxy_info->proxy)->ip_port;
+            break;
+        case TCP_PROXY_SOCKS5:
+            ip_port = ((TCP_Proxy_SOCKS5*)proxy_info->proxy)->ip_port;
+            break;
+        case TCP_PROXY_NONE:
+            break;
+    }
 
     struct sockaddr_storage addr = {0};
     size_t addrsize;
@@ -80,7 +88,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *TCP_con
         return 0;
     }
     const uint16_t port = ntohs(TCP_conn->ip_port.port);
-    const int written = sprintf(TCP_conn->last_packet, "%s%s:%hu%s%s:%hu%s", one, ip, port, two, ip, port, three);
+    const int written = snprintf(TCP_conn->last_packet, MAX_PACKET_SIZE, "%s%s:%hu%s%s:%hu%s", one, ip, port, two, ip, port, three);
     if (written < 0) {
         return 0;
     }
@@ -605,8 +613,16 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
 
     uint8_t family = ip_port.ip.family;
 
-    if (proxy_info)
-        family = proxy_info->ip_port.ip.family;
+    switch (proxy_info->proxy_type) {
+        case TCP_PROXY_HTTP:
+            family = ((TCP_Proxy_HTTP*)proxy_info->proxy)->ip_port.ip.family;
+            break;
+        case TCP_PROXY_SOCKS5:
+            family = ((TCP_Proxy_SOCKS5*)proxy_info->proxy)->ip_port.ip.family;
+            break;
+        case TCP_PROXY_NONE:
+            break;
+    }
 
     sock_t sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
 
@@ -636,23 +652,26 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     memcpy(temp->self_public_key, self_public_key, crypto_box_PUBLICKEYBYTES);
     encrypt_precompute(temp->public_key, self_secret_key, temp->shared_key);
     temp->ip_port = ip_port;
+    temp->proxy_info = *proxy_info;
 
-    if (proxy_info && proxy_info->is_http) {
-        temp->status = TCP_CLIENT_PROXY_HTTP_CONNECTING;
-        temp->proxy_info = *proxy_info;
-        proxy_http_generate_connection_request(temp);
-    } else if (proxy_info && !proxy_info->is_http) {
-        temp->status = TCP_CLIENT_PROXY_SOCKS5_CONNECTING;
-        temp->proxy_info = *proxy_info;
-        proxy_socks5_generate_handshake(temp);
-    } else {
-        temp->status = TCP_CLIENT_CONNECTING;
+    switch (proxy_info->proxy_type) {
+        case TCP_PROXY_HTTP:
+            temp->status = TCP_CLIENT_PROXY_HTTP_CONNECTING;
+            proxy_http_generate_connection_request(temp);
+            break;
+        case TCP_PROXY_SOCKS5:
+            temp->status = TCP_CLIENT_PROXY_SOCKS5_CONNECTING;
+            proxy_socks5_generate_handshake(temp);
+            break;
+        case TCP_PROXY_NONE:
+            temp->status = TCP_CLIENT_CONNECTING;
 
-        if (generate_handshake(temp) == -1) {
-            kill_sock(sock);
-            free(temp);
-            return NULL;
-        }
+            if (generate_handshake(temp) == -1) {
+                kill_sock(sock);
+                free(temp);
+                return NULL;
+            }
+            break;
     }
 
     temp->kill_at = unix_time() + TCP_CONNECTION_TIMEOUT;

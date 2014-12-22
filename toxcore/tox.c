@@ -1020,19 +1020,63 @@ Tox *tox_new(Tox_Options *options)
     } else {
         m_options.ipv6enabled = options->ipv6enabled;
         m_options.udp_disabled = options->udp_disabled;
-        m_options.proxy_enabled = options->proxy_enabled;
-        m_options.proxy_info.is_http = options->proxy_is_http;
 
-        if (m_options.proxy_enabled) {
-            ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
+        switch (options->proxy_type) {
+            case TOX_PROXY_HTTP: {
+                m_options.proxy_info.proxy_type = TCP_PROXY_HTTP;
+                m_options.proxy_info.proxy = malloc(sizeof(TCP_Proxy_HTTP));
+                if (!m_options.proxy_info.proxy) {
+                    return NULL;
+                }
 
-            if (m_options.ipv6enabled)
-                m_options.proxy_info.ip_port.ip.family = AF_UNSPEC;
+                TCP_Proxy_HTTP* m_proxy = (TCP_Proxy_HTTP*)m_options.proxy_info.proxy;
+                Tox_Proxy_HTTP* tox_proxy = (Tox_Proxy_HTTP*)options->proxy;
 
-            if (!addr_resolve_or_parse_ip(options->proxy_address, &m_options.proxy_info.ip_port.ip, NULL))
-                return NULL;
+                ip_init(&m_proxy->ip_port.ip, m_options.ipv6enabled);
 
-            m_options.proxy_info.ip_port.port = htons(options->proxy_port);
+                if (m_options.ipv6enabled) {
+                    m_proxy->ip_port.ip.family = AF_UNSPEC;
+                }
+
+                if (!addr_resolve_or_parse_ip(tox_proxy->address, &m_proxy->ip_port.ip, NULL)) {
+                    return NULL;
+                }
+
+                m_proxy->ip_port.port = htons(tox_proxy->port);
+
+                break;
+            }
+
+            case TOX_PROXY_SOCKS5: {
+                m_options.proxy_info.proxy_type = TCP_PROXY_SOCKS5;
+                m_options.proxy_info.proxy = malloc(sizeof(TCP_Proxy_SOCKS5));
+                if (!m_options.proxy_info.proxy) {
+                    return NULL;
+                }
+
+                TCP_Proxy_SOCKS5* m_proxy = (TCP_Proxy_SOCKS5*)m_options.proxy_info.proxy;
+                Tox_Proxy_SOCKS5* tox_proxy = (Tox_Proxy_SOCKS5*)options->proxy;
+
+                ip_init(&m_proxy->ip_port.ip, m_options.ipv6enabled);
+
+                if (m_options.ipv6enabled) {
+                    m_proxy->ip_port.ip.family = AF_UNSPEC;
+                }
+
+                if (!addr_resolve_or_parse_ip(tox_proxy->address, &m_proxy->ip_port.ip, NULL)) {
+                    return NULL;
+                }
+
+                m_proxy->ip_port.port = htons(tox_proxy->port);
+
+                break;
+            }
+
+            case TOX_PROXY_NONE: {
+                m_options.proxy_info.proxy_type = TCP_PROXY_NONE;
+
+                break;
+            }
         }
     }
 
