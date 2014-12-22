@@ -880,16 +880,6 @@ typedef enum {
 } TOX_PROXY_TYPE;
 
 typedef struct {
-    char address[256]; /* Proxy ip or domain in NULL terminated string format. */
-    uint16_t port; /* Proxy port: in host byte order. */
-} Tox_Proxy_HTTP;
-
-typedef struct {
-    char address[256]; /* Proxy ip or domain in NULL terminated string format. */
-    uint16_t port; /* Proxy port: in host byte order. */
-} Tox_Proxy_SOCKS5;
-
-typedef struct {
     /*
     *  The type of UDP socket created depends on ipv6enabled:
     *  If set to 0 (zero), creates an IPv4 socket which subsequently only allows
@@ -903,8 +893,9 @@ typedef struct {
        This will force Tox to use TCP only which may slow things down.
        Disabling udp support is necessary when using proxies or Tor.*/
     uint8_t udp_disabled;
-    uint8_t proxy_type; // a value from TOX_PROXY_TYPE
-    void* proxy; // pointer to the corresponding proxy type struct
+    uint8_t proxy_type; /* a value from TOX_PROXY_TYPE */
+    char proxy_address[256]; /* Proxy ip or domain in NULL terminated string format. */
+    uint16_t proxy_port; /* Proxy port in host byte order. */
 } Tox_Options;
 
 /*

@@ -37,17 +37,7 @@ typedef enum {
 
 typedef struct {
     IP_Port ip_port;
-} TCP_Proxy_HTTP;
-
-typedef struct {
-    IP_Port ip_port;
-} TCP_Proxy_SOCKS5;
-
-
-
-typedef struct {
     uint8_t proxy_type; // a value from TCP_PROXY_TYPE
-    void* proxy; // pointer to the corresponding proxy type struct
 } TCP_Proxy_Info;
 
 enum {

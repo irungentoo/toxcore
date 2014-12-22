@@ -37,15 +37,8 @@
  */
 static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_info)
 {
-    switch (proxy_info->proxy_type) {
-        case TCP_PROXY_HTTP:
-            ip_port = ((TCP_Proxy_HTTP*)proxy_info->proxy)->ip_port;
-            break;
-        case TCP_PROXY_SOCKS5:
-            ip_port = ((TCP_Proxy_SOCKS5*)proxy_info->proxy)->ip_port;
-            break;
-        case TCP_PROXY_NONE:
-            break;
+    if (proxy_info->proxy_type != TCP_PROXY_NONE) {
+            ip_port =proxy_info->ip_port;
     }
 
     struct sockaddr_storage addr = {0};
@@ -613,15 +606,8 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
 
     uint8_t family = ip_port.ip.family;
 
-    switch (proxy_info->proxy_type) {
-        case TCP_PROXY_HTTP:
-            family = ((TCP_Proxy_HTTP*)proxy_info->proxy)->ip_port.ip.family;
-            break;
-        case TCP_PROXY_SOCKS5:
-            family = ((TCP_Proxy_SOCKS5*)proxy_info->proxy)->ip_port.ip.family;
-            break;
-        case TCP_PROXY_NONE:
-            break;
+    if (proxy_info->proxy_type != TCP_PROXY_NONE) {
+        family = proxy_info->ip_port.ip.family;
     }
 
     sock_t sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
