@@ -783,42 +783,44 @@ typedef enum {
 
 /* Set the callback for group messages.
  *
- *  function(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
  */
-void tox_callback_group_message(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
-                                const uint8_t *, uint32_t, void *), void *userdata);
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                void *), void *userdata);
+
 /* Set the callback for group operator actions.
  *
- *  function(GC_Chat *chat, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
  */
-void tox_callback_group_op_action(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
-                                  const uint8_t *, uint32_t, void *), void *userdata);
+void tox_callback_group_op_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                  void *), void *userdata);
+
 /* Set the callback for group name changes.
  *
- * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
  */
-void tox_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                    uint32_t, void *), void *userdata);
+void tox_callback_group_name_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                    void *), void *userdata);
 
 /* Set the callback for group title changes.
  *
- * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *title, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *title, uint32_t length, void *userdata)
  */
-void tox_callback_group_title_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
+void tox_callback_group_title_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *,
                                      uint32_t, void *), void *userdata);
 
 /* Set the callback for group peer join.
  *
- * function(GC_Chat *chat, uint32_t peernumber, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, void *userdata)
  */
-void tox_callback_group_peer_join(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata);
+void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32_t, void *), void *userdata);
 
 /* Set the callback for group peer exit.
  *
- * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *partmessage, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *partmessage, uint32_t length, void *userdata)
  */
-void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
-                                  const uint8_t *, uint32_t, void *), void *userdata);
+void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                  void *), void *userdata);
 
 /* Creates a new groupchat and adds to group chats array.
  *

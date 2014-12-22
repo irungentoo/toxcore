@@ -139,11 +139,12 @@ struct GC_Chat {
     uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
     uint32_t    self_common_cert_num;
 
-    GC_GroupPeer  *group;
+    GC_GroupPeer   *group;
     GC_PeerAddress *group_address_only;
+    GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
 
-    GC_PeerAddress close[GROUP_CLOSE_CONNECTIONS];
     uint32_t    numpeers;
+    int         groupnumber;
 
     uint8_t     self_nick[MAX_GC_NICK_SIZE];
     uint16_t    self_nick_len;
@@ -161,26 +162,25 @@ struct GC_Chat {
     GC_ChatCredentials *credentials;
 
     uint32_t message_number;
-
-    // TODO: Move these to GC_Session if possible?
-    void (*group_message)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *);
-    void *group_message_userdata;
-    void (*group_op_action)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *);
-    void *group_op_action_userdata;
-    void (*group_nick_change)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *);
-    void *group_nick_change_userdata;
-    void (*group_title_change)(GC_Chat *chat, uint32_t, const uint8_t *,  uint32_t, void *);
-    void *group_title_change_userdata;
-    void (*group_peer_join)(GC_Chat *chat, uint32_t, void *);
-    void *group_peer_join_userdata;
-    void (*group_peer_exit)(GC_Chat *chat, uint32_t, const uint8_t *, uint32_t, void *);
-    void *group_peer_exit_userdata;
 };
 
 typedef struct GC_Session {
+    Messenger *messenger;
     GC_Chat *chats;
     uint32_t num_chats;
-    Messenger* messenger;
+
+    void (*group_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void *group_message_userdata;
+    void (*group_op_action)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void *group_op_action_userdata;
+    void (*group_nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void *group_nick_change_userdata;
+    void (*group_title_change)(Messenger *m, int, uint32_t, const uint8_t *,  uint32_t, void *);
+    void *group_title_change_userdata;
+    void (*group_peer_join)(Messenger *m, int, uint32_t, void *);
+    void *group_peer_join_userdata;
+    void (*group_peer_exit)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void *group_peer_exit_userdata;
 } GC_Session;
 
 /* TODO remove these cert stuff from the header; it's not used anywhere but the test 
@@ -283,32 +283,33 @@ int gc_set_self_nick(GC_Chat *chat, const uint8_t *nick, uint32_t length);
 /* Return -1 on error.
  * Return nick length if success
  */
-int gc_get_nick(const GC_Chat *chat, uint32_t peernum, uint8_t *namebuffer);
+int gc_get_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
 
 /* Return -1 if fail
  * Return 0 if success
  */
 int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 
-/* Return's peernum's status (GS_INVALID on failure) */
-uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernum);
+/* Return's peernumber's status (GS_INVALID on failure) */
+uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
 
-void gc_callback_groupmessage(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                              uint32_t, void *), void *userdata);
+void gc_callback_group_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                               const uint8_t *, uint32_t, void *), void *userdata);
 
-void gc_callback_group_op_action(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                 uint32_t, void *), void *userdata);
+void gc_callback_group_op_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                                 const uint8_t *, uint32_t, void *), void *userdata);
 
-void gc_callback_group_nick_change(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                   uint32_t, void *), void *userdata);
+void gc_callback_group_nick_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                                   const uint8_t *, uint32_t, void *), void *userdata);
 
-void gc_callback_group_title_change(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                    uint32_t, void *), void *userdata);
+void gc_callback_group_title_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                                    const uint8_t *, uint32_t, void *), void *userdata);
 
-void gc_callback_group_peer_join(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata);
+void gc_callback_group_peer_join(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, void *),
+                                 void *userdata);
 
-void gc_callback_group_peer_exit(GC_Chat *chat, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                 uint32_t, void *), void *userdata);
+void gc_callback_group_peer_exit(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                                 const uint8_t *, uint32_t, void *), void *userdata);
 
 /* Check if peer with client_id is in peer array.
  * return peer number if peer is in chat.
@@ -318,13 +319,13 @@ void gc_callback_group_peer_exit(GC_Chat *chat, void (*function)(GC_Chat *chat, 
 int gc_peer_in_chat(const GC_Chat *chat, const uint8_t *client_id);
 
 int gc_add_peer(GC_Chat *chat, const GC_GroupPeer *peer);
-int gc_update_peer(GC_Chat *chat, const GC_GroupPeer *peer, uint32_t peernum);
+int gc_update_peer(GC_Chat *chat, const GC_GroupPeer *peer, uint32_t peernumber);
 int gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer);
 
 /* TODO maybe clean more? */
 /* This is the main loop.
  */
-void do_gc(GC_Session *c);
+void do_gc(Messenger *m);
 
 /* Create new group credentials with pk ans sk.
  * Returns a new group credentials instance if success.
