@@ -41,8 +41,9 @@
 /* The timeout the first time the path is added and
    then for all the next consecutive times */
 #define ONION_PATH_FIRST_TIMEOUT 5
-#define ONION_PATH_TIMEOUT 30
-#define ONION_PATH_MAX_LIFETIME 600
+#define ONION_PATH_TIMEOUT 10
+#define ONION_PATH_MAX_LIFETIME 1200
+#define ONION_PATH_MAX_NO_RESPONSE_USES 4
 
 #define MAX_STORED_PINGED_NODES 9
 #define MIN_NODE_PING_TIME 10
@@ -71,7 +72,10 @@ typedef struct {
 typedef struct {
     Onion_Path paths[NUMBER_ONION_PATHS];
     uint64_t last_path_success[NUMBER_ONION_PATHS];
+    uint64_t last_path_used[NUMBER_ONION_PATHS];
     uint64_t path_creation_time[NUMBER_ONION_PATHS];
+    /* number of times used without success. */
+    unsigned int last_path_used_times[NUMBER_ONION_PATHS];
 } Onion_Client_Paths;
 
 typedef struct {

@@ -162,7 +162,8 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
     if (pathnum >= NUMBER_ONION_PATHS)
         pathnum = rand() % NUMBER_ONION_PATHS;
 
-    if (is_timeout(onion_paths->last_path_success[pathnum], ONION_PATH_TIMEOUT)
+    if ((onion_paths->last_path_success[pathnum] + ONION_PATH_TIMEOUT < onion_paths->last_path_used[pathnum]
+            && onion_paths->last_path_used_times[pathnum] >= ONION_PATH_MAX_NO_RESPONSE_USES)
             || is_timeout(onion_paths->path_creation_time[pathnum], ONION_PATH_MAX_LIFETIME)) {
         Node_format nodes[3];
 
@@ -177,6 +178,8 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
 
             onion_paths->last_path_success[pathnum] = unix_time() + ONION_PATH_FIRST_TIMEOUT - ONION_PATH_TIMEOUT;
             onion_paths->path_creation_time[pathnum] = unix_time();
+            onion_paths->last_path_used_times[pathnum] = ONION_PATH_MAX_NO_RESPONSE_USES / 2;
+
             uint32_t path_num = rand();
             path_num /= NUMBER_ONION_PATHS;
             path_num *= NUMBER_ONION_PATHS;
@@ -188,6 +191,8 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
         }
     }
 
+    ++onion_paths->last_path_used_times[pathnum];
+    onion_paths->last_path_used[pathnum] = unix_time();
     memcpy(path, &onion_paths->paths[pathnum], sizeof(Onion_Path));
     return 0;
 }
@@ -210,6 +215,7 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, uint32_t 
 
     if (onion_paths->paths[path_num % NUMBER_ONION_PATHS].path_num == path_num) {
         onion_paths->last_path_success[path_num % NUMBER_ONION_PATHS] = unix_time();
+        onion_paths->last_path_used_times[path_num % NUMBER_ONION_PATHS] = 0;
         return path_num % NUMBER_ONION_PATHS;
     }
 
