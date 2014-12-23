@@ -482,7 +482,7 @@ yum install opus-devel libvpx-devel
 
 Install on ubuntu:
 ```bash
-sudo apt-get install libopus-dev libvpx-dev
+sudo apt-get install libopus-dev libvpx-dev pkg-config
 ```
 If you get the "Unable to locate package libopus-dev" message, add the following ppa and try again:
 ```bash
