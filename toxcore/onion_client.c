@@ -1266,8 +1266,6 @@ static void do_announce(Onion_Client *onion_c)
     }
 }
 
-#define NODE_POPULATE_TIMES 4
-
 void do_onion_client(Onion_Client *onion_c)
 {
     unsigned int i;
@@ -1275,8 +1273,7 @@ void do_onion_client(Onion_Client *onion_c)
     if (onion_c->last_run == unix_time())
         return;
 
-    for (i = 0; i < NODE_POPULATE_TIMES; ++i)
-        populate_path_nodes(onion_c);
+    populate_path_nodes(onion_c);
 
     do_announce(onion_c);
 
