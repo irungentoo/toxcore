@@ -2796,7 +2796,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             uint32_t i;
 
             for (i = 0; i < NUM_SAVED_PATH_NODES; ++i) {
-                onion_add_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
+                onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
             }
 
             break;

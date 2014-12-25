@@ -143,6 +143,9 @@ typedef struct {
     Node_format path_nodes[MAX_PATH_NODES];
     uint16_t path_nodes_index;
 
+    Node_format path_nodes_bs[MAX_PATH_NODES];
+    uint16_t path_nodes_index_bs;
+
     Ping_Array announce_ping_array;
     uint8_t last_pinged_index;
     struct {
@@ -154,12 +157,12 @@ typedef struct {
 } Onion_Client;
 
 
-/* Add a node to the path_nodes array.
+/* Add a node to the path_nodes bootstrap array.
  *
  * return -1 on failure
  * return 0 on success
  */
-int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
+int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
 
 /* Put up to max_num nodes in nodes.
  *

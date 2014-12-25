@@ -969,7 +969,7 @@ int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_
 
     ip_port.port = htons(port);
     add_tcp_relay(m->net_crypto, ip_port, public_key);
-    onion_add_path_node(m->onion_c, ip_port, public_key); //TODO: move this
+    onion_add_bs_path_node(m->onion_c, ip_port, public_key); //TODO: move this
     return 1;
 }
 
