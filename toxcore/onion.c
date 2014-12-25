@@ -77,10 +77,37 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
     new_path->ip_port2 = nodes[1].ip_port;
     new_path->ip_port3 = nodes[2].ip_port;
 
+    memcpy(new_path->node_public_key1, nodes[0].client_id, crypto_box_PUBLICKEYBYTES);
+    memcpy(new_path->node_public_key2, nodes[1].client_id, crypto_box_PUBLICKEYBYTES);
+    memcpy(new_path->node_public_key3, nodes[2].client_id, crypto_box_PUBLICKEYBYTES);
+
     /* to_net_family(&new_path->ip_port1.ip); */
     to_net_family(&new_path->ip_port2.ip);
     to_net_family(&new_path->ip_port3.ip);
 
+    return 0;
+}
+
+/* Dump nodes in onion path to nodes of length num_nodes;
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_path_to_nodes(Node_format *nodes, unsigned int num_nodes, const Onion_Path *path)
+{
+    if (num_nodes < 3)
+        return -1;
+
+    nodes[0].ip_port = path->ip_port1;
+    nodes[1].ip_port = path->ip_port2;
+    nodes[2].ip_port = path->ip_port3;
+
+    to_host_family(&nodes[1].ip_port.ip);
+    to_host_family(&nodes[2].ip_port.ip);
+
+    memcpy(nodes[0].client_id, path->node_public_key1, crypto_box_PUBLICKEYBYTES);
+    memcpy(nodes[1].client_id, path->node_public_key2, crypto_box_PUBLICKEYBYTES);
+    memcpy(nodes[2].client_id, path->node_public_key3, crypto_box_PUBLICKEYBYTES);
     return 0;
 }
 
