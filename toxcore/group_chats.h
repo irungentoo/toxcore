@@ -143,7 +143,6 @@ struct GC_Chat {
     uint32_t    self_common_cert_num;
 
     GC_GroupPeer   *group;
-    GC_PeerAddress *group_address_only;
     GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
 
     uint32_t    numpeers;
