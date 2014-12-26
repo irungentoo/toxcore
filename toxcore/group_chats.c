@@ -29,6 +29,7 @@
 
 #include "DHT.h"
 #include "group_chats.h"
+#include "group_announce.h"
 #include "LAN_discovery.h"
 #include "util.h"
 #include "Messenger.h"
@@ -315,7 +316,7 @@ int handle_gc_invite_response(GC_Chat *chat, IP_Port ipp, const uint8_t *public_
 
     memcpy(chat->self_invite_certificate, data, INVITE_CERTIFICATE_SIGNED_SIZE);
 
-    // send_sync_request();
+    gc_send_sync_request(chat, ipp, public_key);
     // add the peer who invited us
     return 0;
 }
@@ -430,7 +431,22 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, IP_Port ipp, const ui
 
     // NB: probably to be deleted
     chat->group_address_only[num-1].ip_port = ipp;
-
+    chat->joined = true;
+    chat->joining = false;
+    
+    if (c->group_self_join) {
+        uint32_t peers_in_chat[num];
+        for (i = 0; i < num; i++) { 
+            /* Copy peer numbers in array so that we can know which peers are 
+             * Already in the chat to mimic IRC behaviour
+             */
+            
+            /* NOTE LOL peer ids are just indexes */
+            peers_in_chat[i] = i;
+        }
+        c->group_self_join(m, groupnumber, peers_in_chat, num, c->group_self_join_userdata);
+    }
+    
     return 0;
 }
 
@@ -960,6 +976,14 @@ void gc_callback_group_peer_join(Messenger *m, void (*function)(Messenger *m, in
     c->group_peer_join_userdata = userdata;
 }
 
+void gc_callback_group_self_join(Messenger* m, void (*function)(Messenger *m, int groupnumber, uint32_t*, uint32_t, void *), 
+                                 void* userdata)
+{
+    GC_Session *c = m->group_handler;
+    c->group_self_join = function;
+    c->group_self_join_userdata = userdata;
+}
+
 /* Sign input data
  * Add signer public key, time stamp and signature in the end of the data
  * Return -1 if fail, 0 if success
@@ -1281,10 +1305,8 @@ static void ping_group(GC_Chat *chat)
     }
 }
 
-void do_gc(Messenger *m)
+void do_gc(GC_Session *c)
 {
-    GC_Session *c = m->group_handler;
-
     if (!c)
         return;
 
@@ -1292,10 +1314,26 @@ void do_gc(Messenger *m)
     
     for (i = 0; i < c->num_chats; ++i) {
         if (c->chats[i].self_status != GS_NONE) {
-            ping_group(&c->chats[i]);
-            check_peer_timeouts(m, i);
+            if (c->chats[i].joined){
+                ping_group(&c->chats[i]);
+                check_peer_timeouts(c->messenger, i);
+            } else if (!c->chats[i].joining) {
+                /* FIXME Max nodes is always 20? */
+                GC_Announce_Node nodes[20];
+                int rc = gca_get_requested_nodes(c->announce, c->chats[i].invite_key, nodes);
+                if (rc) {
+                    /* Join to random node */
+                    if (gc_send_invite_request(&c->chats[i], nodes[random_int() % rc].ip_port,
+                        c->chats[i].invite_key) == -1) {
+                        /* TODO: clear chat and all that or choose another group */
+                    } else
+                        c->chats[i].joining = true;
+                }
+            } /* if else it probably waits for join response */
         }
     }
+    
+    do_gca(c->announce);
 }
 
 GC_ChatCredentials *new_groupcredentials(void)
@@ -1370,7 +1408,12 @@ static int create_new_group(GC_Session *c)
 
     create_long_keypair(chat->self_public_key, chat->self_secret_key);
     
+    /* FIXME: should this be self pk or chat pk? */
     chat->hash_id = calculate_hash(chat->self_public_key, EXT_PUBLIC_KEY);
+    
+    /* We send announce to the DHT so that everyone can join our chat */
+    gca_send_announce_request(c->announce, chat->self_public_key, 
+                              chat->self_secret_key, chat->chat_public_key);
     
     return new_index;
 }
@@ -1402,11 +1445,13 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key)
     if (chat == NULL)
         return -1;
 
-    IP_Port port;  // TODO: fill me out
-
-    if (gc_send_invite_request(chat, port, invite_key) == -1)
-        return -1;
-
+    memcpy(chat->invite_key, invite_key, EXT_PUBLIC_KEY);
+    if ( 0 != gca_send_get_nodes_request(c->announce, chat->self_public_key, 
+        chat->self_secret_key, invite_key) ) {
+            /*TODO: free group and all that*/
+            return -1;
+        }
+    
     return groupnumber;
 }
 
@@ -1467,7 +1512,8 @@ GC_Session* new_groupchats(Messenger* m)
         return NULL;
 
     retu->messenger = m;
-
+    retu->announce = new_gca(m->dht);
+    
     networking_registerhandler(m->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, m);
     return retu;
 }
@@ -1481,6 +1527,7 @@ void gc_kill_groupchats(GC_Session* c)
             gc_group_delete(c, &c->chats[i], (const uint8_t *) "Quit", 4);
     }
     
+    kill_gca(c->announce);
     networking_registerhandler(c->messenger->net, NET_PACKET_GROUP_CHATS, NULL, NULL);
     free(c);
 }

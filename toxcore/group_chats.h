@@ -130,14 +130,15 @@ typedef struct {
     GC_ChatOps   *ops;
 } GC_ChatCredentials;
 
-typedef struct GC_Chat GC_Chat;
+typedef struct GC_Announce GC_Announce;
 
-struct GC_Chat {
+typedef struct GC_Chat {
     Networking_Core *net;
     uint32_t hash_id;   /* 32-bit hash of self_public_key */
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
+    uint8_t     invite_key[EXT_PUBLIC_KEY]; /* Key used to join the chat */
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
     uint32_t    self_common_cert_num;
@@ -165,13 +166,17 @@ struct GC_Chat {
     GC_ChatCredentials *credentials;
 
     uint32_t message_number;
-};
+    
+    bool joined;
+    bool joining;
+} GC_Chat;
 
 typedef struct GC_Session {
     Messenger *messenger;
     GC_Chat *chats;
     uint32_t num_chats;
-
+    GC_Announce* announce;
+    
     void (*group_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *group_message_userdata;
     void (*group_prvt_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
@@ -186,6 +191,8 @@ typedef struct GC_Session {
     void *group_peer_join_userdata;
     void (*group_peer_exit)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *group_peer_exit_userdata;
+    void (*group_self_join)(Messenger *m, int, uint32_t*, uint32_t, void *);
+    void *group_self_join_userdata;
 } GC_Session;
 
 /* TODO remove these cert stuff from the header; it's not used anywhere but the test 
@@ -326,6 +333,9 @@ void gc_callback_group_peer_join(Messenger *m, void (*function)(Messenger *m, in
 void gc_callback_group_peer_exit(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                                  const uint8_t *, uint32_t, void *), void *userdata);
 
+void gc_callback_group_self_join(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t*, uint32_t, void *),
+                                 void *userdata);
+
 /* Check if peer with client_id is in peer array.
  * return peer number if peer is in chat.
  * return -1 if peer is not in chat.
@@ -340,7 +350,7 @@ int gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer);
 /* TODO maybe clean more? */
 /* This is the main loop.
  */
-void do_gc(Messenger *m);
+void do_gc(GC_Session* c);
 
 /* Create new group credentials with pk ans sk.
  * Returns a new group credentials instance if success.
@@ -354,6 +364,7 @@ void do_gc(Messenger *m);
 // void kill_groupcredentials(GC_ChatCredentials *credentials);
 
 /* Returns a NULL pointer if fail.
+ * Make sure that DHT is initialized before calling this
  */
 GC_Session* new_groupchats(Messenger* m);
 

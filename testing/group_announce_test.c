@@ -110,14 +110,14 @@ void basicannouncetest()
     idle_n_secs(10, peers, PEERCOUNT);
 
     printf("Sending get announced nodes requests\n");
-    res = gca_send_get_announced_nodes_request(peers[1].dht, peers[1].pk,
+    res = gca_send_get_nodes_request(peers[1].dht, peers[1].pk,
                              peers[1].sk, group_pk);
     printf("Number of sent get announced nodes requests %d\n", res);
     idle_n_secs(10, peers, PEERCOUNT);
 
     printf("Getting announced nodes\n");
 
-    GC_Node nodes[10*4];
+    GC_Announce_Node nodes[10*4];
     int num_nodes = gca_get_requested_nodes(peers[1].dht->announce, group_pk, nodes);
 
     printf("Number of announced nodes %d\n", num_nodes);
