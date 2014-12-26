@@ -303,7 +303,7 @@ struct Messenger {
     void *file_sendrequest_userdata;
     void (*file_filecontrol)(struct Messenger *m, int32_t, uint8_t, uint8_t, uint8_t, const uint8_t *, uint16_t, void *);
     void *file_filecontrol_userdata;
-    void (*file_filedata)(struct Messenger *m, int32_t, uint8_t, const uint8_t *, uint16_t length, void *);
+    void (*file_filedata)(struct Messenger *m, int32_t, uint8_t, const uint8_t *, uint16_t, void *);
     void *file_filedata_userdata;
 
     void (*msi_packet)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);

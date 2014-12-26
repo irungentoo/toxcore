@@ -22,8 +22,8 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -39,7 +39,7 @@
                                         static unsigned stat_buffer_counter_##name=0;
 #define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[(len)*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
 
-// Macroses for long keys and cert handle
+// Macros for long keys and cert handle
 #define ENC_KEY(key) (key)
 #define SIG_KEY(key) (key+ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
 #define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
@@ -87,4 +87,4 @@ void U32_to_bytes(uint8_t *dest, uint32_t value);
 
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
-#endif /* __UTIL_H__ */
+#endif /* UTIL_H */

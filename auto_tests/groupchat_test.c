@@ -15,7 +15,7 @@ START_TEST(text_all)
     tox_callback_friend_request(Alice, accept_friend_request, &to_compare);
     uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
     tox_get_address(Alice, address);
-    int test = tox_add_friend(Bob, address, (uint8_t *)"gentoo", 7);
+    int test = tox_add_friend(Bob, address, (uint8_t *)"gentoo", 6);
     
     ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
     

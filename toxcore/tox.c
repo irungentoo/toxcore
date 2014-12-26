@@ -847,97 +847,78 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
 
 /* Set the callback for group messages.
  *
- *  function(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
  */
-void tox_callback_group_message(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
-                                const uint8_t *, uint32_t, void *), void *userdata)
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                void *), void *userdata)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    gc_callback_group_message(m, function, userdata);
+}
 
-    if (chat == NULL)
-        return;
-
-    gc_callback_groupmessage(chat, function, userdata);
+/* Set the callback for group private messages.
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ */
+void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                        void *), void *userdata)
+{
+    Messenger *m = tox;
+    gc_callback_group_prvt_message(m, function, userdata);
 }
 
 /* Set the callback for group operator actions.
  *
- *  function(GC_Chat *chat, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
  */
-void tox_callback_group_op_action(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
-                                  const uint8_t *, uint32_t, void *), void *userdata)
+void tox_callback_group_op_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                  void *), void *userdata)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return;
-
-    gc_callback_group_op_action(chat, function, userdata);
+    gc_callback_group_op_action(m, function, userdata);
 }
 
 /* Set the callback for group name changes.
  *
- * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
  */
-void tox_callback_group_name_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                    uint32_t, void *), void *userdata)
+void tox_callback_group_name_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                    void *), void *userdata)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return;
-
-    gc_callback_group_nick_change(chat, function, userdata);
+    gc_callback_group_nick_change(m, function, userdata);
 }
 
 /* Set the callback for group title changes.
  *
- * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *title, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *title, uint32_t length, void *userdata)
  */
-void tox_callback_group_title_change(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, const uint8_t *,
-                                    uint32_t, void *), void *userdata)
+void tox_callback_group_title_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *,
+                                     uint32_t, void *), void *userdata)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return;
-
-    gc_callback_group_title_change(chat, function, userdata);
+    gc_callback_group_title_change(m, function, userdata);
 }
 
 /* Set the callback for group peer join.
  *
- * function(GC_Chat *chat, uint32_t peernumber, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, void *userdata)
  */
-void tox_callback_group_peer_join(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t, void *), void *userdata)
+void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32_t, void *), void *userdata)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return;
-
-    gc_callback_group_peer_join(chat, function, userdata);
+    gc_callback_group_peer_join(m, function, userdata);
 }
 
 /* Set the callback for group peer exit.
  *
- * function(GC_Chat *chat, uint32_t peernumber, const uint8_t *partmessage, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *partmessage, uint32_t length, void *userdata)
  */
-void tox_callback_group_peer_exit(Tox *tox, int groupnumber, void (*function)(GC_Chat *chat, uint32_t,
-                                  const uint8_t *, uint32_t, void *), void *userdata)
+void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                  void *), void *userdata)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return;
-
-    gc_callback_group_peer_exit(chat, function, userdata);
+    gc_callback_group_peer_exit(m, function, userdata);
 }
 
 /* Adds a new groupchat to group chats array.
@@ -993,6 +974,23 @@ int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *messa
         return -1;
 
     return gc_send_plain_message(chat, message, length);
+}
+
+/* Sends a private message to peernumber in groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t peernumber, const uint8_t *message,
+                                   uint32_t length)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_send_prvt_message(chat, peernumber, message, length);
 }
 
 /* Sends a groupchat operator action to groupnumber.
@@ -1107,11 +1105,8 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
     return gc_get_status(chat, peernumber);
 }
 
-int tox_group_get_invite_key(const Tox* tox, int groupnumber, uint8_t* dest)
+int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest)
 {
-    if (!tox)
-        return -1;
-    
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
     
@@ -1120,4 +1115,22 @@ int tox_group_get_invite_key(const Tox* tox, int groupnumber, uint8_t* dest)
     
     memcpy(dest, chat->self_public_key, EXT_PUBLIC_KEY);
     return 0;
+}
+
+/* Toggle ignore on peernumber in groupnumber.
+ * If ignore is 1, group and private messages from peernumber are ignored, as well as A/V.
+ * If ignore is 0, peer is unignored.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, uint8_t ignore)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_toggle_ignore(chat, peernumber, ignore);
 }

@@ -18,8 +18,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __GROUP_ANNOUNCE_H__
-#define __GROUP_ANNOUNCE_H__
+#ifndef GROUP_ANNOUNCE_H
+#define GROUP_ANNOUNCE_H
 
 #include "DHT.h"
 
@@ -59,4 +59,4 @@ GC_Announce *new_gca(DHT *dht);
 void kill_gca(GC_Announce *announce);
 
 
-#endif /* __GROUP_ANNOUNCE_H__ */
+#endif /* GROUP_ANNOUNCE_H */
