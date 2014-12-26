@@ -26,8 +26,6 @@
 
 #include <stdint.h>
 
-typedef struct GC_Chat GC_Chat;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -788,6 +786,13 @@ typedef enum {
 void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
                                 void *), void *userdata);
 
+/* Set the callback for group private messages.
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ */
+void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                        void *), void *userdata);
+
 /* Set the callback for group operator actions.
  *
  *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
@@ -851,6 +856,14 @@ int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint
  * Return -1 on failure.
  */
 int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint32_t length);
+
+/* Sends a private message to peernumber in groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t peernumber, const uint8_t *message,
+                                   uint32_t length);
 
 /* Sends a groupchat operator action to groupnumber.
  *

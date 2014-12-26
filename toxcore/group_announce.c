@@ -40,16 +40,16 @@
 #define NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES 7 /* Get announced nodes request packet ID */
 #define NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES 8 /* Send announced nodes request packet ID */
 
-#define TIME_STAMP (sizeof(uint64_t))
+#define TIME_STAMP_SIZE (sizeof(uint64_t))
 #define REQUEST_ID (sizeof(uint64_t))
 #define GC_ANNOUNCE_EXPIRATION 3600    /* sec */
 
 // Type + Chat_ID + IP_Port + Client_ID + Timestamp + Signature 
-#define GC_ANNOUNCE_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
+#define GC_ANNOUNCE_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 #define GC_ANNOUNCE_REQUEST_DHT_SIZE (1 + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_ANNOUNCE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
 // Type + Chat_ID + IP_Port + RequestID + Client_ID + Timestamp + Signature
-#define GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + sizeof(IP_Port) + REQUEST_ID + TIME_STAMP + SIGNATURE_SIZE)
+#define GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + sizeof(IP_Port) + REQUEST_ID + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 #define GC_ANNOUNCE_GETNODES_REQUEST_DHT_SIZE (1 + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
 // Type + Num_Nodes + Nodes + RequestID
@@ -276,7 +276,7 @@ int handle_gc_announce_request(void * dht_obj, IP_Port ipp, const uint8_t packet
     if (crypto_sign_verify_detached(data + GC_ANNOUNCE_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE,
                                     data, GC_ANNOUNCE_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE,
                                     SIG_KEY(data + GC_ANNOUNCE_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE
-                                            - TIME_STAMP - EXT_PUBLIC_KEY)) != 0) 
+                                            - TIME_STAMP_SIZE - EXT_PUBLIC_KEY)) != 0)
         return -1;
 
     return dispatch_packet(dht, ENC_KEY(data+1), dht->self_public_key, data,
@@ -317,7 +317,7 @@ int send_gc_get_announced_nodes_request(GC_Announce* announce, const uint8_t sel
         return -1;
 
     uint64_t timestamp;
-    bytes_to_U64(&timestamp, data - SIGNATURE_SIZE - TIME_STAMP);
+    bytes_to_U64(&timestamp, data - SIGNATURE_SIZE - TIME_STAMP_SIZE);
 
     new_announce_self_request(dht->announce, chat_id, request_id, timestamp, self_long_pk, self_long_sk);
 
@@ -339,7 +339,8 @@ int handle_gc_get_announced_nodes_request(void * dht_obj, IP_Port ipp, const uin
 
     if (crypto_sign_verify_detached(data + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE,
                  data, GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE,
-                 SIG_KEY(data + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE - TIME_STAMP - EXT_PUBLIC_KEY)) != 0) 
+                 SIG_KEY(data + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE - TIME_STAMP_SIZE
+                 - EXT_PUBLIC_KEY)) != 0)
         return -1;
 
     Announced_Node_format nodes[MAX_SENT_ANNOUNCED_NODES];
@@ -352,7 +353,7 @@ int handle_gc_get_announced_nodes_request(void * dht_obj, IP_Port ipp, const uin
         memcpy(&ipp, data+1+EXT_PUBLIC_KEY, sizeof(IP_Port));
 
         send_gc_get_announced_nodes_response(dht, data+1, request_id, ipp, 
-                ENC_KEY(data + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE - TIME_STAMP
+                ENC_KEY(data + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE - SIGNATURE_SIZE - TIME_STAMP_SIZE
                         - EXT_PUBLIC_KEY), nodes, num_nodes);
     }
     else {
@@ -536,7 +537,7 @@ int add_requested_gc_nodes(GC_Announce *announce, const Announced_Node_format *n
 {
     uint32_t i, j;
     for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) 
-        if (memcmp(&announce->self_requests[i].req_id, &req_id, REQUEST_ID)==0) {
+        if (memcmp(&announce->self_requests[i].req_id, &req_id, REQUEST_ID) == 0) {
             for (j = 0; j < nodes_num; j++) 
                 if (ipport_isset(&node[j].ip_port)) {
                         memcpy(announce->self_requests[i].nodes[j].client_id, node[j].client_id, EXT_PUBLIC_KEY);

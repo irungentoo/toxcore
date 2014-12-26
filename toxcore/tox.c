@@ -856,6 +856,17 @@ void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t
     gc_callback_group_message(m, function, userdata);
 }
 
+/* Set the callback for group private messages.
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ */
+void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                                        void *), void *userdata)
+{
+    Messenger *m = tox;
+    gc_callback_group_prvt_message(m, function, userdata);
+}
+
 /* Set the callback for group operator actions.
  *
  *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
@@ -963,6 +974,23 @@ int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *messa
         return -1;
 
     return gc_send_plain_message(chat, message, length);
+}
+
+/* Sends a private message to peernumber in groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t peernumber, const uint8_t *message,
+                                   uint32_t length)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_send_prvt_message(chat, peernumber, message, length);
 }
 
 /* Sends a groupchat operator action to groupnumber.

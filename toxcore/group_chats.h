@@ -29,7 +29,7 @@
 
 typedef struct Messenger Messenger;
 
-#define TIME_STAMP (sizeof(uint64_t))
+#define TIME_STAMP_SIZE (sizeof(uint64_t))
 #define MAX_GC_PACKET_SIZE 65507
 #define MAX_GC_NICK_SIZE 128
 #define MAX_GC_TOPIC_SIZE 512
@@ -40,11 +40,11 @@ typedef struct Messenger Messenger;
 #define GROUP_PING_INTERVAL 5
 #define BAD_GROUPNODE_TIMEOUT 60
 
-// CERT_TYPE + INVITEE + TIME_STAMP + INVITEE_SIGNATURE + INVITER + TIME_STAMP + INVITER_SIGNATURE
-#define INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
-#define SEMI_INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
-// CERT_TYPE + TARGET + SOURCE + TIME_STAMP + SOURCE_SIGNATURE 
-#define COMMON_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
+// CERT_TYPE + INVITEE + TIME_STAMP_SIZE + INVITEE_SIGNATURE + INVITER + TIME_STAMP_SIZE + INVITER_SIGNATURE
+#define INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
+#define SEMI_INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
+// CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE
+#define COMMON_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
 #define MAX_CERTIFICATES_NUM 5
 
@@ -78,14 +78,16 @@ enum {
     GM_NEW_PEER,
     GM_CHANGE_NICK,
     GM_CHANGE_TOPIC,
-    GM_PLAIN,
-    GM_ACTION,
+    GM_MESSAGE,
+    GM_PRVT_MESSAGE,
+    GM_OP_ACTION,
     GM_PEER_EXIT
 } GROUP_MESSAGE;
 
 typedef struct {
-    uint8_t     client_id[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
+
+    uint8_t     client_id[EXT_PUBLIC_KEY];
 
     uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
@@ -132,7 +134,7 @@ typedef struct GC_Chat GC_Chat;
 struct GC_Chat {
     Networking_Core *net;
     uint32_t hash_id;   /* 32-bit hash of self_public_key */
-    
+
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
@@ -171,6 +173,8 @@ typedef struct GC_Session {
 
     void (*group_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *group_message_userdata;
+    void (*group_prvt_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void *group_prvt_message_userdata;
     void (*group_op_action)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *group_op_action_userdata;
     void (*group_nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
@@ -190,7 +194,8 @@ typedef struct GC_Session {
  * Add signer public key, time stamp and signature in the end of the data
  * Return -1 if fail, 0 if success
  */
-int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate);
+int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key,
+                     uint8_t *certificate);
 
 /* Make invite certificate
  * This cert is only half-done, cause it needs to be signed by inviter also
@@ -201,7 +206,8 @@ int make_invite_cert(const uint8_t *private_key, const uint8_t *public_key, uint
 /* Make common certificate
  * Return -1 if fail, 0 if success
  */
-int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, const uint8_t *target_pub_key, uint8_t *certificate, const uint8_t cert_type);
+int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, const uint8_t *target_pub_key,
+                     uint8_t *certificate, const uint8_t cert_type);
 
 /* Return -1 if certificate is corrupted
  * Return 0 if certificate is consistent
@@ -234,7 +240,7 @@ int gc_send_invite_request(const GC_Chat *chat, IP_Port ip_port, const uint8_t *
  * Return 0 if success
  */
 int gc_send_invite_response(const GC_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
-                         const uint8_t *data, uint32_t length);
+                           const uint8_t *data, uint32_t length);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -245,7 +251,7 @@ int gc_send_sync_request(const GC_Chat *chat, IP_Port ip_port, const uint8_t *pu
  * Return 0 if success
  */
 int gc_send_sync_response(const GC_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
-                         const uint8_t *data, uint32_t length);
+                          const uint8_t *data, uint32_t length);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -295,6 +301,9 @@ uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
 
 void gc_callback_group_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                                const uint8_t *, uint32_t, void *), void *userdata);
+
+void gc_callback_group_prvt_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                                    const uint8_t *, uint32_t, void *), void *userdata);
 
 void gc_callback_group_op_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                                  const uint8_t *, uint32_t, void *), void *userdata);
@@ -371,4 +380,4 @@ int gc_group_delete(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, ui
  */
 GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
 
-#endif
+#endif  /* GROUP_CHATS_H */
