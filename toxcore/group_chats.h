@@ -130,14 +130,15 @@ typedef struct {
     GC_ChatOps   *ops;
 } GC_ChatCredentials;
 
-typedef struct GC_Chat GC_Chat;
+typedef struct GC_Announce GC_Announce;
 
-struct GC_Chat {
+typedef struct GC_Chat {
     Networking_Core *net;
     uint32_t hash_id;   /* 32-bit hash of self_public_key */
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
+    uint8_t     invite_key[EXT_PUBLIC_KEY]; /* Key used to join the chat */
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
     uint32_t    self_common_cert_num;
@@ -164,12 +165,16 @@ struct GC_Chat {
     GC_ChatCredentials *credentials;
 
     uint32_t message_number;
-};
+    
+    bool joined;
+    bool joining;
+} GC_Chat;
 
 typedef struct GC_Session {
     Messenger *messenger;
     GC_Chat *chats;
     uint32_t num_chats;
+    GC_Announce* announce;
 
     void (*message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *message_userdata;
@@ -183,6 +188,8 @@ typedef struct GC_Session {
     void *title_change_userdata;
     void (*peer_join)(Messenger *m, int, uint32_t, void *);
     void *peer_join_userdata;
+    void (*self_join)(Messenger *m, int, uint32_t*, uint32_t, void *);
+    void *self_join_userdata;
     void (*peer_exit)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *peer_exit_userdata;
 } GC_Session;
@@ -243,16 +250,21 @@ void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int gr
 void gc_callback_title_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                               const uint8_t *, uint32_t, void *), void *userdata);
 
+void gc_callback_group_self_join(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t*, uint32_t, void *),
+                                 void *userdata);
+
 void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, void *),
                            void *userdata);
 
 void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                            const uint8_t *, uint32_t, void *), void *userdata);
 
-/* This is the main loop. */
-void do_gc(Messenger *m);
+/* This is the main loop.
+ */
+void do_gc(GC_Session* c);
 
 /* Returns a NULL pointer if fail.
+ * Make sure that DHT is initialized before calling this
  */
 GC_Session* new_groupchats(Messenger* m);
 

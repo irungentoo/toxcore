@@ -2377,7 +2377,7 @@ void do_messenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
-    do_gc(m);
+    do_gc(m->group_handler);
     do_friends(m);
     LANdiscovery(m);
 

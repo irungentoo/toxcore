@@ -827,6 +827,13 @@ void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32
 void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
                                   void *), void *userdata);
 
+/* Set the callback for group peer join.
+ * 
+ * function(Tox *m, int groupnumber, uint32_t* peernumbers, uint32_t size_of_peers, void *userdata)
+ */
+void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t*, uint32_t, 
+                                                             void *), void *userdata);
+
 /* Creates a new groupchat and adds to group chats array.
  *
  * Return groupnumber (index in group chats array) on success.
