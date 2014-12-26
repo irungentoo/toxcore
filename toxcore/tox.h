@@ -920,7 +920,17 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
  * Returns 0 on success
  * Retruns -1 on failure
  */
-int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t* dest);
+int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest);
+
+/* Toggle ignore on peernumber in groupnumber.
+ * If ignore is 1, group and private messages from peernumber are ignored, as well as A/V.
+ * If ignore is 0, peer is unignored.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, uint8_t ignore);
+
 #ifdef __cplusplus
 }
 #endif

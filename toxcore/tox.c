@@ -1105,11 +1105,8 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
     return gc_get_status(chat, peernumber);
 }
 
-int tox_group_get_invite_key(const Tox* tox, int groupnumber, uint8_t* dest)
+int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest)
 {
-    if (!tox)
-        return -1;
-    
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
     
@@ -1118,4 +1115,22 @@ int tox_group_get_invite_key(const Tox* tox, int groupnumber, uint8_t* dest)
     
     memcpy(dest, chat->self_public_key, EXT_PUBLIC_KEY);
     return 0;
+}
+
+/* Toggle ignore on peernumber in groupnumber.
+ * If ignore is 1, group and private messages from peernumber are ignored, as well as A/V.
+ * If ignore is 0, peer is unignored.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, uint8_t ignore)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_toggle_ignore(chat, peernumber, ignore);
 }

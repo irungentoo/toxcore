@@ -100,6 +100,7 @@ typedef struct {
     uint64_t    banned_time;
 
     uint8_t     status;
+    bool        ignore;
 
     bool        verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
 
@@ -267,6 +268,11 @@ int gc_send_new_peer(const GC_Chat *chat, const GC_PeerAddress *rcv_peer, int nu
  * Return 0 if success
  */
 int gc_send_op_action(const GC_Chat *chat, const uint8_t *certificate);
+
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore);
 
 /* Return -1 if fail
  * Return 0 if success

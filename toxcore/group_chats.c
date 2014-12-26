@@ -806,6 +806,9 @@ int handle_gc_message(Messenger *m, int groupnumber, uint32_t peernumber, const 
     if (length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
 
+    if (chat->group[peernumber].ignore)
+        return -1;
+
     if (c->group_message)
         (*c->group_message)(m, groupnumber, peernumber, data, length, c->group_message_userdata);
 
@@ -840,6 +843,9 @@ int handle_gc_prvt_message(Messenger *m, int groupnumber, uint32_t peernumber, c
         return -1;
 
     if (length > MAX_GC_MESSAGE_SIZE || length == 0)
+        return -1;
+
+    if (chat->group[peernumber].ignore)
         return -1;
 
     if (c->group_prvt_message)
@@ -882,6 +888,18 @@ int handle_gc_op_action(Messenger *m, int groupnumber, uint32_t peernumber, cons
     if (c->group_op_action)
         (*c->group_op_action)(m, groupnumber, peernumber, data, length, c->group_op_action_userdata);
 
+    return 0;
+}
+
+int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore)
+{
+    if (!peernumber_valid(chat, peernumber))
+        return -1;
+
+    if (ignore != 0 && ignore != 1)
+        return -1;
+
+    chat->group[peernumber].ignore = (bool) ignore;
     return 0;
 }
 
