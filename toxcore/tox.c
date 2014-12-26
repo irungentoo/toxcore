@@ -853,7 +853,7 @@ void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t
                                 void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_message(m, function, userdata);
+    gc_callback_message(m, function, userdata);
 }
 
 /* Set the callback for group private messages.
@@ -864,7 +864,7 @@ void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, 
                                         void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_prvt_message(m, function, userdata);
+    gc_callback_private_message(m, function, userdata);
 }
 
 /* Set the callback for group operator actions.
@@ -875,7 +875,7 @@ void tox_callback_group_op_action(Tox *tox, void (*function)(Tox *m, int, uint32
                                   void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_op_action(m, function, userdata);
+    gc_callback_op_action(m, function, userdata);
 }
 
 /* Set the callback for group name changes.
@@ -886,7 +886,7 @@ void tox_callback_group_name_change(Tox *tox, void (*function)(Tox *m, int, uint
                                     void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_nick_change(m, function, userdata);
+    gc_callback_nick_change(m, function, userdata);
 }
 
 /* Set the callback for group title changes.
@@ -897,7 +897,7 @@ void tox_callback_group_title_change(Tox *tox, void (*function)(Tox *m, int, uin
                                      uint32_t, void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_title_change(m, function, userdata);
+    gc_callback_title_change(m, function, userdata);
 }
 
 /* Set the callback for group peer join.
@@ -907,7 +907,7 @@ void tox_callback_group_title_change(Tox *tox, void (*function)(Tox *m, int, uin
 void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32_t, void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_peer_join(m, function, userdata);
+    gc_callback_peer_join(m, function, userdata);
 }
 
 /* Set the callback for group peer exit.
@@ -918,7 +918,7 @@ void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32
                                   void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_peer_exit(m, function, userdata);
+    gc_callback_peer_exit(m, function, userdata);
 }
 
 void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t*, uint32_t, 
@@ -997,7 +997,7 @@ int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t pee
     if (chat == NULL)
         return -1;
 
-    return gc_send_prvt_message(chat, peernumber, message, length);
+    return gc_send_private_message(chat, peernumber, message, length);
 }
 
 /* Sends a groupchat operator action to groupnumber.
