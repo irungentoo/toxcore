@@ -38,10 +38,11 @@
 static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_info)
 {
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
-            ip_port =proxy_info->ip_port;
+        ip_port = proxy_info->ip_port;
     }
 
     struct sockaddr_storage addr = {0};
+
     size_t addrsize;
 
     if (ip_port.ip.family == AF_INET) {
@@ -77,11 +78,15 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *TCP_con
     char three[] = "\r\n\r\n";
 
     char ip[INET6_ADDRSTRLEN];
+
     if (!ip_parse_addr(&TCP_conn->ip_port.ip, ip, sizeof(ip))) {
         return 0;
     }
+
     const uint16_t port = ntohs(TCP_conn->ip_port.port);
-    const int written = snprintf(TCP_conn->last_packet, MAX_PACKET_SIZE, "%s%s:%hu%s%s:%hu%s", one, ip, port, two, ip, port, three);
+    const int written = snprintf((char *)TCP_conn->last_packet, MAX_PACKET_SIZE, "%s%s:%hu%s%s:%hu%s", one, ip, port, two,
+                                 ip, port, three);
+
     if (written < 0) {
         return 0;
     }
@@ -107,19 +112,16 @@ static int proxy_http_read_connection_response(TCP_Client_Connection *TCP_conn)
         return 0;
     }
 
-    data[sizeof(data) - 1] = '\0';
+    data[sizeof(data) - 1] = 0;
 
-    if (strstr(data, success)) {
+    if (strstr((char *)data, success)) {
         // drain all data
-        // instead of drainining it byte by byte do it in bigger chunks
-        // decrementing to 1
-        size_t step = sizeof(data);
-        do {
-            if (ret <= 0) {
-                step = step % 2 == 0 ? step/2 : 1;
-            }
-            ret = read_TCP_packet(TCP_conn->sock, data, step);
-        } while (ret > 0 || step != 1);
+        unsigned int data_left = TCP_socket_data_recv_buffer(TCP_conn->sock);
+
+        if (data_left) {
+            uint8_t temp_data[data_left];
+            read_TCP_packet(TCP_conn->sock, temp_data, data_left);
+        }
 
         return 1;
     }
@@ -606,6 +608,12 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
 
     uint8_t family = ip_port.ip.family;
 
+    TCP_Proxy_Info default_proxyinfo;
+    if (proxy_info == NULL) {
+        default_proxyinfo.proxy_type = TCP_PROXY_NONE;
+        proxy_info = &default_proxyinfo;
+    }
+
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
         family = proxy_info->ip_port.ip.family;
     }
@@ -645,10 +653,12 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
             temp->status = TCP_CLIENT_PROXY_HTTP_CONNECTING;
             proxy_http_generate_connection_request(temp);
             break;
+
         case TCP_PROXY_SOCKS5:
             temp->status = TCP_CLIENT_PROXY_SOCKS5_CONNECTING;
             proxy_socks5_generate_handshake(temp);
             break;
+
         case TCP_PROXY_NONE:
             temp->status = TCP_CLIENT_CONNECTING;
 
@@ -657,6 +667,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
                 free(temp);
                 return NULL;
             }
+
             break;
     }
 

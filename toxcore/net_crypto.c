@@ -2030,7 +2030,7 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections_new[i] == NULL) {
             c->tcp_connections_new[i] = new_TCP_connection(ip_port, public_key, c->dht->self_public_key, c->dht->self_secret_key,
-                                            &c->proxy_info);
+                                        &c->proxy_info);
 
             return 0;
         }

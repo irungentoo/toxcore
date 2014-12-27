@@ -1025,9 +1025,11 @@ Tox *tox_new(Tox_Options *options)
             case TOX_PROXY_HTTP:
                 m_options.proxy_info.proxy_type = TCP_PROXY_HTTP;
                 break;
+
             case TOX_PROXY_SOCKS5:
                 m_options.proxy_info.proxy_type = TCP_PROXY_SOCKS5;
                 break;
+
             case TOX_PROXY_NONE:
                 m_options.proxy_info.proxy_type = TCP_PROXY_NONE;
                 break;

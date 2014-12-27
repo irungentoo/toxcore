@@ -154,6 +154,11 @@ void do_TCP_server(TCP_Server *TCP_server);
  */
 void kill_TCP_server(TCP_Server *TCP_server);
 
+/* return the amount of data in the tcp recv buffer.
+ * return 0 on failure.
+ */
+unsigned int TCP_socket_data_recv_buffer(sock_t sock);
+
 /* Read the next two bytes in TCP stream then convert them to
  * length (host byte order).
  *
