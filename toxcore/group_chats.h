@@ -64,13 +64,20 @@ enum {
 } GROUP_ROLE;
 
 enum {
-    GS_NONE,
     GS_ONLINE,
     GS_OFFLINE,
     GS_AWAY,
     GS_BUSY,
     GS_INVALID
 } GROUP_STATUS;
+
+enum {
+    CS_NONE,
+    CS_DISCONNECTED,
+    CS_CONNECTING,
+    CS_CONNECTED,
+    CS_INVALID
+} GROUP_CONNECTION_STATUS;
 
 enum {
     GM_PING,
@@ -82,7 +89,7 @@ enum {
     GM_PRVT_MESSAGE,
     GM_OP_ACTION,
     GM_PEER_EXIT
-} GROUP_MESSAGE;
+} GROUP_MESSAGE_TYPE;
 
 typedef struct {
     IP_Port     ip_port;
@@ -152,7 +159,9 @@ typedef struct GC_Chat {
     uint8_t     self_nick[MAX_GC_NICK_SIZE];
     uint16_t    self_nick_len;
     uint64_t    self_role;
-    uint8_t     self_status; // TODO: enum
+    uint8_t     self_status;
+
+    uint8_t     group_status;
 
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
@@ -164,10 +173,7 @@ typedef struct GC_Chat {
 
     GC_ChatCredentials *credentials;
 
-    uint32_t message_number;
-    
-    bool joined;
-    bool joining;
+    uint32_t     message_number;
 } GC_Chat;
 
 typedef struct GC_Session {

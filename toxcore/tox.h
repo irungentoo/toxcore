@@ -771,7 +771,6 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
 
 
 typedef enum {
-    TOX_GS_NONE,
     TOX_GS_ONLINE,
     TOX_GS_OFFLINE,
     TOX_GS_AWAY,

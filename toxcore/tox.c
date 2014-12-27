@@ -921,8 +921,8 @@ void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32
     gc_callback_peer_exit(m, function, userdata);
 }
 
-void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t*, uint32_t, 
-                                void *), void *userdata)
+void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t *, uint32_t, void *),
+                                  void *userdata)
 {
     Messenger *m = tox;
     gc_callback_group_self_join(m, function, userdata);
