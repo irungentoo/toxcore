@@ -41,7 +41,7 @@
 #define GC_INVITE_RESPONSE_DHT_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
 #define HASH_ID_BYTES (sizeof(uint32_t))
-#define PACKET_HEADER_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
+#define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
 #define NET_PACKET_GROUP_CHATS 9 /* WARNING. Temporary measure. */
 
@@ -81,11 +81,11 @@ static uint32_t calculate_hash(const uint8_t *key, size_t len)
     return hash;
 }
 
-// Handle all decrypt procedures
+/* Decrypts data using sender's public key, self secret key and a nonce. */
 static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, uint8_t *sender_pk,
                                uint8_t *data, uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
-    if (length < PACKET_HEADER_SIZE || length > MAX_GC_PACKET_SIZE)
+    if (length < MIN_GC_PACKET_SIZE || length > MAX_GC_PACKET_SIZE)
         return -1;
     
     if (id_long_equal(packet + 1 + HASH_ID_BYTES, self_pk))
@@ -101,8 +101,7 @@ static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, u
                            packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES,
                            length - (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES),
                            plain);
-
-    if (len == -1 || len == 0)
+    if (len <= 0)
         return -1;
 
     packet_type[0] = plain[0];
@@ -111,12 +110,14 @@ static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, u
     return len;
 }
 
-// Handle all encrypt procedures
+/* Encrypts data using self secret key, recipient's public key and a new nonce.
+ * Adds header consisting of: packet identifier, hash_id, self public key, nonce.
+ */
 static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, const uint8_t *recv_pk,
                              uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type,
                              uint32_t hash_id)
 {
-    if (MAX_GC_PACKET_SIZE < length + PACKET_HEADER_SIZE)
+    if (MAX_GC_PACKET_SIZE < length + MIN_GC_PACKET_SIZE)
         return -1;
 
     uint8_t plain[MAX_GC_PACKET_SIZE];
@@ -159,14 +160,12 @@ static int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint
     return sendpacket(chat->net, ip_port, packet, len);
 }
 
-/* Expects chat_pk to be EXT_PUBLIC_KEY bytes */
-static GC_Chat* get_chat_by_public_key(GC_Session* c, const uint8_t* chat_pk)
+static GC_Chat* get_chat_by_hash_id(GC_Session* c, uint32_t hash_id)
 {
-    uint32_t hh = calculate_hash(chat_pk, EXT_PUBLIC_KEY);
     uint32_t i;
 
     for (i = 0; i < c->num_chats; i ++) {
-        if (c->chats[i].hash_id == hh)
+        if (c->chats[i].hash_id == hash_id)
             return &c->chats[i];
     }
 
@@ -886,7 +885,10 @@ static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *p
     if (!m)
         return -1;
 
-    GC_Chat* chat = get_chat_by_public_key(m->group_handler, packet + 1);
+    uint32_t hash_id;
+    memcpy(&hash_id, packet + 1, sizeof(uint32_t));
+
+    GC_Chat* chat = get_chat_by_hash_id(m->group_handler, hash_id);
 
     if (!chat)
         return -1;
