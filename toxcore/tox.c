@@ -1020,9 +1020,20 @@ Tox *tox_new(Tox_Options *options)
     } else {
         m_options.ipv6enabled = options->ipv6enabled;
         m_options.udp_disabled = options->udp_disabled;
-        m_options.proxy_enabled = options->proxy_enabled;
 
-        if (m_options.proxy_enabled) {
+        switch (options->proxy_type) {
+            case TOX_PROXY_HTTP:
+                m_options.proxy_info.proxy_type = TCP_PROXY_HTTP;
+                break;
+            case TOX_PROXY_SOCKS5:
+                m_options.proxy_info.proxy_type = TCP_PROXY_SOCKS5;
+                break;
+            case TOX_PROXY_NONE:
+                m_options.proxy_info.proxy_type = TCP_PROXY_NONE;
+                break;
+        }
+
+        if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
             if (m_options.ipv6enabled)

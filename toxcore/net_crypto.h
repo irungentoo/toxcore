@@ -215,7 +215,6 @@ typedef struct {
     int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
     void *tcp_onion_callback_object;
 
-    uint8_t proxy_set;
     TCP_Proxy_Info proxy_info;
 } Net_Crypto;
 

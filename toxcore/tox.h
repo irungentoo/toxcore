@@ -873,6 +873,12 @@ int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_
  */
 int tox_isconnected(const Tox *tox);
 
+typedef enum {
+    TOX_PROXY_NONE,
+    TOX_PROXY_HTTP,
+    TOX_PROXY_SOCKS5
+} TOX_PROXY_TYPE;
+
 typedef struct {
     /*
     *  The type of UDP socket created depends on ipv6enabled:
@@ -885,13 +891,11 @@ typedef struct {
 
     /* Set to 1 to disable udp support. (default: 0)
        This will force Tox to use TCP only which may slow things down.
-       Disabling udp support is necessary when using anonymous proxies or Tor.*/
+       Disabling udp support is necessary when using proxies or Tor.*/
     uint8_t udp_disabled;
-
-    /* Enable proxy support. (only basic TCP socks5 proxy currently supported.) (default: 0 (disabled))*/
-    uint8_t proxy_enabled;
+    uint8_t proxy_type; /* a value from TOX_PROXY_TYPE */
     char proxy_address[256]; /* Proxy ip or domain in NULL terminated string format. */
-    uint16_t proxy_port; /* Proxy port: in host byte order. */
+    uint16_t proxy_port; /* Proxy port in host byte order. */
 } Tox_Options;
 
 /*
