@@ -609,6 +609,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     uint8_t family = ip_port.ip.family;
 
     TCP_Proxy_Info default_proxyinfo;
+
     if (proxy_info == NULL) {
         default_proxyinfo.proxy_type = TCP_PROXY_NONE;
         proxy_info = &default_proxyinfo;

@@ -875,8 +875,8 @@ int tox_isconnected(const Tox *tox);
 
 typedef enum {
     TOX_PROXY_NONE,
-    TOX_PROXY_HTTP,
-    TOX_PROXY_SOCKS5
+    TOX_PROXY_SOCKS5,
+    TOX_PROXY_HTTP
 } TOX_PROXY_TYPE;
 
 typedef struct {
