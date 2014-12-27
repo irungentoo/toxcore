@@ -40,7 +40,8 @@
 #define GC_INVITE_RESPONSE_PLAIN_SIZE INVITE_CERTIFICATE_SIGNED_SIZE
 #define GC_INVITE_RESPONSE_DHT_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_INVITE_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
-#define MIN_PACKET_SIZE (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
+#define HASH_ID_BYTES (sizeof(uint32_t))
+#define PACKET_HEADER_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
 #define NET_PACKET_GROUP_CHATS 9 /* WARNING. Temporary measure. */
 
@@ -81,24 +82,25 @@ static uint32_t calculate_hash(const uint8_t *key, size_t len)
 }
 
 // Handle all decrypt procedures
-static int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key,
+static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, uint8_t *sender_pk,
                                uint8_t *data, uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
-    if (length < MIN_PACKET_SIZE && length > MAX_GC_PACKET_SIZE) 
+    if (length < PACKET_HEADER_SIZE || length > MAX_GC_PACKET_SIZE)
         return -1;
     
-    if (id_long_equal(packet + 1, self_public_key))
+    if (id_long_equal(packet + 1 + HASH_ID_BYTES, self_pk))
         return -1;
 
-    memcpy(public_key, packet + 1, EXT_PUBLIC_KEY);
+    memcpy(sender_pk, packet + 1 + HASH_ID_BYTES, EXT_PUBLIC_KEY);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    memcpy(nonce, packet + 1 + EXT_PUBLIC_KEY, crypto_box_NONCEBYTES);
+    memcpy(nonce, packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY, crypto_box_NONCEBYTES);
 
     uint8_t plain[MAX_GC_PACKET_SIZE];
-    int len = decrypt_data(ENC_KEY(public_key), ENC_KEY(self_secret_key), nonce,
-                            packet + 1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES,
-                            length - (1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES), plain);
+    int len = decrypt_data(ENC_KEY(sender_pk), ENC_KEY(self_sk), nonce,
+                           packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES,
+                           length - (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES),
+                           plain);
 
     if (len == -1 || len == 0)
         return -1;
@@ -110,34 +112,37 @@ static int unwrap_group_packet(const uint8_t *self_public_key, const uint8_t *se
 }
 
 // Handle all encrypt procedures
-static int wrap_group_packet(const uint8_t *send_public_key, const uint8_t *send_secret_key, const uint8_t *recv_public_key,
-                             uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type)
+static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, const uint8_t *recv_pk,
+                             uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type,
+                             uint32_t hash_id)
 {
-    if (MAX_GC_PACKET_SIZE < length + MIN_PACKET_SIZE)
+    if (MAX_GC_PACKET_SIZE < length + PACKET_HEADER_SIZE)
         return -1;
-    
+
     uint8_t plain[MAX_GC_PACKET_SIZE];
     plain[0] = packet_type;
+
     memcpy(plain + 1, data, length);
-    
+
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
     uint8_t encrypt[1 + length + crypto_box_MACBYTES];
-    int len = encrypt_data(ENC_KEY(recv_public_key), ENC_KEY(send_secret_key), nonce, plain, length + 1, encrypt);
+    int len = encrypt_data(ENC_KEY(recv_pk), ENC_KEY(self_sk), nonce, plain, length + 1, encrypt);
 
     if (len != sizeof(encrypt))
         return -1;
 
     packet[0] = NET_PACKET_GROUP_CHATS;
-    memcpy(packet + 1, send_public_key, EXT_PUBLIC_KEY);
-    memcpy(packet + 1 + EXT_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
-    memcpy(packet + 1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES, encrypt, len);
+    memcpy(packet + 1, &hash_id, HASH_ID_BYTES);
+    memcpy(packet + 1 + HASH_ID_BYTES, self_pk, EXT_PUBLIC_KEY);
+    memcpy(packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
+    memcpy(packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES, encrypt, len);
 
-    return 1 + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + len;
+    return 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + len;
 }
 
-// General function for packet sending
+/* General function for packet sending */
 static int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                                 const uint8_t *data, uint32_t length, uint8_t packet_type)
 {
@@ -146,7 +151,7 @@ static int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint
 
     uint8_t packet[MAX_GC_PACKET_SIZE];
     int len = wrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, packet, data, length,
-                                packet_type);
+                                packet_type, chat->hash_id);
 
     if (len == -1)
         return -1;
@@ -154,11 +159,10 @@ static int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint
     return sendpacket(chat->net, ip_port, packet, len);
 }
 
-/* Expects extpubkey being the size of EXT_PUBLIC_KEY bytes
- */
-static GC_Chat* get_chat_by_public_key(GC_Session* c, const uint8_t* extpubkey)
+/* Expects chat_pk to be EXT_PUBLIC_KEY bytes */
+static GC_Chat* get_chat_by_public_key(GC_Session* c, const uint8_t* chat_pk)
 {
-    uint32_t hh = calculate_hash(extpubkey, EXT_PUBLIC_KEY);
+    uint32_t hh = calculate_hash(chat_pk, EXT_PUBLIC_KEY);
     uint32_t i;
 
     for (i = 0; i < c->num_chats; i ++) {
@@ -882,24 +886,23 @@ static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *p
     if (!m)
         return -1;
 
-    /* FIXME: This doesn't work. We're receiving the sending peer's public key rather than the chat public key */
     GC_Chat* chat = get_chat_by_public_key(m->group_handler, packet + 1);
 
     if (!chat)
         return -1;
 
-    uint8_t public_key[EXT_PUBLIC_KEY];
+    uint8_t sender_pk[EXT_PUBLIC_KEY];
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint8_t packet_type;
 
-    int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, data, &packet_type,
+    int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, sender_pk, data, &packet_type,
                                   packet, length);
 
     if (len == -1)
         return -1;
 
     // Check if we know the user and if it's banned
-    int peernumber = gc_peer_in_chat(chat, public_key);
+    int peernumber = gc_peer_in_chat(chat, sender_pk);
 
     if (peernumber != -1) {
         if (chat->group[peernumber].banned == 1)
@@ -908,15 +911,15 @@ static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *p
 
     switch (packet_type) {
         case GP_INVITE_REQUEST:
-            return handle_gc_invite_request(m, chat->groupnumber, source, public_key, data, len);
+            return handle_gc_invite_request(m, chat->groupnumber, source, sender_pk, data, len);
         case GP_INVITE_RESPONSE:
-            return handle_gc_invite_response(chat, source, public_key, data, len);
+            return handle_gc_invite_response(chat, source, sender_pk, data, len);
         case GP_SYNC_REQUEST:
-            return handle_gc_sync_request(chat, source, public_key, data, len);
+            return handle_gc_sync_request(chat, source, sender_pk, data, len);
         case GP_SYNC_RESPONSE:
-            return handle_gc_sync_response(m, chat->groupnumber, source, public_key, data, len);
+            return handle_gc_sync_response(m, chat->groupnumber, source, sender_pk, data, len);
         case GP_BROADCAST:
-            return handle_gc_broadcast(m, chat->groupnumber, source, public_key, data, len);
+            return handle_gc_broadcast(m, chat->groupnumber, source, sender_pk, data, len);
         default:
             return -1;
     }

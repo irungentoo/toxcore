@@ -141,7 +141,7 @@ typedef struct GC_Announce GC_Announce;
 
 typedef struct GC_Chat {
     Networking_Core *net;
-    uint32_t hash_id;   /* 32-bit hash of self_public_key */
+    uint32_t hash_id;   /* 32-bit hash of chat_public_key */
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
