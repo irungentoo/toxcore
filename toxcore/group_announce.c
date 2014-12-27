@@ -219,15 +219,16 @@ int dispatch_packet(GC_Announce* announce, const uint8_t target_id[], const uint
 
     if (j == 0 && !self && packet_type == NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST) {
         GC_Announce_Node node;
-        memcpy(&node.ip_port, data+1+EXT_PUBLIC_KEY, sizeof(IP_Port));
-        memcpy(node.client_id, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port), EXT_PUBLIC_KEY);
-        add_gc_announced_node(announce, data+1, node, data+1+EXT_PUBLIC_KEY+sizeof(IP_Port)+EXT_PUBLIC_KEY);
+        memcpy(&node.ip_port, data + 1 + EXT_PUBLIC_KEY, sizeof(IP_Port));
+        memcpy(node.client_id, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), EXT_PUBLIC_KEY);
+        add_gc_announced_node(announce, data + 1, node, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port)+EXT_PUBLIC_KEY);
     }
 
     return j;
 }
 
-int gca_send_announce_request(GC_Announce* announce, const uint8_t self_long_pk[], const uint8_t self_long_sk[], const uint8_t chat_id[])
+int gca_send_announce_request(GC_Announce* announce, const uint8_t self_long_pk[], const uint8_t self_long_sk[],
+                              const uint8_t chat_id[])
 {
     DHT *dht = announce->dht;
     /* Generating an announcement */

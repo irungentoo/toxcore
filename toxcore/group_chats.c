@@ -1042,12 +1042,14 @@ static int verify_cert_integrity(const uint8_t *certificate)
         memcpy(invitee_pk, SIG_KEY(CERT_INVITEE_KEY(certificate)), SIG_PUBLIC_KEY);
         memcpy(inviter_pk, SIG_KEY(CERT_INVITER_KEY(certificate)), SIG_PUBLIC_KEY);
 
-        if (crypto_sign_verify_detached(certificate+INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
-                     certificate, INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, inviter_pk) != 0)
+        if (crypto_sign_verify_detached(certificate + INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE,
+                                        certificate, INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE,
+                                        inviter_pk) != 0)
             return -1;
 
-         if (crypto_sign_verify_detached(certificate+SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE,
-                     certificate, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE-SIGNATURE_SIZE, invitee_pk) != 0)
+         if (crypto_sign_verify_detached(certificate + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE,
+                                         certificate, SEMI_INVITE_CERTIFICATE_SIGNED_SIZE - SIGNATURE_SIZE,
+                                         invitee_pk) != 0)
             return -1;
 
         return 0;
@@ -1080,7 +1082,7 @@ static int process_invite_cert(const GC_Chat *chat, const uint8_t *certificate)
     memcpy(invitee_pk, CERT_INVITEE_KEY(certificate), EXT_PUBLIC_KEY);
     int j = gc_peer_in_chat(chat, invitee_pk); // TODO: processing after adding?
 
-    if (id_long_equal(chat->credentials->chat_public_key, inviter_pk)) {
+    if (id_long_equal(chat->chat_public_key, inviter_pk)) {
         chat->group[j].verified = 1;
         return -2;
     }
@@ -1305,12 +1307,12 @@ void do_gc(GC_Session *c)
         if (c->chats[i].group_status == CS_DISCONNECTED) {
             /* FIXME Max nodes is always 20? */
             GC_Announce_Node nodes[20];
-            int rc = gca_get_requested_nodes(c->announce, c->chats[i].invite_key, nodes);
+            int rc = gca_get_requested_nodes(c->announce, c->chats[i].chat_public_key, nodes);
 
             /* Try to join random node */
             if (rc) {
                 if (gc_send_invite_request(&c->chats[i], nodes[random_int() % rc].ip_port,
-                                           c->chats[i].invite_key) == -1) {
+                                           c->chats[i].chat_public_key) == -1) {
                     gc_group_delete(c, &c->chats[i], NULL, 0);
                 } else {
                     c->chats[i].group_status = CS_CONNECTING;
@@ -1394,10 +1396,6 @@ static int create_new_group(GC_Session *c)
 
     create_long_keypair(chat->self_public_key, chat->self_secret_key);
 
-    /* We send announce to the DHT so that everyone can join our chat */
-    gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key,
-                              chat->credentials->chat_public_key);
-
     return new_index;
 }
 
@@ -1425,7 +1423,13 @@ int gc_group_add(GC_Session *c)
         return -1;
     }
 
-    chat->hash_id = calculate_hash(chat->credentials->chat_public_key, EXT_PUBLIC_KEY);
+    memcpy(chat->founder_public_key, chat->self_public_key, EXT_PUBLIC_KEY);
+    memcpy(chat->chat_public_key, chat->credentials->chat_public_key, EXT_PUBLIC_KEY);
+
+    chat->hash_id = calculate_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
+
+    /* We send announce to the DHT so that everyone can join our chat */
+    gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
 
     return groupnumber;
 }
@@ -1440,7 +1444,7 @@ void kill_groupcredentials(GC_ChatCredentials *credentials)
     free(credentials);
 }
 
-/* Creates a group chat and sends an invite request using invite_key
+/* Creates a group chat and sends an invite request using invite_key.
  *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
@@ -1457,12 +1461,17 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key)
     if (chat == NULL)
         return -1;
 
-    memcpy(chat->invite_key, invite_key, EXT_PUBLIC_KEY);
+    memcpy(chat->chat_public_key, invite_key, EXT_PUBLIC_KEY);
+
+    chat->hash_id = calculate_hash(invite_key, EXT_PUBLIC_KEY);
 
     if ( 0 != gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, invite_key) ) {
         gc_group_delete(c, chat, NULL, 0);
         return -1;
     }
+
+    // TODO: Does this go here?
+    gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
     
     return groupnumber;
 }

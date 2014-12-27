@@ -145,7 +145,6 @@ typedef struct GC_Chat {
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
-    uint8_t     invite_key[EXT_PUBLIC_KEY]; /* Key used to join the chat */
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
     uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
     uint32_t    self_common_cert_num;
@@ -161,12 +160,13 @@ typedef struct GC_Chat {
     uint64_t    self_role;
     uint8_t     self_status;
 
-    uint8_t     group_status;
-
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
-    uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
+
+    uint8_t     group_status;
+
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
+    uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
 
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
