@@ -1419,10 +1419,16 @@ int onion_isconnected(const Onion_Client *onion_c)
         }
     }
 
+    unsigned int pnodes = onion_c->path_nodes_index;
+
+    if (pnodes > MAX_ONION_CLIENTS) {
+        pnodes = MAX_ONION_CLIENTS;
+    }
+
     /* Consider ourselves online if we are announced to half or more nodes
       we are connected to */
     if (num && announced) {
-        if ((num / 2) <= announced)
+        if ((num / 2) <= announced && (pnodes / 2) <= num)
             return 1;
     }
 
