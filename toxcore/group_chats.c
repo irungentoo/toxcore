@@ -410,6 +410,7 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
 
 static int send_gc_broadcast_packet(const GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
+    // TODO: Why do we need this in the packet twice?
     uint8_t packet[length + EXT_PUBLIC_KEY];
     memcpy(packet, chat->self_public_key, EXT_PUBLIC_KEY);
     
@@ -822,7 +823,7 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore)
     return 0;
 }
 
-static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
+static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
                                const uint8_t *data, uint32_t length)
 {
     GC_Session *c = m->group_handler;
@@ -835,7 +836,7 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
     if (chat == NULL)
         return -1;
 
-    if (!id_long_equal(public_key, data))
+    if (!id_long_equal(sender_pk, data))
         return -1;
 
     uint32_t len = length - 1 - EXT_PUBLIC_KEY;
@@ -843,7 +844,7 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
     memcpy(dt, data + 1 + EXT_PUBLIC_KEY, len);
 
     // TODO: Check if peer is verified. Actually we should make it optional
-    int peernumber = gc_peer_in_chat(chat, public_key);
+    int peernumber = gc_peer_in_chat(chat, sender_pk);
 
     if ((peernumber == -1) && (data[EXT_PUBLIC_KEY] != GM_NEW_PEER))
         return -1;
@@ -870,6 +871,8 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
         default:
             return -1;
     }
+
+    return -1;
 }
 
 /* If we receive a group chat packet we call this function so it can be handled.
@@ -878,16 +881,13 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
  */
 static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
-    /* TODO check packet size */
-
-    Messenger *m = object;
-
-    if (!m)
+    if (length > MAX_GC_PACKET_SIZE)
         return -1;
 
     uint32_t hash_id;
     memcpy(&hash_id, packet + 1, sizeof(uint32_t));
 
+    Messenger *m = object;
     GC_Chat* chat = get_chat_by_hash_id(m->group_handler, hash_id);
 
     if (!chat)

@@ -41,18 +41,18 @@ struct GC_Announce;
  * return -1 in case of error
  * return number of send packets otherwise
  */
-int gca_send_announce_request(struct GC_Announce *announce, const uint8_t self_long_pk[],
-                            const uint8_t self_long_sk[], const uint8_t chat_id[]);
+int gca_send_announce_request(struct GC_Announce *announce, const uint8_t *self_long_pk,
+                              const uint8_t *self_long_sk, const uint8_t *chat_id);
 
 /* Sends an actual announcement packet to the node specified as client_id on ipp */
-int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t self_long_pk[],
-                            const uint8_t self_long_sk[], const uint8_t chat_id[]);
+int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t *self_long_pk,
+                               const uint8_t *self_long_sk, const uint8_t *chat_id);
 
 /* Retrieve nodes by chat id, returns 0 if no nodes found or request in progress, number of nodes otherwise */
-int gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t chat_id[], GC_Announce_Node *nodes);
+int gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
 
 /* Do some periodic work, currently removes expired announcements */
-int do_gca(struct GC_Announce *announce);
+void do_gca(struct GC_Announce *announce);
 
 struct GC_Announce *new_gca(DHT *dht);
 void kill_gca(struct GC_Announce *announce);
