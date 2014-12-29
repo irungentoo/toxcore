@@ -1017,7 +1017,7 @@ int tox_group_op_action_send(const Tox *tox, int groupnumber, const uint8_t *cer
 }
 
 /* Sets your name for groupnumber.
- * 
+ *
  * Return 0 on success.
  * Return -1 on failure.
  */
@@ -1050,7 +1050,7 @@ int tox_group_get_name(const Tox *tox, int groupnumber, uint32_t peernumber, uin
 }
 
 /* Sets groupnumber's topic.
- * 
+ *
  * Return 0 on success.
  * Return -1 on failure.
  */
@@ -1082,7 +1082,7 @@ int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topicbuffer)
 }
 
 /* Sets your status for groupnumber.
- * 
+ *
  * Return 0 on success.
  * Return -1 on failure.
  */
@@ -1112,15 +1112,21 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
     return gc_get_status(chat, peernumber);
 }
 
+/* Get invite key for the groupchat from the groupnumber.
+ * The result is stored in 'dest' which must have space for TOX_GROUP_CHAT_ID_SIZE bytes.
+ *
+ * Returns 0 on success
+ * Retruns -1 on failure
+ */
 int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-    
+
     if (chat == NULL)
         return -1;
-    
-    memcpy(dest, chat->self_public_key, EXT_PUBLIC_KEY);
+
+    memcpy(dest, chat->chat_public_key, EXT_PUBLIC_KEY);
     return 0;
 }
 

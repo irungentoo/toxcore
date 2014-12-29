@@ -39,6 +39,7 @@ extern "C" {
 
 #define TOX_MAX_GROUP_TOPIC_LENGTH 512
 #define TOX_MAX_GROUP_PART_LENGTH 128
+#define TOX_GROUP_CHAT_ID_SIZE 64
 
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
@@ -827,11 +828,11 @@ void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32
                                   void *), void *userdata);
 
 /* Set the callback for group peer join.
- * 
+ *
  * function(Tox *m, int groupnumber, uint32_t* peernumbers, uint32_t size_of_peers, void *userdata)
  */
-void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t*, uint32_t, 
-                                                             void *), void *userdata);
+void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t*, uint32_t, void *),
+                                  void *userdata);
 
 /* Creates a new groupchat and adds to group chats array.
  *
@@ -879,7 +880,7 @@ int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t pee
 int tox_group_op_action_send(const Tox *tox, int groupnumber, const uint8_t *certificate);
 
 /* Sets your name for groupnumber.
- * 
+ *
  * Return 0 on success.
  * Return -1 on failure.
  */
@@ -894,7 +895,7 @@ int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint32_t 
 int tox_group_get_name(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t *namebuffer);
 
 /* Changes groupnumber's topic.
- * 
+ *
  * Return 0 on success.
  * Return -1 on failure.
  */
@@ -908,7 +909,7 @@ int tox_group_set_topic(Tox *tox, int groupnumber, const uint8_t *topic, uint32_
 int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topicbuffer);
 
 /* Sets your status for groupnumber.
- * 
+ *
  * Return 0 on success.
  * Return -1 on failure.
  */
@@ -920,9 +921,9 @@ int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type);
  */
 uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber);
 
-/* Get invite key for the groupchat from the group number.
- * The result is stored in 'dest' which must have space for 64 bytes.
- * 
+/* Get invite key for the groupchat from the groupnumber.
+ * The result is stored in 'dest' which must have space for TOX_GROUP_CHAT_ID_SIZE bytes.
+ *
  * Returns 0 on success
  * Retruns -1 on failure
  */
