@@ -1099,7 +1099,8 @@ int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type)
 
 /* Get peernumber's status in groupnumber's group chat.
  *
- * Return a TOX_GROUP_STATUS on success (TOX_GS_INVALID on failure).
+ * Returns a TOX_GROUP_STATUS on success.
+ * Returns TOX_GS_INVALID on failure.
  */
 uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber)
 {
@@ -1107,9 +1108,25 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
-        return -1;
+        return TOX_GS_INVALID;
 
     return gc_get_status(chat, peernumber);
+}
+
+/* Get peernumber's group role in groupnumber's group chat.
+ *
+ * Return a TOX_GROUP_ROLE on success.
+ * Returns TOX_GR_INVALID on failure.
+ */
+uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return TOX_GR_INVALID;
+
+    return gc_get_role(chat, peernumber);
 }
 
 /* Get invite key for the groupchat from the groupnumber.

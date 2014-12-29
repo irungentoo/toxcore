@@ -113,11 +113,10 @@ static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, u
 /* Encrypts data using self secret key, recipient's public key and a new nonce.
  * Adds header consisting of: packet identifier, hash_id, self public key, nonce.
  */
-static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, const uint8_t *recv_pk,
-                             uint8_t *packet, const uint8_t *data, uint32_t length, uint8_t packet_type,
-                             uint32_t hash_id)
+static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, const uint8_t *recv_pk, uint8_t *packet,
+                             const uint8_t *data, uint32_t length, uint8_t packet_type, uint32_t hash_id)
 {
-    if (MAX_GC_PACKET_SIZE < length + MIN_GC_PACKET_SIZE)
+    if (length + MIN_GC_PACKET_SIZE > MAX_GC_PACKET_SIZE)
         return -1;
 
     uint8_t plain[MAX_GC_PACKET_SIZE];
@@ -147,6 +146,9 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, con
 static int send_groupchatpacket(const GC_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
                                 const uint8_t *data, uint32_t length, uint8_t packet_type)
 {
+    if (length == 0)
+        return -1;
+
     if (id_long_equal(chat->self_public_key, public_key))
         return -1;
 
@@ -255,7 +257,7 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, IP_Port ipp, const ui
     return 0;
 }
 
-static int gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer);
+static void gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer);
 
 static int handle_gc_sync_request(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data,
                                   uint32_t length)
@@ -423,7 +425,6 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
 
 static int send_gc_broadcast_packet(const GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
-    // TODO: Why do we need this in the packet twice?
     uint8_t packet[length + EXT_PUBLIC_KEY];
     memcpy(packet, chat->self_public_key, EXT_PUBLIC_KEY);
 
@@ -494,13 +495,26 @@ static int handle_gc_status(Messenger *m, int groupnumber, uint32_t peernumber, 
     return 0;
 }
 
-/* Return's peernumber's status (GS_INVALID on failure) */
+/* Returns peernumber's status.
+ * Returns GS_INVALID on failure.
+ */
 uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber)
 {
     if (!peernumber_valid(chat, peernumber))
         return GS_INVALID;
 
     return chat->group[peernumber].status;
+}
+
+/* Returns peernumber's group role.
+ * Returns GR_INVALID on failure.
+ */
+uint8_t gc_get_role(const GC_Chat *chat, uint8_t peernumber)
+{
+    if (!peernumber_valid(chat, peernumber))
+        return GR_INVALID;
+
+    return chat->group[peernumber].role;
 }
 
 static int send_gc_new_peer(const GC_Chat *chat, uint32_t numpeers)
@@ -917,11 +931,10 @@ static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *p
 
     int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, sender_pk, data, &packet_type,
                                   packet, length);
-
-    if (len == -1)
+    if (len <= 0)
         return -1;
 
-    // Check if we know the user and if it's banned
+    /* Check if we know the user and if they're banned */
     int peernumber = gc_peer_in_chat(chat, sender_pk);
 
     if (peernumber != -1) {
@@ -1055,8 +1068,9 @@ static int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t 
     return 0;
 }
 
-// Return -1 if certificate is corrupted
-// Return 0 if certificate is consistent
+/* Return -1 if certificate is corrupted
+ * Return 0 if certificate is consistent
+ */
 static int verify_cert_integrity(const uint8_t *certificate)
 {
     if (certificate[0] == GC_INVITE) {
@@ -1091,9 +1105,10 @@ static int verify_cert_integrity(const uint8_t *certificate)
     return -1;
 }
 
-// Return -1 if we don't know who signed the certificate
-// Return -2 if cert is signed by chat pk, e.g. in case it is the cert founder created for himself
-// Return peer number in other cases
+/* Return -1 if we don't know who signed the certificate
+ * Return -2 if cert is signed by chat pk, e.g. in case it is the cert founder created for himself
+ * Return peer number in other cases
+ */
 static int process_invite_cert(const GC_Chat *chat, const uint8_t *certificate)
 {
     if (certificate[0] != GC_INVITE)
@@ -1129,9 +1144,10 @@ static int process_invite_cert(const GC_Chat *chat, const uint8_t *certificate)
     return -1;
 }
 
-// Return -1 if cert isn't issued by ops or we don't know the source or op tries to ban op
-// Return issuer peer number in other cases
-// Add roles or ban depending on the cert and save the cert in common_cert arrays (works for ourself and peers)
+/* Return -1 if cert isn't issued by ops or we don't know the source or op tries to ban op
+ * Return issuer peer number in other cases
+ * Add roles or ban depending on the cert and save the cert in common_cert arrays (works for ourself and peers)
+ */
 static int process_common_cert(GC_Chat *chat, const uint8_t *certificate)
 {
     if (certificate[0] > GC_INVITE && certificate[0] < 255) {
@@ -1146,13 +1162,14 @@ static int process_common_cert(GC_Chat *chat, const uint8_t *certificate)
             return src;
 
         if (chat->group[src].role & GR_OP || chat->group[src].role & GR_FOUNDER) {
-
             if (id_long_equal(target_pk, chat->self_public_key)) {
                 memcpy(chat->self_common_certificate[chat->self_common_cert_num], certificate, COMMON_CERTIFICATE_SIGNED_SIZE);
                 chat->self_common_cert_num++;
+
                 if (certificate[0] == GC_OP_CREDENTIALS)
                     chat->self_role |= GR_OP;
-                // In case of ban cert action callback should handle this
+
+                /* In case of ban cert action callback should handle this */
                 return src;
             }
 
@@ -1167,6 +1184,7 @@ static int process_common_cert(GC_Chat *chat, const uint8_t *certificate)
                 if  (((chat->group[trg].role&GR_OP) || (chat->group[trg].role&GR_FOUNDER)) && (chat->group[src].role&GR_OP)) {
                     return -1;
                 }
+
                 chat->group[trg].banned = 1;
                 bytes_to_U64(&chat->group[trg].banned_time, certificate + 1 + EXT_PUBLIC_KEY * 2);
                 memcpy(chat->group[trg].common_certificate[chat->group[trg].common_cert_num], certificate, COMMON_CERTIFICATE_SIGNED_SIZE);
@@ -1282,18 +1300,18 @@ static int gc_peer_update(GC_Chat *chat, const GC_GroupPeer *peer, uint32_t peer
     return 0;
 }
 
-static int gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer)
+/* Copies own peer data to peer */
+static void gc_to_peer(const GC_Chat *chat, GC_GroupPeer *peer)
 {
     // NB: we cannot add out ip_port
     memcpy(peer->client_id, chat->self_public_key, EXT_PUBLIC_KEY);
     memcpy(peer->invite_certificate, chat->self_invite_certificate, INVITE_CERTIFICATE_SIGNED_SIZE);
-    memcpy(peer->common_certificate, chat->self_common_certificate, COMMON_CERTIFICATE_SIGNED_SIZE*MAX_CERTIFICATES_NUM);
+    memcpy(peer->common_certificate, chat->self_common_certificate, COMMON_CERTIFICATE_SIGNED_SIZE * MAX_CERTIFICATES_NUM);
     memcpy(peer->nick, chat->self_nick, chat->self_nick_len);
     peer->nick_len = chat->self_nick_len;
+    peer->status = chat->self_status;
     peer->role = chat->self_role;
     peer->last_update_time = unix_time();
-
-    return 0;
 }
 
 static void check_peer_timeouts(Messenger *m, int groupnumber)
@@ -1307,7 +1325,7 @@ static void check_peer_timeouts(Messenger *m, int groupnumber)
 
     for (i = 0; i < chat->numpeers; ++i) {
         if (is_timeout(chat->group[i].last_rcvd_ping, BAD_GROUPNODE_TIMEOUT))
-            gc_peer_delete(m, groupnumber, i, (const uint8_t *) "Timed out", 9);
+            gc_peer_delete(m, groupnumber, i, (uint8_t *) "Timed out", 9);
     }
 }
 

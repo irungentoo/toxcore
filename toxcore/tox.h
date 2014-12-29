@@ -779,6 +779,16 @@ typedef enum {
     TOX_GS_INVALID
 } TOX_GROUP_STATUS;
 
+typedef enum {
+    TOX_GR_FOUNDER = 1,
+    TOX_GR_OP = 2,
+    TOX_GR_USER = 4,
+    TOX_GR_HUMAN = 8,
+    TOX_GR_ELF = 16,
+    TOX_GR_DWARF = 32,
+    TOX_GR_INVALID = 64
+} TOX_GROUP_ROLE;
+
 /* Set the callback for group messages.
  *
  *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
@@ -917,11 +927,19 @@ int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type);
 
 /* Get peernumber's status in groupnumber's group chat.
  *
- * Return a TOX_GROUP_STATUS on success (TOX_GS_INVALID on failure).
+ * Returns a TOX_GROUP_STATUS on success.
+ * Returns TOX_GS_INVALID on failure.
  */
 uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber);
 
-/* Get invite key for the groupchat from the groupnumber.
+/* Get peernumber's group role in groupnumber's group chat.
+ *
+ * Returns a TOX_GROUP_ROLE on success.
+ * Returns TOX_GR_INVALID on failure.
+ */
+uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber);
+
+/* Get invite key for the groupchat from groupnumber.
  * The result is stored in 'dest' which must have space for TOX_GROUP_CHAT_ID_SIZE bytes.
  *
  * Returns 0 on success

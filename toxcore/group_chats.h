@@ -60,7 +60,8 @@ enum {
     GR_USER = 4,
     GR_HUMAN = 8,
     GR_ELF = 16,
-    GR_DWARF = 32
+    GR_DWARF = 32,
+    GR_INVALID = 64
 } GROUP_ROLE;
 
 enum {
@@ -109,11 +110,11 @@ typedef struct {
     uint8_t     status;
     bool        ignore;
 
-    bool        verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
+    bool        verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
 
-    uint64_t    role;
+    uint8_t     role;
 
-    uint64_t    last_update_time; // updates when nick, role, verified, ip_port change or banned
+    uint64_t    last_update_time; /* updates when nick, role, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
 } GC_GroupPeer;
 
@@ -125,7 +126,7 @@ typedef struct {
 
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
-    uint64_t    role;    
+    uint8_t     role;
 } GC_ChatOps;
 
 // For founder needs
@@ -157,7 +158,7 @@ typedef struct GC_Chat {
 
     uint8_t     self_nick[MAX_GC_NICK_SIZE];
     uint16_t    self_nick_len;
-    uint64_t    self_role;
+    uint8_t     self_role;
     uint8_t     self_status;
 
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
@@ -173,14 +174,15 @@ typedef struct GC_Chat {
 
     GC_ChatCredentials *credentials;
 
-    uint32_t     message_number;
+    uint32_t     message_number;  // What is this for?
 } GC_Chat;
 
 typedef struct GC_Session {
     Messenger *messenger;
     GC_Chat *chats;
+    GC_Announce *announce;
+
     uint32_t num_chats;
-    GC_Announce* announce;
 
     void (*message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *message_userdata;
@@ -238,8 +240,15 @@ int gc_get_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
  */
 int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 
-/* Return's peernumber's status (GS_INVALID on failure) */
+/* Returns peernumber's status.
+ * Returns GS_INVALID on failure.
+ */
 uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
+
+/* Returns peernumber's group role.
+ * Returns GR_INVALID on failure.
+ */
+uint8_t gc_get_role(const GC_Chat *chat, uint8_t peernumber);
 
 void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                          const uint8_t *, uint32_t, void *), void *userdata);
