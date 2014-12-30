@@ -768,8 +768,25 @@ void tox_save(const Tox *tox, uint8_t *data);
  */
 int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
 
+
 /**************** GROUPCHAT FUNCTIONS *****************/
 
+
+/* Group roles are hierarchical where each role has a set of privileges plus
+ * all the privileges of the roles beneath it.
+ *
+ * - FOUNDER is all-powerful. Cannot be demoted or banned.
+ * - OP may issue bans, promotions and demotions to all roles below founder.
+ * - USER may talk and change the group topic.
+ * - OBSERVER cannot interact with the group but may observe.
+ */
+typedef enum {
+    TOX_GR_FOUNDER,
+    TOX_GR_OP,
+    TOX_GR_USER,
+    TOX_GR_OBSERVER,
+    TOX_GR_INVALID
+} TOX_GROUP_ROLE;
 
 typedef enum {
     TOX_GS_ONLINE,
@@ -780,14 +797,11 @@ typedef enum {
 } TOX_GROUP_STATUS;
 
 typedef enum {
-    TOX_GR_FOUNDER = 1,
-    TOX_GR_OP = 2,
-    TOX_GR_USER = 4,
-    TOX_GR_HUMAN = 8,
-    TOX_GR_ELF = 16,
-    TOX_GR_DWARF = 32,
-    TOX_GR_INVALID = 64
-} TOX_GROUP_ROLE;
+    TOX_GC_BAN,
+    TOX_GC_PROMOTE_OP,
+    TOX_GC_REVOKE_OP,
+    TOX_GC_SILENCE
+} TOX_GROUP_OP_CERTIFICATE;
 
 /* Set the callback for group messages.
  *
@@ -803,12 +817,13 @@ void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t
 void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
                                         void *), void *userdata);
 
-/* Set the callback for group operator actions.
+
+/* Set the callback for group operator certificates.
  *
- *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *certificate, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, uint8_t certificate_type, void *userdata)
  */
-void tox_callback_group_op_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
-                                  void *), void *userdata);
+void tox_callback_group_op_certificate(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t, uint8_t, void *),
+                                       void *userdata);
 
 /* Set the callback for group name changes.
  *
@@ -882,12 +897,13 @@ int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *messa
 int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t peernumber, const uint8_t *message,
                                    uint32_t length);
 
-/* Sends a groupchat operator action to groupnumber.
+/* Issues a groupchat operator certificate for peernumber to groupnumber.
+ * type must be a TOX_GROUP_OP_CERTIFICATE.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_op_action_send(const Tox *tox, int groupnumber, const uint8_t *certificate);
+int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t type);
 
 /* Sets your name for groupnumber.
  *

@@ -44,24 +44,31 @@ typedef struct Messenger Messenger;
 #define INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 #define SEMI_INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 // CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE
-#define COMMON_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
-
-#define MAX_CERTIFICATES_NUM 5
+#define ROLE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
 enum {
-    GC_INVITE,
     GC_BAN,
-    GC_OP_CREDENTIALS
+    GC_PROMOTE_OP,
+    GC_REVOKE_OP,
+    GC_SILENCE,
+    GC_INVITE,
+    GC_INVALID
 } GROUP_CERTIFICATE;
 
+/* Group roles are hierarchical where each role has a set of privileges plus
+ * all the privileges of the roles below it.
+ *
+ * - FOUNDER is all-powerful. Cannot be demoted or banned.
+ * - OP may issue bans, promotions and demotions to all roles below founder.
+ * - USER may talk, stream A/V, and change the group topic.
+ * - OBSERVER cannot interact with the group but may observe.
+ */
 enum {
-    GR_FOUNDER = 1,
-    GR_OP = 2,
-    GR_USER = 4,
-    GR_HUMAN = 8,
-    GR_ELF = 16,
-    GR_DWARF = 32,
-    GR_INVALID = 64
+    GR_FOUNDER,
+    GR_OP,
+    GR_USER,
+    GR_OBSERVER,
+    GR_INVALID
 } GROUP_ROLE;
 
 enum {
@@ -78,7 +85,7 @@ enum {
     CS_CONNECTING,
     CS_CONNECTED,
     CS_INVALID
-} GROUP_CONNECTION_STATUS;
+} GROUP_CONNECTION_STATE;
 
 enum {
     GM_PING,
@@ -88,7 +95,7 @@ enum {
     GM_CHANGE_TOPIC,
     GM_MESSAGE,
     GM_PRVT_MESSAGE,
-    GM_OP_ACTION,
+    GM_OP_CERTIFICATE,
     GM_PEER_EXIT
 } GROUP_MESSAGE_TYPE;
 
@@ -98,14 +105,10 @@ typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
 
     uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t     common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
-    uint32_t    common_cert_num;
+    uint8_t     role_certificate[ROLE_CERTIFICATE_SIGNED_SIZE];
 
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
-
-    bool        banned;
-    uint64_t    banned_time;
 
     uint8_t     status;
     bool        ignore;
@@ -114,7 +117,7 @@ typedef struct {
 
     uint8_t     role;
 
-    uint64_t    last_update_time; /* updates when nick, role, verified, ip_port change or banned */
+    uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
 } GC_GroupPeer;
 
@@ -147,8 +150,7 @@ typedef struct GC_Chat {
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
     uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
-    uint32_t    self_common_cert_num;
+    uint8_t     self_role_certificate[ROLE_CERTIFICATE_SIGNED_SIZE];
 
     GC_GroupPeer   *group;
     GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
@@ -188,8 +190,8 @@ typedef struct GC_Session {
     void *message_userdata;
     void (*private_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *private_message_userdata;
-    void (*op_action)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
-    void *op_action_userdata;
+    void (*op_certificate)(Messenger *m, int, uint32_t, uint32_t, uint8_t, void *);
+    void *op_certificate_userdata;
     void (*nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *nick_change_userdata;
     void (*title_change)(Messenger *m, int, uint32_t, const uint8_t *,  uint32_t, void *);
@@ -205,7 +207,7 @@ typedef struct GC_Session {
 /* Return -1 if fail
  * Return 0 if success
  */
-int gc_send_op_action(const GC_Chat *chat, const uint8_t *certificate);
+int gc_send_op_certificate(const GC_Chat *chat, uint32_t peernumber, uint8_t cert_type);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -256,8 +258,8 @@ void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupn
 void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                                  const uint8_t *, uint32_t, void *), void *userdata);
 
-void gc_callback_op_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                           const uint8_t *, uint32_t, void *), void *userdata);
+void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, uint32_t,
+                                uint8_t, void *), void *userdata);
 
 void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                              const uint8_t *, uint32_t, void *), void *userdata);
