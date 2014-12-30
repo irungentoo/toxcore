@@ -30,7 +30,7 @@
 
 #define MAX_ONION_CLIENTS 8
 #define ONION_NODE_PING_INTERVAL 20
-#define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 4)
+#define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 3)
 
 /* The interval in seconds at which to tell our friends where we are */
 #define ONION_FAKEID_INTERVAL 30
