@@ -133,8 +133,8 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
 
     //if (DHT_non_lan_connected(onion_c->dht)) {
     if (DHT_isconnected(onion_c->dht)) {
-        if (num_nodes < 3)
-            return random_nodes_path(onion_c->dht, nodes, max_num);
+        if (num_nodes == 0)
+            return 0;
 
         for (i = 0; i < max_num; ++i) {
             nodes[i] = onion_c->path_nodes[rand() % num_nodes];
