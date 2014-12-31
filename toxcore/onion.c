@@ -293,7 +293,9 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
         return 1;
 
     IP_Port send_to;
-    ipport_unpack(&send_to, plain);
+
+    if (ipport_unpack(&send_to, plain, len) == -1)
+        return 1;
 
     if (to_host_family(&send_to.ip) == -1)
         return 1;
@@ -344,7 +346,9 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
 
     IP_Port send_to;
-    ipport_unpack(&send_to, plain);
+
+    if (ipport_unpack(&send_to, plain, len) == -1)
+        return 1;
 
     if (to_host_family(&send_to.ip) == -1)
         return 1;
@@ -395,7 +399,9 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
 
     IP_Port send_to;
-    ipport_unpack(&send_to, plain);
+
+    if (ipport_unpack(&send_to, plain, len) == -1)
+        return 1;
 
     if (to_host_family(&send_to.ip) == -1)
         return 1;
@@ -443,7 +449,9 @@ static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
 
     IP_Port send_to;
-    ipport_unpack(&send_to, plain);
+
+    if (ipport_unpack(&send_to, plain, len) == -1)
+        return 1;
 
     uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_RECV_2;
@@ -477,7 +485,9 @@ static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
 
     IP_Port send_to;
-    ipport_unpack(&send_to, plain);
+
+    if (ipport_unpack(&send_to, plain, len) == -1)
+        return 1;
 
     uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_RECV_1;
@@ -511,7 +521,9 @@ static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
 
     IP_Port send_to;
-    ipport_unpack(&send_to, plain);
+
+    if (ipport_unpack(&send_to, plain, len) == -1)
+        return 1;
 
     uint16_t data_len = length - (1 + RETURN_1);
 

@@ -763,10 +763,15 @@ void ip_pack(uint8_t *data, const IP *source)
     memcpy(data + 1, &source->ip6, SIZE_IP6);
 }
 
-void ip_unpack(IP *target, const uint8_t *data)
+/* return 0 on success, -1 on failure. */
+int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size)
 {
+    if (data_size < (1 + SIZE_IP6))
+        return -1;
+
     target->family = data[0];
     memcpy(&target->ip6, data + 1, SIZE_IP6);
+    return 0;
 }
 
 void ipport_pack(uint8_t *data, const IP_Port *source)
@@ -775,10 +780,15 @@ void ipport_pack(uint8_t *data, const IP_Port *source)
     memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
 }
 
-void ipport_unpack(IP_Port *target, const uint8_t *data)
+/* return 0 on success, -1 on failure. */
+int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data_size)
 {
-    ip_unpack(&target->ip, data);
+    if (data_size < (SIZE_IP + SIZE_PORT))
+        return -1;
+
+    ip_unpack(&target->ip, data, data_size);
     memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
+    return 0;
 }
 
 /* ip_ntoa
