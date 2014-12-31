@@ -43,7 +43,7 @@
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
-int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, uint32_t length);
+int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, size_t length);
 
 /*  return a random number.
  *
