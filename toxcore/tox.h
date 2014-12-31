@@ -785,6 +785,7 @@ typedef enum {
     TOX_GR_OP,
     TOX_GR_USER,
     TOX_GR_OBSERVER,
+    TOX_GR_BANNED,
     TOX_GR_INVALID
 } TOX_GROUP_ROLE;
 

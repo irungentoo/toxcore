@@ -38,6 +38,7 @@ typedef struct Messenger Messenger;
 
 #define GROUP_CLOSE_CONNECTIONS 6
 #define GROUP_PING_INTERVAL 5
+#define GROUP_PEER_TIMEOUT 255
 #define BAD_GROUPNODE_TIMEOUT 60
 
 // CERT_TYPE + INVITEE + TIME_STAMP_SIZE + INVITEE_SIGNATURE + INVITER + TIME_STAMP_SIZE + INVITER_SIGNATURE
@@ -68,6 +69,7 @@ enum {
     GR_OP,
     GR_USER,
     GR_OBSERVER,
+    GR_BANNED,
     GR_INVALID
 } GROUP_ROLE;
 
@@ -146,7 +148,8 @@ typedef struct GC_Announce GC_Announce;
 
 typedef struct GC_Chat {
     Networking_Core *net;
-    uint32_t hash_id;   /* 32-bit hash of chat_public_key */
+
+    uint32_t    hash_id;   /* 32-bit hash of chat_public_key */
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
@@ -167,13 +170,14 @@ typedef struct GC_Chat {
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
 
-    uint8_t     group_status;
+    uint8_t     connection_state;
 
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
     uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
 
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
+    uint64_t    self_last_rcvd_ping;
 
     GC_ChatCredentials *credentials;
 
@@ -294,14 +298,14 @@ GC_Session* new_groupchats(Messenger* m);
 /* Calls gc_group_delete() for every group chat */
 void gc_kill_groupchats(GC_Session* c);
 
-/* Adds a new group chat
+/* Creates a new group and announces it
  *
  * Return groupnumber on success
  * Return -1 on failure
  */
 int gc_group_add(GC_Session *c);
 
-/* Creates a group chat and sends an invite request using invite_key
+/* Sends an invite request to an existing group using the invite key
  *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
