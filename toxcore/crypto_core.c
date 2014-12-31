@@ -33,7 +33,7 @@
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
-int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, uint32_t length)
+int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, size_t length)
 {
     if (length == 16) {
         return crypto_verify_16(mem1, mem2);
@@ -41,8 +41,8 @@ int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, uint32_t length)
         return crypto_verify_32(mem1, mem2);
     }
 
-    unsigned int i, check = 0;
-
+    unsigned int check = 0;
+    size_t i;
     for (i = 0; i < length; ++i) {
         check |= mem1[i] ^ mem2[i];
     }
