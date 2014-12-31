@@ -817,6 +817,12 @@ void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t
 void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
                                         void *), void *userdata);
 
+/* Set the callback for group action messages (aka /me messages).
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ */
+void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                               void *), void *userdata);
 
 /* Set the callback for group operator certificates.
  *
@@ -889,13 +895,20 @@ int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint
  */
 int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint32_t length);
 
-/* Sends a private message to peernumber in groupnumber.
+/* Sends a private message to peernumber in groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
 int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t peernumber, const uint8_t *message,
                                    uint32_t length);
+
+/* Sends a groupchat action message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *message, uint32_t length);
 
 /* Issues a groupchat operator certificate for peernumber to groupnumber.
  * type must be a TOX_GROUP_OP_CERTIFICATE.

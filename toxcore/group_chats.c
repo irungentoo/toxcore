@@ -734,7 +734,8 @@ static int handle_gc_change_topic(Messenger *m, int groupnumber, uint32_t peernu
     return 0;
 }
 
-int gc_send_plain_message(const GC_Chat *chat, const uint8_t *message, uint32_t length)
+/* Sends a plain message or an action, depending on type */
+int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint32_t length, uint8_t type)
 {
     if (1 + TIME_STAMP_SIZE + length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
@@ -743,7 +744,7 @@ int gc_send_plain_message(const GC_Chat *chat, const uint8_t *message, uint32_t 
         return -1;
 
     uint8_t data[MAX_GC_PACKET_SIZE];
-    data[0] = GM_MESSAGE;
+    data[0] = type;
     U64_to_bytes(data + 1, unix_time());
     memcpy(data + 1 + TIME_STAMP_SIZE, message, length);
     length = 1 + TIME_STAMP_SIZE + length;
@@ -759,7 +760,7 @@ int gc_send_plain_message(const GC_Chat *chat, const uint8_t *message, uint32_t 
 }
 
 static int handle_gc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
-                             uint32_t length)
+                             uint32_t length, uint8_t type)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
@@ -773,8 +774,11 @@ static int handle_gc_message(Messenger *m, int groupnumber, uint32_t peernumber,
     if (chat->group[peernumber].ignore || chat->group[peernumber].role >= GR_OBSERVER)
         return 0;
 
-    if (c->message)
+    if (type == GM_PLAIN_MESSAGE && c->message) {
         (*c->message)(m, groupnumber, peernumber, data, length, c->message_userdata);
+    } else if (type == GM_ACTION_MESSAGE && c->action) {
+        (*c->action)(m, groupnumber, peernumber, data, length, c->action_userdata);
+    }
 
     return 0;
 }
@@ -931,8 +935,10 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
             return handle_gc_change_nick(m, groupnumber, peernumber, dt, len);
         case GM_CHANGE_TOPIC:
             return handle_gc_change_topic(m, groupnumber, peernumber, dt, len);
-        case GM_MESSAGE:
-            return handle_gc_message(m, groupnumber, peernumber, dt, len);
+        case GM_PLAIN_MESSAGE:
+            return handle_gc_message(m, groupnumber, peernumber, dt, len, GM_PLAIN_MESSAGE);
+        case GM_ACTION_MESSAGE:
+            return handle_gc_message(m, groupnumber, peernumber, dt, len, GM_ACTION_MESSAGE);
         case GM_PRVT_MESSAGE:
             return handle_gc_private_message(m, groupnumber, peernumber, dt, len);
         case GM_OP_CERTIFICATE:
@@ -1005,6 +1011,14 @@ void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, in
     GC_Session *c = m->group_handler;
     c->private_message = function;
     c->private_message_userdata = userdata;
+}
+
+void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                        const uint8_t *, uint32_t, void *), void *userdata)
+{
+    GC_Session *c = m->group_handler;
+    c->action = function;
+    c->action_userdata = userdata;
 }
 
 void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, uint32_t,

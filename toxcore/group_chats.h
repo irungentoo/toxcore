@@ -93,7 +93,8 @@ enum {
     GM_NEW_PEER,
     GM_CHANGE_NICK,
     GM_CHANGE_TOPIC,
-    GM_MESSAGE,
+    GM_PLAIN_MESSAGE,
+    GM_ACTION_MESSAGE,
     GM_PRVT_MESSAGE,
     GM_OP_CERTIFICATE,
     GM_PEER_EXIT
@@ -190,6 +191,8 @@ typedef struct GC_Session {
     void *message_userdata;
     void (*private_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *private_message_userdata;
+    void (*action)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void *action_userdata;
     void (*op_certificate)(Messenger *m, int, uint32_t, uint32_t, uint8_t, void *);
     void *op_certificate_userdata;
     void (*nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
@@ -217,7 +220,7 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore);
 /* Return -1 if fail
  * Return 0 if success
  */
-int gc_send_plain_message(const GC_Chat *chat, const uint8_t *message, uint32_t length);
+int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint32_t length, uint8_t type);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -257,6 +260,9 @@ void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupn
 
 void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                                  const uint8_t *, uint32_t, void *), void *userdata);
+
+void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                        const uint8_t *, uint32_t, void *), void *userdata);
 
 void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, uint32_t,
                                 uint8_t, void *), void *userdata);

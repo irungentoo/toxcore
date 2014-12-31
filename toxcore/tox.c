@@ -867,6 +867,17 @@ void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, 
     gc_callback_private_message(m, function, userdata);
 }
 
+/* Set the callback for group action messages (aka /me messages).
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ */
+void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+                               void *), void *userdata)
+{
+    Messenger *m = tox;
+    gc_callback_action(m, function, userdata);
+}
+
 /* Set the callback for group operator certificates.
  *
  *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, uint8_t certificate_type, void *userdata)
@@ -967,7 +978,7 @@ int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint
     return gc_group_delete(m->group_handler, chat, partmessage, length);
 }
 
-/* Sends a groupchat message to groupnumber.
+/* Sends a groupchat message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
  *
  * Return 0 on success.
  * Return -1 on failure.
@@ -980,10 +991,10 @@ int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *messa
     if (chat == NULL)
         return -1;
 
-    return gc_send_plain_message(chat, message, length);
+    return gc_send_message(chat, message, length, GM_PLAIN_MESSAGE);
 }
 
-/* Sends a private message to peernumber in groupnumber.
+/* Sends a private message to peernumber in groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
  *
  * Return 0 on success.
  * Return -1 on failure.
@@ -998,6 +1009,22 @@ int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t pee
         return -1;
 
     return gc_send_private_message(chat, peernumber, message, length);
+}
+
+/* Sends a groupchat action message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *message, uint32_t length)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_send_message(chat, message, length, GM_ACTION_MESSAGE);
 }
 
 /* Issues a groupchat operator certificate for peernumber to groupnumber.
