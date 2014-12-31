@@ -65,7 +65,9 @@
 
 /* Functions to transfer ips safely across wire. */
 void to_net_family(IP *ip);
-void to_host_family(IP *ip);
+
+/* return 0 on success, -1 on failure. */
+int to_host_family(IP *ip);
 
 typedef struct {
     IP_Port     ip_port;

@@ -164,12 +164,17 @@ void to_net_family(IP *ip)
         ip->family = TOX_AF_INET6;
 }
 
-void to_host_family(IP *ip)
+int to_host_family(IP *ip)
 {
-    if (ip->family == TOX_AF_INET)
+    if (ip->family == TOX_AF_INET) {
         ip->family = AF_INET;
-    else if (ip->family == TOX_AF_INET6)
+        return 0;
+    } else if (ip->family == TOX_AF_INET6) {
         ip->family = AF_INET6;
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 /* Pack number of nodes into data of maxlength length.

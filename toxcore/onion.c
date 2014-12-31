@@ -294,7 +294,9 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
 
     IP_Port send_to;
     ipport_unpack(&send_to, plain);
-    to_host_family(&send_to.ip);
+
+    if (to_host_family(&send_to.ip) == -1)
+        return 1;
 
     uint8_t ip_port[SIZE_IPPORT];
     ipport_pack(ip_port, &source);
@@ -343,7 +345,9 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
 
     IP_Port send_to;
     ipport_unpack(&send_to, plain);
-    to_host_family(&send_to.ip);
+
+    if (to_host_family(&send_to.ip) == -1)
+        return 1;
 
     uint8_t data[ONION_MAX_PACKET_SIZE];
     data[0] = NET_PACKET_ONION_SEND_2;
@@ -392,7 +396,9 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 
     IP_Port send_to;
     ipport_unpack(&send_to, plain);
-    to_host_family(&send_to.ip);
+
+    if (to_host_family(&send_to.ip) == -1)
+        return 1;
 
     uint8_t data[ONION_MAX_PACKET_SIZE];
     memcpy(data, plain + SIZE_IPPORT, len - SIZE_IPPORT);
