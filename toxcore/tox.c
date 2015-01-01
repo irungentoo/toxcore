@@ -975,7 +975,7 @@ int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint
     if (chat == NULL)
         return -1;
 
-    return gc_group_delete(m->group_handler, chat, partmessage, length);
+    return gc_group_exit(m->group_handler, chat, partmessage, length);
 }
 
 /* Sends a groupchat message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.

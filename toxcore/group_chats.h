@@ -295,7 +295,7 @@ void do_gc(GC_Session* c);
  */
 GC_Session* new_groupchats(Messenger* m);
 
-/* Calls gc_group_delete() for every group chat */
+/* Calls gc_group_exit() for every group chat */
 void gc_kill_groupchats(GC_Session* c);
 
 /* Creates a new group and announces it
@@ -312,12 +312,12 @@ int gc_group_add(GC_Session *c);
  */
 int gc_group_join(GC_Session *c, const uint8_t *invite_key);
 
-/* Deletes chat from group chat array and cleans up.
+/* Sends parting message to group and deletes group.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gc_group_delete(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint32_t length);
+ int gc_group_exit(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint32_t length);
 
 /* Return groupnumber's GC_Chat pointer on success
  * Return NULL on failure
