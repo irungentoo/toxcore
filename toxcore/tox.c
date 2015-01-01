@@ -932,11 +932,34 @@ void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32
     gc_callback_peer_exit(m, function, userdata);
 }
 
-void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t *, uint32_t, void *),
-                                  void *userdata)
+/* Set the callback for group self join.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_group_self_join(m, function, userdata);
+    gc_callback_self_join(m, function, userdata);
+}
+
+/* Set the callback for peerlist update. Should be used with tox_group_get_names.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_peerlist_update(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata)
+{
+    Messenger *m = tox;
+    gc_callback_peerlist_update(m, function, userdata);
+}
+
+/* Set the callback for self timeout.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_self_timeout(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata)
+{
+    Messenger *m = tox;
+    gc_callback_self_timeout(m, function, userdata);
 }
 
 /* Adds a new groupchat to group chats array.
@@ -1173,6 +1196,42 @@ int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest)
 
     memcpy(dest, chat->chat_public_key, EXT_PUBLIC_KEY);
     return 0;
+}
+
+/* Copies the nicks of the peers in groupnumber to the nicks array.
+ * Copies the lengths of the nicks to the lengths array.
+ *
+ * Arrays must have room for num_peers items.
+ *
+ * Should be used with tox_callback_group_peerlist_update.
+ *
+ * returns number of peers on success.
+ * return -1 on failure.
+ */
+int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t nicks[][TOX_MAX_NAME_LENGTH], uint32_t lengths[],
+                        uint32_t num_peers)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_peernames(chat, nicks, lengths, num_peers);
+}
+
+/* Returns the number of peers in groupnumber on success.
+ * Returns -1 on failure.
+ */
+int tox_group_get_number_peers(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_numpeers(chat);
 }
 
 /* Toggle ignore on peernumber in groupnumber.

@@ -773,12 +773,13 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
 
 
 /* Group roles are hierarchical where each role has a set of privileges plus
- * all the privileges of the roles beneath it.
+ * all the privileges of the roles below it.
  *
  * - FOUNDER is all-powerful. Cannot be demoted or banned.
  * - OP may issue bans, promotions and demotions to all roles below founder.
- * - USER may talk and change the group topic.
+ * - USER may talk, stream A/V, and change the group topic.
  * - OBSERVER cannot interact with the group but may observe.
+ * - BANNED is dropped from the group.
  */
 typedef enum {
     TOX_GR_FOUNDER,
@@ -859,12 +860,23 @@ void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32
 void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
                                   void *), void *userdata);
 
-/* Set the callback for group peer join.
+/* Set the callback for group self join.
  *
- * function(Tox *m, int groupnumber, uint32_t* peernumbers, uint32_t size_of_peers, void *userdata)
+ * function(Tox *m, int groupnumber, void *userdata)
  */
-void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, uint32_t*, uint32_t, void *),
-                                  void *userdata);
+void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
+
+/* Set the callback for peerlist update. Should be used with tox_group_get_names.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_peerlist_update(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
+
+/* Set the callback for self timeout.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_self_timeout(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
 
 /* Creates a new groupchat and adds to group chats array.
  *
@@ -976,6 +988,25 @@ uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
  * Retruns -1 on failure
  */
 int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest);
+
+/* Copies the nicks of the peers in groupnumber to the nicks array.
+ * Copies the lengths of the nicks to the lengths array.
+ *
+ * Arrays must have room for num_peers items.
+ *
+ * Should be used with tox_callback_group_peerlist_update.
+ *
+ * returns number of peers on success.
+ * return -1 on failure.
+ */
+int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t nicks[][TOX_MAX_NAME_LENGTH], uint32_t lengths[],
+                        uint32_t num_peers);
+
+/* Returns the number of peers in groupnumber on success.
+ *
+ * Returns -1 on failure.
+ */
+int tox_group_get_number_peers(const Tox *tox, int groupnumber);
 
 /* Toggle ignore on peernumber in groupnumber.
  * If ignore is 1, group and private messages from peernumber are ignored, as well as A/V.

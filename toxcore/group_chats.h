@@ -38,7 +38,8 @@ typedef struct Messenger Messenger;
 
 #define GROUP_CLOSE_CONNECTIONS 6
 #define GROUP_PING_INTERVAL 5
-#define GROUP_PEER_TIMEOUT 255
+#define GROUP_PEER_TIMEOUT 230  /* needs to be a bit less than GROUP_PEER_TIMEOUT */
+#define GROUP_SELF_TIMEOUT 255
 #define BAD_GROUPNODE_TIMEOUT 60
 
 // CERT_TYPE + INVITEE + TIME_STAMP_SIZE + INVITEE_SIGNATURE + INVITER + TIME_STAMP_SIZE + INVITER_SIGNATURE
@@ -63,6 +64,7 @@ enum {
  * - OP may issue bans, promotions and demotions to all roles below founder.
  * - USER may talk, stream A/V, and change the group topic.
  * - OBSERVER cannot interact with the group but may observe.
+ * - BANNED is dropped from the group.
  */
 enum {
     GR_FOUNDER,
@@ -205,10 +207,14 @@ typedef struct GC_Session {
     void *title_change_userdata;
     void (*peer_join)(Messenger *m, int, uint32_t, void *);
     void *peer_join_userdata;
-    void (*self_join)(Messenger *m, int, uint32_t*, uint32_t, void *);
-    void *self_join_userdata;
     void (*peer_exit)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
     void *peer_exit_userdata;
+    void (*self_join)(Messenger *m, int, void *);
+    void *self_join_userdata;
+    void (*peerlist_update)(Messenger *m, int, void *);
+    void *peerlist_update_userdata;
+    void (*self_timeout)(Messenger *m, int, void *);
+    void *self_timeout_userdata;
 } GC_Session;
 
 /* Return -1 if fail
@@ -254,6 +260,11 @@ int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
  */
 uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
 
+int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint32_t lengths[], uint32_t num_peers);
+
+/* Returns number of peers in chat */
+int gc_get_numpeers(const GC_Chat *chat);
+
 /* Returns peernumber's group role.
  * Returns GR_INVALID on failure.
  */
@@ -277,17 +288,19 @@ void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int gr
 void gc_callback_title_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                               const uint8_t *, uint32_t, void *), void *userdata);
 
-void gc_callback_group_self_join(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t*, uint32_t, void *),
-                                 void *userdata);
-
-void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, void *),
-                           void *userdata);
+void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void *), void *userdata);
 
 void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                            const uint8_t *, uint32_t, void *), void *userdata);
 
-/* This is the main loop.
- */
+void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, int groupnumber, void *), void *userdata);
+
+void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, int groupnumber, void *),
+                                 void *userdata);
+
+void gc_callback_self_timeout(Messenger *m, void (*function)(Messenger *m, int groupnumber, void *), void *userdata);
+
+/* This is the main loop. */
 void do_gc(GC_Session* c);
 
 /* Returns a NULL pointer if fail.
@@ -317,7 +330,7 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key);
  * Return 0 on success.
  * Return -1 on failure.
  */
- int gc_group_exit(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint32_t length);
+int gc_group_exit(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint32_t length);
 
 /* Return groupnumber's GC_Chat pointer on success
  * Return NULL on failure
