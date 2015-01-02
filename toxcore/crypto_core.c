@@ -43,6 +43,7 @@ int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, size_t length)
 
     unsigned int check = 0;
     size_t i;
+
     for (i = 0; i < length; ++i) {
         check |= mem1[i] ^ mem2[i];
     }

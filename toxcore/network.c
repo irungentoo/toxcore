@@ -756,41 +756,6 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
     memcpy(target, source, sizeof(IP_Port));
 };
 
-/* packing and unpacking functions */
-void ip_pack(uint8_t *data, const IP *source)
-{
-    data[0] = source->family;
-    memcpy(data + 1, &source->ip6, SIZE_IP6);
-}
-
-/* return 0 on success, -1 on failure. */
-int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size)
-{
-    if (data_size < (1 + SIZE_IP6))
-        return -1;
-
-    target->family = data[0];
-    memcpy(&target->ip6, data + 1, SIZE_IP6);
-    return 0;
-}
-
-void ipport_pack(uint8_t *data, const IP_Port *source)
-{
-    ip_pack(data, &source->ip);
-    memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
-}
-
-/* return 0 on success, -1 on failure. */
-int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data_size)
-{
-    if (data_size < (SIZE_IP + SIZE_PORT))
-        return -1;
-
-    ip_unpack(&target->ip, data, data_size);
-    memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
-    return 0;
-}
-
 /* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
