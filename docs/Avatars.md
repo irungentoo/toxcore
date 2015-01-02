@@ -89,7 +89,7 @@ in Section "Internal Protocol Description".
     This event contain two data fields: (1) the image format and (2) the
     cryptographic hash of the actual image data. Image format may be NONE
     (for users who have no avatar or removed their avatars) or PNG. The
-    cryptographic hash is intended to be compared with the hash or the
+    cryptographic hash is intended to be compared with the hash of the
     currently cached avatar (if any) and check if it stills up to date.
 
   - **Avatar Information Requests** are very lightweight messages sent by an
