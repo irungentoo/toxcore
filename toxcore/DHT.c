@@ -1628,26 +1628,6 @@ static int routeone_tofriend(DHT *dht, const uint8_t *friend_id, const uint8_t *
     return 0;
 }
 
-/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.
- * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
- *
- *  return number of ips returned.
- *  return 0 if we are connected to friend or if no ips were found.
- *  return -1 if no such friend.
- */
-int friend_ips(const DHT *dht, IP_Port *ip_portlist, const uint8_t *friend_id)
-{
-    uint32_t i;
-
-    for (i = 0; i < dht->num_friends; ++i) {
-        /* Equal */
-        if (id_equal(dht->friends_list[i].client_id, friend_id))
-            return friend_iplist(dht, ip_portlist, i);
-    }
-
-    return -1;
-}
-
 /*----------------------------------------------------------------------------------*/
 /*---------------------BEGINNING OF NAT PUNCHING FUNCTIONS--------------------------*/
 

@@ -375,16 +375,6 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
  */
 void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_callback cb, void *object);
 
-/* NAT PUNCHING FUNCTIONS */
-
-/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.
- * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
- *
- *  returns number of ips returned.
- *  returns -1 if no such friend.
- */
-int friend_ips(const DHT *dht, IP_Port *ip_portlist, const uint8_t *friend_id);
-
 /* SAVE/LOAD functions */
 
 /* Get the size of the DHT (for saving). */
