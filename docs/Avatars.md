@@ -5,18 +5,18 @@
 ## Introduction and rationale
 
 User avatars are small icons or images used to identify users in the friend
-list; they exists in virtually all VoIP and IM protocols and provide an easy
-way to an user identify another in the friend list.
+list; they exist in virtually all VoIP and IM protocols and provide an easy
+way for one user to identify another in the friend list.
 
 This document describes the implementation of avatars in the Tox protocol,
 according to the following design considerations:
 
-  - Avatars are handled as private information, ie., only exchanged over
+  - Avatars are handled as private information, i.e., they are only exchanged over
     Tox encrypted channels among previously authenticated friends;
 
   - The library treats all images as blobs and does not interpret or
-    understands image formats, only ensures that the avatar data sent by
-    an user is correctly received by the other. The client application is
+    understand image formats. It only ensures that the avatar data sent by
+    a user is correctly received by the other. The client application is
     responsible for validating, decoding, resizing, and presenting the
     image to the user.
 
@@ -28,17 +28,17 @@ according to the following design considerations:
 
     **Notice:** As designed, this limit can be changed in the future without
     breaking the protocol compatibility, but clients using the original
-    limit will reject larger avatars;
+    limit will reject larger avatars.
 
   - The protocol MUST provide means to allow caching and avoid unnecessary
-    data transfers;
+    data transfers.
 
-  - Avatars are transfered between clients in a background operation;
+  - Avatars are transfered between clients in a background operation.
 
-  - Avatars are served in a "best effort" basis, without breaking clients
-    who do not support them;
+  - Avatars are served on a "best effort" basis, without breaking clients
+    which do not support them.
 
-  - The protocol MUST resist to malicious users;
+  - The protocol MUST resist to malicious users.
 
   - The protocol MUST work with both UDP and TCP networks.
 
@@ -50,20 +50,20 @@ it silently. This procedure can be improved to provide the previously stated
 design considerations, but this requires a higher integration with the core
 protocol. Moving this feature to the core protocol also:
 
-  - Provides a simpler and cleaner interfaces for client applications;
+  - provides a simpler and cleaner interface for client applications;
 
-  - Hides protocol complexities from the client;
+  - hides protocol complexities from the client;
 
-  - Avoids code duplication and ad-hoc protocols in the clients;
+  - avoids code duplication and ad-hoc protocols in the clients;
 
-  - Avoids incompatibility between client implementations;
+  - avoids incompatibility between client implementations;
 
-  - Allows important optimizations such as lightweight notification of
+  - allows important optimizations, such as lightweight notification of
     removed and updated avatars;
 
-  - Plays well with cache schemes;
+  - plays well with cache schemes;
 
-  - Makes avatar transfer an essentially background operation.
+  - makes avatar transfer essentially a background operation.
 
 
 
@@ -72,35 +72,37 @@ protocol. Moving this feature to the core protocol also:
 
 ## High level description
 
+
+This is a very high level description. The usage patterns expected from
+client applications are described in the section "Using Avatars in Client
+Applications", and a low level protocol description is available in the
+section "Internal Protocol Description".)
 The avatar exchange is implemented with the following new elements in the
-Tox protocol. This is a very high level description and the usage patterns
-expected from client applications are described in Section "Using Avatars
-in Client Applications" and a low level protocol description is available
-in Section "Internal Protocol Description".
+Tox protocol:
 
   - **Avatar Information Notifications** are events which may be sent by
-    an user to another anytime, but are usually sent after one of them
+    a user to another anytime, but are usually sent after one of them
     connects to the network, changes his avatar, or in reply to an **avatar
     information request**. They are delivered by a very lightweight message
-    but with information enough to allow an user to validate or discard an
-    avatar from the local cache and decide if is interesting to request the
+    but with information enough to allow a user to validate or discard an
+    avatar from the local cache and to decide if it is interesting to request the
     avatar data from the peer.
 
-    This event contain two data fields: (1) the image format and (2) the
-    cryptographic hash of the actual image data. Image format may be NONE
+    This event contains two data fields: (1) the image format, and (2) the
+    cryptographic hash of the actual image data. The image format may be NONE
     (for users who have no avatar or removed their avatars) or PNG. The
     cryptographic hash is intended to be compared with the hash of the
-    currently cached avatar (if any) and check if it stills up to date.
+    currently cached avatar (if any) in order to check if it is still up to date.
 
-  - **Avatar Information Requests** are very lightweight messages sent by an
+  - **Avatar Information Requests** are very lightweight messages sent by a
     user asking for an **avatar information notification**. They may be sent
     as part of the login process or when the client thinks the currently
     cached avatar is outdated. The receiver may or may not answer to this
-    request. This message contains no data fields;
+    request. This message contains no data fields.
 
-  - An **Avatar Data Request** is sent by an user asking another for his
+  - An **Avatar Data Request** is sent by a user asking another for his
     complete avatar data. It is sent only when the requesting user decides
-    the avatar do not exists in the local cache or is outdated. The receiver
+    the avatar does not exist in the local cache or is outdated. The receiver
     may or may not answer to this request. This message contains no data
     fields.
 
