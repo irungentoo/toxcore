@@ -63,8 +63,13 @@ typedef struct {
     uint8_t public_key3[crypto_box_PUBLICKEYBYTES];
 
     IP_Port     ip_port1;
+    uint8_t     node_public_key1[crypto_box_PUBLICKEYBYTES];
+
     IP_Port     ip_port2;
+    uint8_t     node_public_key2[crypto_box_PUBLICKEYBYTES];
+
     IP_Port     ip_port3;
+    uint8_t     node_public_key3[crypto_box_PUBLICKEYBYTES];
 
     uint32_t path_num;
 } Onion_Path;
@@ -79,6 +84,13 @@ typedef struct {
  * return 0 on success.
  */
 int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *nodes);
+
+/* Dump nodes in onion path to nodes of length num_nodes;
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int onion_path_to_nodes(Node_format *nodes, unsigned int num_nodes, const Onion_Path *path);
 
 /* Create a onion packet.
  *

@@ -232,6 +232,7 @@ static int handle_status(void *object, int number, uint8_t status)
         friend_con->status = FRIENDCONN_STATUS_CONNECTING;
         friend_con->crypt_connection_id = -1;
         friend_con->dht_ping_lastrecv = unix_time();
+        onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     }
 
     unsigned int i;

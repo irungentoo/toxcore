@@ -178,14 +178,10 @@ static int del_accepted(TCP_Server *TCP_server, int index)
     return 0;
 }
 
-/* Read the next two bytes in TCP stream then convert them to
- * length (host byte order).
- *
- * return length on success
- * return 0 if nothing has been read from socket.
- * return ~0 on failure.
+/* return the amount of data in the tcp recv buffer.
+ * return 0 on failure.
  */
-uint16_t read_TCP_length(sock_t sock)
+unsigned int TCP_socket_data_recv_buffer(sock_t sock)
 {
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     unsigned long count = 0;
@@ -195,7 +191,21 @@ uint16_t read_TCP_length(sock_t sock)
     ioctl(sock, FIONREAD, &count);
 #endif
 
-    if ((unsigned int)count >= sizeof(uint16_t)) {
+    return count;
+}
+
+/* Read the next two bytes in TCP stream then convert them to
+ * length (host byte order).
+ *
+ * return length on success
+ * return 0 if nothing has been read from socket.
+ * return ~0 on failure.
+ */
+uint16_t read_TCP_length(sock_t sock)
+{
+    unsigned int count = TCP_socket_data_recv_buffer(sock);
+
+    if (count >= sizeof(uint16_t)) {
         uint16_t length;
         int len = recv(sock, (uint8_t *)&length, sizeof(uint16_t), MSG_NOSIGNAL);
 
@@ -223,13 +233,7 @@ uint16_t read_TCP_length(sock_t sock)
  */
 int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    unsigned long count = 0;
-    ioctlsocket(sock, FIONREAD, &count);
-#else
-    int count = 0;
-    ioctl(sock, FIONREAD, &count);
-#endif
+    unsigned int count = TCP_socket_data_recv_buffer(sock);
 
     if (count >= length) {
         int len = recv(sock, data, length, MSG_NOSIGNAL);

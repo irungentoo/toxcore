@@ -30,7 +30,7 @@
 
 #define MAX_ONION_CLIENTS 8
 #define ONION_NODE_PING_INTERVAL 20
-#define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 4)
+#define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 3)
 
 /* The interval in seconds at which to tell our friends where we are */
 #define ONION_FAKEID_INTERVAL 30
@@ -41,8 +41,9 @@
 /* The timeout the first time the path is added and
    then for all the next consecutive times */
 #define ONION_PATH_FIRST_TIMEOUT 5
-#define ONION_PATH_TIMEOUT 30
-#define ONION_PATH_MAX_LIFETIME 600
+#define ONION_PATH_TIMEOUT 10
+#define ONION_PATH_MAX_LIFETIME 1200
+#define ONION_PATH_MAX_NO_RESPONSE_USES 4
 
 #define MAX_STORED_PINGED_NODES 9
 #define MIN_NODE_PING_TIME 10
@@ -71,7 +72,10 @@ typedef struct {
 typedef struct {
     Onion_Path paths[NUMBER_ONION_PATHS];
     uint64_t last_path_success[NUMBER_ONION_PATHS];
+    uint64_t last_path_used[NUMBER_ONION_PATHS];
     uint64_t path_creation_time[NUMBER_ONION_PATHS];
+    /* number of times used without success. */
+    unsigned int last_path_used_times[NUMBER_ONION_PATHS];
 } Onion_Client_Paths;
 
 typedef struct {
@@ -139,6 +143,9 @@ typedef struct {
     Node_format path_nodes[MAX_PATH_NODES];
     uint16_t path_nodes_index;
 
+    Node_format path_nodes_bs[MAX_PATH_NODES];
+    uint16_t path_nodes_index_bs;
+
     Ping_Array announce_ping_array;
     uint8_t last_pinged_index;
     struct {
@@ -150,12 +157,12 @@ typedef struct {
 } Onion_Client;
 
 
-/* Add a node to the path_nodes array.
+/* Add a node to the path_nodes bootstrap array.
  *
  * return -1 on failure
  * return 0 on success
  */
-int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
+int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
 
 /* Put up to max_num nodes in nodes.
  *

@@ -1580,11 +1580,7 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
-    if (options->proxy_enabled) {
-        m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
-    } else {
-        m->net_crypto = new_net_crypto(m->dht, 0);
-    }
+    m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
 
     if (m->net_crypto == NULL) {
         kill_networking(m->net);
@@ -2730,7 +2726,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_NAME:
-            if ((length > 0) && (length < MAX_NAME_LENGTH)) {
+            if ((length > 0) && (length <= MAX_NAME_LENGTH)) {
                 setname(m, data, length);
             }
 
@@ -2772,7 +2768,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             uint32_t i;
 
             for (i = 0; i < NUM_SAVED_PATH_NODES; ++i) {
-                onion_add_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
+                onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
             }
 
             break;

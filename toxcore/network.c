@@ -765,34 +765,12 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
     memcpy(target, source, sizeof(IP_Port));
 };
 
-/* packing and unpacking functions */
-void ip_pack(uint8_t *data, const IP *source)
-{
-    data[0] = source->family;
-    memcpy(data + 1, &source->ip6, SIZE_IP6);
-}
-
-void ip_unpack(IP *target, const uint8_t *data)
-{
-    target->family = data[0];
-    memcpy(&target->ip6, data + 1, SIZE_IP6);
-}
-
-void ipport_pack(uint8_t *data, const IP_Port *source)
-{
-    ip_pack(data, &source->ip);
-    memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
-}
-
-void ipport_unpack(IP_Port *target, const uint8_t *data)
-{
-    ip_unpack(&target->ip, data);
-    memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
-}
-
 /* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
+ *
+ *   IPv6 addresses are enclosed into square brackets, i.e. "[IPv6]"
+ *   writes error message into the buffer on error
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
 static char addresstext[96];
@@ -822,6 +800,38 @@ const char *ip_ntoa(const IP *ip)
     /* brute force protection against lacking termination */
     addresstext[sizeof(addresstext) - 1] = 0;
     return addresstext;
+}
+
+/*
+ * ip_parse_addr
+ *  parses IP structure into an address string
+ *
+ * input
+ *  ip: ip of AF_INET or AF_INET6 families
+ *  length: length of the address buffer
+ *          Must be at least INET_ADDRSTRLEN for AF_INET
+ *          and INET6_ADDRSTRLEN for AF_INET6
+ *
+ * output
+ *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
+ *
+ * returns 1 on success, 0 on failure
+ */
+int ip_parse_addr(const IP *ip, char *address, size_t length)
+{
+    if (!address || !ip) {
+        return 0;
+    }
+
+    if (ip->family == AF_INET) {
+        struct in_addr *addr = (struct in_addr *)&ip->ip4;
+        return inet_ntop(ip->family, addr, address, length) != NULL;
+    } else if (ip->family == AF_INET6) {
+        struct in6_addr *addr = (struct in6_addr *)&ip->ip6;
+        return inet_ntop(ip->family, addr, address, length) != NULL;
+    }
+
+    return 0;
 }
 
 /*
