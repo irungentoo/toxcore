@@ -62,7 +62,8 @@ typedef struct GC_Announce {
     DHT *dht;
 
     /* This structure is for announcing requests that we get from
-     *     online chat members. Timestamp is used for expiration purposes */
+     * online chat members. Timestamp is used for expiration purposes
+     */
     struct GC_AnnouncedNode {
         uint8_t chat_id[EXT_PUBLIC_KEY];
         GC_Announce_Node node;
@@ -70,7 +71,8 @@ typedef struct GC_Announce {
     } announcements[MAX_GC_ANNOUNCED_NODES];
 
     /* This structure is for our own requests, when we want to
-     *     find online chat members */
+     * find online chat members
+     */
     struct GC_AnnounceRequest {
         uint8_t chat_id[EXT_PUBLIC_KEY];
         GC_Announce_Node nodes[MAX_SENT_ANNOUNCED_NODES];
@@ -79,7 +81,7 @@ typedef struct GC_Announce {
         _Bool ready;
         uint64_t timestamp;
 
-        /* This is kinda dubbing, what we have in group chats, but it's the most easiest way... */
+        /* This is redundant but it's the easiest way */
         uint8_t long_pk[EXT_PUBLIC_KEY];
         uint8_t long_sk[EXT_SECRET_KEY];
     } self_requests[MAX_CONCURRENT_REQUESTS];

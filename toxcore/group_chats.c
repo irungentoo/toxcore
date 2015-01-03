@@ -663,10 +663,19 @@ int gc_set_self_nick(GC_Chat *chat, const uint8_t *nick, uint16_t length)
     return send_gc_change_nick(chat);
 }
 
-/* Return -1 on error.
+/* Return -1 on error
  * Return nick length if success
  */
-int gc_get_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer)
+int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
+{
+    memcpy(nick, chat->self_nick, chat->self_nick_len);
+    return chat->self_nick_len;
+}
+
+/* Return -1 on error
+ * Return nick length if success
+ */
+int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer)
 {
     if (!peernumber_valid(chat, peernumber))
         return -1;
@@ -775,11 +784,11 @@ static int handle_gc_change_topic(Messenger *m, int groupnumber, uint32_t peernu
 int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname)
 {
     memcpy(groupname, chat->group_name, chat->group_name_len);
-    return 0;
+    return chat->group_name_len;
 }
 
 /* Sends a plain message or an action, depending on type */
-int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint32_t length, uint8_t type)
+int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type)
 {
     if (length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
@@ -827,7 +836,7 @@ static int handle_gc_message(Messenger *m, int groupnumber, uint32_t peernumber,
     return 0;
 }
 
-int gc_send_private_message(const GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint32_t length)
+int gc_send_private_message(const GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length)
 {
     if (length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
@@ -1044,7 +1053,7 @@ static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *p
 }
 
 void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                         const uint8_t *, uint32_t, void *), void *userdata)
+                         const uint8_t *, uint16_t, void *), void *userdata)
 {
     GC_Session *c = m->group_handler;
     c->message = function;
@@ -1052,7 +1061,7 @@ void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupn
 }
 
 void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                                const uint8_t *, uint32_t, void *), void *userdata)
+                                const uint8_t *, uint16_t, void *), void *userdata)
 {
     GC_Session *c = m->group_handler;
     c->private_message = function;
@@ -1060,7 +1069,7 @@ void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, in
 }
 
 void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                        const uint8_t *, uint32_t, void *), void *userdata)
+                        const uint8_t *, uint16_t, void *), void *userdata)
 {
     GC_Session *c = m->group_handler;
     c->action = function;

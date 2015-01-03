@@ -807,23 +807,23 @@ typedef enum {
 
 /* Set the callback for group messages.
  *
- *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
  */
-void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
                                 void *), void *userdata);
 
 /* Set the callback for group private messages.
  *
- *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
  */
-void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
                                         void *), void *userdata);
 
 /* Set the callback for group action messages (aka /me messages).
  *
- *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint32_t length, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
  */
-void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint32_t,
+void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
                                void *), void *userdata);
 
 /* Set the callback for group operator certificates.
@@ -907,7 +907,7 @@ int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint32_t length);
+int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
 
 /* Sends a private message to peernumber in groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
  *
@@ -915,14 +915,14 @@ int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *messa
  * Return -1 on failure.
  */
 int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t peernumber, const uint8_t *message,
-                                   uint32_t length);
+                                   uint16_t length);
 
 /* Sends a groupchat action message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *message, uint32_t length);
+int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
 
 /* Issues a groupchat operator certificate for peernumber to groupnumber.
  * type must be a TOX_GROUP_OP_CERTIFICATE.
@@ -932,7 +932,7 @@ int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *messag
  */
 int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t type);
 
-/* Sets your name for groupnumber.
+/* Sets your name for groupnumber. length should be no larger than TOX_MAX_NAME_LENGTH bytes.
  *
  * Return 0 on success.
  * Return -1 on failure.
@@ -940,12 +940,20 @@ int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peer
 int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length);
 
 /* Get peernumber's name in groupnumber's group chat.
- * name buffer must be at least TOX_MAX_NAME_LENGTH bytes
+ * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.
  *
  * Return length of name on success.
  * Reutrn -1 on failure.
  */
-int tox_group_get_name(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t *name);
+int tox_group_get_peer_name(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t *name);
+
+/* Get your own name for groupnumber's group.
+ * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.
+ *
+ * Return length of name on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_self_name(const Tox *tox, int groupnumber, uint8_t *name);
 
 /* Changes groupnumber's topic.
  *

@@ -197,11 +197,11 @@ typedef struct GC_Session {
 
     uint32_t num_chats;
 
-    void (*message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void (*message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *message_userdata;
-    void (*private_message)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void (*private_message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *private_message_userdata;
-    void (*action)(Messenger *m, int, uint32_t, const uint8_t *, uint32_t, void *);
+    void (*action)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *action_userdata;
     void (*op_certificate)(Messenger *m, int, uint32_t, uint32_t, uint8_t, void *);
     void *op_certificate_userdata;
@@ -234,7 +234,12 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore);
 /* Return -1 if fail
  * Return 0 if success
  */
-int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint32_t length, uint8_t type);
+int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type);
+
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int gc_send_private_message(const GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -252,10 +257,15 @@ int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
  */
 int gc_set_self_nick(GC_Chat *chat, const uint8_t *nick, uint16_t length);
 
+/* Return -1 on error
+ * Return nick length if success
+ */
+int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
+
 /* Return -1 on error.
  * Return nick length if success
  */
-int gc_get_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
+int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -278,13 +288,13 @@ int gc_get_numpeers(const GC_Chat *chat);
 uint8_t gc_get_role(const GC_Chat *chat, uint8_t peernumber);
 
 void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                         const uint8_t *, uint32_t, void *), void *userdata);
+                         const uint8_t *, uint16_t, void *), void *userdata);
 
 void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                                 const uint8_t *, uint32_t, void *), void *userdata);
+                                 const uint8_t *, uint16_t, void *), void *userdata);
 
 void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                        const uint8_t *, uint32_t, void *), void *userdata);
+                        const uint8_t *, uint16_t, void *), void *userdata);
 
 void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, uint32_t,
                                 uint8_t, void *), void *userdata);
