@@ -774,8 +774,8 @@ static int handle_gc_change_topic(Messenger *m, int groupnumber, uint32_t peernu
     memcpy(chat->topic, data, length);
     chat->topic_len = length;
 
-    if (c->title_change)
-        (*c->title_change)(m, groupnumber, peernumber, data, length, c->title_change_userdata);
+    if (c->topic_change)
+        (*c->topic_change)(m, groupnumber, peernumber, data, length, c->topic_change_userdata);
 
     return 0;
 }
@@ -1011,17 +1011,22 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
  */
 static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
-    if (length < MIN_GC_PACKET_SIZE || length > MAX_GC_PACKET_SIZE)
+    fprintf(stderr, "received packet type: %d...", packet[0]);
+    if (length < MIN_GC_PACKET_SIZE || length > MAX_GC_PACKET_SIZE) {
+        fprintf(stderr, "invalid packe size\n");
         return -1;
+    }
 
     uint32_t hash_id;
     bytes_to_U32(&hash_id, packet + 1);
-
+    fprintf(stderr, "chat hash id: %d\n", hash_id);
     Messenger *m = object;
     GC_Chat* chat = get_chat_by_hash_id(m->group_handler, hash_id);
 
-    if (!chat)
+    if (!chat) {
+        fprintf(stderr, "Chat hash failed\n");
         return -1;
+    }
 
     chat->self_last_rcvd_ping = unix_time();   /* consider any received packet a keepalive */
 
@@ -1031,8 +1036,10 @@ static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *p
 
     int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, sender_pk, data, &packet_type,
                                   packet, length);
-    if (len <= 0)
+    if (len <= 0) {
+        fprintf(stderr, "packet unwrap failed\n");
         return -1;
+    }
 
     switch (packet_type) {
         case GP_INVITE_REQUEST:
@@ -1092,12 +1099,12 @@ void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int gr
     c->nick_change_userdata = userdata;
 }
 
-void gc_callback_title_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                               const uint8_t *, uint16_t, void *), void *userdata)
 {
     GC_Session *c = m->group_handler;
-    c->title_change = function;
-    c->title_change_userdata = userdata;
+    c->topic_change = function;
+    c->topic_change_userdata = userdata;
 }
 
 void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void *), void *userdata)
@@ -1576,8 +1583,9 @@ static GC_ChatCredentials *new_groupcredentials(GC_Chat *chat)
 {
     GC_ChatCredentials *credentials = malloc(sizeof(GC_ChatCredentials));
 
-    if (credentials == NULL)
+    if (credentials == NULL) {
         return NULL;
+    }
 
     create_long_keypair(credentials->chat_public_key, credentials->chat_secret_key);
 
@@ -1632,8 +1640,10 @@ static int get_new_group_index(GC_Session *c)
     if (realloc_groupchats(c, c->num_chats + 1) != 0)
         return -1;
 
+    int new_index = c->num_chats;
+    memset(&(c->chats[new_index]), 0, sizeof(GC_Chat));
     ++c->num_chats;
-    return c->num_chats - 1;
+    return new_index;
 }
 
 static int create_new_group(GC_Session *c)
@@ -1653,6 +1663,7 @@ static int create_new_group(GC_Session *c)
     chat->groupnumber = new_index;
     chat->numpeers = 0;
     chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
+    chat->connection_state = CS_DISCONNECTED;
 
     create_long_keypair(chat->self_public_key, chat->self_secret_key);
 
@@ -1723,10 +1734,9 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key)
     memcpy(chat->chat_public_key, invite_key, EXT_PUBLIC_KEY);
 
     chat->hash_id = calculate_hash(invite_key, EXT_PUBLIC_KEY);
-    chat->connection_state = CS_DISCONNECTED;
     chat->self_role = GR_USER;
 
-    if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, invite_key) != 0) {
+    if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, invite_key) == -1) {
         group_delete(c, chat);
         return -1;
     }
@@ -1757,7 +1767,7 @@ static int rejoin_group(GC_Session *c, GC_Chat *chat)
 
     memcpy(&c->chats[new_chat.groupnumber], &new_chat, sizeof(GC_Chat));
 
-    if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) != 0) {
+    if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) == -1) {
         group_delete(c, chat);
         return -1;
     }
@@ -1808,7 +1818,8 @@ static int group_delete(GC_Session* c, GC_Chat *chat)
     if (chat->group)
         free(chat->group);
 
-    memset(chat, 0, sizeof(GC_Chat));
+    int index = chat->groupnumber;
+    memset(&(c->chats[index]), 0, sizeof(GC_Chat));
 
     uint32_t i;
 

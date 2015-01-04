@@ -1564,13 +1564,6 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
-    m->group_handler = new_groupchats(m);
-    if (m->group_handler == NULL) {
-        kill_networking(m->net);
-        free(m);
-        return NULL;
-    }
-    
     m->dht = new_DHT(m->net);
 
     if (m->dht == NULL) {
@@ -1589,6 +1582,13 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
+    m->group_handler = new_groupchats(m);
+    if (m->group_handler == NULL) {
+        kill_networking(m->net);
+        free(m);
+        return NULL;
+    }
+
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
     m->onion_c =  new_onion_client(m->net_crypto);
@@ -1599,6 +1599,7 @@ Messenger *new_messenger(Messenger_Options *options)
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
+        gc_kill_groupchats(m->group_handler);
         kill_DHT(m->dht);
         kill_net_crypto(m->net_crypto);
         kill_networking(m->net);

@@ -192,7 +192,7 @@ int dispatch_packet(GC_Announce* announce, const uint8_t *target_id, const uint8
             break;
         }
         case NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES: {
-            packet = malloc(GC_ANNOUNCE_REQUEST_DHT_SIZE * sizeof(uint8_t));
+            packet = malloc(GC_ANNOUNCE_GETNODES_REQUEST_DHT_SIZE * sizeof(uint8_t));
 
             if (packet == NULL)
                 return -1;
@@ -219,6 +219,9 @@ int dispatch_packet(GC_Announce* announce, const uint8_t *target_id, const uint8
         }
     }
 
+    free(packet);
+    packet = NULL;
+
     if (j == 0 && !self && packet_type == NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST) {
         GC_Announce_Node node;
         memcpy(&node.ip_port, data + 1 + EXT_PUBLIC_KEY, sizeof(IP_Port));
@@ -226,7 +229,6 @@ int dispatch_packet(GC_Announce* announce, const uint8_t *target_id, const uint8
         add_gc_announced_node(announce, data + 1, node, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + EXT_PUBLIC_KEY);
     }
 
-    free(packet);
     return j;
 }
 
@@ -268,6 +270,7 @@ int gca_send_announce_request(GC_Announce* announce, const uint8_t *self_long_pk
 
 int handle_gc_announce_request(void * ancp, IP_Port ipp, const uint8_t *packet, uint16_t length)
 {
+    fprintf(stderr, "handle_gc_announce_request\n");
     GC_Announce* announce = ancp;
     DHT *dht = announce->dht;
 
@@ -285,6 +288,7 @@ int handle_gc_announce_request(void * ancp, IP_Port ipp, const uint8_t *packet, 
                                             - TIME_STAMP_SIZE - EXT_PUBLIC_KEY)) != 0)
         return -1;
 
+    fprintf(stderr, "handle_gc_announce_request done!\n");
     return dispatch_packet(announce, ENC_KEY(data+1), dht->self_public_key, data,
                            GC_ANNOUNCE_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 0);
 }
@@ -335,6 +339,7 @@ int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_long_p
 
 int handle_gc_get_announced_nodes_request(void * ancp, IP_Port ipp, const uint8_t *packet, uint16_t length)
 {
+    fprintf(stderr, "handle_gc_get_announced_nodes_request\n");
     GC_Announce* announce = ancp;
     DHT *dht = announce->dht;
 
@@ -367,7 +372,7 @@ int handle_gc_get_announced_nodes_request(void * ancp, IP_Port ipp, const uint8_
                                                     - SIGNATURE_SIZE - TIME_STAMP_SIZE - EXT_PUBLIC_KEY),
                                                     nodes, num_nodes);
     }
-
+    fprintf(stderr, "handle_gc_get_announced_nodes_request done!\n");
     return dispatch_packet(announce, ENC_KEY(data+1), dht->self_public_key, data,
                           GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES, 0);
 }
@@ -400,6 +405,7 @@ int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t *chat_id, uint6
 
 int handle_gc_get_announced_nodes_response(void * ancp, IP_Port ipp, const uint8_t *packet, uint16_t length)
 {
+    fprintf(stderr, "handle_gc_get_announced_nodes_response\n");
     // NB: most probably we'll get nodes from different peers, so this would be called several times
     // TODO: different request_ids for the same chat_id... Probably
     GC_Announce *announce = ancp;
@@ -436,9 +442,11 @@ int handle_gc_get_announced_nodes_response(void * ancp, IP_Port ipp, const uint8
     bytes_to_U32(&num_nodes, data + 1);
     memcpy(nodes, data + 1 + sizeof(uint32_t), sizeof(GC_Announce_Node) * num_nodes);
 
-    if (i == add_requested_gc_nodes(announce, nodes, request_id, num_nodes))
+    if (i == add_requested_gc_nodes(announce, nodes, request_id, num_nodes)) {
+        fprintf(stderr, "handle_gc_get_announced_nodes_response SUCCESS\n");
         return 0;
-
+    }
+    fprintf(stderr, "handle_gc_get_announced_nodes_response FAIL\n");
     return -1;
 }
 
@@ -579,13 +587,13 @@ void do_gca(GC_Announce *announce)
 
     /* Reset ip_port for those announced nodes, which expired */
     for (i = 0; i < MAX_GC_ANNOUNCED_NODES; i++) {
-        if (announce->announcements[i].timestamp + GC_ANNOUNCE_EXPIRATION < unix_time())
+        if (is_timeout(announce->announcements[i].timestamp, GC_ANNOUNCE_EXPIRATION))
             ipport_reset(&announce->announcements[i].node.ip_port);
     }
 
     for (i = 0; i < MAX_CONCURRENT_REQUESTS; i++) {
-        if ((announce->self_requests[i].timestamp + GC_ANNOUNCE_EXPIRATION < unix_time())
-            && (announce->self_requests[i].req_id != 0)) {
+        if (is_timeout(announce->self_requests[i].timestamp, GC_ANNOUNCE_EXPIRATION)
+            && announce->self_requests[i].req_id != 0) {
             announce->self_requests[i].req_id = 0;
             --announce->req_num;
         }

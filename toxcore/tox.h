@@ -837,18 +837,18 @@ void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t,
 void tox_callback_group_op_certificate(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t, uint8_t, void *),
                                        void *userdata);
 
-/* Set the callback for group name changes.
+/* Set the callback for group peer nickname changes.
  *
- * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *newname, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *newnick, uint32_t length, void *userdata)
  */
-void tox_callback_group_name_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
+void tox_callback_group_nick_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
                                     void *), void *userdata);
 
-/* Set the callback for group title changes.
+/* Set the callback for group topic changes.
  *
- * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *title, uint32_t length, void *userdata)
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *topic, uint16_t length, void *userdata)
  */
-void tox_callback_group_title_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *,
+void tox_callback_group_topic_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *,
                                      uint16_t, void *), void *userdata);
 
 /* Set the callback for group peer join.

@@ -207,8 +207,8 @@ typedef struct GC_Session {
     void *op_certificate_userdata;
     void (*nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *nick_change_userdata;
-    void (*title_change)(Messenger *m, int, uint32_t, const uint8_t *,  uint16_t, void *);
-    void *title_change_userdata;
+    void (*topic_change)(Messenger *m, int, uint32_t, const uint8_t *,  uint16_t, void *);
+    void *topic_change_userdata;
     void (*peer_join)(Messenger *m, int, uint32_t, void *);
     void *peer_join_userdata;
     void (*peer_exit)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
@@ -302,7 +302,7 @@ void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int
 void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                              const uint8_t *, uint16_t, void *), void *userdata);
 
-void gc_callback_title_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                               const uint8_t *, uint16_t, void *), void *userdata);
 
 void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void *), void *userdata);
