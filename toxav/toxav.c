@@ -277,7 +277,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
     if (call->active) {
         pthread_mutex_unlock(call->mutex);
         LOGGER_ERROR("Error while starting RTP session: call already active!\n");
-        return av_ErrorNoCall;
+        return av_ErrorAlreadyInCallWithPeer;
     }
 
     if (pthread_mutex_init(call->mutex_encoding_audio, NULL) != 0
