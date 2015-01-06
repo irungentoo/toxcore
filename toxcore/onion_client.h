@@ -40,7 +40,7 @@
 
 /* The timeout the first time the path is added and
    then for all the next consecutive times */
-#define ONION_PATH_FIRST_TIMEOUT 5
+#define ONION_PATH_FIRST_TIMEOUT 4
 #define ONION_PATH_TIMEOUT 10
 #define ONION_PATH_MAX_LIFETIME 1200
 #define ONION_PATH_MAX_NO_RESPONSE_USES 4
