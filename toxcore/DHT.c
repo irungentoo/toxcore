@@ -669,8 +669,6 @@ static int replace_all(   Client_data    *list,
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 0;
 
-    _Bool replace = 0;
-
     memcpy(cmp_public_key, comp_client_id, crypto_box_PUBLICKEYBYTES);
     qsort(list, length, sizeof(Client_data), cmp_dht_entry);
 
@@ -1233,7 +1231,6 @@ int DHT_delfriend(DHT *dht, const uint8_t *client_id, uint16_t lock_count)
         return 0;
     }
 
-    uint32_t i;
     DHT_Friend *temp;
 
     --dht->num_friends;
@@ -2386,7 +2383,7 @@ int DHT_connect_after_load(DHT *dht)
 static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
 {
     DHT *dht = outer;
-    uint32_t num, i, j;
+    uint32_t num, i;
 
     switch (type) {
         case DHT_STATE_TYPE_FRIENDS_ASSOC46:
