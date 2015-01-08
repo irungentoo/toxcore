@@ -54,14 +54,14 @@
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - CRYPTO_DATA_PACKET_MIN_SIZE)
 
 /* Interval in ms between sending cookie request/handshake packets. */
-#define CRYPTO_SEND_PACKET_INTERVAL 500
+#define CRYPTO_SEND_PACKET_INTERVAL 1000
 
 /* The maximum number of times we try to send the cookie request and handshake
    before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
 
 /* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
-#define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL * 2)
+#define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL)
 
 #define PACKET_ID_PADDING 0 /* Denotes padding */
 #define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
