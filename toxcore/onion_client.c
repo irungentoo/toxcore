@@ -1188,6 +1188,18 @@ static void populate_path_nodes(Onion_Client *onion_c)
     }
 }
 
+static void populate_path_nodes_tcp(Onion_Client *onion_c)
+{
+    Node_format nodes_list[MAX_SENT_NODES];
+
+    unsigned int num_nodes = copy_connected_tcp_relays(onion_c->c, nodes_list, MAX_SENT_NODES);;
+    unsigned int i;
+
+    for (i = 0; i < num_nodes; ++i) {
+        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].client_id);
+    }
+}
+
 #define ANNOUNCE_FRIEND (ONION_NODE_PING_INTERVAL * 6)
 #define ANNOUNCE_FRIEND_BEGINNING 3
 #define FRIEND_ONION_NODE_TIMEOUT (ONION_NODE_TIMEOUT * 6)
@@ -1345,6 +1357,8 @@ void do_onion_client(Onion_Client *onion_c)
         for (i = 0; i < onion_c->num_friends; ++i) {
             do_friend(onion_c, i);
         }
+    } else {
+        populate_path_nodes_tcp(onion_c);
     }
 
     onion_c->last_run = unix_time();
