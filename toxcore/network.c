@@ -264,15 +264,15 @@ uint64_t current_time_monotonic(void)
 #define loglogdata(__message__, __buffer__, __buflen__, __ip_port__, __res__) \
     (__ip_port__) .ip; \
     if (__res__ < 0) /* Windows doesn't necessarily know %zu */ \
-        LOGGER_INFO("[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x", \
+        LOGGER_TRACE("[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x", \
                  __buffer__[0], __message__, (__buflen__ < 999 ? (uint16_t)__buflen__ : 999), 'E', \
                  ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), errno, strerror(errno), data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__)); \
     else if ((__res__ > 0) && ((size_t)__res__ <= __buflen__)) \
-        LOGGER_INFO("[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x", \
+        LOGGER_TRACE("[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x", \
                  __buffer__[0], __message__, (__res__ < 999 ? (size_t)__res__ : 999), ((size_t)__res__ < __buflen__ ? '<' : '='), \
                  ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), 0, "OK", data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__)); \
     else /* empty or overwrite */ \
-        LOGGER_INFO("[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x", \
+        LOGGER_TRACE("[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x", \
                  __buffer__[0], __message__, (size_t)__res__, (!__res__ ? '!' : '>'), __buflen__, \
                  ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), 0, "OK", data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__));
 
