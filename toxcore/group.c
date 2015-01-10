@@ -1634,7 +1634,7 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
     if (!g)
         return 0;
 
-    uint16_t i, sent = 0;
+    unsigned int i, sent = 0, num_connected_closest = 0, connected_closest[DESIRED_CLOSE_CONNECTIONS];
 
     for (i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
         if (g->close[i].type != GROUPCHAT_CLOSE_ONLINE)
@@ -1643,9 +1643,63 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
         if ((int)i == receiver)
             continue;
 
+        if (g->close[i].closest) {
+            connected_closest[num_connected_closest] = i;
+            ++num_connected_closest;
+            continue;
+        }
+
         if (send_lossy_group_peer(g_c->fr_c, g->close[i].number, PACKET_ID_LOSSY_GROUPCHAT, g->close[i].group_number, data,
                                   length))
             ++sent;
+    }
+
+    if (!num_connected_closest) {
+        return sent;
+    }
+
+    unsigned int to_send = 0;
+    uint64_t comp_val_old = ~0;
+
+    for (i = 0; i < num_connected_closest; ++i) {
+        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
+        uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
+        get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->close[connected_closest[i]].number);
+        uint64_t comp_val = calculate_comp_value(g->real_pk, real_pk);
+
+        if (comp_val < comp_val_old) {
+            to_send = connected_closest[i];
+            comp_val_old = comp_val;
+        }
+    }
+
+    if (send_lossy_group_peer(g_c->fr_c, g->close[to_send].number, PACKET_ID_LOSSY_GROUPCHAT,
+                              g->close[to_send].group_number, data, length)) {
+        ++sent;
+    }
+
+    unsigned int to_send_other = 0;
+    comp_val_old = ~0;
+
+    for (i = 0; i < num_connected_closest; ++i) {
+        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
+        uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
+        get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->close[connected_closest[i]].number);
+        uint64_t comp_val = calculate_comp_value(real_pk, g->real_pk);
+
+        if (comp_val < comp_val_old) {
+            to_send_other = connected_closest[i];
+            comp_val_old = comp_val;
+        }
+    }
+
+    if (to_send_other == to_send) {
+        return sent;
+    }
+
+    if (send_lossy_group_peer(g_c->fr_c, g->close[to_send_other].number, PACKET_ID_LOSSY_GROUPCHAT,
+                              g->close[to_send_other].group_number, data, length)) {
+        ++sent;
     }
 
     return sent;
