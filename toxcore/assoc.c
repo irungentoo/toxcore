@@ -996,11 +996,11 @@ static char *idpart2str(uint8_t *id, size_t len)
 void Assoc_status(const Assoc *assoc)
 {
     if (!assoc) {
-        LOGGER_INFO("Assoc status: no assoc");
+        LOGGER_TRACE("Assoc status: no assoc");
         return;
     }
 
-    LOGGER_INFO("[b:p] hash => [id...] used, seen, heard");
+    LOGGER_TRACE("[b:p] hash => [id...] used, seen, heard");
 
     size_t bid, cid, total = 0;
 
@@ -1013,20 +1013,20 @@ void Assoc_status(const Assoc *assoc)
             if (entry->hash) {
                 total++;
 
-                LOGGER_INFO("[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
-                            (int)bid, (int)cid, entry->hash, idpart2str(entry->client.client_id, 8),
-                            entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
-                            entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
-                            entry->seen_at ? (entry->seen_family == AF_INET ? '4' : (entry->seen_family == AF_INET6 ? '6' : '?')) : '?',
-                            entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0,
-                            entry->heard_at ? (entry->heard_family == AF_INET ? '4' : (entry->heard_family == AF_INET6 ? '6' : '?')) : '?');
+                LOGGER_TRACE("[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
+                             (int)bid, (int)cid, entry->hash, idpart2str(entry->client.client_id, 8),
+                             entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
+                             entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
+                             entry->seen_at ? (entry->seen_family == AF_INET ? '4' : (entry->seen_family == AF_INET6 ? '6' : '?')) : '?',
+                             entry->heard_at ? (int)(unix_time() - entry->heard_at) : 0,
+                             entry->heard_at ? (entry->heard_family == AF_INET ? '4' : (entry->heard_family == AF_INET6 ? '6' : '?')) : '?');
             }
         }
     }
 
     if (total) {
-        LOGGER_INFO("Total: %i entries, table usage %i%%.\n", (int)total,
-                    (int)(total * 100 / (assoc->candidates_bucket_count * assoc->candidates_bucket_size)));
+        LOGGER_TRACE("Total: %i entries, table usage %i%%.\n", (int)total,
+                     (int)(total * 100 / (assoc->candidates_bucket_count * assoc->candidates_bucket_size)));
     }
 }
 

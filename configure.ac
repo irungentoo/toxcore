@@ -82,37 +82,40 @@ AC_ARG_ENABLE([randombytes-stir],
     ]
 )
 
-AC_ARG_ENABLE([logging],
-    [AC_HELP_STRING([--enable-logging], [enable logging (default: auto)]) ],
+AC_ARG_ENABLE([log],
+    [AC_HELP_STRING([--enable-log], [enable logging (default: auto)]) ],
     [
         if test "x$enableval" = "xyes"; then
             LOGGING="yes"
             
             AC_DEFINE([LOGGING], [], [If logging enabled])
-            AC_DEFINE([LOGGER_LEVEL], [DEBUG], [LoggerLevel value])
+            AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
             AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$LOGGING_OUTNAM"], [Output of logger])
         fi
     ]
 )
 
-AC_ARG_WITH(logger-level,
-    AC_HELP_STRING([--with-logger-level=LEVEL],
-                   [Logger levels: INFO; DEBUG; WARNING; ERROR ]),
+AC_ARG_WITH(log-level,
+    AC_HELP_STRING([--with-log-level=LEVEL],
+                   [Logger levels: TRACE; DEBUG; INFO; WARNING; ERROR ]),
     [
         if test "x$LOGGING" = "xno"; then
             AC_MSG_WARN([Logging disabled!])
         else
-            if test "x$withval" = "xINFO"; then
-                AC_DEFINE([LOGGER_LEVEL], [INFO], [LoggerLevel value])
-                
+            if test "x$withval" = "xTRACE"; then
+                AC_DEFINE([LOGGER_LEVEL], [LOG_TRACE], [LOG_LEVEL value])
+            
             elif test "x$withval" = "xDEBUG"; then
-                AC_DEFINE([LOGGER_LEVEL], [DEBUG], [LoggerLevel value])
-                
+                AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
+            
+            elif test "x$withval" = "xINFO"; then
+                AC_DEFINE([LOGGER_LEVEL], [LOG_INFO], [LOG_LEVEL value])
+            
             elif test "x$withval" = "xWARNING"; then
-                AC_DEFINE([LOGGER_LEVEL], [WARNING], [LoggerLevel value])
+                AC_DEFINE([LOGGER_LEVEL], [LOG_WARNING], [LOG_LEVEL value])
                 
             elif test "x$withval" = "xERROR"; then
-                AC_DEFINE([LOGGER_LEVEL], [ERROR], [LoggerLevel value])
+                AC_DEFINE([LOGGER_LEVEL], [LOG_ERROR], [LOG_LEVEL value])
             else
                 AC_MSG_WARN([Invalid logger level: $withval. Using default 'DEBUG'])
             fi
@@ -120,8 +123,8 @@ AC_ARG_WITH(logger-level,
     ]
 )
 
-AC_ARG_WITH(logger-path,
-    AC_HELP_STRING([--with-logger-path=DIR],
+AC_ARG_WITH(log-path,
+    AC_HELP_STRING([--with-log-path=DIR],
                    [Path of logger output]),
     [
         if test "x$LOGGING" = "xno"; then

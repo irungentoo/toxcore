@@ -2424,9 +2424,9 @@ void do_messenger(Messenger *m)
                     if (last_pinged > 999)
                         last_pinged = 999;
 
-                    LOGGER_INFO("C[%2u] %s:%u [%3u] %s",
-                                client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                                last_pinged, ID2String(cptr->client_id));
+                    LOGGER_TRACE("C[%2u] %s:%u [%3u] %s",
+                                 client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
+                                 last_pinged, ID2String(cptr->client_id));
                 }
         }
 
@@ -2457,7 +2457,7 @@ void do_messenger(Messenger *m)
                 dht2m[m2dht[friend]] = friend;
 
         if (m->numfriends != m->dht->num_friends) {
-            LOGGER_INFO("Friend num in DHT %u != friend num in msger %u\n", m->dht->num_friends, m->numfriends);
+            LOGGER_TRACE("Friend num in DHT %u != friend num in msger %u\n", m->dht->num_friends, m->numfriends);
         }
 
         uint32_t ping_lastrecv;
@@ -2478,11 +2478,11 @@ void do_messenger(Messenger *m)
                 if (ping_lastrecv > 999)
                     ping_lastrecv = 999;
 
-                LOGGER_INFO("F[%2u:%2u] <%s> [%03u] %s",
-                            dht2m[friend], friend, msgfptr->name,
-                            ping_lastrecv, ID2String(msgfptr->client_id));
+                LOGGER_TRACE("F[%2u:%2u] <%s> [%03u] %s",
+                             dht2m[friend], friend, msgfptr->name,
+                             ping_lastrecv, ID2String(msgfptr->client_id));
             } else {
-                LOGGER_INFO("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
+                LOGGER_TRACE("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -2497,10 +2497,10 @@ void do_messenger(Messenger *m)
                         if (last_pinged > 999)
                             last_pinged = 999;
 
-                        LOGGER_INFO("F[%2u] => C[%2u] %s:%u [%3u] %s",
-                                    friend, client, ip_ntoa(&assoc->ip_port.ip),
-                                    ntohs(assoc->ip_port.port), last_pinged,
-                                    ID2String(cptr->client_id));
+                        LOGGER_TRACE("F[%2u] => C[%2u] %s:%u [%3u] %s",
+                                     friend, client, ip_ntoa(&assoc->ip_port.ip),
+                                     ntohs(assoc->ip_port.port), last_pinged,
+                                     ID2String(cptr->client_id));
                     }
             }
         }
