@@ -170,6 +170,7 @@ void logger_kill(logger *log)
 void logger_kill_global(void)
 {
     logger_kill(global);
+    global = NULL;
 }
 
 void logger_set_global(logger *log)
