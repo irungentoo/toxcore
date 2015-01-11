@@ -44,11 +44,11 @@ typedef struct Messenger Messenger;
 #define BAD_GROUPNODE_TIMEOUT 60
 
 /* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
-#define ROLE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
+#define ROLE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
 /* CERT_TYPE + INVITEE + TIME_STAMP_SIZE + INVITEE_SIGNATURE + INVITER + TIME_STAMP_SIZE + INVITER_SIGNATURE */
-#define INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
-#define SEMI_INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
+#define INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
+#define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
 enum {
     GC_BAN,
@@ -110,8 +110,8 @@ typedef struct {
 
     uint8_t     client_id[EXT_PUBLIC_KEY];
 
-    uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t     role_certificate[ROLE_CERTIFICATE_SIGNED_SIZE];
+    uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
+    uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
 
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
@@ -156,8 +156,8 @@ typedef struct GC_Chat {
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
-    uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t     self_role_certificate[ROLE_CERTIFICATE_SIGNED_SIZE];
+    uint8_t     self_invite_certificate[INVITE_CERT_SIGNED_SIZE];
+    uint8_t     self_role_certificate[ROLE_CERT_SIGNED_SIZE];
 
     GC_GroupPeer   *group;
     GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
@@ -277,8 +277,8 @@ int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
  */
 uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
 
-int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint32_t lengths[], uint32_t num_peers);
-
+/* Returns number of peers */
+int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[], uint32_t num_peers);
 /* Returns number of peers in chat */
 int gc_get_numpeers(const GC_Chat *chat);
 

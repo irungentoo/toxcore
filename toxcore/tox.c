@@ -1255,7 +1255,7 @@ int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest)
  * returns number of peers on success.
  * return -1 on failure.
  */
-int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t nicks[][TOX_MAX_NAME_LENGTH], uint32_t lengths[],
+int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t nicks[][TOX_MAX_NAME_LENGTH], uint16_t lengths[],
                         uint32_t num_peers)
 {
     const Messenger *m = tox;
