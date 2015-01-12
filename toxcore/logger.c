@@ -109,16 +109,16 @@ logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
     if (!(retu->tstr = calloc(16, sizeof (char))) ||
             !(retu->posstr = calloc(300, sizeof (char))) ||
             !(retu->msg = calloc(4096, sizeof (char))) )
-        goto ERROR;
+        goto FAILURE;
 
     if (id) {
         if (!(retu->id = calloc(strlen(id) + 1, 1)))
-            goto ERROR;
+            goto FAILURE;
 
         strcpy(retu->id, id);
     } else {
         if (!(retu->id = malloc(8)))
-            goto ERROR;
+            goto FAILURE;
 
         snprintf(retu->id, 8, "%u", random_int());
     }
@@ -131,7 +131,7 @@ logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
 
     return retu;
 
-ERROR:
+FAILURE:
     fprintf(stderr, "Failed to create logger!\n");
     pthread_mutex_destroy(retu->mutex);
     fclose(retu->log_file);
