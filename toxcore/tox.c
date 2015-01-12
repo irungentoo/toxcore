@@ -975,6 +975,16 @@ void tox_callback_group_self_timeout(Tox *tox, void (*function)(Tox *m, int, voi
     gc_callback_self_timeout(m, function, userdata);
 }
 
+/* Set the callback for when your join attempt is rejected where type is one of TOX_GROUP_JOIN_REJECTED.
+ *
+ * function(Tox *m, int groupnumber, uint8_t type, void *userdata)
+ */
+void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    gc_callback_rejected(m, function, userdata);
+}
+
 /* Adds a new groupchat to group chats array.
  * group_name is required and length must not exceed TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
@@ -1085,6 +1095,7 @@ int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peer
  *
  * Return 0 on success.
  * Return -1 on failure.
+ * Return -2 if nick is already taken by another group member
  */
 int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length)
 {

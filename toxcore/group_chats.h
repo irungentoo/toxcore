@@ -85,6 +85,13 @@ enum {
 } GROUP_STATUS;
 
 enum {
+    GJ_NICK_TAKEN,
+    GJ_GROUP_FULL,
+    GJ_INVITES_DISABLED,
+    GJ_INVALID
+} GROUP_JOIN_REJECTED;
+
+enum {
     CS_NONE,
     CS_DISCONNECTED,
     CS_CONNECTING,
@@ -219,6 +226,8 @@ typedef struct GC_Session {
     void *peerlist_update_userdata;
     void (*self_timeout)(Messenger *m, int, void *);
     void *self_timeout_userdata;
+    void (*rejected)(Messenger *m, int, uint8_t, void *);
+    void *rejected_userdata;
 } GC_Session;
 
 /* Return -1 if fail
@@ -252,8 +261,9 @@ int gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
 /* Returns group_name length */
 int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
 
-/* Return -1 if fail
- * Return 0 if success
+/* Return 0 if success
+ * Return -1 if fail
+ * Return -2 if nick is taken by another group member
  */
 int gc_set_self_nick(GC_Chat *chat, const uint8_t *nick, uint16_t length);
 
@@ -316,6 +326,8 @@ void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, in
                                  void *userdata);
 
 void gc_callback_self_timeout(Messenger *m, void (*function)(Messenger *m, int groupnumber, void *), void *userdata);
+void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint8_t type, void *),
+                          void *userdata);
 
 /* This is the main loop. */
 void do_gc(GC_Session* c);

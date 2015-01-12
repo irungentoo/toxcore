@@ -810,6 +810,12 @@ typedef enum {
     TOX_GC_SILENCE
 } TOX_GROUP_OP_CERTIFICATE;
 
+typedef enum {
+    TOX_GJ_NICK_TAKEN,
+    TOX_GJ_GROUP_FULL,
+    TOX_GJ_INVITES_DISABLED
+} TOX_GROUP_JOIN_REJECTED;
+
 /* Set the callback for group messages.
  *
  *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
@@ -883,6 +889,12 @@ void tox_callback_group_peerlist_update(Tox *tox, void (*function)(Tox *m, int, 
  */
 void tox_callback_group_self_timeout(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
 
+/* Set the callback for when your join attempt is rejected where type is one of TOX_GROUP_JOIN_REJECTED.
+ *
+ * function(Tox *m, int groupnumber, uint8_t type, void *userdata)
+ */
+void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t, void *), void *userdata);
+
 /* Adds a new groupchat to group chats array.
  * group_name is required and length must not exceed TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
@@ -941,6 +953,7 @@ int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peer
  *
  * Return 0 on success.
  * Return -1 on failure.
+ * Return -2 if nick is already taken by another group member
  */
 int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length);
 
