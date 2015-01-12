@@ -249,9 +249,9 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, uint32_t 
     Onion_Client_Paths *onion_paths;
 
     if (num == 0) {
-        onion_paths = &onion_c->onion_paths;
+        onion_paths = &onion_c->onion_paths_self;
     } else {
-        onion_paths = &onion_c->friends_list[num - 1].onion_paths;
+        onion_paths = &onion_c->onion_paths_friends;
     }
 
     if (onion_paths->paths[path_num % NUMBER_ONION_PATHS].path_num == path_num) {
@@ -377,10 +377,10 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     Onion_Path path;
 
     if (num == 0) {
-        if (random_path(onion_c, &onion_c->onion_paths, pathnum, &path) == -1)
+        if (random_path(onion_c, &onion_c->onion_paths_self, pathnum, &path) == -1)
             return -1;
     } else {
-        if (random_path(onion_c, &onion_c->friends_list[num - 1].onion_paths, pathnum, &path) == -1)
+        if (random_path(onion_c, &onion_c->onion_paths_friends, pathnum, &path) == -1)
             return -1;
     }
 
@@ -759,7 +759,7 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length)
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint16_t length)
+int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, uint16_t length)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
@@ -792,7 +792,7 @@ int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *
         ++num_nodes;
 
         if (list_nodes[i].is_stored) {
-            if (random_path(onion_c, &onion_c->friends_list[friend_num].onion_paths, ~0, &path[num_good]) == -1)
+            if (random_path(onion_c, &onion_c->onion_paths_friends, ~0, &path[num_good]) == -1)
                 continue;
 
             good_nodes[num_good] = i;
@@ -890,7 +890,7 @@ static int handle_dht_fakeid(void *object, IP_Port source, const uint8_t *source
  * return the number of packets sent on success
  * return -1 on failure.
  */
-static int send_fakeid_announce(const Onion_Client *onion_c, uint16_t friend_num, uint8_t onion_dht_both)
+static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num, uint8_t onion_dht_both)
 {
     if (friend_num >= onion_c->num_friends)
         return -1;
