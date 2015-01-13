@@ -812,6 +812,7 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint
                 source.port = 0;  // dummy initialise
                 source.ip.family = TCP_ONION_FAMILY;
                 source.ip.ip6.uint32[0] = con_id;
+                source.ip.ip6.uint32[1] = 0;
                 source.ip.ip6.uint64[1] = con->identifier;
                 onion_send_1(TCP_server->onion, data + 1 + crypto_box_NONCEBYTES, length - (1 + crypto_box_NONCEBYTES), source,
                              data + 1);
