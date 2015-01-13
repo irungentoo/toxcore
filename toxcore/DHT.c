@@ -647,6 +647,21 @@ static int cmp_dht_entry(const void *a, const void *b)
     return 0;
 }
 
+/* Is it ok to store node with client_id in client.
+ *
+ * return 0 if node can't be stored.
+ * return 1 if it can.
+ */
+static unsigned int store_node_ok(const Client_data *client, const uint8_t *client_id, const uint8_t *comp_client_id)
+{
+    if ((is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
+            || (id_closest(comp_client_id, client->client_id, client_id) == 2)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 /* Replace a first bad (or empty) node with this one
  *  or replace a possibly bad node (tests failed or not done yet)
  *  that is further than any other in the list
@@ -674,8 +689,7 @@ static int replace_all(   Client_data    *list,
 
     Client_data *client = &list[0];
 
-    if ((is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
-            || (id_closest(comp_client_id, client->client_id, client_id) == 2)) {
+    if (store_node_ok(client, client_id, comp_client_id)) {
         IPPTsPng *ipptp_write = NULL;
         IPPTsPng *ipptp_clear = NULL;
 
@@ -699,6 +713,29 @@ static int replace_all(   Client_data    *list,
         memset(ipptp_clear, 0, sizeof(*ipptp_clear));
 
         return 1;
+    }
+
+    return 0;
+}
+
+/* Check if the node obtained with a get_nodes with client_id should be pinged.
+ * NOTE: for best results call it after addto_lists;
+ *
+ * return 0 if the node should not be pinged.
+ * return 1 if it should.
+ */
+static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *client_id)
+{
+    if (store_node_ok(&dht->close_clientlist[0], client_id, dht->self_public_key)) {
+        return 1;
+    }
+
+    unsigned int i;
+
+    for (i = 0; i < dht->num_friends; ++i) {
+        if (store_node_ok(&dht->friends_list[i].client_list[0], client_id, dht->self_public_key)) {
+            return 1;
+        }
     }
 
     return 0;
@@ -1091,7 +1128,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
     uint32_t i;
 
     for (i = 0; i < num_nodes; i++) {
-        if (ipport_isset(&plain_nodes[i].ip_port)) {
+        if (ipport_isset(&plain_nodes[i].ip_port) && ping_node_from_getnodes_ok(dht, plain_nodes[i].client_id)) {
             send_ping_request(dht->ping, plain_nodes[i].ip_port, plain_nodes[i].client_id);
             returnedip_ports(dht, plain_nodes[i].ip_port, plain_nodes[i].client_id, packet + 1);
         }
