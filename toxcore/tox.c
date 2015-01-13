@@ -1100,12 +1100,7 @@ int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peer
 int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return -1;
-
-    return gc_set_self_nick(chat, name, length);
+    return gc_set_self_nick(m, groupnumber, name, length);
 }
 
 /* Get peernumber's name in groupnumber's group chat.

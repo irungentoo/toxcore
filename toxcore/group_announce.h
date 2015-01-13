@@ -23,6 +23,8 @@
 
 #include "DHT.h"
 
+#define MAX_GC_SENT_ANNOUNCED_NODES 4
+
 typedef struct __attribute__ ((__packed__))
 {
     uint8_t     client_id[EXT_PUBLIC_KEY];
@@ -37,7 +39,7 @@ struct GC_Announce;
  * self_long_pk = extended (encryption+signature) public key of the node announcing its presence
  * self_long_sk = signing private key of the same node
  * chat_id = id of chat we're announcing to
- * 
+ *
  * return -1 in case of error
  * return number of send packets otherwise
  */

@@ -164,8 +164,6 @@ typedef struct GC_Chat {
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
-    uint8_t     self_invite_certificate[INVITE_CERT_SIGNED_SIZE];
-    uint8_t     self_role_certificate[ROLE_CERT_SIGNED_SIZE];
 
     GC_GroupPeer   *group;
     GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
@@ -173,11 +171,6 @@ typedef struct GC_Chat {
     uint32_t    numpeers;
     uint16_t    maxpeers;
     int         groupnumber;
-
-    uint8_t     self_nick[MAX_GC_NICK_SIZE];
-    uint16_t    self_nick_len;
-    uint8_t     self_role;
-    uint8_t     self_status;
 
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
@@ -267,7 +260,7 @@ int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
  * Return -1 if fail
  * Return -2 if nick is taken by another group member
  */
-int gc_set_self_nick(GC_Chat *chat, const uint8_t *nick, uint16_t length);
+int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
 /* Return -1 on error
  * Return nick length if success
