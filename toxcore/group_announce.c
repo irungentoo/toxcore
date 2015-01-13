@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <inttypes.h>
+#include <stdbool.h>
 
 #include "group_announce.h"
 
@@ -33,24 +34,24 @@
 #include "network.h"
 #include "DHT.h"
 
-#define NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST 5 /* Announce request packet ID */
-//#define NET_PACKET_ANNOUNCE_RESPONSE 6 /* Announce response packet ID */ //Not needed for now
-#define NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES 7 /* Get announced nodes request packet ID */
-#define NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES 8 /* Send announced nodes request packet ID */
+#define NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST 5
+//#define NET_PACKET_ANNOUNCE_RESPONSE 6 //Not needed for now
+#define NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES 7
+#define NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES 8
 
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
 #define REQUEST_ID_SIZE (sizeof(uint64_t))
 #define GC_ANNOUNCE_EXPIRATION 3600    /* sec */
 
-// Type + Chat_ID + IP_Port + Client_ID + Timestamp + Signature
+/* Type + Chat_ID + IP_Port + Client_ID + Timestamp + Signature */
 #define GC_ANNOUNCE_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 #define GC_ANNOUNCE_REQUEST_DHT_SIZE (1 + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_ANNOUNCE_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
-// Type + Chat_ID + IP_Port + RequestID + Client_ID + Timestamp + Signature
+/* Type + Chat_ID + IP_Port + RequestID + Client_ID + Timestamp + Signature */
 #define GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + sizeof(IP_Port) + REQUEST_ID_SIZE + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 #define GC_ANNOUNCE_GETNODES_REQUEST_DHT_SIZE (1 + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE + crypto_box_MACBYTES)
 
-// Type + Num_Nodes + Nodes + RequestID
+/* Type + Num_Nodes + Nodes + RequestID */
 #define GC_ANNOUNCE_GETNODES_RESPONSE_PLAIN_SIZE (1 + sizeof(uint32_t) + sizeof(GC_Announce_Node) * MAX_SENT_ANNOUNCED_NODES + REQUEST_ID_SIZE)
 #define GC_ANNOUNCE_GETNODES_RESPONSE_DHT_SIZE (1 + ENC_PUBLIC_KEY + REQUEST_ID_SIZE + crypto_box_NONCEBYTES + GC_ANNOUNCE_GETNODES_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
@@ -78,7 +79,7 @@ typedef struct GC_Announce {
         GC_Announce_Node nodes[MAX_SENT_ANNOUNCED_NODES];
         uint32_t nodes_num;
         uint64_t req_id;
-        _Bool ready;
+        bool ready;
         uint64_t timestamp;
 
         /* This is redundant but it's the easiest way */
@@ -170,12 +171,79 @@ int wrap_gc_announce_packet(const uint8_t *send_public_key, const uint8_t *send_
     return header_len + len;
 }
 
-/* Returns the number of sent packets */
-int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const uint8_t *sender_pk,
-                    const uint8_t *data, uint32_t length, uint8_t packet_type, _Bool self)
+static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *nodes, int nclosest,
+                                            const uint8_t *chat_id, const uint8_t *sender_pk, const uint8_t *data,
+                                            uint32_t length, bool self)
 {
-    /* The packet is valid, find the closest nodes to send it to */
-    static Node_format nodes[MAX_SENT_NODES];
+    uint8_t packet[GC_ANNOUNCE_REQUEST_DHT_SIZE];
+    int i, sent = 0;
+
+    /* Relay announce request to all nclosest nodes if self announce */
+    for (i = 0; i < nclosest; i++) {
+        if (!self && id_closest(chat_id, nodes[i].client_id, sender_pk) != 1)
+            continue;
+
+        int packet_length = wrap_gc_announce_packet(announce->dht->self_public_key,
+                                                    announce->dht->self_secret_key,
+                                                    nodes[i].client_id, packet,
+                                                    data, length, NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST);
+
+        if (packet_length == -1)
+            continue;
+
+        if (sendpacket(announce->dht->net, nodes[i].ip_port, packet, packet_length) != -1) {
+            fprintf(stderr, "dispatching announce packet\n");
+            ++sent;
+        } else {
+            fprintf(stderr, "sendpacket failed in dispatch_packet_announce_request\n");
+        }
+    }
+
+    if (! sent | self) {
+        GC_Announce_Node node;
+        memcpy(&node.ip_port, data + 1 + EXT_PUBLIC_KEY, sizeof(IP_Port));
+        memcpy(node.client_id, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), EXT_PUBLIC_KEY);
+        add_gc_announced_node(announce, data + 1, node, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + EXT_PUBLIC_KEY);
+    }
+
+    return sent;
+}
+
+static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format *nodes, int nclosest,
+                                             const uint8_t *chat_id, const uint8_t *sender_pk, const uint8_t *data,
+                                             uint32_t length, bool self)
+{
+    uint8_t packet[GC_ANNOUNCE_GETNODES_REQUEST_DHT_SIZE];
+    int i, sent = 0;
+
+    for (i = 0; i < nclosest; i++) {
+        if (!self && id_closest(chat_id, nodes[i].client_id, sender_pk) != 1)
+            continue;
+
+        int packet_length = wrap_gc_announce_packet(announce->dht->self_public_key,
+                                                    announce->dht->self_secret_key,
+                                                    nodes[i].client_id, packet,
+                                                    data, length, NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES);
+
+        if (packet_length == -1)
+            continue;
+
+        if (sendpacket(announce->dht->net, nodes[i].ip_port, packet, packet_length) != -1) {
+            fprintf(stderr, "dispatching get nodes request packet\n");
+            ++sent;
+        } else {
+            fprintf(stderr, "sendpacket failed in dispatch_packet_get_nodes_request\n");
+        }
+    }
+
+    return sent;
+}
+
+/* Returns the number of sent packets */
+static int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const uint8_t *sender_pk,
+                           const uint8_t *data, uint32_t length, uint8_t packet_type, bool self)
+{
+    Node_format nodes[MAX_SENT_NODES];
     int nclosest = get_close_nodes(announce->dht, chat_id, nodes, 0, 1, 1);
 
     if (nclosest > MAX_SENT_ANNOUNCED_NODES)
@@ -183,58 +251,15 @@ int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const uint8_t
     else if (nclosest == -1)
         return -1;
 
-    uint8_t *packet = NULL;
+    fprintf(stderr, "dispatch packet found %d nodes\n", nclosest);
 
-    switch (packet_type) {
-        case NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST: {
-            packet = malloc(GC_ANNOUNCE_REQUEST_DHT_SIZE * sizeof(uint8_t));
+    if (packet_type == NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST)
+        return dispatch_packet_announce_request(announce, nodes, nclosest, chat_id, sender_pk, data, length, self);
 
-            if (packet == NULL)
-                return -1;
+    if (packet_type == NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES)
+        return dispatch_packet_get_nodes_request(announce, nodes, nclosest, chat_id, sender_pk, data, length, self);
 
-            break;
-        }
-        case NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES: {
-            packet = malloc(GC_ANNOUNCE_GETNODES_REQUEST_DHT_SIZE * sizeof(uint8_t));
-
-            if (packet == NULL)
-                return -1;
-
-            break;
-        }
-        default:
-            return -1;
-    }
-
-    int i, j = 0;
-
-    /* Relay announcement to nclosest nodes closer to the chat_id than the sender's public key */
-    for (i = 0; i < nclosest; i++) {
-        if (id_closest(chat_id, nodes[i].client_id, sender_pk) == 1) {
-            int packet_length = wrap_gc_announce_packet(announce->dht->self_public_key,
-                                                        announce->dht->self_secret_key,
-                                                        nodes[i].client_id, packet,
-                                                        data, length, packet_type);
-
-            if (packet_length == -1)
-                continue;
-
-            if (sendpacket(announce->dht->net, nodes[i].ip_port, packet, packet_length) != -1)
-                ++j;
-        }
-    }
-
-    free(packet);
-    packet = NULL;
-
-    if (j == 0 && !self && packet_type == NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST) {
-        GC_Announce_Node node;
-        memcpy(&node.ip_port, data + 1 + EXT_PUBLIC_KEY, sizeof(IP_Port));
-        memcpy(node.client_id, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), EXT_PUBLIC_KEY);
-        add_gc_announced_node(announce, data + 1, node, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port) + EXT_PUBLIC_KEY);
-    }
-
-    return j;
+    return -1;
 }
 
 int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_long_pk, const uint8_t *self_long_sk,
@@ -268,6 +293,13 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_long_pk
 
     if (sign_data(data, 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), self_long_sk, self_long_pk, data) == -1)
         return -1;
+
+    uint64_t timestamp = unix_time();
+    uint64_t request_id = random_64b();
+    int idx = new_announce_self_request(announce, chat_id, request_id, timestamp, self_long_pk, self_long_sk);
+
+    if (idx == -1)
+        fprintf(stderr, "new_announce_self_request failed\n");
 
     return dispatch_packet(announce, chat_id, dht->self_public_key, data, GC_ANNOUNCE_REQUEST_PLAIN_SIZE,
                            NET_PACKET_GROUPCHAT_ANNOUNCE_REQUEST, 1);
@@ -335,14 +367,19 @@ int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_long_p
     uint64_t timestamp;
     bytes_to_U64(&timestamp, sigdata - SIGNATURE_SIZE - TIME_STAMP_SIZE);
 
-    new_announce_self_request(announce, chat_id, request_id, timestamp, self_long_pk, self_long_sk);
+    int idx = new_announce_self_request(announce, chat_id, request_id, timestamp, self_long_pk, self_long_sk);
 
+    if (idx == -1)
+        fprintf(stderr, "new_announce_self_request failed\n");
+
+    fprintf(stderr, "sending get nodes request\n");
     return dispatch_packet(announce, chat_id, dht->self_public_key, sigdata, GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE,
                            NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES, 1);
 }
 
 int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint16_t length)
 {
+    fprintf(stderr, "handle_gc_get_announced_nodes_request\n");
     GC_Announce* announce = ancp;
     DHT *dht = announce->dht;
 
@@ -366,7 +403,6 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
     if (num_nodes > 0) {
         uint64_t request_id;
         bytes_to_U64(&request_id, data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port));
-
         IP_Port ipp;
         memcpy(&ipp, data + 1 + EXT_PUBLIC_KEY, sizeof(IP_Port));
 
@@ -376,6 +412,7 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
                                                     nodes, num_nodes);
     }
 
+    fprintf(stderr, "no nodes found: relaying request\n");
     return dispatch_packet(announce, data+1, dht->self_public_key, data,
                           GC_ANNOUNCE_GETNODES_REQUEST_PLAIN_SIZE, NET_PACKET_GROUPCHAT_GET_ANNOUNCED_NODES, 0);
 }
@@ -383,9 +420,6 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
 int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t *chat_id, uint64_t request_id, IP_Port ipp,
                                          const uint8_t *receiver_pk, GC_Announce_Node *nodes, uint32_t num_nodes)
 {
-    if (num_nodes > MAX_SENT_ANNOUNCED_NODES)
-        return -1;
-
     uint8_t data[GC_ANNOUNCE_GETNODES_RESPONSE_PLAIN_SIZE];
     data[0] = NET_PACKET_GROUPCHAT_SEND_ANNOUNCED_NODES;
     U32_to_bytes(data + 1, num_nodes);
@@ -406,6 +440,7 @@ int send_gc_get_announced_nodes_response(DHT *dht, const uint8_t *chat_id, uint6
     U64_to_bytes(packet + 1 + ENC_PUBLIC_KEY, request_id);
     packet_length += REQUEST_ID_SIZE;
 
+    fprintf(stderr, "reply to nodes request successfull!\n");
     return sendpacket(dht->net, ipp, packet, packet_length);
 }
 
@@ -474,7 +509,7 @@ int get_gc_announced_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_Ann
             ipport_copy(&nodes[j].ip_port, &announce->announcements[i].node.ip_port);
 
             if (++j == MAX_SENT_ANNOUNCED_NODES)
-                return j;
+                break;
         }
     }
 
@@ -520,7 +555,9 @@ int add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_id, const G
 }
 
 /* Add new self request.
- * Returns array index.
+ *
+ * Returns array index on success.
+ * Returns -1 on failure.
  */
 int new_announce_self_request(GC_Announce *announce, const uint8_t *chat_id, uint64_t req_id, uint64_t timestamp,
                               const uint8_t *self_long_pk, const uint8_t *self_long_sk)
@@ -536,11 +573,11 @@ int new_announce_self_request(GC_Announce *announce, const uint8_t *chat_id, uin
             memcpy(announce->self_requests[i].long_pk, self_long_pk, EXT_PUBLIC_KEY);
             memcpy(announce->self_requests[i].long_sk, self_long_sk, EXT_PUBLIC_KEY);
             ++announce->req_num;
-            break;
+            return i;
         }
     }
 
-    return i;
+    return -1;
 }
 
 /* Get group chat online members, which you searched for with get announced nodes request */

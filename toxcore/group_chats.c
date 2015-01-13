@@ -62,7 +62,6 @@ enum {
     GP_SYNC_RESPONSE
 } GROUP_PACKET;
 
-
 /* Shamelessly taken from wikipedia's Jenkins hash function page
  */
 static uint32_t calculate_hash(const uint8_t *key, size_t len)
@@ -1799,7 +1798,7 @@ static int create_new_group(GC_Session *c)
 
     memcpy(chat->self_nick, m->name, m->name_length);
     chat->self_nick_len = m->name_length;
-    chat->self_status = GS_NONE;
+    chat->self_status = m->userstatus;
     chat->groupnumber = new_index;
     chat->numpeers = 0;
     chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
