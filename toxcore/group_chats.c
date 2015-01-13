@@ -482,6 +482,9 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     if (chat == NULL)
         return -1;
 
+    if (chat->numpeers >= chat->maxpeers)
+        return gc_invite_response_reject(chat, ipp, public_key, GJ_GROUP_FULL);
+
     uint8_t  invite_certificate[INVITE_CERT_SIGNED_SIZE];
 
     if (!id_long_equal(public_key, data + 1)) {
@@ -508,8 +511,10 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     /* Adding peer we just invited to the peer group list */
     GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
 
-    if (peer == NULL)
+    if (peer == NULL) {
+        gc_invite_response_reject(chat, ipp, public_key, GJ_INVITE_FAILED);
         return -1;
+    }
 
     memcpy(peer->client_id, public_key, EXT_PUBLIC_KEY);
     memcpy(peer->invite_certificate, invite_certificate, sizeof(invite_certificate));
@@ -533,6 +538,7 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
 
     if (peernumber < 0) {
         fprintf(stderr, "handle_gc_invite_request failed: peernum < 0\n");
+        gc_invite_response_reject(chat, ipp, public_key, GJ_INVITE_FAILED);
         return -1;
     }
 
@@ -1804,6 +1810,7 @@ static int create_new_group(GC_Session *c)
     chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
     chat->connection_state = CS_DISCONNECTED;
     chat->net = m->net;
+    chat->maxpeers = (uint16_t) -1;  // TODO: find a reasonable value and also allow it to be set via API
 
     create_long_keypair(chat->self_public_key, chat->self_secret_key);
 

@@ -88,6 +88,7 @@ enum {
     GJ_NICK_TAKEN,
     GJ_GROUP_FULL,
     GJ_INVITES_DISABLED,
+    GJ_INVITE_FAILED,
     GJ_INVALID
 } GROUP_JOIN_REJECTED;
 
@@ -170,6 +171,7 @@ typedef struct GC_Chat {
     GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
 
     uint32_t    numpeers;
+    uint16_t    maxpeers;
     int         groupnumber;
 
     uint8_t     self_nick[MAX_GC_NICK_SIZE];

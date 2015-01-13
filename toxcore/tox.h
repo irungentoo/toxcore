@@ -795,7 +795,7 @@ typedef enum {
     TOX_GR_INVALID
 } TOX_GROUP_ROLE;
 
-/* paralel to TOX_USERSTATUS */
+/* parallel to TOX_USERSTATUS */
 typedef enum {
     TOX_GS_NONE,
     TOX_GS_AWAY,
@@ -813,7 +813,8 @@ typedef enum {
 typedef enum {
     TOX_GJ_NICK_TAKEN,
     TOX_GJ_GROUP_FULL,
-    TOX_GJ_INVITES_DISABLED
+    TOX_GJ_INVITES_DISABLED,
+    TOX_GJ_INVITE_FAILED
 } TOX_GROUP_JOIN_REJECTED;
 
 /* Set the callback for group messages.
