@@ -23,7 +23,7 @@
 
 #include "DHT.h"
 
-#define MAX_GC_SENT_ANNOUNCED_NODES 4
+#define MAX_GCA_SENT_NODES 4
 
 typedef struct __attribute__ ((__packed__))
 {

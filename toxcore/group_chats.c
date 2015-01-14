@@ -27,6 +27,7 @@
 #endif
 
 #include "DHT.h"
+#include "network.h"
 #include "group_chats.h"
 #include "group_announce.h"
 #include "LAN_discovery.h"
@@ -41,8 +42,6 @@
 
 #define HASH_ID_BYTES (sizeof(uint32_t))
 #define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
-
-#define NET_PACKET_GROUP_CHATS 9 /* WARNING. Temporary measure. */
 
 static int peernumber_valid(const GC_Chat *chat, uint32_t peernumber);
 static int groupnumber_valid(const GC_Session* c, int groupnumber);
@@ -61,24 +60,6 @@ enum {
     GP_SYNC_REQUEST,
     GP_SYNC_RESPONSE
 } GROUP_PACKET;
-
-/* Shamelessly taken from wikipedia's Jenkins hash function page
- */
-static uint32_t calculate_hash(const uint8_t *key, size_t len)
-{
-    uint32_t hash, i;
-
-    for (hash = i = 0; i < len; ++i) {
-        hash += key[i];
-        hash += (hash << 10);
-        hash ^= (hash >> 6);
-    }
-
-    hash += (hash << 3);
-    hash ^= (hash >> 11);
-    hash += (hash << 15);
-    return hash;
-}
 
 /* Decrypts data using sender's public key, self secret key and a nonce. */
 static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, uint8_t *sender_pk,
@@ -139,7 +120,7 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, con
         return -1;
     }
 
-    packet[0] = NET_PACKET_GROUP_CHATS;
+    packet[0] = NET_PACKET_GC_MESSAGE;
     U32_to_bytes(packet + 1, hash_id);
     memcpy(packet + 1 + HASH_ID_BYTES, self_pk, EXT_PUBLIC_KEY);
     memcpy(packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
@@ -1171,7 +1152,7 @@ static int handle_groupchatpacket(void *object, IP_Port source, const uint8_t *p
     GC_Chat* chat = get_chat_by_hash_id(m->group_handler, hash_id);
 
     if (!chat) {
-        fprintf(stderr, "get_chat_by_hash_id failed\n");
+        fprintf(stderr, "get_chat_by_hash_id failed (type %u)\n", packet[0]);
         return -1;
     }
 
@@ -1722,7 +1703,7 @@ void do_gc(GC_Session *c)
         }
 
         if (chat->connection_state == CS_DISCONNECTED) {
-            GC_Announce_Node nodes[MAX_GC_SENT_ANNOUNCED_NODES];
+            GC_Announce_Node nodes[MAX_GCA_SENT_NODES];
             int rc = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
 
             /* Try to join random node */
@@ -1888,7 +1869,7 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
     chat->group_name_len = length;
     chat->connection_state = CS_CONNECTED;
     chat->group[0].role = GR_FOUNDER;
-    chat->hash_id = calculate_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
+    chat->hash_id = jenkins_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
 
     /* We send announce to the DHT so that everyone can join our chat */
     if (gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) == -1) {
@@ -1918,7 +1899,7 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key)
         return -1;
 
     memcpy(chat->chat_public_key, invite_key, EXT_PUBLIC_KEY);
-    chat->hash_id = calculate_hash(invite_key, EXT_PUBLIC_KEY);
+    chat->hash_id = jenkins_hash(invite_key, EXT_PUBLIC_KEY);
 
     if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, invite_key) == -1) {
         group_delete(c, chat);
@@ -1945,6 +1926,8 @@ static int rejoin_group(GC_Session *c, GC_Chat *chat)
         group_delete(c, chat);
         return -1;
     }
+
+    oldself->role = GR_USER;
 
     self_to_peer(chat, oldself);
 
@@ -1996,7 +1979,7 @@ GC_Session* new_groupchats(Messenger* m)
         return NULL;
     }
 
-    networking_registerhandler(m->net, NET_PACKET_GROUP_CHATS, &handle_groupchatpacket, m);
+    networking_registerhandler(m->net, NET_PACKET_GC_MESSAGE, &handle_groupchatpacket, m);
     return c;
 }
 
@@ -2056,7 +2039,7 @@ void gc_kill_groupchats(GC_Session* c)
     }
 
     kill_gca(c->announce);
-    networking_registerhandler(c->messenger->net, NET_PACKET_GROUP_CHATS, NULL, NULL);
+    networking_registerhandler(c->messenger->net, NET_PACKET_GC_MESSAGE, NULL, NULL);
     free(c);
 }
 
