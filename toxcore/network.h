@@ -120,8 +120,8 @@ typedef int sock_t;
 #define NET_PACKET_ONION_RECV_2 141
 #define NET_PACKET_ONION_RECV_1 142
 
-#define NET_PACKET_GC_MESSAGE 180            /* Group chat packet */
-#define NET_PACKET_GCA_REQUEST 181           /* Group announce request packet ID */
+#define NET_PACKET_GC_MESSAGE 180            /* Group chat packet ID */
+#define NET_PACKET_GCA_ANNOUNCE 181          /* Group announce announcement packet ID */
 #define NET_PACKET_GCA_GET_NODES 182         /* Group announce get nodes request packet ID */
 #define NET_PACKET_GCA_SEND_NODES 183        /* Group announce send nodes packet ID */
 #define NET_PACKET_GCA_PING_REQUEST 184      /* Group announce ping request packet ID */
