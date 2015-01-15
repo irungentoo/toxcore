@@ -56,6 +56,9 @@ int gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_id
 /* Do some periodic work, currently removes expired announcements */
 void do_gca(struct GC_Announce *announce);
 
+/* Remove our own announcement entries for chat_id */
+void gca_remove_self_announcements(struct GC_Announce *announce, const uint8_t *chat_id);
+
 struct GC_Announce *new_gca(DHT *dht);
 void kill_gca(struct GC_Announce *announce);
 

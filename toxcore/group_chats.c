@@ -1993,6 +1993,7 @@ static int group_delete(GC_Session* c, GC_Chat *chat)
     if (c == NULL)
         return -1;
 
+    gca_remove_self_announcements(c->announce, chat->chat_public_key);
     kill_groupcredentials(chat->credentials);
 
     if (chat->group)
