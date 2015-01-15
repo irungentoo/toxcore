@@ -1128,7 +1128,8 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
     uint32_t i;
 
     for (i = 0; i < num_nodes; i++) {
-        if (ipport_isset(&plain_nodes[i].ip_port) && ping_node_from_getnodes_ok(dht, plain_nodes[i].client_id)) {
+        if (ipport_isset(&plain_nodes[i].ip_port) && (LAN_ip(plain_nodes[i].ip_port.ip) == 0
+                || ping_node_from_getnodes_ok(dht, plain_nodes[i].client_id))) {
             send_ping_request(dht->ping, plain_nodes[i].ip_port, plain_nodes[i].client_id);
             returnedip_ports(dht, plain_nodes[i].ip_port, plain_nodes[i].client_id, packet + 1);
         }
