@@ -1460,13 +1460,7 @@ static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certi
                 break;
 
             case GC_BAN: {
-                chat->group[0].role = GR_BANNED;
-
-                int i;
-
-                for (i = 1; i < chat->numpeers; ++i)
-                    peer_delete(m, groupnumber, i, NULL, 0);
-
+                group_delete(c, chat);
                 break;
             }
 
@@ -1691,8 +1685,7 @@ void do_gc(GC_Session *c)
             check_peer_timeouts(c->messenger, i);
 
             /* Try to auto-rejoin group if we get disconnected */
-            if (is_timeout(chat->self_last_rcvd_ping, GROUP_SELF_TIMEOUT)
-                && chat->group[0].role < GR_BANNED && chat->numpeers > 0) {
+            if (is_timeout(chat->self_last_rcvd_ping, GROUP_SELF_TIMEOUT) && chat->numpeers > 1) {
                 if (c->self_timeout)
                     (*c->self_timeout)(c->messenger, i, c->self_timeout_userdata);
 
@@ -1702,22 +1695,35 @@ void do_gc(GC_Session *c)
             continue;
         }
 
+        if (chat->connection_state == CS_CONNECTING) {
+            if (is_timeout(chat->self_last_rcvd_ping, GROUP_JOIN_TIMEOUT)) {
+                chat->connection_state = CS_DISCONNECTED;
+                chat->self_last_rcvd_ping = unix_time();
+
+                if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
+                    chat->chat_public_key) == -1) {
+                    group_delete(c, chat);
+                }
+            }
+
+            continue;
+        }
+
         if (chat->connection_state == CS_DISCONNECTED) {
-            GC_Announce_Node nodes[MAX_GCA_SENT_NODES];
-            int rc = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
+            GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
+            int num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
 
             /* Try to join random node */
-            if (rc) {
-                int n = random_int() % rc;
+            if (num_nodes) {
+                chat->connection_state = CS_CONNECTING;
+                int n = random_int() % num_nodes;
 
                 if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].client_id) == -1) {
                     group_delete(c, chat);
                     continue;
                 }
-
-                chat->connection_state = CS_CONNECTING;
             }
-        } /* if connection_state is CS_CONNECTING it's waiting for a join response and should do nothing */
+        }
     }
 
     do_gca(c->announce);

@@ -60,9 +60,9 @@
 #define GCA_GETNODES_RESPONSE_PLAIN_SIZE (1 + sizeof(uint32_t) + sizeof(GC_Announce_Node) * MAX_GCA_SENT_NODES + RAND_ID_SIZE)
 #define GCA_GETNODES_RESPONSE_DHT_SIZE (GCA_HEADER_SIZE + RAND_ID_SIZE + GCA_GETNODES_RESPONSE_PLAIN_SIZE + crypto_box_MACBYTES)
 
+#define MAX_GCA_SENT_NODES 4
 #define MAX_GCA_ANNOUNCED_NODES 30
 #define MAX_GCA_SELF_ANNOUNCEMENTS  10
-#define MAX_GCA_SELF_REQUESTS 10
 
 typedef struct GC_Announce {
     DHT *dht;
@@ -79,11 +79,10 @@ typedef struct GC_Announce {
         uint32_t chat_id_hash;
     } announcements[MAX_GCA_ANNOUNCED_NODES];
 
-    /* Holds our own announcements when we create a group */
+    /* Holds our own announcements when we create or join a group */
     struct GC_SelfAnnouncedNode {
         uint32_t chat_id_hash;
         uint64_t time_added;
-        bool is_set;
     } self_announcements[MAX_GCA_SELF_ANNOUNCEMENTS];
 
     /* Holds nodes that we receive when we send a request, used to join groups */
@@ -365,15 +364,13 @@ static int add_gc_self_announced_node(GC_Announce *announce, const uint8_t *chat
             oldest_idx = i;
         }
 
-        if (!announce->self_announcements[i].is_set) {
-            announce->self_announcements[i].is_set = true;
+        if (announce->self_announcements[i].chat_id_hash == 0) {
             announce->self_announcements[i].time_added = unix_time();
             announce->self_announcements[i].chat_id_hash = jenkins_hash(chat_id, EXT_PUBLIC_KEY);
             return i;
         }
     }
 
-    announce->self_announcements[oldest_idx].is_set = true;
     announce->self_announcements[oldest_idx].time_added = unix_time();
     announce->self_announcements[oldest_idx].chat_id_hash = jenkins_hash(chat_id, EXT_PUBLIC_KEY);
     return oldest_idx;
@@ -495,7 +492,6 @@ int handle_gca_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint16_t 
 int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_long_pk, const uint8_t *self_long_sk,
                                const uint8_t *chat_id)
 {
-    // TODO: Check if we already have some nodes!!!
     DHT *dht = announce->dht;
 
     uint8_t data[GCA_GETNODES_REQUEST_PLAIN_SIZE];
@@ -724,7 +720,6 @@ static int send_gca_ping_response(DHT *dht, IP_Port ipp, const uint8_t *data, co
     if (len == -1)
         return -1;
 
-    fprintf(stderr, "sending ping response\n");
     return sendpacket(dht->net, ipp, packet, len);
 }
 
@@ -748,7 +743,7 @@ int handle_gca_ping_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint
     int i;
 
     for (i = 0; i < MAX_GCA_SELF_ANNOUNCEMENTS; ++i) {
-        if (announce->self_announcements[i].is_set && announce->self_announcements[i].chat_id_hash == chat_id_hash)
+        if (announce->self_announcements[i].chat_id_hash == chat_id_hash)
             return send_gca_ping_response(dht, ipp, data, public_key);
     }
 
@@ -835,9 +830,8 @@ void gca_remove_self_announcements(GC_Announce *announce, const uint8_t *chat_id
     }
 
     for (i = 0; i < MAX_GCA_SELF_ANNOUNCEMENTS; ++i) {
-        if (announce->self_announcements[i].is_set
-            && announce->self_announcements[i].chat_id_hash == chat_id_hash) {
-            announce->self_announcements[i].is_set = 0;
+        if (announce->self_announcements[i].chat_id_hash == chat_id_hash) {
+            announce->self_announcements[i].chat_id_hash = 0;
             break;
         }
     }
