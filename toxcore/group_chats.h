@@ -38,10 +38,6 @@ typedef struct Messenger Messenger;
 #define MAX_GC_PART_MESSAGE_SIZE 128
 
 #define GROUP_CLOSE_CONNECTIONS 6
-#define GROUP_JOIN_TIMEOUT 30  // TODO: find ideal value
-#define GROUP_PING_INTERVAL 60
-#define GROUP_PEER_TIMEOUT 255
-#define GROUP_SELF_TIMEOUT GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL + 10
 #define BAD_GROUPNODE_TIMEOUT 60
 
 /* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
@@ -189,8 +185,6 @@ typedef struct GC_Chat {
     uint64_t    self_last_rcvd_ping;
 
     GC_ChatCredentials *credentials;
-
-    uint32_t     message_number;  // What is this for?
 } GC_Chat;
 
 typedef struct GC_Session {

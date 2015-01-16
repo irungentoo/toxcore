@@ -43,13 +43,18 @@
 #define HASH_ID_BYTES (sizeof(uint32_t))
 #define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
+#define GROUP_JOIN_TIMEOUT 10  // TODO: find ideal value
+#define GROUP_PING_INTERVAL 60
+#define GROUP_PEER_TIMEOUT 255
+#define GROUP_SELF_TIMEOUT GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL + 10
+
 static int peernumber_valid(const GC_Chat *chat, uint32_t peernumber);
-static int groupnumber_valid(const GC_Session* c, int groupnumber);
+static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_in_chat(const GC_Chat *chat, const uint8_t *client_id);
 static int peer_add(Messenger *m, int groupnumber, const GC_GroupPeer *peer);
 static void peer_update(GC_Chat *chat, const GC_GroupPeer *peer, uint32_t peernumber);
 static int peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
-static int group_delete(GC_Session* c, GC_Chat *chat);
+static int group_delete(GC_Session *c, GC_Chat *chat);
 static int peer_nick_is_taken(const GC_Chat *chat, const uint8_t *nick, uint16_t length);
 
 enum {
@@ -59,19 +64,19 @@ enum {
     GP_INVITE_RESPONSE_REJECT,
     GP_SYNC_REQUEST,
     GP_SYNC_RESPONSE
-} GROUP_PACKET;
+} GROUP_PACKET_ID;
 
 /* Decrypts data using sender's public key, self secret key and a nonce. */
 static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, uint8_t *sender_pk,
                                uint8_t *data, uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
     if (length < MIN_GC_PACKET_SIZE || length > MAX_GC_PACKET_SIZE) {
-        fprintf(stderr, "unwrap failed: invalid packet size (type %u)\n", *packet_type);
+        fprintf(stderr, "unwrap failed: invalid packet size\n");
         return -1;
     }
 
     if (id_long_equal(packet + 1 + HASH_ID_BYTES, self_pk)) {
-        fprintf(stderr, "unwrap failed: id_long_equal failed (type %u)\n", *packet_type);
+        fprintf(stderr, "unwrap failed: id_long_equal failed\n");
         return -1;
     }
 
@@ -85,7 +90,7 @@ static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, u
                            packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES,
                            length - (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES), plain);
     if (len <= 0) {
-        fprintf(stderr, "decrypt failed: packet type: %d, len %d\n", plain[0], len);
+        fprintf(stderr, "decrypt failed: len %d\n", len);
         return -1;
     }
 
@@ -1691,25 +1696,20 @@ void do_gc(GC_Session *c)
 
                 rejoin_group(c, chat);
             }
-
-            continue;
         }
 
-        if (chat->connection_state == CS_CONNECTING) {
+        else if (chat->connection_state == CS_CONNECTING) {
             if (is_timeout(chat->self_last_rcvd_ping, GROUP_JOIN_TIMEOUT)) {
                 chat->connection_state = CS_DISCONNECTED;
                 chat->self_last_rcvd_ping = unix_time();
 
                 if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
-                    chat->chat_public_key) == -1) {
+                                               chat->chat_public_key) == -1)
                     group_delete(c, chat);
-                }
             }
-
-            continue;
         }
 
-        if (chat->connection_state == CS_DISCONNECTED) {
+        else if (chat->connection_state == CS_DISCONNECTED) {
             GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
             int num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
 
@@ -1718,10 +1718,8 @@ void do_gc(GC_Session *c)
                 chat->connection_state = CS_CONNECTING;
                 int n = random_int() % num_nodes;
 
-                if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].client_id) == -1) {
+                if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].client_id) == -1)
                     group_delete(c, chat);
-                    continue;
-                }
             }
         }
     }
@@ -1748,7 +1746,6 @@ static GC_ChatCredentials *new_groupcredentials(GC_Chat *chat)
 
     credentials->creation_time = unix_time();
     memcpy(credentials->ops->client_id, chat->self_public_key, EXT_PUBLIC_KEY);
-    credentials->ops->role = GR_FOUNDER;
 
     return credentials;
 }
@@ -1953,6 +1950,8 @@ static int rejoin_group(GC_Session *c, GC_Chat *chat)
 
     free(oldself);
 
+    gca_cleanup(c->announce, chat->chat_public_key);
+
     if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) == -1) {
         group_delete(c, chat);
         return -1;
@@ -1999,11 +1998,9 @@ static int group_delete(GC_Session* c, GC_Chat *chat)
     if (c == NULL)
         return -1;
 
-    gca_remove_self_announcements(c->announce, chat->chat_public_key);
+    gca_cleanup(c->announce, chat->chat_public_key);
     kill_groupcredentials(chat->credentials);
-
-    if (chat->group)
-        free(chat->group);
+    free(chat->group);
 
     int index = chat->groupnumber;
     memset(&(c->chats[index]), 0, sizeof(GC_Chat));
