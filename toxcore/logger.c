@@ -55,9 +55,9 @@ typedef struct logger {
 
     /* For thread synchronisation */
     pthread_mutex_t mutex[1];
-} logger;
+} Logger;
 
-logger *global = NULL;
+Logger *global = NULL;
 
 const char *LOG_LEVEL_STR [] = {
     [LOG_TRACE]   = "TRACE",
@@ -83,13 +83,13 @@ char *strtime(char *dest, size_t max_len)
 /**
  * Public Functions
  */
-logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
+Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
 {
 #ifndef LOGGING /* Disabled */
     return NULL;
 #endif
 
-    logger *retu = calloc(1, sizeof(logger));
+    Logger *retu = calloc(1, sizeof(Logger));
 
     if (!retu)
         return NULL;
@@ -143,7 +143,7 @@ FAILURE:
     return NULL;
 }
 
-void logger_kill(logger *log)
+void logger_kill(Logger *log)
 {
 #ifndef LOGGING /* Disabled */
     return;
@@ -173,7 +173,7 @@ void logger_kill_global(void)
     global = NULL;
 }
 
-void logger_set_global(logger *log)
+void logger_set_global(Logger *log)
 {
 #ifndef LOGGING /* Disabled */
     return;
@@ -182,7 +182,7 @@ void logger_set_global(logger *log)
     global = log;
 }
 
-logger *logger_get_global(void)
+Logger *logger_get_global(void)
 {
 #ifndef LOGGING /* Disabled */
     return NULL;
@@ -191,7 +191,7 @@ logger *logger_get_global(void)
     return global;
 }
 
-void logger_write (logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...)
+void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...)
 {
 #ifndef LOGGING /* Disabled */
     return;
@@ -207,7 +207,7 @@ void logger_write (logger *log, LOG_LEVEL level, const char *file, int line, con
         "\n";    /* Every new print new line */
 
 
-    logger *this_log = log ? log : global;
+    Logger *this_log = log ? log : global;
 
     if (!this_log)
         return;
