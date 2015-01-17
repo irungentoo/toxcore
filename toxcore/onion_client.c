@@ -140,8 +140,15 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
             nodes[i] = onion_c->path_nodes[rand() % num_nodes];
         }
     } else {
+        int random_tcp = get_random_tcp_con_number(onion_c->c);
+
+        if (random_tcp == -1) {
+            return 0;
+        }
+
         if (num_nodes >= 2) {
             nodes[0].ip_port.ip.family = TCP_FAMILY;
+            nodes[0].ip_port.ip.ip4.uint32 = random_tcp;
 
             for (i = 1; i < max_num; ++i) {
                 nodes[i] = onion_c->path_nodes[rand() % num_nodes];
@@ -154,6 +161,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
                 return 0;
 
             nodes[0].ip_port.ip.family = TCP_FAMILY;
+            nodes[0].ip_port.ip.ip4.uint32 = random_tcp;
 
             for (i = 1; i < max_num; ++i) {
                 nodes[i] = onion_c->path_nodes_bs[rand() % num_nodes_bs];
@@ -301,7 +309,7 @@ static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Pa
         if (len == -1)
             return -1;
 
-        return send_tcp_onion_request(onion_c->c, packet, len);
+        return send_tcp_onion_request(onion_c->c, path->ip_port1.ip.ip4.uint32, packet, len);
     } else {
         return -1;
     }

@@ -2039,24 +2039,45 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
     return -1;
 }
 
-/* Send an onion packet via a random connected TCP relay.
+/* Return a random TCP connection number for use in send_tcp_onion_request.
  *
- * return 0 on success.
+ * TODO: This number is just the index of an array that the elements can
+ * change without warning.
+ *
+ * return TCP connection number on success.
  * return -1 on failure.
  */
-int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length)
+int get_random_tcp_con_number(Net_Crypto *c)
 {
     unsigned int i, r = rand();
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS]) {
-            pthread_mutex_lock(&c->tcp_mutex);
-            int ret = send_onion_request(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], data, length);
-            pthread_mutex_unlock(&c->tcp_mutex);
-
-            if (ret == 1)
-                return 0;
+            return (i + r) % MAX_TCP_CONNECTIONS;
         }
+    }
+
+    return -1;
+}
+
+/* Send an onion packet via the TCP relay corresponding to TCP_conn_number.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int send_tcp_onion_request(Net_Crypto *c, unsigned int TCP_conn_number, const uint8_t *data, uint16_t length)
+{
+    if (TCP_conn_number > MAX_TCP_CONNECTIONS) {
+        return -1;
+    }
+
+    if (c->tcp_connections[TCP_conn_number]) {
+        pthread_mutex_lock(&c->tcp_mutex);
+        int ret = send_onion_request(c->tcp_connections[TCP_conn_number], data, length);
+        pthread_mutex_unlock(&c->tcp_mutex);
+
+        if (ret == 1)
+            return 0;
     }
 
     return -1;
