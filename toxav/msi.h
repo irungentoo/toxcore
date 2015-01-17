@@ -57,7 +57,7 @@ typedef enum {
 /**
  * Encoding settings.
  */
-typedef struct _MSICodecSettings {
+typedef struct {
     MSICallType call_type;
 
     uint32_t video_bitrate; /* In kbits/s */
@@ -100,32 +100,32 @@ typedef enum {
 /**
  * The call struct.
  */
-typedef struct _MSICall {                  /* Call info structure */
-    struct _MSISession *session;           /* Session pointer */
+typedef struct {                  /* Call info structure */
+    struct MSISession_s *session;           /* Session pointer */
 
-    MSICallState        state;
+    MSICallState         state;
 
-    MSICSettings        csettings_local;   /* Local call settings */
-    MSICSettings       *csettings_peer;    /* Peers call settings */
+    MSICSettings         csettings_local;   /* Local call settings */
+    MSICSettings        *csettings_peer;    /* Peers call settings */
 
-    MSICallIDType       id;                /* Random value identifying the call */
+    MSICallIDType        id;                /* Random value identifying the call */
 
-    int                 ringing_tout_ms;   /* Ringing timeout in ms */
+    int                  ringing_tout_ms;   /* Ringing timeout in ms */
 
-    int                 request_timer_id;  /* Timer id for outgoing request/action */
-    int                 ringing_timer_id;  /* Timer id for ringing timeout */
+    int                  request_timer_id;  /* Timer id for outgoing request/action */
+    int                  ringing_timer_id;  /* Timer id for ringing timeout */
 
-    uint32_t           *peers;
-    uint16_t            peer_count;
+    uint32_t            *peers;
+    uint16_t             peer_count;
 
-    int32_t             call_idx;          /* Index of this call in MSISession */
+    int32_t              call_idx;          /* Index of this call in MSISession */
 } MSICall;
 
 
 /**
  * Control session struct
  */
-typedef struct _MSISession {
+typedef struct MSISession_s {
 
     /* Call handlers */
     MSICall       **calls;

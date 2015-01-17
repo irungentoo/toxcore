@@ -62,7 +62,7 @@ static const uint32_t jbuf_capacity = 6;
 static const uint8_t audio_index = 0, video_index = 1;
 
 typedef struct _ToxAvCall {
-    pthread_mutex_t mutex[1];
+    pthread_mutex_t mutex_control[1];
     pthread_mutex_t mutex_encoding_audio[1];
     pthread_mutex_t mutex_encoding_video[1];
     pthread_mutex_t mutex_do[1];
@@ -117,7 +117,7 @@ ToxAv *toxav_new( Tox *messenger, int32_t max_calls)
     unsigned int i;
 
     for (i = 0; i < max_calls; ++i) {
-        if (create_recursive_mutex(av->calls[i].mutex) != 0 ) {
+        if (create_recursive_mutex(av->calls[i].mutex_control) != 0 ) {
             LOGGER_WARNING("Failed to init call(%u) mutex!", i);
             msi_kill(av->msi_session);
 
@@ -145,7 +145,7 @@ void toxav_kill ( ToxAv *av )
         if ( av->calls[i].cs )
             cs_kill(av->calls[i].cs);
 
-        pthread_mutex_destroy(av->calls[i].mutex);
+        pthread_mutex_destroy(av->calls[i].mutex_control);
     }
 
     msi_kill(av->msi_session);
@@ -160,14 +160,14 @@ uint32_t toxav_do_interval(ToxAv *av)
     uint32_t rc = 200 + av->avgdectms; /* Return 200 if no call is active */
 
     for (; i < av->max_calls; i ++) {
-        pthread_mutex_lock(av->calls[i].mutex);
+        pthread_mutex_lock(av->calls[i].mutex_control);
 
         if (av->calls[i].active) {
             /* This should work. Video payload will always come in greater intervals */
             rc = MIN(av->calls[i].cs->audio_decoder_frame_duration, rc);
         }
 
-        pthread_mutex_unlock(av->calls[i].mutex);
+        pthread_mutex_unlock(av->calls[i].mutex_control);
     }
 
     return rc < av->avgdectms ? 0 : rc - av->avgdectms;
@@ -182,15 +182,15 @@ void toxav_do(ToxAv *av)
     uint32_t i = 0;
 
     for (; i < av->max_calls; i ++) {
-        pthread_mutex_lock(av->calls[i].mutex);
+        pthread_mutex_lock(av->calls[i].mutex_control);
 
         if (av->calls[i].active) {
             pthread_mutex_lock(av->calls[i].mutex_do);
-            pthread_mutex_unlock(av->calls[i].mutex);
+            pthread_mutex_unlock(av->calls[i].mutex_control);
             cs_do(av->calls[i].cs);
             pthread_mutex_unlock(av->calls[i].mutex_do);
         } else {
-            pthread_mutex_unlock(av->calls[i].mutex);
+            pthread_mutex_unlock(av->calls[i].mutex_control);
         }
     }
 
@@ -272,17 +272,17 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
 
     ToxAvCall *call = &av->calls[call_index];
 
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(call->mutex_control);
 
     if (call->active) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         LOGGER_ERROR("Error while starting RTP session: call already active!\n");
         return av_ErrorAlreadyInCallWithPeer;
     }
 
     if (pthread_mutex_init(call->mutex_encoding_audio, NULL) != 0
             || pthread_mutex_init(call->mutex_encoding_video, NULL) != 0 || pthread_mutex_init(call->mutex_do, NULL) != 0) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         LOGGER_ERROR("Error while starting RTP session: mutex initializing failed!\n");
         return av_ErrorUnknown;
     }
@@ -312,7 +312,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
 
     if ( !(call->cs = cs_new(c_self, c_peer, jbuf_capacity, support_video)) ) {
         LOGGER_ERROR("Error while starting Codec State!\n");
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         return av_ErrorInitializingCodecs;
     }
 
@@ -349,7 +349,7 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
     }
 
     call->active = 1;
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_control);
     return av_ErrorNone;
 error:
     rtp_kill(call->crtps[audio_index], av->messenger);
@@ -363,7 +363,7 @@ error:
     pthread_mutex_destroy(call->mutex_encoding_video);
     pthread_mutex_destroy(call->mutex_do);
 
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_control);
     return av_ErrorCreatingRtpSessions;
 }
 
@@ -376,10 +376,10 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
 
     ToxAvCall *call = &av->calls[call_index];
 
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(call->mutex_control);
 
     if (!call->active) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         LOGGER_WARNING("Action on inactive call: %d", call_index);
         return av_ErrorInvalidState;
     }
@@ -404,7 +404,7 @@ int toxav_kill_transmission ( ToxAv *av, int32_t call_index )
     pthread_mutex_destroy(call->mutex_encoding_video);
     pthread_mutex_destroy(call->mutex_do);
 
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_control);
 
     return av_ErrorNone;
 }
@@ -452,21 +452,21 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
 
 
     ToxAvCall *call = &av->calls[call_index];
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(call->mutex_control);
 
     if (!call->active) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         LOGGER_WARNING("Action on inactive call: %d", call_index);
         return av_ErrorInvalidState;
     }
 
     if (cs_set_video_encoder_resolution(call->cs, input->d_w, input->d_h) < 0) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         return av_ErrorSettingVideoResolution;
     }
 
     pthread_mutex_lock(call->mutex_encoding_video);
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_control);
 
     int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 
@@ -507,17 +507,17 @@ int toxav_send_video ( ToxAv *av, int32_t call_index, const uint8_t *frame, unsi
     }
 
     ToxAvCall *call = &av->calls[call_index];
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(call->mutex_control);
 
 
     if (!call->active) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         LOGGER_WARNING("Action on inactive call: %d", call_index);
         return av_ErrorInvalidState;
     }
 
     int rc = toxav_send_rtp_payload(av, call, av_TypeVideo, frame, frame_size);
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_control);
 
     return rc;
 }
@@ -535,16 +535,16 @@ int toxav_prepare_audio_frame ( ToxAv *av,
     }
 
     ToxAvCall *call = &av->calls[call_index];
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(call->mutex_control);
 
     if (!call->active) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         LOGGER_WARNING("Action on inactive call: %d", call_index);
         return av_ErrorInvalidState;
     }
 
     pthread_mutex_lock(call->mutex_encoding_audio);
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_control);
     int32_t rc = opus_encode(call->cs->audio_encoder, frame, frame_size, dest, dest_max);
     pthread_mutex_unlock(call->mutex_encoding_audio);
 
@@ -564,17 +564,17 @@ int toxav_send_audio ( ToxAv *av, int32_t call_index, const uint8_t *data, unsig
     }
 
     ToxAvCall *call = &av->calls[call_index];
-    pthread_mutex_lock(call->mutex);
+    pthread_mutex_lock(call->mutex_control);
 
 
     if (!call->active) {
-        pthread_mutex_unlock(call->mutex);
+        pthread_mutex_unlock(call->mutex_control);
         LOGGER_WARNING("Action on inactive call: %d", call_index);
         return av_ErrorInvalidState;
     }
 
     int rc = toxav_send_rtp_payload(av, call, av_TypeAudio, data, size);
-    pthread_mutex_unlock(call->mutex);
+    pthread_mutex_unlock(call->mutex_control);
     return rc;
 }
 
@@ -624,11 +624,11 @@ int toxav_get_active_count(ToxAv *av)
     int rc = 0, i = 0;
 
     for (; i < av->max_calls; i++) {
-        pthread_mutex_lock(av->calls[i].mutex);
+        pthread_mutex_lock(av->calls[i].mutex_control);
 
         if (av->calls[i].active) rc++;
 
-        pthread_mutex_unlock(av->calls[i].mutex);
+        pthread_mutex_unlock(av->calls[i].mutex_control);
     }
 
     return rc;
