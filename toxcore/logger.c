@@ -42,7 +42,7 @@
 #endif
 
 
-typedef struct logger {
+struct logger {
     FILE *log_file;
     LOG_LEVEL level;
     uint64_t start_time; /* Time when lib loaded */
@@ -55,7 +55,7 @@ typedef struct logger {
 
     /* For thread synchronisation */
     pthread_mutex_t mutex[1];
-} Logger;
+};
 
 Logger *global = NULL;
 
