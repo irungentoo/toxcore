@@ -86,7 +86,7 @@
 
 /* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
    at the dT defined in net_crypto.c */
-#define CONGESTION_QUEUE_ARRAY_SIZE 8
+#define CONGESTION_QUEUE_ARRAY_SIZE 24
 
 typedef struct {
     uint64_t time;
