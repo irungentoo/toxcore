@@ -1,6 +1,6 @@
 /*  logger.c
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2013-2015 Tox Foundation All Rights Reserved.
  *
  *  This file is part of Tox.
  *
@@ -100,7 +100,7 @@ Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
     }
 
     if (!(retu->log_file = fopen(file_name, "ab"))) {
-        fprintf(stderr, "Error opening logger file: %s; info: %s\n", file_name, strerror(errno));
+        fprintf(stderr, "Error opening logger file: %s; info: %s\r\n", file_name, strerror(errno));
         free(retu);
         pthread_mutex_destroy(retu->mutex);
         return NULL;
@@ -126,13 +126,13 @@ Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
     retu->level = level;
     retu->start_time = current_time_monotonic();
 
-    fprintf(retu->log_file, "Successfully created and running logger id: %s; time: %s\n",
+    fprintf(retu->log_file, "Successfully created and running logger id: %s; time: %s\r\n",
             retu->id, strtime(retu->tstr, 16));
 
     return retu;
 
 FAILURE:
-    fprintf(stderr, "Failed to create logger!\n");
+    fprintf(stderr, "Failed to create logger!\r\n");
     pthread_mutex_destroy(retu->mutex);
     fclose(retu->log_file);
     free(retu->tstr);
@@ -204,7 +204,7 @@ void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, con
         "%-5s  " /* Logger lever string */
         "%-20s " /* File:line string */
         "- %s"   /* Output message */
-        "\n";    /* Every new print new line */
+        "\r\n";    /* Every new print new line */
 
 
     Logger *this_log = log ? log : global;
