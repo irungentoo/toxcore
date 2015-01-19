@@ -36,6 +36,7 @@ typedef struct Messenger Messenger;
 #define MAX_GC_GROUP_NAME_SIZE 48
 #define MAX_GC_MESSAGE_SIZE 1368
 #define MAX_GC_PART_MESSAGE_SIZE 128
+#define MAX_GROUP_NUM_PEERS 1000   // temporary?
 
 #define GROUP_CLOSE_CONNECTIONS 6
 #define BAD_GROUPNODE_TIMEOUT 60
@@ -178,7 +179,6 @@ typedef struct GC_Chat {
     uint8_t     connection_state;
 
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
-    uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
 
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;

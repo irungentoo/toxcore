@@ -814,12 +814,12 @@ static void ping_gca_nodes(GC_Announce *announce)
         uint64_t ping_id = random_64b();
         announce->announcements[i].ping_id = ping_id;
 
-        if (gca_send_ping_request(announce->dht, &announce->announcements[i].node, ping_id,
-                                  announce->announcements[i].dht_public_key,
-                                  announce->announcements[i].chat_id_hash,
-                                  announce->announcements[i].client_id_hash) != -1) {
-            announce->announcements[i].last_sent_ping = unix_time();
-        }
+        gca_send_ping_request(announce->dht, &announce->announcements[i].node, ping_id,
+                              announce->announcements[i].dht_public_key,
+                              announce->announcements[i].chat_id_hash,
+                              announce->announcements[i].client_id_hash);
+
+        announce->announcements[i].last_sent_ping = unix_time();
     }
 }
 
