@@ -30,7 +30,7 @@ typedef struct Messenger Tox;
 
 #include "codec.h"
 #include "msi.h"
-#include "group.h"
+#include "group_chats.h"
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
@@ -647,8 +647,8 @@ int toxav_get_active_count(ToxAv *av)
 int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int,
                            uint8_t, unsigned int, void *), void *userdata)
 {
-    Messenger *m = tox;
-    return add_av_groupchat(m->group_chat_object, audio_callback, userdata);
+    //Messenger *m = tox;
+    //return add_av_groupchat(m->group_handler, audio_callback, userdata);
 }
 
 /* Join a AV group (you need to have been invited first.)
@@ -665,8 +665,8 @@ int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data,
                             void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
                             void *userdata)
 {
-    Messenger *m = tox;
-    return join_av_groupchat(m->group_chat_object, friendnumber, data, length, audio_callback, userdata);
+    //Messenger *m = tox;
+    //return join_av_groupchat(m->group_handler, friendnumber, data, length, audio_callback, userdata);
 }
 
 /* Send audio to the group chat.
@@ -685,7 +685,6 @@ int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data,
 int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                            unsigned int sample_rate)
 {
-    Messenger *m = tox;
-    return group_send_audio(m->group_chat_object, groupnumber, pcm, samples, channels, sample_rate);
+   // Messenger *m = tox;
+   // return group_send_audio(m->group_handler, groupnumber, pcm, samples, channels, sample_rate);
 }
-

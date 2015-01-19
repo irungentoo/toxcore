@@ -279,6 +279,7 @@ uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
 
 /* Returns number of peers */
 int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[], uint32_t num_peers);
+
 /* Returns number of peers in chat */
 int gc_get_numpeers(const GC_Chat *chat);
 
