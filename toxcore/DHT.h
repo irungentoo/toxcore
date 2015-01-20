@@ -78,7 +78,9 @@
 
 /* Functions to transfer ips safely across wire. */
 void to_net_family(IP *ip);
-void to_host_family(IP *ip);
+
+/* return 0 on success, -1 on failure. */
+int to_host_family(IP *ip);
 
 typedef struct {
     IP_Port     ip_port;
@@ -346,14 +348,6 @@ int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes
  */
 uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 
-/* Put up to max_num random nodes in nodes.
- *
- * return the number of nodes.
- *
- * NOTE:this is used to pick nodes for paths.
- */
-uint16_t random_nodes_path(const DHT *dht, Node_format *nodes, uint16_t max_num);
-
 /* Run this function at least a couple times per second (It's the main loop). */
 void do_DHT(DHT *dht);
 
@@ -402,16 +396,6 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
 /* Function to handle crypto packets.
  */
 void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_callback cb, void *object);
-
-/* NAT PUNCHING FUNCTIONS */
-
-/* Puts all the different ips returned by the nodes for a friend_id into array ip_portlist.
- * ip_portlist must be at least MAX_FRIEND_CLIENTS big.
- *
- *  returns number of ips returned.
- *  returns -1 if no such friend.
- */
-int friend_ips(const DHT *dht, IP_Port *ip_portlist, const uint8_t *friend_id);
 
 /* SAVE/LOAD functions */
 

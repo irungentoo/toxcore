@@ -85,6 +85,7 @@ typedef struct _CSSession {
     vpx_codec_ctx_t  v_decoder;
     int max_width;
     int max_height;
+    unsigned int video_bitrate;
 
 
     /* Data handling */
@@ -144,7 +145,7 @@ typedef struct _CSSession {
     PAIR(CSVideoCallback, void *) vcb;
 
     /* Buffering */
-    void *abuf_raw, *vbuf_raw; /* Un-decoded data */
+    void *vbuf_raw; /* Un-decoded data */
     pthread_mutex_t queue_mutex[1];
 
     void *agent; /* Pointer to ToxAv */

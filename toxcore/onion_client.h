@@ -30,7 +30,7 @@
 
 #define MAX_ONION_CLIENTS 8
 #define ONION_NODE_PING_INTERVAL 20
-#define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 4)
+#define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 3)
 
 /* The interval in seconds at which to tell our friends where we are */
 #define ONION_FAKEID_INTERVAL 30
@@ -40,9 +40,10 @@
 
 /* The timeout the first time the path is added and
    then for all the next consecutive times */
-#define ONION_PATH_FIRST_TIMEOUT 5
-#define ONION_PATH_TIMEOUT 30
-#define ONION_PATH_MAX_LIFETIME 600
+#define ONION_PATH_FIRST_TIMEOUT 4
+#define ONION_PATH_TIMEOUT 10
+#define ONION_PATH_MAX_LIFETIME 1200
+#define ONION_PATH_MAX_NO_RESPONSE_USES 4
 
 #define MAX_STORED_PINGED_NODES 9
 #define MIN_NODE_PING_TIME 10
@@ -71,7 +72,10 @@ typedef struct {
 typedef struct {
     Onion_Path paths[NUMBER_ONION_PATHS];
     uint64_t last_path_success[NUMBER_ONION_PATHS];
+    uint64_t last_path_used[NUMBER_ONION_PATHS];
     uint64_t path_creation_time[NUMBER_ONION_PATHS];
+    /* number of times used without success. */
+    unsigned int last_path_used_times[NUMBER_ONION_PATHS];
 } Onion_Client_Paths;
 
 typedef struct {
@@ -97,8 +101,6 @@ typedef struct {
     uint64_t last_noreplay;
 
     uint64_t last_seen;
-
-    Onion_Client_Paths onion_paths;
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
     uint8_t last_pinged_index;
@@ -126,7 +128,8 @@ typedef struct {
 
     Onion_Node clients_announce_list[MAX_ONION_CLIENTS];
 
-    Onion_Client_Paths onion_paths;
+    Onion_Client_Paths onion_paths_self;
+    Onion_Client_Paths onion_paths_friends;
 
     uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
     uint64_t last_run;
@@ -139,6 +142,9 @@ typedef struct {
     Node_format path_nodes[MAX_PATH_NODES];
     uint16_t path_nodes_index;
 
+    Node_format path_nodes_bs[MAX_PATH_NODES];
+    uint16_t path_nodes_index_bs;
+
     Ping_Array announce_ping_array;
     uint8_t last_pinged_index;
     struct {
@@ -150,12 +156,12 @@ typedef struct {
 } Onion_Client;
 
 
-/* Add a node to the path_nodes array.
+/* Add a node to the path_nodes bootstrap array.
  *
  * return -1 on failure
  * return 0 on success
  */
-int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
+int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
 
 /* Put up to max_num nodes in nodes.
  *
@@ -255,7 +261,7 @@ unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint16_t length);
+int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, uint16_t length);
 
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object);

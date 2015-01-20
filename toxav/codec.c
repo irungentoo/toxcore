@@ -39,8 +39,8 @@
 #include "rtp.h"
 #include "codec.h"
 
-/* Assume 24 fps*/
-#define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
+/* Good quality encode. */
+#define MAX_ENCODE_TIME_US VPX_DL_GOOD_QUALITY
 #define MAX_DECODE_TIME_US 0
 
 // TODO this has to be exchanged in msi
@@ -133,7 +133,7 @@ static JitterBuffer *jbuf_new(uint32_t capacity)
 {
     unsigned int size = 1;
 
-    while (size <= capacity) {
+    while (size <= (capacity * 4)) {
         size *= 2;
     }
 
@@ -170,7 +170,7 @@ static void jbuf_free(JitterBuffer *q)
     free(q);
 }
 
-static void jbuf_write(JitterBuffer *q, RTPMessage *m)
+static int jbuf_write(JitterBuffer *q, RTPMessage *m)
 {
     uint16_t sequnum = m->header->sequnum;
 
@@ -181,17 +181,18 @@ static void jbuf_write(JitterBuffer *q, RTPMessage *m)
         q->bottom = sequnum - q->capacity;
         q->queue[num] = m;
         q->top = sequnum + 1;
-        return;
+        return 0;
     }
 
     if (q->queue[num])
-        return;
+        return -1;
 
     q->queue[num] = m;
 
     if ((sequnum - q->bottom) >= (q->top - q->bottom))
         q->top = sequnum + 1;
 
+    return 0;
 }
 
 /* Success is 0 when there is nothing to dequeue,
@@ -266,11 +267,8 @@ static int init_video_encoder(CSSession *cs, uint16_t max_width, uint16_t max_he
     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
     cfg.g_lag_in_frames = 0;
     cfg.kf_min_dist = 0;
-    cfg.kf_max_dist = 5;
+    cfg.kf_max_dist = 48;
     cfg.kf_mode = VPX_KF_AUTO;
-
-    cs->max_width = max_width;
-    cs->max_height = max_height;
 
     rc = vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, VPX_ENCODER_ABI_VERSION);
 
@@ -285,6 +283,10 @@ static int init_video_encoder(CSSession *cs, uint16_t max_width, uint16_t max_he
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
+
+    cs->max_width = max_width;
+    cs->max_height = max_height;
+    cs->video_bitrate = video_bitrate;
 
     return 0;
 }
@@ -369,28 +371,30 @@ void cs_do(CSSession *cs)
     Payload *p;
     int rc;
 
+    int success = 0;
+
     pthread_mutex_lock(cs->queue_mutex);
+    RTPMessage *msg;
 
-    if (cs->abuf_raw && !buffer_empty(cs->abuf_raw)) {
-        /* Decode audio */
-        buffer_read(cs->abuf_raw, &p);
-
-        /* Leave space for (possibly) other thread to queue more data after we read it here */
+    while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
         pthread_mutex_unlock(cs->queue_mutex);
 
+        uint16_t fsize = ((cs->audio_decoder_sample_rate * cs->audio_decoder_frame_duration) / 1000);
+        int16_t tmp[fsize * cs->audio_decoder_channels];
 
-        uint16_t fsize = (cs->audio_decoder_channels *
-                          (cs->audio_decoder_sample_rate * cs->audio_decoder_frame_duration) / 1000);
-        int16_t tmp[fsize];
+        if (success == 2) {
+            rc = opus_decode(cs->audio_decoder, 0, 0, tmp, fsize, 1);
+        } else {
+            rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
+            rtp_free_msg(NULL, msg);
+        }
 
-        rc = opus_decode(cs->audio_decoder, p->data, p->size, tmp, fsize, (p->size == 0));
-        free(p);
-
-        if (rc < 0)
+        if (rc < 0) {
             LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
-        else if (cs->acb.first)
+        } else if (cs->acb.first) {
             /* Play */
             cs->acb.first(cs->agent, cs->call_idx, tmp, rc, cs->acb.second);
+        }
 
         pthread_mutex_lock(cs->queue_mutex);
     }
@@ -433,8 +437,17 @@ int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t heig
     if (cfg.g_w == width && cfg.g_h == height)
         return 0;
 
-    if (width * height > cs->max_width * cs->max_height)
-        return cs_ErrorSettingVideoResolution;
+    if (width * height > cs->max_width * cs->max_height) {
+        vpx_codec_ctx_t v_encoder = cs->v_encoder;
+
+        if (init_video_encoder(cs, width, height, cs->video_bitrate) == -1) {
+            cs->v_encoder = v_encoder;
+            return cs_ErrorSettingVideoResolution;
+        }
+
+        vpx_codec_destroy(&v_encoder);
+        return 0;
+    }
 
     LOGGER_DEBUG("New video resolution: %u %u", width, height);
     cfg.g_w = width;
@@ -465,6 +478,7 @@ int cs_set_video_encoder_bitrate(CSSession *cs, uint32_t video_bitrate)
         return cs_ErrorSettingVideoBitrate;
     }
 
+    cs->video_bitrate = video_bitrate;
     return 0;
 }
 
@@ -479,6 +493,7 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
 
     if (create_recursive_mutex(cs->queue_mutex) != 0) {
         LOGGER_WARNING("Failed to create recursive mutex!");
+        free(cs);
         return NULL;
     }
 
@@ -502,8 +517,6 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
     cs->capabilities |= ( 0 == init_audio_decoder(cs) ) ? cs_AudioDecoding : 0;
 
     if ( !(cs->capabilities & cs_AudioEncoding) || !(cs->capabilities & cs_AudioDecoding) ) goto error;
-
-    if ( !(cs->abuf_raw = buffer_new(jbuf_size)) ) goto error;
 
     if ((cs->support_video = has_video)) {
         cs->max_video_frame_size = MAX_VIDEOFRAME_SIZE;
@@ -529,8 +542,6 @@ error:
     LOGGER_WARNING("Error initializing codec session! Application might misbehave!");
 
     pthread_mutex_destroy(cs->queue_mutex);
-
-    buffer_free(cs->abuf_raw);
 
     if ( cs->audio_encoder ) opus_encoder_destroy(cs->audio_encoder);
 
@@ -575,7 +586,6 @@ void cs_kill(CSSession *cs)
         vpx_codec_destroy(&cs->v_encoder);
 
     jbuf_free(cs->j_buf);
-    buffer_free(cs->abuf_raw);
     buffer_free(cs->vbuf_raw);
     free(cs->frame_buf);
 
@@ -598,36 +608,12 @@ void queue_message(RTPSession *session, RTPMessage *msg)
 
     /* Audio */
     if (session->payload_type == msi_TypeAudio % 128) {
-        jbuf_write(cs->j_buf, msg);
+        pthread_mutex_lock(cs->queue_mutex);
+        int ret = jbuf_write(cs->j_buf, msg);
+        pthread_mutex_unlock(cs->queue_mutex);
 
-        int success = 0;
-
-        while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
-            Payload *p;
-
-            if (success == 2) {
-                p = malloc(sizeof(Payload));
-
-                if (p) p->size = 0;
-
-            } else {
-                p = malloc(sizeof(Payload) + msg->length);
-
-                if (p) {
-                    p->size = msg->length;
-                    memcpy(p->data, msg->data, msg->length);
-                }
-
-                rtp_free_msg(NULL, msg);
-            }
-
-            if (p) {
-                pthread_mutex_lock(cs->queue_mutex);
-                buffer_write(cs->abuf_raw, p);
-                pthread_mutex_unlock(cs->queue_mutex);
-            } else {
-                LOGGER_WARNING("Allocation failed! Program might misbehave!");
-            }
+        if (ret == -1) {
+            rtp_free_msg(NULL, msg);
         }
     }
     /* Video */
@@ -638,47 +624,63 @@ void queue_message(RTPSession *session, RTPMessage *msg)
         if (packet_size < VIDEOFRAME_HEADER_SIZE)
             goto end;
 
-        if (packet[0] > cs->frameid_in || (msg->header->timestamp > cs->last_timestamp)) { /* New frame */
-            /* Flush last frames' data and get ready for this frame */
-            Payload *p = malloc(sizeof(Payload) + cs->frame_size);
+        uint8_t diff = packet[0] - cs->frameid_in;
 
-            if (p) {
-                pthread_mutex_lock(cs->queue_mutex);
+        if (diff != 0) {
+            if (diff < 225) { /* New frame */
+                /* Flush last frames' data and get ready for this frame */
+                Payload *p = malloc(sizeof(Payload) + cs->frame_size);
 
-                if (buffer_full(cs->vbuf_raw)) {
-                    LOGGER_DEBUG("Dropped video frame");
-                    Payload *tp;
-                    buffer_read(cs->vbuf_raw, &tp);
-                    free(tp);
+                if (p) {
+                    pthread_mutex_lock(cs->queue_mutex);
+
+                    if (buffer_full(cs->vbuf_raw)) {
+                        LOGGER_DEBUG("Dropped video frame");
+                        Payload *tp;
+                        buffer_read(cs->vbuf_raw, &tp);
+                        free(tp);
+                    } else {
+                        p->size = cs->frame_size;
+                        memcpy(p->data, cs->frame_buf, cs->frame_size);
+                    }
+
+                    buffer_write(cs->vbuf_raw, p);
+                    pthread_mutex_unlock(cs->queue_mutex);
                 } else {
-                    p->size = cs->frame_size;
-                    memcpy(p->data, cs->frame_buf, cs->frame_size);
+                    LOGGER_WARNING("Allocation failed! Program might misbehave!");
+                    goto end;
                 }
 
-                buffer_write(cs->vbuf_raw, p);
-                pthread_mutex_unlock(cs->queue_mutex);
-            } else {
-                LOGGER_WARNING("Allocation failed! Program might misbehave!");
+                cs->last_timestamp = msg->header->timestamp;
+                cs->frameid_in = packet[0];
+                memset(cs->frame_buf, 0, cs->frame_size);
+                cs->frame_size = 0;
+
+            } else { /* Old frame; drop */
+                LOGGER_DEBUG("Old packet: %u", packet[0]);
                 goto end;
             }
+        }
 
-            cs->last_timestamp = msg->header->timestamp;
-            cs->frameid_in = packet[0];
-            memset(cs->frame_buf, 0, cs->frame_size);
-            cs->frame_size = 0;
+        uint8_t piece_number = packet[1];
 
-        } else if (packet[0] < cs->frameid_in) { /* Old frame; drop */
-            LOGGER_DEBUG("Old packet: %u", packet[0]);
+        uint32_t length_before_piece = ((piece_number - 1) * cs->video_frame_piece_size);
+        uint32_t framebuf_new_length = length_before_piece + (packet_size - VIDEOFRAME_HEADER_SIZE);
+
+        if (framebuf_new_length > cs->max_video_frame_size) {
             goto end;
         }
 
         /* Otherwise it's part of the frame so just process */
         /* LOGGER_DEBUG("Video Packet: %u %u", packet[0], packet[1]); */
-        memcpy(cs->frame_buf + cs->frame_size,
+
+        memcpy(cs->frame_buf + length_before_piece,
                packet + VIDEOFRAME_HEADER_SIZE,
                packet_size - VIDEOFRAME_HEADER_SIZE);
 
-        cs->frame_size += packet_size - VIDEOFRAME_HEADER_SIZE;
+        if (framebuf_new_length > cs->frame_size) {
+            cs->frame_size = framebuf_new_length;
+        }
 
 end:
         rtp_free_msg(NULL, msg);

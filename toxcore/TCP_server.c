@@ -178,14 +178,10 @@ static int del_accepted(TCP_Server *TCP_server, int index)
     return 0;
 }
 
-/* Read the next two bytes in TCP stream then convert them to
- * length (host byte order).
- *
- * return length on success
- * return 0 if nothing has been read from socket.
- * return ~0 on failure.
+/* return the amount of data in the tcp recv buffer.
+ * return 0 on failure.
  */
-uint16_t read_TCP_length(sock_t sock)
+unsigned int TCP_socket_data_recv_buffer(sock_t sock)
 {
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     unsigned long count = 0;
@@ -195,7 +191,21 @@ uint16_t read_TCP_length(sock_t sock)
     ioctl(sock, FIONREAD, &count);
 #endif
 
-    if ((unsigned int)count >= sizeof(uint16_t)) {
+    return count;
+}
+
+/* Read the next two bytes in TCP stream then convert them to
+ * length (host byte order).
+ *
+ * return length on success
+ * return 0 if nothing has been read from socket.
+ * return ~0 on failure.
+ */
+uint16_t read_TCP_length(sock_t sock)
+{
+    unsigned int count = TCP_socket_data_recv_buffer(sock);
+
+    if (count >= sizeof(uint16_t)) {
         uint16_t length;
         int len = recv(sock, (uint8_t *)&length, sizeof(uint16_t), MSG_NOSIGNAL);
 
@@ -223,13 +233,7 @@ uint16_t read_TCP_length(sock_t sock)
  */
 int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    unsigned long count = 0;
-    ioctlsocket(sock, FIONREAD, &count);
-#else
-    int count = 0;
-    ioctl(sock, FIONREAD, &count);
-#endif
+    unsigned int count = TCP_socket_data_recv_buffer(sock);
 
     if (count >= length) {
         int len = recv(sock, data, length, MSG_NOSIGNAL);
@@ -808,6 +812,7 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint
                 source.port = 0;  // dummy initialise
                 source.ip.family = TCP_ONION_FAMILY;
                 source.ip.ip6.uint32[0] = con_id;
+                source.ip.ip6.uint32[1] = 0;
                 source.ip.ip6.uint64[1] = con->identifier;
                 onion_send_1(TCP_server->onion, data + 1 + crypto_box_NONCEBYTES, length - (1 + crypto_box_NONCEBYTES), source,
                              data + 1);

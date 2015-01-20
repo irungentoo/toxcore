@@ -70,7 +70,7 @@ void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata
 
 uint32_t custom_packet;
 
-int handle_custom_packet(void *object, const uint8_t *data, uint32_t len)
+int handle_custom_packet(Tox *m, int32_t friend_num, const uint8_t *data, uint32_t len, void *object)
 {
     uint8_t number = *((uint32_t *)object);
 
@@ -141,6 +141,60 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *dat
         printf("FILE_CORRUPTED\n");
     }
 }
+
+START_TEST(test_one)
+{
+    Tox *tox1 = tox_new(0);
+    Tox *tox2 = tox_new(0);
+
+    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
+    tox_get_address(tox1, address);
+    ck_assert_msg(tox_add_friend(tox1, address, (uint8_t *)"m", 1) == TOX_FAERR_OWNKEY, "Adding own address worked.");
+
+    tox_get_address(tox2, address);
+    uint8_t message[TOX_MAX_FRIENDREQUEST_LENGTH + 1];
+    ck_assert_msg(tox_add_friend(tox1, address, NULL, 0) == TOX_FAERR_NOMESSAGE, "Sending request with no message worked.");
+    ck_assert_msg(tox_add_friend(tox1, address, message, sizeof(message)) == TOX_FAERR_TOOLONG,
+                  "TOX_MAX_FRIENDREQUEST_LENGTH is too big.");
+
+    address[0]++;
+    ck_assert_msg(tox_add_friend(tox1, address, (uint8_t *)"m", 1) == TOX_FAERR_BADCHECKSUM,
+                  "Adding address with bad checksum worked.");
+
+    tox_get_address(tox2, address);
+    ck_assert_msg(tox_add_friend(tox1, address, message, TOX_MAX_FRIENDREQUEST_LENGTH) == 0, "Failed to add friend.");
+    ck_assert_msg(tox_add_friend(tox1, address, message, TOX_MAX_FRIENDREQUEST_LENGTH) == TOX_FAERR_ALREADYSENT,
+                  "Adding friend twice worked.");
+
+    uint8_t name[TOX_MAX_NAME_LENGTH];
+    int i;
+
+    for (i = 0; i < TOX_MAX_NAME_LENGTH; ++i) {
+        name[i] = rand();
+    }
+
+    tox_set_name(tox1, name, sizeof(name));
+    ck_assert_msg(tox_get_self_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
+
+    size_t save_size = tox_size(tox1);
+    uint8_t data[save_size];
+    tox_save(tox1, data);
+
+    tox_kill(tox2);
+    tox2 = tox_new(0);
+    ck_assert_msg(tox_load(tox2, data, save_size) == 0, "Load failed");
+
+    size_t length = tox_get_self_name_size(tox2);
+    ck_assert_msg(tox_get_self_name_size(tox2) == sizeof name, "Wrong name size.");
+
+    uint8_t new_name[TOX_MAX_NAME_LENGTH] = { 0 };
+    ck_assert_msg(tox_get_self_name(tox2, new_name) == TOX_MAX_NAME_LENGTH, "Wrong name length");
+    ck_assert_msg(memcmp(name, new_name, TOX_MAX_NAME_LENGTH) == 0, "Wrong name");
+
+    tox_kill(tox1);
+    tox_kill(tox2);
+}
+END_TEST
 
 START_TEST(test_few_clients)
 {
@@ -256,7 +310,7 @@ START_TEST(test_few_clients)
     ck_assert_msg(tox_get_is_typing(tox2, 0) == 0, "Typing fail");
 
     uint32_t packet_number = 160;
-    int ret = tox_lossless_packet_registerhandler(tox3, 0, packet_number, handle_custom_packet, &packet_number);
+    int ret = tox_lossless_packet_registerhandler(tox3, 0, packet_number, &handle_custom_packet, &packet_number);
     ck_assert_msg(ret == 0, "tox_lossless_packet_registerhandler fail %i", ret);
     uint8_t data_c[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
@@ -280,7 +334,7 @@ START_TEST(test_few_clients)
     }
 
     packet_number = 200;
-    ret = tox_lossy_packet_registerhandler(tox3, 0, packet_number, handle_custom_packet, &packet_number);
+    ret = tox_lossy_packet_registerhandler(tox3, 0, packet_number, &handle_custom_packet, &packet_number);
     ck_assert_msg(ret == 0, "tox_lossy_packet_registerhandler fail %i", ret);
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
     ret = tox_send_lossy_packet(tox2, 0, data_c, sizeof(data_c));
@@ -422,11 +476,185 @@ loop_top:
         c_sleep(50);
     }
 
-    printf("test_many_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
-
     for (i = 0; i < NUM_TOXES; ++i) {
         tox_kill(toxes[i]);
     }
+
+    printf("test_many_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
+}
+END_TEST
+
+#define NUM_GROUP_TOX 32
+
+void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+{
+    if (*((uint32_t *)userdata) != 234212)
+        return;
+
+    if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
+        tox_add_friend_norequest(m, public_key);
+    }
+}
+
+static Tox *invite_tox;
+static unsigned int invite_counter;
+
+void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, const uint8_t *data, uint16_t length,
+                                 void *userdata)
+{
+    if (*((uint32_t *)userdata) != 234212)
+        return;
+
+    if (type != TOX_GROUPCHAT_TYPE_TEXT)
+        return;
+
+    int g_num;
+
+    if ((g_num = tox_join_groupchat(tox, friendnumber, data, length)) == -1)
+        return;
+
+    ck_assert_msg(g_num == 0, "Group number was not 0");
+    ck_assert_msg(tox_join_groupchat(tox, friendnumber, data, length) == -1,
+                  "Joining groupchat twice should be impossible.");
+
+    invite_tox = tox;
+    invite_counter = 4;
+}
+
+static unsigned int num_recv;
+
+void print_group_message(Tox *tox, int groupnumber, int peernumber, const uint8_t *message, uint16_t length,
+                         void *userdata)
+{
+    if (*((uint32_t *)userdata) != 234212)
+        return;
+
+    if (length == (sizeof("Install Gentoo") - 1) && memcmp(message, "Install Gentoo", sizeof("Install Gentoo") - 1) == 0) {
+        ++num_recv;
+    }
+}
+
+START_TEST(test_many_group)
+{
+    long long unsigned int cur_time = time(NULL);
+    Tox *toxes[NUM_GROUP_TOX];
+    unsigned int i, j, k;
+
+    uint32_t to_comp = 234212;
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        toxes[i] = tox_new(0);
+        ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
+        tox_callback_friend_request(toxes[i], &g_accept_friend_request, &to_comp);
+        tox_callback_group_invite(toxes[i], &print_group_invite_callback, &to_comp);
+    }
+
+    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
+    tox_get_address(toxes[NUM_GROUP_TOX - 1], address);
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        ck_assert_msg(tox_add_friend(toxes[i], address, (uint8_t *)"Gentoo", 7) == 0, "Failed to add friend");
+
+        tox_get_address(toxes[i], address);
+    }
+
+    while (1) {
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            if (tox_get_friend_connection_status(toxes[i], 0) != 1) {
+                break;
+            }
+        }
+
+        if (i == NUM_GROUP_TOX)
+            break;
+
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_do(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    printf("friends connected, took %llu seconds\n", time(NULL) - cur_time);
+
+    ck_assert_msg(tox_add_groupchat(toxes[0]) != -1, "Failed to create group");
+    ck_assert_msg(tox_invite_friend(toxes[0], 0, 0) == 0, "Failed to invite friend");
+    ck_assert_msg(tox_group_set_title(toxes[0], 0, "Gentoo", sizeof("Gentoo") - 1) == 0, "Failed to set group title");
+    invite_counter = ~0;
+
+    unsigned int done = ~0;
+    done -= 5;
+
+    while (1) {
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_do(toxes[i]);
+        }
+
+        if (!invite_counter) {
+            ck_assert_msg(tox_invite_friend(invite_tox, 0, 0) == 0, "Failed to invite friend");
+        }
+
+        if (done == invite_counter) {
+            break;
+        }
+
+        --invite_counter;
+        c_sleep(50);
+    }
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        int num_peers = tox_group_number_peers(toxes[i], 0);
+        ck_assert_msg(num_peers == NUM_GROUP_TOX, "Bad number of group peers. expected: %u got: %i, tox %u", NUM_GROUP_TOX,
+                      num_peers, i);
+
+        uint8_t title[2048];
+        int ret = tox_group_get_title(toxes[i], 0, title, sizeof(title));
+        ck_assert_msg(ret == sizeof("Gentoo") - 1, "Wrong title length");
+        ck_assert_msg(memcmp("Gentoo", title, ret) == 0, "Wrong title");
+    }
+
+    printf("group connected\n");
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        tox_callback_group_message(toxes[i], &print_group_message, &to_comp);
+    }
+
+    ck_assert_msg(tox_group_message_send(toxes[rand() % NUM_GROUP_TOX], 0, (uint8_t *)"Install Gentoo",
+                                         sizeof("Install Gentoo") - 1) == 0, "Failed to send group message.");
+    num_recv = 0;
+
+    for (j = 0; j < 20; ++j) {
+        for (i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_do(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
+
+    for (k = NUM_GROUP_TOX; k != 0 ; --k) {
+        tox_del_groupchat(toxes[k - 1], 0);
+
+        for (j = 0; j < 10; ++j) {
+            for (i = 0; i < NUM_GROUP_TOX; ++i) {
+                tox_do(toxes[i]);
+            }
+
+            c_sleep(50);
+        }
+
+        for (i = 0; i < (k - 1); ++i) {
+            int num_peers = tox_group_number_peers(toxes[i], 0);
+            ck_assert_msg(num_peers == (k - 1), "Bad number of group peers. expected: %u got: %i, tox %u", (k - 1), num_peers, i);
+        }
+    }
+
+    for (i = 0; i < NUM_GROUP_TOX; ++i) {
+        tox_kill(toxes[i]);
+    }
+
+    printf("test_many_group succeeded, took %llu seconds\n", time(NULL) - cur_time);
 }
 END_TEST
 
@@ -434,8 +662,10 @@ Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox");
 
+    DEFTESTCASE(one);
     DEFTESTCASE_SLOW(few_clients, 50);
     DEFTESTCASE_SLOW(many_clients, 150);
+    DEFTESTCASE_SLOW(many_group, 100);
     return s;
 }
 

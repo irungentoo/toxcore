@@ -1,7 +1,5 @@
 /*  logger.h
  *
- *  Wrapping logger functions in nice macros
- *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
@@ -22,67 +20,74 @@
  */
 
 
-#ifndef __TOXLOGGER
-#define __TOXLOGGER
+#ifndef TOXLOGGER_H
+#define TOXLOGGER_H
 
 #include <string.h>
 
-#ifdef LOGGING
-
-typedef enum _LoggerLevel {
-    INFO,
-    DEBUG,
-    WARNING,
-    ERROR
-} LoggerLevel;
-
-/*
- * Set 'level' as the lowest printable level
- */
-int logger_init(const char *file_name, LoggerLevel level);
-const char *logger_stringify_level(LoggerLevel level);
-unsigned logger_get_pid();
-void logger_write (LoggerLevel level, const char *format, ...);
-char *logger_timestr (char *dest, size_t max_size);
-char *logger_posstr (char *dest, size_t max_size, const char *file, int line);
-
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-#define _SFILE (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
-#else
-#define _SFILE (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+/* In case these are undefined; define 'empty' */
+#ifndef LOGGER_OUTPUT_FILE
+#   define LOGGER_OUTPUT_FILE ""
 #endif
 
-#define LFORMAT "\n%-15s %-7u %-5s %-20s - %s"
-#define WRITE_FORMAT(__LEVEL__, __WHAT__) \
-    char __time__[15]; char posstr[200]; char the_str [4096]; \
-    snprintf(the_str, 4096, LFORMAT, logger_timestr(__time__, 15), logger_get_pid(), \
-    logger_stringify_level(__LEVEL__), logger_posstr(posstr, 200, _SFILE, __LINE__), __WHAT__)
+#ifndef LOGGER_LEVEL
+#   define LOGGER_LEVEL LOG_ERROR
+#endif
 
-/* Use these macros */
 
-#define LOGGER_INIT(name, level) logger_init(name, level);
-#define LOGGER_INFO(format, ...) do { WRITE_FORMAT(INFO, format); logger_write( INFO, the_str, ##__VA_ARGS__ ); } while (0)
-#define LOGGER_DEBUG(format, ...) do { WRITE_FORMAT(DEBUG, format); logger_write( DEBUG, the_str, ##__VA_ARGS__ ); } while (0)
-#define LOGGER_WARNING(format, ...) do { WRITE_FORMAT(WARNING, format); logger_write( WARNING, the_str, ##__VA_ARGS__ ); } while (0)
-#define LOGGER_ERROR(format, ...) do { WRITE_FORMAT(ERROR, format); logger_write( ERROR, the_str, ##__VA_ARGS__ ); } while (0)
+typedef enum {
+    LOG_TRACE,
+    LOG_DEBUG,
+    LOG_INFO,
+    LOG_WARNING,
+    LOG_ERROR
+} LOG_LEVEL;
 
-/* To do some checks or similar only when logging use this */
-#define LOGGER_SCOPE(__SCOPE_DO__) do { __SCOPE_DO__ } while(0)
+typedef struct logger Logger;
 
+/**
+ * Set 'level' as the lowest printable level. If id == NULL, random number is used.
+ */
+Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id);
+
+void logger_kill (Logger *log);
+void logger_kill_global (void);
+
+/**
+ * Global logger setter and getter.
+ */
+void logger_set_global (Logger *log);
+Logger *logger_get_global (void);
+
+/**
+ * Main write function. If logging disabled does nothing. If log == NULL uses global logger.
+ */
+void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...);
+
+
+/* To do some checks or similar only when logging, use this */
+#ifdef LOGGING
+#   define LOGGER_SCOPE(__SCOPE_DO__) do { __SCOPE_DO__ } while(0)
+#   define LOGGER_WRITE(log, level, format, ...) \
+            logger_write(log, level, __FILE__, __LINE__, format, ##__VA_ARGS__ )
 #else
-
-
-#define LOGGER_INIT(name, level) do {} while(0)
-#define LOGGER_INFO(format, ...) do {} while(0)
-#define LOGGER_DEBUG(format, ...) do {} while(0)
-#define LOGGER_WARNING(format, ...) do {} while(0)
-#define LOGGER_ERROR(format, ...) do {} while(0)
-
-#define LOGGER_SCOPE(__SCOPE_DO__) do {} while(0)
-
+#   define LOGGER_SCOPE(__SCOPE_DO__) do {} while(0)
+#   define LOGGER_WRITE(log, level, format, ...) do {} while(0)
 #endif /* LOGGING */
 
+/* To log with an logger */
+#define LOGGER_TRACE_(log, format, ...) LOGGER_WRITE(log, LOG_TRACE, format, ##__VA_ARGS__ )
+#define LOGGER_DEBUG_(log, format, ...) LOGGER_WRITE(log, LOG_DEBUG, format, ##__VA_ARGS__ )
+#define LOGGER_INFO_(log, format, ...) LOGGER_WRITE(log, LOG_INFO, format, ##__VA_ARGS__ )
+#define LOGGER_WARNING_(log, format, ...) LOGGER_WRITE(log, LOG_WARNING, format, ##__VA_ARGS__ )
+#define LOGGER_ERROR_(log, format, ...) LOGGER_WRITE(log, LOG_ERROR, format, ##__VA_ARGS__ )
+
+/* To log with the global logger */
+#define LOGGER_TRACE(format, ...) LOGGER_TRACE_(NULL, format, ##__VA_ARGS__)
+#define LOGGER_DEBUG(format, ...) LOGGER_DEBUG_(NULL, format, ##__VA_ARGS__)
+#define LOGGER_INFO(format, ...) LOGGER_INFO_(NULL, format, ##__VA_ARGS__)
+#define LOGGER_WARNING(format, ...) LOGGER_WARNING_(NULL, format, ##__VA_ARGS__)
+#define LOGGER_ERROR(format, ...) LOGGER_ERROR_(NULL, format, ##__VA_ARGS__)
 
 
-
-#endif /* __TOXLOGGER */
+#endif /* TOXLOGGER_H */

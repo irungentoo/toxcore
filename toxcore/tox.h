@@ -36,6 +36,8 @@ extern "C" {
 /* Maximum length of single messages after which they should be split. */
 #define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
+#define TOX_MAX_FRIENDREQUEST_LENGTH 1016
+
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
 #define TOX_HASH_LENGTH /*crypto_hash_sha256_BYTES*/ 32
@@ -102,7 +104,7 @@ void tox_get_address(const Tox *tox, uint8_t *address);
 /* Add a friend.
  * Set the data that will be sent along with friend request.
  * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be TOX_FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
- * data is the data and length is the length.
+ * data is the data and length is the length (maximum length of data is TOX_MAX_FRIENDREQUEST_LENGTH).
  *
  *  return the friend number if success.
  *  return TOX_FAERR_TOOLONG if message length is too long.
@@ -385,7 +387,8 @@ void tox_get_keys(Tox *tox, uint8_t *public_key, uint8_t *secret_key);
  * return 0 on success.
  */
 int tox_lossy_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
-                                     int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object);
+                                     int (*packet_handler_callback)(Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                     void *object);
 
 /* Function to send custom lossy packets.
  * First byte of data must be in the range: 200-254.
@@ -405,7 +408,8 @@ int tox_send_lossy_packet(const Tox *tox, int32_t friendnumber, const uint8_t *d
  * return 0 on success.
  */
 int tox_lossless_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object);
+                                        int (*packet_handler_callback)(Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                        void *object);
 
 /* Function to send custom lossless packets.
  * First byte of data must be in the range: 160-191.
@@ -429,7 +433,7 @@ enum {
 
 /* Set the callback for group invites.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, int32_t friendnumber, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
  *
  * data of length is what needs to be passed to join_groupchat().
  *
@@ -869,6 +873,12 @@ int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_
  */
 int tox_isconnected(const Tox *tox);
 
+typedef enum {
+    TOX_PROXY_NONE,
+    TOX_PROXY_SOCKS5,
+    TOX_PROXY_HTTP
+} TOX_PROXY_TYPE;
+
 typedef struct {
     /*
     *  The type of UDP socket created depends on ipv6enabled:
@@ -881,13 +891,11 @@ typedef struct {
 
     /* Set to 1 to disable udp support. (default: 0)
        This will force Tox to use TCP only which may slow things down.
-       Disabling udp support is necessary when using anonymous proxies or Tor.*/
+       Disabling udp support is necessary when using proxies or Tor.*/
     uint8_t udp_disabled;
-
-    /* Enable proxy support. (only basic TCP socks5 proxy currently supported.) (default: 0 (disabled))*/
-    uint8_t proxy_enabled;
+    uint8_t proxy_type; /* a value from TOX_PROXY_TYPE */
     char proxy_address[256]; /* Proxy ip or domain in NULL terminated string format. */
-    uint16_t proxy_port; /* Proxy port: in host byte order. */
+    uint16_t proxy_port; /* Proxy port in host byte order. */
 } Tox_Options;
 
 /*

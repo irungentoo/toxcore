@@ -232,6 +232,7 @@ static int handle_status(void *object, int number, uint8_t status)
         friend_con->status = FRIENDCONN_STATUS_CONNECTING;
         friend_con->crypt_connection_id = -1;
         friend_con->dht_ping_lastrecv = unix_time();
+        onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     }
 
     unsigned int i;
@@ -274,6 +275,11 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
         if (friend_con->callbacks[i].data_callback)
             friend_con->callbacks[i].data_callback(friend_con->callbacks[i].data_callback_object,
                                                    friend_con->callbacks[i].data_callback_id, data, length);
+
+        friend_con = get_conn(fr_c, number);
+
+        if (!friend_con)
+            return -1;
     }
 
     return 0;
@@ -296,6 +302,11 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
         if (friend_con->callbacks[i].lossy_data_callback)
             friend_con->callbacks[i].lossy_data_callback(friend_con->callbacks[i].lossy_data_callback_object,
                     friend_con->callbacks[i].lossy_data_callback_id, data, length);
+
+        friend_con = get_conn(fr_c, number);
+
+        if (!friend_con)
+            return -1;
     }
 
     return 0;
@@ -419,8 +430,12 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Con
     if (!friend_con)
         return -1;
 
-    memcpy(real_pk, friend_con->real_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(dht_temp_pk, friend_con->dht_temp_pk, crypto_box_PUBLICKEYBYTES);
+    if (real_pk)
+        memcpy(real_pk, friend_con->real_public_key, crypto_box_PUBLICKEYBYTES);
+
+    if (dht_temp_pk)
+        memcpy(dht_temp_pk, friend_con->dht_temp_pk, crypto_box_PUBLICKEYBYTES);
+
     return 0;
 }
 

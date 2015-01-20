@@ -490,7 +490,8 @@ void tox_get_keys(Tox *tox, uint8_t *public_key, uint8_t *secret_key)
  * return 0 on success.
  */
 int tox_lossy_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
-                                     int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+                                     int (*packet_handler_callback)(Messenger *tox, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                     void *object)
 {
     Messenger *m = tox;
 
@@ -527,7 +528,8 @@ int tox_send_lossy_packet(const Tox *tox, int32_t friendnumber, const uint8_t *d
  * return 0 on success.
  */
 int tox_lossless_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+                                        int (*packet_handler_callback)(Messenger *tox, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                        void *object)
 {
     Messenger *m = tox;
 
@@ -967,7 +969,7 @@ int tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_
 
     ip_port.port = htons(port);
     add_tcp_relay(m->net_crypto, ip_port, public_key);
-    onion_add_path_node(m->onion_c, ip_port, public_key); //TODO: move this
+    onion_add_bs_path_node(m->onion_c, ip_port, public_key); //TODO: move this
     return 1;
 }
 
@@ -1010,7 +1012,9 @@ uint32_t tox_do_interval(Tox *tox)
  */
 Tox *tox_new(Tox_Options *options)
 {
-    LOGGER_INIT(LOGGER_OUTPUT_FILE, LOGGER_LEVEL);
+    logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
+
+
     Messenger_Options m_options = {0};
 
     if (options == NULL) {
@@ -1018,9 +1022,22 @@ Tox *tox_new(Tox_Options *options)
     } else {
         m_options.ipv6enabled = options->ipv6enabled;
         m_options.udp_disabled = options->udp_disabled;
-        m_options.proxy_enabled = options->proxy_enabled;
 
-        if (m_options.proxy_enabled) {
+        switch (options->proxy_type) {
+            case TOX_PROXY_HTTP:
+                m_options.proxy_info.proxy_type = TCP_PROXY_HTTP;
+                break;
+
+            case TOX_PROXY_SOCKS5:
+                m_options.proxy_info.proxy_type = TCP_PROXY_SOCKS5;
+                break;
+
+            case TOX_PROXY_NONE:
+                m_options.proxy_info.proxy_type = TCP_PROXY_NONE;
+                break;
+        }
+
+        if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
             if (m_options.ipv6enabled)
@@ -1051,6 +1068,7 @@ void tox_kill(Tox *tox)
     Messenger *m = tox;
     kill_groupchats(m->group_chat_object);
     kill_messenger(m);
+    logger_kill_global();
 }
 
 /* The main loop that needs to be run at least 20 times per second. */

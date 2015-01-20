@@ -1,6 +1,8 @@
 DHT protocol
 ============
 
+NOTE: only the protocol section is up to date, the rest needs to be rewritten.
+
 Follows pretty much the principle of the torrent DHT: http://www.bittorrent.org/beps/bep_0005.html (READ IT)
 
 But:
@@ -95,11 +97,11 @@ ping_id = a random integer, the response must contain the exact same number as t
 Get nodes (Request):
 Packet contents: 
 ```
-[byte with value: 02][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[char array: requested_node_id (node_id of which we want the ip), length=32 bytes][Sendback data (must be sent back unmodified by in the response), length=1 to NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
+[byte with value: 02][char array (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[char array: requested_node_id (node_id of which we want the ip), length=32 bytes][Sendback data (must be sent back unmodified by in the response), length=8 bytes]]
 ```
 Valid replies: a send_nodes packet
 
 Send_nodes (response (for all addresses)): 
 ```
-[byte with value: 04][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[uint8_t number of nodes in this packet][Nodes in node format, length=?? * (number of nodes (maximum of 8 nodes)) bytes][Sendback data, length=1 to NODES_ENCRYPTED_MESSAGE_LENGTH bytes]]
+[byte with value: 04][char array  (client node_id), length=32 bytes][random 24 byte nonce][Encrypted with the nonce and private key of the sender:[uint8_t number of nodes in this packet][Nodes in node format, length=?? * (number of nodes (maximum of 4 nodes)) bytes][Sendback data, length=8 bytes]]
 ```

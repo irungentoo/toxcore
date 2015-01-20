@@ -25,6 +25,8 @@
 #include "group.h"
 #include "../toxcore/logger.h"
 
+#define GROUP_JBUF_SIZE 6
+
 typedef struct {
     uint16_t sequnum;
     uint16_t length;
@@ -230,7 +232,7 @@ static void group_av_peer_new(void *object, int groupnumber, int friendgroupnumb
     if (!peer_av)
         return;
 
-    peer_av->buffer = create_queue(5); //TODO Use variable instead.
+    peer_av->buffer = create_queue(GROUP_JBUF_SIZE);
     group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av);
 }
 

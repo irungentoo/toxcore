@@ -1441,13 +1441,15 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
 
     if (m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function)
         return m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function(
-                   m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].object, packet, length);
+                   m, friend_num, packet, length, m->friendlist[friend_num].lossy_packethandlers[packet[0] %
+                           PACKET_ID_LOSSY_RANGE_SIZE].object);
 
     return 1;
 }
 
 int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+                                        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                        void *object)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1490,13 +1492,15 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
 
     if (m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function)
         return m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function(
-                   m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].object, packet, length);
+                   m, friend_num, packet, length, m->friendlist[friend_num].lossless_packethandlers[packet[0] %
+                           PACKET_ID_LOSSLESS_RANGE_SIZE].object);
 
     return 1;
 }
 
 int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-        int (*packet_handler_callback)(void *object, const uint8_t *data, uint32_t len), void *object)
+        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+        void *object)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1591,11 +1595,7 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
-    if (options->proxy_enabled) {
-        m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
-    } else {
-        m->net_crypto = new_net_crypto(m->dht, 0);
-    }
+    m->net_crypto = new_net_crypto(m->dht, &options->proxy_info);
 
     if (m->net_crypto == NULL) {
         kill_networking(m->net);
@@ -2424,9 +2424,9 @@ void do_messenger(Messenger *m)
                     if (last_pinged > 999)
                         last_pinged = 999;
 
-                    LOGGER_INFO("C[%2u] %s:%u [%3u] %s",
-                                client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                                last_pinged, ID2String(cptr->client_id));
+                    LOGGER_TRACE("C[%2u] %s:%u [%3u] %s",
+                                 client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
+                                 last_pinged, ID2String(cptr->client_id));
                 }
         }
 
@@ -2457,7 +2457,7 @@ void do_messenger(Messenger *m)
                 dht2m[m2dht[friend]] = friend;
 
         if (m->numfriends != m->dht->num_friends) {
-            LOGGER_INFO("Friend num in DHT %u != friend num in msger %u\n", m->dht->num_friends, m->numfriends);
+            LOGGER_TRACE("Friend num in DHT %u != friend num in msger %u\n", m->dht->num_friends, m->numfriends);
         }
 
         uint32_t ping_lastrecv;
@@ -2478,11 +2478,11 @@ void do_messenger(Messenger *m)
                 if (ping_lastrecv > 999)
                     ping_lastrecv = 999;
 
-                LOGGER_INFO("F[%2u:%2u] <%s> [%03u] %s",
-                            dht2m[friend], friend, msgfptr->name,
-                            ping_lastrecv, ID2String(msgfptr->client_id));
+                LOGGER_TRACE("F[%2u:%2u] <%s> [%03u] %s",
+                             dht2m[friend], friend, msgfptr->name,
+                             ping_lastrecv, ID2String(msgfptr->client_id));
             } else {
-                LOGGER_INFO("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
+                LOGGER_TRACE("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -2497,10 +2497,10 @@ void do_messenger(Messenger *m)
                         if (last_pinged > 999)
                             last_pinged = 999;
 
-                        LOGGER_INFO("F[%2u] => C[%2u] %s:%u [%3u] %s",
-                                    friend, client, ip_ntoa(&assoc->ip_port.ip),
-                                    ntohs(assoc->ip_port.port), last_pinged,
-                                    ID2String(cptr->client_id));
+                        LOGGER_TRACE("F[%2u] => C[%2u] %s:%u [%3u] %s",
+                                     friend, client, ip_ntoa(&assoc->ip_port.ip),
+                                     ntohs(assoc->ip_port.port), last_pinged,
+                                     ID2String(cptr->client_id));
                     }
             }
         }
@@ -2750,7 +2750,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_NAME:
-            if ((length > 0) && (length < MAX_NAME_LENGTH)) {
+            if ((length > 0) && (length <= MAX_NAME_LENGTH)) {
                 setname(m, data, length);
             }
 
@@ -2792,7 +2792,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             uint32_t i;
 
             for (i = 0; i < NUM_SAVED_PATH_NODES; ++i) {
-                onion_add_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
+                onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
             }
 
             break;

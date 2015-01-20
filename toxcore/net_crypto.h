@@ -54,14 +54,14 @@
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - CRYPTO_DATA_PACKET_MIN_SIZE)
 
 /* Interval in ms between sending cookie request/handshake packets. */
-#define CRYPTO_SEND_PACKET_INTERVAL 500
+#define CRYPTO_SEND_PACKET_INTERVAL 1000
 
 /* The maximum number of times we try to send the cookie request and handshake
    before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
 
 /* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
-#define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL * 2)
+#define UDP_DIRECT_TIMEOUT (MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL)
 
 #define PACKET_ID_PADDING 0 /* Denotes padding */
 #define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
@@ -70,7 +70,7 @@
 /* Packet ids 0 to CRYPTO_RESERVED_PACKETS - 1 are reserved for use by net_crypto. */
 #define CRYPTO_RESERVED_PACKETS 16
 
-#define MAX_TCP_CONNECTIONS 32
+#define MAX_TCP_CONNECTIONS 64
 #define MAX_TCP_RELAYS_PEER 4
 
 #define STATUS_TCP_NULL      0
@@ -86,7 +86,7 @@
 
 /* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
    at the dT defined in net_crypto.c */
-#define CONGESTION_QUEUE_ARRAY_SIZE 8
+#define CONGESTION_QUEUE_ARRAY_SIZE 24
 
 typedef struct {
     uint64_t time;
@@ -159,6 +159,8 @@ typedef struct {
 
     uint8_t status_tcp[MAX_TCP_CONNECTIONS]; /* set to one of STATUS_TCP_* */
     uint8_t con_number_tcp[MAX_TCP_CONNECTIONS];
+    unsigned int last_relay_sentto;
+    unsigned int num_tcp_online;
 
     Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
     uint16_t num_tcp_relays;
@@ -213,7 +215,6 @@ typedef struct {
     int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
     void *tcp_onion_callback_object;
 
-    uint8_t proxy_set;
     TCP_Proxy_Info proxy_info;
 } Net_Crypto;
 
@@ -363,12 +364,19 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
 void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
                                 uint16_t length), void *object);
 
-/* Send an onion packet via a random connected TCP relay.
+/* Return a random TCP connection number for use in send_tcp_onion_request.
+ *
+ * return TCP connection number on success.
+ * return -1 on failure.
+ */
+int get_random_tcp_con_number(Net_Crypto *c);
+
+/* Send an onion packet via the TCP relay corresponding to TCP_conn_number.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length);
+int send_tcp_onion_request(Net_Crypto *c, unsigned int TCP_conn_number, const uint8_t *data, uint16_t length);
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
