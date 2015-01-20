@@ -602,9 +602,9 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
         memcpy(&ipp, data + 1 + EXT_PUBLIC_KEY, sizeof(IP_Port));
 
         return send_gca_get_nodes_response(dht, data+1, request_id, ipp,
-                                                    data + GCA_GETNODES_REQUEST_PLAIN_SIZE
-                                                    - EXT_PUBLIC_KEY - TIME_STAMP_SIZE - SIGNATURE_SIZE,
-                                                    nodes, num_nodes);
+                                          data + GCA_GETNODES_REQUEST_PLAIN_SIZE
+                                          - EXT_PUBLIC_KEY - TIME_STAMP_SIZE - SIGNATURE_SIZE,
+                                          nodes, num_nodes);
     }
 
     return dispatch_packet(announce, data+1, dht->self_public_key, data,

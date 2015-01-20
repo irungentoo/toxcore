@@ -94,41 +94,41 @@ typedef int sock_t;
 
 #define MAX_UDP_PACKET_SIZE 65507
 
-#define NET_PACKET_PING_REQUEST    0   /* Ping request packet ID. */
-#define NET_PACKET_PING_RESPONSE   1   /* Ping response packet ID. */
-#define NET_PACKET_GET_NODES       2   /* Get nodes request packet ID. */
-#define NET_PACKET_SEND_NODES_IPV6 4   /* Send nodes response packet ID for other addresses. */
+#define NET_PACKET_PING_REQUEST    8   /* Ping request packet ID. */
+#define NET_PACKET_PING_RESPONSE   9   /* Ping response packet ID. */
+#define NET_PACKET_GET_NODES       10   /* Get nodes request packet ID. */
+#define NET_PACKET_SEND_NODES_IPV6 11   /* Send nodes response packet ID for other addresses. */
 
-#define NET_PACKET_COOKIE_REQUEST  24  /* Cookie request packet */
-#define NET_PACKET_COOKIE_RESPONSE 25  /* Cookie response packet */
-#define NET_PACKET_CRYPTO_HS       26  /* Crypto handshake packet */
-#define NET_PACKET_CRYPTO_DATA     27  /* Crypto data packet */
-#define NET_PACKET_CRYPTO          32  /* Encrypted data packet ID. */
-#define NET_PACKET_LAN_DISCOVERY   33  /* LAN discovery packet ID. */
+#define NET_PACKET_COOKIE_REQUEST  100  /* Cookie request packet */
+#define NET_PACKET_COOKIE_RESPONSE 101  /* Cookie response packet */
+#define NET_PACKET_CRYPTO_HS       102  /* Crypto handshake packet */
+#define NET_PACKET_CRYPTO_DATA     103  /* Crypto data packet */
+#define NET_PACKET_CRYPTO          104  /* Encrypted data packet ID. */
+#define NET_PACKET_LAN_DISCOVERY   105  /* LAN discovery packet ID. */
 
 /* See:  docs/Prevent_Tracking.txt and onion.{c, h} */
-#define NET_PACKET_ONION_SEND_INITIAL 128
-#define NET_PACKET_ONION_SEND_1 129
-#define NET_PACKET_ONION_SEND_2 130
+#define NET_PACKET_ONION_SEND_INITIAL 28
+#define NET_PACKET_ONION_SEND_1 29
+#define NET_PACKET_ONION_SEND_2 30
 
-#define NET_PACKET_ANNOUNCE_REQUEST 131
-#define NET_PACKET_ANNOUNCE_RESPONSE 132
-#define NET_PACKET_ONION_DATA_REQUEST 133
-#define NET_PACKET_ONION_DATA_RESPONSE 134
+#define NET_PACKET_ANNOUNCE_REQUEST 31
+#define NET_PACKET_ANNOUNCE_RESPONSE 32
+#define NET_PACKET_ONION_DATA_REQUEST 33
+#define NET_PACKET_ONION_DATA_RESPONSE 34
 
-#define NET_PACKET_ONION_RECV_3 140
-#define NET_PACKET_ONION_RECV_2 141
-#define NET_PACKET_ONION_RECV_1 142
+#define NET_PACKET_ONION_RECV_3 40
+#define NET_PACKET_ONION_RECV_2 41
+#define NET_PACKET_ONION_RECV_1 42
 
-#define NET_PACKET_GC_MESSAGE 180            /* Group chat packet ID */
-#define NET_PACKET_GCA_ANNOUNCE 181          /* Group announce announcement packet ID */
-#define NET_PACKET_GCA_GET_NODES 182         /* Group announce get nodes request packet ID */
-#define NET_PACKET_GCA_SEND_NODES 183        /* Group announce send nodes packet ID */
-#define NET_PACKET_GCA_PING_REQUEST 184      /* Group announce ping request packet ID */
-#define NET_PACKET_GCA_PING_RESPONSE 185     /* Group announce ping response packet ID */
+#define NET_PACKET_GC_MESSAGE 80            /* Group chat packet ID */
+#define NET_PACKET_GCA_ANNOUNCE 81          /* Group announce announcement packet ID */
+#define NET_PACKET_GCA_GET_NODES 82         /* Group announce get nodes request packet ID */
+#define NET_PACKET_GCA_SEND_NODES 83        /* Group announce send nodes packet ID */
+#define NET_PACKET_GCA_PING_REQUEST 84      /* Group announce ping request packet ID */
+#define NET_PACKET_GCA_PING_RESPONSE 85     /* Group announce ping response packet ID */
 
 /* Only used for bootstrap nodes */
-#define BOOTSTRAP_INFO_PACKET_ID 240
+#define BOOTSTRAP_INFO_PACKET_ID 254
 
 
 #define TOX_PORTRANGE_FROM 33445
