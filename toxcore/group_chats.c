@@ -43,7 +43,7 @@
 #define HASH_ID_BYTES (sizeof(uint32_t))
 #define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
-#define GROUP_JOIN_TIMEOUT 10  // TODO: find ideal value
+#define GROUP_JOIN_TIMEOUT 30  // TODO: find ideal value
 #define GROUP_PING_INTERVAL 60
 #define GROUP_PEER_TIMEOUT 255
 #define GROUP_SELF_TIMEOUT GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL + 10
@@ -391,23 +391,31 @@ static int gc_send_invite_response(const GC_Chat *chat, IP_Port ip_port, const u
 static int handle_gc_invite_response(GC_Chat *chat, IP_Port ipp, const uint8_t *public_key, const uint8_t *data,
                                      uint32_t length)
 {
-    if (!id_long_equal(public_key, data + SEMI_INVITE_CERT_SIGNED_SIZE))
+    if (!id_long_equal(public_key, data + SEMI_INVITE_CERT_SIGNED_SIZE)) {
+        fprintf(stderr, "id_long_equal failed\n");
         return -1;
+    }
 
-    if (data[0] != GC_INVITE)
+    if (data[0] != GC_INVITE) {
+        fprintf(stderr, "wrong packet type\n");
         return -1;
+    }
 
     /* Verify our own signature */
-    if (crypto_sign_verify_detached(data + SEMI_INVITE_CERT_SIGNED_SIZE-SIGNATURE_SIZE, data,
+    if (crypto_sign_verify_detached(data + SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE, data,
                                     SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    SIG_KEY(chat->self_public_key)) != 0)
+                                    SIG_KEY(chat->self_public_key)) != 0) {
+        fprintf(stderr, "handle_gc_invite_response sign verify failed (self)\n");
         return -1;
+    }
 
     /* Verify inviter signature */
     if (crypto_sign_verify_detached(data + INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE, data,
                                     INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    SIG_KEY(public_key)) != 0)
+                                    SIG_KEY(public_key)) != 0) {
+        fprintf(stderr, "handle_gc_invite_response sign verify failed (inviter)\n");
         return -1;
+    }
 
     memcpy(chat->group[0].invite_certificate, data, INVITE_CERT_SIGNED_SIZE);
 
@@ -460,6 +468,7 @@ static int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t 
 int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
                              const uint8_t *data, uint32_t length)
 {
+    fprintf(stderr, "handling invite request\n");
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
@@ -514,8 +523,8 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     peer->ip_port = ipp;
 
     if (peer_nick_is_taken(chat, peer->nick, peer->nick_len)) {
-        //free(peer);
-        //return gc_invite_response_reject(chat, ipp, public_key, GJ_NICK_TAKEN);
+        free(peer);
+        return gc_invite_response_reject(chat, ipp, public_key, GJ_NICK_TAKEN);
     }
 
     if (peer_in_chat(chat, peer->client_id) != -1) {
@@ -1821,13 +1830,11 @@ static int create_new_group(GC_Session *c, bool founder)
             group_delete(c, chat);
             return -1;
         }
-
-        memcpy(chat->self_public_key, chat->credentials->chat_public_key, EXT_PUBLIC_KEY);
-        memcpy(chat->self_secret_key, chat->credentials->chat_secret_key, EXT_PUBLIC_KEY);
     } else {
         chat->credentials = NULL;
-        create_long_keypair(chat->self_public_key, chat->self_secret_key);
     }
+
+    create_long_keypair(chat->self_public_key, chat->self_secret_key);
 
     GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
 
