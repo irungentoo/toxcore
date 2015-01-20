@@ -771,7 +771,9 @@ uint32_t tox_do_interval(Tox *tox)
  */
 Tox *tox_new(Tox_Options *options)
 {
-    LOGGER_INIT(LOGGER_OUTPUT_FILE, LOGGER_LEVEL);
+    logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
+
+
     Messenger_Options m_options = {0};
 
     if (options == NULL) {
@@ -820,6 +822,7 @@ void tox_kill(Tox *tox)
     Messenger *m = tox;
     gc_kill_groupchats(m->group_handler);
     kill_messenger(m);
+    logger_kill_global();
 }
 
 /* The main loop that needs to be run at least 20 times per second. */

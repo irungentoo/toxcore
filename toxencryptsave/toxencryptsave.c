@@ -121,7 +121,7 @@ int tox_derive_key_with_salt(uint8_t *passphrase, uint32_t pplength, uint8_t *sa
     /* note that, according to the documentation, a generic pwhash interface will be created
      * once the pwhash competition (https://password-hashing.net/) is over */
     if (crypto_pwhash_scryptsalsa208sha256(
-                key, sizeof(key), passkey, sizeof(passkey), salt,
+                key, sizeof(key), (char *)passkey, sizeof(passkey), salt,
                 crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 2, /* slightly stronger */
                 crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0) {
         /* out of memory most likely */
@@ -280,7 +280,7 @@ int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, 
 
     if (crypto_pwhash_scryptsalsa208sha256(
                 key + crypto_pwhash_scryptsalsa208sha256_SALTBYTES,
-                crypto_box_KEYBYTES, passkey, sizeof(passkey), salt,
+                crypto_box_KEYBYTES, (char *)passkey, sizeof(passkey), salt,
                 crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 2, /* slightly stronger */
                 crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0) {
         /* out of memory most likely */

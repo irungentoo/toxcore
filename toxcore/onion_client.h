@@ -40,7 +40,7 @@
 
 /* The timeout the first time the path is added and
    then for all the next consecutive times */
-#define ONION_PATH_FIRST_TIMEOUT 5
+#define ONION_PATH_FIRST_TIMEOUT 4
 #define ONION_PATH_TIMEOUT 10
 #define ONION_PATH_MAX_LIFETIME 1200
 #define ONION_PATH_MAX_NO_RESPONSE_USES 4
@@ -102,8 +102,6 @@ typedef struct {
 
     uint64_t last_seen;
 
-    Onion_Client_Paths onion_paths;
-
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
     uint8_t last_pinged_index;
 
@@ -130,7 +128,8 @@ typedef struct {
 
     Onion_Node clients_announce_list[MAX_ONION_CLIENTS];
 
-    Onion_Client_Paths onion_paths;
+    Onion_Client_Paths onion_paths_self;
+    Onion_Client_Paths onion_paths_friends;
 
     uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
     uint64_t last_run;
@@ -262,7 +261,7 @@ unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_
  * return the number of packets sent on success
  * return -1 on failure.
  */
-int send_onion_data(const Onion_Client *onion_c, int friend_num, const uint8_t *data, uint16_t length);
+int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, uint16_t length);
 
 /* Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_callback cb, void *object);
