@@ -514,8 +514,8 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     peer->ip_port = ipp;
 
     if (peer_nick_is_taken(chat, peer->nick, peer->nick_len)) {
-        free(peer);
-        return gc_invite_response_reject(chat, ipp, public_key, GJ_NICK_TAKEN);
+        //free(peer);
+        //return gc_invite_response_reject(chat, ipp, public_key, GJ_NICK_TAKEN);
     }
 
     if (peer_in_chat(chat, peer->client_id) != -1) {
