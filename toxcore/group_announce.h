@@ -23,7 +23,7 @@
 
 #include "DHT.h"
 
-#define MAX_GCA_SELF_REQUESTS 10
+#define MAX_GCA_SELF_REQUESTS 30
 
 typedef struct __attribute__ ((__packed__))
 {

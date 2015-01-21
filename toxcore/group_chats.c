@@ -43,10 +43,10 @@
 #define HASH_ID_BYTES (sizeof(uint32_t))
 #define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 
-#define GROUP_JOIN_TIMEOUT 30  // TODO: find ideal value
+#define GROUP_JOIN_TIMEOUT 10  // TODO: find ideal value
 #define GROUP_PING_INTERVAL 60
-#define GROUP_PEER_TIMEOUT 255
-#define GROUP_SELF_TIMEOUT GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL + 10
+#define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 2)
+#define GROUP_SELF_TIMEOUT (GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL)
 
 /* Group packet ID's */
 #define GP_BROADCAST 0
@@ -85,7 +85,7 @@ static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, u
     memcpy(nonce, packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY, crypto_box_NONCEBYTES);
 
     uint8_t plain[MAX_GC_PACKET_SIZE];
-    int len = decrypt_data(sender_pk, self_sk, nonce,
+    int len = decrypt_data(ENC_KEY(sender_pk), ENC_KEY(self_sk), nonce,
                            packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES,
                            length - (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES), plain);
     if (len <= 0) {
@@ -117,7 +117,7 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, con
     new_nonce(nonce);
 
     uint8_t encrypt[1 + length + crypto_box_MACBYTES];
-    int len = encrypt_data(recv_pk, self_sk, nonce, plain, length + 1, encrypt);
+    int len = encrypt_data(ENC_KEY(recv_pk), ENC_KEY(self_sk), nonce, plain, length + 1, encrypt);
 
     if (len != sizeof(encrypt)) {
         fprintf(stderr, "encrypt failed. packet type: %d, len: %d\n", packet_type, len);
@@ -468,7 +468,6 @@ static int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t 
 int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
                              const uint8_t *data, uint32_t length)
 {
-    fprintf(stderr, "handling invite request\n");
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
