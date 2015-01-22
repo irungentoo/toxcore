@@ -678,7 +678,6 @@ static int handle_data_response(void *object, IP_Port source, const uint8_t *pac
             sizeof(plain));
 }
 
-#define FAKEID_DATA_ID 156
 #define FAKEID_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES)
 #define FAKEID_DATA_MAX_LENGTH (FAKEID_DATA_MIN_LENGTH + sizeof(Node_format)*MAX_SENT_NODES)
 static int handle_fakeid_announce(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t length)
@@ -857,7 +856,7 @@ static int send_dht_fakeid(const Onion_Client *onion_c, int friend_num, const ui
 
     uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
     len = create_request(onion_c->dht->self_public_key, onion_c->dht->self_secret_key, packet,
-                         onion_c->friends_list[friend_num].fake_client_id, temp, sizeof(temp), FAKEID_DATA_ID);
+                         onion_c->friends_list[friend_num].fake_client_id, temp, sizeof(temp), CRYPTO_PACKET_FAKEID);
 
     if (len == -1)
         return -1;
@@ -904,7 +903,7 @@ static int send_fakeid_announce(Onion_Client *onion_c, uint16_t friend_num, uint
         return -1;
 
     uint8_t data[FAKEID_DATA_MAX_LENGTH];
-    data[0] = FAKEID_DATA_ID;
+    data[0] = ONION_DATA_FAKEID;
     uint64_t no_replay = unix_time();
     host_to_net((uint8_t *)&no_replay, sizeof(no_replay));
     memcpy(data + 1, &no_replay, sizeof(no_replay));
@@ -1394,8 +1393,8 @@ Onion_Client *new_onion_client(Net_Crypto *c)
     crypto_box_keypair(onion_c->temp_public_key, onion_c->temp_secret_key);
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_announce_response, onion_c);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_data_response, onion_c);
-    oniondata_registerhandler(onion_c, FAKEID_DATA_ID, &handle_fakeid_announce, onion_c);
-    cryptopacket_registerhandler(onion_c->dht, FAKEID_DATA_ID, &handle_dht_fakeid, onion_c);
+    oniondata_registerhandler(onion_c, ONION_DATA_FAKEID, &handle_fakeid_announce, onion_c);
+    cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_FAKEID, &handle_dht_fakeid, onion_c);
     tcp_onion_response_handler(onion_c->c, &handle_tcp_onion, onion_c);
 
     return onion_c;
@@ -1410,8 +1409,8 @@ void kill_onion_client(Onion_Client *onion_c)
     realloc_onion_friends(onion_c, 0);
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
-    oniondata_registerhandler(onion_c, FAKEID_DATA_ID, NULL, NULL);
-    cryptopacket_registerhandler(onion_c->dht, FAKEID_DATA_ID, NULL, NULL);
+    oniondata_registerhandler(onion_c, ONION_DATA_FAKEID, NULL, NULL);
+    cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_FAKEID, NULL, NULL);
     tcp_onion_response_handler(onion_c->c, NULL, NULL);
     memset(onion_c, 0, sizeof(Onion_Client));
     free(onion_c);

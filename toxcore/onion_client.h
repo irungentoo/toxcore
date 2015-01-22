@@ -55,6 +55,10 @@
  */
 #define ONION_OFFLINE_TIMEOUT (ONION_NODE_PING_INTERVAL * 1.25)
 
+/* Onion data packet ids. */
+#define ONION_DATA_FRIEND_REQ CRYPTO_PACKET_FRIEND_REQ
+#define ONION_DATA_FAKEID CRYPTO_PACKET_FAKEID
+
 typedef struct {
     uint8_t     client_id[CLIENT_ID_SIZE];
     IP_Port     ip_port;
