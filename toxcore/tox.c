@@ -860,6 +860,16 @@ int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
 
 /**************** GROUPCHAT FUNCTIONS *****************/
 
+/* Set the callback for group invites from friends. Length should be TOX_GROUP_INVITE_DATA_SIZE.
+ *
+ * function(Tox *m, int32_t friendnumber, const uint8_t *invite_data, uint16_t length, void *userdata)
+ */
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *m, int32_t, const uint8_t *, uint16_t length, void *),
+                               void *userdata)
+{
+    Messenger *m = tox;
+    m_callback_group_invite(m, function, userdata);
+}
 
 /* Set the callback for group messages.
  *
@@ -1011,6 +1021,34 @@ int tox_group_new_join(Tox *tox, const uint8_t *invite_key)
     return gc_group_join(m->group_handler, invite_key);
 }
 
+/* Joins a group using the invite data received in a friend's group invite.
+ * Length should be TOX_GROUP_INVITE_DATA_SIZE.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure
+ */
+int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length)
+{
+    Messenger *m = tox;
+    return gc_group_accept_invite(m->group_handler, invite_data, length);
+}
+
+/* Invites friendnumber to groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_invite_friend(Tox *tox, int groupnumber, int32_t friendnumber)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_invite_friend(m->group_handler, chat, friendnumber);
+}
+
 /* Deletes groupnumber's group chat and sends an optional parting message to group peers
  * The maximum parting message length is TOX_MAX_GROUP_PART_LENGTH.
  *
@@ -1100,7 +1138,7 @@ int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peer
  * Return -1 on failure.
  * Return -2 if nick is already taken by another group member
  */
-int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length)
+int tox_group_set_self_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length)
 {
     Messenger *m = tox;
     return gc_set_self_nick(m, groupnumber, name, length);

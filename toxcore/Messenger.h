@@ -30,13 +30,14 @@
 #include "LAN_discovery.h"
 #include "friend_connection.h"
 #include "group_chats.h"
+#include "group_announce.h"
 
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
 #define AVATAR_MAX_DATA_LENGTH 16384
 #define AVATAR_HASH_LENGTH crypto_hash_sha256_BYTES
-
+#define GROUP_INVITE_DATA_SIZE (EXT_PUBLIC_KEY + sizeof(GC_Announce_Node))
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
@@ -62,9 +63,6 @@
 #define PACKET_ID_FILE_DATA 82
 #define PACKET_ID_INVITE_GROUPCHAT 96
 #define PACKET_ID_ONLINE_PACKET 97
-#define PACKET_ID_DIRECT_GROUPCHAT 98
-#define PACKET_ID_MESSAGE_GROUPCHAT 99
-#define PACKET_ID_LOSSY_GROUPCHAT 199
 
 /* Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS 16
@@ -307,6 +305,9 @@ struct Messenger {
 
     void (*msi_packet)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
+
+    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
+    void *group_invite_userdata;
 
     Messenger_Options options;
 };
@@ -731,6 +732,24 @@ void m_callback_avatar_info(Messenger *m, void (*function)(Messenger *m, int32_t
  */
 void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *,
                             uint32_t, void *), void *userdata);
+
+
+/****************GROUP CHATS*****************/
+
+/* Set the callback for group invites.
+ *
+ *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ */
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
+                             void *userdata);
+
+/* Send a group invite packet.
+ *
+ *  return 0 on success
+ *  return -1 on failure
+ */
+int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
+
 
 /****************FILE SENDING*****************/
 

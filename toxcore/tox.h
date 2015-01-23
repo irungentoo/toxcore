@@ -41,6 +41,7 @@ extern "C" {
 #define TOX_MAX_GROUP_PART_LENGTH 128
 #define TOX_MAX_GROUP_NAME_LENGTH 48
 #define TOX_GROUP_CHAT_ID_SIZE 64
+#define TOX_GROUP_INVITE_DATA_SIZE 160
 
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
@@ -817,6 +818,14 @@ typedef enum {
     TOX_GJ_INVITE_FAILED
 } TOX_GROUP_JOIN_REJECTED;
 
+
+/* Set the callback for group invites from friends. Length should be TOX_GROUP_INVITE_DATA_SIZE.
+ *
+ * function(Tox *m, int32_t friendnumber, const uint8_t *invite_data, uint16_t length, void *userdata)
+ */
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *m, int32_t, const uint8_t *, uint16_t length, void *),
+                               void *userdata);
+
 /* Set the callback for group messages.
  *
  *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
@@ -905,12 +914,26 @@ void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t
 int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length);
 
 /* Creates and joins a groupchat using the supplied public key.
- * Newly created groupchat is added to the group chats array.
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
 int tox_group_new_join(Tox *tox, const uint8_t *invite_key);
+
+/* Joins a group using the invite data received in a friend's group invite.
+ * Length should be TOX_GROUP_INVITE_DATA_SIZE.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure
+ */
+int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length);
+
+/* Invites friendnumber to groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_invite_friend(Tox *tox, int groupnumber, int32_t friendnumber);
 
 /* Deletes groupnumber's group chat and sends an optional parting message to group peers
  * The maximum parting message length is TOX_MAX_GROUP_PART_LENGTH.
@@ -956,7 +979,7 @@ int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peer
  * Return -1 on failure.
  * Return -2 if nick is already taken by another group member
  */
-int tox_group_set_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length);
+int tox_group_set_self_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length);
 
 /* Get peernumber's name in groupnumber's group chat.
  * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.

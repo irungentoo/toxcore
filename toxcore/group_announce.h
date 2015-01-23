@@ -63,4 +63,12 @@ struct GC_Announce *new_gca(DHT *dht);
 void kill_gca(struct GC_Announce *announce);
 
 
+/* Copies your own ip_port structure to target.
+ *
+ * Return 0 on succcess.
+ * Return -1 on failure.
+ */
+int ipport_self_copy(DHT *dht, IP_Port *target);
+
+
 #endif /* GROUP_ANNOUNCE_H */

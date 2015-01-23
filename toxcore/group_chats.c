@@ -55,6 +55,7 @@
 #define GP_INVITE_RESPONSE_REJECT 3
 #define GP_SYNC_REQUEST 4
 #define GP_SYNC_RESPONSE 5
+#define GP_FRIEND_INVITE 6
 
 static int peernumber_valid(const GC_Chat *chat, uint32_t peernumber);
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
@@ -1905,7 +1906,6 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key)
         return -1;
 
     GC_Chat *chat = gc_get_group(c, groupnumber);
-    const Messenger *m = c->messenger;
 
     if (chat == NULL)
         return -1;
@@ -1969,6 +1969,66 @@ static int rejoin_group(GC_Session *c, GC_Chat *chat)
     return chat->groupnumber;
 }
 
+/* Invites friendnumber to chat. Packet includes: Type, chat_id, node
+ *
+ * Return 0 on success.
+ * Return -1 on fail.
+ */
+int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
+{
+    uint8_t packet[MAX_GC_PACKET_SIZE];
+    packet[0] = GP_FRIEND_INVITE;
+
+    memcpy(packet + 1, chat->chat_public_key, EXT_PUBLIC_KEY);
+
+    IP_Port self_ipp;
+    if (ipport_self_copy(c->messenger->dht, &self_ipp) == -1)
+        return -1;
+
+    GC_Announce_Node node;
+    memcpy(node.client_id, chat->self_public_key, EXT_PUBLIC_KEY);
+    memcpy(&node.ip_port, &self_ipp, sizeof(IP_Port));
+    memcpy(packet + 1 + EXT_PUBLIC_KEY, &node, sizeof(GC_Announce_Node));
+    uint16_t length = 1 + EXT_PUBLIC_KEY + sizeof(GC_Announce_Node);
+
+    return send_group_invite_packet(c->messenger, friendnumber, packet, length);
+}
+
+/* Joins a group using the invite data received in a friend's group invite.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure.
+ */
+int gc_group_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
+{
+    if (length != GROUP_INVITE_DATA_SIZE)
+        return -1;
+
+    uint8_t chat_id[EXT_PUBLIC_KEY];
+    memcpy(chat_id, data, EXT_PUBLIC_KEY);
+
+    GC_Announce_Node node;
+    memcpy(&node, data + EXT_PUBLIC_KEY, sizeof(GC_Announce_Node));
+
+    int groupnumber = create_new_group(c, false);
+
+    if (groupnumber == -1)
+        return -1;
+
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    memcpy(chat->chat_public_key, chat_id, EXT_PUBLIC_KEY);
+    chat->hash_id = jenkins_hash(chat_id, EXT_PUBLIC_KEY);
+
+    if (gc_send_invite_request(chat, node.ip_port, node.client_id) == -1)
+        return -1;
+
+    return groupnumber;
+}
+
 void kill_groupcredentials(GC_ChatCredentials *credentials)
 {
     if (credentials == NULL)
@@ -1978,9 +2038,9 @@ void kill_groupcredentials(GC_ChatCredentials *credentials)
     free(credentials);
 }
 
-GC_Session* new_groupchats(Messenger* m)
+GC_Session *new_groupchats(Messenger* m)
 {
-    GC_Session* c = calloc(sizeof(GC_Session), 1);
+    GC_Session *c = calloc(sizeof(GC_Session), 1);
 
     if (c == NULL)
         return NULL;

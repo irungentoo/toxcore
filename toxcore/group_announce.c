@@ -67,7 +67,6 @@
 
 #define MAX_GCA_SENT_NODES 4
 #define MAX_GCA_ANNOUNCED_NODES 30
-#define MAX_GCA_SELF_ANNOUNCEMENTS  30
 
 /* Holds nodes that we receive when we send a request, used to join groups */
 struct GC_AnnounceRequest {
@@ -77,7 +76,6 @@ struct GC_AnnounceRequest {
     uint64_t time_added;
     bool ready;
 
-    /* This is redundant but it's the easiest way */
     uint8_t long_pk[EXT_PUBLIC_KEY];
     uint8_t long_sk[EXT_SECRET_KEY];
 };
@@ -98,6 +96,34 @@ typedef struct GC_Announce {
     struct GC_AnnouncedNode announcements[MAX_GCA_ANNOUNCED_NODES];
     struct GC_AnnounceRequest self_requests[MAX_GCA_SELF_REQUESTS];
 } GC_Announce;
+
+
+/* Copies your own ip_port structure to target. (TODO: This should probably go somewhere else)
+ *
+ * Return 0 on succcess.
+ * Return -1 on failure.
+ */
+int ipport_self_copy(DHT *dht, IP_Port *target)
+{
+    int i;
+
+    for (i = 0; i < LCLIENT_LIST; i++) {
+        if (ipport_isset(&dht->close_clientlist[i].assoc4.ret_ip_port)) {
+            ipport_copy(target, &dht->close_clientlist[i].assoc4.ret_ip_port);
+            break;
+        }
+
+        if (ipport_isset(&dht->close_clientlist[i].assoc6.ret_ip_port)) {
+            ipport_copy(target, &dht->close_clientlist[i].assoc6.ret_ip_port);
+            break;
+        }
+    }
+
+    if (!ipport_isset(target))
+        return -1;
+
+    return 0;
+}
 
 /* Handle all decrypt procedures */
 static int unwrap_gca_packet(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key,
@@ -403,25 +429,12 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_long_pk
     data[0] = NET_PACKET_GCA_ANNOUNCE;
     memcpy(data + 1, chat_id, EXT_PUBLIC_KEY);
 
-    IP_Port ipp;
-    int i;
+    IP_Port self_ipp;
 
-    for (i = 0; i < LCLIENT_LIST; i++) {
-        if (ipport_isset(&dht->close_clientlist[i].assoc4.ret_ip_port)) {
-            ipport_copy(&ipp, &dht->close_clientlist[i].assoc4.ret_ip_port);
-            break;
-        }
-
-        if (ipport_isset(&dht->close_clientlist[i].assoc6.ret_ip_port)) {
-            ipport_copy(&ipp, &dht->close_clientlist[i].assoc6.ret_ip_port);
-            break;
-        }
-    }
-
-    if (!ipport_isset(&ipp))
+    if (ipport_self_copy(dht, &self_ipp) == -1)
         return -1;
 
-    memcpy(data + 1 + EXT_PUBLIC_KEY, &ipp, sizeof(IP_Port));
+    memcpy(data + 1 + EXT_PUBLIC_KEY, &self_ipp, sizeof(IP_Port));
 
     if (sign_data(data, 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), self_long_sk, self_long_pk, data) == -1)
         return -1;
@@ -469,25 +482,12 @@ int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_long_p
     data[0] = NET_PACKET_GCA_GET_NODES;
     memcpy(data + 1, chat_id, EXT_PUBLIC_KEY);
 
-    IP_Port ipp;
-    uint32_t i;
+    IP_Port self_ipp;
 
-    for (i = 0; i < LCLIENT_LIST; i++) {
-        if (ipport_isset(&dht->close_clientlist[i].assoc4.ret_ip_port)) {
-            ipport_copy(&ipp, &dht->close_clientlist[i].assoc4.ret_ip_port);
-            break;
-        }
-
-        if (ipport_isset(&dht->close_clientlist[i].assoc6.ret_ip_port)) {
-            ipport_copy(&ipp, &dht->close_clientlist[i].assoc6.ret_ip_port);
-            break;
-        }
-    }
-
-    if (!ipport_isset(&ipp))
+    if (ipport_self_copy(dht, &self_ipp) == -1)
         return -1;
 
-    memcpy(data + 1 + EXT_PUBLIC_KEY, &ipp, sizeof(IP_Port));
+    memcpy(data + 1 + EXT_PUBLIC_KEY, &self_ipp, sizeof(IP_Port));
     uint64_t request_id = random_64b();
     U64_to_bytes(data + 1 + EXT_PUBLIC_KEY + sizeof(IP_Port), request_id);
 
@@ -723,16 +723,20 @@ int handle_gca_ping_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint
         }
     }
 
-    if (!node_found)
+    if (!node_found) {
+        fprintf(stderr, "handle ping request node not found\n");
         return -1;
+    }
 
     uint8_t data[GCA_PING_REQUEST_PLAIN_SIZE];
     uint8_t public_key[ENC_PUBLIC_KEY];
     int plain_length = unwrap_gca_packet(dht->self_public_key, announce->self_requests[i].long_sk,
                                          public_key, data, packet[0], packet, length);
 
-    if (plain_length != GCA_PING_REQUEST_PLAIN_SIZE)
+    if (plain_length != GCA_PING_REQUEST_PLAIN_SIZE) {
+        fprintf(stderr, "handle ping request unwrap failed\n");
         return -1;
+    }
 
     return send_gca_ping_response(dht, ipp, data, public_key);
 }
