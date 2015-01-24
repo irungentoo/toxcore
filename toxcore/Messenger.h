@@ -898,8 +898,10 @@ uint32_t messenger_run_interval(Messenger *m);
 /* return size of the messenger data (for saving). */
 uint32_t messenger_size(const Messenger *m);
 
-/* Save the messenger in data (must be allocated memory of size Messenger_size()) */
-void messenger_save(const Messenger *m, uint8_t *data);
+/* Save the messenger in data (must be allocated memory of size Messenger_size())
+ * Returns -1 if the buffer is not large enough, 0 on success
+ */
+int messenger_save(const Messenger *m, uint8_t *data, uint32_t bufsize);
 
 /* Load the messenger from data of size length. */
 int messenger_load(Messenger *m, const uint8_t *data, uint32_t length);

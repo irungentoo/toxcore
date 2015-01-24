@@ -91,7 +91,7 @@ int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength);
+int tox_encrypted_save(const Tox *tox, uint8_t *data, uint32_t buflen, uint8_t *passphrase, uint32_t pplength);
 
 /* Decrypts the given data with the given passphrase. The output array must be
  * at least data_len - tox_pass_encryption_extra_length() bytes long. This delegates
@@ -164,7 +164,7 @@ int tox_pass_key_encrypt(const uint8_t *data, uint32_t data_len, const uint8_t *
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint8_t *key);
+int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint32_t buflen, uint8_t *key);
 
 /* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
  * tox_derive_key_from_pass.

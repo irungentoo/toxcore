@@ -193,11 +193,15 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        uint8_t *buffer = malloc(messenger_size(m));
-        messenger_save(m, buffer);
-        size_t write_result = fwrite(buffer, 1, messenger_size(m), file);
+        uint32_t size = messenger_size(m);
+        uint8_t *buffer = malloc(size);
+        if (messenger_save(m, buffer, size) < 0) {
+            return 1;
+        }
 
-        if (write_result < messenger_size(m)) {
+        size_t write_result = fwrite(buffer, 1, size, file);
+
+        if (write_result < size) {
             return 1;
         }
 
