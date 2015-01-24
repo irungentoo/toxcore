@@ -200,12 +200,16 @@ int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength)
+int tox_encrypted_save(const Tox *tox, uint8_t *data, uint32_t buflen, uint8_t *passphrase, uint32_t pplength)
 {
     /* first get plain save data */
     uint32_t temp_size = tox_size(tox);
+    if (temp_size + TOX_PASS_ENCRYPTION_EXTRA_LENGTH > buflen)
+        return -1;
     uint8_t temp_data[temp_size];
-    tox_save(tox, temp_data);
+    int ret = tox_save(tox, temp_data, temp_size);
+    if (ret<0)
+        return ret;
 
     /* now encrypt */
     return tox_pass_encrypt(temp_data, temp_size, passphrase, pplength, data);
@@ -217,12 +221,16 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
  * returns 0 on success
  * returns -1 on failure
  */
-int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint8_t *key)
+int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint32_t buflen, uint8_t *key)
 {
     /* first get plain save data */
     uint32_t temp_size = tox_size(tox);
+    if (temp_size + TOX_PASS_ENCRYPTION_EXTRA_LENGTH > buflen)
+        return -1;
     uint8_t temp_data[temp_size];
-    tox_save(tox, temp_data);
+    int ret = tox_save(tox, temp_data, temp_size);
+    if (ret<0)
+        return ret;
 
     /* encrypt */
     return tox_pass_key_encrypt(temp_data, temp_size, key, data);

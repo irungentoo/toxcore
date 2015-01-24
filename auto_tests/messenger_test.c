@@ -270,7 +270,7 @@ START_TEST(test_messenger_state_saveloadsave)
     uint8_t buffer[size + 2 * extra];
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
-    messenger_save(m, buffer + extra);
+    messenger_save(m, buffer + extra, size);
 
     for (i = 0; i < extra; i++) {
         ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", i);
@@ -294,7 +294,7 @@ START_TEST(test_messenger_state_saveloadsave)
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
 
     uint8_t buffer2[size2];
-    messenger_save(m, buffer2);
+    messenger_save(m, buffer2, size2);
 
     ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "Messenger state changed by store/load/store cycle");
 }

@@ -178,7 +178,7 @@ START_TEST(test_one)
 
     size_t save_size = tox_size(tox1);
     uint8_t data[save_size];
-    tox_save(tox1, data);
+    tox_save(tox1, data, save_size);
 
     tox_kill(tox2);
     tox2 = tox_new(0);

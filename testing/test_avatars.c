@@ -632,7 +632,7 @@ static int save_bootstrap_data(Tox *tox, const char *base_dir)
         return -1;
     }
 
-    tox_save(tox, buf);
+    tox_save(tox, buf, len);
 
     FILE *fp = fopen(path_tmp, "wb");
 

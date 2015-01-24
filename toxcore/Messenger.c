@@ -2627,7 +2627,7 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 }
 
 /* Save the messenger in data of size Messenger_size(). */
-void messenger_save(const Messenger *m, uint8_t *data)
+int messenger_save(const Messenger *m, uint8_t *data, uint32_t bufsize)
 {
     uint32_t len;
     uint16_t type;
@@ -2642,6 +2642,8 @@ void messenger_save(const Messenger *m, uint8_t *data)
     assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
 #endif
     len = size32 + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
     data = z_state_save_subheader(data, len, type);
     *(uint32_t *)data = get_nospam(&(m->fr));
@@ -2649,30 +2651,40 @@ void messenger_save(const Messenger *m, uint8_t *data)
     data += len;
 
     len = DHT_size(m->dht);
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_DHT;
     data = z_state_save_subheader(data, len, type);
     DHT_save(m->dht, data);
     data += len;
 
     len = saved_friendslist_size(m);
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_FRIENDS;
     data = z_state_save_subheader(data, len, type);
     friends_list_save(m, data);
     data += len;
 
     len = m->name_length;
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_NAME;
     data = z_state_save_subheader(data, len, type);
     memcpy(data, m->name, len);
     data += len;
 
     len = m->statusmessage_length;
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_STATUSMESSAGE;
     data = z_state_save_subheader(data, len, type);
     memcpy(data, m->statusmessage, len);
     data += len;
 
     len = 1;
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_STATUS;
     data = z_state_save_subheader(data, len, type);
     *data = m->userstatus;
@@ -2680,6 +2692,8 @@ void messenger_save(const Messenger *m, uint8_t *data)
 
     Node_format relays[NUM_SAVED_TCP_RELAYS];
     len = sizeof(relays);
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_TCP_RELAY;
     data = z_state_save_subheader(data, len, type);
     memset(relays, 0, len);
@@ -2689,11 +2703,15 @@ void messenger_save(const Messenger *m, uint8_t *data)
 
     Node_format nodes[NUM_SAVED_PATH_NODES];
     len = sizeof(nodes);
+    if (len > bufsize)      return -1;
+    else                    bufsize -= len;
     type = MESSENGER_STATE_TYPE_PATH_NODE;
     data = z_state_save_subheader(data, len, type);
     memset(nodes, 0, len);
     onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
     memcpy(data, nodes, len);
+
+    return 0;
 }
 
 static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)

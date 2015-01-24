@@ -67,7 +67,7 @@ START_TEST(test_save_friend)
 
     uint32_t size = tox_encrypted_size(tox1);
     uint8_t data[size];
-    test = tox_encrypted_save(tox1, data, "correcthorsebatterystaple", 25);
+    test = tox_encrypted_save(tox1, data, size, "correcthorsebatterystaple", 25);
     ck_assert_msg(test == 0, "failed to encrypted save");
     ck_assert_msg(tox_is_save_encrypted(data) == 1, "magic number missing");
 
@@ -84,7 +84,7 @@ START_TEST(test_save_friend)
     uint8_t key[32 + crypto_box_BEFORENMBYTES];
     memcpy(key, salt, 32);
     memcpy(key + 32, known_key2, crypto_box_BEFORENMBYTES);
-    test = tox_encrypted_key_save(tox3, data2, key);
+    test = tox_encrypted_key_save(tox3, data2, size, key);
     ck_assert_msg(test == 0, "failed to encrypted save the second");
     ck_assert_msg(tox_is_save_encrypted(data2) == 1, "magic number the second missing");
 

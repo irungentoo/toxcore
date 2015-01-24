@@ -930,8 +930,10 @@ void tox_do(Tox *tox);
 /*  return size of messenger data (for saving). */
 uint32_t tox_size(const Tox *tox);
 
-/* Save the messenger in data (must be allocated memory of size Messenger_size()). */
-void tox_save(const Tox *tox, uint8_t *data);
+/* Save the messenger in data (must be allocated memory of size Messenger_size()).
+ * Returns -1 if the buffer is not large enough, 0 on success
+ */
+int tox_save(const Tox *tox, uint8_t *data, uint32_t bufsize);
 
 /* Load the messenger from data of size length.
  * NOTE: The Tox save format isn't stable yet meaning this function sometimes
