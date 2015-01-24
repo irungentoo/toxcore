@@ -1999,7 +1999,7 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int gc_group_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
+int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
 {
     if (length != GROUP_INVITE_DATA_SIZE)
         return -1;

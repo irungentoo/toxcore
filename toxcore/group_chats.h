@@ -194,8 +194,6 @@ typedef struct GC_Session {
 
     uint32_t num_chats;
 
-
-
     void (*message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *message_userdata;
     void (*private_message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
@@ -352,7 +350,7 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key);
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int gc_group_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length);
+int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length);
 
 /* Sends parting message to group and deletes group.
  *

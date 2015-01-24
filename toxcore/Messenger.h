@@ -738,7 +738,7 @@ void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length, void *userdata)
  */
 void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
                              void *userdata);

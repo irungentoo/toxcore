@@ -1030,7 +1030,7 @@ int tox_group_new_join(Tox *tox, const uint8_t *invite_key)
 int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length)
 {
     Messenger *m = tox;
-    return gc_group_accept_invite(m->group_handler, invite_data, length);
+    return gc_accept_invite(m->group_handler, invite_data, length);
 }
 
 /* Invites friendnumber to groupnumber.

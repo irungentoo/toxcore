@@ -1046,7 +1046,7 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length, void *userdata)
  */
 void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
                              void *userdata)
@@ -1062,7 +1062,10 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_
  */
 int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0);
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0))
+        return 0;
+
+    return -1;
 }
 
 
@@ -2141,7 +2144,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             if (m->avatar_info_recv) {
                 /*
                  * A malicious user may send an incomplete avatar info message.
-                 * Check if it have the correct size for the format:
+                 * Check if it has the correct size for the format:
                  * [1 uint8_t: avatar format] [32 uint8_t: hash]
                  */
                 if (data_length == AVATAR_HASH_LENGTH + 1) {
